@@ -163,3 +163,26 @@ func (s *AthenaService) CancelCapacityReservation(ctx context.Context, reqCtx *r
 
 	return formatCapacityReservation(cr), nil
 }
+
+// DeleteCapacityReservation deletes the specified capacity reservation.
+func (s *AthenaService) DeleteCapacityReservation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	name := request.GetStringParam(req.Parameters, "Name")
+	if name == "" {
+		return nil, awserrors.NewValidationException("Name is required")
+	}
+
+	if _, err := stores.capacityReservationStore.GetCapacityReservation(name); err != nil {
+		return nil, awserrors.NewResourceNotFoundException("CapacityReservation", name)
+	}
+
+	if err := stores.capacityReservationStore.DeleteCapacityReservation(name); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{}, nil
+}

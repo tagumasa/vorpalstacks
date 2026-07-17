@@ -55,6 +55,14 @@ func (s *AthenaService) queryExecutionToResponse(qe *athenastore.QueryExecution)
 				"KmsKey":           qe.ResultConfiguration.EncryptionConfiguration.KmsKey,
 			}
 		}
+		if qe.ResultConfiguration.ExpectedBucketOwner != "" {
+			resultConfig["ExpectedBucketOwner"] = qe.ResultConfiguration.ExpectedBucketOwner
+		}
+		if qe.ResultConfiguration.ACLConfiguration != nil {
+			resultConfig["AclConfiguration"] = map[string]interface{}{
+				"S3AclOption": qe.ResultConfiguration.ACLConfiguration.S3ACLOption,
+			}
+		}
 		response["ResultConfiguration"] = resultConfig
 	}
 
@@ -102,7 +110,7 @@ func (s *AthenaService) queryExecutionToResponse(qe *athenastore.QueryExecution)
 	return response
 }
 
-func (s *AthenaService) parseResultConfiguration(resultConfigMap map[string]interface{}) *athenastore.ResultConfiguration {
+func (s *AthenaService) parseResultConfiguration(resultConfigMap map[string]interface{}) (*athenastore.ResultConfiguration, error) {
 	resultConfiguration := &athenastore.ResultConfiguration{}
 
 	if outputLocation, ok := resultConfigMap["OutputLocation"].(string); ok {
@@ -123,7 +131,15 @@ func (s *AthenaService) parseResultConfiguration(resultConfigMap map[string]inte
 		resultConfiguration.ExpectedBucketOwner = expectedBucketOwner
 	}
 
-	return resultConfiguration
+	if aclConfigMap, ok := resultConfigMap["AclConfiguration"].(map[string]interface{}); ok {
+		aclOption, _ := aclConfigMap["S3AclOption"].(string)
+		if aclOption != "BUCKET_OWNER_FULL_CONTROL" {
+			return nil, ErrInvalidParameterException
+		}
+		resultConfiguration.ACLConfiguration = &athenastore.ACLConfiguration{S3ACLOption: aclOption}
+	}
+
+	return resultConfiguration, nil
 }
 
 func (s *AthenaService) hasJoin(selectStmt *sqlparser.Select) bool {

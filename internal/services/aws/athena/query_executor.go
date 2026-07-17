@@ -13,7 +13,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution) {
+func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution, bytesScannedCutoff int64) {
 	defer func() {
 		if r := resilience.RecoverPanic("executeQueryAsync"); r != nil {
 			qe.Status.State = athenastore.QueryExecutionStateFailed
@@ -121,6 +121,18 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 		dataScanned = stats.DataScannedInBytes
 		queryPlanningTime = stats.QueryPlanningTimeInMillis
 	}
+
+	if bytesScannedCutoff > 0 && dataScanned > bytesScannedCutoff {
+		qe.Status.State = athenastore.QueryExecutionStateCancelled
+		qe.Status.StateChangeReason = fmt.Sprintf("Query exceeded the data scan limit of %d bytes configured for the workgroup.", bytesScannedCutoff)
+		qe.Status.CompletionDateTime = time.Now().UTC()
+		st.resultStore.DeleteResultsByIDs([]string{qe.QueryExecutionId})
+		logs.Warn("Query cancelled due to BytesScannedCutoffPerQuery exceeded",
+			logs.String("id", qe.QueryExecutionId),
+			logs.Int64("scanned", dataScanned),
+			logs.Int64("cutoff", bytesScannedCutoff))
+	}
+
 	qe.Statistics = &athenastore.QueryExecutionStatistics{
 		EngineExecutionTimeInMillis:   endTime.Sub(startTime).Milliseconds(),
 		DataScannedInBytes:            dataScanned,

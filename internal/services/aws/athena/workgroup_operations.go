@@ -54,7 +54,11 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 	configMap := request.GetMapParamCaseInsensitive(req.Parameters, "Configuration")
 	var configuration *athenastore.WorkGroupConfiguration
 	if configMap != nil {
-		configuration = s.parseWorkGroupConfiguration(configMap)
+		var err error
+		configuration, err = s.parseWorkGroupConfiguration(configMap)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if configuration == nil {
@@ -150,7 +154,9 @@ func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.Req
 
 	configUpdatesMap := request.GetMapParamCaseInsensitive(req.Parameters, "ConfigurationUpdates")
 	if configUpdatesMap != nil {
-		s.applyConfigurationUpdates(workGroup, configUpdatesMap)
+		if err := s.applyConfigurationUpdates(workGroup, configUpdatesMap); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := stores.workGroupStore.UpdateWorkGroup(workGroup); err != nil {
@@ -387,12 +393,16 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 	}, nil
 }
 
-func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{}) *athenastore.WorkGroupConfiguration {
+func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{}) (*athenastore.WorkGroupConfiguration, error) {
 	cfg := &athenastore.WorkGroupConfiguration{}
 
 	if resultConfigRaw, ok := config["ResultConfiguration"]; ok {
 		if resultConfig, ok := resultConfigRaw.(map[string]interface{}); ok {
-			cfg.ResultConfiguration = s.parseResultConfiguration(resultConfig)
+			rc, err := s.parseResultConfiguration(resultConfig)
+			if err != nil {
+				return nil, err
+			}
+			cfg.ResultConfiguration = rc
 		}
 	}
 
@@ -418,7 +428,26 @@ func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{
 		}
 	}
 
-	return cfg
+	if additional, ok := config["AdditionalConfiguration"].(string); ok {
+		cfg.AdditionalConfiguration = additional
+	}
+
+	if executionRole, ok := config["ExecutionRole"].(string); ok {
+		cfg.ExecutionRole = executionRole
+	}
+
+	if custEncMap, ok := config["CustomerContentEncryptionConfiguration"].(map[string]interface{}); ok {
+		cfg.CustomerContentEncryptionConfiguration = &athenastore.CustomerContentEncryptionConfiguration{}
+		if kmsKey, ok := custEncMap["KmsKey"].(string); ok {
+			cfg.CustomerContentEncryptionConfiguration.KmsKey = kmsKey
+		}
+	}
+
+	if enableMin, ok := config["EnableMinimumEncryptionConfiguration"].(bool); ok {
+		cfg.EnableMinimumEncryptionConfiguration = enableMin
+	}
+
+	return cfg, nil
 }
 
 func (s *AthenaService) parseEngineVersion(engineVersion map[string]interface{}) *athenastore.EngineVersion {
@@ -438,7 +467,7 @@ func (s *AthenaService) parseEngineVersion(engineVersion map[string]interface{})
 	return ev
 }
 
-func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, updates map[string]interface{}) {
+func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, updates map[string]interface{}) error {
 	if workGroup.Configuration == nil {
 		workGroup.Configuration = &athenastore.WorkGroupConfiguration{}
 	}
@@ -448,8 +477,42 @@ func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGro
 			if workGroup.Configuration.ResultConfiguration == nil {
 				workGroup.Configuration.ResultConfiguration = &athenastore.ResultConfiguration{}
 			}
+			rc := workGroup.Configuration.ResultConfiguration
+
 			if outputLocation, ok := resultConfigUpdates["OutputLocation"].(string); ok {
-				workGroup.Configuration.ResultConfiguration.OutputLocation = outputLocation
+				rc.OutputLocation = outputLocation
+			}
+			if encConfigMap, ok := resultConfigUpdates["EncryptionConfiguration"].(map[string]interface{}); ok {
+				rc.EncryptionConfiguration = &athenastore.EncryptionConfiguration{}
+				if encOption, ok := encConfigMap["EncryptionOption"].(string); ok {
+					rc.EncryptionConfiguration.EncryptionOption = encOption
+				}
+				if kmsKey, ok := encConfigMap["KmsKey"].(string); ok {
+					rc.EncryptionConfiguration.KmsKey = kmsKey
+				}
+			}
+			if expectedBucketOwner, ok := resultConfigUpdates["ExpectedBucketOwner"].(string); ok {
+				rc.ExpectedBucketOwner = expectedBucketOwner
+			}
+			if aclConfigMap, ok := resultConfigUpdates["AclConfiguration"].(map[string]interface{}); ok {
+				aclOption, _ := aclConfigMap["S3AclOption"].(string)
+				if aclOption != "BUCKET_OWNER_FULL_CONTROL" {
+					return ErrInvalidParameterException
+				}
+				rc.ACLConfiguration = &athenastore.ACLConfiguration{S3ACLOption: aclOption}
+			}
+
+			if remove, ok := resultConfigUpdates["RemoveOutputLocation"].(bool); ok && remove {
+				rc.OutputLocation = ""
+			}
+			if remove, ok := resultConfigUpdates["RemoveEncryptionConfiguration"].(bool); ok && remove {
+				rc.EncryptionConfiguration = nil
+			}
+			if remove, ok := resultConfigUpdates["RemoveExpectedBucketOwner"].(bool); ok && remove {
+				rc.ExpectedBucketOwner = ""
+			}
+			if remove, ok := resultConfigUpdates["RemoveAclConfiguration"].(bool); ok && remove {
+				rc.ACLConfiguration = nil
 			}
 		}
 	}
@@ -462,9 +525,48 @@ func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGro
 		workGroup.Configuration.BytesScannedCutoffPerQuery = int64(bytesScanned)
 	}
 
+	if remove, ok := updates["RemoveBytesScannedCutoffPerQuery"].(bool); ok && remove {
+		workGroup.Configuration.BytesScannedCutoffPerQuery = 0
+	}
+
 	if requesterPays, ok := updates["RequesterPaysEnabled"].(bool); ok {
 		workGroup.Configuration.RequesterPaysEnabled = requesterPays
 	}
+
+	if publish, ok := updates["PublishCloudWatchMetricsEnabled"].(bool); ok {
+		workGroup.Configuration.PublishCloudWatchMetricsEnabled = publish
+	}
+
+	if engineVersionRaw, ok := updates["EngineVersion"]; ok {
+		if engineVersion, ok := engineVersionRaw.(map[string]interface{}); ok {
+			workGroup.Configuration.EngineVersion = s.parseEngineVersion(engineVersion)
+		}
+	}
+
+	if additional, ok := updates["AdditionalConfiguration"].(string); ok {
+		workGroup.Configuration.AdditionalConfiguration = additional
+	}
+
+	if executionRole, ok := updates["ExecutionRole"].(string); ok {
+		workGroup.Configuration.ExecutionRole = executionRole
+	}
+
+	if custEncMap, ok := updates["CustomerContentEncryptionConfiguration"].(map[string]interface{}); ok {
+		workGroup.Configuration.CustomerContentEncryptionConfiguration = &athenastore.CustomerContentEncryptionConfiguration{}
+		if kmsKey, ok := custEncMap["KmsKey"].(string); ok {
+			workGroup.Configuration.CustomerContentEncryptionConfiguration.KmsKey = kmsKey
+		}
+	}
+
+	if remove, ok := updates["RemoveCustomerContentEncryptionConfiguration"].(bool); ok && remove {
+		workGroup.Configuration.CustomerContentEncryptionConfiguration = nil
+	}
+
+	if enableMin, ok := updates["EnableMinimumEncryptionConfiguration"].(bool); ok {
+		workGroup.Configuration.EnableMinimumEncryptionConfiguration = enableMin
+	}
+
+	return nil
 }
 
 func (s *AthenaService) workGroupToResponse(wg *athenastore.WorkGroup) map[string]interface{} {
@@ -502,6 +604,11 @@ func (s *AthenaService) configurationToResponse(cfg *athenastore.WorkGroupConfig
 		if cfg.ResultConfiguration.ExpectedBucketOwner != "" {
 			resultConfig["ExpectedBucketOwner"] = cfg.ResultConfiguration.ExpectedBucketOwner
 		}
+		if cfg.ResultConfiguration.ACLConfiguration != nil {
+			resultConfig["AclConfiguration"] = map[string]interface{}{
+				"S3AclOption": cfg.ResultConfiguration.ACLConfiguration.S3ACLOption,
+			}
+		}
 		response["ResultConfiguration"] = resultConfig
 	}
 
@@ -514,6 +621,24 @@ func (s *AthenaService) configurationToResponse(cfg *athenastore.WorkGroupConfig
 			"SelectedEngineVersion":  cfg.EngineVersion.SelectedEngineVersion,
 			"EffectiveEngineVersion": cfg.EngineVersion.EffectiveEngineVersion,
 		}
+	}
+
+	if cfg.AdditionalConfiguration != "" {
+		response["AdditionalConfiguration"] = cfg.AdditionalConfiguration
+	}
+
+	if cfg.ExecutionRole != "" {
+		response["ExecutionRole"] = cfg.ExecutionRole
+	}
+
+	if cfg.CustomerContentEncryptionConfiguration != nil {
+		response["CustomerContentEncryptionConfiguration"] = map[string]interface{}{
+			"KmsKey": cfg.CustomerContentEncryptionConfiguration.KmsKey,
+		}
+	}
+
+	if cfg.EnableMinimumEncryptionConfiguration {
+		response["EnableMinimumEncryptionConfiguration"] = cfg.EnableMinimumEncryptionConfiguration
 	}
 
 	return response

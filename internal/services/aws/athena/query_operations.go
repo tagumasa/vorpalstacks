@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -52,6 +53,11 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	if wg.State == athenastore.WorkGroupStateDisabled {
+		return nil, awserrors.NewAWSError("InvalidRequestException",
+			fmt.Sprintf("WorkGroup %s is DISABLED.", workGroup), http.StatusBadRequest)
+	}
+
 	var queryExecutionContext *athenastore.QueryExecutionContext
 	contextMap := request.GetMapParamCaseInsensitive(req.Parameters, "QueryExecutionContext")
 	if contextMap != nil {
@@ -72,9 +78,17 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 			resultConfiguration = wg.Configuration.ResultConfiguration
 		}
 	} else if resultConfigMap != nil {
-		resultConfiguration = s.parseResultConfiguration(resultConfigMap)
+		resultConfiguration, err = s.parseResultConfiguration(resultConfigMap)
+		if err != nil {
+			return nil, err
+		}
 	} else if wg.Configuration != nil && wg.Configuration.ResultConfiguration != nil {
 		resultConfiguration = wg.Configuration.ResultConfiguration
+	}
+
+	var bytesScannedCutoff int64
+	if wg.Configuration != nil {
+		bytesScannedCutoff = wg.Configuration.BytesScannedCutoffPerQuery
 	}
 
 	statementType := s.detectStatementType(queryString)
@@ -109,7 +123,7 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 	go func() {
 		defer s.asyncWg.Done()
 		defer func() { resilience.RecoverPanic("athena async query") }()
-		s.executeQueryAsync(reqCtx, queryExecution)
+		s.executeQueryAsync(reqCtx, queryExecution, bytesScannedCutoff)
 	}()
 
 	return map[string]interface{}{
