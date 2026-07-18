@@ -20,14 +20,21 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 	if cidrBlock == "" {
 		return nil, awserrors.NewMissingParameter("CidrBlock is required")
 	}
+	if err := validateCIDRBlock(cidrBlock); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetVPC(vpcID); err != nil {
+	vpc, err := store.GetVPC(vpcID)
+	if err != nil {
 		return nil, translateStoreError(err)
+	}
+	if err := validateSubnetInVPC(cidrBlock, vpc.CidrBlock); err != nil {
+		return nil, err
 	}
 
 	subnetID, err := GenerateSubnetID()
@@ -46,14 +53,15 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	subnet := &ec2store.Subnet{
-		SubnetId:            subnetID,
-		VpcId:               vpcID,
-		CidrBlock:           cidrBlock,
-		AvailabilityZone:    az,
-		State:               "available",
-		OwnerId:             s.accountID,
-		MapPublicIpOnLaunch: mapPublicIpOnLaunch,
-		Tags:                parseEC2Tags(params),
+		SubnetId:                subnetID,
+		VpcId:                   vpcID,
+		CidrBlock:               cidrBlock,
+		AvailabilityZone:        az,
+		State:                   "available",
+		OwnerId:                 s.accountID,
+		AvailableIpAddressCount: calculateAvailableIPs(cidrBlock),
+		MapPublicIpOnLaunch:     mapPublicIpOnLaunch,
+		Tags:                    parseEC2Tags(params),
 	}
 
 	if err := store.CreateSubnet(subnet); err != nil {

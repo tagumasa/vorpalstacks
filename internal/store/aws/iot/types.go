@@ -624,6 +624,8 @@ type AlarmModel struct {
 	LastModifiedDate      time.Time
 	Status                string
 	Severity              string
+	Key                   string
+	EvaluationMethod      string
 	AlarmModelVersion     string
 }
 

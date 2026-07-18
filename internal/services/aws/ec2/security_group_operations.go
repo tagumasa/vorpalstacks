@@ -148,34 +148,37 @@ func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.Re
 
 // AuthorizeSecurityGroupIngress adds one or more ingress rules to a security group.
 func (s *EC2Service) AuthorizeSecurityGroupIngress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+	return s.modifySecurityGroupRules(reqCtx, req, true, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
 		sg.IpPermissions = mergeIPRules(sg.IpPermissions, rules...)
 	})
 }
 
 // AuthorizeSecurityGroupEgress adds one or more egress rules to a security group.
 func (s *EC2Service) AuthorizeSecurityGroupEgress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+	return s.modifySecurityGroupRules(reqCtx, req, true, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
 		sg.IpPermissionsEgress = mergeIPRules(sg.IpPermissionsEgress, rules...)
 	})
 }
 
 // RevokeSecurityGroupIngress removes one or more ingress rules from a security group.
 func (s *EC2Service) RevokeSecurityGroupIngress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+	return s.modifySecurityGroupRules(reqCtx, req, false, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
 		sg.IpPermissions = removeIPRules(sg.IpPermissions, rules...)
 	})
 }
 
 // RevokeSecurityGroupEgress removes one or more egress rules from a security group.
 func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+	return s.modifySecurityGroupRules(reqCtx, req, false, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
 		sg.IpPermissionsEgress = removeIPRules(sg.IpPermissionsEgress, rules...)
 	})
 }
 
 // modifySecurityGroupRules is the common handler for Authorize/Revoke Ingress/Egress.
-func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, req *request.ParsedRequest, apply func(*ec2store.SecurityGroup, []ec2store.IPRule)) (interface{}, error) {
+// validateRules controls whether new rules are validated: Authorize passes true
+// so malformed rules are rejected; Revoke passes false so legacy rules that were
+// created with looser validation can still be removed (M-3).
+func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, req *request.ParsedRequest, validateRules bool, apply func(*ec2store.SecurityGroup, []ec2store.IPRule)) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -187,6 +190,13 @@ func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, re
 	}
 
 	rules := parseIPRules(req.Parameters, "IpPermissions")
+	if validateRules {
+		for _, r := range rules {
+			if err := validateIPRule(r); err != nil {
+				return nil, err
+			}
+		}
+	}
 	apply(sg, rules)
 
 	if err := store.UpdateSecurityGroup(sg); err != nil {

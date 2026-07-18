@@ -32,12 +32,19 @@ func (s *IoTEventsService) CreateAlarmModel(ctx context.Context, reqCtx *request
 		RoleARN:               request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
 		AlarmModelDefinition:  def,
 		Severity:              request.GetParamCaseInsensitive(req.Parameters, "severity"),
+		Key:                   request.GetParamCaseInsensitive(req.Parameters, "key"),
+		EvaluationMethod:      request.GetParamCaseInsensitive(req.Parameters, "evaluationMethod"),
 		Tags:                  parseAlarmTagsParam(req.Parameters),
 	}
 
 	created, err := store.CreateAlarmModel(am)
 	if err != nil {
 		return nil, err
+	}
+
+	// Load the model into the alarm state machine for message evaluation (H-SM2).
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.LoadAlarmModel(created)
 	}
 
 	return map[string]interface{}{
@@ -93,11 +100,18 @@ func (s *IoTEventsService) UpdateAlarmModel(ctx context.Context, reqCtx *request
 		RoleARN:               request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
 		AlarmModelDefinition:  def,
 		Severity:              request.GetParamCaseInsensitive(req.Parameters, "severity"),
+		Key:                   request.GetParamCaseInsensitive(req.Parameters, "key"),
+		EvaluationMethod:      request.GetParamCaseInsensitive(req.Parameters, "evaluationMethod"),
 	}
 
 	updated, err := store.UpdateAlarmModel(update)
 	if err != nil {
 		return nil, err
+	}
+
+	// Reload the model so the alarm state machine picks up the new definition (H-SM2).
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.LoadAlarmModel(updated)
 	}
 
 	return alarmModelDescribeResponse(updated), nil
@@ -116,6 +130,11 @@ func (s *IoTEventsService) DeleteAlarmModel(ctx context.Context, reqCtx *request
 
 	if err := store.DeleteAlarmModel(name); err != nil {
 		return nil, err
+	}
+
+	// Unload the model from the alarm state machine (H-SM2).
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.UnloadAlarmModel(name)
 	}
 
 	return map[string]interface{}{}, nil
@@ -169,6 +188,12 @@ func alarmModelDescribeResponse(am *iotstore.AlarmModel) map[string]interface{} 
 		"alarmModelVersion":     am.AlarmModelVersion,
 		"creationTime":          am.CreationDate.Unix(),
 		"lastUpdateTime":        am.LastModifiedDate.Unix(),
+	}
+	if am.Key != "" {
+		resp["key"] = am.Key
+	}
+	if am.EvaluationMethod != "" {
+		resp["evaluationMethod"] = am.EvaluationMethod
 	}
 	// Severity may be stored as a numeric string or a textual label.
 	// The AWS API returns it as an integer when possible.

@@ -2,7 +2,7 @@ package cloudwatchlogs
 
 import (
 	"bytes"
-	"encoding/base64"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/chunk"
@@ -21,21 +22,20 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/naming"
 	"vorpalstacks/pkg/filterpattern"
-
-	"google.golang.org/protobuf/proto"
 )
 
 // Store provides CloudWatch Logs storage operations.
 type Store struct {
 	*common.BaseStore
 	tagStore     *common.TagStore
+	ts           storage.TransactionalStorage
 	arnBuilder   *svcarn.ARNBuilder
 	region       string
+	bucketName   string
 	chunksDir    string
 	chunkMutex   sync.Mutex
 	activeChunks map[string]*activeChunk
 	chunkCounter uint64
-	filterMutex  sync.Mutex
 }
 
 type activeChunk struct {
@@ -50,11 +50,18 @@ func NewStore(store storage.BasicStorage, bucket storage.Bucket, accountID, regi
 		return nil, fmt.Errorf("failed to create logs chunks directory: %w", err)
 	}
 
+	var ts storage.TransactionalStorage
+	if txnStorage, ok := store.(storage.TransactionalStorage); ok {
+		ts = txnStorage
+	}
+
 	return &Store{
 		BaseStore:    baseStore,
 		tagStore:     common.NewTagStoreWithRegion(store, "cloudwatchlogs", region),
+		ts:           ts,
 		arnBuilder:   svcarn.NewARNBuilder(accountID, region),
 		region:       region,
+		bucketName:   "logs-" + region,
 		chunksDir:    chunksDir,
 		activeChunks: make(map[string]*activeChunk),
 	}, nil
@@ -304,12 +311,21 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 		s.activeChunks[streamKey] = ac
 	}
 
+	// Collect chunk index entries that must be committed atomically with
+	// the LogGroup/LogStream metadata update. If the metadata transaction
+	// fails, the chunk files are removed to prevent orphans (M-S1).
+	var pendingChunks []pendingChunkIndex
+
 	// Flush existing entries first if appending the new batch would
 	// exceed MaxChunkSize, preventing a single chunk from growing
 	// up to ~2× MaxChunkSize.
 	if len(ac.entries)+len(events) > MaxChunkSize && len(ac.entries) > 0 {
-		if err := s.flushChunk(logGroupName, logStreamName, ac); err != nil {
+		pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
+		if err != nil {
 			return "", err
+		}
+		if pi.meta != nil {
+			pendingChunks = append(pendingChunks, pi)
 		}
 		ac.entries = ac.entries[:0]
 	}
@@ -317,8 +333,12 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	ac.entries = append(ac.entries, events...)
 
 	if len(ac.entries) >= MaxChunkSize {
-		if err := s.flushChunk(logGroupName, logStreamName, ac); err != nil {
+		pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
+		if err != nil {
 			return "", err
+		}
+		if pi.meta != nil {
+			pendingChunks = append(pendingChunks, pi)
 		}
 		delete(s.activeChunks, streamKey)
 	}
@@ -342,18 +362,84 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 		return "", err
 	}
 	ls.UploadSequenceToken = newToken
-
 	lg.StoredBytes += bytesAdded
-	if err := s.PutLogGroup(lg); err != nil {
-		return "", err
-	}
 
-	key := s.logStreamKey(logGroupName, logStreamName)
-	if err := s.PutProto(key, LogStreamToProto(ls)); err != nil {
+	// Atomically commit the LogGroup, LogStream, and any pending chunk
+	// indexes in a single transaction. Without this, a failure between
+	// the chunk index write and the metadata update leaves orphaned
+	// chunks and inconsistent StoredBytes/timestamps (M-S1).
+	if err := s.updateLogGroupStreamAndChunks(logGroupName, lg, logStreamName, ls, pendingChunks); err != nil {
+		// The transaction failed; remove the orphaned chunk files so they
+		// do not leak storage with no index pointing to them.
+		for _, pc := range pendingChunks {
+			if rmErr := os.Remove(pc.chunkPath); rmErr != nil && !os.IsNotExist(rmErr) {
+				logs.Error("Failed to remove orphaned chunk file after transaction failure",
+					logs.String("path", pc.chunkPath), logs.Err(rmErr))
+			}
+		}
 		return "", err
 	}
 
 	return ls.UploadSequenceToken, nil
+}
+
+// pendingChunkIndex holds a chunk index entry that has been written to
+// disk but not yet committed to Pebble. The caller must write the index
+// entry to Pebble (ideally inside a transaction together with the
+// LogGroup/LogStream update) or remove chunkPath on failure (M-S1).
+type pendingChunkIndex struct {
+	meta      *ChunkMeta
+	indexKey  string
+	chunkPath string
+}
+
+// updateLogGroupStreamAndChunks atomically writes the LogGroup, LogStream,
+// and any pending chunk indexes using a storage transaction. Falls back to
+// sequential writes if the storage backend does not support transactions.
+// If this returns an error, the caller is responsible for removing the
+// orphaned chunk files referenced by pendingChunks (M-S1).
+func (s *Store) updateLogGroupStreamAndChunks(logGroupName string, lg *LogGroup, logStreamName string, ls *LogStream, pendingChunks []pendingChunkIndex) error {
+	if s.ts == nil {
+		if err := s.PutLogGroup(lg); err != nil {
+			return err
+		}
+		if err := s.PutProto(s.logStreamKey(logGroupName, logStreamName), LogStreamToProto(ls)); err != nil {
+			return err
+		}
+		for _, pc := range pendingChunks {
+			if err := s.PutProto(pc.indexKey, ChunkMetaToProto(pc.meta)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	ctx := context.Background()
+	return s.ts.Update(ctx, func(txn storage.Transaction) error {
+		lgData, err := proto.Marshal(LogGroupToProto(lg))
+		if err != nil {
+			return err
+		}
+		if err := txn.Bucket(s.bucketName).Put([]byte(s.logGroupKey(logGroupName)), lgData); err != nil {
+			return err
+		}
+		lsData, err := proto.Marshal(LogStreamToProto(ls))
+		if err != nil {
+			return err
+		}
+		if err := txn.Bucket(s.bucketName).Put([]byte(s.logStreamKey(logGroupName, logStreamName)), lsData); err != nil {
+			return err
+		}
+		for _, pc := range pendingChunks {
+			idxData, err := proto.Marshal(ChunkMetaToProto(pc.meta))
+			if err != nil {
+				return err
+			}
+			if err := txn.Bucket(s.bucketName).Put([]byte(pc.indexKey), idxData); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func incrementToken(token string) (string, error) {
@@ -367,9 +453,13 @@ func incrementToken(token string) (string, error) {
 	return strconv.Itoa(val + 1), nil
 }
 
-func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) error {
+// prepareChunkFlush writes the chunk file to disk and prepares the index
+// entry WITHOUT committing it to Pebble. The caller must commit the
+// returned pendingChunkIndex to Pebble (ideally inside a transaction) or
+// remove chunkPath on failure (M-S1).
+func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, ac *activeChunk) (pendingChunkIndex, error) {
 	if len(ac.entries) == 0 {
-		return nil
+		return pendingChunkIndex{}, nil
 	}
 
 	chunkSeq := atomic.AddUint64(&s.chunkCounter, 1)
@@ -377,7 +467,7 @@ func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) 
 
 	actualPath, header, err := s.writeChunkFile(ac.entries)
 	if err != nil {
-		return err
+		return pendingChunkIndex{}, err
 	}
 
 	relPath := actualPath
@@ -397,13 +487,32 @@ func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) 
 		ChunkPath:  relPath,
 	}
 
-	indexKey := s.chunkIndexKey(logGroupName, logStreamName, chunkID)
-	if err := s.PutProto(indexKey, ChunkMetaToProto(meta)); err != nil {
+	return pendingChunkIndex{
+		meta:      meta,
+		indexKey:  s.chunkIndexKey(logGroupName, logStreamName, chunkID),
+		chunkPath: actualPath,
+	}, nil
+}
+
+// flushChunk writes a chunk to disk and commits its index entry to Pebble.
+// Used by callers that do not need transactional atomicity with metadata
+// updates (e.g. flushIfNeeded before reads). PutLogEvents uses
+// prepareChunkFlush instead so the index can be committed inside the
+// metadata transaction (M-S1).
+func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) error {
+	pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
+	if err != nil {
+		return err
+	}
+	if pi.meta == nil {
+		return nil
+	}
+	if err := s.PutProto(pi.indexKey, ChunkMetaToProto(pi.meta)); err != nil {
 		// Remove the orphaned chunk file so it does not leak storage
 		// with no index entry pointing to it.
-		if rmErr := os.Remove(actualPath); rmErr != nil {
+		if rmErr := os.Remove(pi.chunkPath); rmErr != nil && !os.IsNotExist(rmErr) {
 			logs.Error("Failed to remove orphaned chunk file after index failure",
-				logs.String("path", actualPath), logs.Err(rmErr))
+				logs.String("path", pi.chunkPath), logs.Err(rmErr))
 		}
 		return err
 	}
@@ -519,13 +628,13 @@ func (s *Store) ListChunksForLogGroup(logGroupName string) []*ChunkMeta {
 }
 
 // GetLogEvents retrieves log events from a CloudWatch Logs log stream.
-func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endTime int64, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, string, int, error) {
+func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endTime int64, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, string, string, error) {
 	if _, err := s.GetLogGroup(logGroupName); err != nil {
-		return nil, "", 0, ErrLogGroupNotFound
+		return nil, "", "", ErrLogGroupNotFound
 	}
 
 	if _, err := s.GetLogStream(logGroupName, logStreamName); err != nil {
-		return nil, "", 0, ErrLogStreamNotFound
+		return nil, "", "", ErrLogStreamNotFound
 	}
 
 	s.flushIfNeeded(logGroupName, logStreamName)
@@ -568,41 +677,71 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 		}
 	}
 
+	// Always sort ascending internally; direction-aware slicing handles ordering.
 	sortEventsByTimestamp(allEvents)
 
-	if !startFromHead {
-		for i, j := 0, len(allEvents)-1; i < j; i, j = i+1, j-1 {
-			allEvents[i], allEvents[j] = allEvents[j], allEvents[i]
+	// Parse the direction-aware token. For the first request (empty token),
+	// derive direction from startFromHead and use the appropriate boundary.
+	direction, offset, err := ParsePaginationToken(nextToken)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if nextToken == "" {
+		if startFromHead {
+			direction = PaginationForward
+			offset = 0
+		} else {
+			direction = PaginationBackward
+			offset = len(allEvents)
 		}
 	}
 
-	startIndex := 0
-	if nextToken != "" {
-		if decoded, err := base64.StdEncoding.DecodeString(nextToken); err == nil {
-			if _, err := fmt.Sscanf(string(decoded), "%d", &startIndex); err != nil {
-				logs.Warn("Failed to parse next token", logs.String("token", nextToken), logs.Err(err))
-				startIndex = 0
+	totalLen := len(allEvents)
+	if offset > totalLen {
+		offset = totalLen
+	}
+
+	var result []*OutputLogEvent
+	var nextFwdOffset, nextBwdOffset int
+
+	if direction == PaginationForward {
+		endIdx := offset + limit
+		if limit <= 0 || endIdx > totalLen {
+			endIdx = totalLen
+		}
+		if offset < totalLen {
+			result = allEvents[offset:endIdx]
+		}
+		nextFwdOffset = endIdx
+		nextBwdOffset = offset
+	} else {
+		// Backward: read [max(0, offset-limit), offset) in descending order.
+		startIdx := offset - limit
+		if limit <= 0 || startIdx < 0 {
+			startIdx = 0
+		}
+		result = make([]*OutputLogEvent, 0, offset-startIdx)
+		for i := offset - 1; i >= startIdx; i-- {
+			if i >= 0 && i < totalLen {
+				result = append(result, allEvents[i])
 			}
 		}
+		nextBwdOffset = startIdx
+		nextFwdOffset = offset
 	}
 
-	if startIndex >= len(allEvents) {
-		return []*OutputLogEvent{}, "", 0, nil
+	// Return empty tokens at boundaries so clients can detect end-of-data.
+	// Forward: no more events when next offset reaches total.
+	// Backward: no more events when next offset reaches 0.
+	var nextForwardToken, nextBackwardToken string
+	if nextFwdOffset < totalLen {
+		nextForwardToken = EncodePaginationToken(PaginationForward, nextFwdOffset)
+	}
+	if nextBwdOffset > 0 {
+		nextBackwardToken = EncodePaginationToken(PaginationBackward, nextBwdOffset)
 	}
 
-	endIndex := len(allEvents)
-	if limit > 0 && startIndex+limit < len(allEvents) {
-		endIndex = startIndex + limit
-	}
-
-	result := allEvents[startIndex:endIndex]
-
-	newNextToken := ""
-	if endIndex < len(allEvents) {
-		newNextToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", endIndex)))
-	}
-
-	return result, newNextToken, startIndex, nil
+	return result, nextForwardToken, nextBackwardToken, nil
 }
 
 // FilterLogEvents filters log events from a log group based on filter pattern.
@@ -668,35 +807,67 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 			})
 		}
 	}
-
+	// Always sort ascending internally; direction-aware slicing handles ordering.
 	sortEventsByTimestamp(allEvents)
 
-	if !startFromHead {
-		for i, j := 0, len(allEvents)-1; i < j; i, j = i+1, j-1 {
-			allEvents[i], allEvents[j] = allEvents[j], allEvents[i]
+	// Parse the direction-aware token. For the first request (empty token),
+	// derive direction from startFromHead and use the appropriate boundary.
+	direction, offset, err := ParsePaginationToken(nextToken)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	if nextToken == "" {
+		if startFromHead {
+			direction = PaginationForward
+			offset = 0
+		} else {
+			direction = PaginationBackward
+			offset = len(allEvents)
 		}
 	}
 
-	skipCount := 0
-	if nextToken != "" {
-		if decoded, err := base64.StdEncoding.DecodeString(nextToken); err == nil {
-			skipCount, _ = strconv.Atoi(string(decoded))
+	totalLen := len(allEvents)
+	var result []*OutputLogEvent
+	var nextOffset int
+
+	if offset > totalLen {
+		offset = totalLen
+	}
+
+	if direction == PaginationForward {
+		endIdx := offset + limit
+		if limit <= 0 || endIdx > totalLen {
+			endIdx = totalLen
 		}
+		if offset < totalLen {
+			result = allEvents[offset:endIdx]
+		}
+		nextOffset = endIdx
+	} else {
+		// Backward: read [max(0, offset-limit), offset) in descending order.
+		startIdx := offset - limit
+		if limit <= 0 || startIdx < 0 {
+			startIdx = 0
+		}
+		result = make([]*OutputLogEvent, 0, offset-startIdx)
+		for i := offset - 1; i >= startIdx; i-- {
+			if i >= 0 && i < totalLen {
+				result = append(result, allEvents[i])
+			}
+		}
+		nextOffset = startIdx
+	}
+	// Return an empty token at the boundary so clients can detect
+	// end-of-data and stop paginating. Without this check the encoded
+	// token (e.g. "f-<totalLen>" or "b-0") is non-empty and the AWS SDK
+	// client loops forever requesting the next page (C-1).
+	var newNextToken string
+	if (direction == PaginationForward && nextOffset < totalLen) ||
+		(direction == PaginationBackward && nextOffset > 0) {
+		newNextToken = EncodePaginationToken(direction, nextOffset)
 	}
 
-	if skipCount > 0 && skipCount < len(allEvents) {
-		allEvents = allEvents[skipCount:]
-	} else if skipCount >= len(allEvents) {
-		return []*OutputLogEvent{}, searchedStreams, "", nil
-	}
-
-	newNextToken := ""
-	if limit > 0 && len(allEvents) > limit {
-		newNextToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", skipCount+limit)))
-		allEvents = allEvents[:limit]
-	}
-
-	return allEvents, searchedStreams, newNextToken, nil
+	return result, searchedStreams, newNextToken, nil
 }
 
 func (s *Store) flushIfNeeded(logGroupName, logStreamName string) {

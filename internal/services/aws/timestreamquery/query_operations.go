@@ -3,10 +3,12 @@ package timestreamquery
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/sqlparser"
@@ -106,7 +108,8 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 	var latestInfo QueryInfo
 	if getErr := stores.queryInfoStore.Get(queryID, &latestInfo); getErr == nil {
 		if latestInfo.Cancelled {
-			return nil, fmt.Errorf("query was cancelled")
+			logs.Info("Timestream query was cancelled", logs.String("queryId", queryID))
+			return nil, ErrQueryExecutionError
 		}
 	}
 
@@ -210,7 +213,9 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 	}
 	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
 	if err != nil {
-		return nil, fmt.Errorf("SQL parse error: %w", err)
+		logs.Debug("Timestream prepared statement SQL parse error", logs.String("query", processedSQL), logs.Err(err))
+		return nil, awserrors.NewAWSError("InvalidQueryException",
+			fmt.Sprintf("SQL parse error: %v", err), http.StatusBadRequest)
 	}
 
 	params := s.extractParameters(queryString)

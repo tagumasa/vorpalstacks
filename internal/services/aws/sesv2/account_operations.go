@@ -2,7 +2,6 @@ package sesv2
 
 import (
 	"context"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -138,7 +137,7 @@ func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *requ
 
 	vdmAttrs := request.GetMapParam(req.Parameters, "VdmAttributes")
 	if vdmAttrs == nil {
-		return nil, fmt.Errorf("VdmAttributes is required")
+		return nil, ErrMissingParameter
 	}
 
 	vdmEnabledStr := request.GetStringParam(vdmAttrs, "VdmEnabled")

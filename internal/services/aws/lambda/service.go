@@ -86,11 +86,50 @@ func (s *LambdaService) getInflightCounter(functionArn string) *atomic.Int32 {
 }
 
 func NewLambdaService(dockerClient mobyclient.ContainerLifecycle, accountID, region, dataDir string) *LambdaService {
-	return &LambdaService{
+	svc := &LambdaService{
 		dockerClient: dockerClient,
 		accountID:    accountID,
 		region:       region,
 		dataDir:      dataDir,
+	}
+	// Remove orphaned Lambda containers from previous server instances that
+	// were killed (SIGKILL) before Shutdown() could clean them up.
+	svc.cleanupOrphanedContainers()
+	return svc
+}
+
+// cleanupOrphanedContainers scans Docker for containers whose name starts
+// with "lambda-" and removes them. This prevents resource accumulation when
+// the server is killed without graceful shutdown (e.g. pkill -9 during test
+// runs). Called once at construction time before any new containers are
+// created.
+func (s *LambdaService) cleanupOrphanedContainers() {
+	if s.dockerClient == nil {
+		return
+	}
+	ctx := context.Background()
+	containers, err := s.dockerClient.ListContainers(ctx, true)
+	if err != nil {
+		logs.Warn("Failed to list containers for orphan cleanup", logs.Err(err))
+		return
+	}
+	removed := 0
+	for _, c := range containers {
+		// Docker container names returned by the API include a leading "/".
+		name := strings.TrimPrefix(c.Name, "/")
+		if strings.HasPrefix(name, "lambda-") {
+			if rmErr := s.dockerClient.RemoveContainer(ctx, c.ID, true); rmErr != nil {
+				logs.Warn("Failed to remove orphaned Lambda container",
+					logs.String("containerID", c.ID),
+					logs.String("name", name),
+					logs.Err(rmErr))
+			} else {
+				removed++
+			}
+		}
+	}
+	if removed > 0 {
+		logs.Info("Cleaned up orphaned Lambda containers", logs.Int("count", removed))
 	}
 }
 

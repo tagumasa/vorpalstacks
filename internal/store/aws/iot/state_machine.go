@@ -21,8 +21,9 @@ var inputReferencePattern = regexp.MustCompile(`\$input\.([A-Za-z0-9_-]+)\.`)
 
 // detectorState represents the current state of a single detector instance.
 type detectorState struct {
-	stateName   string
-	lastUpdated time.Time
+	stateName    string
+	creationTime time.Time
+	lastUpdated  time.Time
 }
 
 // DetectorStateMachine manages state transitions for detector instances.
@@ -75,6 +76,48 @@ func (sm *DetectorStateMachine) UnloadModel(name string) {
 	defer sm.mu.Unlock()
 	delete(sm.models, name)
 	delete(sm.detectors, name)
+}
+
+// DeleteDetector removes a single detector instance identified by
+// (modelName, keyValue). Returns true if the instance existed and was
+// deleted. Used by BatchDeleteDetector (H-SM4).
+func (sm *DetectorStateMachine) DeleteDetector(modelName, keyValue string) bool {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	instanceMap, ok := sm.detectors[modelName]
+	if !ok {
+		return false
+	}
+	if _, exists := instanceMap[keyValue]; !exists {
+		return false
+	}
+	delete(instanceMap, keyValue)
+	return true
+}
+
+// UpdateDetectorState sets the state of a detector instance identified by
+// (modelName, keyValue). If the instance does not exist, it is created in
+// the given state. Used by BatchUpdateDetector (H-SM4).
+func (sm *DetectorStateMachine) UpdateDetectorState(modelName, keyValue, stateName string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	instanceMap, ok := sm.detectors[modelName]
+	if !ok {
+		instanceMap = make(map[string]*detectorState)
+		sm.detectors[modelName] = instanceMap
+	}
+	now := time.Now().UTC()
+	ds, exists := instanceMap[keyValue]
+	if !exists {
+		instanceMap[keyValue] = &detectorState{
+			stateName:    stateName,
+			creationTime: now,
+			lastUpdated:  now,
+		}
+		return
+	}
+	ds.stateName = stateName
+	ds.lastUpdated = now
 }
 
 // EvaluateEvent processes an input message against the named detector model.
@@ -149,7 +192,7 @@ func (sm *DetectorStateMachine) evaluateUnderLock(modelName, key string, payload
 	current, exists := instanceMap[key]
 	if !exists {
 		initialState := initialStateFromDefinition(model.DetectorModelDefinition)
-		current = &detectorState{stateName: initialState, lastUpdated: time.Now().UTC()}
+		current = &detectorState{stateName: initialState, creationTime: time.Now().UTC(), lastUpdated: time.Now().UTC()}
 		instanceMap[key] = current
 	}
 
@@ -214,6 +257,23 @@ func (sm *DetectorStateMachine) GetState(modelName, key string) (string, bool) {
 		return "", false
 	}
 	return ds.stateName, true
+}
+
+// GetDetectorDetail returns the full state of a detector instance including
+// creationTime and lastUpdated. Used by DescribeDetector so that creationTime
+// is stable across calls instead of returning time.Now() on every request (H-SM3).
+func (sm *DetectorStateMachine) GetDetectorDetail(modelName, key string) (stateName string, creationTime, lastUpdated time.Time, ok bool) {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	instanceMap, ok := sm.detectors[modelName]
+	if !ok {
+		return "", time.Time{}, time.Time{}, false
+	}
+	ds, ok := instanceMap[key]
+	if !ok {
+		return "", time.Time{}, time.Time{}, false
+	}
+	return ds.stateName, ds.creationTime, ds.lastUpdated, true
 }
 
 // ListDetectorInstances returns all detector instances for the given model.

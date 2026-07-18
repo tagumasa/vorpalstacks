@@ -18,14 +18,15 @@ type VPC struct {
 
 // Subnet represents a VPC subnet.
 type Subnet struct {
-	SubnetId            string      `json:"SubnetId"`
-	VpcId               string      `json:"VpcId"`
-	CidrBlock           string      `json:"CidrBlock"`
-	AvailabilityZone    string      `json:"AvailabilityZone"`
-	State               string      `json:"State"`
-	OwnerId             string      `json:"OwnerId"`
-	MapPublicIpOnLaunch bool        `json:"MapPublicIpOnLaunch"`
-	Tags                []types.Tag `json:"Tags"`
+	SubnetId                string      `json:"SubnetId"`
+	VpcId                   string      `json:"VpcId"`
+	CidrBlock               string      `json:"CidrBlock"`
+	AvailabilityZone        string      `json:"AvailabilityZone"`
+	AvailableIpAddressCount int64       `json:"AvailableIpAddressCount"`
+	State                   string      `json:"State"`
+	OwnerId                 string      `json:"OwnerId"`
+	MapPublicIpOnLaunch     bool        `json:"MapPublicIpOnLaunch"`
+	Tags                    []types.Tag `json:"Tags"`
 }
 
 // SecurityGroup represents a VPC security group.

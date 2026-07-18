@@ -57,6 +57,7 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: logsstore.ErrDestinationNotFound, AWS: ErrDestinationNotFound},
 	{Store: logsstore.ErrDestinationAlreadyExists, AWS: ErrDestinationAlreadyExists},
 	{Store: logsstore.ErrLimitExceeded, AWS: ErrLimitExceeded},
+	{Store: logsstore.ErrInvalidPaginationToken, AWS: ErrInvalidParameter},
 }
 
 // mapStoreError converts a store error into an appropriate CloudWatch Logs API error.

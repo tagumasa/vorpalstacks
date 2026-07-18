@@ -38,6 +38,8 @@ func (s *IoTEventsService) CreateDetectorModel(ctx context.Context, reqCtx *requ
 	evaluationMethod := request.GetParamCaseInsensitive(req.Parameters, "evaluationMethod")
 	if evaluationMethod == "" {
 		evaluationMethod = "BATCH"
+	} else if evaluationMethod != "BATCH" && evaluationMethod != "SERIAL" {
+		return nil, iotstore.ErrInvalidRequest
 	}
 	now := time.Now().UTC()
 	def, err := parseStructParam(req.Parameters, "detectorModelDefinition")
@@ -135,7 +137,11 @@ func (s *IoTEventsService) UpdateDetectorModel(ctx context.Context, reqCtx *requ
 		existing.Key = request.GetParamCaseInsensitive(req.Parameters, "key")
 	}
 	if request.HasParam(req.Parameters, "evaluationMethod") {
-		existing.EvaluationMethod = request.GetParamCaseInsensitive(req.Parameters, "evaluationMethod")
+		evalMethod := request.GetParamCaseInsensitive(req.Parameters, "evaluationMethod")
+		if evalMethod != "BATCH" && evalMethod != "SERIAL" {
+			return nil, iotstore.ErrInvalidRequest
+		}
+		existing.EvaluationMethod = evalMethod
 	}
 	existing.LastModifiedDate = time.Now().UTC()
 
@@ -379,11 +385,18 @@ func (s *IoTEventsService) ListInputs(ctx context.Context, reqCtx *request.Reque
 
 	summaries := make([]map[string]interface{}, 0, len(result.Items))
 	for _, input := range result.Items {
-		summaries = append(summaries, map[string]interface{}{
+		summary := map[string]interface{}{
 			"inputName":    input.InputName,
 			"inputArn":     input.InputARN,
 			"creationTime": input.CreationDate.Unix(),
-		})
+		}
+		// Only include inputDescription when it is non-empty, matching
+		// AWS behaviour where the field is omitted rather than serialised
+		// as an empty string (L-S1).
+		if input.InputDescription != "" {
+			summary["inputDescription"] = input.InputDescription
+		}
+		summaries = append(summaries, summary)
 	}
 
 	resp := map[string]interface{}{

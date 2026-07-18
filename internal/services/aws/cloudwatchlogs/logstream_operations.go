@@ -142,13 +142,14 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 		// Use offset-based pagination for LastEventTime ordering because
 		// new events can change the sort order between paginated calls,
 		// making key-based markers unreliable (items shift position).
-		offset := 0
-		if nextToken != "" {
-			if decoded, dErr := base64.StdEncoding.DecodeString(nextToken); dErr == nil {
-				if v, pErr := strconv.Atoi(string(decoded)); pErr == nil {
-					offset = v
-				}
-			}
+		// DescribeLogStreams uses forward-only pagination (AWS does not
+		// support backward pagination for this operation).
+		_, offset, err := logsstore.ParsePaginationToken(nextToken)
+		if err != nil {
+			return nil, ErrInvalidParameter
+		}
+		if offset > len(allStreams) {
+			offset = len(allStreams)
 		}
 
 		endIdx := offset + int(limit)
@@ -170,7 +171,7 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 			"logStreams": logStreams,
 		}
 		if endIdx < len(allStreams) {
-			resp["nextToken"] = base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(endIdx)))
+			resp["nextToken"] = logsstore.EncodePaginationToken(logsstore.PaginationForward, endIdx)
 		}
 		return resp, nil
 	}
@@ -738,7 +739,7 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	events, nextForwardToken, startIndex, err := store.GetLogEvents(logGroupName, logStreamName, startTime, endTime, limit, startFromHead, nextToken)
+	events, nextForwardToken, nextBackwardToken, err := store.GetLogEvents(logGroupName, logStreamName, startTime, endTime, limit, startFromHead, nextToken)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
@@ -746,14 +747,6 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 	outputEvents := make([]map[string]interface{}, 0, len(events))
 	for _, e := range events {
 		outputEvents = append(outputEvents, logEventToResponse(e))
-	}
-
-	// Tokens are pure numeric offsets (base64-encoded) so the store's
-	// Sscanf("%d") parser can round-trip them correctly.  Direction is
-	// controlled by the startFromHead parameter, not the token value.
-	nextBackwardToken := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", startIndex)))
-	if nextForwardToken == "" {
-		nextForwardToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", startIndex+len(events))))
 	}
 
 	return map[string]interface{}{

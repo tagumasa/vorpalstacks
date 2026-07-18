@@ -17,6 +17,9 @@ func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestConte
 	if cidrBlock == "" {
 		cidrBlock = "172.31.0.0/16"
 	}
+	if err := validateCIDRBlock(cidrBlock); err != nil {
+		return nil, err
+	}
 
 	vpcID, err := GenerateVpcID()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -288,7 +289,9 @@ func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.Reques
 		if errors.Is(err, ssmstore.ErrParameterNotFound) {
 			return nil, ErrParameterNotFound
 		}
-		return nil, fmt.Errorf("failed to delete parameter: %w", err)
+		logs.Error("Failed to delete parameter from store",
+			logs.String("name", name), logs.Err(err))
+		return nil, awserrors.NewInternalErrorException("failed to delete parameter")
 	}
 
 	return response.EmptyResponse(), nil

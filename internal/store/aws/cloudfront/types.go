@@ -80,7 +80,7 @@ type Origin struct {
 
 // CustomHeaders represents custom headers to be sent to the origin.
 type CustomHeaders struct {
-	Quantity int                 `json:"quantity"`
+	Quantity int                  `json:"quantity"`
 	Items    []OriginCustomHeader `json:"items,omitempty"`
 }
 
@@ -179,7 +179,7 @@ type QueryStringCacheKeys struct {
 
 // LambdaFunctionAssociations represents Lambda@Edge functions associated with a cache behaviour.
 type LambdaFunctionAssociations struct {
-	Quantity int                        `json:"quantity"`
+	Quantity int                         `json:"quantity"`
 	Items    []LambdaFunctionAssociation `json:"items,omitempty"`
 }
 
@@ -192,7 +192,7 @@ type LambdaFunctionAssociation struct {
 
 // FunctionAssociations represents CloudFront Functions associated with a cache behaviour.
 type FunctionAssociations struct {
-	Quantity int                  `json:"quantity"`
+	Quantity int                   `json:"quantity"`
 	Items    []FunctionAssociation `json:"items,omitempty"`
 }
 
@@ -224,10 +224,10 @@ type CustomErrorResponses struct {
 
 // CustomErrorResponse specifies a custom error response for a CloudFront distribution.
 type CustomErrorResponse struct {
-	ErrorCode           int    `json:"errorCode"`
-	ResponsePagePath    string `json:"responsePagePath,omitempty"`
-	ResponseCode        string `json:"responseCode,omitempty"`
-	ErrorCachingMinTTL  int    `json:"errorCachingMinTTL,omitempty"`
+	ErrorCode          int    `json:"errorCode"`
+	ResponsePagePath   string `json:"responsePagePath,omitempty"`
+	ResponseCode       string `json:"responseCode,omitempty"`
+	ErrorCachingMinTTL int    `json:"errorCachingMinTTL,omitempty"`
 }
 
 // LoggingConfig specifies logging configuration for the distribution.
@@ -548,11 +548,11 @@ type ResponseHeadersPolicyListResult struct {
 
 // PublicKey represents a CloudFront public key.
 type PublicKey struct {
-	ID              string            `json:"id"`
-	ARN             string            `json:"arn"`
-	ETag            string            `json:"etag"`
-	CreatedTime     time.Time         `json:"createdTime"`
-	PublicKeyConfig *PublicKeyConfig  `json:"publicKeyConfig"`
+	ID              string           `json:"id"`
+	ARN             string           `json:"arn"`
+	ETag            string           `json:"etag"`
+	CreatedTime     time.Time        `json:"createdTime"`
+	PublicKeyConfig *PublicKeyConfig `json:"publicKeyConfig"`
 }
 
 // PublicKeyConfig represents the configuration for a CloudFront public key.
@@ -572,10 +572,10 @@ type PublicKeyListResult struct {
 
 // KeyGroup represents a CloudFront key group.
 type KeyGroup struct {
-	ID             string         `json:"id"`
-	ARN            string         `json:"arn"`
-	ETag           string         `json:"etag"`
-	LastModifiedAt time.Time      `json:"lastModifiedAt"`
+	ID             string          `json:"id"`
+	ARN            string          `json:"arn"`
+	ETag           string          `json:"etag"`
+	LastModifiedAt time.Time       `json:"lastModifiedAt"`
 	KeyGroupConfig *KeyGroupConfig `json:"keyGroupConfig"`
 }
 
@@ -588,7 +588,7 @@ type KeyGroupConfig struct {
 
 // KeyGroupListResult represents the result of listing CloudFront key groups.
 type KeyGroupListResult struct {
-	KeyGroups  []*KeyGroup
+	KeyGroups   []*KeyGroup
 	IsTruncated bool
 	NextMarker  string
 }

@@ -4,8 +4,13 @@
 package cloudwatchlogs
 
 import (
+	"context"
+	"errors"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
@@ -24,29 +29,75 @@ func (s *Store) metricFilterPrefixForGroup(logGroupName string) string {
 
 // PutMetricFilter creates or updates a metric filter. When the filter is
 // newly created, MetricFilterCount on the parent LogGroup is incremented
-// atomically under filterMutex.
+// atomically within a storage transaction, preventing lost-update races
+// with concurrent PutLogEvents operations (M-2, M-3 fix).
 func (s *Store) PutMetricFilter(filter *MetricFilter) error {
-	s.filterMutex.Lock()
-	defer s.filterMutex.Unlock()
-
 	key := s.metricFilterKey(filter.LogGroupName, filter.Name)
-	isNew := !s.Exists(key)
 
+	if s.ts != nil {
+		ctx := context.Background()
+		return s.ts.Update(ctx, func(txn storage.Transaction) error {
+			// Check existence within the transaction for atomic check-then-act.
+			filterBytes, err := txn.Bucket(s.bucketName).Get([]byte(key))
+			if err != nil {
+				return err
+			}
+			isNew := filterBytes == nil
+
+			filterData, err := proto.Marshal(MetricFilterToProto(filter))
+			if err != nil {
+				return err
+			}
+			if err := txn.Bucket(s.bucketName).Put([]byte(key), filterData); err != nil {
+				return err
+			}
+
+			if isNew {
+				lgBytes, err := txn.Bucket(s.bucketName).Get([]byte(s.logGroupKey(filter.LogGroupName)))
+				if err != nil || lgBytes == nil {
+					return ErrLogGroupNotFound
+				}
+				var lgProto pb.LogGroup
+				if err := proto.Unmarshal(lgBytes, &lgProto); err != nil {
+					return err
+				}
+				lgProto.MetricFilterCount++
+				lgData, err := proto.Marshal(&lgProto)
+				if err != nil {
+					return err
+				}
+				return txn.Bucket(s.bucketName).Put([]byte(s.logGroupKey(filter.LogGroupName)), lgData)
+			}
+			return nil
+		})
+	}
+
+	// Fallback: sequential writes with no cross-path atomicity guarantee.
+	isNew := !s.Exists(key)
 	if err := s.PutProto(key, MetricFilterToProto(filter)); err != nil {
 		return err
 	}
-
 	if isNew {
 		lg, err := s.GetLogGroup(filter.LogGroupName)
 		if err != nil {
+			// Rollback: remove the filter we just wrote (M-2 fix).
+			// Log the rollback error so silent failures are visible, but do
+			// not mask the original error (L-3).
+			if rmErr := s.Delete(key); rmErr != nil {
+				logs.Warn("Failed to rollback metric filter after LogGroup lookup failure",
+					logs.String("key", key), logs.Err(rmErr))
+			}
 			return err
 		}
 		lg.MetricFilterCount++
 		if err := s.PutLogGroup(lg); err != nil {
+			if rmErr := s.Delete(key); rmErr != nil {
+				logs.Warn("Failed to rollback metric filter after LogGroup update failure",
+					logs.String("key", key), logs.Err(rmErr))
+			}
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -61,30 +112,67 @@ func (s *Store) GetMetricFilter(logGroupName, filterName string) (*MetricFilter,
 }
 
 // DeleteMetricFilter deletes a metric filter and decrements
-// MetricFilterCount on the parent LogGroup atomically under filterMutex.
+// MetricFilterCount on the parent LogGroup atomically within a storage
+// transaction (M-3, M-4 fix).
 func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
-	s.filterMutex.Lock()
-	defer s.filterMutex.Unlock()
-
 	key := s.metricFilterKey(logGroupName, filterName)
+
+	if s.ts != nil {
+		ctx := context.Background()
+		return s.ts.Update(ctx, func(txn storage.Transaction) error {
+			filterBytes, err := txn.Bucket(s.bucketName).Get([]byte(key))
+			if err != nil {
+				return err
+			}
+			if filterBytes == nil {
+				return ErrMetricFilterNotFound
+			}
+			if err := txn.Bucket(s.bucketName).Delete([]byte(key)); err != nil {
+				return err
+			}
+
+			lgBytes, err := txn.Bucket(s.bucketName).Get([]byte(s.logGroupKey(logGroupName)))
+			if err != nil {
+				return err
+			}
+			if lgBytes == nil {
+				// LogGroup already deleted; nothing to decrement (M-4 fix).
+				return nil
+			}
+			var lgProto pb.LogGroup
+			if err := proto.Unmarshal(lgBytes, &lgProto); err != nil {
+				return err
+			}
+			if lgProto.MetricFilterCount > 0 {
+				lgProto.MetricFilterCount--
+				lgData, err := proto.Marshal(&lgProto)
+				if err != nil {
+					return err
+				}
+				return txn.Bucket(s.bucketName).Put([]byte(s.logGroupKey(logGroupName)), lgData)
+			}
+			return nil
+		})
+	}
+
+	// Fallback: sequential writes with error-type distinction (M-4 fix).
 	if !s.Exists(key) {
 		return ErrMetricFilterNotFound
 	}
 	if err := s.Delete(key); err != nil {
 		return err
 	}
-
 	lg, err := s.GetLogGroup(logGroupName)
 	if err != nil {
-		return nil
+		if errors.Is(err, ErrLogGroupNotFound) {
+			return nil
+		}
+		return err
 	}
 	if lg.MetricFilterCount > 0 {
 		lg.MetricFilterCount--
-		if err := s.PutLogGroup(lg); err != nil {
-			return err
-		}
+		return s.PutLogGroup(lg)
 	}
-
 	return nil
 }
 

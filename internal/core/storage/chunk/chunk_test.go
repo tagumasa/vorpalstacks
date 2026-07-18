@@ -322,6 +322,115 @@ func TestWriteToExistingDirectory(t *testing.T) {
 	}
 }
 
+func TestIngestionTimeRoundTrip(t *testing.T) {
+	tempDir := t.TempDir()
+
+	entries := []Entry{
+		SimpleEntry{Ts: 1000, IngestionTs: 5000, Msg: []byte("message 1")},
+		SimpleEntry{Ts: 2000, IngestionTs: 6000, Msg: []byte("message 2")},
+		SimpleEntry{Ts: 3000, IngestionTs: 7000, Msg: []byte("message 3")},
+	}
+
+	for _, enc := range []Encoding{EncodingZstd, EncodingGzip} {
+		t.Run(enc.String(), func(t *testing.T) {
+			opts := &WriterOptions{
+				ChunksDir: filepath.Join(tempDir, enc.String()),
+				Encoding:  enc,
+				ChunkSize: 10,
+			}
+
+			w := NewWriter(opts)
+			if err := w.WriteBatch(entries); err != nil {
+				t.Fatalf("WriteBatch failed: %v", err)
+			}
+
+			chunkPath, err := w.Flush()
+			if err != nil {
+				t.Fatalf("Flush failed: %v", err)
+			}
+			if chunkPath == "" {
+				t.Fatal("chunkPath is empty")
+			}
+
+			header, err := ReadHeader(chunkPath)
+			if err != nil {
+				t.Fatalf("ReadHeader failed: %v", err)
+			}
+
+			if header.Version != VersionV2 {
+				t.Errorf("Expected VersionV2 for Ingestible entries, got version %d", header.Version)
+			}
+
+			readEntries, err := Read(chunkPath)
+			if err != nil {
+				t.Fatalf("Read failed: %v", err)
+			}
+
+			if len(readEntries) != 3 {
+				t.Fatalf("Expected 3 entries, got %d", len(readEntries))
+			}
+
+			for i, entry := range readEntries {
+				if entry.Timestamp() != entries[i].Timestamp() {
+					t.Errorf("Entry %d: expected timestamp %d, got %d", i, entries[i].Timestamp(), entry.Timestamp())
+				}
+				if string(entry.Message()) != string(entries[i].Message()) {
+					t.Errorf("Entry %d: expected message %q, got %q", i, entries[i].Message(), entry.Message())
+				}
+				ingestible, ok := entry.(Ingestible)
+				if !ok {
+					t.Fatalf("Entry %d: expected Ingestible interface", i)
+				}
+				if ingestible.IngestionTimeUnixMilli() != entries[i].(SimpleEntry).IngestionTs {
+					t.Errorf("Entry %d: expected ingestionTs %d, got %d",
+						i, entries[i].(SimpleEntry).IngestionTs, ingestible.IngestionTimeUnixMilli())
+				}
+			}
+		})
+	}
+}
+
+func TestZeroIngestionTimeRoundTrip(t *testing.T) {
+	tempDir := t.TempDir()
+
+	entries := []Entry{
+		SimpleEntry{Ts: 1000, Msg: []byte("zero ingestion")},
+	}
+
+	opts := &WriterOptions{
+		ChunksDir: tempDir,
+		Encoding:  EncodingZstd,
+		ChunkSize: 10,
+	}
+
+	w := NewWriter(opts)
+	if err := w.WriteBatch(entries); err != nil {
+		t.Fatalf("WriteBatch failed: %v", err)
+	}
+
+	chunkPath, err := w.Flush()
+	if err != nil {
+		t.Fatalf("Flush failed: %v", err)
+	}
+
+	readEntries, err := Read(chunkPath)
+	if err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+
+	if len(readEntries) != 1 {
+		t.Fatalf("Expected 1 entry, got %d", len(readEntries))
+	}
+
+	ingestible, ok := readEntries[0].(Ingestible)
+	if !ok {
+		t.Fatal("Expected Ingestible interface even for zero IngestionTs")
+	}
+	if ingestible.IngestionTimeUnixMilli() != 0 {
+		t.Errorf("Expected 0 ingestionTs, got %d", ingestible.IngestionTimeUnixMilli())
+	}
+}
+
 func TestPebbleIndex(t *testing.T) {
 	tempDir := t.TempDir()
 	indexPath := filepath.Join(tempDir, "index.db")

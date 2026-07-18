@@ -17,7 +17,7 @@ type CloudWatchLogsStoreInterface interface {
 	DeleteLogStream(logGroupName, logStreamName string) error
 	ListLogStreams(logGroupName, prefix, marker string, maxItems int) ([]*LogStream, string, error)
 	PutLogEvents(logGroupName, logStreamName string, events []LogEntry) (string, error)
-	GetLogEvents(logGroupName, logStreamName string, startTime, endTime int64, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, string, int, error)
+	GetLogEvents(logGroupName, logStreamName string, startTime, endTime int64, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, string, string, error)
 	FilterLogEvents(logGroupName string, logStreamNames []string, startTime, endTime int64, filterPattern string, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, map[string]bool, string, error)
 	PutSubscriptionFilter(filter *SubscriptionFilter) error
 	DeleteSubscriptionFilter(logGroupName, filterName string) error

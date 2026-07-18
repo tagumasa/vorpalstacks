@@ -41,6 +41,11 @@ type Engine struct {
 	bus            eventbus.Bus
 	stores         sync.Map // region → *schedulerstore.SchedulerStore
 
+	// lastFired tracks the last execution time per schedule (key: groupName/name)
+	// to prevent duplicate firing when the ticker polls multiple times within
+	// the same execution window.
+	lastFired sync.Map // string → time.Time
+
 	running   bool
 	runningMu sync.RWMutex
 	stopChan  chan struct{}
@@ -121,12 +126,27 @@ func (e *Engine) run() {
 	}
 }
 
+// lastFiredKey builds the deduplication key used by the lastFired map.
+// Region is part of the key so that schedules sharing the same
+// group/name across regions do not interfere with each other's
+// deduplication state (C-2).
+func lastFiredKey(region, groupName, name string) string {
+	return region + "/" + groupName + "/" + name
+}
+
 func (e *Engine) checkSchedules() {
 	if e.storageManager == nil {
 		return
 	}
 
 	regions := e.storageManager.GetActiveRegions()
+
+	// Collect active schedule keys across ALL regions so the lazy cleanup
+	// pass at the end does not destroy entries belonging to a region that
+	// has not yet been visited, or to a region whose schedules happen to
+	// share a legacy (region-less) key with the current region (C-2).
+	allActiveKeys := make(map[string]bool)
+
 	for _, region := range regions {
 		storage, err := e.storageManager.GetStorage(region)
 		if err != nil {
@@ -147,25 +167,50 @@ func (e *Engine) checkSchedules() {
 
 		for _, schedule := range schedules {
 			schedule.Region = region
+			allActiveKeys[lastFiredKey(region, schedule.GroupName, schedule.Name)] = true
 			if e.shouldExecute(schedule, now) {
+				// Provisionally reserve the dedup slot so a concurrent tick
+				// does not double-fire while the goroutine is still in flight.
+				// If executeSchedule fails or panics the goroutine releases
+				// the reservation so the next tick can retry (H-2).
+				dedupKey := lastFiredKey(region, schedule.GroupName, schedule.Name)
+				e.lastFired.Store(dedupKey, now)
 				e.wg.Add(1)
-				go func(sch *schedulerstore.Schedule) {
+				go func(sch *schedulerstore.Schedule, key string) {
 					defer e.wg.Done()
 					defer func() {
 						if r := recover(); r != nil {
 							logs.Error("scheduler: panic executing schedule", logs.String("name", sch.Name), logs.Any("panic", r))
+							// Release the dedup slot so the next tick can retry (H-2).
+							e.lastFired.Delete(key)
 						}
 					}()
 					select {
 					case <-e.ctx.Done():
 						return
 					default:
-						e.executeSchedule(e.ctx, sch)
+						if err := e.executeSchedule(e.ctx, sch); err != nil {
+							// Release the dedup slot so the next tick can retry (H-2).
+							e.lastFired.Delete(key)
+						}
 					}
-				}(schedule)
+				}(schedule, dedupKey)
 			}
 		}
 	}
+
+	// Remove lastFired entries for schedules that no longer exist (B-R2 fix).
+	// This prevents unbounded growth when schedules are created and deleted.
+	// Runs once after the full region sweep so that other regions' entries
+	// are not destroyed mid-iteration (C-2).
+	e.lastFired.Range(func(key, _ interface{}) bool {
+		if k, ok := key.(string); ok {
+			if !allActiveKeys[k] {
+				e.lastFired.Delete(k)
+			}
+		}
+		return true
+	})
 }
 
 func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time) bool {
@@ -184,6 +229,17 @@ func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time)
 		return false
 	}
 
+	// Prevent duplicate firing: skip if already executed for this interval.
+	// Key includes region so multi-region schedules do not share state (C-2).
+	// shouldExecute is a pure predicate; the caller reserves the dedup slot
+	// after this returns true (H-2).
+	key := lastFiredKey(schedule.Region, schedule.GroupName, schedule.Name)
+	if last, ok := e.lastFired.Load(key); ok {
+		if lastTime, ok := last.(time.Time); ok && !lastTime.Before(nextTime) {
+			return false
+		}
+	}
+
 	if schedule.FlexibleTimeWindow != nil && schedule.FlexibleTimeWindow.Mode == schedulerstore.FlexibleTimeWindowModeFlexible {
 		maxWindow := 1
 		if schedule.FlexibleTimeWindow.MaximumWindowInMinutes != nil {
@@ -193,11 +249,17 @@ func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time)
 		// forward for MaximumWindowInMinutes. Execution must NOT occur before
 		// the scheduled time.
 		windowEnd := nextTime.Add(time.Duration(maxWindow) * time.Minute)
-		return !now.Before(nextTime) && now.Before(windowEnd)
+		if !now.Before(nextTime) && now.Before(windowEnd) {
+			return true
+		}
+		return false
 	}
 
 	diff := now.Sub(nextTime)
-	return diff >= 0 && diff < time.Minute
+	if diff >= 0 && diff < time.Minute {
+		return true
+	}
+	return false
 }
 
 func (e *Engine) getNextExecutionTime(schedule *schedulerstore.Schedule, now time.Time) (time.Time, error) {
@@ -231,6 +293,9 @@ func (e *Engine) getNextExecutionTime(schedule *schedulerstore.Schedule, now tim
 			}
 
 			creationTime := schedule.CreationDate
+			if schedule.StartDate != nil {
+				creationTime = *schedule.StartDate
+			}
 			elapsed := now.Sub(creationTime)
 			periods := int(elapsed / duration)
 			nextTime := creationTime.Add(time.Duration(periods) * duration)
@@ -367,14 +432,14 @@ func scheduleInput(target *schedulerstore.Target, scheduleName string) string {
 	return "{}"
 }
 
-func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.Schedule) {
+func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.Schedule) error {
 	logs.Debug("Executing schedule",
 		logs.String("name", schedule.Name),
 		logs.String("group", schedule.GroupName))
 
 	if schedule.Target == nil {
 		logs.Debug("Schedule has no target", logs.String("schedule", schedule.Name))
-		return
+		return nil
 	}
 
 	target := schedule.Target
@@ -398,7 +463,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 				logs.String("schedule", schedule.Name),
 				logs.String("target", targetArn),
 				logs.Err(err))
-			return
+			return err
 		}
 	} else {
 		if strings.Contains(targetArn, ":lambda:") {
@@ -426,6 +491,8 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 			}
 		}
 	}
+
+	return nil
 }
 
 func (e *Engine) getStoreForSchedule(schedule *schedulerstore.Schedule) *schedulerstore.SchedulerStore {

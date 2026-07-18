@@ -284,9 +284,9 @@ func (s *CloudFrontService) ListKeyGroups(ctx context.Context, reqCtx *request.R
 
 func formatKeyGroupResponse(kg *cloudfrontstore.KeyGroup) map[string]interface{} {
 	return map[string]interface{}{
-		"Id":              kg.ID,
+		"Id":               kg.ID,
 		"LastModifiedTime": kg.LastModifiedAt.Format(time.RFC3339),
-		"KeyGroupConfig":  formatKeyGroupConfigResponse(kg),
+		"KeyGroupConfig":   formatKeyGroupConfigResponse(kg),
 	}
 }
 

@@ -24,6 +24,7 @@ type ContainerLifecycle interface {
 	CreateContainerFromConfig(ctx context.Context, cfg AdvancedContainerConfig) (*CreateContainerResult, error)
 	StartContainer(ctx context.Context, containerID string) error
 	RemoveContainer(ctx context.Context, containerID string, force bool) error
+	ListContainers(ctx context.Context, all bool) ([]ContainerInfo, error)
 	CreateFileInContainer(ctx context.Context, containerID string, path string, content []byte) error
 	Exec(ctx context.Context, containerID string, cfg ExecConfig) (*ExecResult, error)
 	Close() error

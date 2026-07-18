@@ -53,6 +53,7 @@ func (s *IoTEventsService) Init(deps IoTEventsServiceDeps) {
 		adapter := NewDetectorActionAdapter(deps.EventBus, slog.Default())
 		s.actionAdapter = adapter
 		s.hydrateDetectorModels()
+		s.hydrateAlarmModels()
 		s.wireBatchEvaluate(adapter)
 		s.wireActionCallback(adapter)
 		s.initialised = true
@@ -124,6 +125,48 @@ func (s *IoTEventsService) hydrateDetectorModels() {
 		}
 	}
 	slog.Info("hydrated IoT Events detector models", "total", total)
+}
+
+// hydrateAlarmModels loads all persisted alarm models into each regional
+// AlarmStateMachine so that BatchPutMessage evaluations work immediately
+// after server restart (H-SM2).
+func (s *IoTEventsService) hydrateAlarmModels() {
+	if s.storageManager == nil {
+		return
+	}
+	regions := s.storageManager.ListRegions()
+	if len(regions) == 0 {
+		return
+	}
+	total := 0
+	for _, region := range regions {
+		store, err := s.GetStoreForRegion(region)
+		if err != nil {
+			slog.Warn("failed to get store for IoT Events alarm hydration", "region", region, "error", err)
+			continue
+		}
+		concrete, ok := store.(*iotstore.IotStore)
+		if !ok {
+			continue
+		}
+		var opts storecommon.ListOptions
+		for {
+			result, err := store.ListAlarmModels(opts)
+			if err != nil {
+				slog.Warn("failed to list alarm models for hydration", "region", region, "error", err)
+				break
+			}
+			for _, am := range result.Items {
+				concrete.LoadAlarmModel(am)
+				total++
+			}
+			if result.NextMarker == "" {
+				break
+			}
+			opts.Marker = result.NextMarker
+		}
+	}
+	slog.Info("hydrated IoT Events alarm models", "total", total)
 }
 
 func (s *IoTEventsService) wireBatchEvaluate(adapter *DetectorActionAdapter) {

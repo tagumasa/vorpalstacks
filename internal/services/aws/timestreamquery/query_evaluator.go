@@ -1,6 +1,7 @@
 package timestreamquery
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -74,7 +75,7 @@ func (s *TimestreamQueryService) parseTimestampValue(v string) (time.Time, error
 		}
 		return time.Unix(ts, 0), nil
 	}
-	return time.Time{}, fmt.Errorf("not a timestamp")
+	return time.Time{}, errors.New("not a timestamp")
 }
 
 func (s *TimestreamQueryService) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
