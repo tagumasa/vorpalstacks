@@ -309,6 +309,10 @@ func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name str
 	if !s.schedulesStore.Exists(key) {
 		return ErrScheduleNotFound
 	}
+	// Clean up any tags associated with this schedule so they do not
+	// become orphaned entries in the TagStore (S-B7).
+	arn := s.buildScheduleARN(groupName, name)
+	_ = s.TagStore.Delete(arn)
 	return s.schedulesStore.Delete(key)
 }
 

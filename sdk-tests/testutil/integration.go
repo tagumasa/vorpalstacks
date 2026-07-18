@@ -278,14 +278,21 @@ func (r *TestRunner) runIntegWithTimeout(name string, fn func() TestResult) Test
 		fmt.Printf("  Running: %s...\n", name)
 	}
 	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), integTestTimeout)
+	defer cancel()
+
 	done := make(chan TestResult, 1)
-	go func() { done <- fn() }()
+	go func() {
+		result := fn()
+		result.Duration = time.Since(start)
+		if result.TestName == "" {
+			result.TestName = name
+		}
+		done <- result
+	}()
+
 	select {
 	case res := <-done:
-		res.Duration = time.Since(start)
-		if res.TestName == "" {
-			res.TestName = name
-		}
 		if r.verbose {
 			if res.Status == "PASS" {
 				fmt.Printf("  ✓ %s (%.2fs)\n", name, res.Duration.Seconds())
@@ -294,7 +301,7 @@ func (r *TestRunner) runIntegWithTimeout(name string, fn func() TestResult) Test
 			}
 		}
 		return res
-	case <-time.After(integTestTimeout):
+	case <-ctx.Done():
 		if r.verbose {
 			fmt.Printf("  ✗ %s: timed out after %v\n", name, integTestTimeout)
 		}

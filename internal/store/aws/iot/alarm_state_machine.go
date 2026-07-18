@@ -49,11 +49,11 @@ type alarmStateRecord struct {
 // the service layer can respond with ResourceNotFoundException (matching
 // AWS behaviour).
 type AlarmStateMachine struct {
-	mu        sync.RWMutex
-	store     *common.BaseStore
-	alarms    map[string]map[string]*alarmInstanceState
-	modelDefs map[string]bool                    // tracks known alarm model names
-	alarmRules map[string]*loadedAlarmModel      // alarm models with parsed SimpleRules
+	mu         sync.RWMutex
+	store      *common.BaseStore
+	alarms     map[string]map[string]*alarmInstanceState
+	modelDefs  map[string]bool              // tracks known alarm model names
+	alarmRules map[string]*loadedAlarmModel // alarm models with parsed SimpleRules
 }
 
 // NewAlarmStateMachine creates a new AlarmStateMachine. If store is
@@ -269,10 +269,10 @@ func (sm *AlarmStateMachine) ListAlarms(modelName string) []AlarmInstanceSummary
 	result := make([]AlarmInstanceSummary, 0, len(modelAlarms))
 	for key, alarm := range modelAlarms {
 		result = append(result, AlarmInstanceSummary{
-			KeyValue:      key,
-			StateName:     alarm.stateName,
-			CreationTime:  alarm.creationTime,
-			LastUpdate:    alarm.lastUpdate,
+			KeyValue:     key,
+			StateName:    alarm.stateName,
+			CreationTime: alarm.creationTime,
+			LastUpdate:   alarm.lastUpdate,
 		})
 	}
 	return result
@@ -280,8 +280,8 @@ func (sm *AlarmStateMachine) ListAlarms(modelName string) []AlarmInstanceSummary
 
 // AlarmInstanceSummary is a read-only snapshot of an alarm instance.
 type AlarmInstanceSummary struct {
-	KeyValue      string
-	StateName     string
-	CreationTime  time.Time
-	LastUpdate    time.Time
+	KeyValue     string
+	StateName    string
+	CreationTime time.Time
+	LastUpdate   time.Time
 }

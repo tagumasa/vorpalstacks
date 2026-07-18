@@ -127,12 +127,25 @@ type EventBridgeDeliveryEvent struct {
 func (e *EventBridgeDeliveryEvent) EventType() string { return "events:deliver" }
 
 // ScheduleFiredEvent is published when the Scheduler engine fires a schedule.
+// GroupName and serialised Target are included so that downstream consumers
+// (handleBusDelivery) have the full target configuration — SqsParameters,
+// KinesisParameters, EventBridgeParameters, RetryPolicy, DeadLetterConfig —
+// without needing to re-fetch the schedule from the store.
 type ScheduleFiredEvent struct {
 	EventBase
 	ScheduleName string `json:"schedule_name"`
 	ScheduleArn  string `json:"schedule_arn"`
+	GroupName    string `json:"group_name"`
 	TargetArn    string `json:"target_arn"`
 	Input        string `json:"input"`
+	// TargetPayload is the JSON-serialised schedulerstore.Target so that
+	// the bus handler can reconstruct the full target including all
+	// sub-parameters needed for correct delivery.
+	TargetPayload string `json:"target_payload,omitempty"`
+	// ActionAfterCompletion carries the schedule's action-after-completion
+	// setting (e.g. "DELETE") so the delivery path can defer deletion until
+	// the retry lifecycle completes (AWS-compliant delayed deletion).
+	ActionAfterCompletion string `json:"action_after_completion,omitempty"`
 }
 
 // EventType returns "scheduler:fired" for this event type.
@@ -333,6 +346,12 @@ type EventBridgePutEventsEvent struct {
 	EventBase
 	EventBusName string `json:"event_bus_name"`
 	Input        string `json:"input"`
+	// DetailType and Source correspond to EventBridgeParameters in the
+	// scheduler Target. They are used by EventBridge to construct the
+	// "detail-type" and "source" fields of the delivered event so that
+	// event rules can match on them.
+	DetailType string `json:"detail_type,omitempty"`
+	Source     string `json:"source,omitempty"`
 }
 
 // EventType returns "events:putEvents" for this event type.

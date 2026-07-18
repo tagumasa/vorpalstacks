@@ -218,3 +218,33 @@ type ScheduleListResult struct {
 	Schedules []ScheduleSummary `json:"schedules"`
 	NextToken string            `json:"nextToken,omitempty"`
 }
+
+// RetryRecord represents a persisted schedule delivery that is pending retry.
+// It survives server restarts so that the at-least-once delivery guarantee
+// is maintained across crashes (S-B10).
+type RetryRecord struct {
+	// ID is a unique identifier for this retry record.
+	ID string `json:"id"`
+	// ScheduleName is the name of the schedule that fired.
+	ScheduleName string `json:"scheduleName"`
+	// GroupName is the schedule group name.
+	GroupName string `json:"groupName"`
+	// Region is the AWS region of the schedule.
+	Region string `json:"region"`
+	// Target is the full target (JSON-serialised) used for re-delivery.
+	Target string `json:"target"`
+	// Input is the schedule input passed to the target.
+	Input string `json:"input"`
+	// AttemptCount is the number of delivery attempts so far (including
+	// the initial fire and the immediate retry).
+	AttemptCount int `json:"attemptCount"`
+	// CreatedAt is when the original schedule fired.
+	CreatedAt time.Time `json:"createdAt"`
+	// NextAttemptAt is when the next retry should occur.
+	NextAttemptAt time.Time `json:"nextAttemptAt"`
+	// ActionAfterCompletion captures the schedule's action-after-completion
+	// setting at fire time. When set to "DELETE", the schedule is deleted
+	// after the retry lifecycle completes (success or exhaustion), matching
+	// AWS EventBridge Scheduler semantics.
+	ActionAfterCompletion string `json:"actionAfterCompletion,omitempty"`
+}

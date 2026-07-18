@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -18,9 +19,48 @@ var (
 )
 
 func isValidScheduleExpression(expr string) bool {
+	// Smithy model: ScheduleExpression max length is 256 characters.
+	if len(expr) > 256 {
+		return false
+	}
 	return atExpressionRegex.MatchString(expr) ||
-		rateExpressionRegex.MatchString(expr) ||
+		validateRateExpression(expr) ||
 		cronExpressionRegex.MatchString(expr)
+}
+
+// validateRateExpression checks a rate() expression against the AWS rules:
+// the value must be a positive number (>= 1) and the unit must agree with
+// the value — singular for 1, plural for values greater than 1.
+// AWS bounds: rate value must not exceed 1 year (365 days = 525600 minutes
+// = 8760 hours = 365 days).
+func validateRateExpression(expr string) bool {
+	matches := rateExpressionRegex.FindStringSubmatch(expr)
+	if len(matches) != 3 {
+		return false
+	}
+	value, err := strconv.Atoi(matches[1])
+	if err != nil || value < 1 {
+		return false
+	}
+	unit := matches[2]
+	// AWS: value == 1 requires singular unit; value > 1 requires plural.
+	// Apply upper bound: rate must not exceed 1 year.
+	if value == 1 {
+		switch unit {
+		case "minute", "hour", "day":
+			return true
+		}
+		return false
+	}
+	switch unit {
+	case "minutes":
+		return value <= 525600
+	case "hours":
+		return value <= 8760
+	case "days":
+		return value <= 365
+	}
+	return false
 }
 
 func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) {
@@ -302,6 +342,14 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 
 	if ftw.Mode == "" {
 		ftw.Mode = schedulerstore.FlexibleTimeWindowModeOff
+	}
+
+	// AWS: "If you set Mode to FLEXIBLE, you must also set
+	// MaximumWindowInMinutes." Reject when missing or out of range.
+	if ftw.Mode == schedulerstore.FlexibleTimeWindowModeFlexible {
+		if ftw.MaximumWindowInMinutes == nil || *ftw.MaximumWindowInMinutes < 1 || *ftw.MaximumWindowInMinutes > 1440 {
+			return nil, ErrInvalidFlexibleTimeWindow
+		}
 	}
 
 	return ftw, nil

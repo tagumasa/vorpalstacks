@@ -98,14 +98,14 @@ type IotStore struct {
 	domainConfigPS    *common.ProtoStore[DomainConfiguration]
 	violationEventPS  *common.ProtoStore[ViolationEvent]
 	*common.TagStore
-	storage      storage.BasicStorage
-	ts           storage.TransactionalStorage
-	rs           string
-	arnBuilder   *svcarn.ARNBuilder
-	accountID    string
-	region       string
-	mu           sync.RWMutex
-	stateMachine     *DetectorStateMachine
+	storage           storage.BasicStorage
+	ts                storage.TransactionalStorage
+	rs                string
+	arnBuilder        *svcarn.ARNBuilder
+	accountID         string
+	region            string
+	mu                sync.RWMutex
+	stateMachine      *DetectorStateMachine
 	alarmStateMachine *AlarmStateMachine
 	// shadowLocker provides per-shadow-key mutual exclusion for atomic
 	// read-merge-write sequences, replacing the store-wide s.mu. This

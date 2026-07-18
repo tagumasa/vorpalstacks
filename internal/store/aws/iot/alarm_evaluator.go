@@ -42,8 +42,8 @@ func parseInputProperty(s string) *parsedInputProperty {
 type simpleRuleConfig struct {
 	comparisonOperator string
 	inputProperty      *parsedInputProperty
-	thresholdValue     float64               // valid when thresholdIsRef is false
-	thresholdRef       *parsedInputProperty  // non-nil when threshold is a $input reference
+	thresholdValue     float64              // valid when thresholdIsRef is false
+	thresholdRef       *parsedInputProperty // non-nil when threshold is a $input reference
 	thresholdIsRef     bool
 }
 

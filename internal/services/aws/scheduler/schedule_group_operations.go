@@ -18,6 +18,9 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 	if name == "" {
 		return nil, ErrValidation
 	}
+	if !namePattern.MatchString(name) {
+		return nil, ErrValidation
+	}
 
 	group := &schedulerstore.ScheduleGroup{
 		Name: name,

@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -11,6 +12,10 @@ import (
 	"vorpalstacks/internal/common/response"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
+
+// namePattern matches the AWS Scheduler Name/GroupName constraint:
+// 1-64 chars of alphanumeric, hyphen, underscore, and period.
+var namePattern = regexp.MustCompile(`^[0-9a-zA-Z-_.]{1,64}$`)
 
 func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string, err error) {
 	name = request.GetStringParam(params, "Name")
@@ -48,6 +53,9 @@ func getListGroupName(params map[string]interface{}) string {
 func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
+		return nil, ErrValidation
+	}
+	if !namePattern.MatchString(name) {
 		return nil, ErrValidation
 	}
 
@@ -224,69 +232,86 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		return nil, ErrInternalServer
 	}
 
+	// UpdateSchedule is a PUT operation (full replacement). All fields from
+	// the request replace the existing values, including empty strings which
+	// clear the field. Required fields (ScheduleExpression, Target,
+	// FlexibleTimeWindow) must be provided and are validated below.
 	scheduleExpression := request.GetStringParam(req.Parameters, "ScheduleExpression")
-	if scheduleExpression != "" {
-		if !isValidScheduleExpression(scheduleExpression) {
-			return nil, ErrInvalidScheduleExpression
-		}
-		existing.ScheduleExpression = scheduleExpression
+	if scheduleExpression == "" {
+		return nil, ErrValidation
 	}
+	if !isValidScheduleExpression(scheduleExpression) {
+		return nil, ErrInvalidScheduleExpression
+	}
+	existing.ScheduleExpression = scheduleExpression
 
-	if target, err := parseTarget(req.Parameters); err != nil {
+	target, err := parseTarget(req.Parameters)
+	if err != nil {
 		return nil, err
-	} else if target != nil {
-		if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
+	}
+	if target == nil {
+		return nil, ErrInvalidTarget
+	}
+	if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
+		return nil, err
+	}
+	if target.RoleArn != "" {
+		validator := reqCtx.GetIAMValidator()
+		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
 			return nil, err
 		}
-		if target.RoleArn != "" {
-			validator := reqCtx.GetIAMValidator()
-			if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-				return nil, err
-			}
-		}
-		existing.Target = target
 	}
+	existing.Target = target
 
-	if flexibleTimeWindow, err := parseFlexibleTimeWindow(req.Parameters); err != nil {
+	flexibleTimeWindow, err := parseFlexibleTimeWindow(req.Parameters)
+	if err != nil {
 		return nil, err
-	} else if flexibleTimeWindow != nil {
-		existing.FlexibleTimeWindow = flexibleTimeWindow
 	}
+	if flexibleTimeWindow == nil {
+		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
+	}
+	existing.FlexibleTimeWindow = flexibleTimeWindow
 
-	if description := request.GetStringParam(req.Parameters, "Description"); description != "" {
-		existing.Description = description
-	}
-	if timezone := request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone"); timezone != "" {
-		existing.ScheduleExpressionTimezone = timezone
-	}
-	if stateStr := request.GetStringParam(req.Parameters, "State"); stateStr != "" {
-		if stateStr != "ENABLED" && stateStr != "DISABLED" {
-			return nil, ErrInvalidState
-		}
+	// Optional fields — full PUT replacement. Empty/unset applies the
+	// AWS default, not preservation of the previous value.
+	existing.Description = request.GetStringParam(req.Parameters, "Description")
+	existing.ScheduleExpressionTimezone = request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone")
+	existing.KmsKeyArn = request.GetStringParam(req.Parameters, "KmsKeyArn")
+
+	stateStr := request.GetStringParam(req.Parameters, "State")
+	if stateStr == "" {
+		existing.State = schedulerstore.ScheduleStateEnabled
+	} else if stateStr != "ENABLED" && stateStr != "DISABLED" {
+		return nil, ErrInvalidState
+	} else {
 		existing.State = schedulerstore.ScheduleState(stateStr)
 	}
-	if kmsKeyArn := request.GetStringParam(req.Parameters, "KmsKeyArn"); kmsKeyArn != "" {
-		existing.KmsKeyArn = kmsKeyArn
-	}
-	if actionStr := request.GetStringParam(req.Parameters, "ActionAfterCompletion"); actionStr != "" {
-		if actionStr != "DELETE" && actionStr != "NONE" {
-			return nil, ErrInvalidActionAfterCompletion
-		}
+
+	actionStr := request.GetStringParam(req.Parameters, "ActionAfterCompletion")
+	if actionStr == "" {
+		existing.ActionAfterCompletion = schedulerstore.ActionAfterCompletionNone
+	} else if actionStr != "DELETE" && actionStr != "NONE" {
+		return nil, ErrInvalidActionAfterCompletion
+	} else {
 		existing.ActionAfterCompletion = schedulerstore.ActionAfterCompletion(actionStr)
 	}
 	if startDateStr := request.GetStringParam(req.Parameters, "StartDate"); startDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, startDateStr); err == nil {
-			existing.StartDate = &t
-		} else {
+		t, parseErr := time.Parse(time.RFC3339, startDateStr)
+		if parseErr != nil {
 			return nil, ErrInvalidDate
 		}
+		existing.StartDate = &t
+	} else {
+		existing.StartDate = nil
 	}
 	if endDateStr := request.GetStringParam(req.Parameters, "EndDate"); endDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, endDateStr); err == nil {
-			existing.EndDate = &t
-		} else {
+		t, parseErr := time.Parse(time.RFC3339, endDateStr)
+		if parseErr != nil {
 			return nil, ErrInvalidDate
 		}
+		existing.EndDate = &t
+	} else {
+		existing.EndDate = nil
 	}
 
 	if err := store.UpdateSchedule(ctx, existing); err != nil {

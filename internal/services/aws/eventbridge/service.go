@@ -189,8 +189,18 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 		return eventbus.HandlerResult{}
 	}
 
-	source, _ := inputMap["Source"].(string)
-	detailType, _ := inputMap["DetailType"].(string)
+	// Source and DetailType can come from two places:
+	// 1. The event struct itself (e.g. Scheduler's EventBridgeParameters)
+	// 2. The Input JSON map (e.g. S3 notifications, direct PutEvents)
+	// Struct fields take precedence over Input map values.
+	source := evt.Source
+	detailType := evt.DetailType
+	if source == "" {
+		source, _ = inputMap["Source"].(string)
+	}
+	if detailType == "" {
+		detailType, _ = inputMap["DetailType"].(string)
+	}
 	if source == "" || detailType == "" {
 		logs.Warn("eventbridge: putEvents input missing Source or DetailType",
 			logs.String("region", region))

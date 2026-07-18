@@ -3,14 +3,12 @@ package scheduler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
-	"time"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -55,42 +53,36 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 		return eventbus.HandlerResult{}
 	}
 
-	target := &schedulerstore.Target{
-		Arn:   evt.TargetArn,
-		Input: evt.Input,
+	// Reconstruct the full target from the serialised payload so that all
+	// sub-parameters (SqsParameters, KinesisParameters, etc.) are available
+	// for correct delivery. Falls back to a minimal target if the payload
+	// is absent (e.g. events from older engine instances).
+	var target *schedulerstore.Target
+	if evt.TargetPayload != "" {
+		var t schedulerstore.Target
+		if err := json.Unmarshal([]byte(evt.TargetPayload), &t); err == nil {
+			target = &t
+		}
 	}
-	schedule := &schedulerstore.Schedule{
-		Name:   evt.ScheduleName,
-		Region: evt.Region,
-		Target: target,
+	if target == nil {
+		target = &schedulerstore.Target{
+			Arn:   evt.TargetArn,
+			Input: evt.Input,
+		}
 	}
 
-	if strings.Contains(evt.TargetArn, ":lambda:") {
-		s.engine.invokeLambda(ctx, schedule, target)
-	} else if strings.Contains(evt.TargetArn, ":sqs:") {
-		s.engine.sendToSQS(ctx, schedule, target)
-	} else if strings.Contains(evt.TargetArn, ":sns:") {
-		if s.engine != nil && s.engine.bus != nil {
-			message := scheduleInput(target, schedule.Name)
-			snsEvt := &eventbus.SNSDeliveryEvent{
-				TopicARN:  evt.TargetArn,
-				MessageID: fmt.Sprintf("%d", time.Now().UnixNano()),
-				Message:   message,
-			}
-			snsEvt.Region = evt.Region
-			if err := s.engine.bus.Publish(context.Background(), snsEvt); err != nil {
-				logs.Warn("Failed to publish SNS event from scheduler", logs.Err(err))
-			}
-		} else {
-			s.engine.publishToSNS(ctx, schedule, target)
-		}
-	} else if strings.Contains(evt.TargetArn, ":logs:") {
-		s.engine.sendToCloudWatchLogs(ctx, schedule, target)
-	} else if strings.Contains(evt.TargetArn, ":states:") {
-		s.engine.startStepFunctionExecution(ctx, schedule, target)
-	} else if strings.Contains(evt.TargetArn, ":events:") {
-		s.engine.sendToEventBridge(ctx, schedule, target)
+	schedule := &schedulerstore.Schedule{
+		Name:                  evt.ScheduleName,
+		GroupName:             evt.GroupName,
+		Region:                evt.Region,
+		Target:                target,
+		ActionAfterCompletion: schedulerstore.ActionAfterCompletion(evt.ActionAfterCompletion),
 	}
+
+	// Unified delivery with retry (S-B10) and DLQ routing (S-B11).
+	// deliverWithRetry handles immediate retry, persisted background retries,
+	// and DLQ routing on permanent failure.
+	s.engine.deliverWithRetry(ctx, schedule, target)
 
 	return eventbus.HandlerResult{}
 }
