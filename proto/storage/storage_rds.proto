@@ -84,6 +84,36 @@ message DBInstance {
   string region = 20;
   string db_instance_arn = 21;
   ClusterEndpoint endpoint = 22;
+
+  // AWS-standard DBInstance fields captured from CreateDBInstance and
+  // surfaced in DescribeDBInstance / snapshot creation. proto3 treats
+  // unset scalars as the zero value, so existing serialised records
+  // remain readable (forward compatibility).
+  int32 allocated_storage = 23;
+  string master_username = 24;
+  string storage_type = 25;
+  int32 backup_retention_period = 26;
+  string license_model = 27;
+  bool storage_encrypted = 28;
+  string kms_key_id = 29;
+  bool deletion_protection = 30;
+  bool multi_az = 31;
+  string secondary_availability_zone = 32;
+  int32 port = 33;
+  string option_group_name = 34;
+  string vpc_id = 35;
+  int32 iops = 36;
+  int32 max_allocated_storage = 37;
+  int32 storage_throughput = 38;
+  int32 monitoring_interval = 39;
+  string enhanced_monitoring_resource_arn = 40;
+  bool performance_insights_enabled = 41;
+  string performance_insights_kms_key_id = 42;
+  int32 performance_insights_retention_period = 43;
+  string ca_certificate_identifier = 44;
+  string dbi_resource_id = 45;
+  google.protobuf.Timestamp latest_restorable_time = 46;
+  string preferred_backup_window = 47;
 }
 
 message DBClusterSnapshot {
@@ -103,6 +133,13 @@ message DBClusterSnapshot {
   string region = 14;
   repeated string restore_attribute_values = 15;
   string snapshot_type = 16;
+
+  // AWS-standard DBClusterSnapshot fields captured at snapshot time.
+  string master_username = 17;
+  int32 allocated_storage = 18;
+  string storage_type = 19;
+  string license_model = 20;
+  bool iam_database_authentication_enabled = 21;
 }
 
 message DBClusterParameterGroup {

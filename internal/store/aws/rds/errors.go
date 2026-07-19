@@ -24,4 +24,9 @@ var (
 	ErrEventSubscriptionAlreadyExists       = errors.New("rds: EventSubscription already exists")
 	ErrEventAlreadyExists                   = errors.New("rds: Event already exists")
 	ErrInvalidParameterGroupState           = errors.New("rds: InvalidDBClusterParameterGroupState")
+	// ErrInvalidEventMarker signals that a pagination Marker supplied by the
+	// caller does not correspond to any Event in the store. AWS RDS returns
+	// InvalidParameterValue for unknown markers; surfacing this sentinel
+	// allows admin_handler to translate it accordingly.
+	ErrInvalidEventMarker = errors.New("rds: invalid event marker")
 )

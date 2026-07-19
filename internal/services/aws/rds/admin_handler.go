@@ -5,9 +5,13 @@ package rds
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -75,6 +79,9 @@ func (h *AdminHandler) DescribeDBClusters(ctx context.Context, req *connect.Requ
 		if req.Msg.Dbclusteridentifier != "" && c.DBClusterIdentifier != req.Msg.Dbclusteridentifier {
 			continue
 		}
+		if !applyRDSFilters(req.Msg.Filters, clusterFilterGetter(c)) {
+			continue
+		}
 		pbClusters = append(pbClusters, clusterToPb(c, h.accountId))
 	}
 
@@ -101,6 +108,9 @@ func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Req
 		if req.Msg.Dbinstanceidentifier != "" && i.DBInstanceIdentifier != req.Msg.Dbinstanceidentifier {
 			continue
 		}
+		if !applyRDSFilters(req.Msg.Filters, instanceFilterGetter(i)) {
+			continue
+		}
 		pbInstances = append(pbInstances, instanceToPb(i, h.accountId))
 	}
 
@@ -124,7 +134,17 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 	}
 	engine := req.Msg.Engine
 	if engine == "" {
-		engine = "mysql"
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Engine is required"))
+	}
+	// Reject engines without a registered EngineProvider up front. AWS
+	// accepts a long list of engine values but this platform only wires
+	// concrete backing engines for a subset; the previous flow persisted
+	// the row with status="failed" and leaked the storage entry, which
+	// silently degraded the AWS UX (a real AWS CreateDBInstance with an
+	// unsupported value returns InvalidParameterValue immediately).
+	if _, err := h.engines(engine); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("engine %q is not supported on this platform: %v", engine, err))
 	}
 
 	now := time.Now()
@@ -137,6 +157,7 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		DBInstanceStatus:           "creating",
 		AvailabilityZone:           req.Msg.Availabilityzone,
 		PreferredMaintenanceWindow: req.Msg.Preferredmaintenancewindow,
+		PreferredBackupWindow:      req.Msg.Preferredbackupwindow,
 		DBParameterGroupName:       req.Msg.Dbparametergroupname,
 		DBSubnetGroupName:          req.Msg.Dbsubnetgroupname,
 		PubliclyAccessible:         req.Msg.GetPubliclyaccessible(),
@@ -145,27 +166,83 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		AccountID:                  h.accountId,
 		Region:                     region,
 		DBInstanceArn:              arnutil.NewARNBuilder(h.accountId, region).RDS().DBInstance(id),
+		// DbiResourceId is the AWS Region-unique immutable identifier for
+		// the DB instance. AWS allocates 'db-' + 26 base32 characters; we
+		// generate a 26-character hex token which is functionally
+		// equivalent for our local platform and is surfaced in
+		// DescribeDBInstances, CloudTrail-style logging, and snapshot
+		// lineage. Previously this field was plumbed end-to-end but never
+		// assigned, leaving DescribeDBInstances to return an empty value.
+		DbiResourceId: generateDbiResourceId(),
+
+		// AWS-standard DBInstance parameters (RDS-5/RDS-20). These were
+		// previously dropped even though the UI sends allocatedstorage and
+		// masterusername.
+		AllocatedStorage:                   req.Msg.Allocatedstorage,
+		MasterUsername:                     req.Msg.Masterusername,
+		StorageType:                        req.Msg.Storagetype,
+		BackupRetentionPeriod:              req.Msg.Backupretentionperiod,
+		LicenseModel:                       req.Msg.Licensemodel,
+		StorageEncrypted:                   req.Msg.GetStorageencrypted(),
+		KmsKeyId:                           req.Msg.Kmskeyid,
+		DeletionProtection:                 req.Msg.GetDeletionprotection(),
+		MultiAZ:                            req.Msg.GetMultiaz(),
+		Port:                               req.Msg.Port,
+		OptionGroupName:                    req.Msg.Optiongroupname,
+		Iops:                               req.Msg.Iops,
+		MaxAllocatedStorage:                req.Msg.Maxallocatedstorage,
+		StorageThroughput:                  req.Msg.Storagethroughput,
+		MonitoringInterval:                 req.Msg.Monitoringinterval,
+		EnhancedMonitoringResourceArn:      req.Msg.Monitoringrolearn,
+		PerformanceInsightsEnabled:         req.Msg.GetEnableperformanceinsights(),
+		PerformanceInsightsKMSKeyId:        req.Msg.Performanceinsightskmskeyid,
+		PerformanceInsightsRetentionPeriod: req.Msg.Performanceinsightsretentionperiod,
+		CACertificateIdentifier:            req.Msg.Cacertificateidentifier,
+		CopyTagsToSnapshot:                 req.Msg.GetCopytagstosnapshot(),
+		EnabledCloudwatchLogsExports:       req.Msg.Enablecloudwatchlogsexports,
+		IAMDatabaseAuthenticationEnabled:   req.Msg.GetEnableiamdatabaseauthentication(),
+		VpcSecurityGroupIds:                req.Msg.Vpcsecuritygroupids,
+		DBSecurityGroups:                   req.Msg.Dbsecuritygroups,
 	}
 
 	if err := store.CreateInstance(instance); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// Try to start the engine. If engine.Open succeeds but persisting the
+	// resulting endpoint fails, we must roll back the engine so the
+	// allocated port is released and the system is left in a consistent
+	// state. The instance row stays in the store with status="failed" so
+	// the operator can see what happened and explicitly delete it.
 	engineStarted := false
 	if eng, engErr := h.engines(engine); engErr == nil {
-		if port, openErr := eng.Open(region, id); openErr != nil {
+		port, openErr := eng.Open(region, id)
+		if openErr != nil {
 			logs.Warn("rds-admin: failed to start engine for instance",
 				logs.String("instance", id), logs.Err(openErr))
 		} else {
-			engineStarted = true
 			instance.Endpoint = &storerds.Endpoint{
 				Address: fmt.Sprintf("%s.%s.%s.rds.amazonaws.com", id, h.accountId, region),
 				Port:    port,
 			}
 			if err := store.UpdateInstance(instance); err != nil {
-				logs.Warn("rds-admin: failed to persist instance endpoint",
+				logs.Warn("rds-admin: rolling back engine after UpdateInstance failure",
 					logs.String("instance", id), logs.Err(err))
+				if closeErr := eng.Close(id); closeErr != nil {
+					logs.Warn("rds-admin: engine rollback Close also failed",
+						logs.String("instance", id), logs.Err(closeErr))
+				}
+				instance.Endpoint = nil
+				instance.DBInstanceStatus = "failed"
+				// Best-effort: persist the failed status so the operator
+				// sees the failure rather than the original 'creating'.
+				if persistErr := store.UpdateInstance(instance); persistErr != nil {
+					logs.Warn("rds-admin: failed to persist failed status",
+						logs.String("instance", id), logs.Err(persistErr))
+				}
+				return nil, svcerrors.StoreErrorToGRPC(err)
 			}
+			engineStarted = true
 		}
 	}
 
@@ -175,6 +252,16 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		instance.DBInstanceStatus = "failed"
 	}
 	if err := store.UpdateInstance(instance); err != nil {
+		// Final status update failed; if the engine is still open, release
+		// the port so we don't leak it while leaving the row inconsistent.
+		if engineStarted {
+			if eng, engErr := h.engines(engine); engErr == nil {
+				if closeErr := eng.Close(id); closeErr != nil {
+					logs.Warn("rds-admin: cleanup engine.Close after final UpdateInstance failure",
+						logs.String("instance", id), logs.Err(closeErr))
+				}
+			}
+		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -184,12 +271,15 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 }
 
 // DeleteDBInstance deletes a DB instance and stops its engine if running.
+// If SkipFinalSnapshot is false (the AWS default) the caller must supply
+// FinalDBSnapshotIdentifier; otherwise the request is rejected.
 func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Request[pb.DeleteDBInstanceMessage]) (*connect.Response[pb.DeleteDBInstanceResult], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	region := svccommon.GetRegionFromHeader(req.Header())
 	id := req.Msg.Dbinstanceidentifier
 	if id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBInstanceIdentifier is required"))
@@ -198,6 +288,49 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 	instance, err := store.GetInstance(id)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// AWS default: SkipFinalSnapshot=false means a final snapshot is
+	// required. Reject the request if the caller did not provide a
+	// FinalDBSnapshotIdentifier in that case, mirroring AWS behaviour.
+	if !req.Msg.GetSkipfinalsnapshot() {
+		if req.Msg.Finaldbsnapshotidentifier == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				fmt.Errorf("FinalDBSnapshotIdentifier is required when SkipFinalSnapshot is false"))
+		}
+		finalSnap := &storerds.DBInstanceSnapshot{
+			DBSnapshotIdentifier:   req.Msg.Finaldbsnapshotidentifier,
+			DBInstanceIdentifier:   id,
+			SnapshotCreateTime:     nil,
+			InstanceCreateTime:     instance.InstanceCreateTime,
+			Engine:                 instance.Engine,
+			EngineVersion:          instance.EngineVersion,
+			SnapshotType:           "manual",
+			Status:                 "available",
+			AvailabilityZone:       instance.AvailabilityZone,
+			DBSnapshotArn:          fmt.Sprintf("arn:aws:rds:%s:%s:snapshot:%s", region, h.accountId, req.Msg.Finaldbsnapshotidentifier),
+			IAMDatabaseAuthEnabled: instance.IAMDatabaseAuthenticationEnabled,
+			AccountID:              h.accountId,
+			Region:                 region,
+			AllocatedStorage:       instance.AllocatedStorage,
+			MasterUsername:         instance.MasterUsername,
+			StorageType:            instance.StorageType,
+			LicenseModel:           instance.LicenseModel,
+			StorageEncrypted:       instance.StorageEncrypted,
+			KmsKeyId:               instance.KmsKeyId,
+			OptionGroupName:        instance.OptionGroupName,
+			VpcId:                  instance.VpcId,
+		}
+		if instance.Port > 0 {
+			finalSnap.Port = instance.Port
+		} else if instance.Endpoint != nil {
+			finalSnap.Port = int32(instance.Endpoint.Port)
+		}
+		now := time.Now()
+		finalSnap.SnapshotCreateTime = &now
+		if err := store.CreateInstanceSnapshot(finalSnap); err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
 	}
 
 	if eng, engErr := h.engines(instance.Engine); engErr == nil {
@@ -226,9 +359,20 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 	if id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBClusterIdentifier is required"))
 	}
+	// Per AWS RDS API spec, Engine is required for CreateDBCluster. Valid
+	// values are aurora-mysql, aurora-postgresql, mysql, postgres, neptune.
+	// Defaulting silently masked missing-engine requests as aurora-mysql
+	// clusters that could never actually start (no engine provider registered
+	// for aurora-mysql on this platform).
 	engine := req.Msg.Engine
 	if engine == "" {
-		engine = "aurora-mysql"
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Engine is required"))
+	}
+	// Reject engines without a registered EngineProvider up front. See
+	// CreateDBInstance for the rationale.
+	if _, err := h.engines(engine); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("engine %q is not supported on this platform: %v", engine, err))
 	}
 
 	now := time.Now()
@@ -259,8 +403,56 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	cluster.Status = "available"
+	// Allocate an engine port for the cluster so clients have a usable
+	// Endpoint. This mirrors Neptune's CreateDBCluster behaviour. If the
+	// engine.Open fails the cluster stays in 'creating' status (the
+	// admin_handler does not have a background reconciler to drive async
+	// transitions); if engine.Open succeeds but the subsequent
+	// UpdateCluster fails we roll the port back so it is not leaked.
+	engineStarted := false
+	if eng, engErr := h.engines(engine); engErr == nil {
+		port, openErr := eng.Open(region, id)
+		if openErr != nil {
+			logs.Warn("rds-admin: failed to start engine for cluster",
+				logs.String("cluster", id), logs.Err(openErr))
+		} else {
+			cluster.Endpoint = &storerds.Endpoint{
+				Address: fmt.Sprintf("%s.%s.%s.rds.amazonaws.com", id, h.accountId, region),
+				Port:    port,
+			}
+			if err := store.UpdateCluster(cluster); err != nil {
+				logs.Warn("rds-admin: rolling back cluster engine after UpdateCluster failure",
+					logs.String("cluster", id), logs.Err(err))
+				if closeErr := eng.Close(id); closeErr != nil {
+					logs.Warn("rds-admin: cluster engine rollback Close also failed",
+						logs.String("cluster", id), logs.Err(closeErr))
+				}
+				cluster.Endpoint = nil
+				cluster.Status = "failed"
+				if persistErr := store.UpdateCluster(cluster); persistErr != nil {
+					logs.Warn("rds-admin: failed to persist cluster failed status",
+						logs.String("cluster", id), logs.Err(persistErr))
+				}
+				return nil, svcerrors.StoreErrorToGRPC(err)
+			}
+			engineStarted = true
+		}
+	}
+
+	if engineStarted {
+		cluster.Status = "available"
+	} else {
+		cluster.Status = "failed"
+	}
 	if err := store.UpdateCluster(cluster); err != nil {
+		if engineStarted {
+			if eng, engErr := h.engines(engine); engErr == nil {
+				if closeErr := eng.Close(id); closeErr != nil {
+					logs.Warn("rds-admin: cleanup engine.Close after final cluster UpdateCluster failure",
+						logs.String("cluster", id), logs.Err(closeErr))
+				}
+			}
+		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -270,12 +462,15 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 }
 
 // DeleteDBCluster deletes a DB cluster.
+// If SkipFinalSnapshot is false (the AWS default) the caller must supply
+// FinalDBSnapshotIdentifier; otherwise the request is rejected.
 func (h *AdminHandler) DeleteDBCluster(ctx context.Context, req *connect.Request[pb.DeleteDBClusterMessage]) (*connect.Response[pb.DeleteDBClusterResult], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	region := svccommon.GetRegionFromHeader(req.Header())
 	id := req.Msg.Dbclusteridentifier
 	if id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBClusterIdentifier is required"))
@@ -290,8 +485,60 @@ func (h *AdminHandler) DeleteDBCluster(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("cannot delete cluster when DeletionProtection is enabled"))
 	}
 
+	// AWS default: SkipFinalSnapshot=false means a final snapshot is
+	// required. Reject the request if the caller did not provide a
+	// FinalDBSnapshotIdentifier in that case.
+	if !req.Msg.GetSkipfinalsnapshot() {
+		if req.Msg.Finaldbsnapshotidentifier == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				fmt.Errorf("FinalDBSnapshotIdentifier is required when SkipFinalSnapshot is false"))
+		}
+		now := time.Now()
+		finalSnap := &storerds.DBClusterSnapshot{
+			DBClusterSnapshotIdentifier:      req.Msg.Finaldbsnapshotidentifier,
+			DBClusterIdentifier:              id,
+			SnapshotCreateTime:               &now,
+			Engine:                           cluster.Engine,
+			EngineVersion:                    cluster.EngineVersion,
+			SnapshotType:                     "manual",
+			Status:                           "available",
+			Port:                             cluster.Port,
+			VpcId:                            "",
+			ClusterCreateTime:                cluster.ClusterCreateTime,
+			StorageEncrypted:                 cluster.StorageEncrypted,
+			KmsKeyId:                         cluster.KmsKeyId,
+			DBSnapshotArn:                    fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", region, h.accountId, req.Msg.Finaldbsnapshotidentifier),
+			AccountID:                        h.accountId,
+			Region:                           region,
+			MasterUsername:                   cluster.MasterUsername,
+			AllocatedStorage:                 0,
+			StorageType:                      cluster.StorageType,
+			LicenseModel:                     "",
+			IAMDatabaseAuthenticationEnabled: cluster.IAMDatabaseAuthenticationEnabled,
+		}
+		if err := store.CreateSnapshot(finalSnap); err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
+	}
+
 	cluster.Status = "deleting"
-	_ = store.UpdateCluster(cluster)
+	if err := store.UpdateCluster(cluster); err != nil {
+		// Persisting the "deleting" status is best-effort — if Pebble is
+		// unavailable the deletion itself will also fail on the next call,
+		// so log the warning and surface the underlying error to the caller
+		// rather than silently proceeding with an inconsistent view.
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// Release the engine backing the cluster, mirroring DeleteDBInstance.
+	// CreateDBCluster opened the engine via eng.Open(region, id); without
+	// a matching Close the allocated port and goroutine state leak.
+	if eng, engErr := h.engines(cluster.Engine); engErr == nil {
+		if closeErr := eng.Close(id); closeErr != nil {
+			logs.Warn("rds-admin: engine.Close failed during DeleteDBCluster",
+				logs.String("cluster", id), logs.Err(closeErr))
+		}
+	}
 
 	if err := store.DeleteCluster(id); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
@@ -323,6 +570,12 @@ func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *conn
 		if req.Msg.Dbclusteridentifier != "" && s.DBClusterIdentifier != req.Msg.Dbclusteridentifier {
 			continue
 		}
+		if req.Msg.Snapshottype != "" && s.SnapshotType != req.Msg.Snapshottype {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, clusterSnapshotFilterGetter(s)) {
+			continue
+		}
 		pbSnapshots = append(pbSnapshots, snapshotToPb(s, h.accountId))
 	}
 
@@ -347,6 +600,9 @@ func (h *AdminHandler) DescribeDBClusterParameterGroups(ctx context.Context, req
 	pbGroups := make([]*pb.DBClusterParameterGroup, 0, len(groups))
 	for _, g := range groups {
 		if req.Msg.Dbclusterparametergroupname != "" && g.DBClusterParameterGroupName != req.Msg.Dbclusterparametergroupname {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, clusterParamGroupFilterGetter(g)) {
 			continue
 		}
 		pbGroups = append(pbGroups, clusterParamGroupToPb(g))
@@ -375,6 +631,9 @@ func (h *AdminHandler) DescribeDBParameterGroups(ctx context.Context, req *conne
 		if req.Msg.Dbparametergroupname != "" && g.DBParameterGroupName != req.Msg.Dbparametergroupname {
 			continue
 		}
+		if !applyRDSFilters(req.Msg.Filters, paramGroupFilterGetter(g)) {
+			continue
+		}
 		pbGroups = append(pbGroups, paramGroupToPb(g))
 	}
 
@@ -399,6 +658,9 @@ func (h *AdminHandler) DescribeDBSubnetGroups(ctx context.Context, req *connect.
 	pbGroups := make([]*pb.DBSubnetGroup, 0, len(groups))
 	for _, g := range groups {
 		if req.Msg.Dbsubnetgroupname != "" && g.DBSubnetGroupName != req.Msg.Dbsubnetgroupname {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, subnetGroupFilterGetter(g)) {
 			continue
 		}
 		pbGroups = append(pbGroups, subnetGroupToPb(g))
@@ -427,6 +689,9 @@ func (h *AdminHandler) DescribeGlobalClusters(ctx context.Context, req *connect.
 		if req.Msg.Globalclusteridentifier != "" && c.GlobalClusterIdentifier != req.Msg.Globalclusteridentifier {
 			continue
 		}
+		if !applyRDSFilters(req.Msg.Filters, globalClusterFilterGetter(c)) {
+			continue
+		}
 		pbClusters = append(pbClusters, globalClusterToPb(c))
 	}
 
@@ -451,6 +716,9 @@ func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *conn
 	pbSubs := make([]*pb.EventSubscription, 0, len(subs))
 	for _, s := range subs {
 		if req.Msg.Subscriptionname != "" && s.CustSubscriptionId != req.Msg.Subscriptionname {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, eventSubscriptionFilterGetter(s)) {
 			continue
 		}
 		pbSubs = append(pbSubs, eventSubscriptionToPb(s))
@@ -588,43 +856,220 @@ func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect
 	}), nil
 }
 
-// DescribeEvents returns RDS events from the per-region store.
+// DescribeEvents returns RDS events from the per-region store. All AWS-spec
+// filter parameters (SourceType, SourceIdentifier, StartTime, EndTime,
+// Duration, EventCategories, Marker, MaxRecords) are honoured; an unknown
+// SourceType value is rejected with InvalidArgument rather than silently
+// collapsing to a default.
 func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[pb.DescribeEventsMessage]) (*connect.Response[pb.EventsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
-	result, err := store.ListEvents(storerds.EventListOptions{})
+
+	// AWS RDS DescribeEvents explicitly does NOT support Filters per the
+	// API reference ("This parameter isn't currently supported."). The
+	// proto carries the field because the Smithy model includes Filter
+	// generically on every paginated operation; silently ignoring it
+	// matches AWS behaviour. SourceIdentifier / SourceType /
+	// EventCategories / StartTime / EndTime / Duration are the supported
+	// selectors and are honoured below.
+	if len(req.Msg.Filters) > 0 {
+		logs.Warn("rds-admin: DescribeEvents ignores Filters (not supported by AWS RDS)")
+	}
+
+	sourceType, err := sourceTypeToString(req.Msg.Sourcetype)
 	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	var startTime time.Time
+	if st := req.Msg.Starttime; st != "" {
+		startTime, err = time.Parse(time.RFC3339, st)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid StartTime: %v", err))
+		}
+	}
+	var endTime time.Time
+	if et := req.Msg.Endtime; et != "" {
+		endTime, err = time.Parse(time.RFC3339, et)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid EndTime: %v", err))
+		}
+	}
+	// AWS RDS Duration is in minutes and pairs with StartTime to derive an
+	// implied end-of-window. An explicit EndTime overrides Duration.
+	if req.Msg.Duration > 0 && !startTime.IsZero() && endTime.IsZero() {
+		endTime = startTime.Add(time.Duration(req.Msg.Duration) * time.Minute)
+	}
+
+	// AWS RDS DescribeEvents MaxRecords constraints: min 20, max 100,
+	// default 100. Clamp explicitly so callers passing 1 or 1000 still
+	// receive a valid page rather than the raw value.
+	maxRecords := int(req.Msg.Maxrecords)
+	if maxRecords == 0 {
+		maxRecords = 100
+	} else if maxRecords < 20 {
+		maxRecords = 20
+	} else if maxRecords > 100 {
+		maxRecords = 100
+	}
+
+	opts := storerds.EventListOptions{
+		SourceType:       sourceType,
+		SourceIdentifier: req.Msg.Sourceidentifier,
+		StartTime:        startTime,
+		EndTime:          endTime,
+		EventCategories:  req.Msg.Eventcategories,
+		Marker:           req.Msg.Marker,
+		MaxRecords:       maxRecords,
+	}
+
+	result, err := store.ListEvents(opts)
+	if err != nil {
+		if errors.Is(err, storerds.ErrInvalidEventMarker) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid Marker: %s", req.Msg.Marker))
+		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
+
 	events := make([]*pb.Event, 0, len(result.Events))
 	for _, evt := range result.Events {
-		var sourceType pb.SourceType
-		switch evt.SourceType {
-		case "db-cluster":
-			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER
-		case "db-instance":
-			sourceType = pb.SourceType_SOURCE_TYPE_DB_INSTANCE
-		case "db-snapshot":
-			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER_SNAPSHOT
-		case "db-parameter-group":
-			sourceType = pb.SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP
-		default:
-			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER
+		// stringToSourceType now returns an error on unknown values
+		// rather than silently remapping to BLUE_GREEN_DEPLOYMENT.
+		// RecordEvent rejects unknowns at write time so a healthy system
+		// never hits this branch, but a corrupted legacy row could; log
+		// and skip the row rather than fail the whole response.
+		st, stErr := stringToSourceType(evt.SourceType)
+		if stErr != nil {
+			logs.Warn("rds-admin: skipping event with unknown SourceType",
+				logs.String("event_id", evt.EventID),
+				logs.String("source_type", evt.SourceType),
+				logs.Err(stErr))
+			continue
 		}
 		events = append(events, &pb.Event{
 			Date:             evt.Date.UTC().Format(timeutils.ISO8601UTCFormat),
 			Message:          evt.Message,
 			Sourcearn:        evt.SourceArn,
 			Sourceidentifier: evt.SourceIdentifier,
-			Sourcetype:       sourceType,
+			Sourcetype:       st,
 			Eventcategories:  evt.EventCategories,
 		})
 	}
-	return connect.NewResponse(&pb.EventsMessage{
-		Events: events,
-	}), nil
+
+	resp := &pb.EventsMessage{Events: events}
+	if result.IsTruncated && result.Marker != "" {
+		resp.Marker = result.Marker
+	}
+	return connect.NewResponse(resp), nil
+}
+
+// generateDbiResourceId allocates an AWS-shaped DB instance resource id
+// ('db-' + 26 hex characters). AWS itself uses base32 but the wire format
+// is opaque to clients and SDK tests do not assert the alphabet; hex is
+// sufficient and avoids pulling in a base32 implementation with the
+// required alphabet restrictions.
+func generateDbiResourceId() string {
+	b := make([]byte, 13) // 13 bytes -> 26 hex chars
+	if _, err := rand.Read(b); err != nil {
+		// crypto/rand.Read failing indicates a broken system RNG; fail
+		// loud rather than fabricate a deterministic id.
+		panic(fmt.Sprintf("crypto/rand.Read failed for DbiResourceId: %v", err))
+	}
+	return "db-" + hex.EncodeToString(b)
+}
+
+// sourceTypeToString converts the proto SourceType enum to the lowercase
+// AWS wire string ("db-instance", "db-cluster", ...) used by the store filter.
+//
+// Proto3 zero-value ambiguity: SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT == 0 is the
+// enum's zero value. The proto3 wire format cannot distinguish "unset" from
+// "explicitly zero", so any caller that omits SourceType (the common case
+// for "list all events") delivers 0 to the server. We therefore treat 0 as
+// the wildcard sentinel and return "" — matching the pre-L-3 behaviour and
+// the AWS DescribeEvents API contract (omit SourceType => events of every
+// source type).
+//
+// Consequence: clients cannot filter exclusively for blue-green-deployment
+// events via the proto enum, because wire value 0 is reserved for "unset".
+// AWS's own string-typed wire protocol does not suffer this limitation; the
+// proto3 enum mapping introduces the ambiguity. The proper fix is to add
+// SOURCE_TYPE_UNSPECIFIED = 0 to the proto and renumber
+// BLUE_GREEN_DEPLOYMENT to a non-zero slot — a proto-breaking change
+// deferred to a separate batch (see audit/gap-rds-shared memory).
+func sourceTypeToString(st pb.SourceType) (string, error) {
+	switch st {
+	case pb.SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP:
+		return "db-parameter-group", nil
+	case pb.SourceType_SOURCE_TYPE_DB_SHARD_GROUP:
+		return "db-shard-group", nil
+	case pb.SourceType_SOURCE_TYPE_CUSTOM_ENGINE_VERSION:
+		return "custom-engine-version", nil
+	case pb.SourceType_SOURCE_TYPE_DB_PROXY:
+		return "db-proxy", nil
+	case pb.SourceType_SOURCE_TYPE_DB_INSTANCE:
+		return "db-instance", nil
+	case pb.SourceType_SOURCE_TYPE_ZERO_ETL:
+		return "zero-etl", nil
+	case pb.SourceType_SOURCE_TYPE_DB_CLUSTER:
+		return "db-cluster", nil
+	case pb.SourceType_SOURCE_TYPE_DB_SECURITY_GROUP:
+		return "db-security-group", nil
+	case pb.SourceType_SOURCE_TYPE_DB_CLUSTER_SNAPSHOT:
+		return "db-cluster-snapshot", nil
+	case pb.SourceType_SOURCE_TYPE_DB_SNAPSHOT:
+		return "db-snapshot", nil
+	default:
+		// Includes SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT (= 0), which is the
+		// proto3 zero value. Callers cannot distinguish "unset" from
+		// "explicitly blue-green-deployment" on the wire, so treat both
+		// as the wildcard and return "". Any other unmapped value is a
+		// programming error and is surfaced.
+		if st == 0 {
+			return "", nil
+		}
+		return "", fmt.Errorf("unsupported SourceType: %d", st)
+	}
+}
+
+// stringToSourceType is the inverse of sourceTypeToString. Unknown
+// strings return an error rather than being silently remapped to a real
+// category — previously unknowns were mapped to SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT,
+// the proto3 zero value, which fabricated audit data because the zero
+// value is a *real* AWS source type and not a sentinel.
+//
+// RecordEvent rejects unknown values at write time, so a healthy system
+// should never hit this error at read time. DescribeEvents logs and
+// skips any event that does, which keeps the response honest without
+// failing the whole request for a single corrupted row.
+func stringToSourceType(s string) (pb.SourceType, error) {
+	switch s {
+	case "blue-green-deployment":
+		return pb.SourceType_SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT, nil
+	case "db-parameter-group":
+		return pb.SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP, nil
+	case "db-shard-group":
+		return pb.SourceType_SOURCE_TYPE_DB_SHARD_GROUP, nil
+	case "custom-engine-version":
+		return pb.SourceType_SOURCE_TYPE_CUSTOM_ENGINE_VERSION, nil
+	case "db-proxy":
+		return pb.SourceType_SOURCE_TYPE_DB_PROXY, nil
+	case "db-instance":
+		return pb.SourceType_SOURCE_TYPE_DB_INSTANCE, nil
+	case "zero-etl":
+		return pb.SourceType_SOURCE_TYPE_ZERO_ETL, nil
+	case "db-cluster":
+		return pb.SourceType_SOURCE_TYPE_DB_CLUSTER, nil
+	case "db-security-group":
+		return pb.SourceType_SOURCE_TYPE_DB_SECURITY_GROUP, nil
+	case "db-cluster-snapshot":
+		return pb.SourceType_SOURCE_TYPE_DB_CLUSTER_SNAPSHOT, nil
+	case "db-snapshot":
+		return pb.SourceType_SOURCE_TYPE_DB_SNAPSHOT, nil
+	default:
+		return 0, fmt.Errorf("unsupported SourceType string: %q", s)
+	}
 }
 
 // DescribePendingMaintenanceActions returns pending maintenance actions.
@@ -723,6 +1168,56 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 	}), nil
 }
 
+// defaultClusterParamsForFamily returns the system-default parameters
+// appropriate for a given DB parameter group family. The admin handler
+// previously hard-coded Neptune defaults even when describing MySQL
+// parameter groups, returning nonsensical `neptune_query_timeout` values
+// for clusters that could never honour them.
+func defaultClusterParamsForFamily(family string) []struct{ name, value, desc, source, apply, dtype, modifiable string } {
+	switch {
+	case strings.HasPrefix(family, "neptune"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"neptune_query_timeout", "120000", "Query execution timeout in milliseconds", "system", "dynamic", "integer", "true"},
+			{"neptune_enable_audit_log", "0", "Enable audit logging", "system", "static", "boolean", "true"},
+		}
+	case strings.HasPrefix(family, "mysql"), strings.HasPrefix(family, "aurora-mysql"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"character_set_server", "utf8mb4", "Default server character set", "system", "dynamic", "string", "true"},
+			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+		}
+	case strings.HasPrefix(family, "postgres"), strings.HasPrefix(family, "aurora-postgresql"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"max_connections", "100", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+			{"shared_buffers", "128", "Shared buffer pool size in 8KB pages", "system", "static", "integer", "false"},
+		}
+	default:
+		return nil
+	}
+}
+
+// defaultInstanceParamsForFamily mirrors defaultClusterParamsForFamily but
+// for the per-instance DB parameter group.
+func defaultInstanceParamsForFamily(family string) []struct{ name, value, desc, source, apply, dtype, modifiable string } {
+	switch {
+	case strings.HasPrefix(family, "neptune"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"neptune_query_timeout", "120000", "Query execution timeout", "system", "dynamic", "integer", "true"},
+		}
+	case strings.HasPrefix(family, "mysql"), strings.HasPrefix(family, "aurora-mysql"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+		}
+	case strings.HasPrefix(family, "postgres"), strings.HasPrefix(family, "aurora-postgresql"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"max_connections", "100", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+		}
+	default:
+		return nil
+	}
+}
+
 // DescribeDBClusterParameters returns the parameters of a DB cluster parameter
 // group, including system defaults and user modifications.
 func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeDBClusterParametersMessage]) (*connect.Response[pb.DBClusterParameterGroupDetails], error) {
@@ -735,10 +1230,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
-	defaultParams := []struct{ name, value, desc, source, apply, dtype, modifiable string }{
-		{"neptune_query_timeout", "120000", "Query execution timeout in milliseconds", "system", "dynamic", "integer", "true"},
-		{"neptune_enable_audit_log", "0", "Enable audit logging", "system", "static", "boolean", "true"},
-	}
+	defaultParams := defaultClusterParamsForFamily(pg.DBParameterGroupFamily)
 	userMods := make(map[string]storerds.Parameter, len(pg.Parameters))
 	for _, p := range pg.Parameters {
 		userMods[p.ParameterName] = p
@@ -799,9 +1291,7 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
-	defaultParams := []struct{ name, value, desc, source, apply, dtype, modifiable string }{
-		{"neptune_query_timeout", "120000", "Query execution timeout", "system", "dynamic", "integer", "true"},
-	}
+	defaultParams := defaultInstanceParamsForFamily(pg.DBParameterGroupFamily)
 	userMods := make(map[string]storerds.Parameter, len(pg.Parameters))
 	for _, p := range pg.Parameters {
 		userMods[p.ParameterName] = p
@@ -854,13 +1344,25 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 // DescribeEngineDefaultClusterParameters returns the default engine parameters
 // for a cluster parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultClusterParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultClusterParametersResult], error) {
+	family := req.Msg.Dbparametergroupfamily
+	pbParams := make([]*pb.Parameter, 0, 4)
+	for _, dp := range defaultClusterParamsForFamily(family) {
+		pbParams = append(pbParams, &pb.Parameter{
+			Parametername:  dp.name,
+			Parametervalue: dp.value,
+			Description:    dp.desc,
+			Source:         dp.source,
+			Applytype:      dp.apply,
+			Datatype:       dp.dtype,
+			Ismodifiable:   proto.Bool(dp.modifiable == "true"),
+		})
+	}
+	sort.Slice(pbParams, func(i, j int) bool { return pbParams[i].Parametername < pbParams[j].Parametername })
+
 	return connect.NewResponse(&pb.DescribeEngineDefaultClusterParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: "neptune1",
-			Parameters: []*pb.Parameter{
-				{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout in milliseconds", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: proto.Bool(true)},
-				{Parametername: "neptune_enable_audit_log", Parametervalue: "0", Description: "Enable audit logging", Source: "system", Applytype: "static", Datatype: "boolean", Ismodifiable: proto.Bool(true)},
-			},
+			Dbparametergroupfamily: family,
+			Parameters:             pbParams,
 		},
 	}), nil
 }
@@ -868,12 +1370,25 @@ func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Contex
 // DescribeEngineDefaultParameters returns the default engine parameters for a
 // DB parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultParametersResult], error) {
+	family := req.Msg.Dbparametergroupfamily
+	pbParams := make([]*pb.Parameter, 0, 4)
+	for _, dp := range defaultInstanceParamsForFamily(family) {
+		pbParams = append(pbParams, &pb.Parameter{
+			Parametername:  dp.name,
+			Parametervalue: dp.value,
+			Description:    dp.desc,
+			Source:         dp.source,
+			Applytype:      dp.apply,
+			Datatype:       dp.dtype,
+			Ismodifiable:   proto.Bool(dp.modifiable == "true"),
+		})
+	}
+	sort.Slice(pbParams, func(i, j int) bool { return pbParams[i].Parametername < pbParams[j].Parametername })
+
 	return connect.NewResponse(&pb.DescribeEngineDefaultParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: "neptune1",
-			Parameters: []*pb.Parameter{
-				{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: proto.Bool(true)},
-			},
+			Dbparametergroupfamily: family,
+			Parameters:             pbParams,
 		},
 	}), nil
 }
@@ -930,29 +1445,68 @@ func clusterToPb(c *storerds.DBCluster, accountId string) *pb.DBCluster {
 			Status:      r.Status,
 		})
 	}
+	if c.Endpoint != nil {
+		// AWS DBCluster.Endpoint is a host:port writer DNS string; the
+		// admin handler exposes the same shape so the UI can render a
+		// connectable address. ReaderEndpoint mirrors the writer endpoint
+		// for single-node clusters created via the admin console.
+		endpointStr := c.Endpoint.Address
+		if c.Endpoint.Port > 0 {
+			endpointStr = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
+		}
+		p.Endpoint = endpointStr
+		p.Readerendpoint = endpointStr
+	}
 	return p
 }
 
 // instanceToPb converts a domain DBInstance to the RDS API protobuf DBInstance.
 func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 	p := &pb.DBInstance{
-		Dbinstanceidentifier:             i.DBInstanceIdentifier,
-		Dbclusteridentifier:              i.DBClusterIdentifier,
-		Engine:                           i.Engine,
-		Engineversion:                    i.EngineVersion,
-		Dbinstanceclass:                  i.DBInstanceClass,
-		Dbinstancestatus:                 i.DBInstanceStatus,
-		Availabilityzone:                 i.AvailabilityZone,
-		Preferredmaintenancewindow:       i.PreferredMaintenanceWindow,
-		Enabledcloudwatchlogsexports:     i.EnabledCloudwatchLogsExports,
-		Iamdatabaseauthenticationenabled: proto.Bool(i.IAMDatabaseAuthenticationEnabled),
-		Publiclyaccessible:               proto.Bool(i.PubliclyAccessible),
-		Autominorversionupgrade:          proto.Bool(i.AutoMinorVersionUpgrade),
-		Copytagstosnapshot:               proto.Bool(i.CopyTagsToSnapshot),
-		Dbinstancearn:                    i.DBInstanceArn,
+		Dbinstanceidentifier:               i.DBInstanceIdentifier,
+		Dbclusteridentifier:                i.DBClusterIdentifier,
+		Engine:                             i.Engine,
+		Engineversion:                      i.EngineVersion,
+		Dbinstanceclass:                    i.DBInstanceClass,
+		Dbinstancestatus:                   i.DBInstanceStatus,
+		Availabilityzone:                   i.AvailabilityZone,
+		Preferredmaintenancewindow:         i.PreferredMaintenanceWindow,
+		Preferredbackupwindow:              i.PreferredBackupWindow,
+		Enabledcloudwatchlogsexports:       i.EnabledCloudwatchLogsExports,
+		Iamdatabaseauthenticationenabled:   proto.Bool(i.IAMDatabaseAuthenticationEnabled),
+		Publiclyaccessible:                 proto.Bool(i.PubliclyAccessible),
+		Autominorversionupgrade:            proto.Bool(i.AutoMinorVersionUpgrade),
+		Copytagstosnapshot:                 proto.Bool(i.CopyTagsToSnapshot),
+		Dbinstancearn:                      i.DBInstanceArn,
+		Allocatedstorage:                   i.AllocatedStorage,
+		Masterusername:                     i.MasterUsername,
+		Storagetype:                        i.StorageType,
+		Backupretentionperiod:              i.BackupRetentionPeriod,
+		Licensemodel:                       i.LicenseModel,
+		Storageencrypted:                   proto.Bool(i.StorageEncrypted),
+		Kmskeyid:                           i.KmsKeyId,
+		Deletionprotection:                 proto.Bool(i.DeletionProtection),
+		Multiaz:                            proto.Bool(i.MultiAZ),
+		Secondaryavailabilityzone:          i.SecondaryAvailabilityZone,
+		Iops:                               i.Iops,
+		Maxallocatedstorage:                i.MaxAllocatedStorage,
+		Storagethroughput:                  i.StorageThroughput,
+		Monitoringinterval:                 i.MonitoringInterval,
+		Enhancedmonitoringresourcearn:      i.EnhancedMonitoringResourceArn,
+		Performanceinsightsenabled:         proto.Bool(i.PerformanceInsightsEnabled),
+		Performanceinsightskmskeyid:        i.PerformanceInsightsKMSKeyId,
+		Performanceinsightsretentionperiod: i.PerformanceInsightsRetentionPeriod,
+		Cacertificateidentifier:            i.CACertificateIdentifier,
+		Dbiresourceid:                      i.DbiResourceId,
+		Dbinstanceport:                     i.Port,
+		Vpcsecuritygroups:                  vpcSecurityGroupsToPb(i.VpcSecurityGroupIds),
+		Optiongroupmemberships:             optionGroupMembershipsToPb(i.OptionGroupName),
 	}
 	if i.InstanceCreateTime != nil {
 		p.Instancecreatetime = i.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat)
+	}
+	if i.LatestRestorableTime != nil {
+		p.Latestrestorabletime = i.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	if i.Endpoint != nil {
 		p.Endpoint = &pb.Endpoint{
@@ -961,6 +1515,210 @@ func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 		}
 	}
 	return p
+}
+
+// vpcSecurityGroupsToPb converts a list of VPC security group IDs to the
+// RDS API protobuf VpcSecurityGroupMembership shape. Status is reported as
+// "active" to match the Neptune handler's convention.
+func vpcSecurityGroupsToPb(ids []string) []*pb.VpcSecurityGroupMembership {
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make([]*pb.VpcSecurityGroupMembership, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, &pb.VpcSecurityGroupMembership{
+			Vpcsecuritygroupid: id,
+			Status:             "active",
+		})
+	}
+	return out
+}
+
+// optionGroupMembershipsToPb wraps a single option-group name into the
+// AWS-standard OptionGroupMembership list shape with "in-sync" status.
+func optionGroupMembershipsToPb(name string) []*pb.OptionGroupMembership {
+	if name == "" {
+		return nil
+	}
+	return []*pb.OptionGroupMembership{
+		{Optiongroupname: name, Status: "in-sync"},
+	}
+}
+
+// applyRDSFilters reports whether a candidate resource matches every filter
+// in the supplied list. A resource matches a single filter when the value
+// returned by getter(name) is equal (case-insensitive) to at least one of
+// the filter's Values; an empty filter list matches everything.
+//
+// Semantics mirror AWS RDS: OR within a single filter's Values, AND across
+// multiple filters. Unknown filter names cause the resource to be excluded
+// rather than silently matching.
+func applyRDSFilters(filters []*pb.Filter, getter func(name string) (string, bool)) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	for _, f := range filters {
+		if f == nil {
+			continue
+		}
+		v, ok := getter(f.Name)
+		if !ok {
+			return false
+		}
+		matched := false
+		for _, want := range f.Values {
+			if strings.EqualFold(v, want) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
+}
+
+// clusterFilterGetter returns the value for the supplied AWS RDS filter name
+// against a DBCluster. Supported filter names: db-cluster-id, engine,
+// db-cluster-parameter-group-name, db-subnet-group-name.
+func clusterFilterGetter(c *storerds.DBCluster) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-cluster-id":
+			return c.DBClusterIdentifier, true
+		case "engine":
+			return c.Engine, true
+		case "db-cluster-parameter-group-name":
+			return c.DBClusterParameterGroupName, true
+		case "db-subnet-group-name":
+			return c.DBSubnetGroupName, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// instanceFilterGetter returns the value for the supplied AWS RDS filter name
+// against a DBInstance. Supported filter names: db-instance-id, engine,
+// db-parameter-group-name, db-cluster-id.
+func instanceFilterGetter(i *storerds.DBInstance) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-instance-id":
+			return i.DBInstanceIdentifier, true
+		case "engine":
+			return i.Engine, true
+		case "db-parameter-group-name":
+			return i.DBParameterGroupName, true
+		case "db-cluster-id":
+			return i.DBClusterIdentifier, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// clusterSnapshotFilterGetter returns the value for the supplied AWS RDS
+// filter name against a DBClusterSnapshot. Supported filter names:
+// db-cluster-snapshot-id, db-cluster-id, engine, snapshot-type.
+func clusterSnapshotFilterGetter(s *storerds.DBClusterSnapshot) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-cluster-snapshot-id":
+			return s.DBClusterSnapshotIdentifier, true
+		case "db-cluster-id":
+			return s.DBClusterIdentifier, true
+		case "engine":
+			return s.Engine, true
+		case "snapshot-type":
+			return s.SnapshotType, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// instanceSnapshotFilterGetter returns the value for the supplied AWS RDS
+// filter name against a DBInstanceSnapshot. Supported filter names:
+// db-snapshot-id, db-instance-id, engine, snapshot-type.
+func instanceSnapshotFilterGetter(s *storerds.DBInstanceSnapshot) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-snapshot-id":
+			return s.DBSnapshotIdentifier, true
+		case "db-instance-id":
+			return s.DBInstanceIdentifier, true
+		case "engine":
+			return s.Engine, true
+		case "snapshot-type":
+			return s.SnapshotType, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// clusterParamGroupFilterGetter supports db-cluster-parameter-group-name.
+func clusterParamGroupFilterGetter(g *storerds.DBClusterParameterGroup) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-cluster-parameter-group-name":
+			return g.DBClusterParameterGroupName, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// paramGroupFilterGetter supports db-parameter-group-name.
+func paramGroupFilterGetter(g *storerds.DBParameterGroup) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-parameter-group-name":
+			return g.DBParameterGroupName, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// subnetGroupFilterGetter supports db-subnet-group-name.
+func subnetGroupFilterGetter(g *storerds.DBSubnetGroup) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-subnet-group-name":
+			return g.DBSubnetGroupName, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// globalClusterFilterGetter supports global-cluster-id and engine.
+func globalClusterFilterGetter(c *storerds.GlobalCluster) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "global-cluster-id":
+			return c.GlobalClusterIdentifier, true
+		case "engine":
+			return c.Engine, true
+		default:
+			return "", false
+		}
+	}
+}
+
+// eventSubscriptionFilterGetter supports event-subscription-id.
+func eventSubscriptionFilterGetter(s *storerds.EventSubscription) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "event-subscription-id":
+			return s.CustSubscriptionId, true
+		default:
+			return "", false
+		}
+	}
 }
 
 // snapshotToPb converts a domain DBClusterSnapshot to the RDS API protobuf type.
@@ -1126,6 +1884,10 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 	}
 
 	now := time.Now()
+	// NOTE: arnutil.RDS().Snapshot() currently produces 'snapshot/<id>' but
+	// the AWS RDS ARN format uses a colon separator ('snapshot:<id>'). Until
+	// arnutil.RDSBuilder is fixed to match the AWS spec, the existing
+	// fmt.Sprintf is retained to preserve AWS-correct ARN output here.
 	arn := fmt.Sprintf("arn:aws:rds:%s:%s:snapshot:%s", region, h.accountId, snapshotID)
 	snap := &storerds.DBInstanceSnapshot{
 		DBSnapshotIdentifier:   snapshotID,
@@ -1141,10 +1903,44 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 		IAMDatabaseAuthEnabled: instance.IAMDatabaseAuthenticationEnabled,
 		AccountID:              h.accountId,
 		Region:                 region,
+
+		// AWS-standard DBSnapshot fields captured from the source instance.
+		// Previously only Engine/EngineVersion/AZ/IAM were copied, so
+		// RestoreDBInstanceFromDBSnapshot could not reconstruct storage
+		// shape, master username, port, encryption key, etc.
+		AllocatedStorage: instance.AllocatedStorage,
+		MasterUsername:   instance.MasterUsername,
+		StorageType:      instance.StorageType,
+		LicenseModel:     instance.LicenseModel,
+		StorageEncrypted: instance.StorageEncrypted,
+		KmsKeyId:         instance.KmsKeyId,
+		OptionGroupName:  instance.OptionGroupName,
+		VpcId:            instance.VpcId,
+	}
+	// Port: prefer the explicit Port field; fall back to Endpoint.Port for
+	// instances that only carry the listener endpoint.
+	if instance.Port > 0 {
+		snap.Port = instance.Port
+	} else if instance.Endpoint != nil {
+		snap.Port = int32(instance.Endpoint.Port)
 	}
 
 	if err := store.CreateInstanceSnapshot(snap); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// AWS: when the source instance has CopyTagsToSnapshot=true, the
+	// instance's tags are copied to the snapshot. Use the same Pebble tag
+	// bucket so the snapshot's TagList reflects the source instance.
+	if instance.CopyTagsToSnapshot && instance.DBInstanceArn != "" {
+		if tags, terr := store.GetTags(instance.DBInstanceArn); terr == nil && len(tags) > 0 {
+			snap.TagList = tags
+			// Re-put the snapshot to persist the tag list we just attached.
+			if uerr := store.UpdateInstanceSnapshot(snap); uerr != nil {
+				logs.Warn("rds-admin: failed to persist CopyTagsToSnapshot on snapshot",
+					logs.String("snapshot", snapshotID), logs.Err(uerr))
+			}
+		}
 	}
 
 	return connect.NewResponse(&pb.CreateDBSnapshotResult{
@@ -1173,6 +1969,9 @@ func (h *AdminHandler) DescribeDBSnapshots(ctx context.Context, req *connect.Req
 			continue
 		}
 		if req.Msg.Snapshottype != "" && s.SnapshotType != req.Msg.Snapshottype {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, instanceSnapshotFilterGetter(s)) {
 			continue
 		}
 		pbSnapshots = append(pbSnapshots, dbSnapshotToPb(s, h.accountId))

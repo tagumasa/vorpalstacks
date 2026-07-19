@@ -510,8 +510,37 @@ type DBInstance struct {
 	Region                          string                 `protobuf:"bytes,20,opt,name=region,proto3" json:"region,omitempty"`
 	DbInstanceArn                   string                 `protobuf:"bytes,21,opt,name=db_instance_arn,json=dbInstanceArn,proto3" json:"db_instance_arn,omitempty"`
 	Endpoint                        *ClusterEndpoint       `protobuf:"bytes,22,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	// AWS-standard DBInstance fields captured from CreateDBInstance and
+	// surfaced in DescribeDBInstance / snapshot creation. proto3 treats
+	// unset scalars as the zero value, so existing serialised records
+	// remain readable (forward compatibility).
+	AllocatedStorage                   int32                  `protobuf:"varint,23,opt,name=allocated_storage,json=allocatedStorage,proto3" json:"allocated_storage,omitempty"`
+	MasterUsername                     string                 `protobuf:"bytes,24,opt,name=master_username,json=masterUsername,proto3" json:"master_username,omitempty"`
+	StorageType                        string                 `protobuf:"bytes,25,opt,name=storage_type,json=storageType,proto3" json:"storage_type,omitempty"`
+	BackupRetentionPeriod              int32                  `protobuf:"varint,26,opt,name=backup_retention_period,json=backupRetentionPeriod,proto3" json:"backup_retention_period,omitempty"`
+	LicenseModel                       string                 `protobuf:"bytes,27,opt,name=license_model,json=licenseModel,proto3" json:"license_model,omitempty"`
+	StorageEncrypted                   bool                   `protobuf:"varint,28,opt,name=storage_encrypted,json=storageEncrypted,proto3" json:"storage_encrypted,omitempty"`
+	KmsKeyId                           string                 `protobuf:"bytes,29,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
+	DeletionProtection                 bool                   `protobuf:"varint,30,opt,name=deletion_protection,json=deletionProtection,proto3" json:"deletion_protection,omitempty"`
+	MultiAz                            bool                   `protobuf:"varint,31,opt,name=multi_az,json=multiAz,proto3" json:"multi_az,omitempty"`
+	SecondaryAvailabilityZone          string                 `protobuf:"bytes,32,opt,name=secondary_availability_zone,json=secondaryAvailabilityZone,proto3" json:"secondary_availability_zone,omitempty"`
+	Port                               int32                  `protobuf:"varint,33,opt,name=port,proto3" json:"port,omitempty"`
+	OptionGroupName                    string                 `protobuf:"bytes,34,opt,name=option_group_name,json=optionGroupName,proto3" json:"option_group_name,omitempty"`
+	VpcId                              string                 `protobuf:"bytes,35,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty"`
+	Iops                               int32                  `protobuf:"varint,36,opt,name=iops,proto3" json:"iops,omitempty"`
+	MaxAllocatedStorage                int32                  `protobuf:"varint,37,opt,name=max_allocated_storage,json=maxAllocatedStorage,proto3" json:"max_allocated_storage,omitempty"`
+	StorageThroughput                  int32                  `protobuf:"varint,38,opt,name=storage_throughput,json=storageThroughput,proto3" json:"storage_throughput,omitempty"`
+	MonitoringInterval                 int32                  `protobuf:"varint,39,opt,name=monitoring_interval,json=monitoringInterval,proto3" json:"monitoring_interval,omitempty"`
+	EnhancedMonitoringResourceArn      string                 `protobuf:"bytes,40,opt,name=enhanced_monitoring_resource_arn,json=enhancedMonitoringResourceArn,proto3" json:"enhanced_monitoring_resource_arn,omitempty"`
+	PerformanceInsightsEnabled         bool                   `protobuf:"varint,41,opt,name=performance_insights_enabled,json=performanceInsightsEnabled,proto3" json:"performance_insights_enabled,omitempty"`
+	PerformanceInsightsKmsKeyId        string                 `protobuf:"bytes,42,opt,name=performance_insights_kms_key_id,json=performanceInsightsKmsKeyId,proto3" json:"performance_insights_kms_key_id,omitempty"`
+	PerformanceInsightsRetentionPeriod int32                  `protobuf:"varint,43,opt,name=performance_insights_retention_period,json=performanceInsightsRetentionPeriod,proto3" json:"performance_insights_retention_period,omitempty"`
+	CaCertificateIdentifier            string                 `protobuf:"bytes,44,opt,name=ca_certificate_identifier,json=caCertificateIdentifier,proto3" json:"ca_certificate_identifier,omitempty"`
+	DbiResourceId                      string                 `protobuf:"bytes,45,opt,name=dbi_resource_id,json=dbiResourceId,proto3" json:"dbi_resource_id,omitempty"`
+	LatestRestorableTime               *timestamppb.Timestamp `protobuf:"bytes,46,opt,name=latest_restorable_time,json=latestRestorableTime,proto3" json:"latest_restorable_time,omitempty"`
+	PreferredBackupWindow              string                 `protobuf:"bytes,47,opt,name=preferred_backup_window,json=preferredBackupWindow,proto3" json:"preferred_backup_window,omitempty"`
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
 }
 
 func (x *DBInstance) Reset() {
@@ -698,6 +727,181 @@ func (x *DBInstance) GetEndpoint() *ClusterEndpoint {
 	return nil
 }
 
+func (x *DBInstance) GetAllocatedStorage() int32 {
+	if x != nil {
+		return x.AllocatedStorage
+	}
+	return 0
+}
+
+func (x *DBInstance) GetMasterUsername() string {
+	if x != nil {
+		return x.MasterUsername
+	}
+	return ""
+}
+
+func (x *DBInstance) GetStorageType() string {
+	if x != nil {
+		return x.StorageType
+	}
+	return ""
+}
+
+func (x *DBInstance) GetBackupRetentionPeriod() int32 {
+	if x != nil {
+		return x.BackupRetentionPeriod
+	}
+	return 0
+}
+
+func (x *DBInstance) GetLicenseModel() string {
+	if x != nil {
+		return x.LicenseModel
+	}
+	return ""
+}
+
+func (x *DBInstance) GetStorageEncrypted() bool {
+	if x != nil {
+		return x.StorageEncrypted
+	}
+	return false
+}
+
+func (x *DBInstance) GetKmsKeyId() string {
+	if x != nil {
+		return x.KmsKeyId
+	}
+	return ""
+}
+
+func (x *DBInstance) GetDeletionProtection() bool {
+	if x != nil {
+		return x.DeletionProtection
+	}
+	return false
+}
+
+func (x *DBInstance) GetMultiAz() bool {
+	if x != nil {
+		return x.MultiAz
+	}
+	return false
+}
+
+func (x *DBInstance) GetSecondaryAvailabilityZone() string {
+	if x != nil {
+		return x.SecondaryAvailabilityZone
+	}
+	return ""
+}
+
+func (x *DBInstance) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *DBInstance) GetOptionGroupName() string {
+	if x != nil {
+		return x.OptionGroupName
+	}
+	return ""
+}
+
+func (x *DBInstance) GetVpcId() string {
+	if x != nil {
+		return x.VpcId
+	}
+	return ""
+}
+
+func (x *DBInstance) GetIops() int32 {
+	if x != nil {
+		return x.Iops
+	}
+	return 0
+}
+
+func (x *DBInstance) GetMaxAllocatedStorage() int32 {
+	if x != nil {
+		return x.MaxAllocatedStorage
+	}
+	return 0
+}
+
+func (x *DBInstance) GetStorageThroughput() int32 {
+	if x != nil {
+		return x.StorageThroughput
+	}
+	return 0
+}
+
+func (x *DBInstance) GetMonitoringInterval() int32 {
+	if x != nil {
+		return x.MonitoringInterval
+	}
+	return 0
+}
+
+func (x *DBInstance) GetEnhancedMonitoringResourceArn() string {
+	if x != nil {
+		return x.EnhancedMonitoringResourceArn
+	}
+	return ""
+}
+
+func (x *DBInstance) GetPerformanceInsightsEnabled() bool {
+	if x != nil {
+		return x.PerformanceInsightsEnabled
+	}
+	return false
+}
+
+func (x *DBInstance) GetPerformanceInsightsKmsKeyId() string {
+	if x != nil {
+		return x.PerformanceInsightsKmsKeyId
+	}
+	return ""
+}
+
+func (x *DBInstance) GetPerformanceInsightsRetentionPeriod() int32 {
+	if x != nil {
+		return x.PerformanceInsightsRetentionPeriod
+	}
+	return 0
+}
+
+func (x *DBInstance) GetCaCertificateIdentifier() string {
+	if x != nil {
+		return x.CaCertificateIdentifier
+	}
+	return ""
+}
+
+func (x *DBInstance) GetDbiResourceId() string {
+	if x != nil {
+		return x.DbiResourceId
+	}
+	return ""
+}
+
+func (x *DBInstance) GetLatestRestorableTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LatestRestorableTime
+	}
+	return nil
+}
+
+func (x *DBInstance) GetPreferredBackupWindow() string {
+	if x != nil {
+		return x.PreferredBackupWindow
+	}
+	return ""
+}
+
 type DBClusterSnapshot struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	DbClusterSnapshotIdentifier string                 `protobuf:"bytes,1,opt,name=db_cluster_snapshot_identifier,json=dbClusterSnapshotIdentifier,proto3" json:"db_cluster_snapshot_identifier,omitempty"`
@@ -716,8 +920,14 @@ type DBClusterSnapshot struct {
 	Region                      string                 `protobuf:"bytes,14,opt,name=region,proto3" json:"region,omitempty"`
 	RestoreAttributeValues      []string               `protobuf:"bytes,15,rep,name=restore_attribute_values,json=restoreAttributeValues,proto3" json:"restore_attribute_values,omitempty"`
 	SnapshotType                string                 `protobuf:"bytes,16,opt,name=snapshot_type,json=snapshotType,proto3" json:"snapshot_type,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// AWS-standard DBClusterSnapshot fields captured at snapshot time.
+	MasterUsername                   string `protobuf:"bytes,17,opt,name=master_username,json=masterUsername,proto3" json:"master_username,omitempty"`
+	AllocatedStorage                 int32  `protobuf:"varint,18,opt,name=allocated_storage,json=allocatedStorage,proto3" json:"allocated_storage,omitempty"`
+	StorageType                      string `protobuf:"bytes,19,opt,name=storage_type,json=storageType,proto3" json:"storage_type,omitempty"`
+	LicenseModel                     string `protobuf:"bytes,20,opt,name=license_model,json=licenseModel,proto3" json:"license_model,omitempty"`
+	IamDatabaseAuthenticationEnabled bool   `protobuf:"varint,21,opt,name=iam_database_authentication_enabled,json=iamDatabaseAuthenticationEnabled,proto3" json:"iam_database_authentication_enabled,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *DBClusterSnapshot) Reset() {
@@ -860,6 +1070,41 @@ func (x *DBClusterSnapshot) GetSnapshotType() string {
 		return x.SnapshotType
 	}
 	return ""
+}
+
+func (x *DBClusterSnapshot) GetMasterUsername() string {
+	if x != nil {
+		return x.MasterUsername
+	}
+	return ""
+}
+
+func (x *DBClusterSnapshot) GetAllocatedStorage() int32 {
+	if x != nil {
+		return x.AllocatedStorage
+	}
+	return 0
+}
+
+func (x *DBClusterSnapshot) GetStorageType() string {
+	if x != nil {
+		return x.StorageType
+	}
+	return ""
+}
+
+func (x *DBClusterSnapshot) GetLicenseModel() string {
+	if x != nil {
+		return x.LicenseModel
+	}
+	return ""
+}
+
+func (x *DBClusterSnapshot) GetIamDatabaseAuthenticationEnabled() bool {
+	if x != nil {
+		return x.IamDatabaseAuthenticationEnabled
+	}
+	return false
 }
 
 type DBClusterParameterGroup struct {
@@ -1821,7 +2066,7 @@ const file_storage_rds_proto_rawDesc = "" +
 	"account_id\x18\x1e \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x1f \x01(\tR\x06region\x12$\n" +
 	"\x0edb_cluster_arn\x18  \x01(\tR\fdbClusterArn\x128\n" +
-	"\bendpoint\x18! \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\"\xcd\b\n" +
+	"\bendpoint\x18! \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\"\x8b\x12\n" +
 	"\n" +
 	"DBInstance\x124\n" +
 	"\x16db_instance_identifier\x18\x01 \x01(\tR\x14dbInstanceIdentifier\x122\n" +
@@ -1847,7 +2092,33 @@ const file_storage_rds_proto_rawDesc = "" +
 	"account_id\x18\x13 \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x14 \x01(\tR\x06region\x12&\n" +
 	"\x0fdb_instance_arn\x18\x15 \x01(\tR\rdbInstanceArn\x128\n" +
-	"\bendpoint\x18\x16 \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\"\xb1\x05\n" +
+	"\bendpoint\x18\x16 \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\x12+\n" +
+	"\x11allocated_storage\x18\x17 \x01(\x05R\x10allocatedStorage\x12'\n" +
+	"\x0fmaster_username\x18\x18 \x01(\tR\x0emasterUsername\x12!\n" +
+	"\fstorage_type\x18\x19 \x01(\tR\vstorageType\x126\n" +
+	"\x17backup_retention_period\x18\x1a \x01(\x05R\x15backupRetentionPeriod\x12#\n" +
+	"\rlicense_model\x18\x1b \x01(\tR\flicenseModel\x12+\n" +
+	"\x11storage_encrypted\x18\x1c \x01(\bR\x10storageEncrypted\x12\x1c\n" +
+	"\n" +
+	"kms_key_id\x18\x1d \x01(\tR\bkmsKeyId\x12/\n" +
+	"\x13deletion_protection\x18\x1e \x01(\bR\x12deletionProtection\x12\x19\n" +
+	"\bmulti_az\x18\x1f \x01(\bR\amultiAz\x12>\n" +
+	"\x1bsecondary_availability_zone\x18  \x01(\tR\x19secondaryAvailabilityZone\x12\x12\n" +
+	"\x04port\x18! \x01(\x05R\x04port\x12*\n" +
+	"\x11option_group_name\x18\" \x01(\tR\x0foptionGroupName\x12\x15\n" +
+	"\x06vpc_id\x18# \x01(\tR\x05vpcId\x12\x12\n" +
+	"\x04iops\x18$ \x01(\x05R\x04iops\x122\n" +
+	"\x15max_allocated_storage\x18% \x01(\x05R\x13maxAllocatedStorage\x12-\n" +
+	"\x12storage_throughput\x18& \x01(\x05R\x11storageThroughput\x12/\n" +
+	"\x13monitoring_interval\x18' \x01(\x05R\x12monitoringInterval\x12G\n" +
+	" enhanced_monitoring_resource_arn\x18( \x01(\tR\x1denhancedMonitoringResourceArn\x12@\n" +
+	"\x1cperformance_insights_enabled\x18) \x01(\bR\x1aperformanceInsightsEnabled\x12D\n" +
+	"\x1fperformance_insights_kms_key_id\x18* \x01(\tR\x1bperformanceInsightsKmsKeyId\x12Q\n" +
+	"%performance_insights_retention_period\x18+ \x01(\x05R\"performanceInsightsRetentionPeriod\x12:\n" +
+	"\x19ca_certificate_identifier\x18, \x01(\tR\x17caCertificateIdentifier\x12&\n" +
+	"\x0fdbi_resource_id\x18- \x01(\tR\rdbiResourceId\x12P\n" +
+	"\x16latest_restorable_time\x18. \x01(\v2\x1a.google.protobuf.TimestampR\x14latestRestorableTime\x126\n" +
+	"\x17preferred_backup_window\x18/ \x01(\tR\x15preferredBackupWindow\"\x9e\a\n" +
 	"\x11DBClusterSnapshot\x12C\n" +
 	"\x1edb_cluster_snapshot_identifier\x18\x01 \x01(\tR\x1bdbClusterSnapshotIdentifier\x122\n" +
 	"\x15db_cluster_identifier\x18\x02 \x01(\tR\x13dbClusterIdentifier\x12L\n" +
@@ -1867,7 +2138,12 @@ const file_storage_rds_proto_rawDesc = "" +
 	"account_id\x18\r \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x0e \x01(\tR\x06region\x128\n" +
 	"\x18restore_attribute_values\x18\x0f \x03(\tR\x16restoreAttributeValues\x12#\n" +
-	"\rsnapshot_type\x18\x10 \x01(\tR\fsnapshotType\"\x86\x02\n" +
+	"\rsnapshot_type\x18\x10 \x01(\tR\fsnapshotType\x12'\n" +
+	"\x0fmaster_username\x18\x11 \x01(\tR\x0emasterUsername\x12+\n" +
+	"\x11allocated_storage\x18\x12 \x01(\x05R\x10allocatedStorage\x12!\n" +
+	"\fstorage_type\x18\x13 \x01(\tR\vstorageType\x12#\n" +
+	"\rlicense_model\x18\x14 \x01(\tR\flicenseModel\x12M\n" +
+	"#iam_database_authentication_enabled\x18\x15 \x01(\bR iamDatabaseAuthenticationEnabled\"\x86\x02\n" +
 	"\x17DBClusterParameterGroup\x12D\n" +
 	"\x1fdb_cluster_parameter_group_name\x18\x01 \x01(\tR\x1bdbClusterParameterGroupName\x129\n" +
 	"\x19db_parameter_group_family\x18\x02 \x01(\tR\x16dbParameterGroupFamily\x12 \n" +
@@ -1997,20 +2273,21 @@ var file_storage_rds_proto_depIdxs = []int32{
 	2,  // 5: storage.rds.DBCluster.endpoint:type_name -> storage.rds.ClusterEndpoint
 	17, // 6: storage.rds.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
 	2,  // 7: storage.rds.DBInstance.endpoint:type_name -> storage.rds.ClusterEndpoint
-	17, // 8: storage.rds.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
-	17, // 9: storage.rds.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
-	14, // 10: storage.rds.DBClusterParameterGroup.parameters:type_name -> storage.rds.Parameter
-	14, // 11: storage.rds.DBParameterGroup.parameters:type_name -> storage.rds.Parameter
-	8,  // 12: storage.rds.DBSubnetGroup.subnets:type_name -> storage.rds.Subnet
-	10, // 13: storage.rds.GlobalCluster.global_cluster_members:type_name -> storage.rds.GlobalClusterMember
-	17, // 14: storage.rds.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
-	17, // 15: storage.rds.Event.date:type_name -> google.protobuf.Timestamp
-	15, // 16: storage.rds.TagList.tags:type_name -> storage.rds.Tag
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	17, // 8: storage.rds.DBInstance.latest_restorable_time:type_name -> google.protobuf.Timestamp
+	17, // 9: storage.rds.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
+	17, // 10: storage.rds.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
+	14, // 11: storage.rds.DBClusterParameterGroup.parameters:type_name -> storage.rds.Parameter
+	14, // 12: storage.rds.DBParameterGroup.parameters:type_name -> storage.rds.Parameter
+	8,  // 13: storage.rds.DBSubnetGroup.subnets:type_name -> storage.rds.Subnet
+	10, // 14: storage.rds.GlobalCluster.global_cluster_members:type_name -> storage.rds.GlobalClusterMember
+	17, // 15: storage.rds.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
+	17, // 16: storage.rds.Event.date:type_name -> google.protobuf.Timestamp
+	15, // 17: storage.rds.TagList.tags:type_name -> storage.rds.Tag
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_storage_rds_proto_init() }

@@ -19,6 +19,35 @@ const (
 	maxEvents   = 10000
 )
 
+// validEventSourceTypes is the closed set of AWS-spec SourceType wire
+// strings accepted by RecordEvent. Unknown values are rejected up front
+// so that downstream serialisation never has to silently misclassify an
+// event. The set mirrors the proto SourceType enum values and the
+// sourceTypeToString / stringToSourceType tables in admin_handler.go.
+//
+// AWS reference:
+// https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeEvents.html
+// Valid Values: db-instance | db-parameter-group | db-security-group |
+// db-snapshot | db-cluster | db-cluster-snapshot | custom-engine-version |
+// db-proxy | blue-green-deployment | db-shard-group | zero-etl
+var validEventSourceTypes = map[string]struct{}{
+	"db-instance":           {},
+	"db-parameter-group":    {},
+	"db-security-group":     {},
+	"db-snapshot":           {},
+	"db-cluster":            {},
+	"db-cluster-snapshot":   {},
+	"custom-engine-version": {},
+	"db-proxy":              {},
+	"blue-green-deployment": {},
+	"db-shard-group":        {},
+	"zero-etl":              {},
+}
+
+// ErrInvalidEventSourceType is returned by RecordEvent when the caller
+// supplies a SourceType outside validEventSourceTypes.
+var ErrInvalidEventSourceType = fmt.Errorf("invalid SourceType")
+
 type BucketConfig struct {
 	ClusterBucket           string
 	InstanceBucket          string
@@ -461,12 +490,29 @@ func (s *RDSStore) RemoveTags(resourceArn string, keys []string) error {
 }
 
 func (s *RDSStore) RecordEvent(evt *Event) error {
+	// Reject unknown SourceType at the entry point so we never have to
+	// fabricate a category during serialisation (stringToSourceType in
+	// admin_handler previously mapped unknowns to BLUE_GREEN_DEPLOYMENT,
+	// the proto3 zero value, silently corrupting audit data). An empty
+	// SourceType is permitted because RecordEvent is also called for
+	// ad-hoc platform events that do not map to a single source.
+	if evt.SourceType != "" {
+		if _, ok := validEventSourceTypes[evt.SourceType]; !ok {
+			return fmt.Errorf("%w: %q", ErrInvalidEventSourceType, evt.SourceType)
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if evt.EventID == "" {
-		evt.EventID = fmt.Sprintf("evt-%d", time.Now().UnixNano())
+	// Allocate a local ID if the caller did not provide one. Mutating the
+	// caller-supplied Event is a surprising side-effect (the caller may
+	// reuse the struct across goroutines or test cases); copy first.
+	id := evt.EventID
+	if id == "" {
+		id = fmt.Sprintf("evt-%d", time.Now().UnixNano())
 	}
-	return s.events.Create(evt)
+	stored := *evt
+	stored.EventID = id
+	return s.events.Create(&stored)
 }
 
 func (s *RDSStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
@@ -492,6 +538,9 @@ func (s *RDSStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
 		if !opts.EndTime.IsZero() && evt.Date.After(opts.EndTime) {
 			return false
 		}
+		if len(opts.EventCategories) > 0 && !intersectsCategories(evt.EventCategories, opts.EventCategories) {
+			return false
+		}
 		return true
 	})
 	if err != nil {
@@ -499,11 +548,13 @@ func (s *RDSStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
 	}
 
 	started := opts.Marker == ""
+	markerFound := started // when Marker is empty we start at the head
 	var remaining []*Event
 	for _, evt := range allEvents {
 		if !started {
 			if evt.EventID == opts.Marker {
 				started = true
+				markerFound = true
 			}
 			continue
 		}
@@ -511,6 +562,12 @@ func (s *RDSStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
 		if len(remaining) > opts.MaxRecords {
 			break
 		}
+	}
+	if !markerFound {
+		// AWS RDS returns InvalidParameterValue when Marker does not match
+		// any event. Silent empty results hide pagination bugs in callers
+		// (e.g., a marker from a stale or purged event set).
+		return nil, ErrInvalidEventMarker
 	}
 
 	result := &EventListResult{Events: remaining}
@@ -552,3 +609,22 @@ func (s *RDSStore) PurgeOldEvents() error {
 }
 
 var _ StoreInterface = (*RDSStore)(nil)
+
+// intersectsCategories reports whether the event's own category list shares
+// at least one element with the requested filter set. AWS RDS treats the
+// EventCategories filter as a union (OR) within a single source type.
+func intersectsCategories(eventCats, filterCats []string) bool {
+	if len(filterCats) == 0 {
+		return true
+	}
+	want := make(map[string]struct{}, len(filterCats))
+	for _, c := range filterCats {
+		want[c] = struct{}{}
+	}
+	for _, c := range eventCats {
+		if _, ok := want[c]; ok {
+			return true
+		}
+	}
+	return false
+}

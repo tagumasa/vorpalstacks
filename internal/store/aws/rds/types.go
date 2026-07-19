@@ -84,6 +84,36 @@ type DBInstance struct {
 	Region                           string     `json:"Region,omitempty"`
 	DBInstanceArn                    string     `json:"DBInstanceArn,omitempty"`
 	Endpoint                         *Endpoint  `json:"Endpoint,omitempty"`
+
+	// AWS-standard DBInstance fields. These are captured from
+	// CreateDBInstance parameters, persisted, and surfaced through
+	// DescribeDBInstance / RestoreDBInstanceFromDBSnapshot. They were
+	// previously dropped on the floor (RDS-5/RDS-20).
+	AllocatedStorage                   int32      `json:"AllocatedStorage,omitempty"`
+	MasterUsername                     string     `json:"MasterUsername,omitempty"`
+	StorageType                        string     `json:"StorageType,omitempty"`
+	BackupRetentionPeriod              int32      `json:"BackupRetentionPeriod,omitempty"`
+	LicenseModel                       string     `json:"LicenseModel,omitempty"`
+	StorageEncrypted                   bool       `json:"StorageEncrypted"`
+	KmsKeyId                           string     `json:"KmsKeyId,omitempty"`
+	DeletionProtection                 bool       `json:"DeletionProtection"`
+	MultiAZ                            bool       `json:"MultiAZ"`
+	SecondaryAvailabilityZone          string     `json:"SecondaryAvailabilityZone,omitempty"`
+	Port                               int32      `json:"Port,omitempty"`
+	OptionGroupName                    string     `json:"OptionGroupName,omitempty"`
+	VpcId                              string     `json:"VpcId,omitempty"`
+	Iops                               int32      `json:"Iops,omitempty"`
+	MaxAllocatedStorage                int32      `json:"MaxAllocatedStorage,omitempty"`
+	StorageThroughput                  int32      `json:"StorageThroughput,omitempty"`
+	MonitoringInterval                 int32      `json:"MonitoringInterval,omitempty"`
+	EnhancedMonitoringResourceArn      string     `json:"EnhancedMonitoringResourceArn,omitempty"`
+	PerformanceInsightsEnabled         bool       `json:"PerformanceInsightsEnabled"`
+	PerformanceInsightsKMSKeyId        string     `json:"PerformanceInsightsKMSKeyId,omitempty"`
+	PerformanceInsightsRetentionPeriod int32      `json:"PerformanceInsightsRetentionPeriod,omitempty"`
+	CACertificateIdentifier            string     `json:"CACertificateIdentifier,omitempty"`
+	DbiResourceId                      string     `json:"DbiResourceId,omitempty"`
+	LatestRestorableTime               *time.Time `json:"LatestRestorableTime,omitempty"`
+	PreferredBackupWindow              string     `json:"PreferredBackupWindow,omitempty"`
 }
 
 type DBInstanceSnapshot struct {
@@ -94,9 +124,9 @@ type DBInstanceSnapshot struct {
 	EngineVersion          string      `json:"EngineVersion,omitempty"`
 	SnapshotType           string      `json:"SnapshotType,omitempty"`
 	Status                 string      `json:"Status"`
-	AllocatedStorage       int         `json:"AllocatedStorage"`
+	AllocatedStorage       int32       `json:"AllocatedStorage"`
 	StorageType            string      `json:"StorageType,omitempty"`
-	Port                   int         `json:"Port"`
+	Port                   int32       `json:"Port"`
 	AvailabilityZone       string      `json:"AvailabilityZone,omitempty"`
 	VpcId                  string      `json:"VpcId,omitempty"`
 	InstanceCreateTime     *time.Time  `json:"InstanceCreateTime,omitempty"`
@@ -130,6 +160,14 @@ type DBClusterSnapshot struct {
 	RestoreAttributeValues      []string   `json:"RestoreAttributeValues,omitempty"`
 	AccountID                   string     `json:"AccountId,omitempty"`
 	Region                      string     `json:"Region,omitempty"`
+
+	// AWS-standard DBClusterSnapshot fields captured from the source
+	// cluster at snapshot time. Previously dropped (RDS-2).
+	MasterUsername                   string `json:"MasterUsername,omitempty"`
+	AllocatedStorage                 int32  `json:"AllocatedStorage,omitempty"`
+	StorageType                      string `json:"StorageType,omitempty"`
+	LicenseModel                     string `json:"LicenseModel,omitempty"`
+	IAMDatabaseAuthenticationEnabled bool   `json:"IAMDatabaseAuthenticationEnabled"`
 }
 
 type DBClusterParameterGroup struct {

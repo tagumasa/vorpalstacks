@@ -181,9 +181,38 @@ func InstanceToProto(i *DBInstance) *pb.DBInstance {
 		AccountId:                       i.AccountID,
 		Region:                          i.Region,
 		DbInstanceArn:                   i.DBInstanceArn,
+
+		// AWS-standard DBInstance fields (RDS-5/RDS-20).
+		AllocatedStorage:                   i.AllocatedStorage,
+		MasterUsername:                     i.MasterUsername,
+		StorageType:                        i.StorageType,
+		BackupRetentionPeriod:              i.BackupRetentionPeriod,
+		LicenseModel:                       i.LicenseModel,
+		StorageEncrypted:                   i.StorageEncrypted,
+		KmsKeyId:                           i.KmsKeyId,
+		DeletionProtection:                 i.DeletionProtection,
+		MultiAz:                            i.MultiAZ,
+		SecondaryAvailabilityZone:          i.SecondaryAvailabilityZone,
+		Port:                               i.Port,
+		OptionGroupName:                    i.OptionGroupName,
+		VpcId:                              i.VpcId,
+		Iops:                               i.Iops,
+		MaxAllocatedStorage:                i.MaxAllocatedStorage,
+		StorageThroughput:                  i.StorageThroughput,
+		MonitoringInterval:                 i.MonitoringInterval,
+		EnhancedMonitoringResourceArn:      i.EnhancedMonitoringResourceArn,
+		PerformanceInsightsEnabled:         i.PerformanceInsightsEnabled,
+		PerformanceInsightsKmsKeyId:        i.PerformanceInsightsKMSKeyId,
+		PerformanceInsightsRetentionPeriod: i.PerformanceInsightsRetentionPeriod,
+		CaCertificateIdentifier:            i.CACertificateIdentifier,
+		DbiResourceId:                      i.DbiResourceId,
+		PreferredBackupWindow:              i.PreferredBackupWindow,
 	}
 	if i.InstanceCreateTime != nil {
 		p.InstanceCreateTime = timestamppb.New(*i.InstanceCreateTime)
+	}
+	if i.LatestRestorableTime != nil {
+		p.LatestRestorableTime = timestamppb.New(*i.LatestRestorableTime)
 	}
 	if i.Endpoint != nil {
 		p.Endpoint = &pb.ClusterEndpoint{Address: i.Endpoint.Address, Port: int32(i.Endpoint.Port)}
@@ -216,10 +245,40 @@ func ProtoToInstance(p *pb.DBInstance) *DBInstance {
 		AccountID:                        p.GetAccountId(),
 		Region:                           p.GetRegion(),
 		DBInstanceArn:                    p.GetDbInstanceArn(),
+
+		// AWS-standard DBInstance fields (RDS-5/RDS-20).
+		AllocatedStorage:                   p.GetAllocatedStorage(),
+		MasterUsername:                     p.GetMasterUsername(),
+		StorageType:                        p.GetStorageType(),
+		BackupRetentionPeriod:              p.GetBackupRetentionPeriod(),
+		LicenseModel:                       p.GetLicenseModel(),
+		StorageEncrypted:                   p.GetStorageEncrypted(),
+		KmsKeyId:                           p.GetKmsKeyId(),
+		DeletionProtection:                 p.GetDeletionProtection(),
+		MultiAZ:                            p.GetMultiAz(),
+		SecondaryAvailabilityZone:          p.GetSecondaryAvailabilityZone(),
+		Port:                               p.GetPort(),
+		OptionGroupName:                    p.GetOptionGroupName(),
+		VpcId:                              p.GetVpcId(),
+		Iops:                               p.GetIops(),
+		MaxAllocatedStorage:                p.GetMaxAllocatedStorage(),
+		StorageThroughput:                  p.GetStorageThroughput(),
+		MonitoringInterval:                 p.GetMonitoringInterval(),
+		EnhancedMonitoringResourceArn:      p.GetEnhancedMonitoringResourceArn(),
+		PerformanceInsightsEnabled:         p.GetPerformanceInsightsEnabled(),
+		PerformanceInsightsKMSKeyId:        p.GetPerformanceInsightsKmsKeyId(),
+		PerformanceInsightsRetentionPeriod: p.GetPerformanceInsightsRetentionPeriod(),
+		CACertificateIdentifier:            p.GetCaCertificateIdentifier(),
+		DbiResourceId:                      p.GetDbiResourceId(),
+		PreferredBackupWindow:              p.GetPreferredBackupWindow(),
 	}
 	if p.InstanceCreateTime != nil {
 		t := p.InstanceCreateTime.AsTime()
 		i.InstanceCreateTime = &t
+	}
+	if p.LatestRestorableTime != nil {
+		t := p.LatestRestorableTime.AsTime()
+		i.LatestRestorableTime = &t
 	}
 	if ep := p.GetEndpoint(); ep != nil {
 		i.Endpoint = &Endpoint{Address: ep.GetAddress(), Port: int(ep.GetPort())}
@@ -246,6 +305,13 @@ func SnapshotToProto(s *DBClusterSnapshot) *pb.DBClusterSnapshot {
 		AccountId:                   s.AccountID,
 		Region:                      s.Region,
 		RestoreAttributeValues:      s.RestoreAttributeValues,
+
+		// AWS-standard fields captured at snapshot time (RDS-2).
+		MasterUsername:                   s.MasterUsername,
+		AllocatedStorage:                 s.AllocatedStorage,
+		StorageType:                      s.StorageType,
+		LicenseModel:                     s.LicenseModel,
+		IamDatabaseAuthenticationEnabled: s.IAMDatabaseAuthenticationEnabled,
 	}
 	if s.SnapshotCreateTime != nil {
 		p.SnapshotCreateTime = timestamppb.New(*s.SnapshotCreateTime)
@@ -275,6 +341,12 @@ func ProtoToSnapshot(p *pb.DBClusterSnapshot) *DBClusterSnapshot {
 		AccountID:                   p.GetAccountId(),
 		Region:                      p.GetRegion(),
 		RestoreAttributeValues:      p.GetRestoreAttributeValues(),
+
+		MasterUsername:                   p.GetMasterUsername(),
+		AllocatedStorage:                 p.GetAllocatedStorage(),
+		StorageType:                      p.GetStorageType(),
+		LicenseModel:                     p.GetLicenseModel(),
+		IAMDatabaseAuthenticationEnabled: p.GetIamDatabaseAuthenticationEnabled(),
 	}
 	if p.SnapshotCreateTime != nil {
 		t := p.SnapshotCreateTime.AsTime()

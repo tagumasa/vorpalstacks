@@ -124,8 +124,13 @@ type EventListOptions struct {
 	SourceIdentifier string
 	StartTime        time.Time
 	EndTime          time.Time
-	Marker           string
-	MaxRecords       int
+	// EventCategories, when non-empty, restricts the result to events whose
+	// own category list intersects the requested set. AWS RDS supports
+	// filtering by multiple categories with implicit OR semantics inside one
+	// source type.
+	EventCategories []string
+	Marker          string
+	MaxRecords      int
 }
 
 type EventListResult struct {
