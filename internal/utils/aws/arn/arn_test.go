@@ -947,3 +947,29 @@ func TestARNBuilder_BuildChinaPartition(t *testing.T) {
 		t.Errorf("Build() = %v, want %v", got, want)
 	}
 }
+
+// TestRDSBuilderColonSeparator verifies that every RDS resource-type
+// ARN produced by RDSBuilder uses the AWS-spec colon separator between
+// the resource type and the resource name. Previously the builders used
+// a slash which produced malformed ARNs (e.g. 'cluster/<id>' instead of
+// 'cluster:<id>') that failed SDK parsing.
+func TestRDSBuilderColonSeparator(t *testing.T) {
+	b := NewARNBuilder("123456789012", "us-east-1").RDS()
+	cases := []struct {
+		kind string
+		got  string
+		want string
+	}{
+		{"Cluster", b.Cluster("my-cluster"), "arn:aws:rds:us-east-1:123456789012:cluster:my-cluster"},
+		{"ClusterSnapshot", b.ClusterSnapshot("snap-1"), "arn:aws:rds:us-east-1:123456789012:cluster-snapshot:snap-1"},
+		{"DBInstance", b.DBInstance("my-db"), "arn:aws:rds:us-east-1:123456789012:db:my-db"},
+		{"Snapshot", b.Snapshot("snap-1"), "arn:aws:rds:us-east-1:123456789012:snapshot:snap-1"},
+		{"ClusterEndpoint", b.ClusterEndpoint("ep-1"), "arn:aws:rds:us-east-1:123456789012:cluster-endpoint:ep-1"},
+		{"GlobalCluster", b.GlobalCluster("gc-1"), "arn:aws:rds:us-east-1:123456789012:global-cluster:gc-1"},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("RDSBuilder.%s = %q, want %q", c.kind, c.got, c.want)
+		}
+	}
+}

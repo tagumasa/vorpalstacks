@@ -3,7 +3,6 @@ package vmysql
 import (
 	"context"
 	"io"
-	"sync"
 
 	"github.com/dolthub/go-mysql-server/sql"
 
@@ -61,38 +60,33 @@ func (d *pebbleDatabase) DropTable(ctx *sql.Context, name string) error {
 }
 
 // pebbleProvider implements sql.MutableDatabaseProvider backed by rdbengine.
+//
+// The provider does NOT maintain an in-memory database cache. Earlier
+// iterations cached pebbleDatabase instances in p.dbs, but the cache
+// lacked invalidation: if a database was created or dropped via a
+// different code path (e.g. a Data API connection on the same instance
+// running CREATE DATABASE / DROP DATABASE), Database() / AllDatabases()
+// would continue to serve stale results. Each call now asks the store
+// directly; the cost is a Pebble prefix scan over the catalog prefix,
+// which is negligible compared with query execution.
 type pebbleProvider struct {
 	store *rdbengine.Store
-	mu    sync.RWMutex
-	dbs   map[string]*pebbleDatabase
 }
 
 func newPebbleProvider(store *rdbengine.Store) *pebbleProvider {
 	return &pebbleProvider{
 		store: store,
-		dbs:   make(map[string]*pebbleDatabase),
 	}
 }
 
 func (p *pebbleProvider) Database(ctx *sql.Context, name string) (sql.Database, error) {
-	p.mu.RLock()
-	if db, ok := p.dbs[name]; ok {
-		p.mu.RUnlock()
-		return db, nil
-	}
-	p.mu.RUnlock()
-
 	names, err := p.store.ListDatabases(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	for _, n := range names {
 		if n == name {
-			db := newPebbleDatabase(name, p.store)
-			p.mu.Lock()
-			p.dbs[name] = db
-			p.mu.Unlock()
-			return db, nil
+			return newPebbleDatabase(name, p.store), nil
 		}
 	}
 	return nil, sql.ErrDatabaseNotFound.New(name)
@@ -108,41 +102,19 @@ func (p *pebbleProvider) AllDatabases(ctx *sql.Context) []sql.Database {
 	if err != nil {
 		return nil
 	}
-	var result []sql.Database
+	result := make([]sql.Database, 0, len(names))
 	for _, name := range names {
-		p.mu.RLock()
-		db, ok := p.dbs[name]
-		p.mu.RUnlock()
-		if !ok {
-			db = newPebbleDatabase(name, p.store)
-			p.mu.Lock()
-			p.dbs[name] = db
-			p.mu.Unlock()
-		}
-		result = append(result, db)
+		result = append(result, newPebbleDatabase(name, p.store))
 	}
 	return result
 }
 
 func (p *pebbleProvider) CreateDatabase(ctx *sql.Context, name string) error {
-	if err := p.store.CreateDatabase(context.Background(), name); err != nil {
-		return err
-	}
-	db := newPebbleDatabase(name, p.store)
-	p.mu.Lock()
-	p.dbs[name] = db
-	p.mu.Unlock()
-	return nil
+	return p.store.CreateDatabase(context.Background(), name)
 }
 
 func (p *pebbleProvider) DropDatabase(ctx *sql.Context, name string) error {
-	if err := p.store.DropDatabase(context.Background(), name); err != nil {
-		return err
-	}
-	p.mu.Lock()
-	delete(p.dbs, name)
-	p.mu.Unlock()
-	return nil
+	return p.store.DropDatabase(context.Background(), name)
 }
 
 func sqlColumnToDef(col *sql.Column) rdbengine.ColumnDef {

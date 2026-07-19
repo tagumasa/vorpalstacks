@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
@@ -21,6 +22,28 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	id := request.GetStringParam(params, "DBInstanceIdentifier")
 	if id == "" {
 		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
+	}
+	if err := rdssvc.ValidateDBInstanceIdentifier(id); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+	if class := request.GetStringParam(params, "DBInstanceClass"); class != "" {
+		if err := rdssvc.ValidateDBInstanceClass(class); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+	engineType := request.GetStringParam(params, "Engine")
+	if engineType == "" {
+		engineType = "neptune"
+	}
+	if err := rdssvc.ValidateEngine(engineType); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+	engineVersion := request.GetStringParam(params, "EngineVersion")
+	if engineVersion == "" {
+		engineVersion = rdssvc.DefaultEngineVersion(engineType)
+	}
+	if err := rdssvc.ValidateEngineVersion(engineType, engineVersion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
 	store, err := s.store(reqCtx)
@@ -39,8 +62,8 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	instance := &neptunestore.DBInstance{
 		DBInstanceIdentifier:             id,
 		DBClusterIdentifier:              clusterID,
-		Engine:                           request.GetStringParam(params, "Engine"),
-		EngineVersion:                    request.GetStringParam(params, "EngineVersion"),
+		Engine:                           engineType,
+		EngineVersion:                    engineVersion,
 		DBInstanceClass:                  request.GetStringParam(params, "DBInstanceClass"),
 		DBInstanceStatus:                 "available",
 		AvailabilityZone:                 request.GetStringParam(params, "AvailabilityZone"),
@@ -63,7 +86,28 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		if s.porter != nil {
 			if port, err := s.porter.GetPort(clusterID); err == nil && port > 0 {
 				instance.Endpoint = &neptunestore.Endpoint{
-					Address: fmt.Sprintf("%s.%s.%s.neptune.amazonaws.com", id, s.accountID, s.region),
+					Address: s.endpointAddressFor(id, instance.Engine),
+					Port:    port,
+				}
+				if err := store.UpdateInstance(instance); err != nil {
+					logs.Warn("failed to persist instance endpoint", logs.String("instance", id), logs.Err(err))
+				}
+			}
+		}
+	} else {
+		// Standalone instance (no cluster) — open the engine directly
+		// so the instance gets its own port and endpoint. This is the
+		// normal path for MySQL RDS instances.
+		engineType := instance.Engine
+		if engineType == "" {
+			engineType = "neptune"
+		}
+		if eng := s.engineFor(engineType); eng != nil {
+			if port, err := eng.Open(reqCtx.GetRegion(), id); err != nil {
+				logs.Warn("failed to open instance engine", logs.String("instance", id), logs.Err(err))
+			} else {
+				instance.Endpoint = &neptunestore.Endpoint{
+					Address: s.endpointAddressFor(id, engineType),
 					Port:    port,
 				}
 				if err := store.UpdateInstance(instance); err != nil {
@@ -114,6 +158,20 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	instance.DBInstanceStatus = "deleting"
+
+	// Close the engine for standalone instances (cluster-based instances
+	// are cleaned up when the cluster's engine is closed).
+	if instance.DBClusterIdentifier == "" {
+		engineType := instance.Engine
+		if engineType == "" {
+			engineType = "neptune"
+		}
+		if eng := s.engineFor(engineType); eng != nil {
+			if err := eng.Close(id); err != nil {
+				logs.Warn("failed to close instance engine on delete", logs.String("instance", id), logs.Err(err))
+			}
+		}
+	}
 
 	if err := store.DeleteInstance(id); err != nil {
 		return nil, translateStoreError(err)
@@ -193,6 +251,9 @@ func (s *NeptuneService) RestoreDBInstanceFromDBSnapshot(ctx context.Context, re
 	if snapshotID == "" {
 		return nil, awserrors.NewMissingParameter("DBSnapshotIdentifier is required")
 	}
+	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -230,6 +291,40 @@ func (s *NeptuneService) RestoreDBInstanceFromDBSnapshot(ctx context.Context, re
 
 	if err := store.CreateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	// Open the engine for the restored instance and restore row-level
+	// data from the snapshot when the snapshot was taken from a MySQL
+	// instance. Without this, the restored instance would have no
+	// running engine and no user data.
+	engineType := snapshot.Engine
+	if engineType == "" {
+		engineType = "neptune"
+	}
+	if eng := s.engineFor(engineType); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), instanceID); err != nil {
+			logs.Warn("failed to open engine for restored instance",
+				logs.String("instance", instanceID),
+				logs.Err(err))
+		} else {
+			instance.Endpoint = &neptunestore.Endpoint{
+				Address: s.endpointAddressFor(instanceID, engineType),
+				Port:    port,
+			}
+			if err := store.UpdateInstance(instance); err != nil {
+				logs.Warn("failed to persist restored instance endpoint",
+					logs.String("instance", instanceID),
+					logs.Err(err))
+			}
+		}
+	}
+	if s.snapOp != nil && snapshot.Engine == "mysql" {
+		if err := s.snapOp.RestoreData(snapshotID, instanceID); err != nil {
+			logs.Warn("neptune: RestoreData failed",
+				logs.String("snapshot", snapshotID),
+				logs.String("instance", instanceID),
+				logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{

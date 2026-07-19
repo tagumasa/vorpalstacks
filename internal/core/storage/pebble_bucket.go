@@ -95,6 +95,63 @@ func (b *PebbleBucket) Count() int {
 	return b.db.CountPrefix(start)
 }
 
+// NewSnapshot creates a point-in-time snapshot of the bucket for
+// consistent cross-key reads. The returned Snapshot observes the
+// database state at the moment of creation; writes committed after
+// creation are invisible. The caller must call Close when finished.
+func (b *PebbleBucket) NewSnapshot() Snapshot {
+	return &PebbleSnapshot{
+		scanner: b.db.NewSnapshotScanner(),
+		prefix:  b.prefix,
+	}
+}
+
+// PebbleSnapshot wraps a pebbledb.SnapshotScanner with bucket prefix
+// handling, implementing the storage.Snapshot interface.
+type PebbleSnapshot struct {
+	scanner *pebbledb.SnapshotScanner
+	prefix  []byte
+}
+
+func (s *PebbleSnapshot) makeKey(key []byte) []byte {
+	return makePrefixedKey(s.prefix, key)
+}
+
+// Get retrieves a value by key from the snapshot.
+func (s *PebbleSnapshot) Get(key []byte) ([]byte, error) {
+	val, err := s.scanner.Get(s.makeKey(key))
+	if err != nil {
+		if err == pebbledb.ErrKeyNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return val, nil
+}
+
+// Has checks whether a key exists in the snapshot.
+func (s *PebbleSnapshot) Has(key []byte) bool {
+	return s.scanner.Has(s.makeKey(key))
+}
+
+// ScanRange returns a prefix-stripped iterator over the given key range
+// in the snapshot.
+func (s *PebbleSnapshot) ScanRange(start, end []byte) Iterator {
+	lower := s.makeKey(start)
+	var upper []byte
+	if end != nil {
+		upper = s.makeKey(end)
+	} else {
+		upper = append(append([]byte{}, s.prefix...), 0xFF)
+	}
+	return newPrefixedDBIterator(s.scanner.NewLazyIterator(lower, upper), len(s.prefix))
+}
+
+// Close releases the underlying snapshot.
+func (s *PebbleSnapshot) Close() {
+	s.scanner.Close()
+}
+
 // prefixedDBIterator wraps a pebbledb.LazyIterator and strips the bucket prefix from keys.
 // It implements the Iterator interface.
 type prefixedDBIterator struct {

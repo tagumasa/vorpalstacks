@@ -123,6 +123,17 @@ func (a *App) initOptionalServices() error {
 		st.neptuneService.SetClusterPorter(st.neptuneDataService)
 	}
 
+	// Wire the MySQL (vmysql) engine and snapshot operator into the
+	// Neptune SDK handler so it can serve RDS SDK clients that create
+	// MySQL instances/clusters. The Neptune handler dispatches to the
+	// MySQL engine when Engine is "mysql" (see NeptuneService.engineFor),
+	// and captures / restores row-level snapshot data through the
+	// snapshot operator.
+	if st.neptuneService != nil && st.vmysqlService != nil {
+		st.neptuneService.SetMysqlEngine(st.vmysqlService)
+		st.neptuneService.SetSnapshotOperator(&vmysqlSnapshotOperatorAdapter{svc: st.vmysqlService})
+	}
+
 	if st.kmsService != nil {
 		st.kmsService.SetPrincipalResolver(a.server.Dispatcher().PrincipalResolver())
 	}
@@ -333,7 +344,6 @@ func (a *App) initRDSStoreLookup(st *serviceState) {
 func (a *App) initRDSMySQL(st *serviceState) error {
 	svc := svcvmysql.NewService(st.portAllocator)
 	svc.SetStorageManager(a.server.StorageManager())
-	svc.SetRegion(st.region)
 	st.vmysqlService = svc
 
 	// The hardcoded "test-instance" engine exists to support the rdsdata
@@ -411,6 +421,35 @@ func (p *vmysqlEngineProvider) GetEngine(instanceID string) *sqle.Engine {
 
 func (p *vmysqlEngineProvider) NewContext(instanceID string, database string) *sql.Context {
 	return p.svc.NewContext(instanceID, database)
+}
+
+// vmysqlSnapshotOperatorAdapter adapts vmysql.Service to the
+// SnapshotOperator interface so CreateDBSnapshot, DeleteDBInstance
+// final snapshots, RestoreDBInstanceFromDBSnapshot, and DeleteDBSnapshot
+// can capture / restore / clean up row data.
+type vmysqlSnapshotOperatorAdapter struct {
+	svc *svcvmysql.Service
+}
+
+func (a *vmysqlSnapshotOperatorAdapter) SnapshotData(instanceID, snapshotID string) error {
+	if a == nil || a.svc == nil {
+		return fmt.Errorf("vmysql snapshot operator: service is nil")
+	}
+	return a.svc.SnapshotData(instanceID, snapshotID)
+}
+
+func (a *vmysqlSnapshotOperatorAdapter) RestoreData(snapshotID, instanceID string) error {
+	if a == nil || a.svc == nil {
+		return fmt.Errorf("vmysql snapshot operator: service is nil")
+	}
+	return a.svc.RestoreData(snapshotID, instanceID)
+}
+
+func (a *vmysqlSnapshotOperatorAdapter) DeleteSnapshotData(snapshotID string) error {
+	if a == nil || a.svc == nil {
+		return fmt.Errorf("vmysql snapshot operator: service is nil")
+	}
+	return a.svc.DeleteSnapshotData(snapshotID)
 }
 
 // rdsStoreProvider resolves RDS resource ARNs to live DB instance IDs by
@@ -756,7 +795,8 @@ func (a *App) initGRPCWebAdmin() {
 				return nil, fmt.Errorf("unsupported engine: %s", engineType)
 			}
 		}),
-		aid)
+		aid,
+		&vmysqlSnapshotOperatorAdapter{svc: st.vmysqlService})
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcappsync.NewConnectHandler(st.appSyncService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})

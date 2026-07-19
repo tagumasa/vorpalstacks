@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+// maxColumnsPerRow caps the colCount field read from a Pebble value to
+// prevent a malformed or hostile value from triggering huge allocations
+// inside decodeRow. MySQL 8.0 hard-limits tables to 4096 columns; the
+// cap here is generous but bounded.
+const maxColumnsPerRow = 8192
+
 // encodeRow serialises a Row into Pebble value bytes using a compact binary
 // format: uint32 column count, then for each column: uint16 name length, name
 // bytes, uint8 type tag, uint32 value length, value bytes.
@@ -40,11 +46,19 @@ func encodeRow(row Row) ([]byte, error) {
 }
 
 // decodeRow deserialises a Row from Pebble value bytes.
+//
+// The colCount field is capped at maxColumnsPerRow to prevent a single
+// malformed or malicious value from triggering the allocation of a
+// multi-gigabyte map. Real MySQL tables are limited to 4096 columns
+// (MySQL 8.0+); the cap here is generous but finite.
 func decodeRow(data []byte) (Row, error) {
 	if len(data) < 4 {
 		return nil, fmt.Errorf("rdbengine: row data too short (%d bytes)", len(data))
 	}
 	colCount := int(binary.BigEndian.Uint32(data[0:4]))
+	if colCount > maxColumnsPerRow {
+		return nil, fmt.Errorf("rdbengine: row declares %d columns, exceeds limit %d", colCount, maxColumnsPerRow)
+	}
 	off := 4
 	row := make(Row, colCount)
 

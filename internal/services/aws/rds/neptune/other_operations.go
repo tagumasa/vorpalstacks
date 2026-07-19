@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
@@ -417,44 +418,63 @@ func (s *NeptuneService) ApplyPendingMaintenanceAction(ctx context.Context, reqC
 	}, nil
 }
 
-// DescribeDBEngineVersions returns the available Neptune engine versions.
+// DescribeDBEngineVersions returns the available engine versions for
+// Neptune and MySQL (when the MySQL engine is wired). The version list
+// is driven by rdssvc.SupportedNeptuneVersions / SupportedMysqlVersions
+// so that the list a client sees here is exactly the list that
+// rdssvc.ValidateEngineVersion accepts — no version can be advertised
+// but rejected (or vice versa).
 func (s *NeptuneService) DescribeDBEngineVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	engine := request.GetStringParam(params, "Engine")
-	if engine == "" {
-		engine = "neptune"
-	}
-	if engine != "neptune" {
-		return map[string]interface{}{
-			"DBEngineVersions": protocol.XMLElements{ElementName: "DBEngineVersion", Items: []interface{}{}},
-		}, nil
+	engineFilter := request.GetStringParam(params, "Engine")
+	versionFilter := request.GetStringParam(params, "EngineVersion")
+
+	result := make([]interface{}, 0)
+
+	// Neptune versions (always available — this is the Neptune handler).
+	if engineFilter == "" || engineFilter == "neptune" {
+		for _, v := range rdssvc.SupportedNeptuneVersions() {
+			if versionFilter != "" && v.Version != versionFilter {
+				continue
+			}
+			result = append(result, map[string]interface{}{
+				"Engine":                             "neptune",
+				"EngineVersion":                      v.Version,
+				"DBParameterGroupFamily":             v.Family,
+				"DBEngineDescription":                "Amazon Neptune",
+				"DBEngineVersionDescription":         "Neptune " + v.Version,
+				"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
+				"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
+				"SupportsLogExportsToCloudwatchLogs": true,
+				"SupportsGlobalDatabases":            false,
+				"SupportsParallelQuery":              v.ParallelQuery,
+				"SupportsReadReplica":                true,
+				"Status":                             "available",
+			})
+		}
 	}
 
-	versions := []struct {
-		version       string
-		parallelQuery bool
-	}{
-		{"1.3.2.0", true},
-		{"1.3.1.0", true},
-		{"1.2.1.0", false},
-	}
-
-	result := make([]interface{}, 0, len(versions))
-	for _, v := range versions {
-		result = append(result, map[string]interface{}{
-			"Engine":                             engine,
-			"EngineVersion":                      v.version,
-			"DBParameterGroupFamily":             "neptune1",
-			"DBEngineDescription":                "Amazon Neptune",
-			"DBEngineVersionDescription":         "Neptune " + v.version,
-			"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
-			"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
-			"SupportsLogExportsToCloudwatchLogs": true,
-			"SupportsGlobalDatabases":            false,
-			"SupportsParallelQuery":              v.parallelQuery,
-			"SupportsReadReplica":                true,
-			"Status":                             "available",
-		})
+	// MySQL versions (only when the MySQL engine is wired).
+	if (engineFilter == "" || engineFilter == "mysql") && s.mysqlEngine != nil {
+		for _, v := range rdssvc.SupportedMysqlVersions() {
+			if versionFilter != "" && v.Version != versionFilter {
+				continue
+			}
+			result = append(result, map[string]interface{}{
+				"Engine":                             "mysql",
+				"EngineVersion":                      v.Version,
+				"DBParameterGroupFamily":             v.Family,
+				"DBEngineDescription":                "MySQL",
+				"DBEngineVersionDescription":         v.DescShort,
+				"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
+				"ExportableLogTypes":                 []interface{}{"error", "general", "slowquery"},
+				"SupportsLogExportsToCloudwatchLogs": true,
+				"SupportsGlobalDatabases":            false,
+				"SupportsParallelQuery":              false,
+				"SupportsReadReplica":                true,
+				"Status":                             "available",
+			})
+		}
 	}
 
 	return map[string]interface{}{

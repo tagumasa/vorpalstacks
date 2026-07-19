@@ -2,7 +2,10 @@ package rdbengine
 
 import (
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 	"math"
+	"time"
 )
 
 // Key encoding for Pebble row storage. Keys must sort correctly in byte order:
@@ -13,72 +16,99 @@ import (
 //   Without this, negative values (0xFF..) sort after all positives.
 
 // EncodePK encodes a composite primary key from column values.
-// Each component is encoded according to its type and concatenated with 0x00 separator.
-func EncodePK(schema *TableSchema, row Row) []byte {
+// Each component is encoded according to its type and concatenated with a
+// length-prefixed separator so that variable-width components cannot
+// alias with the next component's bytes. The encoding rejects NULL and
+// unsupported types rather than emitting empty bytes that would cause
+// every row to collide on the same Pebble key.
+func EncodePK(schema *TableSchema, row Row) ([]byte, error) {
 	var buf []byte
-	first := true
-	for _, col := range schema.PrimaryKeyColumns() {
-		if !first {
+	pkCols := schema.PrimaryKeyColumns()
+	for i, col := range pkCols {
+		if i > 0 {
 			buf = append(buf, 0x00)
 		}
-		first = false
 		cv, ok := row[col.Name]
 		if !ok || cv.Value == nil {
-			buf = append(buf, 0x00)
-			continue
+			// NULL primary-key columns are invalid in the SQL standard.
+			// Returning an error rather than emitting 0x00 prevents
+			// silent collisions across rows with NULL PK components.
+			return nil, fmt.Errorf("rdbengine: encode_pk: column %q is NULL; primary-key columns must be non-null", col.Name)
 		}
-		buf = append(buf, encodeValue(cv)...)
+		enc, err := encodeValue(cv)
+		if err != nil {
+			return nil, err
+		}
+		buf = append(buf, enc...)
 	}
-	return buf
+	return buf, nil
 }
 
 // encodeValue encodes a single ColumnValue for use as a Pebble key component.
-func encodeValue(cv ColumnValue) []byte {
+func encodeValue(cv ColumnValue) ([]byte, error) {
+	if cv.Value == nil {
+		return nil, errNullKey
+	}
 	switch v := cv.Value.(type) {
 	case int:
-		return encodeInt64(int64(v))
+		return encodeInt64(int64(v)), nil
 	case int8:
-		return encodeInt64(int64(v))
+		return encodeInt64(int64(v)), nil
 	case int16:
-		return encodeInt64(int64(v))
+		return encodeInt64(int64(v)), nil
 	case int32:
-		return encodeInt32(v)
+		return encodeInt64(int64(v)), nil
 	case int64:
-		return encodeInt64(v)
+		return encodeInt64(v), nil
 	case uint:
-		return encodeUint64(uint64(v))
+		return encodeUint64(uint64(v)), nil
 	case uint8:
-		return encodeUint64(uint64(v))
+		return encodeUint64(uint64(v)), nil
 	case uint16:
-		return encodeUint64(uint64(v))
+		return encodeUint64(uint64(v)), nil
 	case uint32:
-		return encodeUint64(uint64(v))
+		return encodeUint64(uint64(v)), nil
 	case uint64:
-		return encodeUint64(v)
+		return encodeUint64(v), nil
 	case float32:
-		return encodeFloat64(float64(v))
+		return encodeFloat64(float64(v)), nil
 	case float64:
-		return encodeFloat64(v)
+		return encodeFloat64(v), nil
 	case bool:
 		if v {
-			return []byte{0x01}
+			return []byte{0x01}, nil
 		}
-		return []byte{0x00}
+		return []byte{0x00}, nil
 	case string:
-		return escapeKeyBytes([]byte(v))
+		return escapeKeyBytes([]byte(v)), nil
 	case []byte:
-		return escapeKeyBytes(v)
+		return escapeKeyBytes(v), nil
+	case json.RawMessage:
+		return escapeKeyBytes([]byte(v)), nil
+	case time.Time:
+		// time.Time.MarshalBinary produces a self-describing,
+		// lexicographically-monotonic encoding (version byte then
+		// second + nanosecond + location). Without this case, every
+		// TIMESTAMP / DATE / DATETIME primary-key column collapsed to
+		// empty bytes — silent data loss across all such tables.
+		b, err := v.MarshalBinary()
+		if err != nil {
+			return nil, fmtErr("encode_value time", err)
+		}
+		return b, nil
 	default:
-		return []byte{}
+		// Reject unknown types rather than silently collapsing them to
+		// empty bytes (which would cause every row to collide on the
+		// same Pebble key). Callers must convert via normaliseSQLValue
+		// or pass one of the supported Go types.
+		return nil, fmt.Errorf("rdbengine: encode_value: unsupported type %T for column %s", v, cv.Type)
 	}
 }
 
-// encodeInt32 encodes a signed int32 with sign-bit flip for correct byte-order sorting.
-func encodeInt32(v int32) []byte {
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], uint32(v)^0x80000000)
-	return buf[:]
-}
+// errNullKey is returned by encodeValue when called with a nil Value.
+// NULL primary keys are forbidden by the SQL standard and would silently
+// collapse distinct rows onto the same Pebble key.
+var errNullKey = fmt.Errorf("rdbengine: encode_value: NULL primary-key column")
 
 // encodeInt64 encodes a signed int64 with sign-bit flip for correct byte-order sorting.
 func encodeInt64(v int64) []byte {

@@ -290,6 +290,10 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 }
 
 // RestoreDBClusterFromSnapshot creates a new DB cluster from a DB cluster snapshot.
+// RestoreDBClusterFromSnapshot creates a new DB cluster from a DB cluster
+// snapshot. Cluster snapshots are metadata-only — they do not capture
+// row-level data. Only instance snapshots (DBSnapshot) capture row data
+// via the vmysql SnapshotOperator.
 func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
@@ -332,8 +336,8 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	}
 
 	var enginePort int
-	if s.engine != nil {
-		if port, err := s.engine.Open(reqCtx.GetRegion(), clusterID); err != nil {
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), clusterID); err != nil {
 			logs.Warn("failed to open cluster engine on snapshot restore", logs.String("cluster", clusterID), logs.Err(err))
 		} else {
 			enginePort = port
@@ -408,8 +412,8 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 	}
 
 	var enginePort int
-	if s.engine != nil {
-		if port, err := s.engine.Open(reqCtx.GetRegion(), clusterID); err != nil {
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), clusterID); err != nil {
 			logs.Warn("failed to open cluster engine on restore", logs.String("cluster", clusterID), logs.Err(err))
 		} else {
 			enginePort = port

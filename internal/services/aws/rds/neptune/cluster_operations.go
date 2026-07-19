@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
@@ -130,7 +131,7 @@ func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *ne
 // constructs the address from endpointAddress, stores it in cluster.Endpoint,
 // and writes the update through to Pebble.
 func (s *NeptuneService) setClusterEndpoint(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster, enginePort int) {
-	addr := s.endpointAddress(cluster.DBClusterIdentifier)
+	addr := s.endpointAddressFor(cluster.DBClusterIdentifier, cluster.Engine)
 	if addr == "" || enginePort <= 0 {
 		return
 	}
@@ -147,10 +148,28 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	if id == "" {
 		return nil, awserrors.NewMissingParameter("DBClusterIdentifier is required")
 	}
+	if err := rdssvc.ValidateDBClusterIdentifier(id); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 
 	engine := request.GetStringParam(params, "Engine")
 	if engine == "" {
 		engine = "neptune"
+	}
+	if err := rdssvc.ValidateEngine(engine); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+	engineVersion := request.GetStringParam(params, "EngineVersion")
+	if engineVersion == "" {
+		engineVersion = rdssvc.DefaultEngineVersion(engine)
+	}
+	if err := rdssvc.ValidateEngineVersion(engine, engineVersion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+	if dbName := request.GetStringParam(params, "DatabaseName"); dbName != "" {
+		if err := rdssvc.ValidateDatabaseName(dbName); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
 	}
 
 	store, err := s.store(reqCtx)
@@ -176,7 +195,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	cluster := &neptunestore.DBCluster{
 		DBClusterIdentifier:              id,
 		Engine:                           engine,
-		EngineVersion:                    request.GetStringParam(params, "EngineVersion"),
+		EngineVersion:                    engineVersion,
 		Status:                           "available",
 		Port:                             port,
 		BackupRetentionPeriod:            backupRetention,
@@ -234,8 +253,8 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	var enginePort int
-	if s.engine != nil {
-		if port, err := s.engine.Open(reqCtx.GetRegion(), id); err != nil {
+	if eng := s.engineFor(engine); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port
@@ -337,8 +356,8 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	if s.engine != nil {
-		if err := s.engine.Close(id); err != nil {
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if err := eng.Close(id); err != nil {
 			logs.Warn("failed to close cluster engine", logs.String("cluster", id), logs.Err(err))
 		}
 	}
@@ -524,8 +543,8 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 	}
 
 	var enginePort int
-	if s.engine != nil {
-		if port, err := s.engine.Open(reqCtx.GetRegion(), id); err != nil {
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine on start", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port
@@ -561,8 +580,8 @@ func (s *NeptuneService) StopDBCluster(ctx context.Context, reqCtx *request.Requ
 		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("DBCluster %s is not in available state (current: %s)", id, cluster.Status), http.StatusBadRequest)
 	}
 
-	if s.engine != nil {
-		if err := s.engine.Close(id); err != nil {
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if err := eng.Close(id); err != nil {
 			logs.Warn("failed to close cluster engine on stop", logs.String("cluster", id), logs.Err(err))
 		}
 	}

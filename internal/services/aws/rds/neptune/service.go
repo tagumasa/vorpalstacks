@@ -28,7 +28,9 @@ type NeptuneService struct {
 	eventBus       *eventbus.EventBus
 	cancelCleanup  context.CancelFunc
 	engine         rdssvc.Engine
+	mysqlEngine    rdssvc.Engine
 	porter         rdssvc.GetPorter
+	snapOp         rdssvc.SnapshotOperator
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
@@ -54,13 +56,22 @@ func (s *NeptuneService) SetServerHost(host string) {
 
 // endpointAddress returns the hostname for a cluster's Endpoint field.
 func (s *NeptuneService) endpointAddress(clusterID string) string {
+	return s.endpointAddressFor(clusterID, "neptune")
+}
+
+// endpointAddressFor returns the hostname for a cluster/instance Endpoint
+// field, choosing the appropriate AWS-style DNS suffix based on engine type.
+func (s *NeptuneService) endpointAddressFor(resourceID, engineType string) string {
 	if s.serverHost != "" {
 		if host, _, err := net.SplitHostPort(s.serverHost); err == nil {
 			return host
 		}
 		return s.serverHost
 	}
-	return fmt.Sprintf("%s.cluster-%s.%s.neptune.amazonaws.com", clusterID, s.accountID, s.region)
+	if engineType == "mysql" {
+		return fmt.Sprintf("%s.%s.%s.rds.amazonaws.com", resourceID, s.accountID, s.region)
+	}
+	return fmt.Sprintf("%s.cluster-%s.%s.neptune.amazonaws.com", resourceID, s.accountID, s.region)
 }
 
 // cleanupOldEvents periodically purges events older than the retention period.
@@ -103,6 +114,38 @@ func (s *NeptuneService) SetEventBus(bus *eventbus.EventBus) {
 
 func (s *NeptuneService) SetEngine(e rdssvc.Engine) {
 	s.engine = e
+}
+
+// SetMysqlEngine wires the MySQL (vmysql) engine so the handler can
+// serve RDS SDK clients that create MySQL instances/clusters. When the
+// engine type of a resource is "mysql", operations dispatch to this
+// engine instead of the Neptune engine.
+func (s *NeptuneService) SetMysqlEngine(e rdssvc.Engine) {
+	s.mysqlEngine = e
+}
+
+// SetSnapshotOperator wires the row-level snapshot operator (vmysql).
+// When set, CreateDBSnapshot captures actual row data, and
+// RestoreDBInstanceFromDBSnapshot / DeleteDBSnapshot recover / clean up
+// that data. When nil, snapshots are metadata-only.
+func (s *NeptuneService) SetSnapshotOperator(op rdssvc.SnapshotOperator) {
+	s.snapOp = op
+}
+
+// engineFor returns the appropriate engine for the given engine type.
+// Recognised values: "neptune" and "" (the default) map to the Neptune
+// engine; "mysql" maps to the MySQL engine. All other values return nil
+// so that engine open is a no-op rather than silently opening the wrong
+// engine.
+func (s *NeptuneService) engineFor(engineType string) rdssvc.Engine {
+	switch engineType {
+	case "", "neptune":
+		return s.engine
+	case "mysql":
+		return s.mysqlEngine
+	default:
+		return nil
+	}
 }
 
 func (s *NeptuneService) SetClusterPorter(p rdssvc.GetPorter) {

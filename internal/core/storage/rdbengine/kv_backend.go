@@ -79,3 +79,18 @@ func (w *iterWrap) key() []byte   { return w.iter.Key() }
 func (w *iterWrap) value() []byte { return w.iter.Value() }
 func (w *iterWrap) err() error    { return w.iter.Error() }
 func (w *iterWrap) close()        { w.iter.Close() }
+
+// snapshotIterWrap adapts a storage.Iterator (returned by Snapshot.ScanRange)
+// to the internal kvIterator interface.
+type snapshotIterWrap struct {
+	iter storage.Iterator
+	ok   bool
+}
+
+func (w *snapshotIterWrap) first()        { w.ok = w.iter.Next() }
+func (w *snapshotIterWrap) valid() bool   { return w.ok }
+func (w *snapshotIterWrap) next()         { w.ok = w.iter.Next() }
+func (w *snapshotIterWrap) key() []byte   { return w.iter.Key() }
+func (w *snapshotIterWrap) value() []byte { return w.iter.Value() }
+func (w *snapshotIterWrap) err() error    { return w.iter.Error() }
+func (w *snapshotIterWrap) close()        { w.iter.Close() }

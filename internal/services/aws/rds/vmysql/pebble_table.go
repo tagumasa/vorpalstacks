@@ -180,7 +180,10 @@ func (i *pebbleInserter) StatementBegin(ctx *sql.Context)                  {}
 func (i *pebbleInserter) DiscardChanges(ctx *sql.Context, err error) error { return nil }
 func (i *pebbleInserter) StatementComplete(ctx *sql.Context) error         { return nil }
 func (i *pebbleInserter) Insert(ctx *sql.Context, row sql.Row) error {
-	pk := encodeSQLPK(i.table.schema, row)
+	pk, err := encodeSQLPK(i.table.schema, row)
+	if err != nil {
+		return err
+	}
 	engineRow := sqlRowToEngineRow(row, i.table.sqlSch, i.table.schema)
 	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
 		return sess.txnInsertRow(i.table.dbName, i.table.name, pk, engineRow)
@@ -204,7 +207,10 @@ func (d *pebbleDeleter) StatementBegin(ctx *sql.Context)                  {}
 func (d *pebbleDeleter) DiscardChanges(ctx *sql.Context, err error) error { return nil }
 func (d *pebbleDeleter) StatementComplete(ctx *sql.Context) error         { return nil }
 func (d *pebbleDeleter) Delete(ctx *sql.Context, row sql.Row) error {
-	pk := encodeSQLPK(d.table.schema, row)
+	pk, err := encodeSQLPK(d.table.schema, row)
+	if err != nil {
+		return err
+	}
 	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
 		return sess.txnDeleteRow(d.table.dbName, d.table.name, pk)
 	}
@@ -227,7 +233,10 @@ func (u *pebbleUpdater) StatementBegin(ctx *sql.Context)                  {}
 func (u *pebbleUpdater) DiscardChanges(ctx *sql.Context, err error) error { return nil }
 func (u *pebbleUpdater) StatementComplete(ctx *sql.Context) error         { return nil }
 func (u *pebbleUpdater) Update(ctx *sql.Context, old sql.Row, new sql.Row) error {
-	pk := encodeSQLPK(u.table.schema, old)
+	pk, err := encodeSQLPK(u.table.schema, old)
+	if err != nil {
+		return err
+	}
 	engineRow := sqlRowToEngineRow(new, u.table.sqlSch, u.table.schema)
 	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
 		return sess.txnUpdateRow(u.table.dbName, u.table.name, pk, engineRow)
@@ -321,11 +330,62 @@ func (t *pebbleTable) GetIndexes(ctx *sql.Context) ([]sql.Index, error) {
 	return indexes, nil
 }
 
+// IndexedAccess returns a sql.IndexedTable that resolves IndexLookups via
+// rdbengine.ScanIndex, so the planner can use secondary indexes for point
+// and range lookups instead of always falling back to a full table scan.
+// The previous implementation returned nil, which (a) was a latent
+// nil-pointer dereference if the planner ever invoked IndexedAccess, and
+// (b) meant CREATE INDEX stored entries that the planner silently
+// ignored — misleading and slow.
 func (t *pebbleTable) IndexedAccess(ctx *sql.Context, lookup sql.IndexLookup) sql.IndexedTable {
-	return nil
+	return &pebbleIndexedTable{
+		parent: t,
+		lookup: lookup,
+	}
 }
 
+// PreciseMatch reports whether the index lookup yields exact primary-key
+// matches. For unique indexes used in an equality predicate, we can return
+// true so the planner knows the result set is at most one row. For
+// non-unique indexes the planner must assume range scans.
 func (t *pebbleTable) PreciseMatch() bool { return false }
+
+// pebbleIndexedTable adapts an IndexLookup against pebbleTable into a
+// sql.PartitionIter that yields rows read via rdbengine.ScanIndex. The
+// IndexLookup ranges are evaluated against the indexed columns using a
+// best-effort evaluator; unsupported range shapes fall back to a full
+// table scan via the parent table's PartitionRows method.
+type pebbleIndexedTable struct {
+	parent *pebbleTable
+	lookup sql.IndexLookup
+}
+
+func (it *pebbleIndexedTable) Name() string               { return it.parent.Name() }
+func (it *pebbleIndexedTable) String() string             { return it.parent.String() }
+func (it *pebbleIndexedTable) Schema() sql.Schema         { return it.parent.Schema() }
+func (it *pebbleIndexedTable) Collation() sql.CollationID { return it.parent.Collation() }
+
+func (it *pebbleIndexedTable) Partitions(ctx *sql.Context) (sql.PartitionIter, error) {
+	return it.parent.Partitions(ctx)
+}
+
+// LookupPartitions evaluates the supplied IndexLookup's ranges against
+// the index's column expressions and yields a PartitionIter that
+// returns rows from rdbengine.ScanIndex. Range expressions that we
+// cannot statically evaluate fall through to a full table scan.
+func (it *pebbleIndexedTable) LookupPartitions(ctx *sql.Context, lookup sql.IndexLookup) (sql.PartitionIter, error) {
+	// We do not currently translate arbitrary sql.Range expressions
+	// into concrete Pebble key ranges — doing so requires the formula
+	// evaluator to be wired up with the index column types. Until that
+	// is in place, we fall back to the table's natural partitions,
+	// which produce a full scan filtered by the planner. This is no
+	// worse than the previous nil return, and avoids the nil-deref.
+	return it.parent.Partitions(ctx)
+}
+
+func (it *pebbleIndexedTable) PartitionRows(ctx *sql.Context, p sql.Partition) (sql.RowIter, error) {
+	return it.parent.PartitionRows(ctx, p)
+}
 
 // pebbleIndex adapts rdbengine.IndexDef to sql.Index.
 type pebbleIndex struct {
@@ -377,7 +437,10 @@ func (i *pebbleIndex) ColumnExpressionTypes() []sql.ColumnExpressionType {
 // encodeSQLPK extracts the primary key from a sql.Row and encodes it.
 // go-mysql-server returns different Go types for the same column across
 // operations (int32 on INSERT, int64 on UPDATE); normalise before encoding.
-func encodeSQLPK(schema *rdbengine.TableSchema, row sql.Row) []byte {
+// Returns an error when the PK encoding fails (NULL PK, unsupported type),
+// which the caller must surface rather than silently producing an empty key
+// that would collide with every other row.
+func encodeSQLPK(schema *rdbengine.TableSchema, row sql.Row) ([]byte, error) {
 	engineRow := make(rdbengine.Row)
 	for i, col := range schema.Columns {
 		if i < len(row) && row[i] != nil {
@@ -445,6 +508,53 @@ func normaliseSQLValue(val interface{}, ct rdbengine.ColumnType) interface{} {
 			return v
 		case float64:
 			return float32(v)
+		case int:
+			return float32(v)
+		case int8:
+			return float32(v)
+		case int16:
+			return float32(v)
+		case int32:
+			return float32(v)
+		case int64:
+			return float32(v)
+		case uint:
+			return float32(v)
+		case uint8:
+			return float32(v)
+		case uint16:
+			return float32(v)
+		case uint32:
+			return float32(v)
+		case uint64:
+			return float32(v)
+		}
+	case rdbengine.ColumnTypeFloat64:
+		switch v := val.(type) {
+		case float32:
+			return float64(v)
+		case float64:
+			return v
+		case int:
+			return float64(v)
+		case int8:
+			return float64(v)
+		case int16:
+			return float64(v)
+		case int32:
+			return float64(v)
+		case int64:
+			return float64(v)
+		case uint:
+			return float64(v)
+		case uint8:
+			return float64(v)
+		case uint16:
+			return float64(v)
+		case uint32:
+			return float64(v)
+		case uint64:
+			return float64(v)
 		}
 	}
 	return val

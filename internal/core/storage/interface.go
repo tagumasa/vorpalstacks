@@ -268,6 +268,31 @@ type Iterator interface {
 	Close()
 }
 
+// Snapshot provides a consistent point-in-time read view of a Bucket.
+// All reads through a Snapshot observe the state as of the moment the
+// snapshot was created, regardless of concurrent writes. This is the
+// foundation for consistent cross-key / cross-table reads such as
+// database snapshots where iterating table A and then table B must not
+// see writes that committed between the two scans.
+//
+// The caller must call Close when finished to release the underlying
+// resources (e.g. a Pebble snapshot handle).
+type Snapshot interface {
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) bool
+	ScanRange(start, end []byte) Iterator
+	Close()
+}
+
+// Snapshotter is implemented by buckets whose backing store supports
+// point-in-time snapshots. Buckets that do not support snapshots (e.g.
+// in-memory test fakes) should not implement this interface; callers
+// that need snapshots should type-assert and fall back to a locking
+// strategy when the bucket does not implement Snapshotter.
+type Snapshotter interface {
+	NewSnapshot() Snapshot
+}
+
 // Stats contains storage statistics.
 type Stats struct {
 	KeyCount    int64

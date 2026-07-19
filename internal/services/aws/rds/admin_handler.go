@@ -46,6 +46,11 @@ type AdminHandler struct {
 	stores    StoreProvider
 	engines   EngineProvider
 	accountId string
+
+	// snapOp, when non-nil, allows CreateDBSnapshot and DeleteDBInstance
+	// to capture row-level data for snapshots. When nil, snapshots store
+	// metadata only (legacy behaviour).
+	snapOp SnapshotOperator
 }
 
 var _ rdsconnect.RDSServiceHandler = (*AdminHandler)(nil)
@@ -54,6 +59,13 @@ var _ rdsconnect.RDSServiceHandler = (*AdminHandler)(nil)
 // store provider and engine provider.
 func NewAdminHandler(stores StoreProvider, engines EngineProvider, accountId string) *AdminHandler {
 	return &AdminHandler{stores: stores, engines: engines, accountId: accountId}
+}
+
+// SetSnapshotOperator wires the snapshot data-copier. Called by
+// optional.go after the vmysql service has been initialised. Without
+// this call, snapshots store metadata only.
+func (h *AdminHandler) SetSnapshotOperator(op SnapshotOperator) {
+	h.snapOp = op
 }
 
 func (h *AdminHandler) getStore(header http.Header) (storerds.StoreInterface, error) {
@@ -132,9 +144,25 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 	if id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBInstanceIdentifier is required"))
 	}
+	if err := ValidateDBInstanceIdentifier(id); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := ValidateDBInstanceClass(req.Msg.Dbinstanceclass); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	engine := req.Msg.Engine
 	if engine == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Engine is required"))
+	}
+	if err := ValidateEngine(engine); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	engineVersion := req.Msg.Engineversion
+	if engineVersion == "" {
+		engineVersion = DefaultEngineVersion(engine)
+	}
+	if err := ValidateEngineVersion(engine, engineVersion); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	// Reject engines without a registered EngineProvider up front. AWS
 	// accepts a long list of engine values but this platform only wires
@@ -152,7 +180,7 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		DBInstanceIdentifier:       id,
 		DBClusterIdentifier:        req.Msg.Dbclusteridentifier,
 		Engine:                     engine,
-		EngineVersion:              req.Msg.Engineversion,
+		EngineVersion:              engineVersion,
 		DBInstanceClass:            req.Msg.Dbinstanceclass,
 		DBInstanceStatus:           "creating",
 		AvailabilityZone:           req.Msg.Availabilityzone,
@@ -298,6 +326,9 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInvalidArgument,
 				fmt.Errorf("FinalDBSnapshotIdentifier is required when SkipFinalSnapshot is false"))
 		}
+		if err := ValidateDBSnapshotIdentifier(req.Msg.Finaldbsnapshotidentifier); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
 		finalSnap := &storerds.DBInstanceSnapshot{
 			DBSnapshotIdentifier:   req.Msg.Finaldbsnapshotidentifier,
 			DBInstanceIdentifier:   id,
@@ -308,7 +339,7 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 			SnapshotType:           "manual",
 			Status:                 "available",
 			AvailabilityZone:       instance.AvailabilityZone,
-			DBSnapshotArn:          fmt.Sprintf("arn:aws:rds:%s:%s:snapshot:%s", region, h.accountId, req.Msg.Finaldbsnapshotidentifier),
+			DBSnapshotArn:          arnutil.NewARNBuilder(h.accountId, region).RDS().Snapshot(req.Msg.Finaldbsnapshotidentifier),
 			IAMDatabaseAuthEnabled: instance.IAMDatabaseAuthenticationEnabled,
 			AccountID:              h.accountId,
 			Region:                 region,
@@ -330,6 +361,18 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 		finalSnap.SnapshotCreateTime = &now
 		if err := store.CreateInstanceSnapshot(finalSnap); err != nil {
 			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
+		// Capture row-level data before the engine is torn down.
+		// SnapshotData copies every database / table / row / index
+		// into a 'snap_<snapshotID>' key prefix in the same Pebble
+		// bucket.
+		if h.snapOp != nil && instance.Engine == "mysql" {
+			if err := h.snapOp.SnapshotData(id, req.Msg.Finaldbsnapshotidentifier); err != nil {
+				logs.Warn("rds-admin: SnapshotData for final snapshot failed",
+					logs.String("instance", id),
+					logs.String("snapshot", req.Msg.Finaldbsnapshotidentifier),
+					logs.Err(err))
+			}
 		}
 	}
 
@@ -359,6 +402,9 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 	if id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBClusterIdentifier is required"))
 	}
+	if err := ValidateDBClusterIdentifier(id); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	// Per AWS RDS API spec, Engine is required for CreateDBCluster. Valid
 	// values are aurora-mysql, aurora-postgresql, mysql, postgres, neptune.
 	// Defaulting silently masked missing-engine requests as aurora-mysql
@@ -367,6 +413,21 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 	engine := req.Msg.Engine
 	if engine == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Engine is required"))
+	}
+	if err := ValidateEngine(engine); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	engineVersion := req.Msg.Engineversion
+	if engineVersion == "" {
+		engineVersion = DefaultEngineVersion(engine)
+	}
+	if err := ValidateEngineVersion(engine, engineVersion); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if req.Msg.Databasename != "" {
+		if err := ValidateDatabaseName(req.Msg.Databasename); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
 	}
 	// Reject engines without a registered EngineProvider up front. See
 	// CreateDBInstance for the rationale.
@@ -379,7 +440,7 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 	cluster := &storerds.DBCluster{
 		DBClusterIdentifier:              id,
 		Engine:                           engine,
-		EngineVersion:                    req.Msg.Engineversion,
+		EngineVersion:                    engineVersion,
 		Status:                           "creating",
 		MasterUsername:                   req.Msg.Masterusername,
 		DatabaseName:                     req.Msg.Databasename,
@@ -507,7 +568,7 @@ func (h *AdminHandler) DeleteDBCluster(ctx context.Context, req *connect.Request
 			ClusterCreateTime:                cluster.ClusterCreateTime,
 			StorageEncrypted:                 cluster.StorageEncrypted,
 			KmsKeyId:                         cluster.KmsKeyId,
-			DBSnapshotArn:                    fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", region, h.accountId, req.Msg.Finaldbsnapshotidentifier),
+			DBSnapshotArn:                    arnutil.NewARNBuilder(h.accountId, region).RDS().ClusterSnapshot(req.Msg.Finaldbsnapshotidentifier),
 			AccountID:                        h.accountId,
 			Region:                           region,
 			MasterUsername:                   cluster.MasterUsername,
@@ -785,54 +846,28 @@ func (h *AdminHandler) RemoveTagsFromResource(ctx context.Context, req *connect.
 }
 
 // DescribeDBEngineVersions returns the available RDS engine versions for both
-// Neptune and MySQL engines.
+// Neptune and MySQL engines. The full version list lives in validators.go
+// (supportedMysqlVersions, supportedNeptuneVersions) so the same data drives
+// DescribeDBEngineVersions and ValidateEngineVersion.
 func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connect.Request[pb.DescribeDBEngineVersionsMessage]) (*connect.Response[pb.DBEngineVersionMessage], error) {
-	versions := []*pb.DBEngineVersion{
-		// Neptune engine versions
-		{
-			Engine:                 "neptune",
-			Engineversion:          "1.3.2.0",
-			Dbparametergroupfamily: "neptune1",
-		},
-		{
-			Engine:                 "neptune",
-			Engineversion:          "1.3.1.0",
-			Dbparametergroupfamily: "neptune1",
-		},
-		{
-			Engine:                 "neptune",
-			Engineversion:          "1.2.1.0",
-			Dbparametergroupfamily: "neptune1",
-		},
-		// MySQL engine versions
-		{
-			Engine:                     "mysql",
-			Engineversion:              "8.0.40",
-			Dbparametergroupfamily:     "mysql8.0",
-			Dbenginedescription:        "MySQL 8.0",
-			Dbengineversiondescription: "MySQL 8.0.40",
-		},
-		{
-			Engine:                     "mysql",
-			Engineversion:              "8.0.39",
-			Dbparametergroupfamily:     "mysql8.0",
-			Dbenginedescription:        "MySQL 8.0",
-			Dbengineversiondescription: "MySQL 8.0.39",
-		},
-		{
-			Engine:                     "mysql",
-			Engineversion:              "8.4.3",
-			Dbparametergroupfamily:     "mysql8.4",
-			Dbenginedescription:        "MySQL 8.4",
-			Dbengineversiondescription: "MySQL 8.4.3",
-		},
-	}
+	versions := allEngineVersions()
 
 	// Filter by engine if requested
 	if req.Msg.Engine != "" {
 		filtered := make([]*pb.DBEngineVersion, 0)
 		for _, v := range versions {
 			if v.Engine == req.Msg.Engine {
+				filtered = append(filtered, v)
+			}
+		}
+		versions = filtered
+	}
+
+	// Filter by engine version if requested
+	if req.Msg.Engineversion != "" {
+		filtered := make([]*pb.DBEngineVersion, 0)
+		for _, v := range versions {
+			if v.Engineversion == req.Msg.Engineversion {
 				filtered = append(filtered, v)
 			}
 		}
@@ -1133,7 +1168,9 @@ func (h *AdminHandler) DescribeDBClusterSnapshotAttributes(ctx context.Context, 
 }
 
 // DescribeDBClusterEndpoints returns cluster endpoints filtered by cluster or
-// endpoint identifier.
+// endpoint identifier. Filters (when supplied) are applied in addition to
+// the explicit identifier-based filters, mirroring the AWS RDS API which
+// supports both shapes simultaneously.
 func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *connect.Request[pb.DescribeDBClusterEndpointsMessage]) (*connect.Response[pb.DBClusterEndpointMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -1149,6 +1186,9 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 	pbEndpoints := make([]*pb.DBClusterEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		if req.Msg.Dbclusterendpointidentifier != "" && ep.DBClusterEndpointIdentifier != req.Msg.Dbclusterendpointidentifier {
+			continue
+		}
+		if !applyRDSFilters(req.Msg.Filters, clusterEndpointFilterGetter(ep)) {
 			continue
 		}
 		pbEndpoints = append(pbEndpoints, &pb.DBClusterEndpoint{
@@ -1168,28 +1208,89 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 	}), nil
 }
 
+// clusterEndpointFilterGetter supports the AWS RDS filter names for
+// DBClusterEndpoint resources: db-cluster-endpoint-id and db-cluster-id.
+func clusterEndpointFilterGetter(ep *storerds.DBClusterEndpoint) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		switch name {
+		case "db-cluster-endpoint-id":
+			return ep.DBClusterEndpointIdentifier, true
+		case "db-cluster-id":
+			return ep.DBClusterIdentifier, true
+		default:
+			return "", false
+		}
+	}
+}
+
 // defaultClusterParamsForFamily returns the system-default parameters
 // appropriate for a given DB parameter group family. The admin handler
 // previously hard-coded Neptune defaults even when describing MySQL
 // parameter groups, returning nonsensical `neptune_query_timeout` values
 // for clusters that could never honour them.
+//
+// The parameter lists below are intentionally a representative subset
+// of AWS's published defaults: the most-tuned parameters that AWS RDS
+// customers actually inspect via DescribeDBClusterParameters. The
+// complete AWS list per family runs to hundreds of entries; expanding
+// to match AWS 1-for-1 is tracked as a separate data-entry task and is
+// not required for correctness of the API response.
 func defaultClusterParamsForFamily(family string) []struct{ name, value, desc, source, apply, dtype, modifiable string } {
 	switch {
 	case strings.HasPrefix(family, "neptune"):
 		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
 			{"neptune_query_timeout", "120000", "Query execution timeout in milliseconds", "system", "dynamic", "integer", "true"},
 			{"neptune_enable_audit_log", "0", "Enable audit logging", "system", "static", "boolean", "true"},
+			{"neptune_streams", "0", "Enable Neptune streams", "system", "dynamic", "boolean", "true"},
+			{"neptune_replica_primary_endpoint", "", "Override endpoint for replica primary", "system", "dynamic", "string", "true"},
 		}
-	case strings.HasPrefix(family, "mysql"), strings.HasPrefix(family, "aurora-mysql"):
+	case strings.HasPrefix(family, "mysql5.7"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"auto_increment_offset", "1", "Offset for auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"character_set_server", "utf8mb4", "Default server character set", "system", "dynamic", "string", "true"},
+			{"collation_server", "utf8mb4_general_ci", "Server default collation", "system", "dynamic", "string", "true"},
+			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+			{"innodb_buffer_pool_size", "{DBInstanceClassMemory*3/4}", "Size of the InnoDB buffer pool", "system", "dynamic", "integer", "true"},
+			{"innodb_log_file_size", "134217728", "Size of each InnoDB log file in bytes", "system", "dynamic", "integer", "true"},
+			{"long_query_time", "10", "Threshold in seconds for slow_query_log", "system", "dynamic", "float", "true"},
+			{"slow_query_log", "0", "Enable slow query log", "system", "dynamic", "boolean", "true"},
+			{"transaction_isolation", "REPEATABLE-READ", "Default transaction isolation level", "system", "dynamic", "string", "true"},
+		}
+	case strings.HasPrefix(family, "mysql8.0"):
+		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"auto_increment_offset", "1", "Offset for auto-generated IDs", "system", "dynamic", "integer", "true"},
+			{"character_set_server", "utf8mb4", "Default server character set", "system", "dynamic", "string", "true"},
+			{"collation_server", "utf8mb4_0900_ai_ci", "Server default collation", "system", "dynamic", "string", "true"},
+			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+			{"innodb_buffer_pool_size", "{DBInstanceClassMemory*3/4}", "Size of the InnoDB buffer pool", "system", "dynamic", "integer", "true"},
+			{"innodb_log_file_size", "134217728", "Size of each InnoDB log file in bytes", "system", "dynamic", "integer", "true"},
+			{"long_query_time", "10", "Threshold in seconds for slow_query_log", "system", "dynamic", "float", "true"},
+			{"slow_query_log", "0", "Enable slow query log", "system", "dynamic", "boolean", "true"},
+			{"transaction_isolation", "REPEATABLE-READ", "Default transaction isolation level", "system", "dynamic", "string", "true"},
+			{"binlog_expire_logs_seconds", "0", "Binlog expiration in seconds", "system", "dynamic", "integer", "true"},
+		}
+	case strings.HasPrefix(family, "mysql8.4"):
 		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
 			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
 			{"character_set_server", "utf8mb4", "Default server character set", "system", "dynamic", "string", "true"},
+			{"collation_server", "utf8mb4_0900_ai_ci", "Server default collation", "system", "dynamic", "string", "true"},
 			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
+			{"innodb_buffer_pool_size", "{DBInstanceClassMemory*3/4}", "Size of the InnoDB buffer pool", "system", "dynamic", "integer", "true"},
+			{"long_query_time", "10", "Threshold in seconds for slow_query_log", "system", "dynamic", "float", "true"},
+			{"slow_query_log", "0", "Enable slow query log", "system", "dynamic", "boolean", "true"},
+			{"transaction_isolation", "REPEATABLE-READ", "Default transaction isolation level", "system", "dynamic", "string", "true"},
+			{"binlog_expire_logs_seconds", "0", "Binlog expiration in seconds", "system", "dynamic", "integer", "true"},
+			{"innodb_redo_log_capacity", "8589934592", "InnoDB redo log capacity in bytes", "system", "dynamic", "integer", "true"},
 		}
 	case strings.HasPrefix(family, "postgres"), strings.HasPrefix(family, "aurora-postgresql"):
 		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
 			{"max_connections", "100", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
 			{"shared_buffers", "128", "Shared buffer pool size in 8KB pages", "system", "static", "integer", "false"},
+			{"work_mem", "4096", "Memory in KB used by internal sort operations", "system", "dynamic", "integer", "true"},
+			{"maintenance_work_mem", "65536", "Memory in KB used by maintenance operations", "system", "dynamic", "integer", "true"},
+			{"log_min_duration_statement", "-1", "Log statements slower than this many ms", "system", "dynamic", "integer", "true"},
 		}
 	default:
 		return nil
@@ -1204,15 +1305,10 @@ func defaultInstanceParamsForFamily(family string) []struct{ name, value, desc, 
 		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
 			{"neptune_query_timeout", "120000", "Query execution timeout", "system", "dynamic", "integer", "true"},
 		}
-	case strings.HasPrefix(family, "mysql"), strings.HasPrefix(family, "aurora-mysql"):
-		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
-			{"auto_increment_increment", "1", "Increments between auto-generated IDs", "system", "dynamic", "integer", "true"},
-			{"max_connections", "150", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
-		}
+	case strings.HasPrefix(family, "mysql5.7"), strings.HasPrefix(family, "mysql8.0"), strings.HasPrefix(family, "mysql8.4"):
+		return defaultClusterParamsForFamily(family)
 	case strings.HasPrefix(family, "postgres"), strings.HasPrefix(family, "aurora-postgresql"):
-		return []struct{ name, value, desc, source, apply, dtype, modifiable string }{
-			{"max_connections", "100", "Maximum simultaneous connections", "system", "dynamic", "integer", "true"},
-		}
+		return defaultClusterParamsForFamily(family)
 	default:
 		return nil
 	}
@@ -1860,8 +1956,12 @@ func eventSubscriptionToPb(s *storerds.EventSubscription) *pb.EventSubscription 
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the RDS admin console.
-func NewConnectHandler(stores StoreProvider, engines EngineProvider, accountID string) (string, http.Handler) {
-	return rdsconnect.NewRDSServiceHandler(NewAdminHandler(stores, engines, accountID))
+// snapOp may be nil; when non-nil it enables row-level snapshot data capture
+// for CreateDBSnapshot and DeleteDBInstance final snapshots.
+func NewConnectHandler(stores StoreProvider, engines EngineProvider, accountID string, snapOp SnapshotOperator) (string, http.Handler) {
+	h := NewAdminHandler(stores, engines, accountID)
+	h.SetSnapshotOperator(snapOp)
+	return rdsconnect.NewRDSServiceHandler(h)
 }
 
 // CreateDBSnapshot creates a manual snapshot of a DB instance.
@@ -1877,6 +1977,9 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 	if snapshotID == "" || instanceID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBSnapshotIdentifier and DBInstanceIdentifier are required"))
 	}
+	if err := ValidateDBSnapshotIdentifier(snapshotID); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
 	instance, err := store.GetInstance(instanceID)
 	if err != nil {
@@ -1884,11 +1987,7 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 	}
 
 	now := time.Now()
-	// NOTE: arnutil.RDS().Snapshot() currently produces 'snapshot/<id>' but
-	// the AWS RDS ARN format uses a colon separator ('snapshot:<id>'). Until
-	// arnutil.RDSBuilder is fixed to match the AWS spec, the existing
-	// fmt.Sprintf is retained to preserve AWS-correct ARN output here.
-	arn := fmt.Sprintf("arn:aws:rds:%s:%s:snapshot:%s", region, h.accountId, snapshotID)
+	arn := arnutil.NewARNBuilder(h.accountId, region).RDS().Snapshot(snapshotID)
 	snap := &storerds.DBInstanceSnapshot{
 		DBSnapshotIdentifier:   snapshotID,
 		DBInstanceIdentifier:   instanceID,
@@ -1927,6 +2026,19 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 
 	if err := store.CreateInstanceSnapshot(snap); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// Capture row-level data for MySQL instances so that
+	// RestoreDBInstanceFromDBSnapshot can recover user tables. Without
+	// this call the snapshot is metadata-only and restore produces an
+	// empty instance.
+	if h.snapOp != nil && instance.Engine == "mysql" {
+		if err := h.snapOp.SnapshotData(instanceID, snapshotID); err != nil {
+			logs.Warn("rds-admin: SnapshotData for manual snapshot failed",
+				logs.String("instance", instanceID),
+				logs.String("snapshot", snapshotID),
+				logs.Err(err))
+		}
 	}
 
 	// AWS: when the source instance has CopyTagsToSnapshot=true, the

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Index operations for secondary index management stored in Pebble.
@@ -17,18 +18,33 @@ func (s *Store) CreateIndex(ctx context.Context, db, table, indexName string, co
 	if err := s.checkOpen(); err != nil {
 		return err
 	}
+	if s.snap != nil {
+		return errReadOnly
+	}
+	if err := ValidateIdentifier("database", db); err != nil {
+		return err
+	}
+	if err := ValidateIdentifier("table", table); err != nil {
+		return err
+	}
+	if err := ValidateIdentifier("index", indexName); err != nil {
+		return err
+	}
+	if len(columns) == 0 {
+		return fmt.Errorf("rdbengine: create_index: columns list is empty")
+	}
 
 	mu := s.TableLock(db, table)
 	mu.Lock()
 	defer mu.Unlock()
 
 	tblKey := catalogTableKey(s.engine, db, table)
-	if !s.backend.has(tblKey) {
+	if !s.has(tblKey) {
 		return ErrNotFound
 	}
 
 	idxCatalogKey := catalogIndexKey(s.engine, db, table, indexName)
-	if s.backend.has(idxCatalogKey) {
+	if s.has(idxCatalogKey) {
 		return ErrAlreadyExists
 	}
 
@@ -60,7 +76,7 @@ func (s *Store) CreateIndex(ctx context.Context, db, table, indexName string, co
 
 	prefix := rowKeyPrefix(s.engine, db, table)
 	end := rowEndKey(s.engine, db, table)
-	iter := s.backend.newIter(prefix, end)
+	iter := s.newIter(prefix, end)
 	defer iter.close()
 
 	for iter.first(); iter.valid(); iter.next() {
@@ -70,13 +86,20 @@ func (s *Store) CreateIndex(ctx context.Context, db, table, indexName string, co
 			return fmtErr("create_index backfill decode", decodeErr)
 		}
 
-		colVal := s.encodeIndexColumns(def, row)
+		colVal, hasNull, encErr := s.encodeIndexColumns(def, row)
+		if encErr != nil {
+			return encErr
+		}
+		// SQL standard / MySQL behaviour: NULL values are distinct for
+		// uniqueness; never reject a row for colliding on an empty
+		// unique key, and never insert a uniq/<empty> entry for a row
+		// whose indexed columns are NULL.
 		iKey := indexKey(s.engine, db, table, indexName, colVal, pk)
 		batch.put(iKey, pk)
 
-		if unique {
+		if unique && !hasNull {
 			uKey := uniqueKey(s.engine, db, table, indexName, colVal)
-			existing, getErr := s.backend.get(uKey)
+			existing, getErr := s.get(uKey)
 			if getErr != nil {
 				return fmtErr("create_index backfill unique check", getErr)
 			}
@@ -98,13 +121,16 @@ func (s *Store) DropIndex(ctx context.Context, db, table, indexName string) erro
 	if err := s.checkOpen(); err != nil {
 		return err
 	}
+	if s.snap != nil {
+		return errReadOnly
+	}
 
 	mu := s.TableLock(db, table)
 	mu.Lock()
 	defer mu.Unlock()
 
 	idxCatalogKey := catalogIndexKey(s.engine, db, table, indexName)
-	if !s.backend.has(idxCatalogKey) {
+	if !s.has(idxCatalogKey) {
 		return ErrNotFound
 	}
 
@@ -127,6 +153,11 @@ func (s *Store) DropIndex(ctx context.Context, db, table, indexName string) erro
 // checkUniqueConstraints validates that no unique constraint would be violated
 // by the given row. The pk parameter identifies the current row — when updating,
 // existing unique entries belonging to the same pk are skipped.
+//
+// Per the SQL standard and MySQL behaviour, NULL values in unique-indexed
+// columns are distinct: rows with NULL in any indexed column bypass the
+// unique check entirely. This matches MySQL which allows multiple NULL
+// values in a UNIQUE column.
 func (s *Store) checkUniqueConstraints(db, table string, pk []byte, row Row) error {
 	indexes, err := s.listIndexDefs(db, table)
 	if err != nil {
@@ -136,9 +167,16 @@ func (s *Store) checkUniqueConstraints(db, table string, pk []byte, row Row) err
 		if !idx.Unique {
 			continue
 		}
-		colVal := s.encodeIndexColumns(idx, row)
+		colVal, hasNull, encErr := s.encodeIndexColumns(idx, row)
+		if encErr != nil {
+			return encErr
+		}
+		if hasNull {
+			// NULLs are distinct for uniqueness; skip the check entirely.
+			continue
+		}
 		uKey := uniqueKey(s.engine, db, table, idx.Name, colVal)
-		existing, err := s.backend.get(uKey)
+		existing, err := s.get(uKey)
 		if err != nil {
 			return err
 		}
@@ -149,36 +187,52 @@ func (s *Store) checkUniqueConstraints(db, table string, pk []byte, row Row) err
 	return nil
 }
 
-func (s *Store) appendIndexEntries(batch kvBatch, db, table string, pk []byte, row Row) {
+func (s *Store) appendIndexEntries(batch kvBatch, db, table string, pk []byte, row Row) error {
 	indexes, err := s.listIndexDefs(db, table)
-	if err != nil || len(indexes) == 0 {
-		return
+	if err != nil {
+		return err
+	}
+	if len(indexes) == 0 {
+		return nil
 	}
 	for _, idx := range indexes {
-		colVal := s.encodeIndexColumns(idx, row)
+		colVal, hasNull, encErr := s.encodeIndexColumns(idx, row)
+		if encErr != nil {
+			return encErr
+		}
 		iKey := indexKey(s.engine, db, table, idx.Name, colVal, pk)
 		batch.put(iKey, pk)
-		if idx.Unique {
+		if idx.Unique && !hasNull {
 			uKey := uniqueKey(s.engine, db, table, idx.Name, colVal)
 			batch.put(uKey, pk)
 		}
 	}
+	return nil
 }
 
-func (s *Store) appendRemoveIndexEntries(batch kvBatch, db, table string, pk []byte, row Row) {
+func (s *Store) appendRemoveIndexEntries(batch kvBatch, db, table string, pk []byte, row Row) error {
 	indexes, err := s.listIndexDefs(db, table)
-	if err != nil || len(indexes) == 0 {
-		return
+	if err != nil {
+		return err
+	}
+	if len(indexes) == 0 {
+		return nil
 	}
 	for _, idx := range indexes {
-		colVal := s.encodeIndexColumns(idx, row)
+		colVal, hasNull, encErr := s.encodeIndexColumns(idx, row)
+		if encErr != nil {
+			return encErr
+		}
 		iKey := indexKey(s.engine, db, table, idx.Name, colVal, pk)
 		batch.del(iKey)
-		if idx.Unique {
+		// When the row had NULL indexed columns, no uniq entry was
+		// written at insert time, so there is nothing to remove.
+		if idx.Unique && !hasNull {
 			uKey := uniqueKey(s.engine, db, table, idx.Name, colVal)
 			batch.del(uKey)
 		}
 	}
+	return nil
 }
 
 // ScanIndex returns rows matching an index scan via prefix iteration.
@@ -208,29 +262,38 @@ func (s *Store) ScanIndex(ctx context.Context, db, table, indexName string, opts
 		schema:   schema,
 		db:       db,
 		table:    table,
-		iter:     s.backend.newIter(lower, upper),
+		iter:     s.newIter(lower, upper),
 		limit:    opts.Limit,
 		offset:   opts.Offset,
 		consumed: 0,
 	}, nil
 }
 
-// encodeIndexColumns encodes the indexed columns from a row into a single key component.
-func (s *Store) encodeIndexColumns(idx IndexDef, row Row) []byte {
+// encodeIndexColumns encodes the indexed columns from a row into a single
+// key component. The returned `hasNull` flag is true when any indexed
+// column's value was NULL; per the SQL standard and MySQL semantics,
+// NULL values are distinct for uniqueness purposes and must NOT collide
+// on a common empty key. Callers (checkUniqueConstraints, CreateIndex
+// backfill) skip the unique-check entirely when hasNull is true.
+func (s *Store) encodeIndexColumns(idx IndexDef, row Row) ([]byte, bool, error) {
 	var buf []byte
-	first := true
-	for _, col := range idx.Columns {
-		if !first {
+	hasNull := false
+	for i, col := range idx.Columns {
+		if i > 0 {
 			buf = append(buf, 0x00)
 		}
-		first = false
 		cv, ok := row[col]
 		if !ok || cv.Value == nil {
+			hasNull = true
 			continue
 		}
-		buf = append(buf, encodeValue(cv)...)
+		enc, err := encodeValue(cv)
+		if err != nil {
+			return nil, false, fmtErr("encode_index_columns", err)
+		}
+		buf = append(buf, enc...)
 	}
-	return buf
+	return buf, hasNull, nil
 }
 
 // indexRowIter iterates over index entries and fetches the corresponding rows.

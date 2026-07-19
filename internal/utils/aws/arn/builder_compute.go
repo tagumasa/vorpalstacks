@@ -84,16 +84,28 @@ type RDSBuilder struct{ *ARNBuilder }
 func (b *ARNBuilder) RDS() *RDSBuilder { return &RDSBuilder{b} }
 
 // Cluster constructs an ARN for an RDS/Neptune DB cluster.
-func (b *RDSBuilder) Cluster(id string) string { return b.Build("rds", "cluster/"+id) }
+//
+// AWS RDS ARN format (verified against the Amazon RDS User Guide,
+// "Constructing an ARN for Amazon RDS") uses a colon separator between
+// the resource type and the resource name:
+//
+//	arn:aws:rds:<region>:<account>:cluster:<name>
+//
+// The previous implementation produced 'cluster/<name>' (with a slash),
+// which is malformed per the AWS spec and caused SDK clients to fail
+// ARN parsing on every cluster-related operation.
+func (b *RDSBuilder) Cluster(id string) string { return b.Build("rds", "cluster:"+id) }
 
 // ClusterSnapshot constructs an ARN for an RDS/Neptune DB cluster snapshot.
 func (b *RDSBuilder) ClusterSnapshot(id string) string {
-	return b.Build("rds", "cluster-snapshot/"+id)
+	return b.Build("rds", "cluster-snapshot:"+id)
 }
 
 // DBInstance constructs an ARN for an RDS/Neptune DB instance.
-func (b *RDSBuilder) DBInstance(id string) string { return b.Build("rds", "db/"+id) }
-func (b *RDSBuilder) Snapshot(id string) string   { return b.Build("rds", "snapshot/"+id) }
+func (b *RDSBuilder) DBInstance(id string) string { return b.Build("rds", "db:"+id) }
+
+// Snapshot constructs an ARN for an RDS/Neptune DB instance snapshot.
+func (b *RDSBuilder) Snapshot(id string) string { return b.Build("rds", "snapshot:"+id) }
 
 // ClusterEndpoint constructs an ARN for an RDS/Neptune DB cluster endpoint.
 func (b *RDSBuilder) ClusterEndpoint(id string) string {
@@ -102,7 +114,7 @@ func (b *RDSBuilder) ClusterEndpoint(id string) string {
 
 // GlobalCluster constructs an ARN for an RDS/Neptune global cluster.
 func (b *RDSBuilder) GlobalCluster(id string) string {
-	return b.Build("rds", "global-cluster/"+id)
+	return b.Build("rds", "global-cluster:"+id)
 }
 
 // StepFunctions returns a StepFunctionsBuilder for constructing Step Functions ARNs.

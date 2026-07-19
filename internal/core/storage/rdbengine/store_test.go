@@ -60,7 +60,11 @@ func makeRow(id int32, email, name string) Row {
 }
 
 func pkOf(id int32) []byte {
-	return encodeValue(ColumnValue{Type: ColumnTypeInt32, Value: id})
+	enc, err := encodeValue(ColumnValue{Type: ColumnTypeInt32, Value: id})
+	if err != nil {
+		panic(err)
+	}
+	return enc
 }
 
 // TestTxnDeleteRowRemovesIndexEntries verifies that TxnDeleteRow cleans up
@@ -140,7 +144,10 @@ func TestTxnUpdateRowRemovesOldIndexEntries(t *testing.T) {
 	}
 
 	// Scan index for the OLD email value — should find nothing.
-	oldVal := encodeValue(ColumnValue{Type: ColumnTypeString, Value: "alice@example.com"})
+	oldVal, err := encodeValue(ColumnValue{Type: ColumnTypeString, Value: "alice@example.com"})
+	if err != nil {
+		t.Fatalf("encodeValue old: %v", err)
+	}
 	it, err := store.ScanIndex(ctx, "testdb", "users", "idx_email", IndexScanOptions{
 		Start: oldVal,
 		End:   append(oldVal, 0xFF),
@@ -158,7 +165,10 @@ func TestTxnUpdateRowRemovesOldIndexEntries(t *testing.T) {
 	}
 
 	// Scan index for the NEW email value — should find 1 entry.
-	newVal := encodeValue(ColumnValue{Type: ColumnTypeString, Value: "bob@example.com"})
+	newVal, err := encodeValue(ColumnValue{Type: ColumnTypeString, Value: "bob@example.com"})
+	if err != nil {
+		t.Fatalf("encodeValue new: %v", err)
+	}
 	it2, err := store.ScanIndex(ctx, "testdb", "users", "idx_email", IndexScanOptions{
 		Start: newVal,
 		End:   append(newVal, 0xFF),

@@ -3,11 +3,14 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	rdsstore "vorpalstacks/internal/store/aws/rds"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -18,6 +21,9 @@ func (s *NeptuneService) CreateDBSnapshot(ctx context.Context, reqCtx *request.R
 	snapshotID := request.GetStringParam(params, "DBSnapshotIdentifier")
 	if snapshotID == "" {
 		return nil, fmt.Errorf("DBSnapshotIdentifier is required")
+	}
+	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
 	if instanceID == "" {
@@ -53,6 +59,17 @@ func (s *NeptuneService) CreateDBSnapshot(ctx context.Context, reqCtx *request.R
 
 	if err := store.CreateInstanceSnapshot(snap); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	// Capture row-level data for MySQL instances so that
+	// RestoreDBInstanceFromDBSnapshot can recover user tables.
+	if s.snapOp != nil && instance.Engine == "mysql" {
+		if err := s.snapOp.SnapshotData(instanceID, snapshotID); err != nil {
+			logs.Warn("neptune: SnapshotData for manual snapshot failed",
+				logs.String("instance", instanceID),
+				logs.String("snapshot", snapshotID),
+				logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{
@@ -101,18 +118,31 @@ func (s *NeptuneService) DeleteDBSnapshot(ctx context.Context, reqCtx *request.R
 	if snapshotID == "" {
 		return nil, fmt.Errorf("DBSnapshotIdentifier is required")
 	}
+	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetInstanceSnapshot(snapshotID); err != nil {
+	snapshot, err := store.GetInstanceSnapshot(snapshotID)
+	if err != nil {
 		return nil, translateStoreError(err)
 	}
 
 	if err := store.DeleteInstanceSnapshot(snapshotID); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	// Clean up row-level data for MySQL snapshots so it does not leak.
+	if s.snapOp != nil && snapshot.Engine == "mysql" {
+		if err := s.snapOp.DeleteSnapshotData(snapshotID); err != nil {
+			logs.Warn("neptune: DeleteSnapshotData failed",
+				logs.String("snapshot", snapshotID),
+				logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{}, nil
