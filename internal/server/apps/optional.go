@@ -2,9 +2,11 @@ package apps
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 
 	"time"
 	"vorpalstacks/internal/core/logs"
@@ -61,9 +63,11 @@ import (
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 	storerds "vorpalstacks/internal/store/aws/rds"
+	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -73,6 +77,11 @@ import (
 func (a *App) initOptionalServices() error {
 	st := a.state
 	st.portAllocator = portalloc.New(appconfig.GetStore())
+
+	// Initialise the standalone RDS store lookup before any service init.
+	// This is used by the RDS admin handler and the RDS Data API and is
+	// always available, even when Neptune is disabled.
+	a.initRDSStoreLookup(st)
 
 	initers := []struct {
 		enabled bool
@@ -286,14 +295,56 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 
 // --- RDS MySQL (optional) ---
 
+// initRDSStoreLookup creates a per-region RDS store factory that is
+// independent of the Neptune service. It uses the same Pebble bucket
+// configuration as the Neptune store (neptune_clusters, neptune_instances,
+// etc.), so data written via the RDS admin API is visible to all consumers
+// regardless of which services are enabled. This eliminates the
+// Neptune-dependency that previously caused cluster ARN resolution to fail
+// with InternalServerError when Neptune was disabled (M-2) and the nil
+// dereference in the RDS admin handler under the same condition (L-5).
+func (a *App) initRDSStoreLookup(st *serviceState) {
+	sm := a.server.StorageManager()
+	var cache sync.Map
+	st.rdsStoreLookup = func(region string) (storerds.StoreInterface, error) {
+		return storecommon.GetOrCreateStoreE(&cache, region, func() (storerds.StoreInterface, error) {
+			rs, err := sm.GetStorage(region)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get regional storage for RDS store: %w", err)
+			}
+			return storerds.NewRDSStore(rs, storerds.BucketConfig{
+				ClusterBucket:           "neptune_clusters",
+				InstanceBucket:          "neptune_instances",
+				SnapshotBucket:          "neptune_snapshots",
+				InstSnapshotBucket:      "neptune_inst_snapshots",
+				ClusterParamGroupBucket: "neptune_cluster_param_groups",
+				ParamGroupBucket:        "neptune_param_groups",
+				SubnetGroupBucket:       "neptune_subnet_groups",
+				GlobalClusterBucket:     "neptune_global_clusters",
+				EventSubBucket:          "neptune_event_subscriptions",
+				EventsBucket:            "neptune_events",
+				TagsBucket:              "neptune_tags",
+				Namespace:               "neptune",
+			}), nil
+		})
+	}
+}
+
 func (a *App) initRDSMySQL(st *serviceState) error {
 	svc := svcvmysql.NewService(st.portAllocator)
 	svc.SetStorageManager(a.server.StorageManager())
 	svc.SetRegion(st.region)
 	st.vmysqlService = svc
 
-	if _, err := svc.Open(st.region, "test-instance"); err != nil {
-		return fmt.Errorf("failed to open test MySQL instance: %w", err)
+	// The hardcoded "test-instance" engine exists to support the rdsdata
+	// SDK test suite, which references arn:...:db:test-instance directly.
+	// In any deployment that is not running the SDK test suite the
+	// engine would leak a Pebble bucket and a TCP listener for no
+	// benefit, so gate its creation on TEST_MODE.
+	if os.Getenv("TEST_MODE") == "true" || os.Getenv("TEST_MODE") == "1" {
+		if _, err := svc.Open(st.region, "test-instance"); err != nil {
+			return fmt.Errorf("failed to open test MySQL instance: %w", err)
+		}
 	}
 
 	a.addShutdown("rds-mysql", func(ctx context.Context) error {
@@ -312,7 +363,28 @@ func (a *App) initRDSData(st *serviceState) error {
 
 	rdsDataSvc := svcrdsdata.NewRDSDataService()
 	rdsDataSvc.SetVmysqlProvider(&vmysqlEngineProvider{svc: st.vmysqlService})
-	rdsDataSvc.SetRDSStoreProvider(&rdsStoreProvider{})
+
+	// Cluster ARN resolution uses the standalone RDS store lookup that
+	// is always available (initialised in initRDSStoreLookup), regardless
+	// of whether Neptune is enabled. The store reads/writes the same
+	// Pebble buckets as the Neptune store, ensuring data compatibility.
+	rdsDataSvc.SetRDSStoreProvider(&rdsStoreProvider{
+		region: st.region,
+		lookup: st.rdsStoreLookup,
+	})
+
+	// Secrets Manager validation: when secretsmanager is enabled, wire it in
+	// so secretArn is actually looked up rather than accepted verbatim.
+	if st.secretsManagerService != nil {
+		secretLookup := st.secretsManagerService.GetStoreForRegion
+		rdsDataSvc.SetSecretResolver(&rdsDataSecretResolver{
+			region: st.region,
+			lookup: func(region string) (secretsmanagerstore.SecretStoreInterface, error) {
+				return secretLookup(region)
+			},
+		})
+	}
+
 	if eb := a.server.EventBus(); eb != nil {
 		rdsDataSvc.SetEventBus(eb)
 		eb.SetRDSDataInvoker(&rdsDataInvokerAdapter{service: rdsDataSvc})
@@ -341,18 +413,101 @@ func (p *vmysqlEngineProvider) NewContext(instanceID string, database string) *s
 	return p.svc.NewContext(instanceID, database)
 }
 
-// rdsStoreProvider adapts the RDS store for ARN resolution.
-type rdsStoreProvider struct{}
+// rdsStoreProvider resolves RDS resource ARNs to live DB instance IDs by
+// consulting the unified RDS store. It implements the
+// svcrdsdata.RDSStoreProvider interface and replaces the previous stub that
+// returned the cluster ID verbatim.
+//
+// For cluster ARNs the provider lists all DB instances whose
+// DBClusterIdentifier matches and returns the first writer instance. AWS
+// Data API semantics require the writer (not a reader) for SQL execution.
+type rdsStoreProvider struct {
+	region string
+	lookup func(region string) (storerds.StoreInterface, error)
+}
 
 func (p *rdsStoreProvider) GetInstance(identifier string) (string, string, string, error) {
-	// Returns instanceName, engine, status, error
-	// For now, delegate to the vmysql service which tracks running instances
-	return identifier, "mysql", "available", nil
+	if p == nil || p.lookup == nil {
+		return "", "", "", fmt.Errorf("rds store not configured")
+	}
+	store, err := p.lookup(p.region)
+	if err != nil {
+		return "", "", "", err
+	}
+	inst, err := store.GetInstance(identifier)
+	if err != nil {
+		return "", "", "", err
+	}
+	return inst.DBInstanceIdentifier, inst.Engine, inst.DBInstanceStatus, nil
 }
 
 func (p *rdsStoreProvider) GetCluster(identifier string) (string, []string, error) {
-	// Returns clusterName, instances, error
-	return identifier, []string{identifier}, nil
+	if p == nil || p.lookup == nil {
+		return "", nil, fmt.Errorf("rds store not configured")
+	}
+	store, err := p.lookup(p.region)
+	if err != nil {
+		return "", nil, err
+	}
+	if _, err := store.GetCluster(identifier); err != nil {
+		return "", nil, err
+	}
+	// Find every DB instance whose DBClusterIdentifier matches the requested
+	// cluster, then prefer the writer. Aurora exposes the writer via the
+	// instance endpoint mode; our store does not yet model reader/writer
+	// distinction explicitly, so the first member is returned. This matches
+	// the documented Data API behaviour of routing to a writer instance and
+	// is sufficient for the single-writer topology used by the local
+	// vmysql engine.
+	instances, err := store.ListInstances()
+	if err != nil {
+		return "", nil, err
+	}
+	var members []string
+	for _, inst := range instances {
+		if inst.DBClusterIdentifier == identifier {
+			members = append(members, inst.DBInstanceIdentifier)
+		}
+	}
+	if len(members) == 0 {
+		return "", nil, fmt.Errorf("cluster %s has no instances", identifier)
+	}
+	return identifier, members, nil
+}
+
+// rdsDataSecretResolver implements svcrdsdata.SecretResolver by delegating
+// to the Secrets Manager service. The secret's SecretString is parsed as a
+// JSON credential document; failures map to the AWS exception types
+// (SecretsErrorException for retrieval, InvalidSecretException for malformed
+// credentials).
+type rdsDataSecretResolver struct {
+	region string
+	lookup func(region string) (secretsmanagerstore.SecretStoreInterface, error)
+}
+
+func (r *rdsDataSecretResolver) ResolveSecret(ctx context.Context, secretArn string) (*svcrdsdata.SecretCredential, error) {
+	if r == nil || r.lookup == nil {
+		return nil, svcrdsdata.SecretsError("secrets manager not configured")
+	}
+	store, err := r.lookup(r.region)
+	if err != nil {
+		return nil, svcrdsdata.SecretsError(fmt.Sprintf("failed to load secrets store for region %s: %v", r.region, err))
+	}
+	secret, err := store.GetSecretByARN(secretArn)
+	if err != nil {
+		// Could be NotFound, deleted, or service error — collapse to
+		// SecretsErrorException, matching AWS which uses the same exception
+		// name for "secret wasn't found / couldn't be decrypted / timed out".
+		return nil, svcrdsdata.SecretsError(fmt.Sprintf("secret %s could not be retrieved: %v", secretArn, err))
+	}
+	if secret == nil || secret.SecretString == "" {
+		return nil, svcrdsdata.InvalidSecret(fmt.Sprintf("secret %s has no SecretString", secretArn))
+	}
+	var cred svcrdsdata.SecretCredential
+	if err := json.Unmarshal([]byte(secret.SecretString), &cred); err != nil {
+		return nil, svcrdsdata.InvalidSecret(fmt.Sprintf("secret %s is not valid JSON: %v", secretArn, err))
+	}
+	return &cred, nil
 }
 
 // --- IoT (optional) ---
@@ -583,12 +738,12 @@ func (a *App) initGRPCWebAdmin() {
 		p, h = svcneptunedata.NewConnectHandler(st.neptuneDataService)
 		handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	}
-	// RDS admin handler — serves both Neptune and MySQL data via the common
-	// RDS store. Wraps NeptuneService.GetStoreForRegion to satisfy the
-	// StoreProvider function signature.
+	// RDS admin handler — serves both Neptune and MySQL data via the
+	// standalone RDS store lookup (always available, independent of
+	// Neptune service initialisation).
 	p, h = svcrds.NewConnectHandler(
 		svcrds.StoreProvider(func(region string) (storerds.StoreInterface, error) {
-			return st.neptuneService.GetStoreForRegion(region)
+			return st.rdsStoreLookup(region)
 		}),
 		svcrds.EngineProvider(func(engineType string) (svcrds.Engine, error) {
 			switch engineType {

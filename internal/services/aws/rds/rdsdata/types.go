@@ -2,17 +2,41 @@ package rdsdata
 
 // ExecuteStatementInput represents the ExecuteStatement request.
 type ExecuteStatementInput struct {
-	ResourceArn           string            `json:"resourceArn"`
-	SecretArn             string            `json:"secretArn"`
-	Sql                   string            `json:"sql"`
-	Database              string            `json:"database,omitempty"`
-	Schema                string            `json:"schema,omitempty"`
-	TransactionID         string            `json:"transactionId,omitempty"`
-	IncludeResultMetadata bool              `json:"includeResultMetadata,omitempty"`
-	FormatRecordsAs       string            `json:"formatRecordsAs,omitempty"`
-	ContinueAfterTimeout  bool              `json:"continueAfterTimeout,omitempty"`
-	Parameters            []SqlParameter    `json:"parameters,omitempty"`
-	ResultSetOptions      *ResultSetOptions `json:"resultSetOptions,omitempty"`
+	ResourceArn string `json:"resourceArn"`
+	SecretArn   string `json:"secretArn"`
+	Sql         string `json:"sql"`
+	Database    string `json:"database,omitempty"`
+	// Schema is accepted for AWS SDK compatibility but, per the AWS spec,
+	// "isn't currently supported." It is captured for round-trip fidelity
+	// and silently ignored at execution time.
+	Schema                string `json:"schema,omitempty"`
+	TransactionID         string `json:"transactionId,omitempty"`
+	IncludeResultMetadata bool   `json:"includeResultMetadata,omitempty"`
+	FormatRecordsAs       string `json:"formatRecordsAs,omitempty"`
+	// ContinueAfterTimeout controls whether the statement continues
+	// running after the Data API's 45-second call timeout (AWS Aurora
+	// User Guide, "Controlling Data API timeout behavior").
+	//
+	// When true:
+	//   - The client receives StatementTimeoutException at 45 s.
+	//   - The statement continues in a background goroutine on a
+	//     detached context for up to maxBgStatementTime (1 hour; see
+	//     engine_bridge.go). DDL changes take effect even though the
+	//     client already received the timeout error.
+	//   - For transactional calls (transactionId set), CommitTransaction
+	//     / RollbackTransaction wait for the background statement —
+	//     bounded at 45 s — before issuing COMMIT / ROLLBACK. If the
+	//     wait itself times out, the transaction stays open and the
+	//     client can retry.
+	//
+	// When false (default): the statement is aborted at the 45-second
+	// timeout and StatementTimeoutException is returned.
+	//
+	// AWS spec: "A value that indicates whether to continue running the
+	// statement after the call times out."
+	ContinueAfterTimeout bool              `json:"continueAfterTimeout,omitempty"`
+	Parameters           []SqlParameter    `json:"parameters,omitempty"`
+	ResultSetOptions     *ResultSetOptions `json:"resultSetOptions,omitempty"`
 }
 
 // BatchExecuteStatementInput represents the BatchExecuteStatement request.
@@ -43,7 +67,9 @@ type BeginTransactionInput struct {
 	ResourceArn string `json:"resourceArn"`
 	SecretArn   string `json:"secretArn"`
 	Database    string `json:"database,omitempty"`
-	Schema      string `json:"schema,omitempty"`
+	// Schema is accepted for AWS SDK compatibility but, per the AWS spec,
+	// "isn't currently supported." Captured for round-trip fidelity.
+	Schema string `json:"schema,omitempty"`
 }
 
 // CommitTransactionInput represents the CommitTransaction request.

@@ -11,6 +11,12 @@ import (
 
 // ExecuteStatementForInvoker is the EventBus invoker entry point for ExecuteStatement.
 func (s *RDSDataService) ExecuteStatementForInvoker(ctx context.Context, resourceArn, secretArn, database, schema, sqlStr string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error) {
+	if err := validateCommon(resourceArn, secretArn, database, schema); err != nil {
+		return nil, err
+	}
+	if err := validateSQL(sqlStr); err != nil {
+		return nil, err
+	}
 	engine, _, err := s.resolveEngine(resourceArn)
 	if err != nil {
 		return nil, err
@@ -24,6 +30,15 @@ func (s *RDSDataService) ExecuteStatementForInvoker(ctx context.Context, resourc
 
 // ExecuteStatementInTxForInvoker runs a SQL statement within an existing transaction.
 func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, resourceArn, secretArn, transactionId, sqlStr string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error) {
+	if err := validateCommon(resourceArn, secretArn, "", ""); err != nil {
+		return nil, err
+	}
+	if err := validateSQL(sqlStr); err != nil {
+		return nil, err
+	}
+	if err := validateTransactionID(transactionId, false); err != nil {
+		return nil, err
+	}
 	engine, _, err := s.resolveEngine(resourceArn)
 	if err != nil {
 		return nil, err
@@ -32,9 +47,19 @@ func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, res
 		return nil, err
 	}
 
-	s.mu.RLock()
+	now := time.Now()
+	s.mu.Lock()
 	entry, ok := s.transactions[transactionId]
-	s.mu.RUnlock()
+	if ok {
+		if entry.isExpired(now) {
+			delete(s.transactions, transactionId)
+			entry = nil
+			ok = false
+		} else {
+			entry.touch()
+		}
+	}
+	s.mu.Unlock()
 	if !ok {
 		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", transactionId))
 	}
@@ -48,6 +73,9 @@ func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, res
 
 // BeginTransactionForInvoker is the EventBus invoker entry point for BeginTransaction.
 func (s *RDSDataService) BeginTransactionForInvoker(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error) {
+	if err := validateCommon(resourceArn, secretArn, database, schema); err != nil {
+		return "", err
+	}
 	engine, instanceID, err := s.resolveEngine(resourceArn)
 	if err != nil {
 		return "", err
@@ -65,14 +93,16 @@ func (s *RDSDataService) BeginTransactionForInvoker(ctx context.Context, resourc
 	}
 
 	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, ""); err != nil {
-		return "", badRequest(fmt.Sprintf("begin transaction failed: %v", err))
+		return "", mapSQLError(err)
 	}
 
 	txID := uuid.New().String()
+	now := time.Now()
 	s.mu.Lock()
 	s.transactions[txID] = &staleEntry{
 		engine:   engine,
-		created:  time.Now(),
+		created:  now,
+		lastSeen: now,
 		database: database,
 		schema:   schema,
 		sqlCtx:   sqlCtx,
@@ -84,6 +114,12 @@ func (s *RDSDataService) BeginTransactionForInvoker(ctx context.Context, resourc
 
 // CommitTransactionForInvoker is the EventBus invoker entry point for CommitTransaction.
 func (s *RDSDataService) CommitTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error {
+	if err := validateCommon(resourceArn, secretArn, "", ""); err != nil {
+		return err
+	}
+	if err := validateTransactionID(transactionId, false); err != nil {
+		return err
+	}
 	if err := s.validateCredentials(ctx, secretArn); err != nil {
 		return err
 	}
@@ -109,6 +145,12 @@ func (s *RDSDataService) CommitTransactionForInvoker(ctx context.Context, resour
 
 // RollbackTransactionForInvoker is the EventBus invoker entry point for RollbackTransaction.
 func (s *RDSDataService) RollbackTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error {
+	if err := validateCommon(resourceArn, secretArn, "", ""); err != nil {
+		return err
+	}
+	if err := validateTransactionID(transactionId, false); err != nil {
+		return err
+	}
 	if err := s.validateCredentials(ctx, secretArn); err != nil {
 		return err
 	}

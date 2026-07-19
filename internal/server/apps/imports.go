@@ -42,6 +42,7 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
+	storerds "vorpalstacks/internal/store/aws/rds"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 )
@@ -95,4 +96,13 @@ type serviceState struct {
 	snsStoreInstance     *storesns.SNSStore
 	kinesisStoreInstance *storekinesis.KinesisStore
 	eventsStoreInstance  *storeevents.EventsStore
+
+	// rdsStoreLookup provides a per-region RDS StoreInterface that is
+	// always available, independent of whether Neptune is enabled. It
+	// reads/writes the same Pebble buckets as the Neptune store
+	// (neptune_clusters, neptune_instances, etc.), ensuring data
+	// compatibility. Used by the RDS admin handler and the RDS Data
+	// API so that MySQL-only deployments (Neptune disabled) still
+	// resolve cluster ARNs and serve RDS API requests.
+	rdsStoreLookup func(region string) (storerds.StoreInterface, error)
 }

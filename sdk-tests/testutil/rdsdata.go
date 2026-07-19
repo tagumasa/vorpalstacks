@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata/types"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -26,11 +27,31 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+
+	secretArn := "arn:aws:secretsmanager:us-east-1:000000000000:secret:test"
+	// The RDS Data service validates secretArn against Secrets Manager, so
+	// the test must seed a real secret carrying username/password fields
+	// before any Data API call references it. CreateSecret is idempotent:
+	// the surrounding dropTestDB logic likewise tolerates prior state.
+	smClient := secretsmanager.NewFromConfig(cfg)
+	if _, err := smClient.CreateSecret(context.Background(), &secretsmanager.CreateSecretInput{
+		Name:         ptrStr("test"),
+		SecretString: ptrStr(`{"username":"admin","password":"admin","engine":"mysql","host":"localhost","port":3306}`),
+	}); err != nil {
+		// If the secret already exists, that is fine — the prior run
+		// seeded it. Any other error is fatal because subsequent Data API
+		// calls would all fail with SecretsErrorException.
+		if !strings.Contains(err.Error(), "already exists") &&
+			!strings.Contains(err.Error(), "ResourceExistsException") {
+			return nil, fmt.Errorf("failed to seed test secret: %w", err)
+		}
+	}
+
 	return &rdsDataTestContext{
 		client:      rdsdata.NewFromConfig(cfg),
 		ctx:         context.Background(),
 		resourceArn: "arn:aws:rds:us-east-1:000000000000:db:test-instance",
-		secretArn:   "arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
+		secretArn:   secretArn,
 		database:    "rdsdata_sdk_test",
 	}, nil
 }

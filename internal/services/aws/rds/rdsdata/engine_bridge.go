@@ -6,12 +6,34 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	sqle "github.com/dolthub/go-mysql-server"
 	"github.com/dolthub/go-mysql-server/sql"
+	"github.com/dolthub/go-mysql-server/sql/types"
+
+	"vorpalstacks/internal/core/logs"
 )
 
+// AWS Data API operational constants. The response size cap and the default
+// statement timeout are documented in the AWS Data API reference and the
+// Aurora User Guide ("If the binary response data from the database is more
+// than 1 MB, the call is terminated.").
+const (
+	maxResponseBytes        = 1 << 20 // 1 MiB
+	defaultStatementTimeout = 45 * time.Second
+	// maxBgStatementTime bounds how long a ContinueAfterTimeout statement
+	// may run in the background after the client has received
+	// StatementTimeoutException. AWS does not publish a hard ceiling for
+	// Aurora Serverless v1; one hour covers all but the most extreme
+	// schema migrations.
+	maxBgStatementTime = time.Hour
+)
+
+// newSQLContext returns a fresh sql.Context bound to the given database.
+// A new context per call mirrors the AWS Data API contract: each
+// non-transactional call is independent and carries no session state.
 func newSQLContext(database string) *sql.Context {
 	ctx := sql.NewContext(context.Background())
 	if database != "" {
@@ -20,57 +42,202 @@ func newSQLContext(database string) *sql.Context {
 	return ctx
 }
 
-// executeSQL runs a SQL string on the given engine and returns a formatted response.
+// executeSQL runs a SQL string on the given engine and returns a formatted
+// response. Behaviour follows the AWS Data API contract:
+//
+//   - Result-producing statements (SELECT / SHOW / DESCRIBE / EXPLAIN / WITH
+//     CTEs / TABLE) populate Records and ColumnMetadata. Classification is
+//     driven by the engine's returned schema (types.IsOkResultSchema) rather
+//     than SQL prefix matching, so CTEs and parenthesised SELECTs are
+//     detected correctly.
+//   - DML / DDL statements produce an OkResult row carrying RowsAffected
+//     and (for INSERT on auto-increment tables) the InsertID. The InsertID
+//     is exposed via generatedFields; RowsAffected populates
+//     NumberOfRecordsUpdated.
+//   - The whole call is bounded by a context timeout (defaultStatementTimeout).
+//     A timeout surfaces as StatementTimeoutException.
+//   - The marshalled response is bounded to maxResponseBytes; an oversized
+//     response surfaces as StatementTimeoutException, matching AWS which
+//     terminates the call when binary response data exceeds 1 MiB.
 func executeSQL(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string) (*ExecuteStatementResponse, error) {
-	schema, rowIter, _, err := engine.Query(sqlCtx, sqlStr)
-	if err != nil {
-		return nil, err
+	return executeSQLOpts(engine, sqlCtx, sqlStr, includeMetadata, formatRecordsAs, nil)
+}
+
+// executeSQLOpts is the option-bearing form of executeSQL. resultSetOpts is
+// optional; nil leaves DECIMAL / BIGINT formatting at the engine default.
+func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string, resultSetOpts *ResultSetOptions) (*ExecuteStatementResponse, error) {
+	// Bind a deadline to the underlying context so engine.Query and any
+	// downstream iterators observe StatementTimeout. AWS Data API's default
+	// is 45 seconds for ExecuteStatement.
+	parentCtx, cancel := context.WithTimeout(sqlCtx, defaultStatementTimeout)
+	defer cancel()
+	sqlCtx = sqlCtx.WithContext(parentCtx)
+
+	// Wrap engine.Query in a goroutine + select so that even if the
+	// engine's analyser or planner blocks without checking the context,
+	// we still return StatementTimeoutException at the deadline instead
+	// of hanging indefinitely.
+	type queryResult struct {
+		schema sql.Schema
+		iter   sql.RowIter
+		err    error
 	}
+	qCh := make(chan queryResult, 1)
+	go func() {
+		schema, iter, _, err := engine.Query(sqlCtx, sqlStr)
+		qCh <- queryResult{schema, iter, err}
+	}()
+
+	var schema sql.Schema
+	var rowIter sql.RowIter
+	select {
+	case qr := <-qCh:
+		if qr.err != nil {
+			if parentCtx.Err() == context.DeadlineExceeded {
+				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+			}
+			return nil, qr.err
+		}
+		schema = qr.schema
+		rowIter = qr.iter
+	case <-parentCtx.Done():
+		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+	}
+
+	// Wrap RowIterToRows in the same goroutine + select pattern so that a
+	// blocking iterator (e.g. a full-table scan on a very large Pebble
+	// store) cannot hang past the deadline.
+	type rowsResult struct {
+		rows []sql.Row
+		err  error
+	}
+	rCh := make(chan rowsResult, 1)
+	go func() {
+		var rows []sql.Row
+		var err error
+		if rowIter != nil {
+			rows, err = sql.RowIterToRows(sqlCtx, rowIter)
+		}
+		rCh <- rowsResult{rows, err}
+	}()
 
 	var rows []sql.Row
-	if rowIter != nil {
-		rows, err = sql.RowIterToRows(sqlCtx, rowIter)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read rows: %w", err)
+	select {
+	case rr := <-rCh:
+		if rr.err != nil {
+			if parentCtx.Err() == context.DeadlineExceeded {
+				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+			}
+			return nil, fmt.Errorf("failed to read rows: %w", rr.err)
 		}
+		rows = rr.rows
+	case <-parentCtx.Done():
+		// Force-close the iterator to unblock the goroutine. The
+		// goroutine may still leak if Close itself blocks, but many
+		// iterators check for closure between rows.
+		if rowIter != nil {
+			rowIter.Close(sqlCtx)
+		}
+		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
 	}
-
-	upperSQL := strings.ToUpper(strings.TrimSpace(sqlStr))
-	isSelect := strings.HasPrefix(upperSQL, "SELECT") || strings.HasPrefix(upperSQL, "SHOW") || strings.HasPrefix(upperSQL, "DESCRIBE") || strings.HasPrefix(upperSQL, "EXPLAIN")
 
 	resp := &ExecuteStatementResponse{}
 
-	if isSelect && len(rows) > 0 {
-		resp.Records = convertRows(rows, schema)
-	} else if isSelect && len(rows) == 0 {
-		resp.Records = [][]Field{}
-	}
+	// AWS spec: formatRecordsAs only applies to SELECT-style statements.
+	// DDL/DML do not produce a result set to format.
+	isResultProducing := schema != nil && len(schema) > 0 && !types.IsOkResultSchema(schema)
 
-	if isSelect && includeMetadata && schema != nil {
-		resp.ColumnMetadata = convertSchema(schema)
-	}
-
-	if !isSelect {
-		resp.NumberOfRecordsUpdated = int64(len(rows))
-	}
-
-	if formatRecordsAs == "JSON" && isSelect {
-		formatted, err := formatAsJSON(rows, schema)
-		if err == nil {
-			resp.FormattedRecords = formatted
+	if isResultProducing {
+		resp.Records = convertRows(rows, schema, resultSetOpts)
+		if includeMetadata {
+			resp.ColumnMetadata = convertSchema(schema)
 		}
+		if strings.EqualFold(formatRecordsAs, "JSON") {
+			formatted, jerr := formatAsJSON(rows, schema)
+			if jerr != nil {
+				// L-8: previously swallowed silently. Surface the failure
+				// in logs so operators can diagnose schema mismatches.
+				logs.Warn("rdsdata: failed to format records as JSON",
+					logs.Err(jerr),
+					logs.Int("rows", len(rows)))
+			} else {
+				resp.FormattedRecords = formatted
+			}
+		}
+	} else {
+		// DML / DDL: the engine yields a single OkResult row carrying
+		// RowsAffected and the last InsertID (auto-increment). Fall back to
+		// 'len(rows)' only if the engine neglected to emit an OkResult.
+		var insertID uint64
+		resp.NumberOfRecordsUpdated = int64(len(rows))
+		if len(rows) > 0 && types.IsOkResult(rows[0]) {
+			ok := types.GetOkResult(rows[0])
+			resp.NumberOfRecordsUpdated = int64(ok.RowsAffected)
+			insertID = ok.InsertID
+		}
+		if insertID > 0 {
+			id := int64(insertID)
+			resp.GeneratedFields = []Field{{LongValue: &id}}
+		}
+	}
+
+	// AWS spec: 'If the binary response data from the database is more than
+	// 1 MB, the call is terminated.' Enforce after assembly so the cap
+	// reflects the actual payload the client would receive.
+	if approxResponseSize(resp) > maxResponseBytes {
+		return nil, statementTimeout(fmt.Sprintf("response size exceeds %d bytes", maxResponseBytes))
 	}
 
 	return resp, nil
 }
 
-// convertRows converts sql.Rows to RDS Data API Field format.
-func convertRows(rows []sql.Row, schema sql.Schema) [][]Field {
+// approxResponseSize estimates the marshalled size of the response without
+// performing the full JSON encode. Each Field is sized by its actual value
+// type: StringValue/BlobValue contribute their byte length, LongValue up
+// to 20 bytes (int64 max digits + sign), DoubleValue up to 24 bytes
+// (float64 repr), BooleanValue 5 bytes. Column-metadata entries are sized
+// at 256 bytes to account for type/name/label strings. The estimate is
+// conservative (slightly over) so genuinely oversized payloads are caught.
+func approxResponseSize(resp *ExecuteStatementResponse) int {
+	total := len(resp.FormattedRecords)
+	for _, row := range resp.Records {
+		for _, f := range row {
+			if f.StringValue != nil {
+				total += len(*f.StringValue) + 2 // quotes
+			} else if f.BlobValue != nil {
+				total += len(f.BlobValue)*2 + 2 // hex-encoded + quotes
+			} else if f.LongValue != nil {
+				total += 20 // max int64 digits + sign
+			} else if f.DoubleValue != nil {
+				total += 24 // float64 repr
+			} else if f.BooleanValue != nil {
+				total += 5 // "true"/"false"
+			} else {
+				total += 4 // "null"
+			}
+		}
+	}
+	total += len(resp.ColumnMetadata) * 256
+	for _, f := range resp.GeneratedFields {
+		if f.StringValue != nil {
+			total += len(*f.StringValue) + 2
+		} else {
+			total += 20
+		}
+	}
+	return total
+}
+
+// convertRows converts sql.Rows to RDS Data API Field format. When
+// resultSetOpts is supplied, DECIMAL columns are stringified and BIGINT
+// columns can be returned as strings per the AWS-spec LongReturnType
+// / DecimalReturnType directives.
+func convertRows(rows []sql.Row, schema sql.Schema, opts *ResultSetOptions) [][]Field {
 	result := make([][]Field, len(rows))
 	for i, row := range rows {
 		fields := make([]Field, len(row))
 		for j, val := range row {
-			fields[j] = convertValue(val)
+			fields[j] = convertValue(val, schema, j, opts)
 		}
 		result[i] = fields
 	}
@@ -98,10 +265,42 @@ func convertSchema(schema sql.Schema) []ColumnMetadata {
 }
 
 // convertValue converts a Go value to an RDS Data API Field.
-func convertValue(val interface{}) Field {
+//
+// When schema / colIdx are available and opts requests a particular return
+// type, DECIMAL and BIGINT columns are stringified per the AWS spec:
+//
+//   - DecimalReturnType = "STRING"  -> DECIMAL values returned as StringValue
+//   - LongReturnType    = "STRING"  -> BIGINT values returned as StringValue
+//
+// The default (no opts, or "DOUBLE_VALUE"/"LONG_VALUE") keeps the native
+// numeric encoding.
+//
+// uint64 (added for H-2): values exceeding int64's positive range still fit
+// in LongValue as a negative int64, mirroring what JDBC clients do when
+// reading BIGINT UNSIGNED via DatabaseMetaData. Callers that need the
+// unsigned value should request LongReturnType=STRING.
+func convertValue(val interface{}, schema sql.Schema, colIdx int, opts *ResultSetOptions) Field {
 	if val == nil {
 		t := true
 		return Field{IsNull: &t}
+	}
+
+	// Apply DecimalReturnType / LongReturnType directives when we know the
+	// originating column. Without schema information (e.g. for values that
+	// bypassed convertRows) the directives are no-ops.
+	if schema != nil && colIdx < len(schema) && opts != nil {
+		typeStr := ""
+		if schema[colIdx].Type != nil {
+			typeStr = schema[colIdx].Type.String()
+		}
+		switch {
+		case strings.Contains(typeStr, "DECIMAL") && strings.EqualFold(opts.DecimalReturnType, "STRING"):
+			sv := fmtDecimalString(val)
+			return Field{StringValue: &sv}
+		case strings.Contains(typeStr, "BIGINT") && strings.EqualFold(opts.LongReturnType, "STRING"):
+			sv := fmt.Sprintf("%d", toInt64(val))
+			return Field{StringValue: &sv}
+		}
 	}
 
 	switch v := val.(type) {
@@ -131,6 +330,15 @@ func convertValue(val interface{}) Field {
 	case uint32:
 		lv := int64(v)
 		return Field{LongValue: &lv}
+	case uint64:
+		// H-2: previously fell through to the default branch and was
+		// stringified via fmt.Sprintf("%v"). That broke AWS-spec clients
+		// expecting LongValue for integer-typed columns. Encode as int64
+		// (with wrap-around for values > MaxInt64) so the type matches;
+		// clients that need the unsigned magnitude request
+		// LongReturnType=STRING.
+		lv := int64(v)
+		return Field{LongValue: &lv}
 	case float32:
 		dv := float64(v)
 		return Field{DoubleValue: &dv}
@@ -151,6 +359,50 @@ func convertValue(val interface{}) Field {
 	default:
 		sv := fmt.Sprintf("%v", v)
 		return Field{StringValue: &sv}
+	}
+}
+
+// toInt64 coerces integer-like Go values to int64. Used for LongReturnType
+// stringification where the engine may return any of the int*/uint* types
+// for a BIGINT column depending on the operation path.
+func toInt64(val interface{}) int64 {
+	switch v := val.(type) {
+	case int:
+		return int64(v)
+	case int8:
+		return int64(v)
+	case int16:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case int64:
+		return v
+	case uint:
+		return int64(v)
+	case uint8:
+		return int64(v)
+	case uint16:
+		return int64(v)
+	case uint32:
+		return int64(v)
+	case uint64:
+		return int64(v)
+	}
+	return 0
+}
+
+// fmtDecimalString renders a DECIMAL value to its canonical string form
+// without using %v (which would lose precision through float coercion).
+// strings.TrimRight trims trailing zeros after the decimal point while
+// keeping at least one fractional digit for fractional inputs.
+func fmtDecimalString(val interface{}) string {
+	switch v := val.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	default:
+		return fmt.Sprintf("%v", v)
 	}
 }
 
@@ -272,7 +524,14 @@ func nullableToInt(nullable bool) int32 {
 }
 
 // parseArn extracts the resource identifier and type from an RDS ARN.
+// The ARN must use the canonical colon-separated form
+// "arn:aws:rds:<region>:<account>:<resource-type>:<identifier>". Any other
+// prefix (or fewer than seven colon-separated parts) yields ("", "") so
+// resolveEngine surfaces InvalidParameterException to the caller.
 func parseArn(arn string) (string, string) {
+	if !strings.HasPrefix(arn, "arn:aws:rds:") && !strings.HasPrefix(arn, "arn:aws-cn:rds:") && !strings.HasPrefix(arn, "arn:aws-us-gov:rds:") {
+		return "", ""
+	}
 	parts := strings.Split(arn, ":")
 	if len(parts) < 7 {
 		return "", ""
@@ -291,19 +550,38 @@ func parseArn(arn string) (string, string) {
 }
 
 // splitSQL splits a multi-statement SQL string by semicolons, respecting
-// single-quoted string literals, double-quoted identifiers, line comments
-// (--), and block comments (/* */) so that semicolons inside literals or
-// comments are not treated as statement separators.
+// single-quoted string literals, double-quoted identifiers, MySQL
+// backtick-quoted identifiers, line comments (--), block comments (/* */),
+// and backslash escapes inside single-quoted strings. Semicolons inside
+// any of these contexts are not treated as statement separators.
+//
+// Dollar-quoting ($$...$$) is intentionally NOT handled: it is
+// PostgreSQL-only syntax and does not exist in MySQL. MySQL identifiers
+// may legally contain '$' (per the manual, "Schema Object Names"), and
+// the sequence '$$' can appear inside a valid identifier such as
+// `price$$amount`. Detecting '$$' as a delimiter would corrupt
+// multi-statement batches and could shift statement boundaries in ways
+// that enable SQL injection.
 func splitSQL(sqlStr string) []string {
 	var statements []string
 	var buf strings.Builder
 	inSingle := false
 	inDouble := false
+	inBacktick := false
 	inLineComment := false
 	inBlockComment := false
 
 	for i := 0; i < len(sqlStr); i++ {
 		ch := sqlStr[i]
+		// Honour backslash escapes inside single-quoted strings so that
+		// '\;' does not prematurely terminate the statement. MySQL's
+		// default mode interprets '\' as an escape character.
+		if inSingle && ch == '\\' && i+1 < len(sqlStr) {
+			buf.WriteByte(ch)
+			buf.WriteByte(sqlStr[i+1])
+			i++
+			continue
+		}
 
 		switch {
 		case inLineComment:
@@ -342,6 +620,17 @@ func splitSQL(sqlStr string) []string {
 				}
 			}
 
+		case inBacktick:
+			buf.WriteByte(ch)
+			if ch == '`' {
+				if i+1 < len(sqlStr) && sqlStr[i+1] == '`' {
+					buf.WriteByte(sqlStr[i+1])
+					i++
+				} else {
+					inBacktick = false
+				}
+			}
+
 		case ch == '-' && i+1 < len(sqlStr) && sqlStr[i+1] == '-':
 			inLineComment = true
 			buf.WriteByte(ch)
@@ -360,6 +649,10 @@ func splitSQL(sqlStr string) []string {
 
 		case ch == '"':
 			inDouble = true
+			buf.WriteByte(ch)
+
+		case ch == '`':
+			inBacktick = true
 			buf.WriteByte(ch)
 
 		case ch == ';':
@@ -381,26 +674,114 @@ func splitSQL(sqlStr string) []string {
 	return statements
 }
 
+// validateParameters ensures every SqlParameter is well-formed and that no
+// array-valued parameters are present (AWS spec: 'Array parameters are not
+// supported'). It also validates that TypeHint=DECIMAL StringValues match
+// a strict numeric pattern and TypeHint=JSON StringValues are valid JSON,
+// preventing SQL injection via raw string concatenation in
+// fieldToSQLString. Returns InvalidParameterException on the first
+// violation.
+func validateParameters(params []SqlParameter) error {
+	for _, p := range params {
+		if p.Name == "" {
+			return invalidParam("parameter name is required")
+		}
+		if p.Value == nil {
+			return invalidParam(fmt.Sprintf("parameter %q has no value", p.Name))
+		}
+		if p.Value.ArrayValue != nil {
+			return invalidParam(fmt.Sprintf("array parameters are not supported (parameter %q)", p.Name))
+		}
+		// TypeHint-specific validation: DECIMAL and JSON TypeHints accept
+		// StringValue but render it into SQL without single-quote
+		// escaping (DECIMAL) or with only string-literal escaping (JSON).
+		// DECIMAL must be a strict numeric literal to prevent injection;
+		// JSON must be syntactically valid JSON.
+		hint := strings.ToUpper(p.TypeHint)
+		if hint == "DECIMAL" && p.Value.StringValue != nil {
+			if !decimalLiteralPattern.MatchString(*p.Value.StringValue) {
+				return invalidParam(fmt.Sprintf(
+					"parameter %q with typeHint DECIMAL is not a valid numeric literal", p.Name))
+			}
+		}
+		if hint == "JSON" && p.Value.StringValue != nil {
+			if !json.Valid([]byte(*p.Value.StringValue)) {
+				return invalidParam(fmt.Sprintf(
+					"parameter %q with typeHint JSON is not valid JSON", p.Name))
+			}
+		}
+	}
+	return nil
+}
+
+// decimalLiteralPattern matches the textual representation that the AWS
+// Data API accepts for TypeHint=DECIMAL: an optional sign, followed by
+// digits with an optional decimal point. This is the same format that
+// MySQL's DECIMAL parser accepts and prevents any non-numeric character
+// from reaching the SQL stream.
+var decimalLiteralPattern = regexp.MustCompile(`^[+-]?(\d+(\.\d*)?|\.\d+)$`)
+
+// paramReCache caches compiled substituteParameters regexes by sorted
+// parameter-name key. Building the alternation regex is the dominant cost
+// of substituteParameters; caching eliminates re-compilation on repeated
+// calls with the same parameter-name set (the common case in batch and
+// loop callers).
+var paramReCache sync.Map // key: string → value: *regexp.Regexp
+
+func getParamRegex(names []string) *regexp.Regexp {
+	key := strings.Join(names, "\x00")
+	if cached, ok := paramReCache.Load(key); ok {
+		return cached.(*regexp.Regexp)
+	}
+	re := regexp.MustCompile(`(^|\W):(` + strings.Join(names, "|") + `)($|\W)`)
+	actual, _ := paramReCache.LoadOrStore(key, re)
+	return actual.(*regexp.Regexp)
+}
+
 // substituteParameters replaces named parameters (:name) in SQL with values.
-// It uses word-boundary matching to avoid partial replacement (e.g. :id
-// matching inside :id2) and skips occurrences inside string literals.
+// It builds a single alternation regex covering every named parameter and
+// applies it once, which avoids the previous per-parameter
+// regexp.MustCompile cost (M-1). Single-quoted string literals are skipped
+// so that parameter-like substrings inside literals are not substituted.
+// The compiled regex is cached across calls with the same parameter-name
+// set (L-9).
+//
+// The replacement string is produced via fieldToSQLString, which:
+//   - backslash-escapes '\' and single-quotes inside string values (H-6)
+//   - honours TypeHint for DATE / DECIMAL / JSON / TIME / TIMESTAMP
+//     values (M-3)
 func substituteParameters(sqlStr string, params []SqlParameter) string {
-	result := sqlStr
+	if len(params) == 0 {
+		return sqlStr
+	}
+	names := make([]string, 0, len(params))
+	values := make(map[string]*Field, len(params))
+	hints := make(map[string]string, len(params))
 	for _, p := range params {
 		if p.Name == "" || p.Value == nil {
 			continue
 		}
-		replacement := fieldToSQLString(p.Value)
-		// \b cannot anchor before : because : is a non-word character; use (^|\W) instead.
-		pattern := regexp.MustCompile(`(^|\W)` + regexp.QuoteMeta(":"+p.Name) + `($|\W)`)
-		result = replaceOutsideStringsWithCapture(result, pattern, replacement)
+		if _, exists := values[p.Name]; exists {
+			continue
+		}
+		names = append(names, regexp.QuoteMeta(p.Name))
+		values[p.Name] = p.Value
+		hints[p.Name] = p.TypeHint
 	}
-	return result
+	if len(names) == 0 {
+		return sqlStr
+	}
+	pattern := getParamRegex(names)
+	return replaceOutsideStringsWithCaptureMulti(sqlStr, pattern, func(name string) string {
+		return fieldToSQLString(values[name], hints[name])
+	})
 }
 
-// replaceOutsideStringsWithCapture is like replaceOutsideStrings but preserves
-// the captured boundary characters around the match.
-func replaceOutsideStringsWithCapture(s string, re *regexp.Regexp, replacement string) string {
+// replaceOutsideStringsWithCaptureMulti is the multi-parameter generalisation
+// of the previous replaceOutsideStringsWithCapture. The callback receives
+// the captured parameter name (without the leading colon) and returns the
+// substitution.
+func replaceOutsideStringsWithCaptureMulti(s string, re *regexp.Regexp, replace func(name string) string) string {
 	var b strings.Builder
 	inString := false
 	i := 0
@@ -416,16 +797,27 @@ func replaceOutsideStringsWithCapture(s string, re *regexp.Regexp, replacement s
 			i++
 			continue
 		}
+		// Honour backslash escapes inside string literals so the next
+		// character is consumed verbatim.
+		if inString && s[i] == '\\' && i+1 < len(s) {
+			b.WriteByte(s[i])
+			b.WriteByte(s[i+1])
+			i += 2
+			continue
+		}
 		if !inString {
 			loc := re.FindStringSubmatchIndex(s[i:])
 			if loc != nil && loc[0] == 0 {
-				// loc[2:4] = group 1 (leading boundary), loc[4:6] = group 2 (trailing boundary)
+				// loc[2:4]  = group 1 (leading boundary)
+				// loc[4:6]  = group 2 (parameter name)
+				// loc[6:8]  = group 3 (trailing boundary)
 				if loc[2] >= 0 && loc[3] > loc[2] {
 					b.WriteString(s[i+loc[2] : i+loc[3]])
 				}
-				b.WriteString(replacement)
-				if loc[4] >= 0 && loc[5] > loc[4] {
-					b.WriteString(s[i+loc[4] : i+loc[5]])
+				name := s[i+loc[4] : i+loc[5]]
+				b.WriteString(replace(name))
+				if loc[6] >= 0 && loc[7] > loc[6] {
+					b.WriteString(s[i+loc[6] : i+loc[7]])
 				}
 				i += loc[1]
 				continue
@@ -437,18 +829,54 @@ func replaceOutsideStringsWithCapture(s string, re *regexp.Regexp, replacement s
 	return b.String()
 }
 
-// replaceOutsideStrings replaces all matches of re in s, but only in parts
-// outside single-quoted string literals.
-
-func fieldToSQLString(f *Field) string {
+// fieldToSQLString renders a Field as a SQL literal suitable for inline
+// substitution. The TypeHint influences the rendering for DATE / TIME /
+// TIMESTAMP / DECIMAL / JSON values, matching the AWS Data API contract
+// (SqlParameter.typeHint documentation).
+//
+// String values are escaped for the MySQL default mode:
+//   - backslash is doubled ('\' -> '\\')
+//   - single quote is doubled ("'" -> "”")
+//   - NUL is replaced with '\0'
+//
+// Without the backslash escape, a hostile parameter such as "\'" could
+// prematurely close the surrounding string literal and inject SQL.
+func fieldToSQLString(f *Field, typeHint string) string {
 	if f == nil {
 		return "NULL"
 	}
 	if f.IsNull != nil && *f.IsNull {
 		return "NULL"
 	}
+	// TypeHint-aware rendering (M-3): when the caller marks a value as
+	// DATE / TIME / TIMESTAMP / DECIMAL / JSON, treat StringValue as the
+	// canonical literal form and render accordingly. The default case
+	// (no TypeHint) falls through to the value-type switch below.
+	switch strings.ToUpper(typeHint) {
+	case "DATE", "TIME", "TIMESTAMP":
+		if f.StringValue != nil {
+			return "'" + escapeMySQLLiteral(*f.StringValue) + "'"
+		}
+	case "DECIMAL":
+		// DECIMAL literals must not be quoted; the engine parses the
+		// textual representation directly without precision loss.
+		if f.StringValue != nil {
+			return *f.StringValue
+		}
+		if f.LongValue != nil {
+			return fmt.Sprintf("%d", *f.LongValue)
+		}
+		if f.DoubleValue != nil {
+			return fmt.Sprintf("%g", *f.DoubleValue)
+		}
+	case "JSON":
+		if f.StringValue != nil {
+			return "'" + escapeMySQLLiteral(*f.StringValue) + "'"
+		}
+	}
+
 	if f.StringValue != nil {
-		return "'" + strings.ReplaceAll(*f.StringValue, "'", "''") + "'"
+		return "'" + escapeMySQLLiteral(*f.StringValue) + "'"
 	}
 	if f.LongValue != nil {
 		return fmt.Sprintf("%d", *f.LongValue)
@@ -466,4 +894,27 @@ func fieldToSQLString(f *Field) string {
 		return fmt.Sprintf("'%x'", f.BlobValue)
 	}
 	return "NULL"
+}
+
+// escapeMySQLLiteral escapes a string for safe inclusion in a MySQL
+// single-quoted literal under the default sql_mode (where '\' is an escape
+// character). Single quotes, backslashes, and NUL bytes are escaped so
+// that hostile parameter values cannot prematurely close the surrounding
+// string literal and inject SQL.
+func escapeMySQLLiteral(s string) string {
+	// Pre-size for the worst case (every char doubled).
+	out := make([]byte, 0, len(s)*2)
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\'':
+			out = append(out, '\'', '\'')
+		case '\\':
+			out = append(out, '\\', '\\')
+		case 0:
+			out = append(out, '\\', '0')
+		default:
+			out = append(out, s[i])
+		}
+	}
+	return string(out)
 }
