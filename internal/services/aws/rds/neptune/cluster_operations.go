@@ -95,6 +95,10 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		}
 	}
 	if c.Endpoint != nil {
+		// Edge platform convention: Endpoint includes port as "address:port"
+		// so that clients can discover the dynamically assigned engine port.
+		// This is consistent with MySQL instances and all other services that
+		// use dynamic port allocation.
 		m["Endpoint"] = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
 	}
 	return m
@@ -317,6 +321,9 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	cluster.Status = "deleting"
+	if err := store.UpdateCluster(cluster); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	if !skipFinal {
 		now := time.Now()
@@ -649,7 +656,7 @@ func (s *NeptuneService) AddRoleToDBCluster(ctx context.Context, reqCtx *request
 	featureName := request.GetStringParam(params, "FeatureName")
 	for _, r := range cluster.AssociatedRoles {
 		if r.RoleArn == roleArn {
-			return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("IAM role %s is already associated with cluster %s", roleArn, id), http.StatusBadRequest)
+			return nil, awserrors.NewAWSError("DBClusterRoleAlreadyExistsFault", fmt.Sprintf("IAM role %s is already associated with cluster %s", roleArn, id), http.StatusBadRequest)
 		}
 	}
 	cluster.AssociatedRoles = append(cluster.AssociatedRoles, neptunestore.DBClusterRole{
@@ -697,7 +704,7 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 		filtered = append(filtered, r)
 	}
 	if !found {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("role %s is not associated with cluster %s", roleArn, id), http.StatusBadRequest)
+		return nil, awserrors.NewAWSError("DBClusterRoleNotFoundFault", fmt.Sprintf("role %s is not associated with cluster %s", roleArn, id), http.StatusBadRequest)
 	}
 	cluster.AssociatedRoles = filtered
 	if err := store.UpdateCluster(cluster); err != nil {

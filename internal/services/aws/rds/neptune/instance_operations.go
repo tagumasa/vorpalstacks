@@ -433,6 +433,32 @@ func (s *NeptuneService) RestoreDBInstanceToPointInTime(ctx context.Context, req
 		return nil, translateStoreError(err)
 	}
 
+	// Open the engine for the restored instance so it can serve
+	// queries. Without this, the restored instance exists in metadata
+	// only and has no running engine — the same gap that would exist
+	// if RestoreDBInstanceFromDBSnapshot omitted the engine open.
+	engineType := source.Engine
+	if engineType == "" {
+		engineType = "neptune"
+	}
+	if eng := s.engineFor(engineType); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), targetID); err != nil {
+			logs.Warn("failed to open engine for PITR restored instance",
+				logs.String("instance", targetID),
+				logs.Err(err))
+		} else {
+			instance.Endpoint = &neptunestore.Endpoint{
+				Address: s.endpointAddressFor(targetID, engineType),
+				Port:    port,
+			}
+			if err := store.UpdateInstance(instance); err != nil {
+				logs.Warn("failed to persist PITR restored instance endpoint",
+					logs.String("instance", targetID),
+					logs.Err(err))
+			}
+		}
+	}
+
 	return map[string]interface{}{
 		"DBInstance": instance,
 	}, nil

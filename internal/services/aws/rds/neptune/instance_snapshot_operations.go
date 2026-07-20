@@ -20,14 +20,14 @@ func (s *NeptuneService) CreateDBSnapshot(ctx context.Context, reqCtx *request.R
 	params := req.Parameters
 	snapshotID := request.GetStringParam(params, "DBSnapshotIdentifier")
 	if snapshotID == "" {
-		return nil, fmt.Errorf("DBSnapshotIdentifier is required")
+		return nil, awserrors.NewMissingParameter("DBSnapshotIdentifier is required")
 	}
 	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
 	if instanceID == "" {
-		return nil, fmt.Errorf("DBInstanceIdentifier is required")
+		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -93,7 +93,7 @@ func (s *NeptuneService) DescribeDBSnapshots(ctx context.Context, reqCtx *reques
 	filterInstID := request.GetStringParam(req.Parameters, "DBInstanceIdentifier")
 	filterType := request.GetStringParam(req.Parameters, "SnapshotType")
 
-	result := make([]map[string]interface{}, 0, len(snapshots))
+	result := make([]interface{}, 0, len(snapshots))
 	for _, snap := range snapshots {
 		if filterSnapID != "" && snap.DBSnapshotIdentifier != filterSnapID {
 			continue
@@ -107,16 +107,30 @@ func (s *NeptuneService) DescribeDBSnapshots(ctx context.Context, reqCtx *reques
 		result = append(result, instanceSnapshotToMap(snap, reqCtx))
 	}
 
-	return map[string]interface{}{
-		"DBSnapshots": result,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxRecords := request.GetIntParam(req.Parameters, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(result, marker, maxRecords, func(item interface{}) string {
+		m := item.(map[string]interface{})
+		if v, ok := m["DBSnapshotIdentifier"].(string); ok {
+			return v
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
+		"DBSnapshots": protocol.XMLElements{ElementName: "DBSnapshot", Items: resultItems},
+	}
+	if isTruncated {
+		resp["Marker"] = nextMarker
+	}
+	return resp, nil
 }
 
 // DeleteDBSnapshot deletes a DB instance snapshot.
 func (s *NeptuneService) DeleteDBSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	snapshotID := request.GetStringParam(req.Parameters, "DBSnapshotIdentifier")
 	if snapshotID == "" {
-		return nil, fmt.Errorf("DBSnapshotIdentifier is required")
+		return nil, awserrors.NewMissingParameter("DBSnapshotIdentifier is required")
 	}
 	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
@@ -145,7 +159,9 @@ func (s *NeptuneService) DeleteDBSnapshot(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"DBSnapshot": instanceSnapshotToMap(snapshot, reqCtx),
+	}, nil
 }
 
 // instanceSnapshotToMap converts a DBInstanceSnapshot to the AWS RDS API

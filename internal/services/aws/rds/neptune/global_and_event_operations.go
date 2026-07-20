@@ -10,6 +10,8 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -38,6 +40,17 @@ func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *reques
 	if engine == "" {
 		engine = "neptune"
 	}
+	if err := rdssvc.ValidateEngine(engine); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+
+	engineVersion := request.GetStringParam(params, "EngineVersion")
+	if engineVersion == "" {
+		engineVersion = rdssvc.DefaultEngineVersion(engine)
+	}
+	if err := rdssvc.ValidateEngineVersion(engine, engineVersion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -49,7 +62,7 @@ func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *reques
 		GlobalClusterResourceId: fmt.Sprintf("cluster-%s", id),
 		GlobalClusterArn:        arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().GlobalCluster(id),
 		Engine:                  engine,
-		EngineVersion:           request.GetStringParam(params, "EngineVersion"),
+		EngineVersion:           engineVersion,
 		Status:                  "available",
 		StorageEncrypted:        request.GetBoolParam(params, "StorageEncrypted"),
 		DeletionProtection:      request.GetBoolParam(params, "DeletionProtection"),
@@ -163,6 +176,9 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 	}
 
 	if v := request.GetStringParam(params, "EngineVersion"); v != "" {
+		if err := rdssvc.ValidateEngineVersion(gc.Engine, v); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
 		gc.EngineVersion = v
 	}
 	if request.HasParam(params, "DeletionProtection") {
@@ -181,6 +197,21 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 		if err := store.CreateGlobalCluster(gc); err != nil {
 			return nil, translateStoreError(err)
 		}
+
+		// Update GlobalClusterIdentifier on all member clusters so they
+		// reference the renamed global cluster. Without this, member
+		// clusters retain a stale GC identifier that no longer resolves.
+		for _, m := range gc.GlobalClusterMembers {
+			clusterID := clusterIDFromARN(m.DBClusterArn)
+			if member, err := store.GetCluster(clusterID); err == nil {
+				member.GlobalClusterIdentifier = newID
+				if err := store.UpdateCluster(member); err != nil {
+					logs.Warn("rename GC: failed to update member cluster GC ref",
+						logs.String("cluster", clusterID), logs.Err(err))
+				}
+			}
+		}
+
 		if err := store.DeleteGlobalCluster(oldID); err != nil {
 			_ = store.DeleteGlobalCluster(newID)
 			return nil, translateStoreError(err)

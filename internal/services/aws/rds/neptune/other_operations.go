@@ -503,7 +503,7 @@ func (s *NeptuneService) DescribeOrderableDBInstanceOptions(ctx context.Context,
 	for _, cls := range classes {
 		options = append(options, map[string]interface{}{
 			"Engine":          engine,
-			"EngineVersion":   "1.3.2.0",
+			"EngineVersion":   rdssvc.DefaultEngineVersion("neptune"),
 			"DBInstanceClass": cls,
 			"LicenseModel":    "bring-your-own-license",
 			"AvailabilityZones": protocol.XMLElements{ElementName: "AvailabilityZone", Items: []interface{}{

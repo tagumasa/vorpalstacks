@@ -226,14 +226,24 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 		return nil, translateStoreError(err)
 	}
 
-	result := make([]interface{}, 0, len(groups))
+	items := make([]interface{}, 0, len(groups))
 	for _, g := range groups {
-		result = append(result, g)
+		items = append(items, g)
 	}
 
-	return map[string]interface{}{
-		"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: result},
-	}, nil
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(*neptunestore.DBSubnetGroup).DBSubnetGroupName
+	})
+
+	result := map[string]interface{}{
+		"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // ModifyDBSubnetGroup modifies the description or subnet list of an existing DB subnet group.

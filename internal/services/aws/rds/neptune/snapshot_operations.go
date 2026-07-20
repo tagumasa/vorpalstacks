@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -20,6 +21,9 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 	snapshotID := request.GetStringParam(params, "DBClusterSnapshotIdentifier")
 	if snapshotID == "" {
 		return nil, awserrors.NewMissingParameter("DBClusterSnapshotIdentifier is required")
+	}
+	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
 	if clusterID == "" {
@@ -289,7 +293,6 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 	}, nil
 }
 
-// RestoreDBClusterFromSnapshot creates a new DB cluster from a DB cluster snapshot.
 // RestoreDBClusterFromSnapshot creates a new DB cluster from a DB cluster
 // snapshot. Cluster snapshots are metadata-only — they do not capture
 // row-level data. Only instance snapshots (DBSnapshot) capture row data
@@ -300,9 +303,15 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	if clusterID == "" {
 		return nil, awserrors.NewMissingParameter("DBClusterIdentifier is required")
 	}
+	if err := rdssvc.ValidateDBClusterIdentifier(clusterID); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 	engine := request.GetStringParam(params, "Engine")
 	if engine == "" {
 		engine = "neptune"
+	}
+	if err := rdssvc.ValidateEngine(engine); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 	snapshotID := request.GetStringParam(params, "SnapshotIdentifier")
 	if snapshotID == "" {
@@ -319,8 +328,19 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		return nil, translateStoreError(err)
 	}
 
+	engineVersion := request.GetStringParam(params, "EngineVersion")
+	if engineVersion == "" {
+		engineVersion = snapshot.EngineVersion
+	}
+	if engineVersion == "" {
+		engineVersion = rdssvc.DefaultEngineVersion(engine)
+	}
+	if err := rdssvc.ValidateEngineVersion(engine, engineVersion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+
 	now := time.Now()
-	cluster := buildRestoredCluster(clusterID, engine, snapshot.EngineVersion, params, &now, reqCtx)
+	cluster := buildRestoredCluster(clusterID, engine, engineVersion, params, &now, reqCtx)
 	if cluster.Port == 0 {
 		cluster.Port = snapshot.Port
 	}
@@ -452,6 +472,24 @@ func (s *NeptuneService) PromoteReadReplicaDBCluster(ctx context.Context, reqCtx
 
 	if cluster.Status != "available" {
 		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("cluster %s is not in available state", id), http.StatusBadRequest)
+	}
+
+	// Remove the cluster from its global cluster's member list before
+	// clearing the reference. Without this, the global cluster retains
+	// a stale member ARN that points back at this now-promoted cluster.
+	if cluster.GlobalClusterIdentifier != "" {
+		if gc, err := store.GetGlobalCluster(cluster.GlobalClusterIdentifier); err == nil {
+			filtered := make([]neptunestore.GlobalClusterMember, 0, len(gc.GlobalClusterMembers))
+			for _, m := range gc.GlobalClusterMembers {
+				if m.DBClusterArn != cluster.DBClusterArn {
+					filtered = append(filtered, m)
+				}
+			}
+			gc.GlobalClusterMembers = filtered
+			if err := store.UpdateGlobalCluster(gc); err != nil {
+				logs.Warn("failed to remove cluster from global cluster members on promote", logs.String("cluster", id), logs.Err(err))
+			}
+		}
 	}
 
 	cluster.ReplicationSourceIdentifier = ""
