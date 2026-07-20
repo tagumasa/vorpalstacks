@@ -346,7 +346,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem = request.GetIntParam(req.Parameters, "provisionedMemory")
 		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", "provisionedMemory must be between 16 and 24576")
+			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("provisionedMemory must be between %d and %d", minProvisionedMemory, maxProvisionedMemory))
 		}
 	}
 
@@ -395,13 +395,13 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	}
 	db, err := graphengine.New(bucket, s.engineOptions())
 	if err != nil {
-		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
+		logs.Error("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
 		graph.Status = "FAILED"
 		graph.StatusReason = fmt.Sprintf("failed to open graph engine: %v", err)
 		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Warn("failed to update graph status to FAILED", logs.String("graphId", graphID), logs.Err(updateErr))
+			logs.Error("failed to update graph status to FAILED", logs.String("graphId", graphID), logs.Err(updateErr))
 		}
-		return graphToResponse(graph), nil
+		return nil, newInternalServerException(err)
 	}
 	s.enginesMu.Lock()
 	s.activeEngines[graphID] = &engineEntry{db: db}
@@ -556,7 +556,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 			Id:                 snapshotID,
 			Name:               graph.Name + "-auto-snapshot",
 			Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
-			Status:             "AVAILABLE",
+			Status:             "CREATING",
 			SourceGraphId:      graphID,
 			SnapshotCreateTime: &now,
 			AccountID:          s.accountID,
@@ -564,6 +564,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		}
 		if err := store.CreateSnapshot(snapshot); err != nil {
 			logs.Warn("failed to create auto snapshot during graph deletion", logs.String("graphId", graphID), logs.Err(err))
+			snapshotID = ""
 		}
 	}
 
@@ -602,10 +603,24 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	if snapshotID != "" {
 		srcBkt, srcErr := s.graphBucket(graphID)
 		dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
+		copyOK := false
 		if srcErr == nil && dstErr == nil {
 			if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
 				logs.Warn("failed to copy graph data to snapshot bucket during deletion",
 					logs.String("graphId", graphID), logs.String("snapshotId", snapshotID), logs.Err(err))
+			} else {
+				copyOK = true
+			}
+		}
+		finalStatus := "AVAILABLE"
+		if !copyOK {
+			finalStatus = "FAILED"
+		}
+		if snap, getErr := store.GetSnapshot(snapshotID); getErr == nil {
+			snap.Status = finalStatus
+			if updateErr := store.UpdateSnapshot(snap); updateErr != nil {
+				logs.Warn("failed to update snapshot status after copy",
+					logs.String("snapshotId", snapshotID), logs.Err(updateErr))
 			}
 		}
 	}
@@ -875,12 +890,17 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 
 	db, err := graphengine.New(dstBucket, s.engineOptions())
 	if err != nil {
-		logs.Warn("failed to open graph engine for restored graph", logs.String("graphId", graphID), logs.Err(err))
-	} else {
-		s.enginesMu.Lock()
-		s.activeEngines[graphID] = &engineEntry{db: db}
-		s.enginesMu.Unlock()
+		graph.Status = "FAILED"
+		graph.StatusReason = fmt.Sprintf("failed to open graph engine: %v", err)
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to update graph status to FAILED after restore", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
+		return nil, newInternalServerException(err)
 	}
+
+	s.enginesMu.Lock()
+	s.activeEngines[graphID] = &engineEntry{db: db}
+	s.enginesMu.Unlock()
 
 	graph.Status = "AVAILABLE"
 	graph.Endpoint = s.graphEndpoint(graphID)

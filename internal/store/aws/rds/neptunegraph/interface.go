@@ -56,6 +56,7 @@ type QueryOps interface {
 	UpdateQuery(q *QueryRecord) error
 	DeleteQuery(graphId, id string) error
 	ListQueries(graphId string, maxResults int) ([]*QueryRecord, error)
+	TryAdvanceQuery(graphId, id string, expectedState string, apply func(*QueryRecord)) error
 }
 
 // ImportTaskOps defines CRUD and state transition operations for import tasks.

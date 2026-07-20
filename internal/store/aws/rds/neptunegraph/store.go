@@ -213,6 +213,7 @@ func (s *NeptuneGraphStore) ListSnapshots(opts common.ListOptions, graphId strin
 		}
 
 		ids = ids[startIdx:]
+		hasMore := opts.MaxItems > 0 && len(ids) > opts.MaxItems
 		if opts.MaxItems > 0 && len(ids) > opts.MaxItems {
 			ids = ids[:opts.MaxItems]
 		}
@@ -226,11 +227,10 @@ func (s *NeptuneGraphStore) ListSnapshots(opts common.ListOptions, graphId strin
 			snapshots = append(snapshots, snap)
 		}
 
-		truncated := false
+		truncated := hasMore
 		nextToken := ""
-		if opts.MaxItems > 0 && len(snapshots) == opts.MaxItems {
-			nextToken = snapshots[len(snapshots)-1].Id
-			truncated = true
+		if truncated && len(ids) > 0 {
+			nextToken = ids[len(ids)-1]
 		}
 		return snapshots, nextToken, truncated, nil
 	}
@@ -368,6 +368,29 @@ func (s *NeptuneGraphStore) UpdateQuery(q *QueryRecord) error {
 	return s.queries.PutProto(key, queryToProto(q))
 }
 
+// TryAdvanceQuery atomically advances a query state if it matches the expected
+// current state. This prevents a completed query from overwriting a CANCELLED
+// state set by CancelQuery.
+func (s *NeptuneGraphStore) TryAdvanceQuery(graphId, id string, expectedState string, apply func(*QueryRecord)) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var p pb.QueryRecord
+	if err := s.queries.GetProto(graphId+"/"+id, &p); err != nil {
+		if common.IsNotFound(err) {
+			return ErrQueryNotFound
+		}
+		return err
+	}
+	if p.GetState() != expectedState {
+		return nil
+	}
+	q := protoToQuery(&p)
+	if apply != nil {
+		apply(q)
+	}
+	return s.queries.PutProto(graphId+"/"+id, queryToProto(q))
+}
+
 // DeleteQuery removes a query record by graph and query identifiers.
 func (s *NeptuneGraphStore) DeleteQuery(graphId, id string) error {
 	key := graphId + "/" + id
@@ -503,6 +526,7 @@ func (s *NeptuneGraphStore) ListExportTasks(opts common.ListOptions, graphId str
 		}
 
 		ids = ids[startIdx:]
+		hasMore := opts.MaxItems > 0 && len(ids) > opts.MaxItems
 		if opts.MaxItems > 0 && len(ids) > opts.MaxItems {
 			ids = ids[:opts.MaxItems]
 		}
@@ -516,11 +540,10 @@ func (s *NeptuneGraphStore) ListExportTasks(opts common.ListOptions, graphId str
 			tasks = append(tasks, task)
 		}
 
-		truncated := false
+		truncated := hasMore
 		nextToken := ""
-		if opts.MaxItems > 0 && len(tasks) == opts.MaxItems {
-			nextToken = tasks[len(tasks)-1].TaskId
-			truncated = true
+		if truncated && len(ids) > 0 {
+			nextToken = ids[len(ids)-1]
 		}
 		return tasks, nextToken, truncated, nil
 	}

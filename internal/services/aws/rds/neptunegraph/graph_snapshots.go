@@ -48,7 +48,7 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 		Id:                 snapshotID,
 		Name:               snapshotName,
 		Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
-		Status:             "AVAILABLE",
+		Status:             "CREATING",
 		SourceGraphId:      graph.Id,
 		SnapshotCreateTime: &now,
 		AccountID:          s.accountID,
@@ -64,11 +64,23 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 
 	srcBkt, srcErr := s.graphBucket(graph.Id)
 	dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
+	copyOK := false
 	if srcErr == nil && dstErr == nil {
 		if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
 			logs.Warn("failed to copy graph data to snapshot bucket",
 				logs.String("graphId", graph.Id), logs.String("snapshotId", snapshotID), logs.Err(err))
+		} else {
+			copyOK = true
 		}
+	}
+
+	snapshot.Status = "AVAILABLE"
+	if !copyOK {
+		snapshot.Status = "FAILED"
+	}
+	if err := store.UpdateSnapshot(snapshot); err != nil {
+		logs.Warn("failed to update snapshot status after copy",
+			logs.String("snapshotId", snapshotID), logs.Err(err))
 	}
 
 	return snapshotToResponse(snapshot), nil

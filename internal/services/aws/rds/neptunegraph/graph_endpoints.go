@@ -95,7 +95,13 @@ func (s *NeptuneGraphService) GetPrivateGraphEndpoint(ctx context.Context, reqCt
 	}
 
 	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
+	if graphID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	}
 	vpcID := request.GetStringParam(req.Parameters, "vpcId")
+	if vpcID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
+	}
 
 	ep, err := store.GetEndpoint(graphID, vpcID)
 	if err != nil {
@@ -143,7 +149,13 @@ func (s *NeptuneGraphService) DeletePrivateGraphEndpoint(ctx context.Context, re
 	}
 
 	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
+	if graphID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	}
 	vpcID := request.GetStringParam(req.Parameters, "vpcId")
+	if vpcID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
+	}
 
 	ep, err := store.GetEndpoint(graphID, vpcID)
 	if err != nil {

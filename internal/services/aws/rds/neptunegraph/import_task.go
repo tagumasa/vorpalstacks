@@ -402,6 +402,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 		if err != nil {
 			logs.Warn("failed to advance import task to FAILED", logs.String("taskId", taskID), logs.Err(err))
 		}
+		finaliseImportedGraph(store, graphID, false, "Import failed")
 		return
 	}
 
@@ -433,6 +434,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 		if err != nil {
 			logs.Warn("failed to advance import task to FAILED", logs.String("taskId", taskID), logs.Err(err))
 		}
+		finaliseImportedGraph(store, graphID, false, "Import failed")
 		return
 	}
 
@@ -487,23 +489,28 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 		return
 	}
 
-	if finalStatus == "SUCCEEDED" {
-		graph, err := store.GetGraph(graphID)
-		if err == nil && graph.Status == "IMPORTING" {
-			graph.Status = "AVAILABLE"
-			if err := store.UpdateGraph(graph); err != nil {
-				logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
-			}
-		}
-	} else if finalStatus == "FAILED" {
-		graph, err := store.GetGraph(graphID)
-		if err == nil && graph.Status == "IMPORTING" {
-			graph.Status = "FAILED"
-			graph.StatusReason = "Import failed"
-			if err := store.UpdateGraph(graph); err != nil {
-				logs.Warn("Failed to update graph status after failed import", logs.Err(err))
-			}
-		}
+	finaliseImportedGraph(store, graphID, finalStatus == "SUCCEEDED", statusReason)
+}
+
+// finaliseImportedGraph transitions a graph from IMPORTING to AVAILABLE or FAILED
+// based on import outcome. All early-return paths in advanceImportTask must call
+// this to prevent the graph from being stuck in IMPORTING state forever.
+func finaliseImportedGraph(store *ngstore.NeptuneGraphStore, graphID string, succeeded bool, reason string) {
+	graph, err := store.GetGraph(graphID)
+	if err != nil {
+		return
+	}
+	if graph.Status != "IMPORTING" {
+		return
+	}
+	if succeeded {
+		graph.Status = "AVAILABLE"
+	} else {
+		graph.Status = "FAILED"
+		graph.StatusReason = reason
+	}
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("failed to update graph status after import", logs.String("graphId", graphID), logs.Err(err))
 	}
 }
 
@@ -565,6 +572,18 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 	}
 
 	b := newImportBatcher(db)
+
+	if isEdge {
+		// Edge-only CSV files have no node records to populate the
+		// ext-to-internal ID mapping. Build it from existing DB nodes
+		// so that ~from/~to external IDs can be resolved.
+		_ = db.ForEachNode(func(node *graphengine.Node) error {
+			if extID, ok := node.Props["~id"].(string); ok {
+				b.extToInternal[extID] = node.ID
+			}
+			return nil
+		})
+	}
 
 	for {
 		record, err := r.Read()

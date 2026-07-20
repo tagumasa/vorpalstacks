@@ -677,9 +677,12 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 
 	finaliseQuery := func(state string) {
 		elapsed := int32(time.Since(now).Milliseconds())
-		queryRecord.Elapsed = elapsed
-		queryRecord.State = state
-		if err := store.UpdateQuery(queryRecord); err != nil {
+		// Use TryAdvanceQuery to avoid overwriting a CANCELLED state
+		// set by CancelQuery during execution.
+		if err := store.TryAdvanceQuery(graphID, queryID, "RUNNING", func(q *ngstore.QueryRecord) {
+			q.Elapsed = elapsed
+			q.State = state
+		}); err != nil {
 			logs.Warn("failed to update query state", logs.Err(err))
 		}
 	}
