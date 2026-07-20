@@ -614,8 +614,10 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 		now := time.Now()
 		s.fastTokens.Store(token, now.Add(30*time.Second))
 		s.fastTokens.Range(func(key, value any) bool {
-			if now.After(value.(time.Time)) {
-				s.fastTokens.Delete(key)
+			if t, ok := value.(time.Time); ok {
+				if now.After(t) {
+					s.fastTokens.Delete(key)
+				}
 			}
 			return true
 		})
@@ -630,7 +632,12 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 			return nil, missingParameter("token")
 		}
 		val, ok := s.fastTokens.Load(params.Token)
-		if !ok || time.Now().After(val.(time.Time)) {
+		if !ok {
+			return nil, preconditionFailed("invalid or expired token")
+		}
+		expiry, typeOk := val.(time.Time)
+		if !typeOk || time.Now().After(expiry) {
+			s.fastTokens.Delete(params.Token)
 			return nil, preconditionFailed("invalid or expired token")
 		}
 		s.fastTokens.Delete(params.Token)
@@ -745,9 +752,10 @@ func (s *NeptuneDataService) getQueryStatus(reqCtx *request.RequestContext, req 
 		"queryId":     qr.GetQueryId(),
 		"queryString": qr.GetQueryString(),
 		"queryEvalStats": map[string]interface{}{
-			"cancelled": qr.GetStatus() == "cancelled",
-			"elapsed":   elapsed,
-			"waited":    0,
+			"cancelled":  qr.GetStatus() == "cancelled",
+			"elapsed":    elapsed,
+			"waited":     0,
+			"subqueries": []interface{}{},
 		},
 	}, nil
 }
@@ -792,6 +800,9 @@ func (s *NeptuneDataService) listQueries(reqCtx *request.RequestContext, req *re
 			acceptedCount++
 		}
 		result = append(result, entry)
+	}
+	if result == nil {
+		result = []interface{}{}
 	}
 
 	return map[string]interface{}{

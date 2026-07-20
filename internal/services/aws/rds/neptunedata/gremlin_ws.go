@@ -16,12 +16,10 @@ import (
 )
 
 const (
-	wsKeepAliveInterval  = 60 * time.Second
-	wsWriteTimeout       = 10 * time.Second
-	wsSendBufferSize     = 256
-	wsMaxMessageSize     = 1 * 1024 * 1024
-	wsSessionIdleTimeout = 5 * time.Minute
-	wsSessionCleanupTick = 30 * time.Second
+	wsKeepAliveInterval = 60 * time.Second
+	wsWriteTimeout      = 10 * time.Second
+	wsSendBufferSize    = 256
+	wsMaxMessageSize    = 1 * 1024 * 1024
 )
 
 // gremlinUpgrader is the WebSocket upgrader for TinkerPop Gremlin Server

@@ -274,7 +274,14 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string,
 	job.TotalRecords = stats.totalRecords
 	job.TotalErrors = stats.failed
 
-	if loadErr != "" {
+	// Re-read the job from the store to detect a concurrent cancel.
+	// CancelLoaderJob may have set the status to CANCELLED during loading.
+	// If so, we must preserve that status rather than overwriting it with
+	// LOAD_COMPLETED or LOAD_FAILED based on our stale local copy.
+	current, err := store.GetLoaderJob(loadID)
+	if err == nil && current != nil && current.GetStatus() == "CANCELLED" {
+		job.Status = "CANCELLED"
+	} else if loadErr != "" {
 		job.Status = "LOAD_FAILED"
 		if job.Details == nil {
 			job.Details = make(map[string]string)
@@ -767,7 +774,7 @@ func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWr
 	for scanner.Scan() {
 		select {
 		case <-cancelCh:
-			return ""
+			return "loader job cancelled"
 		default:
 		}
 
