@@ -83,6 +83,9 @@ func (s *BatchLoadTaskStore) GetBatchLoadTask(taskId string) (*BatchLoadTaskDesc
 
 // UpdateBatchLoadTaskStatus updates the status of a batch load task.
 func (s *BatchLoadTaskStore) UpdateBatchLoadTaskStatus(taskId string, status BatchLoadStatus, errorMessage string) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
 	task, err := s.GetBatchLoadTask(taskId)
 	if err != nil {
 		return err
@@ -93,6 +96,36 @@ func (s *BatchLoadTaskStore) UpdateBatchLoadTaskStatus(taskId string, status Bat
 	if errorMessage != "" {
 		task.ErrorMessage = errorMessage
 	}
+
+	return s.PutProto(taskId, BatchLoadTaskDescriptionToProto(task))
+}
+
+// TransitionBatchLoadTaskStatus atomically transitions a task from one of the
+// allowed source statuses to a target status. Returns ErrBatchLoadTaskNotFound
+// if the task does not exist, or ErrInvalidTransition if the current status
+// does not match any of the allowed source statuses.
+func (s *BatchLoadTaskStore) TransitionBatchLoadTaskStatus(taskId string, fromStatuses []BatchLoadStatus, toStatus BatchLoadStatus) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
+	task, err := s.GetBatchLoadTask(taskId)
+	if err != nil {
+		return err
+	}
+
+	allowed := false
+	for _, from := range fromStatuses {
+		if task.TaskStatus == from {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return ErrInvalidTransition
+	}
+
+	task.TaskStatus = toStatus
+	task.LastUpdatedTime = time.Now().UTC()
 
 	return s.PutProto(taskId, BatchLoadTaskDescriptionToProto(task))
 }
@@ -118,21 +151,21 @@ func (s *BatchLoadTaskStore) DeleteBatchLoadTask(taskId string) error {
 	return s.BaseStore.Delete(taskId)
 }
 
-// ListBatchLoadTasks lists batch load tasks with optional status filter.
-func (s *BatchLoadTaskStore) ListBatchLoadTasks(taskStatus BatchLoadStatus) ([]*BatchLoadTask, error) {
+// ListBatchLoadTasks lists batch load tasks with optional status filter and pagination.
+func (s *BatchLoadTaskStore) ListBatchLoadTasks(taskStatus BatchLoadStatus, opts common.ListOptions) (*common.ListResult[BatchLoadTask], error) {
 	result, err := common.ListProto[*pb.BatchLoadTaskDescription](s.BaseStore, common.ListOptions{MaxItems: common.AbsoluteMaxItems}, func() *pb.BatchLoadTaskDescription { return &pb.BatchLoadTaskDescription{} }, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var tasks []*BatchLoadTask
+	var filtered []*BatchLoadTask
 	for _, pbDesc := range result.Items {
 		desc := ProtoToBatchLoadTaskDescription(pbDesc)
 		if taskStatus != "" && desc.TaskStatus != taskStatus {
 			continue
 		}
 
-		tasks = append(tasks, &BatchLoadTask{
+		filtered = append(filtered, &BatchLoadTask{
 			TaskId:          desc.TaskId,
 			DatabaseName:    desc.TargetDatabaseName,
 			TableName:       desc.TargetTableName,
@@ -142,7 +175,39 @@ func (s *BatchLoadTaskStore) ListBatchLoadTasks(taskStatus BatchLoadStatus) ([]*
 			ResumableUntil:  desc.ResumableUntil,
 		})
 	}
-	return tasks, nil
+
+	startIdx := 0
+	if opts.Marker != "" {
+		for i, t := range filtered {
+			if t.TaskId == opts.Marker {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	maxItems := opts.MaxItems
+	if maxItems <= 0 {
+		maxItems = 20
+	}
+
+	endIdx := startIdx + maxItems
+	if endIdx > len(filtered) {
+		endIdx = len(filtered)
+	}
+
+	page := filtered[startIdx:endIdx]
+
+	nextMarker := ""
+	if endIdx < len(filtered) {
+		nextMarker = filtered[endIdx-1].TaskId
+	}
+
+	return &common.ListResult[BatchLoadTask]{
+		Items:       page,
+		NextMarker:  nextMarker,
+		IsTruncated: endIdx < len(filtered),
+	}, nil
 }
 
 // AccountSettingsStore manages account settings for Timestream.

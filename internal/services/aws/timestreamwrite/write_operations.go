@@ -24,6 +24,19 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 
 	records := s.parseRecords(req.Parameters["Records"])
 
+	if len(records) < 1 || len(records) > 100 {
+		return nil, ErrValidationException
+	}
+
+	commonAttributes := s.parseCommonAttributes(req.Parameters["CommonAttributes"])
+	if commonAttributes != nil {
+		merged, err := s.mergeCommonAttributes(records, commonAttributes)
+		if err != nil {
+			return nil, err
+		}
+		records = merged
+	}
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -33,10 +46,12 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 		return nil, s.mapStoreError(err)
 	}
 
+	ingestedCount := int64(len(records) - len(rejectedRecords))
+
 	response := map[string]interface{}{
 		"RecordsIngested": map[string]interface{}{
-			"Total":         int64(len(records)),
-			"MemoryStore":   int64(len(records) - len(rejectedRecords)),
+			"Total":         ingestedCount,
+			"MemoryStore":   ingestedCount,
 			"MagneticStore": int64(0),
 		},
 	}
@@ -61,23 +76,27 @@ func (s *TimestreamWriteService) parseRecords(data interface{}) []tsstore.Record
 		if !ok {
 			continue
 		}
-
-		record := tsstore.Record{
-			Dimensions:       s.parseDimensions(itemMap["Dimensions"]),
-			MeasureName:      request.GetStringParam(itemMap, "MeasureName"),
-			MeasureValue:     request.GetStringParam(itemMap, "MeasureValue"),
-			MeasureValueType: tsstore.MeasureValueType(request.GetStringParam(itemMap, "MeasureValueType")),
-			Time:             request.GetStringParam(itemMap, "Time"),
-			TimeUnit:         tsstore.TimeUnit(request.GetStringParam(itemMap, "TimeUnit")),
-			Version:          getIntFromMap(itemMap, "Version"),
-		}
-
-		record.MeasureValues = s.parseMeasureValues(itemMap["MeasureValues"])
-
-		records = append(records, record)
+		records = append(records, s.parseSingleRecord(itemMap))
 	}
 
 	return records
+}
+
+// parseSingleRecord parses a single record from a map[string]interface{}.
+func (s *TimestreamWriteService) parseSingleRecord(itemMap map[string]interface{}) tsstore.Record {
+	record := tsstore.Record{
+		Dimensions:       s.parseDimensions(itemMap["Dimensions"]),
+		MeasureName:      request.GetStringParam(itemMap, "MeasureName"),
+		MeasureValue:     request.GetStringParam(itemMap, "MeasureValue"),
+		MeasureValueType: tsstore.MeasureValueType(request.GetStringParam(itemMap, "MeasureValueType")),
+		Time:             request.GetStringParam(itemMap, "Time"),
+		TimeUnit:         tsstore.TimeUnit(request.GetStringParam(itemMap, "TimeUnit")),
+		Version:          getIntFromMap(itemMap, "Version"),
+	}
+
+	record.MeasureValues = s.parseMeasureValues(itemMap["MeasureValues"])
+
+	return record
 }
 
 func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dimension {
@@ -107,6 +126,73 @@ func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dim
 	}
 
 	return dimensions
+}
+
+// parseCommonAttributes parses the CommonAttributes record from the request.
+// CommonAttributes contains measure, dimension, time, and version attributes
+// shared across all records in the WriteRecords request.
+func (s *TimestreamWriteService) parseCommonAttributes(data interface{}) *tsstore.Record {
+	if data == nil {
+		return nil
+	}
+	itemMap, ok := data.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	rec := s.parseSingleRecord(itemMap)
+	return &rec
+}
+
+// mergeCommonAttributes merges CommonAttributes into each individual record.
+// Per AWS spec: dimension names must not overlap between common and individual
+// records (ValidationException). For scalar fields (MeasureName, MeasureValue,
+// MeasureValueType, Time, TimeUnit, Version), the individual record's value
+// takes precedence when set; otherwise the common value is used.
+func (s *TimestreamWriteService) mergeCommonAttributes(records []tsstore.Record, common *tsstore.Record) ([]tsstore.Record, error) {
+	if common == nil {
+		return records, nil
+	}
+
+	commonDimNames := make(map[string]bool, len(common.Dimensions))
+	for _, d := range common.Dimensions {
+		commonDimNames[d.Name] = true
+	}
+
+	for i := range records {
+		rec := &records[i]
+
+		for _, d := range rec.Dimensions {
+			if commonDimNames[d.Name] {
+				return nil, ErrValidationException
+			}
+		}
+
+		rec.Dimensions = append(rec.Dimensions, common.Dimensions...)
+
+		if rec.MeasureName == "" {
+			rec.MeasureName = common.MeasureName
+		}
+		if rec.MeasureValue == "" {
+			rec.MeasureValue = common.MeasureValue
+		}
+		if rec.MeasureValueType == "" {
+			rec.MeasureValueType = common.MeasureValueType
+		}
+		if len(rec.MeasureValues) == 0 {
+			rec.MeasureValues = common.MeasureValues
+		}
+		if rec.Time == "" {
+			rec.Time = common.Time
+		}
+		if rec.TimeUnit == "" {
+			rec.TimeUnit = common.TimeUnit
+		}
+		if rec.Version == 0 {
+			rec.Version = common.Version
+		}
+	}
+
+	return records, nil
 }
 
 func (s *TimestreamWriteService) parseMeasureValues(data interface{}) []tsstore.MeasureValue {

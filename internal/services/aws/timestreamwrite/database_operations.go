@@ -98,6 +98,9 @@ func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *r
 func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
+	if maxResults > maxListDatabasesResults {
+		maxResults = maxListDatabasesResults
+	}
 
 	opts := common.ListOptions{MaxItems: maxResults}
 	if nextToken != "" {
@@ -134,6 +137,9 @@ func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *req
 	}
 
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
+	if kmsKeyID == "" {
+		return nil, ErrValidationException
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {

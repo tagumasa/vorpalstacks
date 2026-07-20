@@ -32,4 +32,6 @@ var (
 	ErrBatchLoadTaskNotFound = errors.New("batch load task not found")
 	// ErrBatchLoadTaskAlreadyExists is returned when a batch load task already exists.
 	ErrBatchLoadTaskAlreadyExists = errors.New("batch load task already exists")
+	// ErrInvalidTransition is returned when a state transition is not allowed from the current status.
+	ErrInvalidTransition = errors.New("invalid state transition")
 )

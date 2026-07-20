@@ -16,6 +16,15 @@ import (
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
+// Smithy model pagination limits (timestream-write-2018-11-01.json):
+// PaginationLimit range {min:1, max:20} for ListDatabases/ListTables.
+// PageLimit range {min:1, max:100} for ListBatchLoadTasks.
+const (
+	maxListDatabasesResults      = 20
+	maxListTablesResults         = 20
+	maxListBatchLoadTasksResults = 100
+)
+
 // tsWriteStores holds the various Timestream Write stores.
 type tsWriteStores struct {
 	store          *tsstore.Store

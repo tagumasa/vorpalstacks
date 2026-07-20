@@ -8,10 +8,12 @@ import (
 	"strconv"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -112,23 +114,35 @@ func (s *TimestreamWriteService) ListBatchLoadTasks(ctx context.Context, reqCtx 
 		taskStatus = tsstore.BatchLoadStatus(status)
 	}
 
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
+	if maxResults > maxListBatchLoadTasksResults {
+		maxResults = maxListBatchLoadTasksResults
+	}
+
+	opts := storecommon.ListOptions{MaxItems: maxResults}
+	if nextToken != "" {
+		opts.Marker = nextToken
+	}
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	tasks, err := st.batchLoadStore.ListBatchLoadTasks(taskStatus)
+	result, err := st.batchLoadStore.ListBatchLoadTasks(taskStatus, opts)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	taskList := make([]map[string]interface{}, 0)
-	for _, task := range tasks {
+	for _, task := range result.Items {
 		taskList = append(taskList, s.formatBatchLoadTask(task))
 	}
 
 	response := map[string]interface{}{
 		"BatchLoadTasks": taskList,
 	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 
 	return response, nil
 }
@@ -144,19 +158,18 @@ func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	task, err := st.batchLoadStore.GetBatchLoadTask(taskId)
+
+	err = st.batchLoadStore.TransitionBatchLoadTaskStatus(taskId, []tsstore.BatchLoadStatus{
+		tsstore.BatchLoadStatusProgressStopped,
+		tsstore.BatchLoadStatusPendingResume,
+	}, tsstore.BatchLoadStatusPendingResume)
 	if err != nil {
 		if err == tsstore.ErrBatchLoadTaskNotFound {
 			return nil, ErrResourceNotFound
 		}
-		return nil, s.mapStoreError(err)
-	}
-
-	if task.TaskStatus != tsstore.BatchLoadStatusProgressStopped && task.TaskStatus != tsstore.BatchLoadStatusPendingResume {
-		return nil, ErrValidationException
-	}
-
-	if err := st.batchLoadStore.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusPendingResume, ""); err != nil {
+		if err == tsstore.ErrInvalidTransition {
+			return nil, ErrValidationException
+		}
 		return nil, s.mapStoreError(err)
 	}
 

@@ -90,22 +90,28 @@ func (r *TestRunner) runTimestreamBatchLoadTests(tc *tsTestContext) []TestResult
 	}))
 
 	results = append(results, r.RunTest("timestream", "ListBatchLoadTasks_Verify", func() error {
-		resp, err := tc.writeClient.ListBatchLoadTasks(tc.ctx, &timestreamwrite.ListBatchLoadTasksInput{})
-		if err != nil {
-			return err
-		}
-		if len(resp.BatchLoadTasks) == 0 {
-			return fmt.Errorf("expected at least 1 task, got 0")
-		}
 		found := false
-		for _, t := range resp.BatchLoadTasks {
-			if t.TaskId != nil && *t.TaskId == blTaskID {
-				found = true
-				if t.TaskStatus == "" {
-					return fmt.Errorf("batch load task has empty TaskStatus")
+		var nextToken *string
+		for {
+			resp, err := tc.writeClient.ListBatchLoadTasks(tc.ctx, &timestreamwrite.ListBatchLoadTasksInput{
+				NextToken: nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			for _, t := range resp.BatchLoadTasks {
+				if t.TaskId != nil && *t.TaskId == blTaskID {
+					found = true
+					if t.TaskStatus == "" {
+						return fmt.Errorf("batch load task has empty TaskStatus")
+					}
+					break
 				}
+			}
+			if found || resp.NextToken == nil {
 				break
 			}
+			nextToken = resp.NextToken
 		}
 		if !found {
 			return fmt.Errorf("batch load task %s not found in list", blTaskID)

@@ -2,6 +2,7 @@ package timestreamwrite
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -32,7 +33,10 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 		return nil, ErrValidationException
 	}
 
-	retentionProperties := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
+	retentionProperties, err := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
+	if err != nil {
+		return nil, err
+	}
 	schema := s.parseSchema(req.Parameters["Schema"])
 
 	st, err := s.store(reqCtx)
@@ -102,6 +106,9 @@ func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request
 	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
+	if maxResults > maxListTablesResults {
+		maxResults = maxListTablesResults
+	}
 
 	opts := common.ListOptions{MaxItems: maxResults}
 	if nextToken != "" {
@@ -142,7 +149,10 @@ func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *reques
 		return nil, ErrValidationException
 	}
 
-	retentionProperties := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
+	retentionProperties, err := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
+	if err != nil {
+		return nil, err
+	}
 	schema := s.parseSchema(req.Parameters["Schema"])
 
 	st, err := s.store(reqCtx)
@@ -192,42 +202,51 @@ func (s *TimestreamWriteService) DeleteTable(ctx context.Context, reqCtx *reques
 	return response.EmptyResponse(), nil
 }
 
-func (s *TimestreamWriteService) parseRetentionProperties(data interface{}) *tsstore.RetentionProperties {
+func (s *TimestreamWriteService) parseRetentionProperties(data interface{}) (*tsstore.RetentionProperties, error) {
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 
 	propsMap, ok := data.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
-	props := &tsstore.RetentionProperties{
-		MemoryStoreRetentionPeriodInHours:  6,
-		MagneticStoreRetentionPeriodInDays: 7300,
+	props := &tsstore.RetentionProperties{}
+
+	memHours, memPresent := getRetentionPolicyValue(propsMap, "MemoryStoreRetentionPeriodInHours")
+	magDays, magPresent := getRetentionPolicyValue(propsMap, "MagneticStoreRetentionPeriodInDays")
+
+	if !memPresent || !magPresent {
+		return nil, ErrValidationException
 	}
 
-	if v, ok := propsMap["MemoryStoreRetentionPeriodInHours"]; ok {
-		if f, ok := v.(float64); ok {
-			props.MemoryStoreRetentionPeriodInHours = int64(f)
-		}
-	} else if v, ok := propsMap["memoryStoreRetentionPeriodInHours"]; ok {
-		if f, ok := v.(float64); ok {
-			props.MemoryStoreRetentionPeriodInHours = int64(f)
-		}
+	if memHours < 1 || memHours > 8766 {
+		return nil, ErrValidationException
 	}
 
-	if v, ok := propsMap["MagneticStoreRetentionPeriodInDays"]; ok {
-		if f, ok := v.(float64); ok {
-			props.MagneticStoreRetentionPeriodInDays = int64(f)
-		}
-	} else if v, ok := propsMap["magneticStoreRetentionPeriodInDays"]; ok {
-		if f, ok := v.(float64); ok {
-			props.MagneticStoreRetentionPeriodInDays = int64(f)
-		}
+	if magDays < 1 || magDays > 73000 {
+		return nil, ErrValidationException
 	}
 
-	return props
+	props.MemoryStoreRetentionPeriodInHours = memHours
+	props.MagneticStoreRetentionPeriodInDays = magDays
+
+	return props, nil
+}
+
+func getRetentionPolicyValue(propsMap map[string]interface{}, key string) (int64, bool) {
+	v, ok := propsMap[key]
+	if !ok {
+		v, ok = propsMap[strings.ToLower(key[:1])+key[1:]]
+		if !ok {
+			return 0, false
+		}
+	}
+	if f, ok := v.(float64); ok {
+		return int64(f), true
+	}
+	return 0, false
 }
 
 func (s *TimestreamWriteService) parseSchema(data interface{}) *tsstore.Schema {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -157,8 +158,12 @@ func (s *RecordStore) parseTimestamp(timeStr string, timeUnit TimeUnit) (time.Ti
 		return time.Now().UTC(), nil
 	}
 
-	var ts int64
-	if _, err := fmt.Sscanf(timeStr, "%d", &ts); err != nil {
+	ts, err := strconv.ParseInt(timeStr, 10, 64)
+	if err != nil {
+		return time.Time{}, ErrInvalidParameter
+	}
+
+	if ts < 0 {
 		return time.Time{}, ErrInvalidParameter
 	}
 
@@ -244,13 +249,18 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 			version = 1
 		}
 
+		measureValueType := record.MeasureValueType
+		if measureValueType == "" {
+			measureValueType = MeasureValueTypeDouble
+		}
+
 		entry := &chunk.TimestreamEntry{
 			DatabaseName:     databaseName,
 			TableName:        tableName,
 			Dimensions:       convertDimensions(record.Dimensions),
 			MeasureName:      record.MeasureName,
 			MeasureValue:     record.MeasureValue,
-			MeasureValueType: string(record.MeasureValueType),
+			MeasureValueType: string(measureValueType),
 			MeasureValues:    convertMeasureValues(record.MeasureValues),
 			Time:             ts,
 			Version:          version,
