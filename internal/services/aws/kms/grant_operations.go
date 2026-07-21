@@ -5,12 +5,19 @@ package kms
 import (
 	"context"
 	"errors"
+	"regexp"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
+
+// grantNamePattern mirrors the AWS GrantNameType constraint: 1-256 chars
+// of alphanumerics plus colon, slash, underscore, and hyphen. Length bounds
+// come from the smithy.api#length trait on com.amazonaws.kms#GrantNameType.
+var grantNamePattern = regexp.MustCompile(`^[a-zA-Z0-9:/_-]{1,256}$`)
 
 // CreateGrant creates a grant for a KMS key.
 func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -25,11 +32,18 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	granteePrincipal := request.GetStringParam(req.Parameters, "GranteePrincipal")
 	if granteePrincipal == "" {
-		return nil, ErrAccessDenied
+		// AWS: GranteePrincipal is a required field; missing is a
+		// ValidationException, not AccessDenied.
+		return nil, ErrValidation
 	}
 
 	retiringPrincipal := request.GetStringParam(req.Parameters, "RetiringPrincipal")
 	name := request.GetStringParam(req.Parameters, "Name")
+	// AWS: Name is optional but if present must be 1-256 chars matching
+	// the grantNamePattern (alnum, colon, slash, underscore, hyphen).
+	if name != "" && !grantNamePattern.MatchString(name) {
+		return nil, ErrValidation
+	}
 
 	var operations []string
 	if ops, ok := req.Parameters["Operations"]; ok {
@@ -41,8 +55,15 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 			}
 		}
 	}
+	// AWS: Operations is a required field for CreateGrant.
+	if len(operations) == 0 {
+		return nil, ErrValidation
+	}
 
-	constraints := parseGrantConstraints(req.Parameters)
+	constraints, err := parseGrantConstraints(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	grantToken, err := kmsstore.GenerateGrantToken()
 	if err != nil {
@@ -113,6 +134,14 @@ func (s *KMSService) ListRetirableGrants(ctx context.Context, reqCtx *request.Re
 	for _, g := range result.Grants {
 		key, err := stores.keys.Get(g.KeyID)
 		if err != nil {
+			// A grant whose key cannot be resolved is an orphan — typically
+			// the result of a partially-failed cascade-delete. Skip the
+			// entry (matching AWS behaviour where retired/deleted keys do
+			// not appear in ListRetirableGrants) but log loudly so the
+			// operator detects the data-integrity issue. The previous
+			// code returned ErrKMSInternal here, which broke the entire
+			// list response for a single orphaned grant.
+			logs.Error("ListRetirableGrants: skipping orphaned grant (key not found)", logs.String("keyId", g.KeyID), logs.String("grantId", g.GrantID), logs.Err(err))
 			continue
 		}
 
@@ -140,7 +169,26 @@ func (s *KMSService) buildGrantResponse(g *kmsstore.Grant, keyArn string) map[st
 		grant["RetiringPrincipal"] = g.RetiringPrincipal
 	}
 	if g.Constraints != nil {
-		grant["Constraints"] = g.Constraints
+		// AWS expects Constraints as an object with EncryptionContextEquals,
+		// EncryptionContextSubset, and/or SourceArn fields. Emitting the raw
+		// store struct produces an empty Constraints object on the wire
+		// because the struct's json tags use snake_case while AWS uses
+		// PascalCase member names. Build the map explicitly and include
+		// SourceArn when set so that round-tripping a grant preserves the
+		// constraint.
+		constraintsMap := map[string]interface{}{}
+		if len(g.Constraints.EncryptionContextEquals) > 0 {
+			constraintsMap["EncryptionContextEquals"] = g.Constraints.EncryptionContextEquals
+		}
+		if len(g.Constraints.EncryptionContextSubset) > 0 {
+			constraintsMap["EncryptionContextSubset"] = g.Constraints.EncryptionContextSubset
+		}
+		if g.Constraints.SourceArn != "" {
+			constraintsMap["SourceArn"] = g.Constraints.SourceArn
+		}
+		if len(constraintsMap) > 0 {
+			grant["Constraints"] = constraintsMap
+		}
 	}
 	return grant
 }
@@ -170,7 +218,9 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	grantID := request.GetStringParam(req.Parameters, "GrantId")
 	if grantID == "" {
-		return nil, ErrGrantNotFound
+		// AWS: GrantId is required; missing is a ValidationException,
+		// not NotFoundException.
+		return nil, ErrValidation
 	}
 
 	grant, err := stores.grants.Get(grantID)
@@ -223,7 +273,9 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 		}
 		grantID = grant.GrantID
 	} else {
-		return nil, ErrGrantNotFound
+		// AWS: at least one of GrantId or GrantToken is required;
+		// missing both is a ValidationException, not NotFoundException.
+		return nil, ErrValidation
 	}
 
 	keyID := s.getKeyID(req.Parameters)
@@ -247,39 +299,76 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 	return response.EmptyResponse(), nil
 }
 
-func parseGrantConstraints(params map[string]interface{}) *kmsstore.GrantConstraints {
+func parseGrantConstraints(params map[string]interface{}) (*kmsstore.GrantConstraints, error) {
 	var constraints *kmsstore.GrantConstraints
 
 	if c, ok := params["Constraints"]; ok {
 		if cmap, ok := c.(map[string]interface{}); ok {
+			// Reject unknown constraint members up-front so that future
+			// AWS spec additions surface as ValidationException rather
+			// than being silently dropped (over-authorising the grant).
+			for k := range cmap {
+				switch k {
+				case "EncryptionContextEquals", "EncryptionContextSubset", "SourceArn":
+				default:
+					return nil, ErrValidation
+				}
+			}
 			if ecEquals, ok := cmap["EncryptionContextEquals"]; ok {
-				if ecMap, ok := ecEquals.(map[string]interface{}); ok {
-					if constraints == nil {
-						constraints = &kmsstore.GrantConstraints{}
+				ecMap, ok := ecEquals.(map[string]interface{})
+				if !ok {
+					// Smithy: EncryptionContextEquals is map<string,string>.
+					// A non-map value is a malformed request.
+					return nil, ErrValidation
+				}
+				if constraints == nil {
+					constraints = &kmsstore.GrantConstraints{}
+				}
+				constraints.EncryptionContextEquals = make(map[string]string)
+				for k, v := range ecMap {
+					vs, ok := v.(string)
+					if !ok {
+						// Smithy: EncryptionContextValue is a string.
+						// Non-string values are ValidationException
+						// rather than being silently dropped (which
+						// would weaken the constraint).
+						return nil, ErrValidation
 					}
-					constraints.EncryptionContextEquals = make(map[string]string)
-					for k, v := range ecMap {
-						if vs, ok := v.(string); ok {
-							constraints.EncryptionContextEquals[k] = vs
-						}
-					}
+					constraints.EncryptionContextEquals[k] = vs
 				}
 			}
 			if ecSubset, ok := cmap["EncryptionContextSubset"]; ok {
-				if ecMap, ok := ecSubset.(map[string]interface{}); ok {
-					if constraints == nil {
-						constraints = &kmsstore.GrantConstraints{}
-					}
-					constraints.EncryptionContextSubset = make(map[string]string)
-					for k, v := range ecMap {
-						if vs, ok := v.(string); ok {
-							constraints.EncryptionContextSubset[k] = vs
-						}
-					}
+				ecMap, ok := ecSubset.(map[string]interface{})
+				if !ok {
+					return nil, ErrValidation
 				}
+				if constraints == nil {
+					constraints = &kmsstore.GrantConstraints{}
+				}
+				constraints.EncryptionContextSubset = make(map[string]string)
+				for k, v := range ecMap {
+					vs, ok := v.(string)
+					if !ok {
+						return nil, ErrValidation
+					}
+					constraints.EncryptionContextSubset[k] = vs
+				}
+			}
+			// Smithy com.amazonaws.kms#GrantConstraints has three members;
+			// SourceArn was previously dropped silently, over-authorising
+			// grants whose callers depended on the constraint.
+			if sourceArnVal, ok := cmap["SourceArn"]; ok {
+				sourceArn, ok := sourceArnVal.(string)
+				if !ok || sourceArn == "" {
+					return nil, ErrValidation
+				}
+				if constraints == nil {
+					constraints = &kmsstore.GrantConstraints{}
+				}
+				constraints.SourceArn = sourceArn
 			}
 		}
 	}
 
-	return constraints
+	return constraints, nil
 }

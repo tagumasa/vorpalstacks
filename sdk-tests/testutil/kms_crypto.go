@@ -134,7 +134,7 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 			return fmt.Errorf("key ID not available")
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
-		testAlias := fmt.Sprintf("alias/encrypt-test-%d", tc.keyID[len(tc.keyID)-8:])
+		testAlias := fmt.Sprintf("alias/encrypt-test-%s", tc.keyID[len(tc.keyID)-8:])
 		_, err := tc.client.CreateAlias(tc.ctx, &kms.CreateAliasInput{
 			AliasName:   aws.String(testAlias),
 			TargetKeyId: aws.String(tc.keyID),

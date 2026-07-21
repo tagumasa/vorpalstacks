@@ -12,13 +12,23 @@ import (
 // KeyState represents the state of a KMS key.
 type KeyState string
 
-// KeyState constants define the possible states of a KMS key.
+// KeyState constants define the possible states of a KMS key. Per Smithy
+// com.amazonaws.kms#KeyState the enum has 8 values: Creating, Enabled,
+// Disabled, PendingDeletion, PendingImport, PendingReplicaDeletion,
+// Unavailable, Updating. Creating/Updating are not currently produced by
+// the platform (no asynchronous key-material generation), and
+// PendingReplicaDeletion is reserved for multi-region replica teardown;
+// they are declared here so that values returned by AWS-imported metadata
+// are not silently re-serialised as the zero value.
 const (
-	KeyStateEnabled         KeyState = "Enabled"
-	KeyStateDisabled        KeyState = "Disabled"
-	KeyStatePendingDeletion KeyState = "PendingDeletion"
-	KeyStatePendingImport   KeyState = "PendingImport"
-	KeyStateUnavailable     KeyState = "Unavailable"
+	KeyStateEnabled                KeyState = "Enabled"
+	KeyStateDisabled               KeyState = "Disabled"
+	KeyStatePendingDeletion        KeyState = "PendingDeletion"
+	KeyStatePendingImport          KeyState = "PendingImport"
+	KeyStateUnavailable            KeyState = "Unavailable"
+	KeyStateCreating               KeyState = "Creating"
+	KeyStatePendingReplicaDeletion KeyState = "PendingReplicaDeletion"
+	KeyStateUpdating               KeyState = "Updating"
 )
 
 // KeyUsage represents the intended use of a KMS key.
@@ -86,6 +96,8 @@ type Key struct {
 	Origin                         OriginType                `json:"origin"`
 	KeyManager                     KeyManagerType            `json:"key_manager"`
 	KeyRotationEnabled             bool                      `json:"key_rotation_enabled"`
+	RotationPeriodInDays           int32                     `json:"rotation_period_in_days,omitempty"`
+	OnDemandRotationStartDate      *time.Time                `json:"on_demand_rotation_start_date,omitempty"`
 	CustomKeyStoreID               string                    `json:"custom_key_store_id,omitempty"`
 	CloudHsmClusterID              string                    `json:"cloud_hsm_cluster_id,omitempty"`
 	BypassPolicyLockoutSafetyCheck bool                      `json:"bypass_policy_lockout_safety_check"`
@@ -99,6 +111,8 @@ type Key struct {
 	Tags                           []types.Tag               `json:"tags,omitempty"`
 	ImportToken                    string                    `json:"import_token,omitempty"`
 	WrappingPrivateKey             []byte                    `json:"wrapping_private_key,omitempty"`
+	WrappingAlgorithm              string                    `json:"wrapping_algorithm,omitempty"`
+	WrappingKeySpec                string                    `json:"wrapping_key_spec,omitempty"`
 }
 
 // MultiRegionConfiguration represents the configuration for a multi-region KMS key.
@@ -145,9 +159,15 @@ type Grant struct {
 }
 
 // GrantConstraints represents constraints on the cryptographic operations that a grant can be used for.
+// Per Smithy com.amazonaws.kms#GrantConstraints, the shape has three members:
+// EncryptionContextEquals, EncryptionContextSubset, and SourceArn.
 type GrantConstraints struct {
 	EncryptionContextEquals map[string]string `json:"encryption_context_equals,omitempty"`
 	EncryptionContextSubset map[string]string `json:"encryption_context_subset,omitempty"`
+	// SourceArn constrains the grant to requests made on behalf of the
+	// specified resource ARN (effectively the aws:SourceArn IAM condition
+	// key). Wildcards are permitted.
+	SourceArn string `json:"source_arn,omitempty"`
 }
 
 // KeyPolicy represents a key policy for a KMS key.

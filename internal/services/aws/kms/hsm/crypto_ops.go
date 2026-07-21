@@ -86,7 +86,7 @@ func (c *cryptoOps) generateKeyMaterial(keySpec KeySpec) (*memoryKey, error) {
 			return nil, err
 		}
 		key.rsaKey = rsaKey
-	case KeySpecECCNISTP256, KeySpecECCSECPP256R1:
+	case KeySpecECCNISTP256, KeySpecECCSECGP256K1:
 		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (c *cryptoOps) generateKeyPairDER(keySpec KeySpec) ([]byte, []byte, error) 
 			return nil, nil, err
 		}
 		return marshalKeyPair(key, &key.PublicKey)
-	case KeySpecECCNISTP256, KeySpecECCSECPP256R1:
+	case KeySpecECCNISTP256, KeySpecECCSECGP256K1:
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, nil, err
@@ -166,19 +166,29 @@ func marshalKeyPair(priv crypto.PrivateKey, pub crypto.PublicKey) ([]byte, []byt
 	return privDER, pubDER, nil
 }
 
-func (c *cryptoOps) encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error) {
+func (c *cryptoOps) encrypt(keyID string, plaintext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*EncryptResult, error) {
 	key, exists := c.keys[keyID]
 	if !exists {
 		return nil, ErrKeyNotFound
 	}
 
-	if key.symmetric == nil {
+	var ciphertext []byte
+	switch {
+	case key.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
+		var err error
+		ciphertext, err = aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(context))
+		if err != nil {
+			return nil, err
+		}
+	case key.rsaKey != nil &&
+		(algorithm == EncryptionAlgorithmRSAOAEPSHA256 || algorithm == EncryptionAlgorithmRSAOAEPSHA1):
+		out, err := rsaEncrypt(&key.rsaKey.PublicKey, plaintext, algorithm)
+		if err != nil {
+			return nil, err
+		}
+		ciphertext = out
+	default:
 		return nil, ErrEncryptFailed
-	}
-
-	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(context))
-	if err != nil {
-		return nil, err
 	}
 
 	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
@@ -189,9 +199,18 @@ func (c *cryptoOps) encrypt(keyID string, plaintext []byte, context map[string]s
 	}, nil
 }
 
-func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, context map[string]string) (*DecryptResult, error) {
+func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, error) {
+	// All ciphertexts produced by this HSM carry a 2-byte keyID length
+	// prefix (see prependKeyIDToCiphertext). When extraction fails the
+	// input is either truncated or came from a foreign source; either way
+	// it is not a valid KMS ciphertext. Surface InvalidCiphertext rather
+	// than silently falling through to AES decrypt on garbage data, which
+	// previously mapped to a misleading ErrDecryptFailed.
 	extractedKeyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
-	if err == nil && extractedKeyID != "" {
+	if err != nil {
+		return nil, ErrInvalidCiphertext
+	}
+	if extractedKeyID != "" {
 		keyID = extractedKeyID
 		ciphertext = actualCiphertext
 	}
@@ -201,13 +220,23 @@ func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, context map[string]
 		return nil, ErrKeyNotFound
 	}
 
-	if key.symmetric == nil {
+	var plaintext []byte
+	switch {
+	case key.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
+		out, err := aesDecrypt(key.symmetric, ciphertext, serializeEncryptionContext(context))
+		if err != nil {
+			return nil, err
+		}
+		plaintext = out
+	case key.rsaKey != nil &&
+		(algorithm == EncryptionAlgorithmRSAOAEPSHA256 || algorithm == EncryptionAlgorithmRSAOAEPSHA1):
+		out, err := rsaDecrypt(key.rsaKey, ciphertext, algorithm)
+		if err != nil {
+			return nil, err
+		}
+		plaintext = out
+	default:
 		return nil, ErrDecryptFailed
-	}
-
-	plaintext, err := aesDecrypt(key.symmetric, ciphertext, serializeEncryptionContext(context))
-	if err != nil {
-		return nil, err
 	}
 
 	return &DecryptResult{
@@ -216,10 +245,13 @@ func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, context map[string]
 	}, nil
 }
 
-func (c *cryptoOps) decryptWithoutKeyID(ciphertext []byte, context map[string]string) (*DecryptResult, string, error) {
+func (c *cryptoOps) decryptWithoutKeyID(ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, string, error) {
 	keyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
 	if err != nil {
-		return nil, "", err
+		// Surface InvalidCiphertext explicitly so the service layer can
+		// map to InvalidCiphertextException rather than the generic
+		// KMSInternalException returned by mapHSMError for unknown errors.
+		return nil, "", ErrInvalidCiphertext
 	}
 
 	key, exists := c.keys[keyID]
@@ -227,13 +259,23 @@ func (c *cryptoOps) decryptWithoutKeyID(ciphertext []byte, context map[string]st
 		return nil, "", ErrKeyNotFound
 	}
 
-	if key.symmetric == nil {
+	var plaintext []byte
+	switch {
+	case key.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
+		out, err := aesDecrypt(key.symmetric, actualCiphertext, serializeEncryptionContext(context))
+		if err != nil {
+			return nil, "", err
+		}
+		plaintext = out
+	case key.rsaKey != nil &&
+		(algorithm == EncryptionAlgorithmRSAOAEPSHA256 || algorithm == EncryptionAlgorithmRSAOAEPSHA1):
+		out, err := rsaDecrypt(key.rsaKey, actualCiphertext, algorithm)
+		if err != nil {
+			return nil, "", err
+		}
+		plaintext = out
+	default:
 		return nil, "", ErrDecryptFailed
-	}
-
-	plaintext, err := aesDecrypt(key.symmetric, actualCiphertext, serializeEncryptionContext(context))
-	if err != nil {
-		return nil, "", err
 	}
 
 	return &DecryptResult{
@@ -499,6 +541,18 @@ func (o *cryptoOps) importKeyMaterial(keyID string, keyMaterial []byte, keySpec 
 	if _, exists := o.keys[keyID]; exists {
 		return nil, ErrKeyAlreadyExists
 	}
+
+	// AWS enforces minimum HMAC key lengths (NIST SP 800-107). Reject
+	// undersized imported material rather than silently storing a weak
+	// key. SYMMETRIC_DEFAULT imports must be exactly 32 bytes (AES-256).
+	minLen, maxLen := importedKeyMaterialBounds(keySpec)
+	if minLen > 0 && len(keyMaterial) < minLen {
+		return nil, ErrInvalidKeySpec
+	}
+	if maxLen > 0 && len(keyMaterial) > maxLen {
+		return nil, ErrInvalidKeySpec
+	}
+
 	key := &memoryKey{keySpec: keySpec}
 	switch keySpec {
 	case KeySpecSymmetricDefault, KeySpecHMAC224, KeySpecHMAC256, KeySpecHMAC384, KeySpecHMAC512:
@@ -508,6 +562,34 @@ func (o *cryptoOps) importKeyMaterial(keyID string, keyMaterial []byte, keySpec 
 		return nil, ErrInvalidKeySpec
 	}
 	return key, nil
+}
+
+// importedKeyMaterialBounds returns the AWS-mandated [min, max] byte
+// length for imported key material of the given spec. A max of 0 means
+// unbounded; a min of 0 means the spec is not importable.
+//
+// Per AWS docs:
+//   - SYMMETRIC_DEFAULT: 32 bytes (AES-256 only)
+//   - HMAC_SHA_224: 28-2048 bytes
+//   - HMAC_SHA_256: 32-2048 bytes
+//   - HMAC_SHA_384: 48-2048 bytes
+//   - HMAC_SHA_512: 64-2048 bytes
+//
+// RSA/ECC/SM2 keys are not importable via ImportKeyMaterial.
+func importedKeyMaterialBounds(keySpec KeySpec) (int, int) {
+	switch keySpec {
+	case KeySpecSymmetricDefault:
+		return 32, 32
+	case KeySpecHMAC224:
+		return 28, 2048
+	case KeySpecHMAC256:
+		return 32, 2048
+	case KeySpecHMAC384:
+		return 48, 2048
+	case KeySpecHMAC512:
+		return 64, 2048
+	}
+	return 0, 0
 }
 
 func (o *cryptoOps) generateDataKeyBytes(keySpec string, numberOfBytes int) ([]byte, error) {

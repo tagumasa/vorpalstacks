@@ -4,9 +4,11 @@ package hsm
 // for vorpalstacks KMS operations.
 
 import (
+	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -43,8 +45,14 @@ const (
 	KeySpecECCNISTP384 KeySpec = "ECC_NIST_P384"
 	// KeySpecECCNISTP521 specifies an ECC NIST P-521 curve key.
 	KeySpecECCNISTP521 KeySpec = "ECC_NIST_P521"
-	// KeySpecECCSECPP256R1 specifies an ECC SECG P-256K1 curve key.
-	KeySpecECCSECPP256R1 KeySpec = "ECC_SECG_P256K1"
+	// KeySpecECCNISTEdwards25519 specifies an Edwards25519 curve key
+	// (Ed25519 signature algorithm). Smithy com.amazonaws.kms#DataKeyPairSpec
+	// includes ECC_NIST_EDWARDS25519 as a native member.
+	KeySpecECCNISTEdwards25519 KeySpec = "ECC_NIST_EDWARDS25519"
+	// KeySpecECCSECGP256K1 specifies an ECC SECG P-256K1 curve key
+	// (secp256k1, the Bitcoin curve). Distinct from KeySpecECCNISTP256
+	// which is the NIST/SECG P-256 (secp256r1) curve.
+	KeySpecECCSECGP256K1 KeySpec = "ECC_SECG_P256K1"
 	// KeySpecSM2ECC is an alias for SM2 (Chinese national standard).
 	KeySpecSM2ECC KeySpec = "SM2"
 )
@@ -129,11 +137,17 @@ type GenerateDataKeyResult struct {
 type Backend interface {
 	GenerateKey(keyID string, keySpec KeySpec) error
 	ImportKey(keyID string, keyMaterial []byte, keySpec KeySpec) error
+	// ReplicateKey copies the cryptographic material of an existing key into
+	// a new key ID. Used by ReplicateKey to provision the replica key in the
+	// HSM with the primary's material so that crypto operations on the
+	// replica succeed. Returns ErrKeyAlreadyExists if destKeyID is already
+	// populated, or ErrKeyNotFound if sourceKeyID does not exist.
+	ReplicateKey(sourceKeyID, destKeyID string) error
 	DeleteKey(keyID string) error
 
-	Encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error)
-	Decrypt(keyID string, ciphertext []byte, context map[string]string) (*DecryptResult, error)
-	DecryptWithoutKeyID(ciphertext []byte, context map[string]string) (*DecryptResult, string, error)
+	Encrypt(keyID string, plaintext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*EncryptResult, error)
+	Decrypt(keyID string, ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, error)
+	DecryptWithoutKeyID(ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, string, error)
 
 	Sign(keyID string, message []byte, algorithm SigningAlgorithm, messageType MessageType) (*SignResult, error)
 	Verify(keyID string, message, signature []byte, algorithm SigningAlgorithm, messageType MessageType) (bool, error)
@@ -168,6 +182,12 @@ var (
 	ErrEncryptFailed = errors.New("encryption failed")
 	// ErrDecryptFailed is returned when decryption fails.
 	ErrDecryptFailed = errors.New("decryption failed")
+	// ErrInvalidCiphertext is returned when the ciphertext cannot be
+	// parsed (missing or truncated keyID prefix). Surfacing this from the
+	// HSM lets the service layer map it to InvalidCiphertextException
+	// rather than the generic KMSInternalException that decrypt-failure
+	// mapping produces.
+	ErrInvalidCiphertext = errors.New("invalid ciphertext")
 	// ErrSignFailed is returned when signing fails.
 	ErrSignFailed = errors.New("signing failed")
 	// ErrVerifyFailed is returned when signature verification fails.
@@ -189,6 +209,64 @@ func NewBackend(cfg *Config) (Backend, error) {
 	default:
 		return nil, fmt.Errorf("unknown HSM backend type: %s", cfg.BackendType)
 	}
+}
+
+// EncryptionAlgorithm defines the asymmetric or symmetric algorithm used
+// to encrypt plaintext under a KMS key.
+type EncryptionAlgorithm string
+
+const (
+	// EncryptionAlgorithmSymmetricDefault is the only valid algorithm for
+	// SYMMETRIC_DEFAULT keys.
+	EncryptionAlgorithmSymmetricDefault EncryptionAlgorithm = "SYMMETRIC_DEFAULT"
+	// EncryptionAlgorithmRSAOAEPSHA1 is RSAES-OAEP with SHA-1.
+	EncryptionAlgorithmRSAOAEPSHA1 EncryptionAlgorithm = "RSAES_OAEP_SHA_1"
+	// EncryptionAlgorithmRSAOAEPSHA256 is RSAES-OAEP with SHA-256.
+	EncryptionAlgorithmRSAOAEPSHA256 EncryptionAlgorithm = "RSAES_OAEP_SHA_256"
+)
+
+// resolveRSAHash returns the crypto.Hash to use for the requested OAEP
+// algorithm. SHA-1 is intentionally supported because AWS KMS still
+// exposes RSAES_OAEP_SHA_1 on RSA keys.
+func resolveRSAHash(algorithm EncryptionAlgorithm) crypto.Hash {
+	switch algorithm {
+	case EncryptionAlgorithmRSAOAEPSHA1:
+		return crypto.SHA1
+	case EncryptionAlgorithmRSAOAEPSHA256:
+		return crypto.SHA256
+	default:
+		return crypto.SHA256
+	}
+}
+
+// rsaEncrypt encrypts plaintext under an RSA public key using the supplied
+// OAEP algorithm. AWS KMS only supports OAEP padding for RSA encryption;
+// PKCS#1 v1.5 is not exposed.
+func rsaEncrypt(pub *rsa.PublicKey, plaintext []byte, algorithm EncryptionAlgorithm) ([]byte, error) {
+	hash := resolveRSAHash(algorithm)
+	if err := validateRSAPlaintextLength(pub, plaintext, hash); err != nil {
+		return nil, err
+	}
+	return rsa.EncryptOAEP(hash.New(), rand.Reader, pub, plaintext, nil)
+}
+
+// rsaDecrypt decrypts ciphertext that was produced by rsaEncrypt.
+func rsaDecrypt(priv *rsa.PrivateKey, ciphertext []byte, algorithm EncryptionAlgorithm) ([]byte, error) {
+	hash := resolveRSAHash(algorithm)
+	return rsa.DecryptOAEP(hash.New(), rand.Reader, priv, ciphertext, nil)
+}
+
+// validateRSAPlaintextLength mirrors the AWS KMS plaintext length limits
+// for RSA encryption. RSAES_OAEP_SHA_256 supports up to 190 (RSA_2048),
+// 318 (RSA_3072) and 446 (RSA_4096) bytes; RSAES_OAEP_SHA_1 supports up
+// to 214/342/470 bytes respectively. AWS rejects oversized plaintext
+// with ValidationException, which we surface as ErrEncryptFailed.
+func validateRSAPlaintextLength(pub *rsa.PublicKey, plaintext []byte, hash crypto.Hash) error {
+	maxLen := pub.Size() - 2*hash.Size() - 2
+	if maxLen < 0 || len(plaintext) > maxLen {
+		return fmt.Errorf("%w: plaintext exceeds %d bytes for %d-bit RSA with %s", ErrEncryptFailed, maxLen, pub.Size()*8, hash)
+	}
+	return nil
 }
 
 func computeCRC32(data []byte) uint32 {

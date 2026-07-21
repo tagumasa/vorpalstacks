@@ -10,6 +10,10 @@ import (
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
+// defaultRotationPeriodInDays is the AWS default rotation period when
+// EnableKeyRotation is called without an explicit RotationPeriodInDays.
+const defaultRotationPeriodInDays = int32(365)
+
 // EnableKeyRotation enables automatic key rotation for a symmetric key.
 // Key rotation automatically generates new cryptographic material every year.
 // Per AWS spec, automatic rotation is supported only on SYMMETRIC_DEFAULT keys
@@ -24,8 +28,14 @@ func (s *KMSService) EnableKeyRotation(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if key.KeyState == kmsstore.KeyStatePendingDeletion || key.KeyState == kmsstore.KeyStatePendingImport {
+	if key.KeyState == kmsstore.KeyStatePendingDeletion {
 		return nil, ErrKeyPendingDeletion
+	}
+	if key.KeyState == kmsstore.KeyStatePendingImport {
+		// AWS: PendingImport is a distinct KMSInvalidStateException. The
+		// previous code conflated the two states under ErrKeyPendingDeletion,
+		// which is misleading for PendingImport keys.
+		return nil, ErrKeyPendingImport
 	}
 	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
 		return nil, ErrKeyDisabled
@@ -34,7 +44,16 @@ func (s *KMSService) EnableKeyRotation(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrUnsupportedOperation
 	}
 
-	if err := stores.keys.SetKeyRotation(key.KeyID, true); err != nil {
+	// AWS: RotationPeriodInDays is optional, range 90-2560, default 365.
+	rotationPeriod := defaultRotationPeriodInDays
+	if _, ok := req.Parameters["RotationPeriodInDays"]; ok {
+		rotationPeriod = int32(request.GetIntParam(req.Parameters, "RotationPeriodInDays"))
+		if rotationPeriod < 90 || rotationPeriod > 2560 {
+			return nil, ErrValidation
+		}
+	}
+
+	if err := stores.keys.SetKeyRotationWithPeriod(key.KeyID, true, rotationPeriod); err != nil {
 		return nil, err
 	}
 
@@ -54,8 +73,11 @@ func (s *KMSService) DisableKeyRotation(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	if key.KeyState == kmsstore.KeyStatePendingDeletion || key.KeyState == kmsstore.KeyStatePendingImport {
+	if key.KeyState == kmsstore.KeyStatePendingDeletion {
 		return nil, ErrKeyPendingDeletion
+	}
+	if key.KeyState == kmsstore.KeyStatePendingImport {
+		return nil, ErrKeyPendingImport
 	}
 	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
 		return nil, ErrKeyDisabled
@@ -80,15 +102,21 @@ func (s *KMSService) GetKeyRotationStatus(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
+	rotationPeriod := key.RotationPeriodInDays
+	if rotationPeriod == 0 {
+		rotationPeriod = defaultRotationPeriodInDays
+	}
+
 	response := map[string]interface{}{
-		"KeyRotationEnabled": key.KeyRotationEnabled,
-		"KeyId":              key.Arn,
+		"KeyRotationEnabled":        key.KeyRotationEnabled,
+		"KeyId":                     key.Arn,
+		"RotationPeriodInDays":      rotationPeriod,
+		"OnDemandRotationStartDate": nil,
 	}
 
 	if key.KeyRotationEnabled && !key.CreationDate.IsZero() {
-		nextRotation := key.CreationDate.AddDate(1, 0, 0)
+		nextRotation := key.CreationDate.AddDate(0, 0, int(rotationPeriod))
 		response["NextRotationDate"] = nextRotation.Unix()
-		response["RotationPeriodInDays"] = int32(365)
 	}
 
 	return response, nil

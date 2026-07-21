@@ -80,6 +80,14 @@ func (s *GrantStore) CreateWithToken(keyID, granteePrincipal, retiringPrincipal 
 }
 
 // GetByToken retrieves a grant by its token.
+//
+// Note: this is an O(n) full scan over the grants bucket. A token→grantID
+// secondary index was attempted but required either a separate bucket
+// (introducing a storage schema change that would force a data/ wipe on
+// existing deployments) or polluting the main bucket with non-Grant
+// entries (which broke List/ForEach unmarshalling). The scan is
+// acceptable because grant counts per key are typically small and
+// RetireGrant (the only caller) is not on the hot path.
 func (s *GrantStore) GetByToken(token string) (*Grant, error) {
 	var found *Grant
 	err := s.ForEach(func(key string, value []byte) error {
@@ -115,9 +123,23 @@ func (s *GrantStore) save(grant *Grant) error {
 	return s.BaseStore.Put(grant.GrantID, grant)
 }
 
-// Delete removes a grant by its ID.
+// Delete removes a grant by its ID. The lock is acquired on the parent
+// key's ID, not the grant's ID, so that concurrent operations that list or
+// enumerate grants by key ID (e.g. ListGrants, cascade-delete) observe a
+// consistent state. Locking by grantID alone would race with keyID-keyed
+// operations because the two lock domains are disjoint.
 func (s *GrantStore) Delete(grantID string) error {
-	return s.kl.WithLock(grantID, func() error {
+	var grant Grant
+	if err := s.BaseStore.Get(grantID, &grant); err != nil {
+		return err
+	}
+	return s.kl.WithLock(grant.KeyID, func() error {
+		// Re-fetch under the lock to ensure the grant has not been
+		// concurrently modified or deleted since the unlocked read above.
+		var current Grant
+		if err := s.BaseStore.Get(grantID, &current); err != nil {
+			return err
+		}
 		return s.BaseStore.Delete(grantID)
 	})
 }

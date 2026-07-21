@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
@@ -36,6 +37,11 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 	}
 
 	plaintextB64 := request.GetStringParam(req.Parameters, "Plaintext")
+	if plaintextB64 == "" {
+		// AWS rejects empty Plaintext with ValidationException. The
+		// previous code silently treated empty as 0-byte plaintext.
+		return nil, ErrValidation
+	}
 	plaintext, err := base64.StdEncoding.DecodeString(plaintextB64)
 	if err != nil {
 		plaintext, err = base64.RawStdEncoding.DecodeString(plaintextB64)
@@ -44,12 +50,23 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 		}
 	}
 
+	// AWS plaintext length limits:
+	//   SYMMETRIC_DEFAULT: 1-4096 bytes
+	//   RSA: 190/318/446 bytes for RSA_2048/3072/4096 with SHA-256 OAEP,
+	//        214/342/470 bytes for SHA-1 OAEP.
+	// The HSM backend enforces the RSA cap (returns ErrEncryptFailed
+	// which surfaces as KMSInternalException); enforce the symmetric
+	// cap here so callers get a ValidationException instead.
+	if encryptionAlgorithm == "SYMMETRIC_DEFAULT" && len(plaintext) > 4096 {
+		return nil, ErrValidation
+	}
+
 	encryptionContext := parseEncryptionContext(req.Parameters)
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", key.KeyID, encryptionContext); err != nil {
 		return nil, err
 	}
 
-	result, err := s.hsmBackend.Encrypt(key.KeyID, plaintext, encryptionContext)
+	result, err := s.hsmBackend.Encrypt(key.KeyID, plaintext, hsm.EncryptionAlgorithm(encryptionAlgorithm), encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +86,10 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 	}
 
 	ciphertextB64 := request.GetStringParam(req.Parameters, "CiphertextBlob")
+	if ciphertextB64 == "" {
+		// AWS rejects empty CiphertextBlob with InvalidCiphertext.
+		return nil, ErrInvalidCiphertext
+	}
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
 		return nil, ErrInvalidCiphertext
@@ -92,7 +113,22 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		if err := s.validateKeyState(key); err != nil {
 			return nil, err
 		}
-		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, encryptionContext)
+		// AWS: Decrypt on a non-ENCRYPT_DECRYPT key returns
+		// InvalidKeyUsageException. Encrypt has this guard at line 30 but
+		// Decrypt was missing it, allowing HMAC/SignVerify keys to reach
+		// the HSM where they fail with the misleading ErrDecryptFailed.
+		if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+			return nil, ErrInvalidKeyUsage
+		}
+		decryptionAlgorithm := determineEncryptionAlgorithm(key, req.Parameters)
+		// Mirror the Encrypt guard at line 35: when the caller explicitly
+		// supplies an EncryptionAlgorithm that is not in the key's
+		// supported list, reject with InvalidAlgorithmException rather
+		// than dispatching a request the HSM will refuse.
+		if decryptionAlgorithm != "" && !algorithmSupported(decryptionAlgorithm, key.EncryptionAlgorithms) {
+			return nil, ErrInvalidAlgorithm
+		}
+		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, hsm.EncryptionAlgorithm(decryptionAlgorithm), encryptionContext)
 		if err != nil {
 			return nil, s.mapHSMError(err)
 		}
@@ -100,7 +136,11 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		resolvedKey = key
 	} else {
 		var resolvedKeyID string
-		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, encryptionContext)
+		// Without a KeyId, the algorithm cannot be requested by the caller
+		// (DecryptRequest has no EncryptionAlgorithm member). Fall back to
+		// SYMMETRIC_DEFAULT first; if the HSM cannot decrypt (key is RSA)
+		// the caller must resubmit with an explicit KeyId.
+		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 		if err != nil {
 			return nil, s.mapHSMError(err)
 		}
@@ -146,6 +186,7 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 
 	var decryptResult *hsm.DecryptResult
 	var sourceKeyArn string
+	var sourceAlgorithm string
 
 	if sourceKeyID != "" {
 		sourceKey, err = s.resolveKeyByKeyID(stores, sourceKeyID)
@@ -161,14 +202,15 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
 			return nil, ErrInvalidKeyUsage
 		}
-		decryptResult, err = s.hsmBackend.Decrypt(sourceKey.KeyID, ciphertext, sourceEncryptionContext)
+		sourceAlgorithm = determineEncryptionAlgorithm(sourceKey, req.Parameters)
+		decryptResult, err = s.hsmBackend.Decrypt(sourceKey.KeyID, ciphertext, hsm.EncryptionAlgorithm(sourceAlgorithm), sourceEncryptionContext)
 		if err != nil {
 			return nil, err
 		}
 		sourceKeyArn = sourceKey.Arn
 	} else {
 		var resolvedKeyID string
-		decryptResult, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, sourceEncryptionContext)
+		decryptResult, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, sourceEncryptionContext)
 		if err != nil {
 			return nil, err
 		}
@@ -186,6 +228,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 			return nil, ErrInvalidKeyUsage
 		}
 		sourceKeyArn = sourceKey.Arn
+		// No caller-supplied KeyId ⇒ no caller-supplied algorithm; the
+		// DecryptWithoutKeyID path always uses SYMMETRIC_DEFAULT.
+		sourceAlgorithm = "SYMMETRIC_DEFAULT"
 	}
 
 	destinationKeyID := request.GetStringParam(req.Parameters, "DestinationKeyId")
@@ -205,13 +250,11 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		return nil, ErrInvalidKeyUsage
 	}
 
-	encryptResult, err := s.hsmBackend.Encrypt(destinationKey.KeyID, decryptResult.Plaintext, destinationEncryptionContext)
+	destinationAlgorithm := determineEncryptionAlgorithm(destinationKey, req.Parameters)
+	encryptResult, err := s.hsmBackend.Encrypt(destinationKey.KeyID, decryptResult.Plaintext, hsm.EncryptionAlgorithm(destinationAlgorithm), destinationEncryptionContext)
 	if err != nil {
 		return nil, err
 	}
-
-	sourceAlgorithm := determineEncryptionAlgorithm(sourceKey, req.Parameters)
-	destinationAlgorithm := determineEncryptionAlgorithm(destinationKey, req.Parameters)
 
 	return map[string]interface{}{
 		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
@@ -236,6 +279,10 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	if err := validateDataKeySpecAndBytes(key, req.Parameters); err != nil {
 		return nil, err
 	}
 
@@ -275,6 +322,10 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 		return nil, err
 	}
 
+	if err := validateDataKeySpecAndBytes(key, req.Parameters); err != nil {
+		return nil, err
+	}
+
 	keySpec := request.GetStringParam(req.Parameters, "KeySpec")
 	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
 
@@ -291,6 +342,28 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 		"CiphertextBlob": base64.StdEncoding.EncodeToString(result.Ciphertext),
 		"KeyId":          key.Arn,
 	}, nil
+}
+
+// validateDataKeySpecAndBytes implements the AWS GenerateDataKey input rules:
+//   - KeySpec and NumberOfBytes are mutually exclusive
+//   - KeySpec must be AES_128 or AES_256 when set
+//   - NumberOfBytes must be 1-1024 when set
+//
+// The previous code silently accepted both, both empty, or invalid KeySpec
+// values (defaulting to AES_256), which violates the AWS contract.
+func validateDataKeySpecAndBytes(key *kmsstore.Key, params map[string]interface{}) error {
+	keySpec := request.GetStringParam(params, "KeySpec")
+	numberOfBytes := request.GetIntParam(params, "NumberOfBytes")
+	if keySpec != "" && numberOfBytes != 0 {
+		return ErrValidation
+	}
+	if keySpec != "" && keySpec != "AES_128" && keySpec != "AES_256" {
+		return ErrValidation
+	}
+	if numberOfBytes != 0 && (numberOfBytes < 1 || numberOfBytes > 1024) {
+		return ErrValidation
+	}
+	return nil
 }
 
 // GenerateRandom returns a random byte string for use in cryptographic operations.
@@ -348,7 +421,7 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 	}
 
 	keyPairSpec := hsm.KeySpec(request.GetStringParam(req.Parameters, "KeyPairSpec"))
-	if keyPairSpec == "" {
+	if !isValidKeyPairSpec(keyPairSpec) {
 		return nil, ErrValidation
 	}
 
@@ -357,7 +430,7 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
+	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +466,7 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 	}
 
 	keyPairSpec := hsm.KeySpec(request.GetStringParam(req.Parameters, "KeyPairSpec"))
-	if keyPairSpec == "" {
+	if !isValidKeyPairSpec(keyPairSpec) {
 		return nil, ErrValidation
 	}
 
@@ -402,7 +475,7 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 		return nil, err
 	}
 
-	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
+	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -417,6 +490,8 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 
 // ListKeyRotations returns the key rotation history for a KMS key.
 // Returns an empty list when no rotations have been performed.
+// AWS supports pagination via Marker/Limit on this operation; the previous
+// implementation ignored those parameters entirely.
 func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -427,10 +502,24 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Rotations": []interface{}{},
-		"Truncated": false,
-	}, nil
+	marker := pagination.GetMarker(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, 100)
+
+	// No rotations have been performed yet (RotateKeyOnDemand is
+	// unimplemented). Honour the pagination contract by returning empty
+	// pages that respect the marker/maxItems inputs.
+	result := pagination.PaginateSlice([]interface{}{}, marker, maxItems, func(item interface{}) string {
+		return ""
+	})
+
+	response := map[string]interface{}{
+		"Rotations": result.Items,
+		"Truncated": result.IsTruncated,
+	}
+	if result.NextMarker != "" {
+		response["NextMarker"] = result.NextMarker
+	}
+	return response, nil
 }
 
 func (s *KMSService) mapHSMError(err error) error {
@@ -440,12 +529,19 @@ func (s *KMSService) mapHSMError(err error) error {
 	if errors.Is(err, hsm.ErrDecryptFailed) {
 		return ErrInvalidCiphertext
 	}
+	if errors.Is(err, hsm.ErrInvalidCiphertext) {
+		return ErrInvalidCiphertext
+	}
 	return ErrKMSInternal
 }
 
 // determineEncryptionAlgorithm returns the encryption algorithm to use for
 // the given key. If the caller specifies one via the EncryptionAlgorithm
 // parameter, it is used. Otherwise, the default for the key spec is returned.
+// For key specs that do not support encryption at all (HMAC, ECC_SIGNATURE,
+// etc.), the function returns an empty string; callers must check for this
+// and surface UnsupportedOperationException rather than silently selecting
+// an RSA default that would then fail inside the HSM.
 func determineEncryptionAlgorithm(key *kmsstore.Key, params map[string]interface{}) string {
 	if alg := request.GetStringParam(params, "EncryptionAlgorithm"); alg != "" {
 		return alg
@@ -453,5 +549,35 @@ func determineEncryptionAlgorithm(key *kmsstore.Key, params map[string]interface
 	if key.KeySpec == kmsstore.KeySpecSymmetricDefault {
 		return "SYMMETRIC_DEFAULT"
 	}
-	return "RSAES_OAEP_SHA_256"
+	if isRSAKeySpec(key.KeySpec) {
+		return "RSAES_OAEP_SHA_256"
+	}
+	return ""
+}
+
+// isRSAKeySpec reports whether the key spec is one of the RSA_* specs that
+// support Encrypt/Decrypt with RSAES_OAEP_SHA_* algorithms.
+func isRSAKeySpec(spec kmsstore.KeySpec) bool {
+	switch spec {
+	case kmsstore.KeySpecRSA2048,
+		kmsstore.KeySpecRSA3072,
+		kmsstore.KeySpecRSA4096:
+		return true
+	}
+	return false
+}
+
+// isValidKeyPairSpec reports whether spec is one of the AWS-supported
+// DataKeyPairSpec values for GenerateDataKeyPair[WithoutPlaintext].
+// Per Smithy com.amazonaws.kms#DataKeyPairSpec, the enum has 9 members:
+// RSA_2048, RSA_3072, RSA_4096, ECC_NIST_P256, ECC_NIST_P384,
+// ECC_NIST_P521, ECC_SECG_P256K1, SM2, ECC_NIST_EDWARDS25519.
+func isValidKeyPairSpec(spec hsm.KeySpec) bool {
+	switch spec {
+	case hsm.KeySpecRSA2048, hsm.KeySpecRSA3072, hsm.KeySpecRSA4096,
+		hsm.KeySpecECCNISTP256, hsm.KeySpecECCNISTP384, hsm.KeySpecECCNISTP521,
+		hsm.KeySpecECCSECGP256K1, hsm.KeySpecSM2, hsm.KeySpecECCNISTEdwards25519:
+		return true
+	}
+	return false
 }

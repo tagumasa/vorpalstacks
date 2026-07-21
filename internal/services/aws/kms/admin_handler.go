@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	"vorpalstacks/internal/utils/timeutils"
 
@@ -85,6 +86,8 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 
 	keySpec := kmsstore.KeySpecSymmetricDefault
 	switch req.Msg.GetKeyspec() {
+	case pb.KeySpec_KEY_SPEC_SYMMETRIC_DEFAULT:
+		keySpec = kmsstore.KeySpecSymmetricDefault
 	case pb.KeySpec_KEY_SPEC_RSA_2048:
 		keySpec = kmsstore.KeySpecRSA2048
 	case pb.KeySpec_KEY_SPEC_RSA_3072:
@@ -97,8 +100,18 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 		keySpec = kmsstore.KeySpecECCNISTP384
 	case pb.KeySpec_KEY_SPEC_ECC_NIST_P521:
 		keySpec = kmsstore.KeySpecECCNISTP521
+	case pb.KeySpec_KEY_SPEC_ECC_SECG_P256K1:
+		keySpec = kmsstore.KeySpecECCSECGP256K1
+	case pb.KeySpec_KEY_SPEC_SM2:
+		keySpec = kmsstore.KeySpecSM2
+	case pb.KeySpec_KEY_SPEC_HMAC_224:
+		keySpec = kmsstore.KeySpecHMAC224
 	case pb.KeySpec_KEY_SPEC_HMAC_256:
 		keySpec = kmsstore.KeySpecHMAC256
+	case pb.KeySpec_KEY_SPEC_HMAC_384:
+		keySpec = kmsstore.KeySpecHMAC384
+	case pb.KeySpec_KEY_SPEC_HMAC_512:
+		keySpec = kmsstore.KeySpecHMAC512
 	}
 
 	origin := kmsstore.OriginTypeAWSKMS
@@ -119,20 +132,26 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 
 	if origin == kmsstore.OriginTypeExternal {
 		if err := stores.keys.SetPendingImport(keyID); err != nil {
+			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after SetPendingImport failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
 			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 		key.KeyState = kmsstore.KeyStatePendingImport
 		key.Enabled = false
 	} else {
 		if err := h.service.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
-			_ = stores.keys.Delete(keyID)
+			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
 			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
 
 	if err := stores.keyPolicies.PutDefault(keyID, kmsstore.DefaultKeyPolicy); err != nil {
-		_ = stores.keys.Delete(keyID)
-		_ = h.service.hsmBackend.DeleteKey(keyID)
+		if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+			logs.Error("Failed to cascade-delete key after PutDefault policy failure", logs.Err(delErr), logs.String("keyId", keyID))
+		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -164,9 +183,16 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeyId is required"))
 	}
 
+	// AWS: PendingWindowInDays is optional (defaults to 30 when omitted)
+	// but if explicitly supplied must be 7-30. Negative or zero values
+	// are ValidationException. The previous code silently coerced
+	// pendingDays <= 0 to 30, hiding invalid input from callers.
 	pendingDays := int(req.Msg.GetPendingwindowindays())
-	if pendingDays <= 0 {
+	if pendingDays == 0 {
 		pendingDays = 30
+	}
+	if pendingDays < 7 || pendingDays > 30 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PendingWindowInDays must be between 7 and 30"))
 	}
 
 	if err := stores.keys.ScheduleDeletion(req.Msg.GetKeyid(), pendingDays); err != nil {
@@ -179,7 +205,20 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 	}
 
 	resp := &pb.ScheduleKeyDeletionResponse{
-		Keyid: key.KeyID,
+		Keyid:               key.KeyID,
+		Pendingwindowindays: int32(pendingDays),
+	}
+	switch key.KeyState {
+	case kmsstore.KeyStateEnabled:
+		resp.Keystate = pb.KeyState_KEY_STATE_ENABLED
+	case kmsstore.KeyStateDisabled:
+		resp.Keystate = pb.KeyState_KEY_STATE_DISABLED
+	case kmsstore.KeyStatePendingDeletion:
+		resp.Keystate = pb.KeyState_KEY_STATE_PENDINGDELETION
+	case kmsstore.KeyStatePendingImport:
+		resp.Keystate = pb.KeyState_KEY_STATE_PENDINGIMPORT
+	case kmsstore.KeyStateUnavailable:
+		resp.Keystate = pb.KeyState_KEY_STATE_UNAVAILABLE
 	}
 	if key.DeletionDate != nil {
 		resp.Deletiondate = key.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)

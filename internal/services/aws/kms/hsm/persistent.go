@@ -204,6 +204,36 @@ func (b *PersistentBackend) ImportKey(keyID string, keyMaterial []byte, keySpec 
 	return b.saveKeys()
 }
 
+// ReplicateKey copies the cryptographic material of an existing key into a
+// new key ID, mirroring MemoryBackend.ReplicateKey. Persists the new key
+// material to disk so the replica survives restarts.
+func (b *PersistentBackend) ReplicateKey(sourceKeyID, destKeyID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	src, exists := b.keys[sourceKeyID]
+	if !exists {
+		return ErrKeyNotFound
+	}
+	if _, exists := b.keys[destKeyID]; exists {
+		return ErrKeyAlreadyExists
+	}
+
+	replica := &memoryKey{keySpec: src.keySpec}
+	if src.symmetric != nil {
+		replica.symmetric = make([]byte, len(src.symmetric))
+		copy(replica.symmetric, src.symmetric)
+	}
+	if src.rsaKey != nil {
+		replica.rsaKey = src.rsaKey
+	}
+	if src.ecdsaKey != nil {
+		replica.ecdsaKey = src.ecdsaKey
+	}
+	b.keys[destKeyID] = replica
+	return b.saveKeys()
+}
+
 // DeleteKey deletes a key from the HSM.
 func (b *PersistentBackend) DeleteKey(keyID string) error {
 	b.mu.Lock()
@@ -218,10 +248,10 @@ func (b *PersistentBackend) DeleteKey(keyID string) error {
 }
 
 // Encrypt encrypts plaintext using an HSM key.
-func (b *PersistentBackend) Encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error) {
+func (b *PersistentBackend) Encrypt(keyID string, plaintext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*EncryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	result, err := b.encrypt(keyID, plaintext, context)
+	result, err := b.encrypt(keyID, plaintext, algorithm, context)
 	if err != nil {
 		return nil, fmt.Errorf("encrypting plaintext: %w", err)
 	}
@@ -229,10 +259,10 @@ func (b *PersistentBackend) Encrypt(keyID string, plaintext []byte, context map[
 }
 
 // Decrypt decrypts ciphertext using an HSM key.
-func (b *PersistentBackend) Decrypt(keyID string, ciphertext []byte, context map[string]string) (*DecryptResult, error) {
+func (b *PersistentBackend) Decrypt(keyID string, ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	result, err := b.decrypt(keyID, ciphertext, context)
+	result, err := b.decrypt(keyID, ciphertext, algorithm, context)
 	if err != nil {
 		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
 	}
@@ -240,10 +270,10 @@ func (b *PersistentBackend) Decrypt(keyID string, ciphertext []byte, context map
 }
 
 // DecryptWithoutKeyID decrypts ciphertext without specifying a key ID.
-func (b *PersistentBackend) DecryptWithoutKeyID(ciphertext []byte, context map[string]string) (*DecryptResult, string, error) {
+func (b *PersistentBackend) DecryptWithoutKeyID(ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, string, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	result, keyID, err := b.decryptWithoutKeyID(ciphertext, context)
+	result, keyID, err := b.decryptWithoutKeyID(ciphertext, algorithm, context)
 	if err != nil {
 		return nil, "", fmt.Errorf("decrypting ciphertext: %w", err)
 	}

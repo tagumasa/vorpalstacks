@@ -43,7 +43,11 @@ func (s *AliasStore) normalizeAliasName(aliasName string) string {
 func (s *AliasStore) Create(aliasName, targetKeyID string) (*Alias, error) {
 	aliasName = s.normalizeAliasName(aliasName)
 
-	if strings.HasPrefix(aliasName, "alias/aws/") {
+	// AWS reserves the "alias/aws/" prefix (case-insensitively) for
+	// AWS-managed aliases. The previous check was case-sensitive, allowing
+	// callers to sneak in "alias/AWS/foo" which would later collide with
+	// real AWS-managed aliases on case-insensitive lookups.
+	if hasReservedAWSPrefix(aliasName) {
 		return nil, ErrInvalidAliasName
 	}
 
@@ -72,6 +76,12 @@ func (s *AliasStore) Create(aliasName, targetKeyID string) (*Alias, error) {
 	return alias, nil
 }
 
+// hasReservedAWSPrefix reports whether aliasName begins with the
+// AWS-reserved "alias/aws/" prefix, compared case-insensitively.
+func hasReservedAWSPrefix(aliasName string) bool {
+	return strings.HasPrefix(strings.ToLower(aliasName), "alias/aws/")
+}
+
 // Get retrieves an alias by name.
 func (s *AliasStore) Get(aliasName string) (*Alias, error) {
 	aliasName = s.normalizeAliasName(aliasName)
@@ -87,10 +97,15 @@ func (s *AliasStore) save(alias *Alias) error {
 	return s.BaseStore.Put(alias.AliasName, alias)
 }
 
-// Delete removes an alias.
+// Delete removes an alias. AWS returns NotFoundException when the alias
+// does not exist, so we surface that explicitly rather than the silent
+// no-op that BaseStore.Delete produces for missing keys.
 func (s *AliasStore) Delete(aliasName string) error {
 	aliasName = s.normalizeAliasName(aliasName)
 	return s.kl.WithLock(aliasName, func() error {
+		if !s.BaseStore.Exists(aliasName) {
+			return ErrAliasNotFound
+		}
 		return s.BaseStore.Delete(aliasName)
 	})
 }

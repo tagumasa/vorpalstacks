@@ -48,7 +48,7 @@ func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map
 
 // Decrypt decrypts data using KMS.
 func (c *HSMKMSClient) Decrypt(keyID string, ciphertext []byte, context map[string]string) ([]byte, error) {
-	result, err := c.hsmBackend.Decrypt(keyID, ciphertext, context)
+	result, err := c.hsmBackend.Decrypt(keyID, ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, context)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt: %w", err)
 	}

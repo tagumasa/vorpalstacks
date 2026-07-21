@@ -40,14 +40,21 @@ func (s *KMSService) GenerateMac(ctx context.Context, reqCtx *request.RequestCon
 	}
 
 	messageB64 := request.GetStringParam(req.Parameters, "Message")
+	if messageB64 == "" {
+		// AWS rejects empty Message with ValidationException.
+		return nil, ErrValidation
+	}
+	// AWS requires base64-encoded Message. The previous code fell back to
+	// []byte(messageB64) which silently accepted non-base64 input and
+	// computed a MAC over the raw string, diverging from AWS.
 	message, err := base64.StdEncoding.DecodeString(messageB64)
 	if err != nil {
-		message = []byte(messageB64)
+		return nil, ErrValidation
 	}
 
 	algorithm := request.GetStringParam(req.Parameters, "MacAlgorithm")
 	if algorithm == "" {
-		return nil, ErrInvalidAlgorithm
+		return nil, ErrValidation
 	}
 	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
 		return nil, ErrInvalidAlgorithm
@@ -85,20 +92,30 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	messageB64 := request.GetStringParam(req.Parameters, "Message")
-	message, err := base64.StdEncoding.DecodeString(messageB64)
-	if err != nil {
-		message = []byte(messageB64)
+	if messageB64 == "" {
+		return nil, ErrValidation
+	}
+	macB64 := request.GetStringParam(req.Parameters, "Mac")
+	if macB64 == "" {
+		return nil, ErrValidation
 	}
 
-	macB64 := request.GetStringParam(req.Parameters, "Mac")
+	message, err := base64.StdEncoding.DecodeString(messageB64)
+	if err != nil {
+		// AWS requires base64 Message; non-base64 is a validation error.
+		return nil, ErrValidation
+	}
 	macValue, err := base64.StdEncoding.DecodeString(macB64)
 	if err != nil {
-		return nil, ErrInvalidAlgorithm
+		// Previous code returned ErrInvalidAlgorithm for malformed Mac
+		// which conflated the input validation failure with the
+		// algorithm check. ValidationException is the correct AWS error.
+		return nil, ErrValidation
 	}
 
 	algorithm := request.GetStringParam(req.Parameters, "MacAlgorithm")
 	if algorithm == "" {
-		return nil, ErrInvalidAlgorithm
+		return nil, ErrValidation
 	}
 	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
 		return nil, ErrInvalidAlgorithm

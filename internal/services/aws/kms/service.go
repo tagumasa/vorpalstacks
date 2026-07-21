@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"sync"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -26,6 +28,60 @@ type kmsStores struct {
 	aliases     *kmsstore.AliasStore
 	grants      *kmsstore.GrantStore
 	keyPolicies *kmsstore.KeyPolicyStore
+}
+
+// CascadeDeleteKey removes the key and every related artefact (HSM key
+// material, grants, aliases, key policies, tags) from all stores. It is
+// the single, authoritative entry point for hard-deleting a KMS key and
+// must be used by every rollback path as well as any future hard-delete
+// worker that purges keys whose PendingWindow has elapsed. Failing to go
+// through this helper leaves orphaned grants (security: authz remnants),
+// policies, aliases or tags that reference a non-existent key.
+//
+// Errors from individual stages are accumulated and returned as a joined
+// error so that a partial failure does not silently mask other failures.
+// Callers that absolutely must continue on partial failure (for example a
+// best-effort rollback) may log the returned error and proceed.
+func (ks *kmsStores) CascadeDeleteKey(hsmBackend hsm.Backend, keyID string) error {
+	var errs []error
+
+	if hsmBackend != nil {
+		if err := hsmBackend.DeleteKey(keyID); err != nil {
+			errs = append(errs, fmt.Errorf("hsm delete: %w", err))
+		}
+	}
+
+	if err := ks.grants.DeleteByKeyID(keyID); err != nil {
+		errs = append(errs, fmt.Errorf("grants delete: %w", err))
+	}
+
+	aliases, err := ks.aliases.ListForKeyID(keyID)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("list aliases: %w", err))
+	} else {
+		for _, a := range aliases {
+			if err := ks.aliases.Delete(a.AliasName); err != nil {
+				errs = append(errs, fmt.Errorf("alias %s delete: %w", a.AliasName, err))
+			}
+		}
+	}
+
+	if err := ks.keyPolicies.DeleteAllForKey(keyID); err != nil {
+		errs = append(errs, fmt.Errorf("policies delete: %w", err))
+	}
+
+	if err := ks.keys.TagStore.Delete(keyID); err != nil {
+		errs = append(errs, fmt.Errorf("tags delete: %w", err))
+	}
+
+	if err := ks.keys.Delete(keyID); err != nil {
+		errs = append(errs, fmt.Errorf("key delete: %w", err))
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("cascade delete failed for key %s: %v", keyID, errs)
+	}
+	return nil
 }
 
 // KMSService provides AWS KMS key and encryption operations.
@@ -154,42 +210,166 @@ func (s *KMSService) authorizeOperation(stores *kmsStores, principal, action, ke
 		return ErrKeyNotFound
 	}
 
+	// KMS authorisation order per AWS docs: explicit Deny wins; otherwise
+	// key policy → IAM policy → grants. The platform does not currently
+	// surface a separate IAM policy plane, and the policy evaluator here
+	// honours only Allow effects (explicit Deny is treated as no-match
+	// rather than a definitive deny). The net behaviour is therefore
+	// "first-Allow-wins across key policy then grants", which is correct
+	// for the common case but does not yet model Deny semantics.
+
 	policyDoc, err := stores.keyPolicies.GetDefault(key.KeyID)
-	if err != nil {
-		return ErrAccessDenied
+	if err == nil {
+		if parsedPolicy, perr := policy.ParseDocument(policyDoc.PolicyDocument); perr == nil {
+			ctx := &policy.EvaluationContext{
+				Principal:         principal,
+				Action:            "kms:" + action,
+				Resource:          key.Arn,
+				EncryptionContext: encryptionContext,
+				Variables: map[string]string{
+					"kms:EncryptionContextKeys": getEncryptionContextKeys(encryptionContext),
+				},
+			}
+			decision := s.policyEvaluator.Evaluate(ctx, []*policy.Document{parsedPolicy})
+			if decision.Effect == policy.DecisionEffectAllow {
+				return nil
+			}
+		}
 	}
 
-	parsedPolicy, err := policy.ParseDocument(policyDoc.PolicyDocument)
-	if err != nil {
-		return ErrMalformedPolicy
-	}
-
-	ctx := &policy.EvaluationContext{
-		Principal:         principal,
-		Action:            "kms:" + action,
-		Resource:          key.Arn,
-		EncryptionContext: encryptionContext,
-		Variables: map[string]string{
-			"kms:EncryptionContextKeys": getEncryptionContextKeys(encryptionContext),
-		},
-	}
-
-	decision := s.policyEvaluator.Evaluate(ctx, []*policy.Document{parsedPolicy})
-	if decision.Effect == policy.DecisionEffectAllow {
+	if s.authorizeViaGrant(stores, principal, action, keyID, encryptionContext) {
 		return nil
 	}
 
 	return ErrAccessDenied
 }
 
+// sourceArnMatches reports whether the requested resource ARN satisfies
+// the grant's SourceArn constraint. AWS allows wildcard globbing in the
+// final segment of the ARN (the resource portion). The constraint must
+// match either exactly or via prefix wildcard. The constraint value
+// comes from the aws:SourceArn global condition semantics.
+func sourceArnMatches(constraintArn, requestArn string) bool {
+	if constraintArn == "" {
+		return true
+	}
+	if constraintArn == requestArn {
+		return true
+	}
+	// AWS allows the constraint ARN to end with "*" to match any
+	// resource under the prefix (e.g.
+	// "arn:aws:sqs:us-east-1:111122223333:*").
+	if strings.HasSuffix(constraintArn, "*") {
+		prefix := constraintArn[:len(constraintArn)-1]
+		return strings.HasPrefix(requestArn, prefix)
+	}
+	return false
+}
+
+// authorizeViaGrant implements the KMS grant evaluation path. A grant
+// authorises the operation when all of the following hold:
+//   - the grant is attached to the key being operated on
+//   - the GranteePrincipal matches the caller's principal ARN exactly
+//     (KMS does not currently support principal wildcards in grants)
+//   - the grant Operations list contains the requested action
+//   - every EncryptionContextEquals constraint is satisfied by an exact
+//     match in the request encryption context, and every
+//     EncryptionContextSubset constraint is satisfied by a subset match
+//     (request context contains at least the constraint pairs)
+func (s *KMSService) authorizeViaGrant(stores *kmsStores, principal, action, keyID string, encryptionContext map[string]string) bool {
+	result, err := stores.grants.List(keyID, principal, "", 1000)
+	if err != nil || result == nil {
+		return false
+	}
+	// aws:SourceArn is not currently surfaced by the request pipeline; we
+	// pass "" so that SourceArn-constrained grants are denied by default
+	// (matching AWS deny-by-default) until the request context exposes the
+	// value. See grantConstraintsSatisfied.
+	const requestArn = ""
+	for _, g := range result.Grants {
+		if g.GranteePrincipal != principal {
+			continue
+		}
+		if !grantAllowsAction(g.Operations, action) {
+			continue
+		}
+		if !grantConstraintsSatisfied(g.Constraints, encryptionContext, requestArn) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// grantAllowsAction reports whether the grant's Operations list explicitly
+// authorises the requested action. KMS uses the bare operation names
+// (e.g. "Encrypt", "Decrypt", "CreateGrant") without the "kms:" prefix.
+func grantAllowsAction(operations []string, action string) bool {
+	for _, op := range operations {
+		if op == action {
+			return true
+		}
+	}
+	return false
+}
+
+// grantConstraintsSatisfied evaluates EncryptionContextEquals (exact match
+// of the entire constraint map against the request), EncryptionContextSubset
+// (request must contain at least every constraint pair), and SourceArn
+// (request resource ARN must match the constraint ARN, with optional
+// trailing-segment wildcard). Returns true when the constraint block is
+// nil or when all applicable constraints pass.
+//
+// The SourceArn constraint requires a request resource ARN. The KMS
+// request pipeline does not currently expose aws:SourceArn (it is set by
+// upstream AWS services like S3 when calling KMS on behalf of a resource).
+// When SourceArn is configured on the grant and no requestArn is supplied,
+// the constraint is treated as not satisfied, mirroring AWS deny-by-default
+// behaviour.
+func grantConstraintsSatisfied(constraints *kmsstore.GrantConstraints, encryptionContext map[string]string, requestArn string) bool {
+	if constraints == nil {
+		return true
+	}
+	if len(constraints.EncryptionContextEquals) > 0 {
+		if len(encryptionContext) != len(constraints.EncryptionContextEquals) {
+			return false
+		}
+		for k, v := range constraints.EncryptionContextEquals {
+			if encryptionContext[k] != v {
+				return false
+			}
+		}
+	}
+	if len(constraints.EncryptionContextSubset) > 0 {
+		for k, v := range constraints.EncryptionContextSubset {
+			if encryptionContext[k] != v {
+				return false
+			}
+		}
+	}
+	if constraints.SourceArn != "" {
+		// Deny-by-default: without a requestArn to match against, a
+		// SourceArn-constrained grant cannot be satisfied.
+		if !sourceArnMatches(constraints.SourceArn, requestArn) {
+			return false
+		}
+	}
+	return true
+}
+
+// validateKeyState reports whether the key is in a state that permits
+// cryptographic operations. Read-only metadata operations (DescribeKey,
+// ListResourceTags) bypass this check. The Enabled flag and KeyState field
+// are kept in sync by the store layer, so checking KeyState alone is
+// sufficient — the previous `!key.Enabled || KeyState == Disabled` test
+// was redundant.
 func (s *KMSService) validateKeyState(key *kmsstore.Key) error {
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
+	switch key.KeyState {
+	case kmsstore.KeyStatePendingDeletion:
 		return ErrKeyPendingDeletion
-	}
-	if key.KeyState == kmsstore.KeyStatePendingImport {
+	case kmsstore.KeyStatePendingImport:
 		return ErrKeyPendingImport
-	}
-	if !key.Enabled || key.KeyState == kmsstore.KeyStateDisabled {
+	case kmsstore.KeyStateDisabled:
 		return ErrKeyDisabled
 	}
 	return nil
@@ -221,8 +401,24 @@ func (s *KMSService) resolveKey(stores *kmsStores, params map[string]interface{}
 	if err != nil {
 		return nil, NewKeyNotFoundError(keyID)
 	}
+	// AWS rejects operations on a PendingDeletion key with
+	// KMSInvalidStateException at resolution time; the granular
+	// per-operation state check in validateKeyState still runs in the
+	// handler, but resolving to a PendingDeletion key for read-only
+	// metadata calls (DescribeKey, ListResourceTags) is permitted.
+	// PendingImport keys likewise resolve successfully; the caller is
+	// responsible for invoking validateKeyState when about to use the
+	// key for crypto operations.
 	return key, nil
 }
+
+// unresolvedCallerPrincipal is returned by resolveCallerPrincipal when the
+// caller's access key cannot be mapped to an IAM user. Returning the account
+// root ARN here (the previous behaviour) would silently grant root privileges
+// on every key whose default policy permits the root principal, which is the
+// common case. AWS denies the request in this scenario, so we emit a
+// sentinel ARN that will not match any statement in any reasonable policy.
+const unresolvedCallerPrincipal = "arn:vorpalstacks:iam::000000000000:unresolved-principal"
 
 func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req *request.ParsedRequest) string {
 	accessKeyId := req.AccessKeyID
@@ -233,14 +429,19 @@ func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req 
 		accessKeyId = req.Headers.Get("X-Amz-Access-Key")
 	}
 	if accessKeyId == "" {
-		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+		// No access key at all — this is an unauthenticated request; deny.
+		return unresolvedCallerPrincipal
 	}
 	if s.principalResolver == nil {
-		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+		// Without a resolver we cannot map the access key to a user; deny
+		// rather than fall back to root.
+		return unresolvedCallerPrincipal
 	}
 	username, err := s.principalResolver.ResolvePrincipal(reqCtx, accessKeyId)
 	if err != nil || username == "" {
-		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+		// Resolution failed (transient store error, deleted user, etc.).
+		// Do NOT grant root as a side effect; deny.
+		return unresolvedCallerPrincipal
 	}
 	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(username)
 }
@@ -260,14 +461,15 @@ func getEncryptionContextKeys(ctx map[string]string) string {
 	if ctx == nil {
 		return ""
 	}
-	keys := ""
+	// AWS requires the kms:EncryptionContextKeys condition key to be in
+	// canonical (lexically sorted) form so that policy authors can match
+	// the key set deterministically regardless of map iteration order.
+	keys := make([]string, 0, len(ctx))
 	for k := range ctx {
-		if keys != "" {
-			keys += ","
-		}
-		keys += k
+		keys = append(keys, k)
 	}
-	return keys
+	sort.Strings(keys)
+	return strings.Join(keys, ",")
 }
 
 func parseEncryptionContext(params map[string]interface{}) map[string]string {
@@ -318,6 +520,14 @@ var (
 	ErrMalformedPolicy = awserrors.NewAWSError("MalformedPolicyDocumentException", "Malformed policy document", http.StatusBadRequest)
 	// ErrValidation is returned when a parameter validation fails.
 	ErrValidation = awserrors.NewAWSError("ValidationException", "Invalid parameter", http.StatusBadRequest)
+	// NewValidationError returns a ValidationException with a specific
+	// detail message, mirroring AWS's \"1 validation error detected: ...\"
+	// output. Static ErrValidation is fine for opaque failure but loses
+	// actionable context for SDK clients; prefer this helper at call
+	// sites that can identify the failing parameter.
+	NewValidationError = func(detail string) *awserrors.AWSError {
+		return awserrors.NewAWSError("ValidationException", detail, http.StatusBadRequest)
+	}
 	// ErrUnsupportedOperation is returned when the operation is not supported for the key type.
 	ErrUnsupportedOperation = awserrors.NewAWSError("UnsupportedOperationException", "Operation is not supported for this key type", http.StatusBadRequest)
 	// ErrTagException is returned when a tag limit or format is violated.
@@ -346,7 +556,7 @@ func (s *KMSService) EncryptString(ctx context.Context, keyID string, plaintext 
 		resolvedKeyID = "alias/aws/ssm"
 	}
 
-	result, err := s.hsmBackend.Encrypt(resolvedKeyID, []byte(plaintext), nil)
+	result, err := s.hsmBackend.Encrypt(resolvedKeyID, []byte(plaintext), hsm.EncryptionAlgorithmSymmetricDefault, nil)
 	if err != nil {
 		return "", err
 	}
@@ -371,7 +581,7 @@ func (s *KMSService) DecryptString(ctx context.Context, keyID string, ciphertext
 		resolvedKeyID = "alias/aws/ssm"
 	}
 
-	result, err := s.hsmBackend.Decrypt(resolvedKeyID, ciphertextBytes, nil)
+	result, err := s.hsmBackend.Decrypt(resolvedKeyID, ciphertextBytes, hsm.EncryptionAlgorithmSymmetricDefault, nil)
 	if err != nil {
 		return "", err
 	}
@@ -423,7 +633,7 @@ func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
 	}
-	result, err := a.hsmBackend.Decrypt(keyID, ciphertext, encryptionContext)
+	result, err := a.hsmBackend.Decrypt(keyID, ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt: %w", err)
 	}

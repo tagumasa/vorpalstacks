@@ -5,6 +5,7 @@ package kms
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/common/pagination"
@@ -12,6 +13,32 @@ import (
 	"vorpalstacks/internal/common/response"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
+
+// aliasNamePattern mirrors the AWS AliasName constraint: after the required
+// "alias/" prefix, only alphanumerics, forward slashes, underscores, and
+// hyphens are permitted. Total length 1-256 characters.
+var aliasNamePattern = regexp.MustCompile(`^alias/[a-zA-Z0-9/_-]+$`)
+
+// validateAliasName enforces the AWS AliasName format rules:
+//   - must be 1-256 characters
+//   - must start with "alias/"
+//   - must not start with "alias/aws/" (reserved for AWS-managed aliases)
+//   - the suffix after "alias/" may contain only [a-zA-Z0-9/_-]
+func validateAliasName(aliasName string) error {
+	if aliasName == "" || len(aliasName) > 256 {
+		return ErrInvalidAliasName
+	}
+	if !strings.HasPrefix(aliasName, "alias/") {
+		return ErrInvalidAliasName
+	}
+	if strings.HasPrefix(aliasName, "alias/aws/") {
+		return ErrInvalidAliasName
+	}
+	if !aliasNamePattern.MatchString(aliasName) {
+		return ErrInvalidAliasName
+	}
+	return nil
+}
 
 func (s *KMSService) mapAliasStoreError(err error) error {
 	if err == nil {
@@ -40,20 +67,8 @@ func (s *KMSService) CreateAlias(ctx context.Context, reqCtx *request.RequestCon
 	aliasName := request.GetStringParam(req.Parameters, "AliasName")
 	targetKeyID := request.GetStringParam(req.Parameters, "TargetKeyId")
 
-	if aliasName == "" {
-		return nil, ErrInvalidAliasName
-	}
-
-	if !strings.HasPrefix(aliasName, "alias/") {
-		return nil, ErrInvalidAliasName
-	}
-
-	if strings.HasPrefix(aliasName, "alias/aws/") {
-		return nil, ErrInvalidAliasName
-	}
-
-	if len(aliasName) > 256 {
-		return nil, ErrInvalidAliasName
+	if err := validateAliasName(aliasName); err != nil {
+		return nil, err
 	}
 
 	if targetKeyID == "" {
@@ -162,20 +177,8 @@ func (s *KMSService) UpdateAlias(ctx context.Context, reqCtx *request.RequestCon
 	aliasName := request.GetStringParam(req.Parameters, "AliasName")
 	targetKeyID := request.GetStringParam(req.Parameters, "TargetKeyId")
 
-	if aliasName == "" {
-		return nil, ErrInvalidAliasName
-	}
-
-	if !strings.HasPrefix(aliasName, "alias/") {
-		return nil, ErrInvalidAliasName
-	}
-
-	if strings.HasPrefix(aliasName, "alias/aws/") {
-		return nil, ErrInvalidAliasName
-	}
-
-	if len(aliasName) > 256 {
-		return nil, ErrInvalidAliasName
+	if err := validateAliasName(aliasName); err != nil {
+		return nil, err
 	}
 
 	if targetKeyID == "" {

@@ -48,6 +48,38 @@ func (b *MemoryBackend) ImportKey(keyID string, keyMaterial []byte, keySpec KeyS
 	return nil
 }
 
+// ReplicateKey copies the cryptographic material of an existing key into a
+// new key ID. The replica shares the primary's secret material so crypto
+// operations on the replica succeed. Required because ImportKey only
+// supports symmetric/HMAC material; RSA/ECDSA private keys cannot be
+// round-tripped through ImportKey.
+func (b *MemoryBackend) ReplicateKey(sourceKeyID, destKeyID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	src, exists := b.keys[sourceKeyID]
+	if !exists {
+		return ErrKeyNotFound
+	}
+	if _, exists := b.keys[destKeyID]; exists {
+		return ErrKeyAlreadyExists
+	}
+
+	replica := &memoryKey{keySpec: src.keySpec}
+	if src.symmetric != nil {
+		replica.symmetric = make([]byte, len(src.symmetric))
+		copy(replica.symmetric, src.symmetric)
+	}
+	if src.rsaKey != nil {
+		replica.rsaKey = src.rsaKey
+	}
+	if src.ecdsaKey != nil {
+		replica.ecdsaKey = src.ecdsaKey
+	}
+	b.keys[destKeyID] = replica
+	return nil
+}
+
 // DeleteKey removes a key from the in-memory HSM backend.
 // Returns an error if the key does not exist.
 func (b *MemoryBackend) DeleteKey(keyID string) error {
@@ -62,28 +94,28 @@ func (b *MemoryBackend) DeleteKey(keyID string) error {
 	return nil
 }
 
-// Encrypt encrypts plaintext using the specified symmetric key.
+// Encrypt encrypts plaintext using the specified symmetric or RSA key.
 // Returns the ciphertext with key ID prepended and CRC32 checksum.
-func (b *MemoryBackend) Encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error) {
+func (b *MemoryBackend) Encrypt(keyID string, plaintext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*EncryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	return b.encrypt(keyID, plaintext, context)
+	return b.encrypt(keyID, plaintext, algorithm, context)
 }
 
-// Decrypt decrypts ciphertext using the specified symmetric key.
+// Decrypt decrypts ciphertext using the specified symmetric or RSA key.
 // Extracts the key ID from the ciphertext if present.
-func (b *MemoryBackend) Decrypt(keyID string, ciphertext []byte, context map[string]string) (*DecryptResult, error) {
+func (b *MemoryBackend) Decrypt(keyID string, ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	return b.decrypt(keyID, ciphertext, context)
+	return b.decrypt(keyID, ciphertext, algorithm, context)
 }
 
 // DecryptWithoutKeyID decrypts ciphertext and extracts the key ID from the ciphertext.
 // Returns the plaintext, key ID used, and any error encountered.
-func (b *MemoryBackend) DecryptWithoutKeyID(ciphertext []byte, context map[string]string) (*DecryptResult, string, error) {
+func (b *MemoryBackend) DecryptWithoutKeyID(ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, string, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	return b.decryptWithoutKeyID(ciphertext, context)
+	return b.decryptWithoutKeyID(ciphertext, algorithm, context)
 }
 
 // Sign signs a message using the specified key and signing algorithm.

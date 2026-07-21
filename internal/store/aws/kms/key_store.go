@@ -279,7 +279,28 @@ func (s *KeyStore) UpdateDescription(keyID, description string) error {
 
 // SetKeyRotation enables or disables automatic key rotation for a KMS key.
 func (s *KeyStore) SetKeyRotation(keyID string, enabled bool) error {
-	return s.atomicUpdate(keyID, func(key *Key) error { key.KeyRotationEnabled = enabled; return nil })
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		key.KeyRotationEnabled = enabled
+		if !enabled {
+			key.RotationPeriodInDays = 0
+		}
+		return nil
+	})
+}
+
+// SetKeyRotationWithPeriod enables automatic key rotation with an explicit
+// rotation period in days. The caller is responsible for validating the range
+// (AWS: 90-2560).
+func (s *KeyStore) SetKeyRotationWithPeriod(keyID string, enabled bool, periodInDays int32) error {
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		key.KeyRotationEnabled = enabled
+		if enabled {
+			key.RotationPeriodInDays = periodInDays
+		} else {
+			key.RotationPeriodInDays = 0
+		}
+		return nil
+	})
 }
 
 // Count returns the number of KMS keys in the store (excluding keys pending deletion).
@@ -335,8 +356,13 @@ func IsHMACKey(keySpec KeySpec) bool {
 }
 
 // SetPendingImport sets the key state to PendingImport for external-origin keys.
+// The pre-import Enabled flag is preserved in PreDeletionEnabled so
+// ImportKeyMaterial can restore the original state instead of
+// unconditionally transitioning to Enabled.
 func (s *KeyStore) SetPendingImport(keyID string) error {
 	return s.atomicUpdate(keyID, func(key *Key) error {
+		origEnabled := key.Enabled
+		key.PreDeletionEnabled = &origEnabled
 		key.KeyState = KeyStatePendingImport
 		key.Enabled = false
 		return nil
@@ -345,7 +371,9 @@ func (s *KeyStore) SetPendingImport(keyID string) error {
 
 // GetParametersForImport generates an import token and wrapping RSA key pair,
 // stores them on the key for later validation, and returns token + public key (base64 DER).
-func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) (string, string, error) {
+// wrappingAlgorithm is recorded on the key so ImportKeyMaterial can select the
+// matching OAEP hash when decrypting the wrapped material.
+func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string, wrappingAlgorithm string) (string, string, error) {
 	key, err := s.Get(keyID)
 	if err != nil {
 		return "", "", err
@@ -368,6 +396,8 @@ func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) 
 	if err := s.atomicUpdate(keyID, func(k *Key) error {
 		k.ImportToken = importToken
 		k.WrappingPrivateKey = privKeyBytes
+		k.WrappingAlgorithm = wrappingAlgorithm
+		k.WrappingKeySpec = wrappingKeySpec
 		return nil
 	}); err != nil {
 		return "", "", err
@@ -378,6 +408,9 @@ func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) 
 
 // ImportKeyMaterial validates the import token, decrypts the wrapped key material
 // using the stored wrapping private key, and returns the raw key material for HSM import.
+// The post-import key state honours the pre-SetPendingImport enabled state:
+// AWS restores Enabled/Disabled as it was before import was requested rather
+// than unconditionally transitioning to Enabled.
 func (s *KeyStore) ImportKeyMaterial(keyID string, importToken string, encryptedKeyMaterial []byte, validTo *time.Time) ([]byte, error) {
 	var rawKeyMaterial []byte
 	err := s.atomicUpdate(keyID, func(key *Key) error {
@@ -397,11 +430,18 @@ func (s *KeyStore) ImportKeyMaterial(keyID string, importToken string, encrypted
 		}
 		rawKeyMaterial = decrypted
 
-		key.KeyState = KeyStateEnabled
-		key.Enabled = true
+		if key.PreDeletionEnabled != nil && !*key.PreDeletionEnabled {
+			key.KeyState = KeyStateDisabled
+			key.Enabled = false
+		} else {
+			key.KeyState = KeyStateEnabled
+			key.Enabled = true
+		}
 		key.ValidTo = validTo
 		key.ImportToken = ""
 		key.WrappingPrivateKey = nil
+		key.WrappingAlgorithm = ""
+		key.WrappingKeySpec = ""
 		return nil
 	})
 	return rawKeyMaterial, err
@@ -418,6 +458,8 @@ func (s *KeyStore) DeleteImportedKeyMaterial(keyID string) error {
 		key.ValidTo = nil
 		key.ImportToken = ""
 		key.WrappingPrivateKey = nil
+		key.WrappingAlgorithm = ""
+		key.WrappingKeySpec = ""
 		return nil
 	})
 }
@@ -433,6 +475,16 @@ func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID
 
 		if !key.MultiRegion {
 			return ErrNotMultiRegionKey
+		}
+
+		// Reject duplicate replicas. AWS returns KMSInvalidStateException
+		// when a replica already exists in the requested region.
+		if key.MultiRegionConfiguration != nil {
+			for _, r := range key.MultiRegionConfiguration.ReplicaKeys {
+				if r.Region == replicaRegion {
+					return ErrInvalidKeyState
+				}
+			}
 		}
 
 		replicaKey = &Key{

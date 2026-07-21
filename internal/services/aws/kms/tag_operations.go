@@ -9,6 +9,8 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/aws/types"
+
+	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // KMS tag limits per AWS spec.
@@ -52,6 +54,10 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "TagResource", key.KeyID, nil); err != nil {
 		return nil, err
+	}
+	// AWS: tagging is rejected when the key is PendingDeletion.
+	if key.KeyState == kmsstore.KeyStatePendingDeletion {
+		return nil, ErrKeyPendingDeletion
 	}
 	tagList := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
 	if len(tagList) == 0 {
@@ -102,6 +108,9 @@ func (s *KMSService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UntagResource", key.KeyID, nil); err != nil {
 		return nil, err
+	}
+	if key.KeyState == kmsstore.KeyStatePendingDeletion {
+		return nil, ErrKeyPendingDeletion
 	}
 	tagKeys := tagutil.ParseTagKeysAsSlice(req.Parameters, "TagKeys")
 	if len(tagKeys) == 0 {
