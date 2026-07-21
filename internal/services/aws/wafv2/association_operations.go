@@ -2,6 +2,7 @@ package wafv2
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -56,15 +57,14 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	assoc, err := assocStore.GetByResourceArn(resourceArn)
-	if err != nil {
+	if _, err := assocStore.GetByResourceArn(resourceArn); err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("WebACL association")
 		}
 		return nil, err
 	}
 
-	if err := assocStore.Disassociate(assoc.WebACLArn, resourceArn); err != nil {
+	if err := assocStore.Disassociate(resourceArn); err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("WebACL association")
 		}
@@ -75,11 +75,15 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 }
 
 // ListResourcesForWebACL returns all resource ARNs associated with the specified WebACL.
+// If ResourceType is provided, results are filtered to only include resources
+// of that type.
 func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
 		return nil, validationError("WebACLArn is required")
 	}
+
+	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
 
 	associationStores, err := s.allAssociationStores(reqCtx)
 	if err != nil {
@@ -95,8 +99,10 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 		}
 		for _, assoc := range associations {
 			if !seen[assoc.ResourceArn] {
-				seen[assoc.ResourceArn] = true
-				resources = append(resources, assoc.ResourceArn)
+				if resourceType == "" || matchesResourceType(assoc.ResourceArn, resourceType) {
+					seen[assoc.ResourceArn] = true
+					resources = append(resources, assoc.ResourceArn)
+				}
 			}
 		}
 	}
@@ -104,6 +110,31 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 	return map[string]interface{}{
 		"ResourceArns": resources,
 	}, nil
+}
+
+// matchesResourceType checks whether a resource ARN matches the given
+// AWS ResourceType enum value.
+func matchesResourceType(resourceArn, resourceType string) bool {
+	switch resourceType {
+	case "APPLICATION_LOAD_BALANCER":
+		return strings.Contains(resourceArn, ":elasticloadbalancing:")
+	case "API_GATEWAY":
+		return strings.Contains(resourceArn, ":apigateway:")
+	case "APPSYNC":
+		return strings.Contains(resourceArn, ":appsync:")
+	case "COGNITIO_USER_POOL":
+		return strings.Contains(resourceArn, ":cognito-idp:")
+	case "APP_RUNNER_SERVICE":
+		return strings.Contains(resourceArn, ":runner:")
+	case "VERIFIED_ACCESS_INSTANCE":
+		return strings.Contains(resourceArn, ":ec2:") && strings.Contains(resourceArn, "verified-access")
+	case "AMPLIFY":
+		return strings.Contains(resourceArn, ":amplify:")
+	case "AGENTCORE_GATEWAY":
+		return strings.Contains(resourceArn, ":agentcore:")
+	default:
+		return true
+	}
 }
 
 // GetWebACLForResource returns the WebACL associated with the specified resource ARN.

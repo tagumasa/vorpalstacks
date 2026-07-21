@@ -145,13 +145,16 @@ message ScheduledQuery {
 
 // ExecutionStats contains statistics about a scheduled query execution.
 message ExecutionStats {
-  int64 total_bytes_processed = 1;
+  // Fields aligned to the Smithy model
+  // (com.amazonaws.timestreamquery#ExecutionStats).
+  // Removed fabricated fields: total_bytes_processed, total_records_processed.
+  // Added missing field: records_ingested.
   int64 data_writes = 2;
-  int64 total_records_processed = 3;
   int64 bytes_metered = 4;
   int64 query_result_rows = 5;
   int64 cumulative_bytes_scanned = 6;
   int64 execution_time_in_millis = 7;
+  int64 records_ingested = 8;
 }
 
 // ScheduledQueryRun represents the execution of a scheduled query.

@@ -75,9 +75,15 @@ func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule
 }
 
 // List returns a list of WAF Web ACLs from the store with pagination
-// support.
-func (s *WebACLStore) List(marker string, maxItems int) (*WebACLListResult, error) {
-	result, err := common.List[WebACL](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
+// support. If scope is non-empty, only Web ACLs matching the specified
+// scope are returned (filter is applied during iteration, before
+// pagination, to avoid empty pages).
+func (s *WebACLStore) List(marker string, maxItems int, scope string) (*WebACLListResult, error) {
+	var filter common.FilterFunc[WebACL]
+	if scope != "" {
+		filter = func(w *WebACL) bool { return w.Scope == scope }
+	}
+	result, err := common.List[WebACL](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, NewStoreError("list_web_acls", err)
 	}

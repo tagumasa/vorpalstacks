@@ -75,37 +75,17 @@ func (s *ScheduledQueryStore) GetScheduledQuery(name string) (*ScheduledQuery, e
 	return ProtoToScheduledQuery(&pbSq), nil
 }
 
-// UpdateScheduledQuery updates an existing scheduled query.
-func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQueryStatus, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration) (*ScheduledQuery, error) {
+// UpdateScheduledQuery updates the state of an existing scheduled query.
+// Per the Smithy UpdateScheduledQueryRequest, only the State field may
+// be modified (ENABLED or DISABLED). All other fields are immutable
+// after creation.
+func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQueryStatus) (*ScheduledQuery, error) {
 	sq, err := s.GetScheduledQuery(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if state != "" {
-		switch state {
-		case ScheduledQueryStatusEnabled:
-			sq.ScheduledQueryStatus = ScheduledQueryStatusEnabled
-		case ScheduledQueryStatusDisabled:
-			sq.ScheduledQueryStatus = ScheduledQueryStatusDisabled
-		}
-	}
-
-	if scheduleConfig != nil {
-		sq.ScheduleConfiguration = scheduleConfig
-	}
-	if notificationConfig != nil {
-		sq.NotificationConfiguration = notificationConfig
-	}
-	if kmsKeyID != "" {
-		sq.KmsKeyID = kmsKeyID
-	}
-	if errorReportConfig != nil {
-		sq.ErrorReportConfiguration = errorReportConfig
-	}
-	if targetConfig != nil {
-		sq.TargetConfiguration = targetConfig
-	}
+	sq.ScheduledQueryStatus = state
 
 	if err := s.PutProto(name, ScheduledQueryToProto(sq)); err != nil {
 		return nil, err

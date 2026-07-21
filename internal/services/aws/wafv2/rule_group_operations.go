@@ -24,8 +24,8 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "REGIONAL"
+	if err := validateScope(scope); err != nil {
+		return nil, err
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
@@ -103,27 +103,19 @@ func (s *WAFv2Service) ListRuleGroups(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 	scope := request.GetStringParam(req.Parameters, "Scope")
+	if err := validateScope(scope); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
-	result, err := stores.ruleGroups.List(nextMarker, maxItems)
+	result, err := stores.ruleGroups.List(nextMarker, maxItems, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered := result.RuleGroups
-	if scope != "" {
-		tmp := make([]*wafstore.RuleGroup, 0, len(filtered))
-		for _, rg := range filtered {
-			if rg.Scope == scope {
-				tmp = append(tmp, rg)
-			}
-		}
-		filtered = tmp
-	}
-
-	ruleGroups := make([]interface{}, 0, len(filtered))
-	for _, rg := range filtered {
+	ruleGroups := make([]interface{}, 0, len(result.RuleGroups))
+	for _, rg := range result.RuleGroups {
 		ruleGroups = append(ruleGroups, buildRuleGroupSummary(rg))
 	}
 
@@ -205,23 +197,18 @@ func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, validationError("LockToken is required")
 	}
 
-	ruleGroup, err := stores.ruleGroups.Get(id)
+	deleted, err := stores.ruleGroups.Delete(id, lockToken)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("RuleGroup")
 		}
-		return nil, err
-	}
-
-	err = stores.ruleGroups.Delete(id, lockToken)
-	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
 		}
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(ruleGroup.ARN)
+	_ = stores.tags.Delete(deleted.ARN)
 
 	return response.EmptyResponse(), nil
 }

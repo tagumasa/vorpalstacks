@@ -17,6 +17,16 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
+// Smithy model pagination limits (timestream-query-2018-11-01.json):
+// MaxQueryResults range {min:1, max:1000} for Query.MaxRows.
+// MaxScheduledQueriesResults range {min:1, max:1000} for ListScheduledQueries.MaxResults.
+// MaxTagsForResourceResult range {min:1, max:200} for ListTagsForResource.MaxResults.
+const (
+	maxQueryRows            = 1000
+	maxListScheduledQueries = 1000
+	maxListTagsForResource  = 200
+)
+
 type tsQueryStores struct {
 	recordStore            *tsstore.RecordStore
 	tableStore             *tsstore.TableStore

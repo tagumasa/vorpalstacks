@@ -160,18 +160,6 @@ const (
 	ScheduledQueryStatusEnabled ScheduledQueryStatus = "ENABLED"
 	// ScheduledQueryStatusDisabled indicates the scheduled query is disabled.
 	ScheduledQueryStatusDisabled ScheduledQueryStatus = "DISABLED"
-	// ScheduledQueryStatusCreating indicates the scheduled query is being created.
-	ScheduledQueryStatusCreating ScheduledQueryStatus = "CREATING"
-	// ScheduledQueryStatusUpdating indicates the scheduled query is being updated.
-	ScheduledQueryStatusUpdating ScheduledQueryStatus = "UPDATING"
-	// ScheduledQueryStatusDeleting indicates the scheduled query is being deleted.
-	ScheduledQueryStatusDeleting ScheduledQueryStatus = "DELETING"
-	// ScheduledQueryStatusCreateFailed indicates the scheduled query creation failed.
-	ScheduledQueryStatusCreateFailed ScheduledQueryStatus = "CREATE_FAILED"
-	// ScheduledQueryStatusUpdateFailed indicates the scheduled query update failed.
-	ScheduledQueryStatusUpdateFailed ScheduledQueryStatus = "UPDATE_FAILED"
-	// ScheduledQueryStatusDeleteFailed indicates the scheduled query deletion failed.
-	ScheduledQueryStatusDeleteFailed ScheduledQueryStatus = "DELETE_FAILED"
 )
 
 // ScheduledQuery represents a scheduled query in Timestream.
@@ -287,6 +275,17 @@ const (
 	ScheduleRunStatusCancelled ScheduleRunStatus = "CANCELLED"
 )
 
+// ScheduledQueryRunStatusValue represents the API-visible run status
+// per the Smithy ScheduledQueryRunStatus enum. These values appear in
+// the LastRunStatus field of the ScheduledQuery shape and the RunStatus
+// field of ScheduledQueryRunSummary in API responses.
+const (
+	ScheduledQueryRunStatusAutoTriggerSuccess   = "AUTO_TRIGGER_SUCCESS"
+	ScheduledQueryRunStatusAutoTriggerFailure   = "AUTO_TRIGGER_FAILURE"
+	ScheduledQueryRunStatusManualTriggerSuccess = "MANUAL_TRIGGER_SUCCESS"
+	ScheduledQueryRunStatusManualTriggerFailure = "MANUAL_TRIGGER_FAILURE"
+)
+
 // ScheduledQueryRun represents the execution of a scheduled query.
 type ScheduledQueryRun struct {
 	ARN               string            `json:"arn"`
@@ -300,14 +299,15 @@ type ScheduledQueryRun struct {
 }
 
 // ExecutionStats contains statistics about a scheduled query execution.
+// Fields aligned to the Smithy model
+// (com.amazonaws.timestreamquery#ExecutionStats).
 type ExecutionStats struct {
-	TotalBytesProcessed    int64 `json:"totalBytesProcessed,omitempty"`
 	DataWrites             int64 `json:"dataWrites,omitempty"`
-	TotalRecordsProcessed  int64 `json:"totalRecordsProcessed,omitempty"`
 	BytesMetered           int64 `json:"bytesMetered,omitempty"`
 	QueryResultRows        int64 `json:"queryResultRows,omitempty"`
 	CumulativeBytesScanned int64 `json:"cumulativeBytesScanned,omitempty"`
 	ExecutionTimeInMillis  int64 `json:"executionTimeInMillis,omitempty"`
+	RecordsIngested        int64 `json:"recordsIngested,omitempty"`
 }
 
 // BatchLoadStatus represents the status of a batch load task.

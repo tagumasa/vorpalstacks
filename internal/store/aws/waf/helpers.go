@@ -1,16 +1,13 @@
 package waf
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"time"
+	"github.com/google/uuid"
 )
 
-// GenerateLockToken generates a unique lock token for WAF resource optimistic concurrency control.
+// GenerateLockToken generates a unique lock token for WAF resource
+// optimistic concurrency control. The token is a UUID (RFC 4122) to
+// match the Smithy LockToken pattern:
+// ^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$
 func GenerateLockToken() string {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		return hex.EncodeToString([]byte(time.Now().Format("20060102150405.000000000")))
-	}
-	return hex.EncodeToString(bytes)
+	return uuid.New().String()
 }

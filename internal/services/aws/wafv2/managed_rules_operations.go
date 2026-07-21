@@ -99,12 +99,12 @@ func (s *WAFv2Service) DescribeManagedRuleGroup(ctx context.Context, reqCtx *req
 				"LabelNamespace": labelNamespace,
 				"VersionName":    versionNameResp,
 				"Rules": []map[string]interface{}{
-					{"Name": "Rule1", "Action": map[string]interface{}{"Block": map[string]interface{}{}}},
-					{"Name": "Rule2", "Action": map[string]interface{}{"Block": map[string]interface{}{}}},
+					{"Name": name + "_Rule1", "Action": map[string]interface{}{"Block": map[string]interface{}{}}},
+					{"Name": name + "_Rule2", "Action": map[string]interface{}{"Count": map[string]interface{}{}}},
 				},
 				"AvailableLabels": []map[string]interface{}{
-					{"Name": labelNamespace + "label1"},
-					{"Name": labelNamespace + "label2"},
+					{"Name": labelNamespace + "rule1"},
+					{"Name": labelNamespace + "rule2"},
 				},
 			}, nil
 		}
@@ -134,11 +134,11 @@ func (s *WAFv2Service) ListAvailableManagedRuleGroupVersions(ctx context.Context
 		return nil, notFoundError("ManagedRuleGroup")
 	}
 
-	now := time.Now()
+	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 	versions := []map[string]interface{}{
 		{"Name": "Version_2026_03_01", "LastUpdated": now.Unix()},
-		{"Name": "Version_2026_02_01", "LastUpdated": now.Unix()},
-		{"Name": "Version_2026_01_01", "LastUpdated": now.Unix()},
+		{"Name": "Version_2026_02_01", "LastUpdated": time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC).Unix()},
+		{"Name": "Version_2026_01_01", "LastUpdated": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).Unix()},
 	}
 
 	return map[string]interface{}{

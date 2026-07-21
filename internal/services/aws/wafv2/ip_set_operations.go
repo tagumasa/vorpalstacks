@@ -5,6 +5,7 @@ import (
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -36,8 +37,8 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "REGIONAL"
+	if err := validateScope(scope); err != nil {
+		return nil, err
 	}
 
 	ipAddressVersion := request.GetStringParam(req.Parameters, "IPAddressVersion")
@@ -111,27 +112,19 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 	scope := request.GetStringParam(req.Parameters, "Scope")
+	if err := validateScope(scope); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
-	result, err := stores.ipSets.List(nextMarker, maxItems)
+	result, err := stores.ipSets.List(nextMarker, maxItems, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered := result.IPSets
-	if scope != "" {
-		tmp := make([]*wafstore.IPSet, 0, len(filtered))
-		for _, ips := range filtered {
-			if ips.Scope == scope {
-				tmp = append(tmp, ips)
-			}
-		}
-		filtered = tmp
-	}
-
-	ipSets := make([]interface{}, 0, len(filtered))
-	for _, ips := range filtered {
+	ipSets := make([]interface{}, 0, len(result.IPSets))
+	for _, ips := range result.IPSets {
 		ipSets = append(ipSets, buildIPSetSummary(ips))
 	}
 
@@ -160,7 +153,7 @@ func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestC
 
 	addresses := parseAddressList(req.Parameters)
 
-	ipSet, err := stores.ipSets.Update(id, lockToken, addresses)
+	ipSet, err := stores.ipSets.Update(id, lockToken, addresses, request.GetStringParam(req.Parameters, "Description"))
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
@@ -192,22 +185,18 @@ func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, validationError("LockToken is required")
 	}
 
-	ipSet, err := stores.ipSets.Get(id)
+	deleted, err := stores.ipSets.Delete(id, lockToken)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("IPSet")
 		}
-		return nil, err
-	}
-
-	if err := stores.ipSets.Delete(id, lockToken); err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
 		}
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(ipSet.ARN)
+	_ = stores.tags.Delete(deleted.ARN)
 
-	return map[string]interface{}{}, nil
+	return response.EmptyResponse(), nil
 }

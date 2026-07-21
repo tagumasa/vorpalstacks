@@ -20,8 +20,8 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "REGIONAL"
+	if err := validateScope(scope); err != nil {
+		return nil, err
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
@@ -31,6 +31,9 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	defaultAction := convertAction(request.GetMapParam(req.Parameters, "DefaultAction"))
+	if err := validateDefaultAction(defaultAction); err != nil {
+		return nil, err
+	}
 	rules := convertRules(req.Parameters["Rules"])
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
 
@@ -103,6 +106,9 @@ func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestCon
 // ListWebACLs returns a paginated list of all web ACLs filtered by scope.
 func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	scope := request.GetStringParam(req.Parameters, "Scope")
+	if err := validateScope(scope); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
@@ -110,24 +116,13 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.webACLs.List(nextMarker, maxItems)
+	result, err := stores.webACLs.List(nextMarker, maxItems, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered := result.WebACLs
-	if scope != "" {
-		tmp := make([]*wafstore.WebACL, 0, len(filtered))
-		for _, w := range filtered {
-			if w.Scope == scope {
-				tmp = append(tmp, w)
-			}
-		}
-		filtered = tmp
-	}
-
 	resp := map[string]interface{}{
-		"WebACLs": buildWebACLSummaryList(filtered),
+		"WebACLs": buildWebACLSummaryList(result.WebACLs),
 	}
 	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
 	return resp, nil
@@ -219,22 +214,18 @@ func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	webACL, err := stores.webACLs.Get(id)
+	deleted, err := stores.webACLs.Delete(id, lockToken)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("WebACL")
 		}
-		return nil, err
-	}
-
-	if err := stores.webACLs.Delete(id, lockToken); err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
 		}
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(webACL.ARN)
+	_ = stores.tags.Delete(deleted.ARN)
 
 	return response.EmptyResponse(), nil
 }

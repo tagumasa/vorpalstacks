@@ -62,23 +62,25 @@ func (s *ResourceStore[T]) FindByName(name string) (*T, error) {
 }
 
 // Delete removes a WAF resource by ID, verifying the lock token if provided.
-func (s *ResourceStore[T]) Delete(id, lockToken string) error {
+// Returns the deleted resource so callers can perform cleanup (e.g., tag
+// deletion) without a separate Get call.
+func (s *ResourceStore[T]) Delete(id, lockToken string) (*T, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	resource, err := s.Get(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if lockToken != "" && s.accessor.getLockTokenFn(resource) != lockToken {
-		return NewStoreError("delete_resource", ErrLockTokenMismatch)
+		return nil, NewStoreError("delete_resource", ErrLockTokenMismatch)
 	}
 
 	if err := s.BaseStore.Delete(id); err != nil {
-		return NewStoreError("delete_resource", err)
+		return nil, NewStoreError("delete_resource", err)
 	}
-	return nil
+	return resource, nil
 }
 
 // UpdateWithLockToken applies the given update function to a WAF resource, verifying the lock token if provided.

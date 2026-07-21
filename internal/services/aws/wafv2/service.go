@@ -162,33 +162,24 @@ func (s *WAFv2Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("wafv2", "UntagResource", s.UntagResource)
 	d.RegisterHandlerForService("wafv2", "ListTagsForResource", s.ListTagsForResource)
 
-	d.RegisterHandlerForService("wafv2", "GetChangeToken", s.GetChangeToken)
-	d.RegisterHandlerForService("wafv2", "GetChangeTokenStatus", s.GetChangeTokenStatus)
-
 	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroups", s.ListAvailableManagedRuleGroups)
 	d.RegisterHandlerForService("wafv2", "DescribeManagedRuleGroup", s.DescribeManagedRuleGroup)
 	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroupVersions", s.ListAvailableManagedRuleGroupVersions)
 }
 
-// GetChangeToken generates and returns a new change token for WAFv2 write operations.
-func (s *WAFv2Service) GetChangeToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	token := uuid.New().String()
-	return map[string]interface{}{
-		"ChangeToken": token,
-	}, nil
-}
-
-// GetChangeTokenStatus returns the current status of the most recent change token.
-func (s *WAFv2Service) GetChangeTokenStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"ChangeTokenStatus": "PROVISIONED",
-	}, nil
-}
-
-// CheckCapacity returns the capacity consumed by the specified rules.
+// CheckCapacity calculates the capacity consumed by the specified rules.
+// Each statement type has a base WCU (Web ACL Capacity Unit) cost per
+// AWS documentation. The total is the sum across all rules.
 func (s *WAFv2Service) CheckCapacity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	rules := convertRules(req.Parameters["Rules"])
+	var total int64
+	for _, rule := range rules {
+		if rule != nil {
+			total += calculateStatementCapacity(rule.Statement)
+		}
+	}
 	return map[string]interface{}{
-		"Capacity": 10,
+		"Capacity": total,
 	}, nil
 }
 

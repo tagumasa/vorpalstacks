@@ -1215,14 +1215,17 @@ func (x *ScheduledQuery) GetNextRunTime() *timestamppb.Timestamp {
 
 // ExecutionStats contains statistics about a scheduled query execution.
 type ExecutionStats struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	TotalBytesProcessed    int64                  `protobuf:"varint,1,opt,name=total_bytes_processed,json=totalBytesProcessed,proto3" json:"total_bytes_processed,omitempty"`
-	DataWrites             int64                  `protobuf:"varint,2,opt,name=data_writes,json=dataWrites,proto3" json:"data_writes,omitempty"`
-	TotalRecordsProcessed  int64                  `protobuf:"varint,3,opt,name=total_records_processed,json=totalRecordsProcessed,proto3" json:"total_records_processed,omitempty"`
-	BytesMetered           int64                  `protobuf:"varint,4,opt,name=bytes_metered,json=bytesMetered,proto3" json:"bytes_metered,omitempty"`
-	QueryResultRows        int64                  `protobuf:"varint,5,opt,name=query_result_rows,json=queryResultRows,proto3" json:"query_result_rows,omitempty"`
-	CumulativeBytesScanned int64                  `protobuf:"varint,6,opt,name=cumulative_bytes_scanned,json=cumulativeBytesScanned,proto3" json:"cumulative_bytes_scanned,omitempty"`
-	ExecutionTimeInMillis  int64                  `protobuf:"varint,7,opt,name=execution_time_in_millis,json=executionTimeInMillis,proto3" json:"execution_time_in_millis,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Fields aligned to the Smithy model
+	// (com.amazonaws.timestreamquery#ExecutionStats).
+	// Removed fabricated fields: total_bytes_processed, total_records_processed.
+	// Added missing field: records_ingested.
+	DataWrites             int64 `protobuf:"varint,2,opt,name=data_writes,json=dataWrites,proto3" json:"data_writes,omitempty"`
+	BytesMetered           int64 `protobuf:"varint,4,opt,name=bytes_metered,json=bytesMetered,proto3" json:"bytes_metered,omitempty"`
+	QueryResultRows        int64 `protobuf:"varint,5,opt,name=query_result_rows,json=queryResultRows,proto3" json:"query_result_rows,omitempty"`
+	CumulativeBytesScanned int64 `protobuf:"varint,6,opt,name=cumulative_bytes_scanned,json=cumulativeBytesScanned,proto3" json:"cumulative_bytes_scanned,omitempty"`
+	ExecutionTimeInMillis  int64 `protobuf:"varint,7,opt,name=execution_time_in_millis,json=executionTimeInMillis,proto3" json:"execution_time_in_millis,omitempty"`
+	RecordsIngested        int64 `protobuf:"varint,8,opt,name=records_ingested,json=recordsIngested,proto3" json:"records_ingested,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1257,23 +1260,9 @@ func (*ExecutionStats) Descriptor() ([]byte, []int) {
 	return file_storage_timestream_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *ExecutionStats) GetTotalBytesProcessed() int64 {
-	if x != nil {
-		return x.TotalBytesProcessed
-	}
-	return 0
-}
-
 func (x *ExecutionStats) GetDataWrites() int64 {
 	if x != nil {
 		return x.DataWrites
-	}
-	return 0
-}
-
-func (x *ExecutionStats) GetTotalRecordsProcessed() int64 {
-	if x != nil {
-		return x.TotalRecordsProcessed
 	}
 	return 0
 }
@@ -1302,6 +1291,13 @@ func (x *ExecutionStats) GetCumulativeBytesScanned() int64 {
 func (x *ExecutionStats) GetExecutionTimeInMillis() int64 {
 	if x != nil {
 		return x.ExecutionTimeInMillis
+	}
+	return 0
+}
+
+func (x *ExecutionStats) GetRecordsIngested() int64 {
+	if x != nil {
+		return x.RecordsIngested
 	}
 	return 0
 }
@@ -2383,16 +2379,15 @@ const file_storage_timestream_proto_rawDesc = "" +
 	"\rcreation_time\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fcreationTime\x12&\n" +
 	"\x0flast_run_status\x18\r \x01(\tR\rlastRunStatus\x12F\n" +
 	"\x11previous_run_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\x0fpreviousRunTime\x12>\n" +
-	"\rnext_run_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vnextRunTime\"\xe1\x02\n" +
-	"\x0eExecutionStats\x122\n" +
-	"\x15total_bytes_processed\x18\x01 \x01(\x03R\x13totalBytesProcessed\x12\x1f\n" +
+	"\rnext_run_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vnextRunTime\"\xa0\x02\n" +
+	"\x0eExecutionStats\x12\x1f\n" +
 	"\vdata_writes\x18\x02 \x01(\x03R\n" +
-	"dataWrites\x126\n" +
-	"\x17total_records_processed\x18\x03 \x01(\x03R\x15totalRecordsProcessed\x12#\n" +
+	"dataWrites\x12#\n" +
 	"\rbytes_metered\x18\x04 \x01(\x03R\fbytesMetered\x12*\n" +
 	"\x11query_result_rows\x18\x05 \x01(\x03R\x0fqueryResultRows\x128\n" +
 	"\x18cumulative_bytes_scanned\x18\x06 \x01(\x03R\x16cumulativeBytesScanned\x127\n" +
-	"\x18execution_time_in_millis\x18\a \x01(\x03R\x15executionTimeInMillis\"\xa0\x03\n" +
+	"\x18execution_time_in_millis\x18\a \x01(\x03R\x15executionTimeInMillis\x12)\n" +
+	"\x10records_ingested\x18\b \x01(\x03R\x0frecordsIngested\"\xa0\x03\n" +
 	"\x11ScheduledQueryRun\x12\x10\n" +
 	"\x03arn\x18\x01 \x01(\tR\x03arn\x12.\n" +
 	"\x13scheduled_query_arn\x18\x02 \x01(\tR\x11scheduledQueryArn\x12C\n" +

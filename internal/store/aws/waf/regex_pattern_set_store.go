@@ -59,16 +59,23 @@ func (s *RegexPatternSetStore) Create(id, name, description string, regularPatte
 }
 
 // Update updates an existing Regex Pattern Set.
-func (s *RegexPatternSetStore) Update(id, lockToken string, regularPatterns []string) (*RegexPatternSet, error) {
+func (s *RegexPatternSetStore) Update(id, lockToken string, regularPatterns []string, description string) (*RegexPatternSet, error) {
 	return s.UpdateWithLockToken(id, lockToken, func(regexPatternSet *RegexPatternSet) error {
 		regexPatternSet.RegularPatterns = regularPatterns
+		if description != "" {
+			regexPatternSet.Description = description
+		}
 		return nil
 	}, "update_regex_pattern_set")
 }
 
-// List returns a paginated list of Regex Pattern Sets.
-func (s *RegexPatternSetStore) List(marker string, maxItems int) (*RegexPatternSetListResult, error) {
-	result, err := common.List[RegexPatternSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
+// List returns a paginated list of Regex Pattern Sets filtered by scope.
+func (s *RegexPatternSetStore) List(marker string, maxItems int, scope string) (*RegexPatternSetListResult, error) {
+	var filter common.FilterFunc[RegexPatternSet]
+	if scope != "" {
+		filter = func(rps *RegexPatternSet) bool { return rps.Scope == scope }
+	}
+	result, err := common.List[RegexPatternSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, NewStoreError("list_regex_pattern_sets", err)
 	}

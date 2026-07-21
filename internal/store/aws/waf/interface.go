@@ -6,8 +6,8 @@ type WebACLStoreInterface interface {
 	GetByARN(arn string) (*WebACL, error)
 	Create(id, name, description, scope string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error)
 	Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error)
-	Delete(id, lockToken string) error
-	List(marker string, maxItems int) (*WebACLListResult, error)
+	Delete(id, lockToken string) (*WebACL, error)
+	List(marker string, maxItems int, scope string) (*WebACLListResult, error)
 	Raw() *WebACLStore
 }
 
@@ -17,8 +17,8 @@ type RuleGroupStoreInterface interface {
 	GetByARN(arn string) (*RuleGroup, error)
 	Create(id, name, description string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig, scope string) (*RuleGroup, error)
 	Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error)
-	Delete(id, lockToken string) error
-	List(marker string, maxItems int) (*RuleGroupListResult, error)
+	Delete(id, lockToken string) (*RuleGroup, error)
+	List(marker string, maxItems int, scope string) (*RuleGroupListResult, error)
 	Raw() *RuleGroupStore
 }
 
@@ -27,9 +27,9 @@ type IPSetStoreInterface interface {
 	Get(id string) (*IPSet, error)
 	GetByARN(arn string) (*IPSet, error)
 	Create(id, name, description, ipAddressVersion string, addresses []string, scope string) (*IPSet, error)
-	Update(id, lockToken string, addresses []string) (*IPSet, error)
-	Delete(id, lockToken string) error
-	List(marker string, maxItems int) (*IPSetListResult, error)
+	Update(id, lockToken string, addresses []string, description string) (*IPSet, error)
+	Delete(id, lockToken string) (*IPSet, error)
+	List(marker string, maxItems int, scope string) (*IPSetListResult, error)
 	Raw() *IPSetStore
 }
 
@@ -38,16 +38,16 @@ type RegexPatternSetStoreInterface interface {
 	Get(id string) (*RegexPatternSet, error)
 	GetByARN(arn string) (*RegexPatternSet, error)
 	Create(id, name, description string, regularPatterns []string, scope string) (*RegexPatternSet, error)
-	Update(id, lockToken string, regularPatterns []string) (*RegexPatternSet, error)
-	Delete(id, lockToken string) error
-	List(marker string, maxItems int) (*RegexPatternSetListResult, error)
+	Update(id, lockToken string, regularPatterns []string, description string) (*RegexPatternSet, error)
+	Delete(id, lockToken string) (*RegexPatternSet, error)
+	List(marker string, maxItems int, scope string) (*RegexPatternSetListResult, error)
 	Raw() *RegexPatternSetStore
 }
 
 // WebACLAssociationStoreInterface defines operations for managing WAF Web ACL associations.
 type WebACLAssociationStoreInterface interface {
 	Associate(webACLArn, resourceArn string) error
-	Disassociate(webACLArn, resourceArn string) error
+	Disassociate(resourceArn string) error
 	GetByResourceArn(resourceArn string) (*WebACLAssociation, error)
 	GetByWebACLArn(webACLArn string) ([]*WebACLAssociation, error)
 	List() ([]*WebACLAssociation, error)

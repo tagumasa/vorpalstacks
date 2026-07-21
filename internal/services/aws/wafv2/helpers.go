@@ -1,117 +1,205 @@
 package wafv2
 
 import (
+	"encoding/json"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/aws/waf"
 )
 
-func convertVisibilityConfig(m map[string]interface{}) *waf.VisibilityConfig {
-	if m == nil {
-		return &waf.VisibilityConfig{
-			SampledRequestsEnabled:   true,
-			CloudWatchMetricsEnabled: true,
-			MetricName:               "unnamed",
-		}
+// marshalUnmarshal converts a value to JSON and back into a different type.
+// This is used for conversion between raw maps from the AWS request layer
+// and the typed WAF store structs. Because both sides use PascalCase JSON
+// keys (AWS convention), the roundtrip preserves all fields faithfully.
+func marshalUnmarshal[In any, Out any](in In) (Out, bool) {
+	var zero Out
+	data, err := json.Marshal(in)
+	if err != nil {
+		return zero, false
 	}
-	return &waf.VisibilityConfig{
-		SampledRequestsEnabled:   request.GetBoolParam(m, "SampledRequestsEnabled"),
-		CloudWatchMetricsEnabled: request.GetBoolParam(m, "CloudWatchMetricsEnabled"),
-		MetricName:               request.GetStringParam(m, "MetricName"),
+	var out Out
+	if err := json.Unmarshal(data, &out); err != nil {
+		return zero, false
 	}
+	return out, true
 }
 
+// validateScope checks that the Scope parameter is a valid Smithy enum
+// value (CLOUDFRONT or REGIONAL). Returns a validation error if not.
+func validateScope(scope string) error {
+	if scope != "CLOUDFRONT" && scope != "REGIONAL" {
+		return validationError("Scope must be CLOUDFRONT or REGIONAL")
+	}
+	return nil
+}
+
+// validateDefaultAction checks that the DefaultAction only contains Allow
+// or Block. Per the Smithy model, DefaultAction is a separate shape from
+// RuleAction and only supports terminating actions (Allow, Block).
+func validateDefaultAction(action *waf.Action) error {
+	if action == nil {
+		return nil
+	}
+	if action.Allow != nil {
+		return nil
+	}
+	if action.Block != nil {
+		return nil
+	}
+	return validationError("DefaultAction must be Allow or Block")
+}
+
+// calculateStatementCapacity returns the WCU capacity consumed by a single
+// statement. Base WCU values per AWS WAF documentation:
+//
+//	ByteMatchStatement: 1, SqliMatchStatement: 20, XssMatchStatement: 20,
+//	SizeConstraintStatement: 1, GeoMatchStatement: 1,
+//	RegexMatchStatement: 25, RegexPatternSetRefStatement: 25,
+//	IPSetReferenceStatement: 1, LabelMatchStatement: 1,
+//	AndStatement/OrStatement: 1 + sum of nested,
+//	NotStatement: 1 + nested, RateBasedStatement: 2 + nested,
+//	ManagedRuleGroupStatement: 0 (capacity is provided by DescribeManagedRuleGroup)
+func calculateStatementCapacity(stmt *waf.Statement) int64 {
+	if stmt == nil {
+		return 0
+	}
+	if stmt.ByteMatchStatement != nil {
+		return 1
+	}
+	if stmt.SqliMatchStatement != nil {
+		return 20
+	}
+	if stmt.XssMatchStatement != nil {
+		return 20
+	}
+	if stmt.SizeConstraintStatement != nil {
+		return 1
+	}
+	if stmt.GeoMatchStatement != nil {
+		return 1
+	}
+	if stmt.RegexMatchStatement != nil {
+		return 25
+	}
+	if stmt.RegexPatternSetRefStatement != nil {
+		return 25
+	}
+	if stmt.IPSetReferenceStatement != nil {
+		return 1
+	}
+	if stmt.LabelMatchStatement != nil {
+		return 1
+	}
+	if stmt.AsnMatchStatement != nil {
+		return 1
+	}
+	if stmt.AndStatement != nil {
+		var total int64 = 1
+		for _, s := range stmt.AndStatement.Statements {
+			total += calculateStatementCapacity(s)
+		}
+		return total
+	}
+	if stmt.OrStatement != nil {
+		var maxNested int64
+		for _, s := range stmt.OrStatement.Statements {
+			if c := calculateStatementCapacity(s); c > maxNested {
+				maxNested = c
+			}
+		}
+		return 1 + maxNested
+	}
+	if stmt.NotStatement != nil {
+		return 1 + calculateStatementCapacity(stmt.NotStatement.Statement)
+	}
+	if stmt.RateBasedStatement != nil {
+		var nested int64
+		if stmt.RateBasedStatement.ScopeDownStatement != nil {
+			nested = calculateStatementCapacity(stmt.RateBasedStatement.ScopeDownStatement)
+		}
+		return 2 + nested
+	}
+	if stmt.ManagedRuleGroupStatement != nil {
+		return 0
+	}
+	if stmt.RuleGroupReferenceStatement != nil {
+		return 0
+	}
+	return 1
+}
+
+// convertVisibilityConfig converts a raw map to a typed VisibilityConfig.
+// Returns nil if the input is empty — callers should validate that
+// VisibilityConfig is provided where required by the Smithy model.
+func convertVisibilityConfig(m map[string]interface{}) *waf.VisibilityConfig {
+	if len(m) == 0 {
+		return nil
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return nil
+	}
+	var vc waf.VisibilityConfig
+	if err := json.Unmarshal(data, &vc); err != nil {
+		return nil
+	}
+	return &vc
+}
+
+// convertVisibilityConfigToResponse serialises a VisibilityConfig back to
+// a raw map for the API response.
 func convertVisibilityConfigToResponse(vc *waf.VisibilityConfig) map[string]interface{} {
 	if vc == nil {
 		return nil
 	}
-	return map[string]interface{}{
-		"SampledRequestsEnabled":   vc.SampledRequestsEnabled,
-		"CloudWatchMetricsEnabled": vc.CloudWatchMetricsEnabled,
-		"MetricName":               vc.MetricName,
+	data, err := json.Marshal(vc)
+	if err != nil {
+		return nil
 	}
+	var result map[string]interface{}
+	json.Unmarshal(data, &result)
+	return result
 }
 
+// convertAction converts a raw map to a typed Action. Handles all six
+// AWS action types: Allow, Block, Count, Captcha, Challenge, Monetize.
 func convertAction(m map[string]interface{}) *waf.Action {
-	if m == nil {
-		return &waf.Action{}
+	if len(m) == 0 {
+		return nil
 	}
-	action := &waf.Action{}
-	if _, ok := m["Allow"]; ok {
-		action.Allow = &waf.AllowAction{}
-	} else if _, ok := m["allow"]; ok {
-		action.Allow = &waf.AllowAction{}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return nil
 	}
-	if _, ok := m["Block"]; ok {
-		action.Block = &waf.BlockAction{}
-	} else if _, ok := m["block"]; ok {
-		action.Block = &waf.BlockAction{}
+	var a waf.Action
+	if err := json.Unmarshal(data, &a); err != nil {
+		return nil
 	}
-	if _, ok := m["Count"]; ok {
-		action.Count = &waf.CountAction{}
-	} else if _, ok := m["count"]; ok {
-		action.Count = &waf.CountAction{}
-	}
-	if _, ok := m["Captcha"]; ok {
-		action.Captcha = &waf.CaptchaAction{}
-	} else if _, ok := m["captcha"]; ok {
-		action.Captcha = &waf.CaptchaAction{}
-	}
-	if _, ok := m["Challenge"]; ok {
-		action.Challenge = &waf.ChallengeAction{}
-	} else if _, ok := m["challenge"]; ok {
-		action.Challenge = &waf.ChallengeAction{}
-	}
-	return action
+	return &a
 }
 
+// convertActionToResponse serialises an Action back to a raw map. The
+// input may be either *waf.Action (pre-storage) or map[string]interface{}
+// (post-deserialisation from Pebble storage).
 func convertActionToResponse(a interface{}) map[string]interface{} {
 	if a == nil {
-		return map[string]interface{}{"Allow": map[string]interface{}{}}
+		return nil
 	}
-	if action, ok := a.(*waf.Action); ok {
-		result := map[string]interface{}{}
-		if action.Allow != nil {
-			result["Allow"] = map[string]interface{}{}
-		} else if action.Block != nil {
-			result["Block"] = map[string]interface{}{}
-		} else if action.Count != nil {
-			result["Count"] = map[string]interface{}{}
-		} else if action.Captcha != nil {
-			result["Captcha"] = map[string]interface{}{}
-		} else if action.Challenge != nil {
-			result["Challenge"] = map[string]interface{}{}
-		}
-		if len(result) == 0 {
-			result["Allow"] = map[string]interface{}{}
-		}
-		return result
+	data, err := json.Marshal(a)
+	if err != nil {
+		return nil
 	}
-	if m, ok := a.(map[string]interface{}); ok {
-		result := map[string]interface{}{}
-		for k, v := range m {
-			switch k {
-			case "allow", "Allow":
-				result["Allow"] = v
-			case "block", "Block":
-				result["Block"] = v
-			case "count", "Count":
-				result["Count"] = v
-			case "captcha", "Captcha":
-				result["Captcha"] = v
-			case "challenge", "Challenge":
-				result["Challenge"] = v
-			default:
-				result[k] = v
-			}
-		}
-		if len(result) == 0 {
-			result["Allow"] = map[string]interface{}{}
-		}
-		return result
+	var result map[string]interface{}
+	json.Unmarshal(data, &result)
+	if len(result) == 0 {
+		return nil
 	}
-	return map[string]interface{}{"Allow": map[string]interface{}{}}
+	return result
 }
 
+// convertRules converts a raw Rules array from the AWS request into typed
+// Rule structs. Each rule's Action, OverrideAction, Statement, and
+// VisibilityConfig are fully populated via JSON roundtrip.
 func convertRules(rulesRaw interface{}) []*waf.Rule {
 	if rulesRaw == nil {
 		return nil
@@ -155,53 +243,25 @@ func convertRules(rulesRaw interface{}) []*waf.Rule {
 	return rules
 }
 
+// convertStatement converts a raw map to a typed Statement via JSON
+// roundtrip. This faithfully preserves all sixteen Smithy statement types
+// (ByteMatchStatement, GeoMatchStatement, RateBasedStatement,
+// RegexPatternSetReferenceStatement, AndStatement, OrStatement, etc.)
+// with their full data including nested FieldToMatch and
+// TextTransformations.
 func convertStatement(m map[string]interface{}) *waf.Statement {
-	if m == nil {
+	if len(m) == 0 {
 		return nil
 	}
-	stmt := &waf.Statement{}
-	if _, ok := m["IPSetReferenceStatement"]; ok {
-		if ipSetMap, ok := m["IPSetReferenceStatement"].(map[string]interface{}); ok {
-			arn := request.GetStringParam(ipSetMap, "ARN")
-			stmt.IPSetReferenceStatement = &waf.IPSetReferenceStatement{
-				IPSetArn: arn,
-			}
-			if ipConfig, ok := ipSetMap["IPSetForwardedIPConfig"].(map[string]interface{}); ok {
-				stmt.IPSetReferenceStatement.IPSetForwardedIPConfig = &waf.IPSetForwardedIPConfig{
-					HeaderName:       request.GetStringParam(ipConfig, "HeaderName"),
-					Position:         request.GetStringParam(ipConfig, "Position"),
-					FallbackBehavior: request.GetStringParam(ipConfig, "FallbackBehavior"),
-				}
-			}
-		}
+	stmt, ok := marshalUnmarshal[map[string]interface{}, waf.Statement](m)
+	if !ok {
+		return nil
 	}
-	if _, ok := m["RegexPatternSetReferenceStatement"]; ok {
-		if rpsMap, ok := m["RegexPatternSetReferenceStatement"].(map[string]interface{}); ok {
-			stmt.RegexMatchStatement = &waf.RegexMatchStatement{
-				RegexPatternSetID: request.GetStringParam(rpsMap, "ARN"),
-			}
-		}
-	}
-	if _, ok := m["ByteMatchStatement"]; ok {
-		stmt.ByteMatchStatement = &waf.ByteMatchStatement{}
-	}
-	if _, ok := m["GeoMatchStatement"]; ok {
-		stmt.GeoMatchStatement = &waf.GeoMatchStatement{}
-	}
-	if _, ok := m["RateBasedStatement"]; ok {
-		stmt.RateBasedStatement = &waf.RateBasedStatement{}
-	}
-	if _, ok := m["ManagedRuleGroupStatement"]; ok {
-		if mrgMap, ok := m["ManagedRuleGroupStatement"].(map[string]interface{}); ok {
-			stmt.ManagedRuleGroupStatement = &waf.ManagedRuleGroupStatement{
-				Name:       request.GetStringParam(mrgMap, "Name"),
-				VendorName: request.GetStringParam(mrgMap, "VendorName"),
-			}
-		}
-	}
-	return stmt
+	return &stmt
 }
 
+// convertRulesToResponse serialises typed Rules back to a slice of raw
+// maps for the API response.
 func convertRulesToResponse(rules []*waf.Rule) []interface{} {
 	if rules == nil {
 		return nil
@@ -212,9 +272,11 @@ func convertRulesToResponse(rules []*waf.Rule) []interface{} {
 			continue
 		}
 		m := map[string]interface{}{
-			"Name":      r.Name,
-			"Priority":  r.Priority,
-			"Statement": convertStatementToResponse(r.Statement),
+			"Name":     r.Name,
+			"Priority": r.Priority,
+		}
+		if r.Statement != nil {
+			m["Statement"] = convertStatementToResponse(r.Statement)
 		}
 		if r.Action != nil {
 			m["Action"] = convertActionToResponse(r.Action)
@@ -230,34 +292,21 @@ func convertRulesToResponse(rules []*waf.Rule) []interface{} {
 	return result
 }
 
+// convertStatementToResponse serialises a typed Statement back to a raw
+// map for the API response. Only the non-nil statement type is included
+// (AWS Statement is a union — exactly one type should be present).
 func convertStatementToResponse(s *waf.Statement) map[string]interface{} {
 	if s == nil {
 		return nil
 	}
-	result := map[string]interface{}{}
-	if s.IPSetReferenceStatement != nil {
-		ipSetRef := map[string]interface{}{
-			"ARN": s.IPSetReferenceStatement.IPSetArn,
-		}
-		if s.IPSetReferenceStatement.IPSetForwardedIPConfig != nil {
-			ipSetRef["IPSetForwardedIPConfig"] = map[string]interface{}{
-				"HeaderName":       s.IPSetReferenceStatement.IPSetForwardedIPConfig.HeaderName,
-				"Position":         s.IPSetReferenceStatement.IPSetForwardedIPConfig.Position,
-				"FallbackBehavior": s.IPSetReferenceStatement.IPSetForwardedIPConfig.FallbackBehavior,
-			}
-		}
-		result["IPSetReferenceStatement"] = ipSetRef
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil
 	}
-	if s.RegexMatchStatement != nil {
-		result["RegexPatternSetReferenceStatement"] = map[string]interface{}{
-			"ARN": s.RegexMatchStatement.RegexPatternSetID,
-		}
-	}
-	if s.ManagedRuleGroupStatement != nil {
-		result["ManagedRuleGroupStatement"] = map[string]interface{}{
-			"Name":       s.ManagedRuleGroupStatement.Name,
-			"VendorName": s.ManagedRuleGroupStatement.VendorName,
-		}
+	var result map[string]interface{}
+	json.Unmarshal(data, &result)
+	if len(result) == 0 {
+		return nil
 	}
 	return result
 }

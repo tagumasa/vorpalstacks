@@ -2,9 +2,12 @@ package timestreamquery
 
 import (
 	"context"
+	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -16,11 +19,44 @@ import (
 	"github.com/google/uuid"
 )
 
+// scheduledQueryNamePattern implements the Smithy ScheduledQueryName pattern:
+// ^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$
+var scheduledQueryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$`)
+
+// validateScheduledQueryName validates the Name parameter against the Smithy
+// ScheduledQueryName shape: length {min:1, max:64} and the pattern above.
+func validateScheduledQueryName(name string) error {
+	if len(name) < 1 || len(name) > 64 {
+		return awserrors.NewAWSError("ValidationException",
+			"ScheduledQueryName must be between 1 and 64 characters.", 400)
+	}
+	if !scheduledQueryNamePattern.MatchString(name) {
+		return awserrors.NewAWSError("ValidationException",
+			"ScheduledQueryName does not match the required pattern.", 400)
+	}
+	return nil
+}
+
+// validateClientToken validates a ClientToken against the Smithy
+// ClientToken shape: length {min:32, max:128}. Only called when the
+// client explicitly provides a token (empty tokens are replaced with a
+// generated UUID by the handler).
+func validateClientToken(token string) error {
+	if len(token) < 32 || len(token) > 128 {
+		return awserrors.NewAWSError("ValidationException",
+			"ClientToken must be between 32 and 128 characters.", 400)
+	}
+	return nil
+}
+
 // CreateScheduledQuery creates a new scheduled query.
 func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateScheduledQueryName(name); err != nil {
+		return nil, err
 	}
 
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
@@ -53,6 +89,10 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 
 	if clientToken == "" {
 		clientToken = uuid.New().String()
+	} else {
+		if err := validateClientToken(clientToken); err != nil {
+			return nil, err
+		}
 	}
 
 	st, err := s.store(reqCtx)
@@ -83,9 +123,7 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 		}
 	}
 
-	tags, _ := st.scheduledQueryStore.List(sq.ARN)
-
-	return s.formatScheduledQueryResponse(sq, tags), nil
+	return s.formatScheduledQueryResponse(sq), nil
 }
 
 func (s *TimestreamQueryService) tagHandlerConfig(st *tsQueryStores) tagutil.TagHandlerConfig {
@@ -233,10 +271,17 @@ func (s *TimestreamQueryService) DescribeScheduledQuery(ctx context.Context, req
 		return nil, ErrInternalServer
 	}
 
-	tags, _ := st.scheduledQueryStore.List(sq.ARN)
+	// Query the most recent run to populate LastRunSummary with full
+	// details (InvocationTime, TriggerTime, ExecutionStats,
+	// FailureReason) per the Smithy ScheduledQueryRunSummary shape.
+	var lastRun *tsstore.ScheduledQueryRun
+	runs, runErr := st.scheduledQueryRunStore.ListRuns(sq.ARN)
+	if runErr == nil && len(runs) > 0 {
+		lastRun = runs[len(runs)-1]
+	}
 
 	return map[string]interface{}{
-		"ScheduledQuery": s.formatScheduledQueryDescriptionResponse(sq, tags),
+		"ScheduledQuery": s.formatScheduledQueryDescriptionResponse(sq, lastRun),
 	}, nil
 }
 
@@ -257,6 +302,9 @@ func (s *TimestreamQueryService) ListScheduledQueries(ctx context.Context, reqCt
 			maxResults = val
 		}
 	}
+	if maxResults > maxListScheduledQueries {
+		maxResults = maxListScheduledQueries
+	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
@@ -273,8 +321,7 @@ func (s *TimestreamQueryService) ListScheduledQueries(ctx context.Context, reqCt
 		if len(scheduledQueries) >= maxResults {
 			break
 		}
-		tags, _ := st.scheduledQueryStore.List(sq.ARN)
-		scheduledQueries = append(scheduledQueries, s.formatScheduledQueryResponse(sq, tags))
+		scheduledQueries = append(scheduledQueries, s.formatScheduledQueryResponse(sq))
 	}
 
 	response := map[string]interface{}{
@@ -305,21 +352,11 @@ func (s *TimestreamQueryService) UpdateScheduledQuery(ctx context.Context, reqCt
 	}
 
 	state := tsstore.ScheduledQueryStatus(request.GetParamCaseInsensitive(req.Parameters, "State"))
-	scheduleConfig := s.parseScheduleConfiguration(req.Parameters)
-	notificationConfig := s.parseNotificationConfiguration(req.Parameters)
-	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	errorReportConfig := s.parseErrorReportConfiguration(req.Parameters)
-	targetConfig := s.parseTargetConfiguration(req.Parameters)
+	if state != tsstore.ScheduledQueryStatusEnabled && state != tsstore.ScheduledQueryStatusDisabled {
+		return nil, ErrValidationException
+	}
 
-	_, err = st.scheduledQueryStore.UpdateScheduledQuery(
-		name,
-		state,
-		scheduleConfig,
-		notificationConfig,
-		kmsKeyID,
-		errorReportConfig,
-		targetConfig,
-	)
+	_, err = st.scheduledQueryStore.UpdateScheduledQuery(name, state)
 	if err != nil {
 		if err == tsstore.ErrScheduledQueryNotFound {
 			return nil, ErrResourceNotFound
@@ -346,6 +383,12 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 		return nil, ErrValidationException
 	}
 
+	if ct := request.GetParamCaseInsensitive(req.Parameters, "ClientToken"); ct != "" {
+		if err := validateClientToken(ct); err != nil {
+			return nil, err
+		}
+	}
+
 	sq, err := st.scheduledQueryStore.GetScheduledQuery(name)
 	if err != nil {
 		if err == tsstore.ErrScheduledQueryNotFound {
@@ -370,7 +413,7 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 		if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusFailed, execErr.Error(), nil); err != nil {
 			logs.Error("Failed to update scheduled query run to FAILED", logs.String("arn", run.ARN), logs.Err(err))
 		}
-		if err := st.scheduledQueryStore.UpdateLastRun(name, "FAILED", now); err != nil {
+		if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusManualTriggerFailure, now); err != nil {
 			logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 		}
 		return nil, ErrQueryExecutionError
@@ -382,7 +425,7 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusSucceeded, "", stats); err != nil {
 		logs.Error("Failed to update scheduled query run to SUCCEEDED", logs.String("arn", run.ARN), logs.Err(err))
 	}
-	if err := st.scheduledQueryStore.UpdateLastRun(name, "SUCCESS", now); err != nil {
+	if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusManualTriggerSuccess, now); err != nil {
 		logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 	}
 
@@ -476,12 +519,71 @@ func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]inte
 }
 
 // ListTagsForResource returns the tags for a scheduled query.
+// Implements MaxResults validation (range {1, 200}) and NextToken
+// pagination per the Smithy model.
 func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleList(ctx, req, s.tagHandlerConfig(st))
+
+	cfg := s.tagHandlerConfig(st)
+
+	rawKey := tagutil.GetResourceKey(req.Parameters, cfg.Param)
+	if rawKey == "" {
+		return nil, awserrors.NewAWSError("InvalidArgument", "ResourceARN is required.", http.StatusBadRequest)
+	}
+	resourceKey := rawKey
+	if cfg.ResourceKey != nil {
+		resourceKey = cfg.ResourceKey(rawKey)
+	}
+
+	if cfg.ListFunc == nil {
+		return nil, ErrInternalServer
+	}
+
+	tags, err := cfg.ListFunc(ctx, resourceKey)
+	if err != nil {
+		return nil, err
+	}
+
+	maxResults := 0
+	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
+		val, atoiErr := strconv.Atoi(maxStr)
+		if atoiErr != nil || val < 1 || val > maxListTagsForResource {
+			return nil, awserrors.NewAWSError("ValidationException",
+				"MaxResults must be between 1 and 200.", 400)
+		}
+		maxResults = val
+	}
+
+	offset := 0
+	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
+		if val, atoiErr := strconv.Atoi(nextToken); atoiErr == nil && val >= 0 {
+			offset = val
+		}
+	}
+
+	totalTags := len(tags)
+	if offset > totalTags {
+		offset = totalTags
+	}
+	end := totalTags
+	if maxResults > 0 && offset+maxResults < end {
+		end = offset + maxResults
+	}
+	pagedTags := tags[offset:end]
+
+	tagResponse := tagutil.ToResponseWithKeyNames(pagedTags, cfg.Param.TagKeyName, cfg.Param.TagValueName)
+
+	resp := map[string]interface{}{
+		cfg.Param.TagsParam: tagResponse,
+	}
+	if end < totalTags {
+		resp["NextToken"] = strconv.Itoa(end)
+	}
+
+	return resp, nil
 }
 
 func epochFloat(t time.Time) float64 {
@@ -513,6 +615,15 @@ func (s *TimestreamQueryService) formatScheduledQueryBaseResponse(sq *tsstore.Sc
 		response["PreviousInvocationTime"] = epochFloat(sq.PreviousRunTime)
 	}
 
+	return response
+}
+
+func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery) map[string]interface{} {
+	response := s.formatScheduledQueryBaseResponse(sq)
+
+	// TargetDestination is the ListScheduledQueries representation of the
+	// target — a read-only projection containing only DatabaseName and
+	// TableName (Smithy: ScheduledQuery.TargetDestination).
 	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
 		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
 		response["TargetDestination"] = map[string]interface{}{
@@ -523,12 +634,6 @@ func (s *TimestreamQueryService) formatScheduledQueryBaseResponse(sq *tsstore.Sc
 		}
 	}
 
-	return response
-}
-
-func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
-	response := s.formatScheduledQueryBaseResponse(sq)
-
 	if sq.LastRunStatus != "" {
 		response["LastRunStatus"] = sq.LastRunStatus
 	}
@@ -536,7 +641,7 @@ func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.Schedu
 	return response
 }
 
-func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, lastRun *tsstore.ScheduledQueryRun) map[string]interface{} {
 	response := s.formatScheduledQueryBaseResponse(sq)
 
 	response["QueryString"] = sq.QueryString
@@ -563,10 +668,65 @@ func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tss
 		response["KmsKeyId"] = sq.KmsKeyID
 	}
 
+	// TargetConfiguration is the DescribeScheduledQuery representation of
+	// the target — the full write-side configuration (Smithy:
+	// ScheduledQueryDescription.TargetConfiguration). This is distinct
+	// from TargetDestination which is a read-only projection used in
+	// ListScheduledQueries.
+	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
+		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
+		tsMap := map[string]interface{}{
+			"DatabaseName": tsConfig.DatabaseName,
+			"TableName":    tsConfig.TableName,
+		}
+		if tsConfig.TimeColumn != "" {
+			tsMap["TimeColumn"] = tsConfig.TimeColumn
+		}
+		response["TargetConfiguration"] = map[string]interface{}{
+			"TimestreamConfiguration": tsMap,
+		}
+	}
+
 	if sq.LastRunStatus != "" {
-		response["LastRunSummary"] = map[string]interface{}{
+		summary := map[string]interface{}{
 			"RunStatus": sq.LastRunStatus,
 		}
+		if lastRun != nil {
+			if !lastRun.InvocationTime.IsZero() {
+				summary["InvocationTime"] = epochFloat(lastRun.InvocationTime)
+			}
+			if !lastRun.TriggerTime.IsZero() {
+				summary["TriggerTime"] = epochFloat(lastRun.TriggerTime)
+			}
+			if lastRun.Error != "" {
+				summary["FailureReason"] = lastRun.Error
+			}
+			if lastRun.ExecutionStats != nil {
+				stats := map[string]interface{}{}
+				if lastRun.ExecutionStats.DataWrites > 0 {
+					stats["DataWrites"] = lastRun.ExecutionStats.DataWrites
+				}
+				if lastRun.ExecutionStats.BytesMetered > 0 {
+					stats["BytesMetered"] = lastRun.ExecutionStats.BytesMetered
+				}
+				if lastRun.ExecutionStats.QueryResultRows > 0 {
+					stats["QueryResultRows"] = lastRun.ExecutionStats.QueryResultRows
+				}
+				if lastRun.ExecutionStats.CumulativeBytesScanned > 0 {
+					stats["CumulativeBytesScanned"] = lastRun.ExecutionStats.CumulativeBytesScanned
+				}
+				if lastRun.ExecutionStats.ExecutionTimeInMillis > 0 {
+					stats["ExecutionTimeInMillis"] = lastRun.ExecutionStats.ExecutionTimeInMillis
+				}
+				if lastRun.ExecutionStats.RecordsIngested > 0 {
+					stats["RecordsIngested"] = lastRun.ExecutionStats.RecordsIngested
+				}
+				if len(stats) > 0 {
+					summary["ExecutionStats"] = stats
+				}
+			}
+		}
+		response["LastRunSummary"] = summary
 	}
 
 	return response

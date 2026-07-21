@@ -1,6 +1,7 @@
 package waf
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -87,17 +88,34 @@ func (s *LoggingStore) Delete(resourceArn string) error {
 	return nil
 }
 
-// List returns a paginated list of logging configurations.
+// List returns a paginated list of logging configurations. If scope is
+// non-empty, only configurations whose ResourceArn contains the scope
+// region pattern are returned.
 func (s *LoggingStore) List(scope string, marker string, maxItems int) (*LoggingConfigurationListResult, error) {
 	result, err := common.List[LoggingConfiguration](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_logging_configurations", err)
 	}
+
+	var filtered []*LoggingConfiguration
+	for _, config := range result.Items {
+		if scope == "" || matchesScope(config.ResourceArn, scope) {
+			filtered = append(filtered, config)
+		}
+	}
+
 	return &LoggingConfigurationListResult{
-		LoggingConfigurations: result.Items,
+		LoggingConfigurations: filtered,
 		IsTruncated:           result.IsTruncated,
 		NextMarker:            result.NextMarker,
 	}, nil
+}
+
+// matchesScope determines whether a resource ARN belongs to the given
+// WAF scope. WAF ARNs embed the scope in the resource path (e.g.,
+// webacl/REGIONAL/<id> or webacl/CLOUDFRONT/<id>).
+func matchesScope(resourceArn, scope string) bool {
+	return strings.Contains(resourceArn, "/"+scope+"/")
 }
 
 // GetByResourceArn retrieves a logging configuration by resource ARN.

@@ -118,7 +118,7 @@ func (s *TimestreamQueryService) matchLike(value, pattern string) bool {
 	regexPattern := regexp.QuoteMeta(pattern)
 	regexPattern = strings.ReplaceAll(regexPattern, `\%`, `.*`)
 	regexPattern = strings.ReplaceAll(regexPattern, `\_`, `.`)
-	regexPattern = `(?i)^` + regexPattern + `$`
+	regexPattern = `^` + regexPattern + `$`
 	matched, _ := regexp.MatchString(regexPattern, value)
 	return matched
 }

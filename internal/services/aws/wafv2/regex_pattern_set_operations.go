@@ -5,6 +5,7 @@ import (
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -38,8 +39,8 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "REGIONAL"
+	if err := validateScope(scope); err != nil {
+		return nil, err
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
@@ -114,27 +115,19 @@ func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 	scope := request.GetStringParam(req.Parameters, "Scope")
+	if err := validateScope(scope); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
-	result, err := stores.regexPatternSets.List(nextMarker, maxItems)
+	result, err := stores.regexPatternSets.List(nextMarker, maxItems, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered := result.RegexPatternSets
-	if scope != "" {
-		tmp := make([]*wafstore.RegexPatternSet, 0, len(filtered))
-		for _, rps := range filtered {
-			if rps.Scope == scope {
-				tmp = append(tmp, rps)
-			}
-		}
-		filtered = tmp
-	}
-
-	sets := make([]interface{}, 0, len(filtered))
-	for _, rps := range filtered {
+	sets := make([]interface{}, 0, len(result.RegexPatternSets))
+	for _, rps := range result.RegexPatternSets {
 		sets = append(sets, buildRegexPatternSetSummary(rps))
 	}
 
@@ -163,7 +156,7 @@ func (s *WAFv2Service) UpdateRegexPatternSet(ctx context.Context, reqCtx *reques
 
 	regularPatterns := parseRegularExpressionList(req.Parameters)
 
-	rps, err := stores.regexPatternSets.Update(id, lockToken, regularPatterns)
+	rps, err := stores.regexPatternSets.Update(id, lockToken, regularPatterns, request.GetStringParam(req.Parameters, "Description"))
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
@@ -195,22 +188,18 @@ func (s *WAFv2Service) DeleteRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, validationError("LockToken is required")
 	}
 
-	rps, err := stores.regexPatternSets.Get(id)
+	deleted, err := stores.regexPatternSets.Delete(id, lockToken)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("RegexPatternSet")
 		}
-		return nil, err
-	}
-
-	if err := stores.regexPatternSets.Delete(id, lockToken); err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
 		}
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(rps.ARN)
+	_ = stores.tags.Delete(deleted.ARN)
 
-	return map[string]interface{}{}, nil
+	return response.EmptyResponse(), nil
 }

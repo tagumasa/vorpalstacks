@@ -71,9 +71,13 @@ func (s *RuleGroupStore) Update(id, lockToken string, capacity int64, rules []*R
 	}, "update_rule_group")
 }
 
-// List returns a paginated list of Rule Groups.
-func (s *RuleGroupStore) List(marker string, maxItems int) (*RuleGroupListResult, error) {
-	result, err := common.List[RuleGroup](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
+// List returns a paginated list of Rule Groups filtered by scope.
+func (s *RuleGroupStore) List(marker string, maxItems int, scope string) (*RuleGroupListResult, error) {
+	var filter common.FilterFunc[RuleGroup]
+	if scope != "" {
+		filter = func(rg *RuleGroup) bool { return rg.Scope == scope }
+	}
+	result, err := common.List[RuleGroup](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, NewStoreError("list_rule_groups", err)
 	}

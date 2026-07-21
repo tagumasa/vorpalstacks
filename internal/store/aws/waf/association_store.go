@@ -8,6 +8,12 @@ import (
 const webACLAssociationBucketName = "waf_web_acl_associations"
 
 // WebACLAssociationStore provides storage for WAF Web ACL associations.
+//
+// AWS WAFv2 enforces a one-WebACL-per-resource constraint: a resource
+// can be associated with at most one Web ACL at any time. Calling
+// AssociateWebACL on a resource that already has an association replaces
+// the existing one. The store key is therefore the resource ARN alone,
+// ensuring the constraint is enforced at the storage level.
 type WebACLAssociationStore struct {
 	*common.BaseStore
 }
@@ -19,34 +25,42 @@ func NewWebACLAssociationStore(store storage.BasicStorage) *WebACLAssociationSto
 	}
 }
 
-// Associate associates a Web ACL with a resource.
+// Associate associates a Web ACL with a resource. If the resource already
+// has an association with a different Web ACL, the existing association
+// is replaced.
 func (s *WebACLAssociationStore) Associate(webACLArn, resourceArn string) error {
-	key := webACLArn + ":" + resourceArn
 	association := &WebACLAssociation{
 		WebACLArn:   webACLArn,
 		ResourceArn: resourceArn,
 	}
-	if err := s.BaseStore.Put(key, association); err != nil {
+	if err := s.BaseStore.Put(resourceArn, association); err != nil {
 		return NewStoreError("associate_web_acl", err)
 	}
 	return nil
 }
 
-// Disassociate removes a Web ACL association from a resource.
-func (s *WebACLAssociationStore) Disassociate(webACLArn, resourceArn string) error {
-	key := webACLArn + ":" + resourceArn
-	if err := s.BaseStore.Delete(key); err != nil {
+// Disassociate removes the Web ACL association from the specified resource.
+func (s *WebACLAssociationStore) Disassociate(resourceArn string) error {
+	if err := s.BaseStore.Delete(resourceArn); err != nil {
 		return NewStoreError("disassociate_web_acl", err)
 	}
 	return nil
 }
 
-// GetByResourceArn retrieves a Web ACL association by resource ARN.
+// GetByResourceArn retrieves the Web ACL association for the specified
+// resource ARN. Returns ErrNotFound if no association exists.
 func (s *WebACLAssociationStore) GetByResourceArn(resourceArn string) (*WebACLAssociation, error) {
-	return common.FindFirst[WebACLAssociation](s.BaseStore, func(a *WebACLAssociation) bool { return a.ResourceArn == resourceArn })
+	var assoc WebACLAssociation
+	if err := s.BaseStore.Get(resourceArn, &assoc); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_association_by_resource", ErrNotFound)
+		}
+		return nil, NewStoreError("get_association_by_resource", err)
+	}
+	return &assoc, nil
 }
 
-// GetByWebACLArn retrieves all associations for a Web ACL.
+// GetByWebACLArn retrieves all associations for the specified Web ACL.
 func (s *WebACLAssociationStore) GetByWebACLArn(webACLArn string) ([]*WebACLAssociation, error) {
 	all, err := common.ListAll[WebACLAssociation](s.BaseStore)
 	if err != nil {

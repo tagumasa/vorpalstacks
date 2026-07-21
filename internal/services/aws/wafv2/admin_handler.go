@@ -50,7 +50,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 		maxItems = 100
 	}
 
-	result, err := store.List(req.Msg.Nextmarker, maxItems)
+	result, err := store.List(req.Msg.Nextmarker, maxItems, "")
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -118,29 +118,18 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
+	lockToken := req.Msg.GetLocktoken()
+	if lockToken == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("lock token is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	lockToken := req.Msg.GetLocktoken()
-	if lockToken == "" {
-		webACL, getErr := store.Get(req.Msg.GetId())
-		if getErr != nil {
-			if wafstore.IsNotFound(getErr) {
-				return nil, connect.NewError(connect.CodeNotFound, getErr)
-			}
-			return nil, svcerrors.StoreErrorToGRPC(getErr)
-		}
-		lockToken = webACL.LockToken
-	}
-
-	webACLARN := ""
-	if webACL, _ := store.Get(req.Msg.GetId()); webACL != nil {
-		webACLARN = webACL.ARN
-	}
-
-	if err := store.Delete(req.Msg.GetId(), lockToken); err != nil {
+	deleted, err := store.Delete(req.Msg.GetId(), lockToken)
+	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
@@ -150,9 +139,9 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if webACLARN != "" {
+	if deleted.ARN != "" {
 		if fullStores, fsErr := h.service.GetStoresForRegion(svccommon.GetRegionFromHeader(req.Header())); fsErr == nil {
-			_ = fullStores.tags.Delete(webACLARN)
+			_ = fullStores.tags.Delete(deleted.ARN)
 		}
 	}
 

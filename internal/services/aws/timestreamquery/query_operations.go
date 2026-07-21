@@ -136,6 +136,9 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 			maxRows = val
 		}
 	}
+	if maxRows > maxQueryRows {
+		maxRows = maxQueryRows
+	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
@@ -234,11 +237,9 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 	}
 
 	return map[string]interface{}{
-		"QueryString":        queryString,
-		"Parameters":         params,
-		"Columns":            columns,
-		"QueryId":            uuid.New().String(),
-		"QueryParsingStatus": "SUCCESSFUL",
+		"QueryString": queryString,
+		"Parameters":  params,
+		"Columns":     columns,
 	}, nil
 }
 

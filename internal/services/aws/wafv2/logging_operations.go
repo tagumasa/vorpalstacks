@@ -120,6 +120,9 @@ func (s *WAFv2Service) DeleteLoggingConfiguration(ctx context.Context, reqCtx *r
 // ListLoggingConfigurations returns a paginated list of all logging configurations.
 func (s *WAFv2Service) ListLoggingConfigurations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	scope := request.GetStringParam(req.Parameters, "Scope")
+	if err := validateScope(scope); err != nil {
+		return nil, err
+	}
 
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")

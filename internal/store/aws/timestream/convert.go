@@ -603,13 +603,12 @@ func ExecutionStatsToProto(e *ExecutionStats) *pb.ExecutionStats {
 		return nil
 	}
 	return &pb.ExecutionStats{
-		TotalBytesProcessed:    e.TotalBytesProcessed,
 		DataWrites:             e.DataWrites,
-		TotalRecordsProcessed:  e.TotalRecordsProcessed,
 		BytesMetered:           e.BytesMetered,
 		QueryResultRows:        e.QueryResultRows,
 		CumulativeBytesScanned: e.CumulativeBytesScanned,
 		ExecutionTimeInMillis:  e.ExecutionTimeInMillis,
+		RecordsIngested:        e.RecordsIngested,
 	}
 }
 
@@ -619,13 +618,12 @@ func ProtoToExecutionStats(p *pb.ExecutionStats) *ExecutionStats {
 		return nil
 	}
 	return &ExecutionStats{
-		TotalBytesProcessed:    p.TotalBytesProcessed,
 		DataWrites:             p.DataWrites,
-		TotalRecordsProcessed:  p.TotalRecordsProcessed,
 		BytesMetered:           p.BytesMetered,
 		QueryResultRows:        p.QueryResultRows,
 		CumulativeBytesScanned: p.CumulativeBytesScanned,
 		ExecutionTimeInMillis:  p.ExecutionTimeInMillis,
+		RecordsIngested:        p.RecordsIngested,
 	}
 }
 

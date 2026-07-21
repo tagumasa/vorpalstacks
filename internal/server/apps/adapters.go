@@ -589,7 +589,7 @@ func (a *wafInvokerAdapter) AssociateWebACL(webACLArn, resourceArn string) error
 
 // DisassociateWebACL removes the WAF WebACL association from a resource.
 func (a *wafInvokerAdapter) DisassociateWebACL(webACLArn, resourceArn string) error {
-	return a.store.Disassociate(webACLArn, resourceArn)
+	return a.store.Disassociate(resourceArn)
 }
 
 type cloudWatchMetricInvokerAdapter struct {

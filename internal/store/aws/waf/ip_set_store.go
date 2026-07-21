@@ -60,16 +60,23 @@ func (s *IPSetStore) Create(id, name, description, ipAddressVersion string, addr
 }
 
 // Update updates an existing IP Set.
-func (s *IPSetStore) Update(id, lockToken string, addresses []string) (*IPSet, error) {
+func (s *IPSetStore) Update(id, lockToken string, addresses []string, description string) (*IPSet, error) {
 	return s.UpdateWithLockToken(id, lockToken, func(ipSet *IPSet) error {
 		ipSet.Addresses = addresses
+		if description != "" {
+			ipSet.Description = description
+		}
 		return nil
 	}, "update_ip_set")
 }
 
-// List returns a paginated list of IP Sets.
-func (s *IPSetStore) List(marker string, maxItems int) (*IPSetListResult, error) {
-	result, err := common.List[IPSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
+// List returns a paginated list of IP Sets filtered by scope.
+func (s *IPSetStore) List(marker string, maxItems int, scope string) (*IPSetListResult, error) {
+	var filter common.FilterFunc[IPSet]
+	if scope != "" {
+		filter = func(ips *IPSet) bool { return ips.Scope == scope }
+	}
+	result, err := common.List[IPSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, NewStoreError("list_ip_sets", err)
 	}
