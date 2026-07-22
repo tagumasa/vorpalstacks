@@ -65,6 +65,14 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
+	if authScopes, ok := req.Parameters["authorizationScopes"].([]interface{}); ok {
+		for _, scope := range authScopes {
+			if ss, ok := scope.(string); ok {
+				method.AuthorizationScopes = append(method.AuthorizationScopes, ss)
+			}
+		}
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -151,6 +159,9 @@ func (s *APIGatewayService) toMethodResponse(m *store.Method) map[string]interfa
 	}
 	if len(m.RequestModels) > 0 {
 		response["requestModels"] = m.RequestModels
+	}
+	if len(m.AuthorizationScopes) > 0 {
+		response["authorizationScopes"] = m.AuthorizationScopes
 	}
 	if m.MethodIntegration != nil {
 		response["methodIntegration"] = s.toIntegrationResponse(m.MethodIntegration)

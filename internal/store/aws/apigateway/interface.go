@@ -41,11 +41,17 @@ type UsageStoreInterface interface {
 	DeleteApiKey(apiKeyId string) error
 	ListApiKeys(opts common.ListOptions) (*common.ListResult[ApiKey], error)
 	GetApiKeyByValue(value string) (*ApiKey, error)
+	TagApiKey(apiKeyId string, tags map[string]string) error
+	UntagApiKey(apiKeyId string, tagKeys []string) error
+	GetApiKeyTags(apiKeyId string) ([]types.Tag, error)
 	CreateUsagePlan(usagePlan *UsagePlan) (*UsagePlan, error)
 	GetUsagePlan(usagePlanId string) (*UsagePlan, error)
 	UpdateUsagePlan(usagePlan *UsagePlan) error
 	DeleteUsagePlan(usagePlanId string) error
 	ListUsagePlans(opts common.ListOptions) (*common.ListResult[UsagePlan], error)
+	TagUsagePlan(usagePlanId string, tags map[string]string) error
+	UntagUsagePlan(usagePlanId string, tagKeys []string) error
+	GetUsagePlanTags(usagePlanId string) ([]types.Tag, error)
 	CreateUsagePlanKey(usagePlanId string, key *UsagePlanKey) (*UsagePlanKey, error)
 	GetUsagePlanKey(usagePlanId, keyId string) (*UsagePlanKey, error)
 	DeleteUsagePlanKey(usagePlanId, keyId string) error
@@ -63,6 +69,9 @@ type DomainStoreInterface interface {
 	UpdateDomainName(domain *DomainName) error
 	DeleteDomainName(domainName string) error
 	ListDomainNames(opts common.ListOptions) (*common.ListResult[DomainName], error)
+	TagDomainName(domainName string, tags map[string]string) error
+	UntagDomainName(domainName string, tagKeys []string) error
+	GetDomainNameTags(domainName string) ([]types.Tag, error)
 	CreateBasePathMapping(domainName string, mapping *BasePathMapping) (*BasePathMapping, error)
 	GetBasePathMapping(domainName, basePath string) (*BasePathMapping, error)
 	UpdateBasePathMapping(domainName, basePath string, mapping *BasePathMapping) error

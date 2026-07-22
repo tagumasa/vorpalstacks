@@ -57,6 +57,10 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 		ConnectionId:          request.GetStringParam(req.Parameters, "connectionId"),
 	}
 
+	if integration.TimeoutInMillis <= 0 {
+		integration.TimeoutInMillis = 29000
+	}
+
 	if reqParams, ok := req.Parameters["requestParameters"].(map[string]interface{}); ok {
 		integration.RequestParameters = make(map[string]string)
 		for k, v := range reqParams {
@@ -82,6 +86,16 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 			}
 		}
 	}
+
+	if tlsConfigMap, ok := req.Parameters["tlsConfig"].(map[string]interface{}); ok {
+		integration.TlsConfig = &store.TlsConfig{}
+		if v, ok := tlsConfigMap["insecureSkipVerification"].(bool); ok {
+			integration.TlsConfig.InsecureSkipVerification = v
+		}
+	}
+
+	integration.ResponseTransferMode = request.GetStringParam(req.Parameters, "responseTransferMode")
+	integration.IntegrationTarget = request.GetStringParam(req.Parameters, "integrationTarget")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -305,14 +319,30 @@ func (s *APIGatewayService) toIntegrationResponse(i *store.Integration) map[stri
 	if len(i.CacheKeyParameters) > 0 {
 		response["cacheKeyParameters"] = i.CacheKeyParameters
 	}
-	if i.TimeoutInMillis > 0 {
-		response["timeoutInMillis"] = i.TimeoutInMillis
-	}
+	response["timeoutInMillis"] = i.TimeoutInMillis
 	if len(i.RequestParameters) > 0 {
 		response["requestParameters"] = i.RequestParameters
 	}
 	if len(i.RequestTemplates) > 0 {
 		response["requestTemplates"] = i.RequestTemplates
+	}
+	if i.TlsConfig != nil {
+		response["tlsConfig"] = map[string]interface{}{
+			"insecureSkipVerification": i.TlsConfig.InsecureSkipVerification,
+		}
+	}
+	if i.ResponseTransferMode != "" {
+		response["responseTransferMode"] = i.ResponseTransferMode
+	}
+	if i.IntegrationTarget != "" {
+		response["integrationTarget"] = i.IntegrationTarget
+	}
+	if len(i.IntegrationResponses) > 0 {
+		irMap := make(map[string]interface{})
+		for code, ir := range i.IntegrationResponses {
+			irMap[code] = s.toIntegrationResponseResponse(ir)
+		}
+		response["integrationResponses"] = irMap
 	}
 
 	return response

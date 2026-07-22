@@ -11,24 +11,27 @@ import (
 
 // RestApi represents an API Gateway REST API.
 type RestApi struct {
-	Id                     string                       `json:"id"`
-	Name                   string                       `json:"name"`
-	Description            string                       `json:"description,omitempty"`
-	CreatedDate            time.Time                    `json:"created_date"`
-	Version                string                       `json:"version,omitempty"`
-	Warnings               []string                     `json:"warnings,omitempty"`
-	BinaryMediaTypes       []string                     `json:"binary_media_types,omitempty"`
-	MinimumCompressionSize int32                        `json:"minimum_compression_size,omitempty"`
-	ApiKeySource           string                       `json:"api_key_source,omitempty"`
-	EndpointConfiguration  *EndpointConfiguration       `json:"endpoint_configuration,omitempty"`
-	Policy                 string                       `json:"policy,omitempty"`
-	Tags                   []types.Tag                  `json:"tags,omitempty"`
-	Resources              map[string]*Resource         `json:"resources,omitempty"`
-	Deployments            map[string]*Deployment       `json:"deployments,omitempty"`
-	Stages                 map[string]*Stage            `json:"stages,omitempty"`
-	RequestValidators      map[string]*RequestValidator `json:"request_validators,omitempty"`
-	Models                 map[string]*Model            `json:"models,omitempty"`
-	Authorizers            map[string]*Authorizer       `json:"authorizers,omitempty"`
+	Id                        string                       `json:"id"`
+	Name                      string                       `json:"name"`
+	Description               string                       `json:"description,omitempty"`
+	CreatedDate               time.Time                    `json:"created_date"`
+	Version                   string                       `json:"version,omitempty"`
+	Warnings                  []string                     `json:"warnings,omitempty"`
+	BinaryMediaTypes          []string                     `json:"binary_media_types,omitempty"`
+	MinimumCompressionSize    *int32                       `json:"minimum_compression_size,omitempty"`
+	ApiKeySource              string                       `json:"api_key_source,omitempty"`
+	EndpointConfiguration     *EndpointConfiguration       `json:"endpoint_configuration,omitempty"`
+	Policy                    string                       `json:"policy,omitempty"`
+	DisableExecuteApiEndpoint bool                         `json:"disable_execute_api_endpoint"`
+	SecurityPolicy            string                       `json:"security_policy,omitempty"`
+	EndpointAccessMode        string                       `json:"endpoint_access_mode,omitempty"`
+	Tags                      []types.Tag                  `json:"tags,omitempty"`
+	Resources                 map[string]*Resource         `json:"resources,omitempty"`
+	Deployments               map[string]*Deployment       `json:"deployments,omitempty"`
+	Stages                    map[string]*Stage            `json:"stages,omitempty"`
+	RequestValidators         map[string]*RequestValidator `json:"request_validators,omitempty"`
+	Models                    map[string]*Model            `json:"models,omitempty"`
+	Authorizers               map[string]*Authorizer       `json:"authorizers,omitempty"`
 }
 
 // EndpointConfiguration defines the endpoint configuration for an API.
@@ -49,18 +52,19 @@ type Resource struct {
 
 // Method represents an API Gateway method.
 type Method struct {
-	RestApiId          string                     `json:"rest_api_id"`
-	ResourceId         string                     `json:"resource_id"`
-	HttpMethod         string                     `json:"http_method"`
-	AuthorizationType  string                     `json:"authorization_type,omitempty"`
-	AuthorizerId       string                     `json:"authorizer_id,omitempty"`
-	ApiKeyRequired     bool                       `json:"api_key_required"`
-	RequestValidatorId string                     `json:"request_validator_id,omitempty"`
-	OperationName      string                     `json:"operation_name,omitempty"`
-	RequestParameters  map[string]bool            `json:"request_parameters,omitempty"`
-	RequestModels      map[string]string          `json:"request_models,omitempty"`
-	MethodIntegration  *Integration               `json:"method_integration,omitempty"`
-	MethodResponses    map[string]*MethodResponse `json:"method_responses,omitempty"`
+	RestApiId           string                     `json:"rest_api_id"`
+	ResourceId          string                     `json:"resource_id"`
+	HttpMethod          string                     `json:"http_method"`
+	AuthorizationType   string                     `json:"authorization_type,omitempty"`
+	AuthorizerId        string                     `json:"authorizer_id,omitempty"`
+	ApiKeyRequired      bool                       `json:"api_key_required"`
+	RequestValidatorId  string                     `json:"request_validator_id,omitempty"`
+	OperationName       string                     `json:"operation_name,omitempty"`
+	AuthorizationScopes []string                   `json:"authorization_scopes,omitempty"`
+	RequestParameters   map[string]bool            `json:"request_parameters,omitempty"`
+	RequestModels       map[string]string          `json:"request_models,omitempty"`
+	MethodIntegration   *Integration               `json:"method_integration,omitempty"`
+	MethodResponses     map[string]*MethodResponse `json:"method_responses,omitempty"`
 }
 
 // Integration represents an API Gateway integration.
@@ -83,6 +87,8 @@ type Integration struct {
 	ConnectionType        string                          `json:"connection_type,omitempty"`
 	ConnectionId          string                          `json:"connection_id,omitempty"`
 	TlsConfig             *TlsConfig                      `json:"tls_config,omitempty"`
+	ResponseTransferMode  string                          `json:"response_transfer_mode,omitempty"`
+	IntegrationTarget     string                          `json:"integration_target,omitempty"`
 }
 
 // IntegrationResponse represents an API Gateway integration response.
@@ -193,6 +199,7 @@ func deepCopyMap[T any](src map[string]*T, newFn func() *T) (map[string]*T, erro
 // Stage represents an API Gateway stage.
 type Stage struct {
 	DeploymentId         string                    `json:"deployment_id,omitempty"`
+	ClientCertificateId  string                    `json:"client_certificate_id,omitempty"`
 	RestApiId            string                    `json:"rest_api_id"`
 	StageName            string                    `json:"stage_name"`
 	Description          string                    `json:"description,omitempty"`
@@ -329,23 +336,36 @@ type UsagePlanKey struct {
 
 // DomainName represents a custom domain name for API Gateway.
 type DomainName struct {
-	DomainName               string                 `json:"domain_name"`
-	DomainNameArn            string                 `json:"domain_name_arn,omitempty"`
-	DomainNameId             string                 `json:"domain_name_id,omitempty"`
-	CertificateArn           string                 `json:"certificate_arn,omitempty"`
-	CertificateName          string                 `json:"certificate_name,omitempty"`
-	CertificateUploadDate    time.Time              `json:"certificate_upload_date,omitempty"`
-	DistributionDomainName   string                 `json:"distribution_domain_name,omitempty"`
-	DistributionHostedZoneId string                 `json:"distribution_hosted_zone_id,omitempty"`
-	RegionalDomainName       string                 `json:"regional_domain_name,omitempty"`
-	RegionalHostedZoneId     string                 `json:"regional_hosted_zone_id,omitempty"`
-	RegionalCertificateArn   string                 `json:"regional_certificate_arn,omitempty"`
-	RegionalCertificateName  string                 `json:"regional_certificate_name,omitempty"`
-	EndpointConfiguration    *EndpointConfiguration `json:"endpoint_configuration,omitempty"`
-	DomainNameStatus         string                 `json:"domain_name_status,omitempty"`
-	DomainNameStatusMessage  string                 `json:"domain_name_status_message,omitempty"`
-	SecurityPolicy           string                 `json:"security_policy,omitempty"`
-	Tags                     []types.Tag            `json:"tags,omitempty"`
+	DomainName                          string                   `json:"domain_name"`
+	DomainNameArn                       string                   `json:"domain_name_arn,omitempty"`
+	DomainNameId                        string                   `json:"domain_name_id,omitempty"`
+	CertificateArn                      string                   `json:"certificate_arn,omitempty"`
+	CertificateName                     string                   `json:"certificate_name,omitempty"`
+	CertificateUploadDate               time.Time                `json:"certificate_upload_date,omitempty"`
+	DistributionDomainName              string                   `json:"distribution_domain_name,omitempty"`
+	DistributionHostedZoneId            string                   `json:"distribution_hosted_zone_id,omitempty"`
+	RegionalDomainName                  string                   `json:"regional_domain_name,omitempty"`
+	RegionalHostedZoneId                string                   `json:"regional_hosted_zone_id,omitempty"`
+	RegionalCertificateArn              string                   `json:"regional_certificate_arn,omitempty"`
+	RegionalCertificateName             string                   `json:"regional_certificate_name,omitempty"`
+	EndpointConfiguration               *EndpointConfiguration   `json:"endpoint_configuration,omitempty"`
+	DomainNameStatus                    string                   `json:"domain_name_status,omitempty"`
+	DomainNameStatusMessage             string                   `json:"domain_name_status_message,omitempty"`
+	SecurityPolicy                      string                   `json:"security_policy,omitempty"`
+	EndpointAccessMode                  string                   `json:"endpoint_access_mode,omitempty"`
+	MutualTlsAuthentication             *MutualTlsAuthentication `json:"mutual_tls_authentication,omitempty"`
+	OwnershipVerificationCertificateArn string                   `json:"ownership_verification_certificate_arn,omitempty"`
+	Policy                              string                   `json:"policy,omitempty"`
+	RoutingMode                         string                   `json:"routing_mode,omitempty"`
+	Tags                                []types.Tag              `json:"tags,omitempty"`
+}
+
+// MutualTlsAuthentication defines the mutual TLS authentication settings
+// for a custom domain name.
+type MutualTlsAuthentication struct {
+	TruststoreUri      string   `json:"truststore_uri,omitempty"`
+	TruststoreVersion  string   `json:"truststore_version,omitempty"`
+	TruststoreWarnings []string `json:"truststore_warnings,omitempty"`
 }
 
 // BasePathMapping maps a base path to an API Gateway API.

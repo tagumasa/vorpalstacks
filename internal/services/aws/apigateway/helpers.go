@@ -18,6 +18,11 @@ func parsePatchOperations(params map[string]interface{}) []PatchOperation {
 		return ops
 	}
 
+	validOps := map[string]bool{
+		"add": true, "remove": true, "replace": true,
+		"move": true, "copy": true, "test": true,
+	}
+
 	for _, op := range patchOps {
 		if opMap, ok := op.(map[string]interface{}); ok {
 			po := PatchOperation{}
@@ -26,6 +31,9 @@ func parsePatchOperations(params map[string]interface{}) []PatchOperation {
 			}
 			if po.Op == "" {
 				po.Op = "replace"
+			}
+			if !validOps[po.Op] {
+				continue
 			}
 			if p, ok := opMap["path"].(string); ok {
 				po.Path = p
@@ -54,6 +62,13 @@ func parseFloat64(s string) (float64, error) {
 	return v, err
 }
 
+func derefInt32(p *int32) int32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
 // containsAny checks whether slice contains the target string.
 func containsAny(slice []string, target string) bool {
 	for _, s := range slice {
@@ -64,14 +79,19 @@ func containsAny(slice []string, target string) bool {
 	return false
 }
 
-// paginateItems applies position-based pagination to a pre-sorted slice of items.
-// Returns the paginated slice and the position value for the next page (empty if no more items).
+// paginateItems applies position-based pagination using the "id" key.
 func paginateItems(items []interface{}, position string, limit int) ([]interface{}, string) {
+	return paginateItemsWithKey(items, position, limit, "id")
+}
+
+// paginateItemsWithKey applies position-based pagination using a custom key
+// to identify items (e.g. "stageName" for stages which have no "id" field).
+func paginateItemsWithKey(items []interface{}, position string, limit int, key string) ([]interface{}, string) {
 	start := 0
 	if position != "" {
 		for i, item := range items {
 			if m, ok := item.(map[string]interface{}); ok {
-				if id, _ := m["id"].(string); id == position {
+				if id, _ := m[key].(string); id == position {
 					start = i + 1
 					break
 				}
@@ -88,7 +108,7 @@ func paginateItems(items []interface{}, position string, limit int) ([]interface
 	nextPosition := ""
 	if end < len(items) && len(page) > 0 {
 		if m, ok := page[len(page)-1].(map[string]interface{}); ok {
-			nextPosition, _ = m["id"].(string)
+			nextPosition, _ = m[key].(string)
 		}
 	}
 

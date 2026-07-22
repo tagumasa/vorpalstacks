@@ -3,6 +3,7 @@ package apigateway
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -40,6 +41,14 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
 		apiKey.Tags = tagutil.MapInterfaceToTags(tags)
+	}
+
+	generateDistinctId := true
+	if v, ok := req.Parameters["generateDistinctId"].(bool); ok {
+		generateDistinctId = v
+	}
+	if !generateDistinctId && apiKey.Value != "" {
+		apiKey.Id = apiKey.Value
 	}
 
 	stores, err := s.store(reqCtx)
@@ -290,6 +299,14 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 		if period, ok := quotaMap["period"].(string); ok {
 			usagePlan.Quota.Period = period
 		}
+		if offset, ok := quotaMap["offset"]; ok {
+			switch v := offset.(type) {
+			case int:
+				usagePlan.Quota.Offset = int64(v)
+			case float64:
+				usagePlan.Quota.Offset = int64(v)
+			}
+		}
 	}
 
 	if throttleMap, ok := req.Parameters["throttle"].(map[string]interface{}); ok {
@@ -393,12 +410,14 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 	}
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/name":
+		switch {
+		case po.Path == "/name":
 			usagePlan.Name = po.Value
-		case "/description":
+		case po.Path == "/description":
 			usagePlan.Description = po.Value
-		case "/quota/limit":
+		case po.Path == "/productCode":
+			usagePlan.ProductCode = po.Value
+		case po.Path == "/quota/limit":
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
 			}
@@ -407,12 +426,12 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 			} else {
 				usagePlan.Quota.Limit = v
 			}
-		case "/quota/period":
+		case po.Path == "/quota/period":
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
 			}
 			usagePlan.Quota.Period = po.Value
-		case "/quota/offset":
+		case po.Path == "/quota/offset":
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
 			}
@@ -421,7 +440,7 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 			} else {
 				usagePlan.Quota.Offset = v
 			}
-		case "/throttle/burstLimit":
+		case po.Path == "/throttle/burstLimit":
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &store.Throttle{}
 			}
@@ -430,7 +449,7 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 			} else {
 				usagePlan.Throttle.BurstLimit = v
 			}
-		case "/throttle/rateLimit":
+		case po.Path == "/throttle/rateLimit":
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &store.Throttle{}
 			}
@@ -438,6 +457,43 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 				return nil, NewBadRequestException("invalid throttle rateLimit: not a number")
 			} else {
 				usagePlan.Throttle.RateLimit = v
+			}
+		case strings.HasPrefix(po.Path, "/apiStages/"):
+			rest := strings.TrimPrefix(po.Path, "/apiStages/")
+			parts := strings.SplitN(rest, "/", 2)
+			idxStr := parts[0]
+			var idx int
+			if idxStr == "-" || idxStr == "" {
+				if po.Op != "remove" {
+					usagePlan.ApiStages = append(usagePlan.ApiStages, store.ApiStage{})
+					idx = len(usagePlan.ApiStages) - 1
+				} else {
+					continue
+				}
+			} else {
+				var err error
+				idx, err = strconv.Atoi(idxStr)
+				if err != nil || idx < 0 {
+					continue
+				}
+				if idx >= len(usagePlan.ApiStages) {
+					if po.Op != "remove" {
+						usagePlan.ApiStages = append(usagePlan.ApiStages, store.ApiStage{})
+						idx = len(usagePlan.ApiStages) - 1
+					} else {
+						continue
+					}
+				}
+			}
+			if len(parts) < 2 {
+				continue
+			}
+			field := parts[1]
+			switch {
+			case field == "apiId":
+				usagePlan.ApiStages[idx].ApiId = po.Value
+			case field == "stage":
+				usagePlan.ApiStages[idx].Stage = po.Value
 			}
 		}
 	}

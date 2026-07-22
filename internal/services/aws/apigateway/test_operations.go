@@ -254,16 +254,6 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 			"principalId": []string{"test-user"},
 		}
 		result["policy"] = buildTestPolicy(authorizer, apiId)
-	case "AWS_IAM":
-		result["principalId"] = "test-user"
-		result["authorization"] = map[string]interface{}{
-			"principalId": []string{"test-user"},
-		}
-		result["policy"] = buildTestPolicy(authorizer, apiId)
-		result["claims"] = map[string]string{
-			"sub":   "test-user-id",
-			"email": "test@example.com",
-		}
 	default:
 		result["clientStatus"] = 502
 		result["log"] = "Unsupported authorizer type: " + authorizer.Type

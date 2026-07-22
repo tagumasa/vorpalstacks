@@ -3,6 +3,8 @@ package apigateway
 
 import (
 	"context"
+	"strings"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	store "vorpalstacks/internal/store/aws/apigateway"
@@ -114,6 +116,62 @@ func (s *APIGatewayService) DeleteMethodResponse(ctx context.Context, reqCtx *re
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+// UpdateMethodResponse updates a method response via patch operations.
+func (s *APIGatewayService) UpdateMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	apiId := getRestApiId(req)
+	resourceId := getResourceId(req)
+	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
+	if httpMethod == "" {
+		httpMethod = getPathParam(req, "httpMethod")
+	}
+	statusCode := request.GetStringParam(req.Parameters, "statusCode")
+	if statusCode == "" {
+		statusCode = getPathParam(req, "statusCode")
+	}
+
+	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
+		return nil, NewBadRequestException("missing required parameters")
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	methodResp, err := stores.restApis.GetMethodResponse(apiId, resourceId, httpMethod, statusCode)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	patchOps := parsePatchOperations(req.Parameters)
+	for _, po := range patchOps {
+		switch {
+		case strings.HasPrefix(po.Path, "/responseParameters/"):
+			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
+			if po.Op == "remove" {
+				delete(methodResp.ResponseParameters, paramName)
+			} else {
+				b := po.Value == "true"
+				methodResp.ResponseParameters[paramName] = b
+			}
+		case strings.HasPrefix(po.Path, "/responseModels/"):
+			modelName := strings.TrimPrefix(po.Path, "/responseModels/")
+			if po.Op == "remove" {
+				delete(methodResp.ResponseModels, modelName)
+			} else {
+				methodResp.ResponseModels[modelName] = po.Value
+			}
+		}
+	}
+
+	updatedResp, err := stores.restApis.PutMethodResponse(apiId, resourceId, httpMethod, statusCode, methodResp)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return s.toMethodResponseResponse(updatedResp), nil
 }
 
 func (s *APIGatewayService) toMethodResponseResponse(r *store.MethodResponse) map[string]interface{} {

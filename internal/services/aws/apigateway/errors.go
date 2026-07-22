@@ -40,6 +40,7 @@ var (
 	ErrTooManyRequestsException = NewApiGatewayError("TooManyRequestsException", "Too many requests have been made.", http.StatusTooManyRequests)
 	ErrServiceException         = NewApiGatewayError("ServiceException", "An internal service error occurred.", http.StatusInternalServerError)
 	ErrAccessDeniedException    = NewApiGatewayError("AccessDeniedException", "Access denied.", http.StatusForbidden)
+	ErrUnauthorizedException    = NewApiGatewayError("UnauthorizedException", "Unauthorized.", http.StatusUnauthorized)
 	ErrLimitExceededException   = NewApiGatewayError("LimitExceededException", "The limit has been exceeded.", http.StatusTooManyRequests)
 )
 
@@ -51,6 +52,11 @@ func NewNotFoundException(resourceType, resourceName string) *ApiGatewayError {
 // NewBadRequestException creates a new bad request exception with the specified message.
 func NewBadRequestException(message string) *ApiGatewayError {
 	return NewApiGatewayError("BadRequestException", message, http.StatusBadRequest)
+}
+
+// NewUnauthorizedException creates a new unauthorized exception with the specified message.
+func NewUnauthorizedException(message string) *ApiGatewayError {
+	return NewApiGatewayError("UnauthorizedException", message, http.StatusUnauthorized)
 }
 
 // NewConflictException creates a new conflict exception with the specified message.

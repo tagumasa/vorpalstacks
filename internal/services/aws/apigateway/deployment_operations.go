@@ -43,8 +43,47 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 		stage := &store.Stage{
 			StageName:    stageName,
 			DeploymentId: created.Id,
-			Description:  "Auto-created stage",
 		}
+
+		stageDescription := request.GetStringParam(req.Parameters, "stageDescription")
+		if stageDescription != "" {
+			stage.Description = stageDescription
+		} else {
+			stage.Description = "Auto-created stage"
+		}
+
+		stage.CacheClusterEnabled = request.GetBoolParam(req.Parameters, "cacheClusterEnabled")
+		stage.CacheClusterSize = request.GetStringParam(req.Parameters, "cacheClusterSize")
+		stage.TracingEnabled = request.GetBoolParam(req.Parameters, "tracingEnabled")
+
+		if variables, ok := req.Parameters["variables"].(map[string]interface{}); ok {
+			stage.Variables = make(map[string]string)
+			for k, v := range variables {
+				if vs, ok := v.(string); ok {
+					stage.Variables[k] = vs
+				}
+			}
+		}
+
+		if canaryMap, ok := req.Parameters["canarySettings"].(map[string]interface{}); ok {
+			canary := &store.CanarySettings{DeploymentId: created.Id}
+			if v, ok := canaryMap["percentTraffic"].(float64); ok {
+				canary.PercentTraffic = v
+			}
+			if v, ok := canaryMap["useStageCache"].(bool); ok {
+				canary.UseStageCache = v
+			}
+			if overrides, ok := canaryMap["stageVariableOverrides"].(map[string]interface{}); ok {
+				canary.StageVariableOverrides = make(map[string]string)
+				for k, v := range overrides {
+					if vs, ok := v.(string); ok {
+						canary.StageVariableOverrides[k] = vs
+					}
+				}
+			}
+			stage.CanarySettings = canary
+		}
+
 		if _, err := stores.restApis.CreateStage(apiId, stage); err != nil {
 			return nil, toApiGatewayError(err)
 		}
@@ -172,12 +211,13 @@ func (s *APIGatewayService) CreateStage(ctx context.Context, reqCtx *request.Req
 	}
 
 	stage := &store.Stage{
-		StageName:           stageName,
-		DeploymentId:        request.GetStringParam(req.Parameters, "deploymentId"),
-		Description:         request.GetStringParam(req.Parameters, "description"),
-		CacheClusterEnabled: request.GetBoolParam(req.Parameters, "cacheClusterEnabled"),
-		CacheClusterSize:    request.GetStringParam(req.Parameters, "cacheClusterSize"),
-		TracingEnabled:      request.GetBoolParam(req.Parameters, "tracingEnabled"),
+		StageName:            stageName,
+		DeploymentId:         request.GetStringParam(req.Parameters, "deploymentId"),
+		Description:          request.GetStringParam(req.Parameters, "description"),
+		CacheClusterEnabled:  request.GetBoolParam(req.Parameters, "cacheClusterEnabled"),
+		CacheClusterSize:     request.GetStringParam(req.Parameters, "cacheClusterSize"),
+		TracingEnabled:       request.GetBoolParam(req.Parameters, "tracingEnabled"),
+		DocumentationVersion: request.GetStringParam(req.Parameters, "documentationVersion"),
 	}
 
 	if stage.DeploymentId == "" {
@@ -195,6 +235,28 @@ func (s *APIGatewayService) CreateStage(ctx context.Context, reqCtx *request.Req
 
 	if tagsRaw := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags")); len(tagsRaw) > 0 {
 		stage.Tags = tagutil.MapToTags(tagsRaw)
+	}
+
+	if canaryMap, ok := req.Parameters["canarySettings"].(map[string]interface{}); ok {
+		canary := &store.CanarySettings{}
+		if v, ok := canaryMap["percentTraffic"].(float64); ok {
+			canary.PercentTraffic = v
+		}
+		if v, ok := canaryMap["deploymentId"].(string); ok {
+			canary.DeploymentId = v
+		}
+		if v, ok := canaryMap["useStageCache"].(bool); ok {
+			canary.UseStageCache = v
+		}
+		if overrides, ok := canaryMap["stageVariableOverrides"].(map[string]interface{}); ok {
+			canary.StageVariableOverrides = make(map[string]string)
+			for k, v := range overrides {
+				if vs, ok := v.(string); ok {
+					canary.StageVariableOverrides[k] = vs
+				}
+			}
+		}
+		stage.CanarySettings = canary
 	}
 
 	stores, err := s.store(reqCtx)
@@ -307,6 +369,10 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 			stage.CacheClusterSize = po.Value
 		case po.Path == "/tracingEnabled":
 			stage.TracingEnabled = po.Value == "true"
+		case po.Path == "/clientCertificateId":
+			stage.ClientCertificateId = po.Value
+		case po.Path == "/documentationVersion":
+			stage.DocumentationVersion = po.Value
 		case strings.HasPrefix(po.Path, "/variables/"):
 			if stage.Variables == nil {
 				stage.Variables = make(map[string]string)
@@ -501,7 +567,7 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 		items = append(items, s.toStageResponse(st))
 	}
 
-	page, nextPos := paginateItems(items, position, limit)
+	page, nextPos := paginateItemsWithKey(items, position, limit, "stageName")
 	result := map[string]interface{}{
 		"item": page,
 	}
@@ -524,11 +590,20 @@ func (s *APIGatewayService) toStageResponse(st *store.Stage) map[string]interfac
 	if st.Description != "" {
 		response["description"] = st.Description
 	}
+	if st.ClientCertificateId != "" {
+		response["clientCertificateId"] = st.ClientCertificateId
+	}
 	if st.CacheClusterSize != "" {
 		response["cacheClusterSize"] = st.CacheClusterSize
 	}
 	if st.CacheClusterStatus != "" {
 		response["cacheClusterStatus"] = st.CacheClusterStatus
+	} else {
+		if st.CacheClusterEnabled {
+			response["cacheClusterStatus"] = "AVAILABLE"
+		} else {
+			response["cacheClusterStatus"] = "NOT_AVAILABLE"
+		}
 	}
 	if len(st.Variables) > 0 {
 		response["variables"] = st.Variables

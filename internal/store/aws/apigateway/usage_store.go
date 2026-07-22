@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // UsageStore provides storage operations for API keys and usage plans.
@@ -355,4 +357,80 @@ func (s *UsageStore) RecordUsage(record *UsageRecord) error {
 	}
 
 	return s.Put(key, record)
+}
+
+// TagApiKey adds or updates tags on an API key.
+func (s *UsageStore) TagApiKey(apiKeyId string, inputTags map[string]string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	apiKey, err := s.GetApiKey(apiKeyId)
+	if err != nil {
+		return err
+	}
+	if apiKey.Tags == nil {
+		apiKey.Tags = []types.Tag{}
+	}
+	apiKey.Tags = tags.Apply(apiKey.Tags, tags.MapToTags(inputTags))
+	return s.Put("apikey#"+apiKeyId, apiKey)
+}
+
+// UntagApiKey removes tags from an API key.
+func (s *UsageStore) UntagApiKey(apiKeyId string, tagKeys []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	apiKey, err := s.GetApiKey(apiKeyId)
+	if err != nil {
+		return err
+	}
+	apiKey.Tags = tags.RemoveByTagKeys(apiKey.Tags, tagKeys)
+	return s.Put("apikey#"+apiKeyId, apiKey)
+}
+
+// GetApiKeyTags returns tags for an API key.
+func (s *UsageStore) GetApiKeyTags(apiKeyId string) ([]types.Tag, error) {
+	apiKey, err := s.GetApiKey(apiKeyId)
+	if err != nil {
+		return nil, err
+	}
+	return apiKey.Tags, nil
+}
+
+// TagUsagePlan adds or updates tags on a usage plan.
+func (s *UsageStore) TagUsagePlan(usagePlanId string, inputTags map[string]string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	usagePlan, err := s.GetUsagePlan(usagePlanId)
+	if err != nil {
+		return err
+	}
+	if usagePlan.Tags == nil {
+		usagePlan.Tags = []types.Tag{}
+	}
+	usagePlan.Tags = tags.Apply(usagePlan.Tags, tags.MapToTags(inputTags))
+	return s.Put("usageplan#"+usagePlanId, usagePlan)
+}
+
+// UntagUsagePlan removes tags from a usage plan.
+func (s *UsageStore) UntagUsagePlan(usagePlanId string, tagKeys []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	usagePlan, err := s.GetUsagePlan(usagePlanId)
+	if err != nil {
+		return err
+	}
+	usagePlan.Tags = tags.RemoveByTagKeys(usagePlan.Tags, tagKeys)
+	return s.Put("usageplan#"+usagePlanId, usagePlan)
+}
+
+// GetUsagePlanTags returns tags for a usage plan.
+func (s *UsageStore) GetUsagePlanTags(usagePlanId string) ([]types.Tag, error) {
+	usagePlan, err := s.GetUsagePlan(usagePlanId)
+	if err != nil {
+		return nil, err
+	}
+	return usagePlan.Tags, nil
 }

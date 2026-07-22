@@ -3,6 +3,7 @@ package apigateway
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"vorpalstacks/internal/common/request"
 )
@@ -92,17 +93,58 @@ func (s *APIGatewayService) UpdateMethod(ctx context.Context, reqCtx *request.Re
 	}
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/authorizationType":
+		switch {
+		case po.Path == "/authorizationType":
 			method.AuthorizationType = po.Value
-		case "/authorizerId":
+		case po.Path == "/authorizerId":
 			method.AuthorizerId = po.Value
-		case "/apiKeyRequired":
+		case po.Path == "/apiKeyRequired":
 			method.ApiKeyRequired = po.Value == "true"
-		case "/requestValidatorId":
+		case po.Path == "/requestValidatorId":
 			method.RequestValidatorId = po.Value
-		case "/operationName":
+		case po.Path == "/operationName":
 			method.OperationName = po.Value
+		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			if method.RequestParameters == nil {
+				method.RequestParameters = make(map[string]bool)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(method.RequestParameters, paramName)
+			} else {
+				method.RequestParameters[paramName] = po.Value == "true"
+			}
+		case strings.HasPrefix(po.Path, "/requestModels/"):
+			if method.RequestModels == nil {
+				method.RequestModels = make(map[string]string)
+			}
+			modelName := strings.TrimPrefix(po.Path, "/requestModels/")
+			modelName = strings.ReplaceAll(modelName, "~1", "/")
+			if po.Op == "remove" {
+				delete(method.RequestModels, modelName)
+			} else {
+				method.RequestModels[modelName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/authorizationScopes"):
+			if po.Op == "remove" {
+				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/authorizationScopes/")); err == nil && idx < len(method.AuthorizationScopes) {
+					method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], method.AuthorizationScopes[idx+1:]...)
+				}
+			} else {
+				idxStr := strings.TrimPrefix(po.Path, "/authorizationScopes/")
+				if idxStr == "-" || idxStr == "" {
+					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+				} else if idx, err := strconv.Atoi(idxStr); err == nil {
+					if idx >= len(method.AuthorizationScopes) {
+						method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+					} else {
+						method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], append([]string{po.Value}, method.AuthorizationScopes[idx:]...)...)
+					}
+				} else {
+					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+				}
+			}
 		}
 	}
 
@@ -141,31 +183,61 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 	}
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/uri":
+		switch {
+		case po.Path == "/uri":
 			integration.Uri = po.Value
-		case "/type":
+		case po.Path == "/type":
 			integration.Type = po.Value
-		case "/httpMethod":
+		case po.Path == "/httpMethod":
 			integration.IntegrationHttpMethod = po.Value
-		case "/credentials":
+		case po.Path == "/credentials":
 			integration.Credentials = po.Value
-		case "/passthroughBehavior":
+		case po.Path == "/passthroughBehavior":
 			integration.PassthroughBehavior = po.Value
-		case "/contentHandling":
+		case po.Path == "/contentHandling":
 			integration.ContentHandling = po.Value
-		case "/cacheNamespace":
+		case po.Path == "/cacheNamespace":
 			integration.CacheNamespace = po.Value
-		case "/connectionType":
+		case po.Path == "/connectionType":
 			integration.ConnectionType = po.Value
-		case "/connectionId":
+		case po.Path == "/connectionId":
 			integration.ConnectionId = po.Value
-		case "/timeoutInMillis":
+		case po.Path == "/timeoutInMillis":
 			v, err := parseInt32(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid timeoutInMillis: not a number")
 			}
 			integration.TimeoutInMillis = v
+		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			if integration.RequestParameters == nil {
+				integration.RequestParameters = make(map[string]string)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(integration.RequestParameters, paramName)
+			} else {
+				integration.RequestParameters[paramName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/requestTemplates/"):
+			if integration.RequestTemplates == nil {
+				integration.RequestTemplates = make(map[string]string)
+			}
+			tplName := strings.TrimPrefix(po.Path, "/requestTemplates/")
+			tplName = strings.ReplaceAll(tplName, "~1", "/")
+			if po.Op == "remove" {
+				delete(integration.RequestTemplates, tplName)
+			} else {
+				integration.RequestTemplates[tplName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/cacheKeyParameters"):
+			if po.Op == "remove" {
+				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/cacheKeyParameters/")); err == nil && idx < len(integration.CacheKeyParameters) {
+					integration.CacheKeyParameters = append(integration.CacheKeyParameters[:idx], integration.CacheKeyParameters[idx+1:]...)
+				}
+			} else {
+				integration.CacheKeyParameters = append(integration.CacheKeyParameters, po.Value)
+			}
 		}
 	}
 
@@ -207,11 +279,33 @@ func (s *APIGatewayService) UpdateIntegrationResponse(ctx context.Context, reqCt
 	}
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/selectionPattern":
+		switch {
+		case po.Path == "/selectionPattern":
 			response.SelectionPattern = po.Value
-		case "/contentHandling":
+		case po.Path == "/contentHandling":
 			response.ContentHandling = po.Value
+		case strings.HasPrefix(po.Path, "/responseParameters/"):
+			if response.ResponseParameters == nil {
+				response.ResponseParameters = make(map[string]string)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(response.ResponseParameters, paramName)
+			} else {
+				response.ResponseParameters[paramName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/responseTemplates/"):
+			if response.ResponseTemplates == nil {
+				response.ResponseTemplates = make(map[string]string)
+			}
+			tplName := strings.TrimPrefix(po.Path, "/responseTemplates/")
+			tplName = strings.ReplaceAll(tplName, "~1", "/")
+			if po.Op == "remove" {
+				delete(response.ResponseTemplates, tplName)
+			} else {
+				response.ResponseTemplates[tplName] = po.Value
+			}
 		}
 	}
 

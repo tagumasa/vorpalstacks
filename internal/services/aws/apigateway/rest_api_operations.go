@@ -78,12 +78,19 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 	}
 
 	api := &store.RestApi{
-		Name:                   name,
-		Description:            request.GetStringParam(req.Parameters, "description"),
-		Version:                request.GetStringParam(req.Parameters, "version"),
-		ApiKeySource:           request.GetStringParam(req.Parameters, "apiKeySource"),
-		Policy:                 request.GetStringParam(req.Parameters, "policy"),
-		MinimumCompressionSize: int32(request.GetIntParam(req.Parameters, "minimumCompressionSize")),
+		Name:                      name,
+		Description:               request.GetStringParam(req.Parameters, "description"),
+		Version:                   request.GetStringParam(req.Parameters, "version"),
+		ApiKeySource:              request.GetStringParam(req.Parameters, "apiKeySource"),
+		Policy:                    request.GetStringParam(req.Parameters, "policy"),
+		DisableExecuteApiEndpoint: request.GetBoolParam(req.Parameters, "disableExecuteApiEndpoint"),
+		SecurityPolicy:            request.GetStringParam(req.Parameters, "securityPolicy"),
+		EndpointAccessMode:        request.GetStringParam(req.Parameters, "endpointAccessMode"),
+	}
+
+	if _, ok := req.Parameters["minimumCompressionSize"]; ok {
+		v := int32(request.GetIntParam(req.Parameters, "minimumCompressionSize"))
+		api.MinimumCompressionSize = &v
 	}
 
 	if binaryMediaTypes, ok := req.Parameters["binaryMediaTypes"].([]interface{}); ok {
@@ -118,9 +125,24 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
+
 	created, err := stores.restApis.Create(api)
 	if err != nil {
 		return nil, err
+	}
+
+	if cloneFrom := request.GetStringParam(req.Parameters, "cloneFrom"); cloneFrom != "" {
+		sourceApi, err := stores.restApis.Get(cloneFrom)
+		if err != nil {
+			return nil, NewNotFoundException("RestApi", cloneFrom)
+		}
+		created.Resources = sourceApi.Resources
+		created.Models = sourceApi.Models
+		created.Authorizers = sourceApi.Authorizers
+		created.RequestValidators = sourceApi.RequestValidators
+		if err := stores.restApis.Update(created); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.toRestApiResponse(created), nil
@@ -195,12 +217,18 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 			api.ApiKeySource = po.Value
 		case po.Path == "/policy":
 			api.Policy = po.Value
+		case po.Path == "/disableExecuteApiEndpoint":
+			api.DisableExecuteApiEndpoint = po.Value == "true"
+		case po.Path == "/securityPolicy":
+			api.SecurityPolicy = po.Value
+		case po.Path == "/endpointAccessMode":
+			api.EndpointAccessMode = po.Value
 		case po.Path == "/minimumCompressionSize":
 			v, err := parseInt32(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
 			}
-			api.MinimumCompressionSize = v
+			api.MinimumCompressionSize = &v
 		case strings.HasPrefix(po.Path, "/binaryMediaTypes"):
 			if po.Op == "add" {
 				if !containsAny(api.BinaryMediaTypes, po.Value) {
@@ -265,10 +293,11 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	}
 
 	response := map[string]interface{}{
-		"id":             api.Id,
-		"name":           api.Name,
-		"createdDate":    timeutils.FormatEpochSeconds(api.CreatedDate),
-		"rootResourceId": rootResourceId,
+		"id":                        api.Id,
+		"name":                      api.Name,
+		"createdDate":               timeutils.FormatEpochSeconds(api.CreatedDate),
+		"rootResourceId":            rootResourceId,
+		"disableExecuteApiEndpoint": api.DisableExecuteApiEndpoint,
 	}
 
 	if api.Description != "" {
@@ -280,11 +309,17 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	if api.ApiKeySource != "" {
 		response["apiKeySource"] = api.ApiKeySource
 	}
-	if api.MinimumCompressionSize > 0 {
-		response["minimumCompressionSize"] = api.MinimumCompressionSize
+	if api.MinimumCompressionSize != nil {
+		response["minimumCompressionSize"] = *api.MinimumCompressionSize
 	}
 	if api.Policy != "" {
 		response["policy"] = api.Policy
+	}
+	if api.SecurityPolicy != "" {
+		response["securityPolicy"] = api.SecurityPolicy
+	}
+	if api.EndpointAccessMode != "" {
+		response["endpointAccessMode"] = api.EndpointAccessMode
 	}
 	if len(api.BinaryMediaTypes) > 0 {
 		response["binaryMediaTypes"] = api.BinaryMediaTypes
@@ -295,7 +330,7 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 		}
 	} else {
 		response["endpointConfiguration"] = map[string]interface{}{
-			"types": []string{"EDGE"},
+			"types": []string{"REGIONAL"},
 		}
 	}
 	if len(api.Tags) > 0 {

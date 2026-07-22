@@ -140,6 +140,7 @@ func (s *APIGatewayService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("apigateway", "PutMethodResponse", s.PutMethodResponse)
 	d.RegisterHandlerForService("apigateway", "GetMethodResponse", s.GetMethodResponse)
 	d.RegisterHandlerForService("apigateway", "DeleteMethodResponse", s.DeleteMethodResponse)
+	d.RegisterHandlerForService("apigateway", "UpdateMethodResponse", s.UpdateMethodResponse)
 
 	d.RegisterHandlerForService("apigateway", "PutIntegration", s.PutIntegration)
 	d.RegisterHandlerForService("apigateway", "GetIntegration", s.GetIntegration)

@@ -17,7 +17,7 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 		Warnings:               api.Warnings,
 		Createddate:            api.CreatedDate.Format(timeutils.ISO8601UTCFormat),
 		Binarymediatypes:       api.BinaryMediaTypes,
-		Minimumcompressionsize: api.MinimumCompressionSize,
+		Minimumcompressionsize: derefInt32(api.MinimumCompressionSize),
 		Apikeysource:           toPbApiKeySourceType(api.ApiKeySource),
 		Policy:                 api.Policy,
 		Tags:                   tagsToPbMap(api.Tags),
@@ -458,5 +458,83 @@ func toPbMethodSetting(ms *apigatewaystore.MethodSetting) *pb.MethodSetting {
 		Cachettlinseconds:                   ms.CacheTtlInSeconds,
 		Cachedataencrypted:                  proto.Bool(ms.CacheDataEncrypted),
 		Requireauthorizationforcachecontrol: proto.Bool(ms.RequireAuthorizationForCacheControl),
+	}
+}
+
+// Reverse enum conversion functions for admin handler request parsing.
+
+func apiKeySourceFromPb(v pb.ApiKeySourceType) string {
+	switch v {
+	case pb.ApiKeySourceType_API_KEY_SOURCE_TYPE_HEADER:
+		return "HEADER"
+	case pb.ApiKeySourceType_API_KEY_SOURCE_TYPE_AUTHORIZER:
+		return "AUTHORIZER"
+	default:
+		return ""
+	}
+}
+
+func cacheClusterSizeFromPb(v pb.CacheClusterSize) string {
+	switch v {
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_0_POINT_5_GB:
+		return "0.5"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_1_POINT_6_GB:
+		return "1.6"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_6_POINT_1_GB:
+		return "6.1"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_13_POINT_5_GB:
+		return "13.5"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_28_POINT_4_GB:
+		return "28.4"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_58_POINT_2_GB:
+		return "58.2"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_118_GB:
+		return "118"
+	case pb.CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_237_GB:
+		return "237"
+	default:
+		return ""
+	}
+}
+
+func securityPolicyFromPb(v pb.SecurityPolicy) string {
+	switch v {
+	case pb.SecurityPolicy_SECURITY_POLICY_TLS_1_0:
+		return "TLS_1_0"
+	case pb.SecurityPolicy_SECURITY_POLICY_TLS_1_2:
+		return "TLS_1_2"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09:
+		return "SecurityPolicy_TLS13_1_2_PQ_2025_09"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_2025_EDGE:
+		return "SecurityPolicy_TLS13_2025_EDGE"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_FIPS_PQ_2025_09:
+		return "SecurityPolicy_TLS13_1_2_FIPS_PQ_2025_09"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS12_2018_EDGE:
+		return "SecurityPolicy_TLS12_2018_EDGE"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS12_PFS_2025_EDGE:
+		return "SecurityPolicy_TLS12_PFS_2025_EDGE"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_2021_06:
+		return "SecurityPolicy_TLS13_1_2_2021_06"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_3_2025_09:
+		return "SecurityPolicy_TLS13_1_3_2025_09"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PFS_PQ_2025_09:
+		return "SecurityPolicy_TLS13_1_2_PFS_PQ_2025_09"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_3_FIPS_2025_09:
+		return "SecurityPolicy_TLS13_1_3_FIPS_2025_09"
+	case pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_FIPS_PFS_PQ_2025_09:
+		return "SecurityPolicy_TLS13_1_2_FIPS_PFS_PQ_2025_09"
+	default:
+		return ""
+	}
+}
+
+func endpointAccessModeFromPb(v pb.EndpointAccessMode) string {
+	switch v {
+	case pb.EndpointAccessMode_ENDPOINT_ACCESS_MODE_BASIC:
+		return "BASIC"
+	case pb.EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT:
+		return "STRICT"
+	default:
+		return ""
 	}
 }

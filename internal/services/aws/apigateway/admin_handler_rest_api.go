@@ -3,9 +3,11 @@ package apigateway
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 
+	tagutil "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
@@ -70,12 +72,21 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	}
 
 	api := &apigatewaystore.RestApi{
-		Name:                   req.Msg.Name,
-		Description:            req.Msg.Description,
-		Version:                req.Msg.Version,
-		BinaryMediaTypes:       req.Msg.Binarymediatypes,
-		MinimumCompressionSize: req.Msg.Minimumcompressionsize,
-		Policy:                 req.Msg.Policy,
+		Name:               req.Msg.Name,
+		Description:        req.Msg.Description,
+		Version:            req.Msg.Version,
+		BinaryMediaTypes:   req.Msg.Binarymediatypes,
+		ApiKeySource:       apiKeySourceFromPb(req.Msg.Apikeysource),
+		Policy:             req.Msg.Policy,
+		SecurityPolicy:     securityPolicyFromPb(req.Msg.Securitypolicy),
+		EndpointAccessMode: endpointAccessModeFromPb(req.Msg.Endpointaccessmode),
+	}
+	if req.Msg.Disableexecuteapiendpoint != nil {
+		api.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
+	}
+	if req.Msg.Minimumcompressionsize > 0 {
+		v := req.Msg.Minimumcompressionsize
+		api.MinimumCompressionSize = &v
 	}
 	if req.Msg.Endpointconfiguration != nil {
 		types := make([]string, len(req.Msg.Endpointconfiguration.Types))
@@ -83,6 +94,9 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 			types[i] = t.String()
 		}
 		api.EndpointConfiguration = &apigatewaystore.EndpointConfiguration{Types: types}
+	}
+	if len(req.Msg.Tags) > 0 {
+		api.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
 	created, err := stores.restApis.Create(api)
@@ -133,12 +147,33 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 			api.ApiKeySource = po.Value
 		case "/policy":
 			api.Policy = po.Value
+		case "/disableExecuteApiEndpoint":
+			api.DisableExecuteApiEndpoint = po.Value == "true"
+		case "/securityPolicy":
+			api.SecurityPolicy = po.Value
+		case "/endpointAccessMode":
+			api.EndpointAccessMode = po.Value
 		case "/minimumCompressionSize":
 			v, err := parseInt32(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
 			}
-			api.MinimumCompressionSize = v
+			api.MinimumCompressionSize = &v
+		}
+
+		if strings.HasPrefix(po.Path, "/binaryMediaTypes/") {
+		MediaTypeLoop:
+			for i, mt := range api.BinaryMediaTypes {
+				if mt == po.Value {
+					if po.Op == pb.Op_OP_REMOVE {
+						api.BinaryMediaTypes = append(api.BinaryMediaTypes[:i], api.BinaryMediaTypes[i+1:]...)
+					}
+					break MediaTypeLoop
+				}
+			}
+			if (po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE) && !containsAny(api.BinaryMediaTypes, po.Value) {
+				api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
+			}
 		}
 	}
 

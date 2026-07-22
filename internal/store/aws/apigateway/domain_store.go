@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // DomainStore provides storage operations for API Gateway domain names.
@@ -191,4 +193,42 @@ func (s *DomainStore) ListBasePathMappings(domainName string, opts common.ListOp
 		Marker:   opts.Marker,
 		MaxItems: opts.MaxItems,
 	}, nil)
+}
+
+// TagDomainName adds or updates tags on a domain name.
+func (s *DomainStore) TagDomainName(domainName string, inputTags map[string]string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	domain, err := s.GetDomainName(domainName)
+	if err != nil {
+		return err
+	}
+	if domain.Tags == nil {
+		domain.Tags = []types.Tag{}
+	}
+	domain.Tags = tags.Apply(domain.Tags, tags.MapToTags(inputTags))
+	return s.Put("domain#"+domainName, domain)
+}
+
+// UntagDomainName removes tags from a domain name.
+func (s *DomainStore) UntagDomainName(domainName string, tagKeys []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	domain, err := s.GetDomainName(domainName)
+	if err != nil {
+		return err
+	}
+	domain.Tags = tags.RemoveByTagKeys(domain.Tags, tagKeys)
+	return s.Put("domain#"+domainName, domain)
+}
+
+// GetDomainNameTags returns tags for a domain name.
+func (s *DomainStore) GetDomainNameTags(domainName string) ([]types.Tag, error) {
+	domain, err := s.GetDomainName(domainName)
+	if err != nil {
+		return nil, err
+	}
+	return domain.Tags, nil
 }

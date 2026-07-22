@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	tagutil "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
@@ -29,6 +30,34 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, storeErr(err)
 	}
+
+	if req.Msg.Stagename != "" {
+		stage := &apigatewaystore.Stage{
+			StageName:           req.Msg.Stagename,
+			DeploymentId:        created.Id,
+			CacheClusterEnabled: req.Msg.GetCacheclusterenabled(),
+			CacheClusterSize:    cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
+			TracingEnabled:      req.Msg.GetTracingenabled(),
+			Variables:           req.Msg.Variables,
+		}
+		if req.Msg.Stagedescription != "" {
+			stage.Description = req.Msg.Stagedescription
+		} else {
+			stage.Description = "Auto-created stage"
+		}
+		if req.Msg.Canarysettings != nil {
+			stage.CanarySettings = &apigatewaystore.CanarySettings{
+				PercentTraffic:         req.Msg.Canarysettings.Percenttraffic,
+				DeploymentId:           created.Id,
+				StageVariableOverrides: req.Msg.Canarysettings.Stagevariableoverrides,
+				UseStageCache:          req.Msg.Canarysettings.GetUsestagecache(),
+			}
+		}
+		if _, err := stores.restApis.CreateStage(req.Msg.Restapiid, stage); err != nil {
+			return nil, storeErr(err)
+		}
+	}
+
 	return connect.NewResponse(toPbDeployment(created)), nil
 }
 
@@ -95,11 +124,24 @@ func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.
 	}
 
 	stage := &apigatewaystore.Stage{
-		StageName:           req.Msg.Stagename,
-		DeploymentId:        req.Msg.Deploymentid,
-		Description:         req.Msg.Description,
-		CacheClusterEnabled: req.Msg.GetCacheclusterenabled(),
-		Variables:           req.Msg.Variables,
+		StageName:            req.Msg.Stagename,
+		DeploymentId:         req.Msg.Deploymentid,
+		Description:          req.Msg.Description,
+		CacheClusterEnabled:  req.Msg.GetCacheclusterenabled(),
+		CacheClusterSize:     cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
+		DocumentationVersion: req.Msg.Documentationversion,
+		TracingEnabled:       req.Msg.GetTracingenabled(),
+		Variables:            req.Msg.Variables,
+	}
+	if len(req.Msg.Tags) > 0 {
+		stage.Tags = tagutil.MapToTags(req.Msg.Tags)
+	}
+	if req.Msg.Canarysettings != nil {
+		stage.CanarySettings = &apigatewaystore.CanarySettings{
+			PercentTraffic:         req.Msg.Canarysettings.Percenttraffic,
+			StageVariableOverrides: req.Msg.Canarysettings.Stagevariableoverrides,
+			UseStageCache:          req.Msg.Canarysettings.GetUsestagecache(),
+		}
 	}
 
 	created, err := stores.restApis.CreateStage(req.Msg.Restapiid, stage)

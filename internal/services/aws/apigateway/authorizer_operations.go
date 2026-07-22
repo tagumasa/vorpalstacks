@@ -3,6 +3,8 @@ package apigateway
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	store "vorpalstacks/internal/store/aws/apigateway"
@@ -23,6 +25,13 @@ func (s *APIGatewayService) CreateAuthorizer(ctx context.Context, reqCtx *reques
 	authType := request.GetStringParam(req.Parameters, "type")
 	if authType == "" {
 		authType = "TOKEN"
+	}
+
+	validAuthorizerTypes := map[string]bool{
+		"TOKEN": true, "REQUEST": true, "COGNITO_USER_POOLS": true,
+	}
+	if !validAuthorizerTypes[authType] {
+		return nil, NewBadRequestException("Invalid authorizer type: " + authType)
 	}
 
 	authorizer := &store.Authorizer{
@@ -139,27 +148,35 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 	}
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/name":
+		switch {
+		case po.Path == "/name":
 			existing.Name = po.Value
-		case "/type":
+		case po.Path == "/type":
 			existing.Type = po.Value
-		case "/authType":
+		case po.Path == "/authType":
 			existing.AuthType = po.Value
-		case "/authorizerUri":
+		case po.Path == "/authorizerUri":
 			existing.AuthorizerUri = po.Value
-		case "/authorizerCredentials":
+		case po.Path == "/authorizerCredentials":
 			existing.AuthorizerCredentials = po.Value
-		case "/identitySource":
+		case po.Path == "/identitySource":
 			existing.IdentitySource = po.Value
-		case "/identityValidationExpression":
+		case po.Path == "/identityValidationExpression":
 			existing.IdentityValidationExpression = po.Value
-		case "/authorizerResultTtlInSeconds":
+		case po.Path == "/authorizerResultTtlInSeconds":
 			v, err := parseInt64(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid authorizerResultTtlInSeconds: not a number")
 			}
 			existing.AuthorizerResultTtlInSeconds = int32(v)
+		case strings.HasPrefix(po.Path, "/providerARNs"):
+			if po.Op == "remove" {
+				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/providerARNs/")); err == nil && idx < len(existing.ProviderArns) {
+					existing.ProviderArns = append(existing.ProviderArns[:idx], existing.ProviderArns[idx+1:]...)
+				}
+			} else {
+				existing.ProviderArns = append(existing.ProviderArns, po.Value)
+			}
 		}
 	}
 

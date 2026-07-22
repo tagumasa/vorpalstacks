@@ -63,6 +63,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 	results = append(results, r.runAPIGatewayUsagePlanTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayDomainTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayEdgeTests(ctx, client, apiID)...)
+	results = append(results, r.runAPIGatewayDeepAuditTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayValidationTests(ctx, client, apiID)...)
 
 	results = append(results, r.RunTest("apigateway", "DeleteRestApi", func() error {

@@ -331,15 +331,10 @@ func (s *APIGatewayService) toModelResponse(m *store.Model) map[string]interface
 
 // TagResource adds tags to a resource in API Gateway.
 func (s *APIGatewayService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	arnStr := request.GetStringParam(req.Parameters, "resourceArn")
 
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags"))
-	if len(tags) == 0 {
+	tagsMap := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags"))
+	if len(tagsMap) == 0 {
 		return nil, NewBadRequestException("tags is required")
 	}
 
@@ -348,17 +343,7 @@ func (s *APIGatewayService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	if strings.Contains(arnStr, "/stages/") {
-		stageName := extractResourceFromArn(arnStr, "/stages/")
-		if stageName != "" {
-			if err := stores.restApis.TagStage(apiId, stageName, tags); err != nil {
-				return nil, err
-			}
-			return response.EmptyResponse(), nil
-		}
-	}
-
-	if err := stores.restApis.Tag(apiId, tags); err != nil {
+	if err := s.tagResource(stores, arnStr, tagsMap); err != nil {
 		return nil, err
 	}
 
@@ -367,11 +352,6 @@ func (s *APIGatewayService) TagResource(ctx context.Context, reqCtx *request.Req
 
 // UntagResource removes tags from a resource in API Gateway.
 func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	arnStr := request.GetStringParam(req.Parameters, "resourceArn")
 
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "tagKeys")
@@ -379,24 +359,12 @@ func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException("tagKeys is required")
 	}
 
-	keys := tagKeys
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if strings.Contains(arnStr, "/stages/") {
-		stageName := extractResourceFromArn(arnStr, "/stages/")
-		if stageName != "" {
-			if err := stores.restApis.UntagStage(apiId, stageName, keys); err != nil {
-				return nil, err
-			}
-			return response.EmptyResponse(), nil
-		}
-	}
-
-	if err := stores.restApis.Untag(apiId, keys); err != nil {
+	if err := s.untagResource(stores, arnStr, tagKeys); err != nil {
 		return nil, err
 	}
 
@@ -405,11 +373,6 @@ func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.R
 
 // ListTagsForResource lists tags for a resource in API Gateway.
 func (s *APIGatewayService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	arnStr := request.GetStringParam(req.Parameters, "resourceArn")
 
 	stores, err := s.store(reqCtx)
@@ -417,23 +380,146 @@ func (s *APIGatewayService) ListTagsForResource(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	var tags []types.Tag
-	if strings.Contains(arnStr, "/stages/") {
-		stageName := extractResourceFromArn(arnStr, "/stages/")
-		if stageName != "" {
-			tags, err = stores.restApis.GetStageTags(apiId, stageName)
-		}
-	}
-	if tags == nil {
-		tags, err = stores.restApis.GetResourceTags(apiId)
-	}
+	tagsList, err := s.getResourceTags(stores, arnStr)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"tags": tagutil.ToMap(tags),
+		"tags": tagutil.ToMap(tagsList),
 	}, nil
+}
+
+// tagResource dispatches tag operations based on the resource ARN pattern.
+func (s *APIGatewayService) tagResource(stores *apiGatewayStores, arnStr string, tagsMap map[string]string) error {
+	switch {
+	case strings.Contains(arnStr, "/stages/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		stageName := extractResourceFromArn(arnStr, "/stages/")
+		if apiId == "" || stageName == "" {
+			return NewBadRequestException("invalid stage ARN")
+		}
+		return stores.restApis.TagStage(apiId, stageName, tagsMap)
+
+	case strings.Contains(arnStr, "/usageplans/"):
+		usagePlanId := extractResourceFromArn(arnStr, "/usageplans/")
+		if usagePlanId == "" {
+			return NewBadRequestException("invalid usage plan ARN")
+		}
+		return stores.usage.TagUsagePlan(usagePlanId, tagsMap)
+
+	case strings.Contains(arnStr, "/apikeys/"):
+		apiKeyId := extractResourceFromArn(arnStr, "/apikeys/")
+		if apiKeyId == "" {
+			return NewBadRequestException("invalid API key ARN")
+		}
+		return stores.usage.TagApiKey(apiKeyId, tagsMap)
+
+	case strings.Contains(arnStr, "/domainnames/"):
+		domainName := extractResourceFromArn(arnStr, "/domainnames/")
+		if domainName == "" {
+			return NewBadRequestException("invalid domain name ARN")
+		}
+		return stores.domains.TagDomainName(domainName, tagsMap)
+
+	case strings.Contains(arnStr, "/restapis/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		if apiId == "" {
+			return NewBadRequestException("invalid REST API ARN")
+		}
+		return stores.restApis.Tag(apiId, tagsMap)
+
+	default:
+		return NewBadRequestException("resourceArn is required")
+	}
+}
+
+// untagResource dispatches untag operations based on the resource ARN pattern.
+func (s *APIGatewayService) untagResource(stores *apiGatewayStores, arnStr string, tagKeys []string) error {
+	switch {
+	case strings.Contains(arnStr, "/stages/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		stageName := extractResourceFromArn(arnStr, "/stages/")
+		if apiId == "" || stageName == "" {
+			return NewBadRequestException("invalid stage ARN")
+		}
+		return stores.restApis.UntagStage(apiId, stageName, tagKeys)
+
+	case strings.Contains(arnStr, "/usageplans/"):
+		usagePlanId := extractResourceFromArn(arnStr, "/usageplans/")
+		if usagePlanId == "" {
+			return NewBadRequestException("invalid usage plan ARN")
+		}
+		return stores.usage.UntagUsagePlan(usagePlanId, tagKeys)
+
+	case strings.Contains(arnStr, "/apikeys/"):
+		apiKeyId := extractResourceFromArn(arnStr, "/apikeys/")
+		if apiKeyId == "" {
+			return NewBadRequestException("invalid API key ARN")
+		}
+		return stores.usage.UntagApiKey(apiKeyId, tagKeys)
+
+	case strings.Contains(arnStr, "/domainnames/"):
+		domainName := extractResourceFromArn(arnStr, "/domainnames/")
+		if domainName == "" {
+			return NewBadRequestException("invalid domain name ARN")
+		}
+		return stores.domains.UntagDomainName(domainName, tagKeys)
+
+	case strings.Contains(arnStr, "/restapis/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		if apiId == "" {
+			return NewBadRequestException("invalid REST API ARN")
+		}
+		return stores.restApis.Untag(apiId, tagKeys)
+
+	default:
+		return NewBadRequestException("resourceArn is required")
+	}
+}
+
+// getResourceTags dispatches get-tags operations based on the resource ARN pattern.
+func (s *APIGatewayService) getResourceTags(stores *apiGatewayStores, arnStr string) ([]types.Tag, error) {
+	switch {
+	case strings.Contains(arnStr, "/stages/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		stageName := extractResourceFromArn(arnStr, "/stages/")
+		if apiId == "" || stageName == "" {
+			return nil, NewBadRequestException("invalid stage ARN")
+		}
+		return stores.restApis.GetStageTags(apiId, stageName)
+
+	case strings.Contains(arnStr, "/usageplans/"):
+		usagePlanId := extractResourceFromArn(arnStr, "/usageplans/")
+		if usagePlanId == "" {
+			return nil, NewBadRequestException("invalid usage plan ARN")
+		}
+		return stores.usage.GetUsagePlanTags(usagePlanId)
+
+	case strings.Contains(arnStr, "/apikeys/"):
+		apiKeyId := extractResourceFromArn(arnStr, "/apikeys/")
+		if apiKeyId == "" {
+			return nil, NewBadRequestException("invalid API key ARN")
+		}
+		return stores.usage.GetApiKeyTags(apiKeyId)
+
+	case strings.Contains(arnStr, "/domainnames/"):
+		domainName := extractResourceFromArn(arnStr, "/domainnames/")
+		if domainName == "" {
+			return nil, NewBadRequestException("invalid domain name ARN")
+		}
+		return stores.domains.GetDomainNameTags(domainName)
+
+	case strings.Contains(arnStr, "/restapis/"):
+		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		if apiId == "" {
+			return nil, NewBadRequestException("invalid REST API ARN")
+		}
+		return stores.restApis.GetResourceTags(apiId)
+
+	default:
+		return nil, NewBadRequestException("resourceArn is required")
+	}
 }
 
 func extractResourceFromArn(arnStr, suffix string) string {

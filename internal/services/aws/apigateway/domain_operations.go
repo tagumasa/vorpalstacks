@@ -19,12 +19,26 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 	}
 
 	domain := &store.DomainName{
-		DomainName:              domainName,
-		CertificateArn:          request.GetStringParam(req.Parameters, "certificateArn"),
-		CertificateName:         request.GetStringParam(req.Parameters, "certificateName"),
-		RegionalCertificateArn:  request.GetStringParam(req.Parameters, "regionalCertificateArn"),
-		RegionalCertificateName: request.GetStringParam(req.Parameters, "regionalCertificateName"),
-		SecurityPolicy:          request.GetStringParam(req.Parameters, "securityPolicy"),
+		DomainName:                          domainName,
+		CertificateArn:                      request.GetStringParam(req.Parameters, "certificateArn"),
+		CertificateName:                     request.GetStringParam(req.Parameters, "certificateName"),
+		RegionalCertificateArn:              request.GetStringParam(req.Parameters, "regionalCertificateArn"),
+		RegionalCertificateName:             request.GetStringParam(req.Parameters, "regionalCertificateName"),
+		SecurityPolicy:                      request.GetStringParam(req.Parameters, "securityPolicy"),
+		OwnershipVerificationCertificateArn: request.GetStringParam(req.Parameters, "ownershipVerificationCertificateArn"),
+		EndpointAccessMode:                  request.GetStringParam(req.Parameters, "endpointAccessMode"),
+		Policy:                              request.GetStringParam(req.Parameters, "policy"),
+		RoutingMode:                         request.GetStringParam(req.Parameters, "routingMode"),
+	}
+
+	if mutualTls, ok := req.Parameters["mutualTlsAuthentication"].(map[string]interface{}); ok {
+		domain.MutualTlsAuthentication = &store.MutualTlsAuthentication{}
+		if v, ok := mutualTls["truststoreUri"].(string); ok {
+			domain.MutualTlsAuthentication.TruststoreUri = v
+		}
+		if v, ok := mutualTls["truststoreVersion"].(string); ok {
+			domain.MutualTlsAuthentication.TruststoreVersion = v
+		}
 	}
 
 	if endpointConfig, ok := req.Parameters["endpointConfiguration"].(map[string]interface{}); ok {
@@ -215,6 +229,31 @@ func (s *APIGatewayService) toDomainNameResponse(d *store.DomainName) map[string
 	}
 	if d.SecurityPolicy != "" {
 		response["securityPolicy"] = d.SecurityPolicy
+	}
+	if d.EndpointAccessMode != "" {
+		response["endpointAccessMode"] = d.EndpointAccessMode
+	}
+	if d.MutualTlsAuthentication != nil {
+		mtls := map[string]interface{}{}
+		if d.MutualTlsAuthentication.TruststoreUri != "" {
+			mtls["truststoreUri"] = d.MutualTlsAuthentication.TruststoreUri
+		}
+		if d.MutualTlsAuthentication.TruststoreVersion != "" {
+			mtls["truststoreVersion"] = d.MutualTlsAuthentication.TruststoreVersion
+		}
+		if len(d.MutualTlsAuthentication.TruststoreWarnings) > 0 {
+			mtls["truststoreWarnings"] = d.MutualTlsAuthentication.TruststoreWarnings
+		}
+		response["mutualTlsAuthentication"] = mtls
+	}
+	if d.OwnershipVerificationCertificateArn != "" {
+		response["ownershipVerificationCertificateArn"] = d.OwnershipVerificationCertificateArn
+	}
+	if d.Policy != "" {
+		response["policy"] = d.Policy
+	}
+	if d.RoutingMode != "" {
+		response["routingMode"] = d.RoutingMode
 	}
 	if d.EndpointConfiguration != nil {
 		response["endpointConfiguration"] = map[string]interface{}{
@@ -431,9 +470,8 @@ func (s *APIGatewayService) GetBasePathMappings(ctx context.Context, reqCtx *req
 
 func (s *APIGatewayService) toBasePathMappingResponse(m *store.BasePathMapping) map[string]interface{} {
 	return map[string]interface{}{
-		"domainName": m.DomainName,
-		"basePath":   m.BasePath,
-		"restApiId":  m.RestApiId,
-		"stage":      m.Stage,
+		"basePath":  m.BasePath,
+		"restApiId": m.RestApiId,
+		"stage":     m.Stage,
 	}
 }
