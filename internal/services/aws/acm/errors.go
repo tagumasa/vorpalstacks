@@ -38,3 +38,13 @@ func NewRequestInProgressException(message string) *awserrors.AWSError {
 func NewInvalidStateException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidStateException", message, http.StatusBadRequest)
 }
+
+// NewTooManyTagsException creates a new too many tags exception.
+func NewTooManyTagsException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("TooManyTagsException", message, http.StatusBadRequest)
+}
+
+// NewInternalServerException creates a new internal server exception.
+func NewInternalServerException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InternalServerException", message, http.StatusInternalServerError)
+}

@@ -155,7 +155,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 			}
 		}
 		if len(sans) > 100 {
-			return nil, awserrors.NewValidationException("SubjectAlternativeNames must not exceed 100 entries")
+			return nil, NewInvalidParameterError("SubjectAlternativeNames must not exceed 100 entries")
 		}
 	}
 
@@ -167,12 +167,12 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	now := time.Now().UTC()
 	key, err := generateKeyForKeyAlgorithm(keyAlgorithm)
 	if err != nil {
-		return nil, awserrors.NewValidationException(fmt.Sprintf("Unsupported KeyAlgorithm: %s", keyAlgorithm))
+		return nil, NewInvalidParameterError(fmt.Sprintf("Unsupported KeyAlgorithm: %s", keyAlgorithm))
 	}
 
 	serialBigInt, err := vcrypto.GenerateSerialNumber()
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate serial", 500)
+		return nil, NewInternalServerException("Failed to generate serial")
 	}
 	notAfter := now.AddDate(1, 0, 0)
 	template := &x509.Certificate{
@@ -186,43 +186,54 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 
 	certDER, err := vcrypto.CreateCertificate(template, template, key.Public(), key)
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to create certificate", 500)
+		return nil, NewInternalServerException("Failed to create certificate")
 	}
 
 	certPEM := vcrypto.EncodeCertificatePEM(certDER)
 
+	managedBy, err := parseManagedBy(params)
+	if err != nil {
+		return nil, err
+	}
+
 	serialStr := acmstorelib.GenerateCertificateSerial()
 	cert := &acmstorelib.Certificate{
-		CertificateArn:     certificateArn,
-		DomainName:         domainName,
-		Serial:             serialStr,
-		Status:             "ISSUED",
-		Type:               "AMAZON_ISSUED",
-		KeyAlgorithm:       keyAlgorithm,
-		SignatureAlgorithm: signatureAlgorithmForKeyAlgorithm(keyAlgorithm),
-		RenewalEligibility: "ELIGIBLE",
-		CreatedAt:          now,
-		Subject:            domainName,
-		Issuer:             domainName,
-		AccountID:          reqCtx.GetAccountID(),
-		Region:             reqCtx.GetRegion(),
-		Certificate:        certPEM,
-		NotBefore:          now,
-		NotAfter:           notAfter,
-		IssuedAt:           now,
+		CertificateArn:           certificateArn,
+		DomainName:               domainName,
+		Serial:                   serialStr,
+		Status:                   "ISSUED",
+		Type:                     "AMAZON_ISSUED",
+		KeyAlgorithm:             keyAlgorithm,
+		SignatureAlgorithm:       signatureAlgorithmForKeyAlgorithm(keyAlgorithm),
+		RenewalEligibility:       "ELIGIBLE",
+		CreatedAt:                now,
+		Subject:                  domainName,
+		Issuer:                   domainName,
+		AccountID:                reqCtx.GetAccountID(),
+		Region:                   reqCtx.GetRegion(),
+		Certificate:              certPEM,
+		NotBefore:                now,
+		NotAfter:                 notAfter,
+		IssuedAt:                 now,
+		CertificateAuthorityArn:  parseCertificateAuthorityArn(params),
+		ManagedBy:                managedBy,
+		CertificateKeyPairOrigin: "AWS_MANAGED",
 	}
 
 	cert.SubjectAlternativeNames = sans
 
 	tags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
 	if len(tags) > 50 {
-		return nil, awserrors.NewValidationException("Tags must not exceed 50 entries")
+		return nil, NewTooManyTagsException("Tags must not exceed 50 entries")
 	}
 	cert.Tags = tags
 
 	// Build domain validation options. If the user provided explicit
 	// DomainValidationOptions (e.g. ValidationDomain for EMAIL), merge
 	// them with the auto-generated ones.
+	// ACM creates certs in PENDING_VALIDATION state; the platform validates
+	// synchronously (self-signed) so domain validation options transition to
+	// SUCCESS immediately — no observable PENDING_VALIDATION window.
 	domainValidationOptions := buildDomainValidationOptions(domainName, validationMethod, sans)
 	applyUserDomainValidationOptions(domainValidationOptions, params)
 	for i := range domainValidationOptions {
@@ -233,7 +244,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	if optionsMap, ok := params["Options"].(map[string]interface{}); ok {
 		cert.Options = &acmstorelib.CertificateOptions{
 			CertificateTransparencyLoggingPreference: parseCertificateTransparencyLoggingPreference(optionsMap),
-			Export:                                   "DISABLED",
+			Export:                                   parseExportOption(optionsMap),
 		}
 	} else {
 		cert.Options = &acmstorelib.CertificateOptions{
@@ -244,7 +255,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 
 	if err := stores.certificates.Create(cert); err != nil {
 		if acmstorelib.IsAlreadyExists(err) {
-			return nil, awserrors.NewAWSError("ResourceConflictException", "Certificate already exists", 409)
+			return nil, awserrors.NewConflictException("Certificate already exists")
 		}
 		return nil, err
 	}
@@ -294,23 +305,40 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	var statuses []string
+	filters := acmstorelib.ListFilters{
+		SortBy:    request.GetStringParam(params, "SortBy"),
+		SortOrder: request.GetStringParam(params, "SortOrder"),
+	}
+
 	if raw, ok := params["CertificateStatuses"]; ok {
 		if arr, ok := raw.([]interface{}); ok {
 			for _, v := range arr {
 				if s, ok := v.(string); ok {
-					statuses = append(statuses, s)
+					filters.Statuses = append(filters.Statuses, s)
 				}
 			}
 		}
 	}
 
-	var result *acmstorelib.CertificateListResult
-	if len(statuses) > 0 {
-		result, err = stores.certificates.ListByStatus(statuses, marker, maxItems)
-	} else {
-		result, err = stores.certificates.List(marker, maxItems)
+	if raw, ok := params["CertificateKeyPairOrigins"]; ok {
+		if arr, ok := raw.([]interface{}); ok {
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					filters.Origins = append(filters.Origins, s)
+				}
+			}
+		}
 	}
+
+	if includes, ok := params["Includes"].(map[string]interface{}); ok {
+		filters.KeyTypes = parseStringList(includes, "keyTypes")
+		filters.KeyUsage = parseStringList(includes, "keyUsage")
+		filters.ExtendedKeyUsage = parseStringList(includes, "extendedKeyUsage")
+		filters.ExportOption = request.GetStringParam(includes, "exportOption")
+		filters.ManagedBy = request.GetStringParam(includes, "managedBy")
+	}
+
+	result, err := stores.certificates.ListWithFilters(filters, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +429,38 @@ func (s *ACMService) ResendValidationEmail(ctx context.Context, reqCtx *request.
 		return nil, NewInvalidStateException("Certificate is not in PENDING_VALIDATION state")
 	}
 
+	// Domain and ValidationDomain are required per Smithy model.
+	domain := request.GetStringParam(params, "Domain")
+	validationDomain := request.GetStringParam(params, "ValidationDomain")
+	if domain == "" {
+		return nil, awserrors.NewValidationException("Domain is required")
+	}
+	if validationDomain == "" {
+		return nil, awserrors.NewValidationException("ValidationDomain is required")
+	}
+
+	// In AWS, ResendValidationEmail resends the domain validation email.
+	// For edge deployment, email sending is not available, but we honour the
+	// parameters by updating ValidationDomain.
+	changed := false
+	for _, dvo := range cert.DomainValidationOptions {
+		if dvo.DomainName != domain {
+			continue
+		}
+		dvo.ValidationDomain = validationDomain
+		changed = true
+	}
+
+	if !changed {
+		return nil, NewInvalidDomainValidationOptionsException(fmt.Sprintf("Domain %s not found in certificate validation options", domain))
+	}
+
+	if changed {
+		if err := stores.certificates.Update(cert); err != nil {
+			return nil, err
+		}
+	}
+
 	return response.EmptyResponse(), nil
 }
 
@@ -410,7 +470,10 @@ func (s *ACMService) AddTagsToCertificate(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	arn, err := parseCertificateArn(req.Parameters, "CertificateArn")
+	if err != nil {
+		return nil, err
+	}
 	return tagutil.HandleTag(ctx, req, s.acmTagConfig(stores, arn))
 }
 
@@ -420,7 +483,10 @@ func (s *ACMService) RemoveTagsFromCertificate(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	arn, err := parseCertificateArn(req.Parameters, "CertificateArn")
+	if err != nil {
+		return nil, err
+	}
 	return tagutil.HandleUntag(ctx, req, s.acmTagConfig(stores, arn))
 }
 
@@ -430,7 +496,10 @@ func (s *ACMService) ListTagsForCertificate(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	arn, err := parseCertificateArn(req.Parameters, "CertificateArn")
+	if err != nil {
+		return nil, err
+	}
 	return tagutil.HandleList(ctx, req, s.acmTagConfig(stores, arn))
 }
 
@@ -499,24 +568,25 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 
 	now := time.Now().UTC()
 	cert := &acmstorelib.Certificate{
-		CertificateArn:     certificateArn,
-		DomainName:         extractDomainFromCert(certificate),
-		Serial:             acmstorelib.GenerateCertificateSerial(),
-		Status:             "ISSUED",
-		Type:               "IMPORTED",
-		KeyAlgorithm:       determineKeyAlgorithm(certificate),
-		SignatureAlgorithm: "SHA256WITHRSA",
-		RenewalEligibility: "INELIGIBLE",
-		CreatedAt:          now,
-		ImportedAt:         now,
-		NotBefore:          now,
-		NotAfter:           now.AddDate(1, 0, 0),
-		Certificate:        certificate,
-		CertificateChain:   certificateChain,
-		PrivateKey:         privateKey,
-		Tags:               tags,
-		AccountID:          reqCtx.GetAccountID(),
-		Region:             reqCtx.GetRegion(),
+		CertificateArn:           certificateArn,
+		DomainName:               extractDomainFromCert(certificate),
+		Serial:                   acmstorelib.GenerateCertificateSerial(),
+		Status:                   "ISSUED",
+		Type:                     "IMPORTED",
+		KeyAlgorithm:             determineKeyAlgorithm(certificate),
+		SignatureAlgorithm:       "SHA256WITHRSA",
+		RenewalEligibility:       "INELIGIBLE",
+		CreatedAt:                now,
+		ImportedAt:               now,
+		NotBefore:                now,
+		NotAfter:                 now.AddDate(1, 0, 0),
+		Certificate:              certificate,
+		CertificateChain:         certificateChain,
+		PrivateKey:               privateKey,
+		Tags:                     tags,
+		AccountID:                reqCtx.GetAccountID(),
+		Region:                   reqCtx.GetRegion(),
+		CertificateKeyPairOrigin: "CUSTOMER_PROVIDED",
 	}
 
 	if parsedCert, _ := vcrypto.ParseCertificatePEM([]byte(certificate)); parsedCert != nil {
@@ -530,7 +600,7 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 
 	if err := stores.certificates.Create(cert); err != nil {
 		if acmstorelib.IsAlreadyExists(err) {
-			return nil, awserrors.NewAWSError("ResourceConflictException", "Certificate already exists", 409)
+			return nil, awserrors.NewConflictException("Certificate already exists")
 		}
 		return nil, err
 	}
@@ -567,7 +637,7 @@ func (s *ACMService) UpdateCertificateOptions(ctx context.Context, reqCtx *reque
 
 	cert.Options = &acmstorelib.CertificateOptions{
 		CertificateTransparencyLoggingPreference: parseCertificateTransparencyLoggingPreference(optionsMap),
-		Export:                                   "DISABLED",
+		Export:                                   parseExportOption(optionsMap),
 	}
 
 	if err := stores.certificates.Update(cert); err != nil {
@@ -611,9 +681,15 @@ func (s *ACMService) RenewCertificate(ctx context.Context, reqCtx *request.Reque
 	now := time.Now().UTC()
 	cert.NotBefore = now
 	cert.NotAfter = now.AddDate(1, 0, 0)
+	// ACM renewal transitions through PENDING_VALIDATION → SUCCESS; the
+	// platform re-signs synchronously so we persist the final state directly.
+	cert.IssuedAt = now
 	cert.RenewalSummary = &acmstorelib.RenewalSummary{
-		RenewalStatus: "PENDING",
+		RenewalStatus: "SUCCESS",
 		UpdatedAt:     now,
+	}
+	for i := range cert.DomainValidationOptions {
+		cert.DomainValidationOptions[i].ValidationStatus = "SUCCESS"
 	}
 
 	if err := stores.certificates.Update(cert); err != nil {
@@ -701,11 +777,16 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, NewInvalidStateException("Certificate is not in a valid state for revocation.")
 	}
 
-	if reasonRaw, ok := req.Parameters["RevocationReason"]; ok {
-		if reason, ok := reasonRaw.(string); ok && isValidRevocationReason(reason) {
-			cert.RevocationReason = reason
-		}
+	// RevocationReason is required per Smithy model.
+	reasonRaw, ok := req.Parameters["RevocationReason"]
+	if !ok {
+		return nil, awserrors.NewValidationException("RevocationReason is required")
 	}
+	reason, ok := reasonRaw.(string)
+	if !ok || !isValidRevocationReason(reason) {
+		return nil, NewInvalidParameterError(fmt.Sprintf("Invalid RevocationReason: %v", reasonRaw))
+	}
+	cert.RevocationReason = reason
 	cert.Status = "REVOKED"
 	cert.RevokedAt = time.Now().UTC()
 
@@ -713,7 +794,9 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return response.EmptyResponse(), nil
+	return map[string]interface{}{
+		"CertificateArn": arn,
+	}, nil
 }
 
 func buildDomainValidationOptions(domainName, validationMethod string, sans []string) []*acmstorelib.DomainValidation {
@@ -728,7 +811,7 @@ func buildDomainValidationOptions(domainName, validationMethod string, sans []st
 			DomainName:       d,
 			ValidationDomain: d,
 			ValidationMethod: validationMethod,
-			ValidationStatus: "PENDING",
+			ValidationStatus: "PENDING_VALIDATION",
 		}
 
 		if validationMethod == "DNS" {

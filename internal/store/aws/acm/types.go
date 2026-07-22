@@ -9,38 +9,40 @@ import (
 
 // Certificate represents an ACM certificate.
 type Certificate struct {
-	CertificateArn          string              `json:"certificateArn"`
-	DomainName              string              `json:"domainName"`
-	SubjectAlternativeNames []string            `json:"subjectAlternativeNames,omitempty"`
-	DomainValidationOptions []*DomainValidation `json:"domainValidationOptions,omitempty"`
-	Serial                  string              `json:"serial"`
-	Subject                 string              `json:"subject"`
-	Issuer                  string              `json:"issuer"`
-	CreatedAt               time.Time           `json:"createdAt"`
-	IssuedAt                time.Time           `json:"issuedAt"`
-	NotBefore               time.Time           `json:"notBefore"`
-	NotAfter                time.Time           `json:"notAfter"`
-	KeyAlgorithm            string              `json:"keyAlgorithm"`
-	SignatureAlgorithm      string              `json:"signatureAlgorithm"`
-	Status                  string              `json:"status"`
-	Type                    string              `json:"type"`
-	RenewalEligibility      string              `json:"renewalEligibility"`
-	RenewalSummary          *RenewalSummary     `json:"renewalSummary,omitempty"`
-	Options                 *CertificateOptions `json:"options,omitempty"`
-	KeyUsages               []*KeyUsage         `json:"keyUsages,omitempty"`
-	ExtendedKeyUsages       []*ExtendedKeyUsage `json:"extendedKeyUsages,omitempty"`
-	InUseBy                 []string            `json:"inUseBy,omitempty"`
-	ImportedAt              time.Time           `json:"importedAt,omitempty"`
-	RevokedAt               time.Time           `json:"revokedAt,omitempty"`
-	RevocationReason        string              `json:"revocationReason,omitempty"`
-	FailureReason           string              `json:"failureReason,omitempty"`
-	CertificateAuthorityArn string              `json:"certificateAuthorityArn,omitempty"`
-	Certificate             string              `json:"certificate,omitempty"`
-	CertificateChain        string              `json:"certificateChain,omitempty"`
-	PrivateKey              string              `json:"privateKey,omitempty"`
-	Tags                    []types.Tag         `json:"tags,omitempty"`
-	AccountID               string              `json:"accountId"`
-	Region                  string              `json:"region"`
+	CertificateArn           string              `json:"certificateArn"`
+	DomainName               string              `json:"domainName"`
+	SubjectAlternativeNames  []string            `json:"subjectAlternativeNames,omitempty"`
+	DomainValidationOptions  []*DomainValidation `json:"domainValidationOptions,omitempty"`
+	Serial                   string              `json:"serial"`
+	Subject                  string              `json:"subject"`
+	Issuer                   string              `json:"issuer"`
+	CreatedAt                time.Time           `json:"createdAt"`
+	IssuedAt                 time.Time           `json:"issuedAt"`
+	NotBefore                time.Time           `json:"notBefore"`
+	NotAfter                 time.Time           `json:"notAfter"`
+	KeyAlgorithm             string              `json:"keyAlgorithm"`
+	SignatureAlgorithm       string              `json:"signatureAlgorithm"`
+	Status                   string              `json:"status"`
+	Type                     string              `json:"type"`
+	RenewalEligibility       string              `json:"renewalEligibility"`
+	RenewalSummary           *RenewalSummary     `json:"renewalSummary,omitempty"`
+	Options                  *CertificateOptions `json:"options,omitempty"`
+	KeyUsages                []*KeyUsage         `json:"keyUsages,omitempty"`
+	ExtendedKeyUsages        []*ExtendedKeyUsage `json:"extendedKeyUsages,omitempty"`
+	InUseBy                  []string            `json:"inUseBy,omitempty"`
+	ImportedAt               time.Time           `json:"importedAt,omitempty"`
+	RevokedAt                time.Time           `json:"revokedAt,omitempty"`
+	RevocationReason         string              `json:"revocationReason,omitempty"`
+	FailureReason            string              `json:"failureReason,omitempty"`
+	CertificateAuthorityArn  string              `json:"certificateAuthorityArn,omitempty"`
+	ManagedBy                string              `json:"managedBy,omitempty"`
+	CertificateKeyPairOrigin string              `json:"certificateKeyPairOrigin,omitempty"`
+	Certificate              string              `json:"certificate,omitempty"`
+	CertificateChain         string              `json:"certificateChain,omitempty"`
+	PrivateKey               string              `json:"privateKey,omitempty"`
+	Tags                     []types.Tag         `json:"tags,omitempty"`
+	AccountID                string              `json:"accountId"`
+	Region                   string              `json:"region"`
 }
 
 // DomainValidation represents domain validation details for a certificate.
@@ -95,6 +97,8 @@ type CertificateSummary struct {
 	Type                                 string   `json:"type"`
 	RenewalEligibility                   string   `json:"renewalEligibility"`
 	KeyAlgorithm                         string   `json:"keyAlgorithm"`
+	ManagedBy                            string   `json:"managedBy,omitempty"`
+	CertificateKeyPairOrigin             string   `json:"certificateKeyPairOrigin,omitempty"`
 	KeyUsages                            []string `json:"keyUsages,omitempty"`
 	ExtendedKeyUsages                    []string `json:"extendedKeyUsages,omitempty"`
 	InUse                                bool     `json:"inUse"`
@@ -105,6 +109,7 @@ type CertificateSummary struct {
 	ImportedAt                           float64  `json:"importedAt"`
 	Exported                             bool     `json:"exported"`
 	ExportOption                         string   `json:"exportOption"`
+	RevokedAt                            float64  `json:"revokedAt,omitempty"`
 }
 
 // CertificateListResult represents the result of listing ACM certificates.

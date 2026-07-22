@@ -1,6 +1,7 @@
 package acm
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -49,6 +50,9 @@ func parseCertificateArn(params map[string]interface{}, paramName string) (strin
 	if arn == "" {
 		return "", awserrors.NewValidationException(paramName + " is required")
 	}
+	if !strings.HasPrefix(arn, "arn:") || !strings.Contains(arn, ":certificate/") {
+		return "", NewInvalidArnError(arn)
+	}
 	return arn, nil
 }
 
@@ -91,6 +95,50 @@ func parseCertificateTransparencyLoggingPreference(params map[string]interface{}
 		return "ENABLED"
 	}
 	return pref
+}
+
+func parseExportOption(params map[string]interface{}) string {
+	export := request.GetStringParam(params, "Export")
+	if export == "" {
+		return "DISABLED"
+	}
+	if export != "ENABLED" && export != "DISABLED" {
+		return "DISABLED"
+	}
+	return export
+}
+
+var validManagedByValues = map[string]bool{
+	"CLOUDFRONT": true,
+}
+
+func parseManagedBy(params map[string]interface{}) (string, error) {
+	mb := request.GetStringParam(params, "ManagedBy")
+	if mb == "" {
+		return "", nil
+	}
+	if !validManagedByValues[mb] {
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ManagedBy value: %s", mb))
+	}
+	return mb, nil
+}
+
+func parseCertificateAuthorityArn(params map[string]interface{}) string {
+	return request.GetStringParam(params, "CertificateAuthorityArn")
+}
+
+func parseStringList(params map[string]interface{}, key string) []string {
+	var result []string
+	if raw, ok := params[key]; ok {
+		if arr, ok := raw.([]interface{}); ok {
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					result = append(result, s)
+				}
+			}
+		}
+	}
+	return result
 }
 
 func certificateOptionsToResponse(opts *acmstorelib.CertificateOptions) map[string]interface{} {
@@ -224,6 +272,13 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 		}
 	}
 
+	if cert.ManagedBy != "" {
+		result["ManagedBy"] = cert.ManagedBy
+	}
+	if cert.CertificateKeyPairOrigin != "" {
+		result["CertificateKeyPairOrigin"] = cert.CertificateKeyPairOrigin
+	}
+
 	return result
 }
 
@@ -268,6 +323,15 @@ func certificateSummaryToResponse(summary *acmstorelib.CertificateSummary) map[s
 	}
 	if summary.ExportOption != "" {
 		result["ExportOption"] = summary.ExportOption
+	}
+	if summary.ManagedBy != "" {
+		result["ManagedBy"] = summary.ManagedBy
+	}
+	if summary.CertificateKeyPairOrigin != "" {
+		result["CertificateKeyPairOrigin"] = summary.CertificateKeyPairOrigin
+	}
+	if summary.RevokedAt != 0 {
+		result["RevokedAt"] = summary.RevokedAt
 	}
 
 	return result

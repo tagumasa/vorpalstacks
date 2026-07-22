@@ -2,6 +2,7 @@
 package acm
 
 import (
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -106,6 +107,165 @@ func (s *CertificateStore) ListAll() ([]*Certificate, error) {
 	return common.ListAll[Certificate](s.BaseStore)
 }
 
+// ListWithFilters returns a paginated list of ACM certificates with advanced filtering.
+func (s *CertificateStore) ListWithFilters(filters ListFilters, marker string, maxItems int) (*CertificateListResult, error) {
+	allCerts, err := common.ListAll[Certificate](s.BaseStore)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply filters.
+	filtered := make([]*Certificate, 0, len(allCerts))
+	for _, cert := range allCerts {
+		if !matchStatuses(cert, filters.Statuses) {
+			continue
+		}
+		if !matchKeyTypes(cert, filters.KeyTypes) {
+			continue
+		}
+		if !matchKeyUsage(cert, filters.KeyUsage) {
+			continue
+		}
+		if !matchExtendedKeyUsage(cert, filters.ExtendedKeyUsage) {
+			continue
+		}
+		if !matchExportOption(cert, filters.ExportOption) {
+			continue
+		}
+		if !matchManagedBy(cert, filters.ManagedBy) {
+			continue
+		}
+		if !matchOrigins(cert, filters.Origins) {
+			continue
+		}
+		filtered = append(filtered, cert)
+	}
+
+	// Sort. AWS default sort order is ASCENDING when unspecified.
+	if filters.SortBy == "CREATED_AT" {
+		sort.Slice(filtered, func(i, j int) bool {
+			if filters.SortOrder == "DESCENDING" {
+				return filtered[i].CreatedAt.After(filtered[j].CreatedAt)
+			}
+			return filtered[i].CreatedAt.Before(filtered[j].CreatedAt)
+		})
+	}
+
+	// Paginate.
+	start := 0
+	if marker != "" {
+		for i, cert := range filtered {
+			if cert.CertificateArn == marker {
+				start = i + 1
+				break
+			}
+		}
+	}
+
+	end := len(filtered)
+	if maxItems > 0 && start+maxItems < end {
+		end = start + maxItems
+	}
+	page := filtered[start:end]
+
+	summaries := make([]*CertificateSummary, len(page))
+	for i, cert := range page {
+		summaries[i] = CertificateToSummary(cert)
+	}
+
+	nextToken := ""
+	if end < len(filtered) && len(page) > 0 {
+		nextToken = page[len(page)-1].CertificateArn
+	}
+
+	return &CertificateListResult{
+		Certificates: summaries,
+		IsTruncated:  end < len(filtered),
+		NextToken:    nextToken,
+	}, nil
+}
+
+func matchStatuses(cert *Certificate, statuses []string) bool {
+	if len(statuses) == 0 {
+		return true
+	}
+	for _, s := range statuses {
+		if cert.Status == s {
+			return true
+		}
+	}
+	return false
+}
+
+func matchKeyTypes(cert *Certificate, keyTypes []string) bool {
+	if len(keyTypes) == 0 {
+		return true
+	}
+	for _, kt := range keyTypes {
+		if cert.KeyAlgorithm == kt {
+			return true
+		}
+	}
+	return false
+}
+
+func matchKeyUsage(cert *Certificate, keyUsages []string) bool {
+	if len(keyUsages) == 0 {
+		return true
+	}
+	for _, filterKU := range keyUsages {
+		for _, certKU := range cert.KeyUsages {
+			if certKU.Name == filterKU {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func matchExtendedKeyUsage(cert *Certificate, ekus []string) bool {
+	if len(ekus) == 0 {
+		return true
+	}
+	for _, filterEKU := range ekus {
+		for _, certEKU := range cert.ExtendedKeyUsages {
+			if certEKU.Name == filterEKU || certEKU.OID == filterEKU {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func matchExportOption(cert *Certificate, exportOption string) bool {
+	if exportOption == "" {
+		return true
+	}
+	if cert.Options == nil {
+		return exportOption == "DISABLED"
+	}
+	return cert.Options.Export == exportOption
+}
+
+func matchManagedBy(cert *Certificate, managedBy string) bool {
+	if managedBy == "" {
+		return true
+	}
+	return cert.ManagedBy == managedBy
+}
+
+func matchOrigins(cert *Certificate, origins []string) bool {
+	if len(origins) == 0 {
+		return true
+	}
+	for _, origin := range origins {
+		if cert.CertificateKeyPairOrigin == origin {
+			return true
+		}
+	}
+	return false
+}
+
 // Create creates a new ACM certificate in the store.
 func (s *CertificateStore) Create(cert *Certificate) error {
 	certId := s.extractCertificateId(cert.CertificateArn)
@@ -193,6 +353,13 @@ func CertificateToSummary(cert *Certificate) *CertificateSummary {
 
 	if cert.Options != nil {
 		summary.ExportOption = cert.Options.Export
+	}
+
+	summary.ManagedBy = cert.ManagedBy
+	summary.CertificateKeyPairOrigin = cert.CertificateKeyPairOrigin
+
+	if !cert.RevokedAt.IsZero() {
+		summary.RevokedAt = formatEpochSeconds(cert.RevokedAt)
 	}
 
 	return summary
