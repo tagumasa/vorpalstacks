@@ -8,27 +8,27 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 33 AWS services with 2701 test cases (2637 SDK + 47 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 34 AWS services with 2,777 test cases (2,713 SDK + 47 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
-| ACM | 43 | 100% | ✅ Perfect |
-| API Gateway | 129 | 100% | ✅ Perfect |
+| ACM | 52 | 100% | ✅ Perfect |
+| API Gateway | 135 | 100% | ✅ Perfect |
 | AppSync | 170 | 100% | ✅ Perfect |
 | Athena | 65 | 100% | ✅ Perfect |
 | CloudFront | 60 | 100% | ✅ Perfect |
-| CloudTrail | 65 | 100% | ✅ Perfect |
+| CloudTrail | 95 | 100% | ✅ Perfect |
 | CloudWatch | 24 | 100% | ✅ Perfect |
-| CloudWatch Logs | 43 | 100% | ✅ Perfect |
+| CloudWatch Logs | 44 | 100% | ✅ Perfect |
 | Cognito | 67 | 100% | ✅ Perfect |
 | Cognito Identity | 43 | 100% | ✅ Perfect |
 | DynamoDB | 111 | 100% | ✅ Perfect |
 | EventBridge | 59 | 100% | ✅ Perfect |
-| IAM | 152 | 100% | ✅ Perfect |
-| IoT | 354 | 100% | ✅ Perfect |
+| IAM | 155 | 100% | ✅ Perfect |
+| IoT | 361 | 100% | ✅ Perfect |
 | IoT Events | 36 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
 | KMS | 97 | 100% | ✅ Perfect |
@@ -37,21 +37,20 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
 | RDS Data | 17 | 100% | ✅ Perfect |
-| Route53 | 44 | 100% | ✅ Perfect |
-| S3 | 90 | 100% | ✅ Perfect |
+| Route53 | 45 | 100% | ✅ Perfect |
+| S3 | 105 | 100% | ✅ Perfect |
 | Scheduler | 38 | 100% | ✅ Perfect |
 | SecretsManager | 41 | 100% | ✅ Perfect |
-| SESv2 | 79 | 100% | ✅ Perfect |
-| SNS | 63 | 100% | ✅ Perfect |
-| SQS | 49 | 100% | ✅ Perfect |
+| SESv2 | 81 | 100% | ✅ Perfect |
+| SNS | 69 | 100% | ✅ Perfect |
+| SQS | 51 | 100% | ✅ Perfect |
 | SSM | 44 | 100% | ✅ Perfect |
-| STS | 41 | 100% | ✅ Perfect |
+| STS | 51 | 100% | ✅ Perfect |
 | StepFunctions | 53 | 100% | ✅ Perfect |
-| Timestream | 50 | 100% | ✅ Perfect |
-| WAF | Removed | No longer a supported service |
+| Timestream | 49 | 100% | ✅ Perfect |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2,701/2,701 tests passing (100%) — 2,637 SDK + 47 integration + 17 WebSocket**
+**Overall: 2,777/2,777 tests passing (100%) — 2,713 SDK + 47 integration + 17 WebSocket**
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 
@@ -89,7 +88,6 @@ To run CloudTrail audit integration tests, set `CLOUDTRAIL_ENABLED=true` (or use
 
 ```bash
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
-rm -rf data/us-east-1 data/global
 ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 ```
 
@@ -132,6 +130,7 @@ secretsmanager
 sts
 scheduler
 cognito
+cognito-identity
 sesv2
 kinesis
 acm
@@ -140,12 +139,13 @@ timestream
 route53
 cloudfront
 cloudtrail
-waf
+wafv2
 iot
 iotevents
 neptune
 neptunedata
 neptunegraph
+appsync
 rdsdata
 ```
 

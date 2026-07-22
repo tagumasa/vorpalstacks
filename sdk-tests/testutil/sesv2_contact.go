@@ -49,6 +49,36 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sesv2", "TagResource_ContactList", func() error {
+		arn := tc.contactListARN(contactListName)
+		_, err := tc.client.TagResource(tc.ctx, &sesv2.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err != nil {
+			return fmt.Errorf("list tags after tag: %v", err)
+		}
+		found := false
+		for _, t := range listResp.Tags {
+			if t.Key != nil && *t.Key == "Environment" && t.Value != nil && *t.Value == "test" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("tag Environment=test not found after TagResource")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sesv2", "GetContactList", func() error {
 		resp, err := tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
 			ContactListName: aws.String(contactListName),

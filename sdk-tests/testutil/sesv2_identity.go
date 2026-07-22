@@ -80,6 +80,35 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if !resp.VerifiedForSendingStatus {
 			return fmt.Errorf("expected VerifiedForSendingStatus=true")
 		}
+		// Tag the identity and verify GetEmailIdentity now returns the tag
+		// inline (H-2: per Smithy GetEmailIdentityResponse, Tags is part of
+		// the response shape).
+		arn := tc.identityARN(emailAddress)
+		_, err = tc.client.TagResource(tc.ctx, &sesv2.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags: []types.Tag{
+				{Key: aws.String("Owner"), Value: aws.String("sdk-test")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("tag identity: %v", err)
+		}
+		resp, err = tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
+			EmailIdentity: aws.String(emailAddress),
+		})
+		if err != nil {
+			return fmt.Errorf("get identity after tag: %v", err)
+		}
+		found := false
+		for _, t := range resp.Tags {
+			if t.Key != nil && *t.Key == "Owner" && t.Value != nil && *t.Value == "sdk-test" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("GetEmailIdentity did not return Owner=sdk-test tag (H-2 regression)")
+		}
 		return nil
 	}))
 
@@ -127,6 +156,38 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		})
 		if err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	// BYODKIM via PutEmailIdentityDkimSigningAttributes: the selector and
+	// private key travel inside the nested SigningAttributes structure, not
+	// at the top level. This test catches the nesting bug (B1) where the
+	// handler read BYODKIM fields from req.Parameters directly.
+	results = append(results, r.RunTest("sesv2", "PutEmailIdentityDkimSigningAttributes_BYODKIM", func() error {
+		_, err := tc.client.PutEmailIdentityDkimSigningAttributes(tc.ctx, &sesv2.PutEmailIdentityDkimSigningAttributesInput{
+			EmailIdentity:           aws.String(domainIdentity),
+			SigningAttributesOrigin: types.DkimSigningAttributesOriginExternal,
+			SigningAttributes: &types.DkimSigningAttributes{
+				DomainSigningSelector:   aws.String("byodkimSelector"),
+				DomainSigningPrivateKey: aws.String("MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDdbyodkim"),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
+			EmailIdentity: aws.String(domainIdentity),
+		})
+		if err != nil {
+			return fmt.Errorf("get after BYODKIM put: %v", err)
+		}
+		if resp.DkimAttributes == nil {
+			return fmt.Errorf("DkimAttributes nil after BYODKIM put")
+		}
+		if resp.DkimAttributes.SigningAttributesOrigin != types.DkimSigningAttributesOriginExternal {
+			return fmt.Errorf("expected SigningAttributesOrigin=EXTERNAL after BYODKIM, got %s",
+				resp.DkimAttributes.SigningAttributesOrigin)
 		}
 		return nil
 	}))

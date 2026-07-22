@@ -13,6 +13,12 @@ type AccountDetails struct {
 	WebsiteURL                      string   `json:"websiteUrl,omitempty"`
 	ContactLanguage                 string   `json:"contactLanguage,omitempty"`
 	ProductionAccessEnabled         bool     `json:"productionAccessEnabled"`
+	// ProductionAccessProvided is set true when the caller explicitly
+	// supplied ProductionAccessEnabled in a PutAccountDetails call. Per
+	// Smithy the wire type is EnabledWrapper, which distinguishes unset
+	// from explicit false; without this sentinel we could not tell the
+	// two apart because Go bool's zero value is false.
+	ProductionAccessProvided bool `json:"productionAccessProvided,omitempty"`
 }
 
 // SendingAttributes represents the sending quota and rate attributes for an SESv2 account.
@@ -38,6 +44,13 @@ type VdmAttributes struct {
 }
 
 // Account represents the overall SESv2 account configuration.
+//
+// Note on SendingEnabled: this top-level field mirrors the wire-level
+// response member on com.amazonaws.sesv2#GetAccountResponse. It is
+// distinct from SendingAttributes (which carries the SendQuota fields).
+// The PutAccountSendingAttributes operation flips this top-level flag.
+// The two structures are intentionally separate; the apparent redundancy
+// matches the AWS wire shape.
 type Account struct {
 	Details                 *AccountDetails        `json:"details,omitempty"`
 	SendingAttributes       *SendingAttributes     `json:"sendingAttributes"`
@@ -82,6 +95,9 @@ func (s *SESv2Store) GetAccount() (*Account, error) {
 }
 
 // PutAccountDetails updates the account details for the SESv2 account.
+// Per Smithy, ProductionAccessEnabled is an EnabledWrapper — when the
+// caller omits the parameter, the existing stored value is preserved
+// rather than being implicitly reset to false.
 func (s *SESv2Store) PutAccountDetails(details *AccountDetails) error {
 	s.accountMu.Lock()
 	defer s.accountMu.Unlock()
@@ -89,7 +105,22 @@ func (s *SESv2Store) PutAccountDetails(details *AccountDetails) error {
 	if err != nil {
 		return err
 	}
-	account.Details = details
+	if account.Details == nil {
+		account.Details = &AccountDetails{}
+	}
+	existing := account.Details
+	if details.ProductionAccessProvided {
+		existing.ProductionAccessEnabled = details.ProductionAccessEnabled
+		existing.ProductionAccessProvided = true
+	}
+	existing.MailType = details.MailType
+	existing.UseCaseDescription = details.UseCaseDescription
+	existing.WebsiteURL = details.WebsiteURL
+	existing.ContactLanguage = details.ContactLanguage
+	if len(details.AdditionalContactEmailAddresses) > 0 {
+		existing.AdditionalContactEmailAddresses = details.AdditionalContactEmailAddresses
+	}
+	account.Details = existing
 	return s.accountStore.Put("account", account)
 }
 

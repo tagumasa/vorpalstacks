@@ -75,14 +75,49 @@ func (s *SESv2Store) BuildTemplateArn(name string) string {
 	return s.arnBuilder.Build("ses", "template/"+name)
 }
 
+// BuildContactListArn builds an ARN for an SES contact list. Contact lists
+// live under the `ses:contact-list/<name>` resource path. All tag operations
+// (Create/Read/Delete) and the admin handler must use this helper to keep
+// the key consistent — otherwise tags stored at one key cannot be retrieved
+// at another (the previous raw-string bug C-3).
+func (s *SESv2Store) BuildContactListArn(name string) string {
+	return s.arnBuilder.Build("ses", "contact-list/"+name)
+}
+
+// BuildDedicatedIpPoolArn builds an ARN for an SES dedicated IP pool.
+// Used so that tag operations on dedicated-ip-pool resources share one
+// canonical ARN form across Create/Read/Delete handlers.
+func (s *SESv2Store) BuildDedicatedIpPoolArn(name string) string {
+	return s.arnBuilder.Build("ses", "dedicated-ip-pool/"+name)
+}
+
 // DkimAttributes represents DKIM attributes for an email identity.
 type DkimAttributes struct {
-	Status                  string   `json:"status,omitempty"`
-	SigningEnabled          bool     `json:"signingEnabled"`
-	Tokens                  []string `json:"tokens,omitempty"`
-	CurrentSigningKeyLength string   `json:"currentSigningKeyLength,omitempty"`
-	NextSigningKeyLength    string   `json:"nextSigningKeyLength,omitempty"`
-	SigningAttributesOrigin string   `json:"signingAttributesOrigin,omitempty"`
+	Status                     string   `json:"status,omitempty"`
+	SigningEnabled             bool     `json:"signingEnabled"`
+	Tokens                     []string `json:"tokens,omitempty"`
+	CurrentSigningKeyLength    string   `json:"currentSigningKeyLength,omitempty"`
+	NextSigningKeyLength       string   `json:"nextSigningKeyLength,omitempty"`
+	SigningAttributesOrigin    string   `json:"signingAttributesOrigin,omitempty"`
+	LastKeyGenerationTimestamp string   `json:"lastKeyGenerationTimestamp,omitempty"`
+	SigningHostedZone          string   `json:"signingHostedZone,omitempty"`
+	DomainSigningSelector      string   `json:"domainSigningSelector,omitempty"`
+	DomainSigningPrivateKey    string   `json:"domainSigningPrivateKey,omitempty"`
+}
+
+// DkimSigningAttributes represents the BYODKIM signing attributes supplied
+// by the caller (Bring Your Own DKIM). Per Smithy
+// com.amazonaws.sesv2#DkimSigningAttributes the caller provides
+// DomainSigningSelector + DomainSigningPrivateKey (and optionally
+// NextSigningKeyLength + DomainSigningAttributesOrigin). When supplied on
+// CreateEmailIdentity or PutEmailIdentityDkimSigningAttributes, the
+// identity uses BYODKIM with the user's own keys rather than AWS-managed
+// DKIM tokens.
+type DkimSigningAttributes struct {
+	DomainSigningSelector         string `json:"domainSigningSelector,omitempty"`
+	DomainSigningPrivateKey       string `json:"domainSigningPrivateKey,omitempty"`
+	NextSigningKeyLength          string `json:"nextSigningKeyLength,omitempty"`
+	DomainSigningAttributesOrigin string `json:"domainSigningAttributesOrigin,omitempty"`
 }
 
 // EmailIdentity represents an email identity in SES.
@@ -129,6 +164,14 @@ func isDomain(identity string) bool {
 }
 
 // GenerateDkimAttributes generates DKIM attributes for an email identity.
+// identityType is reserved for future per-type behaviour; currently both
+// EMAIL_ADDRESS and DOMAIN identities receive the same AWS-managed token
+// set. Default signing key length is RSA_2048_BIT per the AWS
+// recommendation in effect since 2022 (RSA_1024_BIT is deprecated for new
+// identities). When the caller supplies BYODKIM DkimSigningAttributes, the
+// higher-level handler sets SigningAttributesOrigin=EXTERNAL and stores
+// the caller-supplied selector/private key on the identity directly
+// rather than calling this helper.
 func GenerateDkimAttributes(identityType string) *DkimAttributes {
 	return &DkimAttributes{
 		Status:         "SUCCESS",
@@ -138,7 +181,7 @@ func GenerateDkimAttributes(identityType string) *DkimAttributes {
 			generateDkimToken(),
 			generateDkimToken(),
 		},
-		CurrentSigningKeyLength: "RSA_1024_BIT",
+		CurrentSigningKeyLength: "RSA_2048_BIT",
 		SigningAttributesOrigin: "AWS_SES",
 	}
 }
@@ -151,8 +194,10 @@ func generateDkimToken() string {
 	for i := range b {
 		r, err := rand.Int(rand.Reader, max)
 		if err != nil {
-			b[i] = charset[i%len(charset)]
-			continue
+			// crypto/rand failure is exceptional; surface it instead of
+			// silently emitting a deterministic token that an attacker
+			// could predict.
+			panic("sesv2: crypto/rand failure during DKIM token generation: " + err.Error())
 		}
 		b[i] = charset[r.Int64()]
 	}
@@ -244,9 +289,16 @@ func (s *SESv2Store) GetDedicatedIpPool(poolName string) (*DedicatedIpPool, erro
 }
 
 // DeleteDedicatedIpPool deletes a dedicated IP pool.
+// Tags are cleaned up alongside the pool so the resource does not leave
+// orphaned tag entries (consistent with DeleteEmailIdentity,
+// DeleteConfigurationSet, DeleteContactList, DeleteEmailTemplate).
 func (s *SESv2Store) DeleteDedicatedIpPool(poolName string) error {
 	if !s.ipPoolStore.Exists(poolName) {
 		return ErrDedicatedIpPoolNotFound
+	}
+	arn := s.BuildDedicatedIpPoolArn(poolName)
+	if err := s.TagStore.Delete(arn); err != nil {
+		logs.Error("Failed to delete tags for dedicated IP pool", logs.String("name", poolName), logs.Err(err))
 	}
 	return s.ipPoolStore.Delete(poolName)
 }

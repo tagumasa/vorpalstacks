@@ -102,6 +102,11 @@ func (s *SESv2Service) PutAccountSuppressionAttributes(ctx context.Context, reqC
 }
 
 // PutAccountDetails updates the account details for the SES v2 account.
+// Per Smithy com.amazonaws.sesv2#PutAccountDetailsRequest,
+// ProductionAccessEnabled has Smithy type EnabledWrapper (a Boolean
+// wrapper that distinguishes unset from explicit false). We honour that
+// by only overwriting the stored value when the caller actually supplied
+// the parameter.
 func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -109,16 +114,20 @@ func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.Re
 	}
 
 	details := &sesv2store.AccountDetails{
-		MailType:                request.GetStringParam(req.Parameters, "MailType"),
-		UseCaseDescription:      request.GetStringParam(req.Parameters, "UseCaseDescription"),
-		WebsiteURL:              request.GetStringParam(req.Parameters, "WebsiteURL"),
-		ContactLanguage:         request.GetStringParam(req.Parameters, "ContactLanguage"),
-		ProductionAccessEnabled: request.GetBoolParam(req.Parameters, "ProductionAccessEnabled"),
+		MailType:           request.GetStringParam(req.Parameters, "MailType"),
+		UseCaseDescription: request.GetStringParam(req.Parameters, "UseCaseDescription"),
+		WebsiteURL:         request.GetStringParam(req.Parameters, "WebsiteURL"),
+		ContactLanguage:    request.GetStringParam(req.Parameters, "ContactLanguage"),
 	}
 
 	additionalEmails := request.GetStringList(req.Parameters, "AdditionalContactEmailAddresses")
 	if len(additionalEmails) > 0 {
 		details.AdditionalContactEmailAddresses = additionalEmails
+	}
+
+	if _, ok := req.Parameters["ProductionAccessEnabled"]; ok {
+		details.ProductionAccessEnabled = request.GetBoolParam(req.Parameters, "ProductionAccessEnabled")
+		details.ProductionAccessProvided = true
 	}
 
 	if err := store.PutAccountDetails(details); err != nil {
@@ -129,6 +138,10 @@ func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.Re
 }
 
 // PutAccountVdmAttributes updates the VDM attributes for the SES v2 account.
+// Per Smithy `com.amazonaws.sesv2#VdmAttributes`, DashboardAttributes and
+// GuardianAttributes are nested structs (not flat strings). The previous
+// implementation read them via GetStringParam, silently dropping the nested
+// EngagementMetrics / OptimizedSharedDelivery values.
 func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -141,12 +154,17 @@ func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	vdmEnabledStr := request.GetStringParam(vdmAttrs, "VdmEnabled")
-	vdmEnabled := vdmEnabledStr == "ENABLED" || vdmEnabledStr == "true"
 	vdm := &sesv2store.VdmAttributes{
-		VdmEnabled:                      vdmEnabled,
-		DashboardAttributes:             request.GetStringParam(vdmAttrs, "DashboardAttributes"),
-		GuardianAttributes:              request.GetStringParam(vdmAttrs, "GuardianAttributes"),
+		VdmEnabled:                      vdmEnabledStr == "ENABLED",
 		AdditionalContactEmailAddresses: request.GetStringList(vdmAttrs, "AdditionalContactEmailAddresses"),
+	}
+
+	if dashboardAttrs := request.GetMapParam(vdmAttrs, "DashboardAttributes"); dashboardAttrs != nil {
+		vdm.DashboardAttributes = request.GetStringParam(dashboardAttrs, "EngagementMetrics")
+	}
+
+	if guardianAttrs := request.GetMapParam(vdmAttrs, "GuardianAttributes"); guardianAttrs != nil {
+		vdm.GuardianAttributes = request.GetStringParam(guardianAttrs, "OptimizedSharedDelivery")
 	}
 
 	if err := store.PutVdmAttributes(vdm); err != nil {

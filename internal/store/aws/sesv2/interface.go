@@ -23,6 +23,8 @@ type SESv2StoreInterface interface {
 	BuildIdentityArn(identity string) string
 	BuildConfigSetArn(name string) string
 	BuildTemplateArn(name string) string
+	BuildContactListArn(name string) string
+	BuildDedicatedIpPoolArn(name string) string
 
 	CreateEmailIdentity(identity *EmailIdentity) (*EmailIdentity, error)
 	GetEmailIdentity(identity string) (*EmailIdentity, error)

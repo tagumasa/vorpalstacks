@@ -57,7 +57,6 @@ type Template struct {
 type EmailRecord struct {
 	MessageId                      string          `json:"messageId"`
 	FromEmailAddress               string          `json:"fromEmailAddress,omitempty"`
-	FromEmailAddressIdentityArn    string          `json:"fromEmailAddressIdentityArn,omitempty"`
 	Destination                    *Destination    `json:"destination,omitempty"`
 	Content                        *EmailContent   `json:"content,omitempty"`
 	ReplyToAddresses               []string        `json:"replyToAddresses,omitempty"`

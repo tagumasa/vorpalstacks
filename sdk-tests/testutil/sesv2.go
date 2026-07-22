@@ -37,6 +37,14 @@ func (tc *sesv2TestContext) configSetARN(name string) string {
 	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:configuration-set/%s", name)
 }
 
+func (tc *sesv2TestContext) contactListARN(name string) string {
+	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:contact-list/%s", name)
+}
+
+func (tc *sesv2TestContext) identityARN(name string) string {
+	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:identity/%s", name)
+}
+
 func (tc *sesv2TestContext) deleteConfigSet(name string) {
 	_, _ = tc.client.DeleteConfigurationSet(tc.ctx, &sesv2.DeleteConfigurationSetInput{
 		ConfigurationSetName: aws.String(name),

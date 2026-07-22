@@ -81,6 +81,34 @@ func (s *SESv2Service) CreateConfigurationSet(ctx context.Context, reqCtx *reque
 		}
 	}
 
+	if suppressionOpts := request.GetMapParam(req.Parameters, "SuppressionOptions"); suppressionOpts != nil {
+		configSet.SuppressionOptions = &sesv2store.SuppressionOptions{
+			SuppressedReasons: request.GetStringList(suppressionOpts, "SuppressedReasons"),
+		}
+	}
+
+	if vdmOpts := request.GetMapParam(req.Parameters, "VdmOptions"); vdmOpts != nil {
+		configSet.VdmOptions = &sesv2store.VdmOptions{}
+		if dashboardOpts := request.GetMapParam(vdmOpts, "DashboardOptions"); dashboardOpts != nil {
+			configSet.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{
+				EngagementMetrics: request.GetStringParam(dashboardOpts, "EngagementMetrics"),
+			}
+		}
+		if guardianOpts := request.GetMapParam(vdmOpts, "GuardianOptions"); guardianOpts != nil {
+			configSet.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{
+				OptimizedSharedDelivery: request.GetStringParam(guardianOpts, "OptimizedSharedDelivery"),
+			}
+		}
+	}
+
+	if archivingOpts := request.GetMapParam(req.Parameters, "ArchivingOptions"); archivingOpts != nil {
+		if archiveArn := request.GetStringParam(archivingOpts, "ArchiveArn"); archiveArn != "" {
+			configSet.ArchivingOptions = &sesv2store.ArchivingOptions{
+				ArchiveArn: archiveArn,
+			}
+		}
+	}
+
 	_, err = store.CreateConfigurationSet(configSet)
 	if err != nil {
 		return nil, err
@@ -144,6 +172,38 @@ func (s *SESv2Service) GetConfigurationSet(ctx context.Context, reqCtx *request.
 			"CustomRedirectDomain": configSet.TrackingOptions.CustomRedirectDomain,
 			"HttpsPolicy":          configSet.TrackingOptions.HttpsPolicy,
 		}
+	}
+
+	if configSet.SuppressionOptions != nil {
+		resp["SuppressionOptions"] = map[string]interface{}{
+			"SuppressedReasons": configSet.SuppressionOptions.SuppressedReasons,
+		}
+	}
+
+	if configSet.VdmOptions != nil {
+		vdmMap := map[string]interface{}{}
+		if configSet.VdmOptions.DashboardOptions != nil {
+			vdmMap["DashboardOptions"] = map[string]interface{}{
+				"EngagementMetrics": configSet.VdmOptions.DashboardOptions.EngagementMetrics,
+			}
+		}
+		if configSet.VdmOptions.GuardianOptions != nil {
+			vdmMap["GuardianOptions"] = map[string]interface{}{
+				"OptimizedSharedDelivery": configSet.VdmOptions.GuardianOptions.OptimizedSharedDelivery,
+			}
+		}
+		resp["VdmOptions"] = vdmMap
+	}
+
+	if configSet.ArchivingOptions != nil {
+		resp["ArchivingOptions"] = map[string]interface{}{
+			"ArchiveArn": configSet.ArchivingOptions.ArchiveArn,
+		}
+	}
+
+	arn := store.BuildConfigSetArn(configSet.Name)
+	if tags, err := store.ListAsSlice(arn); err == nil && len(tags) > 0 {
+		resp["Tags"] = tags
 	}
 
 	return resp, nil
@@ -320,6 +380,9 @@ func formatEventDestination(ed *sesv2store.EventDestination) map[string]interfac
 }
 
 // CreateConfigurationSetEventDestination creates an event destination for a configuration set.
+// Per AWS, when Enabled=true the request must supply a non-empty
+// MatchingEventTypes list. We replicate that validation rather than
+// silently persisting a destination that would never fire.
 func (s *SESv2Service) CreateConfigurationSetEventDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -353,6 +416,10 @@ func (s *SESv2Service) CreateConfigurationSetEventDestination(ctx context.Contex
 		eventDest.Enabled = request.GetBoolParam(defMap, "Enabled")
 		eventDest.MatchingEventTypes = request.GetStringList(defMap, "MatchingEventTypes")
 		eventDest.EventDestinationDefinition = parseEventDestinationDefinition(defMap)
+	}
+
+	if eventDest.Enabled && len(eventDest.MatchingEventTypes) == 0 {
+		return nil, ErrInvalidParameter
 	}
 
 	configSet.EventDestinations = append(configSet.EventDestinations, eventDest)
@@ -421,6 +488,9 @@ func (s *SESv2Service) UpdateConfigurationSetEventDestination(ctx context.Contex
 				if newDef := parseEventDestinationDefinition(defMap); newDef != nil {
 					configSet.EventDestinations[i].EventDestinationDefinition = newDef
 				}
+			}
+			if configSet.EventDestinations[i].Enabled && len(configSet.EventDestinations[i].MatchingEventTypes) == 0 {
+				return nil, ErrInvalidParameter
 			}
 			found = true
 			break
@@ -541,20 +611,30 @@ func (s *SESv2Service) PutConfigurationSetTrackingOptions(ctx context.Context, r
 }
 
 // PutConfigurationSetVdmOptions updates the VDM options for a configuration set.
+// Per Smithy com.amazonaws.sesv2#PutConfigurationSetVdmOptionsRequest the
+// VdmOptions member carries DashboardOptions and GuardianOptions as nested
+// structs. The previous impl read DashboardOptions/GuardianOptions at the
+// top level of params, but the wire shape nests them one level deeper
+// inside VdmOptions.
 func (s *SESv2Service) PutConfigurationSetVdmOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
 		if cs.VdmOptions == nil {
 			cs.VdmOptions = &sesv2store.VdmOptions{}
 		}
 
-		if dashboardOpts := request.GetMapParam(params, "DashboardOptions"); dashboardOpts != nil {
+		vdmOpts := request.GetMapParam(params, "VdmOptions")
+		if vdmOpts == nil {
+			return
+		}
+
+		if dashboardOpts := request.GetMapParam(vdmOpts, "DashboardOptions"); dashboardOpts != nil {
 			if cs.VdmOptions.DashboardOptions == nil {
 				cs.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{}
 			}
 			cs.VdmOptions.DashboardOptions.EngagementMetrics = request.GetStringParam(dashboardOpts, "EngagementMetrics")
 		}
 
-		if guardianOpts := request.GetMapParam(params, "GuardianOptions"); guardianOpts != nil {
+		if guardianOpts := request.GetMapParam(vdmOpts, "GuardianOptions"); guardianOpts != nil {
 			if cs.VdmOptions.GuardianOptions == nil {
 				cs.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{}
 			}
@@ -564,17 +644,18 @@ func (s *SESv2Service) PutConfigurationSetVdmOptions(ctx context.Context, reqCtx
 }
 
 // PutConfigurationSetArchivingOptions updates the archiving options for a configuration set.
+// Per Smithy `PutConfigurationSetArchivingOptionsRequest`, only `ArchiveArn`
+// is accepted (no Enabled/RetentionPeriod/TargetArn — those were an
+// invented schema that silently dropped user input).
 func (s *SESv2Service) PutConfigurationSetArchivingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
-		if cs.ArchivingOptions == nil {
-			cs.ArchivingOptions = &sesv2store.ArchivingOptions{}
+		archiveArn := request.GetStringParam(params, "ArchiveArn")
+		if archiveArn == "" {
+			cs.ArchivingOptions = nil
+			return
 		}
-		cs.ArchivingOptions.Enabled = request.GetBoolParam(params, "Enabled")
-		if v := request.GetStringParam(params, "TargetArn"); v != "" {
-			cs.ArchivingOptions.TargetArn = v
-		}
-		if v := int32(request.GetIntParam(params, "RetentionPeriod")); v > 0 {
-			cs.ArchivingOptions.RetentionPeriod = v
+		cs.ArchivingOptions = &sesv2store.ArchivingOptions{
+			ArchiveArn: archiveArn,
 		}
 	})
 }

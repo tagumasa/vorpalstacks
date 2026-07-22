@@ -43,10 +43,12 @@ type VdmOptions struct {
 }
 
 // ArchivingOptions specifies the archiving options for a configuration set.
+// Per Smithy `com.amazonaws.sesv2#ArchivingOptions`, the only member is
+// `ArchiveArn` — the ARN of the MailManager archive that SES v2 sends email
+// to. There is no Enabled/RetentionPeriod/TargetArn in the AWS spec; the
+// previous fields were a typed-field/spec desync (SNS-B2 pattern).
 type ArchivingOptions struct {
-	Enabled         bool   `json:"enabled"`
-	RetentionPeriod int32  `json:"retentionPeriod,omitempty"`
-	TargetArn       string `json:"targetArn,omitempty"`
+	ArchiveArn string `json:"archiveArn,omitempty"`
 }
 
 // VDMDashboardOptions specifies the dashboard options for VDM.
@@ -66,7 +68,7 @@ type ConfigurationSet struct {
 	ReputationOptions    *ReputationOptions  `json:"reputationOptions,omitempty"`
 	DeliveryOptions      *DeliveryOptions    `json:"deliveryOptions,omitempty"`
 	TrackingOptions      *TrackingOptions    `json:"trackingOptions,omitempty"`
-	SuppressionOptions   *SuppressionOptions `json:"suppressedReasons,omitempty"`
+	SuppressionOptions   *SuppressionOptions `json:"suppressionOptions,omitempty"`
 	VdmOptions           *VdmOptions         `json:"vdmOptions,omitempty"`
 	ArchivingOptions     *ArchivingOptions   `json:"archivingOptions,omitempty"`
 	EventDestinations    []*EventDestination `json:"eventDestinations,omitempty"`

@@ -65,24 +65,31 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 }
 
 // SendBulkEmail sends multiple emails in a single operation.
+// Per AWS, FromEmailAddress and at least one BulkEmailEntries item are
+// required. The previous implementation accepted an empty From and an
+// empty Entries slice, returning a success response with zero entries.
 func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	fromEmailAddress := request.GetStringParam(req.Parameters, "FromEmailAddress")
+	if fromEmailAddress == "" {
+		return nil, ErrMissingParameter
+	}
 	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
 	feedbackForwardingEmailAddress := request.GetStringParam(req.Parameters, "FeedbackForwardingEmailAddress")
 
 	defaultContent := parseContent(request.GetMapParam(req.Parameters, "DefaultContent"))
 
 	entries := parseBulkEmailEntries(req.Parameters)
+	if len(entries) == 0 {
+		return nil, ErrMissingParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if fromEmailAddress != "" {
-		if !identityExistsForEmail(store.Raw(), fromEmailAddress) {
-			return nil, ErrIdentityNotFound
-		}
+	if !identityExistsForEmail(store.Raw(), fromEmailAddress) {
+		return nil, ErrIdentityNotFound
 	}
 
 	results := make([]map[string]interface{}, 0, len(entries))
@@ -310,25 +317,52 @@ func toStringSlice(iface []interface{}) []string {
 	return result
 }
 
-func extractIdentityFromEmail(email string) string {
+// extractIdentityFromEmail returns the identity string that should be
+// looked up to authorise the FromEmailAddress. Per AWS, identities are
+// either an exact email address (user@example.com) or the bare domain
+// (example.com). RFC 5322 display-name forms such as 'John Doe <u@d>' are
+// not valid SES identities and are rejected upstream by the SDK before
+// reaching the service; we still try to extract the addr-spec when
+// possible so a slightly-lenient client does not get a confusing
+// 'identity not found' error.
+func extractIdentityFromEmail(email string) (string, bool) {
+	if email == "" {
+		return "", false
+	}
+	// Trim display-name form: 'Name <addr@domain>' -> 'addr@domain'
+	if i := strings.LastIndex(email, "<"); i >= 0 {
+		end := strings.Index(email[i:], ">")
+		if end > 0 {
+			email = email[i+1 : i+end]
+		}
+	}
+	email = strings.TrimSpace(email)
 	if !strings.Contains(email, "@") {
-		return email
+		// Bare domain (e.g. 'example.com') is a valid identity form.
+		return email, true
 	}
 	parts := strings.Split(email, "@")
-	return parts[len(parts)-1]
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", false
+	}
+	return parts[len(parts)-1], true
 }
 
+// identityExistsForEmail reports whether a verified identity exists that
+// authorises sending from the given FromEmailAddress. The lookup is
+// performed in two steps: first the exact email address, then the
+// extracted domain. Malformed inputs return false so the caller returns
+// ErrIdentityNotFound rather than a confusing 'no identity matches'.
 func identityExistsForEmail(store *sesv2store.SESv2Store, email string) bool {
-	_, err := store.GetEmailIdentity(email)
-	if err != nil {
-		domain := extractIdentityFromEmail(email)
-		if domain != email {
-			_, err = store.GetEmailIdentity(domain)
-			return err == nil
-		}
+	if _, err := store.GetEmailIdentity(email); err == nil {
+		return true
+	}
+	domain, ok := extractIdentityFromEmail(email)
+	if !ok || domain == email {
 		return false
 	}
-	return true
+	_, err := store.GetEmailIdentity(domain)
+	return err == nil
 }
 
 func parseReplacementEmailContent(replMap map[string]interface{}) *sesv2store.ReplacementEmailContent {

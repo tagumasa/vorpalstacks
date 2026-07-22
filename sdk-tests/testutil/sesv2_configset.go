@@ -158,21 +158,52 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 				DashboardOptions: &types.DashboardOptions{
 					EngagementMetrics: types.FeatureStatusEnabled,
 				},
+				GuardianOptions: &types.GuardianOptions{
+					OptimizedSharedDelivery: types.FeatureStatusEnabled,
+				},
 			},
 		})
 		if err != nil {
 			return err
 		}
+		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
+			ConfigurationSetName: aws.String(configSetName),
+		})
+		if err != nil {
+			return fmt.Errorf("get after vdm put: %v", err)
+		}
+		if resp.VdmOptions == nil || resp.VdmOptions.DashboardOptions == nil {
+			return fmt.Errorf("VdmOptions.DashboardOptions is nil after put")
+		}
+		if resp.VdmOptions.DashboardOptions.EngagementMetrics != types.FeatureStatusEnabled {
+			return fmt.Errorf("expected DashboardOptions.EngagementMetrics=ENABLED, got %s", resp.VdmOptions.DashboardOptions.EngagementMetrics)
+		}
+		if resp.VdmOptions.GuardianOptions == nil || resp.VdmOptions.GuardianOptions.OptimizedSharedDelivery != types.FeatureStatusEnabled {
+			return fmt.Errorf("expected GuardianOptions.OptimizedSharedDelivery=ENABLED")
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("sesv2", "PutConfigurationSetArchivingOptions", func() error {
+		archiveArn := "arn:aws:mailmanager:us-east-1:000000000000:archive/test"
 		_, err := tc.client.PutConfigurationSetArchivingOptions(tc.ctx, &sesv2.PutConfigurationSetArchivingOptionsInput{
 			ConfigurationSetName: aws.String(configSetName),
-			ArchiveArn:           aws.String("arn:aws:mailmanager:us-east-1:000000000000:archive/test"),
+			ArchiveArn:           aws.String(archiveArn),
 		})
 		if err != nil {
 			return err
+		}
+		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
+			ConfigurationSetName: aws.String(configSetName),
+		})
+		if err != nil {
+			return fmt.Errorf("get after archiving put: %v", err)
+		}
+		if resp.ArchivingOptions == nil {
+			return fmt.Errorf("ArchivingOptions is nil after put")
+		}
+		if resp.ArchivingOptions.ArchiveArn == nil || *resp.ArchivingOptions.ArchiveArn != archiveArn {
+			return fmt.Errorf("expected ArchiveArn=%s, got %v", archiveArn, resp.ArchivingOptions.ArchiveArn)
 		}
 		return nil
 	}))

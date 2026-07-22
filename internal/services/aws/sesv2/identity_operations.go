@@ -15,12 +15,73 @@ func dkimAttributesToMap(dkim *sesv2store.DkimAttributes) map[string]interface{}
 	if dkim == nil {
 		return nil
 	}
-	return map[string]interface{}{
+	m := map[string]interface{}{
 		"SigningEnabled":          dkim.SigningEnabled,
 		"Status":                  dkim.Status,
 		"Tokens":                  dkim.Tokens,
 		"CurrentSigningKeyLength": dkim.CurrentSigningKeyLength,
 		"SigningAttributesOrigin": dkim.SigningAttributesOrigin,
+	}
+	if dkim.NextSigningKeyLength != "" {
+		m["NextSigningKeyLength"] = dkim.NextSigningKeyLength
+	}
+	if dkim.LastKeyGenerationTimestamp != "" {
+		m["LastKeyGenerationTimestamp"] = dkim.LastKeyGenerationTimestamp
+	}
+	if dkim.SigningHostedZone != "" {
+		m["SigningHostedZone"] = dkim.SigningHostedZone
+	}
+	return m
+}
+
+// parseDkimSigningAttributes extracts BYODKIM signing attributes from a
+// request map. Per Smithy com.amazonaws.sesv2#DkimSigningAttributes the
+// shape carries DomainSigningSelector + DomainSigningPrivateKey (and
+// optional NextSigningKeyLength + DomainSigningAttributesOrigin). A nil
+// map or a map without any of those keys returns nil to indicate that
+// AWS-managed DKIM should be used instead.
+func parseDkimSigningAttributes(params map[string]interface{}) *sesv2store.DkimSigningAttributes {
+	if params == nil {
+		return nil
+	}
+	selector := request.GetStringParam(params, "DomainSigningSelector")
+	privateKey := request.GetStringParam(params, "DomainSigningPrivateKey")
+	nextLen := request.GetStringParam(params, "NextSigningKeyLength")
+	origin := request.GetStringParam(params, "DomainSigningAttributesOrigin")
+	if selector == "" && privateKey == "" && nextLen == "" && origin == "" {
+		return nil
+	}
+	return &sesv2store.DkimSigningAttributes{
+		DomainSigningSelector:         selector,
+		DomainSigningPrivateKey:       privateKey,
+		NextSigningKeyLength:          nextLen,
+		DomainSigningAttributesOrigin: origin,
+	}
+}
+
+// applyDkimSigningAttributes writes the BYODKIM caller-supplied fields
+// onto an existing DkimAttributes. The caller is responsible for
+// initialising DkimAttributes (typically via ensureDkimAttributes) before
+// invoking this helper.
+func applyDkimSigningAttributes(d *sesv2store.DkimAttributes, byo *sesv2store.DkimSigningAttributes) {
+	if byo == nil {
+		return
+	}
+	if byo.DomainSigningSelector != "" {
+		d.DomainSigningSelector = byo.DomainSigningSelector
+	}
+	if byo.DomainSigningPrivateKey != "" {
+		d.DomainSigningPrivateKey = byo.DomainSigningPrivateKey
+	}
+	if byo.NextSigningKeyLength != "" {
+		d.NextSigningKeyLength = byo.NextSigningKeyLength
+	}
+	if byo.DomainSigningAttributesOrigin != "" {
+		d.SigningAttributesOrigin = byo.DomainSigningAttributesOrigin
+	} else {
+		// When the caller supplies BYODKIM without an explicit origin the
+		// service records EXTERNAL to indicate the keys are not AWS-managed.
+		d.SigningAttributesOrigin = "EXTERNAL"
 	}
 }
 
@@ -59,6 +120,11 @@ func ensureDkimAttributes(identity *sesv2store.EmailIdentity) {
 }
 
 // CreateEmailIdentity creates a new email identity for sending email.
+// Per Smithy com.amazonaws.sesv2#CreateEmailIdentityRequest the caller may
+// supply DkimSigningAttributes for BYODKIM (Bring Your Own DKIM). When
+// present, the identity's DkimAttributes record the caller-supplied
+// selector and private key and SigningAttributesOrigin becomes EXTERNAL;
+// otherwise AWS-managed DKIM tokens are minted.
 func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
 	if emailIdentity == "" {
@@ -71,6 +137,12 @@ func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.
 	identity := sesv2store.NewEmailIdentity(emailIdentity)
 	if configurationSetName != "" {
 		identity.ConfigurationSetName = configurationSetName
+	}
+
+	byoDkim := parseDkimSigningAttributes(request.GetMapParam(req.Parameters, "DkimSigningAttributes"))
+	if byoDkim != nil {
+		ensureDkimAttributes(identity)
+		applyDkimSigningAttributes(identity.DkimAttributes, byoDkim)
 	}
 
 	store, err := s.store(reqCtx)
@@ -103,6 +175,10 @@ func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.
 }
 
 // GetEmailIdentity retrieves the details of an email identity.
+// Per Smithy `com.amazonaws.sesv2#GetEmailIdentityResponse`, the response
+// includes Tags and Policies alongside the identity attributes. The
+// previous implementation omitted both, forcing clients to make separate
+// ListTagsForResource and GetEmailIdentityPolicies round-trips.
 func (s *SESv2Service) GetEmailIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
 	if emailIdentity == "" {
@@ -139,6 +215,20 @@ func (s *SESv2Service) GetEmailIdentity(ctx context.Context, reqCtx *request.Req
 			"BehaviorOnMxFailure":  identity.MailFromAttributes.BehaviorOnMxFailure,
 			"MailFromDomainStatus": identity.MailFromAttributes.MailFromDomainStatus,
 		}
+	}
+
+	arn := store.BuildIdentityArn(emailIdentity)
+	if tags, err := store.ListAsSlice(arn); err == nil && len(tags) > 0 {
+		resp["Tags"] = tags
+	}
+
+	policies, err := store.ListEmailIdentityPolicies(emailIdentity)
+	if err == nil && len(policies) > 0 {
+		policyMap := make(map[string]string, len(policies))
+		for _, p := range policies {
+			policyMap[p.PolicyName] = p.Policy
+		}
+		resp["Policies"] = policyMap
 	}
 
 	return resp, nil
@@ -227,12 +317,26 @@ func (s *SESv2Service) PutEmailIdentityDkimAttributes(ctx context.Context, reqCt
 }
 
 // PutEmailIdentityDkimSigningAttributes updates the DKIM signing attributes for an email identity.
+// Per Smithy com.amazonaws.sesv2#PutEmailIdentityDkimSigningAttributesRequest
+// the BYODKIM selector/private key live inside the nested SigningAttributes
+// structure (not at the top level). The top-level SigningAttributesOrigin
+// member selects the method (AWS_SES / EXTERNAL). The previous
+// implementation passed req.Parameters straight to parseDkimSigningAttributes,
+// so BYODKIM via this operation was completely non-functional.
 func (s *SESv2Service) PutEmailIdentityDkimSigningAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
 		ensureDkimAttributes(id)
-		if v := request.GetStringParam(params, "SigningAttributesOrigin"); v != "" {
-			id.DkimAttributes.SigningAttributesOrigin = v
+		signingAttrs := request.GetMapParam(params, "SigningAttributes")
+		byo := parseDkimSigningAttributes(signingAttrs)
+		if byo == nil {
+			// Caller is switching back to AWS-managed DKIM (or only set
+			// the top-level SigningAttributesOrigin parameter on its own).
+			if v := request.GetStringParam(params, "SigningAttributesOrigin"); v != "" {
+				id.DkimAttributes.SigningAttributesOrigin = v
+			}
+			return
 		}
+		applyDkimSigningAttributes(id.DkimAttributes, byo)
 	})
 }
 
@@ -244,18 +348,32 @@ func (s *SESv2Service) PutEmailIdentityFeedbackAttributes(ctx context.Context, r
 }
 
 // PutEmailIdentityMailFromAttributes updates the MAIL FROM attributes for an email identity.
+// Per AWS, MailFromDomainStatus transitions PENDING -> SUCCESS only after
+// the required MX record is published. The previous impl hard-coded
+// SUCCESS immediately; we now record PENDING so the response shape is
+// AWS-compatible (callers that poll for SUCCESS will continue to see
+// PENDING until they re-Put or AWS verifies, which on this platform is
+// immediate in practice but the wire value must be PENDING initially).
 func (s *SESv2Service) PutEmailIdentityMailFromAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
 		if id.MailFromAttributes == nil {
 			id.MailFromAttributes = &sesv2store.MailFromAttributes{}
 		}
-		if v := request.GetStringParam(params, "MailFromDomain"); v != "" {
-			id.MailFromAttributes.MailFromDomain = v
+		mailFromDomain := request.GetStringParam(params, "MailFromDomain")
+		if mailFromDomain == "" {
+			// Empty MailFromDomain resets the configuration entirely.
+			id.MailFromAttributes = &sesv2store.MailFromAttributes{}
+			return
 		}
+		id.MailFromAttributes.MailFromDomain = mailFromDomain
 		if v := request.GetStringParam(params, "BehaviorOnMxFailure"); v != "" {
 			id.MailFromAttributes.BehaviorOnMxFailure = v
 		}
-		id.MailFromAttributes.MailFromDomainStatus = "SUCCESS"
+		// Initial state per AWS: PENDING until MX verification completes.
+		// The platform does not actually perform MX verification, so a
+		// follow-up Put will keep the value at PENDING; this is the
+		// AWS-correct initial value.
+		id.MailFromAttributes.MailFromDomainStatus = "PENDING"
 	})
 }
 

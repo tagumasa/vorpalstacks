@@ -90,7 +90,7 @@ func (s *SESv2Store) DeleteContactList(name string) error {
 			}
 		}
 	}
-	arn := s.arnBuilder.Build("ses", "contact-list/"+name)
+	arn := s.BuildContactListArn(name)
 	if err := s.TagStore.Delete(arn); err != nil {
 		logs.Error("Failed to delete tags for contact list", logs.String("name", name), logs.Err(err))
 	}
