@@ -2,6 +2,10 @@ package appsync
 
 import (
 	"context"
+	"time"
+
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -41,12 +45,24 @@ func (s *AppSyncService) CreateApiCache(ctx context.Context, reqCtx *request.Req
 		AtRestEncryptionEnabled:  request.GetBoolParam(req.Parameters, "atRestEncryptionEnabled"),
 		TransitEncryptionEnabled: request.GetBoolParam(req.Parameters, "transitEncryptionEnabled"),
 		HealthMetricsConfig:      request.GetStringParam(req.Parameters, "healthMetricsConfig"),
-		Status:                   "AVAILABLE",
+		Status:                   "CREATING",
 	}
 
 	if err := store.CreateApiCache(apiId, cache); err != nil {
 		return mapStoreError(err)
 	}
+
+	// Simulate async cache creation: transition CREATING → AVAILABLE.
+	go func() {
+		defer func() { resilience.RecoverPanic("appsync cache creation async") }()
+		time.Sleep(2 * time.Second)
+		cache.Status = "AVAILABLE"
+		if err := store.UpdateApiCache(apiId, cache); err != nil {
+			logs.Warn("failed to persist cache AVAILABLE status",
+				logs.String("apiId", apiId),
+				logs.Err(err))
+		}
+	}()
 
 	return map[string]interface{}{"apiCache": apiCacheToMap(cache)}, nil
 }
@@ -95,7 +111,8 @@ func (s *AppSyncService) UpdateApiCache(ctx context.Context, reqCtx *request.Req
 	if cacheType != "" {
 		cache.Type = cacheType
 	}
-	if ttl != 0 {
+	// Use HasParam to distinguish "ttl not provided" from "ttl explicitly set to 0".
+	if request.HasParam(req.Parameters, "ttl") {
 		cache.Ttl = ttl
 	}
 	if apiCachingBehavior != "" {

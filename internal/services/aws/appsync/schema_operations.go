@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -80,11 +81,7 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 				Details:    errMsg,
 				Definition: defStr,
 			}
-			if err := store.SaveSchemaCreationStatus(apiId, completed); err != nil {
-				logs.Warn("failed to persist schema creation status",
-					logs.String("apiId", apiId),
-					logs.Err(err))
-			}
+			saveSchemaStatusWithRetry(store, apiId, completed)
 			return
 		}
 
@@ -94,16 +91,32 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 			Details:    "The schema was successfully created.",
 			Definition: defStr,
 		}
-		if err := store.SaveSchemaCreationStatus(apiId, completed); err != nil {
-			logs.Warn("failed to persist schema creation status",
-				logs.String("apiId", apiId),
-				logs.Err(err))
-		}
+		saveSchemaStatusWithRetry(store, apiId, completed)
 	}()
 
 	return map[string]interface{}{
 		"status": "PROCESSING",
 	}, nil
+}
+
+// saveSchemaStatusWithRetry attempts to persist schema creation status with
+// up to 3 retries on failure. This prevents the status from being stuck in
+// PROCESSING if a transient Pebble error occurs during the goroutine save.
+func saveSchemaStatusWithRetry(store *appsyncstore.AppSyncStore, apiId string, status *appsyncstore.SchemaCreationStatus) {
+	for attempt := 0; attempt < 3; attempt++ {
+		if err := store.SaveSchemaCreationStatus(apiId, status); err != nil {
+			logs.Warn("failed to persist schema creation status",
+				logs.String("apiId", apiId),
+				logs.Int("attempt", attempt+1),
+				logs.Err(err))
+			time.Sleep(time.Duration(attempt+1) * time.Second)
+			continue
+		}
+		return
+	}
+	logs.Error("failed to persist schema creation status after 3 retries",
+		logs.String("apiId", apiId),
+		logs.String("status", status.Status))
 }
 
 // GetSchemaCreationStatus retrieves the status of a schema creation operation.
@@ -155,6 +168,12 @@ func (s *AppSyncService) GetIntrospectionSchema(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
+	// Check if schema creation has failed — AWS returns GraphQLSchemaException
+	// when the introspection schema is in an invalid state.
+	if status, err := store.GetSchemaCreationStatus(apiId); err == nil && status.Status == "FAILED" {
+		return nil, NewGraphQLSchemaException(status.Details)
+	}
+
 	format := request.GetStringParam(req.Parameters, "format")
 	if format == "" {
 		format = "SDL"
@@ -168,7 +187,11 @@ func (s *AppSyncService) GetIntrospectionSchema(ctx context.Context, reqCtx *req
 	}
 
 	if strings.EqualFold(format, "JSON") {
-		return schemaJSONResponse(schemaSDL, includeDirectives), nil
+		return schemaJSONFromSDL(schemaSDL, includeDirectives), nil
+	}
+
+	if !includeDirectives {
+		schemaSDL = stripDirectivesFromSDL(schemaSDL)
 	}
 
 	return schemaSDL, nil
@@ -291,83 +314,65 @@ scalar AWSIPAddress`
 	return schema
 }
 
-// schemaJSONResponse wraps the introspection schema in a JSON introspection response.
-func schemaJSONResponse(sdl string, includeDirectives bool) map[string]interface{} {
-	types := []interface{}{
-		map[string]interface{}{
-			"kind":          "OBJECT",
-			"name":          "Query",
-			"description":   "Root query type",
-			"fields":        []interface{}{},
-			"inputFields":   nil,
-			"interfaces":    []interface{}{},
-			"enumValues":    nil,
-			"possibleTypes": nil,
-		},
-		map[string]interface{}{
-			"kind":          "OBJECT",
-			"name":          "Mutation",
-			"description":   "Root mutation type",
-			"fields":        []interface{}{},
-			"inputFields":   nil,
-			"interfaces":    []interface{}{},
-			"enumValues":    nil,
-			"possibleTypes": nil,
-		},
-		map[string]interface{}{
-			"kind":          "OBJECT",
-			"name":          "Subscription",
-			"description":   "Root subscription type",
-			"fields":        []interface{}{},
-			"inputFields":   nil,
-			"interfaces":    []interface{}{},
-			"enumValues":    nil,
-			"possibleTypes": nil,
-		},
+// schemaJSONFromSDL parses the SDL using gqlparser and builds a complete
+// GraphQL introspection JSON response using the engine's buildSchemaObject.
+// When includeDirectives is false, the directives array is omitted.
+func schemaJSONFromSDL(sdl string, includeDirectives bool) map[string]interface{} {
+	if sdl == "" {
+		return map[string]interface{}{
+			"__schema": map[string]interface{}{
+				"types":      []interface{}{},
+				"directives": []interface{}{},
+			},
+		}
 	}
 
-	if includeDirectives {
-		types = append(types,
-			map[string]interface{}{
-				"kind":          "SCALAR",
-				"name":          "AWSDate",
-				"description":   "The AWSDate scalar type represents a valid extended ISO 8601 Date string.",
-				"fields":        nil,
-				"inputFields":   nil,
-				"interfaces":    nil,
-				"enumValues":    nil,
-				"possibleTypes": nil,
+	schema, err := gqlparser.LoadSchema(&ast.Source{
+		Name:  "schema.graphql",
+		Input: sdl,
+	})
+	if err != nil {
+		return map[string]interface{}{
+			"__schema": map[string]interface{}{
+				"types":      []interface{}{},
+				"directives": []interface{}{},
 			},
-			map[string]interface{}{
-				"kind":          "SCALAR",
-				"name":          "AWSTime",
-				"description":   "The AWSTime scalar type represents a valid extended ISO 8601 Time string.",
-				"fields":        nil,
-				"inputFields":   nil,
-				"interfaces":    nil,
-				"enumValues":    nil,
-				"possibleTypes": nil,
-			},
-			map[string]interface{}{
-				"kind":          "SCALAR",
-				"name":          "AWSDateTime",
-				"description":   "The AWSDateTime scalar type represents a valid extended ISO 8601 DateTime string.",
-				"fields":        nil,
-				"inputFields":   nil,
-				"interfaces":    nil,
-				"enumValues":    nil,
-				"possibleTypes": nil,
-			},
-		)
+		}
 	}
 
+	engine := &graphQLEngine{}
+	schemaObj := engine.buildSchemaObject(schema)
+	if !includeDirectives {
+		schemaObj["directives"] = []interface{}{}
+	}
 	return map[string]interface{}{
-		"__schema": map[string]interface{}{
-			"types":            types,
-			"queryType":        map[string]interface{}{"name": "Query"},
-			"mutationType":     map[string]interface{}{"name": "Mutation"},
-			"subscriptionType": map[string]interface{}{"name": "Subscription"},
-			"directives":       []interface{}{},
-		},
+		"__schema": schemaObj,
 	}
+}
+
+// stripDirectivesFromSDL removes directive definitions (e.g.
+// "directive @aws_api_key on FIELD_DEFINITION") from SDL output.
+// Directive applications on type fields (e.g. "@deprecated") are preserved.
+// Handles multi-line directive definitions by tracking the start
+// ("directive @") until the "on" keyword that terminates the locations list.
+func stripDirectivesFromSDL(sdl string) string {
+	lines := strings.Split(sdl, "\n")
+	filtered := make([]string, 0, len(lines))
+	inDirectiveDef := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "directive @") {
+			inDirectiveDef = true
+		}
+		if inDirectiveDef {
+			// Directive definitions end with the "on" keyword
+			// followed by one or more locations.
+			if strings.Contains(trimmed, " on ") || strings.HasSuffix(trimmed, " on") {
+				inDirectiveDef = false
+			}
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.Join(filtered, "\n")
 }

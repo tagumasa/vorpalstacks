@@ -303,6 +303,18 @@ func (s *AppSyncStore) ListGraphqlApis(opts common.ListOptions, apiType string) 
 	return result.Items, nextToken, nil
 }
 
+// CountGraphqlApis returns the total number of GraphQL APIs in the store.
+func (s *AppSyncStore) CountGraphqlApis() (int, error) {
+	count := 0
+	err := s.graphqlApisStore.ScanPrefix("", func(key string, value []byte) error {
+		if !strings.HasPrefix(key, "#id:") {
+			count++
+		}
+		return nil
+	})
+	return count, err
+}
+
 // --- DataSource ---
 
 // CreateDataSource persists a new data source scoped to a GraphQL API.

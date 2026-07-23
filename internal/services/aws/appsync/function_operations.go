@@ -45,6 +45,10 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 		SyncConfig:              parseSyncConfig(req.Parameters),
 	}
 
+	if err := validateAppSyncRuntime(f.Runtime); err != nil {
+		return nil, err
+	}
+
 	created, err := store.CreateFunction(f)
 	if err != nil {
 		return mapStoreError(err)
@@ -116,6 +120,10 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 		Code:                    request.GetStringParam(req.Parameters, "code"),
 		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
 		SyncConfig:              parseSyncConfig(req.Parameters),
+	}
+
+	if err := validateAppSyncRuntime(f.Runtime); err != nil {
+		return nil, err
 	}
 
 	updated, err := store.UpdateFunction(f)

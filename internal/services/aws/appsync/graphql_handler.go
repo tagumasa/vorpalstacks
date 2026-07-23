@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/eventbus"
+	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 )
 
 // graphqlRequest represents the incoming GraphQL-over-HTTP request body.
@@ -58,9 +60,16 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 		return s.graphqlErrorResponse(http.StatusBadRequest, "BadRequestException", "apiId is required"), nil
 	}
 
-	_, err = store.GetGraphqlApiById(apiId)
+	api, err := store.GetGraphqlApiById(apiId)
 	if err != nil {
 		return s.graphqlErrorResponse(http.StatusNotFound, "NotFoundException", fmt.Sprintf("GraphQL API %s not found", apiId)), nil
+	}
+
+	// Enforce per-authentication-type access control on the data-plane
+	// endpoint. Management API calls are already gated by the dispatcher's
+	// IAM authoriser (Phase 1); this check protects the GraphQL query path.
+	if authResp := s.authorizeGraphQLRequest(store, req, api); authResp != nil {
+		return authResp, nil
 	}
 
 	var gqlReq graphqlRequest
@@ -114,6 +123,7 @@ func (s *AppSyncService) graphqlErrorResponse(status int, errType, message strin
 	result := &graphqlExecutionResult{
 		Errors: []graphqlError{{
 			Message:   message,
+			ErrorType: errType,
 			Locations: nil,
 			Path:      nil,
 		}},
@@ -125,6 +135,56 @@ func (s *AppSyncService) graphqlErrorResponse(status int, errType, message strin
 		headers: headers,
 		status:  status,
 	}
+}
+
+// authorizeGraphQLRequest validates that the caller is authenticated to
+// execute queries against the GraphQL data-plane endpoint. The check
+// depends on the API's configured authentication type:
+//
+//   - API_KEY: requires a valid, non-expired key in the x-api-key header.
+//   - AWS_IAM: handled by the dispatcher's IAM authoriser; no additional
+//     check is needed here.
+//   - OPENID_CONNECT / AMAZON_COGNITO_USER_POOLS / AWS_LAMBDA: deferred
+//     to future JWT and Lambda-authoriser integration work.
+//
+// Returns a non-nil *graphqlResponse when the request is denied; nil when
+// the caller is authorised.
+func (s *AppSyncService) authorizeGraphQLRequest(store *appsyncstore.AppSyncStore, req *request.ParsedRequest, api *appsyncstore.GraphqlApi) *graphqlResponse {
+	switch api.AuthenticationType {
+	case "API_KEY":
+		return s.authorizeAPIKey(store, req, api)
+	case "AWS_IAM":
+		// IAM authentication is enforced by the dispatcher authoriser.
+		return nil
+	default:
+		// OPENID_CONNECT, AMAZON_COGNITO_USER_POOLS, AWS_LAMBDA:
+		// not yet implemented; allow requests to preserve existing behaviour.
+		return nil
+	}
+}
+
+// authorizeAPIKey validates the x-api-key header against stored API keys.
+func (s *AppSyncService) authorizeAPIKey(store *appsyncstore.AppSyncStore, req *request.ParsedRequest, api *appsyncstore.GraphqlApi) *graphqlResponse {
+	keyValue := ""
+	if req.Headers != nil {
+		keyValue = req.Headers.Get("x-api-key")
+	}
+	if keyValue == "" {
+		return s.graphqlErrorResponse(http.StatusUnauthorized, "UnauthorizedException", "You are not authorized to make this call.")
+	}
+
+	apiKey, err := store.GetApiKey(api.ApiId, keyValue)
+	if err != nil {
+		return s.graphqlErrorResponse(http.StatusUnauthorized, "UnauthorizedException", "You are not authorized to make this call.")
+	}
+
+	// Check expiry: AWS API keys have a 1-year default validity. Expired
+	// keys must reject the request.
+	if apiKey.Expires > 0 && time.Now().Unix() > apiKey.Expires {
+		return s.graphqlErrorResponse(http.StatusUnauthorized, "UnauthorizedException", "The API key has expired.")
+	}
+
+	return nil
 }
 
 // wrapBus wraps an eventbus.Bus into a BusPublisher for use by the GraphQL engine.

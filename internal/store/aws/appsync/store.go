@@ -375,6 +375,18 @@ func (s *AppSyncStore) ListApis(opts common.ListOptions) ([]*Api, string, error)
 	return result.Items, nextToken, nil
 }
 
+// CountApis returns the total number of Event APIs in the store.
+func (s *AppSyncStore) CountApis() (int, error) {
+	count := 0
+	err := s.apisStore.ScanPrefix("", func(key string, value []byte) error {
+		if !strings.HasPrefix(key, "#id:") {
+			count++
+		}
+		return nil
+	})
+	return count, err
+}
+
 // ListAssociationsByMergedApi lists source API associations for a merged API.
 // The apiId parameter is the merged API identifier per AWS spec.
 func (s *AppSyncStore) ListAssociationsByMergedApi(apiId string, opts common.ListOptions) ([]*SourceApiAssociation, string, error) {

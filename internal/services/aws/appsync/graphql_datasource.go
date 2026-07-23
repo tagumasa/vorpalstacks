@@ -305,7 +305,7 @@ func (e *graphQLEngine) dispatchEventBridge(
 			publishEvent := &appsyncPublishEvent{
 				ID:          uuid.New().String(),
 				Timestamp:   time.Now().UTC(),
-				Source:      "aws.appsync",
+				Source:      "appsync.amazonaws.com",
 				Region:      e.store.GetRegion(),
 				AccountID:   e.store.GetAccountID(),
 				EventBusARN: eventBusArn,

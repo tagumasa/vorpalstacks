@@ -3,12 +3,15 @@ package appsync
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
+
+// cloudFrontHostedZoneID is the fixed Route 53 hosted zone ID for all
+// CloudFront distributions. AppSync custom domains are backed by CloudFront,
+// so this value is always returned in DomainNameConfig.hostedZoneId.
+const cloudFrontHostedZoneID = "Z2FDTNDATAQYW2"
 
 // CreateDomainName creates a custom domain name for AppSync.
 func (s *AppSyncService) CreateDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -34,7 +37,7 @@ func (s *AppSyncService) CreateDomainName(ctx context.Context, reqCtx *request.R
 		Description:       description,
 		AppsyncDomainName: domainName + ".appsync-api." + store.GetRegion() + ".amazonaws.com",
 		DomainNameArn:     store.BuildDomainNameARN(domainName),
-		HostedZoneId:      uuid.New().String(),
+		HostedZoneId:      cloudFrontHostedZoneID,
 		// Tags must be parsed from the request and persisted at creation time.
 		Tags: parseTags(req.Parameters),
 	}

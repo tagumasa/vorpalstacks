@@ -51,8 +51,13 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		}
 	}
 
+	result := channelNamespaceToMap(created)
+	if tags, err := store.TagStore.List(created.ChannelNamespaceArn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"channelNamespace": channelNamespaceToMap(created),
+		"channelNamespace": result,
 	}, nil
 }
 
@@ -113,8 +118,13 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
+	result := channelNamespaceToMap(updated)
+	if tags, err := store.TagStore.List(updated.ChannelNamespaceArn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"channelNamespace": channelNamespaceToMap(updated),
+		"channelNamespace": result,
 	}, nil
 }
 
@@ -164,7 +174,11 @@ func (s *AppSyncService) ListChannelNamespaces(ctx context.Context, reqCtx *requ
 
 	items := make([]interface{}, 0, len(namespaces))
 	for _, ns := range namespaces {
-		items = append(items, channelNamespaceToMap(ns))
+		item := channelNamespaceToMap(ns)
+		if tags, err := store.TagStore.List(ns.ChannelNamespaceArn); err == nil && len(tags) > 0 {
+			item["tags"] = tags
+		}
+		items = append(items, item)
 	}
 
 	response := map[string]interface{}{

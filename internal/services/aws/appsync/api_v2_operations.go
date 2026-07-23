@@ -27,6 +27,13 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
+	// Check combined API count quota (GraphQL + Event APIs per region).
+	graphqlCount, _ := store.CountGraphqlApis()
+	eventCount, _ := store.CountApis()
+	if graphqlCount+eventCount >= maxApisPerRegion {
+		return nil, ErrApiLimitExceededException
+	}
+
 	api := &appsyncstore.Api{
 		Name:         name,
 		EventConfig:  eventConfig,
@@ -51,8 +58,13 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		}
 	}
 
+	result := apiToMap(created)
+	if tags, err := store.TagStore.List(created.Arn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"api": apiToMap(created),
+		"api": result,
 	}, nil
 }
 
@@ -97,6 +109,12 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, NewBadRequestException("apiId is required")
 	}
 
+	// Per Smithy model, name is required for UpdateApiRequest.
+	name := request.GetStringParam(req.Parameters, "name")
+	if name == "" {
+		return nil, NewBadRequestException("name is required")
+	}
+
 	// Fetch existing to preserve fields that were not provided in the request.
 	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
 	// Go zero values on every update call that omits them.
@@ -122,19 +140,28 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 		XrayEnabled:  xrayEnabled,
 	}
 
-	if eventConfig, err := parseEventConfig(req.Parameters); err == nil {
-		api.EventConfig = eventConfig
-	} else if request.HasParam(req.Parameters, "eventConfig") {
+	// Per Smithy UpdateApiRequest, eventConfig is @required.
+	if !request.HasParam(req.Parameters, "eventConfig") {
+		return nil, NewBadRequestException("eventConfig is required")
+	}
+	eventConfig, err := parseEventConfig(req.Parameters)
+	if err != nil {
 		return nil, err
 	}
+	api.EventConfig = eventConfig
 
 	updated, err := store.UpdateApiById(apiId, api)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
+	result := apiToMap(updated)
+	if tags, err := store.TagStore.List(updated.Arn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"api": apiToMap(updated),
+		"api": result,
 	}, nil
 }
 
@@ -180,7 +207,11 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 
 	items := make([]interface{}, 0, len(apis))
 	for _, api := range apis {
-		items = append(items, apiToMap(api))
+		item := apiToMap(api)
+		if tags, err := store.TagStore.List(api.Arn); err == nil && len(tags) > 0 {
+			item["tags"] = tags
+		}
+		items = append(items, item)
 	}
 
 	response := map[string]interface{}{

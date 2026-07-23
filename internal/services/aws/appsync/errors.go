@@ -61,3 +61,8 @@ func NewBadRequestException(message string) *AppSyncError {
 func NewConflictException(message string) *AppSyncError {
 	return NewAppSyncError("ConflictException", message, http.StatusConflict)
 }
+
+// NewGraphQLSchemaException creates a GraphQLSchemaException with a custom message.
+func NewGraphQLSchemaException(message string) *AppSyncError {
+	return NewAppSyncError("GraphQLSchemaException", message, http.StatusBadRequest)
+}

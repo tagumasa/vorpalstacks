@@ -104,35 +104,25 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 		} `json:"runtime"`
 	}
 	if err := json.Unmarshal(req.Body, &body); err != nil {
-		return map[string]interface{}{
-			"evaluationResult": "",
-			"error":            map[string]string{"message": "invalid request body"},
-			"logs":             []interface{}{},
-			"outErrors":        "",
-			"stash":            "{}",
-		}, nil
+		return nil, NewBadRequestException("invalid request body")
 	}
 
 	if body.Code == "" {
-		return map[string]interface{}{
-			"evaluationResult": "",
-			"error":            map[string]string{"message": "code is required"},
-			"logs":             []interface{}{},
-			"outErrors":        "",
-			"stash":            "{}",
-		}, nil
+		return nil, NewBadRequestException("code is required")
+	}
+
+	// Per Smithy EvaluateCodeRequest, context and runtime are @required.
+	if len(body.Context) == 0 {
+		return nil, NewBadRequestException("context is required")
+	}
+	if body.Runtime.Name == "" {
+		return nil, NewBadRequestException("runtime is required")
 	}
 
 	ctxMap := make(map[string]interface{})
 	if len(body.Context) > 0 {
 		if err := json.Unmarshal(body.Context, &ctxMap); err != nil {
-			return map[string]interface{}{
-				"evaluationResult": "",
-				"error":            map[string]string{"message": "invalid context JSON"},
-				"logs":             []interface{}{},
-				"outErrors":        "",
-				"stash":            "{}",
-			}, nil
+			return nil, NewBadRequestException("invalid context JSON")
 		}
 	}
 
@@ -420,26 +410,23 @@ func (s *AppSyncService) EvaluateMappingTemplate(ctx context.Context, reqCtx *re
 		Template string `json:"template"`
 	}
 	if err := json.Unmarshal(req.Body, &body); err != nil {
-		return map[string]interface{}{
-			"evaluationResult": "",
-			"error":            map[string]string{"message": "invalid request body"},
-			"logs":             []interface{}{},
-			"outErrors":        "",
-			"stash":            "{}",
-		}, nil
+		return nil, NewBadRequestException("invalid request body")
+	}
+
+	// Per Smithy EvaluateMappingTemplateRequest, context is @required.
+	if body.Context == "" {
+		return nil, NewBadRequestException("context is required")
 	}
 
 	ctxMap := make(map[string]interface{})
 	if body.Context != "" {
 		if err := json.Unmarshal([]byte(body.Context), &ctxMap); err != nil {
-			return map[string]interface{}{
-				"evaluationResult": "",
-				"error":            map[string]string{"message": "invalid context JSON"},
-				"logs":             []interface{}{},
-				"outErrors":        "",
-				"stash":            "{}",
-			}, nil
+			return nil, NewBadRequestException("invalid context JSON")
 		}
+	}
+
+	if body.Template == "" {
+		return nil, NewBadRequestException("template is required")
 	}
 
 	stash := make(map[string]interface{})

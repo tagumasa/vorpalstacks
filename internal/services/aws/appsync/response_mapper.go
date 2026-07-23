@@ -1,6 +1,8 @@
 package appsync
 
 import (
+	"time"
+
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -18,9 +20,6 @@ func apiToMap(api *appsyncstore.Api) map[string]interface{} {
 		"xrayEnabled": api.XrayEnabled,
 	}
 
-	if len(api.Tags) > 0 {
-		m["tags"] = api.Tags
-	}
 	if api.OwnerContact != "" {
 		m["ownerContact"] = api.OwnerContact
 	}
@@ -145,9 +144,6 @@ func channelNamespaceToMap(ns *appsyncstore.ChannelNamespace) map[string]interfa
 	if len(ns.SubscribeAuthModes) > 0 {
 		m["subscribeAuthModes"] = authModesToMap(ns.SubscribeAuthModes)
 	}
-	if len(ns.Tags) > 0 {
-		m["tags"] = ns.Tags
-	}
 
 	return m
 }
@@ -237,9 +233,6 @@ func graphqlApiToMap(api *appsyncstore.GraphqlApi) map[string]interface{} {
 	}
 	if api.ResolverCountLimit > 0 {
 		m["resolverCountLimit"] = api.ResolverCountLimit
-	}
-	if len(api.Tags) > 0 {
-		m["tags"] = api.Tags
 	}
 	if len(api.Uris) > 0 {
 		m["uris"] = api.Uris
@@ -766,6 +759,17 @@ func mergedApiAssociationToMap(a *appsyncstore.SourceApiAssociation) map[string]
 	}
 	if a.Description != "" {
 		result["description"] = a.Description
+	}
+	if a.SourceApiAssociationConfig != nil {
+		result["sourceApiAssociationConfig"] = map[string]interface{}{
+			"mergeType": a.SourceApiAssociationConfig.MergeType,
+		}
+	}
+	if a.SourceApiAssociationStatusDetail != "" {
+		result["sourceApiAssociationStatusDetail"] = a.SourceApiAssociationStatusDetail
+	}
+	if a.LastSuccessfulMergeDate != nil {
+		result["lastSuccessfulMergeDate"] = a.LastSuccessfulMergeDate.Format(time.RFC3339)
 	}
 	return result
 }

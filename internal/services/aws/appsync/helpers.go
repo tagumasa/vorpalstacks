@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -411,6 +412,51 @@ func parseAppSyncRuntime(params map[string]interface{}) *appsyncstore.AppSyncRun
 		Name:           request.GetStringParam(raw, "name"),
 		RuntimeVersion: request.GetStringParam(raw, "runtimeVersion"),
 	}
+}
+
+// validAppSyncRuntimeVersions maps each runtime name to its supported versions.
+var validAppSyncRuntimeVersions = map[string]map[string]bool{
+	"APPSYNC_JS": {"1.0.0": true},
+}
+
+// validateAppSyncRuntime checks that the runtime name and version are supported.
+// Returns nil if runtime is nil (not provided) or valid.
+func validateAppSyncRuntime(rt *appsyncstore.AppSyncRuntime) error {
+	if rt == nil {
+		return nil
+	}
+	versions, ok := validAppSyncRuntimeVersions[rt.Name]
+	if !ok {
+		return NewBadRequestException(fmt.Sprintf("Unsupported runtime name: %s", rt.Name))
+	}
+	if rt.RuntimeVersion == "" {
+		return NewBadRequestException("runtimeVersion is required when runtime is specified")
+	}
+	if !versions[rt.RuntimeVersion] {
+		return NewBadRequestException(fmt.Sprintf("Unsupported runtimeVersion %s for runtime %s", rt.RuntimeVersion, rt.Name))
+	}
+	return nil
+}
+
+// parseSourceApiAssociationConfig parses a SourceApiAssociationConfig from request parameters.
+// The config contains a MergeType field (AUTO_MERGE or MANUAL_MERGE).
+// Returns (nil, nil) when sourceApiAssociationConfig is absent.
+// Returns (nil, error) when mergeType is present but invalid.
+func parseSourceApiAssociationConfig(params map[string]interface{}) (*appsyncstore.SourceApiAssociationConfig, error) {
+	raw := request.GetMapParam(params, "sourceApiAssociationConfig")
+	if raw == nil {
+		return nil, nil
+	}
+	mergeType := request.GetStringParam(raw, "mergeType")
+	if mergeType == "" {
+		return nil, nil
+	}
+	if mergeType != "MANUAL_MERGE" && mergeType != "AUTO_MERGE" {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid mergeType: %s. Valid values: MANUAL_MERGE, AUTO_MERGE", mergeType))
+	}
+	return &appsyncstore.SourceApiAssociationConfig{
+		MergeType: mergeType,
+	}, nil
 }
 
 // parsePipelineConfig parses a PipelineConfig from request parameters.

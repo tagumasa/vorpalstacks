@@ -44,6 +44,9 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
 		return nil, err
 	}
+	if err := validateAppSyncRuntime(r.Runtime); err != nil {
+		return nil, err
+	}
 
 	created, err := store.CreateResolver(r)
 	if err != nil {
@@ -115,6 +118,9 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 	}
 
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
+		return nil, err
+	}
+	if err := validateAppSyncRuntime(r.Runtime); err != nil {
 		return nil, err
 	}
 

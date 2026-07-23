@@ -38,6 +38,11 @@ func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *
 
 	description := request.GetStringParam(req.Parameters, "description")
 
+	assocConfig, err := parseSourceApiAssociationConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	assocID := uuid.New().String()
 	assoc := &appsyncstore.SourceApiAssociation{
 		AssociationId:              assocID,
@@ -48,6 +53,7 @@ func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *
 		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(mergedApiId, assocID),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
+		SourceApiAssociationConfig: assocConfig,
 	}
 
 	if err := store.CreateMergedApiAssociation(assoc); err != nil {
@@ -184,15 +190,22 @@ func (s *AppSyncService) StartSchemaMerge(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
-	assoc.SourceApiAssociationStatus = "MERGE_SUCCESS"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		logs.Warn("failed to persist merged API SUCCESS status",
-			logs.String("mergedApiId", mergedApiId),
-			logs.String("associationId", associationId),
-			logs.Err(err))
-	}
+	// Simulate async schema merge: transition MERGE_IN_PROGRESS → MERGE_SUCCESS.
+	go func() {
+		defer func() { resilience.RecoverPanic("appsync schema merge async") }()
+		time.Sleep(2 * time.Second)
+		assoc.SourceApiAssociationStatus = "MERGE_SUCCESS"
+		now := time.Now().UTC()
+		assoc.LastSuccessfulMergeDate = &now
+		if err := store.UpdateMergedApiAssociation(assoc); err != nil {
+			logs.Warn("failed to persist merged API SUCCESS status",
+				logs.String("mergedApiId", mergedApiId),
+				logs.String("associationId", associationId),
+				logs.Err(err))
+		}
+	}()
 
-	return map[string]interface{}{"sourceApiAssociationStatus": "MERGE_SUCCESS"}, nil
+	return map[string]interface{}{"sourceApiAssociationStatus": "MERGE_IN_PROGRESS"}, nil
 }
 
 // AssociateMergedGraphqlApi links a merged API from the source API side.
@@ -218,6 +231,11 @@ func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *
 
 	description := request.GetStringParam(req.Parameters, "description")
 
+	assocConfig, err := parseSourceApiAssociationConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	assocID := uuid.New().String()
 	assoc := &appsyncstore.SourceApiAssociation{
 		AssociationId:              assocID,
@@ -228,6 +246,7 @@ func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *
 		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(sourceApiId, assocID),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
+		SourceApiAssociationConfig: assocConfig,
 	}
 
 	if err := store.CreateMergedApiAssociation(assoc); err != nil {

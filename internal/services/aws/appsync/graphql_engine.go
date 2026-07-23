@@ -28,6 +28,7 @@ type graphqlExecutionResult struct {
 // graphqlError represents a single error in a GraphQL response.
 type graphqlError struct {
 	Message   string      `json:"message"`
+	ErrorType string      `json:"errorType,omitempty"`
 	Locations []gqlErrLoc `json:"locations,omitempty"`
 	Path      interface{} `json:"path,omitempty"`
 }

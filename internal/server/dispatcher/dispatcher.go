@@ -106,7 +106,7 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 			return
 		}
 		if !authzResult {
-			d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
+			d.handleErrorForRequest(w, r, accessDeniedErrorForService(serviceName))
 			return
 		}
 	}

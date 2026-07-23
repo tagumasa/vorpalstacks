@@ -8,6 +8,10 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
+// maxApisPerRegion is the AWS service quota for AppSync APIs per region.
+// This limit applies to the combined count of GraphQL APIs and Event APIs.
+const maxApisPerRegion = 25
+
 // CreateGraphqlApi creates a new GraphQL API (v1).
 // POST /v1/apis
 func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -24,6 +28,13 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 	authType := request.GetStringParam(req.Parameters, "authenticationType")
 	if authType == "" {
 		return nil, NewBadRequestException("authenticationType is required")
+	}
+
+	// Check combined API count quota (GraphQL + Event APIs per region).
+	graphqlCount, _ := store.CountGraphqlApis()
+	eventCount, _ := store.CountApis()
+	if graphqlCount+eventCount >= maxApisPerRegion {
+		return nil, ErrApiLimitExceededException
 	}
 
 	api := &appsyncstore.GraphqlApi{
@@ -62,8 +73,13 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		}
 	}
 
+	result := graphqlApiToMap(created)
+	if tags, err := store.TagStore.List(created.Arn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"graphqlApi": graphqlApiToMap(created),
+		"graphqlApi": result,
 	}, nil
 }
 
@@ -108,10 +124,16 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	// In AWS, name and authenticationType are optional for updates;
-	// only non-empty values are applied via the store's merge logic.
+	// Per Smithy model, name and authenticationType are required for
+	// UpdateGraphqlApiRequest. The client must resend current values.
 	name := request.GetStringParam(req.Parameters, "name")
+	if name == "" {
+		return nil, NewBadRequestException("name is required")
+	}
 	authType := request.GetStringParam(req.Parameters, "authenticationType")
+	if authType == "" {
+		return nil, NewBadRequestException("authenticationType is required")
+	}
 
 	// Fetch existing to preserve fields that were not provided in the request.
 	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
@@ -154,8 +176,13 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
+	result := graphqlApiToMap(updated)
+	if tags, err := store.TagStore.List(updated.Arn); err == nil && len(tags) > 0 {
+		result["tags"] = tags
+	}
+
 	return map[string]interface{}{
-		"graphqlApi": graphqlApiToMap(updated),
+		"graphqlApi": result,
 	}, nil
 }
 
@@ -202,7 +229,11 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 
 	items := make([]interface{}, 0, len(apis))
 	for _, api := range apis {
-		items = append(items, graphqlApiToMap(api))
+		item := graphqlApiToMap(api)
+		if tags, err := store.TagStore.List(api.Arn); err == nil && len(tags) > 0 {
+			item["tags"] = tags
+		}
+		items = append(items, item)
 	}
 
 	response := map[string]interface{}{

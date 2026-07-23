@@ -324,8 +324,8 @@ func (r *TestRunner) runAppSyncMergedApiTests(res *appsyncResources) []TestResul
 		if err != nil {
 			return err
 		}
-		if resp.SourceApiAssociationStatus != types.SourceApiAssociationStatusMergeSuccess {
-			return fmt.Errorf("expected MERGE_SUCCESS, got %s", resp.SourceApiAssociationStatus)
+		if resp.SourceApiAssociationStatus != types.SourceApiAssociationStatusMergeInProgress {
+			return fmt.Errorf("expected MERGE_IN_PROGRESS, got %s", resp.SourceApiAssociationStatus)
 		}
 		return nil
 	}))
