@@ -204,4 +204,7 @@ func (s *AthenaService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("athena", "UpdateCapacityReservation", s.UpdateCapacityReservation)
 	d.RegisterHandlerForService("athena", "CancelCapacityReservation", s.CancelCapacityReservation)
 	d.RegisterHandlerForService("athena", "DeleteCapacityReservation", s.DeleteCapacityReservation)
+	d.RegisterHandlerForService("athena", "GetCapacityAssignmentConfiguration", s.GetCapacityAssignmentConfiguration)
+	d.RegisterHandlerForService("athena", "PutCapacityAssignmentConfiguration", s.PutCapacityAssignmentConfiguration)
+	d.RegisterHandlerForService("athena", "ListApplicationDPUSizes", s.ListApplicationDPUSizes)
 }

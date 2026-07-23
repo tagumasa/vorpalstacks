@@ -162,6 +162,7 @@ func (s *AthenaService) buildResultSetFromStoredTable(tableData *athenastore.Sto
 	}
 
 	var resultRows []athenastore.Row
+	dataScanned := int64(0)
 	for _, row := range tableData.Rows {
 		var data []athenastore.Datum
 		for _, col := range tableData.Columns {
@@ -169,6 +170,7 @@ func (s *AthenaService) buildResultSetFromStoredTable(tableData *athenastore.Sto
 			if v, ok := row.Values[col.Name]; ok {
 				val = fmt.Sprintf("%v", v)
 			}
+			dataScanned += int64(len(val))
 			data = append(data, athenastore.Datum{VarCharValue: val})
 		}
 		resultRows = append(resultRows, athenastore.Row{Data: data})
@@ -182,7 +184,7 @@ func (s *AthenaService) buildResultSetFromStoredTable(tableData *athenastore.Sto
 
 	stats := &athenastore.QueryExecutionStatistics{
 		QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-		DataScannedInBytes:        int64(len(tableData.Rows) * 100),
+		DataScannedInBytes:        dataScanned,
 	}
 
 	return &athenastore.ResultSet{

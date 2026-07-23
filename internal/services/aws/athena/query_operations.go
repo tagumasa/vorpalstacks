@@ -21,6 +21,7 @@ const (
 	maxResultRows             = 1000
 	maxQueryStringSize        = 262144
 	queryHistoryRetentionDays = 45
+	testModeRetentionHours    = 2
 	athenaListMaxResults      = 50
 )
 
@@ -187,7 +188,7 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 			return nil, err
 		}
 	} else if queryExecution.Status.State != athenastore.QueryExecutionStateCancelled {
-		return nil, awserrors.NewBadRequestException("Query execution is not in a cancellable state")
+		return nil, ErrInvalidRequestException
 	}
 
 	return response.EmptyResponse(), nil
@@ -424,6 +425,22 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 		return nil, ErrInvalidRequestException
 	}
 
+	outputRows := int64(0)
+	outputBytes := int64(0)
+	if result, err := st.resultStore.GetResult(queryExecutionId); err == nil && result != nil && result.ResultSet != nil {
+		outputRows = int64(len(result.ResultSet.Rows))
+		for _, row := range result.ResultSet.Rows {
+			for _, d := range row.Data {
+				outputBytes += int64(len(d.VarCharValue))
+			}
+		}
+	}
+
+	dataScanned := int64(0)
+	if queryExecution.Statistics != nil {
+		dataScanned = queryExecution.Statistics.DataScannedInBytes
+	}
+
 	return map[string]interface{}{
 		"QueryRuntimeStatistics": map[string]interface{}{
 			"Timeline": map[string]interface{}{
@@ -434,10 +451,14 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 				"TotalExecutionTimeInMillis":    queryExecution.Statistics.TotalExecutionTimeInMillis,
 			},
 			"Rows": map[string]interface{}{
-				"InputRows":   queryExecution.Statistics.DataScannedInBytes / 100,
-				"InputBytes":  queryExecution.Statistics.DataScannedInBytes,
-				"OutputRows":  queryExecution.Statistics.DataScannedInBytes / 100,
-				"OutputBytes": queryExecution.Statistics.DataScannedInBytes / 10,
+				// InputRows is approximate — our engine does not track source row
+				// counts separately from output rows. InputBytes equals
+				// DataScannedInBytes (the source data volume). OutputBytes is
+				// computed from the actual result set content.
+				"InputRows":   outputRows,
+				"InputBytes":  dataScanned,
+				"OutputRows":  outputRows,
+				"OutputBytes": outputBytes,
 			},
 			"OutputStage": map[string]interface{}{
 				"StageId":         0,
@@ -455,28 +476,21 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 
 // cleanupExpiredQueryExecutions removes query executions older than the AWS-specified
 // 45-day retention period. Athena keeps query history for 45 days per AWS documentation.
+// In testMode, a shorter retention (testModeRetentionHours) is applied to prevent
+// unbounded growth across repeated test runs without destroying in-flight executions.
 func (s *AthenaService) cleanupExpiredQueryExecutions(st *athenaStores) {
-	if s.testMode {
-		allIds, err := st.queryExecutionStore.ListQueryExecutionIDs("", 0)
-		if err != nil {
-			return
-		}
-		for _, id := range allIds {
-			st.queryExecutionStore.DeleteQueryExecution(id)
-		}
-		st.resultStore.DeleteResultsByIDs(allIds)
-		if len(allIds) > 0 {
-			logs.Info(fmt.Sprintf("athena: test mode cleanup removed %d query executions", len(allIds)))
-		}
-		return
-	}
 	cutoff := time.Now().UTC().AddDate(0, 0, -queryHistoryRetentionDays)
+	retentionLabel := fmt.Sprintf("%d days", queryHistoryRetentionDays)
+	if s.testMode {
+		cutoff = time.Now().UTC().Add(-time.Duration(testModeRetentionHours) * time.Hour)
+		retentionLabel = fmt.Sprintf("%d hours", testModeRetentionHours)
+	}
 	deleted, deletedIds, err := st.queryExecutionStore.DeleteExpiredQueryExecutions(cutoff)
 	if err != nil {
 		return
 	}
 	st.resultStore.DeleteResultsByIDs(deletedIds)
 	if deleted > 0 {
-		logs.Info(fmt.Sprintf("athena: cleaned up %d expired query executions (older than %d days)", deleted, queryHistoryRetentionDays))
+		logs.Info(fmt.Sprintf("athena: cleaned up %d expired query executions (older than %s)", deleted, retentionLabel))
 	}
 }

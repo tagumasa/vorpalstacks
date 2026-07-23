@@ -1707,6 +1707,8 @@ type Column struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	Comment       string                 `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
+	NotNull       bool                   `protobuf:"varint,4,opt,name=not_null,json=notNull,proto3" json:"not_null,omitempty"`
+	DefaultValue  string                 `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1758,6 +1760,20 @@ func (x *Column) GetType() string {
 func (x *Column) GetComment() string {
 	if x != nil {
 		return x.Comment
+	}
+	return ""
+}
+
+func (x *Column) GetNotNull() bool {
+	if x != nil {
+		return x.NotNull
+	}
+	return false
+}
+
+func (x *Column) GetDefaultValue() string {
+	if x != nil {
+		return x.DefaultValue
 	}
 	return ""
 }
@@ -2034,11 +2050,13 @@ const file_storage_athena_proto_rawDesc = "" +
 	"parameters\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"J\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x01\n" +
 	"\x06Column\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\",\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\x12\x19\n" +
+	"\bnot_null\x18\x04 \x01(\bR\anotNull\x12#\n" +
+	"\rdefault_value\x18\x05 \x01(\tR\fdefaultValue\",\n" +
 	"\tStoredRow\x12\x1f\n" +
 	"\vvalues_json\x18\x01 \x01(\fR\n" +
 	"valuesJson\"\xb2\x01\n" +

@@ -12,6 +12,9 @@ import (
 )
 
 // ListEngineVersions retrieves the list of available Athena engine versions.
+// The list is service-defined (not user-configurable) and matches the AWS
+// ListEngineVersions API output as of Athena engine version 3.
+// Verified against https://docs.aws.amazon.com/athena/latest/ug/engine-versions-changing.html
 func (s *AthenaService) ListEngineVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"EngineVersions": []map[string]interface{}{
@@ -74,7 +77,14 @@ func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if name == "AwsDataCatalog" {
-		return nil, ErrInvalidRequestException
+		return map[string]interface{}{
+			"DataCatalog": map[string]interface{}{
+				"Name":        "AwsDataCatalog",
+				"Type":        "GLUE",
+				"Description": "The default AWS data catalog",
+				"Parameters":  map[string]interface{}{},
+			},
+		}, nil
 	}
 
 	stores, err := s.store(reqCtx)
@@ -98,6 +108,9 @@ func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.Requ
 func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
+		return nil, ErrInvalidRequestException
+	}
+	if name == "AwsDataCatalog" {
 		return nil, ErrInvalidRequestException
 	}
 

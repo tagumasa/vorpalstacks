@@ -77,6 +77,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 	results = append(results, r.runAppSyncResolverTests(res)...)
 	results = append(results, r.runAppSyncVTLTests(res)...)
 	results = append(results, r.runAppSyncApiKeyCacheTests(res)...)
+	results = append(results, r.runAppSyncGraphQLAuthTests(res)...)
 	results = append(results, r.runAppSyncDomainTests(res)...)
 	results = append(results, r.runAppSyncCleanupTests(res)...)
 

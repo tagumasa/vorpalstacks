@@ -922,28 +922,40 @@ func capacityReservationBucketName(region string) string {
 // CapacityReservationStore manages Athena capacity reservations.
 type CapacityReservationStore struct {
 	*common.BaseStore
-	accountID string
-	region    string
+	*common.TagStore
+	arnBuilder *svcarn.ARNBuilder
+	accountID  string
+	region     string
+	kl         common.KeyLocker
 }
 
 // NewCapacityReservationStore creates a new CapacityReservationStore.
 func NewCapacityReservationStore(store storage.BasicStorage, accountID, region string) *CapacityReservationStore {
 	return &CapacityReservationStore{
-		BaseStore: common.NewBaseStore(store.Bucket(capacityReservationBucketName(region)), "athena-capacity-reservation"),
-		accountID: accountID,
-		region:    region,
+		BaseStore:  common.NewBaseStore(store.Bucket(capacityReservationBucketName(region)), "athena-capacity-reservation"),
+		TagStore:   common.NewTagStoreWithRegion(store, "athena-capacity-reservation", region),
+		arnBuilder: svcarn.NewARNBuilder(accountID, region),
+		accountID:  accountID,
+		region:     region,
 	}
+}
+
+// GetARN returns the ARN for an Athena capacity reservation.
+func (s *CapacityReservationStore) GetARN(name string) string {
+	return s.arnBuilder.Athena().CapacityReservation(name)
 }
 
 // CreateCapacityReservation persists a new capacity reservation.
 func (s *CapacityReservationStore) CreateCapacityReservation(cr *CapacityReservation) (*CapacityReservation, error) {
-	existing, err := s.GetCapacityReservation(cr.Name)
-	if err == nil && existing != nil {
-		return nil, ErrCapacityReservationAlreadyExists
-	}
-	cr.CreationTime = time.Now().UTC()
-	cr.Status = CapacityReservationStatusActive
-	return cr, s.Put(cr.Name, cr)
+	return cr, s.kl.WithLock(cr.Name, func() error {
+		existing, err := s.GetCapacityReservation(cr.Name)
+		if err == nil && existing != nil {
+			return ErrCapacityReservationAlreadyExists
+		}
+		cr.CreationTime = time.Now().UTC()
+		cr.Status = CapacityReservationStatusActive
+		return s.Put(cr.Name, cr)
+	})
 }
 
 // GetCapacityReservation retrieves a capacity reservation by name.
@@ -957,7 +969,9 @@ func (s *CapacityReservationStore) GetCapacityReservation(name string) (*Capacit
 
 // UpdateCapacityReservation updates a capacity reservation.
 func (s *CapacityReservationStore) UpdateCapacityReservation(cr *CapacityReservation) error {
-	return s.Put(cr.Name, cr)
+	return s.kl.WithLock(cr.Name, func() error {
+		return s.Put(cr.Name, cr)
+	})
 }
 
 // ListCapacityReservations returns all capacity reservations, optionally
@@ -980,5 +994,33 @@ func (s *CapacityReservationStore) ListCapacityReservations(workGroup string) ([
 
 // DeleteCapacityReservation deletes a capacity reservation by name.
 func (s *CapacityReservationStore) DeleteCapacityReservation(name string) error {
-	return s.BaseStore.Delete(name)
+	return s.kl.WithLock(name, func() error {
+		arn := s.GetARN(name)
+		_ = s.TagStore.Delete(arn)
+		return s.BaseStore.Delete(name)
+	})
+}
+
+// GetCapacityAssignments returns the capacity assignment work-group lists
+// for the specified capacity reservation.
+func (s *CapacityReservationStore) GetCapacityAssignments(name string) ([][]string, error) {
+	cr, err := s.GetCapacityReservation(name)
+	if err != nil {
+		return nil, err
+	}
+	return cr.CapacityAssignments, nil
+}
+
+// PutCapacityAssignments sets the capacity assignment work-group lists
+// for the specified capacity reservation, replacing any existing configuration.
+func (s *CapacityReservationStore) PutCapacityAssignments(name string, assignments [][]string) error {
+	return s.kl.WithLock(name, func() error {
+		cr, err := s.GetCapacityReservation(name)
+		if err != nil {
+			return err
+		}
+		cr.CapacityAssignments = assignments
+		cr.LastModifiedTime = time.Now().UTC()
+		return s.Put(cr.Name, cr)
+	})
 }

@@ -154,6 +154,11 @@ func (b *AthenaBuilder) DataCatalog(name string) string {
 	return b.Build("athena", "datacatalog/"+name)
 }
 
+// CapacityReservation constructs an ARN for an Athena capacity reservation.
+func (b *AthenaBuilder) CapacityReservation(name string) string {
+	return b.Build("athena", "capacityreservation/"+name)
+}
+
 // ParseWorkGroupName extracts the work group name from an Athena work group ARN.
 func (b *AthenaBuilder) ParseWorkGroupName(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)

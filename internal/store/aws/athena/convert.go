@@ -688,18 +688,22 @@ func ProtoToTableMetadata(p *pb.TableMetadata) *TableMetadata {
 // ColumnToProto converts a Column to its protobuf representation.
 func ColumnToProto(c Column) *pb.Column {
 	return &pb.Column{
-		Name:    c.Name,
-		Type:    c.Type,
-		Comment: c.Comment,
+		Name:         c.Name,
+		Type:         c.Type,
+		Comment:      c.Comment,
+		NotNull:      c.NotNull,
+		DefaultValue: c.DefaultValue,
 	}
 }
 
 // ProtoToColumn converts a protobuf Column to its internal representation.
 func ProtoToColumn(p *pb.Column) Column {
 	return Column{
-		Name:    p.Name,
-		Type:    p.Type,
-		Comment: p.Comment,
+		Name:         p.Name,
+		Type:         p.Type,
+		Comment:      p.Comment,
+		NotNull:      p.NotNull,
+		DefaultValue: p.DefaultValue,
 	}
 }
 

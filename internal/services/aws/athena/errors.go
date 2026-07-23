@@ -1,6 +1,7 @@
 package athena
 
 import (
+	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -46,4 +47,13 @@ func queryExecutionNotFound(id string) *awserrors.AWSError {
 // preparedStatementNotFound returns a ResourceNotFoundException for the specified prepared statement.
 func preparedStatementNotFound(name string) *awserrors.AWSError {
 	return awserrors.NewResourceNotFoundException("PreparedStatement", name)
+}
+
+// capacityReservationNotFound returns an InvalidRequestException for the
+// specified capacity reservation. Per the Smithy model, CapacityReservation
+// operations only define InternalServerException and InvalidRequestException —
+// ResourceNotFoundException is not among the declared errors.
+func capacityReservationNotFound(name string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidRequestException",
+		fmt.Sprintf("CapacityReservation %s not found", name), http.StatusBadRequest)
 }

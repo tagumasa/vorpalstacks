@@ -122,18 +122,6 @@ func (s *AthenaService) executeCreateTable(reqCtx *request.RequestContext, query
 		return nil, nil, fmt.Errorf("failed to create table: %w", err)
 	}
 
-	if location == "" || !strings.HasPrefix(location, "s3://") {
-		storedTable := &athenastore.StoredTable{
-			DatabaseName: database,
-			TableName:    tableName,
-			Columns:      columns,
-			Rows:         []*athenastore.StoredRow{},
-		}
-		if err := stores.tableDataStore.StoreTableData(catalog, database, tableName, storedTable); err != nil {
-			logs.Warn("failed to store table data after CREATE TABLE", logs.String("table", tableName), logs.Err(err))
-		}
-	}
-
 	rs, stats := emptyDDLResult(startTime)
 	return rs, stats, nil
 }
@@ -153,6 +141,18 @@ func (s *AthenaService) executeDropTable(reqCtx *request.RequestContext, querySt
 	tableName := s.extractTableNameFromDrop(queryString)
 	if tableName == "" {
 		return nil, nil, fmt.Errorf("table name not specified")
+	}
+	if strings.Contains(tableName, ".") {
+		parts := strings.Split(tableName, ".")
+		switch len(parts) {
+		case 2:
+			database = strings.Trim(parts[0], "`\"';")
+			tableName = strings.Trim(parts[1], "`\"';")
+		case 3:
+			catalog = strings.Trim(parts[0], "`\"';")
+			database = strings.Trim(parts[1], "`\"';")
+			tableName = strings.Trim(parts[2], "`\"';")
+		}
 	}
 
 	stores, err := s.store(reqCtx)
@@ -351,6 +351,23 @@ func (s *AthenaService) executeDescribe(reqCtx *request.RequestContext, queryStr
 	tableName := strings.TrimSpace(queryString[len(prefix):])
 	if strings.Contains(tableName, ";") {
 		tableName = strings.TrimSpace(strings.Split(tableName, ";")[0])
+	}
+	if strings.HasPrefix(tableName, ".") {
+		tableName = strings.TrimPrefix(tableName, ".")
+	}
+	if strings.Contains(tableName, ".") {
+		parts := strings.Split(tableName, ".")
+		switch len(parts) {
+		case 2:
+			database = strings.Trim(parts[0], "`\"';")
+			tableName = strings.Trim(parts[1], "`\"';")
+		case 3:
+			catalog = strings.Trim(parts[0], "`\"';")
+			database = strings.Trim(parts[1], "`\"';")
+			tableName = strings.Trim(parts[2], "`\"';")
+		}
+	} else {
+		tableName = strings.Trim(tableName, "`\"';")
 	}
 
 	stores, err := s.store(reqCtx)

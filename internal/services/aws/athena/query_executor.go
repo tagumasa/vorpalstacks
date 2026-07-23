@@ -107,7 +107,8 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 			logs.Error("Failed to store query result", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 		}
 
-		if qe.ResultConfiguration != nil && qe.ResultConfiguration.OutputLocation != "" {
+		if qe.ResultConfiguration != nil && qe.ResultConfiguration.OutputLocation != "" &&
+			qe.StatementType == athenastore.StatementTypeDML {
 			if writeErr := s.writeQueryResultsToS3(ctx, reqCtx.GetRegion(), qe.QueryExecutionId, queryResult, qe.ResultConfiguration.OutputLocation); writeErr != nil {
 				logs.Warn("Failed to write query results to S3", logs.Err(writeErr))
 			}
@@ -194,7 +195,10 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 
 	selectStmt, ok := stmt.(*sqlparser.Select)
 	if !ok {
-		return nil, nil, fmt.Errorf("only SELECT statements are supported")
+		if unionStmt, ok := stmt.(*sqlparser.Union); ok {
+			return s.executeUnion(reqCtx, ctx, unionStmt, context, startTime)
+		}
+		return nil, nil, fmt.Errorf("only SELECT and UNION statements are supported")
 	}
 
 	catalog := "AwsDataCatalog"
@@ -232,7 +236,7 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 
 	tableData, err := s.getTableData(reqCtx, catalog, database, tableName)
 	if err != nil {
-		columnInfo := s.buildColumnInfoFromSelect(selectStmt)
+		columnInfo := s.buildColumnInfoFromSelectWithTypes(selectStmt, nil)
 		return &athenastore.ResultSet{
 				Rows:              []athenastore.Row{},
 				ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columnInfo},
@@ -278,15 +282,23 @@ func (s *AthenaService) getTableData(reqCtx *request.RequestContext, catalog, da
 			if s.hasS3Support() {
 				data, err := s.loadExternalTableData(reqCtx, catalog, database, tableName)
 				if err != nil {
-					logs.Warn("Failed to load external table data from S3", logs.Err(err))
-				} else {
-					return s.convertS3DataToStoredTable(data, table.Columns), nil
+					return nil, fmt.Errorf("failed to load external table data from S3: %w", err)
 				}
+				return s.convertS3DataToStoredTable(data, table.Columns), nil
 			}
 		}
 	}
 
-	return stores.tableDataStore.GetTableData(catalog, database, tableName)
+	storedTable, err := stores.tableDataStore.GetTableData(catalog, database, tableName)
+	if err != nil {
+		return &athenastore.StoredTable{
+			DatabaseName: database,
+			TableName:    tableName,
+			Columns:      table.Columns,
+			Rows:         []*athenastore.StoredRow{},
+		}, nil
+	}
+	return storedTable, nil
 }
 
 // executeSelectWithoutFrom handles SELECT statements without a FROM clause (e.g. SELECT 1, SELECT 1+2).
@@ -396,4 +408,86 @@ func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athe
 	}
 
 	return s.projectColumns(rows, selectStmt.SelectExprs)
+}
+
+// executeUnion handles UNION / UNION ALL / UNION DISTINCT set operations.
+// Each side is executed as an independent query and results are merged.
+// pkg/sqlparser does not support INTERSECT or EXCEPT.
+func (s *AthenaService) executeUnion(reqCtx *request.RequestContext, ctx context.Context, unionStmt *sqlparser.Union, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+	leftSQL := sqlparser.String(unionStmt.Left)
+	rightSQL := sqlparser.String(unionStmt.Right)
+
+	leftResult, leftStats, err := s.executeSQLQuery(reqCtx, ctx, leftSQL, context)
+	if err != nil {
+		return nil, nil, fmt.Errorf("UNION left side error: %w", err)
+	}
+
+	rightResult, rightStats, err := s.executeSQLQuery(reqCtx, ctx, rightSQL, context)
+	if err != nil {
+		return nil, nil, fmt.Errorf("UNION right side error: %w", err)
+	}
+
+	merged := s.mergeUnionResults(leftResult, rightResult, unionStmt.Type)
+
+	dataScanned := int64(0)
+	if leftStats != nil {
+		dataScanned += leftStats.DataScannedInBytes
+	}
+	if rightStats != nil {
+		dataScanned += rightStats.DataScannedInBytes
+	}
+
+	return merged, &athenastore.QueryExecutionStatistics{
+		QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
+		DataScannedInBytes:        dataScanned,
+	}, nil
+}
+
+// mergeUnionResults combines two result sets based on the set operation type.
+// Only UNION and UNION ALL are supported — INTERSECT/EXCEPT are not parsed
+// by pkg/sqlparser.
+func (s *AthenaService) mergeUnionResults(left, right *athenastore.ResultSet, unionType string) *athenastore.ResultSet {
+	upperType := strings.ToUpper(strings.TrimSpace(unionType))
+
+	var columnInfo []athenastore.ColumnInfo
+	if left.ResultSetMetadata != nil {
+		columnInfo = left.ResultSetMetadata.ColumnInfo
+	} else if right.ResultSetMetadata != nil {
+		columnInfo = right.ResultSetMetadata.ColumnInfo
+	}
+
+	makeRowKey := func(row athenastore.Row) string {
+		var parts []string
+		for _, d := range row.Data {
+			parts = append(parts, d.VarCharValue)
+		}
+		return strings.Join(parts, "\x00")
+	}
+
+	// UNION ALL: concatenate without deduplication
+	if strings.Contains(upperType, "ALL") {
+		rows := make([]athenastore.Row, 0, len(left.Rows)+len(right.Rows))
+		rows = append(rows, left.Rows...)
+		rows = append(rows, right.Rows...)
+		return &athenastore.ResultSet{Rows: rows, ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columnInfo}}
+	}
+
+	// UNION (distinct): concatenate with deduplication
+	rows := make([]athenastore.Row, 0, len(left.Rows)+len(right.Rows))
+	seen := make(map[string]bool)
+	for _, l := range left.Rows {
+		key := makeRowKey(l)
+		if !seen[key] {
+			rows = append(rows, l)
+			seen[key] = true
+		}
+	}
+	for _, r := range right.Rows {
+		key := makeRowKey(r)
+		if !seen[key] {
+			rows = append(rows, r)
+			seen[key] = true
+		}
+	}
+	return &athenastore.ResultSet{Rows: rows, ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columnInfo}}
 }

@@ -184,6 +184,8 @@ message Column {
   string name = 1;
   string type = 2;
   string comment = 3;
+  bool not_null = 4;
+  string default_value = 5;
 }
 
 message StoredRow {

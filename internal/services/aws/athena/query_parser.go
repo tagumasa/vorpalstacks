@@ -47,12 +47,7 @@ func (s *AthenaService) extractTableNameFromDrop(query string) string {
 
 	parts := strings.Fields(rest)
 	if len(parts) > 0 {
-		tableName := parts[0]
-		if strings.Contains(tableName, ".") {
-			parts := strings.Split(tableName, ".")
-			tableName = parts[len(parts)-1]
-		}
-		return strings.Trim(tableName, "`\"';")
+		return strings.Trim(parts[0], "`\"';")
 	}
 
 	return ""
@@ -135,10 +130,12 @@ func (s *AthenaService) parseCreateTableRest(rest string) (string, string, []ath
 		if len(parts) >= 2 {
 			colName := strings.Trim(parts[0], "`\"';")
 			colType := parts[1]
-			columns = append(columns, athenastore.Column{
+			col := athenastore.Column{
 				Name: colName,
 				Type: colType,
-			})
+			}
+			s.parseColumnAttributes(colDef, upperColDef, &col)
+			columns = append(columns, col)
 		} else if len(parts) == 1 {
 			colName := strings.Trim(parts[0], "`\"';")
 			columns = append(columns, athenastore.Column{
@@ -159,9 +156,9 @@ func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (str
 
 	upperQuery := strings.ToUpper(query)
 
-	locIdx := strings.Index(upperQuery, "LOCATION")
+	locIdx := strings.Index(upperQuery, " LOCATION ")
 	if locIdx != -1 {
-		locPart := query[locIdx+len("LOCATION"):]
+		locPart := query[locIdx+len(" LOCATION "):]
 		locPart = strings.TrimSpace(locPart)
 
 		locPart = strings.TrimPrefix(locPart, "'")
@@ -455,4 +452,39 @@ func (s *AthenaService) parseValue(val string) interface{} {
 	}
 
 	return val
+}
+
+// parseColumnAttributes extracts NOT NULL, DEFAULT, and COMMENT modifiers
+// from a column definition string and populates the Column struct.
+// upperColDef is the uppercase version of colDef for keyword matching;
+// indices align because case conversion preserves byte positions.
+func (s *AthenaService) parseColumnAttributes(colDef, upperColDef string, col *athenastore.Column) {
+	if strings.Contains(upperColDef, "NOT NULL") {
+		col.NotNull = true
+	}
+
+	if idx := strings.Index(upperColDef, " DEFAULT "); idx != -1 {
+		rest := strings.TrimSpace(colDef[idx+len(" DEFAULT "):])
+		if strings.HasPrefix(rest, "'") {
+			endIdx := strings.Index(rest[1:], "'")
+			if endIdx != -1 {
+				col.DefaultValue = rest[1 : 1+endIdx]
+			}
+		} else {
+			tokens := strings.Fields(rest)
+			if len(tokens) > 0 {
+				col.DefaultValue = tokens[0]
+			}
+		}
+	}
+
+	if idx := strings.Index(upperColDef, " COMMENT "); idx != -1 {
+		rest := strings.TrimSpace(colDef[idx+len(" COMMENT "):])
+		if strings.HasPrefix(rest, "'") {
+			endIdx := strings.Index(rest[1:], "'")
+			if endIdx != -1 {
+				col.Comment = rest[1 : 1+endIdx]
+			}
+		}
+	}
 }

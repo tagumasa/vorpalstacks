@@ -245,9 +245,11 @@ type TableMetadata struct {
 
 // Column represents a column in an Athena table.
 type Column struct {
-	Name    string `json:"name"`
-	Type    string `json:"type,omitempty"`
-	Comment string `json:"comment,omitempty"`
+	Name         string `json:"name"`
+	Type         string `json:"type,omitempty"`
+	Comment      string `json:"comment,omitempty"`
+	NotNull      bool   `json:"notNull,omitempty"`
+	DefaultValue string `json:"defaultValue,omitempty"`
 }
 
 // StoredRow represents a stored row in an Athena table.
@@ -289,4 +291,5 @@ type CapacityReservation struct {
 	ExpectedDispatchTime time.Time                 `json:"expectedDispatchTime,omitempty"`
 	LastModifiedTime     time.Time                 `json:"lastModifiedTime,omitempty"`
 	Tags                 map[string]string         `json:"tags,omitempty"`
+	CapacityAssignments  [][]string                `json:"capacityAssignments,omitempty"`
 }

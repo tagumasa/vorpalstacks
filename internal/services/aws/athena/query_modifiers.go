@@ -3,6 +3,7 @@ package athena
 import (
 	"sort"
 	"strconv"
+	"strings"
 
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	"vorpalstacks/pkg/sqlparser"
@@ -112,6 +113,15 @@ func (s *AthenaService) extractColumnName(expr sqlparser.Expr) string {
 }
 
 func (s *AthenaService) buildColumnInfoFromSelect(selectStmt *sqlparser.Select) []athenastore.ColumnInfo {
+	return s.buildColumnInfoFromSelectWithTypes(selectStmt, nil)
+}
+
+func (s *AthenaService) buildColumnInfoFromSelectWithTypes(selectStmt *sqlparser.Select, tableCols []athenastore.Column) []athenastore.ColumnInfo {
+	typeMap := make(map[string]string)
+	for _, c := range tableCols {
+		typeMap[strings.ToLower(c.Name)] = c.Type
+	}
+
 	var columns []athenastore.ColumnInfo
 
 	if len(selectStmt.SelectExprs) == 1 {
@@ -130,10 +140,52 @@ func (s *AthenaService) buildColumnInfoFromSelect(selectStmt *sqlparser.Select) 
 			columns = append(columns, athenastore.ColumnInfo{
 				Label: outputName,
 				Name:  outputName,
-				Type:  "string",
+				Type:  s.inferExprType(aliased.Expr, typeMap),
 			})
 		}
 	}
 
 	return columns
+}
+
+// inferExprType determines the Athena data type for a SQL expression.
+func (s *AthenaService) inferExprType(expr sqlparser.Expr, typeMap map[string]string) string {
+	switch e := expr.(type) {
+	case *sqlparser.ColName:
+		if t, ok := typeMap[strings.ToLower(e.Name.String())]; ok {
+			return t
+		}
+		return "string"
+
+	case *sqlparser.SQLVal:
+		switch e.Type {
+		case sqlparser.IntVal:
+			return "integer"
+		case sqlparser.FloatVal:
+			return "double"
+		default:
+			return "string"
+		}
+
+	case *sqlparser.FuncExpr:
+		upperName := strings.ToUpper(e.Name.String())
+		switch upperName {
+		case "COUNT":
+			return "bigint"
+		case "SUM", "AVG":
+			return "double"
+		case "MIN", "MAX":
+			if len(e.Exprs) > 0 {
+				if aliased, ok := e.Exprs[0].(*sqlparser.AliasedExpr); ok {
+					return s.inferExprType(aliased.Expr, typeMap)
+				}
+			}
+			return "string"
+		default:
+			return "string"
+		}
+
+	default:
+		return "string"
+	}
 }

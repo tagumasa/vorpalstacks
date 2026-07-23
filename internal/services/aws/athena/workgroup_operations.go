@@ -16,7 +16,7 @@ import (
 
 var workGroupNameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
-var arnRegex = regexp.MustCompile(`^arn:aws:athena:[^:]+:[^:]*:(workgroup|datacatalog|namedquery|preparedstatement)/(.+)$`)
+var arnRegex = regexp.MustCompile(`^arn:aws:athena:[^:]+:[^:]*:(workgroup|datacatalog|namedquery|preparedstatement|capacityreservation)/(.+)$`)
 
 func normalizeAthenaARN(arn string, accountID string) string {
 	parts := strings.SplitN(arn, ":", 6)

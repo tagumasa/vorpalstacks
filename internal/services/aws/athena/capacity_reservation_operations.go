@@ -79,7 +79,7 @@ func (s *AthenaService) GetCapacityReservation(ctx context.Context, reqCtx *requ
 
 	cr, err := stores.capacityReservationStore.GetCapacityReservation(name)
 	if err != nil {
-		return nil, awserrors.NewResourceNotFoundException("CapacityReservation", name)
+		return nil, capacityReservationNotFound(name)
 	}
 
 	return formatCapacityReservation(cr), nil
@@ -123,7 +123,7 @@ func (s *AthenaService) UpdateCapacityReservation(ctx context.Context, reqCtx *r
 
 	cr, err := stores.capacityReservationStore.GetCapacityReservation(name)
 	if err != nil {
-		return nil, awserrors.NewResourceNotFoundException("CapacityReservation", name)
+		return nil, capacityReservationNotFound(name)
 	}
 
 	if dpus := request.GetIntParam(req.Parameters, "TargetDpus"); dpus > 0 {
@@ -152,7 +152,7 @@ func (s *AthenaService) CancelCapacityReservation(ctx context.Context, reqCtx *r
 
 	cr, err := stores.capacityReservationStore.GetCapacityReservation(name)
 	if err != nil {
-		return nil, awserrors.NewResourceNotFoundException("CapacityReservation", name)
+		return nil, capacityReservationNotFound(name)
 	}
 
 	cr.Status = athenastore.CapacityReservationStatusCancelled
@@ -177,7 +177,7 @@ func (s *AthenaService) DeleteCapacityReservation(ctx context.Context, reqCtx *r
 	}
 
 	if _, err := stores.capacityReservationStore.GetCapacityReservation(name); err != nil {
-		return nil, awserrors.NewResourceNotFoundException("CapacityReservation", name)
+		return nil, capacityReservationNotFound(name)
 	}
 
 	if err := stores.capacityReservationStore.DeleteCapacityReservation(name); err != nil {
@@ -185,4 +185,90 @@ func (s *AthenaService) DeleteCapacityReservation(ctx context.Context, reqCtx *r
 	}
 
 	return map[string]interface{}{}, nil
+}
+
+// GetCapacityAssignmentConfiguration returns the capacity assignment
+// configuration for a capacity reservation, if one exists.
+func (s *AthenaService) GetCapacityAssignmentConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	name := request.GetStringParam(req.Parameters, "CapacityReservationName")
+	if name == "" {
+		return nil, awserrors.NewValidationException("CapacityReservationName is required")
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	assignments, err := stores.capacityReservationStore.GetCapacityAssignments(name)
+	if err != nil {
+		return nil, capacityReservationNotFound(name)
+	}
+
+	var assignmentList []map[string]interface{}
+	for _, wgNames := range assignments {
+		assignmentList = append(assignmentList, map[string]interface{}{
+			"WorkGroupNames": wgNames,
+		})
+	}
+
+	return map[string]interface{}{
+		"CapacityAssignmentConfiguration": map[string]interface{}{
+			"CapacityReservationName": name,
+			"CapacityAssignments":     assignmentList,
+		},
+	}, nil
+}
+
+// PutCapacityAssignmentConfiguration puts a new capacity assignment
+// configuration for a specified capacity reservation. If a configuration
+// already exists, it is replaced.
+func (s *AthenaService) PutCapacityAssignmentConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	name := request.GetStringParam(req.Parameters, "CapacityReservationName")
+	if name == "" {
+		return nil, awserrors.NewValidationException("CapacityReservationName is required")
+	}
+
+	assignmentsRaw := request.GetArrayParam(req.Parameters, "CapacityAssignments")
+	var assignments [][]string
+	for _, a := range assignmentsRaw {
+		if m, ok := a.(map[string]interface{}); ok {
+			wgNamesRaw, _ := m["WorkGroupNames"].([]interface{})
+			var wgNames []string
+			for _, w := range wgNamesRaw {
+				if ws, ok := w.(string); ok {
+					wgNames = append(wgNames, ws)
+				}
+			}
+			assignments = append(assignments, wgNames)
+		}
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := stores.capacityReservationStore.PutCapacityAssignments(name, assignments); err != nil {
+		if err == athenastore.ErrCapacityReservationNotFound {
+			return nil, capacityReservationNotFound(name)
+		}
+		return nil, err
+	}
+
+	// Smithy defines PutCapacityAssignmentConfigurationOutput as an empty structure.
+	return map[string]interface{}{}, nil
+}
+
+// ListApplicationDPUSizes returns the supported DPU sizes for the
+// supported Athena application runtimes.
+func (s *AthenaService) ListApplicationDPUSizes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return map[string]interface{}{
+		"ApplicationDPUSizes": []map[string]interface{}{
+			{
+				"ApplicationRuntimeId": "Athena notebook version 1",
+				"SupportedDPUSizes":    []int{24, 48, 72},
+			},
+		},
+	}, nil
 }

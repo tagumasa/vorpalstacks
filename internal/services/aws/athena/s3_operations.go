@@ -33,6 +33,12 @@ func (s *AthenaService) parseS3Location(location string) (bucket, prefix string,
 	return rest[:idx], strings.TrimPrefix(rest[idx+1:], "/"), nil
 }
 
+// writeQueryResultsToS3 writes query results to the configured S3 output location.
+// Only DML (SELECT) queries reach this path — DDL and Utility statements are
+// filtered out in executeQueryAsync. CSV is the correct output format for
+// Athena SELECT results per the AWS specification. CTAS output goes to the
+// table LOCATION, not to ResultConfiguration.OutputLocation, and is handled
+// separately by the CREATE TABLE path.
 func (s *AthenaService) writeQueryResultsToS3(ctx context.Context, region, queryExecutionId string, result *athenastore.QueryResult, outputLocation string) error {
 	if !s.hasS3Support() {
 		return nil
