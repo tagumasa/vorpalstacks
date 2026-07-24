@@ -223,8 +223,14 @@ type Table struct {
 	TimeToLive                    *TimeToLiveSpecification        `json:"time_to_live,omitempty"`
 	PointInTimeRecovery           *PointInTimeRecoveryDescription `json:"point_in_time_recovery,omitempty"`
 	ResourcePolicy                string                          `json:"resource_policy,omitempty"`
+	ResourcePolicyRevisionId      int                             `json:"resource_policy_revision_id,omitempty"`
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `json:"contributor_insights_enabled,omitempty"`
+	ContributorInsightsAction     string                          `json:"contributor_insights_action,omitempty"`
+	ContributorInsightsUpdatedAt  time.Time                       `json:"contributor_insights_updated_at,omitempty"`
+	WarmThroughput                *WarmThroughput                 `json:"warm_throughput,omitempty"`
+	OnDemandThroughput            *OnDemandThroughput             `json:"on_demand_throughput,omitempty"`
+	GlobalTableSourceArn          string                          `json:"global_table_source_arn,omitempty"`
 	TableClass                    string                          `json:"table_class,omitempty"`
 }
 
@@ -270,9 +276,22 @@ type Replica struct {
 
 // KinesisDataStreamDestination represents a Kinesis data stream destination for a table.
 type KinesisDataStreamDestination struct {
-	StreamArn                    string `json:"stream_arn"`
-	DestinationStatus            string `json:"destination_status"`
-	DestinationStatusDescription string `json:"destination_status_description,omitempty"`
+	StreamArn                            string `json:"stream_arn"`
+	DestinationStatus                    string `json:"destination_status"`
+	DestinationStatusDescription         string `json:"destination_status_description,omitempty"`
+	ApproximateCreationDateTimePrecision int    `json:"approximate_creation_date_time_precision,omitempty"`
+}
+
+// WarmThroughput represents the warm throughput for a DynamoDB table.
+type WarmThroughput struct {
+	ReadUnitsPerSecond  int64 `json:"read_units_per_second,omitempty"`
+	WriteUnitsPerSecond int64 `json:"write_units_per_second,omitempty"`
+}
+
+// OnDemandThroughput represents the on-demand throughput settings.
+type OnDemandThroughput struct {
+	MaxReadRequestUnits  int64 `json:"max_read_request_units,omitempty"`
+	MaxWriteRequestUnits int64 `json:"max_write_request_units,omitempty"`
 }
 
 // AttributeValue represents a DynamoDB attribute value.

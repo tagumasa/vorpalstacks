@@ -247,7 +247,7 @@ func tokenizeExpression(expr string) []string {
 		}
 
 		if ch == '(' {
-			if current.Len() > 0 && isIdentRune(current.String()) {
+			if current.Len() > 0 && isConditionFunctionName(current.String()) {
 				current.WriteByte(ch)
 				depth := 1
 				i++
@@ -320,4 +320,17 @@ func isIdentRune(s string) bool {
 		}
 	}
 	return true
+}
+
+// isConditionFunctionName returns true for DynamoDB expression function
+// names that should absorb their parenthetical arguments as a single token.
+// This prevents keywords like IN from being treated as function calls
+// when written as IN(:v1, :v2) without a space before the parenthesis.
+func isConditionFunctionName(s string) bool {
+	switch s {
+	case "attribute_exists", "attribute_not_exists", "attribute_type",
+		"begins_with", "contains", "size":
+		return true
+	}
+	return false
 }

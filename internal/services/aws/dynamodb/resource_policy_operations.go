@@ -3,10 +3,24 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+// revisionMatches compares an ExpectedRevisionId ("v<N>") against the
+// current revision number stored on the table. Returns true if they match.
+func revisionMatches(expected string, currentRev int) bool {
+	expectedNum, err := strconv.Atoi(strings.TrimPrefix(expected, "v"))
+	if err != nil {
+		return false
+	}
+	return expectedNum == currentRev
+}
 
 // DeleteResourcePolicy deletes a resource policy from a DynamoDB table.
 func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -14,6 +28,8 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 	if resourceArn == "" {
 		return nil, ErrInvalidParameter
 	}
+
+	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
 
 	tableName := svcarn.ParseTableARN(resourceArn)
 	if tableName == "" {
@@ -27,6 +43,13 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 	_, err = store.Tables().Get(tableName)
 	if err != nil {
 		return nil, ErrResourceNotFound
+	}
+
+	if expectedRevisionId != "" {
+		currentRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
+		if !revisionMatches(expectedRevisionId, currentRev) {
+			return nil, ErrPolicyNotFound
+		}
 	}
 
 	if err := store.Tables().DeleteResourcePolicy(tableName); err != nil {
@@ -83,6 +106,8 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 		return nil, ErrInvalidParameter
 	}
 
+	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
+
 	tableName := svcarn.ParseTableARN(resourceArn)
 	if tableName == "" {
 		return nil, ErrResourceNotFound
@@ -97,11 +122,21 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 		return nil, ErrResourceNotFound
 	}
 
+	if expectedRevisionId != "" {
+		currentRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
+		if !revisionMatches(expectedRevisionId, currentRev) {
+			return nil, ErrPolicyNotFound
+		}
+	}
+
 	if err := store.Tables().SetResourcePolicy(tableName, policy); err != nil {
 		return nil, err
 	}
 
+	newRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
+	revisionId := fmt.Sprintf("v%d", newRev)
+
 	return map[string]interface{}{
-		"RevisionId": "v1",
+		"RevisionId": revisionId,
 	}, nil
 }

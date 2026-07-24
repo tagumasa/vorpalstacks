@@ -316,7 +316,6 @@ func ParseTagsAsMap(params map[string]interface{}, key string) map[string]string
 		}
 		return result
 	}
-
 	return ToMap(ParseTags(params, key))
 }
 
@@ -513,4 +512,20 @@ func ConvertMessageTagsToSESv2(tags []MessageTag) []struct {
 		result[i].Value = t.Value
 	}
 	return result
+}
+
+// HasDuplicateKeys returns true if the tag slice contains any duplicate
+// tag keys. AWS requires unique tag keys within a single TagResource call.
+func HasDuplicateKeys(tags []types.Tag) bool {
+	seen := make(map[string]bool, len(tags))
+	for _, t := range tags {
+		if t.Key == "" {
+			continue
+		}
+		if seen[t.Key] {
+			return true
+		}
+		seen[t.Key] = true
+	}
+	return false
 }

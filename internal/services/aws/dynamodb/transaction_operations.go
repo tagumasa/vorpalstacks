@@ -25,6 +25,10 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
+	if len(transactItems) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, fmt.Errorf("transact get items: get store: %w", err)
@@ -40,22 +44,22 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 	for _, item := range transactItems {
 		itemMap, ok := item.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		getMap, ok := itemMap["Get"].(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		tableName := request.GetStringParam(getMap, "TableName")
 		if tableName == "" {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		key := parseKey(getMap["Key"])
 		if key == nil {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		projection := parseProjectionExpression(getMap)
@@ -146,6 +150,15 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 	}
 
 	if len(transactItems) > 100 {
+		return nil, ErrInvalidParameter
+	}
+
+	if len(transactItems) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
+	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
+	if clientRequestToken != "" && len(clientRequestToken) > 36 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -291,7 +304,7 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		return op, nil
 	}
 
-	return nil, nil
+	return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("no recognised operation type (Put/Update/Delete/ConditionCheck) in TransactItem")}
 }
 
 // opParseError represents a parse error encountered during transaction operation parsing.

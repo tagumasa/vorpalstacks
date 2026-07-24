@@ -39,6 +39,7 @@ type TableStoreInterface interface {
 	SetPointInTimeRecovery(name string, pitr *PointInTimeRecoveryDescription) error
 	GetPointInTimeRecovery(name string) (*PointInTimeRecoveryDescription, error)
 	SetResourcePolicy(name string, policy string) error
+	GetResourcePolicyRevisionId(name string) (int, error)
 	GetResourcePolicy(name string) (string, error)
 	DeleteResourcePolicy(name string) error
 	SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error

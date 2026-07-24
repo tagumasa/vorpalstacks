@@ -3,7 +3,6 @@ package dynamodb
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -26,7 +25,9 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 	result := map[string]interface{}{
 		"TableName":                 table.Name,
 		"ContributorInsightsStatus": status,
-		"LastUpdateDateTime":        time.Now().Unix(),
+	}
+	if !table.ContributorInsightsUpdatedAt.IsZero() {
+		result["LastUpdateDateTime"] = table.ContributorInsightsUpdatedAt.Unix()
 	}
 	if indexName != "" {
 		result["IndexName"] = indexName
@@ -77,9 +78,10 @@ func (s *DynamoDBService) ListContributorInsights(ctx context.Context, reqCtx *r
 		})
 	}
 
-	if len(summaries) > maxResults {
+	if len(summaries) > maxResults && maxResults > 0 {
 		summaries = summaries[:maxResults]
-		return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, summaries[len(summaries)-1]["TableName"].(string)), nil
+		lastTableName, _ := summaries[len(summaries)-1]["TableName"].(string)
+		return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, lastTableName), nil
 	}
 
 	return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, ""), nil
@@ -93,12 +95,11 @@ func (s *DynamoDBService) UpdateContributorInsights(ctx context.Context, reqCtx 
 	}
 	tableName := table.Name
 
-	enabled := true
-	if e, ok := req.Parameters["ContributorInsightsAction"].(string); ok {
-		if e == "DISABLE" {
-			enabled = false
-		}
+	action, ok := req.Parameters["ContributorInsightsAction"].(string)
+	if !ok || (action != "ENABLE" && action != "DISABLE") {
+		return nil, ErrInvalidParameter
 	}
+	enabled := action == "ENABLE"
 
 	store, err := s.store(reqCtx)
 	if err != nil {

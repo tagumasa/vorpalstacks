@@ -36,7 +36,7 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 	for tableName, tableReq := range requestItems {
 		tr, ok := tableReq.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		if !store.Tables().Exists(tableName) {
@@ -45,9 +45,11 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 
 		keys, ok := tr["Keys"].([]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
+		// Single-instance Pebble provides strong consistency by default.
+		// ConsistentRead is accepted for API compatibility.
 		_ = request.GetBoolParam(tr, "ConsistentRead")
 
 		var tableItems []map[string]interface{}
@@ -141,7 +143,7 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 	for tableName, tableReq := range requestItems {
 		writes, ok := tableReq.([]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
 		table, tableErr := store.Tables().Get(tableName)
@@ -157,18 +159,18 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 		for _, w := range writes {
 			writeReq, ok := w.(map[string]interface{})
 			if !ok {
-				continue
+				return nil, ErrInvalidParameter
 			}
 
 			if putReq, ok := writeReq["PutRequest"].(map[string]interface{}); ok {
 				item := parseItem(putReq["Item"])
 				if item == nil {
-					continue
+					return nil, ErrInvalidParameter
 				}
 
 				key := s.extractKeyFromItem(table, item)
 				if key == nil {
-					continue
+					return nil, ErrInvalidParameter
 				}
 
 				allWrites = append(allWrites, writeOp{
@@ -183,7 +185,7 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 			if delReq, ok := writeReq["DeleteRequest"].(map[string]interface{}); ok {
 				key := parseKey(delReq["Key"])
 				if key == nil {
-					continue
+					return nil, ErrInvalidParameter
 				}
 
 				allWrites = append(allWrites, writeOp{

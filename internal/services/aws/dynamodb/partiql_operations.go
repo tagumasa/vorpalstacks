@@ -132,6 +132,8 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 		result = append(result, buildItemResponse(attrs))
 	}
 
+	// Single-instance Pebble provides strong consistency by default.
+	// ConsistentRead is accepted for API compatibility.
 	_ = consistentRead
 
 	return map[string]interface{}{
@@ -389,8 +391,24 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) {
 	for _, asgn := range assignments {
 		var attrValue *dbstore.AttributeValue
-		switch e := asgn.value.(type) {
-		case *sqlparser.SQLVal:
+
+		if funcExpr, ok := asgn.value.(*sqlparser.FuncExpr); ok && strings.EqualFold(funcExpr.Name.String(), "if_not_exists") {
+			if len(funcExpr.Exprs) >= 2 {
+				if aliased, ok := funcExpr.Exprs[0].(*sqlparser.AliasedExpr); ok {
+					if colName, ok := aliased.Expr.(*sqlparser.ColName); ok {
+						attrName := colName.Name.String()
+						if existing, exists := attrs[attrName]; exists && existing != nil {
+							continue
+						}
+					}
+				}
+				if aliased, ok := funcExpr.Exprs[1].(*sqlparser.AliasedExpr); ok {
+					if sqlVal, ok := aliased.Expr.(*sqlparser.SQLVal); ok {
+						attrValue = exprToAttributeValueWithParams(sqlVal, params)
+					}
+				}
+			}
+		} else if e, ok := asgn.value.(*sqlparser.SQLVal); ok {
 			if e.Type == sqlparser.ValArg {
 				if strings.HasPrefix(string(e.Val), ":") {
 					idxStr := strings.TrimPrefix(string(e.Val), ":v")
@@ -401,7 +419,7 @@ func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments [
 			} else {
 				attrValue = exprToAttributeValue(e)
 			}
-		default:
+		} else {
 			attrValue = exprToAttributeValue(asgn.value)
 		}
 

@@ -113,55 +113,43 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	var allTables []*dbstore.GlobalTable
+	var filteredTables []*dbstore.GlobalTable
 	marker := exclusiveStartGlobalTableName
-	pageLimit := 1000
-	if marker == "" {
-		marker = ""
+	pageSize := limit
+	if pageSize < 10 {
+		pageSize = 10
 	}
 
-	for {
-		page, nextMarker, err := store.GlobalTables().List(marker, pageLimit)
+	for len(filteredTables) < limit {
+		page, nextMarker, err := store.GlobalTables().List(marker, pageSize)
 		if err != nil {
 			return nil, err
 		}
-		allTables = append(allTables, page...)
+		for _, gt := range page {
+			if regionName != "" {
+				found := false
+				for _, r := range gt.ReplicationGroup {
+					if r.RegionName == regionName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					continue
+				}
+			}
+			filteredTables = append(filteredTables, gt)
+			if len(filteredTables) >= limit {
+				break
+			}
+		}
 		if nextMarker == "" {
 			break
 		}
 		marker = nextMarker
 	}
 
-	var filteredTables []*dbstore.GlobalTable
-	for _, gt := range allTables {
-		if regionName != "" {
-			found := false
-			for _, r := range gt.ReplicationGroup {
-				if r.RegionName == regionName {
-					found = true
-					break
-				}
-			}
-			if !found {
-				continue
-			}
-		}
-		filteredTables = append(filteredTables, gt)
-	}
-
-	startIdx := 0
-	if exclusiveStartGlobalTableName != "" {
-		for i, gt := range filteredTables {
-			if gt.GlobalTableName == exclusiveStartGlobalTableName {
-				startIdx = i + 1
-				break
-			}
-		}
-	}
-
-	filteredTables = filteredTables[startIdx:]
-
-	hasMore := len(filteredTables) > limit
+	hasMore := len(filteredTables) >= limit
 
 	if len(filteredTables) > limit {
 		filteredTables = filteredTables[:limit]
@@ -207,13 +195,13 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 		for _, update := range updates {
 			updateMap, ok := update.(map[string]interface{})
 			if !ok {
-				continue
+				return nil, ErrInvalidParameter
 			}
 
 			if createMap, ok := updateMap["Create"].(map[string]interface{}); ok {
 				regionName, _ := createMap["RegionName"].(string)
 				if regionName == "" {
-					continue
+					return nil, ErrInvalidParameter
 				}
 				for _, r := range globalTable.ReplicationGroup {
 					if r.RegionName == regionName {
@@ -229,7 +217,7 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 			if deleteMap, ok := updateMap["Delete"].(map[string]interface{}); ok {
 				regionName, _ := deleteMap["RegionName"].(string)
 				if regionName == "" {
-					continue
+					return nil, ErrInvalidParameter
 				}
 				found := false
 				var newReplicas []*dbstore.Replica
@@ -283,7 +271,7 @@ func (s *DynamoDBService) UpdateGlobalTableSettings(ctx context.Context, reqCtx 
 
 			regionName, _ := updateMap["RegionName"].(string)
 			if regionName == "" {
-				continue
+				return nil, ErrInvalidParameter
 			}
 
 			for _, replica := range globalTable.ReplicationGroup {

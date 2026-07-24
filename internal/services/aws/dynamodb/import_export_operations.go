@@ -5,8 +5,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"vorpalstacks/internal/common/pagination"
@@ -68,6 +70,13 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 	if exportFormat == "" {
 		exportFormat = "DYNAMODB_JSON"
 	}
+	validExportFormats := map[string]bool{
+		"DYNAMODB_JSON": true,
+		"ION":           true,
+	}
+	if !validExportFormats[exportFormat] {
+		return nil, ErrInvalidParameter
+	}
 
 	export, err := store.Exports().Create(tableArn, tableName, exportFormat)
 	if err != nil {
@@ -79,6 +88,8 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 	billedSizeBytes := int64(0)
 
 	s3 := s.s3invoker()
+	exportFailed := false
+	var failureCode, failureMessage string
 	if s3 != nil {
 		var buf bytes.Buffer
 		writer := bufio.NewWriter(&buf)
@@ -103,6 +114,9 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 				logs.Err(err),
 				logs.String("tableName", tableName),
 			)
+			exportFailed = true
+			failureCode = "InternalFailure"
+			failureMessage = fmt.Sprintf("failed to scan items: %v", err)
 		}
 
 		if err := writer.Flush(); err != nil {
@@ -110,11 +124,15 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 				logs.Err(err),
 				logs.String("tableName", tableName),
 			)
+			exportFailed = true
+			failureCode = "InternalFailure"
+			failureMessage = fmt.Sprintf("failed to flush buffer: %v", err)
 		}
 
 		billedSizeBytes = int64(buf.Len())
+		dataFileID := fmt.Sprintf("%d", time.Now().UnixNano())
 		objectKey := fmt.Sprintf("%s/AWSDynamoDB/%s/data/%s.json",
-			s3Prefix, export.ExportArn, export.ExportArn,
+			s3Prefix, export.ExportArn, dataFileID,
 		)
 		if err := s3.PutObject(ctx, region, s3Bucket, objectKey, buf.Bytes(), "application/octet-stream"); err != nil {
 			logs.Error("Failed to write export to S3",
@@ -122,12 +140,21 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 				logs.String("bucket", s3Bucket),
 				logs.String("key", objectKey),
 			)
+			exportFailed = true
+			failureCode = "S3AccessDenied"
+			failureMessage = fmt.Sprintf("failed to write to S3: %v", err)
 		}
 	} else {
 		itemCount = table.ItemCount
 	}
 
-	export.ExportStatus = "COMPLETED"
+	if exportFailed {
+		export.ExportStatus = "FAILED"
+		export.FailureCode = failureCode
+		export.FailureMessage = failureMessage
+	} else {
+		export.ExportStatus = "COMPLETED"
+	}
 	export.S3Bucket = s3Bucket
 	export.S3Prefix = s3Prefix
 	export.EndTime = time.Now()
@@ -137,19 +164,27 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
+	result := map[string]interface{}{
+		"ExportArn":       export.ExportArn,
+		"ExportStatus":    export.ExportStatus,
+		"StartTime":       export.StartTime.Unix(),
+		"EndTime":         export.EndTime.Unix(),
+		"TableArn":        export.TableArn,
+		"ExportFormat":    export.ExportFormat,
+		"S3Bucket":        export.S3Bucket,
+		"S3Prefix":        export.S3Prefix,
+		"ItemCount":       export.ItemCount,
+		"BilledSizeBytes": export.BilledSizeBytes,
+	}
+	if export.FailureCode != "" {
+		result["FailureCode"] = export.FailureCode
+	}
+	if export.FailureMessage != "" {
+		result["FailureMessage"] = export.FailureMessage
+	}
+
 	return map[string]interface{}{
-		"ExportDescription": map[string]interface{}{
-			"ExportArn":       export.ExportArn,
-			"ExportStatus":    export.ExportStatus,
-			"StartTime":       export.StartTime.Unix(),
-			"EndTime":         export.EndTime.Unix(),
-			"TableArn":        export.TableArn,
-			"ExportFormat":    export.ExportFormat,
-			"S3Bucket":        export.S3Bucket,
-			"S3Prefix":        export.S3Prefix,
-			"ItemCount":       export.ItemCount,
-			"BilledSizeBytes": export.BilledSizeBytes,
-		},
+		"ExportDescription": result,
 	}, nil
 }
 
@@ -289,12 +324,12 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 
 	keySchema := parseKeySchema(tableCreationParams)
 	if len(keySchema) == 0 {
-		keySchema = []*dbstore.KeySchemaElement{{AttributeName: "id", KeyType: dbstore.KeyTypeHash}}
+		return nil, ErrInvalidParameter
 	}
 
 	attrDefs := parseAttributeDefinitions(tableCreationParams)
 	if len(attrDefs) == 0 {
-		attrDefs = []*dbstore.AttributeDefinition{{AttributeName: "id", AttributeType: dbstore.ScalarAttributeTypeS}}
+		return nil, ErrInvalidParameter
 	}
 
 	billingMode := dbstore.BillingMode(request.GetStringParam(tableCreationParams, "BillingMode"))
@@ -326,7 +361,7 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	imp, err := store.Imports().Create(table.ARN, "")
+	imp, err := store.Imports().Create(table.ARN, tableName)
 	if err != nil {
 		if delErr := store.Tables().Delete(tableName); delErr != nil {
 			logs.Error("Failed to rollback table creation during import", logs.Err(delErr), logs.String("tableName", tableName))
@@ -336,9 +371,27 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 
 	importedCount := int64(0)
 	billedSizeBytes := int64(0)
+	importFailed := false
+	var failureCode, failureMessage string
+
+	// Parse CSV options if applicable.
+	var csvDelimiter string
+	var csvHeaderList []string
+	if inputFormat == "CSV" {
+		if csvOpts, ok := req.Parameters["CsvOptions"].(map[string]interface{}); ok {
+			csvDelimiter, _ = csvOpts["Delimiter"].(string)
+			if hl, ok := csvOpts["HeaderList"].([]interface{}); ok {
+				for _, h := range hl {
+					if hs, ok := h.(string); ok {
+						csvHeaderList = append(csvHeaderList, hs)
+					}
+				}
+			}
+		}
+	}
 
 	s3 := s.s3invoker()
-	if s3 != nil && inputFormat == "DYNAMODB_JSON" {
+	if s3 != nil {
 		region := reqCtx.GetRegion()
 		keys, listErr := s3.ListObjects(ctx, region, s3Bucket, s3Prefix, 0)
 		if listErr != nil {
@@ -347,6 +400,9 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 				logs.String("bucket", s3Bucket),
 				logs.String("prefix", s3Prefix),
 			)
+			importFailed = true
+			failureCode = "S3AccessDenied"
+			failureMessage = fmt.Sprintf("failed to list S3 objects: %v", listErr)
 		} else {
 			for _, key := range keys {
 				data, getErr := s3.GetObject(ctx, region, s3Bucket, key, 0)
@@ -356,15 +412,33 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 						logs.String("bucket", s3Bucket),
 						logs.String("key", key),
 					)
+					importFailed = true
+					failureCode = "S3AccessDenied"
+					failureMessage = fmt.Sprintf("failed to read S3 object %s: %v", key, getErr)
 					continue
 				}
 				billedSizeBytes += int64(len(data))
-				count, parseErr := importDynamoDBJSONData(ctx, data, tableName, store)
+				var count int64
+				var parseErr error
+				switch inputFormat {
+				case "CSV":
+					count, parseErr = importCSVData(ctx, data, tableName, store, csvDelimiter, csvHeaderList)
+				case "ION":
+					importFailed = true
+					failureCode = "UnsupportedFormat"
+					failureMessage = "ION format parsing is not yet implemented"
+					continue
+				default:
+					count, parseErr = importDynamoDBJSONData(ctx, data, tableName, store)
+				}
 				if parseErr != nil {
 					logs.Error("Failed to parse DynamoDB JSON for import",
 						logs.Err(parseErr),
 						logs.String("key", key),
 					)
+					importFailed = true
+					failureCode = "DocumentAccessException"
+					failureMessage = fmt.Sprintf("failed to parse data in %s: %v", key, parseErr)
 					continue
 				}
 				importedCount += count
@@ -372,7 +446,13 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	imp.ImportStatus = "COMPLETED"
+	if importFailed {
+		imp.ImportStatus = "FAILED"
+		imp.FailureCode = failureCode
+		imp.FailureMessage = failureMessage
+	} else {
+		imp.ImportStatus = "COMPLETED"
+	}
 	imp.TableArn = table.ARN
 	imp.InputFormat = inputFormat
 	imp.S3BucketSource = &dbstore.S3BucketSource{
@@ -486,6 +566,89 @@ func importDynamoDBJSONData(ctx context.Context, data []byte, tableName string, 
 		count++
 	}
 	return count, scanner.Err()
+}
+
+// importCSVData parses CSV-formatted data and imports rows as DynamoDB items.
+// Each column becomes a String attribute. If headerList is empty, the first
+// row is treated as the header. delimiter defaults to comma.
+func importCSVData(ctx context.Context, data []byte, tableName string, store dbstore.DynamoDBStoreInterface, delimiter string, headerList []string) (int64, error) {
+	var count int64
+
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		return 0, fmt.Errorf("get table %s for CSV import: %w", tableName, err)
+	}
+
+	if delimiter == "" {
+		delimiter = ","
+	}
+
+	reader := csv.NewReader(bytes.NewReader(data))
+	reader.Comma = rune(delimiter[0])
+
+	headers := headerList
+	if len(headers) == 0 {
+		headerRecord, err := reader.Read()
+		if err != nil {
+			return 0, fmt.Errorf("failed to read CSV header: %w", err)
+		}
+		headers = headerRecord
+	}
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			continue
+		}
+
+		attrs := make(map[string]*dbstore.AttributeValue)
+		for i, val := range record {
+			if i >= len(headers) {
+				break
+			}
+			attrs[headers[i]] = &dbstore.AttributeValue{S: &val}
+		}
+
+		key := make(map[string]*dbstore.AttributeValue)
+		for _, ks := range table.KeySchema {
+			if v, ok := attrs[ks.AttributeName]; ok {
+				key[ks.AttributeName] = v
+			}
+		}
+		if len(key) == 0 {
+			continue
+		}
+
+		itemSize := calculateItemSize(attrs)
+		putErr := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+			if err := txn.PutItem(tableName, key, attrs); err != nil {
+				return err
+			}
+			newItem := &dbstore.Item{
+				TableName:  tableName,
+				Key:        key,
+				Attributes: attrs,
+			}
+			if err := txn.PutIndexEntries(tableName, newItem); err != nil {
+				return err
+			}
+			if err := txn.UpdateItemCount(tableName, 1); err != nil {
+				return err
+			}
+			if err := txn.UpdateTableSize(tableName, itemSize); err != nil {
+				return err
+			}
+			return nil
+		})
+		if putErr != nil {
+			continue
+		}
+		count++
+	}
+	return count, nil
 }
 
 // DescribeImport returns information about a table import.

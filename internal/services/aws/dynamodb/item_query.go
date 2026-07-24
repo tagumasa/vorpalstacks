@@ -22,6 +22,8 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
+	// Single-instance Pebble provides strong consistency by default.
+	// ConsistentRead is accepted for API compatibility.
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 {
@@ -215,6 +217,8 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 		}
 	}
 
+	// Single-instance Pebble provides strong consistency by default.
+	// ConsistentRead is accepted for API compatibility.
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 {

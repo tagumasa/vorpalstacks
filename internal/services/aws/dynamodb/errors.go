@@ -130,9 +130,35 @@ var (
 	// ErrPolicyNotFound is returned when a resource-based policy is not found for the specified resource.
 	ErrPolicyNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#PolicyNotFoundException", "Policy not found", http.StatusNotFound)
 	// ErrIndexNotFound is returned when the specified secondary index does not exist on the table.
-	ErrIndexNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceNotFoundException", "Index not found", http.StatusNotFound)
+	ErrIndexNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#IndexNotFoundException", "Index not found", http.StatusNotFound)
 	// ErrIndexAlreadyExists is returned when a secondary index already exists with the same name on the table.
 	ErrIndexAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Index already exists", http.StatusConflict)
 	// ErrPITRNotEnabled is returned when point-in-time recovery is not enabled for the table.
 	ErrPITRNotEnabled = NewAPIError("com.amazonaws.dynamodb.v20120810#PointInTimeRecoveryUnavailableException", "Point in time recovery is not enabled for this table", http.StatusBadRequest)
+	// ErrContinuousBackupsUnavailable is returned when continuous backups are unavailable.
+	ErrContinuousBackupsUnavailable = NewAPIError("com.amazonaws.dynamodb.v20120810#ContinuousBackupsUnavailableException", "Backups are not available for this table", http.StatusBadRequest)
+	// ErrDuplicateItem is returned when a batch write contains duplicate items.
+	ErrDuplicateItem = NewAPIError("com.amazonaws.dynamodb.v20120810#DuplicateItemException", "Duplicate item in request", http.StatusBadRequest)
+	// ErrExportConflict is returned when an export operation conflicts with an existing export.
+	ErrExportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportConflictException", "Export conflict", http.StatusBadRequest)
+	// ErrFailure is returned when a generic failure occurs during import or export.
+	ErrFailure = NewAPIError("com.amazonaws.dynamodb.v20120810#FailureException", "Failure", http.StatusInternalServerError)
+	// ErrImportConflict is returned when an import operation conflicts with an existing import.
+	ErrImportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ImportConflictException", "Import conflict", http.StatusBadRequest)
+	// ErrItemCollectionSizeLimitExceeded is returned when an item collection exceeds the size limit.
+	ErrItemCollectionSizeLimitExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#ItemCollectionSizeLimitExceededException", "Item collection size limit exceeded", http.StatusBadRequest)
+	// ErrLimitExceeded is returned when a service limit is exceeded.
+	ErrLimitExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#LimitExceededException", "Limit exceeded", http.StatusBadRequest)
+	// ErrProvisionedThroughputExceeded is returned when provisioned throughput is exceeded.
+	ErrProvisionedThroughputExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#ProvisionedThroughputExceededException", "Provisioned throughput exceeded", http.StatusBadRequest)
+	// ErrReplicatedWriteConflict is returned when a replicated write conflict occurs.
+	ErrReplicatedWriteConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicatedWriteConflictException", "Replicated write conflict", http.StatusBadRequest)
+	// ErrThrottling is returned when the request is throttled.
+	ErrThrottling = NewAPIError("com.amazonaws.dynamodb.v20120810#ThrottlingException", "Rate of requests exceeds throughput limit", http.StatusBadRequest)
+	// ErrTransactionInProgress is returned when a transaction is already in progress.
+	ErrTransactionInProgress = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionInProgressException", "Transaction in progress", http.StatusBadRequest)
+	// ErrInvalidExportTime is returned when the requested export time is invalid.
+	ErrInvalidExportTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidExportTimeException", "Invalid export time", http.StatusBadRequest)
+	// ErrInvalidRestoreTime is returned when the requested restore time is invalid.
+	ErrInvalidRestoreTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidRestoreTimeException", "Invalid restore time", http.StatusBadRequest)
 )

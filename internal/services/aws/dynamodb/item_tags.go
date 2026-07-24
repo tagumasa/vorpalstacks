@@ -82,6 +82,10 @@ func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
+	tags := tagutil.ParseTags(req.Parameters, "Tags")
+	if tagutil.HasDuplicateKeys(tags) {
+		return nil, ErrInvalidParameter
+	}
 	return tagutil.HandleTag(ctx, req, dynamodbTagConfig(store))
 }
 

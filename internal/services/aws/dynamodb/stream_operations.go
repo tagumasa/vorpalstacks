@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -47,6 +48,12 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 		seqRange["EndingSequenceNumber"] = fmt.Sprintf("%d", latestSeq)
 	}
 
+	// StreamStatus reflects the table's streaming state.
+	streamStatus := "ENABLED"
+	if table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
+		streamStatus = "DISABLED"
+	}
+
 	shard := map[string]interface{}{
 		"ShardId":             dbstore.ShardID,
 		"SequenceNumberRange": seqRange,
@@ -56,7 +63,7 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 		"StreamDescription": map[string]interface{}{
 			"StreamArn":               streamArn,
 			"StreamLabel":             table.LatestStreamLabel,
-			"StreamStatus":            "ENABLED",
+			"StreamStatus":            streamStatus,
 			"StreamViewType":          string(table.StreamSpecification.StreamViewType),
 			"TableName":               tableName,
 			"KeySchema":               buildKeySchemaResponse(table.KeySchema),
@@ -162,10 +169,12 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 			limit = int(v)
 		case int:
 			limit = v
+		default:
+			return nil, ErrInvalidParameter
 		}
 	}
 	if limit <= 0 || limit > 1000 {
-		limit = 100
+		return nil, ErrInvalidParameter
 	}
 
 	tableName, fromSeq, err := decodeShardIterator(iterator)
@@ -212,25 +221,16 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 //
 //	arn:aws:dynamodb:region:accountId:table/tableName/stream/label
 func extractTableNameFromStreamArn(streamArn string) string {
-	idx := indexOf(streamArn, "table/")
+	idx := strings.Index(streamArn, "table/")
 	if idx < 0 {
 		return ""
 	}
 	rest := streamArn[idx+6:]
-	slashIdx := indexOf(rest, "/")
+	slashIdx := strings.Index(rest, "/")
 	if slashIdx < 0 {
 		return rest
 	}
 	return rest[:slashIdx]
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }
 
 // encodeShardIterator creates an opaque iterator string from the table

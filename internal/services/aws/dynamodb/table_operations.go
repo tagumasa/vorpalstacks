@@ -73,6 +73,24 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	tagList := tagutil.ParseTags(req.Parameters, "Tags")
 	deletionProtectionEnabled := request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 
+	var warmThroughput *dbstore.WarmThroughput
+	if wtMap, ok := req.Parameters["WarmThroughput"].(map[string]interface{}); ok {
+		warmThroughput = &dbstore.WarmThroughput{
+			ReadUnitsPerSecond:  request.GetInt64Param(wtMap, "ReadUnitsPerSecond"),
+			WriteUnitsPerSecond: request.GetInt64Param(wtMap, "WriteUnitsPerSecond"),
+		}
+	}
+
+	var onDemandThroughput *dbstore.OnDemandThroughput
+	if odtMap, ok := req.Parameters["OnDemandThroughput"].(map[string]interface{}); ok {
+		onDemandThroughput = &dbstore.OnDemandThroughput{
+			MaxReadRequestUnits:  request.GetInt64Param(odtMap, "MaxReadRequestUnits"),
+			MaxWriteRequestUnits: request.GetInt64Param(odtMap, "MaxWriteRequestUnits"),
+		}
+	}
+
+	globalTableSourceArn := request.GetStringParam(req.Parameters, "GlobalTableSourceArn")
+
 	var sseDesc *dbstore.SSEDescription
 	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
 		var err error
@@ -107,6 +125,16 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 
 	if sseDesc != nil {
 		table.SSEDescription = sseDesc
+	}
+
+	if warmThroughput != nil {
+		table.WarmThroughput = warmThroughput
+	}
+	if onDemandThroughput != nil {
+		table.OnDemandThroughput = onDemandThroughput
+	}
+	if globalTableSourceArn != "" {
+		table.GlobalTableSourceArn = globalTableSourceArn
 	}
 
 	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
@@ -250,7 +278,7 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 		table.StreamSpecification = streamSpec
 		if streamSpec.StreamEnabled {
 			now := time.Now().UTC()
-			table.StreamArn = table.ARN + "/stream/" + now.Format("20060102150405")
+			table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
 			table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
 		} else {
 			table.StreamArn = ""

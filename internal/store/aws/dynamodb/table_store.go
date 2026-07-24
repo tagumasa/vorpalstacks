@@ -99,7 +99,7 @@ func (s *TableStore) Create(
 	}
 
 	if streamSpec != nil && streamSpec.StreamEnabled {
-		table.StreamArn = table.ARN + "/stream/" + now.Format("20060102150405")
+		table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
 		table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
 	}
 
@@ -263,8 +263,19 @@ func (s *TableStore) SetResourcePolicy(name string, policy string) error {
 			return err
 		}
 		table.ResourcePolicy = policy
+		table.ResourcePolicyRevisionId++
 		return s.Put(table)
 	})
+}
+
+// GetResourcePolicyRevisionId returns the current resource policy revision
+// number for a table. Returns 0 if no policy has been set.
+func (s *TableStore) GetResourcePolicyRevisionId(name string) (int, error) {
+	table, err := s.Get(name)
+	if err != nil {
+		return 0, err
+	}
+	return table.ResourcePolicyRevisionId, nil
 }
 
 // GetResourcePolicy returns the resource policy for a DynamoDB table.
@@ -308,6 +319,7 @@ func (s *TableStore) SetContributorInsights(name string, enabled bool) error {
 			return err
 		}
 		table.ContributorInsightsEnabled = enabled
+		table.ContributorInsightsUpdatedAt = time.Now().UTC()
 		return s.Put(table)
 	})
 }

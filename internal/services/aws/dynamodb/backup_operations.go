@@ -3,9 +3,9 @@ package dynamodb
 
 import (
 	"context"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -52,29 +52,47 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 	backup.SourceTableCreationTime = table.CreationDateTime
 	backup.SourceTableSizeBytes = table.TableSizeBytes
 	backup.SourceTableItemCount = table.ItemCount
-
-	// Snapshot all items from the source table so the backup is
-	// self-contained and can be restored even after the source
-	// table is deleted.
-	var snapshotItems []*dbstore.Item
-	if err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
-		snapshotItems = append(snapshotItems, &dbstore.Item{
-			TableName:  tableName,
-			Key:        copyAttributes(item.Key),
-			Attributes: copyAttributes(item.Attributes),
-		})
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("failed to scan items for backup: %w", err)
-	}
-	if err := store.Backups().SaveSnapshot(backupName, snapshotItems); err != nil {
-		return nil, err
-	}
 	backup.BackupSizeBytes = table.TableSizeBytes
 
+	// Set CREATING status and persist immediately so DescribeBackup
+	// shows the correct state while the snapshot is being taken.
+	backup.BackupStatus = dbstore.BackupStatusCreating
 	if err := store.Backups().Put(backup); err != nil {
 		return nil, err
 	}
+
+	// Take the snapshot in the background and transition to AVAILABLE.
+	go func() {
+		var snapshotItems []*dbstore.Item
+		if err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
+			snapshotItems = append(snapshotItems, &dbstore.Item{
+				TableName:  tableName,
+				Key:        copyAttributes(item.Key),
+				Attributes: copyAttributes(item.Attributes),
+			})
+			return nil
+		}); err != nil {
+			logs.Error("Failed to scan items for backup",
+				logs.Err(err),
+				logs.String("tableName", tableName),
+			)
+			return
+		}
+		if err := store.Backups().SaveSnapshot(backupName, snapshotItems); err != nil {
+			logs.Error("Failed to save backup snapshot",
+				logs.Err(err),
+				logs.String("backupName", backupName),
+			)
+			return
+		}
+		backup.BackupStatus = dbstore.BackupStatusAvailable
+		if err := store.Backups().Put(backup); err != nil {
+			logs.Error("Failed to update backup status to AVAILABLE",
+				logs.Err(err),
+				logs.String("backupName", backupName),
+			)
+		}
+	}()
 
 	return map[string]interface{}{
 		"BackupDetails": map[string]interface{}{
@@ -178,7 +196,7 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	backups, _, err := store.Backups().List("", 0, tableName)
+	backups, _, err := store.Backups().List(exclusiveStartBackupArn, limit, tableName)
 	if err != nil {
 		return nil, err
 	}

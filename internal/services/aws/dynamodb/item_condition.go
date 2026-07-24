@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -233,15 +234,6 @@ func evaluateConditionExpr(item *dbstore.Item, expr string, names map[string]str
 		return true, nil
 	}
 
-	if len(expr) > 4 && strings.EqualFold(expr[:4], "NOT ") {
-		inner := strings.TrimSpace(expr[4:])
-		result, err := evaluateConditionExpr(item, inner, names, values)
-		if err != nil {
-			return false, err
-		}
-		return !result, nil
-	}
-
 	orParts := splitByLogicalOp(expr, " OR ")
 	if len(orParts) > 1 {
 		for _, part := range orParts {
@@ -298,7 +290,7 @@ func splitByLogicalOp(expr string, op string) []string {
 	var parts []string
 	current := ""
 	upperExpr := strings.ToUpper(expr)
-	opUpper := strings.ToUpper(strings.TrimSpace(op))
+	opUpper := strings.ToUpper(op)
 	opLen := len(opUpper)
 	i := 0
 
@@ -322,6 +314,18 @@ func splitByLogicalOp(expr string, op string) []string {
 			}
 
 			if depth == 0 && i+opLen <= len(upperExpr) && upperExpr[i:i+opLen] == opUpper {
+				// N1: When splitting by " AND ", skip ANDs that are part
+				// of a BETWEEN expression. The accumulated text ending
+				// with "<token> BETWEEN <token>" means this AND is the
+				// BETWEEN separator, not a logical conjunction.
+				if opUpper == " AND " {
+					fields := strings.Fields(strings.TrimSpace(current))
+					if len(fields) >= 2 && strings.EqualFold(fields[len(fields)-2], "BETWEEN") {
+						current += string(ch)
+						i++
+						continue
+					}
+				}
 				if trimmed := strings.TrimSpace(current); trimmed != "" {
 					parts = append(parts, trimmed)
 				}
@@ -343,6 +347,32 @@ func splitByLogicalOp(expr string, op string) []string {
 }
 
 func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (bool, error) {
+	expr = strings.TrimSpace(expr)
+
+	// NOT handling — after OR/AND split, so NOT applies only to the
+	// immediate operand. "NOT a AND b" is split to ["NOT a", "b"],
+	// and each part is evaluated separately. NOT negates only its own
+	// operand, not the entire expression.
+	if len(expr) > 4 && strings.EqualFold(expr[:4], "NOT ") {
+		inner := strings.TrimSpace(expr[4:])
+		result, err := evaluateConditionExpr(item, inner, names, values)
+		if err != nil {
+			return false, err
+		}
+		return !result, nil
+	}
+	if len(expr) > 4 && strings.EqualFold(expr[:3], "NOT") && expr[3] == '(' {
+		inner := expr[3:]
+		if strings.HasPrefix(inner, "(") && strings.HasSuffix(inner, ")") {
+			inner = strings.TrimSpace(inner[1 : len(inner)-1])
+		}
+		result, err := evaluateConditionExpr(item, inner, names, values)
+		if err != nil {
+			return false, err
+		}
+		return !result, nil
+	}
+
 	tokens := tokenizeExpression(expr)
 	if len(tokens) == 0 {
 		return true, nil
@@ -398,6 +428,39 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 		}
 	}
 
+	if len(tokens) >= 5 && strings.EqualFold(tokens[1], "BETWEEN") && strings.EqualFold(tokens[3], "AND") {
+		attrName := resolveName(tokens[0], names)
+		attr := getNestedAttributeValue(item.Attributes, attrName)
+		if attr == nil {
+			return false, nil
+		}
+		low := resolveValue(tokens[2], values, names)
+		high := resolveValue(tokens[4], values, names)
+		if low == nil || high == nil {
+			return false, nil
+		}
+		return compareAttributeValues(attr, ">=", low) && compareAttributeValues(attr, "<=", high), nil
+	}
+
+	if len(tokens) >= 4 && strings.EqualFold(tokens[1], "IN") {
+		attrName := resolveName(tokens[0], names)
+		attr := getNestedAttributeValue(item.Attributes, attrName)
+		if attr == nil {
+			return false, nil
+		}
+		for i := 2; i < len(tokens); i++ {
+			t := tokens[i]
+			if t == "(" || t == ")" || t == "," {
+				continue
+			}
+			v := resolveValue(t, values, names)
+			if v != nil && attributeValuesEqual(attr, v) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
 	if len(tokens) >= 3 {
 		if strings.HasPrefix(tokens[0], "size(") && strings.HasSuffix(tokens[0], ")") {
 			pathStr := tokens[0][5 : len(tokens[0])-1]
@@ -418,6 +481,9 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 
 		attrName := resolveName(tokens[0], names)
 		op := tokens[1]
+		if !isValidComparisonOperator(op) {
+			return false, fmt.Errorf("unsupported comparison operator: %s", op)
+		}
 		value := resolveValue(tokens[2], values, names)
 
 		attr := getNestedAttributeValue(item.Attributes, attrName)
@@ -431,7 +497,7 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 		return compareAttributeValues(attr, op, value), nil
 	}
 
-	return true, nil
+	return false, fmt.Errorf("unsupported condition expression: %s", expr)
 }
 
 func evaluateFunctionCondition(item *dbstore.Item, tokens []string, names map[string]string, values map[string]*dbstore.AttributeValue) (bool, error) {

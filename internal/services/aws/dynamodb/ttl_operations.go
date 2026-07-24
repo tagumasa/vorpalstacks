@@ -3,7 +3,10 @@ package dynamodb
 
 import (
 	"context"
+	"time"
+
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -71,9 +74,9 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		AttributeName: attrName,
 	}
 	if enabled {
-		ttl.Status = dbstore.TTLStatusEnabled
+		ttl.Status = dbstore.TTLStatusEnabling
 	} else {
-		ttl.Status = dbstore.TTLStatusDisabled
+		ttl.Status = dbstore.TTLStatusDisabling
 	}
 
 	store, err := s.store(reqCtx)
@@ -84,9 +87,26 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	status := "DISABLED"
-	if enabled {
-		status = "ENABLED"
+	// Background transition to final state.
+	go func() {
+		time.Sleep(1 * time.Second)
+		if enabled {
+			ttl.Status = dbstore.TTLStatusEnabled
+		} else {
+			ttl.Status = dbstore.TTLStatusDisabled
+		}
+		if err := store.Tables().SetTimeToLive(tableName, ttl); err != nil {
+			logs.Error("Failed to transition TTL to final state",
+				logs.Err(err),
+				logs.String("tableName", tableName),
+			)
+		}
+	}()
+
+	// Response shows the transition state.
+	status := "ENABLING"
+	if !enabled {
+		status = "DISABLING"
 	}
 
 	return map[string]interface{}{

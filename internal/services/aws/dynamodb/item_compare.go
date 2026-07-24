@@ -87,6 +87,17 @@ func evaluateFilterExpression(item *dbstore.Item, expr string, names map[string]
 	return result
 }
 
+// isValidComparisonOperator returns true for recognised DynamoDB
+// ConditionExpression comparison operators. Legacy ComparisonOperator
+// API names (NE, LT, LE, GT, GE, !=) are intentionally excluded.
+func isValidComparisonOperator(op string) bool {
+	switch op {
+	case "=", "<>", "<", "<=", ">", ">=":
+		return true
+	}
+	return false
+}
+
 func compareAttributeValues(attr *dbstore.AttributeValue, op string, value *dbstore.AttributeValue) bool {
 	if attr == nil || value == nil {
 		return false
