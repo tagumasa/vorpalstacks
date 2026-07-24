@@ -154,12 +154,16 @@ func cfResponseHeadersPolicyTests(tc *cfTestContext) []TestResult {
 			if cfg.CustomHeadersConfig == nil || cfg.CustomHeadersConfig.Quantity == nil || *cfg.CustomHeadersConfig.Quantity != 1 {
 				return fmt.Errorf("custom headers config not set")
 			}
+			if resp.ETag != nil {
+				rhpETag = *resp.ETag
+			}
 			return nil
 		}))
 
 		results = append(results, tc.runner.RunTest("cloudfront", "DeleteResponseHeadersPolicy", func() error {
 			_, err := client.DeleteResponseHeadersPolicy(ctx, &cloudfront.DeleteResponseHeadersPolicyInput{
-				Id: aws.String(rhpID),
+				Id:      aws.String(rhpID),
+				IfMatch: aws.String(rhpETag),
 			})
 			return err
 		}))

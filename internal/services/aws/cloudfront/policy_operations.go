@@ -42,6 +42,12 @@ func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
+
+	existing, _ := store.cachePolicies.GetByName(name)
+	if existing != nil {
+		return nil, awserrors.NewAWSError("CachePolicyAlreadyExists", "Cache policy with this name already exists", 409)
+	}
+
 	cachePolicy, err := store.cachePolicies.Create(name, "", config)
 	if err != nil {
 		return nil, err
@@ -112,7 +118,7 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 	items := make([]interface{}, 0, len(result.CachePolicies))
 	for _, cp := range result.CachePolicies {
 		policyType := "custom"
-		if cp.ETag == "managed" {
+		if cp.IsManaged {
 			policyType = "managed"
 		}
 		items = append(items, map[string]interface{}{
@@ -169,6 +175,10 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 	}
 
 	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -183,7 +193,7 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	if ifMatch != "" && ifMatch != "*" && existing.ETag != ifMatch {
+	if ifMatch != "*" && existing.ETag != ifMatch {
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
@@ -199,6 +209,13 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
 		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
 		ParametersInCacheKeyParametersInCacheKey: parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin")),
+	}
+
+	if config.Name != existing.Name {
+		dup, _ := store.cachePolicies.GetByName(config.Name)
+		if dup != nil {
+			return nil, awserrors.NewAWSError("CachePolicyAlreadyExists", "Cache policy with this name already exists", 409)
+		}
 	}
 
 	cachePolicy, err := store.cachePolicies.Update(id, config)
@@ -226,10 +243,29 @@ func (s *CloudFrontService) DeleteCachePolicy(ctx context.Context, reqCtx *reque
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	existing, err := store.cachePolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
+	}
+
 	err = store.cachePolicies.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -266,6 +302,12 @@ func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCt
 	if err != nil {
 		return nil, err
 	}
+
+	existing, _ := store.originRequestPolicies.GetByName(name)
+	if existing != nil {
+		return nil, awserrors.NewAWSError("OriginRequestPolicyAlreadyExists", "Origin request policy with this name already exists", 409)
+	}
+
 	policy, err := store.originRequestPolicies.Create(name, "", config)
 	if err != nil {
 		return nil, err
@@ -336,7 +378,7 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 	items := make([]interface{}, 0, len(result.OriginRequestPolicies))
 	for _, p := range result.OriginRequestPolicies {
 		policyType := "custom"
-		if p.ETag == "managed" {
+		if p.IsManaged {
 			policyType = "managed"
 		}
 		items = append(items, map[string]interface{}{
@@ -393,6 +435,10 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 	}
 
 	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -407,7 +453,7 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	if ifMatch != "" && ifMatch != "*" && existing.ETag != ifMatch {
+	if ifMatch != "*" && existing.ETag != ifMatch {
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
@@ -422,6 +468,13 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 		CookiesConfig:      parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig")),
 		HeadersConfig:      parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig")),
 		QueryStringsConfig: parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig")),
+	}
+
+	if config.Name != existing.Name {
+		dup, _ := store.originRequestPolicies.GetByName(config.Name)
+		if dup != nil {
+			return nil, awserrors.NewAWSError("OriginRequestPolicyAlreadyExists", "Origin request policy with this name already exists", 409)
+		}
 	}
 
 	policy, err := store.originRequestPolicies.Update(id, config)
@@ -449,10 +502,29 @@ func (s *CloudFrontService) DeleteOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	existing, err := store.originRequestPolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
+	}
+
 	err = store.originRequestPolicies.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -477,7 +549,7 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 
 	resourceKey := arn
 	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
 	}
 
 	store, err := s.store(reqCtx)
@@ -487,7 +559,7 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 
 	tags, err := store.tags.ListTagsForResource(resourceKey)
 	if err != nil {
-		return nil, awserrors.NewAWSError("ListTags", err.Error(), 500)
+		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 	}
 
 	tagItems := tagutil.ToResponse(tags)
@@ -541,7 +613,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 	}
 
 	if err := store.tags.Tag(resourceKey, tags); err != nil {
-		return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
+		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 	}
 
 	return response.EmptyResponse(), nil
@@ -620,7 +692,7 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 
 	if len(tagKeys) > 0 {
 		if err := store.tags.Untag(resourceKey, tagKeys); err != nil {
-			return nil, awserrors.NewAWSError("UntagResource", err.Error(), 500)
+			return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 		}
 	}
 

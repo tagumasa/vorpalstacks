@@ -184,12 +184,16 @@ func cfCachePolicyTests(tc *cfTestContext) []TestResult {
 			if cfg.MinTTL == nil || *cfg.MinTTL != 60 {
 				return fmt.Errorf("minTTL not updated: got %d", aws.ToInt64(cfg.MinTTL))
 			}
+			if resp.ETag != nil {
+				cpETag = *resp.ETag
+			}
 			return nil
 		}))
 
 		results = append(results, tc.runner.RunTest("cloudfront", "DeleteCachePolicy", func() error {
 			_, err := client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{
-				Id: aws.String(cpID),
+				Id:      aws.String(cpID),
+				IfMatch: aws.String(cpETag),
 			})
 			return err
 		}))

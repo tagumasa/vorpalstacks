@@ -147,6 +147,12 @@ func (s *CloudFrontService) UpdateOriginAccessControl(ctx context.Context, reqCt
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
 		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
@@ -189,6 +195,25 @@ func (s *CloudFrontService) UpdateOriginAccessControl(ctx context.Context, reqCt
 		return nil, err
 	}
 
+	existing, err := store.originAccessControls.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
+	}
+
+	if config.Name != existing.Name {
+		dup, _ := store.originAccessControls.GetByName(config.Name)
+		if dup != nil {
+			return nil, awserrors.NewAWSError("OriginAccessControlAlreadyExists", "Origin access control with this name already exists", 409)
+		}
+	}
+
 	oac, err := store.originAccessControls.Update(id, config)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -217,9 +242,27 @@ func (s *CloudFrontService) DeleteOriginAccessControl(ctx context.Context, reqCt
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	existing, err := store.originAccessControls.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
 	err = store.originAccessControls.Delete(id)
@@ -255,14 +298,12 @@ func (s *CloudFrontService) ListOriginAccessControls(ctx context.Context, reqCtx
 	items := make([]interface{}, 0, len(result.OriginAccessControls))
 	for _, oac := range result.OriginAccessControls {
 		items = append(items, map[string]interface{}{
-			"Id":               oac.ID,
-			"Name":             oac.Name,
-			"Description":      oac.Description,
-			"OriginType":       oac.OriginAccessControlOriginType,
-			"SigningBehavior":  oac.SigningBehavior,
-			"SigningProtocol":  oac.SigningProtocol,
-			"CreatedTime":      oac.CreatedAt.Format(time.RFC3339),
-			"LastModifiedTime": oac.LastModifiedAt.Format(time.RFC3339),
+			"Id":                            oac.ID,
+			"Name":                          oac.Name,
+			"Description":                   oac.Description,
+			"OriginAccessControlOriginType": oac.OriginAccessControlOriginType,
+			"SigningBehavior":               oac.SigningBehavior,
+			"SigningProtocol":               oac.SigningProtocol,
 		})
 	}
 

@@ -126,6 +126,12 @@ func (s *CloudFrontService) UpdateResponseHeadersPolicy(ctx context.Context, req
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	params := req.Parameters
 	if configMap := request.GetMapParam(params, "ResponseHeadersPolicyConfig"); configMap != nil {
 		params = configMap
@@ -162,6 +168,25 @@ func (s *CloudFrontService) UpdateResponseHeadersPolicy(ctx context.Context, req
 		return nil, err
 	}
 
+	existing, err := store.responseHeadersPolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
+	}
+
+	if config.Name != existing.Name {
+		dup, _ := store.responseHeadersPolicies.GetByName(config.Name)
+		if dup != nil {
+			return nil, awserrors.NewAWSError("ResponseHeadersPolicyAlreadyExists", "Response headers policy with this name already exists", 409)
+		}
+	}
+
 	policy, err := store.responseHeadersPolicies.Update(id, config)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -183,9 +208,27 @@ func (s *CloudFrontService) DeleteResponseHeadersPolicy(ctx context.Context, req
 		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
+	ifMatch := getIfMatch(req)
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	existing, err := store.responseHeadersPolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
 	err = store.responseHeadersPolicies.Delete(id)
@@ -219,13 +262,17 @@ func (s *CloudFrontService) ListResponseHeadersPolicies(ctx context.Context, req
 
 	items := make([]interface{}, 0, len(result.ResponseHeadersPolicies))
 	for _, policy := range result.ResponseHeadersPolicies {
+		policyType := "custom"
+		if policy.IsManaged {
+			policyType = "managed"
+		}
 		items = append(items, map[string]interface{}{
 			"ResponseHeadersPolicy": map[string]interface{}{
 				"Id":                          policy.ID,
 				"LastModifiedTime":            policy.LastModifiedAt.Format(time.RFC3339),
 				"ResponseHeadersPolicyConfig": buildResponseHeadersPolicyConfigResponse(policy),
 			},
-			"Type": "custom",
+			"Type": policyType,
 		})
 	}
 

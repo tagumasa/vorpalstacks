@@ -3,34 +3,13 @@ package cloudfront
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
-
-var (
-	invalidationMu          sync.Mutex
-	invalidationSeq         int64
-	invalidations           = map[string][]map[string]interface{}{}
-	maxInvalidationsPerDist = 1000
-)
-
-func cleanupInvalidations(distID string) {
-	if items, ok := invalidations[distID]; ok && len(items) > maxInvalidationsPerDist {
-		invalidations[distID] = items[len(items)-maxInvalidationsPerDist:]
-	}
-}
-
-func generateInvalidationID() string {
-	invalidationMu.Lock()
-	invalidationSeq++
-	id := invalidationSeq
-	invalidationMu.Unlock()
-	return fmt.Sprintf("INV%d-%s", id, time.Now().UTC().Format("20060102150405"))
-}
 
 // CreateInvalidation creates a new cache invalidation for a CloudFront distribution.
 func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -84,8 +63,9 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 			}
 		}
 		quantity := int(request.GetIntParam(pathsMap, "Quantity"))
-		if quantity > 0 && quantity < len(paths) {
-			paths = paths[:quantity]
+		if quantity > 0 && quantity != len(paths) {
+			return nil, errors.NewAWSError("InconsistentQuantities",
+				fmt.Sprintf("The Quantity value (%d) does not match the number of path items (%d)", quantity, len(paths)), 400)
 		}
 	}
 
@@ -96,47 +76,48 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 		return nil, errors.NewAWSError("InvalidArgument", "Cannot invalidate more than 3000 paths in a single request.", 400)
 	}
 
-	invalidationID := generateInvalidationID()
-	now := time.Now().UTC()
+	inv, err := stores.invalidations.Create(distID, callerRef, paths)
+	if err != nil {
+		return nil, errors.NewAWSError("InternalError", fmt.Sprintf("Failed to create invalidation: %v", err), 500)
+	}
 
-	pathItemsXML := protocol.XMLElements{ElementName: "Path", Items: make([]interface{}, len(paths))}
-	for i, p := range paths {
+	go s.transitionInvalidation(stores, inv)
+
+	return map[string]interface{}{
+		"Location":     fmt.Sprintf("/2020-05-31/distribution/%s/invalidation/%s", distID, inv.ID),
+		"Invalidation": formatInvalidation(inv),
+	}, nil
+}
+
+// transitionInvalidation asynchronously transitions an invalidation from
+// InProgress to Completed, simulating the real CloudFront edge propagation.
+func (s *CloudFrontService) transitionInvalidation(stores *cloudfrontStores, inv *cloudfrontstore.Invalidation) {
+	time.Sleep(2 * time.Second)
+
+	inv.Status = "Completed"
+	if err := stores.invalidations.Update(inv); err != nil {
+		inv.Status = "InProgress"
+	}
+}
+
+func formatInvalidation(inv *cloudfrontstore.Invalidation) map[string]interface{} {
+	pathItemsXML := protocol.XMLElements{ElementName: "Path", Items: make([]interface{}, len(inv.Paths))}
+	for i, p := range inv.Paths {
 		pathItemsXML.Items[i] = p
 	}
 
-	invalidation := map[string]interface{}{
-		"Id":         invalidationID,
-		"CreateTime": now.Format(time.RFC3339),
-		"Status":     "COMPLETED",
+	return map[string]interface{}{
+		"Id":         inv.ID,
+		"CreateTime": inv.CreateTime.Format(time.RFC3339),
+		"Status":     inv.Status,
 		"InvalidationBatch": map[string]interface{}{
-			"CallerReference": callerRef,
+			"CallerReference": inv.CallerReference,
 			"Paths": map[string]interface{}{
-				"Quantity": len(paths),
+				"Quantity": len(inv.Paths),
 				"Items":    pathItemsXML,
 			},
 		},
 	}
-
-	invalidationMu.Lock()
-	invalidations[distID] = append(invalidations[distID], invalidation)
-	cleanupInvalidations(distID)
-	invalidationMu.Unlock()
-
-	return map[string]interface{}{
-		"Location": fmt.Sprintf("/2020-05-31/distribution/%s/invalidation/%s", distID, invalidationID),
-		"Invalidation": map[string]interface{}{
-			"Id":         invalidationID,
-			"CreateTime": now.Format(time.RFC3339),
-			"Status":     "COMPLETED",
-			"InvalidationBatch": map[string]interface{}{
-				"CallerReference": callerRef,
-				"Paths": map[string]interface{}{
-					"Quantity": len(paths),
-					"Items":    pathItemsXML,
-				},
-			},
-		},
-	}, nil
 }
 
 // ListInvalidations lists invalidations for a CloudFront distribution.
@@ -155,50 +136,39 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 		return nil, errors.NewAWSError("NoSuchDistribution", fmt.Sprintf("The specified distribution does not exist: %s", distID), 404)
 	}
 
-	invalidationMu.Lock()
-	distInvalidations := invalidations[distID]
-	invalidationMu.Unlock()
-
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
 	if maxItems <= 0 || maxItems > 200 {
 		maxItems = 100
 	}
 
-	startIdx := 0
-	if marker != "" {
-		for i, inv := range distInvalidations {
-			if id, ok := inv["Id"].(string); ok && id == marker {
-				startIdx = i + 1
-				break
-			}
-		}
+	result, err := stores.invalidations.List(distID, marker, maxItems)
+	if err != nil {
+		return nil, errors.NewAWSError("InternalError", fmt.Sprintf("Failed to list invalidations: %v", err), 500)
 	}
 
-	available := distInvalidations[startIdx:]
-	isTruncated := len(available) > int(maxItems)
-	if isTruncated {
-		available = available[:maxItems]
+	items := make([]interface{}, 0, len(result.Invalidations))
+	for _, inv := range result.Invalidations {
+		items = append(items, map[string]interface{}{
+			"Id":         inv.ID,
+			"CreateTime": inv.CreateTime.Format(time.RFC3339),
+			"Status":     inv.Status,
+		})
 	}
-
-	items := make([]map[string]interface{}, len(available))
-	copy(items, available)
 
 	nextMarker := ""
-	if isTruncated && len(items) > 0 {
-		if id, ok := items[len(items)-1]["Id"].(string); ok {
-			nextMarker = id
-		}
+	if result.IsTruncated && len(result.Invalidations) > 0 {
+		nextMarker = result.Invalidations[len(result.Invalidations)-1].ID
 	}
 
 	return map[string]interface{}{
 		"InvalidationList": map[string]interface{}{
-			"IsTruncated": isTruncated,
+			"IsTruncated": result.IsTruncated,
 			"Quantity":    len(items),
 			"MaxItems":    maxItems,
 			"Marker":      marker,
 			"NextMarker":  nextMarker,
-			"Items":       protocol.XMLElements{ElementName: "InvalidationSummary", Items: makeSliceFromMaps(items)},
+			"Items":       protocol.XMLElements{ElementName: "InvalidationSummary", Items: items},
 		},
 	}, nil
 }
@@ -224,25 +194,12 @@ func (s *CloudFrontService) GetInvalidation(ctx context.Context, reqCtx *request
 		return nil, errors.NewAWSError("NoSuchDistribution", fmt.Sprintf("The specified distribution does not exist: %s", distID), 404)
 	}
 
-	invalidationMu.Lock()
-	distInvalidations := invalidations[distID]
-	invalidationMu.Unlock()
-
-	for _, inv := range distInvalidations {
-		if id, ok := inv["Id"].(string); ok && id == invalidationID {
-			return map[string]interface{}{
-				"Invalidation": inv,
-			}, nil
-		}
+	inv, err := stores.invalidations.Get(distID, invalidationID)
+	if err != nil {
+		return nil, errors.NewAWSError("NoSuchInvalidation", fmt.Sprintf("The specified invalidation does not exist: %s", invalidationID), 404)
 	}
 
-	return nil, errors.NewAWSError("NoSuchInvalidation", fmt.Sprintf("The specified invalidation does not exist: %s", invalidationID), 404)
-}
-
-func makeSliceFromMaps(maps []map[string]interface{}) []interface{} {
-	result := make([]interface{}, len(maps))
-	for i, m := range maps {
-		result[i] = m
-	}
-	return result
+	return map[string]interface{}{
+		"Invalidation": formatInvalidation(inv),
+	}, nil
 }

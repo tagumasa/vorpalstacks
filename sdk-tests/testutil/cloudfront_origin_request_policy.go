@@ -170,12 +170,16 @@ func cfOriginRequestPolicyTests(tc *cfTestContext) []TestResult {
 			if cfg.HeadersConfig == nil || cfg.HeadersConfig.HeaderBehavior != types.OriginRequestPolicyHeaderBehaviorAllViewer {
 				return fmt.Errorf("header behavior not updated")
 			}
+			if resp.ETag != nil {
+				orpETag = *resp.ETag
+			}
 			return nil
 		}))
 
 		results = append(results, tc.runner.RunTest("cloudfront", "DeleteOriginRequestPolicy", func() error {
 			_, err := client.DeleteOriginRequestPolicy(ctx, &cloudfront.DeleteOriginRequestPolicyInput{
-				Id: aws.String(orpID),
+				Id:      aws.String(orpID),
+				IfMatch: aws.String(orpETag),
 			})
 			return err
 		}))

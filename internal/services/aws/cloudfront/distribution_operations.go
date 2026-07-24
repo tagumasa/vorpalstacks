@@ -46,6 +46,99 @@ func formatDistributionResponse(d *cloudfrontstore.Distribution) map[string]inte
 	}
 }
 
+func formatDistributionSummary(d *cloudfrontstore.Distribution) map[string]interface{} {
+	m := map[string]interface{}{
+		"Id":               d.ID,
+		"ARN":              d.ARN,
+		"ETag":             d.ETag,
+		"Status":           d.Status,
+		"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
+		"DomainName":       d.DomainName,
+		"Enabled":          d.Enabled,
+		"Staging":          d.Staging,
+	}
+
+	if d.DistributionConfig != nil {
+		cfg := d.DistributionConfig
+		m["Comment"] = cfg.Comment
+		m["PriceClass"] = cfg.PriceClass
+		m["HttpVersion"] = cfg.HttpVersion
+		m["IsIPV6Enabled"] = cfg.IsIPV6Enabled
+		m["WebACLId"] = cfg.WebACLId
+
+		if cfg.Aliases != nil {
+			aliasMap := map[string]interface{}{"Quantity": cfg.Aliases.Quantity}
+			if len(cfg.Aliases.Items) > 0 {
+				items := make([]interface{}, len(cfg.Aliases.Items))
+				for i, a := range cfg.Aliases.Items {
+					items[i] = a
+				}
+				aliasMap["Items"] = protocol.XMLElements{ElementName: "CNAME", Items: items}
+			}
+			m["Aliases"] = aliasMap
+		} else {
+			m["Aliases"] = map[string]interface{}{"Quantity": 0}
+		}
+
+		if cfg.Origins.Quantity > 0 || len(cfg.Origins.Items) > 0 {
+			m["Origins"] = formatOrigins(cfg.Origins)
+		}
+
+		if cfg.DefaultCacheBehavior != nil {
+			m["DefaultCacheBehavior"] = formatCacheBehavior(cfg.DefaultCacheBehavior)
+		}
+
+		if cfg.CacheBehaviors != nil && (cfg.CacheBehaviors.Quantity > 0 || len(cfg.CacheBehaviors.Items) > 0) {
+			m["CacheBehaviors"] = formatCacheBehaviors(cfg.CacheBehaviors)
+		}
+
+		if cfg.CustomErrorResponses != nil {
+			cerMap := map[string]interface{}{"Quantity": cfg.CustomErrorResponses.Quantity}
+			if len(cfg.CustomErrorResponses.Items) > 0 {
+				items := make([]interface{}, len(cfg.CustomErrorResponses.Items))
+				for i, r := range cfg.CustomErrorResponses.Items {
+					itemMap := map[string]interface{}{"ErrorCode": r.ErrorCode}
+					if r.ResponsePagePath != "" {
+						itemMap["ResponsePagePath"] = r.ResponsePagePath
+					}
+					if r.ResponseCode != "" {
+						itemMap["ResponseCode"] = r.ResponseCode
+					}
+					if r.ErrorCachingMinTTL != 0 {
+						itemMap["ErrorCachingMinTTL"] = r.ErrorCachingMinTTL
+					}
+					items[i] = itemMap
+				}
+				cerMap["Items"] = protocol.XMLElements{ElementName: "CustomErrorResponse", Items: items}
+			}
+			m["CustomErrorResponses"] = cerMap
+		}
+
+		if cfg.ViewerCertificate != nil {
+			m["ViewerCertificate"] = formatViewerCertificate(cfg.ViewerCertificate)
+		}
+
+		if cfg.Restrictions != nil {
+			geoMap := map[string]interface{}{
+				"RestrictionType": cfg.Restrictions.GeoRestriction.RestrictionType,
+				"Quantity":        cfg.Restrictions.GeoRestriction.Quantity,
+			}
+			if len(cfg.Restrictions.GeoRestriction.Items) > 0 {
+				items := make([]interface{}, len(cfg.Restrictions.GeoRestriction.Items))
+				for i, loc := range cfg.Restrictions.GeoRestriction.Items {
+					items[i] = loc
+				}
+				geoMap["Items"] = protocol.XMLElements{ElementName: "Location", Items: items}
+			}
+			m["Restrictions"] = map[string]interface{}{"GeoRestriction": geoMap}
+		}
+	}
+
+	m["OriginGroups"] = map[string]interface{}{"Quantity": 0}
+
+	return m
+}
+
 func formatDistributionConfig(config *cloudfrontstore.DistributionConfig) map[string]interface{} {
 	if config == nil {
 		return nil
@@ -455,7 +548,7 @@ func formatViewerCertificate(vc *cloudfrontstore.ViewerCertificate) map[string]i
 	if vc.MinimumProtocolVersion != "" {
 		m["MinimumProtocolVersion"] = vc.MinimumProtocolVersion
 	} else if vc.CloudFrontDefaultCertificate {
-		m["MinimumProtocolVersion"] = "TLSv1"
+		m["MinimumProtocolVersion"] = "TLSv1.2_2021"
 	}
 	if vc.CertificateSource != "" {
 		m["CertificateSource"] = vc.CertificateSource
@@ -674,7 +767,7 @@ func parseOrigin(m map[string]interface{}) *cloudfrontstore.Origin {
 			coc.OriginKeepaliveTimeout = 5
 		}
 		if len(coc.OriginSslProtocols) == 0 {
-			coc.OriginSslProtocols = []string{"TLSv1", "TLSv1.1", "TLSv1.2"}
+			coc.OriginSslProtocols = []string{"TLSv1.2"}
 		}
 		origin.CustomOriginConfig = coc
 	}
@@ -972,9 +1065,23 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 		}
 	}
 
+	go s.transitionDistributionDeployed(store, distribution.ID)
+
 	return map[string]interface{}{
 		"Distribution": formatDistributionResponse(distribution),
 	}, nil
+}
+
+// transitionDistributionDeployed asynchronously transitions a distribution
+// from InProgress to Deployed, simulating real CloudFront deployment.
+func (s *CloudFrontService) transitionDistributionDeployed(stores *cloudfrontStores, distID string) {
+	time.Sleep(3 * time.Second)
+	dist, err := stores.distributions.Get(distID)
+	if err != nil {
+		return
+	}
+	dist.Status = "Deployed"
+	_ = stores.distributions.UpdateWithLastModified(distID, dist)
 }
 
 // CreateDistributionWithTags creates a new CloudFront distribution with the specified tags.
@@ -1017,6 +1124,8 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 			return nil, fmt.Errorf("failed to tag distribution: %w", err)
 		}
 	}
+
+	go s.transitionDistributionDeployed(store, distribution.ID)
 
 	return map[string]interface{}{
 		"Distribution": formatDistributionResponse(distribution),
@@ -1091,20 +1200,7 @@ func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *reque
 
 	items := make([]interface{}, 0, len(result.Distributions))
 	for _, d := range result.Distributions {
-		comment := ""
-		if d.DistributionConfig != nil {
-			comment = d.DistributionConfig.Comment
-		}
-		items = append(items, map[string]interface{}{
-			"Id":               d.ID,
-			"ARN":              d.ARN,
-			"Status":           d.Status,
-			"DomainName":       d.DomainName,
-			"Enabled":          d.Enabled,
-			"CallerReference":  d.CallerReference,
-			"Comment":          comment,
-			"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
-		})
+		items = append(items, formatDistributionSummary(d))
 	}
 
 	return map[string]interface{}{
@@ -1143,7 +1239,11 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if ifMatch != "" && ifMatch != "*" && distribution.ETag != ifMatch {
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+	if ifMatch != "*" && distribution.ETag != ifMatch {
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
@@ -1207,7 +1307,11 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if ifMatch != "" && ifMatch != "*" && distribution.ETag != ifMatch {
+	if ifMatch == "" {
+		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
+			"The If-Match version is missing or not valid", 400)
+	}
+	if ifMatch != "*" && distribution.ETag != ifMatch {
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
@@ -1227,6 +1331,8 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 	if distribution.ARN != "" {
 		_ = store.tags.TagStore.Delete(distribution.ARN)
 	}
+
+	_ = store.invalidations.DeleteByDistribution(id)
 
 	err = store.distributions.Delete(id)
 	if err != nil {

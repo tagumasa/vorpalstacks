@@ -74,7 +74,7 @@ func (s *DistributionStore) Create(callerReference string, config *DistributionC
 		DomainName:         domainName,
 		ARN:                s.arnBuilder.BuildDistributionARN(id),
 		ETag:               etag,
-		Status:             "Deployed",
+		Status:             "InProgress",
 		CreatedAt:          now,
 		LastModifiedAt:     now,
 		Enabled:            config.Enabled,

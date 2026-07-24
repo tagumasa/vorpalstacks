@@ -24,6 +24,7 @@ type cloudfrontStores struct {
 	publicKeys              *cloudfrontstore.PublicKeyStore
 	keyGroups               *cloudfrontstore.KeyGroupStore
 	tags                    *cloudfrontstore.TagStore
+	invalidations           *cloudfrontstore.InvalidationStore
 	arnBuilder              *cloudfrontstore.ARNBuilder
 }
 
@@ -90,6 +91,7 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 			publicKeys:              cloudfrontstore.NewPublicKeyStore(storage, s.accountID),
 			keyGroups:               cloudfrontstore.NewKeyGroupStore(storage, s.accountID),
 			tags:                    cloudfrontstore.NewTagStore(storage),
+			invalidations:           cloudfrontstore.NewInvalidationStore(storage),
 			arnBuilder:              arnBuilder,
 		}, nil
 	})
@@ -122,6 +124,7 @@ func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, erro
 		originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(st, s.accountID),
 		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(st, s.accountID),
 		tags:                    cloudfrontstore.NewTagStore(st),
+		invalidations:           cloudfrontstore.NewInvalidationStore(st),
 		arnBuilder:              arnBuilder,
 	}
 	actual, _ := s.stores.LoadOrStore("global", stores)

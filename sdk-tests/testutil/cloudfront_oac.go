@@ -145,12 +145,16 @@ func cfOACTests(tc *cfTestContext) []TestResult {
 			if cfg.Description == nil || *cfg.Description != "updated description" {
 				return fmt.Errorf("description not updated: got %q", aws.ToString(cfg.Description))
 			}
+			if resp.ETag != nil {
+				oacETag = *resp.ETag
+			}
 			return nil
 		}))
 
 		results = append(results, tc.runner.RunTest("cloudfront", "DeleteOriginAccessControl", func() error {
 			_, err := client.DeleteOriginAccessControl(ctx, &cloudfront.DeleteOriginAccessControlInput{
-				Id: aws.String(oacID),
+				Id:      aws.String(oacID),
+				IfMatch: aws.String(oacETag),
 			})
 			return err
 		}))

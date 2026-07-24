@@ -39,6 +39,11 @@ func (s *CachePolicyStore) Get(id string) (*CachePolicy, error) {
 	return &cachePolicy, nil
 }
 
+// GetByName retrieves a cache policy by its name.
+func (s *CachePolicyStore) GetByName(name string) (*CachePolicy, error) {
+	return common.FindFirst[CachePolicy](s.BaseStore, func(cp *CachePolicy) bool { return cp.Name == name })
+}
+
 // Put stores a cache policy by its ID (used for seeding managed policies).
 func (s *CachePolicyStore) Put(id string, cp *CachePolicy) error {
 	if err := s.BaseStore.Put(id, cp); err != nil {
@@ -149,6 +154,11 @@ func (s *OriginRequestPolicyStore) Get(id string) (*OriginRequestPolicy, error) 
 		return nil, NewStoreError("get_origin_request_policy", err)
 	}
 	return &originRequestPolicy, nil
+}
+
+// GetByName retrieves an origin request policy by its name.
+func (s *OriginRequestPolicyStore) GetByName(name string) (*OriginRequestPolicy, error) {
+	return common.FindFirst[OriginRequestPolicy](s.BaseStore, func(orp *OriginRequestPolicy) bool { return orp.Name == name })
 }
 
 // Put stores an origin request policy by its ID (used for seeding managed policies).
@@ -266,6 +276,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				MinTTL:     0,
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -281,6 +292,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				MinTTL:     0,
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -296,6 +308,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				MinTTL:     0,
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -311,6 +324,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				MinTTL:     0,
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -326,6 +340,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				MinTTL:     0,
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -347,6 +362,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				Comment: "AWS Managed CORS-S3Origin Policy",
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -359,6 +375,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				Comment: "AWS Managed AllViewer Policy",
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -371,6 +388,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				Comment: "AWS Managed AllViewerExceptHostHeader Policy",
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -383,6 +401,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				Comment: "AWS Managed UserAgentRefererHeaders Policy",
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},
@@ -395,6 +414,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 				Comment: "AWS Managed None Policy",
 			},
 			ETag:       "managed",
+			IsManaged:  true,
 			CreatedAt:  now,
 			ModifiedAt: now,
 		},

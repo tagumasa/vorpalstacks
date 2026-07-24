@@ -256,6 +256,7 @@ type CachePolicy struct {
 	ETag              string             `json:"etag"`
 	Name              string             `json:"name"`
 	CachePolicyConfig *CachePolicyConfig `json:"cachePolicyConfig"`
+	IsManaged         bool               `json:"isManaged"`
 	CreatedAt         time.Time          `json:"createdAt"`
 	ModifiedAt        time.Time          `json:"modifiedAt"`
 }
@@ -316,6 +317,7 @@ type OriginRequestPolicy struct {
 	ETag                      string                     `json:"etag"`
 	Name                      string                     `json:"name"`
 	OriginRequestPolicyConfig *OriginRequestPolicyConfig `json:"originRequestPolicyConfig"`
+	IsManaged                 bool                       `json:"isManaged"`
 	CreatedAt                 time.Time                  `json:"createdAt"`
 	ModifiedAt                time.Time                  `json:"modifiedAt"`
 }
@@ -405,6 +407,7 @@ type ResponseHeadersPolicy struct {
 	ETag                      string                                          `json:"etag"`
 	Name                      string                                          `json:"name"`
 	Comment                   string                                          `json:"comment,omitempty"`
+	IsManaged                 bool                                            `json:"isManaged"`
 	CorsConfig                *ResponseHeadersPolicyCorsConfig                `json:"corsConfig,omitempty"`
 	CustomHeadersConfig       *ResponseHeadersPolicyCustomHeadersConfig       `json:"customHeadersConfig,omitempty"`
 	RemoveHeadersConfig       *ResponseHeadersPolicyRemoveHeadersConfig       `json:"removeHeadersConfig,omitempty"`

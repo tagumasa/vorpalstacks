@@ -3,6 +3,7 @@ package cloudfront
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -115,7 +116,11 @@ func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	originReq.Header.Set("X-Forwarded-Host", r.Host)
-	originReq.Header.Set("X-Forwarded-For", r.RemoteAddr)
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		originReq.Header.Set("X-Forwarded-For", host)
+	} else {
+		originReq.Header.Set("X-Forwarded-For", r.RemoteAddr)
+	}
 
 	resp, err := s.client.Do(originReq)
 	if err != nil {
