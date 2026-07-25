@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
@@ -92,6 +93,10 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 
 	if lookupAttrsRaw := req.Parameters["LookupAttributes"]; lookupAttrsRaw != nil {
 		if attrs, ok := lookupAttrsRaw.([]interface{}); ok {
+			if len(attrs) > 50 {
+				return nil, awserrors.NewAWSError("InvalidLookupAttributesException",
+					"Number of lookup attributes exceeds the limit of 50", 400)
+			}
 			for _, attr := range attrs {
 				if attrMap, ok := attr.(map[string]interface{}); ok {
 					key, _ := attrMap["AttributeKey"].(string)
@@ -133,9 +138,14 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 		query.Username = username
 	}
 
+	if eventCategory := req.GetParam("EventCategory"); eventCategory != "" {
+		query.EventCategory = eventCategory
+	}
+
 	if maxResults := request.GetIntParam(req.Parameters, "MaxResults"); maxResults > 0 {
 		if maxResults > 50 {
-			return nil, ErrInvalidParameter
+			return nil, awserrors.NewAWSError("InvalidMaxResultsException",
+				"MaxResults exceeds the maximum of 50", 400)
 		}
 		query.MaxResults = int32(maxResults)
 	}
@@ -238,10 +248,54 @@ func (s *CloudTrailService) GetEventSelectors(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"TrailArn":       trail.TrailARN,
-		"EventSelectors": formatEventSelectors(trail.EventSelectors),
-	}, nil
+	resp := map[string]interface{}{
+		"TrailArn": trail.TrailARN,
+	}
+	if len(trail.EventSelectors) > 0 {
+		resp["EventSelectors"] = formatEventSelectors(trail.EventSelectors)
+	}
+	if len(trail.AdvancedEventSelectors) > 0 {
+		resp["AdvancedEventSelectors"] = formatAdvancedEventSelectors(trail.AdvancedEventSelectors)
+	}
+	return resp, nil
+}
+
+// formatAdvancedEventSelectors converts advanced event selectors to API
+// response format.
+func formatAdvancedEventSelectors(selectors []cloudtrailstore.AdvancedEventSelector) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(selectors))
+	for _, sel := range selectors {
+		selMap := map[string]interface{}{}
+		if sel.Name != "" {
+			selMap["Name"] = sel.Name
+		}
+		fields := make([]map[string]interface{}, 0, len(sel.FieldSelectors))
+		for _, fs := range sel.FieldSelectors {
+			fm := map[string]interface{}{"Field": fs.Field}
+			if len(fs.Equals) > 0 {
+				fm["Equals"] = fs.Equals
+			}
+			if len(fs.StartsWith) > 0 {
+				fm["StartsWith"] = fs.StartsWith
+			}
+			if len(fs.EndsWith) > 0 {
+				fm["EndsWith"] = fs.EndsWith
+			}
+			if len(fs.NotEquals) > 0 {
+				fm["NotEquals"] = fs.NotEquals
+			}
+			if len(fs.NotStartsWith) > 0 {
+				fm["NotStartsWith"] = fs.NotStartsWith
+			}
+			if len(fs.NotEndsWith) > 0 {
+				fm["NotEndsWith"] = fs.NotEndsWith
+			}
+			fields = append(fields, fm)
+		}
+		selMap["FieldSelectors"] = fields
+		result = append(result, selMap)
+	}
+	return result
 }
 
 // PutEventSelectors configures event selectors for a trail.
@@ -251,61 +305,129 @@ func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
+	// Parse AdvancedEventSelectors if provided.
+	var advancedSelectors []cloudtrailstore.AdvancedEventSelector
+	if aesRaw, ok := req.Parameters["AdvancedEventSelectors"]; ok && aesRaw != nil {
+		advancedSelectors = parseTrailAdvancedEventSelectors(aesRaw)
+	}
+
+	// Parse basic EventSelectors if provided.
 	selectorsRaw := req.Parameters["EventSelectors"]
-	if selectorsRaw == nil {
+	if selectorsRaw == nil && len(advancedSelectors) == 0 {
 		return nil, ErrInvalidParameter
 	}
 
 	var selectors []cloudtrailstore.EventSelector
-	switch v := selectorsRaw.(type) {
-	case []interface{}:
-		for _, sel := range v {
-			if sm, ok := sel.(map[string]interface{}); ok {
-				es := cloudtrailstore.EventSelector{}
-				if rwt, ok := sm["ReadWriteType"].(string); ok {
-					es.ReadWriteType = rwt
-				}
-				if ime, ok := sm["IncludeManagementEvents"].(bool); ok {
-					es.IncludeManagementEvents = ime
-				}
-				if drRaw, ok := sm["DataResources"].([]interface{}); ok {
-					for _, dr := range drRaw {
-						if drm, ok := dr.(map[string]interface{}); ok {
-							drItem := cloudtrailstore.DataResource{}
-							if t, ok := drm["Type"].(string); ok {
-								drItem.Type = t
-							}
-							if vals, ok := drm["Values"].([]interface{}); ok {
-								for _, val := range vals {
-									if s, ok := val.(string); ok {
-										drItem.Values = append(drItem.Values, s)
+	if selectorsRaw != nil {
+		switch v := selectorsRaw.(type) {
+		case []interface{}:
+			for _, sel := range v {
+				if sm, ok := sel.(map[string]interface{}); ok {
+					es := cloudtrailstore.EventSelector{}
+					if rwt, ok := sm["ReadWriteType"].(string); ok {
+						es.ReadWriteType = rwt
+					}
+					if ime, ok := sm["IncludeManagementEvents"].(bool); ok {
+						es.IncludeManagementEvents = ime
+					}
+					if drRaw, ok := sm["DataResources"].([]interface{}); ok {
+						for _, dr := range drRaw {
+							if drm, ok := dr.(map[string]interface{}); ok {
+								drItem := cloudtrailstore.DataResource{}
+								if t, ok := drm["Type"].(string); ok {
+									drItem.Type = t
+								}
+								if vals, ok := drm["Values"].([]interface{}); ok {
+									for _, val := range vals {
+										if s, ok := val.(string); ok {
+											drItem.Values = append(drItem.Values, s)
+										}
 									}
 								}
+								es.DataResources = append(es.DataResources, drItem)
 							}
-							es.DataResources = append(es.DataResources, drItem)
 						}
 					}
-				}
-				if emesRaw, ok := sm["ExcludeManagementEventSources"].([]interface{}); ok {
-					for _, emes := range emesRaw {
-						if s, ok := emes.(string); ok {
-							es.ExcludeManagementEventSources = append(es.ExcludeManagementEventSources, s)
+					if emesRaw, ok := sm["ExcludeManagementEventSources"].([]interface{}); ok {
+						for _, emes := range emesRaw {
+							if s, ok := emes.(string); ok {
+								es.ExcludeManagementEventSources = append(es.ExcludeManagementEventSources, s)
+							}
 						}
 					}
+					selectors = append(selectors, es)
 				}
-				selectors = append(selectors, es)
 			}
 		}
 	}
 
-	if err := store.PutEventSelector(trail.Name, selectors); err != nil {
-		return nil, s.mapStoreError(err)
+	// Persist selectors. Basic and advanced are mutually exclusive: setting
+	// one clears the other (AWS spec). Only write the type that was provided.
+	if len(advancedSelectors) > 0 {
+		if err := store.PutAdvancedEventSelectors(trail.Name, advancedSelectors); err != nil {
+			return nil, s.mapStoreError(err)
+		}
+	} else if selectorsRaw != nil {
+		if err := store.PutEventSelector(trail.Name, selectors); err != nil {
+			return nil, s.mapStoreError(err)
+		}
 	}
 
-	return map[string]interface{}{
-		"TrailArn":       trail.TrailARN,
-		"EventSelectors": formatEventSelectors(selectors),
-	}, nil
+	resp := map[string]interface{}{
+		"TrailArn": trail.TrailARN,
+	}
+	if len(selectors) > 0 {
+		resp["EventSelectors"] = formatEventSelectors(selectors)
+	}
+	if len(advancedSelectors) > 0 {
+		resp["AdvancedEventSelectors"] = formatAdvancedEventSelectors(advancedSelectors)
+	}
+	return resp, nil
+}
+
+// parseTrailAdvancedEventSelectors parses advanced event selectors from
+// request parameters for trail event selector configuration.
+func parseTrailAdvancedEventSelectors(raw interface{}) []cloudtrailstore.AdvancedEventSelector {
+	var rawList []interface{}
+	switch v := raw.(type) {
+	case []interface{}:
+		rawList = v
+	default:
+		return nil
+	}
+
+	result := make([]cloudtrailstore.AdvancedEventSelector, 0, len(rawList))
+	for _, item := range rawList {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		sel := cloudtrailstore.AdvancedEventSelector{}
+		if name, ok := m["Name"].(string); ok {
+			sel.Name = name
+		}
+		if fieldsRaw, ok := m["FieldSelectors"].([]interface{}); ok {
+			for _, fRaw := range fieldsRaw {
+				fm, ok := fRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				fs := cloudtrailstore.AdvancedFieldSelector{}
+				if f, ok := fm["Field"].(string); ok {
+					fs.Field = f
+				}
+				fs.Equals = toStringSlice(fm["Equals"])
+				fs.StartsWith = toStringSlice(fm["StartsWith"])
+				fs.EndsWith = toStringSlice(fm["EndsWith"])
+				fs.NotEquals = toStringSlice(fm["NotEquals"])
+				fs.NotStartsWith = toStringSlice(fm["NotStartsWith"])
+				fs.NotEndsWith = toStringSlice(fm["NotEndsWith"])
+				sel.FieldSelectors = append(sel.FieldSelectors, fs)
+			}
+		}
+		result = append(result, sel)
+	}
+	return result
 }
 
 // GetInsightSelectors retrieves the insight selectors for a trail.

@@ -226,6 +226,47 @@ func (r *TestRunner) runCloudTrailChannelTests(tc *cloudTrailTestContext) []Test
 		return nil
 	}))
 
+	// CreateChannel with tags (B1 regression: CreateChannel uses "Tags" not "TagsList").
+	results = append(results, r.RunTest("cloudtrail", "CreateChannel_WithTags", func() error {
+		tagCh := fmt.Sprintf("ct-channel-tags-%d", time.Now().UnixNano())
+		resp, err := tc.client.CreateChannel(tc.ctx, &cloudtrail.CreateChannelInput{
+			Name:   aws.String(tagCh),
+			Source: aws.String("Custom"),
+			Destinations: []types.Destination{
+				{
+					Type:     types.DestinationTypeEventDataStore,
+					Location: aws.String("test-eds-location"),
+				},
+			},
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("production")},
+				{Key: aws.String("Team"), Value: aws.String("cloud")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("CreateChannel with tags failed: %w", err)
+		}
+		defer tc.client.DeleteChannel(tc.ctx, &cloudtrail.DeleteChannelInput{
+			Channel: resp.ChannelArn,
+		})
+
+		// Verify tags appear in the CreateChannel response.
+		if len(resp.Tags) != 2 {
+			return fmt.Errorf("expected 2 tags in CreateChannel response, got %d", len(resp.Tags))
+		}
+		tagMap := make(map[string]string)
+		for _, t := range resp.Tags {
+			tagMap[*t.Key] = *t.Value
+		}
+		if tagMap["Environment"] != "production" {
+			return fmt.Errorf("expected Environment=production, got %s", tagMap["Environment"])
+		}
+		if tagMap["Team"] != "cloud" {
+			return fmt.Errorf("expected Team=cloud, got %s", tagMap["Team"])
+		}
+		return nil
+	}))
+
 	// Delete channel.
 	results = append(results, r.RunTest("cloudtrail", "DeleteChannel_Success", func() error {
 		_, err := tc.client.DeleteChannel(tc.ctx, &cloudtrail.DeleteChannelInput{
@@ -287,14 +328,22 @@ func (r *TestRunner) runCloudTrailQueryTests(tc *cloudTrailTestContext) []TestRe
 		return nil
 	}))
 
-	// DescribeQuery.
+	// DescribeQuery — poll for FINISHED since StartQuery is asynchronous.
 	results = append(results, r.RunTest("cloudtrail", "DescribeQuery_Success", func() error {
-		resp, err := tc.client.DescribeQuery(tc.ctx, &cloudtrail.DescribeQueryInput{
-			EventDataStore: aws.String(edsID),
-			QueryId:        aws.String(queryID),
-		})
-		if err != nil {
-			return fmt.Errorf("DescribeQuery failed: %w", err)
+		var resp *cloudtrail.DescribeQueryOutput
+		var err error
+		for i := 0; i < 10; i++ {
+			resp, err = tc.client.DescribeQuery(tc.ctx, &cloudtrail.DescribeQueryInput{
+				EventDataStore: aws.String(edsID),
+				QueryId:        aws.String(queryID),
+			})
+			if err != nil {
+				return fmt.Errorf("DescribeQuery failed: %w", err)
+			}
+			if resp.QueryStatus == types.QueryStatusFinished {
+				break
+			}
+			time.Sleep(200 * time.Millisecond)
 		}
 		if resp.QueryStatus != types.QueryStatusFinished {
 			return fmt.Errorf("expected FINISHED status, got %s", resp.QueryStatus)
@@ -302,7 +351,7 @@ func (r *TestRunner) runCloudTrailQueryTests(tc *cloudTrailTestContext) []TestRe
 		return nil
 	}))
 
-	// GetQueryResults.
+	// GetQueryResults — query should be FINISHED after DescribeQuery poll.
 	results = append(results, r.RunTest("cloudtrail", "GetQueryResults_Success", func() error {
 		_, err := tc.client.GetQueryResults(tc.ctx, &cloudtrail.GetQueryResultsInput{
 			EventDataStore: aws.String(edsID),

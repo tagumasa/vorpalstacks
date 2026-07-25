@@ -133,6 +133,14 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 
 	applyTrailUpdates(trail, req)
 
+	// Validate tags BEFORE creation to ensure atomicity.
+	tagList := tags.ParseTags(req.Parameters, "TagsList")
+	if len(tagList) > 0 {
+		if err := validateCloudTrailTags(tagList); err != nil {
+			return nil, err
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -143,10 +151,8 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 		return nil, s.mapStoreError(err)
 	}
 
-	if tagList := tags.ParseTags(req.Parameters, "TagsList"); len(tagList) > 0 {
-		if err := validateCloudTrailTags(tagList); err != nil {
-			return nil, err
-		}
+	// Apply tags after creation (validation already passed).
+	if len(tagList) > 0 {
 		tagMap := make(map[string]string)
 		for _, t := range tagList {
 			tagMap[t.Key] = t.Value

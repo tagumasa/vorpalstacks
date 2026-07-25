@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	tags "vorpalstacks/internal/common/tags"
 	ctstore "vorpalstacks/internal/store/aws/cloudtrail"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // formatEventDataStore builds the response map for an event data store.
@@ -73,6 +75,16 @@ func formatEventDataStore(eds *ctstore.EventDataStore) map[string]interface{} {
 		}
 		resp["AdvancedEventSelectors"] = selectors
 	}
+	if len(eds.Tags) > 0 {
+		tagsList := make([]interface{}, 0, len(eds.Tags))
+		for k, v := range eds.Tags {
+			tagsList = append(tagsList, map[string]interface{}{
+				"Key":   k,
+				"Value": v,
+			})
+		}
+		resp["TagsList"] = tagsList
+	}
 	return resp
 }
 
@@ -105,6 +117,9 @@ func (s *CloudTrailService) CreateEventDataStore(ctx context.Context, reqCtx *re
 	if v, ok := req.Parameters["IngestionEnabled"]; ok {
 		eds.IngestionEnabled = parseBool(v)
 	}
+	if v, ok := req.Parameters["StartIngestion"]; ok {
+		eds.IngestionEnabled = parseBool(v)
+	}
 	if rp, err := extractRetentionPeriod(req.Parameters); err != nil {
 		return nil, err
 	} else if rp > 0 {
@@ -113,9 +128,25 @@ func (s *CloudTrailService) CreateEventDataStore(ctx context.Context, reqCtx *re
 	if v := request.GetStringParam(req.Parameters, "KmsKeyId"); v != "" {
 		eds.KMSKeyID = v
 	}
+	if v := request.GetStringParam(req.Parameters, "BillingMode"); v != "" {
+		if v != "EXTENDABLE_RETENTION_PRICING" && v != "FIXED_RETENTION_PRICING" {
+			return nil, awserrors.NewAWSError("InvalidParameterException",
+				"BillingMode must be EXTENDABLE_RETENTION_PRICING or FIXED_RETENTION_PRICING", 400)
+		}
+		eds.BillingMode = v
+	}
 
 	if aesRaw, ok := req.Parameters["AdvancedEventSelectors"]; ok {
 		eds.AdvancedEventSelectors = parseAdvancedEventSelectors(aesRaw)
+	}
+
+	// Validate and apply tags BEFORE creation to ensure atomicity.
+	if tagsRaw, ok := req.Parameters["TagsList"]; ok {
+		tagList := tags.ParseTags(req.Parameters, "TagsList")
+		if err := validateCloudTrailTags(tagList); err != nil {
+			return nil, err
+		}
+		applyEventDataStoreTags(eds, tagsRaw)
 	}
 
 	created, err := store.CreateEventDataStore(eds)
@@ -124,15 +155,6 @@ func (s *CloudTrailService) CreateEventDataStore(ctx context.Context, reqCtx *re
 			return nil, awserrors.NewAWSError("EventDataStoreAlreadyExistsException", "Event data store already exists", 409)
 		}
 		return nil, err
-	}
-
-	if tagsRaw, ok := req.Parameters["TagsList"]; ok {
-		tagList := tags.ParseTags(req.Parameters, "TagsList")
-		if err := validateCloudTrailTags(tagList); err != nil {
-			return nil, err
-		}
-		applyEventDataStoreTags(created, tagsRaw)
-		_ = store.UpdateEventDataStore(created)
 	}
 
 	return formatEventDataStore(created), nil
@@ -161,26 +183,39 @@ func (s *CloudTrailService) GetEventDataStore(ctx context.Context, reqCtx *reque
 	return formatEventDataStore(eds), nil
 }
 
-// ListEventDataStores returns all event data stores.
+// ListEventDataStores returns event data stores with pagination.
 func (s *CloudTrailService) ListEventDataStores(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	stores, err := store.ListEventDataStores()
+	opts := storecommon.ListOptions{MaxItems: 100}
+	if nextToken := req.GetParam("NextToken"); nextToken != "" {
+		opts.Marker = nextToken
+	}
+	if maxResults := request.GetIntParam(req.Parameters, "MaxResults"); maxResults > 0 {
+		opts.MaxItems = maxResults
+	}
+
+	result, err := store.ListEventDataStores(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(stores))
-	for _, eds := range stores {
+	items := make([]interface{}, 0, len(result.Items))
+	for _, eds := range result.Items {
 		items = append(items, formatEventDataStore(eds))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"EventDataStores": items,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+
+	return resp, nil
 }
 
 // UpdateEventDataStore updates the specified event data store.
@@ -228,6 +263,13 @@ func (s *CloudTrailService) UpdateEventDataStore(ctx context.Context, reqCtx *re
 	}
 	if v := request.GetStringParam(req.Parameters, "KmsKeyId"); v != "" {
 		eds.KMSKeyID = v
+	}
+	if v := request.GetStringParam(req.Parameters, "BillingMode"); v != "" {
+		if v != "EXTENDABLE_RETENTION_PRICING" && v != "FIXED_RETENTION_PRICING" {
+			return nil, awserrors.NewAWSError("InvalidParameterException",
+				"BillingMode must be EXTENDABLE_RETENTION_PRICING or FIXED_RETENTION_PRICING", 400)
+		}
+		eds.BillingMode = v
 	}
 	if aesRaw, ok := req.Parameters["AdvancedEventSelectors"]; ok {
 		eds.AdvancedEventSelectors = parseAdvancedEventSelectors(aesRaw)
@@ -516,6 +558,11 @@ func (s *CloudTrailService) EnableFederation(ctx context.Context, reqCtx *reques
 	federationRoleARN := request.GetStringParam(req.Parameters, "FederationRoleArn")
 	if federationRoleARN == "" {
 		return nil, awserrors.NewAWSError("InvalidParameter", "FederationRoleArn is required", 400)
+	}
+
+	validator := reqCtx.GetIAMValidator()
+	if err := validator.ValidateRoleForService(ctx, federationRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
+		return nil, err
 	}
 
 	eds, err := store.GetEventDataStore(id)

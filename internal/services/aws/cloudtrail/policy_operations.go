@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 )
@@ -28,10 +29,8 @@ func (s *CloudTrailService) GetResourcePolicy(ctx context.Context, reqCtx *reque
 
 	policy, err := store.GetResourcePolicy(resourceARN)
 	if err != nil {
-		return map[string]interface{}{
-			"ResourceArn":    resourceARN,
-			"ResourcePolicy": "",
-		}, nil
+		return nil, awserrors.NewAWSError("ResourcePolicyNotFoundException",
+			"Resource policy not found", 404)
 	}
 
 	return map[string]interface{}{
@@ -54,10 +53,24 @@ func (s *CloudTrailService) PutResourcePolicy(ctx context.Context, reqCtx *reque
 		return nil, s.mapStoreError(err)
 	}
 
-	if strings.Contains(resourceARN, ":trail/") {
+	switch {
+	case strings.Contains(resourceARN, ":trail/"):
 		if _, err := store.GetTrailByARN(resourceARN); err != nil {
 			return nil, s.mapStoreError(err)
 		}
+	case strings.Contains(resourceARN, ":eventdata-store/"):
+		if _, err := store.GetEventDataStore(resourceARN); err != nil {
+			return nil, awserrors.NewAWSError("EventDataStoreNotFoundException",
+				"Event data store not found", 404)
+		}
+	case strings.Contains(resourceARN, ":channel/"):
+		if _, err := store.GetChannel(resourceARN); err != nil {
+			return nil, awserrors.NewAWSError("ChannelNotFoundException",
+				"Channel not found", 404)
+		}
+	default:
+		return nil, awserrors.NewAWSError("ResourceARNNotValidException",
+			"The resource ARN is not valid", 400)
 	}
 
 	if err := store.PutResourcePolicy(resourceARN, policy); err != nil {

@@ -22,31 +22,32 @@ const (
 )
 
 type Trail struct {
-	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Name                       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	TrailArn                   string                 `protobuf:"bytes,2,opt,name=trail_arn,json=trailArn,proto3" json:"trail_arn,omitempty"`
-	S3BucketName               string                 `protobuf:"bytes,3,opt,name=s3_bucket_name,json=s3BucketName,proto3" json:"s3_bucket_name,omitempty"`
-	S3KeyPrefix                string                 `protobuf:"bytes,4,opt,name=s3_key_prefix,json=s3KeyPrefix,proto3" json:"s3_key_prefix,omitempty"`
-	SnsTopicName               string                 `protobuf:"bytes,5,opt,name=sns_topic_name,json=snsTopicName,proto3" json:"sns_topic_name,omitempty"`
-	SnsTopicArn                string                 `protobuf:"bytes,6,opt,name=sns_topic_arn,json=snsTopicArn,proto3" json:"sns_topic_arn,omitempty"`
-	IncludeGlobalServiceEvents bool                   `protobuf:"varint,7,opt,name=include_global_service_events,json=includeGlobalServiceEvents,proto3" json:"include_global_service_events,omitempty"`
-	IsMultiRegionTrail         bool                   `protobuf:"varint,8,opt,name=is_multi_region_trail,json=isMultiRegionTrail,proto3" json:"is_multi_region_trail,omitempty"`
-	HomeRegion                 string                 `protobuf:"bytes,9,opt,name=home_region,json=homeRegion,proto3" json:"home_region,omitempty"`
-	IsOrganizationTrail        bool                   `protobuf:"varint,10,opt,name=is_organization_trail,json=isOrganizationTrail,proto3" json:"is_organization_trail,omitempty"`
-	IsLogging                  bool                   `protobuf:"varint,11,opt,name=is_logging,json=isLogging,proto3" json:"is_logging,omitempty"`
-	LogFileValidationEnabled   bool                   `protobuf:"varint,12,opt,name=log_file_validation_enabled,json=logFileValidationEnabled,proto3" json:"log_file_validation_enabled,omitempty"`
-	CloudWatchLogsLogGroupArn  string                 `protobuf:"bytes,13,opt,name=cloud_watch_logs_log_group_arn,json=cloudWatchLogsLogGroupArn,proto3" json:"cloud_watch_logs_log_group_arn,omitempty"`
-	CloudWatchLogsRoleArn      string                 `protobuf:"bytes,14,opt,name=cloud_watch_logs_role_arn,json=cloudWatchLogsRoleArn,proto3" json:"cloud_watch_logs_role_arn,omitempty"`
-	KmsKeyId                   string                 `protobuf:"bytes,15,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
-	HasCustomEventSelectors    bool                   `protobuf:"varint,16,opt,name=has_custom_event_selectors,json=hasCustomEventSelectors,proto3" json:"has_custom_event_selectors,omitempty"`
-	HasInsightSelectors        bool                   `protobuf:"varint,17,opt,name=has_insight_selectors,json=hasInsightSelectors,proto3" json:"has_insight_selectors,omitempty"`
-	EventSelectors             []*EventSelector       `protobuf:"bytes,18,rep,name=event_selectors,json=eventSelectors,proto3" json:"event_selectors,omitempty"`
-	InsightSelectors           []*InsightSelector     `protobuf:"bytes,19,rep,name=insight_selectors,json=insightSelectors,proto3" json:"insight_selectors,omitempty"`
-	CreatedAt                  int64                  `protobuf:"varint,20,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastUpdated                int64                  `protobuf:"varint,21,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
-	StartedLoggingAt           int64                  `protobuf:"varint,22,opt,name=started_logging_at,json=startedLoggingAt,proto3" json:"started_logging_at,omitempty"`
-	StoppedLoggingAt           int64                  `protobuf:"varint,23,opt,name=stopped_logging_at,json=stoppedLoggingAt,proto3" json:"stopped_logging_at,omitempty"`
-	Tags                       map[string]string      `protobuf:"bytes,24,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state                      protoimpl.MessageState        `protogen:"open.v1"`
+	Name                       string                        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	TrailArn                   string                        `protobuf:"bytes,2,opt,name=trail_arn,json=trailArn,proto3" json:"trail_arn,omitempty"`
+	S3BucketName               string                        `protobuf:"bytes,3,opt,name=s3_bucket_name,json=s3BucketName,proto3" json:"s3_bucket_name,omitempty"`
+	S3KeyPrefix                string                        `protobuf:"bytes,4,opt,name=s3_key_prefix,json=s3KeyPrefix,proto3" json:"s3_key_prefix,omitempty"`
+	SnsTopicName               string                        `protobuf:"bytes,5,opt,name=sns_topic_name,json=snsTopicName,proto3" json:"sns_topic_name,omitempty"`
+	SnsTopicArn                string                        `protobuf:"bytes,6,opt,name=sns_topic_arn,json=snsTopicArn,proto3" json:"sns_topic_arn,omitempty"`
+	IncludeGlobalServiceEvents bool                          `protobuf:"varint,7,opt,name=include_global_service_events,json=includeGlobalServiceEvents,proto3" json:"include_global_service_events,omitempty"`
+	IsMultiRegionTrail         bool                          `protobuf:"varint,8,opt,name=is_multi_region_trail,json=isMultiRegionTrail,proto3" json:"is_multi_region_trail,omitempty"`
+	HomeRegion                 string                        `protobuf:"bytes,9,opt,name=home_region,json=homeRegion,proto3" json:"home_region,omitempty"`
+	IsOrganizationTrail        bool                          `protobuf:"varint,10,opt,name=is_organization_trail,json=isOrganizationTrail,proto3" json:"is_organization_trail,omitempty"`
+	IsLogging                  bool                          `protobuf:"varint,11,opt,name=is_logging,json=isLogging,proto3" json:"is_logging,omitempty"`
+	LogFileValidationEnabled   bool                          `protobuf:"varint,12,opt,name=log_file_validation_enabled,json=logFileValidationEnabled,proto3" json:"log_file_validation_enabled,omitempty"`
+	CloudWatchLogsLogGroupArn  string                        `protobuf:"bytes,13,opt,name=cloud_watch_logs_log_group_arn,json=cloudWatchLogsLogGroupArn,proto3" json:"cloud_watch_logs_log_group_arn,omitempty"`
+	CloudWatchLogsRoleArn      string                        `protobuf:"bytes,14,opt,name=cloud_watch_logs_role_arn,json=cloudWatchLogsRoleArn,proto3" json:"cloud_watch_logs_role_arn,omitempty"`
+	KmsKeyId                   string                        `protobuf:"bytes,15,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
+	HasCustomEventSelectors    bool                          `protobuf:"varint,16,opt,name=has_custom_event_selectors,json=hasCustomEventSelectors,proto3" json:"has_custom_event_selectors,omitempty"`
+	HasInsightSelectors        bool                          `protobuf:"varint,17,opt,name=has_insight_selectors,json=hasInsightSelectors,proto3" json:"has_insight_selectors,omitempty"`
+	EventSelectors             []*EventSelector              `protobuf:"bytes,18,rep,name=event_selectors,json=eventSelectors,proto3" json:"event_selectors,omitempty"`
+	InsightSelectors           []*InsightSelector            `protobuf:"bytes,19,rep,name=insight_selectors,json=insightSelectors,proto3" json:"insight_selectors,omitempty"`
+	CreatedAt                  int64                         `protobuf:"varint,20,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUpdated                int64                         `protobuf:"varint,21,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
+	StartedLoggingAt           int64                         `protobuf:"varint,22,opt,name=started_logging_at,json=startedLoggingAt,proto3" json:"started_logging_at,omitempty"`
+	StoppedLoggingAt           int64                         `protobuf:"varint,23,opt,name=stopped_logging_at,json=stoppedLoggingAt,proto3" json:"stopped_logging_at,omitempty"`
+	Tags                       map[string]string             `protobuf:"bytes,24,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AdvancedEventSelectors     []*TrailAdvancedEventSelector `protobuf:"bytes,25,rep,name=advanced_event_selectors,json=advancedEventSelectors,proto3" json:"advanced_event_selectors,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -249,6 +250,157 @@ func (x *Trail) GetTags() map[string]string {
 	return nil
 }
 
+func (x *Trail) GetAdvancedEventSelectors() []*TrailAdvancedEventSelector {
+	if x != nil {
+		return x.AdvancedEventSelectors
+	}
+	return nil
+}
+
+type TrailAdvancedEventSelector struct {
+	state          protoimpl.MessageState        `protogen:"open.v1"`
+	Name           string                        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	FieldSelectors []*TrailAdvancedFieldSelector `protobuf:"bytes,2,rep,name=field_selectors,json=fieldSelectors,proto3" json:"field_selectors,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TrailAdvancedEventSelector) Reset() {
+	*x = TrailAdvancedEventSelector{}
+	mi := &file_storage_cloudtrail_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrailAdvancedEventSelector) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrailAdvancedEventSelector) ProtoMessage() {}
+
+func (x *TrailAdvancedEventSelector) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_cloudtrail_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrailAdvancedEventSelector.ProtoReflect.Descriptor instead.
+func (*TrailAdvancedEventSelector) Descriptor() ([]byte, []int) {
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TrailAdvancedEventSelector) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TrailAdvancedEventSelector) GetFieldSelectors() []*TrailAdvancedFieldSelector {
+	if x != nil {
+		return x.FieldSelectors
+	}
+	return nil
+}
+
+type TrailAdvancedFieldSelector struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Equals        []string               `protobuf:"bytes,2,rep,name=equals,proto3" json:"equals,omitempty"`
+	StartsWith    []string               `protobuf:"bytes,3,rep,name=starts_with,json=startsWith,proto3" json:"starts_with,omitempty"`
+	EndsWith      []string               `protobuf:"bytes,4,rep,name=ends_with,json=endsWith,proto3" json:"ends_with,omitempty"`
+	NotEquals     []string               `protobuf:"bytes,5,rep,name=not_equals,json=notEquals,proto3" json:"not_equals,omitempty"`
+	NotStartsWith []string               `protobuf:"bytes,6,rep,name=not_starts_with,json=notStartsWith,proto3" json:"not_starts_with,omitempty"`
+	NotEndsWith   []string               `protobuf:"bytes,7,rep,name=not_ends_with,json=notEndsWith,proto3" json:"not_ends_with,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrailAdvancedFieldSelector) Reset() {
+	*x = TrailAdvancedFieldSelector{}
+	mi := &file_storage_cloudtrail_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrailAdvancedFieldSelector) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrailAdvancedFieldSelector) ProtoMessage() {}
+
+func (x *TrailAdvancedFieldSelector) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_cloudtrail_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrailAdvancedFieldSelector.ProtoReflect.Descriptor instead.
+func (*TrailAdvancedFieldSelector) Descriptor() ([]byte, []int) {
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TrailAdvancedFieldSelector) GetField() string {
+	if x != nil {
+		return x.Field
+	}
+	return ""
+}
+
+func (x *TrailAdvancedFieldSelector) GetEquals() []string {
+	if x != nil {
+		return x.Equals
+	}
+	return nil
+}
+
+func (x *TrailAdvancedFieldSelector) GetStartsWith() []string {
+	if x != nil {
+		return x.StartsWith
+	}
+	return nil
+}
+
+func (x *TrailAdvancedFieldSelector) GetEndsWith() []string {
+	if x != nil {
+		return x.EndsWith
+	}
+	return nil
+}
+
+func (x *TrailAdvancedFieldSelector) GetNotEquals() []string {
+	if x != nil {
+		return x.NotEquals
+	}
+	return nil
+}
+
+func (x *TrailAdvancedFieldSelector) GetNotStartsWith() []string {
+	if x != nil {
+		return x.NotStartsWith
+	}
+	return nil
+}
+
+func (x *TrailAdvancedFieldSelector) GetNotEndsWith() []string {
+	if x != nil {
+		return x.NotEndsWith
+	}
+	return nil
+}
+
 type EventSelector struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	ReadWriteType                 string                 `protobuf:"bytes,1,opt,name=read_write_type,json=readWriteType,proto3" json:"read_write_type,omitempty"`
@@ -261,7 +413,7 @@ type EventSelector struct {
 
 func (x *EventSelector) Reset() {
 	*x = EventSelector{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[1]
+	mi := &file_storage_cloudtrail_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -273,7 +425,7 @@ func (x *EventSelector) String() string {
 func (*EventSelector) ProtoMessage() {}
 
 func (x *EventSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[1]
+	mi := &file_storage_cloudtrail_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -286,7 +438,7 @@ func (x *EventSelector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventSelector.ProtoReflect.Descriptor instead.
 func (*EventSelector) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{1}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EventSelector) GetReadWriteType() string {
@@ -327,7 +479,7 @@ type DataResource struct {
 
 func (x *DataResource) Reset() {
 	*x = DataResource{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[2]
+	mi := &file_storage_cloudtrail_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +491,7 @@ func (x *DataResource) String() string {
 func (*DataResource) ProtoMessage() {}
 
 func (x *DataResource) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[2]
+	mi := &file_storage_cloudtrail_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +504,7 @@ func (x *DataResource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataResource.ProtoReflect.Descriptor instead.
 func (*DataResource) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{2}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DataResource) GetType() string {
@@ -378,7 +530,7 @@ type InsightSelector struct {
 
 func (x *InsightSelector) Reset() {
 	*x = InsightSelector{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[3]
+	mi := &file_storage_cloudtrail_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +542,7 @@ func (x *InsightSelector) String() string {
 func (*InsightSelector) ProtoMessage() {}
 
 func (x *InsightSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[3]
+	mi := &file_storage_cloudtrail_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -403,7 +555,7 @@ func (x *InsightSelector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsightSelector.ProtoReflect.Descriptor instead.
 func (*InsightSelector) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{3}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *InsightSelector) GetInsightType() string {
@@ -441,7 +593,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[4]
+	mi := &file_storage_cloudtrail_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -453,7 +605,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[4]
+	mi := &file_storage_cloudtrail_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,7 +618,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{4}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Event) GetEventId() string {
@@ -624,7 +776,7 @@ type UserIdentity struct {
 
 func (x *UserIdentity) Reset() {
 	*x = UserIdentity{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[5]
+	mi := &file_storage_cloudtrail_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -636,7 +788,7 @@ func (x *UserIdentity) String() string {
 func (*UserIdentity) ProtoMessage() {}
 
 func (x *UserIdentity) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[5]
+	mi := &file_storage_cloudtrail_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -649,7 +801,7 @@ func (x *UserIdentity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserIdentity.ProtoReflect.Descriptor instead.
 func (*UserIdentity) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{5}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UserIdentity) GetType() string {
@@ -711,7 +863,7 @@ type SessionContext struct {
 
 func (x *SessionContext) Reset() {
 	*x = SessionContext{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[6]
+	mi := &file_storage_cloudtrail_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -723,7 +875,7 @@ func (x *SessionContext) String() string {
 func (*SessionContext) ProtoMessage() {}
 
 func (x *SessionContext) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[6]
+	mi := &file_storage_cloudtrail_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -736,7 +888,7 @@ func (x *SessionContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionContext.ProtoReflect.Descriptor instead.
 func (*SessionContext) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{6}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SessionContext) GetSessionIssuer() *SessionIssuer {
@@ -766,7 +918,7 @@ type SessionIssuer struct {
 
 func (x *SessionIssuer) Reset() {
 	*x = SessionIssuer{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[7]
+	mi := &file_storage_cloudtrail_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -778,7 +930,7 @@ func (x *SessionIssuer) String() string {
 func (*SessionIssuer) ProtoMessage() {}
 
 func (x *SessionIssuer) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[7]
+	mi := &file_storage_cloudtrail_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -791,7 +943,7 @@ func (x *SessionIssuer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionIssuer.ProtoReflect.Descriptor instead.
 func (*SessionIssuer) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{7}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SessionIssuer) GetType() string {
@@ -839,7 +991,7 @@ type SessionAttributes struct {
 
 func (x *SessionAttributes) Reset() {
 	*x = SessionAttributes{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[8]
+	mi := &file_storage_cloudtrail_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -851,7 +1003,7 @@ func (x *SessionAttributes) String() string {
 func (*SessionAttributes) ProtoMessage() {}
 
 func (x *SessionAttributes) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[8]
+	mi := &file_storage_cloudtrail_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -864,7 +1016,7 @@ func (x *SessionAttributes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionAttributes.ProtoReflect.Descriptor instead.
 func (*SessionAttributes) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{8}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SessionAttributes) GetCreationDate() int64 {
@@ -893,7 +1045,7 @@ type Resource struct {
 
 func (x *Resource) Reset() {
 	*x = Resource{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[9]
+	mi := &file_storage_cloudtrail_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -905,7 +1057,7 @@ func (x *Resource) String() string {
 func (*Resource) ProtoMessage() {}
 
 func (x *Resource) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[9]
+	mi := &file_storage_cloudtrail_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -918,7 +1070,7 @@ func (x *Resource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resource.ProtoReflect.Descriptor instead.
 func (*Resource) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{9}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Resource) GetResourceType() string {
@@ -959,7 +1111,7 @@ type ResourcePolicy struct {
 
 func (x *ResourcePolicy) Reset() {
 	*x = ResourcePolicy{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[10]
+	mi := &file_storage_cloudtrail_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -971,7 +1123,7 @@ func (x *ResourcePolicy) String() string {
 func (*ResourcePolicy) ProtoMessage() {}
 
 func (x *ResourcePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[10]
+	mi := &file_storage_cloudtrail_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -984,7 +1136,7 @@ func (x *ResourcePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourcePolicy.ProtoReflect.Descriptor instead.
 func (*ResourcePolicy) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{10}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ResourcePolicy) GetResourceArn() string {
@@ -1014,7 +1166,7 @@ type PublicKey struct {
 
 func (x *PublicKey) Reset() {
 	*x = PublicKey{}
-	mi := &file_storage_cloudtrail_proto_msgTypes[11]
+	mi := &file_storage_cloudtrail_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1026,7 +1178,7 @@ func (x *PublicKey) String() string {
 func (*PublicKey) ProtoMessage() {}
 
 func (x *PublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudtrail_proto_msgTypes[11]
+	mi := &file_storage_cloudtrail_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1039,7 +1191,7 @@ func (x *PublicKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublicKey.ProtoReflect.Descriptor instead.
 func (*PublicKey) Descriptor() ([]byte, []int) {
-	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{11}
+	return file_storage_cloudtrail_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PublicKey) GetPublicKeyId() string {
@@ -1081,7 +1233,8 @@ var File_storage_cloudtrail_proto protoreflect.FileDescriptor
 
 const file_storage_cloudtrail_proto_rawDesc = "" +
 	"\n" +
-	"\x18storage_cloudtrail.proto\x12\x12storage.cloudtrail\"\xaf\t\n" +
+	"\x18storage_cloudtrail.proto\x12\x12storage.cloudtrail\"\x99\n" +
+	"\n" +
 	"\x05Trail\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
 	"\ttrail_arn\x18\x02 \x01(\tR\btrailArn\x12$\n" +
@@ -1111,10 +1264,24 @@ const file_storage_cloudtrail_proto_rawDesc = "" +
 	"\flast_updated\x18\x15 \x01(\x03R\vlastUpdated\x12,\n" +
 	"\x12started_logging_at\x18\x16 \x01(\x03R\x10startedLoggingAt\x12,\n" +
 	"\x12stopped_logging_at\x18\x17 \x01(\x03R\x10stoppedLoggingAt\x127\n" +
-	"\x04tags\x18\x18 \x03(\v2#.storage.cloudtrail.Trail.TagsEntryR\x04tags\x1a7\n" +
+	"\x04tags\x18\x18 \x03(\v2#.storage.cloudtrail.Trail.TagsEntryR\x04tags\x12h\n" +
+	"\x18advanced_event_selectors\x18\x19 \x03(\v2..storage.cloudtrail.TrailAdvancedEventSelectorR\x16advancedEventSelectors\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x85\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x89\x01\n" +
+	"\x1aTrailAdvancedEventSelector\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12W\n" +
+	"\x0ffield_selectors\x18\x02 \x03(\v2..storage.cloudtrail.TrailAdvancedFieldSelectorR\x0efieldSelectors\"\xf3\x01\n" +
+	"\x1aTrailAdvancedFieldSelector\x12\x14\n" +
+	"\x05field\x18\x01 \x01(\tR\x05field\x12\x16\n" +
+	"\x06equals\x18\x02 \x03(\tR\x06equals\x12\x1f\n" +
+	"\vstarts_with\x18\x03 \x03(\tR\n" +
+	"startsWith\x12\x1b\n" +
+	"\tends_with\x18\x04 \x03(\tR\bendsWith\x12\x1d\n" +
+	"\n" +
+	"not_equals\x18\x05 \x03(\tR\tnotEquals\x12&\n" +
+	"\x0fnot_starts_with\x18\x06 \x03(\tR\rnotStartsWith\x12\"\n" +
+	"\rnot_ends_with\x18\a \x03(\tR\vnotEndsWith\"\x85\x02\n" +
 	"\rEventSelector\x12&\n" +
 	"\x0fread_write_type\x18\x01 \x01(\tR\rreadWriteType\x12:\n" +
 	"\x19include_management_events\x18\x02 \x01(\bR\x17includeManagementEvents\x12G\n" +
@@ -1209,39 +1376,43 @@ func file_storage_cloudtrail_proto_rawDescGZIP() []byte {
 	return file_storage_cloudtrail_proto_rawDescData
 }
 
-var file_storage_cloudtrail_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_storage_cloudtrail_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_storage_cloudtrail_proto_goTypes = []any{
-	(*Trail)(nil),             // 0: storage.cloudtrail.Trail
-	(*EventSelector)(nil),     // 1: storage.cloudtrail.EventSelector
-	(*DataResource)(nil),      // 2: storage.cloudtrail.DataResource
-	(*InsightSelector)(nil),   // 3: storage.cloudtrail.InsightSelector
-	(*Event)(nil),             // 4: storage.cloudtrail.Event
-	(*UserIdentity)(nil),      // 5: storage.cloudtrail.UserIdentity
-	(*SessionContext)(nil),    // 6: storage.cloudtrail.SessionContext
-	(*SessionIssuer)(nil),     // 7: storage.cloudtrail.SessionIssuer
-	(*SessionAttributes)(nil), // 8: storage.cloudtrail.SessionAttributes
-	(*Resource)(nil),          // 9: storage.cloudtrail.Resource
-	(*ResourcePolicy)(nil),    // 10: storage.cloudtrail.ResourcePolicy
-	(*PublicKey)(nil),         // 11: storage.cloudtrail.PublicKey
-	nil,                       // 12: storage.cloudtrail.Trail.TagsEntry
-	nil,                       // 13: storage.cloudtrail.Event.TagsEntry
+	(*Trail)(nil),                      // 0: storage.cloudtrail.Trail
+	(*TrailAdvancedEventSelector)(nil), // 1: storage.cloudtrail.TrailAdvancedEventSelector
+	(*TrailAdvancedFieldSelector)(nil), // 2: storage.cloudtrail.TrailAdvancedFieldSelector
+	(*EventSelector)(nil),              // 3: storage.cloudtrail.EventSelector
+	(*DataResource)(nil),               // 4: storage.cloudtrail.DataResource
+	(*InsightSelector)(nil),            // 5: storage.cloudtrail.InsightSelector
+	(*Event)(nil),                      // 6: storage.cloudtrail.Event
+	(*UserIdentity)(nil),               // 7: storage.cloudtrail.UserIdentity
+	(*SessionContext)(nil),             // 8: storage.cloudtrail.SessionContext
+	(*SessionIssuer)(nil),              // 9: storage.cloudtrail.SessionIssuer
+	(*SessionAttributes)(nil),          // 10: storage.cloudtrail.SessionAttributes
+	(*Resource)(nil),                   // 11: storage.cloudtrail.Resource
+	(*ResourcePolicy)(nil),             // 12: storage.cloudtrail.ResourcePolicy
+	(*PublicKey)(nil),                  // 13: storage.cloudtrail.PublicKey
+	nil,                                // 14: storage.cloudtrail.Trail.TagsEntry
+	nil,                                // 15: storage.cloudtrail.Event.TagsEntry
 }
 var file_storage_cloudtrail_proto_depIdxs = []int32{
-	1,  // 0: storage.cloudtrail.Trail.event_selectors:type_name -> storage.cloudtrail.EventSelector
-	3,  // 1: storage.cloudtrail.Trail.insight_selectors:type_name -> storage.cloudtrail.InsightSelector
-	12, // 2: storage.cloudtrail.Trail.tags:type_name -> storage.cloudtrail.Trail.TagsEntry
-	2,  // 3: storage.cloudtrail.EventSelector.data_resources:type_name -> storage.cloudtrail.DataResource
-	5,  // 4: storage.cloudtrail.Event.user_identity:type_name -> storage.cloudtrail.UserIdentity
-	9,  // 5: storage.cloudtrail.Event.resources:type_name -> storage.cloudtrail.Resource
-	13, // 6: storage.cloudtrail.Event.tags:type_name -> storage.cloudtrail.Event.TagsEntry
-	6,  // 7: storage.cloudtrail.UserIdentity.session_context:type_name -> storage.cloudtrail.SessionContext
-	7,  // 8: storage.cloudtrail.SessionContext.session_issuer:type_name -> storage.cloudtrail.SessionIssuer
-	8,  // 9: storage.cloudtrail.SessionContext.attributes:type_name -> storage.cloudtrail.SessionAttributes
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	3,  // 0: storage.cloudtrail.Trail.event_selectors:type_name -> storage.cloudtrail.EventSelector
+	5,  // 1: storage.cloudtrail.Trail.insight_selectors:type_name -> storage.cloudtrail.InsightSelector
+	14, // 2: storage.cloudtrail.Trail.tags:type_name -> storage.cloudtrail.Trail.TagsEntry
+	1,  // 3: storage.cloudtrail.Trail.advanced_event_selectors:type_name -> storage.cloudtrail.TrailAdvancedEventSelector
+	2,  // 4: storage.cloudtrail.TrailAdvancedEventSelector.field_selectors:type_name -> storage.cloudtrail.TrailAdvancedFieldSelector
+	4,  // 5: storage.cloudtrail.EventSelector.data_resources:type_name -> storage.cloudtrail.DataResource
+	7,  // 6: storage.cloudtrail.Event.user_identity:type_name -> storage.cloudtrail.UserIdentity
+	11, // 7: storage.cloudtrail.Event.resources:type_name -> storage.cloudtrail.Resource
+	15, // 8: storage.cloudtrail.Event.tags:type_name -> storage.cloudtrail.Event.TagsEntry
+	8,  // 9: storage.cloudtrail.UserIdentity.session_context:type_name -> storage.cloudtrail.SessionContext
+	9,  // 10: storage.cloudtrail.SessionContext.session_issuer:type_name -> storage.cloudtrail.SessionIssuer
+	10, // 11: storage.cloudtrail.SessionContext.attributes:type_name -> storage.cloudtrail.SessionAttributes
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_storage_cloudtrail_proto_init() }
@@ -1255,7 +1426,7 @@ func file_storage_cloudtrail_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_cloudtrail_proto_rawDesc), len(file_storage_cloudtrail_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

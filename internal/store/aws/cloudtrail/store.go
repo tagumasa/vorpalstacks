@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,9 @@ import (
 
 // ErrResourcePolicyNotFound is returned when a resource policy cannot be located.
 var ErrResourcePolicyNotFound = fmt.Errorf("resource policy not found")
+
+// ErrImportNotFound is returned when an import cannot be located.
+var ErrImportNotFound = fmt.Errorf("import not found")
 
 // CloudTrailStore provides CloudTrail storage operations.
 type CloudTrailStore struct {
@@ -40,6 +44,7 @@ type CloudTrailStore struct {
 	channelStore        *common.BaseStore
 	eventConfigStore    *common.BaseStore
 	delegatedAdminStore *common.BaseStore
+	importStore         *common.BaseStore
 	storage             storage.TransactionalStorageWith2PC
 }
 
@@ -83,6 +88,10 @@ func delegatedAdminBucketName(region string) string {
 	return "cloudtrail-delegated-admins-" + region
 }
 
+func importBucketName(region string) string {
+	return "cloudtrail-imports-" + region
+}
+
 func eventIDIndexBucketName(region string) string {
 	return "cloudtrail-event-id-index-" + region
 }
@@ -111,6 +120,7 @@ func NewCloudTrailStore(store storage.BasicStorage, accountID, region string) *C
 		channelStore:        common.NewBaseStore(store.Bucket(channelBucketName(region)), "cloudtrail-channels"),
 		eventConfigStore:    common.NewBaseStore(store.Bucket(eventConfigBucketName(region)), "cloudtrail-event-config"),
 		delegatedAdminStore: common.NewBaseStore(store.Bucket(delegatedAdminBucketName(region)), "cloudtrail-delegated-admins"),
+		importStore:         common.NewBaseStore(store.Bucket(importBucketName(region)), "cloudtrail-imports"),
 		storage:             tstore,
 	}
 }
@@ -373,6 +383,25 @@ func (s *CloudTrailStore) PutEventSelector(trailName string, eventSelectors []Ev
 	}
 
 	trail.EventSelectors = eventSelectors
+	trail.AdvancedEventSelectors = nil
+	trail.HasCustomEventSelectors = true
+
+	return s.updateTrailInternal(trail)
+}
+
+// PutAdvancedEventSelectors sets advanced event selectors for a CloudTrail trail.
+// Providing advanced selectors clears basic event selectors per AWS spec.
+func (s *CloudTrailStore) PutAdvancedEventSelectors(trailName string, selectors []AdvancedEventSelector) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	trail, err := s.GetTrail(trailName)
+	if err != nil {
+		return err
+	}
+
+	trail.AdvancedEventSelectors = selectors
+	trail.EventSelectors = nil
 	trail.HasCustomEventSelectors = true
 
 	return s.updateTrailInternal(trail)
@@ -631,6 +660,10 @@ func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
 		return false
 	}
 
+	if query.EventCategory != "" && event.GetEventCategory() != query.EventCategory {
+		return false
+	}
+
 	return true
 }
 
@@ -665,6 +698,7 @@ type EventQuery struct {
 	AccessKeyID   string
 	EventID       string
 	ReadOnly      string
+	EventCategory string
 	MaxResults    int32
 	NextToken     string
 }
@@ -779,8 +813,8 @@ func (s *CloudTrailStore) GetEventDataStore(idOrARN string) (*EventDataStore, er
 }
 
 // ListEventDataStores returns all event data stores.
-func (s *CloudTrailStore) ListEventDataStores() ([]*EventDataStore, error) {
-	return s.listEventDataStoresRaw()
+func (s *CloudTrailStore) ListEventDataStores(opts common.ListOptions) (*common.ListResult[EventDataStore], error) {
+	return common.List[EventDataStore](s.eventDataStoreStore, opts, nil)
 }
 
 // UpdateEventDataStore updates an existing event data store.
@@ -909,18 +943,9 @@ func (s *CloudTrailStore) DeleteChannel(arn string) error {
 	return s.channelStore.Delete(arn)
 }
 
-// ListAllChannels lists all channels.
-func (s *CloudTrailStore) ListAllChannels() ([]*Channel, error) {
-	var result []*Channel
-	err := s.channelStore.ForEach(func(_ string, value []byte) error {
-		var ch Channel
-		if err := json.Unmarshal(value, &ch); err != nil {
-			return nil
-		}
-		result = append(result, &ch)
-		return nil
-	})
-	return result, err
+// ListChannels lists channels with pagination support.
+func (s *CloudTrailStore) ListChannels(opts common.ListOptions) (*common.ListResult[Channel], error) {
+	return common.List[Channel](s.channelStore, opts, nil)
 }
 
 // --- Event Configuration ---
@@ -963,4 +988,87 @@ func (s *CloudTrailStore) DeregisterDelegatedAdmin(accountID string) error {
 // IsDelegatedAdmin checks if an account is a registered delegated admin.
 func (s *CloudTrailStore) IsDelegatedAdmin(accountID string) bool {
 	return s.delegatedAdminStore.Exists(accountID)
+}
+
+// --- Import operations ---
+
+// CreateImport persists a new import record.
+func (s *CloudTrailStore) CreateImport(imp *Import) (*Import, error) {
+	return imp, s.importStore.Put(imp.ImportID, imp)
+}
+
+// GetImport retrieves an import by ID.
+func (s *CloudTrailStore) GetImport(importID string) (*Import, error) {
+	var imp Import
+	if err := s.importStore.Get(importID, &imp); err != nil {
+		return nil, ErrImportNotFound
+	}
+	return &imp, nil
+}
+
+// UpdateImport updates an existing import record.
+func (s *CloudTrailStore) UpdateImport(imp *Import) error {
+	imp.UpdatedTimestamp = time.Now().UTC()
+	return s.importStore.Put(imp.ImportID, imp)
+}
+
+// ListImports lists imports with optional destination and status filters.
+func (s *CloudTrailStore) ListImports(opts common.ListOptions, destination, statusFilter string) (*common.ListResult[Import], error) {
+	return common.List[Import](s.importStore, opts, func(imp *Import) bool {
+		if destination != "" {
+			found := false
+			for _, d := range imp.Destinations {
+				if d == destination {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+		if statusFilter != "" && imp.ImportStatus != statusFilter {
+			return false
+		}
+		return true
+	})
+}
+
+// ListImportFailures lists failures for a specific import.
+func (s *CloudTrailStore) ListImportFailures(importID string, opts common.ListOptions) (*common.ListResult[ImportFailure], error) {
+	imp, err := s.GetImport(importID)
+	if err != nil {
+		return nil, err
+	}
+
+	total := len(imp.Failures)
+	offset := 0
+	if opts.Marker != "" {
+		if n, err := strconv.Atoi(opts.Marker); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+	maxItems := opts.MaxItems
+	if maxItems <= 0 {
+		maxItems = 50
+	}
+
+	end := offset + maxItems
+	if end > total {
+		end = total
+	}
+
+	var items []*ImportFailure
+	for i := offset; i < end; i++ {
+		items = append(items, &imp.Failures[i])
+	}
+
+	result := &common.ListResult[ImportFailure]{
+		Items: items,
+	}
+	if end < total {
+		result.NextMarker = strconv.Itoa(end)
+		result.IsTruncated = true
+	}
+	return result, nil
 }

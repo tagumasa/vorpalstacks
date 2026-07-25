@@ -29,6 +29,22 @@ message Trail {
   int64 started_logging_at = 22;
   int64 stopped_logging_at = 23;
   map<string, string> tags = 24;
+  repeated TrailAdvancedEventSelector advanced_event_selectors = 25;
+}
+
+message TrailAdvancedEventSelector {
+  string name = 1;
+  repeated TrailAdvancedFieldSelector field_selectors = 2;
+}
+
+message TrailAdvancedFieldSelector {
+  string field = 1;
+  repeated string equals = 2;
+  repeated string starts_with = 3;
+  repeated string ends_with = 4;
+  repeated string not_equals = 5;
+  repeated string not_starts_with = 6;
+  repeated string not_ends_with = 7;
 }
 
 message EventSelector {

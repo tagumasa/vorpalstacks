@@ -14,30 +14,31 @@ import (
 
 // Trail represents a CloudTrail trail.
 type Trail struct {
-	Name                       string            `json:"name"`
-	TrailARN                   string            `json:"trailArn"`
-	S3BucketName               string            `json:"s3BucketName,omitempty"`
-	S3KeyPrefix                string            `json:"s3KeyPrefix,omitempty"`
-	SnsTopicName               string            `json:"snsTopicName,omitempty"`
-	SnsTopicARN                string            `json:"snsTopicArn,omitempty"`
-	IncludeGlobalServiceEvents bool              `json:"includeGlobalServiceEvents"`
-	IsMultiRegionTrail         bool              `json:"isMultiRegionTrail"`
-	HomeRegion                 string            `json:"homeRegion"`
-	IsOrganizationTrail        bool              `json:"isOrganizationTrail"`
-	IsLogging                  bool              `json:"isLogging"`
-	LogFileValidationEnabled   bool              `json:"logFileValidationEnabled"`
-	CloudWatchLogsLogGroupARN  string            `json:"cloudWatchLogsLogGroupArn,omitempty"`
-	CloudWatchLogsRoleARN      string            `json:"cloudWatchLogsRoleArn,omitempty"`
-	KMSKeyID                   string            `json:"kmsKeyId,omitempty"`
-	HasCustomEventSelectors    bool              `json:"hasCustomEventSelectors"`
-	HasInsightSelectors        bool              `json:"hasInsightSelectors"`
-	EventSelectors             []EventSelector   `json:"eventSelectors,omitempty"`
-	InsightSelectors           []InsightSelector `json:"insightSelectors,omitempty"`
-	CreatedAt                  time.Time         `json:"createdAt"`
-	LastUpdated                time.Time         `json:"lastUpdated"`
-	StartedLoggingAt           *time.Time        `json:"startedLoggingAt,omitempty"`
-	StoppedLoggingAt           *time.Time        `json:"stoppedLoggingAt,omitempty"`
-	Tags                       map[string]string `json:"tags,omitempty"`
+	Name                       string                  `json:"name"`
+	TrailARN                   string                  `json:"trailArn"`
+	S3BucketName               string                  `json:"s3BucketName,omitempty"`
+	S3KeyPrefix                string                  `json:"s3KeyPrefix,omitempty"`
+	SnsTopicName               string                  `json:"snsTopicName,omitempty"`
+	SnsTopicARN                string                  `json:"snsTopicArn,omitempty"`
+	IncludeGlobalServiceEvents bool                    `json:"includeGlobalServiceEvents"`
+	IsMultiRegionTrail         bool                    `json:"isMultiRegionTrail"`
+	HomeRegion                 string                  `json:"homeRegion"`
+	IsOrganizationTrail        bool                    `json:"isOrganizationTrail"`
+	IsLogging                  bool                    `json:"isLogging"`
+	LogFileValidationEnabled   bool                    `json:"logFileValidationEnabled"`
+	CloudWatchLogsLogGroupARN  string                  `json:"cloudWatchLogsLogGroupArn,omitempty"`
+	CloudWatchLogsRoleARN      string                  `json:"cloudWatchLogsRoleArn,omitempty"`
+	KMSKeyID                   string                  `json:"kmsKeyId,omitempty"`
+	HasCustomEventSelectors    bool                    `json:"hasCustomEventSelectors"`
+	HasInsightSelectors        bool                    `json:"hasInsightSelectors"`
+	EventSelectors             []EventSelector         `json:"eventSelectors,omitempty"`
+	AdvancedEventSelectors     []AdvancedEventSelector `json:"advancedEventSelectors,omitempty"`
+	InsightSelectors           []InsightSelector       `json:"insightSelectors,omitempty"`
+	CreatedAt                  time.Time               `json:"createdAt"`
+	LastUpdated                time.Time               `json:"lastUpdated"`
+	StartedLoggingAt           *time.Time              `json:"startedLoggingAt,omitempty"`
+	StoppedLoggingAt           *time.Time              `json:"stoppedLoggingAt,omitempty"`
+	Tags                       map[string]string       `json:"tags,omitempty"`
 }
 
 // EventSelector represents event selector settings for a CloudTrail trail.
@@ -174,9 +175,9 @@ func NewEventDataStore(name string, accountID, region string) *EventDataStore {
 		Status:                       "ENABLED",
 		MultiRegionEnabled:           true,
 		OrganizationEnabled:          false,
-		RetentionPeriod:              2555,
+		RetentionPeriod:              366,
 		IngestionEnabled:             true,
-		BillingMode:                  "EXTENDABLE_WRITES",
+		BillingMode:                  "EXTENDABLE_RETENTION_PRICING",
 		CreatedTimestamp:             now,
 		UpdatedTimestamp:             now,
 		Tags:                         make(map[string]string),
@@ -291,6 +292,59 @@ func NewTrail(name, s3BucketName, region string) *Trail {
 		CreatedAt:   now,
 		LastUpdated: now,
 		Tags:        make(map[string]string),
+	}
+}
+
+// Import represents a CloudTrail Lake import operation for copying trail
+// events from an S3 bucket into an event data store.
+type Import struct {
+	ImportID         string           `json:"importId"`
+	Destinations     []string         `json:"destinations"`
+	ImportSource     ImportSource     `json:"importSource"`
+	StartEventTime   *time.Time       `json:"startEventTime,omitempty"`
+	EndEventTime     *time.Time       `json:"endEventTime,omitempty"`
+	ImportStatus     string           `json:"importStatus"`
+	CreatedTimestamp time.Time        `json:"createdTimestamp"`
+	UpdatedTimestamp time.Time        `json:"updatedTimestamp"`
+	ImportStatistics ImportStatistics `json:"importStatistics,omitempty"`
+	Failures         []ImportFailure  `json:"failures,omitempty"`
+}
+
+// ImportSource specifies the S3 bucket source for a CloudTrail import.
+type ImportSource struct {
+	S3LocationURI         string `json:"s3LocationUri"`
+	S3BucketRegion        string `json:"s3BucketRegion"`
+	S3BucketAccessRoleARN string `json:"s3BucketAccessRoleArn,omitempty"`
+}
+
+// ImportStatistics tracks the progress of a CloudTrail import.
+type ImportStatistics struct {
+	PrefixesFound     int64 `json:"prefixesFound,omitempty"`
+	PrefixesCompleted int64 `json:"prefixesCompleted,omitempty"`
+	FilesCompleted    int64 `json:"filesCompleted,omitempty"`
+	EventsCompleted   int64 `json:"eventsCompleted,omitempty"`
+	FailedEntries     int64 `json:"failedEntries,omitempty"`
+}
+
+// ImportFailure represents a single failure during a CloudTrail import.
+type ImportFailure struct {
+	Location        string     `json:"location,omitempty"`
+	Status          string     `json:"status,omitempty"`
+	ErrorType       string     `json:"errorType,omitempty"`
+	ErrorMessage    string     `json:"errorMessage,omitempty"`
+	LastUpdatedTime *time.Time `json:"lastUpdatedTime,omitempty"`
+}
+
+// NewImport creates a new CloudTrail import with default status.
+func NewImport(destinations []string, source ImportSource) *Import {
+	now := time.Now().UTC()
+	return &Import{
+		ImportID:         uuid.NewString(),
+		Destinations:     destinations,
+		ImportSource:     source,
+		ImportStatus:     "INITIALIZING",
+		CreatedTimestamp: now,
+		UpdatedTimestamp: now,
 	}
 }
 

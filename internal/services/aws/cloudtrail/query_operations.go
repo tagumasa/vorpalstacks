@@ -190,39 +190,35 @@ func (s *CloudTrailService) StartQuery(ctx context.Context, reqCtx *request.Requ
 	queryID := uuid.NewString()
 	now := time.Now().UTC()
 
-	// Execute the query synchronously.
-	results, err := s.executeQuery(store, pq)
-	if err != nil {
-		qr := &cloudtrailstore.QueryRecord{
-			QueryID:        queryID,
-			EventDataStore: eds.EventDataStoreID,
-			QueryStatement: stmt,
-			QueryStatus:    "FAILED",
-			ErrorMessage:   err.Error(),
-			StartTime:      now,
-			EndTime:        &now,
-		}
-		_ = store.SaveQuery(qr)
-		return nil, awserrors.NewAWSError("InternalError",
-			"Query execution failed", 500)
-	}
-
-	endTime := time.Now().UTC()
+	// Save the query record with RUNNING status before returning.
 	qr := &cloudtrailstore.QueryRecord{
-		QueryID:         queryID,
-		EventDataStore:  eds.EventDataStoreID,
-		QueryStatement:  stmt,
-		QueryStatus:     "FINISHED",
-		QueryResultRows: results,
-		ResultsCount:    int32(len(results)),
-		BytesScanned:    int64(len(results) * 500),
-		StartTime:       now,
-		EndTime:         &endTime,
+		QueryID:        queryID,
+		EventDataStore: eds.EventDataStoreID,
+		QueryStatement: stmt,
+		QueryStatus:    "RUNNING",
+		StartTime:      now,
 	}
 
 	if err := store.SaveQuery(qr); err != nil {
 		return nil, s.mapStoreError(err)
 	}
+
+	// Execute the query asynchronously.
+	go func() {
+		results, execErr := s.executeQuery(store, pq)
+		endTime := time.Now().UTC()
+		qr.EndTime = &endTime
+		if execErr != nil {
+			qr.QueryStatus = "FAILED"
+			qr.ErrorMessage = execErr.Error()
+		} else {
+			qr.QueryStatus = "FINISHED"
+			qr.QueryResultRows = results
+			qr.ResultsCount = int32(len(results))
+			qr.BytesScanned = int64(len(results) * 500)
+		}
+		_ = store.SaveQuery(qr)
+	}()
 
 	return map[string]interface{}{
 		"QueryId": queryID,
@@ -354,9 +350,9 @@ func (s *CloudTrailService) CancelQuery(ctx context.Context, reqCtx *request.Req
 			"Query not found", 404)
 	}
 
-	if qr.QueryStatus == "FINISHED" || qr.QueryStatus == "FAILED" {
+	if qr.QueryStatus == "FINISHED" || qr.QueryStatus == "FAILED" || qr.QueryStatus == "CANCELLED" {
 		return nil, awserrors.NewAWSError("OperationNotPermittedException",
-			"Cannot cancel a query that has already finished", 400)
+			"Cannot cancel a query that has already finished or been cancelled", 400)
 	}
 
 	qr.QueryStatus = "CANCELLED"
@@ -401,28 +397,43 @@ func (s *CloudTrailService) ListQueries(ctx context.Context, reqCtx *request.Req
 	if maxResults <= 0 {
 		maxResults = 50
 	}
+	offset := 0
+	if nt := request.GetStringParam(req.Parameters, "NextToken"); nt != "" {
+		if n, err := strconv.Atoi(nt); err == nil && n > 0 {
+			offset = n
+		}
+	}
 
-	// L2: initialise with make to ensure JSON serialises as [] not null.
-	queryList := make([]map[string]interface{}, 0)
-	count := 0
+	// Filter queries by status.
+	var filtered []*cloudtrailstore.QueryRecord
 	for _, qr := range queries {
 		if statusFilter != "" && qr.QueryStatus != statusFilter {
 			continue
 		}
-		if count >= maxResults {
-			break
-		}
+		filtered = append(filtered, qr)
+	}
+
+	// Paginate the filtered results.
+	queryList := make([]map[string]interface{}, 0)
+	end := offset + maxResults
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	for i := offset; i < end; i++ {
+		qr := filtered[i]
 		queryList = append(queryList, map[string]interface{}{
 			"QueryId":        qr.QueryID,
 			"QueryStatus":    qr.QueryStatus,
 			"StartTime":      qr.StartTime.Unix(),
 			"EventDataStore": qr.EventDataStore,
 		})
-		count++
 	}
 
 	result := map[string]interface{}{
 		"Queries": queryList,
+	}
+	if end < len(filtered) {
+		result["NextToken"] = strconv.Itoa(end)
 	}
 
 	return result, nil

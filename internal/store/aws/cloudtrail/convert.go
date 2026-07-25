@@ -40,6 +40,7 @@ func TrailToProto(t *Trail) *pb.Trail {
 		HasCustomEventSelectors:    t.HasCustomEventSelectors,
 		HasInsightSelectors:        t.HasInsightSelectors,
 		EventSelectors:             eventSelectorsToProto(t.EventSelectors),
+		AdvancedEventSelectors:     trailAdvancedSelectorsToProto(t.AdvancedEventSelectors),
 		InsightSelectors:           insightSelectorsToProto(t.InsightSelectors),
 		CreatedAt:                  t.CreatedAt.UnixMilli(),
 		LastUpdated:                t.LastUpdated.UnixMilli(),
@@ -83,6 +84,7 @@ func ProtoToTrail(p *pb.Trail) *Trail {
 		HasCustomEventSelectors:    p.HasCustomEventSelectors,
 		HasInsightSelectors:        p.HasInsightSelectors,
 		EventSelectors:             protoToEventSelectors(p.EventSelectors),
+		AdvancedEventSelectors:     protoToTrailAdvancedSelectors(p.AdvancedEventSelectors),
 		InsightSelectors:           protoToInsightSelectors(p.InsightSelectors),
 		CreatedAt:                  time.UnixMilli(p.CreatedAt),
 		LastUpdated:                time.UnixMilli(p.LastUpdated),
@@ -160,6 +162,58 @@ func insightSelectorsToProto(selectors []InsightSelector) []*pb.InsightSelector 
 	for i, s := range selectors {
 		result[i] = &pb.InsightSelector{
 			InsightType: s.InsightType,
+		}
+	}
+	return result
+}
+
+func trailAdvancedSelectorsToProto(selectors []AdvancedEventSelector) []*pb.TrailAdvancedEventSelector {
+	if selectors == nil {
+		return nil
+	}
+	result := make([]*pb.TrailAdvancedEventSelector, len(selectors))
+	for i, s := range selectors {
+		fields := make([]*pb.TrailAdvancedFieldSelector, len(s.FieldSelectors))
+		for j, f := range s.FieldSelectors {
+			fields[j] = &pb.TrailAdvancedFieldSelector{
+				Field:         f.Field,
+				Equals:        f.Equals,
+				StartsWith:    f.StartsWith,
+				EndsWith:      f.EndsWith,
+				NotEquals:     f.NotEquals,
+				NotStartsWith: f.NotStartsWith,
+				NotEndsWith:   f.NotEndsWith,
+			}
+		}
+		result[i] = &pb.TrailAdvancedEventSelector{
+			Name:           s.Name,
+			FieldSelectors: fields,
+		}
+	}
+	return result
+}
+
+func protoToTrailAdvancedSelectors(selectors []*pb.TrailAdvancedEventSelector) []AdvancedEventSelector {
+	if selectors == nil {
+		return nil
+	}
+	result := make([]AdvancedEventSelector, len(selectors))
+	for i, s := range selectors {
+		fields := make([]AdvancedFieldSelector, len(s.FieldSelectors))
+		for j, f := range s.FieldSelectors {
+			fields[j] = AdvancedFieldSelector{
+				Field:         f.Field,
+				Equals:        f.Equals,
+				StartsWith:    f.StartsWith,
+				EndsWith:      f.EndsWith,
+				NotEquals:     f.NotEquals,
+				NotStartsWith: f.NotStartsWith,
+				NotEndsWith:   f.NotEndsWith,
+			}
+		}
+		result[i] = AdvancedEventSelector{
+			Name:           s.Name,
+			FieldSelectors: fields,
 		}
 	}
 	return result

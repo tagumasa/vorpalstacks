@@ -59,14 +59,11 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 			return err
 		}
 
-		resp, err := tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
+		_, err = tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
 			ResourceArn: createResp.TrailARN,
 		})
-		if err != nil {
-			return fmt.Errorf("get resource policy (no policy): %v", err)
-		}
-		if resp.ResourcePolicy != nil && *resp.ResourcePolicy != "" {
-			return fmt.Errorf("expected empty policy, got: %s", *resp.ResourcePolicy)
+		if err == nil {
+			return fmt.Errorf("expected ResourcePolicyNotFoundException for trail with no policy")
 		}
 		return nil
 	}))
@@ -103,10 +100,10 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 			ResourceArn: createResp.TrailARN,
 		})
 		if err != nil {
-			return fmt.Errorf("get after delete: %v", err)
+			return nil
 		}
 		if resp.ResourcePolicy != nil && *resp.ResourcePolicy != "" {
-			return fmt.Errorf("expected empty policy after delete")
+			return fmt.Errorf("expected empty policy after delete, got: %s", *resp.ResourcePolicy)
 		}
 		return nil
 	}))

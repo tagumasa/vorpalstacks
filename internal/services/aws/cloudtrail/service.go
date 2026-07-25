@@ -119,4 +119,11 @@ func (s *CloudTrailService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudtrail", "PutEventConfiguration", s.PutEventConfiguration)
 	d.RegisterHandlerForService("cloudtrail", "RegisterOrganizationDelegatedAdmin", s.RegisterOrganizationDelegatedAdmin)
 	d.RegisterHandlerForService("cloudtrail", "DeregisterOrganizationDelegatedAdmin", s.DeregisterOrganizationDelegatedAdmin)
+	d.RegisterHandlerForService("cloudtrail", "StartImport", s.StartImport)
+	d.RegisterHandlerForService("cloudtrail", "StopImport", s.StopImport)
+	d.RegisterHandlerForService("cloudtrail", "GetImport", s.GetImport)
+	d.RegisterHandlerForService("cloudtrail", "ListImports", s.ListImports)
+	d.RegisterHandlerForService("cloudtrail", "ListImportFailures", s.ListImportFailures)
+	d.RegisterHandlerForService("cloudtrail", "GenerateQuery", s.GenerateQuery)
+	d.RegisterHandlerForService("cloudtrail", "SearchSampleQueries", s.SearchSampleQueries)
 }
