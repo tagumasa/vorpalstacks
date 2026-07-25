@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
+	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // PutSubscriptionFilter creates or updates a subscription filter for the specified CloudWatch Logs log group.
@@ -24,13 +25,24 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		return nil, ErrMissingParameter
 	}
 
+	if !arn.IsLambdaARN(destinationArn) && !arn.IsKinesisARN(destinationArn) &&
+		!isFirehoseARN(destinationArn) {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid destinationArn: %s. Must be a Lambda, Kinesis, or Firehose ARN", destinationArn), 400)
+	}
+
 	if roleArn != "" {
-		if s.bus != nil {
-			if rr := s.bus.RoleResolver(); rr != nil {
-				if err := rr.ValidateRole(ctx, roleArn); err != nil {
-					return nil, awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", roleArn), 400)
-				}
-			}
+		if s.bus == nil {
+			return nil, NewLogsError("InvalidParameterException",
+				"RoleArn validation is not available (event bus not configured)", 400)
+		}
+		rr := s.bus.RoleResolver()
+		if rr == nil {
+			return nil, NewLogsError("InvalidParameterException",
+				"RoleArn validation is not available (role resolver not configured)", 400)
+		}
+		if err := rr.ValidateRole(ctx, roleArn); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", roleArn), 400)
 		}
 	}
 
@@ -53,21 +65,6 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		return nil, mapStoreError(err)
 	}
 
-	filters, err := store.ListSubscriptionFilters(logGroupName, "")
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	existingCount := 0
-	for _, f := range filters {
-		if f.FilterName != filterName {
-			existingCount++
-		}
-	}
-	if existingCount >= 2 {
-		return nil, ErrLimitExceeded
-	}
-
 	filter := &logsstore.SubscriptionFilter{
 		LogGroupName:   logGroupName,
 		FilterName:     filterName,
@@ -77,7 +74,7 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		Distribution:   distribution,
 	}
 
-	if err := store.PutSubscriptionFilter(filter); err != nil {
+	if err := store.PutSubscriptionFilterWithLimitCheck(filter, 2); err != nil {
 		return nil, mapStoreError(err)
 	}
 
@@ -157,4 +154,8 @@ func formatSubscriptionFilter(f *logsstore.SubscriptionFilter) map[string]interf
 		result["roleArn"] = f.RoleArn
 	}
 	return result
+}
+
+func isFirehoseARN(ar string) bool {
+	return arn.GetServiceFromARN(ar) == "firehose"
 }

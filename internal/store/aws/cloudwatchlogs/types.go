@@ -125,6 +125,112 @@ type Destination struct {
 	Tags         map[string]string `json:"tags,omitempty"`
 }
 
+// ResourcePolicy represents a CloudWatch Logs resource policy.
+type ResourcePolicy struct {
+	PolicyName      string `json:"policyName"`
+	PolicyDocument  string `json:"policyDocument"`
+	ResourceArn     string `json:"resourceArn,omitempty"`
+	PolicyScope     string `json:"policyScope,omitempty"`
+	RevisionId      string `json:"revisionId,omitempty"`
+	LastUpdatedTime int64  `json:"lastUpdatedTime"`
+}
+
+// AccountPolicy represents a CloudWatch Logs account-level policy.
+type AccountPolicy struct {
+	PolicyName        string `json:"policyName"`
+	PolicyDocument    string `json:"policyDocument"`
+	PolicyType        string `json:"policyType"`
+	Scope             string `json:"scope,omitempty"`
+	SelectionCriteria string `json:"selectionCriteria,omitempty"`
+	AccountId         string `json:"accountId,omitempty"`
+	LastUpdatedTime   int64  `json:"lastUpdatedTime"`
+}
+
+// DataProtectionPolicy represents a CloudWatch Logs data protection policy.
+type DataProtectionPolicy struct {
+	LogGroupIdentifier string `json:"logGroupIdentifier"`
+	PolicyDocument     string `json:"policyDocument"`
+	LastUpdatedTime    int64  `json:"lastUpdatedTime"`
+}
+
+// QueryDefinition represents a saved CloudWatch Logs Insights query definition.
+type QueryDefinition struct {
+	QueryDefinitionId string                 `json:"queryDefinitionId"`
+	Name              string                 `json:"name"`
+	QueryString       string                 `json:"queryString"`
+	LogGroupNames     []string               `json:"logGroupNames,omitempty"`
+	QueryLanguage     string                 `json:"queryLanguage,omitempty"`
+	Parameters        map[string]interface{} `json:"parameters,omitempty"`
+	LastModified      int64                  `json:"lastModified"`
+}
+
+// ExportTask represents a CloudWatch Logs export-to-S3 task.
+type ExportTask struct {
+	TaskId              string                 `json:"taskId"`
+	TaskName            string                 `json:"taskName"`
+	LogGroupName        string                 `json:"logGroupName"`
+	LogStreamNamePrefix string                 `json:"logStreamNamePrefix,omitempty"`
+	From                int64                  `json:"from"`
+	To                  int64                  `json:"to"`
+	Destination         string                 `json:"destination"`
+	DestinationPrefix   string                 `json:"destinationPrefix,omitempty"`
+	Status              string                 `json:"status"`
+	StatusMessage       string                 `json:"statusMessage,omitempty"`
+	ExecutionInfo       map[string]interface{} `json:"executionInfo,omitempty"`
+	CreationTime        int64                  `json:"creationTime"`
+}
+
+// ImportTask represents a CloudWatch Logs import-from-S3 task.
+type ImportTask struct {
+	ImportId             string                 `json:"importId"`
+	ImportSourceArn      string                 `json:"importSourceArn"`
+	ImportRoleArn        string                 `json:"importRoleArn,omitempty"`
+	LogGroupName         string                 `json:"logGroupName"`
+	ImportStatus         string                 `json:"importStatus"`
+	ImportDestinationArn string                 `json:"importDestinationArn,omitempty"`
+	ImportStatistics     map[string]interface{} `json:"importStatistics,omitempty"`
+	ImportFilter         map[string]interface{} `json:"importFilter,omitempty"`
+	ErrorMessage         string                 `json:"errorMessage,omitempty"`
+	CreationTime         int64                  `json:"creationTime"`
+	LastUpdatedTime      int64                  `json:"lastUpdatedTime"`
+}
+
+// ScheduledQuery represents a scheduled CloudWatch Logs Insights query.
+type ScheduledQuery struct {
+	Id                       string                 `json:"id"`
+	Name                     string                 `json:"name"`
+	Description              string                 `json:"description,omitempty"`
+	QueryString              string                 `json:"queryString"`
+	QueryLanguage            string                 `json:"queryLanguage,omitempty"`
+	LogGroupIdentifiers      []string               `json:"logGroupIdentifiers,omitempty"`
+	ScheduleExpression       string                 `json:"scheduleExpression"`
+	ScheduleType             string                 `json:"scheduleType,omitempty"`
+	State                    string                 `json:"state"`
+	ExecutionRoleArn         string                 `json:"executionRoleArn,omitempty"`
+	Timezone                 string                 `json:"timezone,omitempty"`
+	StartTimeOffset          int64                  `json:"startTimeOffset,omitempty"`
+	EndTimeOffset            int64                  `json:"endTimeOffset,omitempty"`
+	ScheduleStartTime        int64                  `json:"scheduleStartTime,omitempty"`
+	ScheduleEndTime          int64                  `json:"scheduleEndTime,omitempty"`
+	DestinationConfiguration map[string]interface{} `json:"destinationConfiguration,omitempty"`
+	LastExecutionStatus      map[string]interface{} `json:"lastExecutionStatus,omitempty"`
+	CreationTime             int64                  `json:"creationTime"`
+	LastUpdatedTime          int64                  `json:"lastUpdatedTime"`
+	LastTriggeredTime        int64                  `json:"lastTriggeredTime,omitempty"`
+	Tags                     map[string]string      `json:"tags,omitempty"`
+}
+
+// ScheduledQueryExecution represents a single execution of a scheduled query.
+type ScheduledQueryExecution struct {
+	ScheduledQueryId string `json:"scheduledQueryId"`
+	QueryId          string `json:"queryId"`
+	TriggerTime      int64  `json:"triggerTime"`
+	Status           string `json:"status"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
+	RecordsScanned   int64  `json:"recordsScanned"`
+	RecordsMatched   int64  `json:"recordsMatched"`
+}
+
 // NewLogGroup creates a new CloudWatch Logs log group.
 func NewLogGroup(name, region, accountID string) *LogGroup {
 	return &LogGroup{

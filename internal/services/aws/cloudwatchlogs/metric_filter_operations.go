@@ -30,12 +30,17 @@ func (s *LogsService) PutMetricFilter(ctx context.Context, reqCtx *request.Reque
 		if metricName == "" && metricNamespace == "" {
 			break
 		}
-		transformations = append(transformations, logsstore.MetricTransformation{
+		t := logsstore.MetricTransformation{
 			MetricName:      metricName,
 			MetricNamespace: metricNamespace,
 			MetricValue:     request.GetParamLowerFirst(req.Parameters, "MetricTransformations."+strconv.Itoa(i)+".MetricValue"),
-			DefaultValue:    request.GetFloatParam(req.Parameters, "MetricTransformations."+strconv.Itoa(i)+".DefaultValue"),
-		})
+		}
+		dvKey := "MetricTransformations." + strconv.Itoa(i) + ".DefaultValue"
+		if dvStr := request.GetParamLowerFirst(req.Parameters, dvKey); dvStr != "" {
+			t.DefaultValue = request.GetFloatParam(req.Parameters, dvKey)
+			t.DefaultValueSet = true
+		}
+		transformations = append(transformations, t)
 	}
 
 	if len(transformations) == 0 {
@@ -199,7 +204,7 @@ func (s *LogsService) TestMetricFilter(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	if len(logEventMessages) > 10 {
+	if len(logEventMessages) > 50 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -207,11 +212,16 @@ func (s *LogsService) TestMetricFilter(ctx context.Context, reqCtx *request.Requ
 	var matches []map[string]interface{}
 	eventNumber := 1
 	for _, msg := range logEventMessages {
-		if matcher.Matches(filterPattern, msg) {
+		matched, extracted := matcher.ExtractMatches(filterPattern, msg)
+		if matched {
+			evMap := make(map[string]interface{}, len(extracted))
+			for k, v := range extracted {
+				evMap[k] = v
+			}
 			matches = append(matches, map[string]interface{}{
 				"eventMessage":    msg,
 				"eventNumber":     int64(eventNumber),
-				"extractedValues": map[string]interface{}{},
+				"extractedValues": evMap,
 			})
 			eventNumber++
 		}

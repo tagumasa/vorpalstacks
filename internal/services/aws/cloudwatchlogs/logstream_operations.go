@@ -504,6 +504,8 @@ func parseLogEventsFromMap(req *request.ParsedRequest) []logsstore.LogEntry {
 // emits CloudWatch metrics for matched log entries.
 func (s *LogsService) evaluateMetricFilters(store *logsstore.Store, region, logGroupName string, events []logsstore.LogEntry) {
 	if s.cwMetricInvoker == nil {
+		logs.Warn("cwMetricInvoker is nil, skipping metric filter evaluation",
+			logs.String("logGroup", logGroupName))
 		return
 	}
 

@@ -3,6 +3,7 @@ package cloudwatchlogs
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,6 +37,7 @@ type Store struct {
 	chunkMutex   sync.Mutex
 	activeChunks map[string]*activeChunk
 	chunkCounter uint64
+	subFilterMu  sync.Mutex
 }
 
 type activeChunk struct {
@@ -141,7 +143,7 @@ func (s *Store) DeleteLogGroup(name string) error {
 	}
 	arn := s.arnBuilder.CloudWatch().LogGroup(name)
 	if err := s.tagStore.Delete(arn); err != nil {
-		logs.Error("Failed to delete tags for log group", logs.String("name", name), logs.Err(err))
+		return fmt.Errorf("failed to delete tags for log group %s: %w", name, err)
 	}
 	key := s.logGroupKey(name)
 	return s.Delete(key)
@@ -950,6 +952,36 @@ func (s *Store) PutSubscriptionFilter(filter *SubscriptionFilter) error {
 	return s.PutProto(key, SubscriptionFilterToProto(filter))
 }
 
+// PutSubscriptionFilterWithLimitCheck atomically checks the per-log-group
+// subscription filter limit (max 2 distinct filter names) and creates or
+// updates the filter. This prevents race conditions where concurrent
+// PutSubscriptionFilter calls could exceed the limit.
+func (s *Store) PutSubscriptionFilterWithLimitCheck(filter *SubscriptionFilter, maxPerGroup int) error {
+	s.subFilterMu.Lock()
+	defer s.subFilterMu.Unlock()
+
+	filters, err := s.ListSubscriptionFilters(filter.LogGroupName, "")
+	if err != nil {
+		return err
+	}
+
+	existingCount := 0
+	isUpdate := false
+	for _, f := range filters {
+		if f.FilterName == filter.FilterName {
+			isUpdate = true
+			continue
+		}
+		existingCount++
+	}
+
+	if !isUpdate && existingCount >= maxPerGroup {
+		return ErrLimitExceeded
+	}
+
+	return s.PutSubscriptionFilter(filter)
+}
+
 // DeleteSubscriptionFilter deletes a subscription filter.
 func (s *Store) DeleteSubscriptionFilter(logGroupName, filterName string) error {
 	key := s.subscriptionFilterKey(logGroupName, filterName)
@@ -1140,4 +1172,309 @@ func (s *Store) PurgeAllExpiredChunks() error {
 	}
 
 	return nil
+}
+
+// --- Resource Policy ---
+
+func (s *Store) resourcePolicyKey(policyName string) string {
+	return "resource-policy:" + policyName
+}
+
+func (s *Store) PutResourcePolicy(policy *ResourcePolicy) error {
+	policy.LastUpdatedTime = time.Now().UTC().UnixMilli()
+	return s.Put(s.resourcePolicyKey(policy.PolicyName), policy)
+}
+
+func (s *Store) GetResourcePolicy(policyName string) (*ResourcePolicy, error) {
+	var p ResourcePolicy
+	if err := s.Get(s.resourcePolicyKey(policyName), &p); err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return &p, nil
+}
+
+func (s *Store) DeleteResourcePolicy(policyName string) error {
+	if !s.Exists(s.resourcePolicyKey(policyName)) {
+		return ErrResourceNotFound
+	}
+	return s.Delete(s.resourcePolicyKey(policyName))
+}
+
+func (s *Store) ListResourcePolicies(resourceArn string) ([]*ResourcePolicy, error) {
+	var policies []*ResourcePolicy
+	if err := s.ScanPrefix("resource-policy:", func(key string, value []byte) error {
+		var p ResourcePolicy
+		if err := json.Unmarshal(value, &p); err != nil {
+			return nil
+		}
+		if resourceArn == "" || p.ResourceArn == resourceArn {
+			policies = append(policies, &p)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return policies, nil
+}
+
+// --- Account Policy ---
+
+func (s *Store) accountPolicyKey(policyType, policyName string) string {
+	return "account-policy:" + policyType + ":" + policyName
+}
+
+func (s *Store) PutAccountPolicy(policy *AccountPolicy) error {
+	policy.LastUpdatedTime = time.Now().UTC().UnixMilli()
+	return s.Put(s.accountPolicyKey(policy.PolicyType, policy.PolicyName), policy)
+}
+
+func (s *Store) DeleteAccountPolicyEntry(policyType, policyName string) error {
+	key := s.accountPolicyKey(policyType, policyName)
+	if !s.Exists(key) {
+		return ErrResourceNotFound
+	}
+	return s.Delete(key)
+}
+
+func (s *Store) ListAccountPolicies(policyType, policyName string) ([]*AccountPolicy, error) {
+	var policies []*AccountPolicy
+	scanPrefix := "account-policy:"
+	if policyType != "" {
+		scanPrefix = "account-policy:" + policyType + ":"
+	}
+	if err := s.ScanPrefix(scanPrefix, func(key string, value []byte) error {
+		var p AccountPolicy
+		if err := json.Unmarshal(value, &p); err != nil {
+			return nil
+		}
+		if policyName != "" && p.PolicyName != policyName {
+			return nil
+		}
+		policies = append(policies, &p)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return policies, nil
+}
+
+// --- Data Protection Policy ---
+
+func (s *Store) dataProtectionPolicyKey(logGroupIdentifier string) string {
+	return "data-protection-policy:" + escapePath(logGroupIdentifier)
+}
+
+func (s *Store) PutDataProtectionPolicy(policy *DataProtectionPolicy) error {
+	policy.LastUpdatedTime = time.Now().UTC().UnixMilli()
+	return s.Put(s.dataProtectionPolicyKey(policy.LogGroupIdentifier), policy)
+}
+
+func (s *Store) GetDataProtectionPolicy(logGroupIdentifier string) (*DataProtectionPolicy, error) {
+	var p DataProtectionPolicy
+	if err := s.Get(s.dataProtectionPolicyKey(logGroupIdentifier), &p); err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return &p, nil
+}
+
+func (s *Store) DeleteDataProtectionPolicy(logGroupIdentifier string) error {
+	key := s.dataProtectionPolicyKey(logGroupIdentifier)
+	if !s.Exists(key) {
+		return ErrResourceNotFound
+	}
+	return s.Delete(key)
+}
+
+// --- Query Definition ---
+
+func (s *Store) queryDefinitionKey(id string) string {
+	return "query-definition:" + id
+}
+
+func (s *Store) PutQueryDefinitionEntry(qd *QueryDefinition) error {
+	qd.LastModified = time.Now().UTC().UnixMilli()
+	return s.Put(s.queryDefinitionKey(qd.QueryDefinitionId), qd)
+}
+
+func (s *Store) DeleteQueryDefinitionEntry(id string) error {
+	key := s.queryDefinitionKey(id)
+	if !s.Exists(key) {
+		return ErrResourceNotFound
+	}
+	return s.Delete(key)
+}
+
+func (s *Store) ListQueryDefinitions(namePrefix string) ([]*QueryDefinition, error) {
+	var defs []*QueryDefinition
+	if err := s.ScanPrefix("query-definition:", func(key string, value []byte) error {
+		var qd QueryDefinition
+		if err := json.Unmarshal(value, &qd); err != nil {
+			return nil
+		}
+		if namePrefix == "" || strings.HasPrefix(qd.Name, namePrefix) {
+			defs = append(defs, &qd)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return defs, nil
+}
+
+// --- Export Task ---
+
+func (s *Store) exportTaskKey(taskId string) string {
+	return "export-task:" + taskId
+}
+
+func (s *Store) PutExportTask(task *ExportTask) error {
+	return s.Put(s.exportTaskKey(task.TaskId), task)
+}
+
+func (s *Store) GetExportTask(taskId string) (*ExportTask, error) {
+	var t ExportTask
+	if err := s.Get(s.exportTaskKey(taskId), &t); err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return &t, nil
+}
+
+func (s *Store) DeleteExportTask(taskId string) error {
+	return s.Delete(s.exportTaskKey(taskId))
+}
+
+func (s *Store) ListExportTasks(statusCode string) ([]*ExportTask, error) {
+	var tasks []*ExportTask
+	if err := s.ScanPrefix("export-task:", func(key string, value []byte) error {
+		var t ExportTask
+		if err := json.Unmarshal(value, &t); err != nil {
+			return nil
+		}
+		if statusCode == "" || t.Status == statusCode {
+			tasks = append(tasks, &t)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+// --- Import Task ---
+
+func (s *Store) importTaskKey(importId string) string {
+	return "import-task:" + importId
+}
+
+func (s *Store) PutImportTask(task *ImportTask) error {
+	task.LastUpdatedTime = time.Now().UTC().UnixMilli()
+	return s.Put(s.importTaskKey(task.ImportId), task)
+}
+
+func (s *Store) GetImportTask(importId string) (*ImportTask, error) {
+	var t ImportTask
+	if err := s.Get(s.importTaskKey(importId), &t); err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return &t, nil
+}
+
+func (s *Store) ListImportTasks(importId, status, sourceArn string) ([]*ImportTask, error) {
+	var tasks []*ImportTask
+	if err := s.ScanPrefix("import-task:", func(key string, value []byte) error {
+		var t ImportTask
+		if err := json.Unmarshal(value, &t); err != nil {
+			return nil
+		}
+		if importId != "" && t.ImportId != importId {
+			return nil
+		}
+		if status != "" && t.ImportStatus != status {
+			return nil
+		}
+		if sourceArn != "" && t.ImportSourceArn != sourceArn {
+			return nil
+		}
+		tasks = append(tasks, &t)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+// --- Scheduled Query ---
+
+func (s *Store) scheduledQueryKey(id string) string {
+	return "scheduled-query:" + id
+}
+
+func (s *Store) PutScheduledQuery(sq *ScheduledQuery) error {
+	sq.LastUpdatedTime = time.Now().UTC().UnixMilli()
+	return s.Put(s.scheduledQueryKey(sq.Id), sq)
+}
+
+func (s *Store) GetScheduledQuery(id string) (*ScheduledQuery, error) {
+	var sq ScheduledQuery
+	if err := s.Get(s.scheduledQueryKey(id), &sq); err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return &sq, nil
+}
+
+func (s *Store) DeleteScheduledQuery(id string) error {
+	key := s.scheduledQueryKey(id)
+	if !s.Exists(key) {
+		return ErrResourceNotFound
+	}
+	return s.Delete(key)
+}
+
+func (s *Store) ListScheduledQueries(state string) ([]*ScheduledQuery, error) {
+	var queries []*ScheduledQuery
+	if err := s.ScanPrefix("scheduled-query:", func(key string, value []byte) error {
+		var sq ScheduledQuery
+		if err := json.Unmarshal(value, &sq); err != nil {
+			return nil
+		}
+		if state == "" || sq.State == state {
+			queries = append(queries, &sq)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return queries, nil
+}
+
+// --- Scheduled Query Execution History ---
+
+func (s *Store) scheduledQueryExecutionKey(sqId string, triggerTime int64) string {
+	return "sq-execution:" + sqId + ":" + strconv.FormatInt(triggerTime, 10)
+}
+
+func (s *Store) PutScheduledQueryExecution(exec *ScheduledQueryExecution) error {
+	return s.Put(s.scheduledQueryExecutionKey(exec.ScheduledQueryId, exec.TriggerTime), exec)
+}
+
+func (s *Store) ListScheduledQueryExecutions(sqId string, startTime, endTime int64) ([]*ScheduledQueryExecution, error) {
+	var execs []*ScheduledQueryExecution
+	prefix := "sq-execution:" + sqId + ":"
+	if err := s.ScanPrefix(prefix, func(key string, value []byte) error {
+		var exec ScheduledQueryExecution
+		if err := json.Unmarshal(value, &exec); err != nil {
+			return nil
+		}
+		if startTime > 0 && exec.TriggerTime < startTime {
+			return nil
+		}
+		if endTime > 0 && exec.TriggerTime > endTime {
+			return nil
+		}
+		execs = append(execs, &exec)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return execs, nil
 }

@@ -78,13 +78,6 @@ func TestLogsError(t *testing.T) {
 			wantMsg:      "Operation aborted",
 			wantHTTPCode: http.StatusBadRequest,
 		},
-		{
-			name:         "ErrServiceUnavailable",
-			err:          ErrServiceUnavailable,
-			wantCode:     "ServiceUnavailableException",
-			wantMsg:      "Service unavailable",
-			wantHTTPCode: http.StatusServiceUnavailable,
-		},
 	}
 
 	for _, tt := range tests {

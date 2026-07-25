@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -28,6 +27,7 @@ type LogsService struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	wg              sync.WaitGroup
+	queries         sync.Map // queryId → *queryState (per-service, not global)
 }
 
 // NewLogsService creates a new CloudWatch Logs service.
@@ -43,6 +43,7 @@ func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPat
 		cancel:         cancel,
 	}
 	s.startRetentionPurger()
+	s.startScheduledQueryWorker()
 	return s
 }
 
@@ -138,13 +139,65 @@ func (s *LogsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("logs", "PutDestinationPolicy", s.PutDestinationPolicy)
 	d.RegisterHandlerForService("logs", "DeleteDestination", s.DeleteDestination)
 	d.RegisterHandlerForService("logs", "DescribeDestinations", s.DescribeDestinations)
+
+	d.RegisterHandlerForService("logs", "AssociateKmsKey", s.AssociateKmsKey)
+	d.RegisterHandlerForService("logs", "DisassociateKmsKey", s.DisassociateKmsKey)
+	d.RegisterHandlerForService("logs", "PutLogGroupDeletionProtection", s.PutLogGroupDeletionProtection)
+
+	d.RegisterHandlerForService("logs", "PutResourcePolicy", s.PutResourcePolicy)
+	d.RegisterHandlerForService("logs", "DeleteResourcePolicy", s.DeleteResourcePolicy)
+	d.RegisterHandlerForService("logs", "DescribeResourcePolicies", s.DescribeResourcePolicies)
+
+	d.RegisterHandlerForService("logs", "PutAccountPolicy", s.PutAccountPolicy)
+	d.RegisterHandlerForService("logs", "DeleteAccountPolicy", s.DeleteAccountPolicy)
+	d.RegisterHandlerForService("logs", "DescribeAccountPolicies", s.DescribeAccountPolicies)
+
+	d.RegisterHandlerForService("logs", "PutDataProtectionPolicy", s.PutDataProtectionPolicy)
+	d.RegisterHandlerForService("logs", "GetDataProtectionPolicy", s.GetDataProtectionPolicy)
+	d.RegisterHandlerForService("logs", "DeleteDataProtectionPolicy", s.DeleteDataProtectionPolicy)
+
+	d.RegisterHandlerForService("logs", "PutQueryDefinition", s.PutQueryDefinition)
+	d.RegisterHandlerForService("logs", "DeleteQueryDefinition", s.DeleteQueryDefinition)
+	d.RegisterHandlerForService("logs", "DescribeQueryDefinitions", s.DescribeQueryDefinitions)
+
+	d.RegisterHandlerForService("logs", "GetLogGroupFields", s.GetLogGroupFields)
+	d.RegisterHandlerForService("logs", "GetLogRecord", s.GetLogRecord)
+	d.RegisterHandlerForService("logs", "GetLogObject", s.GetLogObject)
+	d.RegisterHandlerForService("logs", "GetLogFields", s.GetLogFields)
+
+	d.RegisterHandlerForService("logs", "CreateExportTask", s.CreateExportTask)
+	d.RegisterHandlerForService("logs", "DescribeExportTasks", s.DescribeExportTasks)
+	d.RegisterHandlerForService("logs", "CancelExportTask", s.CancelExportTask)
+
+	d.RegisterHandlerForService("logs", "CreateImportTask", s.CreateImportTask)
+	d.RegisterHandlerForService("logs", "DescribeImportTasks", s.DescribeImportTasks)
+	d.RegisterHandlerForService("logs", "CancelImportTask", s.CancelImportTask)
+	d.RegisterHandlerForService("logs", "DescribeImportTaskBatches", s.DescribeImportTaskBatches)
+
+	d.RegisterHandlerForService("logs", "StartQuery", s.StartQuery)
+	d.RegisterHandlerForService("logs", "StopQuery", s.StopQuery)
+	d.RegisterHandlerForService("logs", "DescribeQueries", s.DescribeQueries)
+	d.RegisterHandlerForService("logs", "GetQueryResults", s.GetQueryResults)
+
+	d.RegisterHandlerForService("logs", "CreateScheduledQuery", s.CreateScheduledQuery)
+	d.RegisterHandlerForService("logs", "DeleteScheduledQuery", s.DeleteScheduledQuery)
+	d.RegisterHandlerForService("logs", "UpdateScheduledQuery", s.UpdateScheduledQuery)
+	d.RegisterHandlerForService("logs", "GetScheduledQuery", s.GetScheduledQuery)
+	d.RegisterHandlerForService("logs", "GetScheduledQueryHistory", s.GetScheduledQueryHistory)
+	d.RegisterHandlerForService("logs", "ListScheduledQueries", s.ListScheduledQueries)
 }
 
 func (s *LogsService) startRetentionPurger() {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		defer func() { resilience.RecoverAndRestart("retention purger", &s.wg, s.startRetentionPurger) }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("PANIC in retention purger, restarting",
+					logs.Any("panic", r))
+				go s.startRetentionPurger()
+			}
+		}()
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 

@@ -721,3 +721,43 @@ func stripQuotes(s string) string {
 func Matches(pattern, message string) bool {
 	return NewMatcher().Matches(pattern, message)
 }
+
+// jsonPathRe matches CloudWatch Logs JSON path references like $.field or $.nested.field or $['key']
+var jsonPathRe = regexp.MustCompile(`\$\.([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*(?:\[\d+\])*)`)
+
+// ExtractMatches tests whether the message matches the filter pattern and, for
+// JSON patterns, extracts the values of fields referenced in the pattern.
+// For unstructured and delimited patterns, returns an empty extractedValues map.
+func (m *Matcher) ExtractMatches(pattern, message string) (bool, map[string]string) {
+	pattern = strings.TrimSpace(pattern)
+	matched := m.Matches(pattern, message)
+
+	extracted := make(map[string]string)
+	if !matched {
+		return false, extracted
+	}
+
+	pt := DetectPatternType(pattern)
+	if pt != PatternTypeJSON {
+		return matched, extracted
+	}
+
+	var data map[string]any
+	if err := json.Unmarshal([]byte(message), &data); err != nil {
+		return matched, extracted
+	}
+
+	rawPaths := jsonPathRe.FindAllString(pattern, -1)
+	seen := make(map[string]bool)
+	for _, p := range rawPaths {
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		if val, exists := getJSONValue(data, p); exists {
+			extracted[p] = fmt.Sprintf("%v", val)
+		}
+	}
+
+	return matched, extracted
+}

@@ -33,8 +33,6 @@ var (
 	ErrLimitExceeded = NewLogsError("LimitExceededException", "Limit exceeded", http.StatusTooManyRequests)
 	// ErrOperationAborted is returned when an operation is aborted.
 	ErrOperationAborted = NewLogsError("OperationAbortedException", "Operation aborted", http.StatusBadRequest)
-	// ErrServiceUnavailable is returned when the service is unavailable.
-	ErrServiceUnavailable = NewLogsError("ServiceUnavailableException", "Service unavailable", http.StatusServiceUnavailable)
 	// ErrDestinationNotFound is returned when a destination is not found.
 	ErrDestinationNotFound = NewLogsError("ResourceNotFoundException", "Destination not found", http.StatusNotFound)
 	// ErrDestinationAlreadyExists is returned when a destination already exists.

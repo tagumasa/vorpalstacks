@@ -8,7 +8,9 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
+	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -28,14 +30,21 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 		lg.LogGroupClass = "STANDARD"
 	}
 
-	if lg.LogGroupClass != "STANDARD" && lg.LogGroupClass != "INFREQUENT_ACCESS" {
+	if lg.LogGroupClass != "STANDARD" && lg.LogGroupClass != "INFREQUENT_ACCESS" && lg.LogGroupClass != "DELIVERY" {
 		return nil, NewLogsError("InvalidParameterException",
-			fmt.Sprintf("Invalid log group class: %s. Valid values: STANDARD, INFREQUENT_ACCESS", lg.LogGroupClass), 400)
+			fmt.Sprintf("Invalid log group class: %s. Valid values: STANDARD, INFREQUENT_ACCESS, DELIVERY", lg.LogGroupClass), 400)
 	}
 
-	if lg.KmsKeyId != "" && !strings.HasPrefix(lg.KmsKeyId, "arn:aws:kms:") {
-		return nil, NewLogsError("InvalidParameterException",
-			"kmsKeyId must be a valid KMS key ARN", 400)
+	if lg.KmsKeyId != "" {
+		parsed, err := arn.ParseARN(lg.KmsKeyId)
+		if err != nil || parsed.Service != "kms" {
+			return nil, NewLogsError("InvalidParameterException",
+				"kmsKeyId must be a valid KMS key ARN", 400)
+		}
+		if !strings.HasPrefix(parsed.Resource, "key/") && !strings.HasPrefix(parsed.Resource, "alias/") {
+			return nil, NewLogsError("InvalidParameterException",
+				"kmsKeyId resource must be a key UUID (key/...) or alias (alias/...)", 400)
+		}
 	}
 
 	lg.DeletionProtectionEnabled = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
@@ -51,6 +60,10 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 
 	if len(tags) > 0 {
 		if err := store.Tags().Tag(lg.ARN, tags); err != nil {
+			if delErr := store.DeleteLogGroup(lg.Name); delErr != nil {
+				logs.Error("Failed to rollback log group after tag failure",
+					logs.String("logGroup", lg.Name), logs.Err(delErr))
+			}
 			return nil, mapStoreError(err)
 		}
 	}
