@@ -833,13 +833,52 @@ func (s *MetricChunkStore) ListMetrics(namespace, metricName string, dimensions 
 	return metrics, nil
 }
 
+// metricRecentlyActive checks whether the given metric has at least one
+// data chunk in the last 3 hours (PT3H).
+func (s *MetricChunkStore) metricRecentlyActive(m MetricDatum) bool {
+	safeNS := strings.ReplaceAll(m.Namespace, "/", "_")
+	safeMetric := strings.ReplaceAll(m.MetricName, "/", "_")
+	metricDir := fmt.Sprintf("%s/%s/cw_metric_chunks/%s/%s", s.dataPath, s.region, safeNS, safeMetric)
+	entries, err := os.ReadDir(metricDir)
+	if err != nil {
+		return false
+	}
+	cutoff := time.Now().UTC().Add(-3 * time.Hour)
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		// Chunk file names use format "2006-01-02-15.chunk".
+		name := strings.TrimSuffix(e.Name(), ".chunk")
+		ts, err := time.ParseInLocation("2006-01-02-15", name, time.UTC)
+		if err != nil {
+			continue
+		}
+		if ts.After(cutoff) {
+			return true
+		}
+	}
+	return false
+}
+
 // ListMetricsPaginated returns a paginated list of metrics matching the specified criteria.
 // Since metrics are stored in filesystem chunks (not Pebble), pagination is applied
-// after collecting and deduplicating unique metrics.
-func (s *MetricChunkStore) ListMetricsPaginated(namespace, metricName string, dimensions []Dimension, marker string, maxItems int) ([]MetricDatum, string, bool, error) {
+// after collecting and deduplicating unique metrics. When recentlyActive is true,
+// only metrics with data points in the last 3 hours are returned.
+func (s *MetricChunkStore) ListMetricsPaginated(namespace, metricName string, dimensions []Dimension, marker string, maxItems int, recentlyActive bool) ([]MetricDatum, string, bool, error) {
 	allMetrics, err := s.ListMetrics(namespace, metricName, dimensions)
 	if err != nil {
 		return nil, "", false, err
+	}
+
+	if recentlyActive {
+		filtered := allMetrics[:0]
+		for _, m := range allMetrics {
+			if s.metricRecentlyActive(m) {
+				filtered = append(filtered, m)
+			}
+		}
+		allMetrics = filtered
 	}
 
 	type metricWithKey struct {

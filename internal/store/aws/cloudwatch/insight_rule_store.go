@@ -128,6 +128,17 @@ func (s *InsightRuleStore) ListInsightRules(managedOnly bool) ([]*InsightRule, e
 	return rules, nil
 }
 
+// ListInsightRulesPaginated returns a paginated list of insight rules,
+// optionally filtered by managed status.
+func (s *InsightRuleStore) ListInsightRulesPaginated(managedOnly bool, opts common.ListOptions) (*common.ListResult[InsightRule], error) {
+	opts.Prefix = "insight_rule:"
+	var filter func(*InsightRule) bool
+	if managedOnly {
+		filter = func(r *InsightRule) bool { return r.ManagedRule }
+	}
+	return common.List[InsightRule](s.BaseStore, opts, filter)
+}
+
 // GetInsightRule returns a rule by name.
 func (s *InsightRuleStore) GetInsightRule(name string) (*InsightRule, error) {
 	var rule InsightRule

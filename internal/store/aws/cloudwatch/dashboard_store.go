@@ -38,8 +38,8 @@ func (s *DashboardStore) buildDashboardArn(name string) string {
 	return s.arnBuilder.Build("cloudwatch", "dashboard:"+name)
 }
 
-// PutDashboard creates or updates a CloudWatch dashboard with the given name and body.
-func (s *DashboardStore) PutDashboard(name, body string) (*Dashboard, error) {
+// PutDashboard creates or updates a CloudWatch dashboard with the given name, body, and tags.
+func (s *DashboardStore) PutDashboard(name, body string, tags map[string]string) (*Dashboard, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -48,6 +48,8 @@ func (s *DashboardStore) PutDashboard(name, body string) (*Dashboard, error) {
 
 	existing := &Dashboard{}
 	if err := s.BaseStore.Get(key, existing); err == nil {
+		// Smithy PutDashboardInput.Tags: "If you specify Tags when
+		// updating an existing dashboard, the tag updates are ignored."
 		existing.Body = body
 		existing.UpdatedAt = now
 		if err := s.BaseStore.Put(key, existing); err != nil {
@@ -62,6 +64,7 @@ func (s *DashboardStore) PutDashboard(name, body string) (*Dashboard, error) {
 		Body:      body,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Tags:      tags,
 	}
 	if err := s.BaseStore.Put(key, dashboard); err != nil {
 		return nil, err

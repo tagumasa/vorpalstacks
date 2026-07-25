@@ -632,7 +632,7 @@ func (a *cloudWatchAlarmInvokerAdapter) SetAlarmState(region, alarmName, stateVa
 	if err != nil {
 		return err
 	}
-	return store.SetAlarmState(alarmName, stateValue, stateReason)
+	return store.SetAlarmState(alarmName, stateValue, stateReason, "")
 }
 
 type timestreamInvokerAdapter struct {

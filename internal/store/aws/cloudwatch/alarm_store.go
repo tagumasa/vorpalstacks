@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 	"vorpalstacks/internal/core/storage"
@@ -158,7 +159,7 @@ func (s *AlarmStore) ListAlarmsPaginated(alarmNamePrefix string, opts common.Lis
 }
 
 // SetAlarmState updates the state of a CloudWatch alarm.
-func (s *AlarmStore) SetAlarmState(name, state, reason string) error {
+func (s *AlarmStore) SetAlarmState(name, state, reason, reasonData string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -169,6 +170,7 @@ func (s *AlarmStore) SetAlarmState(name, state, reason string) error {
 
 	alarm.State = state
 	alarm.StateReason = reason
+	alarm.StateReasonData = reasonData
 	alarm.StateUpdatedTimestamp = time.Now().UTC()
 
 	key := s.buildAlarmKey(alarm.Name)
@@ -242,15 +244,87 @@ func (s *AlarmStore) ListAlarmHistory(alarmName string, historyItemType string) 
 }
 
 // ListAlarmHistoryPaginated returns a paginated list of alarm history entries.
-func (s *AlarmStore) ListAlarmHistoryPaginated(alarmName, historyItemType string, opts common.ListOptions) (*common.ListResult[AlarmHistoryEntry], error) {
-	opts.Prefix = alarmHistoryPrefix(alarmName)
+// ListAlarmHistoryOpts holds all filter and pagination options for
+// listing alarm history entries.
+type ListAlarmHistoryOpts struct {
+	AlarmName       string
+	HistoryItemType string
+	AlarmTypes      map[string]bool
+	StartDate       int64 // UnixMilli; 0 = no filter
+	EndDate         int64 // UnixMilli; 0 = no filter
+	ScanBy          string
+	ListOpts        common.ListOptions
+}
+
+func (s *AlarmStore) ListAlarmHistoryPaginated(opts ListAlarmHistoryOpts) (*common.ListResult[AlarmHistoryEntry], error) {
+	prefix := alarmHistoryPrefix(opts.AlarmName)
+
+	// Build the combined filter for HistoryItemType, AlarmTypes,
+	// StartDate and EndDate — applied during iteration so that
+	// pagination counts only matching entries.
 	var filter func(*AlarmHistoryEntry) bool
-	if historyItemType != "" {
+	if opts.HistoryItemType != "" || len(opts.AlarmTypes) > 0 || opts.StartDate > 0 || opts.EndDate > 0 {
 		filter = func(e *AlarmHistoryEntry) bool {
-			return e.HistoryItemType == historyItemType
+			if opts.HistoryItemType != "" && e.HistoryItemType != opts.HistoryItemType {
+				return false
+			}
+			if len(opts.AlarmTypes) > 0 && !opts.AlarmTypes[e.AlarmType] {
+				return false
+			}
+			if opts.StartDate > 0 && e.Timestamp < opts.StartDate {
+				return false
+			}
+			if opts.EndDate > 0 && e.Timestamp > opts.EndDate {
+				return false
+			}
+			return true
 		}
 	}
-	return common.List[AlarmHistoryEntry](s.BaseStore, opts, filter)
+
+	// Fetch ALL matching items via ListMatching (unlimited iteration)
+	// so that ScanBy sort is global, not per-page. Using common.List
+	// with MaxItems=0 would silently clamp to 100 items.
+	allItems, err := common.ListMatching[AlarmHistoryEntry](s.BaseStore, prefix, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort: Pebble keys are ascending by timestamp (oldest first).
+	// AWS default ScanBy is TimestampDescending (newest first), so
+	// reverse unless explicitly TimestampAscending.
+	if opts.ScanBy != "TimestampAscending" {
+		for i, j := 0, len(allItems)-1; i < j; i, j = i+1, j-1 {
+			allItems[i], allItems[j] = allItems[j], allItems[i]
+		}
+	}
+
+	// Apply manual offset-based pagination on the sorted list.
+	startIdx := 0
+	maxItems := opts.ListOpts.MaxItems
+	if maxItems <= 0 {
+		maxItems = 100
+	}
+	if opts.ListOpts.Marker != "" {
+		if idx, err := strconv.Atoi(opts.ListOpts.Marker); err == nil && idx >= 0 && idx < len(allItems) {
+			startIdx = idx
+		}
+	}
+	endIdx := startIdx + maxItems
+	if endIdx > len(allItems) {
+		endIdx = len(allItems)
+	}
+
+	pageItems := allItems[startIdx:endIdx]
+	nextMarker := ""
+	if endIdx < len(allItems) {
+		nextMarker = strconv.Itoa(endIdx)
+	}
+
+	return &common.ListResult[AlarmHistoryEntry]{
+		Items:       pageItems,
+		NextMarker:  nextMarker,
+		IsTruncated: endIdx < len(allItems),
+	}, nil
 }
 
 func alarmHistoryKey(alarmName string, timestamp int64) string {

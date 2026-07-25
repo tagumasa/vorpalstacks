@@ -152,6 +152,46 @@ func (s *CloudWatchService) DescribeAlarmContributors(ctx context.Context, reqCt
 	}, nil
 }
 
+// parseScheduledQueryConfig builds a ScheduledQueryConfig from the raw
+// request parameter map, parsing all 7 Smithy members.
+func parseScheduledQueryConfig(m map[string]interface{}) *cwstore.ScheduledQueryConfig {
+	sqc := &cwstore.ScheduledQueryConfig{
+		QueryString:           getAlarmStringParam(m, "QueryString", "queryString"),
+		QueryARN:              getAlarmStringParam(m, "QueryARN", "queryArn"),
+		ScheduledQueryRoleARN: getAlarmStringParam(m, "ScheduledQueryRoleARN", "scheduledQueryRoleArn"),
+		AggregationExpression: getAlarmStringParam(m, "AggregationExpression", "aggregationExpression"),
+	}
+	if lgRaw, ok := m["LogGroupIdentifiers"]; ok {
+		sqc.LogGroupIdentifiers = toStringSlice(lgRaw)
+	} else if lgRaw, ok := m["logGroupIdentifiers"]; ok {
+		sqc.LogGroupIdentifiers = toStringSlice(lgRaw)
+	}
+	if scRaw, ok := m["ScheduleConfiguration"]; ok {
+		if scMap, ok := scRaw.(map[string]interface{}); ok {
+			sqc.ScheduleConfiguration = parseScheduleConfig(scMap)
+		}
+	} else if scRaw, ok := m["scheduleConfiguration"]; ok {
+		if scMap, ok := scRaw.(map[string]interface{}); ok {
+			sqc.ScheduleConfiguration = parseScheduleConfig(scMap)
+		}
+	}
+	sqc.Tags = parseAlarmTags(m)
+	if len(sqc.Tags) == 0 {
+		sqc.Tags = nil
+	}
+	return sqc
+}
+
+// parseScheduleConfig parses the ScheduleConfiguration sub-struct.
+func parseScheduleConfig(m map[string]interface{}) *cwstore.ScheduleConfig {
+	sc := &cwstore.ScheduleConfig{
+		ScheduleExpression: getAlarmStringParam(m, "ScheduleExpression", "scheduleExpression"),
+		StartTimeOffset:    int64(getAlarmIntParam(m, "StartTimeOffset", "startTimeOffset")),
+		EndTimeOffset:      int64(getAlarmIntParam(m, "EndTimeOffset", "endTimeOffset")),
+	}
+	return sc
+}
+
 // PutLogAlarm creates or updates a log-based alarm. Log alarms evaluate
 // CloudWatch Logs query results against a threshold.
 func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -171,15 +211,15 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 	treatMissingData := getAlarmStringParam(req.Parameters, "TreatMissingData", "treatMissingData")
 	actionsEnabled := getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true)
 
-	// Parse scheduled query configuration.
-	sqc := ""
+	// Parse scheduled query configuration (Smithy ScheduledQueryConfiguration).
+	var sqc *cwstore.ScheduledQueryConfig
 	if v, ok := req.Parameters["ScheduledQueryConfiguration"]; ok {
 		if m, ok := v.(map[string]interface{}); ok {
-			if sq, ok := m["ScheduledQueryName"]; ok {
-				if sqStr, ok := sq.(string); ok {
-					sqc = sqStr
-				}
-			}
+			sqc = parseScheduledQueryConfig(m)
+		}
+	} else if v, ok := req.Parameters["scheduledQueryConfiguration"]; ok {
+		if m, ok := v.(map[string]interface{}); ok {
+			sqc = parseScheduledQueryConfig(m)
 		}
 	}
 
@@ -194,10 +234,16 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 	alarm.OKActions = parseStringArrayParam(req.Parameters, "OKActions", "okActions")
 	alarm.InsufficientDataActions = parseStringArrayParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions")
 
-	// Store the scheduled query name in the AlarmRule field.
-	if sqc != "" {
-		alarm.AlarmRule = sqc
+	// Store the scheduled query configuration on the alarm.
+	if sqc != nil {
+		alarm.ScheduledQueryConfiguration = sqc
 	}
+
+	// Parse log alarm-specific fields.
+	alarm.ActionLogLineCount = int32(getAlarmIntParam(req.Parameters, "ActionLogLineCount", "actionLogLineCount"))
+	alarm.ActionLogLineRoleArn = getAlarmStringParam(req.Parameters, "ActionLogLineRoleArn", "actionLogLineRoleArn")
+	alarm.QueryResultsToEvaluate = int32(getAlarmIntParam(req.Parameters, "QueryResultsToEvaluate", "queryResultsToEvaluate"))
+	alarm.QueryResultsToAlarm = int32(getAlarmIntParam(req.Parameters, "QueryResultsToAlarm", "queryResultsToAlarm"))
 
 	tags, tagErr := parseAndValidateAlarmTags(req.Parameters)
 	if tagErr != nil {
@@ -205,7 +251,7 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 	}
 	alarm.Tags = tags
 
-	result, err := s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeMetricAlarm)
+	result, err := s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeLogAlarm)
 	if err != nil {
 		return nil, err
 	}

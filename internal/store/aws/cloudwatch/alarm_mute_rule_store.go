@@ -156,6 +156,51 @@ func (s *AlarmMuteRuleStore) ListAlarmMuteRules(alarmName string, statuses []str
 	return rules, nil
 }
 
+// ListAlarmMuteRulesPaginated returns a paginated list of alarm mute
+// rules, optionally filtered by alarm name and statuses.
+func (s *AlarmMuteRuleStore) ListAlarmMuteRulesPaginated(alarmName string, statuses []string, opts common.ListOptions) (*common.ListResult[AlarmMuteRule], error) {
+	opts.Prefix = "mute_rule:"
+	now := time.Now().UTC()
+
+	var filter func(*AlarmMuteRule) bool
+	if alarmName != "" || len(statuses) > 0 {
+		filter = func(r *AlarmMuteRule) bool {
+			r.Status = computeMuteRuleStatus(r.StartDate, r.ExpireDate, now)
+			if alarmName != "" {
+				found := false
+				for _, n := range r.MutedAlarmNames {
+					if n == alarmName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return false
+				}
+			}
+			if len(statuses) > 0 {
+				matched := false
+				for _, st := range statuses {
+					if r.Status == st {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					return false
+				}
+			}
+			return true
+		}
+	} else {
+		filter = func(r *AlarmMuteRule) bool {
+			r.Status = computeMuteRuleStatus(r.StartDate, r.ExpireDate, now)
+			return true
+		}
+	}
+	return common.List[AlarmMuteRule](s.BaseStore, opts, filter)
+}
+
 // IsAlarmMuted checks if the given alarm name is muted by any ACTIVE
 // alarm mute rule.
 func (s *AlarmMuteRuleStore) IsAlarmMuted(alarmName string) bool {

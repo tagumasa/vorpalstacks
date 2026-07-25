@@ -784,7 +784,7 @@ func isAlarmMuted(alarmName string, muteRuleStore *cwstore.AlarmMuteRuleStore) b
 func (s *CloudWatchService) handleAlarmStateTransition(ctx context.Context, result *alarmEvalResult, alarmStore *cwstore.AlarmStore, muteRuleStore *cwstore.AlarmMuteRuleStore) {
 	alarm := result.alarm
 
-	if err := alarmStore.SetAlarmState(alarm.Name, result.newState, result.reason); err != nil {
+	if err := alarmStore.SetAlarmState(alarm.Name, result.newState, result.reason, ""); err != nil {
 		s.log("failed to set alarm state", "alarm", alarm.Name, "new_state", result.newState, "error", err)
 		return
 	}

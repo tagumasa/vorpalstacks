@@ -27,6 +27,8 @@ var (
 	ErrAlarmNotFound = awserrors.NewResourceNotFoundException("Alarm", "")
 	// ErrAlarmLimitExceeded is returned when the alarm limit is exceeded.
 	ErrAlarmLimitExceeded = awserrors.NewLimitExceededException("Alarm limit exceeded")
+	// ErrDashboardInvalidInput is returned when the dashboard body is invalid.
+	ErrDashboardInvalidInput = awserrors.NewAWSError("DashboardInvalidInputError", "Invalid dashboard input", http.StatusBadRequest)
 )
 
 // NewInvalidSequenceTokenError creates an error for an invalid sequence token.

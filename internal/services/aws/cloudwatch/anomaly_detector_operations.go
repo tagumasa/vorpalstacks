@@ -6,8 +6,10 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutAnomalyDetector creates or updates a CloudWatch anomaly detection
@@ -56,12 +58,28 @@ func (s *CloudWatchService) PutAnomalyDetector(ctx context.Context, reqCtx *requ
 		Dimensions: dimensions,
 	}
 
-	_, err = store.anomalyDetectors.PutAnomalyDetector(detector)
+	// Parse Configuration if present (top-level for legacy flat form).
+	if cfg, ok := req.Parameters["Configuration"]; ok {
+		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
+	} else if cfg, ok := req.Parameters["configuration"]; ok {
+		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
+	}
+
+	// Parse MetricCharacteristics if present (top-level for legacy flat form).
+	if mc, ok := req.Parameters["MetricCharacteristics"]; ok {
+		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
+	} else if mc, ok := req.Parameters["metricCharacteristics"]; ok {
+		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
+	}
+
+	saved, err := store.anomalyDetectors.PutAnomalyDetector(detector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to put anomaly detector: %w", err)
 	}
 
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"AnomalyDetectorId": saved.ID,
+	}, nil
 }
 
 func (s *CloudWatchService) putSingleMetricAnomalyDetector(store *cloudwatchStores, raw interface{}, params map[string]interface{}) (interface{}, error) {
@@ -104,12 +122,14 @@ func (s *CloudWatchService) putSingleMetricAnomalyDetector(store *cloudwatchStor
 		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
 	}
 
-	_, err := store.anomalyDetectors.PutAnomalyDetector(detector)
+	saved, err := store.anomalyDetectors.PutAnomalyDetector(detector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to put anomaly detector: %w", err)
 	}
 
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"AnomalyDetectorId": saved.ID,
+	}, nil
 }
 
 func (s *CloudWatchService) putMetricMathAnomalyDetector(store *cloudwatchStores, raw interface{}) (interface{}, error) {
@@ -138,12 +158,14 @@ func (s *CloudWatchService) putMetricMathAnomalyDetector(store *cloudwatchStores
 		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
 	}
 
-	_, err := store.anomalyDetectors.PutMetricMathAnomalyDetector(detector)
+	saved, err := store.anomalyDetectors.PutMetricMathAnomalyDetector(detector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to put metric math anomaly detector: %w", err)
 	}
 
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"AnomalyDetectorId": saved.ID,
+	}, nil
 }
 
 // DeleteAnomalyDetector deletes the specified anomaly detection model.
@@ -207,7 +229,25 @@ func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx
 
 	namespace := getAlarmStringParam(req.Parameters, "Namespace", "namespace")
 	metricName := getAlarmStringParam(req.Parameters, "MetricName", "metricName")
-	detectorType := getAlarmStringParam(req.Parameters, "AnomalyDetectorType", "anomalyDetectorType")
+
+	// Smithy input is AnomalyDetectorTypes (plural list), not
+	// AnomalyDetectorType (singular string). The SDK sends
+	// AnomalyDetectorTypes.1=…, AnomalyDetectorTypes.2=… etc.
+	var detectorTypes []string
+	if typesRaw, ok := req.Parameters["AnomalyDetectorTypes"]; ok {
+		detectorTypes = toStringSlice(typesRaw)
+	} else if typesRaw, ok := req.Parameters["anomalyDetectorTypes"]; ok {
+		detectorTypes = toStringSlice(typesRaw)
+	}
+	// Validate detector types if provided.
+	for _, dt := range detectorTypes {
+		if dt != cwstore.AnomalyDetectorTypeSingleMetric && dt != cwstore.AnomalyDetectorTypeMetricMath {
+			return nil, awserrors.NewInvalidParameterValueException(
+				fmt.Sprintf("AnomalyDetectorType must be %s or %s",
+					cwstore.AnomalyDetectorTypeSingleMetric, cwstore.AnomalyDetectorTypeMetricMath))
+		}
+	}
+
 	dimensions := parseAlarmDimensions(req.Parameters)
 
 	var detectorIDs []string
@@ -217,22 +257,19 @@ func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx
 		detectorIDs = toStringSlice(ids)
 	}
 
-	// Validate detector type if provided.
-	if detectorType != "" && detectorType != cwstore.AnomalyDetectorTypeSingleMetric && detectorType != cwstore.AnomalyDetectorTypeMetricMath {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("AnomalyDetectorType must be %s or %s",
-				cwstore.AnomalyDetectorTypeSingleMetric, cwstore.AnomalyDetectorTypeMetricMath))
-	}
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
 
 	opts := cwstore.DescribeAnomalyDetectorsOpts{
-		AnomalyDetectorIDs:  detectorIDs,
-		AnomalyDetectorType: detectorType,
-		Namespace:           namespace,
-		MetricName:          metricName,
-		Dimensions:          dimensions,
+		AnomalyDetectorIDs:   detectorIDs,
+		AnomalyDetectorTypes: detectorTypes,
+		Namespace:            namespace,
+		MetricName:           metricName,
+		Dimensions:           dimensions,
+		ListOpts:             common.ListOptions{Marker: marker, MaxItems: maxResults},
 	}
 
-	detectors, _, err := store.anomalyDetectors.DescribeAnomalyDetectors(opts)
+	detectors, nextToken, err := store.anomalyDetectors.DescribeAnomalyDetectors(opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe anomaly detectors: %w", err)
 	}
@@ -242,10 +279,13 @@ func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx
 		results = append(results, anomalyDetectorToResponse(d))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"AnomalyDetectors": results,
-		"NextToken":        nil,
-	}, nil
+	}
+	if nextToken != "" {
+		resp["NextToken"] = nextToken
+	}
+	return resp, nil
 }
 
 // anomalyDetectorToResponse serialises an AnomalyDetector into the

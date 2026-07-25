@@ -117,6 +117,7 @@ type Alarm struct {
 	InsufficientDataActions     []string          `json:"insufficientDataActions,omitempty"`
 	State                       string            `json:"state"`
 	StateReason                 string            `json:"stateReason,omitempty"`
+	StateReasonData             string            `json:"stateReasonData,omitempty"`
 	StateUpdatedTimestamp       time.Time         `json:"stateUpdatedTimestamp"`
 	CreatedAt                   time.Time         `json:"createdAt"`
 	Tags                        map[string]string `json:"tags,omitempty"`
@@ -131,6 +132,12 @@ type Alarm struct {
 	AlarmType                   string            `json:"alarmType,omitempty"`
 	// PromQL evaluation criteria (EvaluationCriteria.PromQLCriteria).
 	EvaluationCriteria *EvaluationCriteria `json:"evaluationCriteria,omitempty"`
+	// Log alarm fields (PutLogAlarm).
+	ActionLogLineCount          int32                 `json:"actionLogLineCount,omitempty"`
+	ActionLogLineRoleArn        string                `json:"actionLogLineRoleArn,omitempty"`
+	QueryResultsToEvaluate      int32                 `json:"queryResultsToEvaluate,omitempty"`
+	QueryResultsToAlarm         int32                 `json:"queryResultsToAlarm,omitempty"`
+	ScheduledQueryConfiguration *ScheduledQueryConfig `json:"scheduledQueryConfiguration,omitempty"`
 }
 
 // EvaluationCriteria holds the criteria for evaluating an alarm.
@@ -146,10 +153,31 @@ type AlarmPromQLCriteria struct {
 	RecoveryPeriod int32  `json:"recoveryPeriod,omitempty"`
 }
 
+// ScheduledQueryConfig holds the CloudWatch Logs scheduled query
+// configuration that backs a log alarm (Smithy ScheduledQueryConfiguration).
+type ScheduledQueryConfig struct {
+	QueryString           string            `json:"queryString,omitempty"`
+	LogGroupIdentifiers   []string          `json:"logGroupIdentifiers,omitempty"`
+	QueryARN              string            `json:"queryArn,omitempty"`
+	ScheduledQueryRoleARN string            `json:"scheduledQueryRoleArn,omitempty"`
+	ScheduleConfiguration *ScheduleConfig   `json:"scheduleConfiguration,omitempty"`
+	AggregationExpression string            `json:"aggregationExpression,omitempty"`
+	Tags                  map[string]string `json:"tags,omitempty"`
+}
+
+// ScheduleConfig holds the schedule expression and time-range offsets
+// for a scheduled query (Smithy ScheduleConfiguration).
+type ScheduleConfig struct {
+	ScheduleExpression string `json:"scheduleExpression,omitempty"`
+	StartTimeOffset    int64  `json:"startTimeOffset,omitempty"`
+	EndTimeOffset      int64  `json:"endTimeOffset,omitempty"`
+}
+
 // AlarmType constants
 const (
 	AlarmTypeMetricAlarm    = "MetricAlarm"
 	AlarmTypeCompositeAlarm = "CompositeAlarm"
+	AlarmTypeLogAlarm       = "LogAlarm"
 )
 
 // HistoryItemType constants
@@ -171,11 +199,12 @@ type AlarmHistoryEntry struct {
 
 // Dashboard represents a CloudWatch dashboard.
 type Dashboard struct {
-	Name      string    `json:"name"`
-	ARN       string    `json:"arn"`
-	Body      string    `json:"body"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Name      string            `json:"name"`
+	ARN       string            `json:"arn"`
+	Body      string            `json:"body"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
+	Tags      map[string]string `json:"tags,omitempty"`
 }
 
 // NewAlarm creates a new Alarm with the specified name, namespace, and metric name.

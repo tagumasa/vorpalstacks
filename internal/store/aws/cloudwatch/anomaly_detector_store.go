@@ -143,11 +143,10 @@ func (s *AnomalyDetectorStore) DeleteAnomalyDetector(namespace, metricName strin
 // DescribeAnomalyDetectors returns anomaly detectors matching the given
 // filters. When anomalyDetectorIDs is non-empty, only those IDs are
 // returned. Otherwise, filters by namespace, metricName, dimensions,
-// and anomalyDetectorType are applied.
+// and anomalyDetectorType are applied. Supports pagination via ListOpts.
 func (s *AnomalyDetectorStore) DescribeAnomalyDetectors(opts DescribeAnomalyDetectorsOpts) ([]*AnomalyDetector, string, error) {
-	var detectors []*AnomalyDetector
-
 	if len(opts.AnomalyDetectorIDs) > 0 {
+		var detectors []*AnomalyDetector
 		for _, id := range opts.AnomalyDetectorIDs {
 			d := &AnomalyDetector{}
 			if err := s.BaseStore.Get(id, d); err != nil {
@@ -160,46 +159,56 @@ func (s *AnomalyDetectorStore) DescribeAnomalyDetectors(opts DescribeAnomalyDete
 
 	prefix := "detector:"
 	if opts.Namespace != "" {
-		// Scan with the full key prefix for namespace-level filtering.
 		prefix = singleMetricKeyPrefix(opts.Namespace, opts.MetricName)
 	}
 
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		var d AnomalyDetector
-		if err := json.Unmarshal(value, &d); err != nil {
-			return err
+	listOpts := opts.ListOpts
+	listOpts.Prefix = prefix
+
+	var filter func(*AnomalyDetector) bool
+	if len(opts.AnomalyDetectorTypes) > 0 || opts.Namespace != "" || opts.MetricName != "" || len(opts.Dimensions) > 0 {
+		filter = func(d *AnomalyDetector) bool {
+			if len(opts.AnomalyDetectorTypes) > 0 {
+				matched := false
+				for _, t := range opts.AnomalyDetectorTypes {
+					if d.AnomalyDetectorType == t {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					return false
+				}
+			}
+			if opts.Namespace != "" && d.Namespace != opts.Namespace {
+				return false
+			}
+			if opts.MetricName != "" && d.MetricName != opts.MetricName {
+				return false
+			}
+			if len(opts.Dimensions) > 0 && !dimensionsMatch(d.Dimensions, opts.Dimensions) {
+				return false
+			}
+			return true
 		}
-		// Apply filters.
-		if opts.AnomalyDetectorType != "" && d.AnomalyDetectorType != opts.AnomalyDetectorType {
-			return nil
-		}
-		if opts.Namespace != "" && d.Namespace != opts.Namespace {
-			return nil
-		}
-		if opts.MetricName != "" && d.MetricName != opts.MetricName {
-			return nil
-		}
-		if len(opts.Dimensions) > 0 && !dimensionsMatch(d.Dimensions, opts.Dimensions) {
-			return nil
-		}
-		detectors = append(detectors, &d)
-		return nil
-	})
+	}
+
+	result, err := common.List[AnomalyDetector](s.BaseStore, listOpts, filter)
 	if err != nil {
 		return nil, "", err
 	}
-
-	return detectors, "", nil
+	return result.Items, result.NextMarker, nil
 }
 
 // DescribeAnomalyDetectorsOpts holds filter options for listing
 // anomaly detectors.
 type DescribeAnomalyDetectorsOpts struct {
-	AnomalyDetectorIDs  []string
-	AnomalyDetectorType string
-	Namespace           string
-	MetricName          string
-	Dimensions          []Dimension
+	AnomalyDetectorIDs   []string
+	AnomalyDetectorTypes []string
+	Namespace            string
+	MetricName           string
+	Dimensions           []Dimension
+	ListOpts             common.ListOptions
 }
 
 // singleMetricDetectorKey builds a deterministic storage key for a

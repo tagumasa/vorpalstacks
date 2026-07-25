@@ -46,6 +46,10 @@ func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.R
 		metricDataRaw = md
 	}
 
+	// EntityMetricData (OTel) and StrictEntityValidation are accepted but
+	// not processed — OTel entity-based metrics require the OTel pipeline.
+	// The StrictEntityValidation flag is accepted as a no-op.
+
 	metricData := parseMetricData(metricDataRaw)
 	if len(metricData) == 0 {
 		return nil, ErrInvalidParameter
@@ -192,6 +196,13 @@ func (s *CloudWatchService) ListMetrics(ctx context.Context, reqCtx *request.Req
 
 	dimensions := parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"])
 	nextToken := getMetricStringParam(req.Parameters, "NextToken", "nextToken")
+	recentlyActive := getMetricStringParam(req.Parameters, "RecentlyActive", "recentlyActive")
+	if recentlyActive != "" && recentlyActive != "PT3H" {
+		return nil, awserrors.NewInvalidParameterValueException(
+			"RecentlyActive must be PT3H")
+	}
+	// IncludeLinkedAccounts and OwningAccount are cross-account params
+	// accepted but not used — vorpalstacks is single-account.
 	maxResults := 500
 	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
 		maxResults = mr
@@ -202,7 +213,7 @@ func (s *CloudWatchService) ListMetrics(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	metrics, nextMarker, isTruncated, err := store.metrics.ListMetricsPaginated(namespace, metricName, dimensions, nextToken, maxResults)
+	metrics, nextMarker, isTruncated, err := store.metrics.ListMetricsPaginated(namespace, metricName, dimensions, nextToken, maxResults, recentlyActive == "PT3H")
 	if err != nil {
 		return nil, err
 	}

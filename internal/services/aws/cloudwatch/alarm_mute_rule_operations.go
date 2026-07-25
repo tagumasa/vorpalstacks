@@ -7,8 +7,10 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutAlarmMuteRule creates or updates an alarm mute rule that suppresses
@@ -137,20 +139,27 @@ func (s *CloudWatchService) ListAlarmMuteRules(ctx context.Context, reqCtx *requ
 	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
 	statuses := parseStringArrayParam(req.Parameters, "Statuses", "statuses")
 
-	rules, err := store.alarmMuteRules.ListAlarmMuteRules(alarmName, statuses)
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxRecords")
+
+	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
+	result, err := store.alarmMuteRules.ListAlarmMuteRulesPaginated(alarmName, statuses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list alarm mute rules: %w", err)
 	}
 
-	summaries := make([]map[string]interface{}, 0, len(rules))
-	for _, r := range rules {
+	summaries := make([]map[string]interface{}, 0, len(result.Items))
+	for _, r := range result.Items {
 		summaries = append(summaries, alarmMuteRuleSummaryToResponse(r))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"AlarmMuteRuleSummaries": summaries,
-		"NextToken":              nil,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // alarmMuteRuleToResponse serialises an AlarmMuteRule into the full

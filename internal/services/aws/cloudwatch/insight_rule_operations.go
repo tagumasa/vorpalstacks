@@ -6,8 +6,10 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutInsightRule creates or updates a CloudWatch Contributor Insights
@@ -106,20 +108,27 @@ func (s *CloudWatchService) DescribeInsightRules(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	rules, err := store.insightRules.ListInsightRules(false)
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+
+	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
+	result, err := store.insightRules.ListInsightRulesPaginated(false, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list insight rules: %w", err)
 	}
 
-	results := make([]map[string]interface{}, 0, len(rules))
-	for _, r := range rules {
+	results := make([]map[string]interface{}, 0, len(result.Items))
+	for _, r := range result.Items {
 		results = append(results, insightRuleToResponse(r))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"InsightRules": results,
-		"NextToken":    nil,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // EnableInsightRules enables the specified Contributor Insights rules.
@@ -310,24 +319,31 @@ func (s *CloudWatchService) ListManagedInsightRules(ctx context.Context, reqCtx 
 
 	resourceARN := getAlarmStringParam(req.Parameters, "ResourceARN", "resourceArn")
 
-	rules, err := store.insightRules.ListInsightRules(true)
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+
+	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
+	result, err := store.insightRules.ListInsightRulesPaginated(true, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list managed insight rules: %w", err)
 	}
 
 	// Filter by resource ARN if provided.
-	results := make([]map[string]interface{}, 0, len(rules))
-	for _, r := range rules {
+	results := make([]map[string]interface{}, 0, len(result.Items))
+	for _, r := range result.Items {
 		if resourceARN != "" && r.ResourceARN != resourceARN {
 			continue
 		}
 		results = append(results, managedInsightRuleToResponse(r))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"ManagedRules": results,
-		"NextToken":    nil,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // insightRuleToResponse serialises an InsightRule into the AWS API

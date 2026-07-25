@@ -13,15 +13,17 @@ func (s *CloudWatchService) PutDashboard(ctx context.Context, reqCtx *request.Re
 	name := request.GetStringParam(req.Parameters, "DashboardName")
 	body := request.GetStringParam(req.Parameters, "DashboardBody")
 	if name == "" || body == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrDashboardInvalidInput
 	}
+
+	tags := parseAlarmTags(req.Parameters)
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	dashboard, err := stores.dashboards.PutDashboard(name, body)
+	dashboard, err := stores.dashboards.PutDashboard(name, body, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +54,6 @@ func (s *CloudWatchService) GetDashboard(ctx context.Context, reqCtx *request.Re
 		"DashboardArn":  dashboard.ARN,
 		"DashboardBody": dashboard.Body,
 		"DashboardName": dashboard.Name,
-		"LastModified":  dashboard.UpdatedAt,
 	}, nil
 }
 
@@ -65,7 +66,7 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	marker := pagination.GetMarker(req.Parameters)
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
 	opts := common.ListOptions{Marker: marker, MaxItems: 1000}
 
 	result, err := stores.dashboards.ListDashboardsPaginated(prefix, opts)
