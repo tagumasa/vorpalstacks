@@ -55,7 +55,7 @@ var (
 	cognitoSrpG = mustHexToBig(cognitoSrpGHex)
 	// cognitoSrpK is the SRP multiplier parameter k = H(N || pad(g)). It is
 	// computed once at package initialisation.
-	cognitoSrpK = mustHexToBig(hexHash("00"+cognitoSrpNHex+"0"+cognitoSrpGHex))
+	cognitoSrpK = mustHexToBig(hexHash("00" + cognitoSrpNHex + "0" + cognitoSrpGHex))
 )
 
 // ErrInvalidSrpA is returned when the client-supplied SRP_A value is invalid
@@ -137,7 +137,9 @@ func DeriveKey(S, u *big.Int) []byte {
 }
 
 // VerifyClaim computes the expected HMAC-SHA256 claim over the Cognito message
-//   msg = poolName || userId || secretBlock || timestamp
+//
+//	msg = poolName || userId || secretBlock || timestamp
+//
 // using the derived key K. The returned slice is the digest that the client's
 // PASSWORD_CLAIM_SIGNATURE must match (constant-time comparison is the
 // caller's responsibility).

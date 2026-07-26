@@ -2,18 +2,23 @@ package ec2
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateSecurityGroup creates a security group in the specified VPC.
 // GroupName must be unique within the VPC scope.
 func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	groupName := request.GetStringParam(params, "GroupName")
 	if groupName == "" {
 		return nil, awserrors.NewMissingParameter("GroupName is required")
@@ -74,7 +79,9 @@ func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.Re
 	}
 
 	return map[string]interface{}{
-		"GroupId": groupID,
+		"GroupId":          groupID,
+		"SecurityGroupArn": fmt.Sprintf("arn:aws:ec2:%s:%s:security-group/%s", reqCtx.GetRegion(), s.accountID, groupID),
+		"TagSet":           protocol.XMLElements{ElementName: "item", Items: sgTagsToInterface(sg.Tags)},
 	}, nil
 }
 
@@ -82,6 +89,9 @@ func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.Re
 // Supports GroupId, GroupName, and Filter.N for filtering.
 func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -127,6 +137,9 @@ func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request
 // DeleteSecurityGroup deletes the specified security group.
 func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	groupID := request.GetStringParam(params, "GroupId")
 	if groupID == "" {
 		return nil, awserrors.NewAWSError("MissingParameter", "The request must contain the parameter GroupId", http.StatusBadRequest)
@@ -135,6 +148,43 @@ func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.Re
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Existence check first (AWS spec ordering): return InvalidGroup.NotFound
+	// before any dependency evaluation.
+	if _, err := store.GetSecurityGroup(groupID); err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	// DependencyViolation: reject if another SG references this one via
+	// UserIdGroupPairs in its ingress or egress rules.
+	allSGs, err := store.ListSecurityGroups()
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+	for _, sg := range allSGs {
+		if sg.GroupId == groupID {
+			continue
+		}
+		if sgReferencesGroup(sg.IpPermissions, groupID) || sgReferencesGroup(sg.IpPermissionsEgress, groupID) {
+			return nil, awserrors.NewAWSError("DependencyViolation",
+				"The security group '"+groupID+"' is being referenced by security group '"+sg.GroupId+"'",
+				http.StatusBadRequest)
+		}
+	}
+
+	// Cross-service dependency check: verify no Lambda function VpcConfig
+	// references this security group.
+	if s.bus != nil {
+		for _, checker := range s.bus.SecurityGroupUsageCheckers() {
+			if checker.IsSecurityGroupInUse(ctx, reqCtx.GetRegion(), groupID) {
+				return nil, awserrors.NewAWSError(
+					"DependencyViolation",
+					"The security group '"+groupID+"' is being used by another resource",
+					http.StatusBadRequest,
+				)
+			}
+		}
 	}
 
 	if err := store.DeleteSecurityGroup(groupID); err != nil {
@@ -179,6 +229,9 @@ func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *requ
 // so malformed rules are rejected; Revoke passes false so legacy rules that were
 // created with looser validation can still be removed (M-3).
 func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, req *request.ParsedRequest, validateRules bool, apply func(*ec2store.SecurityGroup, []ec2store.IPRule)) (interface{}, error) {
+	if err := checkDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -267,4 +320,26 @@ func matchesSGFilters(sg *ec2store.SecurityGroup, filters []ec2Filter) bool {
 		}
 	}
 	return true
+}
+
+// sgReferencesGroup returns true if any rule in the given list contains a
+// UserIdGroupPair referencing the specified groupId.
+func sgReferencesGroup(rules []ec2store.IPRule, groupId string) bool {
+	for _, rule := range rules {
+		for _, pair := range rule.UserIdGroupPairs {
+			if pair.GroupId == groupId {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// sgTagsToInterface converts store tags to interface slice for XML output.
+func sgTagsToInterface(tags []types.Tag) []interface{} {
+	items := make([]interface{}, 0, len(tags))
+	for _, t := range tags {
+		items = append(items, t)
+	}
+	return items
 }

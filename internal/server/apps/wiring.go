@@ -135,6 +135,8 @@ func (a *App) wireCrossServiceDeps() {
 		st.lambdaService.SetLogsInvoker(eb.LogsInvoker())
 		st.lambdaService.SetEventBus(eb)
 		st.lambdaService.StartESMPoller(context.Background())
+		eb.RegisterSubnetUsageChecker(st.lambdaService)
+		eb.RegisterSecurityGroupUsageChecker(st.lambdaService)
 		a.addShutdown("lambda-esm", func(ctx context.Context) error {
 			st.lambdaService.StopESMPoller()
 			return nil

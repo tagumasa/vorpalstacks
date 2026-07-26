@@ -13,6 +13,9 @@ import (
 // CreateVpc creates a VPC with the specified CIDR block.
 func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	cidrBlock := request.GetStringParam(params, "CidrBlock")
 	if cidrBlock == "" {
 		cidrBlock = "172.31.0.0/16"
@@ -46,6 +49,8 @@ func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestConte
 		State:              "available",
 		OwnerId:            s.accountID,
 		InstanceTenancy:    instanceTenancy,
+		DhcpOptionsId:      "dopt-default",
+		IsDefault:          false,
 		EnableDnsSupport:   enableDnsSupport,
 		EnableDnsHostnames: enableDnsHostnames,
 		Tags:               parseEC2Tags(params),
@@ -68,6 +73,9 @@ func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestConte
 // and Filter.N for filtering by vpc-id, cidr, state, tag, etc.
 func (s *EC2Service) DescribeVpcs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -109,6 +117,9 @@ func (s *EC2Service) DescribeVpcs(ctx context.Context, reqCtx *request.RequestCo
 // still has dependent resources (subnets or security groups).
 func (s *EC2Service) DeleteVpc(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	vpcID := request.GetStringParam(params, "VpcId")
 	if vpcID == "" {
 		return nil, awserrors.NewMissingParameter("VpcId is required")

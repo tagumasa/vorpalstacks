@@ -774,11 +774,11 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		schema := make([]map[string]interface{}, 0, len(pool.SchemaAttributes))
 		for _, sa := range pool.SchemaAttributes {
 			entry := map[string]interface{}{
-				"Name":                  sa.Name,
-				"AttributeDataType":     sa.AttributeDataType,
+				"Name":                   sa.Name,
+				"AttributeDataType":      sa.AttributeDataType,
 				"DeveloperOnlyAttribute": sa.DeveloperOnlyAttribute,
-				"Mutable":               sa.Mutable,
-				"Required":              sa.Required,
+				"Mutable":                sa.Mutable,
+				"Required":               sa.Required,
 			}
 			if sa.NumberAttributeConstraints != nil {
 				entry["NumberAttributeConstraints"] = map[string]interface{}{

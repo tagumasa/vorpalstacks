@@ -196,6 +196,9 @@ func (a *App) initNeptune(st *serviceState) error {
 	st.neptuneService.SetEventBus(a.server.EventBus())
 	st.neptuneService.SetServerHost(a.cfg.ServerHost())
 	st.neptuneService.RegisterHandlers(a.server.Dispatcher())
+	if eb := a.server.EventBus(); eb != nil {
+		eb.RegisterSubnetUsageChecker(st.neptuneService)
+	}
 	a.addShutdown("neptune", func(ctx context.Context) error {
 		st.neptuneService.Close()
 		return nil

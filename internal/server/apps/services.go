@@ -194,6 +194,9 @@ func (a *App) initDynamoDB(st *serviceState) error {
 func (a *App) initEC2(st *serviceState) error {
 	st.ec2Service = svcec2.NewEC2Service(st.accountID, st.region)
 	st.ec2Service.SetStorageManager(a.server.StorageManager())
+	if eb := a.server.EventBus(); eb != nil {
+		st.ec2Service.SetEventBus(eb)
+	}
 	st.ec2Service.RegisterHandlers(a.server.Dispatcher())
 	if eb := a.server.EventBus(); eb != nil {
 		eb.RegisterInvoker(&eventbus.EC2InvokerAdapter{Lookup: st.ec2Service})

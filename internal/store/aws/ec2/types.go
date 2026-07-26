@@ -11,6 +11,8 @@ type VPC struct {
 	State              string      `json:"State"`
 	OwnerId            string      `json:"OwnerId"`
 	InstanceTenancy    string      `json:"InstanceTenancy"`
+	DhcpOptionsId      string      `json:"DhcpOptionsId"`
+	IsDefault          bool        `json:"IsDefault"`
 	EnableDnsSupport   bool        `json:"EnableDnsSupport"`
 	EnableDnsHostnames bool        `json:"EnableDnsHostnames"`
 	Tags               []types.Tag `json:"Tags"`
@@ -18,15 +20,22 @@ type VPC struct {
 
 // Subnet represents a VPC subnet.
 type Subnet struct {
-	SubnetId                string      `json:"SubnetId"`
-	VpcId                   string      `json:"VpcId"`
-	CidrBlock               string      `json:"CidrBlock"`
-	AvailabilityZone        string      `json:"AvailabilityZone"`
-	AvailableIpAddressCount int64       `json:"AvailableIpAddressCount"`
-	State                   string      `json:"State"`
-	OwnerId                 string      `json:"OwnerId"`
-	MapPublicIpOnLaunch     bool        `json:"MapPublicIpOnLaunch"`
-	Tags                    []types.Tag `json:"Tags"`
+	SubnetId                    string      `json:"SubnetId"`
+	VpcId                       string      `json:"VpcId"`
+	CidrBlock                   string      `json:"CidrBlock"`
+	AvailabilityZone            string      `json:"AvailabilityZone"`
+	AvailabilityZoneId          string      `json:"AvailabilityZoneId"`
+	AvailableIpAddressCount     int64       `json:"AvailableIpAddressCount"`
+	State                       string      `json:"State"`
+	OwnerId                     string      `json:"OwnerId"`
+	SubnetArn                   string      `json:"SubnetArn"`
+	DefaultForAz                bool        `json:"DefaultForAz"`
+	MapPublicIpOnLaunch         bool        `json:"MapPublicIpOnLaunch"`
+	AssignIpv6AddressOnCreation bool        `json:"AssignIpv6AddressOnCreation"`
+	Ipv6Native                  bool        `json:"Ipv6Native"`
+	EnableDns64                 bool        `json:"EnableDns64"`
+	SubnetType                  string      `json:"Type"`
+	Tags                        []types.Tag `json:"Tags"`
 }
 
 // SecurityGroup represents a VPC security group.

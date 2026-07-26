@@ -82,6 +82,28 @@ func validateSubnetInVPC(subnetCIDR, vpcCIDR string) error {
 	return nil
 }
 
+// validateSubnetCIDROverlap checks if the new CIDR overlaps with any existing
+// subnet in the same VPC. AWS rejects overlapping subnets with
+// InvalidSubnet.Conflict error.
+func validateSubnetCIDROverlap(newCIDR string, existingSubnets []*ec2store.Subnet) error {
+	_, newNet, err := net.ParseCIDR(newCIDR)
+	if err != nil {
+		return validateCIDRBlock(newCIDR)
+	}
+	for _, sub := range existingSubnets {
+		_, existingNet, err := net.ParseCIDR(sub.CidrBlock)
+		if err != nil {
+			continue
+		}
+		if newNet.Contains(existingNet.IP) || existingNet.Contains(newNet.IP) {
+			return awserrors.NewAWSError("InvalidSubnet.Conflict",
+				"The CIDR '"+newCIDR+"' conflicts with another subnet",
+				http.StatusBadRequest)
+		}
+	}
+	return nil
+}
+
 // calculateAvailableIPs returns the number of usable IP addresses in a subnet
 // with the given CIDR block. AWS reserves 5 IPs per subnet.
 func calculateAvailableIPs(cidrBlock string) int64 {
@@ -102,9 +124,52 @@ func calculateAvailableIPs(cidrBlock string) int64 {
 }
 
 // parseEC2Tags extracts EC2 tags from request parameters.
-// EC2 uses Tag.N.Key / Tag.N.Value format in the Query protocol.
+// AWS SDK Go v2 sends tags as TagSpecification.N.Tag.N.Key/Value;
+// older clients (AWS CLI v1) use Tag.N.Key/Value. Both are handled.
 func parseEC2Tags(params map[string]interface{}) []types.Tag {
+	if tsTags := parseTagSpecification(params); len(tsTags) > 0 {
+		return tsTags
+	}
 	return tags.ParseTagsWithPrefix(params, "Tag")
+}
+
+// checkDryRun returns a DryRunOperation error (HTTP 412) when the DryRun
+// query parameter is set to true. AWS EC2 supports DryRun on all operations;
+// the SDK treats 412 + DryRunOperation code as a successful dry-run.
+func checkDryRun(params map[string]interface{}) error {
+	if v := request.GetStringParam(params, "DryRun"); v == "true" {
+		return awserrors.NewAWSError("DryRunOperation",
+			"Request would have succeeded, but DryRun flag is set.",
+			http.StatusPreconditionFailed)
+	}
+	return nil
+}
+
+// parseTagSpecification parses the TagSpecification.N.Tag.N.Key/Value format
+// used by AWS SDK Go v2 for EC2 Query protocol requests.
+func parseTagSpecification(params map[string]interface{}) []types.Tag {
+	var result []types.Tag
+	for i := 1; ; i++ {
+		tagPrefix := "TagSpecification." + strconv.Itoa(i) + ".Tag"
+		found := false
+		for j := 1; ; j++ {
+			keyKey := tagPrefix + "." + strconv.Itoa(j) + ".Key"
+			valueKey := tagPrefix + "." + strconv.Itoa(j) + ".Value"
+
+			key := request.GetStringParam(params, keyKey)
+			if key == "" {
+				break
+			}
+
+			value := request.GetStringParam(params, valueKey)
+			result = append(result, types.Tag{Key: key, Value: value})
+			found = true
+		}
+		if !found {
+			break
+		}
+	}
+	return result
 }
 
 // parseInt64Port parses a port string to int64, returning -1 for empty/invalid.

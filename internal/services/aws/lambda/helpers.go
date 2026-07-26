@@ -3,6 +3,7 @@ package lambda
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -177,19 +178,22 @@ func parseVpcConfig(params map[string]interface{}) *lambdastore.VpcConfig {
 
 // resolveVpcConfig uses the EC2 invoker to derive the VPC ID from the first
 // subnet. AWS Lambda derives the VPC from the subnets automatically.
-func (s *LambdaService) resolveVpcConfig(ctx context.Context, vpcConfig *lambdastore.VpcConfig) {
+// Returns an error if the subnet lookup fails so callers can reject the
+// request instead of creating a function with an empty VpcId.
+func (s *LambdaService) resolveVpcConfig(ctx context.Context, vpcConfig *lambdastore.VpcConfig) error {
 	if s.bus == nil || len(vpcConfig.SubnetIds) == 0 {
-		return
+		return nil
 	}
 	ec2 := s.bus.EC2Invoker()
 	if ec2 == nil {
-		return
+		return nil
 	}
 	vpcId, _, err := ec2.LookupSubnet(ctx, s.region, vpcConfig.SubnetIds[0])
 	if err != nil {
-		return
+		return fmt.Errorf("subnet %q not found or EC2 service unavailable: %w", vpcConfig.SubnetIds[0], err)
 	}
 	vpcConfig.VpcId = vpcId
+	return nil
 }
 
 func parseEnvironment(params map[string]interface{}) *lambdastore.Environment {

@@ -183,6 +183,10 @@ type Bus interface {
 	SetCloudTrailInvoker(invoker CloudTrailInvoker)
 	SetLogsInvoker(invoker LogsInvoker)
 	SetRDSDataInvoker(invoker RDSDataInvoker)
+	RegisterSubnetUsageChecker(checker SubnetUsageChecker)
+	RegisterSecurityGroupUsageChecker(checker SecurityGroupUsageChecker)
+	SubnetUsageCheckers() []SubnetUsageChecker
+	SecurityGroupUsageCheckers() []SecurityGroupUsageChecker
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -224,6 +228,8 @@ type EventBus struct {
 	cloudTrailInvoker       CloudTrailInvoker
 	logsInvoker             LogsInvoker
 	rdsDataInvoker          RDSDataInvoker
+	subnetUsageCheckers     []SubnetUsageChecker
+	securityGroupCheckers   []SecurityGroupUsageChecker
 	nextSubID               atomic.Int64
 	asyncCh                 chan *OutboxEntry
 	directCh                chan *directDispatch
@@ -874,6 +880,42 @@ func (b *EventBus) RDSDataInvoker() RDSDataInvoker {
 	b.invokersMu.RLock()
 	defer b.invokersMu.RUnlock()
 	return b.rdsDataInvoker
+}
+
+// RegisterSubnetUsageChecker registers a service that can report whether a
+// subnet is in use. Multiple services may register (e.g. Lambda, Neptune).
+// EC2 calls all registered checkers before deleting a subnet.
+func (b *EventBus) RegisterSubnetUsageChecker(checker SubnetUsageChecker) {
+	b.invokersMu.Lock()
+	defer b.invokersMu.Unlock()
+	b.subnetUsageCheckers = append(b.subnetUsageCheckers, checker)
+}
+
+// RegisterSecurityGroupUsageChecker registers a service that can report
+// whether a security group is in use. Multiple services may register.
+// EC2 calls all registered checkers before deleting a security group.
+func (b *EventBus) RegisterSecurityGroupUsageChecker(checker SecurityGroupUsageChecker) {
+	b.invokersMu.Lock()
+	defer b.invokersMu.Unlock()
+	b.securityGroupCheckers = append(b.securityGroupCheckers, checker)
+}
+
+// SubnetUsageCheckers returns all registered subnet usage checkers.
+func (b *EventBus) SubnetUsageCheckers() []SubnetUsageChecker {
+	b.invokersMu.RLock()
+	defer b.invokersMu.RUnlock()
+	result := make([]SubnetUsageChecker, len(b.subnetUsageCheckers))
+	copy(result, b.subnetUsageCheckers)
+	return result
+}
+
+// SecurityGroupUsageCheckers returns all registered security group usage checkers.
+func (b *EventBus) SecurityGroupUsageCheckers() []SecurityGroupUsageChecker {
+	b.invokersMu.RLock()
+	defer b.invokersMu.RUnlock()
+	result := make([]SecurityGroupUsageChecker, len(b.securityGroupCheckers))
+	copy(result, b.securityGroupCheckers)
+	return result
 }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.

@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 )
@@ -20,6 +21,7 @@ type EC2Service struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	stores         sync.Map
+	bus            eventbus.Bus
 }
 
 // NewEC2Service creates a new EC2Service for the specified account and region.
@@ -30,6 +32,13 @@ func NewEC2Service(accountID, region string) *EC2Service {
 // SetStorageManager injects the region storage manager.
 func (s *EC2Service) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetEventBus injects the event bus for cross-service dependency checks
+// (e.g. checking whether Lambda or Neptune reference a subnet/SG before
+// deletion).
+func (s *EC2Service) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
 }
 
 // SetEC2Store pre-populates the store cache for the given region.

@@ -124,6 +124,22 @@ type EC2Invoker interface {
 	LookupVPC(ctx context.Context, region string, vpcId string) error
 }
 
+// SubnetUsageChecker checks whether a subnet is referenced by a service's
+// resources. EC2 calls all registered checkers before deleting a subnet to
+// prevent orphaned VPC configuration references (e.g. Lambda VpcConfig,
+// Neptune DB subnet groups).
+type SubnetUsageChecker interface {
+	IsSubnetInUse(ctx context.Context, region, subnetId string) bool
+}
+
+// SecurityGroupUsageChecker checks whether a security group is referenced
+// by a service's resources. EC2 calls all registered checkers before
+// deleting a security group to prevent orphaned VPC configuration
+// references (e.g. Lambda VpcConfig.SecurityGroupIds).
+type SecurityGroupUsageChecker interface {
+	IsSecurityGroupInUse(ctx context.Context, region, sgId string) bool
+}
+
 // DynamoDBInvoker provides DynamoDB item operations for cross-service
 // consumers (e.g. AppSync GraphQL resolvers). Consumers call these methods
 // instead of holding a direct reference to the DynamoDB store.

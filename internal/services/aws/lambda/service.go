@@ -718,6 +718,48 @@ func (s *LambdaService) GetFunctionStoreForRegion(region string) *lambdastore.Fu
 	return s.getOrCreateFunctionStore(region)
 }
 
+// IsSubnetInUse implements eventbus.SubnetUsageChecker. It scans all Lambda
+// functions in the given region and returns true if any function's
+// VpcConfig references the specified subnet ID.
+func (s *LambdaService) IsSubnetInUse(ctx context.Context, region, subnetId string) bool {
+	store := s.getOrCreateFunctionStore(region)
+	functions, err := store.ListAllFunctions()
+	if err != nil {
+		return false
+	}
+	for _, fn := range functions {
+		if fn.VpcConfig != nil {
+			for _, sid := range fn.VpcConfig.SubnetIds {
+				if sid == subnetId {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// IsSecurityGroupInUse implements eventbus.SecurityGroupUsageChecker. It
+// scans all Lambda functions in the given region and returns true if any
+// function's VpcConfig references the specified security group ID.
+func (s *LambdaService) IsSecurityGroupInUse(ctx context.Context, region, sgId string) bool {
+	store := s.getOrCreateFunctionStore(region)
+	functions, err := store.ListAllFunctions()
+	if err != nil {
+		return false
+	}
+	for _, fn := range functions {
+		if fn.VpcConfig != nil {
+			for _, gid := range fn.VpcConfig.SecurityGroupIds {
+				if gid == sgId {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (s *LambdaService) getOrCreateFunctionStore(region string) *lambdastore.FunctionStore {
 	if cached, ok := s.storeCache.Load(region); ok {
 		if typed, ok := cached.(*lambdaStore); ok {

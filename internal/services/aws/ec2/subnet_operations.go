@@ -2,6 +2,8 @@ package ec2
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
@@ -12,6 +14,9 @@ import (
 // CreateSubnet creates a subnet in the specified VPC.
 func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	vpcID := request.GetStringParam(params, "VpcId")
 	if vpcID == "" {
 		return nil, awserrors.NewMissingParameter("VpcId is required")
@@ -37,6 +42,16 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
+	// CIDR overlap check: reject if another subnet in the same VPC has an
+	// overlapping CIDR block.
+	existingSubnets, err := store.ListSubnetsByVPC(vpcID)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+	if err := validateSubnetCIDROverlap(cidrBlock, existingSubnets); err != nil {
+		return nil, err
+	}
+
 	subnetID, err := GenerateSubnetID()
 	if err != nil {
 		return nil, err
@@ -57,10 +72,12 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 		VpcId:                   vpcID,
 		CidrBlock:               cidrBlock,
 		AvailabilityZone:        az,
+		AvailableIpAddressCount: calculateAvailableIPs(cidrBlock),
 		State:                   "available",
 		OwnerId:                 s.accountID,
-		AvailableIpAddressCount: calculateAvailableIPs(cidrBlock),
+		SubnetArn:               fmt.Sprintf("arn:aws:ec2:%s:%s:subnet/%s", reqCtx.GetRegion(), s.accountID, subnetID),
 		MapPublicIpOnLaunch:     mapPublicIpOnLaunch,
+		SubnetType:              "ipv4",
 		Tags:                    parseEC2Tags(params),
 	}
 
@@ -78,6 +95,9 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 // availability-zone, tag, etc.
 func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -116,8 +136,15 @@ func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.Reques
 }
 
 // DeleteSubnet deletes the specified subnet.
+// AWS checks for instances, ENIs, NAT gateways, and VPC endpoints before
+// allowing deletion. On this edge platform, those resources do not exist.
+// Cross-service consumers (Lambda VpcConfig, Neptune DB subnet groups) are
+// checked via registered SubnetUsageCheckers on the event bus.
 func (s *EC2Service) DeleteSubnet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
+	if err := checkDryRun(params); err != nil {
+		return nil, err
+	}
 	subnetID := request.GetStringParam(params, "SubnetId")
 	if subnetID == "" {
 		return nil, awserrors.NewMissingParameter("SubnetId is required")
@@ -126,6 +153,26 @@ func (s *EC2Service) DeleteSubnet(ctx context.Context, reqCtx *request.RequestCo
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Existence check first (AWS spec ordering): return InvalidSubnetID.NotFound
+	// before any dependency evaluation.
+	if _, err := store.GetSubnet(subnetID); err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	// Cross-service dependency check: verify no Lambda function VpcConfig or
+	// Neptune DB subnet group references this subnet.
+	if s.bus != nil {
+		for _, checker := range s.bus.SubnetUsageCheckers() {
+			if checker.IsSubnetInUse(ctx, reqCtx.GetRegion(), subnetID) {
+				return nil, awserrors.NewAWSError(
+					"DependencyViolation",
+					fmt.Sprintf("The subnet '%s' has dependencies and cannot be deleted", subnetID),
+					http.StatusBadRequest,
+				)
+			}
+		}
 	}
 
 	if err := store.DeleteSubnet(subnetID); err != nil {
