@@ -2,6 +2,7 @@ package cognitoidentity
 
 import (
 	"context"
+	"errors"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -14,6 +15,9 @@ func cognitoIdentityMapError(err error) error {
 	switch err.(type) {
 	case *tagutil.MissingResourceError, *tagutil.MissingTagsError, *tagutil.MissingTagKeysError:
 		return ErrInvalidParameter
+	}
+	if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
+		return ErrResourceNotFound
 	}
 	return err
 }

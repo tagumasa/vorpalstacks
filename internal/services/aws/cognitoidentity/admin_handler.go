@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/core/logs"
 
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
 	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
@@ -127,6 +128,20 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)
 		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// Persist tags through the tag store so they are visible via the HTTP API
+	// (DescribeIdentityPool / ListTagsForResource), matching the HTTP API path.
+	if t := req.Msg.GetIdentitypooltags(); len(t) > 0 {
+		if err := store.Tag(created.Arn, t); err != nil {
+			logs.Error("Failed to tag identity pool via admin console, attempting cleanup",
+				logs.String("poolId", created.ID), logs.Err(err))
+			if delErr := store.DeleteIdentityPool(created.ID); delErr != nil {
+				logs.Error("Failed to cleanup identity pool after tag failure",
+					logs.String("poolId", created.ID), logs.Err(delErr))
+			}
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
 	}
 
 	resp := &pb.IdentityPool{

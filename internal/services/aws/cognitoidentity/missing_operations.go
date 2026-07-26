@@ -69,6 +69,9 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 		maxResults = 60
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	// HideDisabled is accepted for SPEC compliance. Edge identities have no
+	// disabled state, so the filter has no effect.
+	_ = getBoolParam(req, "HideDisabled")
 
 	identities, token, err := store.ListIdentitiesByPool(poolID, maxResults, nextToken)
 	if err != nil {
@@ -113,15 +116,12 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 		return nil, ErrResourceNotFound
 	}
 
-	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
-		for k, v := range logins {
-			identity.Logins[k] = v
-		}
-		key := cognitoidentitystore.IdentityPoolIdentityKey(identity.IdentityPoolID, identity.ID)
-		if err := store.Identities().Put(key, identity); err != nil {
-			return nil, fmt.Errorf("failed to update identity logins: %w", err)
-		}
-	}
+	// Logins are accepted for wire compatibility but NOT persisted. In AWS,
+	// GetOpenIdToken verifies the caller's provider tokens against the actual
+	// identity provider before issuing a token. The edge environment cannot
+	// perform external provider verification, so the parameter is accepted
+	// without side effects to prevent identity takeover via Logins injection.
+	_ = parseMapParam(req, "Logins")
 
 	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 900, nil)
 	if err != nil {
@@ -159,14 +159,12 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 
 	// TokenDuration controls token expiry (range 1-86400 seconds per AWS spec).
 	tokenDuration := int64(900) // default 15 minutes
-	if td := request.GetIntParam(req.Parameters, "TokenDuration"); td > 0 {
+	if _, ok := req.Parameters["TokenDuration"]; ok {
+		td := request.GetIntParam(req.Parameters, "TokenDuration")
+		if td < 1 || td > 86400 {
+			return nil, ErrInvalidParameter
+		}
 		tokenDuration = int64(td)
-	}
-	if tokenDuration < 1 {
-		tokenDuration = 1
-	}
-	if tokenDuration > 86400 {
-		tokenDuration = 86400
 	}
 
 	for providerName, devUserID := range logins {
@@ -300,6 +298,9 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 {
 		maxResults = 60
+	}
+	if maxResults > 60 {
+		return nil, ErrInvalidParameter
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
@@ -443,6 +444,14 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 		return nil, ErrInvalidParameter
 	}
 
+	// Logins provides the caller's provider tokens for authorization. AWS
+	// requires at least one provider token matching the identity's linked
+	// providers before allowing an unlink operation.
+	logins := parseMapParam(req, "Logins")
+	if len(logins) == 0 {
+		return nil, ErrNotAuthorized
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -451,6 +460,19 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
 		return nil, ErrResourceNotFound
+	}
+
+	// Verify the caller holds a token for at least one provider linked to
+	// this identity.
+	providerMatch := false
+	for provider := range logins {
+		if _, exists := identity.Logins[provider]; exists {
+			providerMatch = true
+			break
+		}
+	}
+	if !providerMatch {
+		return nil, ErrNotAuthorized
 	}
 
 	if err := store.UnlinkLogins(identity.IdentityPoolID, identityID, loginsToRemove); err != nil {

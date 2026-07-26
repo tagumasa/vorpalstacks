@@ -211,9 +211,11 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 		updatedTags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
 		existingTags, _ := store.List(pool.Arn)
 		var keysToRemove []string
-		for k := range existingTags {
+		removedTags := make(map[string]string)
+		for k, v := range existingTags {
 			if _, keep := updatedTags[k]; !keep {
 				keysToRemove = append(keysToRemove, k)
+				removedTags[k] = v
 			}
 		}
 		if len(keysToRemove) > 0 {
@@ -222,6 +224,11 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 			}
 		}
 		if err := store.Tag(pool.Arn, updatedTags); err != nil {
+			// Rollback: re-apply the tags that were removed to avoid
+			// leaving the resource in a partially-untagged state.
+			if len(removedTags) > 0 {
+				_ = store.Tag(pool.Arn, removedTags)
+			}
 			return nil, ErrInternalError
 		}
 		pool.Tags = updatedTags
@@ -289,19 +296,23 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 	}
 
 	authRole, unauthRole := "", ""
-	if roles, ok := req.Parameters["Roles"]; ok {
-		if m, ok := roles.(map[string]interface{}); ok {
-			if v, ok := m["Authenticated"].(string); ok {
-				authRole = v
-			} else if v, ok := m["authenticated"].(string); ok {
+	if rolesVal, ok := req.Parameters["Roles"]; ok {
+		if m, ok := rolesVal.(map[string]interface{}); ok {
+			if v, ok := m["authenticated"].(string); ok {
 				authRole = v
 			}
-			if v, ok := m["Unauthenticated"].(string); ok {
-				unauthRole = v
-			} else if v, ok := m["unauthenticated"].(string); ok {
+			if v, ok := m["unauthenticated"].(string); ok {
 				unauthRole = v
 			}
 		}
+	} else {
+		// Roles is semantically required by AWS. Absent Roles would silently
+		// clear all existing roles — a destructive operation that AWS rejects
+		// with InvalidParameterException.
+		return nil, ErrInvalidParameter
+	}
+	if authRole == "" && unauthRole == "" {
+		return nil, ErrInvalidParameter
 	}
 	mappings := parseRoleMappings(req)
 

@@ -130,39 +130,39 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 
 	if err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		if err := s.identitiesStore.Delete(key); err != nil {
-			logs.Warn("failed to delete identity during pool deletion",
+			logs.Error("failed to delete identity during pool deletion",
 				logs.String("identityKey", key), logs.String("poolId", id), logs.Err(err))
 		}
 		return nil
 	}); err != nil {
-		logs.Warn("failed to scan identities during pool deletion",
+		logs.Error("failed to scan identities during pool deletion",
 			logs.String("poolId", id), logs.Err(err))
 	}
 
 	if err := s.developerIdStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		if err := s.developerIdStore.Delete(key); err != nil {
-			logs.Warn("failed to delete developer identity during pool deletion",
+			logs.Error("failed to delete developer identity during pool deletion",
 				logs.String("devKey", key), logs.String("poolId", id), logs.Err(err))
 		}
 		return nil
 	}); err != nil {
-		logs.Warn("failed to scan developer identities during pool deletion",
+		logs.Error("failed to scan developer identities during pool deletion",
 			logs.String("poolId", id), logs.Err(err))
 	}
 
 	if err := s.principalTagStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		if err := s.principalTagStore.Delete(key); err != nil {
-			logs.Warn("failed to delete principal tag attribute map during pool deletion",
+			logs.Error("failed to delete principal tag attribute map during pool deletion",
 				logs.String("ptKey", key), logs.String("poolId", id), logs.Err(err))
 		}
 		return nil
 	}); err != nil {
-		logs.Warn("failed to scan principal tags during pool deletion",
+		logs.Error("failed to scan principal tags during pool deletion",
 			logs.String("poolId", id), logs.Err(err))
 	}
 
 	if err := s.TagStore.Delete(s.arnBuilder.Cognito().IdentityPool(id)); err != nil {
-		logs.Warn("failed to delete resource tags during pool deletion",
+		logs.Error("failed to delete resource tags during pool deletion",
 			logs.String("poolId", id), logs.Err(err))
 	}
 
@@ -376,57 +376,35 @@ func (s *CognitoIdentityStore) LinkDeveloperIdentity(di *DeveloperIdentity) erro
 
 // LookupDeveloperIdentity looks up developer identity mappings with pagination support.
 func (s *CognitoIdentityStore) LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int, nextToken string) (matchedIdentityID string, devUserIDs []string, nextTokenOut string, err error) {
-	prefix := poolID + "#"
-
-	type entry struct {
-		key        string
-		devUserID  string
-		identityID string
-	}
-	var entries []entry
-
-	scanErr := s.developerIdStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		var di DeveloperIdentity
-		if err := json.Unmarshal(value, &di); err != nil {
-			return err
-		}
+	filter := func(di *DeveloperIdentity) bool {
 		if devUserID != "" && di.DeveloperUserIdentifier != devUserID {
-			return nil
+			return false
 		}
 		if identityID != "" && di.IdentityID != identityID {
-			return nil
+			return false
 		}
-		entries = append(entries, entry{key: key, devUserID: di.DeveloperUserIdentifier, identityID: di.IdentityID})
-		return nil
-	})
-	if scanErr != nil {
-		return "", nil, "", scanErr
+		return true
 	}
 
-	startIdx := 0
-	if nextToken != "" {
-		for i, e := range entries {
-			if e.key == nextToken {
-				startIdx = i + 1
-				break
-			}
-		}
+	result, err := common.List[DeveloperIdentity](s.developerIdStore, common.ListOptions{
+		Prefix:   poolID + "#",
+		Marker:   nextToken,
+		MaxItems: maxResults,
+	}, filter)
+	if err != nil {
+		return "", nil, "", err
 	}
 
-	end := startIdx + maxResults
-	if end > len(entries) {
-		end = len(entries)
-	}
-
-	for _, e := range entries[startIdx:end] {
-		devUserIDs = append(devUserIDs, e.devUserID)
-		if e.identityID != "" {
-			matchedIdentityID = e.identityID
+	devUserIDs = make([]string, 0, len(result.Items))
+	for _, di := range result.Items {
+		devUserIDs = append(devUserIDs, di.DeveloperUserIdentifier)
+		if di.IdentityID != "" {
+			matchedIdentityID = di.IdentityID
 		}
 	}
 
-	if end < len(entries) {
-		nextTokenOut = entries[end-1].key
+	if result.IsTruncated {
+		nextTokenOut = result.NextMarker
 	}
 
 	return matchedIdentityID, devUserIDs, nextTokenOut, nil

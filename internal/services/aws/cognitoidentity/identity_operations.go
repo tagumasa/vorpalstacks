@@ -2,6 +2,7 @@ package cognitoidentity
 
 import (
 	"context"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
@@ -12,6 +13,20 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
+	}
+
+	// AccountId is used for cross-account identity pool delegation in AWS.
+	// It is accepted and validated for SPEC compliance; the edge environment
+	// operates single-account so no cross-account check is enforced.
+	if accountID := req.GetParam("AccountId"); accountID != "" {
+		if len(accountID) < 1 || len(accountID) > 15 {
+			return nil, ErrInvalidParameter
+		}
+		for _, c := range accountID {
+			if c < '0' || c > '9' {
+				return nil, ErrInvalidParameter
+			}
+		}
 	}
 
 	store, err := s.store(reqCtx)
@@ -70,7 +85,23 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 	}
 
 	customRoleArn := req.GetParam("CustomRoleArn")
-	_ = parseMapParam(req, "Logins")
+
+	// When the caller provides fresh provider tokens via Logins, persist them
+	// onto the identity so that subsequent role selection and credential
+	// issuance reflect the current authentication state.
+	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
+		if identity.Logins == nil {
+			identity.Logins = make(map[string]string)
+		}
+		for k, v := range logins {
+			identity.Logins[k] = v
+		}
+		identity.LastModifiedDate = time.Now().UTC()
+		key := cognitoidentitystore.IdentityPoolIdentityKey(identity.IdentityPoolID, identity.ID)
+		if err := store.Identities().Put(key, identity); err != nil {
+			return nil, ErrInternalError
+		}
+	}
 
 	authRole, unauthRole, _, err := store.GetIdentityPoolRoles(identity.IdentityPoolID)
 	if err != nil {
