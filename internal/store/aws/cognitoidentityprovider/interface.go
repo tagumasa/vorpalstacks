@@ -199,6 +199,7 @@ func (s *CognitoStore) Raw() *CognitoStore {
 type DomainOperations interface {
 	SetUserPoolDomain(domain string, entry *UserPoolDomain) error
 	GetUserPoolDomain(domain string) (*UserPoolDomain, error)
+	GetUserPoolDomainByPool(userPoolID string) (*UserPoolDomain, error)
 	DeleteUserPoolDomain(domain string) error
 }
 

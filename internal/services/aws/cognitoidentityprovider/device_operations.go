@@ -166,8 +166,9 @@ func (s *CognitoService) ListDevices(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrUserNotFound
 	}
 
+	// Smithy QueryLimitType: range {min: 0, max: 60}
 	limit := 60
-	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 {
+	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 && l <= 60 {
 		limit = l
 	}
 
@@ -311,8 +312,9 @@ func (s *CognitoService) AdminListDevices(ctx context.Context, reqCtx *request.R
 		return nil, ErrUserNotFound
 	}
 
+	// Smithy QueryLimitType: range {min: 0, max: 60}
 	limit := 60
-	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 {
+	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 && l <= 60 {
 		limit = l
 	}
 

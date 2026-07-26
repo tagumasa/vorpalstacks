@@ -88,8 +88,9 @@ func (s *CognitoService) ListUserImportJobs(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	// Smithy PoolQueryLimitType: range {min: 1, max: 60}
 	maxResults := 60
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
+	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 && mr <= 60 {
 		maxResults = mr
 	}
 

@@ -12,6 +12,7 @@ import (
 
 func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getToken func(*T) string, getExpires func(*T) time.Time) (*T, error) {
 	var found *T
+	var foundKey string
 	err := store.ForEach(func(key string, value []byte) error {
 		var t T
 		if err := json.Unmarshal(value, &t); err != nil {
@@ -20,6 +21,7 @@ func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getToke
 		if getToken(&t) == tokenValue {
 			cp := t
 			found = &cp
+			foundKey = key
 		}
 		return nil
 	})
@@ -30,6 +32,7 @@ func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getToke
 		return nil, ErrTokenNotFound
 	}
 	if time.Now().After(getExpires(found)) {
+		_ = store.Delete(foundKey)
 		return nil, ErrTokenExpired
 	}
 	return found, nil
@@ -171,6 +174,18 @@ func userPoolClientKey(userPoolID, clientID string) string {
 
 func tokenKey(userPoolID, userID, token string) string {
 	return userPoolID + "#" + userID + "#" + token
+}
+
+func userIndexKey(userID string) string {
+	return "useridx:" + userID
+}
+
+func providerIndexKey(userPoolID, providerName, providerAttrValue string) string {
+	return "providx:" + userPoolID + "#" + providerName + "#" + providerAttrValue
+}
+
+func clientIndexKey(clientID string) string {
+	return "clientidx:" + clientID
 }
 
 func encodePrivateKeyToPEM(key *rsa.PrivateKey) string {

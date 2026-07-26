@@ -1,6 +1,9 @@
 package cognitoidentityprovider
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,6 +13,15 @@ import (
 
 	"github.com/google/uuid"
 )
+
+// cognitoIdpHost returns the Cognito IDP hostname for the given region,
+// accounting for partition-specific suffixes (aws-cn uses .amazonaws.com.cn).
+func cognitoIdpHost(region string) string {
+	if strings.HasPrefix(region, "cn-") {
+		return "cognito-idp." + region + ".amazonaws.com.cn"
+	}
+	return "cognito-idp." + region + ".amazonaws.com"
+}
 
 func getBoolParam(req *request.ParsedRequest, key string) bool {
 	lowerKey := strings.ToLower(key[:1]) + key[1:]
@@ -160,15 +172,18 @@ func parseClientMetadata(req *request.ParsedRequest) map[string]string {
 	return metadata
 }
 
-func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolicy {
+func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.PasswordPolicy) *cognitostore.PasswordPolicy {
 	hasPolicy := false
-	policy := &cognitostore.PasswordPolicy{
-		MinimumLength:                 8,
-		RequireUppercase:              true,
-		RequireLowercase:              true,
-		RequireNumbers:                true,
-		RequireSymbols:                true,
-		TemporaryPasswordValidityDays: 7,
+	policy := &cognitostore.PasswordPolicy{}
+	if base != nil {
+		*policy = *base
+	} else {
+		policy.MinimumLength = 8
+		policy.RequireUppercase = true
+		policy.RequireLowercase = true
+		policy.RequireNumbers = true
+		policy.RequireSymbols = true
+		policy.TemporaryPasswordValidityDays = 7
 	}
 
 	if policiesMap, ok := req.Parameters["Policies"].(map[string]interface{}); ok {
@@ -261,9 +276,20 @@ func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolic
 	return policy
 }
 
+func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolicy {
+	return parsePasswordPolicyWithBase(req, nil)
+}
+
 func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
+	return parseLambdaConfigWithBase(req, nil)
+}
+
+func parseLambdaConfigWithBase(req *request.ParsedRequest, base *cognitostore.LambdaConfig) *cognitostore.LambdaConfig {
 	hasConfig := false
 	config := &cognitostore.LambdaConfig{}
+	if base != nil {
+		*config = *base
+	}
 
 	if lambdaConfigMap, ok := req.Parameters["LambdaConfig"].(map[string]interface{}); ok {
 		if val, ok := lambdaConfigMap["PreSignUp"].(string); ok && val != "" {
@@ -306,6 +332,26 @@ func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
 			config.UserMigration = val
 			hasConfig = true
 		}
+		if val, ok := lambdaConfigMap["KMSKeyID"].(string); ok && val != "" {
+			config.KMSKeyID = val
+			hasConfig = true
+		}
+		if m, ok := lambdaConfigMap["CustomEmailSender"].(map[string]interface{}); ok {
+			config.CustomEmailSender = parseLambdaVersionConfig(m)
+			hasConfig = true
+		}
+		if m, ok := lambdaConfigMap["CustomSMSSender"].(map[string]interface{}); ok {
+			config.CustomSMSSender = parseLambdaVersionConfig(m)
+			hasConfig = true
+		}
+		if m, ok := lambdaConfigMap["PreTokenGenerationConfig"].(map[string]interface{}); ok {
+			config.PreTokenGenerationConfig = parseLambdaVersionConfig(m)
+			hasConfig = true
+		}
+		if m, ok := lambdaConfigMap["InboundFederation"].(map[string]interface{}); ok {
+			config.InboundFederation = parseLambdaVersionConfig(m)
+			hasConfig = true
+		}
 	}
 
 	fields := []struct {
@@ -322,6 +368,7 @@ func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
 		{"LambdaConfig.VerifyAuthChallengeResponse", &config.VerifyAuthChallengeResponse},
 		{"LambdaConfig.PreTokenGeneration", &config.PreTokenGeneration},
 		{"LambdaConfig.UserMigration", &config.UserMigration},
+		{"LambdaConfig.KMSKeyID", &config.KMSKeyID},
 	}
 	for _, f := range fields {
 		if val := req.GetParam(f.param); val != "" {
@@ -333,6 +380,13 @@ func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
 		return nil
 	}
 	return config
+}
+
+func parseLambdaVersionConfig(m map[string]interface{}) *cognitostore.LambdaVersionConfig {
+	return &cognitostore.LambdaVersionConfig{
+		LambdaArn:     getStringParam(m, "LambdaArn"),
+		LambdaVersion: getStringParam(m, "LambdaVersion"),
+	}
 }
 
 func parseEmailConfiguration(req *request.ParsedRequest) *cognitostore.EmailConfiguration {
@@ -488,11 +542,16 @@ func parseUserAttributeUpdateSettings(req *request.ParsedRequest) *cognitostore.
 }
 
 func parseInt(s string) int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
 	var result int
 	for _, c := range s {
-		if c >= '0' && c <= '9' {
-			result = result*10 + int(c-'0')
+		if c < '0' || c > '9' {
+			return -1
 		}
+		result = result*10 + int(c-'0')
 	}
 	return result
 }
@@ -559,6 +618,47 @@ func parseDeviceConfiguration(req *request.ParsedRequest) *cognitostore.DeviceCo
 	return cfg
 }
 
+func parseSchemaAttributes(req *request.ParsedRequest) []cognitostore.SchemaAttributeType {
+	var result []cognitostore.SchemaAttributeType
+	if rawList, ok := req.Parameters["Schema"].([]interface{}); ok {
+		for _, item := range rawList {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			sa := cognitostore.SchemaAttributeType{
+				Name:              getStringParam(m, "Name"),
+				AttributeDataType: getStringParam(m, "AttributeDataType"),
+			}
+			if v, ok := m["DeveloperOnlyAttribute"].(bool); ok {
+				sa.DeveloperOnlyAttribute = v
+			}
+			if v, ok := m["Mutable"].(bool); ok {
+				sa.Mutable = v
+			}
+			if v, ok := m["Required"].(bool); ok {
+				sa.Required = v
+			}
+			if nac, ok := m["NumberAttributeConstraints"].(map[string]interface{}); ok {
+				sa.NumberAttributeConstraints = &cognitostore.NumberAttributeConstraints{
+					MinValue: getStringParam(nac, "MinValue"),
+					MaxValue: getStringParam(nac, "MaxValue"),
+				}
+			}
+			if sac, ok := m["StringAttributeConstraints"].(map[string]interface{}); ok {
+				sa.StringAttributeConstraints = &cognitostore.StringAttributeConstraints{
+					MinLength: getStringParam(sac, "MinLength"),
+					MaxLength: getStringParam(sac, "MaxLength"),
+				}
+			}
+			if sa.Name != "" {
+				result = append(result, sa)
+			}
+		}
+	}
+	return result
+}
+
 func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedRequest) {
 	if v := req.GetParam("PoolName"); v != "" {
 		pool.Name = v
@@ -590,10 +690,13 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
 		pool.AutoVerifiedAttributes = v
 	}
-	if v := parsePasswordPolicy(req); v != nil {
+	if schemaAttrs := parseSchemaAttributes(req); len(schemaAttrs) > 0 {
+		pool.SchemaAttributes = schemaAttrs
+	}
+	if v := parsePasswordPolicyWithBase(req, pool.PasswordPolicy); v != nil {
 		pool.PasswordPolicy = v
 	}
-	if v := parseLambdaConfig(req); v != nil {
+	if v := parseLambdaConfigWithBase(req, pool.LambdaConfig); v != nil {
 		pool.LambdaConfig = v
 	}
 	if v := parseEmailConfiguration(req); v != nil {
@@ -622,6 +725,20 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 	}
 	if v := parseDeviceConfiguration(req); v != nil {
 		pool.DeviceConfiguration = v
+	}
+	if m, ok := req.Parameters["IssuerConfiguration"].(map[string]interface{}); ok {
+		pool.IssuerConfiguration = &cognitostore.IssuerConfiguration{
+			Type: getStringParam(m, "Type"),
+		}
+	}
+	if m, ok := req.Parameters["KeyConfiguration"].(map[string]interface{}); ok {
+		pool.KeyConfiguration = &cognitostore.KeyConfiguration{
+			KeyType:   getStringParam(m, "KeyType"),
+			KmsKeyArn: getStringParam(m, "KmsKeyArn"),
+		}
+	}
+	if v := req.GetParam("UserPoolTier"); v != "" {
+		pool.UserPoolTier = v
 	}
 }
 
@@ -653,8 +770,31 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 	if pool.AutoVerifiedAttributes != nil {
 		result["AutoVerifiedAttributes"] = pool.AutoVerifiedAttributes
 	}
-	if pool.Schema != "" {
-		result["Schema"] = pool.Schema
+	if len(pool.SchemaAttributes) > 0 {
+		schema := make([]map[string]interface{}, 0, len(pool.SchemaAttributes))
+		for _, sa := range pool.SchemaAttributes {
+			entry := map[string]interface{}{
+				"Name":                  sa.Name,
+				"AttributeDataType":     sa.AttributeDataType,
+				"DeveloperOnlyAttribute": sa.DeveloperOnlyAttribute,
+				"Mutable":               sa.Mutable,
+				"Required":              sa.Required,
+			}
+			if sa.NumberAttributeConstraints != nil {
+				entry["NumberAttributeConstraints"] = map[string]interface{}{
+					"MinValue": sa.NumberAttributeConstraints.MinValue,
+					"MaxValue": sa.NumberAttributeConstraints.MaxValue,
+				}
+			}
+			if sa.StringAttributeConstraints != nil {
+				entry["StringAttributeConstraints"] = map[string]interface{}{
+					"MinLength": sa.StringAttributeConstraints.MinLength,
+					"MaxLength": sa.StringAttributeConstraints.MaxLength,
+				}
+			}
+			schema = append(schema, entry)
+		}
+		result["Schema"] = schema
 	}
 	if pool.PasswordPolicy != nil {
 		result["Policies"] = map[string]interface{}{
@@ -737,6 +877,24 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 			"ChallengeRequiredOnNewDevice":     pool.DeviceConfiguration.ChallengeRequiredOnNewDevice,
 			"DeviceOnlyRememberedOnUserPrompt": pool.DeviceConfiguration.DeviceOnlyRememberedOnUserPrompt,
 		}
+	}
+	if pool.IssuerConfiguration != nil {
+		result["IssuerConfiguration"] = map[string]interface{}{
+			"Type": pool.IssuerConfiguration.Type,
+		}
+	}
+	if pool.KeyConfiguration != nil {
+		kc := map[string]interface{}{}
+		if pool.KeyConfiguration.KeyType != "" {
+			kc["KeyType"] = pool.KeyConfiguration.KeyType
+		}
+		if pool.KeyConfiguration.KmsKeyArn != "" {
+			kc["KmsKeyArn"] = pool.KeyConfiguration.KmsKeyArn
+		}
+		result["KeyConfiguration"] = kc
+	}
+	if pool.UserPoolTier != "" {
+		result["UserPoolTier"] = pool.UserPoolTier
 	}
 
 	return result
@@ -836,10 +994,35 @@ func formatLambdaConfig(config *cognitostore.LambdaConfig) map[string]interface{
 		{"VerifyAuthChallengeResponse", config.VerifyAuthChallengeResponse},
 		{"PreTokenGeneration", config.PreTokenGeneration},
 		{"UserMigration", config.UserMigration},
+		{"KMSKeyID", config.KMSKeyID},
 	}
 	for _, f := range fields {
 		if f.value != "" {
 			result[f.key] = f.value
+		}
+	}
+	if config.CustomEmailSender != nil {
+		result["CustomEmailSender"] = map[string]interface{}{
+			"LambdaArn":     config.CustomEmailSender.LambdaArn,
+			"LambdaVersion": config.CustomEmailSender.LambdaVersion,
+		}
+	}
+	if config.CustomSMSSender != nil {
+		result["CustomSMSSender"] = map[string]interface{}{
+			"LambdaArn":     config.CustomSMSSender.LambdaArn,
+			"LambdaVersion": config.CustomSMSSender.LambdaVersion,
+		}
+	}
+	if config.PreTokenGenerationConfig != nil {
+		result["PreTokenGenerationConfig"] = map[string]interface{}{
+			"LambdaArn":     config.PreTokenGenerationConfig.LambdaArn,
+			"LambdaVersion": config.PreTokenGenerationConfig.LambdaVersion,
+		}
+	}
+	if config.InboundFederation != nil {
+		result["InboundFederation"] = map[string]interface{}{
+			"LambdaArn":     config.InboundFederation.LambdaArn,
+			"LambdaVersion": config.InboundFederation.LambdaVersion,
 		}
 	}
 	return result
@@ -901,16 +1084,16 @@ func formatGroup(group *cognitostore.Group) map[string]interface{} {
 }
 
 func generateSessionID() string {
-	return "SESSION_" + uuid.New().String()[:16]
+	return "SESSION_" + uuid.New().String()
 }
 
-var userFilterRe = regexp.MustCompile(`^"?(\w[\w:]*)\s*(=|\^=)\s*"([^"]*)"\s*$`)
+var userFilterRe = regexp.MustCompile(`^"?(\w[\w:.\-+]*)\s*(=|\^=)\s*"?([^"]+?)"?\s*$`)
 
 func matchUserFilter(user *cognitostore.User, filter string) bool {
 	f := strings.TrimSpace(filter)
 	m := userFilterRe.FindStringSubmatch(f)
 	if m == nil {
-		return true
+		return false
 	}
 	attrName := m[1]
 	op := m[2]
@@ -941,4 +1124,39 @@ func matchUserFilter(user *cognitostore.User, filter string) bool {
 		return strings.HasPrefix(strings.ToLower(actual), strings.ToLower(attrValue))
 	}
 	return false
+}
+
+// computeSrpVerifier derives a fresh random salt and the matching SRP verifier
+// for the supplied password. It must be invoked at every site that stores a
+// password hash so that the user can later authenticate via USER_SRP_AUTH.
+//
+// userPoolID is the full Cognito pool ID (e.g. "us-east-1_abc123"); the part
+// after the underscore (poolName) is required by Cognito's SRP variant inner
+// hash. The returned saltHex and verifierHex are lowercase hex strings suitable
+// for direct assignment to User.SrpSalt and User.SrpVerifier.
+func computeSrpVerifier(userPoolID, username, password string) (saltHex, verifierHex string, err error) {
+	idx := strings.Index(userPoolID, "_")
+	if idx < 0 || idx == len(userPoolID)-1 {
+		return "", "", fmt.Errorf("invalid user pool ID %q: missing region prefix", userPoolID)
+	}
+	poolName := userPoolID[idx+1:]
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", "", err
+	}
+	saltHex = hex.EncodeToString(salt)
+	v := ComputeVerifier(saltHex, poolName, username, password)
+	return saltHex, hex.EncodeToString(v.Bytes()), nil
+}
+
+// poolNameFromID extracts the portion of a Cognito user pool ID after the
+// underscore (e.g. "us-east-1_abc123" => "abc123"). The pool name is used as
+// part of the Cognito SRP inner hash and the claim message. The boolean is
+// false when the ID does not contain a valid region/name separator.
+func poolNameFromID(userPoolID string) (string, bool) {
+	idx := strings.Index(userPoolID, "_")
+	if idx < 0 || idx == len(userPoolID)-1 {
+		return "", false
+	}
+	return userPoolID[idx+1:], true
 }

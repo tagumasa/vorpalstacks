@@ -69,6 +69,13 @@ func (s *CognitoStore) buildUserPoolArn(userPoolID string) string {
 
 // CreateUserPool creates a new Cognito user pool.
 func (s *CognitoStore) CreateUserPool(userPool *UserPool) (*UserPool, error) {
+	// H9: Generate RSA key outside createMu to avoid blocking CreateUser
+	// and CreateGroup operations during the 100-300ms key generation.
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if userPool.Name == "" {
@@ -77,11 +84,6 @@ func (s *CognitoStore) CreateUserPool(userPool *UserPool) (*UserPool, error) {
 
 	if s.Exists(userPool.ID) {
 		return nil, ErrUserPoolAlreadyExists
-	}
-
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, err
 	}
 
 	now := time.Now().UTC()
@@ -270,7 +272,16 @@ func (s *CognitoStore) CreateUser(user *User) error {
 	user.CreatedDate = now
 	user.LastModifiedDate = now
 
-	return s.usersStore.Put(key, user)
+	if err := s.usersStore.Put(key, user); err != nil {
+		return err
+	}
+	// M16: Write secondary index for O(1) GetUserByID lookup
+	_ = s.usersStore.Put(userIndexKey(user.ID), user.UserPoolID+"#"+user.Username)
+	// M17: Write secondary index for O(1) GetUserByProvider lookup
+	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
+		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
+	}
+	return nil
 }
 
 // GetUser retrieves a Cognito user by user pool ID and username.
@@ -285,8 +296,20 @@ func (s *CognitoStore) GetUser(userPoolID, username string) (*User, error) {
 
 // GetUserByID retrieves a Cognito user by user ID.
 func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
+	// M16: Use secondary index for O(1) lookup
+	var idx string
+	if err := s.usersStore.Get(userIndexKey(userID), &idx); err == nil && idx != "" {
+		parts := strings.SplitN(idx, "#", 2)
+		if len(parts) == 2 {
+			return s.GetUser(parts[0], parts[1])
+		}
+	}
+	// Fallback: full scan for legacy users without index
 	var found *User
 	err := s.usersStore.ForEach(func(key string, value []byte) error {
+		if strings.HasPrefix(key, "useridx:") || strings.HasPrefix(key, "providx:") {
+			return nil
+		}
 		var user User
 		if err := json.Unmarshal(value, &user); err != nil {
 			return err
@@ -302,6 +325,8 @@ func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
 	if found == nil {
 		return nil, ErrUserNotFound
 	}
+	// Backfill index for future lookups
+	_ = s.usersStore.Put(userIndexKey(found.ID), found.UserPoolID+"#"+found.Username)
 	return found, nil
 }
 
@@ -309,9 +334,18 @@ func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
 // given federated provider with the matching attribute value. Returns
 // ErrUserNotFound if no user matches.
 func (s *CognitoStore) GetUserByProvider(userPoolID, providerName, providerAttrValue string) (*User, error) {
+	// M17: Use secondary index for O(1) lookup
+	var username string
+	if err := s.usersStore.Get(providerIndexKey(userPoolID, providerName, providerAttrValue), &username); err == nil && username != "" {
+		return s.GetUser(userPoolID, username)
+	}
+	// Fallback: prefix scan for legacy users without index
 	var found *User
 	prefix := userPoolID + "#"
 	err := s.usersStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if strings.HasPrefix(key, "useridx:") || strings.HasPrefix(key, "providx:") {
+			return nil
+		}
 		var user User
 		if err := json.Unmarshal(value, &user); err != nil {
 			return err
@@ -327,6 +361,8 @@ func (s *CognitoStore) GetUserByProvider(userPoolID, providerName, providerAttrV
 	if found == nil {
 		return nil, ErrUserNotFound
 	}
+	// Backfill index
+	_ = s.usersStore.Put(providerIndexKey(userPoolID, providerName, providerAttrValue), found.Username)
 	return found, nil
 }
 
@@ -337,7 +373,14 @@ func (s *CognitoStore) UpdateUser(user *User) error {
 		return ErrUserNotFound
 	}
 	user.LastModifiedDate = time.Now().UTC()
-	return s.usersStore.Put(key, user)
+	if err := s.usersStore.Put(key, user); err != nil {
+		return err
+	}
+	// M17: Update provider index if provider info is set
+	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
+		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
+	}
+	return nil
 }
 
 // DeleteUser deletes a Cognito user.
@@ -367,6 +410,11 @@ func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 		if err := s.groupsStore.Put(userPoolGroupKey(userPoolID, groupName), group); err != nil {
 			logs.Warn("failed to update group after user deletion", logs.String("group", groupName), logs.Err(err))
 		}
+	}
+	// M16/M17: Clean up secondary indexes
+	_ = s.usersStore.Delete(userIndexKey(user.ID))
+	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
+		_ = s.usersStore.Delete(providerIndexKey(userPoolID, user.ProviderName, user.ProviderAttributeValue))
 	}
 	return s.usersStore.Delete(key)
 }
@@ -591,7 +639,12 @@ func (s *CognitoStore) CreateUserPoolClient(client *UserPoolClient) error {
 	client.CreationDate = now
 	client.LastModifiedDate = now
 
-	return s.clientsStore.Put(key, client)
+	if err := s.clientsStore.Put(key, client); err != nil {
+		return err
+	}
+	// M19: Write secondary index for O(1) GetUserPoolByClientID lookup
+	_ = s.clientsStore.Put(clientIndexKey(client.ClientID), client.UserPoolID)
+	return nil
 }
 
 // GetUserPoolClient retrieves a Cognito user pool client by client ID.
@@ -643,6 +696,8 @@ func (s *CognitoStore) DeleteUserPoolClient(userPoolID, clientID string) error {
 	if !s.clientsStore.Exists(key) {
 		return ErrClientNotFound
 	}
+	// M19: Clean up secondary index
+	_ = s.clientsStore.Delete(clientIndexKey(clientID))
 	return s.clientsStore.Delete(key)
 }
 
@@ -666,6 +721,12 @@ func (s *CognitoStore) ListUserPoolClients(userPoolID string) ([]*UserPoolClient
 
 // GetUserPoolByClientID retrieves the user pool associated with a client ID.
 func (s *CognitoStore) GetUserPoolByClientID(clientID string) (*UserPool, error) {
+	// M19: Use secondary index for O(1) lookup
+	var poolID string
+	if err := s.clientsStore.Get(clientIndexKey(clientID), &poolID); err == nil && poolID != "" {
+		return s.GetUserPool(poolID)
+	}
+	// Fallback: full scan for legacy clients without index
 	pools, err := s.ListUserPools()
 	if err != nil {
 		return nil, err
@@ -678,6 +739,8 @@ func (s *CognitoStore) GetUserPoolByClientID(clientID string) (*UserPool, error)
 		}
 		for _, client := range clients {
 			if client.ClientID == clientID {
+				// Backfill index
+				_ = s.clientsStore.Put(clientIndexKey(clientID), pool.ID)
 				return pool, nil
 			}
 		}
@@ -717,6 +780,7 @@ func (s *CognitoStore) GetRefreshToken(userPoolID, userID, token string) (*Refre
 		return nil, ErrTokenNotFound
 	}
 	if time.Now().After(rt.Expires) {
+		_ = s.refreshTokensStore.Delete(key)
 		return nil, ErrTokenExpired
 	}
 	return &rt, nil
@@ -755,6 +819,7 @@ func (s *CognitoStore) GetIDToken(userPoolID, userID, token string) (*IDToken, e
 		return nil, ErrTokenNotFound
 	}
 	if time.Now().After(it.Expires) {
+		_ = s.idTokensStore.Delete(key)
 		return nil, ErrTokenExpired
 	}
 	return &it, nil
@@ -785,6 +850,7 @@ func (s *CognitoStore) GetAccessToken(userPoolID, userID, token string) (*Access
 		return nil, ErrTokenNotFound
 	}
 	if time.Now().After(at.Expires) {
+		_ = s.accessTokensStore.Delete(key)
 		return nil, ErrTokenExpired
 	}
 	return &at, nil
@@ -860,6 +926,22 @@ func (s *CognitoStore) GetUserPoolDomain(domain string) (*UserPoolDomain, error)
 	return &entry, nil
 }
 
+// GetUserPoolDomainByPool retrieves the custom domain for a user pool, if any.
+func (s *CognitoStore) GetUserPoolDomainByPool(userPoolID string) (*UserPoolDomain, error) {
+	var found *UserPoolDomain
+	_ = s.BaseStore.ScanPrefix("domain:", func(key string, value []byte) error {
+		var entry UserPoolDomain
+		if err := json.Unmarshal(value, &entry); err == nil && entry.UserPoolID == userPoolID {
+			found = &entry
+		}
+		return nil
+	})
+	if found == nil {
+		return nil, ErrUserPoolNotFound
+	}
+	return found, nil
+}
+
 // DeleteUserPoolDomain removes the domain configuration for a user pool.
 func (s *CognitoStore) DeleteUserPoolDomain(domain string) error {
 	return s.BaseStore.Delete(domainKey(domain))
@@ -871,6 +953,9 @@ func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
 	if s.BaseStore.Exists(key) {
 		return ErrResourceAlreadyExists
 	}
+	now := time.Now().UTC()
+	rs.CreationDate = now
+	rs.LastModifiedDate = now
 	return s.BaseStore.Put(key, rs)
 }
 
@@ -887,6 +972,7 @@ func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*Resour
 // UpdateResourceServer updates an existing resource server in the store.
 func (s *CognitoStore) UpdateResourceServer(rs *ResourceServer) error {
 	key := resourceServerKey(rs.UserPoolID, rs.Identifier)
+	rs.LastModifiedDate = time.Now().UTC()
 	return s.BaseStore.Put(key, rs)
 }
 
@@ -923,6 +1009,9 @@ func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
 	if s.BaseStore.Exists(key) {
 		return ErrResourceAlreadyExists
 	}
+	now := time.Now().UTC()
+	ip.CreationDate = now
+	ip.LastModifiedDate = now
 	return s.BaseStore.Put(key, ip)
 }
 
@@ -939,6 +1028,7 @@ func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*Id
 // UpdateIdentityProvider updates an existing identity provider in the store.
 func (s *CognitoStore) UpdateIdentityProvider(ip *IdentityProvider) error {
 	key := identityProviderKey(ip.UserPoolID, ip.ProviderName)
+	ip.LastModifiedDate = time.Now().UTC()
 	return s.BaseStore.Put(key, ip)
 }
 

@@ -30,12 +30,42 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 
 	challenge := make([]byte, 32)
 	rand.Read(challenge)
+	challengeB64 := base64.RawURLEncoding.EncodeToString(challenge)
+
+	// M11: Store the challenge in a session for CompleteWebAuthnRegistration binding
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(userID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	sessionID := generateSessionID()
+	challengeSession := &cognitostore.ChallengeSession{
+		SessionID:     sessionID,
+		UserPoolID:    user.UserPoolID,
+		ClientID:      "",
+		Username:      user.Username,
+		ChallengeName: "WEB_AUTHN_REGISTRATION",
+		CreatedAt:     time.Now().UTC(),
+		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+	}
+	if err := store.SaveChallengeSession(challengeSession); err != nil {
+		return nil, ErrInternalError
+	}
+
+	// M10: Use custom domain as RP ID if configured, otherwise default
+	rpID := cognitoIdpHost(s.region)
+	if domain, err := store.GetUserPoolDomainByPool(user.UserPoolID); err == nil && domain.Domain != "" {
+		rpID = domain.Domain
+	}
 
 	options := map[string]interface{}{
-		"challenge": base64.RawURLEncoding.EncodeToString(challenge),
+		"challenge": challengeB64,
 		"rp": map[string]interface{}{
 			"name": "Cognito",
-			"id":   "cognito-idp." + s.region + ".amazonaws.com",
+			"id":   rpID,
 		},
 		"user": map[string]interface{}{
 			"id":          base64.RawURLEncoding.EncodeToString([]byte(userID)),
@@ -56,6 +86,7 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 
 	return map[string]interface{}{
 		"CredentialCreationOptions": options,
+		"Session":                   sessionID,
 	}, nil
 }
 
@@ -146,6 +177,10 @@ func (s *CognitoService) ListWebAuthnCredentials(ctx context.Context, reqCtx *re
 	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
 		maxResults = mr
 	}
+	// Smithy WebAuthnCredentialsQueryLimitType: range {min: 0, max: 20}
+	if maxResults > 20 {
+		return nil, ErrInvalidParameter
+	}
 
 	result, err := store.ListWebAuthnCredentialsPaginated(user.UserPoolID, user.ID, storecommon.ListOptions{
 		MaxItems: maxResults,
@@ -234,7 +269,9 @@ func (s *CognitoService) CreateManagedLoginBranding(ctx context.Context, reqCtx 
 			b.Settings = m
 		}
 	}
-	parseBrandingAssets(req, b)
+	if err := parseBrandingAssets(req, b); err != nil {
+		return nil, err
+	}
 
 	if err := store.SaveManagedLoginBranding(b); err != nil {
 		return nil, ErrInternalError
@@ -314,7 +351,9 @@ func (s *CognitoService) UpdateManagedLoginBranding(ctx context.Context, reqCtx 
 			b.Settings = m
 		}
 	}
-	parseBrandingAssets(req, b)
+	if err := parseBrandingAssets(req, b); err != nil {
+		return nil, err
+	}
 
 	if err := store.SaveManagedLoginBranding(b); err != nil {
 		return nil, ErrInternalError
@@ -344,21 +383,74 @@ func (s *CognitoService) DeleteManagedLoginBranding(ctx context.Context, reqCtx 
 	return response.EmptyResponse(), nil
 }
 
-func parseBrandingAssets(req *request.ParsedRequest, b *cognitostore.ManagedLoginBranding) {
+var validAssetCategories = map[string]bool{
+	"AUTH_APP_GRAPHIC": true, "EMAIL_GRAPHIC": true, "FAVICON_ICO": true,
+	"FAVICON_SVG": true, "FORM_BACKGROUND": true, "FORM_LOGO": true,
+	"IDP_BUTTON_ICON": true, "PAGE_BACKGROUND": true, "PAGE_FOOTER_BACKGROUND": true,
+	"PAGE_FOOTER_LOGO": true, "PAGE_HEADER_BACKGROUND": true, "PAGE_HEADER_LOGO": true,
+	"PASSKEY_GRAPHIC": true, "PASSWORD_GRAPHIC": true, "SMS_GRAPHIC": true,
+}
+
+var validAssetExtensions = map[string]bool{
+	"ICO": true, "JPEG": true, "PNG": true, "SVG": true, "WEBP": true,
+}
+
+var validColorModes = map[string]bool{
+	"LIGHT": true, "DARK": true, "DYNAMIC": true,
+}
+
+var assetMagicBytes = map[string][]byte{
+	"PNG":  {0x89, 0x50, 0x4E, 0x47},
+	"JPEG": {0xFF, 0xD8, 0xFF},
+	"ICO":  {0x00, 0x00, 0x01, 0x00},
+	"GIF":  {0x47, 0x49, 0x46, 0x38},
+}
+
+func parseBrandingAssets(req *request.ParsedRequest, b *cognitostore.ManagedLoginBranding) error {
 	if rawAssets, ok := req.Parameters["Assets"].([]interface{}); ok {
 		b.Assets = nil
 		for _, a := range rawAssets {
-			if m, ok := a.(map[string]interface{}); ok {
-				asset := cognitostore.BrandingAsset{
-					Category:  getStringParam(m, "Category"),
-					Color:     getStringParam(m, "Color"),
-					Extension: getStringParam(m, "Extension"),
-					Bytes:     getStringParam(m, "Bytes"),
-				}
-				b.Assets = append(b.Assets, asset)
+			m, ok := a.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			category := getStringParam(m, "Category")
+			extension := getStringParam(m, "Extension")
+			colorMode := getStringParam(m, "Color")
+			// L3: Validate enum values
+			if category != "" && !validAssetCategories[category] {
+				return ErrInvalidParameter
+			}
+			if extension != "" && !validAssetExtensions[extension] {
+				return ErrInvalidParameter
+			}
+			if colorMode != "" && !validColorModes[colorMode] {
+				return ErrInvalidParameter
+			}
+			// Validate Bytes magic bytes when extension is known
+			bytesVal := getStringParam(m, "Bytes")
+			if bytesVal != "" && extension != "" {
+				if magic, ok := assetMagicBytes[extension]; ok {
+					decoded, err := base64.StdEncoding.DecodeString(bytesVal)
+					if err == nil && len(decoded) >= len(magic) {
+						for i, b := range magic {
+							if decoded[i] != b {
+								return ErrInvalidParameter
+							}
+						}
+					}
+				}
+			}
+			asset := cognitostore.BrandingAsset{
+				Category:  category,
+				Color:     colorMode,
+				Extension: extension,
+				Bytes:     bytesVal,
+			}
+			b.Assets = append(b.Assets, asset)
 		}
 	}
+	return nil
 }
 
 func formatManagedLoginBranding(b *cognitostore.ManagedLoginBranding) map[string]interface{} {
@@ -471,8 +563,9 @@ func (s *CognitoService) ListTerms(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
+	// Smithy ListTermsRequestMaxResultsInteger: range {min: 1, max: 60}
 	maxResults := 60
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
+	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 && mr <= 60 {
 		maxResults = mr
 	}
 

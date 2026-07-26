@@ -143,6 +143,66 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if v := req.GetParam("PreventUserExistenceErrors"); v != "" {
 		client.PreventUserExistenceErrors = v
 	}
+	// M2: Parse missing Smithy fields
+	if val := getIntParam(req, "AuthSessionValidity"); val > 0 {
+		client.AuthSessionValidity = val
+	}
+	if attrs := getStringSliceParam(req, "ReadAttributes"); len(attrs) > 0 {
+		client.ReadAttributes = attrs
+	}
+	if attrs := getStringSliceParam(req, "WriteAttributes"); len(attrs) > 0 {
+		client.WriteAttributes = attrs
+	}
+	client.EnablePropagateAdditionalUserContextData = getBoolParam(req, "EnablePropagateAdditionalUserContextData")
+	client.EnableTokenRevocation = getBoolParam(req, "EnableTokenRevocation")
+	client.GenerateSecret = getBoolParam(req, "GenerateSecret")
+	if m, ok := req.Parameters["AnalyticsConfiguration"].(map[string]interface{}); ok {
+		ac := &cognitostore.AnalyticsConfiguration{}
+		if v, ok := m["ApplicationArn"].(string); ok {
+			ac.ApplicationArn = v
+		}
+		if v, ok := m["ApplicationId"].(string); ok {
+			ac.ApplicationId = v
+		}
+		if v, ok := m["ExternalId"].(string); ok {
+			ac.ExternalId = v
+		}
+		if v, ok := m["RoleArn"].(string); ok {
+			ac.RoleArn = v
+		}
+		if v, ok := m["UserDataShared"].(bool); ok {
+			ac.UserDataShared = v
+		}
+		client.AnalyticsConfiguration = ac
+	}
+	if m, ok := req.Parameters["TokenValidityUnits"].(map[string]interface{}); ok {
+		tvu := &cognitostore.TokenValidityUnits{}
+		if v, ok := m["AccessToken"].(string); ok {
+			tvu.AccessToken = v
+		}
+		if v, ok := m["IdToken"].(string); ok {
+			tvu.IdToken = v
+		}
+		if v, ok := m["RefreshToken"].(string); ok {
+			tvu.RefreshToken = v
+		}
+		client.TokenValidityUnits = tvu
+	}
+	if m, ok := req.Parameters["RefreshTokenRotation"].(map[string]interface{}); ok {
+		rtr := &cognitostore.RefreshTokenRotation{}
+		if v, ok := m["Feature"].(string); ok {
+			rtr.Feature = v
+		}
+		if v, ok := m["RetryGracePeriodSeconds"]; ok {
+			switch n := v.(type) {
+			case int:
+				rtr.RetryGracePeriodSeconds = n
+			case float64:
+				rtr.RetryGracePeriodSeconds = int(n)
+			}
+		}
+		client.RefreshTokenRotation = rtr
+	}
 }
 
 // DeleteUserPoolClient deletes a user pool client.
@@ -276,6 +336,58 @@ func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret boo
 	}
 	// Always include AllowedOAuthFlowsUserPoolClient (CIPD-5)
 	result["AllowedOAuthFlowsUserPoolClient"] = client.AllowedOAuthFlowsUserPoolClient
+	result["EnablePropagateAdditionalUserContextData"] = client.EnablePropagateAdditionalUserContextData
+	result["EnableTokenRevocation"] = client.EnableTokenRevocation
+
+	if client.AuthSessionValidity > 0 {
+		result["AuthSessionValidity"] = client.AuthSessionValidity
+	}
+	if len(client.ReadAttributes) > 0 {
+		result["ReadAttributes"] = client.ReadAttributes
+	}
+	if len(client.WriteAttributes) > 0 {
+		result["WriteAttributes"] = client.WriteAttributes
+	}
+	if client.AnalyticsConfiguration != nil {
+		ac := map[string]interface{}{}
+		if client.AnalyticsConfiguration.ApplicationArn != "" {
+			ac["ApplicationArn"] = client.AnalyticsConfiguration.ApplicationArn
+		}
+		if client.AnalyticsConfiguration.ApplicationId != "" {
+			ac["ApplicationId"] = client.AnalyticsConfiguration.ApplicationId
+		}
+		if client.AnalyticsConfiguration.ExternalId != "" {
+			ac["ExternalId"] = client.AnalyticsConfiguration.ExternalId
+		}
+		if client.AnalyticsConfiguration.RoleArn != "" {
+			ac["RoleArn"] = client.AnalyticsConfiguration.RoleArn
+		}
+		ac["UserDataShared"] = client.AnalyticsConfiguration.UserDataShared
+		result["AnalyticsConfiguration"] = ac
+	}
+	if client.TokenValidityUnits != nil {
+		tvu := map[string]interface{}{}
+		if client.TokenValidityUnits.AccessToken != "" {
+			tvu["AccessToken"] = client.TokenValidityUnits.AccessToken
+		}
+		if client.TokenValidityUnits.IdToken != "" {
+			tvu["IdToken"] = client.TokenValidityUnits.IdToken
+		}
+		if client.TokenValidityUnits.RefreshToken != "" {
+			tvu["RefreshToken"] = client.TokenValidityUnits.RefreshToken
+		}
+		result["TokenValidityUnits"] = tvu
+	}
+	if client.RefreshTokenRotation != nil {
+		rtr := map[string]interface{}{}
+		if client.RefreshTokenRotation.Feature != "" {
+			rtr["Feature"] = client.RefreshTokenRotation.Feature
+		}
+		if client.RefreshTokenRotation.RetryGracePeriodSeconds > 0 {
+			rtr["RetryGracePeriodSeconds"] = client.RefreshTokenRotation.RetryGracePeriodSeconds
+		}
+		result["RefreshTokenRotation"] = rtr
+	}
 
 	return result
 }

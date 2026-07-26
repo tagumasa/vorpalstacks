@@ -71,6 +71,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 		results = append(results, r.cognitoUserTests(ctx, client, userPoolID)...)
 		results = append(results, r.cognitoIDPTests(ctx, client, userPoolID)...)
 		results = append(results, r.cognitoResourceServerTests(ctx, client, userPoolID)...)
+		results = append(results, r.cognitoSRPTests(ctx, client, userPoolID)...)
 
 		results = append(results, r.RunTest("cognito", "DeleteUserPool", func() error {
 			_, err := client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{

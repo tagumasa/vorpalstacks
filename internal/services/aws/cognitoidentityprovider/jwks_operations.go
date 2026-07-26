@@ -25,7 +25,7 @@ func (s *CognitoService) GetJWKS(reqCtx *request.RequestContext, userPoolID stri
 		return nil, ErrInternalError
 	}
 
-	issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", reqCtx.GetRegion(), userPoolID)
+	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(reqCtx.GetRegion()), userPoolID)
 	jwtManager := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
 	return jwtManager.GetJWKS(), nil
 }

@@ -31,8 +31,9 @@ func (s *CognitoService) AdminListUserAuthEvents(ctx context.Context, reqCtx *re
 		return nil, ErrUserNotFound
 	}
 
-	maxResults := 20
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
+	// Smithy QueryLimitType: range {min: 0, max: 60}
+	maxResults := 60
+	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 && mr <= 60 {
 		maxResults = mr
 	}
 

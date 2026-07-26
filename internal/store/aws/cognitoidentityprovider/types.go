@@ -20,7 +20,6 @@ type UserPool struct {
 	AliasAttributes               []string                     `json:"aliasAttributes,omitempty"`
 	UsernameAttributes            []string                     `json:"usernameAttributes,omitempty"`
 	AutoVerifiedAttributes        []string                     `json:"autoVerifiedAttributes,omitempty"`
-	Schema                        string                       `json:"schema,omitempty"`
 	SchemaAttributes              []SchemaAttributeType        `json:"schemaAttributes,omitempty"`
 	MfaConfiguration              string                       `json:"mfaConfiguration,omitempty"`
 	PasswordPolicy                *PasswordPolicy              `json:"passwordPolicy,omitempty"`
@@ -44,8 +43,13 @@ type UserPool struct {
 	SmsVerificationMessage        string                       `json:"smsVerificationMessage,omitempty"`
 	SmsAuthenticationMessage      string                       `json:"smsAuthenticationMessage,omitempty"`
 	UserAttributeUpdateSettings   *UserAttributeUpdateSettings `json:"userAttributeUpdateSettings,omitempty"`
-	MfaConfigurationSms           *MfaConfigurationType        `json:"mfaConfigurationSms,omitempty"`
+	MfaConfigurationSms           *SmsMfaConfig                `json:"mfaConfigurationSms,omitempty"`
 	MfaConfigurationSoftwareToken *MfaConfigurationType        `json:"mfaConfigurationSoftwareToken,omitempty"`
+	EmailMfaConfig                *EmailMfaConfig              `json:"emailMfaConfig,omitempty"`
+	WebAuthnConfiguration         *WebAuthnConfiguration       `json:"webAuthnConfiguration,omitempty"`
+	IssuerConfiguration           *IssuerConfiguration         `json:"issuerConfiguration,omitempty"`
+	KeyConfiguration              *KeyConfiguration            `json:"keyConfiguration,omitempty"`
+	UserPoolTier                  string                       `json:"userPoolTier,omitempty"`
 }
 
 // PasswordPolicy represents the password policy for a Cognito user pool.
@@ -137,18 +141,59 @@ type MfaConfigurationType struct {
 	Enabled bool `json:"enabled"`
 }
 
+// SmsMfaConfig holds SMS MFA settings per Smithy SmsMfaConfigType.
+type SmsMfaConfig struct {
+	SmsAuthenticationMessage string           `json:"smsAuthenticationMessage,omitempty"`
+	SmsConfiguration         *SmsConfiguration `json:"smsConfiguration,omitempty"`
+}
+
+// EmailMfaConfig holds email-based MFA message templates per Smithy EmailMfaConfigType.
+type EmailMfaConfig struct {
+	Message string `json:"message,omitempty"`
+	Subject string `json:"subject,omitempty"`
+}
+
+// WebAuthnConfiguration holds passkey/WebAuthn MFA settings.
+type WebAuthnConfiguration struct {
+	RelyingPartyId   string `json:"relyingPartyId,omitempty"`
+	UserVerification string `json:"userVerification,omitempty"`
+}
+
 // LambdaConfig represents the Lambda trigger configuration for a Cognito user pool.
 type LambdaConfig struct {
-	PreSignUp                   string `json:"preSignUp,omitempty"`
-	CustomMessage               string `json:"customMessage,omitempty"`
-	PostConfirmation            string `json:"postConfirmation,omitempty"`
-	PreAuthentication           string `json:"preAuthentication,omitempty"`
-	PostAuthentication          string `json:"postAuthentication,omitempty"`
-	DefineAuthChallenge         string `json:"defineAuthChallenge,omitempty"`
-	CreateAuthChallenge         string `json:"createAuthChallenge,omitempty"`
-	VerifyAuthChallengeResponse string `json:"verifyAuthChallengeResponse,omitempty"`
-	PreTokenGeneration          string `json:"preTokenGeneration,omitempty"`
-	UserMigration               string `json:"userMigration,omitempty"`
+	PreSignUp                   string                `json:"preSignUp,omitempty"`
+	CustomMessage               string                `json:"customMessage,omitempty"`
+	PostConfirmation            string                `json:"postConfirmation,omitempty"`
+	PreAuthentication           string                `json:"preAuthentication,omitempty"`
+	PostAuthentication          string                `json:"postAuthentication,omitempty"`
+	DefineAuthChallenge         string                `json:"defineAuthChallenge,omitempty"`
+	CreateAuthChallenge         string                `json:"createAuthChallenge,omitempty"`
+	VerifyAuthChallengeResponse string                `json:"verifyAuthChallengeResponse,omitempty"`
+	PreTokenGeneration          string                `json:"preTokenGeneration,omitempty"`
+	UserMigration               string                `json:"userMigration,omitempty"`
+	KMSKeyID                    string                `json:"kmsKeyId,omitempty"`
+	CustomEmailSender           *LambdaVersionConfig  `json:"customEmailSender,omitempty"`
+	CustomSMSSender             *LambdaVersionConfig  `json:"customSmsSender,omitempty"`
+	PreTokenGenerationConfig    *LambdaVersionConfig  `json:"preTokenGenerationConfig,omitempty"`
+	InboundFederation           *LambdaVersionConfig  `json:"inboundFederation,omitempty"`
+}
+
+// LambdaVersionConfig pairs a Lambda ARN with its version for advanced
+// trigger types (CustomEmailSender, CustomSMSSender, etc.).
+type LambdaVersionConfig struct {
+	LambdaArn     string `json:"lambdaArn,omitempty"`
+	LambdaVersion string `json:"lambdaVersion,omitempty"`
+}
+
+// IssuerConfiguration controls token issuance settings.
+type IssuerConfiguration struct {
+	Type string `json:"type,omitempty"`
+}
+
+// KeyConfiguration holds encryption key settings for a user pool.
+type KeyConfiguration struct {
+	KeyType    string `json:"keyType,omitempty"`
+	KmsKeyArn  string `json:"kmsKeyArn,omitempty"`
 }
 
 // User represents a Cognito user.
@@ -162,6 +207,12 @@ type User struct {
 	LastModifiedDate           time.Time                         `json:"lastModifiedDate"`
 	Attributes                 map[string]string                 `json:"attributes,omitempty"`
 	PasswordHash               string                            `json:"passwordHash,omitempty"`
+	// SrpSalt is the hex-encoded 16-byte random salt used to derive the SRP
+	// verifier. It is sent to clients in the SALT ChallengeParameter.
+	SrpSalt                    string                            `json:"srpSalt,omitempty"`
+	// SrpVerifier is the hex-encoded SRP verifier v = g^x mod N. It is a
+	// long-term secret stored at password-set time and never sent to clients.
+	SrpVerifier                string                            `json:"srpVerifier,omitempty"`
 	Groups                     []string                          `json:"groups,omitempty"`
 	MFAOptions                 []*MFAOptionType                  `json:"mfaOptions,omitempty"`
 	ConfirmationCode           string                            `json:"confirmationCode,omitempty"`
@@ -263,25 +314,56 @@ type Group struct {
 
 // UserPoolClient represents a Cognito user pool client.
 type UserPoolClient struct {
-	ClientID                        string                   `json:"clientId"`
-	UserPoolID                      string                   `json:"userPoolId"`
-	ClientName                      string                   `json:"clientName"`
-	ClientSecret                    string                   `json:"clientSecret,omitempty"`
-	RefreshTokenValidity            int                      `json:"refreshTokenValidity"`
-	AccessTokenValidity             int                      `json:"accessTokenValidity"`
-	IDTokenValidity                 int                      `json:"idTokenValidity"`
-	ExplicitAuthFlows               []string                 `json:"explicitAuthFlows,omitempty"`
-	AllowedOAuthFlows               []string                 `json:"allowedOAuthFlows,omitempty"`
-	CallbackURLs                    []string                 `json:"callbackURLs,omitempty"`
-	LogoutURLs                      []string                 `json:"logoutURLs,omitempty"`
-	DefaultRedirectURI              string                   `json:"defaultRedirectUri,omitempty"`
-	SupportedIdentityProviders      []string                 `json:"supportedIdentityProviders,omitempty"`
-	AllowedOAuthScopes              []string                 `json:"allowedOAuthScopes,omitempty"`
-	AllowedOAuthFlowsUserPoolClient bool                     `json:"allowedOAuthFlowsUserPoolClient"`
-	PreventUserExistenceErrors      string                   `json:"preventUserExistenceErrors,omitempty"`
-	ClientSecrets                   []ClientSecretDescriptor `json:"clientSecrets,omitempty"`
-	CreationDate                    time.Time                `json:"creationDate"`
-	LastModifiedDate                time.Time                `json:"lastModifiedDate"`
+	ClientID                               string                   `json:"clientId"`
+	UserPoolID                             string                   `json:"userPoolId"`
+	ClientName                             string                   `json:"clientName"`
+	ClientSecret                           string                   `json:"clientSecret,omitempty"`
+	RefreshTokenValidity                   int                      `json:"refreshTokenValidity"`
+	AccessTokenValidity                    int                      `json:"accessTokenValidity"`
+	IDTokenValidity                        int                      `json:"idTokenValidity"`
+	ExplicitAuthFlows                      []string                 `json:"explicitAuthFlows,omitempty"`
+	AllowedOAuthFlows                      []string                 `json:"allowedOAuthFlows,omitempty"`
+	CallbackURLs                           []string                 `json:"callbackURLs,omitempty"`
+	LogoutURLs                             []string                 `json:"logoutURLs,omitempty"`
+	DefaultRedirectURI                     string                   `json:"defaultRedirectUri,omitempty"`
+	SupportedIdentityProviders             []string                 `json:"supportedIdentityProviders,omitempty"`
+	AllowedOAuthScopes                     []string                 `json:"allowedOAuthScopes,omitempty"`
+	AllowedOAuthFlowsUserPoolClient        bool                     `json:"allowedOAuthFlowsUserPoolClient"`
+	PreventUserExistenceErrors             string                   `json:"preventUserExistenceErrors,omitempty"`
+	ClientSecrets                          []ClientSecretDescriptor `json:"clientSecrets,omitempty"`
+	CreationDate                           time.Time                `json:"creationDate"`
+	LastModifiedDate                       time.Time                `json:"lastModifiedDate"`
+	AnalyticsConfiguration                 *AnalyticsConfiguration  `json:"analyticsConfiguration,omitempty"`
+	AuthSessionValidity                    int                      `json:"authSessionValidity,omitempty"`
+	EnablePropagateAdditionalUserContextData bool                    `json:"enablePropagateAdditionalUserContextData,omitempty"`
+	EnableTokenRevocation                  bool                     `json:"enableTokenRevocation,omitempty"`
+	GenerateSecret                         bool                     `json:"generateSecret,omitempty"`
+	ReadAttributes                         []string                 `json:"readAttributes,omitempty"`
+	RefreshTokenRotation                   *RefreshTokenRotation    `json:"refreshTokenRotation,omitempty"`
+	TokenValidityUnits                     *TokenValidityUnits      `json:"tokenValidityUnits,omitempty"`
+	WriteAttributes                        []string                 `json:"writeAttributes,omitempty"`
+}
+
+// AnalyticsConfiguration holds Amazon Pinpoint analytics configuration.
+type AnalyticsConfiguration struct {
+	ApplicationArn string `json:"applicationArn,omitempty"`
+	ApplicationId  string `json:"applicationId,omitempty"`
+	ExternalId     string `json:"externalId,omitempty"`
+	RoleArn        string `json:"roleArn,omitempty"`
+	UserDataShared bool   `json:"userDataShared,omitempty"`
+}
+
+// RefreshTokenRotation controls refresh token rotation behaviour.
+type RefreshTokenRotation struct {
+	Feature                  string `json:"feature,omitempty"`
+	RetryGracePeriodSeconds  int    `json:"retryGracePeriodSeconds,omitempty"`
+}
+
+// TokenValidityUnits specifies the time units for token validity periods.
+type TokenValidityUnits struct {
+	AccessToken  string `json:"accessToken,omitempty"`
+	IdToken      string `json:"idToken,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 }
 
 // RefreshToken represents a Cognito refresh token.
@@ -330,7 +412,6 @@ func NewUserPool(name string, region string) *UserPool {
 		AliasAttributes:        []string{},
 		UsernameAttributes:     []string{},
 		AutoVerifiedAttributes: []string{},
-		Schema:                 "{}",
 		MfaConfiguration:       "OFF",
 		Tags:                   []types.Tag{},
 	}
@@ -451,6 +532,15 @@ type ChallengeSession struct {
 	ChallengeName string    `json:"challengeName"`
 	CreatedAt     time.Time `json:"createdAt"`
 	ExpiresAt     time.Time `json:"expiresAt"`
+	// SRP state for PASSWORD_VERIFIER challenges. SrpA, SrpB and SrpPrivateB
+	// are hex strings (matching the on-the-wire format of SRP_A/SRP_B); only
+	// SecretBlock is base64 because it is opaque binary returned to the client
+	// verbatim. SrpPrivateB is the server's secret scalar b and must never be
+	// disclosed.
+	SrpA          string    `json:"srpA,omitempty"`
+	SrpB          string    `json:"srpB,omitempty"`
+	SrpPrivateB   string    `json:"srpPrivateB,omitempty"`
+	SecretBlock   string    `json:"secretBlock,omitempty"`
 }
 
 func generateToken() string {
@@ -467,10 +557,12 @@ type UserPoolDomain struct {
 
 // ResourceServer represents an OAuth 2.0 resource server within a Cognito user pool.
 type ResourceServer struct {
-	UserPoolID string                `json:"userPoolId"`
-	Identifier string                `json:"identifier"`
-	Name       string                `json:"name"`
-	Scopes     []ResourceServerScope `json:"scopes,omitempty"`
+	UserPoolID      string                `json:"userPoolId"`
+	Identifier      string                `json:"identifier"`
+	Name            string                `json:"name"`
+	Scopes          []ResourceServerScope `json:"scopes,omitempty"`
+	CreationDate    time.Time             `json:"creationDate"`
+	LastModifiedDate time.Time            `json:"lastModifiedDate"`
 }
 
 // ResourceServerScope defines a scope within an OAuth 2.0 resource server.
@@ -487,6 +579,8 @@ type IdentityProvider struct {
 	ProviderDetails  map[string]string `json:"providerDetails,omitempty"`
 	AttributeMapping map[string]string `json:"attributeMapping,omitempty"`
 	IdpIdentifiers   []string          `json:"idpIdentifiers,omitempty"`
+	CreationDate     time.Time         `json:"creationDate"`
+	LastModifiedDate time.Time         `json:"lastModifiedDate"`
 }
 
 // Device represents a tracked device in a Cognito user pool.

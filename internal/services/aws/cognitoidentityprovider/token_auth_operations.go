@@ -15,6 +15,7 @@ import (
 func (s *CognitoService) RevokeToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	token := req.GetParam("Token")
 	clientID := req.GetParam("ClientId")
+	clientSecret := req.GetParam("ClientSecret")
 
 	if token == "" || clientID == "" {
 		return nil, ErrInvalidParameter
@@ -32,6 +33,17 @@ func (s *CognitoService) RevokeToken(ctx context.Context, reqCtx *request.Reques
 
 	if rt.ClientID != clientID {
 		return nil, ErrInvalidParameter
+	}
+
+	// M24: Verify ClientSecret when the client has one configured
+	if clientSecret != "" {
+		client, err := store.GetUserPoolClient(rt.UserPoolID, clientID)
+		if err != nil {
+			return nil, ErrInvalidParameter
+		}
+		if client.ClientSecret != "" && subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(clientSecret)) != 1 {
+			return nil, ErrNotAuthorized
+		}
 	}
 
 	if err := store.DeleteRefreshToken(rt.UserPoolID, rt.UserID, token); err != nil {
@@ -321,18 +333,25 @@ func (s *CognitoService) GetUserAuthFactors(ctx context.Context, reqCtx *request
 // name for confirmation codes, based on the pool's AutoVerifiedAttributes and
 // the user's contact information.
 func determineDeliveryMedium(pool *cognitostore.UserPool, user *cognitostore.User) (medium, attrName string) {
+	// Check AutoVerifiedAttributes first — these take priority
 	for _, attr := range pool.AutoVerifiedAttributes {
 		if attr == "phone_number" {
 			if phone, ok := user.Attributes["phone_number"]; ok && phone != "" {
 				return "SMS", "phone_number"
 			}
 		}
+		if attr == "email" {
+			if email, ok := user.Attributes["email"]; ok && email != "" {
+				return "EMAIL", "email"
+			}
+		}
 	}
+	// Fallback: use any available contact attribute
 	if email, ok := user.Attributes["email"]; ok && email != "" {
 		return "EMAIL", "email"
 	}
 	if phone, ok := user.Attributes["phone_number"]; ok && phone != "" {
 		return "SMS", "phone_number"
 	}
-	return "EMAIL", "email"
+	return "", ""
 }

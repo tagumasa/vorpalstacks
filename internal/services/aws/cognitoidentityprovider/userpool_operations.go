@@ -20,6 +20,11 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
 	applyUserPoolUpdates(userPool, req)
 
+	// M6: AliasAttributes and UsernameAttributes are mutually exclusive
+	if len(userPool.AliasAttributes) > 0 && len(userPool.UsernameAttributes) > 0 {
+		return nil, ErrInvalidParameter
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -197,9 +202,9 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 	}
 
 	if m, ok := req.Parameters["SmsMfaConfiguration"].(map[string]interface{}); ok {
-		smsMfa := &cognitostore.MfaConfigurationType{}
-		if enabled, ok := m["Enabled"].(bool); ok {
-			smsMfa.Enabled = enabled
+		smsMfa := &cognitostore.SmsMfaConfig{}
+		if v, ok := m["SmsAuthenticationMessage"].(string); ok {
+			smsMfa.SmsAuthenticationMessage = v
 		}
 		if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
 			poolSmsConfig := &cognitostore.SmsConfiguration{}
@@ -209,8 +214,10 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 			if v, ok := smsConfig["ExternalId"].(string); ok {
 				poolSmsConfig.ExternalId = v
 			}
-			userPool.SmsConfiguration = poolSmsConfig
-			smsMfa.Enabled = true
+			if v, ok := smsConfig["SnsRegion"].(string); ok {
+				poolSmsConfig.SnsRegion = v
+			}
+			smsMfa.SmsConfiguration = poolSmsConfig
 		}
 		userPool.MfaConfigurationSms = smsMfa
 	}
@@ -220,6 +227,26 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 			swMfa.Enabled = enabled
 		}
 		userPool.MfaConfigurationSoftwareToken = swMfa
+	}
+	if m, ok := req.Parameters["EmailMfaConfiguration"].(map[string]interface{}); ok {
+		emailMfa := &cognitostore.EmailMfaConfig{}
+		if v, ok := m["Message"].(string); ok {
+			emailMfa.Message = v
+		}
+		if v, ok := m["Subject"].(string); ok {
+			emailMfa.Subject = v
+		}
+		userPool.EmailMfaConfig = emailMfa
+	}
+	if m, ok := req.Parameters["WebAuthnConfiguration"].(map[string]interface{}); ok {
+		wa := &cognitostore.WebAuthnConfiguration{}
+		if v, ok := m["RelyingPartyId"].(string); ok {
+			wa.RelyingPartyId = v
+		}
+		if v, ok := m["UserVerification"].(string); ok {
+			wa.UserVerification = v
+		}
+		userPool.WebAuthnConfiguration = wa
 	}
 
 	if err := store.UpdateUserPool(userPool); err != nil {
@@ -238,16 +265,20 @@ func formatMfaConfigResponse(pool *cognitostore.UserPool) map[string]interface{}
 		"MfaConfiguration": mfaConfig,
 	}
 	if pool.MfaConfigurationSms != nil {
-		smsEntry := map[string]interface{}{
-			"Enabled": pool.MfaConfigurationSms.Enabled,
+		smsEntry := map[string]interface{}{}
+		if pool.MfaConfigurationSms.SmsAuthenticationMessage != "" {
+			smsEntry["SmsAuthenticationMessage"] = pool.MfaConfigurationSms.SmsAuthenticationMessage
 		}
-		if pool.SmsConfiguration != nil {
+		if pool.MfaConfigurationSms.SmsConfiguration != nil {
 			smsConfig := map[string]interface{}{}
-			if pool.SmsConfiguration.SnsCallerArn != "" {
-				smsConfig["SnsCallerArn"] = pool.SmsConfiguration.SnsCallerArn
+			if pool.MfaConfigurationSms.SmsConfiguration.SnsCallerArn != "" {
+				smsConfig["SnsCallerArn"] = pool.MfaConfigurationSms.SmsConfiguration.SnsCallerArn
 			}
-			if pool.SmsConfiguration.ExternalId != "" {
-				smsConfig["ExternalId"] = pool.SmsConfiguration.ExternalId
+			if pool.MfaConfigurationSms.SmsConfiguration.ExternalId != "" {
+				smsConfig["ExternalId"] = pool.MfaConfigurationSms.SmsConfiguration.ExternalId
+			}
+			if pool.MfaConfigurationSms.SmsConfiguration.SnsRegion != "" {
+				smsConfig["SnsRegion"] = pool.MfaConfigurationSms.SmsConfiguration.SnsRegion
 			}
 			if len(smsConfig) > 0 {
 				smsEntry["SmsConfiguration"] = smsConfig
@@ -259,6 +290,26 @@ func formatMfaConfigResponse(pool *cognitostore.UserPool) map[string]interface{}
 		result["SoftwareTokenMfaConfiguration"] = map[string]interface{}{
 			"Enabled": pool.MfaConfigurationSoftwareToken.Enabled,
 		}
+	}
+	if pool.EmailMfaConfig != nil {
+		emailEntry := map[string]interface{}{}
+		if pool.EmailMfaConfig.Message != "" {
+			emailEntry["Message"] = pool.EmailMfaConfig.Message
+		}
+		if pool.EmailMfaConfig.Subject != "" {
+			emailEntry["Subject"] = pool.EmailMfaConfig.Subject
+		}
+		result["EmailMfaConfiguration"] = emailEntry
+	}
+	if pool.WebAuthnConfiguration != nil {
+		waEntry := map[string]interface{}{}
+		if pool.WebAuthnConfiguration.RelyingPartyId != "" {
+			waEntry["RelyingPartyId"] = pool.WebAuthnConfiguration.RelyingPartyId
+		}
+		if pool.WebAuthnConfiguration.UserVerification != "" {
+			waEntry["UserVerification"] = pool.WebAuthnConfiguration.UserVerification
+		}
+		result["WebAuthnConfiguration"] = waEntry
 	}
 	return result
 }

@@ -63,6 +63,12 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrInternalError
 	}
 	user.PasswordHash = string(hash)
+	saltHex, verifierHex, verr := computeSrpVerifier(targetPool.ID, username, password)
+	if verr != nil {
+		return nil, ErrInternalError
+	}
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
 
 	if preSignUpResult.AutoConfirmUser {
 		user.UserStatus = "CONFIRMED"

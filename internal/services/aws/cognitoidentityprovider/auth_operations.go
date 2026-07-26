@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -44,7 +46,7 @@ func (s *CognitoService) InitiateAuth(ctx context.Context, reqCtx *request.Reque
 	case "USER_PASSWORD_AUTH":
 		return s.handleUserPasswordAuth(ctx, reqCtx, req)
 	case "USER_SRP_AUTH":
-		return nil, ErrInvalidParameter
+		return s.handleUserSrpAuth(reqCtx, req)
 	case "REFRESH_TOKEN_AUTH", "REFRESH_TOKEN":
 		return s.handleRefreshTokenAuth(reqCtx, req)
 	default:
@@ -61,6 +63,7 @@ func (s *CognitoService) authenticateUser(
 	reqCtx *request.RequestContext,
 	userPoolID, clientID, username, password string,
 	lambdaConfig *cognitostore.LambdaConfig,
+	validationData, clientMetadata map[string]string,
 ) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -69,7 +72,7 @@ func (s *CognitoService) authenticateUser(
 
 	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
-		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPoolID, username, clientID, password, lambdaConfig)
+		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPoolID, username, clientID, password, lambdaConfig, validationData, clientMetadata)
 		if migrationErr != nil || migrationResult == nil {
 			return nil, ErrIncorrectPassword
 		}
@@ -89,6 +92,12 @@ func (s *CognitoService) authenticateUser(
 				return nil, ErrInternalError
 			}
 			migratedUser.PasswordHash = string(hash)
+			saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, migratedUser.Username, password)
+			if verr != nil {
+				return nil, ErrInternalError
+			}
+			migratedUser.SrpSalt = saltHex
+			migratedUser.SrpVerifier = verifierHex
 		}
 		if err := store.CreateUser(migratedUser); err != nil {
 			if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
@@ -115,7 +124,7 @@ func (s *CognitoService) authenticateUser(
 	}
 
 	attrs := userAttributesMap(user)
-	if err := invokePreAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs); err != nil {
+	if err := invokePreAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs, clientMetadata); err != nil {
 		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
 		return nil, fmt.Errorf("PreAuthentication trigger failed: %w", err)
 	}
@@ -125,7 +134,7 @@ func (s *CognitoService) authenticateUser(
 		return nil, ErrIncorrectPassword
 	}
 
-	if err := invokePostAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs); err != nil {
+	if err := invokePostAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs, clientMetadata); err != nil {
 		return nil, fmt.Errorf("PostAuthentication trigger failed: %w", err)
 	}
 
@@ -205,7 +214,105 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 		return nil, ErrResourceNotFound
 	}
 
-	return s.authenticateUser(ctx, reqCtx, userPool.ID, getClientId(req), username, password, userPool.LambdaConfig)
+	return s.authenticateUser(ctx, reqCtx, userPool.ID, getClientId(req), username, password, userPool.LambdaConfig, parseValidationData(req), parseClientMetadata(req))
+}
+
+// handleUserSrpAuth handles the InitiateAuth USER_SRP_AUTH flow. It receives
+// the client's SRP_A value, looks up the user, generates the server's
+// ephemeral B and a fresh SECRET_BLOCK, persists the SRP session state, and
+// returns a PASSWORD_VERIFIER challenge. The actual proof verification happens
+// in respondToPasswordVerifier when the client responds.
+//
+// Per AWS spec, USER_ID_FOR_SRP returned to the client is the user's username
+// (the same value the client must use in the inner hash and claim message).
+func (s *CognitoService) handleUserSrpAuth(reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	username, srpAHex, err := parseSrpAuthParams(req)
+	if err != nil {
+		return nil, err
+	}
+
+	clientID := getClientId(req)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	userPool, err := store.GetUserPoolByClientID(clientID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	user, err := store.GetUser(userPool.ID, username)
+	if err != nil {
+		// Avoid revealing whether the username exists; mirror the NotAuthorized
+		// semantics used elsewhere in the auth flow.
+		return nil, ErrNotAuthorized
+	}
+
+	if !user.Enabled {
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		return nil, ErrNotAuthorized
+	}
+	if user.UserStatus != "CONFIRMED" {
+		// Users in FORCE_CHANGE_PASSWORD or other transitional states cannot
+		// complete SRP; they must first complete the NEW_PASSWORD_REQUIRED
+		// challenge via the non-SRP admin flow.
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		return nil, ErrUserNotConfirmed
+	}
+	if user.SrpVerifier == "" || user.SrpSalt == "" {
+		// The user was created before SRP support was added. They must reset
+		// their password via ForgotPassword/AdminSetUserPassword to obtain a
+		// verifier before USER_SRP_AUTH will succeed.
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		return nil, ErrNotAuthorized
+	}
+
+	verifier, ok := new(big.Int).SetString(user.SrpVerifier, 16)
+	if !ok {
+		return nil, ErrInternalError
+	}
+	B, b, err := GenerateB(verifier)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	secretBlock := make([]byte, 16)
+	if _, err := rand.Read(secretBlock); err != nil {
+		return nil, ErrInternalError
+	}
+
+	sessionID := generateSessionID()
+	challengeSession := &cognitostore.ChallengeSession{
+		SessionID:     sessionID,
+		UserPoolID:    userPool.ID,
+		ClientID:      clientID,
+		Username:      user.Username,
+		ChallengeName: "PASSWORD_VERIFIER",
+		CreatedAt:     time.Now().UTC(),
+		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+		SrpA:          srpAHex,
+		SrpB:          B.Text(16),
+		SrpPrivateB:   b.Text(16),
+		SecretBlock:   base64.StdEncoding.EncodeToString(secretBlock),
+	}
+	if err := store.SaveChallengeSession(challengeSession); err != nil {
+		return nil, ErrInternalError
+	}
+
+	s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "InProgress")
+
+	return map[string]interface{}{
+		"ChallengeName": "PASSWORD_VERIFIER",
+		"Session":       sessionID,
+		"ChallengeParameters": map[string]interface{}{
+			"USERNAME":        user.Username,
+			"USER_ID_FOR_SRP": user.Username,
+			"SALT":            user.SrpSalt,
+			"SECRET_BLOCK":    challengeSession.SecretBlock,
+			"SRP_B":           B.Text(16),
+		},
+	}, nil
 }
 
 // refreshAuthToken contains the shared refresh-token flow for both InitiateAuth
@@ -236,7 +343,7 @@ func (s *CognitoService) refreshAuthToken(reqCtx *request.RequestContext, userPo
 	}
 
 	attrs := userAttributesMap(user)
-	if err := invokePostAuthentication(reqCtx, s, poolID, user.Username, rt.ClientID, nil, attrs); err != nil {
+	if err := invokePostAuthentication(reqCtx, s, poolID, user.Username, rt.ClientID, nil, attrs, nil); err != nil {
 		return nil, fmt.Errorf("PostAuthentication trigger failed: %w", err)
 	}
 
@@ -286,6 +393,9 @@ func (s *CognitoService) RespondToAuthChallenge(ctx context.Context, reqCtx *req
 	if challengeName == "NEW_PASSWORD_REQUIRED" {
 		return s.respondToNewPasswordChallenge(reqCtx, req, userPool.ID, clientID, session)
 	}
+	if challengeName == "PASSWORD_VERIFIER" {
+		return s.respondToPasswordVerifier(reqCtx, req, userPool.ID, clientID, session)
+	}
 
 	return nil, ErrInvalidParameter
 }
@@ -307,6 +417,29 @@ func parseAuthParams(req *request.ParsedRequest) (username, password string, err
 		return "", "", ErrInvalidParameter
 	}
 	return username, password, nil
+}
+
+// parseSrpAuthParams extracts USERNAME and SRP_A from the AuthParameters
+// block of an InitiateAuth USER_SRP_AUTH request. SRP_A is a lowercase hex
+// string supplied by the client.
+func parseSrpAuthParams(req *request.ParsedRequest) (username, srpAHex string, err error) {
+	authParams := req.Parameters["AuthParameters"]
+	if authParams == nil {
+		return "", "", ErrInvalidParameter
+	}
+	params, ok := authParams.(map[string]interface{})
+	if !ok {
+		return "", "", ErrInvalidParameter
+	}
+	username, _ = params["USERNAME"].(string)
+	srpAHex, _ = params["SRP_A"].(string)
+	if username == "" || srpAHex == "" {
+		return "", "", ErrInvalidParameter
+	}
+	if _, ok := new(big.Int).SetString(srpAHex, 16); !ok {
+		return "", "", ErrInvalidParameter
+	}
+	return username, srpAHex, nil
 }
 
 // parseRefreshTokenParam extracts the REFRESH_TOKEN from AuthParameters.
@@ -373,10 +506,7 @@ func (s *CognitoService) GlobalSignOut(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrNotAuthorized
 	}
 
-	if err := store.DeleteAllRefreshTokensForUser(user.UserPoolID, user.ID); err != nil {
-		return nil, err
-	}
-	if err := store.DeleteAccessToken(user.UserPoolID, user.ID, accessToken); err != nil {
+	if err := store.DeleteUserTokens(user.UserPoolID, user.ID); err != nil {
 		return nil, err
 	}
 
@@ -427,6 +557,12 @@ func (s *CognitoService) ChangePassword(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInternalError
 	}
 	user.PasswordHash = string(hash)
+	saltHex, verifierHex, verr := computeSrpVerifier(user.UserPoolID, user.Username, newPassword)
+	if verr != nil {
+		return nil, ErrInternalError
+	}
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -529,6 +665,12 @@ func (s *CognitoService) ConfirmForgotPassword(ctx context.Context, reqCtx *requ
 		return nil, ErrInternalError
 	}
 	user.PasswordHash = string(hash)
+	saltHex, verifierHex, verr := computeSrpVerifier(user.UserPoolID, user.Username, password)
+	if verr != nil {
+		return nil, ErrInternalError
+	}
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
 	user.UserStatus = "CONFIRMED"
 	user.ConfirmationCode = ""
 	user.ConfirmationCodeExpiry = time.Time{}
@@ -576,7 +718,7 @@ func (s *CognitoService) handleAdminNoSrpAuth(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return s.authenticateUser(ctx, reqCtx, userPoolID, clientID, username, password, lambdaConfig)
+	return s.authenticateUser(ctx, reqCtx, userPoolID, clientID, username, password, lambdaConfig, parseValidationData(req), parseClientMetadata(req))
 }
 
 // AdminRespondToAuthChallenge responds to an admin authentication challenge.
@@ -602,6 +744,9 @@ func (s *CognitoService) AdminRespondToAuthChallenge(ctx context.Context, reqCtx
 
 	if challengeName == "NEW_PASSWORD_REQUIRED" {
 		return s.respondToNewPasswordChallenge(reqCtx, req, userPoolID, clientID, session)
+	}
+	if challengeName == "PASSWORD_VERIFIER" {
+		return s.respondToPasswordVerifier(reqCtx, req, userPoolID, clientID, session)
 	}
 
 	return nil, ErrInvalidParameter
@@ -663,6 +808,12 @@ func (s *CognitoService) respondToNewPasswordChallenge(reqCtx *request.RequestCo
 		return nil, ErrInternalError
 	}
 	user.PasswordHash = string(hash)
+	saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, user.Username, newPassword)
+	if verr != nil {
+		return nil, ErrInternalError
+	}
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
 	user.UserStatus = "CONFIRMED"
 
 	if err := store.UpdateUser(user); err != nil {
@@ -673,6 +824,131 @@ func (s *CognitoService) respondToNewPasswordChallenge(reqCtx *request.RequestCo
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
+
+	return map[string]interface{}{
+		"AuthenticationResult": map[string]interface{}{
+			"AccessToken":  accessToken,
+			"IdToken":      idToken,
+			"RefreshToken": refreshToken,
+			"TokenType":    "Bearer",
+			"ExpiresIn":    expiresIn,
+		},
+	}, nil
+}
+
+// respondToPasswordVerifier handles the PASSWORD_VERIFIER challenge for both
+// RespondToAuthChallenge and AdminRespondToAuthChallenge. It retrieves the
+// SRP session established by handleUserSrpAuth, recomputes the shared secret
+// from the stored private scalar b and the user's verifier, derives the
+// HMAC key, and constant-time compares the expected claim against the client's
+// PASSWORD_CLAIM_SIGNATURE.
+//
+// AWS Cognito returns a generic NotAuthorizedException on any mismatch
+// (wrong password, tampered SRP_A, expired session, etc.) to avoid leaking
+// which leg of the verification failed.
+func (s *CognitoService) respondToPasswordVerifier(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID, session string) (interface{}, error) {
+	challengeResponses := req.Parameters["ChallengeResponses"]
+	if challengeResponses == nil {
+		return nil, ErrInvalidParameter
+	}
+	params, ok := challengeResponses.(map[string]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	username, _ := params["USERNAME"].(string)
+	claimSigB64, _ := params["PASSWORD_CLAIM_SIGNATURE"].(string)
+	claimBlockB64, _ := params["PASSWORD_CLAIM_SECRET_BLOCK"].(string)
+	timestamp, _ := params["TIMESTAMP"].(string)
+	if username == "" || claimSigB64 == "" || claimBlockB64 == "" || timestamp == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	challengeSession, err := store.GetChallengeSession(session)
+	if err != nil || challengeSession == nil {
+		return nil, ErrNotAuthorized
+	}
+	// Burn the session regardless of outcome so a leaked Session identifier
+	// cannot be replayed.
+	defer func() { _ = store.DeleteChallengeSession(session) }()
+
+	if challengeSession.ChallengeName != "PASSWORD_VERIFIER" {
+		return nil, ErrNotAuthorized
+	}
+	if challengeSession.Username != username {
+		return nil, ErrNotAuthorized
+	}
+	if !challengeSession.ExpiresAt.IsZero() && time.Now().UTC().After(challengeSession.ExpiresAt) {
+		return nil, ErrNotAuthorized
+	}
+	if challengeSession.SecretBlock != claimBlockB64 {
+		// The client must echo back the exact SECRET_BLOCK we issued. A
+		// mismatch indicates the client did not use our challenge parameters.
+		return nil, ErrNotAuthorized
+	}
+
+	A, ok := new(big.Int).SetString(challengeSession.SrpA, 16)
+	if !ok {
+		return nil, ErrInternalError
+	}
+	B, ok := new(big.Int).SetString(challengeSession.SrpB, 16)
+	if !ok {
+		return nil, ErrInternalError
+	}
+	b, ok := new(big.Int).SetString(challengeSession.SrpPrivateB, 16)
+	if !ok {
+		return nil, ErrInternalError
+	}
+	secretBlock, err := base64.StdEncoding.DecodeString(challengeSession.SecretBlock)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	clientSig, err := base64.StdEncoding.DecodeString(claimSigB64)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+
+	user, err := store.GetUser(userPoolID, username)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+	verifier, ok := new(big.Int).SetString(user.SrpVerifier, 16)
+	if !ok || verifier.Sign() == 0 {
+		return nil, ErrNotAuthorized
+	}
+
+	K, err := DeriveServerKey(A, B, b, verifier)
+	if err != nil {
+		// ErrInvalidSrpA indicates a malicious or malformed client value.
+		return nil, ErrNotAuthorized
+	}
+
+	poolName, ok := poolNameFromID(userPoolID)
+	if !ok {
+		return nil, ErrInternalError
+	}
+	// USER_ID_FOR_SRP for Cognito is the username (not the sub).
+	expectedSig := VerifyClaim(K, poolName, user.Username, secretBlock, timestamp)
+
+	if subtle.ConstantTimeCompare(clientSig, expectedSig) != 1 {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		return nil, ErrNotAuthorized
+	}
+
+	if !user.Enabled {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		return nil, ErrNotAuthorized
+	}
+
+	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tokens: %w", err)
+	}
+	s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Pass")
 
 	return map[string]interface{}{
 		"AuthenticationResult": map[string]interface{}{

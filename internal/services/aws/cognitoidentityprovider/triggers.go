@@ -144,7 +144,7 @@ func (s *CognitoService) invokeTrigger(
 		"userPoolId":    userPoolID,
 		"userName":      username,
 		"callerContext": map[string]interface{}{
-			"awsSdkVersion": "",
+			"awsSdkVersion": "aws-sdk-go-v2/1.30.0",
 			"clientId":      clientID,
 		},
 		"request":  requestPayload,
@@ -212,7 +212,7 @@ func (s *CognitoService) invokeTrigger(
 			logs.String("trigger_source", triggerSource),
 			logs.Err(err),
 		)
-		return responseDefaults, nil
+		return nil, nil
 	}
 
 	return response, nil
@@ -365,7 +365,7 @@ func invokePreAuthentication(
 	s *CognitoService,
 	userPoolID, username, clientID string,
 	config *cognitostore.LambdaConfig,
-	userAttrs map[string]string,
+	userAttrs, clientMetadata map[string]string,
 ) error {
 	lambdaARN := resolveTriggerARN(config, PreAuthentication)
 	if lambdaARN == "" {
@@ -374,7 +374,7 @@ func invokePreAuthentication(
 
 	request := map[string]interface{}{
 		"userAttributes": userAttrs,
-		"clientMetadata": nil,
+		"clientMetadata": clientMetadata,
 	}
 
 	_, err := s.invokeTrigger(ctx, PreAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
@@ -389,7 +389,7 @@ func invokePostAuthentication(
 	s *CognitoService,
 	userPoolID, username, clientID string,
 	config *cognitostore.LambdaConfig,
-	userAttrs map[string]string,
+	userAttrs, clientMetadata map[string]string,
 ) error {
 	lambdaARN := resolveTriggerARN(config, PostAuthentication)
 	if lambdaARN == "" {
@@ -399,7 +399,7 @@ func invokePostAuthentication(
 	request := map[string]interface{}{
 		"userAttributes": userAttrs,
 		"newDeviceUsed":  false,
-		"clientMetadata": nil,
+		"clientMetadata": clientMetadata,
 	}
 
 	_, err := s.invokeTrigger(ctx, PostAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
@@ -572,6 +572,7 @@ func invokeUserMigration(
 	s *CognitoService,
 	userPoolID, username, clientID, password string,
 	config *cognitostore.LambdaConfig,
+	validationData, clientMetadata map[string]string,
 ) (*userMigrationResult, error) {
 	lambdaARN := resolveTriggerARN(config, UserMigrationAuthentication)
 	if lambdaARN == "" {
@@ -580,8 +581,8 @@ func invokeUserMigration(
 
 	request := map[string]interface{}{
 		"password":       password,
-		"validationData": nil,
-		"clientMetadata": nil,
+		"validationData": validationData,
+		"clientMetadata": clientMetadata,
 	}
 
 	responseDefaults := map[string]interface{}{

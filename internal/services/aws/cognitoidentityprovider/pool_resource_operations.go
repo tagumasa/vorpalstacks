@@ -470,8 +470,9 @@ func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *requ
 	}
 
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 50 {
-		maxResults = 50
+	// Smithy ListProvidersLimitType: range {min: 0, max: 60}
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
@@ -515,11 +516,21 @@ func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrResourceNotFound
 	}
 
+	pool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
 	csvHeader := []string{
 		"cognito:username", "name", "given_name", "family_name", "middle_name",
 		"nickname", "preferred_username", "profile", "picture", "website",
 		"email", "email_verified", "gender", "birthdate", "zoneinfo",
 		"locale", "phone_number", "phone_number_verified", "address", "updated_at",
+	}
+	for _, sa := range pool.SchemaAttributes {
+		if sa.Name != "" {
+			csvHeader = append(csvHeader, sa.Name)
+		}
 	}
 
 	return map[string]interface{}{
@@ -568,10 +579,12 @@ func (s *CognitoService) DescribeRiskConfiguration(ctx context.Context, reqCtx *
 // formatResourceServer converts a ResourceServer store model to the API response map.
 func formatResourceServer(rs *cognitostore.ResourceServer) map[string]interface{} {
 	result := map[string]interface{}{
-		"UserPoolId": rs.UserPoolID,
-		"Identifier": rs.Identifier,
-		"Name":       rs.Name,
-		"Scopes":     []interface{}{},
+		"UserPoolId":       rs.UserPoolID,
+		"Identifier":       rs.Identifier,
+		"Name":             rs.Name,
+		"Scopes":           []interface{}{},
+		"CreationDate":     rs.CreationDate.Unix(),
+		"LastModifiedDate": rs.LastModifiedDate.Unix(),
 	}
 	if len(rs.Scopes) > 0 {
 		scopes := make([]interface{}, 0, len(rs.Scopes))
@@ -589,9 +602,11 @@ func formatResourceServer(rs *cognitostore.ResourceServer) map[string]interface{
 // formatIdentityProvider converts an IdentityProvider store model to the API response map.
 func formatIdentityProvider(ip *cognitostore.IdentityProvider) map[string]interface{} {
 	result := map[string]interface{}{
-		"UserPoolId":   ip.UserPoolID,
-		"ProviderName": ip.ProviderName,
-		"ProviderType": ip.ProviderType,
+		"UserPoolId":       ip.UserPoolID,
+		"ProviderName":     ip.ProviderName,
+		"ProviderType":     ip.ProviderType,
+		"CreationDate":     ip.CreationDate.Unix(),
+		"LastModifiedDate": ip.LastModifiedDate.Unix(),
 	}
 	if ip.ProviderDetails != nil {
 		result["ProviderDetails"] = ip.ProviderDetails

@@ -59,10 +59,12 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 			return nil, ErrInternalError
 		}
 		user.PasswordHash = string(hash)
-	}
-
-	if messageAction := req.GetParam("MessageAction"); messageAction == "SUPPRESS" {
-		user.UserStatus = "FORCE_CHANGE_PASSWORD"
+		saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, username, tempPassword)
+		if verr != nil {
+			return nil, ErrInternalError
+		}
+		user.SrpSalt = saltHex
+		user.SrpVerifier = verifierHex
 	}
 
 	if preSignUpResult.AutoConfirmUser {
@@ -360,6 +362,12 @@ func (s *CognitoService) AdminSetUserPassword(ctx context.Context, reqCtx *reque
 		return nil, ErrInternalError
 	}
 	user.PasswordHash = string(hash)
+	saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, username, password)
+	if verr != nil {
+		return nil, ErrInternalError
+	}
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
 
 	if permanent {
 		user.UserStatus = "CONFIRMED"
