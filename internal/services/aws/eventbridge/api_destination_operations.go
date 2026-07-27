@@ -189,6 +189,7 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 // ListApiDestinations lists API destinations with optional filtering.
 func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
+	connectionArn := request.GetStringParam(req.Parameters, "ConnectionArn")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	if limit == 0 {
@@ -205,7 +206,7 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	result, err := store.ListApiDestinations(ctx, namePrefix, limit, nextToken)
+	result, err := store.ListApiDestinations(ctx, namePrefix, connectionArn, limit, nextToken)
 	if err != nil {
 		return nil, err
 	}

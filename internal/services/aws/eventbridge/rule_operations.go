@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strconv"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
@@ -41,6 +42,9 @@ func ruleToMap(r *eventsstore.Rule, includeTimestamps bool) map[string]interface
 	if r.ManagedBy != "" {
 		result["ManagedBy"] = r.ManagedBy
 	}
+	if r.CreatedBy != "" {
+		result["CreatedBy"] = r.CreatedBy
+	}
 	return result
 }
 
@@ -66,12 +70,155 @@ func isValidScheduleExpression(expr string) bool {
 		return true
 	}
 	if scheduleCronRegex.MatchString(expr) {
-		return true
+		return validateCronFields(expr)
 	}
 	if scheduleRateRegex.MatchString(expr) {
 		return true
 	}
 	return false
+}
+
+// validateCronFields checks the inner contents of cron(...) against the AWS
+// six-field layout: minutes hours day-of-month month day-of-week year.
+// Per-field ranges follow the AWS EventBridge cron reference. Invalid fields
+// (e.g. minute=99) are rejected here instead of failing silently at runtime.
+func validateCronFields(expr string) bool {
+	inner := strings.TrimPrefix(expr, "cron(")
+	inner = strings.TrimSuffix(inner, ")")
+	inner = strings.TrimSpace(inner)
+
+	fields := strings.Fields(inner)
+	if len(fields) < 5 || len(fields) > 6 {
+		return false
+	}
+
+	normalised := make([]string, len(fields))
+	for i, f := range fields {
+		normalised[i] = normaliseCronField(i, f)
+	}
+
+	if !validateCronField(normalised[0], 0, 59) {
+		return false
+	}
+	if !validateCronField(normalised[1], 0, 23) {
+		return false
+	}
+	if !validateCronField(normalised[2], 1, 31) {
+		return false
+	}
+	if !validateCronField(normalised[3], 1, 12) {
+		return false
+	}
+	if !validateCronField(normalised[4], 1, 7) {
+		return false
+	}
+	if len(normalised) == 6 && !validateCronField(normalised[5], 1970, 2199) {
+		return false
+	}
+	return true
+}
+
+// normaliseCronField replaces month/DOW names with numeric literals so the
+// numeric validators can be expressed uniformly. fieldIndex 3 is month
+// (JAN..DEC), fieldIndex 4 is day-of-week (SUN..SAT).
+func normaliseCronField(fieldIndex int, field string) string {
+	upper := strings.ToUpper(field)
+	var table map[string]string
+	if fieldIndex == 3 {
+		table = map[string]string{
+			"JAN": "1", "FEB": "2", "MAR": "3", "APR": "4", "MAY": "5", "JUN": "6",
+			"JUL": "7", "AUG": "8", "SEP": "9", "OCT": "10", "NOV": "11", "DEC": "12",
+		}
+	} else if fieldIndex == 4 {
+		table = map[string]string{
+			"SUN": "1", "MON": "2", "TUE": "3", "WED": "4",
+			"THU": "5", "FRI": "6", "SAT": "7",
+		}
+	} else {
+		return field
+	}
+	for name, num := range table {
+		upper = strings.ReplaceAll(upper, name, num)
+	}
+	return upper
+}
+
+// validateCronField verifies that an already name-normalised cron field
+// contains only legal values and operators within [min, max]. Supports the
+// same operators as the scheduler runtime: *, ?, exact, list (a,b,c),
+// range (a-b), and step (a/n, a-b/n, * /n, ?/n). a/n is equivalent to a-max/n.
+func validateCronField(field string, min, max int) bool {
+	field = strings.TrimSpace(field)
+	if field == "" || field == "*" || field == "?" {
+		return true
+	}
+	for _, part := range strings.Split(field, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			return false
+		}
+		if idx := strings.Index(part, "/"); idx != -1 {
+			rangePart := part[:idx]
+			stepStr := part[idx+1:]
+			step, err := strconv.Atoi(stepStr)
+			if err != nil || step <= 0 {
+				return false
+			}
+			if rangePart == "*" || rangePart == "?" {
+				continue
+			}
+			// Plain numeric a/n: equivalent to a-max/n.
+			if !strings.Contains(rangePart, "-") {
+				n, err := strconv.Atoi(rangePart)
+				if err != nil || n < min || n > max {
+					return false
+				}
+				continue
+			}
+			if !validateCronRange(rangePart, min, max) {
+				return false
+			}
+			continue
+		}
+		if strings.Contains(part, "-") {
+			if !validateCronRange(part, min, max) {
+				return false
+			}
+			continue
+		}
+		n, err := strconv.Atoi(part)
+		if err != nil {
+			return false
+		}
+		if n < min || n > max {
+			return false
+		}
+	}
+	return true
+}
+
+// validateCronRange validates a-b segments within [min, max]. Both endpoints
+// must be integers and start <= end.
+func validateCronRange(s string, min, max int) bool {
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return false
+	}
+	start, err1 := strconv.Atoi(parts[0])
+	end, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	if start < min || start > max {
+		return false
+	}
+	if end < min || end > max {
+		return false
+	}
+	if start > end {
+		return false
+	}
+	return true
 }
 
 // PutRule creates or updates a rule on the specified event bus.
@@ -110,6 +257,7 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 	rule := &eventsstore.Rule{
 		Name:         name,
 		EventBusName: eventBusName,
+		CreatedBy:    "arn:aws:iam::" + reqCtx.GetAccountID() + ":root",
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
@@ -118,7 +266,7 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
 		if !isValidEventPattern(pattern) {
-			return nil, awserrors.NewValidationException("EventPattern must be valid JSON")
+			return nil, awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
 		}
 		rule.EventPattern = pattern
 	}
@@ -129,6 +277,12 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 		}
 		rule.ScheduleExpression = schedule
 	}
+
+	// Note: AWS accepts PutRule with neither EventPattern nor
+	// ScheduleExpression (both are optional in Smithy). Such a rule simply
+	// matches no events and never fires from a schedule; it can still be
+	// updated later. We follow the same contract rather than imposing a
+	// stricter validation than AWS itself applies.
 
 	if state, ok := req.Parameters["State"].(string); ok {
 		if !isValidRuleState(state) {
@@ -227,13 +381,37 @@ func (s *EventsService) DeleteRule(ctx context.Context, reqCtx *request.RequestC
 		return nil, mapStoreError(err, name)
 	}
 
-	// Check if rule has targets
+	force, _ := req.Parameters["Force"].(bool)
+
+	// Check if rule has targets. When Force is false (the default), AWS
+	// rejects the delete with a DependencyViolation-style error so that
+	// callers must explicitly remove targets first. When Force is true the
+	// targets are cascade-deleted before the rule itself is removed.
 	targetsResult, err := store.ListTargetsByRule(ctx, eventBusName, name, 1, "")
 	if err != nil {
 		return nil, err
 	}
-	if len(targetsResult.Targets) > 0 {
-		return nil, awserrors.NewValidationException("Rule '" + name + "' has targets. Remove targets before deleting the rule.")
+	if len(targetsResult.Targets) > 0 && !force {
+		return nil, awserrors.NewValidationException("Rule '" + name + "' has targets. Remove targets before deleting the rule, or retry with Force=true.")
+	}
+	if len(targetsResult.Targets) > 0 && force {
+		// Cascade-delete targets before removing the rule.
+		allToken := ""
+		for {
+			page, err := store.ListTargetsByRule(ctx, eventBusName, name, 1000, allToken)
+			if err != nil {
+				return nil, err
+			}
+			for _, t := range page.Targets {
+				if err := store.DeleteTarget(ctx, eventBusName, name, t.ID); err != nil {
+					return nil, err
+				}
+			}
+			if page.NextToken == "" {
+				break
+			}
+			allToken = page.NextToken
+		}
 	}
 
 	if err := store.DeleteRule(ctx, eventBusName, name); err != nil {
@@ -437,11 +615,23 @@ func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *reque
 
 	start := 0
 	if nextToken != "" {
-		if idx, err := strconv.Atoi(nextToken); err == nil && idx < len(allRuleNames) {
-			start = idx
+		// AWS returns InvalidParameterException when the supplied
+		// NextToken is not a recognised opaque cursor. Our pagination
+		// scheme uses a zero-based integer offset, so reject any token
+		// that fails to parse as a non-negative integer.
+		idx, err := strconv.Atoi(nextToken)
+		if err != nil || idx < 0 {
+			return nil, awserrors.NewInvalidParameterException("Invalid NextToken: " + nextToken)
 		}
+		start = idx
 	}
 	end := start + int(limit)
+	// Clamp both endpoints to the result-set length to prevent slice
+	// bounds panics when a stale NextToken offset exceeds the current
+	// length (e.g. rules were deleted between paginated calls).
+	if start > len(allRuleNames) {
+		start = len(allRuleNames)
+	}
 	if end > len(allRuleNames) {
 		end = len(allRuleNames)
 	}

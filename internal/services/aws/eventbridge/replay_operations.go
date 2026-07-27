@@ -368,7 +368,7 @@ func (s *EventsService) CancelReplay(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if replay.State != eventsstore.ReplayStateRunning && replay.State != eventsstore.ReplayStateStarting {
-		return nil, awserrors.NewValidationException("Replay cannot be cancelled in state: " + string(replay.State))
+		return nil, awserrors.NewIllegalStatusException("Replay cannot be cancelled in state: " + string(replay.State))
 	}
 
 	replay.State = eventsstore.ReplayStateCancelled

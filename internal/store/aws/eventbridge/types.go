@@ -73,15 +73,26 @@ const (
 
 // EventBus represents an EventBridge event bus.
 type EventBus struct {
-	Name           string      `json:"name"`
-	ARN            string      `json:"arn"`
-	Region         string      `json:"region"`
-	AccountID      string      `json:"accountId"`
-	Description    string      `json:"description,omitempty"`
-	Policy         string      `json:"policy,omitempty"`
-	Tags           []types.Tag `json:"tags,omitempty"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	LastModifiedAt time.Time   `json:"lastModifiedAt,omitempty"`
+	Name             string            `json:"name"`
+	ARN              string            `json:"arn"`
+	Region           string            `json:"region"`
+	AccountID        string            `json:"accountId"`
+	Description      string            `json:"description,omitempty"`
+	Policy           string            `json:"policy,omitempty"`
+	KmsKeyIdentifier string            `json:"kmsKeyIdentifier,omitempty"`
+	DeadLetterConfig *DeadLetterConfig `json:"deadLetterConfig,omitempty"`
+	LogConfig        *BusLogConfig     `json:"logConfig,omitempty"`
+	Tags             []types.Tag       `json:"tags,omitempty"`
+	CreatedAt        time.Time         `json:"createdAt"`
+	LastModifiedAt   time.Time         `json:"lastModifiedAt,omitempty"`
+}
+
+// BusLogConfig configures the EventBridge bus-level logging destination.
+// Per Smithy LogConfig shape: IncludeDetail (NONE|FULL) and Level
+// (OFF|ERROR|INFO|TRACE).
+type BusLogConfig struct {
+	IncludeDetail string `json:"includeDetail,omitempty"`
+	Level         string `json:"level,omitempty"`
 }
 
 // Rule represents an EventBridge rule.
@@ -97,6 +108,7 @@ type Rule struct {
 	State              RuleState   `json:"state"`
 	ManagedBy          string      `json:"managedBy,omitempty"`
 	RoleARN            string      `json:"roleArn,omitempty"`
+	CreatedBy          string      `json:"createdBy,omitempty"`
 	Tags               []types.Tag `json:"tags,omitempty"`
 	CreatedAt          time.Time   `json:"createdAt"`
 	LastModifiedAt     time.Time   `json:"lastModifiedAt"`
@@ -104,25 +116,92 @@ type Rule struct {
 
 // Target represents an EventBridge target.
 type Target struct {
-	ID                string             `json:"id"`
-	RuleName          string             `json:"ruleName"`
-	EventBusName      string             `json:"eventBusName"`
-	ARN               string             `json:"arn"`
-	Input             string             `json:"input,omitempty"`
-	InputPath         string             `json:"inputPath,omitempty"`
-	InputTransformer  *InputTransformer  `json:"inputTransformer,omitempty"`
-	RoleARN           string             `json:"roleArn,omitempty"`
-	DeadLetterConfig  *DeadLetterConfig  `json:"deadLetterConfig,omitempty"`
-	RetryPolicy       *RetryPolicy       `json:"retryPolicy,omitempty"`
-	SqsParameters     *SqsParameters     `json:"sqsParameters,omitempty"`
-	HttpParameters    *HttpParameters    `json:"httpParameters,omitempty"`
-	KinesisParameters *KinesisParameters `json:"kinesisParameters,omitempty"`
-	CreatedAt         time.Time          `json:"createdAt"`
+	ID                          string                       `json:"id"`
+	RuleName                    string                       `json:"ruleName"`
+	EventBusName                string                       `json:"eventBusName"`
+	ARN                         string                       `json:"arn"`
+	Input                       string                       `json:"input,omitempty"`
+	InputPath                   string                       `json:"inputPath,omitempty"`
+	InputTransformer            *InputTransformer            `json:"inputTransformer,omitempty"`
+	RoleARN                     string                       `json:"roleArn,omitempty"`
+	DeadLetterConfig            *DeadLetterConfig            `json:"deadLetterConfig,omitempty"`
+	RetryPolicy                 *RetryPolicy                 `json:"retryPolicy,omitempty"`
+	SqsParameters               *SqsParameters               `json:"sqsParameters,omitempty"`
+	HttpParameters              *HttpParameters              `json:"httpParameters,omitempty"`
+	KinesisParameters           *KinesisParameters           `json:"kinesisParameters,omitempty"`
+	RunCommandParameters        *RunCommandParameters        `json:"runCommandParameters,omitempty"`
+	BatchParameters             *BatchParameters             `json:"batchParameters,omitempty"`
+	RedshiftDataParameters      *RedshiftDataParameters      `json:"redshiftDataParameters,omitempty"`
+	SageMakerPipelineParameters *SageMakerPipelineParameters `json:"sageMakerPipelineParameters,omitempty"`
+	AppSyncParameters           *AppSyncParameters           `json:"appSyncParameters,omitempty"`
+	CreatedAt                   time.Time                    `json:"createdAt"`
 }
 
 // KinesisParameters represents the Kinesis parameters for an EventBridge target.
 type KinesisParameters struct {
 	PartitionKeyPath string `json:"partitionKeyPath,omitempty"`
+}
+
+// RunCommandTarget identifies a target for an SSM Run Command invocation.
+type RunCommandTarget struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
+}
+
+// RunCommandParameters configures the SSM Run Command target.
+type RunCommandParameters struct {
+	RunCommandTargets []RunCommandTarget `json:"runCommandTargets"`
+}
+
+// BatchArrayProperties enables Batch array job sizing.
+type BatchArrayProperties struct {
+	Size int32 `json:"size,omitempty"`
+}
+
+// BatchRetryStrategy controls Batch job retry behaviour.
+type BatchRetryStrategy struct {
+	Attempts int32 `json:"attempts,omitempty"`
+}
+
+// BatchParameters configures an AWS Batch target per the Smithy shape:
+// JobDefinition, JobName, ArrayProperties, RetryStrategy only.
+type BatchParameters struct {
+	JobDefinition   string                `json:"jobDefinition"`
+	JobName         string                `json:"jobName"`
+	ArrayProperties *BatchArrayProperties `json:"arrayProperties,omitempty"`
+	RetryStrategy   *BatchRetryStrategy   `json:"retryStrategy,omitempty"`
+}
+
+// RedshiftDataParameters configures a Redshift Data API target. The backing
+// Redshift service is not available on this platform; parameters are accepted
+// for SDK parity.
+type RedshiftDataParameters struct {
+	SecretManagerArn string   `json:"secretManagerArn,omitempty"`
+	Database         string   `json:"database"`
+	DbUser           string   `json:"dbUser,omitempty"`
+	Sql              string   `json:"sql,omitempty"`
+	StatementName    string   `json:"statementName,omitempty"`
+	WithEvent        bool     `json:"withEvent,omitempty"`
+	Sqls             []string `json:"sqls,omitempty"`
+}
+
+// SageMakerPipelineParameter is a name/value pair passed to a SageMaker
+// pipeline execution.
+type SageMakerPipelineParameter struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// SageMakerPipelineParameters configures a SageMaker pipeline target. The
+// backing SageMaker service is not available on this platform; parameters are
+// accepted for SDK parity.
+type SageMakerPipelineParameters struct {
+	PipelineParameterList []SageMakerPipelineParameter `json:"pipelineParameterList,omitempty"`
+}
+
+// AppSyncParameters configures an AppSync GraphQL target.
+type AppSyncParameters struct {
+	GraphQLOperation string `json:"graphQLOperation,omitempty"`
 }
 
 // InputTransformer represents an input transformer for EventBridge targets.
@@ -156,35 +235,105 @@ type HttpParameters struct {
 
 // Archive represents an EventBridge archive.
 type Archive struct {
-	Name           string       `json:"name"`
-	ARN            string       `json:"arn"`
-	Region         string       `json:"region"`
-	AccountID      string       `json:"accountId"`
-	EventBusName   string       `json:"eventBusName"`
-	EventSourceARN string       `json:"eventSourceArn"`
-	Description    string       `json:"description,omitempty"`
-	EventPattern   string       `json:"eventPattern,omitempty"`
-	RetentionDays  int32        `json:"retentionDays,omitempty"`
-	State          ArchiveState `json:"state"`
-	EventCount     int64        `json:"eventCount"`
-	SizeBytes      int64        `json:"sizeBytes"`
-	CreatedAt      time.Time    `json:"createdAt"`
+	Name             string       `json:"name"`
+	ARN              string       `json:"arn"`
+	Region           string       `json:"region"`
+	AccountID        string       `json:"accountId"`
+	EventBusName     string       `json:"eventBusName"`
+	EventSourceARN   string       `json:"eventSourceArn"`
+	Description      string       `json:"description,omitempty"`
+	EventPattern     string       `json:"eventPattern,omitempty"`
+	RetentionDays    int32        `json:"retentionDays,omitempty"`
+	KmsKeyIdentifier string       `json:"kmsKeyIdentifier,omitempty"`
+	State            ArchiveState `json:"state"`
+	StateReason      string       `json:"stateReason,omitempty"`
+	EventCount       int64        `json:"eventCount"`
+	SizeBytes        int64        `json:"sizeBytes"`
+	CreatedAt        time.Time    `json:"createdAt"`
+}
+
+// ConnectionHttpParameters represents additional header/query/body parameters
+// to send on the HTTP request when invoking an API destination target.
+type ConnectionHttpParameters struct {
+	HeaderParameters      map[string]string `json:"headerParameters,omitempty"`
+	QueryStringParameters map[string]string `json:"queryStringParameters,omitempty"`
+	BodyParameters        []string          `json:"bodyParameters,omitempty"`
+}
+
+// BasicAuthParameters holds Basic HTTP authentication credentials.
+type BasicAuthParameters struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// OAuthClientParameters holds the OAuth client credentials used to obtain an
+// access token from the authorization endpoint.
+type OAuthClientParameters struct {
+	ClientID     string `json:"clientId"`
+	ClientSecret string `json:"clientSecret"`
+}
+
+// OAuthParameters holds the OAuth client-credentials flow configuration.
+type OAuthParameters struct {
+	ClientParameters      *OAuthClientParameters    `json:"clientParameters,omitempty"`
+	AuthorizationEndpoint string                    `json:"authorizationEndpoint,omitempty"`
+	HttpMethod            string                    `json:"httpMethod,omitempty"`
+	OAuthHttpParameters   *ConnectionHttpParameters `json:"oauthHttpParameters,omitempty"`
+}
+
+// ApiKeyAuthParameters holds the API key header used to authenticate the
+// request to the API destination.
+type ApiKeyAuthParameters struct {
+	ApiKeyName  string `json:"apiKeyName"`
+	ApiKeyValue string `json:"apiKeyValue"`
+}
+
+// AuthParameters holds the per-authorization-type credentials for a connection.
+// Only one of BasicAuthParameters / OAuthParameters / ApiKeyAuthParameters is
+// populated, matching the value of Connection.AuthorizationType.
+type AuthParameters struct {
+	BasicAuthParameters      *BasicAuthParameters      `json:"basicAuthParameters,omitempty"`
+	OAuthParameters          *OAuthParameters          `json:"oauthParameters,omitempty"`
+	ApiKeyAuthParameters     *ApiKeyAuthParameters     `json:"apiKeyAuthParameters,omitempty"`
+	InvocationHttpParameters *ConnectionHttpParameters `json:"invocationHttpParameters,omitempty"`
+}
+
+// ConnectivityResourceParameters wraps the ResourceParameters sub-structure
+// per the Smithy shape. The top-level request member
+// InvocationConnectivityParameters maps to this shape; it contains a
+// ResourceParameters member that itself carries the resource configuration
+// ARN (and resource association ARN on responses).
+type ConnectivityResourceParameters struct {
+	ResourceParameters *ResourceConfiguration `json:"resourceParameters,omitempty"`
+}
+
+// ResourceConfiguration corresponds to the Smithy
+// ConnectivityResourceConfigurationArn (request) and
+// DescribeConnectionResourceParameters (response) shapes. The
+// ResourceAssociationArn field is populated only on Describe responses.
+type ResourceConfiguration struct {
+	ResourceConfigurationArn string `json:"resourceConfigurationArn,omitempty"`
+	ResourceAssociationArn   string `json:"resourceAssociationArn,omitempty"`
 }
 
 // Connection represents an EventBridge connection.
 type Connection struct {
-	Name              string          `json:"name"`
-	ARN               string          `json:"arn"`
-	Region            string          `json:"region"`
-	AccountID         string          `json:"accountId"`
-	Description       string          `json:"description,omitempty"`
-	AuthorizationType string          `json:"authorizationType"`
-	State             ConnectionState `json:"state"`
-	StateReason       string          `json:"stateReason,omitempty"`
-	Tags              []types.Tag     `json:"tags,omitempty"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	LastModifiedAt    time.Time       `json:"lastModifiedAt,omitempty"`
-	LastAuthorizedAt  time.Time       `json:"lastAuthorizedAt,omitempty"`
+	Name                             string                          `json:"name"`
+	ARN                              string                          `json:"arn"`
+	Region                           string                          `json:"region"`
+	AccountID                        string                          `json:"accountId"`
+	Description                      string                          `json:"description,omitempty"`
+	AuthorizationType                string                          `json:"authorizationType"`
+	AuthParameters                   *AuthParameters                 `json:"authParameters,omitempty"`
+	InvocationConnectivityParameters *ConnectivityResourceParameters `json:"invocationConnectivityParameters,omitempty"`
+	KmsKeyIdentifier                 string                          `json:"kmsKeyIdentifier,omitempty"`
+	SecretArn                        string                          `json:"secretArn,omitempty"`
+	State                            ConnectionState                 `json:"state"`
+	StateReason                      string                          `json:"stateReason,omitempty"`
+	Tags                             []types.Tag                     `json:"tags,omitempty"`
+	CreatedAt                        time.Time                       `json:"createdAt"`
+	LastModifiedAt                   time.Time                       `json:"lastModifiedAt,omitempty"`
+	LastAuthorizedAt                 time.Time                       `json:"lastAuthorizedAt,omitempty"`
 }
 
 // ApiDestination represents an EventBridge API destination.
@@ -216,6 +365,7 @@ type Event struct {
 	Resources    []string               `json:"resources,omitempty"`
 	Detail       map[string]interface{} `json:"detail"`
 	EventBusName string                 `json:"eventBusName"`
+	TraceHeader  string                 `json:"traceHeader,omitempty"`
 }
 
 // Replay represents an EventBridge replay.

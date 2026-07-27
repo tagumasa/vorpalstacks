@@ -38,8 +38,25 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 		return nil, awserrors.NewValidationException("Maximum 10 entries allowed per request")
 	}
 
+	// EndpointId routes the request through a global endpoint. Global
+	// endpoints are out of scope for this edge platform, but we still
+	// accept the parameter so SDK clients do not receive an unexpected
+	// ValidationException when populating it.
+	if endpointID, _ := req.Parameters["EndpointId"].(string); endpointID != "" {
+		logs.Debug("PutEvents EndpointId ignored (global endpoints out of scope)",
+			logs.String("endpointId", endpointID))
+	}
+
 	resultEntries := make([]map[string]interface{}, 0)
 	failedCount := int32(0)
+
+	// Acquire the store once before iterating entries. s.store() is
+	// cached, but hoisting it keeps the loop body focused on per-entry
+	// validation and delivery.
+	busStore, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, e := range entries {
 		entryMap, ok := e.(map[string]interface{})
@@ -55,9 +72,22 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 		source, _ := entryMap["Source"].(string)
 		detailType, _ := entryMap["DetailType"].(string)
 		detailStr, _ := entryMap["Detail"].(string)
+		traceHeader, _ := entryMap["TraceHeader"].(string)
 		eventBusName, _ := entryMap["EventBusName"].(string)
 		if eventBusName == "" {
 			eventBusName = "default"
+		}
+
+		// Validate the event bus exists before attempting delivery so
+		// that callers receive a per-entry error code instead of a
+		// silent no-op when targeting a non-existent bus.
+		if _, err := busStore.GetEventBus(ctx, eventBusName); err != nil {
+			resultEntries = append(resultEntries, map[string]interface{}{
+				"ErrorCode":    "ResourceNotFoundException",
+				"ErrorMessage": "Event bus '" + eventBusName + "' does not exist",
+			})
+			failedCount++
+			continue
 		}
 
 		if source == "" || detailType == "" || detailStr == "" {
@@ -101,6 +131,7 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			Region:       reqCtx.GetRegion(),
 			Detail:       detail,
 			EventBusName: eventBusName,
+			TraceHeader:  traceHeader,
 		}
 
 		if resources, ok := entryMap["Resources"].([]interface{}); ok {
@@ -1094,7 +1125,7 @@ func (s *EventsService) TestEventPattern(ctx context.Context, reqCtx *request.Re
 
 	var patternMap, eventMap map[string]interface{}
 	if err := json.Unmarshal([]byte(patternStr), &patternMap); err != nil {
-		return nil, awserrors.NewValidationException(fmt.Sprintf("EventPattern is not valid JSON: %s", err))
+		return nil, awserrors.NewInvalidEventPatternException(fmt.Sprintf("EventPattern is not valid JSON: %s", err))
 	}
 	if err := json.Unmarshal([]byte(eventStr), &eventMap); err != nil {
 		return nil, awserrors.NewValidationException(fmt.Sprintf("Event is not valid JSON: %s", err))

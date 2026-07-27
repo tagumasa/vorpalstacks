@@ -33,7 +33,7 @@ type EventsStoreInterface interface {
 	DeleteArchive(ctx context.Context, name string) error
 	UpdateArchive(ctx context.Context, archive *Archive) error
 	ListArchivesForEventBus(ctx context.Context, eventBusName string) ([]*Archive, error)
-	ListArchives(ctx context.Context, namePrefix string, state string, limit int32, nextToken string) (*ArchiveListResult, error)
+	ListArchives(ctx context.Context, namePrefix, eventSourceArn, state string, limit int32, nextToken string) (*ArchiveListResult, error)
 	IncrementArchiveCounters(ctx context.Context, archiveName string, eventSize int64) error
 
 	StoreArchiveEvent(ctx context.Context, archiveName string, event *ArchivedEvent) error
@@ -57,5 +57,5 @@ type EventsStoreInterface interface {
 	GetApiDestination(ctx context.Context, name string) (*ApiDestination, error)
 	DeleteApiDestination(ctx context.Context, name string) error
 	UpdateApiDestination(ctx context.Context, apiDest *ApiDestination) error
-	ListApiDestinations(ctx context.Context, namePrefix string, limit int32, nextToken string) (*ApiDestinationListResult, error)
+	ListApiDestinations(ctx context.Context, namePrefix, connectionArn string, limit int32, nextToken string) (*ApiDestinationListResult, error)
 }

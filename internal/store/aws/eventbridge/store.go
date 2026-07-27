@@ -518,7 +518,10 @@ func (s *EventsStore) IncrementArchiveCounters(ctx context.Context, archiveName 
 	return s.archivesStore.Put(archiveName, &archive)
 }
 
-// UpdateArchive updates an existing archive.
+// UpdateArchive updates an existing archive. It takes the archiveCountersMu
+// lock so that IncrementArchiveCounters (which runs from the event delivery
+// path) cannot observe a torn EventCount/SizeBytes during a user-initiated
+// update, and vice versa.
 //
 // Parameters:
 //   - ctx: The context
@@ -527,6 +530,9 @@ func (s *EventsStore) IncrementArchiveCounters(ctx context.Context, archiveName 
 // Returns:
 //   - error: An error if update fails
 func (s *EventsStore) UpdateArchive(ctx context.Context, archive *Archive) error {
+	s.archiveCountersMu.Lock()
+	defer s.archiveCountersMu.Unlock()
+
 	if !s.archivesStore.Exists(archive.Name) {
 		return ErrArchiveNotFound
 	}
@@ -930,7 +936,7 @@ func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state 
 }
 
 // ListArchives lists archives with optional filtering.
-func (s *EventsStore) ListArchives(ctx context.Context, namePrefix string, state string, limit int32, nextToken string) (*ArchiveListResult, error) {
+func (s *EventsStore) ListArchives(ctx context.Context, namePrefix, eventSourceArn, state string, limit int32, nextToken string) (*ArchiveListResult, error) {
 	opts := common.ListOptions{
 		Marker:   nextToken,
 		MaxItems: int(limit),
@@ -938,6 +944,9 @@ func (s *EventsStore) ListArchives(ctx context.Context, namePrefix string, state
 
 	result, err := common.List[Archive](s.archivesStore, opts, func(a *Archive) bool {
 		if namePrefix != "" && !strings.HasPrefix(a.Name, namePrefix) {
+			return false
+		}
+		if eventSourceArn != "" && a.EventSourceARN != eventSourceArn {
 			return false
 		}
 		if state != "" && string(a.State) != state {
@@ -982,7 +991,7 @@ func (s *EventsStore) ListConnections(ctx context.Context, namePrefix string, st
 }
 
 // ListApiDestinations lists API destinations with optional filtering.
-func (s *EventsStore) ListApiDestinations(ctx context.Context, namePrefix string, limit int32, nextToken string) (*ApiDestinationListResult, error) {
+func (s *EventsStore) ListApiDestinations(ctx context.Context, namePrefix, connectionArn string, limit int32, nextToken string) (*ApiDestinationListResult, error) {
 	opts := common.ListOptions{
 		Marker:   nextToken,
 		MaxItems: int(limit),
@@ -990,6 +999,9 @@ func (s *EventsStore) ListApiDestinations(ctx context.Context, namePrefix string
 
 	result, err := common.List[ApiDestination](s.apiDestinationsStore, opts, func(d *ApiDestination) bool {
 		if namePrefix != "" && !strings.HasPrefix(d.Name, namePrefix) {
+			return false
+		}
+		if connectionArn != "" && d.ConnectionARN != connectionArn {
 			return false
 		}
 		return true

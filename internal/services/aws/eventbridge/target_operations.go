@@ -26,8 +26,9 @@ func isValidTargetARN(arn string) bool {
 		"kinesis":       true,
 		"stepfunctions": true,
 		"states":        true,
-		"ecs":           true,
 		"logs":          true,
+		"ssm":           true,
+		"appsync":       true,
 	}
 	return validServices[service]
 }
@@ -121,6 +122,12 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 	for _, t := range targets {
 		targetMap, ok := t.(map[string]interface{})
 		if !ok {
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"TargetId":     "",
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": "Target entry must be an object",
+			})
+			failedCount++
 			continue
 		}
 
@@ -265,6 +272,25 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 			}
 		}
 
+		if rcp, ok := targetMap["RunCommandParameters"].(map[string]interface{}); ok {
+			target.RunCommandParameters = parseRunCommandParameters(rcp)
+		}
+		if bp, ok := targetMap["BatchParameters"].(map[string]interface{}); ok {
+			target.BatchParameters = parseBatchParameters(bp)
+		}
+		if rdp, ok := targetMap["RedshiftDataParameters"].(map[string]interface{}); ok {
+			target.RedshiftDataParameters = parseRedshiftDataParameters(rdp)
+		}
+		if smp, ok := targetMap["SageMakerPipelineParameters"].(map[string]interface{}); ok {
+			target.SageMakerPipelineParameters = parseSageMakerPipelineParameters(smp)
+		}
+		if asp, ok := targetMap["AppSyncParameters"].(map[string]interface{}); ok {
+			target.AppSyncParameters = &eventsstore.AppSyncParameters{}
+			if op, ok := asp["GraphQLOperation"].(string); ok {
+				target.AppSyncParameters.GraphQLOperation = op
+			}
+		}
+
 		if err := store.PutTarget(ctx, target); err != nil {
 			failedEntries = append(failedEntries, map[string]interface{}{
 				"TargetId":     targetID,
@@ -312,6 +338,13 @@ func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.Reque
 	if len(targetIDs) == 0 {
 		return nil, awserrors.NewValidationException("Target IDs are required")
 	}
+
+	// Force is currently accepted for SDK parity. The vorpalstacks
+	// RemoveTargets implementation always removes the requested target IDs
+	// (no extra pre-conditions to bypass), so the flag does not alter
+	// behaviour here, but accepting it avoids spurious ValidationException
+	// responses for SDK clients that pass Force=true.
+	_, _ = req.Parameters["Force"].(bool)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -436,4 +469,95 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 	}
 
 	return response, nil
+}
+
+// parseRunCommandParameters builds RunCommandParameters from a request map.
+// At least one RunCommandTarget with both Key and Values is required.
+func parseRunCommandParameters(m map[string]interface{}) *eventsstore.RunCommandParameters {
+	out := &eventsstore.RunCommandParameters{}
+	if targets, ok := m["RunCommandTargets"].([]interface{}); ok {
+		for _, t := range targets {
+			tm, ok := t.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			rct := eventsstore.RunCommandTarget{
+				Key: getStringField(tm, "Key"),
+			}
+			if vals, ok := tm["Values"].([]interface{}); ok {
+				for _, v := range vals {
+					if vs, ok := v.(string); ok {
+						rct.Values = append(rct.Values, vs)
+					}
+				}
+			}
+			out.RunCommandTargets = append(out.RunCommandTargets, rct)
+		}
+	}
+	return out
+}
+
+// parseBatchParameters captures AWS Batch target invocation parameters.
+// Batch is not available on this platform; we persist for SDK parity.
+func parseBatchParameters(m map[string]interface{}) *eventsstore.BatchParameters {
+	out := &eventsstore.BatchParameters{
+		JobDefinition: getStringField(m, "JobDefinition"),
+		JobName:       getStringField(m, "JobName"),
+	}
+	if arr, ok := m["ArrayProperties"].(map[string]interface{}); ok {
+		out.ArrayProperties = &eventsstore.BatchArrayProperties{}
+		if v, ok := arr["Size"].(float64); ok {
+			out.ArrayProperties.Size = int32(v)
+		}
+	}
+	if rs, ok := m["RetryStrategy"].(map[string]interface{}); ok {
+		out.RetryStrategy = &eventsstore.BatchRetryStrategy{}
+		if v, ok := rs["Attempts"].(float64); ok {
+			out.RetryStrategy.Attempts = int32(v)
+		}
+	}
+	return out
+}
+
+// parseRedshiftDataParameters captures Redshift Data API target parameters.
+// Redshift is not available on this platform; we persist for SDK parity.
+func parseRedshiftDataParameters(m map[string]interface{}) *eventsstore.RedshiftDataParameters {
+	out := &eventsstore.RedshiftDataParameters{
+		SecretManagerArn: getStringField(m, "SecretManagerArn"),
+		Database:         getStringField(m, "Database"),
+		DbUser:           getStringField(m, "DbUser"),
+		Sql:              getStringField(m, "Sql"),
+		StatementName:    getStringField(m, "StatementName"),
+	}
+	if v, ok := m["WithEvent"].(bool); ok {
+		out.WithEvent = v
+	}
+	if sqls, ok := m["Sqls"].([]interface{}); ok {
+		for _, s := range sqls {
+			if ss, ok := s.(string); ok {
+				out.Sqls = append(out.Sqls, ss)
+			}
+		}
+	}
+	return out
+}
+
+// parseSageMakerPipelineParameters captures SageMaker pipeline target
+// parameters. SageMaker is not available on this platform; we persist for
+// SDK parity.
+func parseSageMakerPipelineParameters(m map[string]interface{}) *eventsstore.SageMakerPipelineParameters {
+	out := &eventsstore.SageMakerPipelineParameters{}
+	if ppl, ok := m["PipelineParameterList"].([]interface{}); ok {
+		for _, p := range ppl {
+			pm, ok := p.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			out.PipelineParameterList = append(out.PipelineParameterList, eventsstore.SageMakerPipelineParameter{
+				Name:  getStringField(pm, "Name"),
+				Value: getStringField(pm, "Value"),
+			})
+		}
+	}
+	return out
 }

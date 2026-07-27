@@ -247,7 +247,7 @@ func cronFieldMatches(field string, value, min, max int) bool {
 }
 
 func matchesCronPart(part string, value, min, max int) bool {
-	// Step value: a-b/n or */n
+	// Step value: a/n (a-max/n), a-b/n, or * /n
 	if idx := strings.Index(part, "/"); idx != -1 {
 		rangePart := part[:idx]
 		stepStr := part[idx+1:]
@@ -257,11 +257,20 @@ func matchesCronPart(part string, value, min, max int) bool {
 		}
 		start, end := min, max
 		if rangePart != "*" && rangePart != "?" {
-			s, e, ok := parseRange(rangePart, min, max)
-			if !ok {
-				return false
+			// Plain numeric a/n: equivalent to a-max/n.
+			if !strings.Contains(rangePart, "-") {
+				n, err := strconv.Atoi(rangePart)
+				if err != nil || n < min || n > max {
+					return false
+				}
+				start = n
+			} else {
+				s, e, ok := parseRange(rangePart, min, max)
+				if !ok {
+					return false
+				}
+				start, end = s, e
 			}
-			start, end = s, e
 		}
 		for i := start; i <= end; i += step {
 			if i == value {
@@ -312,12 +321,22 @@ var monthMap = map[string]int{
 	"JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
 }
 
-func cronMonthMatches(field string, month time.Month) bool {
+// expandCronNames returns a copy of field in which every occurrence of a
+// month name (JAN..DEC) is replaced with its numeric value. The replacement
+// is applied to every comma-separated, range, list, and step sub-expression
+// so that downstream range/list/step validators can treat the field purely
+// as integers.
+func expandCronNames(field string, names map[string]int) string {
 	upper := strings.ToUpper(field)
-	if v, ok := monthMap[upper]; ok {
-		field = strconv.Itoa(v)
+	for name, num := range names {
+		upper = strings.ReplaceAll(upper, name, strconv.Itoa(num))
 	}
-	return cronFieldMatches(field, int(month), 1, 12)
+	return upper
+}
+
+func cronMonthMatches(field string, month time.Month) bool {
+	expanded := expandCronNames(field, monthMap)
+	return cronFieldMatches(expanded, int(month), 1, 12)
 }
 
 var dowNameToAWS = map[string]int{
@@ -327,20 +346,23 @@ var dowNameToAWS = map[string]int{
 // cronDOWMatches checks the day-of-week field. AWS cron uses 1=SUN..7=SAT.
 // Go's time.Weekday uses 0=SUNDAY..6=SATURDAY. We convert Go's value to
 // AWS convention (goDOW+1) before matching.
+//
+// Both cronMonthMatches and cronDOWMatches expand the supplied field so that
+// names inside ranges (e.g. MON-FRI), lists (MON,WED,FRI), and steps
+// (MON/2) are translated to numeric form before cronFieldMatches parses
+// them. This closes the long-standing asymmetry where only the bare single
+// name was being recognised.
 func cronDOWMatches(field string, goDOW int) bool {
 	awsDOW := goDOW + 1
 	if awsDOW > 7 {
 		awsDOW = 7
 	}
 
-	upper := strings.ToUpper(field)
-	if v, ok := dowNameToAWS[upper]; ok {
-		return v == awsDOW
-	}
-	if field == "?" || field == "*" {
+	expanded := expandCronNames(field, dowNameToAWS)
+	if expanded == "?" || expanded == "*" {
 		return true
 	}
-	return cronFieldMatches(field, awsDOW, 1, 7)
+	return cronFieldMatches(expanded, awsDOW, 1, 7)
 }
 
 func getLastFire(ruleARN string) (time.Time, bool) {
@@ -381,7 +403,7 @@ func (s *EventsService) purgeExpiredArchiveEvents(ctx context.Context, now time.
 		}
 		token := ""
 		for {
-			result, err := store.ListArchives(ctx, "", "", 1000, token)
+			result, err := store.ListArchives(ctx, "", "", "", 1000, token)
 			if err != nil {
 				return true
 			}

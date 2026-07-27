@@ -27,9 +27,11 @@ var validHttpMethods = map[string]bool{
 	"PATCH":   true,
 }
 
-func archiveToMap(a *eventsstore.Archive) map[string]interface{} {
+// archiveToListItem serialises an Archive for the ListArchives response.
+// Per Smithy Archive shape: ArchiveName, EventSourceArn, State,
+// StateReason, RetentionDays, SizeBytes, EventCount, CreationTime.
+func archiveToListItem(a *eventsstore.Archive) map[string]interface{} {
 	result := map[string]interface{}{
-		"ArchiveArn":     a.ARN,
 		"ArchiveName":    a.Name,
 		"EventSourceArn": a.EventSourceARN,
 		"State":          string(a.State),
@@ -37,14 +39,29 @@ func archiveToMap(a *eventsstore.Archive) map[string]interface{} {
 		"EventCount":     a.EventCount,
 		"SizeBytes":      a.SizeBytes,
 	}
+	if a.StateReason != "" {
+		result["StateReason"] = a.StateReason
+	}
+	if a.RetentionDays > 0 {
+		result["RetentionDays"] = a.RetentionDays
+	}
+	return result
+}
+
+// archiveToDescribeMap serialises an Archive for the
+// DescribeArchiveResponse shape. Includes the Describe-only fields:
+// ArchiveArn, Description, EventPattern, KmsKeyIdentifier.
+func archiveToDescribeMap(a *eventsstore.Archive) map[string]interface{} {
+	result := archiveToListItem(a)
+	result["ArchiveArn"] = a.ARN
 	if a.Description != "" {
 		result["Description"] = a.Description
 	}
 	if a.EventPattern != "" {
 		result["EventPattern"] = a.EventPattern
 	}
-	if a.RetentionDays > 0 {
-		result["RetentionDays"] = a.RetentionDays
+	if a.KmsKeyIdentifier != "" {
+		result["KmsKeyIdentifier"] = a.KmsKeyIdentifier
 	}
 	return result
 }
@@ -94,15 +111,23 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
 	}
 
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		archive.KmsKeyIdentifier = kms
+	}
+
 	if err := store.CreateArchive(ctx, archive); err != nil {
 		return nil, mapStoreError(err, name)
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"ArchiveArn":   archive.ARN,
 		"CreationTime": archive.CreatedAt.Unix(),
 		"State":        string(archive.State),
-	}, nil
+	}
+	if archive.StateReason != "" {
+		resp["StateReason"] = archive.StateReason
+	}
+	return resp, nil
 }
 
 // DeleteArchive deletes an archive.
@@ -141,13 +166,14 @@ func (s *EventsService) DescribeArchive(ctx context.Context, reqCtx *request.Req
 		return nil, mapStoreError(err, name)
 	}
 
-	return archiveToMap(archive), nil
+	return archiveToDescribeMap(archive), nil
 }
 
 // ListArchives lists archives with optional filtering.
 func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
 	stateStr := request.GetParamLowerFirst(req.Parameters, "State")
+	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	if limit == 0 {
@@ -164,14 +190,14 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	result, err := store.ListArchives(ctx, namePrefix, stateStr, limit, nextToken)
+	result, err := store.ListArchives(ctx, namePrefix, eventSourceArn, stateStr, limit, nextToken)
 	if err != nil {
 		return nil, err
 	}
 
 	archives := make([]map[string]interface{}, 0, len(result.Archives))
 	for _, archive := range result.Archives {
-		archives = append(archives, archiveToMap(archive))
+		archives = append(archives, archiveToListItem(archive))
 	}
 
 	response := map[string]interface{}{
@@ -211,14 +237,21 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 	if _, ok := req.Parameters["RetentionDays"]; ok {
 		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
 	}
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		archive.KmsKeyIdentifier = kms
+	}
 
 	if err := store.UpdateArchive(ctx, archive); err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"ArchiveArn":   archive.ARN,
 		"State":        string(archive.State),
 		"CreationTime": archive.CreatedAt.Unix(),
-	}, nil
+	}
+	if archive.StateReason != "" {
+		resp["StateReason"] = archive.StateReason
+	}
+	return resp, nil
 }

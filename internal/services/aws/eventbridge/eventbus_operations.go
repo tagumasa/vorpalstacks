@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -13,7 +14,10 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-func eventBusToMap(eb *eventsstore.EventBus) map[string]interface{} {
+// eventBusToListItem serialises an EventBus for the ListEventBuses response.
+// Per Smithy EventBus shape: Name, Arn, Description, Policy, CreationTime,
+// LastModifiedTime.
+func eventBusToListItem(eb *eventsstore.EventBus) map[string]interface{} {
 	result := map[string]interface{}{
 		"Arn":              eb.ARN,
 		"Name":             eb.Name,
@@ -25,6 +29,68 @@ func eventBusToMap(eb *eventsstore.EventBus) map[string]interface{} {
 	}
 	if eb.Policy != "" {
 		result["Policy"] = eb.Policy
+	}
+	return result
+}
+
+// eventBusToDescribeMap serialises an EventBus for the
+// DescribeEventBusResponse shape. Includes the Describe-only fields:
+// KmsKeyIdentifier, DeadLetterConfig, LogConfig.
+func eventBusToDescribeMap(eb *eventsstore.EventBus) map[string]interface{} {
+	result := eventBusToListItem(eb)
+	if eb.KmsKeyIdentifier != "" {
+		result["KmsKeyIdentifier"] = eb.KmsKeyIdentifier
+	}
+	if eb.DeadLetterConfig != nil {
+		dlc := map[string]interface{}{}
+		if eb.DeadLetterConfig.Arn != "" {
+			dlc["Arn"] = eb.DeadLetterConfig.Arn
+		}
+		result["DeadLetterConfig"] = dlc
+	}
+	if eb.LogConfig != nil {
+		lc := map[string]interface{}{}
+		if eb.LogConfig.IncludeDetail != "" {
+			lc["IncludeDetail"] = eb.LogConfig.IncludeDetail
+		}
+		if eb.LogConfig.Level != "" {
+			lc["Level"] = eb.LogConfig.Level
+		}
+		result["LogConfig"] = lc
+	}
+	return result
+}
+
+// eventBusToUpdateMap serialises an EventBus for the UpdateEventBusResponse
+// shape per Smithy: Arn, Name, KmsKeyIdentifier, Description,
+// DeadLetterConfig, LogConfig.
+func eventBusToUpdateMap(eb *eventsstore.EventBus) map[string]interface{} {
+	result := map[string]interface{}{
+		"Arn":  eb.ARN,
+		"Name": eb.Name,
+	}
+	if eb.Description != "" {
+		result["Description"] = eb.Description
+	}
+	if eb.KmsKeyIdentifier != "" {
+		result["KmsKeyIdentifier"] = eb.KmsKeyIdentifier
+	}
+	if eb.DeadLetterConfig != nil {
+		dlc := map[string]interface{}{}
+		if eb.DeadLetterConfig.Arn != "" {
+			dlc["Arn"] = eb.DeadLetterConfig.Arn
+		}
+		result["DeadLetterConfig"] = dlc
+	}
+	if eb.LogConfig != nil {
+		lc := map[string]interface{}{}
+		if eb.LogConfig.IncludeDetail != "" {
+			lc["IncludeDetail"] = eb.LogConfig.IncludeDetail
+		}
+		if eb.LogConfig.Level != "" {
+			lc["Level"] = eb.LogConfig.Level
+		}
+		result["LogConfig"] = lc
 	}
 	return result
 }
@@ -51,6 +117,31 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 		eventBus.Policy = policy
 	}
 
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		eventBus.KmsKeyIdentifier = kms
+	}
+	if dlc, ok := req.Parameters["DeadLetterConfig"].(map[string]interface{}); ok {
+		eventBus.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
+		if arn, ok := dlc["Arn"].(string); ok {
+			eventBus.DeadLetterConfig.Arn = arn
+		}
+	}
+	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
+		eventBus.LogConfig = &eventsstore.BusLogConfig{}
+		if id, ok := lc["IncludeDetail"].(string); ok {
+			if !isValidLogIncludeDetail(id) {
+				return nil, awserrors.NewValidationException("LogConfig.IncludeDetail must be one of: NONE, FULL")
+			}
+			eventBus.LogConfig.IncludeDetail = id
+		}
+		if lvl, ok := lc["Level"].(string); ok {
+			if !isValidLogLevel(lvl) {
+				return nil, awserrors.NewValidationException("LogConfig.Level must be one of: OFF, ERROR, INFO, TRACE")
+			}
+			eventBus.LogConfig.Level = lvl
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -65,9 +156,35 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	return map[string]interface{}{
+	// CreateEventBusResponse shape: EventBusArn, Description,
+	// KmsKeyIdentifier, DeadLetterConfig, LogConfig.
+	resp := map[string]interface{}{
 		"EventBusArn": eventBus.ARN,
-	}, nil
+	}
+	if eventBus.Description != "" {
+		resp["Description"] = eventBus.Description
+	}
+	if eventBus.KmsKeyIdentifier != "" {
+		resp["KmsKeyIdentifier"] = eventBus.KmsKeyIdentifier
+	}
+	if eventBus.DeadLetterConfig != nil {
+		dlc := map[string]interface{}{}
+		if eventBus.DeadLetterConfig.Arn != "" {
+			dlc["Arn"] = eventBus.DeadLetterConfig.Arn
+		}
+		resp["DeadLetterConfig"] = dlc
+	}
+	if eventBus.LogConfig != nil {
+		lc := map[string]interface{}{}
+		if eventBus.LogConfig.IncludeDetail != "" {
+			lc["IncludeDetail"] = eventBus.LogConfig.IncludeDetail
+		}
+		if eventBus.LogConfig.Level != "" {
+			lc["Level"] = eventBus.LogConfig.Level
+		}
+		resp["LogConfig"] = lc
+	}
+	return resp, nil
 }
 
 // DeleteEventBus deletes an event bus.
@@ -87,31 +204,55 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 	if _, err := store.GetEventBus(ctx, name); err != nil {
 		return nil, mapStoreError(err, name)
 	}
-	// Cascade-delete: rules → targets (paginated), then archives
+	// Cascade-delete: rules → targets (paginated), then archives.
+	// AWS aborts the entire DeleteEventBus when any cascade step fails
+	// (ConcurrentModificationException or InternalException), so that the
+	// bus remains queryable for follow-up diagnosis. We follow the same
+	// contract: collect the first cascade error and abort without deleting
+	// the bus when one occurs.
+	var cascadeErr error
+
 	ruleToken := ""
-	for {
+	for cascadeErr == nil {
 		rulesResult, err := store.ListRules(ctx, name, "", 1000, ruleToken)
 		if err != nil {
+			cascadeErr = fmt.Errorf("DeleteEventBus: list rules: %w", err)
 			break
 		}
 		for _, rule := range rulesResult.Rules {
 			targetToken := ""
-			for {
+			for cascadeErr == nil {
 				targetsResult, tErr := store.ListTargetsByRule(ctx, name, rule.Name, 1000, targetToken)
 				if tErr != nil {
+					cascadeErr = fmt.Errorf("DeleteEventBus: list targets for rule %s: %w", rule.Name, tErr)
 					break
 				}
 				for _, t := range targetsResult.Targets {
-					_ = store.DeleteTarget(ctx, name, rule.Name, t.ID)
+					if err := store.DeleteTarget(ctx, name, rule.Name, t.ID); err != nil {
+						cascadeErr = fmt.Errorf("DeleteEventBus: delete target %s: %w", t.ID, err)
+						break
+					}
+				}
+				if cascadeErr != nil {
+					break
 				}
 				if targetsResult.NextToken == "" {
 					break
 				}
 				targetToken = targetsResult.NextToken
 			}
-			_ = store.DeleteRule(ctx, name, rule.Name)
+			if cascadeErr != nil {
+				break
+			}
+			if err := store.DeleteRule(ctx, name, rule.Name); err != nil {
+				cascadeErr = fmt.Errorf("DeleteEventBus: delete rule %s: %w", rule.Name, err)
+				break
+			}
 			lastFireTimes.Delete(rule.ARN)
 			_ = store.TagStore.Delete(rule.ARN)
+		}
+		if cascadeErr != nil {
+			break
 		}
 		if rulesResult.NextToken == "" {
 			break
@@ -119,12 +260,31 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 		ruleToken = rulesResult.NextToken
 	}
 
-	archives, err := store.ListArchivesForEventBus(ctx, name)
-	if err == nil {
-		for _, a := range archives {
-			_ = store.DeleteArchiveEvents(ctx, a.Name)
-			_ = store.DeleteArchive(ctx, a.Name)
+	if cascadeErr == nil {
+		archives, err := store.ListArchivesForEventBus(ctx, name)
+		if err != nil {
+			cascadeErr = fmt.Errorf("DeleteEventBus: list archives: %w", err)
+		} else {
+			for _, a := range archives {
+				if err := store.DeleteArchiveEvents(ctx, a.Name); err != nil {
+					cascadeErr = fmt.Errorf("DeleteEventBus: delete archive events %s: %w", a.Name, err)
+					break
+				}
+				if err := store.DeleteArchive(ctx, a.Name); err != nil {
+					cascadeErr = fmt.Errorf("DeleteEventBus: delete archive %s: %w", a.Name, err)
+					break
+				}
+			}
 		}
+	}
+
+	if cascadeErr != nil {
+		// Leave the bus in place so callers can inspect orphaned resources.
+		return nil, awserrors.NewAWSError(
+			"InternalException",
+			cascadeErr.Error(),
+			http.StatusInternalServerError,
+		)
 	}
 
 	if err := store.DeleteEventBus(ctx, name); err != nil {
@@ -150,7 +310,7 @@ func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.Re
 		return nil, mapStoreError(err, name)
 	}
 
-	result := eventBusToMap(eventBus)
+	result := eventBusToDescribeMap(eventBus)
 
 	if tagSlice, err := store.TagStore.ListAsSlice(eventBus.ARN); err == nil && len(tagSlice) > 0 {
 		tagMaps := make([]map[string]string, 0, len(tagSlice))
@@ -187,7 +347,7 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 
 	eventBuses := make([]map[string]interface{}, len(result.EventBuses))
 	for i, eb := range result.EventBuses {
-		eventBuses[i] = eventBusToMap(eb)
+		eventBuses[i] = eventBusToListItem(eb)
 	}
 
 	response := map[string]interface{}{
@@ -223,11 +383,36 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 		eventBus.Policy = policy
 	}
 
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		eventBus.KmsKeyIdentifier = kms
+	}
+	if dlc, ok := req.Parameters["DeadLetterConfig"].(map[string]interface{}); ok {
+		eventBus.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
+		if arn, ok := dlc["Arn"].(string); ok {
+			eventBus.DeadLetterConfig.Arn = arn
+		}
+	}
+	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
+		eventBus.LogConfig = &eventsstore.BusLogConfig{}
+		if id, ok := lc["IncludeDetail"].(string); ok {
+			if !isValidLogIncludeDetail(id) {
+				return nil, awserrors.NewValidationException("LogConfig.IncludeDetail must be one of: NONE, FULL")
+			}
+			eventBus.LogConfig.IncludeDetail = id
+		}
+		if lvl, ok := lc["Level"].(string); ok {
+			if !isValidLogLevel(lvl) {
+				return nil, awserrors.NewValidationException("LogConfig.Level must be one of: OFF, ERROR, INFO, TRACE")
+			}
+			eventBus.LogConfig.Level = lvl
+		}
+	}
+
 	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
 		return nil, err
 	}
 
-	return eventBusToMap(eventBus), nil
+	return eventBusToUpdateMap(eventBus), nil
 }
 
 // PutPermission adds a resource policy statement to the specified event bus,
@@ -252,6 +437,12 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 
 	// Mode 1: Full policy document provided via the Policy parameter.
 	if policyStr, ok := req.Parameters["Policy"].(string); ok && policyStr != "" {
+		// AWS enforces an 8192-byte ceiling on the resource policy.
+		if len(policyStr) > 8192 {
+			return nil, awserrors.NewPolicyLengthExceededException(
+				fmt.Sprintf("Event bus policy length %d exceeds the maximum allowed length of 8192 bytes", len(policyStr)),
+			)
+		}
 		var policyDoc map[string]interface{}
 		if err := json.Unmarshal([]byte(policyStr), &policyDoc); err != nil {
 			return nil, awserrors.NewValidationException("Invalid policy document")
@@ -344,8 +535,11 @@ func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	}
 
 	statementID := request.GetStringParam(req.Parameters, "StatementId")
-	if statementID == "" {
-		return nil, awserrors.NewValidationException("StatementId is required")
+	removeAll, _ := req.Parameters["RemoveAllPermissions"].(bool)
+
+	// AWS requires either StatementId or RemoveAllPermissions=true.
+	if !removeAll && statementID == "" {
+		return nil, awserrors.NewValidationException("StatementId is required when RemoveAllPermissions is not true")
 	}
 
 	store, err := s.store(reqCtx)
@@ -359,6 +553,15 @@ func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	}
 
 	if eventBus.Policy == "" {
+		return response.EmptyResponse(), nil
+	}
+
+	// RemoveAllPermissions clears the policy entirely.
+	if removeAll {
+		eventBus.Policy = ""
+		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+			return nil, err
+		}
 		return response.EmptyResponse(), nil
 	}
 
@@ -398,4 +601,20 @@ func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+// isValidLogIncludeDetail validates IncludeDetail against the Smithy enum
+// values: NONE or FULL.
+func isValidLogIncludeDetail(v string) bool {
+	return v == "NONE" || v == "FULL"
+}
+
+// isValidLogLevel validates Level against the Smithy enum values:
+// OFF, ERROR, INFO, or TRACE.
+func isValidLogLevel(v string) bool {
+	switch v {
+	case "OFF", "ERROR", "INFO", "TRACE":
+		return true
+	}
+	return false
 }

@@ -110,3 +110,24 @@ func NewInvalidParameterValueException(message string) *AWSError {
 func NewResourceInUseException(message string) *AWSError {
 	return NewAWSError("ResourceInUseException", message, http.StatusBadRequest)
 }
+
+// NewInvalidEventPatternException creates a new InvalidEventPatternException
+// error. Used by EventBridge PutRule / TestEventPattern when the supplied
+// event pattern is not a valid JSON pattern document.
+func NewInvalidEventPatternException(message string) *AWSError {
+	return NewAWSError("InvalidEventPatternException", message, http.StatusBadRequest)
+}
+
+// NewIllegalStatusException creates a new IllegalStatusException error. Used
+// by EventBridge CancelReplay when the replay state does not allow
+// cancellation (state is not Running or Starting).
+func NewIllegalStatusException(message string) *AWSError {
+	return NewAWSError("IllegalStatusException", message, http.StatusBadRequest)
+}
+
+// NewPolicyLengthExceededException creates a new PolicyLengthExceededException
+// error. Used by EventBridge PutPermission when the resource policy document
+// exceeds the AWS-imposed 8192-byte limit.
+func NewPolicyLengthExceededException(message string) *AWSError {
+	return NewAWSError("PolicyLengthExceededException", message, http.StatusBadRequest)
+}
