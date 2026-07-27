@@ -18,8 +18,9 @@ import (
 // Returns an error if the user does not exist.
 func (s *IAMService) GetUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -189,6 +190,10 @@ func (s *IAMService) UpdateUser(ctx context.Context, reqCtx *request.RequestCont
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
 	newUserName := request.GetStringParam(req.Parameters, "NewUserName")
 
+	if newPath == "" && newUserName == "" {
+		return nil, NewInvalidInputError("UpdateUser", "at least one of NewPath or NewUserName must be specified")
+	}
+
 	if err := store.RenameUser(userName, newUserName, newPath); err != nil {
 		return nil, err
 	}
@@ -282,6 +287,9 @@ func (s *IAMService) PutUserPermissionsBoundary(ctx context.Context, reqCtx *req
 	permissionsBoundary := request.GetStringParam(req.Parameters, "PermissionsBoundary")
 	if permissionsBoundary == "" {
 		return nil, ErrNoSuchPolicy
+	}
+	if !iamPolicyArnPattern.MatchString(permissionsBoundary) {
+		return nil, NewInvalidInputError("PermissionsBoundary", "must be a valid IAM policy ARN")
 	}
 
 	store, err := s.store(reqCtx)

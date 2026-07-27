@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/resilience"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -71,6 +73,9 @@ func (s *IAMService) CreateServiceLinkedRole(ctx context.Context, reqCtx *reques
 	awsServiceName := request.GetStringParam(req.Parameters, "AWSServiceName")
 	if awsServiceName == "" {
 		return nil, NewInvalidInputError("AWSServiceName", "cannot be empty")
+	}
+	if !awsServiceNamePattern.MatchString(awsServiceName) {
+		return nil, NewInvalidInputError("AWSServiceName", "must be a valid AWS service name (e.g. ec2.amazonaws.com)")
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
@@ -136,14 +141,15 @@ func (s *IAMService) DeleteServiceLinkedRole(ctx context.Context, reqCtx *reques
 		return nil, NewNoSuchRoleError(roleName)
 	}
 
-	taskID := fmt.Sprintf("task-%d", time.Now().UnixNano())
+	taskID := "task-" + uuid.New().String()
 
 	task := &serviceLinkedRoleDeletionTask{
 		TaskID:    taskID,
 		RoleName:  roleName,
-		Status:    "SUCCEEDED",
+		Status:    "IN_PROGRESS",
 		CreatedAt: time.Now(),
 	}
+	slRoleDeletionTasks.Store(taskID, task)
 
 	if err := store.InlinePolicies().DeleteAllForPrincipal(PrincipalTypeRole, roleName); err != nil {
 		task.Status = "FAILED"
@@ -151,7 +157,7 @@ func (s *IAMService) DeleteServiceLinkedRole(ctx context.Context, reqCtx *reques
 		task.ErrorReason = "Failed to delete inline policies"
 	}
 
-	if task.Status == "SUCCEEDED" {
+	if task.Status == "IN_PROGRESS" {
 		attachedPolicies, err := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeRole, roleName)
 		if err != nil {
 			task.Status = "FAILED"
@@ -174,7 +180,7 @@ func (s *IAMService) DeleteServiceLinkedRole(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	if task.Status == "SUCCEEDED" {
+	if task.Status == "IN_PROGRESS" {
 		instanceProfiles, err := store.InstanceProfiles().ListForRole(roleName, "", 1)
 		if err != nil {
 			task.Status = "FAILED"
@@ -191,7 +197,7 @@ func (s *IAMService) DeleteServiceLinkedRole(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	if task.Status == "SUCCEEDED" {
+	if task.Status == "IN_PROGRESS" {
 		if err := store.Roles().Delete(roleName); err != nil {
 			task.Status = "FAILED"
 			task.DeletionFailed = true
@@ -199,7 +205,9 @@ func (s *IAMService) DeleteServiceLinkedRole(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	slRoleDeletionTasks.Store(taskID, task)
+	if task.Status == "IN_PROGRESS" {
+		task.Status = "SUCCEEDED"
+	}
 
 	return map[string]interface{}{
 		"DeletionTaskId": taskID,
@@ -215,9 +223,7 @@ func (s *IAMService) GetServiceLinkedRoleDeletionStatus(ctx context.Context, req
 
 	val, ok := slRoleDeletionTasks.Load(taskID)
 	if !ok {
-		return map[string]interface{}{
-			"Status": "FAILED",
-		}, nil
+		return nil, NewNoSuchEntityError("deletion task", taskID)
 	}
 
 	task := val.(*serviceLinkedRoleDeletionTask)

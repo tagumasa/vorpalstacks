@@ -48,6 +48,8 @@ type LoginProfile struct {
 	PasswordHash          string    `json:"password_hash"`
 	PasswordResetRequired bool      `json:"password_reset_required"`
 	CreateDate            time.Time `json:"create_date"`
+	PasswordHistory       []string  `json:"password_history,omitempty"`
+	PasswordChangedAt     time.Time `json:"password_changed_at,omitempty"`
 }
 
 // PermissionsBoundary represents a permissions boundary for an IAM entity.

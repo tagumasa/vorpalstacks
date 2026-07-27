@@ -26,11 +26,34 @@ const (
 	MaxTagValueLength = 256
 )
 
+// policyValidationMode controls which fields are required for each statement.
+type policyValidationMode int
+
+const (
+	// policyModeManaged is for identity-based policies (managed and inline).
+	// Requires Effect + Action/NotAction + Resource/NotResource per statement.
+	policyModeManaged policyValidationMode = iota
+	// policyModeTrust is for AssumeRolePolicyDocument (resource-based trust
+	// policies). Requires Effect + Action/NotAction + Principal/NotPrincipal.
+	policyModeTrust
+)
+
 // validatePolicyDocument checks if a policy document is valid JSON and has
-// the minimum required structure for an IAM policy: a top-level object with
-// a "Statement" field containing at least one statement object with an
-// "Effect" member.
+// the minimum required structure for an IAM identity-based policy: a
+// top-level object with a "Statement" field containing at least one
+// statement object with Effect, Action/NotAction, and Resource/NotResource.
 func validatePolicyDocument(document string) bool {
+	return validatePolicyDocumentMode(document, policyModeManaged)
+}
+
+// validateTrustPolicyDocument validates an AssumeRolePolicyDocument (trust
+// policy).  Each statement must have Effect, Action/NotAction, and
+// Principal/NotPrincipal.
+func validateTrustPolicyDocument(document string) bool {
+	return validatePolicyDocumentMode(document, policyModeTrust)
+}
+
+func validatePolicyDocumentMode(document string, mode policyValidationMode) bool {
 	if document == "" {
 		return false
 	}
@@ -46,7 +69,7 @@ func validatePolicyDocument(document string) bool {
 	// Statement can be a single object or an array of objects.
 	var singleStmt map[string]interface{}
 	if err := json.Unmarshal(statementsRaw, &singleStmt); err == nil {
-		return validateStatement(singleStmt)
+		return validateStatement(singleStmt, mode)
 	}
 
 	var stmtArray []map[string]interface{}
@@ -57,21 +80,56 @@ func validatePolicyDocument(document string) bool {
 		return false
 	}
 	for _, stmt := range stmtArray {
-		if !validateStatement(stmt) {
+		if !validateStatement(stmt, mode) {
 			return false
 		}
 	}
 	return true
 }
 
-// validateStatement checks that a single policy statement has an Effect field
-// set to either "Allow" or "Deny".
-func validateStatement(stmt map[string]interface{}) bool {
+// validateStatement checks that a single policy statement has the required
+// members for the given validation mode:
+//   - Effect must be "Allow" or "Deny"
+//   - Action or NotAction must be present
+//   - For managed policies: Resource or NotResource must be present
+//   - For trust policies: Principal or NotPrincipal must be present
+func validateStatement(stmt map[string]interface{}, mode policyValidationMode) bool {
 	effect, ok := stmt["Effect"].(string)
 	if !ok {
 		return false
 	}
-	return effect == "Allow" || effect == "Deny"
+	if effect != "Allow" && effect != "Deny" {
+		return false
+	}
+
+	// Action or NotAction is required in all policy statements.
+	if !hasPolicyKey(stmt, "Action") && !hasPolicyKey(stmt, "NotAction") {
+		return false
+	}
+
+	switch mode {
+	case policyModeManaged:
+		// Identity-based policies require Resource or NotResource.
+		if !hasPolicyKey(stmt, "Resource") && !hasPolicyKey(stmt, "NotResource") {
+			return false
+		}
+	case policyModeTrust:
+		// Trust policies require Principal or NotPrincipal.
+		if !hasPolicyKey(stmt, "Principal") && !hasPolicyKey(stmt, "NotPrincipal") {
+			return false
+		}
+	}
+	return true
+}
+
+// hasPolicyKey returns true if the statement map contains the given key
+// with a non-nil value.  A key set to JSON null is treated as absent.
+func hasPolicyKey(stmt map[string]interface{}, key string) bool {
+	val, ok := stmt[key]
+	if !ok {
+		return false
+	}
+	return val != nil
 }
 
 // validateTagEntries validates the key and value length limits for each
@@ -82,6 +140,9 @@ func validateTagEntries(newTags []types.Tag) error {
 	for _, t := range newTags {
 		if len(t.Key) == 0 || len(t.Key) > MaxTagKeyLength {
 			return NewInvalidInputError("TagKey", "must be 1 to "+strconv.Itoa(MaxTagKeyLength)+" characters")
+		}
+		if !tagKeyPattern.MatchString(t.Key) {
+			return NewInvalidInputError("TagKey", "contains invalid characters")
 		}
 		if len(t.Value) > MaxTagValueLength {
 			return NewInvalidInputError("TagValue", "must be 0 to "+strconv.Itoa(MaxTagValueLength)+" characters")
@@ -101,6 +162,21 @@ func validateNewTags(newTags []types.Tag) error {
 		return NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(MaxTagsPerResource)+" tags per resource")
 	}
 	return nil
+}
+
+// resolveUserName returns userName if non-empty, otherwise defaults to the
+// caller's IAM principal name.  Per AWS spec, several IAM operations allow
+// UserName to be omitted, in which case it defaults to the authenticated
+// caller.  If the caller is not an IAM user (e.g. anonymous), an error is
+// returned.
+func resolveUserName(reqCtx *request.RequestContext, userName string) (string, error) {
+	if userName != "" {
+		return userName, nil
+	}
+	if reqCtx.PrincipalType == request.PrincipalTypeUser && reqCtx.Principal != "" {
+		return reqCtx.Principal, nil
+	}
+	return "", ErrNoSuchUser
 }
 
 type tagOps[T any] struct {
@@ -285,7 +361,11 @@ func listAllPolicies(store *iamstore.IAMStore, scope, pathPrefix string, onlyAtt
 // cascadeDeleteUser removes all resources associated with a user before deleting
 // the user record. Used by the admin handler to ensure consistent cleanup.
 func cascadeDeleteUser(store *iamstore.IAMStore, userName string) error {
-	_ = store.LoginProfiles().Delete(userName)
+	if store.LoginProfiles().Exists(userName) {
+		if err := store.LoginProfiles().Delete(userName); err != nil {
+			return err
+		}
+	}
 
 	if err := store.InlinePolicies().DeleteAllForPrincipal(PrincipalTypeUser, userName); err != nil {
 		return err
@@ -329,7 +409,9 @@ func cascadeDeleteUser(store *iamstore.IAMStore, userName string) error {
 		return err
 	}
 	for _, device := range mfaResult.MFADevices {
-		_ = store.MFADevices().Deactivate(device.SerialNumber)
+		if err := store.MFADevices().Deactivate(device.SerialNumber); err != nil {
+			return err
+		}
 	}
 
 	return store.Users().Delete(userName)
@@ -360,7 +442,9 @@ func cascadeDeleteRole(store *iamstore.IAMStore, roleName string) error {
 		return err
 	}
 	for _, ip := range instanceProfiles.InstanceProfiles {
-		_ = store.InstanceProfiles().RemoveRole(ip.InstanceProfileName, roleName)
+		if err := store.InstanceProfiles().RemoveRole(ip.InstanceProfileName, roleName); err != nil {
+			return err
+		}
 	}
 
 	return store.Roles().Delete(roleName)

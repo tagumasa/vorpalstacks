@@ -15,9 +15,35 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// entityNamePattern validates IAM entity names (users, groups, roles, instance profiles).
-// AWS allows alphanumeric characters plus +=,.@- with length 1-64.
+// entityNamePattern validates IAM entity names for users and roles.
+// Per Smithy userNameType/roleNameType: length 1-64, pattern ^[\w+=,.@-]+$.
 var entityNamePattern = regexp.MustCompile(`^[\w+=,.@-]{1,64}$`)
+
+// entityNamePattern128 validates entity names that allow up to 128
+// characters: groups, instance profiles, server certificates, policies,
+// and inline policy names. Per Smithy groupNameType/instanceProfileNameType/
+// serverCertificateNameType/policyNameType: length 1-128, pattern ^[\w+=,.@-]+$.
+var entityNamePattern128 = regexp.MustCompile(`^[\w+=,.@-]{1,128}$`)
+
+// samlProviderNamePattern validates SAML provider names. Per Smithy
+// samlProviderNameType: length 1-128, pattern ^[\w._-]+$.
+var samlProviderNamePattern = regexp.MustCompile(`^[\w._-]{1,128}$`)
+
+// accountAliasPattern validates account alias names. Per Smithy
+// accountAliasType: lowercase alphanumeric with no consecutive hyphens.
+// Length 3-63 is enforced separately.
+var accountAliasPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// tagKeyPattern validates tag keys. Per Smithy tagKeyType: length 1-128,
+// pattern ^[\p{L}\p{Z}\p{N}_.:/=+\-@]+$.
+var tagKeyPattern = regexp.MustCompile(`^[\p{L}\p{Z}\p{N}_.:/=+\-@]{1,128}$`)
+
+// iamPolicyArnPattern validates IAM policy ARNs used for attach/detach.
+var iamPolicyArnPattern = regexp.MustCompile(`^arn:aws:iam::\d+:policy/.+$`)
+
+// awsServiceNamePattern validates AWSServiceName for service-linked roles.
+// Must be a dotted service name like "ec2.amazonaws.com".
+var awsServiceNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)+$`)
 
 // CreateRole creates a new IAM role.
 // RoleName is required and must not be empty.
@@ -42,7 +68,7 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 	if assumeRolePolicyDocument == "" {
 		return nil, ErrMalformedPolicyDocument
 	}
-	if !validatePolicyDocument(assumeRolePolicyDocument) {
+	if !validateTrustPolicyDocument(assumeRolePolicyDocument) {
 		return nil, ErrMalformedPolicyDocument
 	}
 	description := request.GetStringParam(req.Parameters, "Description")
@@ -50,8 +76,8 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 	if maxSessionDuration == 0 {
 		maxSessionDuration = 3600
 	}
-	if maxSessionDuration < 900 || maxSessionDuration > 43200 {
-		return nil, NewInvalidInputError("MaxSessionDuration", "must be between 900 and 43200 seconds")
+	if maxSessionDuration < 3600 || maxSessionDuration > 43200 {
+		return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
 	}
 
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
@@ -109,8 +135,8 @@ func (s *IAMService) UpdateRole(ctx context.Context, reqCtx *request.RequestCont
 
 	maxSessionDuration := request.GetIntParam(req.Parameters, "MaxSessionDuration")
 	if maxSessionDuration > 0 {
-		if maxSessionDuration < 900 || maxSessionDuration > 43200 {
-			return nil, NewInvalidInputError("MaxSessionDuration", "must be between 900 and 43200 seconds")
+		if maxSessionDuration < 3600 || maxSessionDuration > 43200 {
+			return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
 		}
 	}
 
@@ -264,7 +290,7 @@ func (s *IAMService) UpdateAssumeRolePolicy(ctx context.Context, reqCtx *request
 	}
 
 	policyDocument := request.GetStringParam(req.Parameters, "PolicyDocument")
-	if !validatePolicyDocument(policyDocument) {
+	if !validateTrustPolicyDocument(policyDocument) {
 		return nil, ErrMalformedPolicyDocument
 	}
 	role.AssumeRolePolicyDocument = policyDocument
@@ -402,6 +428,9 @@ func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *req
 	permissionsBoundary := request.GetStringParam(req.Parameters, "PermissionsBoundary")
 	if permissionsBoundary == "" {
 		return nil, ErrNoSuchPolicy
+	}
+	if !iamPolicyArnPattern.MatchString(permissionsBoundary) {
+		return nil, NewInvalidInputError("PermissionsBoundary", "must be a valid IAM policy ARN")
 	}
 
 	store, err := s.store(reqCtx)

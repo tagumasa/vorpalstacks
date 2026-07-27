@@ -2,7 +2,12 @@ package iam
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
+	"regexp"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -12,15 +17,49 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+var x509CertDataPattern = regexp.MustCompile(`(?s)<(?:ds:)?X509Certificate>([^<]+)</(?:ds:)?X509Certificate>`)
+var whitespacePattern = regexp.MustCompile(`\s+`)
+
+func extractValidUntilFromSAMLMetadata(metadata string) *time.Time {
+	matches := x509CertDataPattern.FindStringSubmatch(metadata)
+	if len(matches) < 2 {
+		return nil
+	}
+	certData := whitespacePattern.ReplaceAllString(matches[1], "")
+
+	derBytes, err := base64.StdEncoding.DecodeString(certData)
+	if err != nil {
+		pemBlock, _ := pem.Decode([]byte("-----BEGIN CERTIFICATE-----\n" + certData + "\n-----END CERTIFICATE-----"))
+		if pemBlock == nil {
+			return nil
+		}
+		derBytes = pemBlock.Bytes
+	}
+
+	cert, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		return nil
+	}
+
+	notAfter := cert.NotAfter.UTC()
+	return &notAfter
+}
+
 // CreateSAMLProvider creates a SAML identity provider for the account.
 func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
 		return nil, NewValidationError("Name")
 	}
+	if !samlProviderNamePattern.MatchString(name) {
+		return nil, NewInvalidInputError("Name", "must be 1 to 128 alphanumeric characters or any of ._-")
+	}
 	metadataDocument := request.GetStringParam(req.Parameters, "SAMLMetadataDocument")
 	if metadataDocument == "" {
 		return nil, NewValidationError("SAMLMetadataDocument")
+	}
+	if len(metadataDocument) < 1000 || len(metadataDocument) > 10000000 {
+		return nil, NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
 	}
 
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
@@ -32,7 +71,8 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	provider, err := store.SAMLProviders().Create(name, metadataDocument, nil, newTags)
+	validUntil := extractValidUntilFromSAMLMetadata(metadataDocument)
+	provider, err := store.SAMLProviders().Create(name, metadataDocument, validUntil, newTags)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrSAMLProviderAlreadyExists) {
 			return nil, NewEntityAlreadyExistsError("SAML Provider " + name)
@@ -122,7 +162,8 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 		return nil, NewNoSuchEntityError("SAML provider", providerArn)
 	}
 
-	if err := store.SAMLProviders().Update(providerArn, metadataDocument, nil); err != nil {
+	validUntil := extractValidUntilFromSAMLMetadata(metadataDocument)
+	if err := store.SAMLProviders().Update(providerArn, metadataDocument, validUntil); err != nil {
 		return nil, err
 	}
 

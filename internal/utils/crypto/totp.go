@@ -12,14 +12,29 @@ import (
 )
 
 const (
-	totpTimeStep    = 30
-	totpDigits      = 6
-	totpWindowSize  = 1
-	hotpCounterSize = 8
+	totpTimeStep   = 30
+	totpDigits     = 6
+	totpWindowSize = 1
+	// totpResyncWindowSize is the wider window used by ResyncMFADevice
+	// to recover from clock drift. AWS recommends ±5 steps (2.5 minutes).
+	totpResyncWindowSize = 5
+	hotpCounterSize      = 8
 )
 
-// ValidateConsecutiveTOTPCodes validates two consecutive TOTP codes.
+// ValidateConsecutiveTOTPCodes validates two consecutive TOTP codes with
+// a narrow window (±1 step, 30 seconds). Used by EnableMFADevice.
 func ValidateConsecutiveTOTPCodes(secret string, code1, code2 string) error {
+	return validateConsecutiveTOTPCodes(secret, code1, code2, totpWindowSize)
+}
+
+// ValidateConsecutiveTOTPCodesForResync validates two consecutive TOTP codes
+// with a wider window (±5 steps, 2.5 minutes) to recover from clock drift.
+// Used by ResyncMFADevice.
+func ValidateConsecutiveTOTPCodesForResync(secret string, code1, code2 string) error {
+	return validateConsecutiveTOTPCodes(secret, code1, code2, totpResyncWindowSize)
+}
+
+func validateConsecutiveTOTPCodes(secret string, code1, code2 string, windowSize int) error {
 	if secret == "" {
 		return fmt.Errorf("secret is empty")
 	}
@@ -34,7 +49,7 @@ func ValidateConsecutiveTOTPCodes(secret string, code1, code2 string) error {
 	currentTimeStep := now / totpTimeStep
 
 	var foundStep1 int64 = -1
-	for offset := -totpWindowSize; offset <= totpWindowSize; offset++ {
+	for offset := -windowSize; offset <= windowSize; offset++ {
 		step := currentTimeStep + int64(offset)
 		if generateTOTP(decoded, step) == code1 {
 			foundStep1 = step
@@ -46,10 +61,10 @@ func ValidateConsecutiveTOTPCodes(secret string, code1, code2 string) error {
 		return fmt.Errorf("first authentication code is invalid")
 	}
 
-	for offset := -totpWindowSize; offset <= totpWindowSize; offset++ {
+	for offset := -windowSize; offset <= windowSize; offset++ {
 		step := currentTimeStep + int64(offset)
 		if generateTOTP(decoded, step) == code2 {
-			if step > foundStep1 {
+			if step == foundStep1+1 {
 				return nil
 			}
 		}

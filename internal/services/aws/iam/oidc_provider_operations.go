@@ -18,8 +18,16 @@ func (s *IAMService) CreateOpenIDConnectProvider(ctx context.Context, reqCtx *re
 	if url == "" {
 		return nil, NewValidationError("Url")
 	}
+	if len(url) > 255 {
+		return nil, NewInvalidInputError("Url", "must be 1 to 255 characters")
+	}
 
 	thumbprintList := request.GetStringList(req.Parameters, "ThumbprintList")
+	for _, tp := range thumbprintList {
+		if len(tp) != 40 {
+			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be exactly 40 characters")
+		}
+	}
 	clientIdList := request.GetStringList(req.Parameters, "ClientIDList")
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateNewTags(newTags); err != nil {
@@ -113,6 +121,11 @@ func (s *IAMService) UpdateOpenIDConnectProviderThumbprint(ctx context.Context, 
 	}
 
 	thumbprintList := request.GetStringList(req.Parameters, "ThumbprintList")
+	for _, tp := range thumbprintList {
+		if len(tp) != 40 {
+			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be exactly 40 characters")
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

@@ -13,8 +13,9 @@ import (
 // CreateAccessKey creates a new access key for the specified user.
 func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -81,8 +82,9 @@ func (s *IAMService) DeleteAccessKey(ctx context.Context, reqCtx *request.Reques
 // ListAccessKeys lists the access keys for the specified user.
 func (s *IAMService) ListAccessKeys(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

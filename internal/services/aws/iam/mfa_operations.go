@@ -3,6 +3,7 @@ package iam
 
 import (
 	"context"
+	"encoding/base32"
 	"encoding/base64"
 	"strconv"
 	"strings"
@@ -135,8 +136,9 @@ func (s *IAMService) DeactivateMFADevice(ctx context.Context, reqCtx *request.Re
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
 
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 	if serialNumber == "" {
 		return nil, ErrNoSuchMFADevice
@@ -304,7 +306,7 @@ func (s *IAMService) ResyncMFADevice(ctx context.Context, reqCtx *request.Reques
 		return nil, NewNoSuchMFADeviceError(serialNumber)
 	}
 
-	if err := crypto.ValidateConsecutiveTOTPCodes(device.Base32StringSeed, authCode1, authCode2); err != nil {
+	if err := crypto.ValidateConsecutiveTOTPCodesForResync(device.Base32StringSeed, authCode1, authCode2); err != nil {
 		return nil, ErrInvalidAuthenticationCode
 	}
 
@@ -348,7 +350,10 @@ func (s *IAMService) UpdateAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	policy := store.PasswordPolicy().GetOrDefault()
 
 	minLength := request.GetIntParam(req.Parameters, "MinimumPasswordLength")
-	if minLength > 0 {
+	if minLength != 0 {
+		if minLength < 6 || minLength > 128 {
+			return nil, NewInvalidInputError("MinimumPasswordLength", "must be between 6 and 128")
+		}
 		policy.MinimumPasswordLength = minLength
 	}
 
@@ -371,10 +376,18 @@ func (s *IAMService) UpdateAccountPasswordPolicy(ctx context.Context, reqCtx *re
 		policy.HardExpiry = toBool(hardExpiry)
 	}
 	if maxAge, ok := req.Parameters["MaxPasswordAge"]; ok {
-		policy.MaxPasswordAge = toInt(maxAge)
+		ageVal := toInt(maxAge)
+		if ageVal < 1 || ageVal > 1095 {
+			return nil, NewInvalidInputError("MaxPasswordAge", "must be between 1 and 1095")
+		}
+		policy.MaxPasswordAge = ageVal
 	}
 	if reusePrevention, ok := req.Parameters["PasswordReusePrevention"]; ok {
-		policy.PasswordReusePrevention = toInt(reusePrevention)
+		reuseVal := toInt(reusePrevention)
+		if reuseVal < 1 || reuseVal > 24 {
+			return nil, NewInvalidInputError("PasswordReusePrevention", "must be between 1 and 24")
+		}
+		policy.PasswordReusePrevention = reuseVal
 	}
 
 	if err := store.PasswordPolicy().Put(policy); err != nil {
@@ -405,11 +418,9 @@ func toInt(v interface{}) int {
 	case float64:
 		return int(val)
 	case string:
-		var i int
-		for _, c := range val {
-			if c >= '0' && c <= '9' {
-				i = i*10 + int(c-'0')
-			}
+		i, err := strconv.Atoi(val)
+		if err != nil {
+			return 0
 		}
 		return i
 	}
@@ -473,7 +484,9 @@ func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device 
 	}
 
 	if includeSecret && device.Base32StringSeed != "" {
-		resp["Base32StringSeed"] = base64.StdEncoding.EncodeToString([]byte(device.Base32StringSeed))
+		if decoded, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(device.Base32StringSeed); err == nil {
+			resp["Base32StringSeed"] = base64.StdEncoding.EncodeToString(decoded)
+		}
 	}
 
 	if device.EnableDate != nil {

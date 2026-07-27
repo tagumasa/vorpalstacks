@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -67,8 +68,9 @@ func (s *IAMService) DeleteServiceSpecificCredential(ctx context.Context, reqCtx
 // ListServiceSpecificCredentials lists all service-specific credentials for the specified user.
 func (s *IAMService) ListServiceSpecificCredentials(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 	serviceName := request.GetStringParam(req.Parameters, "ServiceName")
 
@@ -93,9 +95,26 @@ func (s *IAMService) ListServiceSpecificCredentials(ctx context.Context, reqCtx 
 		credList = append(credList, s.serviceSpecificCredentialToResponse(cred, false))
 	}
 
-	return map[string]interface{}{
-		"ServiceSpecificCredentials": credList,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	paged := pagination.PaginateSlice(credList, marker, maxItems, func(item interface{}) string {
+		if m, ok := item.(map[string]interface{}); ok {
+			if id, ok := m["ServiceSpecificCredentialId"].(string); ok {
+				return id
+			}
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
+		"ServiceSpecificCredentials": paged.Items,
+		"IsTruncated":                paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 // ResetServiceSpecificCredential resets the password for a service-specific credential.

@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -18,6 +19,9 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 	certificateBody := request.GetStringParam(req.Parameters, "CertificateBody")
 	if certificateBody == "" {
 		return nil, NewValidationError("CertificateBody")
+	}
+	if len(certificateBody) > 16384 {
+		return nil, NewInvalidInputError("CertificateBody", "must be 1 to 16384 characters")
 	}
 
 	store, err := s.store(reqCtx)
@@ -63,10 +67,26 @@ func (s *IAMService) ListSigningCertificates(ctx context.Context, reqCtx *reques
 		certList[i] = s.signingCertificateToResponse(cert)
 	}
 
-	return map[string]interface{}{
-		"Certificates": certList,
-		"IsTruncated":  false,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	paged := pagination.PaginateSlice(certList, marker, maxItems, func(item interface{}) string {
+		if m, ok := item.(map[string]interface{}); ok {
+			if id, ok := m["CertificateId"].(string); ok {
+				return id
+			}
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
+		"Certificates": paged.Items,
+		"IsTruncated":  paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 // UpdateSigningCertificate changes the status of the specified signing certificate to Active or Inactive.

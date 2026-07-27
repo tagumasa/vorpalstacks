@@ -19,8 +19,8 @@ func (s *IAMService) CreateGroup(ctx context.Context, reqCtx *request.RequestCon
 	if groupName == "" {
 		return nil, NewInvalidInputError("GroupName", "cannot be empty")
 	}
-	if !entityNamePattern.MatchString(groupName) {
-		return nil, NewInvalidInputError("GroupName", "must be 1 to 64 alphanumeric characters or any of +=,.@-_")
+	if !entityNamePattern128.MatchString(groupName) {
+		return nil, NewInvalidInputError("GroupName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
 	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
@@ -61,6 +61,9 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 		return nil, NewNoSuchGroupError(groupName)
 	}
 
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
 	users, err := store.UserGroups().ListUsersInGroup(groupName)
 	if err != nil {
 		return nil, err
@@ -73,11 +76,24 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 		}
 	}
 
-	return map[string]interface{}{
+	paged := pagination.PaginateSlice(userList, marker, maxItems, func(item interface{}) string {
+		if m, ok := item.(map[string]interface{}); ok {
+			if name, ok := m["UserName"].(string); ok {
+				return name
+			}
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
 		"Group":       s.groupToResponse(reqCtx, group),
-		"Users":       userList,
-		"IsTruncated": false,
-	}, nil
+		"Users":       paged.Items,
+		"IsTruncated": paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 // UpdateGroup updates an IAM group.
@@ -94,6 +110,10 @@ func (s *IAMService) UpdateGroup(ctx context.Context, reqCtx *request.RequestCon
 
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
 	newGroupName := request.GetStringParam(req.Parameters, "NewGroupName")
+
+	if newPath == "" && newGroupName == "" {
+		return nil, NewInvalidInputError("UpdateGroup", "at least one of NewPath or NewGroupName must be specified")
+	}
 
 	if err := store.RenameGroup(groupName, newGroupName, newPath); err != nil {
 		return nil, err
@@ -215,10 +235,26 @@ func (s *IAMService) ListGroupsForUser(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	return map[string]interface{}{
-		"Groups":      groups,
-		"IsTruncated": false,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	paged := pagination.PaginateSlice(groups, marker, maxItems, func(item interface{}) string {
+		if m, ok := item.(map[string]interface{}); ok {
+			if name, ok := m["GroupName"].(string); ok {
+				return name
+			}
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
+		"Groups":      paged.Items,
+		"IsTruncated": paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 func (s *IAMService) groupToResponse(reqCtx *request.RequestContext, group *iamstore.Group) map[string]interface{} {

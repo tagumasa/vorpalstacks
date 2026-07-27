@@ -83,7 +83,7 @@ func (s *IAMService) SetSecurityTokenServicePreferences(ctx context.Context, req
 	}
 
 	if tokenVersion != "v1Token" && tokenVersion != "v2Token" {
-		return nil, errors.NewAWSError("InvalidParameterValue", tokenVersion+" is not a valid value for GlobalEndpointTokenVersion. Must be v1Token or v2Token.", http.StatusBadRequest)
+		return nil, errors.NewAWSError("InvalidInput", tokenVersion+" is not a valid value for GlobalEndpointTokenVersion. Must be v1Token or v2Token.", http.StatusBadRequest)
 	}
 
 	store, err := s.store(reqCtx)

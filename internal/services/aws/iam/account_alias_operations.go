@@ -13,6 +13,9 @@ func (s *IAMService) CreateAccountAlias(ctx context.Context, reqCtx *request.Req
 	if alias == "" {
 		return nil, NewValidationError("AccountAlias")
 	}
+	if !accountAliasPattern.MatchString(alias) || len(alias) < 3 || len(alias) > 63 {
+		return nil, NewInvalidInputError("AccountAlias", "must be 3 to 63 characters: lowercase alphanumeric or hyphens (no consecutive hyphens), starting and ending with alphanumeric")
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

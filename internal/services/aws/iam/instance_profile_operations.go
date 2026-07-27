@@ -22,6 +22,9 @@ func (s *IAMService) CreateInstanceProfile(ctx context.Context, reqCtx *request.
 	if instanceProfileName == "" {
 		return nil, NewInvalidInputError("InstanceProfileName", "cannot be empty")
 	}
+	if !entityNamePattern128.MatchString(instanceProfileName) {
+		return nil, NewInvalidInputError("InstanceProfileName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {

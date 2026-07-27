@@ -94,6 +94,22 @@ func (s *RoleStore) Update(role *Role) error {
 	return s.Put(role)
 }
 
+// UpdateRoleLastUsed records the last time a role was assumed.
+func (s *RoleStore) UpdateRoleLastUsed(roleName, region string) error {
+	return s.kl.WithLock(roleName, func() error {
+		role, err := s.Get(roleName)
+		if err != nil {
+			return err
+		}
+		now := time.Now().UTC()
+		role.RoleLastUsed = &RoleLastUsed{
+			LastUsedDate: &now,
+			Region:       region,
+		}
+		return s.Put(role)
+	})
+}
+
 // GetAssumeRolePolicyDocument returns the assume role policy document for a role.
 func (s *RoleStore) GetAssumeRolePolicyDocument(roleName string) (string, error) {
 	role, err := s.Get(roleName)

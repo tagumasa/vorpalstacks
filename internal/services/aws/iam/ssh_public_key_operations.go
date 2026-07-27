@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -18,6 +19,9 @@ func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	sshPublicKeyBody := request.GetStringParam(req.Parameters, "SSHPublicKeyBody")
 	if sshPublicKeyBody == "" {
 		return nil, NewValidationError("SSHPublicKeyBody")
+	}
+	if len(sshPublicKeyBody) > 16384 {
+		return nil, NewInvalidInputError("SSHPublicKeyBody", "must be 1 to 16384 characters")
 	}
 
 	store, err := s.store(reqCtx)
@@ -106,8 +110,9 @@ func (s *IAMService) UpdateSSHPublicKey(ctx context.Context, reqCtx *request.Req
 // ListSSHPublicKeys returns information about the SSH public keys associated with the specified IAM user.
 func (s *IAMService) ListSSHPublicKeys(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -128,10 +133,26 @@ func (s *IAMService) ListSSHPublicKeys(ctx context.Context, reqCtx *request.Requ
 		keyList[i] = s.sshPublicKeyToResponse(key, false)
 	}
 
-	return map[string]interface{}{
-		"SSHPublicKeys": keyList,
-		"IsTruncated":   false,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	paged := pagination.PaginateSlice(keyList, marker, maxItems, func(item interface{}) string {
+		if m, ok := item.(map[string]interface{}); ok {
+			if id, ok := m["SSHPublicKeyId"].(string); ok {
+				return id
+			}
+		}
+		return ""
+	})
+
+	resp := map[string]interface{}{
+		"SSHPublicKeys": paged.Items,
+		"IsTruncated":   paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 // DeleteSSHPublicKey deletes the specified SSH public key for the specified IAM user.

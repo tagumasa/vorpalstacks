@@ -6,8 +6,11 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -26,6 +29,9 @@ func (s *IAMService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 	policyName := request.GetStringParam(req.Parameters, "PolicyName")
 	if policyName == "" {
 		return nil, NewInvalidInputError("PolicyName", "cannot be empty")
+	}
+	if !entityNamePattern128.MatchString(policyName) {
+		return nil, NewInvalidInputError("PolicyName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
 	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
@@ -400,6 +406,14 @@ func (s *IAMService) ListEntitiesForPolicy(ctx context.Context, reqCtx *request.
 	policyGroups := make([]interface{}, 0)
 	policyRoles := make([]interface{}, 0)
 
+	type entityEntry struct {
+		entityType string
+		name       string
+		data       map[string]interface{}
+	}
+
+	combined := make([]entityEntry, 0)
+
 	for _, ref := range refs {
 		switch ref.PrincipalType {
 		case PrincipalTypeUser:
@@ -407,40 +421,65 @@ func (s *IAMService) ListEntitiesForPolicy(ctx context.Context, reqCtx *request.
 				continue
 			}
 			if user, err := store.Users().Get(ref.PrincipalName); err == nil {
-				policyUsers = append(policyUsers, map[string]interface{}{
+				entry := map[string]interface{}{
 					"UserName": user.UserName,
 					"UserId":   user.ID,
 					"Arn":      user.Arn,
-				})
+				}
+				combined = append(combined, entityEntry{"User", user.UserName, entry})
 			}
 		case PrincipalTypeGroup:
 			if entityFilter != "" && entityFilter != "Group" {
 				continue
 			}
 			if group, err := store.Groups().Get(ref.PrincipalName); err == nil {
-				policyGroups = append(policyGroups, map[string]interface{}{
+				entry := map[string]interface{}{
 					"GroupName": group.GroupName,
 					"GroupId":   group.ID,
 					"Arn":       group.Arn,
-				})
+				}
+				combined = append(combined, entityEntry{"Group", group.GroupName, entry})
 			}
 		case PrincipalTypeRole:
 			if entityFilter != "" && entityFilter != "Role" {
 				continue
 			}
 			if role, err := store.Roles().Get(ref.PrincipalName); err == nil {
-				policyRoles = append(policyRoles, map[string]interface{}{
+				entry := map[string]interface{}{
 					"RoleName": role.RoleName,
 					"RoleId":   role.ID,
 					"Arn":      role.Arn,
-				})
+				}
+				combined = append(combined, entityEntry{"Role", role.RoleName, entry})
 			}
+		}
+	}
+
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	paged := pagination.PaginateSlice(combined, marker, maxItems, func(item entityEntry) string {
+		return item.entityType + ":" + item.name
+	})
+
+	for _, entry := range paged.Items {
+		switch entry.entityType {
+		case "User":
+			policyUsers = append(policyUsers, entry.data)
+		case "Group":
+			policyGroups = append(policyGroups, entry.data)
+		case "Role":
+			policyRoles = append(policyRoles, entry.data)
 		}
 	}
 
 	response["PolicyUsers"] = policyUsers
 	response["PolicyGroups"] = policyGroups
 	response["PolicyRoles"] = policyRoles
+	response["IsTruncated"] = paged.IsTruncated
+	if paged.NextMarker != "" {
+		response["Marker"] = paged.NextMarker
+	}
 
 	return response, nil
 }
@@ -457,6 +496,44 @@ func (s *IAMService) policyToResponse(reqCtx *request.RequestContext, policy *ia
 		"AttachmentCount":  policy.AttachmentCount,
 		"IsAttachable":     policy.IsAttachable,
 	}
+
+	if store, err := s.store(reqCtx); err == nil {
+		count := 0
+		userMarker := ""
+		for {
+			users, err := store.Users().List("", userMarker, 1000)
+			if err != nil {
+				break
+			}
+			for _, u := range users.Users {
+				if u.PermissionsBoundary != nil && u.PermissionsBoundary.PermissionsBoundaryArn == policy.Arn {
+					count++
+				}
+			}
+			if !users.IsTruncated || users.Marker == "" {
+				break
+			}
+			userMarker = users.Marker
+		}
+		roleMarker := ""
+		for {
+			roles, err := store.Roles().List("", roleMarker, 1000)
+			if err != nil {
+				break
+			}
+			for _, r := range roles.Roles {
+				if r.PermissionsBoundary != nil && r.PermissionsBoundary.PermissionsBoundaryArn == policy.Arn {
+					count++
+				}
+			}
+			if !roles.IsTruncated || roles.Marker == "" {
+				break
+			}
+			roleMarker = roles.Marker
+		}
+		resp["PermissionsBoundaryUsageCount"] = count
+	}
+
 	if policy.Description != "" {
 		resp["Description"] = policy.Description
 	}
@@ -475,29 +552,118 @@ func (s *IAMService) policyVersionToResponse(reqCtx *request.RequestContext, ver
 	}
 }
 
-// SimulatePrincipalPolicy simulates the effects of a set of IAM policies on a principal.
+// SimulatePrincipalPolicy simulates the effects of IAM policies on a principal.
 func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	actionNames := request.GetStringList(req.Parameters, "ActionNames")
-	resourceArns := request.GetStringList(req.Parameters, "ResourceArns")
+	policySourceArn := request.GetStringParam(req.Parameters, "PolicySourceArn")
+	if policySourceArn == "" {
+		return nil, NewValidationError("PolicySourceArn")
+	}
 
-	evaluationResults := make([]interface{}, 0, len(actionNames))
+	actionNames := request.GetStringList(req.Parameters, "ActionNames")
+	if len(actionNames) == 0 {
+		return nil, NewValidationError("ActionNames")
+	}
+
+	resourceArns := request.GetStringList(req.Parameters, "ResourceArns")
 	resources := resourceArns
 	if len(resources) == 0 {
 		resources = []string{"*"}
 	}
 
+	// Gather all applicable policies for the principal.
+	policyDocs, err := s.gatherPrincipalPolicies(reqCtx, policySourceArn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add PolicyInputList (additional inline policy documents).
+	policyInputList := request.GetStringList(req.Parameters, "PolicyInputList")
+	for _, pDoc := range policyInputList {
+		doc, pErr := policy.ParseDocument(pDoc)
+		if pErr != nil {
+			return nil, NewInvalidInputError("PolicyInputList", "contains a malformed policy document")
+		}
+		policyDocs = append(policyDocs, doc)
+	}
+
+	// Permissions boundary — if present, it limits the maximum permissions.
+	boundaryInputList := request.GetStringList(req.Parameters, "PermissionsBoundaryPolicyInputList")
+	var boundaryDocs []*policy.Document
+	for _, bDoc := range boundaryInputList {
+		doc, bErr := policy.ParseDocument(bDoc)
+		if bErr != nil {
+			return nil, NewInvalidInputError("PermissionsBoundaryPolicyInputList", "contains a malformed policy document")
+		}
+		boundaryDocs = append(boundaryDocs, doc)
+	}
+
+	// Build context entries from request.
+	sessionCtx := buildSimulationContextEntries(req.Parameters)
+	principalName := extractPrincipalNameFromARN(policySourceArn)
+	principalAccount := extractAccountFromARN(policySourceArn)
+
+	evaluator := policy.NewPolicyEvaluator()
+
+	evaluationResults := make([]interface{}, 0, len(actionNames)*len(resources))
 	for _, action := range actionNames {
 		for _, resource := range resources {
-			evaluationResults = append(evaluationResults, map[string]interface{}{
-				"EvalActionName":     action,
-				"EvalResourceName":   resource,
-				"EvalDecision":       "allowed",
-				"MatchedStatements":  []interface{}{},
-				"MissingContextKeys": []interface{}{},
+			evalCtx := &policy.EvaluationContext{
+				Principal:        policySourceArn,
+				PrincipalAccount: principalAccount,
+				Action:           action,
+				Resource:         resource,
+				RequestTime:      time.Now(),
+				UserName:         principalName,
+				SessionContext:   sessionCtx,
+			}
+
+			// Evaluate identity-based policies.
+			decision := evaluator.Evaluate(evalCtx, policyDocs)
+
+			effect := decision.Effect
+			matchedStatements := []interface{}{}
+			if decision.MatchedSid != "" {
+				matchedStatements = append(matchedStatements, map[string]interface{}{
+					"SourcePolicyId": policySourceArn,
+					"StatementIds":   []interface{}{decision.MatchedSid},
+				})
+			}
+
+			// If allowed by identity policies, check permissions boundary.
+			allowedByBoundary := true
+			if effect == policy.DecisionEffectAllow && len(boundaryDocs) > 0 {
+				boundaryDecision := evaluator.Evaluate(evalCtx, boundaryDocs)
+				if boundaryDecision.Effect != policy.DecisionEffectAllow {
+					effect = policy.DecisionEffectDefaultDeny
+					matchedStatements = []interface{}{}
+					allowedByBoundary = false
+				}
+			}
+
+			evalDecision := "implicitDeny"
+			switch effect {
+			case policy.DecisionEffectAllow:
+				evalDecision = "allowed"
+			case policy.DecisionEffectDeny:
+				evalDecision = "explicitDeny"
+			}
+
+			resultEntry := map[string]interface{}{
+				"EvalActionName":       action,
+				"EvalResourceName":     resource,
+				"EvalDecision":         evalDecision,
+				"MatchedStatements":    matchedStatements,
+				"MissingContextValues": []interface{}{},
 				"OrganizationsDecisionDetail": map[string]interface{}{
 					"AllowedByOrganizations": false,
 				},
-			})
+			}
+			if len(boundaryDocs) > 0 {
+				resultEntry["PermissionsBoundaryDecisionDetail"] = map[string]interface{}{
+					"AllowedByPermissionsBoundary": allowedByBoundary,
+				}
+			}
+			evaluationResults = append(evaluationResults, resultEntry)
 		}
 	}
 
@@ -506,4 +672,140 @@ func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *reques
 		"IsTruncated":       false,
 		"Marker":            "",
 	}, nil
+}
+
+// gatherPrincipalPolicies collects all identity-based policies applicable to the given principal.
+func (s *IAMService) gatherPrincipalPolicies(reqCtx *request.RequestContext, principalArn string) ([]*policy.Document, error) {
+	entityType := resolveEntityType(principalArn)
+	entityName := resolveEntityName(principalArn)
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	var docs []*policy.Document
+
+	switch entityType {
+	case "User":
+		if !store.Users().Exists(entityName) {
+			return nil, NewNoSuchUserError(entityName)
+		}
+		// User inline policies.
+		docs = append(docs, collectInlinePolicies(store, PrincipalTypeUser, entityName)...)
+		// User attached managed policies.
+		docs = append(docs, collectAttachedPolicies(store, PrincipalTypeUser, entityName)...)
+		// Group inline + attached policies for each group the user belongs to.
+		groupNames, err := store.UserGroups().ListGroupsForUser(entityName)
+		if err != nil {
+			return nil, err
+		}
+		for _, groupName := range groupNames {
+			docs = append(docs, collectInlinePolicies(store, PrincipalTypeGroup, groupName)...)
+			docs = append(docs, collectAttachedPolicies(store, PrincipalTypeGroup, groupName)...)
+		}
+
+	case "Role":
+		if !store.Roles().Exists(entityName) {
+			return nil, NewNoSuchRoleError(entityName)
+		}
+		docs = append(docs, collectInlinePolicies(store, PrincipalTypeRole, entityName)...)
+		docs = append(docs, collectAttachedPolicies(store, PrincipalTypeRole, entityName)...)
+
+	case "Group":
+		if !store.Groups().Exists(entityName) {
+			return nil, NewNoSuchGroupError(entityName)
+		}
+		docs = append(docs, collectInlinePolicies(store, PrincipalTypeGroup, entityName)...)
+		docs = append(docs, collectAttachedPolicies(store, PrincipalTypeGroup, entityName)...)
+	}
+
+	return docs, nil
+}
+
+func collectInlinePolicies(store *iamstore.IAMStore, principalType, principalName string) []*policy.Document {
+	policyNames, err := store.InlinePolicies().List(principalType, principalName)
+	if err != nil {
+		return nil
+	}
+	var docs []*policy.Document
+	for _, pn := range policyNames {
+		ip, err := store.InlinePolicies().Get(principalType, principalName, pn)
+		if err != nil || ip == nil {
+			continue
+		}
+		doc, err := policy.ParseDocument(ip.PolicyDocument)
+		if err != nil {
+			continue
+		}
+		docs = append(docs, doc)
+	}
+	return docs
+}
+
+func collectAttachedPolicies(store *iamstore.IAMStore, principalType, principalName string) []*policy.Document {
+	arns, err := store.AttachedPolicies().ListAttachedPolicies(principalType, principalName)
+	if err != nil {
+		return nil
+	}
+	var docs []*policy.Document
+	for _, arn := range arns {
+		version, err := store.Policies().GetDefaultVersion(arn)
+		if err != nil || version == nil {
+			continue
+		}
+		doc, err := policy.ParseDocument(version.Document)
+		if err != nil {
+			continue
+		}
+		docs = append(docs, doc)
+	}
+	return docs
+}
+
+func extractPrincipalNameFromARN(arn string) string {
+	_, name := parseIAMARNResource(arn)
+	return name
+}
+
+func extractAccountFromARN(arn string) string {
+	// arn:aws:iam::123456789012:user/Bob
+	parts := strings.Split(arn, ":")
+	if len(parts) >= 5 {
+		return parts[4]
+	}
+	return ""
+}
+
+func buildSimulationContextEntries(params map[string]interface{}) map[string]string {
+	result := make(map[string]string)
+	i := 1
+	for {
+		nameKey := fmt.Sprintf("ContextEntries.member.%d.ContextKeyName", i)
+		nameVal, ok := params[nameKey]
+		if !ok {
+			nameKey2 := fmt.Sprintf("ContextEntries.%d.ContextKeyName", i)
+			nameVal, ok = params[nameKey2]
+			if !ok {
+				break
+			}
+		}
+		ctxKey, _ := nameVal.(string)
+		if ctxKey == "" {
+			break
+		}
+		valKey := fmt.Sprintf("ContextEntries.member.%d.ContextKeyValues.member.1", i)
+		valKeyAlt := fmt.Sprintf("ContextEntries.%d.ContextKeyValues.1", i)
+		if v, ok := params[valKey]; ok {
+			if s, ok := v.(string); ok {
+				result[ctxKey] = s
+			}
+		} else if v, ok := params[valKeyAlt]; ok {
+			if s, ok := v.(string); ok {
+				result[ctxKey] = s
+			}
+		}
+		i++
+	}
+	return result
 }

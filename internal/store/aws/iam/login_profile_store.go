@@ -74,6 +74,7 @@ func (s *LoginProfileStore) Create(userName, password string, passwordResetRequi
 			PasswordHash:          string(passwordHash),
 			PasswordResetRequired: passwordResetRequired,
 			CreateDate:            time.Now().UTC(),
+			PasswordChangedAt:     time.Now().UTC(),
 		}
 
 		return s.Put(profile)
@@ -97,11 +98,38 @@ func (s *LoginProfileStore) UpdatePassword(userName, password string) error {
 			return NewStoreError("update_password", err)
 		}
 
+		profile.PasswordHistory = append(profile.PasswordHistory, profile.PasswordHash)
+		if len(profile.PasswordHistory) > 24 {
+			profile.PasswordHistory = profile.PasswordHistory[len(profile.PasswordHistory)-24:]
+		}
+
 		profile.PasswordHash = string(passwordHash)
 		profile.PasswordResetRequired = false
+		profile.PasswordChangedAt = time.Now().UTC()
 
 		return s.Put(profile)
 	})
+}
+
+// CheckPasswordReuse tests whether the given password matches any entry in the
+// user's password history. Returns true if the password has been reused.
+func (s *LoginProfileStore) CheckPasswordReuse(userName, password string, maxHistory int) (bool, error) {
+	profile, err := s.Get(userName)
+	if err != nil {
+		return false, err
+	}
+
+	history := profile.PasswordHistory
+	if maxHistory > 0 && len(history) > maxHistory {
+		history = history[len(history)-maxHistory:]
+	}
+
+	for _, oldHash := range history {
+		if bcrypt.CompareHashAndPassword([]byte(oldHash), []byte(password)) == nil {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // UpdatePasswordResetRequired changes the password reset requirement flag.

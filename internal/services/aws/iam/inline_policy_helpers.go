@@ -60,6 +60,9 @@ func putInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Request
 	if policyName == "" {
 		return nil, ErrNoSuchPolicy
 	}
+	if !entityNamePattern128.MatchString(policyName) {
+		return nil, NewInvalidInputError("PolicyName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	}
 	if !validatePolicyDocument(policyDocument) {
 		return nil, ErrMalformedPolicyDocument
 	}

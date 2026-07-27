@@ -16,7 +16,7 @@ func TestIAMErrors(t *testing.T) {
 		assert.Equal(t, http.StatusConflict, ErrUserAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "LimitExceeded: Cannot exceed quota for AccessKeysPerUser: 2.", ErrAccessKeyLimitExceeded.Error())
-		assert.Equal(t, http.StatusForbidden, ErrAccessKeyLimitExceeded.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusConflict, ErrAccessKeyLimitExceeded.GetHTTPStatusCode())
 
 		assert.Equal(t, "PasswordPolicyViolation: The password does not meet the password policy requirements.", ErrPasswordPolicyViolation.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrPasswordPolicyViolation.GetHTTPStatusCode())
@@ -25,13 +25,13 @@ func TestIAMErrors(t *testing.T) {
 		assert.Equal(t, http.StatusConflict, ErrDeleteConflict.GetHTTPStatusCode())
 
 		assert.Equal(t, "LimitExceeded: Cannot exceed quota for Users: 5000.", ErrLimitExceeded.Error())
-		assert.Equal(t, http.StatusForbidden, ErrLimitExceeded.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusConflict, ErrLimitExceeded.GetHTTPStatusCode())
 
 		assert.Equal(t, "MalformedPolicyDocument: This policy contains invalid JSON.", ErrMalformedPolicyDocument.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrMalformedPolicyDocument.GetHTTPStatusCode())
 
 		assert.Equal(t, "LimitExceeded: Cannot exceed quota for PolicyVersions: 5.", ErrLimitExceededPolicyVersions.Error())
-		assert.Equal(t, http.StatusForbidden, ErrLimitExceededPolicyVersions.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusConflict, ErrLimitExceededPolicyVersions.GetHTTPStatusCode())
 
 		assert.Equal(t, "InvalidAuthenticationCode: Invalid authentication code.", ErrInvalidAuthenticationCode.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrInvalidAuthenticationCode.GetHTTPStatusCode())

@@ -69,8 +69,9 @@ func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPass
 // and whether a password reset is required.
 func (s *IAMService) GetLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -145,8 +146,9 @@ func (s *IAMService) CreateLoginProfile(ctx context.Context, reqCtx *request.Req
 // Returns an error if the user or login profile does not exist.
 func (s *IAMService) DeleteLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, ErrNoSuchUser
+	userName, err := resolveUserName(reqCtx, userName)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -196,6 +198,15 @@ func (s *IAMService) UpdateLoginProfile(ctx context.Context, reqCtx *request.Req
 		passwordPolicy := store.PasswordPolicy().GetOrDefault()
 		if !validatePasswordAgainstPolicy(password, passwordPolicy) {
 			return nil, ErrPasswordPolicyViolation
+		}
+		if passwordPolicy.PasswordReusePrevention > 0 {
+			reused, err := store.LoginProfiles().CheckPasswordReuse(userName, password, passwordPolicy.PasswordReusePrevention)
+			if err != nil {
+				return nil, err
+			}
+			if reused {
+				return nil, ErrPasswordPolicyViolation
+			}
 		}
 		if err := store.LoginProfiles().UpdatePassword(userName, password); err != nil {
 			return nil, err
@@ -268,6 +279,16 @@ func (s *IAMService) ChangePassword(ctx context.Context, reqCtx *request.Request
 	passwordPolicy := store.PasswordPolicy().GetOrDefault()
 	if !validatePasswordAgainstPolicy(newPassword, passwordPolicy) {
 		return nil, ErrPasswordPolicyViolation
+	}
+
+	if passwordPolicy.PasswordReusePrevention > 0 {
+		reused, err := store.LoginProfiles().CheckPasswordReuse(userName, newPassword, passwordPolicy.PasswordReusePrevention)
+		if err != nil {
+			return nil, err
+		}
+		if reused {
+			return nil, ErrPasswordPolicyViolation
+		}
 	}
 
 	if err := store.LoginProfiles().UpdatePassword(userName, newPassword); err != nil {

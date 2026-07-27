@@ -19,13 +19,25 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if name == "" {
 		return nil, NewValidationError("ServerCertificateName")
 	}
+	if !entityNamePattern128.MatchString(name) {
+		return nil, NewInvalidInputError("ServerCertificateName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {
 		path = "/"
 	}
 	certificateBody := request.GetStringParam(req.Parameters, "CertificateBody")
+	if certificateBody == "" {
+		return nil, NewValidationError("CertificateBody")
+	}
+	if len(certificateBody) > 16384 {
+		return nil, NewInvalidInputError("CertificateBody", "must be 1 to 16384 characters")
+	}
 	certificateChain := request.GetStringParam(req.Parameters, "CertificateChain")
+	if certificateChain != "" && len(certificateChain) > 2097152 {
+		return nil, NewInvalidInputError("CertificateChain", "must be 1 to 2097152 characters")
+	}
 
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateNewTags(newTags); err != nil {

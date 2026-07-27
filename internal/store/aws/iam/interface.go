@@ -14,6 +14,7 @@ type RoleStoreInterface interface {
 	Exists(roleName string) bool
 	Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag) (*Role, error)
 	Update(role *Role) error
+	UpdateRoleLastUsed(roleName, region string) error
 	Count() int
 	GetAssumeRolePolicyDocument(roleName string) (string, error)
 	RoleExists(roleName string) bool
@@ -46,6 +47,7 @@ type LoginProfileStoreInterface interface {
 	UpdatePassword(userName, password string) error
 	UpdatePasswordResetRequired(userName string, required bool) error
 	VerifyPassword(userName, password string) (bool, error)
+	CheckPasswordReuse(userName, password string, maxHistory int) (bool, error)
 	Count() int
 }
 

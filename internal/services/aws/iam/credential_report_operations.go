@@ -36,7 +36,7 @@ func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request
 
 	if s.credentialReportState == "COMPLETE" && s.credentialReportTime.Add(reportExpiry).After(now) {
 		return map[string]interface{}{
-			"Description": "No report exists. Starting a new report generation task",
+			"Description": "Report already exists. No action taken.",
 			"State":       "COMPLETE",
 		}, nil
 	}
@@ -201,7 +201,13 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 			if user.PasswordLastUsed != nil {
 				passwordLastUsed = user.PasswordLastUsed.Format(timeutils.ISO8601SimpleFormat)
 			}
-			passwordLastChanged = "N/A"
+			if profile, err := store.LoginProfiles().Get(user.UserName); err == nil {
+				if !profile.PasswordChangedAt.IsZero() {
+					passwordLastChanged = profile.PasswordChangedAt.Format(timeutils.ISO8601SimpleFormat)
+				} else {
+					passwordLastChanged = profile.CreateDate.Format(timeutils.ISO8601SimpleFormat)
+				}
+			}
 		}
 
 		certs, _ := store.SigningCertificates().ListByUserName(user.UserName)
@@ -222,6 +228,21 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 			cert2LastRotated = certs[1].UploadDate.Format(timeutils.ISO8601SimpleFormat)
 		}
 
+		passwordNextRotation := "N/A"
+		if passwordEnabled == "TRUE" {
+			policy := store.PasswordPolicy().GetOrDefault()
+			if policy.MaxPasswordAge > 0 {
+				if profile, err := store.LoginProfiles().Get(user.UserName); err == nil {
+					base := profile.PasswordChangedAt
+					if base.IsZero() {
+						base = profile.CreateDate
+					}
+					nextRotation := base.AddDate(0, 0, policy.MaxPasswordAge)
+					passwordNextRotation = nextRotation.Format(timeutils.ISO8601SimpleFormat)
+				}
+			}
+		}
+
 		row := fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
 			csvEscape(user.UserName),
 			csvEscape(user.Arn),
@@ -229,7 +250,7 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 			passwordEnabled,
 			passwordLastUsed,
 			passwordLastChanged,
-			"not_supported",
+			passwordNextRotation,
 			mfaActive,
 			ak1Active,
 			ak1LastRotated,

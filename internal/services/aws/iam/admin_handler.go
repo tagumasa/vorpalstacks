@@ -151,6 +151,9 @@ func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.C
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
+	if !entityNamePattern.MatchString(req.Msg.Username) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName does not match the required pattern"))
+	}
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
 
@@ -250,8 +253,14 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
+	if !entityNamePattern.MatchString(req.Msg.Rolename) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName does not match the required pattern"))
+	}
 	if req.Msg.Assumerolepolicydocument == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is required"))
+	}
+	if !validateTrustPolicyDocument(req.Msg.Assumerolepolicydocument) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is malformed"))
 	}
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
@@ -372,8 +381,14 @@ func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb
 	if req.Msg.Policyname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName is required"))
 	}
+	if !entityNamePattern128.MatchString(req.Msg.Policyname) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName does not match the required pattern"))
+	}
 	if req.Msg.Policydocument == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyDocument is required"))
+	}
+	if !validatePolicyDocument(req.Msg.Policydocument) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyDocument is malformed"))
 	}
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
@@ -454,6 +469,9 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 	}
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	}
+	if !entityNamePattern128.MatchString(req.Msg.Groupname) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName does not match the required pattern"))
 	}
 
 	group, err := stores.Groups().Create(req.Msg.Groupname, req.Msg.Path, stores.AccountID())

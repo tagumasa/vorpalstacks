@@ -448,6 +448,11 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
+	iamStore, err := s.iamStore(reqCtx)
+	if err == nil {
+		_ = iamStore.Roles().UpdateRoleLastUsed(role.RoleName, reqCtx.GetRegion())
+	}
+
 	return map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,

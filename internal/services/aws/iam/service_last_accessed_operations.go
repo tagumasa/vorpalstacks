@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -17,7 +18,7 @@ import (
 
 var (
 	// ErrNoSuchJob is returned when a job ID does not match any stored report.
-	ErrNoSuchJob = errors.NewAWSError("NoSuchEntity", "The request was rejected because no job was found with the provided job ID.", http.StatusNotFound)
+	ErrNoSuchJob = errors.NewAWSError("NoSuchEntity", "The job ID specified does not exist in this account.", http.StatusNotFound)
 )
 
 // eventSourceToServiceNamespace maps CloudTrail event sources to AWS service namespace identifiers.
@@ -99,16 +100,43 @@ func parseGranularity(granularity string) time.Duration {
 	}
 }
 
+// parseIAMARNResource splits an IAM ARN into entity type and name by
+// parsing the colon-delimited resource section, rather than substring
+// matching which can misclassify paths containing "user/" etc.
+func parseIAMARNResource(arn string) (entityType, entityName string) {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 6 {
+		return "User", arn
+	}
+	resource := parts[5]
+	resourceParts := strings.SplitN(resource, "/", 2)
+	switch resourceParts[0] {
+	case "user":
+		entityType = "User"
+	case "role":
+		entityType = "Role"
+	case "group":
+		entityType = "Group"
+	default:
+		entityType = "User"
+	}
+	if len(resourceParts) > 1 {
+		entityName = resourceParts[1]
+	} else {
+		entityName = resource
+	}
+	return entityType, entityName
+}
+
 // resolveEntityName extracts the entity name (user, role, or group) from an IAM ARN.
 func resolveEntityName(arn string) string {
-	arn = strings.TrimPrefix(arn, "arn:aws:iam::")
+	_, name := parseIAMARNResource(arn)
+	return name
+}
 
-	for _, prefix := range []string{"user/", "role/", "group/"} {
-		if idx := strings.Index(arn, prefix); idx >= 0 {
-			return arn[idx+len(prefix):]
-		}
-	}
-	return arn
+func resolveEntityType(arn string) string {
+	entityType, _ := parseIAMARNResource(arn)
+	return entityType
 }
 
 // generateLastAccessedReport queries CloudTrail events for the given entity within the
@@ -134,13 +162,9 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, regio
 		eventRegion := region
 
 		serviceNamespace := eventSourceToServiceNamespace[event.EventSource]
-		if serviceNamespace == "" {
+		if serviceNamespace == "" && event.EventSource != "" {
 			parts := strings.SplitN(event.EventSource, ".", 2)
-			if len(parts) > 0 {
-				serviceNamespace = parts[0]
-			} else {
-				serviceNamespace = event.EventSource
-			}
+			serviceNamespace = parts[0]
 		}
 
 		serviceName := namespaceToDisplayName[serviceNamespace]
@@ -236,16 +260,36 @@ func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCt
 		return nil, err
 	}
 
-	job := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", reqCtx.GetRegion())
+	now := time.Now().UTC()
+	jobID := generateJobID()
 
-	if err := store.ServiceLastAccessed().Put(job); err != nil {
+	pendingJob := &iamstore.ServiceLastAccessedJob{
+		JobID:           jobID,
+		Arn:             arn,
+		JobType:         "SERVICE_LAST_ACCESSED",
+		JobStatus:       "IN_PROGRESS",
+		JobCreationTime: now,
+		Granularity:     granularity,
+	}
+	if err := store.ServiceLastAccessed().Put(pendingJob); err != nil {
 		return nil, err
 	}
 
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("PANIC in ServiceLastAccessed report generation", logs.Any("panic", r))
+			}
+		}()
+		completedJob := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", reqCtx.GetRegion())
+		completedJob.JobID = jobID
+		_ = store.ServiceLastAccessed().Put(completedJob)
+	}()
+
 	return map[string]interface{}{
-		"JobId":     job.JobID,
-		"JobType":   job.JobType,
-		"JobStatus": "COMPLETED",
+		"JobId":     jobID,
+		"JobType":   pendingJob.JobType,
+		"JobStatus": "IN_PROGRESS",
 	}, nil
 }
 
@@ -371,7 +415,7 @@ func (s *IAMService) GetServiceLastAccessedDetailsWithEntities(_ context.Context
 		entityPolicyNames := make([]map[string]interface{}, 0)
 		entityPolicyNames = append(entityPolicyNames, map[string]interface{}{
 			"EntityName":        resolveEntityName(entityPath),
-			"EntityType":        "User",
+			"EntityType":        resolveEntityType(entityPath),
 			"LastAuthenticated": job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
 		})
 		entity["EntityPolicyList"] = entityPolicyNames

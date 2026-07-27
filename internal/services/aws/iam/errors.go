@@ -16,7 +16,7 @@ var (
 	// ErrNoSuchAccessKey is returned when an access key with the specified ID cannot be found.
 	ErrNoSuchAccessKey = awserrors.NewAWSError("NoSuchEntity", "The Access Key with id {AccessKeyId} cannot be found.", http.StatusNotFound)
 	// ErrAccessKeyLimitExceeded is returned when the user has reached the maximum number of access keys.
-	ErrAccessKeyLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for AccessKeysPerUser: 2.", http.StatusForbidden)
+	ErrAccessKeyLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for AccessKeysPerUser: 2.", http.StatusConflict)
 	// ErrNoSuchLoginProfile is returned when a login profile for the specified user does not exist.
 	ErrNoSuchLoginProfile = awserrors.NewAWSError("NoSuchEntity", "Login profile for user {UserName} does not exist.", http.StatusNotFound)
 	// ErrLoginProfileAlreadyExists is returned when a login profile for the user already exists.
@@ -30,10 +30,10 @@ var (
 	// ErrInvalidInput is returned when an input parameter is invalid.
 	ErrInvalidInput = awserrors.NewAWSError("InvalidInput", "The input parameter {Parameter} is invalid.", http.StatusBadRequest)
 	// ErrLimitExceeded is returned when the user quota has been exceeded.
-	ErrLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for Users: 5000.", http.StatusForbidden)
+	ErrLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for Users: 5000.", http.StatusConflict)
 	// ErrInstanceProfileRoleLimit is returned when attempting to add a second
 	// role to an instance profile (AWS allows only one role per profile).
-	ErrInstanceProfileRoleLimit = awserrors.NewAWSError("LimitExceededException", "Cannot exceed quota for RolesPerInstanceProfile: 1.", http.StatusBadRequest)
+	ErrInstanceProfileRoleLimit = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for RolesPerInstanceProfile: 1.", http.StatusConflict)
 	// ErrNoSuchGroup is returned when a group with the specified name cannot be found.
 	ErrNoSuchGroup = awserrors.NewAWSError("NoSuchEntity", "The group with name {GroupName} cannot be found.", http.StatusNotFound)
 	// ErrGroupAlreadyExists is returned when attempting to create a group that already exists.
@@ -69,7 +69,7 @@ var (
 	// ErrNoSuchPolicyVersion is returned when a policy version with the specified ID cannot be found.
 	ErrNoSuchPolicyVersion = awserrors.NewAWSError("NoSuchEntity", "Policy version {VersionId} does not exist.", http.StatusNotFound)
 	// ErrLimitExceededPolicyVersions is returned when the policy has reached the maximum number of versions.
-	ErrLimitExceededPolicyVersions = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for PolicyVersions: 5.", http.StatusForbidden)
+	ErrLimitExceededPolicyVersions = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for PolicyVersions: 5.", http.StatusConflict)
 	// ErrNoSuchMFADevice is returned when an MFA device with the specified serial number cannot be found.
 	ErrNoSuchMFADevice = awserrors.NewAWSError("NoSuchEntity", "MFA Device {SerialNumber} does not exist.", http.StatusNotFound)
 	// ErrMFADeviceAlreadyAssigned is returned when the MFA device is already assigned to a user.
@@ -233,14 +233,15 @@ func NewEntityAlreadyExistsError(entity string) *awserrors.AWSError {
 }
 
 // ErrValidationRequiredParameter is returned when a required parameter is missing.
-var ErrValidationRequiredParameter = awserrors.NewAWSError("ValidationError", "Required parameter {Parameter} is missing.", http.StatusBadRequest)
+var ErrValidationRequiredParameter = awserrors.NewAWSError("InvalidInput", "Required parameter {Parameter} is missing.", http.StatusBadRequest)
 
 // ErrNotAuthorized is returned when authentication fails.
 var ErrNotAuthorized = awserrors.NewAWSError("NotAuthorized", "Not authorized to perform this operation.", http.StatusForbidden)
 
 // NewValidationError creates a new error indicating that a required parameter is missing.
+// Uses the InvalidInput wire code per Smithy InvalidInputException.
 func NewValidationError(parameter string) *awserrors.AWSError {
-	return awserrors.NewAWSError("ValidationError", "Required parameter "+parameter+" is missing.", http.StatusBadRequest)
+	return awserrors.NewAWSError("InvalidInput", "Required parameter "+parameter+" is missing.", http.StatusBadRequest)
 }
 
 // NewInvalidInputError creates a new error indicating that an input parameter is invalid.
