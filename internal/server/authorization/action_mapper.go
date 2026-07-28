@@ -85,7 +85,6 @@ func (m *ActionMapper) registerDefaults() {
 	m.registerAppSyncMappings()
 	m.registerSESMappings()
 	m.registerRDSDataMappings()
-	m.registerIoTEventsDataMappings()
 }
 
 func (m *ActionMapper) registerS3Mappings() {
@@ -219,12 +218,6 @@ func (m *ActionMapper) registerSESMappings() {
 	// SESv2 handlers register under "email" (the internal service name),
 	// but IAM actions use the "ses:" prefix.
 	m.RegisterWildcard("email", "ses")
-}
-
-func (m *ActionMapper) registerIoTEventsDataMappings() {
-	// IoT Events Data handlers register under "iotevents-data", but IAM
-	// actions use the "iotevents:" prefix.
-	m.RegisterWildcard("iotevents-data", "iotevents")
 }
 
 func (m *ActionMapper) registerRDSDataMappings() {

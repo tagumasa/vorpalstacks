@@ -109,21 +109,3 @@ func (b *IoTBuilder) CertificateProvider(name string) string {
 func (b *IoTBuilder) OTAUpdate(name string) string {
 	return b.Build("iot", "otaupdate/"+name)
 }
-
-// IoTEventsBuilder provides methods for constructing AWS IoT Events ARNs.
-type IoTEventsBuilder struct{ *ARNBuilder }
-
-// IoTEvents returns an IoTEventsBuilder for constructing IoT Events ARNs.
-func (b *ARNBuilder) IoTEvents() *IoTEventsBuilder { return &IoTEventsBuilder{b} }
-
-func (b *IoTEventsBuilder) DetectorModel(name string) string {
-	return b.Build("iotevents", "detectorModel/"+name)
-}
-
-func (b *IoTEventsBuilder) Input(name string) string {
-	return b.Build("iotevents", "input/"+name)
-}
-
-func (b *IoTEventsBuilder) AlarmModel(name string) string {
-	return b.Build("iotevents", "alarmModel/"+name)
-}

@@ -27,7 +27,6 @@ var actionRegistry = map[string]ActionHandler{
 	"cloudwatchLogs":   (*Dispatcher).dispatchCloudWatchLogs,
 	"republish":        (*Dispatcher).dispatchRepublish,
 	"stepFunctions":    (*Dispatcher).dispatchStepFunctions,
-	"iotEvents":        (*Dispatcher).dispatchIoTEvents,
 	"http":             (*Dispatcher).dispatchHTTP,
 	"firehose": func(_ *Dispatcher, _ context.Context, _ *ActionConfig, _ *ActionPayload) error {
 		return fmt.Errorf("firehose action not supported in vorpalstacks")

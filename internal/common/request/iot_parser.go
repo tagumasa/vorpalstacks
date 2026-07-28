@@ -72,11 +72,6 @@ func (p *iotRESTParser) MatchPath(path string) bool {
 		pathHasRoutePrefix(path, "/audit") ||
 		pathHasRoutePrefix(path, "/detect") ||
 		pathHasRoutePrefix(path, "/mitigationactions") ||
-		pathHasRoutePrefix(path, "/detector-models") ||
-		strings.HasPrefix(path, "/detector-model/") ||
-		pathHasRoutePrefix(path, "/alarm-models") ||
-		pathHasRoutePrefix(path, "/inputs") ||
-		strings.HasPrefix(path, "/input/") ||
 		pathHasRoutePrefix(path, "/custom-metric") ||
 		pathHasRoutePrefix(path, "/custom-metrics") ||
 		pathHasRoutePrefix(path, "/dimensions") ||
@@ -435,50 +430,6 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 
 	case path == "/messages" && method == http.MethodPost:
 		return "BatchPutMessage"
-
-	case path == "/detector-models" && method == http.MethodGet:
-		return "ListDetectorModels"
-	case path == "/detector-models" && method == http.MethodPost:
-		return "CreateDetectorModel"
-	case strings.HasPrefix(path, "/detector-models/") && len(parts) >= 2:
-		switch {
-		case len(parts) == 2 && method == http.MethodGet:
-			return "DescribeDetectorModel"
-		case len(parts) == 2 && method == http.MethodPatch:
-			return "UpdateDetectorModel"
-		case len(parts) == 2 && method == http.MethodDelete:
-			return "DeleteDetectorModel"
-		}
-
-	case path == "/alarm-models" && method == http.MethodGet:
-		return "ListAlarmModels"
-	case path == "/alarm-models" && method == http.MethodPost:
-		return "CreateAlarmModel"
-	case strings.HasPrefix(path, "/alarm-models/") && len(parts) >= 2:
-		switch {
-		case len(parts) == 2 && method == http.MethodGet:
-			return "DescribeAlarmModel"
-		case len(parts) == 2 && (method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch):
-			return "UpdateAlarmModel"
-		case len(parts) == 2 && method == http.MethodDelete:
-			return "DeleteAlarmModel"
-		case len(parts) == 3 && parts[2] == "versions" && method == http.MethodGet:
-			return "ListAlarmModelVersions"
-		}
-
-	case path == "/inputs" && method == http.MethodGet:
-		return "ListInputs"
-	case path == "/inputs" && method == http.MethodPost:
-		return "CreateInput"
-	case strings.HasPrefix(path, "/inputs/") && len(parts) >= 2:
-		switch {
-		case len(parts) == 2 && method == http.MethodGet:
-			return "DescribeInput"
-		case len(parts) == 2 && method == http.MethodPatch:
-			return "UpdateInput"
-		case len(parts) == 2 && method == http.MethodDelete:
-			return "DeleteInput"
-		}
 
 	case path == "/effective-policies" && method == http.MethodPost:
 		return "GetEffectivePolicies"
@@ -923,12 +874,6 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 		params["domainConfigurationName"] = parts[1]
 	case strings.HasPrefix(path, "/security-profiles/") && len(parts) >= 2:
 		params["securityProfileName"] = parts[1]
-	case strings.HasPrefix(path, "/detector-models/") && len(parts) >= 2:
-		params["detectorModelName"] = parts[1]
-	case strings.HasPrefix(path, "/alarm-models/") && len(parts) >= 2:
-		params["alarmModelName"] = parts[1]
-	case strings.HasPrefix(path, "/inputs/") && len(parts) >= 2:
-		params["inputName"] = parts[1]
 	case strings.HasPrefix(path, "/policy-principals/") && len(parts) >= 2:
 		params["policyName"] = parts[1]
 	case strings.HasPrefix(path, "/target-policies/") && len(parts) >= 2:

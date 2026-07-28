@@ -39,8 +39,9 @@ import (
 	"vorpalstacks/internal/services/aws/iot/broker"
 	"vorpalstacks/internal/services/aws/iot/ca"
 	"vorpalstacks/internal/services/aws/iot/rules/actions"
-	svciotevents "vorpalstacks/internal/services/aws/iotevents"
+
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
+
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
 	svcrds "vorpalstacks/internal/services/aws/rds"
@@ -65,7 +66,6 @@ import (
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 	storerds "vorpalstacks/internal/store/aws/rds"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -101,7 +101,6 @@ func (a *App) initOptionalServices() error {
 		{a.cfg.RDSMySQL, "RDSMySQL", a.initRDSMySQL},
 		{a.cfg.RDSMySQL, "RDSData", a.initRDSData},
 		{a.cfg.IoT, "IoT", a.initIoT},
-		{a.cfg.IoTEvents, "IoTEvents", a.initIoTEvents},
 	}
 
 	for _, init := range initers {
@@ -625,82 +624,18 @@ func (a *App) initIoT(st *serviceState) error {
 
 	st.iotService = iotService
 	st.iotService.RegisterHandlers(a.server.Dispatcher())
+
+	// Wire the rule action dispatcher callbacks for every region so
+	// Republish routes to the correct regional broker.
+	for _, region := range a.server.StorageManager().ListRegions() {
+		st.iotService.WireActionCallbacksForRegion(region)
+	}
+
 	a.addShutdown("iot", func(ctx context.Context) error {
 		iotService.Shutdown()
 		return nil
 	})
 	return nil
-}
-
-func (a *App) initIoTEvents(st *serviceState) error {
-	iotEventsService := svciotevents.NewIoTEventsService(st.accountID, st.region)
-	iotEventsService.SetStorageManager(a.server.StorageManager())
-
-	eb := a.server.EventBus()
-	if eb != nil {
-		iotEventsService.Init(svciotevents.IoTEventsServiceDeps{
-			EventBus:       eb,
-			StorageManager: a.server.StorageManager(),
-		})
-	}
-
-	st.iotEventsService = iotEventsService
-	st.iotEventsService.RegisterHandlers(a.server.Dispatcher())
-
-	// Wire the rule action dispatcher callbacks now that both IoT and IoT Events
-	// services are initialised. The dispatcher was created in initIoT but the
-	// callbacks require the broker (Republish) and the IoT Events state machine
-	// (BatchPutMessage), which are only available at this point.
-	if st.iotService != nil {
-		// Wire the rule action dispatcher callbacks for every region so
-		// Republish routes to the correct regional broker.
-		for _, region := range a.server.StorageManager().ListRegions() {
-			var batchPutFn func(context.Context, []map[string]interface{}) error
-			if st.iotEventsService != nil {
-				batchPutFn = makeIoTEventsBatchPutFn(st, region)
-			}
-			st.iotService.WireActionCallbacksForRegion(region, batchPutFn)
-		}
-
-		// Wire detector model iotTopicPublish action to the MQTT broker.
-		if st.iotEventsService != nil {
-			if brk := st.iotService.BrokerForRegion(st.region); brk != nil {
-				st.iotEventsService.SetRepublishFn(func(topic string, payload []byte) error {
-					return brk.Publish(topic, payload)
-				})
-			}
-		}
-	}
-
-	return nil
-}
-
-// makeIoTEventsBatchPutFn returns a function that bridges the IoT rule
-// dispatcher to the IoT Events detector state machine. It resolves the
-// IotStore from the iotevents service and calls BatchEvaluate on the
-// state machine for each incoming message batch.
-func makeIoTEventsBatchPutFn(st *serviceState, region string) func(context.Context, []map[string]interface{}) error {
-	return func(ctx context.Context, messages []map[string]interface{}) error {
-		store, err := st.iotEventsService.GetStoreForRegion(region)
-		if err != nil {
-			return fmt.Errorf("iot events batch put: %w", err)
-		}
-		concrete, ok := store.(*iotstore.IotStore)
-		if !ok || concrete.StateMachine() == nil {
-			return nil
-		}
-		inputs := make([]iotstore.InputMessage, 0, len(messages))
-		for _, m := range messages {
-			name, _ := m["inputName"].(string)
-			payload := iotstore.ExtractPayload(m["payload"])
-			inputs = append(inputs, iotstore.InputMessage{InputName: name, Payload: payload})
-		}
-		errs := concrete.StateMachine().BatchEvaluate(ctx, inputs)
-		if len(errs) > 0 {
-			return fmt.Errorf("iot events batch evaluate: %d message(s) produced errors", len(errs))
-		}
-		return nil
-	}
 }
 
 // --- gRPC-Web Admin ---

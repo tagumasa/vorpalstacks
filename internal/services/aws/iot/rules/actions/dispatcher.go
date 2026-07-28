@@ -20,7 +20,7 @@ import (
 type ActionConfig struct {
 	// Type identifies the action: "lambda", "sqs", "sns", "dynamodb", "s3",
 	// "kinesis", "cloudwatch", "cloudwatchLogs", "republish", "http",
-	// "stepFunctions", "eventbridge", "firehose", "timestream", "iotEvents".
+	// "stepFunctions", "eventbridge", "firehose", "timestream".
 	Type string
 
 	// TargetARN is the resource ARN for the action target (Lambda, SQS, SNS,
@@ -59,11 +59,10 @@ type ActionConfig struct {
 // Dispatcher routes evaluated rule payloads to the appropriate action handler
 // using EventBus invokers for cross-service communication.
 type Dispatcher struct {
-	bus           eventbus.Bus
-	logger        *slog.Logger
-	RepublishFn   func(ctx context.Context, topic string, payload map[string]interface{}) error
-	BatchPutMsgFn func(ctx context.Context, messages []map[string]interface{}) error
-	HTTPPostFn    func(ctx context.Context, url string, payload []byte) error
+	bus         eventbus.Bus
+	logger      *slog.Logger
+	RepublishFn func(ctx context.Context, topic string, payload map[string]interface{}) error
+	HTTPPostFn  func(ctx context.Context, url string, payload []byte) error
 }
 
 // NewDispatcher creates a new action dispatcher backed by the given EventBus.
@@ -73,10 +72,6 @@ func NewDispatcher(bus eventbus.Bus, logger *slog.Logger) *Dispatcher {
 
 func (d *Dispatcher) SetRepublishFn(fn func(context.Context, string, map[string]interface{}) error) {
 	d.RepublishFn = fn
-}
-
-func (d *Dispatcher) SetBatchPutMessageFn(fn func(context.Context, []map[string]interface{}) error) {
-	d.BatchPutMsgFn = fn
 }
 
 func (d *Dispatcher) SetHTTPPostFn(fn func(context.Context, string, []byte) error) {
@@ -610,18 +605,6 @@ func (d *Dispatcher) dispatchStepFunctions(ctx context.Context, config *ActionCo
 		Input:            p.JSONString,
 	}
 	return d.bus.Publish(ctx, evt)
-}
-
-func (d *Dispatcher) dispatchIoTEvents(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
-	if d.BatchPutMsgFn == nil {
-		return fmt.Errorf("iotEvents: not configured")
-	}
-	msg := map[string]interface{}{
-		"messageId": fmt.Sprintf("rule-%d", time.Now().UnixNano()),
-		"inputName": config.Extra["inputName"],
-		"payload":   p.Raw,
-	}
-	return d.BatchPutMsgFn(ctx, []map[string]interface{}{msg})
 }
 
 func (d *Dispatcher) dispatchHTTP(ctx context.Context, config *ActionConfig, p *ActionPayload) error {

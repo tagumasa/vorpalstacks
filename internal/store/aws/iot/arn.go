@@ -60,14 +60,6 @@ func BuildProvisioningTemplateARN(accountID, region, name string) string {
 	return svcarn.NewARNBuilder(accountID, region).IoT().ProvisioningTemplate(name)
 }
 
-func BuildDetectorModelARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).IoTEvents().DetectorModel(name)
-}
-
-func BuildInputARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).IoTEvents().Input(name)
-}
-
 func BuildSecurityProfileARN(accountID, region, name string) string {
 	return svcarn.NewARNBuilder(accountID, region).IoT().SecurityProfile(name)
 }
@@ -90,10 +82,6 @@ func BuildCertificateProviderARN(accountID, region, name string) string {
 
 func BuildDomainConfigurationARN(accountID, region, name string) string {
 	return svcarn.NewARNBuilder(accountID, region).IoT().DomainConfiguration(name)
-}
-
-func BuildAlarmModelARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).IoTEvents().AlarmModel(name)
 }
 
 func BuildCACertificateARN(accountID, region, certID string) string {

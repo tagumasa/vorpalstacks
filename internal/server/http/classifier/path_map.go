@@ -119,9 +119,6 @@ func lookupServiceByPath(path string) string {
 	if request.IsNeptuneGraphPath(path) {
 		return "neptunegraph"
 	}
-	if isIoTEventsPath(path) {
-		return "iotevents"
-	}
 	if isIoTPath(path) {
 		return "iot"
 	}
@@ -234,30 +231,6 @@ var iotPathPrefixes = []string{
 
 func isIoTPath(path string) bool {
 	for _, prefix := range iotPathPrefixes {
-		if strings.HasPrefix(path, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-// ioteventsPathPrefixes lists URL path prefixes for AWS IoT Events control
-// plane. Derived from the Smithy model at
-// third_party/api-models-aws/models/iot-events/service/2018-07-27/iot-events-2018-07-27.json.
-// R18-C1: populated (previously empty) so IoT Events operations route
-// correctly via restJson1 protocol.
-var ioteventsPathPrefixes = []string{
-	"/alarm-models",
-	"/detector-models", "/detector-model/",
-	"/inputs", "/input/",
-	"/input-routings",
-	"/logging",
-	"/analysis",
-	"/tags",
-}
-
-func isIoTEventsPath(path string) bool {
-	for _, prefix := range ioteventsPathPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}

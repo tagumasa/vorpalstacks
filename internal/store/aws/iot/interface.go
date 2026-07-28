@@ -20,9 +20,6 @@ type IotStoreInterface interface {
 	ShadowOps
 	AuthorizerOps
 	ProvisioningTemplateOps
-	DetectorModelOps
-	InputOps
-	AlarmModelOps
 	GenericKVOps
 	SecurityProfileOps
 	ViolationOps
@@ -136,31 +133,6 @@ type ProvisioningTemplateOps interface {
 	UpdateProvisioningTemplate(name string, opts ProvisioningTemplateUpdateOpts) (*ProvisioningTemplate, error)
 	DeleteProvisioningTemplate(name string) error
 	ListProvisioningTemplates(opts common.ListOptions) (*common.ListResult[ProvisioningTemplate], error)
-}
-
-type DetectorModelOps interface {
-	CreateDetectorModel(d *DetectorModel) (*DetectorModel, error)
-	GetDetectorModel(name string) (*DetectorModel, error)
-	UpdateDetectorModel(d *DetectorModel) error
-	DeleteDetectorModel(name string) error
-	ListDetectorModels(opts common.ListOptions) (*common.ListResult[DetectorModel], error)
-}
-
-type InputOps interface {
-	CreateInput(i *Input) (*Input, error)
-	GetInput(name string) (*Input, error)
-	UpdateInput(i *Input) error
-	DeleteInput(name string) error
-	ListInputs(opts common.ListOptions) (*common.ListResult[Input], error)
-}
-
-type AlarmModelOps interface {
-	CreateAlarmModel(a *AlarmModel) (*AlarmModel, error)
-	GetAlarmModel(name string) (*AlarmModel, error)
-	UpdateAlarmModel(a *AlarmModel) (*AlarmModel, error)
-	DeleteAlarmModel(name string) error
-	ListAlarmModels(opts common.ListOptions) (*common.ListResult[AlarmModel], error)
-	ListAlarmModelVersions(name string) ([]map[string]interface{}, error)
 }
 
 type GenericKVOps interface {

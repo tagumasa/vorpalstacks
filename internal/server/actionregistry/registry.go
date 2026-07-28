@@ -303,11 +303,6 @@ func (r *ActionRegistry) initDefaults() {
 		"ListActiveViolations", "ListViolationEvents", "GetBehaviorModelTrainingSummaries",
 		// Tags
 		"TagResource", "UntagResource", "ListTagsForResource",
-		// Detector Models (IoT Events - also registered under iotevents)
-		"CreateDetectorModel", "DescribeDetectorModel", "DeleteDetectorModel",
-		"ListDetectorModels", "UpdateDetectorModel",
-		// Inputs (IoT Events - also registered under iotevents)
-		"CreateInput", "DescribeInput", "DeleteInput", "ListInputs", "UpdateInput",
 		// Device Management Extensions
 		"CreateDynamicThingGroup", "DeleteDynamicThingGroup", "UpdateDynamicThingGroup",
 		"AddThingToBillingGroup", "RemoveThingFromBillingGroup", "ListThingsInBillingGroup",
@@ -397,34 +392,6 @@ func (r *ActionRegistry) initDefaults() {
 		"CreateTopicRuleDestination", "DeleteTopicRuleDestination",
 		"GetTopicRuleDestination", "ListTopicRuleDestinations",
 		"UpdateTopicRuleDestination", "ConfirmTopicRuleDestination",
-	})
-}
-
-func init() {
-	globalActionRegistry.Register("iotevents", []string{
-		// Detector Models (IoT Events)
-		"CreateDetectorModel", "DescribeDetectorModel", "DeleteDetectorModel",
-		"ListDetectorModels", "UpdateDetectorModel", "ListDetectorModelVersions",
-		// Inputs (IoT Events)
-		"CreateInput", "DescribeInput", "DeleteInput", "ListInputs", "UpdateInput",
-		"ListInputRoutings",
-		// Detector Model Analysis (IoT Events)
-		"StartDetectorModelAnalysis", "DescribeDetectorModelAnalysis",
-		"GetDetectorModelAnalysisResults",
-		// Logging (IoT Events)
-		"PutLoggingOptions", "DescribeLoggingOptions",
-		// Alarm Models (IoT Events)
-		"CreateAlarmModel", "DescribeAlarmModel", "UpdateAlarmModel",
-		"DeleteAlarmModel", "ListAlarmModels", "ListAlarmModelVersions",
-		// Messaging (IoT Events Data)
-		"BatchPutMessage",
-		// Batch Alarm/Detector Ops (IoT Events Data)
-		"BatchAcknowledgeAlarm", "BatchDisableAlarm", "BatchEnableAlarm",
-		"BatchResetAlarm", "BatchSnoozeAlarm",
-		"BatchDeleteDetector", "BatchUpdateDetector",
-		"DescribeAlarm", "DescribeDetector", "ListAlarms", "ListDetectors",
-		// Tags
-		"TagResource", "UntagResource", "ListTagsForResource",
 	})
 }
 

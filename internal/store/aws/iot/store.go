@@ -1,7 +1,6 @@
 package iot
 
 import (
-	"context"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -39,10 +38,6 @@ const (
 	bucketBillingGroups      = "iot-billing-groups"
 	bucketAuthorizers        = "iot-authorizers"
 	bucketProvisioningTpls   = "iot-provisioning-templates"
-	bucketDetectorModels     = "iot-detector-models"
-	bucketInputs             = "iot-inputs"
-	bucketAlarmModels        = "iot-alarm-models"
-	bucketAlarmState         = "iot-alarm-state"
 	bucketGenericKV          = "iot-generic-kv"
 	bucketSecurityProfiles   = "iot-security-profiles"
 	bucketDomainConfigs      = "iot-domain-configs"
@@ -71,10 +66,6 @@ type IotStore struct {
 	billingGroupsBase      *common.BaseStore
 	authorizersBase        *common.BaseStore
 	templatesBase          *common.BaseStore
-	detectorModelsBase     *common.BaseStore
-	inputsBase             *common.BaseStore
-	alarmModelsBase        *common.BaseStore
-	alarmStateBase         *common.BaseStore
 	genericKVBase          *common.BaseStore
 	securityProfilesBase   *common.BaseStore
 	domainConfigsBase      *common.BaseStore
@@ -98,15 +89,13 @@ type IotStore struct {
 	domainConfigPS    *common.ProtoStore[DomainConfiguration]
 	violationEventPS  *common.ProtoStore[ViolationEvent]
 	*common.TagStore
-	storage           storage.BasicStorage
-	ts                storage.TransactionalStorage
-	rs                string
-	arnBuilder        *svcarn.ARNBuilder
-	accountID         string
-	region            string
-	mu                sync.RWMutex
-	stateMachine      *DetectorStateMachine
-	alarmStateMachine *AlarmStateMachine
+	storage    storage.BasicStorage
+	ts         storage.TransactionalStorage
+	rs         string
+	arnBuilder *svcarn.ARNBuilder
+	accountID  string
+	region     string
+	mu         sync.RWMutex
 	// shadowLocker provides per-shadow-key mutual exclusion for atomic
 	// read-merge-write sequences, replacing the store-wide s.mu. This
 	// allows concurrent shadow updates for different things to proceed
@@ -137,10 +126,6 @@ func NewIotStore(store storage.BasicStorage, accountID, region string, onAction 
 		billingGroupsBase:      common.NewBaseStore(store.Bucket(bucketBillingGroups+bp), bucketBillingGroups),
 		authorizersBase:        common.NewBaseStore(store.Bucket(bucketAuthorizers+bp), bucketAuthorizers),
 		templatesBase:          common.NewBaseStore(store.Bucket(bucketProvisioningTpls+bp), bucketProvisioningTpls),
-		detectorModelsBase:     common.NewBaseStore(store.Bucket(bucketDetectorModels+bp), bucketDetectorModels),
-		inputsBase:             common.NewBaseStore(store.Bucket(bucketInputs+bp), bucketInputs),
-		alarmModelsBase:        common.NewBaseStore(store.Bucket(bucketAlarmModels+bp), bucketAlarmModels),
-		alarmStateBase:         common.NewBaseStore(store.Bucket(bucketAlarmState+bp), bucketAlarmState),
 		genericKVBase:          common.NewBaseStore(store.Bucket(bucketGenericKV+bp), bucketGenericKV),
 		securityProfilesBase:   common.NewBaseStore(store.Bucket(bucketSecurityProfiles+bp), bucketSecurityProfiles),
 		domainConfigsBase:      common.NewBaseStore(store.Bucket(bucketDomainConfigs+bp), bucketDomainConfigs),
@@ -156,13 +141,11 @@ func NewIotStore(store storage.BasicStorage, accountID, region string, onAction 
 	}
 	s.ts, _ = store.(storage.TransactionalStorage)
 	initProtoStores(s)
-	s.stateMachine = NewDetectorStateMachine(onAction)
-	s.alarmStateMachine = NewAlarmStateMachine(s.alarmStateBase)
 	return s
 }
 
 // regionalStores ensures a single IotStore instance per (accountID, region)
-// pair. All services (iot, iotevents, MQTT broker auth) must use
+// pair. All services (iot, MQTT broker auth) must use
 // GetOrCreateStore to avoid duplicate store instances and state machine
 // divergence, mirroring the IAM/STS/admin_auth pattern (see
 // GetOrCreateGlobalStore in store/aws/iam/store.go).
@@ -182,17 +165,6 @@ func GetOrCreateStore(store storage.BasicStorage, accountID, region string) *Iot
 	newStore := NewIotStore(store, accountID, region, nil)
 	actual, _ := regionalStores.LoadOrStore(key, newStore)
 	return actual.(*IotStore)
-}
-
-// SetActionCallback installs the detector action dispatch callback on the
-// state machine. Intended to be called at most once during process
-// initialisation; subsequent calls overwrite the previous callback. Safe
-// for concurrent EvaluateEvent readers via the state machine's internal
-// RWMutex.
-func (s *IotStore) SetActionCallback(fn func(modelName, key, actionType string, payload map[string]interface{})) {
-	if s.stateMachine != nil {
-		s.stateMachine.SetActionCallback(fn)
-	}
 }
 
 func initProtoStores(s *IotStore) {
@@ -318,72 +290,4 @@ func (s *IotStore) GetAccountID() string {
 }
 func (s *IotStore) GetRegion() string {
 	return s.region
-}
-
-// LoadDetectorModel registers a detector model in the state machine for
-// event evaluation. No-op if no state machine is initialised.
-func (s *IotStore) LoadDetectorModel(dm *DetectorModel) {
-	if s.stateMachine != nil {
-		s.stateMachine.LoadModel(dm)
-	}
-}
-
-// UnloadModel removes a detector model and its instances from the state machine.
-func (s *IotStore) UnloadModel(name string) {
-	if s.stateMachine != nil {
-		s.stateMachine.UnloadModel(name)
-	}
-}
-
-// DeleteDetector removes a single detector instance (H-SM4).
-func (s *IotStore) DeleteDetector(modelName, keyValue string) bool {
-	if s.stateMachine == nil {
-		return false
-	}
-	return s.stateMachine.DeleteDetector(modelName, keyValue)
-}
-
-// UpdateDetectorState sets the state of a detector instance (H-SM4).
-func (s *IotStore) UpdateDetectorState(modelName, keyValue, stateName string) {
-	if s.stateMachine != nil {
-		s.stateMachine.UpdateDetectorState(modelName, keyValue, stateName)
-	}
-}
-
-// BatchEvaluate processes a batch of input messages against all loaded
-// detector models AND alarm models. Returns error entries for failed
-// detector evaluations (alarm evaluations do not produce error entries).
-func (s *IotStore) BatchEvaluate(ctx context.Context, messages []InputMessage) []map[string]interface{} {
-	if s.alarmStateMachine != nil {
-		s.alarmStateMachine.EvaluateMessages(messages)
-	}
-	if s.stateMachine == nil {
-		return nil
-	}
-	return s.stateMachine.BatchEvaluate(ctx, messages)
-}
-
-// LoadAlarmModel registers an alarm model in the AlarmStateMachine for
-// message evaluation. No-op if no alarm state machine is initialised.
-func (s *IotStore) LoadAlarmModel(am *AlarmModel) {
-	if s.alarmStateMachine != nil {
-		s.alarmStateMachine.LoadAlarmModel(am)
-	}
-}
-
-// UnloadAlarmModel removes an alarm model from evaluation.
-func (s *IotStore) UnloadAlarmModel(name string) {
-	if s.alarmStateMachine != nil {
-		s.alarmStateMachine.UnloadAlarmModel(name)
-	}
-}
-
-// StateMachine returns the underlying DetectorStateMachine, or nil if not initialised.
-func (s *IotStore) StateMachine() *DetectorStateMachine {
-	return s.stateMachine
-}
-
-// AlarmStateMachine returns the underlying AlarmStateMachine, or nil if not initialised.
-func (s *IotStore) AlarmStateMachine() *AlarmStateMachine {
-	return s.alarmStateMachine
 }

@@ -282,13 +282,8 @@ func (s *IoTService) makeActionDispatcher(region string, d *actions.Dispatcher) 
 // WireActionCallbacksForRegion connects the rule action dispatcher
 // callbacks for the given region to their concrete implementations.
 // Republish routes to that region's broker so messages stay within the
-// region, matching AWS IoT Core's per-region rule engine. Must be called
-// after both IoT and IoT Events services have been initialised, because
-// the dispatcher is created in initIoT but the IoT Events state machine
-// (needed for BatchPutMessage) is only available after initIoTEvents
-// completes. batchPutFn should resolve the IoT Events state machine and
-// evaluate messages; pass nil to leave BatchPutMessage unwired.
-func (s *IoTService) WireActionCallbacksForRegion(region string, batchPutFn func(ctx context.Context, messages []map[string]interface{}) error) {
+// region, matching AWS IoT Core's per-region rule engine.
+func (s *IoTService) WireActionCallbacksForRegion(region string) {
 	d := s.dispatchers[region]
 	if d == nil {
 		return
@@ -302,10 +297,6 @@ func (s *IoTService) WireActionCallbacksForRegion(region string, batchPutFn func
 			}
 			return brk.Publish(topic, data)
 		})
-	}
-
-	if batchPutFn != nil {
-		d.SetBatchPutMessageFn(batchPutFn)
 	}
 
 	d.SetHTTPPostFn(func(ctx context.Context, url string, payload []byte) error {

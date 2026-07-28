@@ -207,10 +207,6 @@ func (c *Classifier) serviceFromSigningService(r *http.Request, bodyBytes []byte
 		"rds-data":          "rdsdata",
 		"neptune-db":        "neptunedata",
 		"neptune-graph":     "neptunegraph",
-		"iotevents":         "iotevents",
-		// iotevents-data signs as "ioteventsdata" (no hyphen) per AWS SigV4
-		// but handlers are registered under the iotevents-data service.
-		"ioteventsdata": "iotevents-data",
 		// iot-data-plane (Thing Shadows) signs as "iotdata" but its handlers
 		// are registered under the iot service.
 		"iotdata": "iot",
