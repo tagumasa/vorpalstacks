@@ -26,7 +26,7 @@ func runLambdaConfigTests(
 	pcFuncName := fmt.Sprintf("PcFunc-%d", time.Now().UnixNano())
 	pcRoleName := fmt.Sprintf("PcRole-%d", time.Now().UnixNano())
 	pcRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", pcRoleName)
-	pcCode := []byte("exports.handler = async () => { return 1; };")
+	pcCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 
 	if err := createIAMRole(pcRoleName); err != nil {
 		results = append(results, TestResult{Service: "lambda", TestName: "PutProvisionedConcurrencyConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
@@ -157,7 +157,7 @@ func runLambdaConfigTests(
 	eicFuncName := fmt.Sprintf("EicFunc-%d", time.Now().UnixNano())
 	eicRoleName := fmt.Sprintf("EicRole-%d", time.Now().UnixNano())
 	eicRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", eicRoleName)
-	eicCode := []byte("exports.handler = async () => { return 1; };")
+	eicCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 
 	if err := createIAMRole(eicRoleName); err != nil {
 		results = append(results, TestResult{Service: "lambda", TestName: "PutFunctionEventInvokeConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
@@ -345,7 +345,7 @@ func runLambdaConfigTests(
 	furlFuncName := fmt.Sprintf("FurlFunc-%d", time.Now().UnixNano())
 	furlRoleName := fmt.Sprintf("FurlRole-%d", time.Now().UnixNano())
 	furlRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", furlRoleName)
-	furlCode := []byte("exports.handler = async () => { return 1; };")
+	furlCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 
 	if err := createIAMRole(furlRoleName); err != nil {
 		results = append(results, TestResult{Service: "lambda", TestName: "CreateFunctionUrlConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
@@ -457,7 +457,7 @@ func runLambdaConfigTests(
 	iaFuncName := fmt.Sprintf("IaFunc-%d", time.Now().UnixNano())
 	iaRoleName := fmt.Sprintf("IaRole-%d", time.Now().UnixNano())
 	iaRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", iaRoleName)
-	iaCode := []byte("exports.handler = async () => { return { statusCode: 200 }; };")
+	iaCode := zipLambdaCode("exports.handler = async () => { return { statusCode: 200 }; };")
 
 	if err := createIAMRole(iaRoleName); err != nil {
 		results = append(results, TestResult{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})

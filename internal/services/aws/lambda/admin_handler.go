@@ -121,6 +121,18 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// Apply tags if provided — mirrors the HTTP API's CreateFunction
+	// which accepts Tags alongside the function configuration.
+	if len(req.Msg.Tags) > 0 {
+		tags := make(map[string]string, len(req.Msg.Tags))
+		for k, v := range req.Msg.Tags {
+			tags[k] = v
+		}
+		if err := store.TagStore.Tag(fn.FunctionName, tags); err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
+	}
+
 	resp := functionToProto(fn)
 	return connect.NewResponse(resp), nil
 }

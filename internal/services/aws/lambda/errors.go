@@ -87,6 +87,15 @@ var (
 		"An internal service error occurred.",
 		http.StatusInternalServerError,
 	)
+
+	// ErrRequestTooLarge is returned when the request payload exceeds the
+	// maximum allowed size (6 MB for synchronous invocation, 256 KB for
+	// asynchronous invocation).
+	ErrRequestTooLarge = NewLambdaError(
+		"RequestTooLargeException",
+		"The request payload exceeds the maximum allowed size.",
+		http.StatusRequestEntityTooLarge,
+	)
 )
 
 // NewResourceNotFound creates a new LambdaError for a resource that was not found.

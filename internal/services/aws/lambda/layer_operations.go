@@ -93,9 +93,24 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
+		zipFile, _ := base64.StdEncoding.DecodeString(zipFileStr)
+		codePath, storeErr := s.storeLayerCode(layerName, created.Version, zipFile, reqCtx.GetRegion())
+		if storeErr != nil {
+			return nil, fmt.Errorf("failed to persist layer code: %w", storeErr)
+		}
+		created.CodeLocation = codePath
+		// Persist the updated CodeLocation so it survives server restarts.
+		// created points into layer.Versions, so this call writes the
+		// CodeLocation to PebbleDB alongside the rest of the layer.
+		if err := layers.Update(layer); err != nil {
+			return nil, fmt.Errorf("failed to persist layer code location: %w", err)
+		}
+	}
+
 	return map[string]interface{}{
 		"Content": map[string]interface{}{
-			"Location":   "",
+			"Location":   created.CodeLocation,
 			"CodeSha256": created.CodeSha256,
 			"CodeSize":   created.CodeSize,
 		},
@@ -163,7 +178,7 @@ func (s *LambdaService) GetLayerVersion(ctx context.Context, reqCtx *request.Req
 
 	return map[string]interface{}{
 		"Content": map[string]interface{}{
-			"Location":   "",
+			"Location":   layerVersion.CodeLocation,
 			"CodeSha256": layerVersion.CodeSha256,
 			"CodeSize":   layerVersion.CodeSize,
 		},
@@ -186,11 +201,18 @@ func (s *LambdaService) ListLayers(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
+	compatibleRuntime := request.GetStringParam(req.Parameters, "CompatibleRuntime")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Layers.List(common.ListOptions{Marker: marker, MaxItems: maxItems})
+
+	var result *common.ListResult[lambdastore.Layer]
+	if compatibleRuntime != "" {
+		result, err = store.Layers.ListWithRuntimeFilter(lambdastore.Runtime(compatibleRuntime), common.ListOptions{Marker: marker, MaxItems: maxItems})
+	} else {
+		result, err = store.Layers.List(common.ListOptions{Marker: marker, MaxItems: maxItems})
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +325,7 @@ func (s *LambdaService) GetLayerVersionByArn(ctx context.Context, reqCtx *reques
 
 	return map[string]interface{}{
 		"Content": map[string]interface{}{
-			"Location":   "",
+			"Location":   layerVersion.CodeLocation,
 			"CodeSha256": layerVersion.CodeSha256,
 			"CodeSize":   layerVersion.CodeSize,
 		},

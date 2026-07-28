@@ -683,13 +683,20 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
+	deleteFailures := 0
 	for _, handle := range receiptHandles {
 		if err := p.bus.SQSInvoker().DeleteMessage(ctx, queueURL, handle); err != nil {
 			p.log("failed to delete message", "queue", queueName, "error", err)
+			deleteFailures++
 		}
 	}
 
-	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
+	lastResult := "No errors."
+	if deleteFailures > 0 {
+		lastResult = fmt.Sprintf("%d message(s) failed to delete", deleteFailures)
+	}
+
+	if err := p.esmStore.SetState(mapping.UUID, "Enabled", lastResult); err != nil {
 		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
 	}
 }

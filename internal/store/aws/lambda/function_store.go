@@ -232,34 +232,39 @@ func (s *FunctionStore) PublishVersion(function *Function, description string) (
 	}
 
 	version := &Version{
-		Version:          versionNum,
-		FunctionArn:      s.arnBuilder.FunctionVersionArn(function.FunctionName, versionNum),
-		Role:             function.Role,
-		Runtime:          function.Runtime,
-		Handler:          function.Handler,
-		CodeSize:         function.CodeSize,
-		CodeSha256:       function.CodeSha256,
-		CodeLocation:     function.CodeLocation,
-		ImageUri:         function.ImageUri,
-		Description:      description,
-		Timeout:          function.Timeout,
-		MemorySize:       function.MemorySize,
-		EphemeralStorage: deepCopyEphemeralStorage(function.EphemeralStorage),
-		Architectures:    deepCopyArchitectures(function.Architectures),
-		KMSKeyArn:        function.KMSKeyArn,
-		RevisionId:       uuid.New().String(),
-		State:            StateActive,
-		LastUpdateStatus: LastUpdateStatusSuccessful,
-		LastModified:     time.Now().UTC(),
-		VpcConfig:        deepCopyVpcConfig(function.VpcConfig),
-		Environment:      deepCopyEnvironment(function.Environment),
-		DeadLetterConfig: deepCopyDeadLetterConfig(function.DeadLetterConfig),
-		TracingConfig:    deepCopyTracingConfig(function.TracingConfig),
-		Layers:           deepCopyLayers(function.Layers),
-		SnapStart:        deepCopySnapStart(function.SnapStart),
-		PackageType:      function.PackageType,
-		ContainerID:      function.ContainerID,
-		ContainerImageID: function.ContainerImageID,
+		Version:                  versionNum,
+		FunctionArn:              s.arnBuilder.FunctionVersionArn(function.FunctionName, versionNum),
+		Role:                     function.Role,
+		Runtime:                  function.Runtime,
+		Handler:                  function.Handler,
+		CodeSize:                 function.CodeSize,
+		CodeSha256:               function.CodeSha256,
+		CodeLocation:             function.CodeLocation,
+		ImageUri:                 function.ImageUri,
+		Description:              description,
+		Timeout:                  function.Timeout,
+		MemorySize:               function.MemorySize,
+		EphemeralStorage:         deepCopyEphemeralStorage(function.EphemeralStorage),
+		Architectures:            deepCopyArchitectures(function.Architectures),
+		KMSKeyArn:                function.KMSKeyArn,
+		RevisionId:               uuid.New().String(),
+		State:                    StateActive,
+		LastUpdateStatus:         LastUpdateStatusSuccessful,
+		LastModified:             time.Now().UTC(),
+		VpcConfig:                deepCopyVpcConfig(function.VpcConfig),
+		Environment:              deepCopyEnvironment(function.Environment),
+		DeadLetterConfig:         deepCopyDeadLetterConfig(function.DeadLetterConfig),
+		TracingConfig:            deepCopyTracingConfig(function.TracingConfig),
+		Layers:                   deepCopyLayers(function.Layers),
+		SnapStart:                deepCopySnapStart(function.SnapStart),
+		PackageType:              function.PackageType,
+		SigningProfileVersionArn: function.SigningProfileVersionArn,
+		SigningJobArn:            function.SigningJobArn,
+		LoggingConfig:            deepCopyLoggingConfig(function.LoggingConfig),
+		ImageConfig:              deepCopyImageConfig(function.ImageConfig),
+		FileSystemConfigs:        deepCopyFileSystemConfigs(function.FileSystemConfigs),
+		ContainerID:              function.ContainerID,
+		ContainerImageID:         function.ContainerImageID,
 	}
 
 	function.Versions = append(function.Versions, *version)
@@ -881,6 +886,39 @@ func deepCopyArchitectures(src []string) []string {
 		return nil
 	}
 	dst := make([]string, len(src))
+	copy(dst, src)
+	return dst
+}
+
+func deepCopyLoggingConfig(src *LoggingConfig) *LoggingConfig {
+	if src == nil {
+		return nil
+	}
+	dst := *src
+	return &dst
+}
+
+func deepCopyImageConfig(src *ImageConfig) *ImageConfig {
+	if src == nil {
+		return nil
+	}
+	dst := *src
+	if src.EntryPoint != nil {
+		dst.EntryPoint = make([]string, len(src.EntryPoint))
+		copy(dst.EntryPoint, src.EntryPoint)
+	}
+	if src.Command != nil {
+		dst.Command = make([]string, len(src.Command))
+		copy(dst.Command, src.Command)
+	}
+	return &dst
+}
+
+func deepCopyFileSystemConfigs(src []FileSystemConfig) []FileSystemConfig {
+	if src == nil {
+		return nil
+	}
+	dst := make([]FileSystemConfig, len(src))
 	copy(dst, src)
 	return dst
 }

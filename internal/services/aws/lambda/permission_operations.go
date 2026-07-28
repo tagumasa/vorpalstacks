@@ -44,6 +44,10 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		Resource:  function.FunctionArn,
 	}
 
+	if err := validatePermission(policy); err != nil {
+		return nil, err
+	}
+
 	if err := store.Functions.AddPolicyAtomically(function.FunctionName, policy); err != nil {
 		return nil, err
 	}

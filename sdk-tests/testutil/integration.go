@@ -97,7 +97,7 @@ func (ic *integClients) createLambda(name, roleName string) (string, error) {
 		Runtime:      lambdatypes.RuntimeNodejs22x,
 		Role:         aws.String(intRoleARN(roleName)),
 		Handler:      aws.String("index.handler"),
-		Code:         &lambdatypes.FunctionCode{ZipFile: []byte(echoHandlerCode)},
+		Code:         &lambdatypes.FunctionCode{ZipFile: zipLambdaCode(echoHandlerCode)},
 	})
 	if err != nil {
 		return "", err

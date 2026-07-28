@@ -142,10 +142,35 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if snapMap := request.GetMapParam(req.Parameters, "SnapStart"); snapMap != nil {
-		function.SnapStart = &lambdastore.SnapStart{}
-		if applyOn, ok := snapMap["ApplyOn"].(string); ok {
-			function.SnapStart.ApplyOn = applyOn
+		applyOn, _ := snapMap["ApplyOn"].(string)
+		if applyOn != "PublishedVersions" && applyOn != "None" {
+			return nil, NewInvalidParameter("SnapStart.ApplyOn",
+				"SnapStart.ApplyOn must be 'PublishedVersions' or 'None'")
 		}
+		function.SnapStart = &lambdastore.SnapStart{ApplyOn: applyOn}
+	}
+
+	if logMap := request.GetMapParam(req.Parameters, "LoggingConfig"); logMap != nil {
+		function.LoggingConfig = parseLoggingConfig(logMap)
+	}
+
+	if imgMap := request.GetMapParam(req.Parameters, "ImageConfig"); imgMap != nil {
+		function.ImageConfig = parseImageConfig(imgMap)
+	}
+
+	if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
+		for _, fsc := range fscs {
+			if m, ok := fsc.(map[string]interface{}); ok {
+				function.FileSystemConfigs = append(function.FileSystemConfigs, lambdastore.FileSystemConfig{
+					Arn:            request.GetStringParam(m, "Arn"),
+					LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
+				})
+			}
+		}
+	}
+
+	if req.Parameters["CodeSigningConfigArn"] != nil {
+		function.CodeSigningConfigArn = request.GetStringParam(req.Parameters, "CodeSigningConfigArn")
 	}
 
 	if imageUri, ok := codeMap["ImageUri"].(string); ok && imageUri != "" {

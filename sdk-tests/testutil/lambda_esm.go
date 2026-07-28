@@ -24,7 +24,7 @@ func runLambdaESMTests(
 	esmFuncName := fmt.Sprintf("EsmFunc-%d", time.Now().UnixNano())
 	esmRoleName := fmt.Sprintf("EsmRole-%d", time.Now().UnixNano())
 	esmRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", esmRoleName)
-	esmCode := []byte("exports.handler = async () => { return 1; };")
+	esmCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 	esmEventSourceArn := "arn:aws:sqs:us-east-1:000000000000:test-queue"
 
 	if err := createIAMRole(esmRoleName); err != nil {

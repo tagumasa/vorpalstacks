@@ -14,6 +14,7 @@ import (
 	sqle "github.com/dolthub/go-mysql-server"
 	"github.com/dolthub/go-mysql-server/sql"
 	"vorpalstacks/internal/common/audit"
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
 	appconfig "vorpalstacks/internal/config"
@@ -850,7 +851,18 @@ func (a *App) registerListeners() {
 	}
 
 	if st.lambdaService != nil {
-		lambdaUrlServer := svclambda.NewFunctionURLServer(st.lambdaService, st.accountID, st.region, st.lambdaService)
+		var sigVerifier *auth.SignatureV4Verifier
+		if a.cfg.SignatureVerification {
+			sigVerifier = auth.NewSignatureV4Verifier(
+				auth.NewStaticCredentialsProvider(
+					a.cfg.AccessKeyID,
+					a.cfg.SecretAccessKey,
+					a.cfg.Region,
+					"",
+				),
+			)
+		}
+		lambdaUrlServer := svclambda.NewFunctionURLServer(st.lambdaService, st.accountID, st.region, st.lambdaService, sigVerifier)
 		a.registerListener(listener.ListenerConfig{
 			Name:        "lambda_url",
 			PortKey:     "ports.lambda_url",

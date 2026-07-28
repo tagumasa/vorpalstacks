@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -13,6 +15,18 @@ import (
 )
 
 const lambdaFunctionCode = "exports.handler = async (event) => { return { statusCode: 200, body: 'Hello' }; };"
+
+// zipLambdaCode wraps raw JavaScript source code into a zip archive
+// with entry name "index.js", matching the handler "index.handler".
+// AWS Lambda requires ZipFile to be a base64-encoded zip archive.
+func zipLambdaCode(src string) []byte {
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("index.js")
+	f.Write([]byte(src))
+	w.Close()
+	return buf.Bytes()
+}
 
 func (r *TestRunner) RunLambdaTests() []TestResult {
 	var results []TestResult

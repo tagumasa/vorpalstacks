@@ -34,7 +34,7 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 		"Configuration": config,
 		"Code": map[string]interface{}{
 			"Location":       function.CodeLocation,
-			"RepositoryType": "S3",
+			"RepositoryType": repositoryType(function),
 			"ImageUri":       function.ImageUri,
 		},
 		"Tags": tags,

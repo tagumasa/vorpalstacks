@@ -22,9 +22,24 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 		return nil, NewInvalidParameter("EventSourceArn", "Event source ARN is required")
 	}
 
+	// Validate that the event source ARN refers to a supported service.
+	// Only SQS, Kinesis, and DynamoDB streams are polled by the ESM
+	// poller; accepting other services would silently create a mapping
+	// that never processes events.
+	if err := validateEventSourceArn(eventSourceArn); err != nil {
+		return nil, err
+	}
+
 	batchSize := int32(request.GetIntParam(req.Parameters, "BatchSize"))
 	if batchSize <= 0 {
 		batchSize = 100
+	}
+
+	startingPosition := request.GetStringParam(req.Parameters, "StartingPosition")
+	if startingPosition != "" {
+		if err := validateStartingPosition(startingPosition); err != nil {
+			return nil, err
+		}
 	}
 
 	mapping := &lambdastore.EventSourceMapping{
@@ -34,7 +49,40 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 		BatchSize:                      batchSize,
 		MaximumBatchingWindowInSeconds: int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds")),
 		ParallelizationFactor:          int32(request.GetIntParam(req.Parameters, "ParallelizationFactor")),
-		StartingPosition:               request.GetStringParam(req.Parameters, "StartingPosition"),
+		StartingPosition:               startingPosition,
+		State:                          "Enabled",
+	}
+
+	// Fields shared with UpdateEventSourceMapping — accept on Create
+	// for API surface parity with AWS.
+	if _, ok := req.Parameters["Enabled"]; ok {
+		if request.GetBoolParam(req.Parameters, "Enabled") {
+			mapping.State = "Enabled"
+		} else {
+			mapping.State = "Disabled"
+		}
+	}
+	if _, ok := req.Parameters["MaximumRecordAgeInSeconds"]; ok {
+		mapping.MaximumRecordAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
+	} else {
+		mapping.MaximumRecordAgeInSeconds = -1
+	}
+	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
+		mapping.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+	} else {
+		mapping.MaximumRetryAttempts = -1
+	}
+	if _, ok := req.Parameters["TumblingWindowInSeconds"]; ok {
+		mapping.TumblingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
+	}
+	if _, ok := req.Parameters["BisectBatchOnFunctionError"]; ok {
+		mapping.BisectBatchOnFunctionError = request.GetBoolParam(req.Parameters, "BisectBatchOnFunctionError")
+	}
+	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
+		mapping.DestinationConfig = parseDestinationConfig(destMap)
+	}
+	if filterMap := request.GetMapParam(req.Parameters, "FilterCriteria"); filterMap != nil {
+		mapping.FilterCriteria = parseFilterCriteria(filterMap)
 	}
 
 	store, err := s.store(reqCtx)
@@ -250,12 +298,10 @@ func (s *LambdaService) toEventSourceMapping(m *lambdastore.EventSourceMapping) 
 	if m.FilterCriteria != nil {
 		result["FilterCriteria"] = toFilterCriteria(m.FilterCriteria)
 	}
-	if m.MaximumRecordAgeInSeconds > 0 {
-		result["MaximumRecordAgeInSeconds"] = m.MaximumRecordAgeInSeconds
-	}
-	if m.MaximumRetryAttempts >= 0 {
-		result["MaximumRetryAttempts"] = m.MaximumRetryAttempts
-	}
+	// AWS always includes MaximumRecordAgeInSeconds and MaximumRetryAttempts
+	// in the ESM response (they default to -1 when not explicitly configured).
+	result["MaximumRecordAgeInSeconds"] = m.MaximumRecordAgeInSeconds
+	result["MaximumRetryAttempts"] = m.MaximumRetryAttempts
 	if m.TumblingWindowInSeconds > 0 {
 		result["TumblingWindowInSeconds"] = m.TumblingWindowInSeconds
 	}

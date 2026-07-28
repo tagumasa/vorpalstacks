@@ -101,7 +101,9 @@ func (s *EventSourceStore) Create(mapping *EventSourceMapping) (*EventSourceMapp
 	}
 
 	mapping.LastModified = time.Now().UTC()
-	mapping.State = "Enabled"
+	if mapping.State == "" {
+		mapping.State = "Enabled"
+	}
 	mapping.StateTransitionReason = "User action"
 
 	if err := s.Put(mapping.UUID, mapping); err != nil {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -26,6 +27,12 @@ var (
 
 	_ response.StreamableResponse = (*invokeAsyncResponse)(nil)
 	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
+)
+
+// Payload size limits per AWS Lambda specification.
+const (
+	syncMaxPayloadSize  = 6 * 1024 * 1024 // 6 MB for synchronous invocation
+	asyncMaxPayloadSize = 256 * 1024      // 256 KB for asynchronous invocation
 )
 
 // Invoke synchronously invokes a Lambda function with the given payload.
@@ -51,12 +58,17 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 
 	invocationType := request.GetStringParam(req.Parameters, "InvocationType")
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+	// DryRun: AWS returns 204 without invoking the function. The
+	// caller has already been authorised by this point, so we simply
+	// acknowledge the request.
+	if invocationType == "DryRun" {
+		return &lambdaInvokeResponse{result: &lambdastore.InvocationResult{StatusCode: 204}}, nil
 	}
 
 	if invocationType == "Event" {
+		if len(payload) > asyncMaxPayloadSize {
+			return nil, ErrRequestTooLarge
+		}
 		region := reqCtx.GetRegion()
 		functionCopy := deepCopyFunction(function)
 		verCopy := deepCopyVersion(ver)
@@ -81,6 +93,16 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 			s.invokeAsyncWithRetry(asyncCtx, functionCopy, verCopy, asyncStore, region, payload, qualifier)
 		}()
 		return &lambdaInvokeResponse{result: &lambdastore.InvocationResult{StatusCode: 202}}, nil
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Synchronous invocation payload limit: 6 MB.
+	if len(payload) > syncMaxPayloadSize {
+		return nil, ErrRequestTooLarge
 	}
 
 	logType := request.GetStringParam(req.Parameters, "LogType")
@@ -148,6 +170,10 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	var payload []byte
 	if payloadStr, ok := req.Parameters["Payload"].(string); ok {
 		payload = []byte(payloadStr)
+	}
+
+	if len(payload) > syncMaxPayloadSize {
+		return nil, ErrRequestTooLarge
 	}
 
 	store, err := s.store(reqCtx)
@@ -246,6 +272,10 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 	var payload []byte
 	if payloadStr, ok := req.Parameters["Payload"].(string); ok {
 		payload = []byte(payloadStr)
+	}
+
+	if len(payload) > asyncMaxPayloadSize {
+		return nil, ErrRequestTooLarge
 	}
 
 	region := reqCtx.GetRegion()
@@ -527,6 +557,18 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 	}
 
 	alias, err := store.Functions.UpdateAliasAtomically(functionName, aliasName, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
+		if functionVersion != "" && functionVersion != "$LATEST" {
+			versionExists := false
+			for _, v := range fn.Versions {
+				if v.Version == functionVersion {
+					versionExists = true
+					break
+				}
+			}
+			if !versionExists {
+				return NewResourceNotFound("FunctionVersion", functionVersion)
+			}
+		}
 		if description != "" {
 			existing.Description = description
 		}
@@ -565,14 +607,50 @@ func (s *LambdaService) ListAliases(ctx context.Context, reqCtx *request.Request
 		return nil, ErrResourceNotFound
 	}
 
-	aliases := make([]interface{}, 0)
-	for _, a := range function.Aliases {
-		aliases = append(aliases, s.toAliasResponse(&a))
+	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
+	if maxItems <= 0 {
+		maxItems = 50
+	}
+	marker := request.GetStringParam(req.Parameters, "Marker")
+
+	// Apply pagination to the alias slice. Marker is the alias name to
+	// start after; we return MaxItems aliases and set NextMarker when
+	// truncated.
+	// AWS returns aliases sorted by name. Work on a sorted copy so that
+	// pagination (marker-based) is deterministic and matches AWS ordering.
+	allAliases := make([]lambdastore.Alias, len(function.Aliases))
+	copy(allAliases, function.Aliases)
+	sort.Slice(allAliases, func(i, j int) bool {
+		return allAliases[i].Name < allAliases[j].Name
+	})
+	startIdx := 0
+	if marker != "" {
+		for i, a := range allAliases {
+			if a.Name == marker {
+				startIdx = i + 1
+				break
+			}
+		}
 	}
 
-	return map[string]interface{}{
+	endIdx := startIdx + maxItems
+	if endIdx > len(allAliases) {
+		endIdx = len(allAliases)
+	}
+
+	aliases := make([]interface{}, 0, endIdx-startIdx)
+	for i := startIdx; i < endIdx; i++ {
+		aliases = append(aliases, s.toAliasResponse(&allAliases[i]))
+	}
+
+	resp := map[string]interface{}{
 		"Aliases": aliases,
-	}, nil
+	}
+	if endIdx < len(allAliases) {
+		resp["NextMarker"] = allAliases[endIdx-1].Name
+	}
+
+	return resp, nil
 }
 
 func (s *LambdaService) toAliasResponse(a *lambdastore.Alias) map[string]interface{} {

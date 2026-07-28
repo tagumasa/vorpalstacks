@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/server/fqdnrouter"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -27,16 +28,20 @@ type FunctionURLServer struct {
 	region        string
 	storeProvider FunctionStoreProvider
 	lambdaInvoker common.LambdaInvoker
+	sigVerifier   *auth.SignatureV4Verifier
 }
 
 // NewFunctionURLServer creates a new FunctionURLServer backed by the shared
-// Lambda service store cache.
-func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker common.LambdaInvoker) *FunctionURLServer {
+// Lambda service store cache. When sigVerifier is non-nil, AWS_IAM auth
+// function URLs will verify the incoming SigV4 signature; when nil,
+// AWS_IAM requests are allowed without verification (test mode).
+func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker common.LambdaInvoker, sigVerifier *auth.SignatureV4Verifier) *FunctionURLServer {
 	return &FunctionURLServer{
 		storeProvider: storeProvider,
 		accountID:     accountID,
 		region:        region,
 		lambdaInvoker: invoker,
+		sigVerifier:   sigVerifier,
 	}
 }
 
@@ -64,8 +69,12 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 	}
 
 	if urlConfig.AuthType == "AWS_IAM" {
-		http.Error(w, `{"message":"AWS_IAM auth not supported in this mode"}`, http.StatusUnauthorized)
-		return
+		if s.sigVerifier != nil {
+			if err := s.sigVerifier.VerifyRequest(r, "lambda", s.region); err != nil {
+				http.Error(w, `{"message":"Forbidden: Invalid signature"}`, http.StatusForbidden)
+				return
+			}
+		}
 	}
 
 	if r.Method == http.MethodOptions {

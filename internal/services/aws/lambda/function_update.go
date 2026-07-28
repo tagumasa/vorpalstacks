@@ -223,6 +223,26 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 			fn.TracingConfig = trace
 		}
 
+		if logMap := request.GetMapParam(req.Parameters, "LoggingConfig"); logMap != nil {
+			fn.LoggingConfig = parseLoggingConfig(logMap)
+		}
+
+		if imgMap := request.GetMapParam(req.Parameters, "ImageConfig"); imgMap != nil {
+			fn.ImageConfig = parseImageConfig(imgMap)
+		}
+
+		if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
+			fn.FileSystemConfigs = nil
+			for _, fsc := range fscs {
+				if m, ok := fsc.(map[string]interface{}); ok {
+					fn.FileSystemConfigs = append(fn.FileSystemConfigs, lambdastore.FileSystemConfig{
+						Arn:            request.GetStringParam(m, "Arn"),
+						LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
+					})
+				}
+			}
+		}
+
 		if layers, ok := req.Parameters["Layers"].([]interface{}); ok {
 			fn.Layers = make([]lambdastore.LayerReference, 0, len(layers))
 			for _, l := range layers {

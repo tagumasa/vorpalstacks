@@ -290,6 +290,26 @@ func (s *LambdaService) initDataDir() string {
 	return s.dataDir
 }
 
+// storeLayerCode persists a layer version's zip archive to disk so it
+// can be retrieved later via GetLayerVersion for download by clients.
+func (s *LambdaService) storeLayerCode(layerName string, versionNum int64, code []byte, region string) (string, error) {
+	dataDir := s.initDataDir()
+
+	safeLayer := naming.SanitizePathComponent(layerName)
+	safeRegion := naming.SanitizePathComponent(region)
+	codeDir := fmt.Sprintf("%s/%s/layers/%s/%d", dataDir, safeRegion, safeLayer, versionNum)
+	if err := os.MkdirAll(codeDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create layer code directory: %w", err)
+	}
+
+	codePath := fmt.Sprintf("%s/code.zip", codeDir)
+	if err := os.WriteFile(codePath, code, 0644); err != nil {
+		return "", fmt.Errorf("failed to write layer code file: %w", err)
+	}
+
+	return codePath, nil
+}
+
 func (s *LambdaService) storeCode(functionName, version string, code []byte, region string) (string, int64, error) {
 	dataDir := s.initDataDir()
 
@@ -458,41 +478,43 @@ func (s *LambdaService) copyCodeToContainer(containerID string, code []byte, run
 	ctx := context.Background()
 
 	reader, err := zip.NewReader(bytes.NewReader(code), int64(len(code)))
-	if err == nil {
-		for _, f := range reader.File {
-			if f.FileInfo().IsDir() {
-				continue
-			}
+	if err != nil {
+		return fmt.Errorf("invalid deployment package: failed to read zip: %w", err)
+	}
 
-			rc, err := f.Open()
-			if err != nil {
-				return fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
-			}
-
-			data, err := io.ReadAll(rc)
-			rc.Close()
-			if err != nil {
-				return fmt.Errorf("failed to read zip entry %s: %w", f.Name, err)
-			}
-
-			destPath := fmt.Sprintf("/var/task/%s", f.Name)
-			if err := s.dockerClient.CreateFileInContainer(ctx, containerID, destPath, data); err != nil {
-				return fmt.Errorf("failed to copy %s to container: %w", f.Name, err)
-			}
+	for _, f := range reader.File {
+		if f.FileInfo().IsDir() {
+			continue
 		}
-		return nil
-	}
 
-	fallbackFile := "index.js"
-	if strings.HasPrefix(string(runtime), "python") {
-		fallbackFile = "index.py"
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
+		}
+
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			return fmt.Errorf("failed to read zip entry %s: %w", f.Name, err)
+		}
+
+		destPath := fmt.Sprintf("/var/task/%s", f.Name)
+		if err := s.dockerClient.CreateFileInContainer(ctx, containerID, destPath, data); err != nil {
+			return fmt.Errorf("failed to copy %s to container: %w", f.Name, err)
+		}
 	}
-	return s.dockerClient.CreateFileInContainer(ctx, containerID, fmt.Sprintf("/var/task/%s", fallbackFile), code)
+	return nil
 }
 
 func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string, payload []byte, logType string) (*lambdastore.InvocationResult, error) {
 	// Enforce reserved concurrency limit if configured.
-	if function.ReservedConcurrency != nil && *function.ReservedConcurrency > 0 {
+	// ReservedConcurrency=0 means the function is effectively paused
+	// (zero concurrent executions allowed); any non-nil value must be
+	// enforced.
+	if function.ReservedConcurrency != nil {
+		if *function.ReservedConcurrency == 0 {
+			return nil, ErrTooManyRequests
+		}
 		counter := s.getInflightCounter(function.FunctionArn)
 		for {
 			current := counter.Load()
@@ -796,6 +818,12 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, fmt.Errorf("failed to list functions: %w", err)
 	}
+
+	var totalCodeSize int64
+	for _, fn := range result {
+		totalCodeSize += fn.CodeSize
+	}
+
 	return map[string]interface{}{
 		"AccountLimit": map[string]interface{}{
 			"TotalCodeSize":                  80530636800,
@@ -805,7 +833,7 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 			"UnreservedConcurrentExecutions": 1000,
 		},
 		"AccountUsage": map[string]interface{}{
-			"TotalCodeSize": 0,
+			"TotalCodeSize": totalCodeSize,
 			"FunctionCount": len(result),
 		},
 	}, nil

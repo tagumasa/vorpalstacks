@@ -42,7 +42,7 @@ func runLambdaFunctionTests(
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(roleARN),
 			Handler:      aws.String("index.handler"),
-			Code:         &types.FunctionCode{ZipFile: []byte(lambdaFunctionCode)},
+			Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
 		})
 		if err != nil {
 			return err
@@ -146,7 +146,7 @@ func runLambdaFunctionTests(
 	}))
 
 	results = append(results, r.RunTest("lambda", "UpdateFunctionCode", func() error {
-		newCode := []byte("exports.handler = async (event) => { return { statusCode: 200, body: 'Updated' }; };")
+		newCode := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: 'Updated' }; };")
 		resp, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
 			FunctionName: aws.String(functionName),
 			ZipFile:      newCode,
@@ -329,7 +329,7 @@ func runLambdaFunctionTests(
 		dupName := fmt.Sprintf("DupFunc-%d", time.Now().UnixNano())
 		dupRoleName := fmt.Sprintf("DupRole-%d", time.Now().UnixNano())
 		dupRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", dupRoleName)
-		dupCode := []byte("exports.handler = async () => { return 1; };")
+		dupCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		if err := createIAMRole(dupRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -387,7 +387,7 @@ func runLambdaFunctionTests(
 		invFunc := fmt.Sprintf("InvFunc-%d", time.Now().UnixNano())
 		invRoleName := fmt.Sprintf("InvRole-%d", time.Now().UnixNano())
 		invRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invRoleName)
-		invCode := []byte("exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({result: 'ok'}) }; };")
+		invCode := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({result: 'ok'}) }; };")
 		if err := createIAMRole(invRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -449,7 +449,7 @@ func runLambdaFunctionTests(
 		gfcFunc := fmt.Sprintf("GfcFunc-%d", time.Now().UnixNano())
 		gfcRoleName := fmt.Sprintf("GfcRole-%d", time.Now().UnixNano())
 		gfcRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", gfcRoleName)
-		gfcCode := []byte("exports.handler = async () => { return 1; };")
+		gfcCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		gfcDesc := "Test description for verification"
 		if err := createIAMRole(gfcRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
@@ -502,7 +502,7 @@ func runLambdaFunctionTests(
 		lfFunc := fmt.Sprintf("LfFunc-%d", time.Now().UnixNano())
 		lfRoleName := fmt.Sprintf("LfRole-%d", time.Now().UnixNano())
 		lfRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", lfRoleName)
-		lfCode := []byte("exports.handler = async () => { return 1; };")
+		lfCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		if err := createIAMRole(lfRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -547,7 +547,7 @@ func runLambdaFunctionTests(
 		ucFunc := fmt.Sprintf("UcFunc-%d", time.Now().UnixNano())
 		ucRoleName := fmt.Sprintf("UcRole-%d", time.Now().UnixNano())
 		ucRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", ucRoleName)
-		ucCode := []byte("exports.handler = async () => { return 1; };")
+		ucCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		if err := createIAMRole(ucRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -607,7 +607,7 @@ func runLambdaFunctionTests(
 				Runtime:      types.RuntimeNodejs22x,
 				Role:         aws.String(roleARN),
 				Handler:      aws.String("index.handler"),
-				Code:         &types.FunctionCode{ZipFile: []byte(lambdaFunctionCode)},
+				Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
 			})
 			if err != nil {
 				return fmt.Errorf("create function %s: %v", name, err)

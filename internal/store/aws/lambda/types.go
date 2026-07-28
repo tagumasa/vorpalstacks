@@ -69,44 +69,52 @@ const (
 
 // Function represents a Lambda function configuration and metadata.
 type Function struct {
-	FunctionName             string             `json:"function_name"`
-	FunctionArn              string             `json:"function_arn"`
-	Runtime                  Runtime            `json:"runtime"`
-	Role                     string             `json:"role"`
-	Handler                  string             `json:"handler"`
-	CodeSize                 int64              `json:"code_size"`
-	CodeSha256               string             `json:"code_sha256"`
-	CodeLocation             string             `json:"code_location"`
-	ImageUri                 string             `json:"image_uri,omitempty"`
-	SourceCodeHash           string             `json:"source_code_hash,omitempty"`
-	Description              string             `json:"description,omitempty"`
-	Timeout                  int32              `json:"timeout"`
-	MemorySize               int32              `json:"memory_size"`
-	EphemeralStorage         *EphemeralStorage  `json:"ephemeral_storage,omitempty"`
-	Publish                  bool               `json:"publish"`
-	Architectures            []string           `json:"architectures,omitempty"`
-	KMSKeyArn                string             `json:"kms_key_arn,omitempty"`
-	RevisionId               string             `json:"revision_id"`
-	State                    State              `json:"state"`
-	StateReason              string             `json:"state_reason,omitempty"`
-	StateReasonCode          string             `json:"state_reason_code,omitempty"`
-	LastUpdateStatus         LastUpdateStatus   `json:"last_update_status"`
-	LastUpdateReason         string             `json:"last_update_reason,omitempty"`
-	LastUpdateStatusReason   string             `json:"last_update_status_reason,omitempty"`
-	LastModified             time.Time          `json:"last_modified"`
-	LastModifiedUser         string             `json:"last_modified_user,omitempty"`
-	VpcConfig                *VpcConfig         `json:"vpc_config,omitempty"`
-	Environment              *Environment       `json:"environment,omitempty"`
-	DeadLetterConfig         *DeadLetterConfig  `json:"dead_letter_config,omitempty"`
-	TracingConfig            *TracingConfig     `json:"tracing_config,omitempty"`
-	Layers                   []LayerReference   `json:"layers,omitempty"`
-	Tags                     []types.Tag        `json:"tags,omitempty"`
-	SnapStart                *SnapStart         `json:"snap_start,omitempty"`
-	PackageType              string             `json:"package_type"`
-	SigningProfileVersionArn string             `json:"signing_profile_version_arn,omitempty"`
-	SigningJobArn            string             `json:"signing_job_arn,omitempty"`
-	UrlConfig                *FunctionUrlConfig `json:"url_config,omitempty"`
-	CodeSigningConfigArn     string             `json:"code_signing_config_arn,omitempty"`
+	FunctionName               string                 `json:"function_name"`
+	FunctionArn                string                 `json:"function_arn"`
+	Runtime                    Runtime                `json:"runtime"`
+	Role                       string                 `json:"role"`
+	Handler                    string                 `json:"handler"`
+	CodeSize                   int64                  `json:"code_size"`
+	CodeSha256                 string                 `json:"code_sha256"`
+	CodeLocation               string                 `json:"code_location"`
+	ImageUri                   string                 `json:"image_uri,omitempty"`
+	SourceCodeHash             string                 `json:"source_code_hash,omitempty"`
+	Description                string                 `json:"description,omitempty"`
+	Timeout                    int32                  `json:"timeout"`
+	MemorySize                 int32                  `json:"memory_size"`
+	EphemeralStorage           *EphemeralStorage      `json:"ephemeral_storage,omitempty"`
+	Publish                    bool                   `json:"publish"`
+	Architectures              []string               `json:"architectures,omitempty"`
+	KMSKeyArn                  string                 `json:"kms_key_arn,omitempty"`
+	RevisionId                 string                 `json:"revision_id"`
+	State                      State                  `json:"state"`
+	StateReason                string                 `json:"state_reason,omitempty"`
+	StateReasonCode            string                 `json:"state_reason_code,omitempty"`
+	LastUpdateStatus           LastUpdateStatus       `json:"last_update_status"`
+	LastUpdateReason           string                 `json:"last_update_reason,omitempty"`
+	LastUpdateStatusReason     string                 `json:"last_update_status_reason,omitempty"`
+	LastUpdateStatusReasonCode string                 `json:"last_update_status_reason_code,omitempty"`
+	LastModified               time.Time              `json:"last_modified"`
+	LastModifiedUser           string                 `json:"last_modified_user,omitempty"`
+	VpcConfig                  *VpcConfig             `json:"vpc_config,omitempty"`
+	Environment                *Environment           `json:"environment,omitempty"`
+	DeadLetterConfig           *DeadLetterConfig      `json:"dead_letter_config,omitempty"`
+	TracingConfig              *TracingConfig         `json:"tracing_config,omitempty"`
+	Layers                     []LayerReference       `json:"layers,omitempty"`
+	Tags                       []types.Tag            `json:"tags,omitempty"`
+	SnapStart                  *SnapStart             `json:"snap_start,omitempty"`
+	PackageType                string                 `json:"package_type"`
+	SigningProfileVersionArn   string                 `json:"signing_profile_version_arn,omitempty"`
+	SigningJobArn              string                 `json:"signing_job_arn,omitempty"`
+	UrlConfig                  *FunctionUrlConfig     `json:"url_config,omitempty"`
+	CodeSigningConfigArn       string                 `json:"code_signing_config_arn,omitempty"`
+	LoggingConfig              *LoggingConfig         `json:"logging_config,omitempty"`
+	ImageConfig                *ImageConfig           `json:"image_config,omitempty"`
+	FileSystemConfigs          []FileSystemConfig     `json:"file_system_configs,omitempty"`
+	TenancyConfig              *TenancyConfig         `json:"tenancy_config,omitempty"`
+	CapacityProviderConfig     map[string]interface{} `json:"capacity_provider_config,omitempty"`
+	RuntimeVersionConfig       *RuntimeVersionConfig  `json:"runtime_version_config,omitempty"`
+	DurableConfig              map[string]interface{} `json:"durable_config,omitempty"`
 
 	Versions       []Version        `json:"versions,omitempty"`
 	Aliases        []Alias          `json:"aliases,omitempty"`
@@ -127,36 +135,39 @@ type Function struct {
 
 // Version represents a published version of a Lambda function.
 type Version struct {
-	Version                  string            `json:"version"`
-	FunctionArn              string            `json:"function_arn"`
-	Runtime                  Runtime           `json:"runtime"`
-	Role                     string            `json:"role"`
-	Handler                  string            `json:"handler"`
-	CodeSize                 int64             `json:"code_size"`
-	CodeSha256               string            `json:"code_sha256"`
-	CodeLocation             string            `json:"code_location"`
-	ImageUri                 string            `json:"image_uri,omitempty"`
-	Description              string            `json:"description,omitempty"`
-	Timeout                  int32             `json:"timeout"`
-	MemorySize               int32             `json:"memory_size"`
-	EphemeralStorage         *EphemeralStorage `json:"ephemeral_storage,omitempty"`
-	Architectures            []string          `json:"architectures,omitempty"`
-	KMSKeyArn                string            `json:"kms_key_arn,omitempty"`
-	RevisionId               string            `json:"revision_id"`
-	State                    State             `json:"state"`
-	StateReason              string            `json:"state_reason,omitempty"`
-	StateReasonCode          string            `json:"state_reason_code,omitempty"`
-	LastUpdateStatus         LastUpdateStatus  `json:"last_update_status"`
-	LastModified             time.Time         `json:"last_modified"`
-	VpcConfig                *VpcConfig        `json:"vpc_config,omitempty"`
-	Environment              *Environment      `json:"environment,omitempty"`
-	DeadLetterConfig         *DeadLetterConfig `json:"dead_letter_config,omitempty"`
-	TracingConfig            *TracingConfig    `json:"tracing_config,omitempty"`
-	Layers                   []LayerReference  `json:"layers,omitempty"`
-	SnapStart                *SnapStart        `json:"snap_start,omitempty"`
-	PackageType              string            `json:"package_type"`
-	SigningProfileVersionArn string            `json:"signing_profile_version_arn,omitempty"`
-	SigningJobArn            string            `json:"signing_job_arn,omitempty"`
+	Version                  string             `json:"version"`
+	FunctionArn              string             `json:"function_arn"`
+	Runtime                  Runtime            `json:"runtime"`
+	Role                     string             `json:"role"`
+	Handler                  string             `json:"handler"`
+	CodeSize                 int64              `json:"code_size"`
+	CodeSha256               string             `json:"code_sha256"`
+	CodeLocation             string             `json:"code_location"`
+	ImageUri                 string             `json:"image_uri,omitempty"`
+	Description              string             `json:"description,omitempty"`
+	Timeout                  int32              `json:"timeout"`
+	MemorySize               int32              `json:"memory_size"`
+	EphemeralStorage         *EphemeralStorage  `json:"ephemeral_storage,omitempty"`
+	Architectures            []string           `json:"architectures,omitempty"`
+	KMSKeyArn                string             `json:"kms_key_arn,omitempty"`
+	RevisionId               string             `json:"revision_id"`
+	State                    State              `json:"state"`
+	StateReason              string             `json:"state_reason,omitempty"`
+	StateReasonCode          string             `json:"state_reason_code,omitempty"`
+	LastUpdateStatus         LastUpdateStatus   `json:"last_update_status"`
+	LastModified             time.Time          `json:"last_modified"`
+	VpcConfig                *VpcConfig         `json:"vpc_config,omitempty"`
+	Environment              *Environment       `json:"environment,omitempty"`
+	DeadLetterConfig         *DeadLetterConfig  `json:"dead_letter_config,omitempty"`
+	TracingConfig            *TracingConfig     `json:"tracing_config,omitempty"`
+	Layers                   []LayerReference   `json:"layers,omitempty"`
+	SnapStart                *SnapStart         `json:"snap_start,omitempty"`
+	PackageType              string             `json:"package_type"`
+	SigningProfileVersionArn string             `json:"signing_profile_version_arn,omitempty"`
+	SigningJobArn            string             `json:"signing_job_arn,omitempty"`
+	LoggingConfig            *LoggingConfig     `json:"logging_config,omitempty"`
+	ImageConfig              *ImageConfig       `json:"image_config,omitempty"`
+	FileSystemConfigs        []FileSystemConfig `json:"file_system_configs,omitempty"`
 
 	ContainerID      string `json:"container_id,omitempty"`
 	ContainerImageID string `json:"container_image_id,omitempty"`
@@ -223,6 +234,39 @@ type TracingConfig struct {
 type SnapStart struct {
 	ApplyOn            string `json:"apply_on,omitempty"`
 	OptimizationStatus string `json:"optimization_status,omitempty"`
+}
+
+// LoggingConfig configures advanced Lambda logging settings.
+type LoggingConfig struct {
+	LogFormat           string `json:"log_format,omitempty"`
+	ApplicationLogLevel string `json:"application_log_level,omitempty"`
+	SystemLogLevel      string `json:"system_log_level,omitempty"`
+	LogGroup            string `json:"log_group,omitempty"`
+}
+
+// ImageConfig configures container image entry point and command
+// overrides for Lambda functions with PackageType=Image.
+type ImageConfig struct {
+	EntryPoint       []string `json:"entry_point,omitempty"`
+	Command          []string `json:"command,omitempty"`
+	WorkingDirectory string   `json:"working_directory,omitempty"`
+}
+
+// FileSystemConfig describes an EFS file system mount configuration.
+type FileSystemConfig struct {
+	Arn            string `json:"arn,omitempty"`
+	LocalMountPath string `json:"local_mount_path,omitempty"`
+}
+
+// TenancyConfig configures the tenancy isolation mode for a function.
+type TenancyConfig struct {
+	TenantIsolationMode string `json:"tenant_isolation_mode,omitempty"`
+}
+
+// RuntimeVersionConfig records the runtime version assigned to a function.
+type RuntimeVersionConfig struct {
+	RuntimeVersionArn string                 `json:"runtime_version_arn,omitempty"`
+	Error             map[string]interface{} `json:"error,omitempty"`
 }
 
 // FunctionUrlConfig represents the configuration for a Lambda function URL.

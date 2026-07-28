@@ -77,99 +77,118 @@ type SnapStart struct {
 // configFields holds the common fields shared between Function and Version
 // configurations, used to eliminate copy-paste in response building.
 type configFields struct {
-	FunctionName     string
-	FunctionArn      string
-	Role             string
-	CodeSize         int64
-	Description      string
-	Timeout          int32
-	MemorySize       int32
-	LastModified     time.Time
-	CodeSha256       string
-	Version          string
-	RevisionId       string
-	State            string
-	StateReason      string
-	StateReasonCode  string
-	LastUpdateStatus string
-	PackageType      string
-	Runtime          string
-	Handler          string
-	KMSKeyArn        string
-	ImageUri         string
-	EphemeralStorage *lambdastore.EphemeralStorage
-	VpcConfig        *lambdastore.VpcConfig
-	Environment      *lambdastore.Environment
-	TracingConfig    *lambdastore.TracingConfig
-	DeadLetterConfig *lambdastore.DeadLetterConfig
-	SnapStart        *lambdastore.SnapStart
-	Architectures    []string
-	Layers           []lambdastore.LayerReference
+	FunctionName               string
+	FunctionArn                string
+	Role                       string
+	CodeSize                   int64
+	Description                string
+	Timeout                    int32
+	MemorySize                 int32
+	LastModified               time.Time
+	CodeSha256                 string
+	Version                    string
+	RevisionId                 string
+	State                      string
+	StateReason                string
+	StateReasonCode            string
+	LastUpdateStatus           string
+	LastUpdateStatusReason     string
+	LastUpdateStatusReasonCode string
+	PackageType                string
+	Runtime                    string
+	Handler                    string
+	KMSKeyArn                  string
+	ImageUri                   string
+	EphemeralStorage           *lambdastore.EphemeralStorage
+	VpcConfig                  *lambdastore.VpcConfig
+	Environment                *lambdastore.Environment
+	TracingConfig              *lambdastore.TracingConfig
+	DeadLetterConfig           *lambdastore.DeadLetterConfig
+	SnapStart                  *lambdastore.SnapStart
+	Architectures              []string
+	Layers                     []lambdastore.LayerReference
+	LoggingConfig              *lambdastore.LoggingConfig
+	ImageConfig                *lambdastore.ImageConfig
+	FileSystemConfigs          []lambdastore.FileSystemConfig
+	SigningProfileVersionArn   string
+	SigningJobArn              string
 }
 
 func functionToConfigFields(fn *lambdastore.Function) configFields {
 	return configFields{
-		FunctionName:     fn.FunctionName,
-		FunctionArn:      fn.FunctionArn,
-		Role:             fn.Role,
-		CodeSize:         fn.CodeSize,
-		Description:      fn.Description,
-		Timeout:          fn.Timeout,
-		MemorySize:       fn.MemorySize,
-		LastModified:     fn.LastModified,
-		CodeSha256:       fn.CodeSha256,
-		Version:          fn.CurrentVersion,
-		RevisionId:       fn.RevisionId,
-		State:            string(fn.State),
-		StateReason:      fn.StateReason,
-		StateReasonCode:  fn.StateReasonCode,
-		LastUpdateStatus: string(fn.LastUpdateStatus),
-		PackageType:      fn.PackageType,
-		Runtime:          string(fn.Runtime),
-		Handler:          fn.Handler,
-		KMSKeyArn:        fn.KMSKeyArn,
-		ImageUri:         fn.ImageUri,
-		EphemeralStorage: fn.EphemeralStorage,
-		VpcConfig:        fn.VpcConfig,
-		Environment:      fn.Environment,
-		TracingConfig:    fn.TracingConfig,
-		DeadLetterConfig: fn.DeadLetterConfig,
-		SnapStart:        fn.SnapStart,
-		Architectures:    fn.Architectures,
-		Layers:           fn.Layers,
+		FunctionName:               fn.FunctionName,
+		FunctionArn:                fn.FunctionArn,
+		Role:                       fn.Role,
+		CodeSize:                   fn.CodeSize,
+		Description:                fn.Description,
+		Timeout:                    fn.Timeout,
+		MemorySize:                 fn.MemorySize,
+		LastModified:               fn.LastModified,
+		CodeSha256:                 fn.CodeSha256,
+		Version:                    fn.CurrentVersion,
+		RevisionId:                 fn.RevisionId,
+		State:                      string(fn.State),
+		StateReason:                fn.StateReason,
+		StateReasonCode:            fn.StateReasonCode,
+		LastUpdateStatus:           string(fn.LastUpdateStatus),
+		LastUpdateStatusReason:     fn.LastUpdateStatusReason,
+		LastUpdateStatusReasonCode: fn.LastUpdateStatusReasonCode,
+		PackageType:                fn.PackageType,
+		Runtime:                    string(fn.Runtime),
+		Handler:                    fn.Handler,
+		KMSKeyArn:                  fn.KMSKeyArn,
+		ImageUri:                   fn.ImageUri,
+		EphemeralStorage:           fn.EphemeralStorage,
+		VpcConfig:                  fn.VpcConfig,
+		Environment:                fn.Environment,
+		TracingConfig:              fn.TracingConfig,
+		DeadLetterConfig:           fn.DeadLetterConfig,
+		SnapStart:                  fn.SnapStart,
+		Architectures:              fn.Architectures,
+		Layers:                     fn.Layers,
+		LoggingConfig:              fn.LoggingConfig,
+		ImageConfig:                fn.ImageConfig,
+		FileSystemConfigs:          fn.FileSystemConfigs,
+		SigningProfileVersionArn:   fn.SigningProfileVersionArn,
+		SigningJobArn:              fn.SigningJobArn,
 	}
 }
 
 func versionToConfigFields(v *lambdastore.Version) configFields {
 	return configFields{
-		FunctionName:     arn.ExtractFunctionNameFromARN(v.FunctionArn),
-		FunctionArn:      v.FunctionArn,
-		Role:             v.Role,
-		CodeSize:         v.CodeSize,
-		Description:      v.Description,
-		Timeout:          v.Timeout,
-		MemorySize:       v.MemorySize,
-		LastModified:     v.LastModified,
-		CodeSha256:       v.CodeSha256,
-		Version:          v.Version,
-		RevisionId:       v.RevisionId,
-		State:            string(v.State),
-		StateReason:      v.StateReason,
-		StateReasonCode:  v.StateReasonCode,
-		LastUpdateStatus: string(v.LastUpdateStatus),
-		PackageType:      v.PackageType,
-		Runtime:          string(v.Runtime),
-		Handler:          v.Handler,
-		KMSKeyArn:        v.KMSKeyArn,
-		ImageUri:         v.ImageUri,
-		EphemeralStorage: v.EphemeralStorage,
-		VpcConfig:        v.VpcConfig,
-		Environment:      v.Environment,
-		TracingConfig:    v.TracingConfig,
-		DeadLetterConfig: v.DeadLetterConfig,
-		SnapStart:        v.SnapStart,
-		Architectures:    v.Architectures,
-		Layers:           v.Layers,
+		FunctionName:             arn.ExtractFunctionNameFromARN(v.FunctionArn),
+		FunctionArn:              v.FunctionArn,
+		Role:                     v.Role,
+		CodeSize:                 v.CodeSize,
+		Description:              v.Description,
+		Timeout:                  v.Timeout,
+		MemorySize:               v.MemorySize,
+		LastModified:             v.LastModified,
+		CodeSha256:               v.CodeSha256,
+		Version:                  v.Version,
+		RevisionId:               v.RevisionId,
+		State:                    string(v.State),
+		StateReason:              v.StateReason,
+		StateReasonCode:          v.StateReasonCode,
+		LastUpdateStatus:         string(v.LastUpdateStatus),
+		PackageType:              v.PackageType,
+		Runtime:                  string(v.Runtime),
+		Handler:                  v.Handler,
+		KMSKeyArn:                v.KMSKeyArn,
+		ImageUri:                 v.ImageUri,
+		EphemeralStorage:         v.EphemeralStorage,
+		VpcConfig:                v.VpcConfig,
+		Environment:              v.Environment,
+		TracingConfig:            v.TracingConfig,
+		DeadLetterConfig:         v.DeadLetterConfig,
+		SnapStart:                v.SnapStart,
+		Architectures:            v.Architectures,
+		Layers:                   v.Layers,
+		LoggingConfig:            v.LoggingConfig,
+		ImageConfig:              v.ImageConfig,
+		FileSystemConfigs:        v.FileSystemConfigs,
+		SigningProfileVersionArn: v.SigningProfileVersionArn,
+		SigningJobArn:            v.SigningJobArn,
 	}
 }
 
@@ -196,6 +215,12 @@ func buildConfigMap(f configFields) map[string]interface{} {
 	}
 	if f.StateReasonCode != "" {
 		config["StateReasonCode"] = f.StateReasonCode
+	}
+	if f.LastUpdateStatusReason != "" {
+		config["LastUpdateStatusReason"] = f.LastUpdateStatusReason
+	}
+	if f.LastUpdateStatusReasonCode != "" {
+		config["LastUpdateStatusReasonCode"] = f.LastUpdateStatusReasonCode
 	}
 
 	if f.PackageType != "Image" {
@@ -269,6 +294,59 @@ func buildConfigMap(f configFields) map[string]interface{} {
 
 	if f.ImageUri != "" {
 		config["ImageUri"] = f.ImageUri
+	}
+
+	if f.LoggingConfig != nil {
+		lc := map[string]interface{}{}
+		if f.LoggingConfig.LogFormat != "" {
+			lc["LogFormat"] = f.LoggingConfig.LogFormat
+		}
+		if f.LoggingConfig.ApplicationLogLevel != "" {
+			lc["ApplicationLogLevel"] = f.LoggingConfig.ApplicationLogLevel
+		}
+		if f.LoggingConfig.SystemLogLevel != "" {
+			lc["SystemLogLevel"] = f.LoggingConfig.SystemLogLevel
+		}
+		if f.LoggingConfig.LogGroup != "" {
+			lc["LogGroup"] = f.LoggingConfig.LogGroup
+		}
+		config["LoggingConfig"] = lc
+	}
+
+	if f.ImageConfig != nil {
+		ic := map[string]interface{}{}
+		if len(f.ImageConfig.EntryPoint) > 0 {
+			ic["EntryPoint"] = f.ImageConfig.EntryPoint
+		}
+		if len(f.ImageConfig.Command) > 0 {
+			ic["Command"] = f.ImageConfig.Command
+		}
+		if f.ImageConfig.WorkingDirectory != "" {
+			ic["WorkingDirectory"] = f.ImageConfig.WorkingDirectory
+		}
+		config["ImageConfig"] = ic
+	}
+
+	if len(f.FileSystemConfigs) > 0 {
+		fscs := make([]map[string]interface{}, 0, len(f.FileSystemConfigs))
+		for _, fsc := range f.FileSystemConfigs {
+			entry := map[string]interface{}{}
+			if fsc.Arn != "" {
+				entry["Arn"] = fsc.Arn
+			}
+			if fsc.LocalMountPath != "" {
+				entry["LocalMountPath"] = fsc.LocalMountPath
+			}
+			fscs = append(fscs, entry)
+		}
+		config["FileSystemConfigs"] = fscs
+	}
+
+	if f.SigningProfileVersionArn != "" {
+		config["SigningProfileVersionArn"] = f.SigningProfileVersionArn
+	}
+	if f.SigningJobArn != "" {
+		config["SigningJobArn"] = f.SigningJobArn
 	}
 
 	return config

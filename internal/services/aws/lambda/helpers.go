@@ -34,6 +34,79 @@ func validateFunctionName(name string) error {
 	return nil
 }
 
+// validatePermission validates the Principal and Action fields of a
+// resource-based policy statement. Principal must be an IAM ARN, a
+// service principal (e.g. "lambda.amazonaws.com"), or "*". Action must
+// start with "lambda:".
+func validatePermission(p *lambdastore.FunctionPolicy) error {
+	if p.Principal == "" {
+		return NewInvalidParameter("Principal", "Principal is required")
+	}
+	if !isValidPrincipal(p.Principal) {
+		return NewInvalidParameter("Principal",
+			fmt.Sprintf("Principal %q is not a valid IAM ARN, service principal, or wildcard", p.Principal))
+	}
+	if p.Action == "" {
+		return NewInvalidParameter("Action", "Action is required")
+	}
+	if !strings.HasPrefix(p.Action, "lambda:") {
+		return NewInvalidParameter("Action",
+			fmt.Sprintf("Action %q must start with 'lambda:'", p.Action))
+	}
+	return nil
+}
+
+// isValidPrincipal checks whether the principal string is a recognised
+// format: wildcard "*", an IAM/IAM-with-path ARN, or a service principal
+// ending in ".amazonaws.com".
+func isValidPrincipal(principal string) bool {
+	if principal == "*" {
+		return true
+	}
+	if strings.HasPrefix(principal, "arn:") {
+		_, service, _, _, _ := arnutil.SplitARN(principal)
+		return service == "iam"
+	}
+	return strings.HasSuffix(principal, ".amazonaws.com")
+}
+
+// repositoryType returns the AWS repository type for a function's code
+// source: "ECR" for container image packages, "S3" for zip-based
+// packages.
+func repositoryType(fn *lambdastore.Function) string {
+	if fn.ImageUri != "" || fn.PackageType == "Image" {
+		return "ECR"
+	}
+	return "S3"
+}
+
+// validateEventSourceArn checks that the ARN refers to a supported event
+// source service (SQS, Kinesis, or DynamoDB streams). Other services
+// (Kafka, MSK, DocumentDB) are accepted by AWS but not polled by this
+// implementation; rejecting them prevents silent no-op mappings.
+func validateEventSourceArn(arn string) error {
+	service := arnutil.GetServiceFromARN(arn)
+	switch service {
+	case "sqs", "kinesis", "dynamodb":
+		return nil
+	default:
+		return NewInvalidParameter("EventSourceArn",
+			fmt.Sprintf("Unsupported event source service %q: only sqs, kinesis, and dynamodb are supported", service))
+	}
+}
+
+// validateStartingPosition validates the EventSourcePosition enum per
+// the Smithy model (TRIM_HORIZON, LATEST, AT_TIMESTAMP).
+func validateStartingPosition(pos string) error {
+	switch pos {
+	case "TRIM_HORIZON", "LATEST", "AT_TIMESTAMP":
+		return nil
+	default:
+		return NewInvalidParameter("StartingPosition",
+			fmt.Sprintf("StartingPosition must be one of TRIM_HORIZON, LATEST, AT_TIMESTAMP; got %q", pos))
+	}
+}
+
 func isValidLayerARN(arnStr string) bool {
 	if arnStr == "" {
 		return false
@@ -259,44 +332,90 @@ func parseTracingConfig(params map[string]interface{}) (*lambdastore.TracingConf
 	}, nil
 }
 
+func parseLoggingConfig(m map[string]interface{}) *lambdastore.LoggingConfig {
+	lc := &lambdastore.LoggingConfig{}
+	if v, ok := m["LogFormat"].(string); ok {
+		lc.LogFormat = v
+	}
+	if v, ok := m["ApplicationLogLevel"].(string); ok {
+		lc.ApplicationLogLevel = v
+	}
+	if v, ok := m["SystemLogLevel"].(string); ok {
+		lc.SystemLogLevel = v
+	}
+	if v, ok := m["LogGroup"].(string); ok {
+		lc.LogGroup = v
+	}
+	if lc.LogFormat == "" && lc.ApplicationLogLevel == "" && lc.SystemLogLevel == "" && lc.LogGroup == "" {
+		return nil
+	}
+	return lc
+}
+
+func parseImageConfig(m map[string]interface{}) *lambdastore.ImageConfig {
+	ic := &lambdastore.ImageConfig{}
+	if eps, ok := m["EntryPoint"].([]interface{}); ok {
+		for _, ep := range eps {
+			if s, ok := ep.(string); ok {
+				ic.EntryPoint = append(ic.EntryPoint, s)
+			}
+		}
+	}
+	if cmds, ok := m["Command"].([]interface{}); ok {
+		for _, c := range cmds {
+			if s, ok := c.(string); ok {
+				ic.Command = append(ic.Command, s)
+			}
+		}
+	}
+	if wd, ok := m["WorkingDirectory"].(string); ok {
+		ic.WorkingDirectory = wd
+	}
+	if len(ic.EntryPoint) == 0 && len(ic.Command) == 0 && ic.WorkingDirectory == "" {
+		return nil
+	}
+	return ic
+}
+
 func deepCopyFunction(fn *lambdastore.Function) *lambdastore.Function {
 	if fn == nil {
 		return nil
 	}
 
 	result := &lambdastore.Function{
-		FunctionName:             fn.FunctionName,
-		FunctionArn:              fn.FunctionArn,
-		Runtime:                  fn.Runtime,
-		Role:                     fn.Role,
-		Handler:                  fn.Handler,
-		CodeSize:                 fn.CodeSize,
-		CodeSha256:               fn.CodeSha256,
-		CodeLocation:             fn.CodeLocation,
-		ImageUri:                 fn.ImageUri,
-		SourceCodeHash:           fn.SourceCodeHash,
-		Description:              fn.Description,
-		Timeout:                  fn.Timeout,
-		MemorySize:               fn.MemorySize,
-		Publish:                  fn.Publish,
-		KMSKeyArn:                fn.KMSKeyArn,
-		RevisionId:               fn.RevisionId,
-		State:                    fn.State,
-		StateReason:              fn.StateReason,
-		StateReasonCode:          fn.StateReasonCode,
-		LastUpdateStatus:         fn.LastUpdateStatus,
-		LastUpdateReason:         fn.LastUpdateReason,
-		LastUpdateStatusReason:   fn.LastUpdateStatusReason,
-		LastModified:             fn.LastModified,
-		LastModifiedUser:         fn.LastModifiedUser,
-		PackageType:              fn.PackageType,
-		SigningProfileVersionArn: fn.SigningProfileVersionArn,
-		SigningJobArn:            fn.SigningJobArn,
-		CodeSigningConfigArn:     fn.CodeSigningConfigArn,
-		CurrentVersion:           fn.CurrentVersion,
-		ReservedConcurrency:      fn.ReservedConcurrency,
-		ContainerID:              fn.ContainerID,
-		ContainerImageID:         fn.ContainerImageID,
+		FunctionName:               fn.FunctionName,
+		FunctionArn:                fn.FunctionArn,
+		Runtime:                    fn.Runtime,
+		Role:                       fn.Role,
+		Handler:                    fn.Handler,
+		CodeSize:                   fn.CodeSize,
+		CodeSha256:                 fn.CodeSha256,
+		CodeLocation:               fn.CodeLocation,
+		ImageUri:                   fn.ImageUri,
+		SourceCodeHash:             fn.SourceCodeHash,
+		Description:                fn.Description,
+		Timeout:                    fn.Timeout,
+		MemorySize:                 fn.MemorySize,
+		Publish:                    fn.Publish,
+		KMSKeyArn:                  fn.KMSKeyArn,
+		RevisionId:                 fn.RevisionId,
+		State:                      fn.State,
+		StateReason:                fn.StateReason,
+		StateReasonCode:            fn.StateReasonCode,
+		LastUpdateStatus:           fn.LastUpdateStatus,
+		LastUpdateReason:           fn.LastUpdateReason,
+		LastUpdateStatusReason:     fn.LastUpdateStatusReason,
+		LastUpdateStatusReasonCode: fn.LastUpdateStatusReasonCode,
+		LastModified:               fn.LastModified,
+		LastModifiedUser:           fn.LastModifiedUser,
+		PackageType:                fn.PackageType,
+		SigningProfileVersionArn:   fn.SigningProfileVersionArn,
+		SigningJobArn:              fn.SigningJobArn,
+		CodeSigningConfigArn:       fn.CodeSigningConfigArn,
+		CurrentVersion:             fn.CurrentVersion,
+		ReservedConcurrency:        fn.ReservedConcurrency,
+		ContainerID:                fn.ContainerID,
+		ContainerImageID:           fn.ContainerImageID,
 	}
 
 	if fn.EphemeralStorage != nil {
@@ -347,6 +466,34 @@ func deepCopyFunction(fn *lambdastore.Function) *lambdastore.Function {
 
 	if fn.SnapStart != nil {
 		result.SnapStart = &lambdastore.SnapStart{ApplyOn: fn.SnapStart.ApplyOn}
+	}
+
+	if fn.LoggingConfig != nil {
+		result.LoggingConfig = &lambdastore.LoggingConfig{
+			LogFormat:           fn.LoggingConfig.LogFormat,
+			ApplicationLogLevel: fn.LoggingConfig.ApplicationLogLevel,
+			SystemLogLevel:      fn.LoggingConfig.SystemLogLevel,
+			LogGroup:            fn.LoggingConfig.LogGroup,
+		}
+	}
+
+	if fn.ImageConfig != nil {
+		result.ImageConfig = &lambdastore.ImageConfig{
+			WorkingDirectory: fn.ImageConfig.WorkingDirectory,
+		}
+		if len(fn.ImageConfig.EntryPoint) > 0 {
+			result.ImageConfig.EntryPoint = make([]string, len(fn.ImageConfig.EntryPoint))
+			copy(result.ImageConfig.EntryPoint, fn.ImageConfig.EntryPoint)
+		}
+		if len(fn.ImageConfig.Command) > 0 {
+			result.ImageConfig.Command = make([]string, len(fn.ImageConfig.Command))
+			copy(result.ImageConfig.Command, fn.ImageConfig.Command)
+		}
+	}
+
+	if len(fn.FileSystemConfigs) > 0 {
+		result.FileSystemConfigs = make([]lambdastore.FileSystemConfig, len(fn.FileSystemConfigs))
+		copy(result.FileSystemConfigs, fn.FileSystemConfigs)
 	}
 
 	if fn.UrlConfig != nil {
@@ -449,6 +596,34 @@ func deepCopyVersion(v *lambdastore.Version) *lambdastore.Version {
 	if len(v.Layers) > 0 {
 		result.Layers = make([]lambdastore.LayerReference, len(v.Layers))
 		copy(result.Layers, v.Layers)
+	}
+
+	if v.LoggingConfig != nil {
+		result.LoggingConfig = &lambdastore.LoggingConfig{
+			LogFormat:           v.LoggingConfig.LogFormat,
+			ApplicationLogLevel: v.LoggingConfig.ApplicationLogLevel,
+			SystemLogLevel:      v.LoggingConfig.SystemLogLevel,
+			LogGroup:            v.LoggingConfig.LogGroup,
+		}
+	}
+
+	if v.ImageConfig != nil {
+		result.ImageConfig = &lambdastore.ImageConfig{
+			WorkingDirectory: v.ImageConfig.WorkingDirectory,
+		}
+		if len(v.ImageConfig.EntryPoint) > 0 {
+			result.ImageConfig.EntryPoint = make([]string, len(v.ImageConfig.EntryPoint))
+			copy(result.ImageConfig.EntryPoint, v.ImageConfig.EntryPoint)
+		}
+		if len(v.ImageConfig.Command) > 0 {
+			result.ImageConfig.Command = make([]string, len(v.ImageConfig.Command))
+			copy(result.ImageConfig.Command, v.ImageConfig.Command)
+		}
+	}
+
+	if len(v.FileSystemConfigs) > 0 {
+		result.FileSystemConfigs = make([]lambdastore.FileSystemConfig, len(v.FileSystemConfigs))
+		copy(result.FileSystemConfigs, v.FileSystemConfigs)
 	}
 
 	return result

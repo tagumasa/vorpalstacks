@@ -77,6 +77,22 @@ func (s *LayerStore) List(opts common.ListOptions) (*common.ListResult[Layer], e
 	return common.List[Layer](s.BaseStore, opts, nil)
 }
 
+// ListWithRuntimeFilter lists layers with pagination, filtered by
+// compatibility with the specified runtime.
+func (s *LayerStore) ListWithRuntimeFilter(runtime Runtime, opts common.ListOptions) (*common.ListResult[Layer], error) {
+	return common.List[Layer](s.BaseStore, opts, func(l *Layer) bool {
+		if l.LatestMatchingVersion == nil {
+			return false
+		}
+		for _, r := range l.LatestMatchingVersion.CompatibleRuntimes {
+			if r == runtime {
+				return true
+			}
+		}
+		return false
+	})
+}
+
 // PublishVersion creates a new version of a Lambda layer.
 func (s *LayerStore) PublishVersion(layer *Layer, version *LayerVersion) (*LayerVersion, error) {
 	s.mu.Lock()

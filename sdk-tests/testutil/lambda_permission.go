@@ -38,7 +38,7 @@ func runLambdaPermissionTests(
 		Runtime:      types.RuntimeNodejs22x,
 		Role:         aws.String(roleARN),
 		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: []byte(lambdaFunctionCode)},
+		Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
 	})
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Permission_Setup", Status: "FAIL",

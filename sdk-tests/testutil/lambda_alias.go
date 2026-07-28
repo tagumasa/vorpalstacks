@@ -36,7 +36,7 @@ func runLambdaAliasTests(
 		Runtime:      types.RuntimeNodejs22x,
 		Role:         aws.String(roleARN),
 		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: []byte(lambdaFunctionCode)},
+		Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
 	})
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
@@ -191,7 +191,7 @@ func runLambdaAliasTests(
 		pvFunc := fmt.Sprintf("PvFunc-%d", time.Now().UnixNano())
 		pvRoleName := fmt.Sprintf("PvRole-%d", time.Now().UnixNano())
 		pvRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", pvRoleName)
-		pvCode := []byte("exports.handler = async () => { return 1; };")
+		pvCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		if err := createIAMRole(pvRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -228,7 +228,7 @@ func runLambdaAliasTests(
 		caFunc := fmt.Sprintf("CaFunc-%d", time.Now().UnixNano())
 		caRoleName := fmt.Sprintf("CaRole-%d", time.Now().UnixNano())
 		caRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", caRoleName)
-		caCode := []byte("exports.handler = async () => { return 1; };")
+		caCode := zipLambdaCode("exports.handler = async () => { return 1; };")
 		if err := createIAMRole(caRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}

@@ -23,10 +23,20 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 	config := &lambdastore.EventInvokeConfig{}
 
 	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
-		config.MaximumEventAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+		maxEventAge := request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds")
+		if maxEventAge < 60 || maxEventAge > 21600 {
+			return nil, NewInvalidParameter("MaximumEventAgeInSeconds",
+				"MaximumEventAgeInSeconds must be between 60 and 21600 seconds")
+		}
+		config.MaximumEventAgeInSeconds = int32(maxEventAge)
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		config.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		maxRetry := request.GetIntParam(req.Parameters, "MaximumRetryAttempts")
+		if maxRetry < 0 || maxRetry > 2 {
+			return nil, NewInvalidParameter("MaximumRetryAttempts",
+				"MaximumRetryAttempts must be between 0 and 2")
+		}
+		config.MaximumRetryAttempts = int32(maxRetry)
 	}
 	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
 		config.DestinationConfig = parseDestinationConfig(destMap)
