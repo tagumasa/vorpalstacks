@@ -32,8 +32,28 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 			if rc, ok := reader.(io.ReadCloser); ok {
 				defer rc.Close()
 			}
-			if _, err := io.Copy(w, reader); err != nil {
-				logs.Error("Failed to stream response", logs.Err(err))
+			// Use a flushing copy so that streaming responses (e.g.
+			// SubscribeToShard event streams) push data to the client
+			// immediately rather than buffering until the handler returns.
+			flusher, _ := w.(http.Flusher)
+			buf := make([]byte, 32*1024)
+			for {
+				n, err := reader.Read(buf)
+				if n > 0 {
+					if _, werr := w.Write(buf[:n]); werr != nil {
+						logs.Error("Failed to write streaming response", logs.Err(werr))
+						return
+					}
+					if flusher != nil {
+						flusher.Flush()
+					}
+				}
+				if err != nil {
+					if err != io.EOF {
+						logs.Error("Failed to read streaming response", logs.Err(err))
+					}
+					return
+				}
 			}
 		}
 		return

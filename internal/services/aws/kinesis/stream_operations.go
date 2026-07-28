@@ -2,6 +2,7 @@ package kinesis
 
 import (
 	"context"
+	"encoding/base64"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -14,7 +15,7 @@ import (
 // CreateStream creates a new Kinesis stream.
 func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	if streamName == "" {
+	if streamName == "" || !validateStreamName(streamName) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -28,12 +29,30 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 
 	streamMode := parseStreamModeDetails(req.Parameters)
 
+	// Parse optional MaxRecordSizeInKiB (Smithy range: 1024-10240)
+	maxRecordSizeInKiB := int32(0)
+	if _, ok := req.Parameters["MaxRecordSizeInKiB"]; ok {
+		maxRecordSizeInKiB = int32(request.GetIntParam(req.Parameters, "MaxRecordSizeInKiB"))
+		if maxRecordSizeInKiB < 1024 || maxRecordSizeInKiB > 10240 {
+			return nil, ErrInvalidArgument
+		}
+	}
+
+	// Parse optional WarmThroughputMiBps
+	warmThroughputMiBps := int32(0)
+	if _, ok := req.Parameters["WarmThroughputMiBps"]; ok {
+		warmThroughputMiBps = int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
+		if warmThroughputMiBps < 1 {
+			return nil, ErrInvalidArgument
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := store.CreateStream(streamName, shardCount, streamMode)
+	stream, err := store.CreateStream(streamName, shardCount, streamMode, maxRecordSizeInKiB, warmThroughputMiBps)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
@@ -140,7 +159,12 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 
 	exclusiveStartName := request.GetStringParam(req.Parameters, "ExclusiveStartStreamName")
 	if exclusiveStartName == "" {
-		exclusiveStartName = request.GetStringParam(req.Parameters, "NextToken")
+		// Decode opaque NextToken (base64-encoded stream name)
+		if encoded := request.GetStringParam(req.Parameters, "NextToken"); encoded != "" {
+			if decoded, err := base64.StdEncoding.DecodeString(encoded); err == nil {
+				exclusiveStartName = string(decoded)
+			}
+		}
 	}
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 || limit > 10000 {
@@ -174,8 +198,9 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 	}
 
 	nextToken := ""
-	if hasMore && len(streamSummaries) > 0 {
-		nextToken = streamSummaries[len(streamSummaries)-1]["StreamName"].(string)
+	if hasMore && len(streamNames) > 0 {
+		// Encode NextToken as opaque base64 token to avoid information leakage
+		nextToken = base64.StdEncoding.EncodeToString([]byte(streamNames[len(streamNames)-1]))
 	}
 
 	return map[string]interface{}{
@@ -206,6 +231,16 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 	}
 
 	stream.StreamModeDetails = &kinesisstore.StreamModeDetails{StreamMode: streamMode}
+
+	// Parse optional WarmThroughputMiBps
+	if _, ok := req.Parameters["WarmThroughputMiBps"]; ok {
+		warm := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
+		if warm < 1 {
+			return nil, ErrInvalidArgument
+		}
+		stream.WarmThroughputMiBps = warm
+	}
+
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, s.mapStoreError(err)
 	}

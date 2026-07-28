@@ -3,6 +3,7 @@ package kinesis
 import (
 	"context"
 	"encoding/base64"
+	"sort"
 	"strconv"
 	"time"
 
@@ -18,8 +19,20 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 	}
 
 	if streamName != "" {
-		if _, err := store.GetStream(streamName); err != nil {
+		stream, err := store.GetStream(streamName)
+		if err != nil {
 			return nil, s.mapStoreError(err)
+		}
+		// M11: Verify StreamCreationTimestamp matches when provided
+		// (used to disambiguate deleted+recreated streams)
+		if tsStr := request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"); tsStr != "" {
+			if unixTs, err := strconv.ParseFloat(tsStr, 64); err == nil {
+				// Compare at second precision: stream.CreatedAt has nanosecond
+				// resolution but the client timestamp is epoch seconds.
+				if stream.CreatedAt.Unix() != int64(unixTs) {
+					return nil, s.mapStoreError(kinesisstore.ErrStreamNotFound)
+				}
+			}
 		}
 	}
 
@@ -68,6 +81,14 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 	shards, err := store.ListShards(streamName, filter, nextToken, limit)
 	if err != nil {
 		return nil, s.mapStoreError(err)
+	}
+
+	// M15: Apply ShardOrder (ASCENDING is default, DESCENDING reverses)
+	shardOrder := request.GetParamLowerFirst(req.Parameters, "ShardOrder")
+	if shardOrder == "DESCENDING" {
+		sort.Slice(shards, func(i, j int) bool {
+			return shards[i].ShardID > shards[j].ShardID
+		})
 	}
 
 	resp := map[string]interface{}{

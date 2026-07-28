@@ -2,6 +2,7 @@ package kinesis
 
 import (
 	"context"
+	"sort"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -48,9 +49,38 @@ func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req 
 			return store.ListAsSlice(resourceKey)
 		},
 		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+			// L6: Implement pagination with ExclusiveStartTagKey and Limit
+			startKey := request.GetStringParam(req.Parameters, "ExclusiveStartTagKey")
+			limit := request.GetIntParam(req.Parameters, "Limit")
+			if limit <= 0 || limit > 50 {
+				limit = 50
+			}
+
+			// Sort first so that ExclusiveStartTagKey filtering is lexical
+			sort.Slice(tagList, func(i, j int) bool {
+				return tagList[i].Key < tagList[j].Key
+			})
+
+			// Apply ExclusiveStartTagKey: keep only keys > startKey
+			if startKey != "" {
+				filtered := tagList[:0]
+				for _, t := range tagList {
+					if t.Key > startKey {
+						filtered = append(filtered, t)
+					}
+				}
+				tagList = filtered
+			}
+
+			hasMore := false
+			if int32(len(tagList)) > int32(limit) {
+				hasMore = true
+				tagList = tagList[:limit]
+			}
+
 			return map[string]interface{}{
 				"Tags":        tags.ToResponse(tagList),
-				"HasMoreTags": false,
+				"HasMoreTags": hasMore,
 			}, nil
 		},
 		EmptyResponse: func() (interface{}, error) {

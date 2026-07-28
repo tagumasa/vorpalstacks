@@ -1,9 +1,20 @@
 package kinesis
 
 import (
+	"regexp"
+
 	"vorpalstacks/internal/common/request"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
+
+// streamNamePattern matches valid Kinesis stream names: letters, digits,
+// underscores, hyphens, and periods. Length 1-128 per AWS spec.
+var streamNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,128}$`)
+
+// validateStreamName checks that a stream name matches the AWS naming rules.
+func validateStreamName(name string) bool {
+	return streamNamePattern.MatchString(name)
+}
 
 // resolveStreamName resolves a stream name from either StreamName or StreamARN
 // parameters, returning the store and stream name. Returns ErrInvalidArgument
@@ -29,6 +40,10 @@ func (s *KinesisService) resolveStreamName(reqCtx *request.RequestContext, param
 		return nil, "", ErrInvalidArgument
 	}
 
+	if !validateStreamName(streamName) {
+		return nil, "", ErrInvalidArgument
+	}
+
 	return store, streamName, nil
 }
 
@@ -49,6 +64,10 @@ func (s *KinesisService) resolveStreamNameOptional(reqCtx *request.RequestContex
 			return nil, "", s.mapStoreError(err)
 		}
 		streamName = stream.StreamName
+	}
+
+	if streamName != "" && !validateStreamName(streamName) {
+		return nil, "", ErrInvalidArgument
 	}
 
 	return store, streamName, nil

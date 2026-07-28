@@ -275,7 +275,7 @@ func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb
 		shardCount = 1
 	}
 
-	_, err = store.CreateStream(req.Msg.GetStreamname(), shardCount, kinesisstore.StreamModeProvisioned)
+	_, err = store.CreateStream(req.Msg.GetStreamname(), shardCount, kinesisstore.StreamModeProvisioned, 0, 0)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}

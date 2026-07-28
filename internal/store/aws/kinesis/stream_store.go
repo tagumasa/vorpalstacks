@@ -12,8 +12,8 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_kinesis"
 )
 
-// CreateStream creates a new Kinesis stream with the specified name, shard count, and stream mode.
-func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamMode StreamMode) (*Stream, error) {
+// CreateStream creates a new Kinesis stream with the specified parameters.
+func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32) (*Stream, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -22,7 +22,7 @@ func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamM
 		return nil, ErrStreamAlreadyExists
 	}
 
-	stream := NewStream(streamName, shardCount, streamMode)
+	stream := NewStream(streamName, shardCount, streamMode, maxRecordSizeInKiB, warmThroughputMiBps)
 	stream.StreamARN = s.buildStreamARN(streamName)
 
 	if stream.StreamModeDetails.StreamMode == StreamModeOnDemand {

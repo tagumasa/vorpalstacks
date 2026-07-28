@@ -2,6 +2,7 @@ package kinesis
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
@@ -46,6 +48,17 @@ func (s *KinesisService) RegisterStreamConsumer(ctx context.Context, reqCtx *req
 	consumer, err := store.RegisterStreamConsumer(streamARN, consumerName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
+	}
+
+	// M14: Apply tags if provided in RegisterStreamConsumer request
+	if tagList := tags.ParseTags(req.Parameters, "Tags"); len(tagList) > 0 {
+		tagMap := make(map[string]string, len(tagList))
+		for _, t := range tagList {
+			tagMap[t.Key] = t.Value
+		}
+		if err := store.Tag(consumer.ConsumerARN, tagMap); err != nil {
+			return nil, s.mapStoreError(err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -134,21 +147,77 @@ func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
+	// Parse optional StreamCreationTimestamp — used to disambiguate streams
+	// with the same name (deleted + recreated). Verify the stream identity.
+	if tsStr := request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"); tsStr != "" {
+		if unixTs, err := strconv.ParseFloat(tsStr, 64); err == nil {
+			// Compare at second precision: stream.CreatedAt has nanosecond
+			// resolution but the client timestamp is epoch seconds.
+			if stream.CreatedAt.Unix() != int64(unixTs) {
+				return nil, s.mapStoreError(kinesisstore.ErrStreamNotFound)
+			}
+		}
+	}
+
 	consumers, err := store.ListStreamConsumers(stream.StreamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	formattedConsumers := make([]map[string]interface{}, len(consumers))
-	for i, c := range consumers {
+	// Pagination: parse MaxResults and NextToken
+	maxResults := 0
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		maxResults = request.GetIntParam(req.Parameters, "MaxResults")
+	}
+	// MaxResults: Smithy range 1-10000. Reject out-of-range values.
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		if maxResults < 1 || maxResults > 10000 {
+			return nil, ErrInvalidArgument
+		}
+	} else {
+		maxResults = 10000
+	}
+
+	// Decode opaque NextToken (base64-encoded consumer ARN for resumption)
+	startOffset := 0
+	if encoded := request.GetStringParam(req.Parameters, "NextToken"); encoded != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(encoded); err == nil {
+			startARN := string(decoded)
+			for i, c := range consumers {
+				if c.ConsumerARN == startARN {
+					startOffset = i + 1
+					break
+				}
+			}
+		}
+	}
+
+	// Apply offset and limit
+	end := startOffset + maxResults
+	hasMore := false
+	if end < len(consumers) {
+		hasMore = true
+	} else {
+		end = len(consumers)
+	}
+	page := consumers[startOffset:end]
+
+	formattedConsumers := make([]map[string]interface{}, len(page))
+	for i, c := range page {
 		formattedConsumers[i] = formatConsumer(c)
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"Consumers":        formattedConsumers,
-		"NextToken":        nil,
-		"HasMoreConsumers": false,
-	}, nil
+		"HasMoreConsumers": hasMore,
+	}
+	if hasMore && len(page) > 0 {
+		result["NextToken"] = base64.StdEncoding.EncodeToString([]byte(page[len(page)-1].ConsumerARN))
+	} else {
+		result["NextToken"] = nil
+	}
+
+	return result, nil
 }
 
 // SubscribeToShard subscribes a consumer to receive records from a Kinesis shard.
@@ -211,16 +280,68 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		}
 
 		includeStart := startingPosition == "AT_SEQUENCE_NUMBER"
-		records, lastSeqNum, err := store.GetRecords(stream.StreamName, shardID, iterator.SequenceNumber, 1000, includeStart)
-		if err != nil {
-			if writeErr := writer.WriteResourceNotFoundException(err.Error()); writeErr != nil {
-				logs.Error("Failed to write error event", logs.Err(writeErr))
-			}
-			return
-		}
+		lastSeqNum := iterator.SequenceNumber
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 
-		if err := writer.WriteSubscribeToShardEvent(records, lastSeqNum, 0, nil); err != nil {
-			return
+		for {
+			records, newSeqNum, err := store.GetRecords(stream.StreamName, shardID, lastSeqNum, 1000, includeStart)
+			if err != nil {
+				if writeErr := writer.WriteResourceNotFoundException(err.Error()); writeErr != nil {
+					logs.Error("Failed to write error event", logs.Err(writeErr))
+				}
+				return
+			}
+			// After the first iteration, use strict after-sequence-number semantics
+			includeStart = false
+
+			// Check whether the shard has been closed (split or merged)
+			shard, shardErr := store.GetShard(stream.StreamName, shardID)
+			if shardErr != nil {
+				logs.Error("SubscribeToShard: failed to get shard for closure check", logs.Err(shardErr))
+				break
+			}
+			shardClosed := shard != nil && shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber != ""
+
+			// Calculate MillisBehindLatest from the last record's arrival time
+			var millisBehindLatest int64
+			if len(records) > 0 {
+				last := records[len(records)-1]
+				millisBehindLatest = time.Since(last.ApproximateArrivalTimestamp).Milliseconds()
+				if millisBehindLatest < 0 {
+					millisBehindLatest = 0
+				}
+			}
+
+			// Build child shards list when the shard is closed
+			var childShards []interface{}
+			if shardClosed {
+				children, _ := store.GetChildShards(stream.StreamName, shardID)
+				childShards = formatChildShards(children)
+			}
+
+			// Send event when there are records or when the shard closes
+			if len(records) > 0 {
+				if err := writer.WriteSubscribeToShardEvent(records, newSeqNum, millisBehindLatest, childShards); err != nil {
+					return
+				}
+				lastSeqNum = newSeqNum
+			} else if shardClosed && len(childShards) > 0 {
+				if err := writer.WriteSubscribeToShardEvent(nil, lastSeqNum, 0, childShards); err != nil {
+					return
+				}
+			}
+
+			// Shard closed — send End event and stop
+			if shardClosed {
+				break
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+			}
 		}
 
 		if err := writer.WriteEndEvent(); err != nil {

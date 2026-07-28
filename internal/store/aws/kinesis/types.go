@@ -140,9 +140,14 @@ type ShardFilter struct {
 	Timestamp *time.Time `json:"timestamp,omitempty"`
 }
 
-// NewStream creates a new Kinesis stream with the specified name and shard count.
-func NewStream(name string, shardCount int32, streamMode StreamMode) *Stream {
+// NewStream creates a new Kinesis stream with the specified name, shard count,
+// stream mode, max record size, and warm throughput. If maxRecordSizeInKiB is
+// 0, defaults to 1024 (1 MiB).
+func NewStream(name string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32) *Stream {
 	now := time.Now().UTC()
+	if maxRecordSizeInKiB == 0 {
+		maxRecordSizeInKiB = 1024
+	}
 	return &Stream{
 		StreamName:           name,
 		StreamStatus:         StreamStatusActive,
@@ -150,7 +155,8 @@ func NewStream(name string, shardCount int32, streamMode StreamMode) *Stream {
 		ShardCount:           shardCount,
 		RetentionPeriodHours: 24,
 		EnhancedMonitoring:   []EnhancedMonitoring{{ShardLevelMetrics: []string{}}},
-		MaxRecordSizeInKiB:   1024,
+		MaxRecordSizeInKiB:   maxRecordSizeInKiB,
+		WarmThroughputMiBps:  warmThroughputMiBps,
 		CreatedAt:            now,
 		LastModifiedAt:       now,
 	}

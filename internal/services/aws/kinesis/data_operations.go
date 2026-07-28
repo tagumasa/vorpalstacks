@@ -150,6 +150,9 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 	if val := request.GetParamLowerFirst(req.Parameters, "Limit"); val != "" {
 		limit = int32(request.GetIntParam(req.Parameters, "Limit"))
 	}
+	if limit < 1 || limit > 10000 {
+		return nil, ErrInvalidArgument
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -242,11 +245,22 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"Records":            formattedRecords,
 		"NextShardIterator":  nextIterator,
 		"MillisBehindLatest": millisBehindLatest,
-	}, nil
+	}
+
+	// H3: When the shard is closed (split or merged), include ChildShards so
+	// consumers know which shards to read from next.
+	if shardClosed {
+		childShards, _ := store.GetChildShards(iterator.StreamName, iterator.ShardID)
+		if len(childShards) > 0 {
+			result["ChildShards"] = formatChildShards(childShards)
+		}
+	}
+
+	return result, nil
 }
 
 // GetShardIterator gets a shard iterator for reading from a Kinesis stream shard.
@@ -290,4 +304,30 @@ func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.R
 	return map[string]interface{}{
 		"ShardIterator": iterator.IteratorID,
 	}, nil
+}
+
+// formatChildShards formats child shards for GetRecords and SubscribeToShard
+// responses. Each ChildShard contains ShardId, ParentShards (list), and
+// HashKeyRange.
+func formatChildShards(shards []*kinesisstore.Shard) []interface{} {
+	result := make([]interface{}, 0, len(shards))
+	for _, shard := range shards {
+		parentShards := []string{}
+		if shard.ParentShardID != "" {
+			parentShards = append(parentShards, shard.ParentShardID)
+		}
+		if shard.AdjacentParentShardID != "" {
+			parentShards = append(parentShards, shard.AdjacentParentShardID)
+		}
+		m := map[string]interface{}{
+			"ShardId":      shard.ShardID,
+			"ParentShards": parentShards,
+			"HashKeyRange": map[string]interface{}{
+				"StartingHashKey": shard.HashKeyRange.StartingHashKey,
+				"EndingHashKey":   shard.HashKeyRange.EndingHashKey,
+			},
+		}
+		result = append(result, m)
+	}
+	return result
 }

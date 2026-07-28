@@ -11,7 +11,7 @@ type KinesisStoreInterface interface {
 	GetAccountID() string
 	GetRegion() string
 	BuildStreamARN(streamName string) string
-	CreateStream(streamName string, shardCount int32, streamMode StreamMode) (*Stream, error)
+	CreateStream(streamName string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32) (*Stream, error)
 	GetStream(streamName string) (*Stream, error)
 	GetStreamByARN(streamARN string) (*Stream, error)
 	UpdateStream(stream *Stream) error

@@ -2,12 +2,33 @@ package kinesis
 
 import (
 	"context"
+	"encoding/json"
+	"regexp"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
+
+// resourceARNPattern validates Kinesis resource ARNs per Smithy model:
+// ^arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+$
+var resourceARNPattern = regexp.MustCompile(`^arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+$`)
+
+// validShardLevelMetrics is the set of valid ShardLevelMetrics enum values.
+// Values match the enumValue traits in the Smithy model (camelCase, not
+// the SCREAMING_SNAKE_CASE member names).
+var validShardLevelMetrics = map[string]bool{
+	"IncomingBytes":                      true,
+	"IncomingRecords":                    true,
+	"OutgoingBytes":                      true,
+	"OutgoingRecords":                    true,
+	"WriteProvisionedThroughputExceeded": true,
+	"ReadProvisionedThroughputExceeded":  true,
+	"IteratorAgeMilliseconds":            true,
+	"ALL":                                true,
+}
 
 // IncreaseStreamRetentionPeriod increases the retention period of a Kinesis stream.
 func (s *KinesisService) IncreaseStreamRetentionPeriod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -71,11 +92,33 @@ func (s *KinesisService) DecreaseStreamRetentionPeriod(ctx context.Context, reqC
 
 // DescribeLimits returns the Kinesis service limits.
 func (s *KinesisService) DescribeLimits(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Aggregate actual shard and on-demand stream counts across all streams.
+	openShardCount := int32(0)
+	onDemandStreamCount := int32(0)
+
+	result, err := store.ListStreams(storecommon.ListOptions{MaxItems: 10000})
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+	for _, stream := range result.Items {
+		if stream.StreamModeDetails != nil && stream.StreamModeDetails.StreamMode == kinesisstore.StreamModeOnDemand {
+			onDemandStreamCount++
+		}
+		// Use stream.ShardCount (maintained by split/merge/updateShardCount)
+		// to avoid an N+1 ListShards query per stream.
+		openShardCount += stream.ShardCount
+	}
+
 	return map[string]interface{}{
-		"ShardLimit":               500,
-		"OpenShardCount":           0,
-		"OnDemandStreamCount":      0,
-		"OnDemandStreamCountLimit": 50,
+		"ShardLimit":               int32(500),
+		"OpenShardCount":           openShardCount,
+		"OnDemandStreamCount":      onDemandStreamCount,
+		"OnDemandStreamCountLimit": int32(50),
 	}, nil
 }
 
@@ -118,6 +161,11 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 	}
 
 	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
+	for _, m := range requestedMetrics {
+		if !validShardLevelMetrics[m] {
+			return nil, ErrInvalidArgument
+		}
+	}
 
 	var currentMetrics []string
 	if len(stream.EnhancedMonitoring) > 0 {
@@ -157,6 +205,11 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 	}
 
 	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
+	for _, m := range requestedMetrics {
+		if !validShardLevelMetrics[m] {
+			return nil, ErrInvalidArgument
+		}
+	}
 
 	var currentMetrics []string
 	if len(stream.EnhancedMonitoring) > 0 {
@@ -196,7 +249,9 @@ func (s *KinesisService) StartStreamEncryption(ctx context.Context, reqCtx *requ
 	if encryptionType != "KMS" {
 		return nil, ErrInvalidArgument
 	}
-	if keyID == "" {
+	// KeyId: Smithy shape has length trait (1-2048) but no pattern trait.
+	// AWS accepts UUID, key ARN, alias name (alias/my-key), and alias ARN.
+	if keyID == "" || len(keyID) > 2048 {
 		return nil, ErrInvalidArgument
 	}
 
@@ -267,7 +322,19 @@ func (s *KinesisService) PutResourcePolicy(ctx context.Context, reqCtx *request.
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 	policy := request.GetParamLowerFirst(req.Parameters, "Policy")
 
-	if resourceARN == "" {
+	if resourceARN == "" || policy == "" {
+		return nil, ErrInvalidArgument
+	}
+	// ResourceARN has Smithy length trait (1-2048); Policy is a bare string
+	// with no length trait — AWS allows policies up to ~20000 chars.
+	if len(resourceARN) > 2048 {
+		return nil, ErrLimitExceeded
+	}
+	if !resourceARNPattern.MatchString(resourceARN) {
+		return nil, ErrInvalidArgument
+	}
+	// Validate that Policy is valid JSON
+	if !json.Valid([]byte(policy)) {
 		return nil, ErrInvalidArgument
 	}
 

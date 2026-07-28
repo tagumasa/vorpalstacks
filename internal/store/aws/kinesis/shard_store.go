@@ -77,6 +77,35 @@ func (s *KinesisStore) ListShards(streamName string, filter *ShardFilter, exclus
 	return shards, nil
 }
 
+// GetChildShards returns the direct child shards of the given shard.
+// Child shards are identified by ParentShardID or AdjacentParentShardID
+// matching the given shardID. Only open shards are considered because
+// the consumer should transition to them after the parent is closed.
+func (s *KinesisStore) GetChildShards(streamName, shardID string) ([]*Shard, error) {
+	prefix := streamName + "#"
+	var children []*Shard
+
+	err := s.shardsStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var pbShard pb.Shard
+		if err := proto.Unmarshal(value, &pbShard); err != nil {
+			return fmt.Errorf("unmarshal shard for child lookup: %w", err)
+		}
+		shard := ProtoToShard(&pbShard)
+		// Only open shards can be children (closed shards have ended)
+		if shard.SequenceNumberRange.EndingSequenceNumber != "" {
+			return nil
+		}
+		if shard.ParentShardID == shardID || shard.AdjacentParentShardID == shardID {
+			children = append(children, shard)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("scan shards for child lookup: %w", err)
+	}
+	return children, nil
+}
+
 func (s *KinesisStore) listShardsInTxn(txn storage.Transaction, streamName string) ([]*Shard, error) {
 	bucket := txn.Bucket("kinesis-shards-" + s.region)
 	prefix := []byte(streamName + "#")
@@ -101,17 +130,23 @@ func (s *KinesisStore) listShardsInTxn(txn storage.Transaction, streamName strin
 
 func (s *KinesisStore) shardMatchesFilter(shard *Shard, filter *ShardFilter) bool {
 	switch filter.Type {
-	case "AT_SHARD_ID":
-		return shard.ShardID == filter.ShardID
+	case "AFTER_SHARD_ID":
+		return shard.ShardID > filter.ShardID
+	case "AT_TRIM_HORIZON", "FROM_TRIM_HORIZON", "AT_LATEST":
+		// All open shards match — the caller already filtered to open shards
+		// and these filter types return the full set of open shards.
+		return true
+	case "AT_TIMESTAMP":
+		if filter.Timestamp == nil {
+			return true
+		}
+		// Shard was open at the specified timestamp: created at or before
+		return shard.CreatedAt.Before(*filter.Timestamp) || shard.CreatedAt.Equal(*filter.Timestamp)
 	case "FROM_TIMESTAMP":
 		if filter.Timestamp == nil {
 			return true
 		}
 		return shard.CreatedAt.After(*filter.Timestamp) || shard.CreatedAt.Equal(*filter.Timestamp)
-	case "AFTER_SHARD_ID":
-		return shard.ShardID > filter.ShardID
-	case "TRIM_HORIZON", "LATEST":
-		return true
 	}
 	return true
 }
@@ -194,9 +229,26 @@ func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shar
 		midHash = new(big.Int).Div(new(big.Int).Add(startHash, endHash), big.NewInt(2))
 	}
 
+	// Compute child shard hash key boundaries.
+	//
+	// When the user specifies NewStartingHashKey (NSK), per the Smithy
+	// documentation NSK is the starting hash key of child 2 (upper):
+	//   child1 = [start, NSK-1],  child2 = [NSK, end]
+	//
+	// When auto-midpoint is used, midHash is the ending key of child 1:
+	//   child1 = [start, mid],    child2 = [mid+1, end]
+	var child1End, child2Start *big.Int
+	if newStartingHashKey != "" {
+		child2Start = midHash
+		child1End = new(big.Int).Sub(midHash, big.NewInt(1))
+	} else {
+		child1End = midHash
+		child2Start = new(big.Int).Add(midHash, big.NewInt(1))
+	}
+
 	shardCounter1 := atomic.AddInt64(&s.shardIDCounter, 1)
 	newShardID1 := fmt.Sprintf("shardId-%012d", shardCounter1)
-	newShard1 := NewShard(newShardID1, streamName, shard.HashKeyRange.StartingHashKey, midHash.String())
+	newShard1 := NewShard(newShardID1, streamName, shard.HashKeyRange.StartingHashKey, child1End.String())
 	newShard1.ParentShardID = shardID
 	newShard1.SequenceNumberRange = &SequenceNumberRange{
 		StartingSequenceNumber: s.generateSequenceNumber(newShardID1),
@@ -204,7 +256,9 @@ func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shar
 
 	shardCounter2 := atomic.AddInt64(&s.shardIDCounter, 1)
 	newShardID2 := fmt.Sprintf("shardId-%012d", shardCounter2)
-	newShard2 := NewShard(newShardID2, streamName, midHash.String(), shard.HashKeyRange.EndingHashKey)
+	// H1 fix: child shards use inclusive ranges with no gaps; adjacent
+	// shards differ by exactly 1 in their boundary hash keys.
+	newShard2 := NewShard(newShardID2, streamName, child2Start.String(), shard.HashKeyRange.EndingHashKey)
 	newShard2.ParentShardID = shardID
 	newShard2.SequenceNumberRange = &SequenceNumberRange{
 		StartingSequenceNumber: s.generateSequenceNumber(newShardID2),
