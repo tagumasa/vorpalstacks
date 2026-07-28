@@ -23,11 +23,20 @@ const (
 	hmacSHA512KeySize = 64
 )
 
-type memoryKey struct {
-	keySpec   KeySpec
+// keyMaterial holds the raw cryptographic material for one key version.
+// During rotation, the previous version's material is preserved so that
+// ciphertexts encrypted before rotation remain decryptable.
+type keyMaterial struct {
 	symmetric []byte
 	rsaKey    *rsa.PrivateKey
 	ecdsaKey  *ecdsa.PrivateKey
+}
+
+type memoryKey struct {
+	keySpec          KeySpec
+	currentVersion   uint16
+	previousVersions []keyMaterial
+	keyMaterial
 }
 
 type cryptoOps struct {
@@ -166,6 +175,31 @@ func marshalKeyPair(priv crypto.PrivateKey, pub crypto.PublicKey) ([]byte, []byt
 	return privDER, pubDER, nil
 }
 
+// rotateKey generates new key material for the specified key, preserving
+// the previous version so that ciphertexts encrypted before rotation
+// remain decryptable. The key spec is preserved; only the raw material
+// changes. Returns ErrKeyNotFound if the key does not exist.
+func (c *cryptoOps) rotateKey(keyID string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	old, exists := c.keys[keyID]
+	if !exists {
+		return ErrKeyNotFound
+	}
+
+	newKey, err := c.generateKeyMaterial(old.keySpec)
+	if err != nil {
+		return err
+	}
+
+	// Preserve the current material as a previous version.
+	old.previousVersions = append([]keyMaterial{old.keyMaterial}, old.previousVersions...)
+	old.keyMaterial = newKey.keyMaterial
+	old.currentVersion++
+	return nil
+}
+
 func (c *cryptoOps) encrypt(keyID string, plaintext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*EncryptResult, error) {
 	key, exists := c.keys[keyID]
 	if !exists {
@@ -191,7 +225,7 @@ func (c *cryptoOps) encrypt(keyID string, plaintext []byte, algorithm Encryption
 		return nil, ErrEncryptFailed
 	}
 
-	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
+	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, key.currentVersion, ciphertext)
 
 	return &EncryptResult{
 		Ciphertext:      ciphertextWithKeyID,
@@ -201,12 +235,12 @@ func (c *cryptoOps) encrypt(keyID string, plaintext []byte, algorithm Encryption
 
 func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, error) {
 	// All ciphertexts produced by this HSM carry a 2-byte keyID length
-	// prefix (see prependKeyIDToCiphertext). When extraction fails the
-	// input is either truncated or came from a foreign source; either way
-	// it is not a valid KMS ciphertext. Surface InvalidCiphertext rather
-	// than silently falling through to AES decrypt on garbage data, which
-	// previously mapped to a misleading ErrDecryptFailed.
-	extractedKeyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
+	// prefix followed by a 2-byte version number (see
+	// prependKeyIDToCiphertext). When extraction fails the input is either
+	// truncated or came from a foreign source; either way it is not a
+	// valid KMS ciphertext. Surface InvalidCiphertext rather than silently
+	// falling through to AES decrypt on garbage data.
+	extractedKeyID, version, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
 	if err != nil {
 		return nil, ErrInvalidCiphertext
 	}
@@ -220,17 +254,28 @@ func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, algorithm Encryptio
 		return nil, ErrKeyNotFound
 	}
 
+	// Select the key material for the version encoded in the ciphertext.
+	// Version 0 and the current version both map to the embedded
+	// keyMaterial. Previous versions are stored in previousVersions.
+	km := &key.keyMaterial
+	if version != key.currentVersion && version < key.currentVersion {
+		idx := int(key.currentVersion) - int(version) - 1
+		if idx >= 0 && idx < len(key.previousVersions) {
+			km = &key.previousVersions[idx]
+		}
+	}
+
 	var plaintext []byte
 	switch {
-	case key.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
-		out, err := aesDecrypt(key.symmetric, ciphertext, serializeEncryptionContext(context))
+	case km.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
+		out, err := aesDecrypt(km.symmetric, ciphertext, serializeEncryptionContext(context))
 		if err != nil {
 			return nil, err
 		}
 		plaintext = out
-	case key.rsaKey != nil &&
+	case km.rsaKey != nil &&
 		(algorithm == EncryptionAlgorithmRSAOAEPSHA256 || algorithm == EncryptionAlgorithmRSAOAEPSHA1):
-		out, err := rsaDecrypt(key.rsaKey, ciphertext, algorithm)
+		out, err := rsaDecrypt(km.rsaKey, ciphertext, algorithm)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +291,7 @@ func (c *cryptoOps) decrypt(keyID string, ciphertext []byte, algorithm Encryptio
 }
 
 func (c *cryptoOps) decryptWithoutKeyID(ciphertext []byte, algorithm EncryptionAlgorithm, context map[string]string) (*DecryptResult, string, error) {
-	keyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
+	keyID, version, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
 	if err != nil {
 		// Surface InvalidCiphertext explicitly so the service layer can
 		// map to InvalidCiphertextException rather than the generic
@@ -259,17 +304,30 @@ func (c *cryptoOps) decryptWithoutKeyID(ciphertext []byte, algorithm EncryptionA
 		return nil, "", ErrKeyNotFound
 	}
 
+	// Select the key material for the version encoded in the ciphertext,
+	// mirroring the logic in decrypt(). Version 0 and the current version
+	// both map to the embedded keyMaterial. Previous versions are stored
+	// in previousVersions so that post-rotation decryption of old
+	// ciphertexts succeeds.
+	km := &key.keyMaterial
+	if version != key.currentVersion && version < key.currentVersion {
+		idx := int(key.currentVersion) - int(version) - 1
+		if idx >= 0 && idx < len(key.previousVersions) {
+			km = &key.previousVersions[idx]
+		}
+	}
+
 	var plaintext []byte
 	switch {
-	case key.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
-		out, err := aesDecrypt(key.symmetric, actualCiphertext, serializeEncryptionContext(context))
+	case km.symmetric != nil && algorithm == EncryptionAlgorithmSymmetricDefault:
+		out, err := aesDecrypt(km.symmetric, actualCiphertext, serializeEncryptionContext(context))
 		if err != nil {
 			return nil, "", err
 		}
 		plaintext = out
-	case key.rsaKey != nil &&
+	case km.rsaKey != nil &&
 		(algorithm == EncryptionAlgorithmRSAOAEPSHA256 || algorithm == EncryptionAlgorithmRSAOAEPSHA1):
-		out, err := rsaDecrypt(key.rsaKey, actualCiphertext, algorithm)
+		out, err := rsaDecrypt(km.rsaKey, actualCiphertext, algorithm)
 		if err != nil {
 			return nil, "", err
 		}
@@ -524,17 +582,18 @@ func hashAlgorithm(algorithm SigningAlgorithm) crypto.Hash {
 	}
 }
 
-func extractKeyIDFromCiphertext(ciphertext []byte) (string, []byte, error) {
-	if len(ciphertext) < 2 {
-		return "", nil, errors.New("ciphertext too short")
+func extractKeyIDFromCiphertext(ciphertext []byte) (string, uint16, []byte, error) {
+	if len(ciphertext) < 4 {
+		return "", 0, nil, errors.New("ciphertext too short")
 	}
 	keyIDLen := int(ciphertext[0])<<8 | int(ciphertext[1])
-	if len(ciphertext) < 2+keyIDLen {
-		return "", nil, errors.New("ciphertext too short for keyID")
+	if len(ciphertext) < 2+keyIDLen+2 {
+		return "", 0, nil, errors.New("ciphertext too short for keyID and version")
 	}
 	keyID := string(ciphertext[2 : 2+keyIDLen])
-	actualCiphertext := ciphertext[2+keyIDLen:]
-	return keyID, actualCiphertext, nil
+	version := uint16(ciphertext[2+keyIDLen])<<8 | uint16(ciphertext[2+keyIDLen+1])
+	actualCiphertext := ciphertext[2+keyIDLen+2:]
+	return keyID, version, actualCiphertext, nil
 }
 
 func (o *cryptoOps) importKeyMaterial(keyID string, keyMaterial []byte, keySpec KeySpec) (*memoryKey, error) {
@@ -636,7 +695,7 @@ func (c *cryptoOps) generateDataKey(keyID string, keySpec string, numberOfBytes 
 		return nil, err
 	}
 
-	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
+	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, key.currentVersion, ciphertext)
 
 	return &GenerateDataKeyResult{
 		Plaintext:      plaintext,
@@ -646,12 +705,14 @@ func (c *cryptoOps) generateDataKey(keyID string, keySpec string, numberOfBytes 
 	}, nil
 }
 
-func prependKeyIDToCiphertext(keyID string, ciphertext []byte) []byte {
+func prependKeyIDToCiphertext(keyID string, version uint16, ciphertext []byte) []byte {
 	keyIDBytes := []byte(keyID)
-	result := make([]byte, 2+len(keyIDBytes)+len(ciphertext))
+	result := make([]byte, 2+len(keyIDBytes)+2+len(ciphertext))
 	result[0] = byte(len(keyIDBytes) >> 8)
 	result[1] = byte(len(keyIDBytes))
 	copy(result[2:], keyIDBytes)
-	copy(result[2+len(keyIDBytes):], ciphertext)
+	result[2+len(keyIDBytes)] = byte(version >> 8)
+	result[2+len(keyIDBytes)+1] = byte(version)
+	copy(result[2+len(keyIDBytes)+2:], ciphertext)
 	return result
 }

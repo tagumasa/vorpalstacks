@@ -3,8 +3,10 @@ package kms
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
+	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -97,61 +99,75 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 	return response.EmptyResponse(), nil
 }
 
-// validatePolicyDoesNotLockOutRoot performs a best-effort check that the
-// supplied policy grants the account root principal kms:PutKeyPolicy (or
-// kms:*). AWS rejects policies that lock out the root principal unless
-// BypassPolicyLockoutSafetyCheck=true. A full IAM policy evaluator is out
-// of scope for this implementation; we reject the clearly-broken case of
-// a Statement list with no root-permitting statement.
+// validatePolicyDoesNotLockOutRoot verifies that the supplied policy
+// grants the account root principal kms:PutKeyPolicy (or kms:*). AWS
+// rejects policies that lock out the root principal unless
+// BypassPolicyLockoutSafetyCheck=true.
+//
+// The check uses the full IAM PolicyEvaluator (not manual JSON parsing)
+// to correctly handle conditions, NotPrincipal, NotAction, and
+// Deny statements that could implicitly lock out root. The root
+// principal ARN is constructed from the policy's resource account.
 func validatePolicyDoesNotLockOutRoot(policyDocument string) error {
-	var doc struct {
-		Statement []struct {
-			Principal interface{} `json:"Principal"`
-			Action    interface{} `json:"Action"`
-			Effect    string      `json:"Effect"`
-		} `json:"Statement"`
-	}
-	if err := json.Unmarshal([]byte(policyDocument), &doc); err != nil {
+	parsedPolicy, err := policy.ParseDocument(policyDocument)
+	if err != nil {
 		return ErrMalformedPolicy
 	}
-	if len(doc.Statement) == 0 {
+	if len(parsedPolicy.Statement) == 0 {
 		return ErrMalformedPolicy
 	}
-	for _, stmt := range doc.Statement {
-		if stmt.Effect != "Allow" {
-			continue
-		}
-		// Root principal appears as {"AWS": "arn:...:root"} or "*" — both
-		// count as granting access to the account root.
-		principalStr := ""
-		switch p := stmt.Principal.(type) {
-		case string:
-			principalStr = p
-		case map[string]interface{}:
-			if v, ok := p["AWS"].(string); ok {
-				principalStr = v
+
+	// Extract the account ID from the first resource ARN in the policy.
+	// The root principal ARN is "arn:vorpalstacks:iam::<account>:root".
+	accountID := "000000000000"
+	for _, stmt := range parsedPolicy.Statement {
+		for _, res := range stmt.Resource {
+			if id := extractAccountFromARN(res); id != "" {
+				accountID = id
+				break
 			}
 		}
-		if principalStr != "*" && !strings.HasSuffix(principalStr, ":root") {
-			continue
-		}
-		// Action must cover kms:PutKeyPolicy (or kms:* / "*").
-		switch a := stmt.Action.(type) {
-		case string:
-			if a == "*" || a == "kms:*" || a == "kms:PutKeyPolicy" {
-				return nil
-			}
-		case []interface{}:
-			for _, item := range a {
-				if s, ok := item.(string); ok {
-					if s == "*" || s == "kms:*" || s == "kms:PutKeyPolicy" {
-						return nil
-					}
-				}
-			}
+		if accountID != "000000000000" {
+			break
 		}
 	}
+	rootPrincipal := fmt.Sprintf("arn:vorpalstacks:iam::%s:root", accountID)
+
+	evaluator := policy.NewPolicyEvaluator()
+	ctx := &policy.EvaluationContext{
+		Principal: rootPrincipal,
+		Action:    "kms:PutKeyPolicy",
+		// Resource is set to "*" so that any resource-scoped statement
+		// matches; we are testing whether the root principal has the
+		// PutKeyPolicy permission, not whether a specific key matches.
+		Resource: "*",
+	}
+
+	// Test with root principal for kms:PutKeyPolicy.
+	decision := evaluator.Evaluate(ctx, []*policy.Document{parsedPolicy})
+	if decision.Effect == policy.DecisionEffectAllow {
+		// Root can PutKeyPolicy — not locked out.
+		return nil
+	}
+
+	// Also test with "*" principal wildcard. Some policies use Principal "*"
+	// which implicitly includes root.
+	ctx.Principal = "*"
+	decision = evaluator.Evaluate(ctx, []*policy.Document{parsedPolicy})
+	if decision.Effect == policy.DecisionEffectAllow {
+		return nil
+	}
+
 	return ErrMalformedPolicy
+}
+
+// extractAccountFromARN extracts the account ID from an ARN string.
+func extractAccountFromARN(arnStr string) string {
+	parts := strings.Split(arnStr, ":")
+	if len(parts) >= 5 {
+		return parts[4]
+	}
+	return ""
 }
 
 // ListKeyPolicies retrieves the names of all key policies attached to a key.

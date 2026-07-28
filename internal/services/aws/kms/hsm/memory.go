@@ -188,3 +188,8 @@ func (b *MemoryBackend) KeyExists(keyID string) bool {
 	defer b.mu.RUnlock()
 	return b.keyExists(keyID)
 }
+
+// RotateKey generates new key material, preserving the old version.
+func (b *MemoryBackend) RotateKey(keyID string) error {
+	return b.cryptoOps.rotateKey(keyID)
+}

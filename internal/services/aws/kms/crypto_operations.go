@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -63,6 +64,10 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 
 	encryptionContext := parseEncryptionContext(req.Parameters)
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", key.KeyID, encryptionContext); err != nil {
+		return nil, err
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
 		return nil, err
 	}
 
@@ -128,6 +133,9 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		if decryptionAlgorithm != "" && !algorithmSupported(decryptionAlgorithm, key.EncryptionAlgorithms) {
 			return nil, ErrInvalidAlgorithm
 		}
+		if err := checkKMSDryRun(req.Parameters); err != nil {
+			return nil, err
+		}
 		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, hsm.EncryptionAlgorithm(decryptionAlgorithm), encryptionContext)
 		if err != nil {
 			return nil, s.mapHSMError(err)
@@ -140,6 +148,9 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		// (DecryptRequest has no EncryptionAlgorithm member). Fall back to
 		// SYMMETRIC_DEFAULT first; if the HSM cannot decrypt (key is RSA)
 		// the caller must resubmit with an explicit KeyId.
+		if err := checkKMSDryRun(req.Parameters); err != nil {
+			return nil, err
+		}
 		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 		if err != nil {
 			return nil, s.mapHSMError(err)
@@ -202,6 +213,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
 			return nil, ErrInvalidKeyUsage
 		}
+		if err := checkKMSDryRun(req.Parameters); err != nil {
+			return nil, err
+		}
 		sourceAlgorithm = determineEncryptionAlgorithm(sourceKey, req.Parameters)
 		decryptResult, err = s.hsmBackend.Decrypt(sourceKey.KeyID, ciphertext, hsm.EncryptionAlgorithm(sourceAlgorithm), sourceEncryptionContext)
 		if err != nil {
@@ -210,6 +224,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		sourceKeyArn = sourceKey.Arn
 	} else {
 		var resolvedKeyID string
+		if err := checkKMSDryRun(req.Parameters); err != nil {
+			return nil, err
+		}
 		decryptResult, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, sourceEncryptionContext)
 		if err != nil {
 			return nil, err
@@ -286,6 +303,10 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	keySpec := request.GetStringParam(req.Parameters, "KeySpec")
 	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
 
@@ -323,6 +344,10 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 	}
 
 	if err := validateDataKeySpecAndBytes(key, req.Parameters); err != nil {
+		return nil, err
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
 		return nil, err
 	}
 
@@ -425,6 +450,10 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 		return nil, ErrValidation
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(hsm.KeySpec(keyPairSpec))
 	if err != nil {
 		return nil, err
@@ -470,6 +499,10 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 		return nil, ErrValidation
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(keyPairSpec)
 	if err != nil {
 		return nil, err
@@ -497,7 +530,7 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListKeyRotations", nil)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListKeyRotations", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -505,10 +538,21 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	marker := pagination.GetMarker(req.Parameters)
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
-	// No rotations have been performed yet (RotateKeyOnDemand is
-	// unimplemented). Honour the pagination contract by returning empty
-	// pages that respect the marker/maxItems inputs.
-	result := pagination.PaginateSlice([]interface{}{}, marker, maxItems, func(item interface{}) string {
+	// Return the actual rotation history recorded by RotateKeyOnDemand.
+	// Each entry includes the rotation date, type, and key material version.
+	rotations := make([]map[string]interface{}, 0, len(key.RotationHistory))
+	for _, entry := range key.RotationHistory {
+		rotations = append(rotations, map[string]interface{}{
+			"RotationDate":  entry.RotationDate.Unix(),
+			"RotationType":  entry.RotationType,
+			"KeyMaterialId": entry.KeyMaterialId,
+		})
+	}
+
+	result := pagination.PaginateSlice(rotations, marker, maxItems, func(item map[string]interface{}) string {
+		if ts, ok := item["RotationDate"].(int64); ok {
+			return fmt.Sprintf("%d", ts)
+		}
 		return ""
 	})
 

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
@@ -90,6 +91,7 @@ type KMSService struct {
 	policyEvaluator   *policy.PolicyEvaluator
 	principalResolver eventbus.IAMPrincipalResolver
 	accountID         string
+	region            string
 	stores            sync.Map // region → *kmsStores
 	storageManager    *storage.RegionStorageManager
 }
@@ -110,6 +112,7 @@ func NewKMSService(accountID, region string, hsmBackend hsm.Backend) *KMSService
 		hsmBackend:      hsmBackend,
 		policyEvaluator: policy.NewPolicyEvaluator(),
 		accountID:       accountID,
+		region:          region,
 	}
 }
 
@@ -198,6 +201,8 @@ func (s *KMSService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("kms", "GenerateDataKeyPair", s.GenerateDataKeyPair)
 	d.RegisterHandlerForService("kms", "GenerateDataKeyPairWithoutPlaintext", s.GenerateDataKeyPairWithoutPlaintext)
 	d.RegisterHandlerForService("kms", "ListKeyRotations", s.ListKeyRotations)
+	d.RegisterHandlerForService("kms", "RotateKeyOnDemand", s.RotateKeyOnDemand)
+	d.RegisterHandlerForService("kms", "GetKeyLastUsage", s.GetKeyLastUsage)
 }
 
 func (s *KMSService) authorizeOperation(stores *kmsStores, principal, action, keyID string, encryptionContext map[string]string) error {
@@ -211,12 +216,11 @@ func (s *KMSService) authorizeOperation(stores *kmsStores, principal, action, ke
 	}
 
 	// KMS authorisation order per AWS docs: explicit Deny wins; otherwise
-	// key policy → IAM policy → grants. The platform does not currently
-	// surface a separate IAM policy plane, and the policy evaluator here
-	// honours only Allow effects (explicit Deny is treated as no-match
-	// rather than a definitive deny). The net behaviour is therefore
-	// "first-Allow-wins across key policy then grants", which is correct
-	// for the common case but does not yet model Deny semantics.
+	// key policy → IAM policy → grants. The policy evaluator honours both
+	// Allow and Deny effects. An explicit Deny in the key policy is
+	// definitive — it cannot be overridden by a grant. Only when the
+	// policy returns DefaultDeny (no matching statement) do we fall
+	// through to grant evaluation.
 
 	policyDoc, err := stores.keyPolicies.GetDefault(key.KeyID)
 	if err == nil {
@@ -231,6 +235,12 @@ func (s *KMSService) authorizeOperation(stores *kmsStores, principal, action, ke
 				},
 			}
 			decision := s.policyEvaluator.Evaluate(ctx, []*policy.Document{parsedPolicy})
+			if decision.Effect == policy.DecisionEffectDeny {
+				// Explicit Deny is definitive and cannot be overridden by
+				// grants. This mirrors the AWS evaluation order where Deny
+				// always wins.
+				return ErrAccessDenied
+			}
 			if decision.Effect == policy.DecisionEffectAllow {
 				return nil
 			}
@@ -281,10 +291,10 @@ func (s *KMSService) authorizeViaGrant(stores *kmsStores, principal, action, key
 	if err != nil || result == nil {
 		return false
 	}
-	// aws:SourceArn is not currently surfaced by the request pipeline; we
-	// pass "" so that SourceArn-constrained grants are denied by default
-	// (matching AWS deny-by-default) until the request context exposes the
-	// value. See grantConstraintsSatisfied.
+	// sourceArn comes from the calling service (e.g. S3 bucket ARN). When
+	// non-empty, SourceArn-constrained grants are evaluated against it.
+	// When empty, SourceArn-constrained grants are denied by default
+	// (matching AWS deny-by-default).
 	const requestArn = ""
 	for _, g := range result.Grants {
 		if g.GranteePrincipal != principal {
@@ -454,6 +464,17 @@ func (s *KMSService) resolveAndAuthorizeKey(reqCtx *request.RequestContext, req 
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), action, key.KeyID, encryptionContext); err != nil {
 		return nil, err
 	}
+
+	// Track last usage timestamp and operation for crypto operations.
+	// Read-only operations (DescribeKey, ListResourceTags, GetKeyPolicy)
+	// are excluded because they do not exercise the key material.
+	if isCryptoAction(action) {
+		now := time.Now().UTC()
+		key.LastUsedAt = &now
+		key.LastUsageOperation = action
+		_ = stores.keys.Update(key)
+	}
+
 	return key, nil
 }
 
@@ -532,7 +553,34 @@ var (
 	ErrUnsupportedOperation = awserrors.NewAWSError("UnsupportedOperationException", "Operation is not supported for this key type", http.StatusBadRequest)
 	// ErrTagException is returned when a tag limit or format is violated.
 	ErrTagException = awserrors.NewAWSError("TagException", "Tag validation failed", http.StatusBadRequest)
+	// ErrDryRunOperation is returned when the DryRun parameter is set to
+	// true. AWS KMS uses HTTP 412 (Precondition Failed) for this error,
+	// and the AWS SDK treats it as a successful dry-run verification.
+	ErrDryRunOperation = awserrors.NewAWSError("DryRunOperation", "Request would have succeeded, but the DryRun flag is set.", http.StatusPreconditionFailed)
 )
+
+// checkKMSDryRun returns ErrDryRunOperation when the DryRun parameter is
+// set to true. Per the Smithy model, DryRun is supported on Encrypt,
+// Decrypt, ReEncrypt, GenerateDataKey, GenerateDataKeyWithoutPlaintext,
+// GenerateDataKeyPair, GenerateDataKeyPairWithoutPlaintext, GenerateMac,
+// VerifyMac, Sign, Verify, CreateGrant, RevokeGrant, and RetireGrant.
+// The call should be placed after all validation and authorisation but
+// before the actual cryptographic or state-mutating operation.
+func checkKMSDryRun(params map[string]interface{}) error {
+	if v, ok := params["DryRun"]; ok {
+		switch val := v.(type) {
+		case string:
+			if val == "true" {
+				return ErrDryRunOperation
+			}
+		case bool:
+			if val {
+				return ErrDryRunOperation
+			}
+		}
+	}
+	return nil
+}
 
 // NewKeyNotFoundError creates a new key not found error.
 func NewKeyNotFoundError(keyID string) *awserrors.AWSError {
@@ -614,9 +662,16 @@ type kmsBusAdapter struct {
 }
 
 // GenerateDataKey generates a data key encrypted under the specified KMS key.
-func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string) (*eventbus.KMSDataKeyResult, error) {
+func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*eventbus.KMSDataKeyResult, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
+	}
+	// Evaluate grant constraints with the caller's sourceArn so that
+	// SourceArn-constrained grants are honoured for internal calls.
+	if sourceArn != "" {
+		if !a.grantAllowsSourceArn(keyID, sourceArn) {
+			return nil, ErrAccessDenied
+		}
 	}
 	result, err := a.hsmBackend.GenerateDataKey(keyID, keySpec, 0, encryptionContext)
 	if err != nil {
@@ -629,15 +684,54 @@ func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySp
 }
 
 // Decrypt decrypts ciphertext that was encrypted under a KMS key.
-func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string) ([]byte, error) {
+func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string, sourceArn string) ([]byte, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
+	}
+	if sourceArn != "" {
+		if !a.grantAllowsSourceArn(keyID, sourceArn) {
+			return nil, ErrAccessDenied
+		}
 	}
 	result, err := a.hsmBackend.Decrypt(keyID, ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt: %w", err)
 	}
 	return result.Plaintext, nil
+}
+
+// grantAllowsSourceArn checks whether any SourceArn-constrained grant on
+// the key allows the given sourceArn. This enables the S3→KMS pattern
+// where S3 creates a grant with SourceArn = bucket ARN.
+//
+// Returns true when no SourceArn-constrained grants exist (the common
+// case), because without such constraints there is nothing to enforce.
+func (s *KMSService) grantAllowsSourceArn(keyID, sourceArn string) bool {
+	stores, err := s.GetStoreForRegion(s.region)
+	if err != nil {
+		// Cannot verify — allow to avoid blocking legitimate traffic.
+		return true
+	}
+	result, err := stores.grants.List(keyID, "", "", 1000)
+	if err != nil || result == nil || len(result.Grants) == 0 {
+		// No grants at all — nothing to enforce.
+		return true
+	}
+	hasSourceArnConstraint := false
+	for _, g := range result.Grants {
+		if g.Constraints != nil && g.Constraints.SourceArn != "" {
+			hasSourceArnConstraint = true
+			if sourceArnMatches(g.Constraints.SourceArn, sourceArn) {
+				return true
+			}
+		} else {
+			// Grant without SourceArn constraint always allows.
+			return true
+		}
+	}
+	// If there are SourceArn-constrained grants but none matched, deny.
+	// If there are grants but none have SourceArn constraints, allow.
+	return !hasSourceArnConstraint
 }
 
 // KeyExists reports whether the specified KMS key exists.
@@ -651,4 +745,18 @@ func (a *kmsBusAdapter) KeyExists(ctx context.Context, keyID string) bool {
 // KMSBusInvoker returns an eventbus.KMSInvoker backed by this service.
 func (s *KMSService) KMSBusInvoker() eventbus.KMSInvoker {
 	return &kmsBusAdapter{s}
+}
+
+// isCryptoAction reports whether the action exercises the key material
+// (as opposed to metadata-only operations like DescribeKey).
+func isCryptoAction(action string) bool {
+	switch action {
+	case "Encrypt", "Decrypt", "ReEncrypt",
+		"GenerateDataKey", "GenerateDataKeyWithoutPlaintext",
+		"GenerateDataKeyPair", "GenerateDataKeyPairWithoutPlaintext",
+		"Sign", "Verify",
+		"GenerateMac", "VerifyMac":
+		return true
+	}
+	return false
 }

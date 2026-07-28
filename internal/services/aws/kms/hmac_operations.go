@@ -60,6 +60,10 @@ func (s *KMSService) GenerateMac(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrInvalidAlgorithm
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	macValue, err := s.hsmBackend.GenerateMAC(key.KeyID, message, hsm.MACAlgorithm(algorithm))
 	if err != nil {
 		return nil, err
@@ -119,6 +123,10 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	}
 	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
 		return nil, ErrInvalidAlgorithm
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
 	}
 
 	valid, err := s.hsmBackend.VerifyMAC(key.KeyID, message, macValue, hsm.MACAlgorithm(algorithm))

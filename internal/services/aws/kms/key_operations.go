@@ -142,6 +142,29 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	if policyStr == "" {
 		policyStr = kmsstore.DefaultKeyPolicy
 	}
+
+	// Validate the supplied policy does not lock out the root principal
+	// unless BypassPolicyLockoutSafetyCheck is explicitly true. This mirrors
+	// the PutKeyPolicy logic at policy_operations.go:80-88.
+	bypassLockoutCheck := false
+	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
+		if b, ok := v.(string); ok && b == "true" {
+			bypassLockoutCheck = true
+		}
+	}
+	if !bypassLockoutCheck {
+		if err := validatePolicyDoesNotLockOutRoot(policyStr); err != nil {
+			if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after policy lockout check failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			return nil, err
+		}
+	}
+	key.BypassPolicyLockoutSafetyCheck = bypassLockoutCheck
+	if err := stores.keys.Update(key); err != nil {
+		return nil, err
+	}
+
 	if err := stores.keyPolicies.PutDefault(keyID, policyStr); err != nil {
 		if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
 			logs.Error("Failed to cascade-delete key after PutDefault policy failure", logs.Err(delErr), logs.String("keyId", keyID))
@@ -365,8 +388,20 @@ func (s *KMSService) buildKeyMetadata(key *kmsstore.Key) map[string]interface{} 
 	if key.DeletionDate != nil {
 		metadata["DeletionDate"] = key.DeletionDate.Unix()
 	}
+	// AWS: PendingDeletionWindowInDays appears in KeyMetadata when the
+	// key is scheduled for deletion. The field name in the Smithy model is
+	// "PendingDeletionWindowInDays".
+	if key.KeyState == kmsstore.KeyStatePendingDeletion && key.PendingWindowInDays > 0 {
+		metadata["PendingDeletionWindowInDays"] = key.PendingWindowInDays
+	}
 	if key.ValidTo != nil {
 		metadata["ValidTo"] = key.ValidTo.Unix()
+	}
+	// AWS: ExpirationModel is present only for keys with imported key
+	// material (Origin EXTERNAL). Values: KEY_MATERIAL_EXPIRES or
+	// KEY_MATERIAL_DOES_NOT_EXPIRE.
+	if key.Origin == kmsstore.OriginTypeExternal && key.ExpirationModel != "" {
+		metadata["ExpirationModel"] = key.ExpirationModel
 	}
 	if key.CustomKeyStoreID != "" {
 		metadata["CustomKeyStoreId"] = key.CustomKeyStoreID
@@ -505,16 +540,29 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	importToken := request.GetStringParam(req.Parameters, "ImportToken")
 	encryptedKeyMaterialB64 := request.GetStringParam(req.Parameters, "EncryptedKeyMaterial")
 	validTo := request.GetIntParam(req.Parameters, "ValidTo")
+	expirationModel := request.GetStringParam(req.Parameters, "ExpirationModel")
 
 	encryptedKeyMaterial, err := base64.StdEncoding.DecodeString(encryptedKeyMaterialB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid EncryptedKeyMaterial: %w", err)
 	}
 
+	// AWS: ExpirationModel controls whether the imported key material
+	// expires. KEY_MATERIAL_DOES_NOT_EXPIRE causes ValidTo to be ignored.
+	// When ExpirationModel is omitted but ValidTo is supplied, the default
+	// is KEY_MATERIAL_EXPIRES. When neither is supplied, the default is
+	// KEY_MATERIAL_DOES_NOT_EXPIRE.
 	var validToTime *time.Time
-	if validTo > 0 {
+	if expirationModel != "KEY_MATERIAL_DOES_NOT_EXPIRE" && validTo > 0 {
 		t := time.Unix(int64(validTo), 0)
 		validToTime = &t
+	}
+	if expirationModel == "" {
+		if validToTime != nil {
+			expirationModel = "KEY_MATERIAL_EXPIRES"
+		} else {
+			expirationModel = "KEY_MATERIAL_DOES_NOT_EXPIRE"
+		}
 	}
 
 	rawKeyMaterial, err := stores.keys.ImportKeyMaterial(keyID, importToken, encryptedKeyMaterial, validToTime)
@@ -523,6 +571,18 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if err := s.hsmBackend.ImportKey(keyID, rawKeyMaterial, hsm.KeySpec(key.KeySpec)); err != nil {
+		return nil, err
+	}
+
+	// Re-fetch the key because ImportKeyMaterial's atomicUpdate changed
+	// its state (PendingImport → Enabled) and we must not overwrite that
+	// with the stale pre-import copy.
+	updatedKey, err := stores.keys.Get(keyID)
+	if err != nil {
+		return nil, err
+	}
+	updatedKey.ExpirationModel = expirationModel
+	if err := stores.keys.Update(updatedKey); err != nil {
 		return nil, err
 	}
 
@@ -590,6 +650,69 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 
 	replicaKey, err := stores.keys.ReplicateKey(keyID, replicaRegion, replicaKeyID)
 	if err != nil {
+		return nil, err
+	}
+
+	// Apply optional caller-supplied parameters to the replica. Per the
+	// Smithy ReplicateKeyRequest, the caller may set Policy, Description,
+	// BypassPolicyLockoutSafetyCheck, and Tags on the replica.
+	replicaPolicy := request.GetStringParam(req.Parameters, "Policy")
+	if replicaPolicy == "" {
+		// Inherit the primary's key policy when not explicitly supplied.
+		primaryPolicy, pErr := stores.keyPolicies.GetDefault(primary.KeyID)
+		if pErr == nil {
+			replicaPolicy = primaryPolicy.PolicyDocument
+		} else {
+			replicaPolicy = kmsstore.DefaultKeyPolicy
+		}
+	}
+	bypassCheck := false
+	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
+		if b, ok := v.(string); ok && b == "true" {
+			bypassCheck = true
+		}
+	}
+	if !bypassCheck {
+		if err := validatePolicyDoesNotLockOutRoot(replicaPolicy); err != nil {
+			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+				logs.Error("Failed to cascade-delete replica after policy lockout check", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+			}
+			return nil, err
+		}
+	}
+	if desc := request.GetStringParam(req.Parameters, "Description"); desc != "" {
+		replicaKey.Description = desc
+	}
+	replicaKey.BypassPolicyLockoutSafetyCheck = bypassCheck
+	if err := stores.keys.Update(replicaKey); err != nil {
+		if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+			logs.Error("Failed to cascade-delete replica after Update", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+		}
+		return nil, err
+	}
+
+	// Apply tags from the request.
+	replicaTags := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
+	if len(replicaTags) > 0 {
+		if err := validateKMSTags(replicaTags); err != nil {
+			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+				logs.Error("Failed to cascade-delete replica after tag validation failure", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+			}
+			return nil, err
+		}
+		if err := stores.keys.TagStore.Tag(replicaKeyID, tagutil.ToMap(replicaTags)); err != nil {
+			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+				logs.Error("Failed to cascade-delete replica after Tag failure", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+			}
+			return nil, err
+		}
+	}
+
+	// Store the replica's key policy.
+	if err := stores.keyPolicies.PutDefault(replicaKeyID, replicaPolicy); err != nil {
+		if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+			logs.Error("Failed to cascade-delete replica after PutDefault policy", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+		}
 		return nil, err
 	}
 

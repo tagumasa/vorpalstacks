@@ -113,6 +113,32 @@ type Key struct {
 	WrappingPrivateKey             []byte                    `json:"wrapping_private_key,omitempty"`
 	WrappingAlgorithm              string                    `json:"wrapping_algorithm,omitempty"`
 	WrappingKeySpec                string                    `json:"wrapping_key_spec,omitempty"`
+	// ExpirationModel indicates whether imported key material expires.
+	// Valid values: KEY_MATERIAL_EXPIRES (default when ValidTo is set),
+	// KEY_MATERIAL_DOES_NOT_EXPIRE. Populated only for keys with Origin
+	// EXTERNAL. Mirrors the Smithy ExpirationModelType enum.
+	ExpirationModel string `json:"expiration_model,omitempty"`
+	// RotationHistory tracks each rotation event (automatic and on-demand).
+	// Used by ListKeyRotations to return past rotation details.
+	RotationHistory []RotationEntry `json:"rotation_history,omitempty"`
+	// OnDemandRotationCount tracks the number of on-demand rotations
+	// performed. AWS enforces a limit of 25 on-demand rotations per key.
+	OnDemandRotationCount int32 `json:"on_demand_rotation_count,omitempty"`
+	// LastUsedAt records the timestamp of the most recent cryptographic
+	// operation using this key. Updated by Encrypt, Decrypt, Sign, Verify,
+	// GenerateMac, VerifyMac, GenerateDataKey, and ReEncrypt.
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	// LastUsageOperation records the KMS operation name (e.g. "Encrypt",
+	// "Decrypt") of the most recent cryptographic operation. Returned in
+	// the KeyLastUsage response per the Smithy KeyLastUsageData shape.
+	LastUsageOperation string `json:"last_usage_operation,omitempty"`
+}
+
+// RotationEntry represents a single key rotation event.
+type RotationEntry struct {
+	RotationDate  time.Time `json:"rotation_date"`
+	RotationType  string    `json:"rotation_type"`   // AUTOMATIC or ON_DEMAND
+	KeyMaterialId string    `json:"key_material_id"` // version identifier
 }
 
 // MultiRegionConfiguration represents the configuration for a multi-region KMS key.

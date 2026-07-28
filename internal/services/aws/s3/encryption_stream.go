@@ -9,6 +9,7 @@ import (
 	"io"
 
 	s3store "vorpalstacks/internal/store/aws/s3"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/crypto"
 )
 
@@ -312,7 +313,8 @@ func (m *EncryptionManager) resolveDecryptionKey(
 			return nil, fmt.Errorf("missing encrypted data key")
 		}
 		encryptionContext := m.sseKMSEncryptor.buildEncryptionContext(bucket, key)
-		plainKey, err := m.sseKMSEncryptor.kmsClient.Decrypt(sseMetadata.KMSKeyID, sseMetadata.EncryptedDataKey, encryptionContext)
+		bucketArn := arnutil.NewARNBuilder("", "").S3().Bucket(bucket)
+		plainKey, err := m.sseKMSEncryptor.kmsClient.Decrypt(sseMetadata.KMSKeyID, sseMetadata.EncryptedDataKey, encryptionContext, bucketArn)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt data key: %w", err)
 		}

@@ -59,6 +59,10 @@ func (s *KMSService) Sign(ctx context.Context, reqCtx *request.RequestContext, r
 		return nil, NewValidationError("Message is not valid base64")
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	result, err := s.hsmBackend.Sign(key.KeyID, message, hsm.SigningAlgorithm(algorithm), hsm.MessageType(messageType))
 	if err != nil {
 		if errors.Is(err, hsm.ErrInvalidDigestLength) {
@@ -127,6 +131,10 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 		// Signature was malformed; surface as ValidationException rather
 		// than the misleading ErrInvalidAlgorithm the previous code returned.
 		return nil, NewValidationError("Signature is not valid base64")
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
 	}
 
 	valid, err := s.hsmBackend.Verify(key.KeyID, message, signature, hsm.SigningAlgorithm(algorithm), hsm.MessageType(messageType))

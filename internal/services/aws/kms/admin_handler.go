@@ -10,6 +10,8 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/kms/hsm"
+	"vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
@@ -148,27 +150,63 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 		}
 	}
 
-	if err := stores.keyPolicies.PutDefault(keyID, kmsstore.DefaultKeyPolicy); err != nil {
+	// Apply caller-supplied policy. When omitted, inherit the primary's
+	// policy or fall back to the default.
+	keyPolicy := ""
+	if req.Msg.GetPolicy() != "" {
+		keyPolicy = req.Msg.GetPolicy()
+	} else {
+		keyPolicy = kmsstore.DefaultKeyPolicy
+	}
+	bypassLockoutCheck := req.Msg.GetBypasspolicylockoutsafetycheck()
+	if !bypassLockoutCheck {
+		if err := validatePolicyDoesNotLockOutRoot(keyPolicy); err != nil {
+			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after policy lockout check failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
+	key.BypassPolicyLockoutSafetyCheck = bypassLockoutCheck
+	if err := stores.keys.Update(key); err != nil {
+		if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+			logs.Error("Failed to cascade-delete key after Update", logs.Err(delErr), logs.String("keyId", keyID))
+		}
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	if err := stores.keyPolicies.PutDefault(keyID, keyPolicy); err != nil {
 		if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
 			logs.Error("Failed to cascade-delete key after PutDefault policy failure", logs.Err(delErr), logs.String("keyId", keyID))
 		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// Apply tags from the request.
+	if len(req.Msg.GetTags()) > 0 {
+		var tagList []types.Tag
+		for _, t := range req.Msg.GetTags() {
+			tagList = append(tagList, types.Tag{Key: t.GetTagkey(), Value: t.GetTagvalue()})
+		}
+		if err := validateKMSTags(tagList); err != nil {
+			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after tag validation failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		tagMap := make(map[string]string, len(tagList))
+		for _, t := range tagList {
+			tagMap[t.Key] = t.Value
+		}
+		if err := stores.keys.TagStore.Tag(keyID, tagMap); err != nil {
+			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
+				logs.Error("Failed to cascade-delete key after Tag failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
+	}
+
 	return connect.NewResponse(&pb.CreateKeyResponse{
-		Keymetadata: &pb.KeyMetadata{
-			Keyid:        key.KeyID,
-			Arn:          key.Arn,
-			Keystate:     pb.KeyState_KEY_STATE_ENABLED,
-			Keyusage:     req.Msg.GetKeyusage(),
-			Keyspec:      req.Msg.GetKeyspec(),
-			Description:  key.Description,
-			Enabled:      proto.Bool(key.Enabled),
-			Origin:       req.Msg.GetOrigin(),
-			Keymanager:   pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
-			Multiregion:  proto.Bool(key.MultiRegion),
-			Creationdate: key.CreationDate.Format(timeutils.ISO8601UTCFormat),
-		},
+		Keymetadata: h.buildProtoKeyMetadata(key, req.Msg.GetKeyusage(), req.Msg.GetKeyspec(), req.Msg.GetOrigin()),
 	}), nil
 }
 
@@ -224,6 +262,63 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		resp.Deletiondate = key.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
 	}
 	return connect.NewResponse(resp), nil
+}
+
+// buildProtoKeyMetadata constructs a full pb.KeyMetadata from a store Key,
+// mapping all fields that the HTTP API's buildKeyMetadata also emits. This
+// ensures admin console clients see the same metadata richness as SDK clients.
+func (h *AdminHandler) buildProtoKeyMetadata(key *kmsstore.Key, keyUsage pb.KeyUsageType, keySpec pb.KeySpec, origin pb.OriginType) *pb.KeyMetadata {
+	_, _, _, accountID, _ := arn.SplitARN(key.Arn)
+
+	md := &pb.KeyMetadata{
+		Awsaccountid:          accountID,
+		Keyid:                 key.KeyID,
+		Arn:                   key.Arn,
+		Keystate:              storeKeyStateToProto(key.KeyState),
+		Keyusage:              keyUsage,
+		Keyspec:               keySpec,
+		Customermasterkeyspec: pb.CustomerMasterKeySpec(keySpec),
+		Description:           key.Description,
+		Enabled:               proto.Bool(key.Enabled),
+		Origin:                origin,
+		Keymanager:            pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
+		Multiregion:           proto.Bool(key.MultiRegion),
+		Creationdate:          key.CreationDate.Format(timeutils.ISO8601UTCFormat),
+	}
+
+	if key.DeletionDate != nil {
+		md.Deletiondate = key.DeletionDate.Format(timeutils.ISO8601UTCFormat)
+	}
+	if key.KeyState == kmsstore.KeyStatePendingDeletion && key.PendingWindowInDays > 0 {
+		md.Pendingdeletionwindowindays = int32(key.PendingWindowInDays)
+	}
+	if key.ValidTo != nil {
+		md.Validto = key.ValidTo.Format(timeutils.ISO8601UTCFormat)
+	}
+	if key.ExpirationModel == "KEY_MATERIAL_EXPIRES" {
+		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES
+	} else if key.ExpirationModel == "KEY_MATERIAL_DOES_NOT_EXPIRE" {
+		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
+	}
+
+	return md
+}
+
+func storeKeyStateToProto(state kmsstore.KeyState) pb.KeyState {
+	switch state {
+	case kmsstore.KeyStateEnabled:
+		return pb.KeyState_KEY_STATE_ENABLED
+	case kmsstore.KeyStateDisabled:
+		return pb.KeyState_KEY_STATE_DISABLED
+	case kmsstore.KeyStatePendingDeletion:
+		return pb.KeyState_KEY_STATE_PENDINGDELETION
+	case kmsstore.KeyStatePendingImport:
+		return pb.KeyState_KEY_STATE_PENDINGIMPORT
+	case kmsstore.KeyStateUnavailable:
+		return pb.KeyState_KEY_STATE_UNAVAILABLE
+	default:
+		return pb.KeyState_KEY_STATE_ENABLED
+	}
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Kms admin console.

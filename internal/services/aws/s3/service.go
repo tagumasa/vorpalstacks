@@ -75,12 +75,13 @@ type busKMSClient struct {
 }
 
 // GenerateDataKey generates a data key encrypted under an S3-managed KMS key.
-func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext map[string]string) (*GenerateDataKeyResult, error) {
+// The bucket ARN is passed as sourceArn for KMS grant constraint evaluation.
+func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext map[string]string, sourceArn string) (*GenerateDataKeyResult, error) {
 	invoker := c.bus.KMSInvoker()
 	if invoker == nil {
 		return nil, fmt.Errorf("KMS invoker not available on event bus")
 	}
-	result, err := invoker.GenerateDataKey(context.Background(), keyID, keySpec, encContext)
+	result, err := invoker.GenerateDataKey(context.Background(), keyID, keySpec, encContext, sourceArn)
 	if err != nil {
 		return nil, err
 	}
@@ -91,12 +92,13 @@ func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext 
 }
 
 // Decrypt decrypts ciphertext using an S3-managed KMS key.
-func (c *busKMSClient) Decrypt(keyID string, ciphertext []byte, encContext map[string]string) ([]byte, error) {
+// The bucket ARN is passed as sourceArn for KMS grant constraint evaluation.
+func (c *busKMSClient) Decrypt(keyID string, ciphertext []byte, encContext map[string]string, sourceArn string) ([]byte, error) {
 	invoker := c.bus.KMSInvoker()
 	if invoker == nil {
 		return nil, fmt.Errorf("KMS invoker not available on event bus")
 	}
-	return invoker.Decrypt(context.Background(), keyID, ciphertext, encContext)
+	return invoker.Decrypt(context.Background(), keyID, ciphertext, encContext, sourceArn)
 }
 
 // KeyExists reports whether the specified KMS key exists.

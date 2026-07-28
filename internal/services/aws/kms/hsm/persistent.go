@@ -3,6 +3,7 @@ package hsm
 import (
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,12 +20,28 @@ type PersistentBackend struct {
 	dataPath  string
 }
 
-type serializedKey struct {
-	KeySpec      string `json:"key_spec"`
+type serializedVersion struct {
 	Symmetric    []byte `json:"symmetric,omitempty"`
 	RSAPrivate   []byte `json:"rsa_private,omitempty"`
 	ECDSAPrivate []byte `json:"ecdsa_private,omitempty"`
 }
+
+type serializedKey struct {
+	KeySpec          string              `json:"key_spec"`
+	CurrentVersion   uint16              `json:"current_version,omitempty"`
+	Symmetric        []byte              `json:"symmetric,omitempty"`
+	RSAPrivate       []byte              `json:"rsa_private,omitempty"`
+	ECDSAPrivate     []byte              `json:"ecdsa_private,omitempty"`
+	PreviousVersions []serializedVersion `json:"previous_versions,omitempty"`
+}
+
+// masterKeyEnvVar is the environment variable that supplies the KMS
+// master key as a hex-encoded 32-byte value. When set, the master key
+// is read from the environment rather than the plaintext file, providing
+// protection equivalent to an external key management service. When not
+// set, the system falls back to the file-based master key (data/hsm/
+// master.key, permission 0600).
+const masterKeyEnvVar = "VORPALSTACKS_KMS_MASTER_KEY"
 
 // NewPersistentBackend creates a new persistent HSM backend.
 func NewPersistentBackend(dataPath string) (*PersistentBackend, error) {
@@ -37,17 +54,27 @@ func NewPersistentBackend(dataPath string) (*PersistentBackend, error) {
 	}
 	b.initKeys()
 
-	masterKeyPath := filepath.Join(dataPath, "hsm", "master.key")
-	if _, err := os.Stat(masterKeyPath); os.IsNotExist(err) {
-		if _, err := rand.Read(b.masterKey[:]); err != nil {
-			return nil, fmt.Errorf("failed to generate master key: %w", err)
-		}
-		if err := b.saveMasterKey(masterKeyPath); err != nil {
-			return nil, fmt.Errorf("failed to save master key: %w", err)
+	// Master key resolution order:
+	// 1. VORPALSTACKS_KMS_MASTER_KEY environment variable (hex-encoded)
+	// 2. Existing master.key file (generated on first run)
+	// 3. Generate new master key and persist to file (first-run bootstrap)
+	if hexKey := os.Getenv(masterKeyEnvVar); hexKey != "" {
+		if err := b.loadMasterKeyFromEnv(hexKey); err != nil {
+			return nil, fmt.Errorf("failed to load master key from %s: %w", masterKeyEnvVar, err)
 		}
 	} else {
-		if err := b.loadMasterKey(masterKeyPath); err != nil {
-			return nil, fmt.Errorf("failed to load master key: %w", err)
+		masterKeyPath := filepath.Join(dataPath, "hsm", "master.key")
+		if _, err := os.Stat(masterKeyPath); os.IsNotExist(err) {
+			if _, err := rand.Read(b.masterKey[:]); err != nil {
+				return nil, fmt.Errorf("failed to generate master key: %w", err)
+			}
+			if err := b.saveMasterKey(masterKeyPath); err != nil {
+				return nil, fmt.Errorf("failed to save master key: %w", err)
+			}
+		} else {
+			if err := b.loadMasterKey(masterKeyPath); err != nil {
+				return nil, fmt.Errorf("failed to load master key: %w", err)
+			}
 		}
 	}
 
@@ -56,6 +83,21 @@ func NewPersistentBackend(dataPath string) (*PersistentBackend, error) {
 	}
 
 	return b, nil
+}
+
+// loadMasterKeyFromEnv decodes a hex-encoded 32-byte master key from the
+// environment variable. This avoids storing the master key in a plaintext
+// file when an external secret manager provides it via the environment.
+func (b *PersistentBackend) loadMasterKeyFromEnv(hexKey string) error {
+	data, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return fmt.Errorf("master key is not valid hex: %w", err)
+	}
+	if len(data) != 32 {
+		return fmt.Errorf("master key must be 32 bytes, got %d", len(data))
+	}
+	copy(b.masterKey[:], data)
+	return nil
 }
 
 func (b *PersistentBackend) saveMasterKey(path string) error {
@@ -84,7 +126,10 @@ func (b *PersistentBackend) saveKeys() error {
 
 	serialized := make(map[string]serializedKey)
 	for keyID, mk := range b.keys {
-		sk := serializedKey{KeySpec: string(mk.keySpec)}
+		sk := serializedKey{
+			KeySpec:        string(mk.keySpec),
+			CurrentVersion: mk.currentVersion,
+		}
 		if mk.symmetric != nil {
 			sk.Symmetric = mk.symmetric
 		}
@@ -97,6 +142,23 @@ func (b *PersistentBackend) saveKeys() error {
 				return fmt.Errorf("failed to marshal ECDSA private key for %s: %w", keyID, err)
 			}
 			sk.ECDSAPrivate = ecdsaBytes
+		}
+		for _, pv := range mk.previousVersions {
+			sv := serializedVersion{}
+			if pv.symmetric != nil {
+				sv.Symmetric = pv.symmetric
+			}
+			if pv.rsaKey != nil {
+				sv.RSAPrivate = x509.MarshalPKCS1PrivateKey(pv.rsaKey)
+			}
+			if pv.ecdsaKey != nil {
+				ecdsaBytes, err := x509.MarshalECPrivateKey(pv.ecdsaKey)
+				if err != nil {
+					return fmt.Errorf("failed to marshal ECDSA prev key for %s: %w", keyID, err)
+				}
+				sv.ECDSAPrivate = ecdsaBytes
+			}
+			sk.PreviousVersions = append(sk.PreviousVersions, sv)
 		}
 		serialized[keyID] = sk
 	}
@@ -148,7 +210,7 @@ func (b *PersistentBackend) loadKeys() error {
 	}
 
 	for keyID, sk := range serialized {
-		mk := &memoryKey{keySpec: KeySpec(sk.KeySpec)}
+		mk := &memoryKey{keySpec: KeySpec(sk.KeySpec), currentVersion: sk.CurrentVersion}
 		if sk.Symmetric != nil {
 			mk.symmetric = sk.Symmetric
 		}
@@ -165,6 +227,27 @@ func (b *PersistentBackend) loadKeys() error {
 				return fmt.Errorf("failed to parse ECDSA private key for %s: %w", keyID, err)
 			}
 			mk.ecdsaKey = ecdsaKey
+		}
+		for _, sv := range sk.PreviousVersions {
+			pv := keyMaterial{}
+			if sv.Symmetric != nil {
+				pv.symmetric = sv.Symmetric
+			}
+			if sv.RSAPrivate != nil {
+				rsaKey, err := x509.ParsePKCS1PrivateKey(sv.RSAPrivate)
+				if err != nil {
+					return fmt.Errorf("failed to parse prev RSA key for %s: %w", keyID, err)
+				}
+				pv.rsaKey = rsaKey
+			}
+			if sv.ECDSAPrivate != nil {
+				ecdsaKey, err := x509.ParseECPrivateKey(sv.ECDSAPrivate)
+				if err != nil {
+					return fmt.Errorf("failed to parse prev ECDSA key for %s: %w", keyID, err)
+				}
+				pv.ecdsaKey = ecdsaKey
+			}
+			mk.previousVersions = append(mk.previousVersions, pv)
 		}
 		b.keys[keyID] = mk
 	}
@@ -341,4 +424,31 @@ func (b *PersistentBackend) KeyExists(keyID string) bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.keyExists(keyID)
+}
+
+// RotateKey generates new key material, preserving the old version,
+// and persists the updated key state. The write lock is held for the
+// entire operation (rotation + saveKeys) to prevent concurrent readers
+// from accessing a partially-updated key map — mirroring the lock
+// discipline used by GenerateKey and ImportKey.
+func (b *PersistentBackend) RotateKey(keyID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	old, exists := b.keys[keyID]
+	if !exists {
+		return ErrKeyNotFound
+	}
+
+	newKey, err := b.generateKeyMaterial(old.keySpec)
+	if err != nil {
+		return err
+	}
+
+	// Preserve the current material as a previous version so that
+	// ciphertexts encrypted before rotation remain decryptable.
+	old.previousVersions = append([]keyMaterial{old.keyMaterial}, old.previousVersions...)
+	old.keyMaterial = newKey.keyMaterial
+	old.currentVersion++
+	return b.saveKeys()
 }

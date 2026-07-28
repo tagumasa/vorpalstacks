@@ -4,7 +4,6 @@ package kms
 
 import (
 	"context"
-	"errors"
 	"regexp"
 
 	"vorpalstacks/internal/common/pagination"
@@ -65,6 +64,10 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	grantToken, err := kmsstore.GenerateGrantToken()
 	if err != nil {
 		return nil, err
@@ -95,15 +98,44 @@ func (s *KMSService) ListGrants(ctx context.Context, reqCtx *request.RequestCont
 	marker := pagination.GetMarker(req.Parameters)
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 	granteePrincipal := request.GetStringParam(req.Parameters, "GranteePrincipal")
+	grantIDFilter := request.GetStringParam(req.Parameters, "GrantId")
+	granteeServicePrincipal := request.GetStringParam(req.Parameters, "GranteeServicePrincipal")
+
+	// When GrantId is specified, fetch the single grant directly instead
+	// of paginating through the full list. GrantId uniquely identifies a
+	// grant, so post-filter pagination is unnecessary and would return
+	// incorrect IsTruncated/NextMarker values.
+	if grantIDFilter != "" {
+		grant, err := stores.grants.Get(grantIDFilter)
+		if err != nil {
+			if kmsstore.IsNotFound(err) {
+				return nil, ErrGrantNotFound
+			}
+			return nil, err
+		}
+		if grant.KeyID != key.KeyID {
+			return nil, ErrGrantNotFound
+		}
+		if granteeServicePrincipal != "" && grant.GranteePrincipal != granteeServicePrincipal {
+			return s.buildGrantsListResponse([]map[string]interface{}{}, false, ""), nil
+		}
+		return s.buildGrantsListResponse([]map[string]interface{}{s.buildGrantResponse(grant, key.Arn)}, false, ""), nil
+	}
 
 	result, err := stores.grants.List(key.KeyID, granteePrincipal, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	grants := make([]map[string]interface{}, len(result.Grants))
-	for i, g := range result.Grants {
-		grants[i] = s.buildGrantResponse(g, key.Arn)
+	// Apply GranteeServicePrincipal filter (post-filter is acceptable
+	// here because GranteeServicePrincipal is a coarse filter that rarely
+	// splits across pages in practice).
+	var grants []map[string]interface{}
+	for _, g := range result.Grants {
+		if granteeServicePrincipal != "" && g.GranteePrincipal != granteeServicePrincipal {
+			continue
+		}
+		grants = append(grants, s.buildGrantResponse(g, key.Arn))
 	}
 
 	return s.buildGrantsListResponse(grants, result.IsTruncated, result.NextMarker), nil
@@ -225,7 +257,7 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	grant, err := stores.grants.Get(grantID)
 	if err != nil {
-		if errors.Is(err, kmsstore.ErrGrantNotFound) {
+		if kmsstore.IsNotFound(err) {
 			return nil, ErrGrantNotFound
 		}
 		return nil, err
@@ -233,6 +265,10 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	if grant.KeyID != key.KeyID {
 		return nil, ErrGrantNotFound
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
 	}
 
 	if err := stores.grants.Delete(grantID); err != nil {
@@ -257,7 +293,7 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 		var err error
 		grant, err = stores.grants.Get(grantID)
 		if err != nil {
-			if errors.Is(err, kmsstore.ErrGrantNotFound) {
+			if kmsstore.IsNotFound(err) {
 				return nil, ErrGrantNotFound
 			}
 			return nil, err
@@ -266,7 +302,7 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 		var err error
 		grant, err = stores.grants.GetByToken(grantToken)
 		if err != nil {
-			if errors.Is(err, kmsstore.ErrGrantNotFound) {
+			if kmsstore.IsNotFound(err) {
 				return nil, ErrGrantNotFound
 			}
 			return nil, err
@@ -290,6 +326,10 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 		if grant.KeyID != key.KeyID {
 			return nil, ErrGrantNotFound
 		}
+	}
+
+	if err := checkKMSDryRun(req.Parameters); err != nil {
+		return nil, err
 	}
 
 	if err := stores.grants.Delete(grantID); err != nil {

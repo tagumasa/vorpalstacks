@@ -13,8 +13,8 @@ import (
 
 // KMSClient defines the interface for KMS operations.
 type KMSClient interface {
-	GenerateDataKey(keyID string, keySpec string, context map[string]string) (*GenerateDataKeyResult, error)
-	Decrypt(keyID string, ciphertext []byte, context map[string]string) ([]byte, error)
+	GenerateDataKey(keyID string, keySpec string, context map[string]string, sourceArn string) (*GenerateDataKeyResult, error)
+	Decrypt(keyID string, ciphertext []byte, context map[string]string, sourceArn string) ([]byte, error)
 	KeyExists(keyID string) bool
 }
 
@@ -35,7 +35,7 @@ func NewHSMKMSClient(backend hsm.Backend) *HSMKMSClient {
 }
 
 // GenerateDataKey generates a new data key using KMS.
-func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map[string]string) (*GenerateDataKeyResult, error) {
+func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map[string]string, _ string) (*GenerateDataKeyResult, error) {
 	result, err := c.hsmBackend.GenerateDataKey(keyID, keySpec, 0, context)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate data key: %w", err)
@@ -47,7 +47,7 @@ func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map
 }
 
 // Decrypt decrypts data using KMS.
-func (c *HSMKMSClient) Decrypt(keyID string, ciphertext []byte, context map[string]string) ([]byte, error) {
+func (c *HSMKMSClient) Decrypt(keyID string, ciphertext []byte, context map[string]string, _ string) ([]byte, error) {
 	result, err := c.hsmBackend.Decrypt(keyID, ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, context)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt: %w", err)
@@ -92,8 +92,9 @@ func (e *SSEKMSEncryptor) Encrypt(plaintext []byte, bucket, key string, kmsKeyID
 	}
 
 	encryptionContext := e.buildEncryptionContext(bucket, key)
+	bucketArn := arnutil.NewARNBuilder("", "").S3().Bucket(bucket)
 
-	dataKeyResult, err := e.kmsClient.GenerateDataKey(kmsKeyID, "AES_256", encryptionContext)
+	dataKeyResult, err := e.kmsClient.GenerateDataKey(kmsKeyID, "AES_256", encryptionContext, bucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate data key: %w", err)
 	}
@@ -153,8 +154,9 @@ func (e *SSEKMSEncryptor) GenerateKey(kmsKeyID string, bucket, key string) (*Gen
 	}
 
 	encryptionContext := e.buildEncryptionContext(bucket, key)
+	bucketArn := arnutil.NewARNBuilder("", "").S3().Bucket(bucket)
 
-	dataKeyResult, err := e.kmsClient.GenerateDataKey(kmsKeyID, "AES_256", encryptionContext)
+	dataKeyResult, err := e.kmsClient.GenerateDataKey(kmsKeyID, "AES_256", encryptionContext, bucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate data key: %w", err)
 	}
@@ -181,8 +183,9 @@ func (e *SSEKMSEncryptor) Decrypt(ciphertext []byte, sseMetadata *s3store.SSEObj
 	}
 
 	encryptionContext := e.buildEncryptionContext(bucket, key)
+	bucketArn := arnutil.NewARNBuilder("", "").S3().Bucket(bucket)
 
-	plaintextKey, err := e.kmsClient.Decrypt(sseMetadata.KMSKeyID, sseMetadata.EncryptedDataKey, encryptionContext)
+	plaintextKey, err := e.kmsClient.Decrypt(sseMetadata.KMSKeyID, sseMetadata.EncryptedDataKey, encryptionContext, bucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt data key: %w", err)
 	}

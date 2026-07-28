@@ -159,6 +159,10 @@ type Backend interface {
 
 	GetPublicKey(keyID string) ([]byte, error)
 	GenerateKeyPair(keySpec KeySpec) (privateKeyDER []byte, publicKeyDER []byte, err error)
+	// RotateKey generates new cryptographic material for the key,
+	// preserving previous versions so that ciphertexts encrypted before
+	// rotation remain decryptable. Used by RotateKeyOnDemand.
+	RotateKey(keyID string) error
 	IsKeyAvailable(keyID string) bool
 	KeyExists(keyID string) bool
 }

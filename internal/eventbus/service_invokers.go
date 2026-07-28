@@ -185,10 +185,12 @@ type NeptuneGraphInvoker interface {
 
 // KMSInvoker provides KMS encryption operations for cross-service consumers
 // (e.g. S3 SSE-KMS envelope encryption). Consumers call these methods instead
-// of holding a direct reference to the KMS store or HSM backend.
+// of holding a direct reference to the KMS store or HSM backend. The
+// sourceArn parameter carries the calling service's resource ARN (e.g. an S3
+// bucket ARN) for grant constraint evaluation (aws:SourceArn).
 type KMSInvoker interface {
-	GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string) (*KMSDataKeyResult, error)
-	Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string) ([]byte, error)
+	GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*KMSDataKeyResult, error)
+	Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string, sourceArn string) ([]byte, error)
 	KeyExists(ctx context.Context, keyID string) bool
 }
 
