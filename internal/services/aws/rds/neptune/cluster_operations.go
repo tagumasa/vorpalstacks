@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
@@ -15,6 +18,50 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 )
+
+// hashMasterPassword bcrypts the given plaintext password and returns the
+// hash string. An empty input yields an empty hash (no password set).
+func hashMasterPassword(plaintext string) (string, error) {
+	if plaintext == "" {
+		return "", nil
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintext), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash master password: %w", err)
+	}
+	return string(hash), nil
+}
+
+// validateBackupRetentionPeriod checks that the retention period is within
+// the AWS-specified range of 1-35 days for Neptune (M1/M13 fix).
+func validateBackupRetentionPeriod(v int) error {
+	if v < 1 || v > 35 {
+		return fmt.Errorf("BackupRetentionPeriod must be between 1 and 35")
+	}
+	return nil
+}
+
+// validatePort checks that the port number is within the AWS-specified
+// valid range for Neptune DB clusters (M2 fix).
+func validatePort(v int) error {
+	if v < 1150 || v > 65535 {
+		return fmt.Errorf("Port must be between 1150 and 65535")
+	}
+	return nil
+}
+
+// isValidIAMRoleArn validates that the given string is a well-formed IAM
+// role ARN (arn:aws:iam::<account>:role/<name>) (H_orig_H5 fix).
+func isValidIAMRoleArn(arn string) bool {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 6 {
+		return false
+	}
+	if parts[0] != "arn" || (parts[1] != "aws" && parts[1] != "aws-cn" && parts[1] != "aws-us-gov") || parts[2] != "iam" {
+		return false
+	}
+	return strings.HasPrefix(parts[len(parts)-1], "role/")
+}
 
 func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 	m := map[string]interface{}{
@@ -29,6 +76,8 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		"DeletionProtection":               c.DeletionProtection,
 		"IAMDatabaseAuthenticationEnabled": c.IAMDatabaseAuthenticationEnabled,
 		"DBClusterArn":                     c.DBClusterArn,
+		// M5: Previously dropped output fields.
+		"AllocatedStorage": c.AllocatedStorage,
 	}
 	if c.EngineVersion != "" {
 		m["EngineVersion"] = c.EngineVersion
@@ -49,7 +98,8 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		m["AvailabilityZones"] = protocol.XMLElements{ElementName: "AvailabilityZone", Items: stringSliceToInterface(c.AvailabilityZones)}
 	}
 	if len(c.VpcSecurityGroupIds) > 0 {
-		m["VpcSecurityGroupIds"] = protocol.XMLElements{ElementName: "VpcSecurityGroupMembership", Items: vpcSecurityToInterface(c.VpcSecurityGroupIds)}
+		// M7: Use Smithy-correct output key "VpcSecurityGroups" (was "VpcSecurityGroupIds").
+		m["VpcSecurityGroups"] = protocol.XMLElements{ElementName: "VpcSecurityGroupMembership", Items: vpcSecurityToInterface(c.VpcSecurityGroupIds, c.Status)}
 	}
 	if c.DBSubnetGroupName != "" {
 		m["DBSubnetGroup"] = c.DBSubnetGroupName
@@ -101,13 +151,60 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		// use dynamic port allocation.
 		m["Endpoint"] = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
 	}
+	// M5: Previously dropped output fields (conditional).
+	if c.DbClusterResourceId != "" {
+		m["DbClusterResourceId"] = c.DbClusterResourceId
+	}
+	if c.NetworkType != "" {
+		m["NetworkType"] = c.NetworkType
+	}
+	if c.PercentProgress != "" {
+		m["PercentProgress"] = c.PercentProgress
+	}
+	if c.HostedZoneId != "" {
+		m["HostedZoneId"] = c.HostedZoneId
+	}
+	if len(c.ReadReplicaIdentifiers) > 0 {
+		m["ReadReplicaIdentifiers"] = protocol.XMLElements{ElementName: "ReadReplicaIdentifier", Items: stringSliceToInterface(c.ReadReplicaIdentifiers)}
+	}
+	if c.AutomaticRestartTime != nil {
+		m["AutomaticRestartTime"] = c.AutomaticRestartTime.Format(time.RFC3339)
+	}
+	if c.PendingModifiedValues != nil {
+		m["PendingModifiedValues"] = c.PendingModifiedValues
+	}
+	if len(c.DBClusterMembers) > 0 {
+		members := make([]interface{}, 0, len(c.DBClusterMembers))
+		for _, mem := range c.DBClusterMembers {
+			members = append(members, map[string]interface{}{
+				"DBInstanceIdentifier":          mem.DBInstanceIdentifier,
+				"IsClusterWriter":               mem.IsClusterWriter,
+				"DBClusterParameterGroupStatus": mem.DBClusterParameterGroupStatus,
+				"PromotionTier":                 mem.PromotionTier,
+			})
+		}
+		m["DBClusterMembers"] = protocol.XMLElements{ElementName: "DBClusterMember", Items: members}
+	}
+	if c.ReaderEndpoint != nil {
+		m["ReaderEndpoint"] = fmt.Sprintf("%s:%d", c.ReaderEndpoint.Address, c.ReaderEndpoint.Port)
+	}
 	return m
 }
 
-func vpcSecurityToInterface(ids []string) []interface{} {
+// vpcSecurityToInterface converts VPC security group IDs to the AWS response
+// format, deriving the Status from the cluster's lifecycle state instead of
+// hardcoding "active" (M7 fix).
+func vpcSecurityToInterface(ids []string, clusterStatus string) []interface{} {
+	sgStatus := "active"
+	switch clusterStatus {
+	case "creating":
+		sgStatus = "adding"
+	case "deleting":
+		sgStatus = "removing"
+	}
 	result := make([]interface{}, len(ids))
 	for i, id := range ids {
-		result[i] = map[string]interface{}{"VpcSecurityGroupId": id, "Status": "active"}
+		result[i] = map[string]interface{}{"VpcSecurityGroupId": id, "Status": sgStatus}
 	}
 	return result
 }
@@ -140,6 +237,11 @@ func (s *NeptuneService) setClusterEndpoint(store neptunestore.NeptuneStoreInter
 		return
 	}
 	cluster.Endpoint = &neptunestore.Endpoint{Address: addr, Port: enginePort}
+	// M5: ReaderEndpoint mirrors the cluster endpoint for Neptune's
+	// single-writer topology. AWS Neptune surfaces both endpoints.
+	if cluster.ReaderEndpoint == nil {
+		cluster.ReaderEndpoint = &neptunestore.Endpoint{Address: addr, Port: enginePort}
+	}
 	if err := store.UpdateCluster(cluster); err != nil {
 		logs.Warn("failed to persist cluster endpoint", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
 	}
@@ -190,17 +292,49 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
+	// H2: Validate that referenced DBClusterParameterGroupName exists.
+	if pgName := request.GetStringParam(params, "DBClusterParameterGroupName"); pgName != "" {
+		if _, err := store.GetClusterParameterGroup(pgName); err != nil {
+			return nil, awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", fmt.Sprintf("DB Cluster Parameter Group not found: %s", pgName), http.StatusNotFound)
+		}
+	}
+	// H2: Validate that referenced DBSubnetGroupName exists.
+	if sgName := request.GetStringParam(params, "DBSubnetGroupName"); sgName != "" {
+		if _, err := store.GetSubnetGroup(sgName); err != nil {
+			return nil, awserrors.NewAWSError("DBSubnetGroupNotFoundFault", fmt.Sprintf("DB Subnet Group not found: %s", sgName), http.StatusNotFound)
+		}
+	}
+
 	now := time.Now()
 	port := request.GetIntParam(params, "Port")
+	// M2: Validate Port range when explicitly provided.
+	if request.HasParam(params, "Port") && port > 0 {
+		if err := validatePort(port); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
 	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
 	if backupRetention == 0 {
 		backupRetention = 1
 	}
+	// M1: Validate BackupRetentionPeriod range (1-35).
+	if err := validateBackupRetentionPeriod(backupRetention); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+
+	// H1: Accept MasterUserPassword and store as bcrypt hash.
+	// Write-only: never surfaced in API responses.
+	masterPassword := request.GetStringParam(params, "MasterUserPassword")
+	masterPasswordHash, err := hashMasterPassword(masterPassword)
+	if err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+
 	cluster := &neptunestore.DBCluster{
 		DBClusterIdentifier:              id,
 		Engine:                           engine,
 		EngineVersion:                    engineVersion,
-		Status:                           "available",
+		Status:                           "creating",
 		Port:                             port,
 		BackupRetentionPeriod:            backupRetention,
 		PreferredBackupWindow:            request.GetStringParam(params, "PreferredBackupWindow"),
@@ -220,6 +354,9 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		ReplicationSourceIdentifier:      replicationSource,
 		GlobalClusterIdentifier:          request.GetStringParam(params, "GlobalClusterIdentifier"),
 		StorageType:                      request.GetStringParam(params, "StorageType"),
+		MasterUserPasswordHash:           masterPasswordHash,
+		DbClusterResourceId:              fmt.Sprintf("cluster-%s", id),
+		NetworkType:                      "IPV4",
 		AccountID:                        reqCtx.GetAccountID(),
 		Region:                           reqCtx.GetRegion(),
 		DBClusterArn:                     arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(id),
@@ -236,6 +373,18 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 	if logExports := request.GetStringList(params, "EnableCloudwatchLogsExports"); len(logExports) > 0 {
 		cluster.EnabledCloudwatchLogsExports = logExports
+	}
+	// M4: Parse ServerlessV2ScalingConfiguration from input (previously dropped).
+	if svsc := request.GetMapParam(params, "ServerlessV2ScalingConfiguration"); svsc != nil {
+		minCap := request.GetFloatParam(svsc, "MinCapacity")
+		maxCap := request.GetFloatParam(svsc, "MaxCapacity")
+		if minCap < 0.5 || minCap > 128 || maxCap < 1 || maxCap > 256 || minCap >= maxCap {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", "ServerlessV2ScalingConfiguration: MinCapacity must be 0.5-128, MaxCapacity 1-256, and MinCapacity < MaxCapacity", http.StatusBadRequest)
+		}
+		cluster.ServerlessV2ScalingConfiguration = &neptunestore.ServerlessV2ScalingConfiguration{
+			MinCapacity: minCap,
+			MaxCapacity: maxCap,
+		}
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
@@ -283,6 +432,24 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 
 	recordEvent(store, "db-cluster", id, cluster.DBClusterArn,
 		fmt.Sprintf("DB cluster %s created", id), []string{"creation"})
+
+	// State machine: transition from 'creating' to 'available'.
+	// Done synchronously so the response reflects the final state and
+	// subsequent operations (StopDBCluster, etc.) see 'available'.
+	// The background goroutine acts as a safety net for the rare case
+	// where the synchronous update was skipped (e.g. store error).
+	cluster.Status = "available"
+	if err := store.UpdateCluster(cluster); err != nil {
+		logs.Warn("failed to transition cluster to available", logs.String("cluster", id), logs.Err(err))
+	}
+	s.scheduleTransition(reqCtx.GetRegion(), 500*time.Millisecond, func(st neptunestore.NeptuneStoreInterface) error {
+		c, err := st.GetCluster(id)
+		if err != nil || c.Status != "creating" {
+			return nil // cluster deleted or already transitioned
+		}
+		c.Status = "available"
+		return st.UpdateCluster(c)
+	})
 
 	return map[string]interface{}{
 		"DBCluster": enrichClusterWithTags(store, cluster),
@@ -342,8 +509,27 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 			Region:                      reqCtx.GetRegion(),
 		}
 		if err := store.CreateSnapshot(snapshot); err != nil {
+			// H4: Roll back cluster status if snapshot creation fails.
+			cluster.Status = "available"
+			store.UpdateCluster(cluster)
 			return nil, translateStoreError(err)
 		}
+	}
+
+	// H4: Delete the cluster before cascading cleanup so that a
+	// DeleteCluster failure leaves the snapshot and cascade untouched.
+	// On failure we roll back the status and remove the orphaned snapshot.
+	if err := store.DeleteCluster(id); err != nil {
+		cluster.Status = "available"
+		if rbErr := store.UpdateCluster(cluster); rbErr != nil {
+			logs.Warn("failed to roll back cluster status after delete failure", logs.String("cluster", id), logs.Err(rbErr))
+		}
+		if !skipFinal {
+			if delErr := store.DeleteSnapshot(finalSnapshotID); delErr != nil {
+				logs.Warn("failed to clean up orphaned snapshot after delete failure", logs.String("snapshot", finalSnapshotID), logs.Err(delErr))
+			}
+		}
+		return nil, translateStoreError(err)
 	}
 
 	cascadeDeleteClusterResources(store, cluster)
@@ -367,10 +553,6 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 		if err := eng.Close(id); err != nil {
 			logs.Warn("failed to close cluster engine", logs.String("cluster", id), logs.Err(err))
 		}
-	}
-
-	if err := store.DeleteCluster(id); err != nil {
-		return nil, translateStoreError(err)
 	}
 
 	recordEvent(store, "db-cluster", id, cluster.DBClusterArn,
@@ -403,15 +585,27 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.EngineVersion = v
 	}
 	if v := request.GetStringParam(params, "DBClusterParameterGroupName"); v != "" {
+		// H2: Validate referenced parameter group exists before assigning.
+		if _, err := store.GetClusterParameterGroup(v); err != nil {
+			return nil, awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", fmt.Sprintf("DB Cluster Parameter Group not found: %s", v), http.StatusNotFound)
+		}
 		cluster.DBClusterParameterGroupName = v
 	}
 	if v := request.GetIntParam(params, "Port"); v > 0 {
+		// M2: Validate Port range on modify.
+		if err := validatePort(v); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
 		cluster.Port = v
 		if cluster.Endpoint != nil {
 			cluster.Endpoint.Port = v
 		}
 	}
 	if v := request.GetIntParam(params, "BackupRetentionPeriod"); v > 0 {
+		// M13: Validate BackupRetentionPeriod range on modify.
+		if err := validateBackupRetentionPeriod(v); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
 		cluster.BackupRetentionPeriod = v
 	}
 	if v := request.GetStringParam(params, "PreferredBackupWindow"); v != "" {
@@ -422,6 +616,30 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 	if v := request.GetStringParam(params, "StorageType"); v != "" {
 		cluster.StorageType = v
+	}
+	// H1: Accept MasterUserPassword on modify and store as bcrypt hash.
+	if pwd := request.GetStringParam(params, "MasterUserPassword"); pwd != "" {
+		hash, hashErr := hashMasterPassword(pwd)
+		if hashErr != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", hashErr.Error(), http.StatusBadRequest)
+		}
+		cluster.MasterUserPasswordHash = hash
+	}
+	// M6: Handle NetworkType on modify (Smithy ModifyDBClusterMessage member).
+	if nt := request.GetStringParam(params, "NetworkType"); nt != "" {
+		cluster.NetworkType = nt
+	}
+	// M4: Handle ServerlessV2ScalingConfiguration on modify.
+	if svsc := request.GetMapParam(params, "ServerlessV2ScalingConfiguration"); svsc != nil {
+		minCap := request.GetFloatParam(svsc, "MinCapacity")
+		maxCap := request.GetFloatParam(svsc, "MaxCapacity")
+		if minCap < 0.5 || minCap > 128 || maxCap < 1 || maxCap > 256 || minCap >= maxCap {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", "ServerlessV2ScalingConfiguration: MinCapacity must be 0.5-128, MaxCapacity 1-256, and MinCapacity < MaxCapacity", http.StatusBadRequest)
+		}
+		cluster.ServerlessV2ScalingConfiguration = &neptunestore.ServerlessV2ScalingConfiguration{
+			MinCapacity: minCap,
+			MaxCapacity: maxCap,
+		}
 	}
 	if request.HasParam(params, "DeletionProtection") {
 		cluster.DeletionProtection = request.GetBoolParam(params, "DeletionProtection")
@@ -621,6 +839,11 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 		return nil, translateStoreError(err)
 	}
 
+	// M11: FailoverDBCluster requires the cluster to be in 'available' state.
+	if cluster.Status != "available" {
+		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("DBCluster %s is not in available state (current: %s)", id, cluster.Status), http.StatusBadRequest)
+	}
+
 	cluster.Status = "available"
 	if err := store.UpdateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
@@ -641,6 +864,10 @@ func (s *NeptuneService) AddRoleToDBCluster(ctx context.Context, reqCtx *request
 	roleArn := request.GetStringParam(params, "RoleArn")
 	if roleArn == "" {
 		return nil, awserrors.NewMissingParameter("RoleArn is required")
+	}
+	// H_orig_H5: Validate IAM role ARN format.
+	if !isValidIAMRoleArn(roleArn) {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Invalid IAM role ARN: %s", roleArn), http.StatusBadRequest)
 	}
 
 	store, err := s.store(reqCtx)

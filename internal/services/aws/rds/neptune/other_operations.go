@@ -411,6 +411,18 @@ func (s *NeptuneService) ApplyPendingMaintenanceAction(ctx context.Context, reqC
 		return nil, awserrors.NewMissingParameter("OptInType is required")
 	}
 
+	// L2: Validate that the resource exists.
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetCluster(resourceID); err != nil {
+		if _, err2 := store.GetInstance(resourceID); err2 != nil {
+			return nil, awserrors.NewAWSError("ResourceNotFoundFault",
+				fmt.Sprintf("Resource %s not found", resourceID), http.StatusNotFound)
+		}
+	}
+
 	return map[string]interface{}{
 		"ResourcePendingMaintenanceActions": map[string]interface{}{
 			"ResourceIdentifier": resourceID,

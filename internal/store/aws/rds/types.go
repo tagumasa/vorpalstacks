@@ -48,6 +48,26 @@ type DBCluster struct {
 	Region                           string                            `json:"Region,omitempty"`
 	DBClusterArn                     string                            `json:"DBClusterArn,omitempty"`
 	Endpoint                         *Endpoint                         `json:"Endpoint,omitempty"`
+
+	// MasterUserPasswordHash stores the bcrypt hash of the master user
+	// password. It is persisted but never serialised to API responses
+	// (write-only per AWS spec). json tag omits it from protocol output
+	// but keeps it in Pebble persistence (H1 fix).
+	MasterUserPasswordHash string `json:"-"`
+
+	// AWS-standard DBCluster output fields previously dropped (M5 fix).
+	// These are populated at create time and surfaced through
+	// DescribeDBClusters so that SDK clients see a complete response.
+	AllocatedStorage       int32                         `json:"AllocatedStorage,omitempty"`
+	DBClusterMembers       []DBClusterMember             `json:"DBClusterMembers,omitempty"`
+	ReaderEndpoint         *Endpoint                     `json:"ReaderEndpoint,omitempty"`
+	DbClusterResourceId    string                        `json:"DbClusterResourceId,omitempty"`
+	NetworkType            string                        `json:"NetworkType,omitempty"`
+	PercentProgress        string                        `json:"PercentProgress,omitempty"`
+	PendingModifiedValues  *ClusterPendingModifiedValues `json:"PendingModifiedValues,omitempty"`
+	HostedZoneId           string                        `json:"HostedZoneId,omitempty"`
+	ReadReplicaIdentifiers []string                      `json:"ReadReplicaIdentifiers,omitempty"`
+	AutomaticRestartTime   *time.Time                    `json:"AutomaticRestartTime,omitempty"`
 }
 
 type ServerlessV2ScalingConfiguration struct {
@@ -59,6 +79,29 @@ type DBClusterRole struct {
 	RoleArn     string `json:"RoleArn"`
 	FeatureName string `json:"FeatureName,omitempty"`
 	Status      string `json:"Status"`
+}
+
+// DBClusterMember represents a DB instance that belongs to a DB cluster.
+// Surfaced in DBCluster output as the DBClusterMembers list (M5 fix).
+type DBClusterMember struct {
+	DBInstanceIdentifier          string `json:"DBInstanceIdentifier"`
+	IsClusterWriter               bool   `json:"IsClusterWriter"`
+	DBClusterParameterGroupStatus string `json:"DBClusterParameterGroupStatus,omitempty"`
+	PromotionTier                 int32  `json:"PromotionTier,omitempty"`
+}
+
+// ClusterPendingModifiedValues holds pending changes that have not yet been
+// applied to the DB cluster. Populated when ApplyImmediately=false during
+// ModifyDBCluster (M5 fix).
+type ClusterPendingModifiedValues struct {
+	DBClusterIdentifier              string `json:"DBClusterIdentifier,omitempty"`
+	IAMDatabaseAuthenticationEnabled *bool  `json:"IAMDatabaseAuthenticationEnabled,omitempty"`
+	EngineVersion                    string `json:"EngineVersion,omitempty"`
+	BackupRetentionPeriod            *int   `json:"BackupRetentionPeriod,omitempty"`
+	StorageType                      string `json:"StorageType,omitempty"`
+	AllocatedStorage                 *int32 `json:"AllocatedStorage,omitempty"`
+	Iops                             *int32 `json:"Iops,omitempty"`
+	NetworkType                      string `json:"NetworkType,omitempty"`
 }
 
 type DBInstance struct {
@@ -114,6 +157,11 @@ type DBInstance struct {
 	DbiResourceId                      string     `json:"DbiResourceId,omitempty"`
 	LatestRestorableTime               *time.Time `json:"LatestRestorableTime,omitempty"`
 	PreferredBackupWindow              string     `json:"PreferredBackupWindow,omitempty"`
+
+	// MasterUserPasswordHash stores the bcrypt hash of the master user
+	// password for the instance. Write-only: persisted but never surfaced
+	// in API responses (H1 fix).
+	MasterUserPasswordHash string `json:"-"`
 }
 
 type DBInstanceSnapshot struct {

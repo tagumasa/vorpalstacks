@@ -20,32 +20,45 @@ import (
 )
 
 type NeptuneService struct {
-	accountID      string
-	region         string
-	serverHost     string
-	storageManager *storage.RegionStorageManager
-	stores         sync.Map
-	eventBus       *eventbus.EventBus
-	cancelCleanup  context.CancelFunc
-	engine         rdssvc.Engine
-	mysqlEngine    rdssvc.Engine
-	porter         rdssvc.GetPorter
-	snapOp         rdssvc.SnapshotOperator
+	accountID        string
+	region           string
+	serverHost       string
+	storageManager   *storage.RegionStorageManager
+	stores           sync.Map
+	eventBus         *eventbus.EventBus
+	cancelCleanup    context.CancelFunc
+	transitionCtx    context.Context
+	cancelTransition context.CancelFunc
+	engine           rdssvc.Engine
+	mysqlEngine      rdssvc.Engine
+	porter           rdssvc.GetPorter
+	snapOp           rdssvc.SnapshotOperator
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
 // region. A background goroutine is started to periodically purge old events.
 func NewNeptuneService(accountID, region string) *NeptuneService {
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &NeptuneService{accountID: accountID, region: region, cancelCleanup: cancel}
-	go s.cleanupOldEvents(ctx)
+	cleanupCtx, cleanupCancel := context.WithCancel(context.Background())
+	transitionCtx, transitionCancel := context.WithCancel(context.Background())
+	s := &NeptuneService{
+		accountID:        accountID,
+		region:           region,
+		cancelCleanup:    cleanupCancel,
+		transitionCtx:    transitionCtx,
+		cancelTransition: transitionCancel,
+	}
+	go s.cleanupOldEvents(cleanupCtx)
 	return s
 }
 
-// Close stops the background event cleanup goroutine.
+// Close stops the background event cleanup goroutine and all pending state
+// transition goroutines.
 func (s *NeptuneService) Close() {
 	if s.cancelCleanup != nil {
 		s.cancelCleanup()
+	}
+	if s.cancelTransition != nil {
+		s.cancelTransition()
 	}
 }
 
@@ -209,6 +222,31 @@ func recordEvent(store neptunestore.NeptuneStoreInterface, sourceType, sourceID,
 	if err := store.RecordEvent(evt); err != nil {
 		logs.Warn("failed to record event", logs.Err(err))
 	}
+}
+
+// scheduleTransition spawns a goroutine that waits for the specified delay
+// and then invokes fn with the per-region store. The goroutine respects
+// service shutdown via the transition context. This implements the async
+// state machine (creating → available, creating → active) for Create
+// operations so that clients observe a brief 'creating' state before the
+// resource transitions to its final state.
+func (s *NeptuneService) scheduleTransition(region string, delay time.Duration, fn func(store neptunestore.NeptuneStoreInterface) error) {
+	go func() {
+		defer func() { resilience.RecoverPanic("Neptune state transition") }()
+		select {
+		case <-s.transitionCtx.Done():
+			return
+		case <-time.After(delay):
+		}
+		store, err := s.GetStoreForRegion(region)
+		if err != nil {
+			logs.Warn("state transition: failed to get store", logs.String("region", region), logs.Err(err))
+			return
+		}
+		if err := fn(store); err != nil {
+			logs.Warn("state transition: failed to update", logs.String("region", region), logs.Err(err))
+		}
+	}()
 }
 
 // RegisterHandlers registers all Neptune Management API action handlers with

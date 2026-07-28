@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	rdsstore "vorpalstacks/internal/store/aws/rds"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -49,7 +50,7 @@ func (s *NeptuneService) CreateDBSnapshot(ctx context.Context, reqCtx *request.R
 		Engine:                 instance.Engine,
 		EngineVersion:          instance.EngineVersion,
 		SnapshotType:           "manual",
-		Status:                 "available",
+		Status:                 "creating",
 		AvailabilityZone:       instance.AvailabilityZone,
 		DBSnapshotArn:          arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Snapshot(snapshotID),
 		IAMDatabaseAuthEnabled: instance.IAMDatabaseAuthenticationEnabled,
@@ -71,6 +72,21 @@ func (s *NeptuneService) CreateDBSnapshot(ctx context.Context, reqCtx *request.R
 				logs.Err(err))
 		}
 	}
+
+	// State machine: synchronous transition from 'creating' to 'available'
+	// with safety-net goroutine.
+	snap.Status = "available"
+	if err := store.UpdateInstanceSnapshot(snap); err != nil {
+		logs.Warn("failed to transition instance snapshot to available", logs.String("snapshot", snapshotID), logs.Err(err))
+	}
+	s.scheduleTransition(reqCtx.GetRegion(), 500*time.Millisecond, func(st neptunestore.NeptuneStoreInterface) error {
+		snap, err := st.GetInstanceSnapshot(snapshotID)
+		if err != nil || snap.Status != "creating" {
+			return nil
+		}
+		snap.Status = "available"
+		return st.UpdateInstanceSnapshot(snap)
+	})
 
 	return map[string]interface{}{
 		"DBSnapshot": instanceSnapshotToMap(snap, reqCtx),

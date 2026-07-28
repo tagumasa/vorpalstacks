@@ -49,6 +49,76 @@ func protoToScalingConfig(c *pb.ServerlessV2ScalingConfiguration) *ServerlessV2S
 	}
 }
 
+func dbClusterMemberToProto(m *DBClusterMember) *pb.DBClusterMember {
+	if m == nil {
+		return nil
+	}
+	return &pb.DBClusterMember{
+		DbInstanceIdentifier:          m.DBInstanceIdentifier,
+		IsClusterWriter:               m.IsClusterWriter,
+		DbClusterParameterGroupStatus: m.DBClusterParameterGroupStatus,
+		PromotionTier:                 m.PromotionTier,
+	}
+}
+
+func protoToDBClusterMember(m *pb.DBClusterMember) *DBClusterMember {
+	if m == nil {
+		return nil
+	}
+	return &DBClusterMember{
+		DBInstanceIdentifier:          m.GetDbInstanceIdentifier(),
+		IsClusterWriter:               m.GetIsClusterWriter(),
+		DBClusterParameterGroupStatus: m.GetDbClusterParameterGroupStatus(),
+		PromotionTier:                 m.GetPromotionTier(),
+	}
+}
+
+func clusterPendingModifiedValuesToProto(v *ClusterPendingModifiedValues) *pb.ClusterPendingModifiedValues {
+	if v == nil {
+		return nil
+	}
+	p := &pb.ClusterPendingModifiedValues{
+		DbClusterIdentifier: v.DBClusterIdentifier,
+		EngineVersion:       v.EngineVersion,
+		StorageType:         v.StorageType,
+		NetworkType:         v.NetworkType,
+	}
+	if v.IAMDatabaseAuthenticationEnabled != nil {
+		p.IamDatabaseAuthenticationEnabled = *v.IAMDatabaseAuthenticationEnabled
+	}
+	if v.BackupRetentionPeriod != nil {
+		p.BackupRetentionPeriod = int32(*v.BackupRetentionPeriod)
+	}
+	if v.AllocatedStorage != nil {
+		p.AllocatedStorage = *v.AllocatedStorage
+	}
+	if v.Iops != nil {
+		p.Iops = *v.Iops
+	}
+	return p
+}
+
+func protoToClusterPendingModifiedValues(p *pb.ClusterPendingModifiedValues) *ClusterPendingModifiedValues {
+	if p == nil {
+		return nil
+	}
+	v := &ClusterPendingModifiedValues{
+		DBClusterIdentifier: p.GetDbClusterIdentifier(),
+		EngineVersion:       p.GetEngineVersion(),
+		StorageType:         p.GetStorageType(),
+		NetworkType:         p.GetNetworkType(),
+	}
+	iamAuth := p.GetIamDatabaseAuthenticationEnabled()
+	v.IAMDatabaseAuthenticationEnabled = &iamAuth
+	brp := int(p.GetBackupRetentionPeriod())
+	v.BackupRetentionPeriod = &brp
+	alloc := p.GetAllocatedStorage()
+	v.AllocatedStorage = &alloc
+	iops := p.GetIops()
+	v.Iops = &iops
+	return v
+}
+
 func ClusterToProto(c *DBCluster) *pb.DBCluster {
 	if c == nil {
 		return nil
@@ -82,6 +152,14 @@ func ClusterToProto(c *DBCluster) *pb.DBCluster {
 		AccountId:                        c.AccountID,
 		Region:                           c.Region,
 		DbClusterArn:                     c.DBClusterArn,
+		MasterUserPasswordHash:           c.MasterUserPasswordHash,
+		AllocatedStorage:                 c.AllocatedStorage,
+		DbClusterResourceId:              c.DbClusterResourceId,
+		NetworkType:                      c.NetworkType,
+		PercentProgress:                  c.PercentProgress,
+		PendingModifiedValues:            clusterPendingModifiedValuesToProto(c.PendingModifiedValues),
+		HostedZoneId:                     c.HostedZoneId,
+		ReadReplicaIdentifiers:           c.ReadReplicaIdentifiers,
 	}
 	if c.ClusterCreateTime != nil {
 		p.ClusterCreateTime = timestamppb.New(*c.ClusterCreateTime)
@@ -97,6 +175,15 @@ func ClusterToProto(c *DBCluster) *pb.DBCluster {
 	}
 	if c.Endpoint != nil {
 		p.Endpoint = &pb.ClusterEndpoint{Address: c.Endpoint.Address, Port: int32(c.Endpoint.Port)}
+	}
+	for _, m := range c.DBClusterMembers {
+		p.DbClusterMembers = append(p.DbClusterMembers, dbClusterMemberToProto(&m))
+	}
+	if c.ReaderEndpoint != nil {
+		p.ReaderEndpoint = &pb.ClusterEndpoint{Address: c.ReaderEndpoint.Address, Port: int32(c.ReaderEndpoint.Port)}
+	}
+	if c.AutomaticRestartTime != nil {
+		p.AutomaticRestartTime = timestamppb.New(*c.AutomaticRestartTime)
 	}
 	return p
 }
@@ -134,6 +221,14 @@ func ProtoToCluster(p *pb.DBCluster) *DBCluster {
 		AccountID:                        p.GetAccountId(),
 		Region:                           p.GetRegion(),
 		DBClusterArn:                     p.GetDbClusterArn(),
+		MasterUserPasswordHash:           p.GetMasterUserPasswordHash(),
+		AllocatedStorage:                 p.GetAllocatedStorage(),
+		DbClusterResourceId:              p.GetDbClusterResourceId(),
+		NetworkType:                      p.GetNetworkType(),
+		PercentProgress:                  p.GetPercentProgress(),
+		PendingModifiedValues:            protoToClusterPendingModifiedValues(p.GetPendingModifiedValues()),
+		HostedZoneId:                     p.GetHostedZoneId(),
+		ReadReplicaIdentifiers:           p.GetReadReplicaIdentifiers(),
 	}
 	if p.ClusterCreateTime != nil {
 		t := p.ClusterCreateTime.AsTime()
@@ -152,6 +247,16 @@ func ProtoToCluster(p *pb.DBCluster) *DBCluster {
 	}
 	if ep := p.GetEndpoint(); ep != nil {
 		c.Endpoint = &Endpoint{Address: ep.GetAddress(), Port: int(ep.GetPort())}
+	}
+	for _, m := range p.GetDbClusterMembers() {
+		c.DBClusterMembers = append(c.DBClusterMembers, *protoToDBClusterMember(m))
+	}
+	if ep := p.GetReaderEndpoint(); ep != nil {
+		c.ReaderEndpoint = &Endpoint{Address: ep.GetAddress(), Port: int(ep.GetPort())}
+	}
+	if p.AutomaticRestartTime != nil {
+		t := p.AutomaticRestartTime.AsTime()
+		c.AutomaticRestartTime = &t
 	}
 	return c
 }
@@ -207,6 +312,11 @@ func InstanceToProto(i *DBInstance) *pb.DBInstance {
 		CaCertificateIdentifier:            i.CACertificateIdentifier,
 		DbiResourceId:                      i.DbiResourceId,
 		PreferredBackupWindow:              i.PreferredBackupWindow,
+
+		// MasterUserPasswordHash: write-only, persisted for verification
+		// (H1 fix). json:"-" on the Go struct prevents it from appearing
+		// in API responses.
+		MasterUserPasswordHash: i.MasterUserPasswordHash,
 	}
 	if i.InstanceCreateTime != nil {
 		p.InstanceCreateTime = timestamppb.New(*i.InstanceCreateTime)
@@ -271,6 +381,9 @@ func ProtoToInstance(p *pb.DBInstance) *DBInstance {
 		CACertificateIdentifier:            p.GetCaCertificateIdentifier(),
 		DbiResourceId:                      p.GetDbiResourceId(),
 		PreferredBackupWindow:              p.GetPreferredBackupWindow(),
+
+		// MasterUserPasswordHash: write-only (H1 fix).
+		MasterUserPasswordHash: p.GetMasterUserPasswordHash(),
 	}
 	if p.InstanceCreateTime != nil {
 		t := p.InstanceCreateTime.AsTime()

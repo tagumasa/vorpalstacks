@@ -59,6 +59,14 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	now := time.Now()
+
+	// H1: Accept MasterUserPassword and store as bcrypt hash (write-only).
+	masterPassword := request.GetStringParam(params, "MasterUserPassword")
+	masterPasswordHash, err := hashMasterPassword(masterPassword)
+	if err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
+
 	instance := &neptunestore.DBInstance{
 		DBInstanceIdentifier:             id,
 		DBClusterIdentifier:              clusterID,
@@ -72,14 +80,32 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		IAMDatabaseAuthenticationEnabled: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
 		PubliclyAccessible:               request.GetBoolParam(params, "PubliclyAccessible"),
 		AutoMinorVersionUpgrade:          request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
+		Port:                             int32(request.GetIntParam(params, "Port")),
 		InstanceCreateTime:               &now,
 		AccountID:                        reqCtx.GetAccountID(),
 		Region:                           reqCtx.GetRegion(),
 		DBInstanceArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(id),
+		MasterUserPasswordHash:           masterPasswordHash,
 	}
 
 	if err := store.CreateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	// M5: Register the instance in the cluster's DBClusterMembers list
+	// so DescribeDBClusters returns a complete member list.
+	if clusterID != "" {
+		if cluster, err := store.GetCluster(clusterID); err == nil {
+			isWriter := len(cluster.DBClusterMembers) == 0
+			cluster.DBClusterMembers = append(cluster.DBClusterMembers, neptunestore.DBClusterMember{
+				DBInstanceIdentifier: id,
+				IsClusterWriter:      isWriter,
+				PromotionTier:        0,
+			})
+			if err := store.UpdateCluster(cluster); err != nil {
+				logs.Warn("failed to add instance to cluster members", logs.String("instance", id), logs.Err(err))
+			}
+		}
 	}
 
 	if clusterID != "" {
@@ -177,6 +203,22 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
+	// M5: Remove the instance from the cluster's DBClusterMembers list.
+	if instance.DBClusterIdentifier != "" {
+		if cluster, err := store.GetCluster(instance.DBClusterIdentifier); err == nil {
+			filtered := make([]neptunestore.DBClusterMember, 0, len(cluster.DBClusterMembers))
+			for _, mem := range cluster.DBClusterMembers {
+				if mem.DBInstanceIdentifier != id {
+					filtered = append(filtered, mem)
+				}
+			}
+			cluster.DBClusterMembers = filtered
+			if err := store.UpdateCluster(cluster); err != nil {
+				logs.Warn("failed to remove instance from cluster members", logs.String("instance", id), logs.Err(err))
+			}
+		}
+	}
+
 	removeTagsForResource(store, instance.DBInstanceArn)
 
 	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
@@ -232,6 +274,38 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 
 	if err := store.UpdateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	// M16: Support NewDBInstanceIdentifier (instance rename).
+	// Follows the same create-new + delete-old pattern as ModifyDBCluster.
+	if newID := request.GetStringParam(params, "NewDBInstanceIdentifier"); newID != "" && newID != id {
+		oldArn := instance.DBInstanceArn
+		instance.DBInstanceIdentifier = newID
+		instance.DBInstanceArn = arnutil.NewARNBuilder(instance.AccountID, instance.Region).RDS().DBInstance(newID)
+		if err := store.CreateInstance(instance); err != nil {
+			instance.DBInstanceIdentifier = id
+			instance.DBInstanceArn = oldArn
+			return nil, translateStoreError(err)
+		}
+		// Copy tags from old to new ARN.
+		if tags, err := store.GetTags(oldArn); err == nil && len(tags) > 0 {
+			store.AddTags(instance.DBInstanceArn, tags)
+		}
+		if err := store.DeleteInstance(id); err != nil {
+			logs.Warn("failed to delete old instance after rename", logs.String("oldID", id), logs.Err(err))
+		}
+		removeTagsForResource(store, oldArn)
+		// Update DBClusterMembers if the instance belongs to a cluster.
+		if instance.DBClusterIdentifier != "" {
+			if cluster, err := store.GetCluster(instance.DBClusterIdentifier); err == nil {
+				for i, mem := range cluster.DBClusterMembers {
+					if mem.DBInstanceIdentifier == id {
+						cluster.DBClusterMembers[i].DBInstanceIdentifier = newID
+					}
+				}
+				store.UpdateCluster(cluster)
+			}
+		}
 	}
 
 	return map[string]interface{}{

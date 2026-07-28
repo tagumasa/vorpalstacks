@@ -18,7 +18,7 @@ func TestClusterIDFromARN(t *testing.T) {
 		{"ARN without cluster segment", "arn:aws:neptune:us-east-1:123456789:snapshot:my-snap", "arn:aws:neptune:us-east-1:123456789:snapshot:my-snap"},
 		{"empty string", "", ""},
 		{"cluster at end", "arn:aws:neptune:us-east-1:123:cluster:", ""},
-		{"multiple colons in ID", "arn:aws:neptune:us-east-1:123:cluster:my:complex:id", "my"},
+		{"multiple colons in ID", "arn:aws:neptune:us-east-1:123:cluster:my:complex:id", "my:complex:id"},
 	}
 
 	for _, tt := range tests {

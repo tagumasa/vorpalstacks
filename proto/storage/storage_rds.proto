@@ -25,6 +25,24 @@ message ClusterEndpoint {
   int32 port = 2;
 }
 
+message DBClusterMember {
+  string db_instance_identifier = 1;
+  bool is_cluster_writer = 2;
+  string db_cluster_parameter_group_status = 3;
+  int32 promotion_tier = 4;
+}
+
+message ClusterPendingModifiedValues {
+  string db_cluster_identifier = 1;
+  bool iam_database_authentication_enabled = 2;
+  string engine_version = 3;
+  int32 backup_retention_period = 4;
+  string storage_type = 5;
+  int32 allocated_storage = 6;
+  int32 iops = 7;
+  string network_type = 8;
+}
+
 message DBCluster {
   string db_cluster_identifier = 1;
   string engine = 2;
@@ -59,6 +77,27 @@ message DBCluster {
   string region = 31;
   string db_cluster_arn = 32;
   ClusterEndpoint endpoint = 33;
+
+  // MasterUserPasswordHash stores the bcrypt hash of the master user
+  // password. Persisted for verification but never surfaced in API
+  // responses (the Go struct uses json:"-" to exclude it from HTTP
+  // output). Write-only per AWS spec (H1 fix).
+  string master_user_password_hash = 34;
+
+  // AWS-standard DBCluster output fields previously dropped (M5 fix).
+  // Populated at create time and surfaced through DescribeDBClusters.
+  // proto3 treats unset scalars as the zero value, so existing
+  // serialised records remain readable (forward compatibility).
+  int32 allocated_storage = 35;
+  repeated DBClusterMember db_cluster_members = 36;
+  ClusterEndpoint reader_endpoint = 37;
+  string db_cluster_resource_id = 38;
+  string network_type = 39;
+  string percent_progress = 40;
+  ClusterPendingModifiedValues pending_modified_values = 41;
+  string hosted_zone_id = 42;
+  repeated string read_replica_identifiers = 43;
+  google.protobuf.Timestamp automatic_restart_time = 44;
 }
 
 message DBInstance {
@@ -114,6 +153,10 @@ message DBInstance {
   string dbi_resource_id = 45;
   google.protobuf.Timestamp latest_restorable_time = 46;
   string preferred_backup_window = 47;
+
+  // MasterUserPasswordHash for the instance. Write-only: persisted
+  // but never surfaced in API responses (json:"-" on Go struct) (H1 fix).
+  string master_user_password_hash = 48;
 }
 
 message DBClusterSnapshot {

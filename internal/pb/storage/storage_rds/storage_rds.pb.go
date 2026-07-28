@@ -186,6 +186,174 @@ func (x *ClusterEndpoint) GetPort() int32 {
 	return 0
 }
 
+type DBClusterMember struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	DbInstanceIdentifier          string                 `protobuf:"bytes,1,opt,name=db_instance_identifier,json=dbInstanceIdentifier,proto3" json:"db_instance_identifier,omitempty"`
+	IsClusterWriter               bool                   `protobuf:"varint,2,opt,name=is_cluster_writer,json=isClusterWriter,proto3" json:"is_cluster_writer,omitempty"`
+	DbClusterParameterGroupStatus string                 `protobuf:"bytes,3,opt,name=db_cluster_parameter_group_status,json=dbClusterParameterGroupStatus,proto3" json:"db_cluster_parameter_group_status,omitempty"`
+	PromotionTier                 int32                  `protobuf:"varint,4,opt,name=promotion_tier,json=promotionTier,proto3" json:"promotion_tier,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *DBClusterMember) Reset() {
+	*x = DBClusterMember{}
+	mi := &file_storage_rds_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DBClusterMember) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DBClusterMember) ProtoMessage() {}
+
+func (x *DBClusterMember) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_rds_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DBClusterMember.ProtoReflect.Descriptor instead.
+func (*DBClusterMember) Descriptor() ([]byte, []int) {
+	return file_storage_rds_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DBClusterMember) GetDbInstanceIdentifier() string {
+	if x != nil {
+		return x.DbInstanceIdentifier
+	}
+	return ""
+}
+
+func (x *DBClusterMember) GetIsClusterWriter() bool {
+	if x != nil {
+		return x.IsClusterWriter
+	}
+	return false
+}
+
+func (x *DBClusterMember) GetDbClusterParameterGroupStatus() string {
+	if x != nil {
+		return x.DbClusterParameterGroupStatus
+	}
+	return ""
+}
+
+func (x *DBClusterMember) GetPromotionTier() int32 {
+	if x != nil {
+		return x.PromotionTier
+	}
+	return 0
+}
+
+type ClusterPendingModifiedValues struct {
+	state                            protoimpl.MessageState `protogen:"open.v1"`
+	DbClusterIdentifier              string                 `protobuf:"bytes,1,opt,name=db_cluster_identifier,json=dbClusterIdentifier,proto3" json:"db_cluster_identifier,omitempty"`
+	IamDatabaseAuthenticationEnabled bool                   `protobuf:"varint,2,opt,name=iam_database_authentication_enabled,json=iamDatabaseAuthenticationEnabled,proto3" json:"iam_database_authentication_enabled,omitempty"`
+	EngineVersion                    string                 `protobuf:"bytes,3,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
+	BackupRetentionPeriod            int32                  `protobuf:"varint,4,opt,name=backup_retention_period,json=backupRetentionPeriod,proto3" json:"backup_retention_period,omitempty"`
+	StorageType                      string                 `protobuf:"bytes,5,opt,name=storage_type,json=storageType,proto3" json:"storage_type,omitempty"`
+	AllocatedStorage                 int32                  `protobuf:"varint,6,opt,name=allocated_storage,json=allocatedStorage,proto3" json:"allocated_storage,omitempty"`
+	Iops                             int32                  `protobuf:"varint,7,opt,name=iops,proto3" json:"iops,omitempty"`
+	NetworkType                      string                 `protobuf:"bytes,8,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
+}
+
+func (x *ClusterPendingModifiedValues) Reset() {
+	*x = ClusterPendingModifiedValues{}
+	mi := &file_storage_rds_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClusterPendingModifiedValues) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClusterPendingModifiedValues) ProtoMessage() {}
+
+func (x *ClusterPendingModifiedValues) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_rds_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClusterPendingModifiedValues.ProtoReflect.Descriptor instead.
+func (*ClusterPendingModifiedValues) Descriptor() ([]byte, []int) {
+	return file_storage_rds_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ClusterPendingModifiedValues) GetDbClusterIdentifier() string {
+	if x != nil {
+		return x.DbClusterIdentifier
+	}
+	return ""
+}
+
+func (x *ClusterPendingModifiedValues) GetIamDatabaseAuthenticationEnabled() bool {
+	if x != nil {
+		return x.IamDatabaseAuthenticationEnabled
+	}
+	return false
+}
+
+func (x *ClusterPendingModifiedValues) GetEngineVersion() string {
+	if x != nil {
+		return x.EngineVersion
+	}
+	return ""
+}
+
+func (x *ClusterPendingModifiedValues) GetBackupRetentionPeriod() int32 {
+	if x != nil {
+		return x.BackupRetentionPeriod
+	}
+	return 0
+}
+
+func (x *ClusterPendingModifiedValues) GetStorageType() string {
+	if x != nil {
+		return x.StorageType
+	}
+	return ""
+}
+
+func (x *ClusterPendingModifiedValues) GetAllocatedStorage() int32 {
+	if x != nil {
+		return x.AllocatedStorage
+	}
+	return 0
+}
+
+func (x *ClusterPendingModifiedValues) GetIops() int32 {
+	if x != nil {
+		return x.Iops
+	}
+	return 0
+}
+
+func (x *ClusterPendingModifiedValues) GetNetworkType() string {
+	if x != nil {
+		return x.NetworkType
+	}
+	return ""
+}
+
 type DBCluster struct {
 	state                            protoimpl.MessageState            `protogen:"open.v1"`
 	DbClusterIdentifier              string                            `protobuf:"bytes,1,opt,name=db_cluster_identifier,json=dbClusterIdentifier,proto3" json:"db_cluster_identifier,omitempty"`
@@ -221,13 +389,32 @@ type DBCluster struct {
 	Region                           string                            `protobuf:"bytes,31,opt,name=region,proto3" json:"region,omitempty"`
 	DbClusterArn                     string                            `protobuf:"bytes,32,opt,name=db_cluster_arn,json=dbClusterArn,proto3" json:"db_cluster_arn,omitempty"`
 	Endpoint                         *ClusterEndpoint                  `protobuf:"bytes,33,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	unknownFields                    protoimpl.UnknownFields
-	sizeCache                        protoimpl.SizeCache
+	// MasterUserPasswordHash stores the bcrypt hash of the master user
+	// password. Persisted for verification but never surfaced in API
+	// responses (the Go struct uses json:"-" to exclude it from HTTP
+	// output). Write-only per AWS spec (H1 fix).
+	MasterUserPasswordHash string `protobuf:"bytes,34,opt,name=master_user_password_hash,json=masterUserPasswordHash,proto3" json:"master_user_password_hash,omitempty"`
+	// AWS-standard DBCluster output fields previously dropped (M5 fix).
+	// Populated at create time and surfaced through DescribeDBClusters.
+	// proto3 treats unset scalars as the zero value, so existing
+	// serialised records remain readable (forward compatibility).
+	AllocatedStorage       int32                         `protobuf:"varint,35,opt,name=allocated_storage,json=allocatedStorage,proto3" json:"allocated_storage,omitempty"`
+	DbClusterMembers       []*DBClusterMember            `protobuf:"bytes,36,rep,name=db_cluster_members,json=dbClusterMembers,proto3" json:"db_cluster_members,omitempty"`
+	ReaderEndpoint         *ClusterEndpoint              `protobuf:"bytes,37,opt,name=reader_endpoint,json=readerEndpoint,proto3" json:"reader_endpoint,omitempty"`
+	DbClusterResourceId    string                        `protobuf:"bytes,38,opt,name=db_cluster_resource_id,json=dbClusterResourceId,proto3" json:"db_cluster_resource_id,omitempty"`
+	NetworkType            string                        `protobuf:"bytes,39,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
+	PercentProgress        string                        `protobuf:"bytes,40,opt,name=percent_progress,json=percentProgress,proto3" json:"percent_progress,omitempty"`
+	PendingModifiedValues  *ClusterPendingModifiedValues `protobuf:"bytes,41,opt,name=pending_modified_values,json=pendingModifiedValues,proto3" json:"pending_modified_values,omitempty"`
+	HostedZoneId           string                        `protobuf:"bytes,42,opt,name=hosted_zone_id,json=hostedZoneId,proto3" json:"hosted_zone_id,omitempty"`
+	ReadReplicaIdentifiers []string                      `protobuf:"bytes,43,rep,name=read_replica_identifiers,json=readReplicaIdentifiers,proto3" json:"read_replica_identifiers,omitempty"`
+	AutomaticRestartTime   *timestamppb.Timestamp        `protobuf:"bytes,44,opt,name=automatic_restart_time,json=automaticRestartTime,proto3" json:"automatic_restart_time,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *DBCluster) Reset() {
 	*x = DBCluster{}
-	mi := &file_storage_rds_proto_msgTypes[3]
+	mi := &file_storage_rds_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -239,7 +426,7 @@ func (x *DBCluster) String() string {
 func (*DBCluster) ProtoMessage() {}
 
 func (x *DBCluster) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[3]
+	mi := &file_storage_rds_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -252,7 +439,7 @@ func (x *DBCluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBCluster.ProtoReflect.Descriptor instead.
 func (*DBCluster) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{3}
+	return file_storage_rds_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DBCluster) GetDbClusterIdentifier() string {
@@ -486,6 +673,83 @@ func (x *DBCluster) GetEndpoint() *ClusterEndpoint {
 	return nil
 }
 
+func (x *DBCluster) GetMasterUserPasswordHash() string {
+	if x != nil {
+		return x.MasterUserPasswordHash
+	}
+	return ""
+}
+
+func (x *DBCluster) GetAllocatedStorage() int32 {
+	if x != nil {
+		return x.AllocatedStorage
+	}
+	return 0
+}
+
+func (x *DBCluster) GetDbClusterMembers() []*DBClusterMember {
+	if x != nil {
+		return x.DbClusterMembers
+	}
+	return nil
+}
+
+func (x *DBCluster) GetReaderEndpoint() *ClusterEndpoint {
+	if x != nil {
+		return x.ReaderEndpoint
+	}
+	return nil
+}
+
+func (x *DBCluster) GetDbClusterResourceId() string {
+	if x != nil {
+		return x.DbClusterResourceId
+	}
+	return ""
+}
+
+func (x *DBCluster) GetNetworkType() string {
+	if x != nil {
+		return x.NetworkType
+	}
+	return ""
+}
+
+func (x *DBCluster) GetPercentProgress() string {
+	if x != nil {
+		return x.PercentProgress
+	}
+	return ""
+}
+
+func (x *DBCluster) GetPendingModifiedValues() *ClusterPendingModifiedValues {
+	if x != nil {
+		return x.PendingModifiedValues
+	}
+	return nil
+}
+
+func (x *DBCluster) GetHostedZoneId() string {
+	if x != nil {
+		return x.HostedZoneId
+	}
+	return ""
+}
+
+func (x *DBCluster) GetReadReplicaIdentifiers() []string {
+	if x != nil {
+		return x.ReadReplicaIdentifiers
+	}
+	return nil
+}
+
+func (x *DBCluster) GetAutomaticRestartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AutomaticRestartTime
+	}
+	return nil
+}
+
 type DBInstance struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	DbInstanceIdentifier            string                 `protobuf:"bytes,1,opt,name=db_instance_identifier,json=dbInstanceIdentifier,proto3" json:"db_instance_identifier,omitempty"`
@@ -539,13 +803,16 @@ type DBInstance struct {
 	DbiResourceId                      string                 `protobuf:"bytes,45,opt,name=dbi_resource_id,json=dbiResourceId,proto3" json:"dbi_resource_id,omitempty"`
 	LatestRestorableTime               *timestamppb.Timestamp `protobuf:"bytes,46,opt,name=latest_restorable_time,json=latestRestorableTime,proto3" json:"latest_restorable_time,omitempty"`
 	PreferredBackupWindow              string                 `protobuf:"bytes,47,opt,name=preferred_backup_window,json=preferredBackupWindow,proto3" json:"preferred_backup_window,omitempty"`
-	unknownFields                      protoimpl.UnknownFields
-	sizeCache                          protoimpl.SizeCache
+	// MasterUserPasswordHash for the instance. Write-only: persisted
+	// but never surfaced in API responses (json:"-" on Go struct) (H1 fix).
+	MasterUserPasswordHash string `protobuf:"bytes,48,opt,name=master_user_password_hash,json=masterUserPasswordHash,proto3" json:"master_user_password_hash,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *DBInstance) Reset() {
 	*x = DBInstance{}
-	mi := &file_storage_rds_proto_msgTypes[4]
+	mi := &file_storage_rds_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -557,7 +824,7 @@ func (x *DBInstance) String() string {
 func (*DBInstance) ProtoMessage() {}
 
 func (x *DBInstance) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[4]
+	mi := &file_storage_rds_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -570,7 +837,7 @@ func (x *DBInstance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBInstance.ProtoReflect.Descriptor instead.
 func (*DBInstance) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{4}
+	return file_storage_rds_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DBInstance) GetDbInstanceIdentifier() string {
@@ -902,6 +1169,13 @@ func (x *DBInstance) GetPreferredBackupWindow() string {
 	return ""
 }
 
+func (x *DBInstance) GetMasterUserPasswordHash() string {
+	if x != nil {
+		return x.MasterUserPasswordHash
+	}
+	return ""
+}
+
 type DBClusterSnapshot struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	DbClusterSnapshotIdentifier string                 `protobuf:"bytes,1,opt,name=db_cluster_snapshot_identifier,json=dbClusterSnapshotIdentifier,proto3" json:"db_cluster_snapshot_identifier,omitempty"`
@@ -932,7 +1206,7 @@ type DBClusterSnapshot struct {
 
 func (x *DBClusterSnapshot) Reset() {
 	*x = DBClusterSnapshot{}
-	mi := &file_storage_rds_proto_msgTypes[5]
+	mi := &file_storage_rds_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -944,7 +1218,7 @@ func (x *DBClusterSnapshot) String() string {
 func (*DBClusterSnapshot) ProtoMessage() {}
 
 func (x *DBClusterSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[5]
+	mi := &file_storage_rds_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -957,7 +1231,7 @@ func (x *DBClusterSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterSnapshot.ProtoReflect.Descriptor instead.
 func (*DBClusterSnapshot) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{5}
+	return file_storage_rds_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DBClusterSnapshot) GetDbClusterSnapshotIdentifier() string {
@@ -1120,7 +1394,7 @@ type DBClusterParameterGroup struct {
 
 func (x *DBClusterParameterGroup) Reset() {
 	*x = DBClusterParameterGroup{}
-	mi := &file_storage_rds_proto_msgTypes[6]
+	mi := &file_storage_rds_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1132,7 +1406,7 @@ func (x *DBClusterParameterGroup) String() string {
 func (*DBClusterParameterGroup) ProtoMessage() {}
 
 func (x *DBClusterParameterGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[6]
+	mi := &file_storage_rds_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1145,7 +1419,7 @@ func (x *DBClusterParameterGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterParameterGroup.ProtoReflect.Descriptor instead.
 func (*DBClusterParameterGroup) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{6}
+	return file_storage_rds_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DBClusterParameterGroup) GetDbClusterParameterGroupName() string {
@@ -1196,7 +1470,7 @@ type DBParameterGroup struct {
 
 func (x *DBParameterGroup) Reset() {
 	*x = DBParameterGroup{}
-	mi := &file_storage_rds_proto_msgTypes[7]
+	mi := &file_storage_rds_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1208,7 +1482,7 @@ func (x *DBParameterGroup) String() string {
 func (*DBParameterGroup) ProtoMessage() {}
 
 func (x *DBParameterGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[7]
+	mi := &file_storage_rds_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1221,7 +1495,7 @@ func (x *DBParameterGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBParameterGroup.ProtoReflect.Descriptor instead.
 func (*DBParameterGroup) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{7}
+	return file_storage_rds_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DBParameterGroup) GetDbParameterGroupName() string {
@@ -1271,7 +1545,7 @@ type Subnet struct {
 
 func (x *Subnet) Reset() {
 	*x = Subnet{}
-	mi := &file_storage_rds_proto_msgTypes[8]
+	mi := &file_storage_rds_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1283,7 +1557,7 @@ func (x *Subnet) String() string {
 func (*Subnet) ProtoMessage() {}
 
 func (x *Subnet) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[8]
+	mi := &file_storage_rds_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1296,7 +1570,7 @@ func (x *Subnet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subnet.ProtoReflect.Descriptor instead.
 func (*Subnet) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{8}
+	return file_storage_rds_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Subnet) GetSubnetIdentifier() string {
@@ -1341,7 +1615,7 @@ type DBSubnetGroup struct {
 
 func (x *DBSubnetGroup) Reset() {
 	*x = DBSubnetGroup{}
-	mi := &file_storage_rds_proto_msgTypes[9]
+	mi := &file_storage_rds_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1353,7 +1627,7 @@ func (x *DBSubnetGroup) String() string {
 func (*DBSubnetGroup) ProtoMessage() {}
 
 func (x *DBSubnetGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[9]
+	mi := &file_storage_rds_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1366,7 +1640,7 @@ func (x *DBSubnetGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBSubnetGroup.ProtoReflect.Descriptor instead.
 func (*DBSubnetGroup) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{9}
+	return file_storage_rds_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DBSubnetGroup) GetDbSubnetGroupName() string {
@@ -1423,7 +1697,7 @@ type GlobalClusterMember struct {
 
 func (x *GlobalClusterMember) Reset() {
 	*x = GlobalClusterMember{}
-	mi := &file_storage_rds_proto_msgTypes[10]
+	mi := &file_storage_rds_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1435,7 +1709,7 @@ func (x *GlobalClusterMember) String() string {
 func (*GlobalClusterMember) ProtoMessage() {}
 
 func (x *GlobalClusterMember) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[10]
+	mi := &file_storage_rds_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1448,7 +1722,7 @@ func (x *GlobalClusterMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalClusterMember.ProtoReflect.Descriptor instead.
 func (*GlobalClusterMember) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{10}
+	return file_storage_rds_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GlobalClusterMember) GetDbClusterArn() string {
@@ -1498,7 +1772,7 @@ type GlobalCluster struct {
 
 func (x *GlobalCluster) Reset() {
 	*x = GlobalCluster{}
-	mi := &file_storage_rds_proto_msgTypes[11]
+	mi := &file_storage_rds_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1510,7 +1784,7 @@ func (x *GlobalCluster) String() string {
 func (*GlobalCluster) ProtoMessage() {}
 
 func (x *GlobalCluster) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[11]
+	mi := &file_storage_rds_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1523,7 +1797,7 @@ func (x *GlobalCluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalCluster.ProtoReflect.Descriptor instead.
 func (*GlobalCluster) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{11}
+	return file_storage_rds_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GlobalCluster) GetGlobalClusterIdentifier() string {
@@ -1620,7 +1894,7 @@ type EventSubscription struct {
 
 func (x *EventSubscription) Reset() {
 	*x = EventSubscription{}
-	mi := &file_storage_rds_proto_msgTypes[12]
+	mi := &file_storage_rds_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1632,7 +1906,7 @@ func (x *EventSubscription) String() string {
 func (*EventSubscription) ProtoMessage() {}
 
 func (x *EventSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[12]
+	mi := &file_storage_rds_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1645,7 +1919,7 @@ func (x *EventSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventSubscription.ProtoReflect.Descriptor instead.
 func (*EventSubscription) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{12}
+	return file_storage_rds_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *EventSubscription) GetCustSubscriptionId() string {
@@ -1726,7 +2000,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_storage_rds_proto_msgTypes[13]
+	mi := &file_storage_rds_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1738,7 +2012,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[13]
+	mi := &file_storage_rds_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1751,7 +2025,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{13}
+	return file_storage_rds_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Event) GetEventId() string {
@@ -1821,7 +2095,7 @@ type Parameter struct {
 
 func (x *Parameter) Reset() {
 	*x = Parameter{}
-	mi := &file_storage_rds_proto_msgTypes[14]
+	mi := &file_storage_rds_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1833,7 +2107,7 @@ func (x *Parameter) String() string {
 func (*Parameter) ProtoMessage() {}
 
 func (x *Parameter) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[14]
+	mi := &file_storage_rds_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1846,7 +2120,7 @@ func (x *Parameter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Parameter.ProtoReflect.Descriptor instead.
 func (*Parameter) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{14}
+	return file_storage_rds_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Parameter) GetParameterName() string {
@@ -1929,7 +2203,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_storage_rds_proto_msgTypes[15]
+	mi := &file_storage_rds_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1941,7 +2215,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[15]
+	mi := &file_storage_rds_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1954,7 +2228,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{15}
+	return file_storage_rds_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Tag) GetKey() string {
@@ -1980,7 +2254,7 @@ type TagList struct {
 
 func (x *TagList) Reset() {
 	*x = TagList{}
-	mi := &file_storage_rds_proto_msgTypes[16]
+	mi := &file_storage_rds_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1992,7 +2266,7 @@ func (x *TagList) String() string {
 func (*TagList) ProtoMessage() {}
 
 func (x *TagList) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_rds_proto_msgTypes[16]
+	mi := &file_storage_rds_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2005,7 +2279,7 @@ func (x *TagList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagList.ProtoReflect.Descriptor instead.
 func (*TagList) Descriptor() ([]byte, []int) {
-	return file_storage_rds_proto_rawDescGZIP(), []int{16}
+	return file_storage_rds_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TagList) GetTags() []*Tag {
@@ -2029,7 +2303,21 @@ const file_storage_rds_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\tR\x06status\"?\n" +
 	"\x0fClusterEndpoint\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\"\xd4\r\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"\xe4\x01\n" +
+	"\x0fDBClusterMember\x124\n" +
+	"\x16db_instance_identifier\x18\x01 \x01(\tR\x14dbInstanceIdentifier\x12*\n" +
+	"\x11is_cluster_writer\x18\x02 \x01(\bR\x0fisClusterWriter\x12H\n" +
+	"!db_cluster_parameter_group_status\x18\x03 \x01(\tR\x1ddbClusterParameterGroupStatus\x12%\n" +
+	"\x0epromotion_tier\x18\x04 \x01(\x05R\rpromotionTier\"\x87\x03\n" +
+	"\x1cClusterPendingModifiedValues\x122\n" +
+	"\x15db_cluster_identifier\x18\x01 \x01(\tR\x13dbClusterIdentifier\x12M\n" +
+	"#iam_database_authentication_enabled\x18\x02 \x01(\bR iamDatabaseAuthenticationEnabled\x12%\n" +
+	"\x0eengine_version\x18\x03 \x01(\tR\rengineVersion\x126\n" +
+	"\x17backup_retention_period\x18\x04 \x01(\x05R\x15backupRetentionPeriod\x12!\n" +
+	"\fstorage_type\x18\x05 \x01(\tR\vstorageType\x12+\n" +
+	"\x11allocated_storage\x18\x06 \x01(\x05R\x10allocatedStorage\x12\x12\n" +
+	"\x04iops\x18\a \x01(\x05R\x04iops\x12!\n" +
+	"\fnetwork_type\x18\b \x01(\tR\vnetworkType\"\xe7\x12\n" +
 	"\tDBCluster\x122\n" +
 	"\x15db_cluster_identifier\x18\x01 \x01(\tR\x13dbClusterIdentifier\x12\x16\n" +
 	"\x06engine\x18\x02 \x01(\tR\x06engine\x12%\n" +
@@ -2066,7 +2354,18 @@ const file_storage_rds_proto_rawDesc = "" +
 	"account_id\x18\x1e \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x1f \x01(\tR\x06region\x12$\n" +
 	"\x0edb_cluster_arn\x18  \x01(\tR\fdbClusterArn\x128\n" +
-	"\bendpoint\x18! \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\"\x8b\x12\n" +
+	"\bendpoint\x18! \x01(\v2\x1c.storage.rds.ClusterEndpointR\bendpoint\x129\n" +
+	"\x19master_user_password_hash\x18\" \x01(\tR\x16masterUserPasswordHash\x12+\n" +
+	"\x11allocated_storage\x18# \x01(\x05R\x10allocatedStorage\x12J\n" +
+	"\x12db_cluster_members\x18$ \x03(\v2\x1c.storage.rds.DBClusterMemberR\x10dbClusterMembers\x12E\n" +
+	"\x0freader_endpoint\x18% \x01(\v2\x1c.storage.rds.ClusterEndpointR\x0ereaderEndpoint\x123\n" +
+	"\x16db_cluster_resource_id\x18& \x01(\tR\x13dbClusterResourceId\x12!\n" +
+	"\fnetwork_type\x18' \x01(\tR\vnetworkType\x12)\n" +
+	"\x10percent_progress\x18( \x01(\tR\x0fpercentProgress\x12a\n" +
+	"\x17pending_modified_values\x18) \x01(\v2).storage.rds.ClusterPendingModifiedValuesR\x15pendingModifiedValues\x12$\n" +
+	"\x0ehosted_zone_id\x18* \x01(\tR\fhostedZoneId\x128\n" +
+	"\x18read_replica_identifiers\x18+ \x03(\tR\x16readReplicaIdentifiers\x12P\n" +
+	"\x16automatic_restart_time\x18, \x01(\v2\x1a.google.protobuf.TimestampR\x14automaticRestartTime\"\xc6\x12\n" +
 	"\n" +
 	"DBInstance\x124\n" +
 	"\x16db_instance_identifier\x18\x01 \x01(\tR\x14dbInstanceIdentifier\x122\n" +
@@ -2118,7 +2417,8 @@ const file_storage_rds_proto_rawDesc = "" +
 	"\x19ca_certificate_identifier\x18, \x01(\tR\x17caCertificateIdentifier\x12&\n" +
 	"\x0fdbi_resource_id\x18- \x01(\tR\rdbiResourceId\x12P\n" +
 	"\x16latest_restorable_time\x18. \x01(\v2\x1a.google.protobuf.TimestampR\x14latestRestorableTime\x126\n" +
-	"\x17preferred_backup_window\x18/ \x01(\tR\x15preferredBackupWindow\"\x9e\a\n" +
+	"\x17preferred_backup_window\x18/ \x01(\tR\x15preferredBackupWindow\x129\n" +
+	"\x19master_user_password_hash\x180 \x01(\tR\x16masterUserPasswordHash\"\x9e\a\n" +
 	"\x11DBClusterSnapshot\x12C\n" +
 	"\x1edb_cluster_snapshot_identifier\x18\x01 \x01(\tR\x1bdbClusterSnapshotIdentifier\x122\n" +
 	"\x15db_cluster_identifier\x18\x02 \x01(\tR\x13dbClusterIdentifier\x12L\n" +
@@ -2243,51 +2543,57 @@ func file_storage_rds_proto_rawDescGZIP() []byte {
 	return file_storage_rds_proto_rawDescData
 }
 
-var file_storage_rds_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_storage_rds_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_storage_rds_proto_goTypes = []any{
 	(*ServerlessV2ScalingConfiguration)(nil), // 0: storage.rds.ServerlessV2ScalingConfiguration
 	(*DBClusterRole)(nil),                    // 1: storage.rds.DBClusterRole
 	(*ClusterEndpoint)(nil),                  // 2: storage.rds.ClusterEndpoint
-	(*DBCluster)(nil),                        // 3: storage.rds.DBCluster
-	(*DBInstance)(nil),                       // 4: storage.rds.DBInstance
-	(*DBClusterSnapshot)(nil),                // 5: storage.rds.DBClusterSnapshot
-	(*DBClusterParameterGroup)(nil),          // 6: storage.rds.DBClusterParameterGroup
-	(*DBParameterGroup)(nil),                 // 7: storage.rds.DBParameterGroup
-	(*Subnet)(nil),                           // 8: storage.rds.Subnet
-	(*DBSubnetGroup)(nil),                    // 9: storage.rds.DBSubnetGroup
-	(*GlobalClusterMember)(nil),              // 10: storage.rds.GlobalClusterMember
-	(*GlobalCluster)(nil),                    // 11: storage.rds.GlobalCluster
-	(*EventSubscription)(nil),                // 12: storage.rds.EventSubscription
-	(*Event)(nil),                            // 13: storage.rds.Event
-	(*Parameter)(nil),                        // 14: storage.rds.Parameter
-	(*Tag)(nil),                              // 15: storage.rds.Tag
-	(*TagList)(nil),                          // 16: storage.rds.TagList
-	(*timestamppb.Timestamp)(nil),            // 17: google.protobuf.Timestamp
+	(*DBClusterMember)(nil),                  // 3: storage.rds.DBClusterMember
+	(*ClusterPendingModifiedValues)(nil),     // 4: storage.rds.ClusterPendingModifiedValues
+	(*DBCluster)(nil),                        // 5: storage.rds.DBCluster
+	(*DBInstance)(nil),                       // 6: storage.rds.DBInstance
+	(*DBClusterSnapshot)(nil),                // 7: storage.rds.DBClusterSnapshot
+	(*DBClusterParameterGroup)(nil),          // 8: storage.rds.DBClusterParameterGroup
+	(*DBParameterGroup)(nil),                 // 9: storage.rds.DBParameterGroup
+	(*Subnet)(nil),                           // 10: storage.rds.Subnet
+	(*DBSubnetGroup)(nil),                    // 11: storage.rds.DBSubnetGroup
+	(*GlobalClusterMember)(nil),              // 12: storage.rds.GlobalClusterMember
+	(*GlobalCluster)(nil),                    // 13: storage.rds.GlobalCluster
+	(*EventSubscription)(nil),                // 14: storage.rds.EventSubscription
+	(*Event)(nil),                            // 15: storage.rds.Event
+	(*Parameter)(nil),                        // 16: storage.rds.Parameter
+	(*Tag)(nil),                              // 17: storage.rds.Tag
+	(*TagList)(nil),                          // 18: storage.rds.TagList
+	(*timestamppb.Timestamp)(nil),            // 19: google.protobuf.Timestamp
 }
 var file_storage_rds_proto_depIdxs = []int32{
-	17, // 0: storage.rds.DBCluster.cluster_create_time:type_name -> google.protobuf.Timestamp
-	17, // 1: storage.rds.DBCluster.earliest_restorable_time:type_name -> google.protobuf.Timestamp
-	17, // 2: storage.rds.DBCluster.latest_restorable_time:type_name -> google.protobuf.Timestamp
+	19, // 0: storage.rds.DBCluster.cluster_create_time:type_name -> google.protobuf.Timestamp
+	19, // 1: storage.rds.DBCluster.earliest_restorable_time:type_name -> google.protobuf.Timestamp
+	19, // 2: storage.rds.DBCluster.latest_restorable_time:type_name -> google.protobuf.Timestamp
 	1,  // 3: storage.rds.DBCluster.associated_roles:type_name -> storage.rds.DBClusterRole
 	0,  // 4: storage.rds.DBCluster.serverless_v2_scaling_configuration:type_name -> storage.rds.ServerlessV2ScalingConfiguration
 	2,  // 5: storage.rds.DBCluster.endpoint:type_name -> storage.rds.ClusterEndpoint
-	17, // 6: storage.rds.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
-	2,  // 7: storage.rds.DBInstance.endpoint:type_name -> storage.rds.ClusterEndpoint
-	17, // 8: storage.rds.DBInstance.latest_restorable_time:type_name -> google.protobuf.Timestamp
-	17, // 9: storage.rds.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
-	17, // 10: storage.rds.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
-	14, // 11: storage.rds.DBClusterParameterGroup.parameters:type_name -> storage.rds.Parameter
-	14, // 12: storage.rds.DBParameterGroup.parameters:type_name -> storage.rds.Parameter
-	8,  // 13: storage.rds.DBSubnetGroup.subnets:type_name -> storage.rds.Subnet
-	10, // 14: storage.rds.GlobalCluster.global_cluster_members:type_name -> storage.rds.GlobalClusterMember
-	17, // 15: storage.rds.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
-	17, // 16: storage.rds.Event.date:type_name -> google.protobuf.Timestamp
-	15, // 17: storage.rds.TagList.tags:type_name -> storage.rds.Tag
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	3,  // 6: storage.rds.DBCluster.db_cluster_members:type_name -> storage.rds.DBClusterMember
+	2,  // 7: storage.rds.DBCluster.reader_endpoint:type_name -> storage.rds.ClusterEndpoint
+	4,  // 8: storage.rds.DBCluster.pending_modified_values:type_name -> storage.rds.ClusterPendingModifiedValues
+	19, // 9: storage.rds.DBCluster.automatic_restart_time:type_name -> google.protobuf.Timestamp
+	19, // 10: storage.rds.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
+	2,  // 11: storage.rds.DBInstance.endpoint:type_name -> storage.rds.ClusterEndpoint
+	19, // 12: storage.rds.DBInstance.latest_restorable_time:type_name -> google.protobuf.Timestamp
+	19, // 13: storage.rds.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
+	19, // 14: storage.rds.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
+	16, // 15: storage.rds.DBClusterParameterGroup.parameters:type_name -> storage.rds.Parameter
+	16, // 16: storage.rds.DBParameterGroup.parameters:type_name -> storage.rds.Parameter
+	10, // 17: storage.rds.DBSubnetGroup.subnets:type_name -> storage.rds.Subnet
+	12, // 18: storage.rds.GlobalCluster.global_cluster_members:type_name -> storage.rds.GlobalClusterMember
+	19, // 19: storage.rds.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
+	19, // 20: storage.rds.Event.date:type_name -> google.protobuf.Timestamp
+	17, // 21: storage.rds.TagList.tags:type_name -> storage.rds.Tag
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_storage_rds_proto_init() }
@@ -2301,7 +2607,7 @@ func file_storage_rds_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_rds_proto_rawDesc), len(file_storage_rds_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

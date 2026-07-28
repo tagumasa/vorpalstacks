@@ -48,7 +48,7 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		Engine:                      cluster.Engine,
 		EngineVersion:               cluster.EngineVersion,
 		SnapshotType:                "manual",
-		Status:                      "available",
+		Status:                      "creating",
 		Port:                        cluster.Port,
 		StorageEncrypted:            cluster.StorageEncrypted,
 		KmsKeyId:                    cluster.KmsKeyId,
@@ -63,6 +63,21 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 
 	recordEvent(store, "db-snapshot", snapshotID, snapshot.DBSnapshotArn,
 		fmt.Sprintf("DB cluster snapshot %s created", snapshotID), []string{"creation"})
+
+	// State machine: synchronous transition from 'creating' to 'available'
+	// with safety-net goroutine.
+	snapshot.Status = "available"
+	if err := store.UpdateSnapshot(snapshot); err != nil {
+		logs.Warn("failed to transition snapshot to available", logs.String("snapshot", snapshotID), logs.Err(err))
+	}
+	s.scheduleTransition(reqCtx.GetRegion(), 500*time.Millisecond, func(st neptunestore.NeptuneStoreInterface) error {
+		snap, err := st.GetSnapshot(snapshotID)
+		if err != nil || snap.Status != "creating" {
+			return nil
+		}
+		snap.Status = "available"
+		return st.UpdateSnapshot(snap)
+	})
 
 	return map[string]interface{}{
 		"DBClusterSnapshot": snapshot,
