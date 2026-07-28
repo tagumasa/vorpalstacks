@@ -21,14 +21,15 @@ func (s *IoTService) CreateAuthorizer(ctx context.Context, reqCtx *request.Reque
 	}
 
 	auth := &iotstore.Authorizer{
-		AuthorizerName:        name,
-		AuthorizerFunctionARN: request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
-		TokenName:             request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
-		TokenSignature:        request.GetParamCaseInsensitive(req.Parameters, "tokenSignature"),
-		Status:                true,
-		EnableCachingForHTTP:  true,
-		CreationDate:          time.Now().UTC(),
-		LastModifiedDate:      time.Now().UTC(),
+		AuthorizerName:         name,
+		AuthorizerFunctionARN:  request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
+		TokenName:              request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
+		TokenSigningPublicKeys: request.ParseAttributes(req.Parameters, "tokenSigningPublicKeys"),
+		SigningDisabled:        request.GetBoolParam(req.Parameters, "signingDisabled"),
+		Status:                 true,
+		EnableCachingForHTTP:   true,
+		CreationDate:           time.Now().UTC(),
+		LastModifiedDate:       time.Now().UTC(),
 	}
 
 	if statusStr := request.GetParamCaseInsensitive(req.Parameters, "status"); statusStr != "" {
@@ -82,11 +83,17 @@ func (s *IoTService) UpdateAuthorizer(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	// ParseAttributes always returns a non-nil (but possibly empty) map.
+	// Guard with len() so absent keys are not overwritten with an empty map.
+	var signingKeys map[string]string
+	if parsed := request.ParseAttributes(req.Parameters, "tokenSigningPublicKeys"); len(parsed) > 0 {
+		signingKeys = parsed
+	}
 	opts := iotstore.AuthorizerUpdateOpts{
-		FunctionARN:    request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
-		TokenName:      request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
-		TokenSignature: request.GetParamCaseInsensitive(req.Parameters, "tokenSignature"),
-		Status:         request.GetParamCaseInsensitive(req.Parameters, "status"),
+		FunctionARN:            request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
+		TokenName:              request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
+		TokenSigningPublicKeys: signingKeys,
+		Status:                 request.GetParamCaseInsensitive(req.Parameters, "status"),
 	}
 	if opts.Status != "" {
 		if err := ValidateAuthorizerStatus(opts.Status); err != nil {

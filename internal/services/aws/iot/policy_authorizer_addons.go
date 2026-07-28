@@ -2,7 +2,16 @@ package iot
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
+	"encoding/json"
+	"encoding/pem"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,6 +19,12 @@ import (
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
+
+// cryptoSHA256 returns the SHA-256 digest of the given data.
+func cryptoSHA256(data []byte) []byte {
+	h := sha256.Sum256(data)
+	return h[:]
+}
 
 func (s *IoTService) CreatePolicyVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
@@ -238,12 +253,147 @@ func (s *IoTService) TestInvokeAuthorizer(ctx context.Context, reqCtx *request.R
 	if name == "" {
 		return nil, iotstore.ErrMissingParam
 	}
-	return map[string]interface{}{
-		"isAuthenticated":       true,
-		"principalId":           "test-principal-" + uuid.New().String()[:8],
-		"policyDocuments":       []map[string]interface{}{},
-		"refreshAfterInSeconds": 300,
-	}, nil
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	auth, err := store.GetAuthorizer(name)
+	if err != nil {
+		return nil, err
+	}
+	if auth == nil || auth.AuthorizerName == "" {
+		return nil, iotstore.ErrAuthorizerNotFound
+	}
+
+	token := request.GetParamCaseInsensitive(req.Parameters, "token")
+	tokenSig := request.GetParamCaseInsensitive(req.Parameters, "tokenSignature")
+
+	// When signing is enabled, the token must be accompanied by a valid
+	// signature verified against one of the registered public keys.
+	signatureVerified := false
+	if !auth.SigningDisabled {
+		if token == "" {
+			return nil, iotstore.ErrInvalidRequest
+		}
+		if len(auth.TokenSigningPublicKeys) > 0 && tokenSig != "" {
+			sigBytes, sigErr := hex.DecodeString(tokenSig)
+			if sigErr == nil {
+				for _, pubKeyPEM := range auth.TokenSigningPublicKeys {
+					block, _ := pem.Decode([]byte(pubKeyPEM))
+					if block == nil {
+						continue
+					}
+					pub, pubErr := x509.ParsePKIXPublicKey(block.Bytes)
+					if pubErr != nil {
+						continue
+					}
+					switch pk := pub.(type) {
+					case *ecdsa.PublicKey:
+						if ecdsa.VerifyASN1(pk, cryptoSHA256([]byte(token)), sigBytes) {
+							signatureVerified = true
+						}
+					case *rsa.PublicKey:
+						if rsa.VerifyPKCS1v15(pk, crypto.SHA256, cryptoSHA256([]byte(token)), sigBytes) == nil {
+							signatureVerified = true
+						}
+					}
+					if signatureVerified {
+						break
+					}
+				}
+			}
+		}
+	} else {
+		signatureVerified = true
+	}
+
+	// Build the authorizer invocation event and dispatch to Lambda.
+	mqttContext := request.GetMapParamCaseInsensitive(req.Parameters, "mqttContext")
+	httpContext := request.GetMapParamCaseInsensitive(req.Parameters, "httpContext")
+	tlsContext := request.GetMapParamCaseInsensitive(req.Parameters, "tlsContext")
+	protocolData := map[string]interface{}{}
+	if len(mqttContext) > 0 {
+		protocolData["mqtt"] = mqttContext
+	}
+	if len(httpContext) > 0 {
+		protocolData["http"] = httpContext
+	}
+	if len(tlsContext) > 0 {
+		protocolData["tls"] = tlsContext
+	}
+
+	event := map[string]interface{}{
+		"token":             token,
+		"signatureVerified": signatureVerified,
+		"protocols":         []string{"tls", "http", "mqtt"},
+		"protocolData":      protocolData,
+		"connectionMetadata": map[string]interface{}{
+			"sessionId": uuid.New().String(),
+		},
+	}
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	// Resolve the Lambda function name from the ARN.
+	fnName := lambdaFunctionNameFromARN(auth.AuthorizerFunctionARN)
+	if fnName == "" {
+		return nil, iotstore.ErrInvalidRequest
+	}
+
+	invoker := s.deps.EventBus.LambdaInvoker()
+	if invoker == nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	_, respBytes, invokeErr := invoker.InvokeForGateway(ctx, fnName, eventJSON)
+	if invokeErr != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	// Parse the Lambda response into the TestInvokeAuthorizerResponse shape.
+	var lambdaResp struct {
+		IsAuthenticated       bool     `json:"isAuthenticated"`
+		PrincipalID           string   `json:"principalId"`
+		PolicyDocuments       []string `json:"policyDocuments"`
+		RefreshAfterInSeconds int64    `json:"refreshAfterInSeconds"`
+	}
+	if err := json.Unmarshal(respBytes, &lambdaResp); err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	result := map[string]interface{}{
+		"isAuthenticated":       lambdaResp.IsAuthenticated,
+		"principalId":           lambdaResp.PrincipalID,
+		"refreshAfterInSeconds": lambdaResp.RefreshAfterInSeconds,
+	}
+	if len(lambdaResp.PolicyDocuments) > 0 {
+		policyDocs := make([]interface{}, 0, len(lambdaResp.PolicyDocuments))
+		for _, pd := range lambdaResp.PolicyDocuments {
+			policyDocs = append(policyDocs, pd)
+		}
+		result["policyDocuments"] = policyDocs
+	} else {
+		result["policyDocuments"] = []interface{}{}
+	}
+	return result, nil
+}
+
+// lambdaFunctionNameFromARN extracts the function name (or ARN suffix)
+// from a Lambda ARN for internal invocation.
+func lambdaFunctionNameFromARN(arn string) string {
+	if arn == "" {
+		return ""
+	}
+	parts := strings.Split(arn, ":")
+	if len(parts) < 7 {
+		// Function name without ARN prefix.
+		return arn
+	}
+	return parts[6]
 }
 
 // loadPolicyVersions reads the persisted version slice for a policy. Returns

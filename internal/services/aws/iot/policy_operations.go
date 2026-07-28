@@ -2,6 +2,7 @@ package iot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -13,6 +14,25 @@ import (
 
 var policyNamePattern = regexp.MustCompile(`^[\w+=,.@-]+$`)
 
+// validatePolicyDocument checks that the policy document is valid JSON with
+// at least Version and Statement fields, matching AWS validation.
+func validatePolicyDocument(doc string) error {
+	var pd struct {
+		Version   string          `json:"Version"`
+		Statement json.RawMessage `json:"Statement"`
+	}
+	if err := json.Unmarshal([]byte(doc), &pd); err != nil {
+		return err
+	}
+	if pd.Version == "" {
+		return fmt.Errorf("policy document missing Version")
+	}
+	if len(pd.Statement) == 0 {
+		return fmt.Errorf("policy document missing Statement")
+	}
+	return nil
+}
+
 func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
 	policyDoc := request.GetParamCaseInsensitive(req.Parameters, "policyDocument")
@@ -20,7 +40,12 @@ func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, iotstore.ErrMissingParam
 	}
 	if !policyNamePattern.MatchString(policyName) {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, iotstore.ErrValidation
+	}
+
+	// Validate the policy document is well-formed JSON with required fields.
+	if err := validatePolicyDocument(policyDoc); err != nil {
+		return nil, iotstore.ErrMalformedPolicy
 	}
 
 	store, err := s.store(reqCtx)

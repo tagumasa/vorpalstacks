@@ -3,6 +3,7 @@ package iot
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -22,14 +23,27 @@ func (s *IoTService) CreateJob(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	job := &iotstore.Job{
-		JobID:           jobID,
-		Description:     request.GetParamCaseInsensitive(req.Parameters, "description"),
-		Document:        request.GetParamCaseInsensitive(req.Parameters, "document"),
-		Targets:         request.GetStringList(req.Parameters, "targets"),
-		Status:          "QUEUED",
-		TargetSelection: request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
-		CreatedAt:       time.Now().UTC(),
-		LastUpdatedAt:   time.Now().UTC(),
+		JobID:                      jobID,
+		Description:                request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Document:                   request.GetParamCaseInsensitive(req.Parameters, "document"),
+		Targets:                    request.GetStringList(req.Parameters, "targets"),
+		Status:                     "IN_PROGRESS",
+		TargetSelection:            request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
+		ReasonCode:                 request.GetParamCaseInsensitive(req.Parameters, "reasonCode"),
+		Comment:                    request.GetParamCaseInsensitive(req.Parameters, "comment"),
+		NamespaceID:                request.GetParamCaseInsensitive(req.Parameters, "namespaceId"),
+		JobTemplateARN:             request.GetParamCaseInsensitive(req.Parameters, "jobTemplateArn"),
+		PresignedUrlConfig:         request.GetParamCaseInsensitive(req.Parameters, "presignedUrlConfig"),
+		JobExecutionsRolloutConfig: request.GetParamCaseInsensitive(req.Parameters, "jobExecutionsRolloutConfig"),
+		AbortConfig:                request.GetParamCaseInsensitive(req.Parameters, "abortConfig"),
+		TimeoutConfig:              request.GetParamCaseInsensitive(req.Parameters, "timeoutConfig"),
+		JobExecutionsRetryConfig:   request.GetParamCaseInsensitive(req.Parameters, "jobExecutionsRetryConfig"),
+		DocumentParameters:         request.GetParamCaseInsensitive(req.Parameters, "documentParameters"),
+		SchedulingConfig:           request.GetParamCaseInsensitive(req.Parameters, "schedulingConfig"),
+		ScheduledJobRollouts:       request.GetParamCaseInsensitive(req.Parameters, "scheduledJobRollouts"),
+		DestinationPackageVersions: request.GetParamCaseInsensitive(req.Parameters, "destinationPackageVersions"),
+		CreatedAt:                  time.Now().UTC(),
+		LastUpdatedAt:              time.Now().UTC(),
 	}
 
 	if job.TargetSelection != "" {
@@ -38,7 +52,10 @@ func (s *IoTService) CreateJob(ctx context.Context, reqCtx *request.RequestConte
 		}
 	}
 
-	tags := parseTags(req.Parameters)
+	tags, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, iotstore.ErrValidation
+	}
 	if len(tags) > 0 {
 		job.Tags = tags
 	}
@@ -157,7 +174,7 @@ func (s *IoTService) CancelJob(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
-	if job.Status != "IN_PROGRESS" && job.Status != "QUEUED" {
+	if job.Status != "IN_PROGRESS" && job.Status != "SCHEDULED" {
 		return nil, iotstore.ErrInvalidRequest
 	}
 
@@ -211,27 +228,22 @@ func (s *IoTService) UpdateJob(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	opts := iotstore.JobUpdateOpts{
-		Description: request.GetParamCaseInsensitive(req.Parameters, "description"),
-		Status:      request.GetParamCaseInsensitive(req.Parameters, "status"),
+		Description:                request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Status:                     request.GetParamCaseInsensitive(req.Parameters, "status"),
+		ReasonCode:                 request.GetParamCaseInsensitive(req.Parameters, "reasonCode"),
+		Comment:                    request.GetParamCaseInsensitive(req.Parameters, "comment"),
+		NamespaceID:                request.GetParamCaseInsensitive(req.Parameters, "namespaceId"),
+		PresignedUrlConfig:         request.GetParamCaseInsensitive(req.Parameters, "presignedUrlConfig"),
+		JobExecutionsRolloutConfig: request.GetParamCaseInsensitive(req.Parameters, "jobExecutionsRolloutConfig"),
+		AbortConfig:                request.GetParamCaseInsensitive(req.Parameters, "abortConfig"),
+		TimeoutConfig:              request.GetParamCaseInsensitive(req.Parameters, "timeoutConfig"),
+		JobExecutionsRetryConfig:   request.GetParamCaseInsensitive(req.Parameters, "jobExecutionsRetryConfig"),
+		SchedulingConfig:           request.GetParamCaseInsensitive(req.Parameters, "schedulingConfig"),
+		ScheduledJobRollouts:       request.GetParamCaseInsensitive(req.Parameters, "scheduledJobRollouts"),
 	}
 	_, err = store.UpdateJob(jobID, opts)
 	if err != nil {
 		return nil, err
-	}
-
-	// Persist optional job configuration fields via GenericKV. These fields
-	// (jobExecutionsRolloutConfig, abortConfig, timeoutConfig, namespaceId)
-	// are not in the Job proto, so they are stored alongside as JSON.
-	configFields := map[string]interface{}{}
-	for _, key := range []string{"jobExecutionsRolloutConfig", "abortConfig", "timeoutConfig", "namespaceId"} {
-		if val := request.GetParamCaseInsensitive(req.Parameters, key); val != "" {
-			configFields[key] = val
-		}
-	}
-	if len(configFields) > 0 {
-		if err := store.PutGeneric("jobConfig/"+jobID, configFields); err != nil {
-			return nil, err
-		}
 	}
 
 	return map[string]interface{}{}, nil
@@ -239,7 +251,8 @@ func (s *IoTService) UpdateJob(ctx context.Context, reqCtx *request.RequestConte
 
 // parseTags extracts a tags map from a tags parameter.
 // Handles both JSON-encoded string form and direct []interface{} from JSON body.
-func parseTags(params map[string]interface{}) map[string]string {
+// Returns an error if the JSON-encoded string form is malformed.
+func parseTags(params map[string]interface{}) (map[string]string, error) {
 	result := make(map[string]string)
 
 	if raw, ok := params["tags"]; ok {
@@ -254,14 +267,14 @@ func parseTags(params map[string]interface{}) map[string]string {
 					}
 				}
 			}
-			return result
+			return result, nil
 		case string:
 			if v == "" {
-				return nil
+				return nil, nil
 			}
 			var tagList []map[string]interface{}
 			if err := json.Unmarshal([]byte(v), &tagList); err != nil {
-				return nil
+				return nil, fmt.Errorf("malformed tags JSON: %w", err)
 			}
 			for _, t := range tagList {
 				key, _ := t["Key"].(string)
@@ -272,5 +285,5 @@ func parseTags(params map[string]interface{}) map[string]string {
 			}
 		}
 	}
-	return result
+	return result, nil
 }

@@ -63,11 +63,41 @@ func (s *IotStore) UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error) {
 	}
 	if opts.Status != "" {
 		switch opts.Status {
-		case "IN_PROGRESS", "CANCELED", "COMPLETED", "QUEUED":
+		case "IN_PROGRESS", "CANCELED", "COMPLETED", "DELETION_IN_PROGRESS", "SCHEDULED":
 			existing.Status = opts.Status
 		default:
 			return nil, ErrInvalidRequest
 		}
+	}
+	if opts.ReasonCode != "" {
+		existing.ReasonCode = opts.ReasonCode
+	}
+	if opts.Comment != "" {
+		existing.Comment = opts.Comment
+	}
+	if opts.NamespaceID != "" {
+		existing.NamespaceID = opts.NamespaceID
+	}
+	if opts.PresignedUrlConfig != "" {
+		existing.PresignedUrlConfig = opts.PresignedUrlConfig
+	}
+	if opts.JobExecutionsRolloutConfig != "" {
+		existing.JobExecutionsRolloutConfig = opts.JobExecutionsRolloutConfig
+	}
+	if opts.AbortConfig != "" {
+		existing.AbortConfig = opts.AbortConfig
+	}
+	if opts.TimeoutConfig != "" {
+		existing.TimeoutConfig = opts.TimeoutConfig
+	}
+	if opts.JobExecutionsRetryConfig != "" {
+		existing.JobExecutionsRetryConfig = opts.JobExecutionsRetryConfig
+	}
+	if opts.SchedulingConfig != "" {
+		existing.SchedulingConfig = opts.SchedulingConfig
+	}
+	if opts.ScheduledJobRollouts != "" {
+		existing.ScheduledJobRollouts = opts.ScheduledJobRollouts
 	}
 	existing.LastUpdatedAt = time.Now().UTC()
 	return existing, s.jobPS.Update(existing)

@@ -1,6 +1,7 @@
 package iot
 
 import (
+	"encoding/json"
 	"fmt"
 
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -8,30 +9,30 @@ import (
 
 func thingResponse(t *iotstore.Thing) map[string]interface{} {
 	return map[string]interface{}{
-		"thingName":        t.ThingName,
-		"thingArn":         t.ThingARN,
-		"thingId":          t.ThingID,
-		"thingTypeName":    t.ThingTypeName,
-		"attributes":       t.Attributes,
-		"attributeNames":   t.AttributeNames,
-		"version":          t.Version,
-		"creationDate":     t.CreationDate.Unix(),
-		"lastModifiedDate": t.LastModifiedDate.Unix(),
+		"thingName":     t.ThingName,
+		"thingArn":      t.ThingARN,
+		"thingId":       t.ThingID,
+		"thingTypeName": t.ThingTypeName,
+		"attributes":    ensureMap(t.Attributes),
+		"version":       t.Version,
 	}
 }
 
 func thingDescribeResponse(t *iotstore.Thing) map[string]interface{} {
-	return map[string]interface{}{
-		"thingName":        t.ThingName,
-		"thingArn":         t.ThingARN,
-		"thingId":          t.ThingID,
-		"thingTypeName":    t.ThingTypeName,
-		"attributes":       ensureMap(t.Attributes),
-		"attributeNames":   t.AttributeNames,
-		"version":          t.Version,
-		"creationDate":     t.CreationDate.Unix(),
-		"lastModifiedDate": t.LastModifiedDate.Unix(),
+	resp := map[string]interface{}{
+		"thingName":     t.ThingName,
+		"thingArn":      t.ThingARN,
+		"thingId":       t.ThingID,
+		"thingTypeName": t.ThingTypeName,
+		"attributes":    ensureMap(t.Attributes),
+		"version":       t.Version,
 	}
+	if t.DefaultClientId != "" {
+		resp["defaultClientId"] = t.DefaultClientId
+	} else {
+		resp["defaultClientId"] = t.ThingName
+	}
+	return resp
 }
 
 func thingTypeResponse(tt *iotstore.ThingType) map[string]interface{} {
@@ -168,21 +169,25 @@ func authorizerResponse(a *iotstore.Authorizer) map[string]interface{} {
 	if !a.Status {
 		status = "INACTIVE"
 	}
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"authorizerName":        a.AuthorizerName,
 		"authorizerArn":         a.AuthorizerARN,
 		"authorizerFunctionArn": a.AuthorizerFunctionARN,
 		"tokenKeyName":          a.TokenName,
-		"tokenSignature":        a.TokenSignature,
 		"status":                status,
 		"enableCachingForHttp":  a.EnableCachingForHTTP,
+		"signingDisabled":       a.SigningDisabled,
 		"creationDate":          a.CreationDate.Unix(),
 		"lastModifiedDate":      a.LastModifiedDate.Unix(),
 	}
+	if len(a.TokenSigningPublicKeys) > 0 {
+		resp["tokenSigningPublicKeys"] = a.TokenSigningPublicKeys
+	}
+	return resp
 }
 
 func jobResponse(j *iotstore.Job) map[string]interface{} {
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"jobId":           j.JobID,
 		"jobArn":          j.JobARN,
 		"description":     j.Description,
@@ -191,7 +196,69 @@ func jobResponse(j *iotstore.Job) map[string]interface{} {
 		"targets":         j.Targets,
 		"createdAt":       j.CreatedAt.Unix(),
 		"lastUpdatedAt":   j.LastUpdatedAt.Unix(),
+		"forceCanceled":   j.ForceCanceledFlag,
 	}
+	if j.ReasonCode != "" {
+		resp["reasonCode"] = j.ReasonCode
+	}
+	if j.Comment != "" {
+		resp["comment"] = j.Comment
+	}
+	if j.NamespaceID != "" {
+		resp["namespaceId"] = j.NamespaceID
+	}
+	if j.CompletedAt != "" {
+		resp["completedAt"] = j.CompletedAt
+	}
+	if j.JobTemplateARN != "" {
+		resp["jobTemplateArn"] = j.JobTemplateARN
+	}
+	if j.IsConcurrent {
+		resp["isConcurrent"] = j.IsConcurrent
+	}
+	if v := rawJSONOrOmit(j.PresignedUrlConfig); v != nil {
+		resp["presignedUrlConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.JobExecutionsRolloutConfig); v != nil {
+		resp["jobExecutionsRolloutConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.AbortConfig); v != nil {
+		resp["abortConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.TimeoutConfig); v != nil {
+		resp["timeoutConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.JobExecutionsRetryConfig); v != nil {
+		resp["jobExecutionsRetryConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.DocumentParameters); v != nil {
+		resp["documentParameters"] = v
+	}
+	if v := rawJSONOrOmit(j.SchedulingConfig); v != nil {
+		resp["schedulingConfig"] = v
+	}
+	if v := rawJSONOrOmit(j.ScheduledJobRollouts); v != nil {
+		resp["scheduledJobRollouts"] = v
+	}
+	if v := rawJSONOrOmit(j.DestinationPackageVersions); v != nil {
+		resp["destinationPackageVersions"] = v
+	}
+	return resp
+}
+
+// rawJSONOrOmit validates that s contains syntactically valid JSON before
+// returning it as json.RawMessage. If s is empty or invalid JSON, it returns
+// nil so the caller can omit the field from the response map entirely.
+// Without this guard, a non-JSON string stored in a config field would
+// corrupt the entire response serialisation.
+func rawJSONOrOmit(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	if !json.Valid([]byte(s)) {
+		return nil
+	}
+	return json.RawMessage(s)
 }
 
 func policyResponse(p *iotstore.Policy) map[string]interface{} {

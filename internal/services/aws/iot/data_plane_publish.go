@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // Publish implements the iotdataplane Publish operation (POST /topics/{topic}).
@@ -12,6 +13,9 @@ import (
 // When the broker is unavailable (e.g. failed to start in TEST_MODE), it falls
 // back to feeding the rule executor directly.
 func (s *IoTService) Publish(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if s.throttle != nil && !s.throttle.allow() {
+		return nil, iotstore.ErrThrottling
+	}
 	topic := request.GetParamCaseInsensitive(req.Parameters, "topic")
 	if topic == "" {
 		return nil, nil

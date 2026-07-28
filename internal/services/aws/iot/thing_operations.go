@@ -29,7 +29,7 @@ func (s *IoTService) CreateThing(ctx context.Context, reqCtx *request.RequestCon
 		ThingName:        thingName,
 		ThingTypeName:    thingTypeName,
 		Attributes:       attributes,
-		AttributeNames:   mapKeys(attributes),
+		DefaultClientId:  thingName,
 		Version:          1,
 		CreationDate:     time.Now().UTC(),
 		LastModifiedDate: time.Now().UTC(),
@@ -38,6 +38,11 @@ func (s *IoTService) CreateThing(ctx context.Context, reqCtx *request.RequestCon
 	created, err := store.CreateThing(thing)
 	if err != nil {
 		return nil, err
+	}
+
+	// If billingGroupName is supplied, add the thing to the billing group.
+	if bgName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName"); bgName != "" {
+		_ = store.AddThingToBillingGroup(thingName, bgName)
 	}
 
 	return thingResponse(created), nil

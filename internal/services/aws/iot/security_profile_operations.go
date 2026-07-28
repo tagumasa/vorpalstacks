@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -30,7 +31,14 @@ func (s *IoTService) CreateSecurityProfile(ctx context.Context, reqCtx *request.
 		return nil, iotstore.ErrInvalidRequest
 	}
 
-	metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainVersionTwo", parseStringList, parseMetricsParam)
+	metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseStringList, parseMetricsParam)
+	additionalMetricsV1 := request.GetStringList(req.Parameters, "additionalMetricsToRetain")
+	metricsExportConfig := request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig")
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	spTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		spTags[t.Key] = t.Value
+	}
 
 	sp := &iotstore.SecurityProfile{
 		SecurityProfileName:         name,
@@ -38,6 +46,9 @@ func (s *IoTService) CreateSecurityProfile(ctx context.Context, reqCtx *request.
 		Behaviors:                   behaviors,
 		AlertTargets:                alertTargets,
 		AdditionalMetricsToRetainV2: metrics,
+		AdditionalMetricsToRetain:   additionalMetricsV1,
+		MetricsExportConfig:         metricsExportConfig,
+		Tags:                        spTags,
 		Version:                     1,
 		CreationDate:                time.Now().UTC(),
 		LastModifiedDate:            time.Now().UTC(),
@@ -107,8 +118,14 @@ func (s *IoTService) UpdateSecurityProfile(ctx context.Context, reqCtx *request.
 		existing.AlertTargets = alertTargets
 	}
 
-	if metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainVersionTwo", parseStringList, parseMetricsParam); metrics != nil {
+	if metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseStringList, parseMetricsParam); metrics != nil {
 		existing.AdditionalMetricsToRetainV2 = metrics
+	}
+	if metricsV1 := request.GetStringList(req.Parameters, "additionalMetricsToRetain"); metricsV1 != nil {
+		existing.AdditionalMetricsToRetain = metricsV1
+	}
+	if mec := request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig"); mec != "" {
+		existing.MetricsExportConfig = mec
 	}
 
 	existing.Version++
@@ -398,15 +415,30 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 		metrics = []string{}
 	}
 
-	return map[string]interface{}{
-		"securityProfileName":                 sp.SecurityProfileName,
-		"securityProfileArn":                  sp.SecurityProfileARN,
-		"securityProfileDescription":          sp.SecurityProfileDescription,
-		"behaviors":                           behaviors,
-		"alertTargets":                        alertTargets,
-		"additionalMetricsToRetainVersionTwo": metrics,
-		"version":                             sp.Version,
-		"creationDate":                        sp.CreationDate.Unix(),
-		"lastModifiedDate":                    sp.LastModifiedDate.Unix(),
+	metricsV1 := sp.AdditionalMetricsToRetain
+	if metricsV1 == nil {
+		metricsV1 = []string{}
 	}
+
+	resp := map[string]interface{}{
+		"securityProfileName":         sp.SecurityProfileName,
+		"securityProfileArn":          sp.SecurityProfileARN,
+		"securityProfileDescription":  sp.SecurityProfileDescription,
+		"behaviors":                   behaviors,
+		"alertTargets":                alertTargets,
+		"additionalMetricsToRetain":   metricsV1,
+		"additionalMetricsToRetainV2": metrics,
+		"version":                     sp.Version,
+		"creationDate":                sp.CreationDate.Unix(),
+		"lastModifiedDate":            sp.LastModifiedDate.Unix(),
+	}
+	if sp.MetricsExportConfig != "" {
+		var mec interface{}
+		if err := json.Unmarshal([]byte(sp.MetricsExportConfig), &mec); err == nil {
+			resp["metricsExportConfig"] = mec
+		} else {
+			resp["metricsExportConfig"] = sp.MetricsExportConfig
+		}
+	}
+	return resp
 }

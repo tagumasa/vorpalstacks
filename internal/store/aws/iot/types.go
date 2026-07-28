@@ -21,6 +21,8 @@ type Thing struct {
 	Version          int64
 	CreationDate     time.Time
 	LastModifiedDate time.Time
+	DefaultClientId  string
+	BillingGroupName string
 }
 
 func ThingToProto(t *Thing) *pb.Thing {
@@ -34,6 +36,8 @@ func ThingToProto(t *Thing) *pb.Thing {
 		Version:          t.Version,
 		CreationDate:     timeToProto(t.CreationDate),
 		LastModifiedDate: timeToProto(t.LastModifiedDate),
+		DefaultClientId:  t.DefaultClientId,
+		BillingGroupName: t.BillingGroupName,
 	}
 }
 
@@ -48,6 +52,8 @@ func ProtoToThing(p *pb.Thing) *Thing {
 		Version:          p.Version,
 		CreationDate:     protoToTime(p.CreationDate),
 		LastModifiedDate: protoToTime(p.LastModifiedDate),
+		DefaultClientId:  p.DefaultClientId,
+		BillingGroupName: p.BillingGroupName,
 	}
 }
 
@@ -292,20 +298,34 @@ func ProtoToRule(p *pb.TopicRule) *TopicRule {
 }
 
 type Job struct {
-	JobARN          string
-	JobID           string
-	Description     string
-	Version         int64
-	Force           bool
-	CreatedAt       time.Time
-	LastUpdatedAt   time.Time
-	CompletedAt     string
-	JobTemplateARN  string
-	Status          string
-	TargetSelection string
-	Tags            map[string]string
-	Document        string
-	Targets         []string
+	JobARN                     string
+	JobID                      string
+	Description                string
+	Version                    int64
+	Force                      bool
+	CreatedAt                  time.Time
+	LastUpdatedAt              time.Time
+	CompletedAt                string
+	JobTemplateARN             string
+	Status                     string
+	TargetSelection            string
+	Tags                       map[string]string
+	Document                   string
+	Targets                    []string
+	ReasonCode                 string
+	Comment                    string
+	NamespaceID                string
+	ForceCanceledFlag          bool
+	IsConcurrent               bool
+	PresignedUrlConfig         string
+	JobExecutionsRolloutConfig string
+	AbortConfig                string
+	TimeoutConfig              string
+	JobExecutionsRetryConfig   string
+	DocumentParameters         string
+	SchedulingConfig           string
+	ScheduledJobRollouts       string
+	DestinationPackageVersions string
 }
 
 func JobToProto(j *Job) *pb.Job {
@@ -316,6 +336,13 @@ func JobToProto(j *Job) *pb.Job {
 		CompletedAt: j.CompletedAt, JobTemplateArn: j.JobTemplateARN,
 		Status: j.Status, TargetSelection: j.TargetSelection, Tags: j.Tags,
 		Document: j.Document, Targets: j.Targets,
+		ReasonCode: j.ReasonCode, Comment: j.Comment, NamespaceId: j.NamespaceID,
+		ForceCanceledFlag: j.ForceCanceledFlag, IsConcurrent: j.IsConcurrent,
+		PresignedUrlConfig: j.PresignedUrlConfig, JobExecutionsRolloutConfig: j.JobExecutionsRolloutConfig,
+		AbortConfig: j.AbortConfig, TimeoutConfig: j.TimeoutConfig,
+		JobExecutionsRetryConfig: j.JobExecutionsRetryConfig, DocumentParameters: j.DocumentParameters,
+		SchedulingConfig: j.SchedulingConfig, ScheduledJobRollouts: j.ScheduledJobRollouts,
+		DestinationPackageVersions: j.DestinationPackageVersions,
 	}
 }
 
@@ -327,6 +354,13 @@ func ProtoToJob(p *pb.Job) *Job {
 		CompletedAt: p.CompletedAt, JobTemplateARN: p.JobTemplateArn,
 		Status: p.Status, TargetSelection: p.TargetSelection, Tags: p.Tags,
 		Document: p.Document, Targets: p.Targets,
+		ReasonCode: p.ReasonCode, Comment: p.Comment, NamespaceID: p.NamespaceId,
+		ForceCanceledFlag: p.ForceCanceledFlag, IsConcurrent: p.IsConcurrent,
+		PresignedUrlConfig: p.PresignedUrlConfig, JobExecutionsRolloutConfig: p.JobExecutionsRolloutConfig,
+		AbortConfig: p.AbortConfig, TimeoutConfig: p.TimeoutConfig,
+		JobExecutionsRetryConfig: p.JobExecutionsRetryConfig, DocumentParameters: p.DocumentParameters,
+		SchedulingConfig: p.SchedulingConfig, ScheduledJobRollouts: p.ScheduledJobRollouts,
+		DestinationPackageVersions: p.DestinationPackageVersions,
 	}
 }
 
@@ -356,16 +390,18 @@ func ProtoToShadow(p *pb.ShadowDocument) *ShadowDocument {
 }
 
 type Authorizer struct {
-	AuthorizerName        string
-	AuthorizerARN         string
-	AuthorizerFunctionARN string
-	TokenName             string
-	TokenSignature        string
-	Status                bool
-	CreationDate          time.Time
-	LastModifiedDate      time.Time
-	EnableCachingForHTTP  bool
-	CachingDisabled       int64
+	AuthorizerName         string
+	AuthorizerARN          string
+	AuthorizerFunctionARN  string
+	TokenName              string
+	TokenSignature         string
+	Status                 bool
+	CreationDate           time.Time
+	LastModifiedDate       time.Time
+	EnableCachingForHTTP   bool
+	CachingDisabled        int64
+	TokenSigningPublicKeys map[string]string
+	SigningDisabled        bool
 }
 
 func AuthorizerToProto(a *Authorizer) *pb.Authorizer {
@@ -375,6 +411,7 @@ func AuthorizerToProto(a *Authorizer) *pb.Authorizer {
 		TokenKeyName:          a.TokenName, TokenSignature: a.TokenSignature, Status: a.Status,
 		CreationDate: timeToProto(a.CreationDate), LastModifiedDate: timeToProto(a.LastModifiedDate),
 		EnableCachingForHttp: a.EnableCachingForHTTP, CachingDisabled: a.CachingDisabled,
+		TokenSigningPublicKeys: a.TokenSigningPublicKeys, SigningDisabled: a.SigningDisabled,
 	}
 }
 
@@ -385,6 +422,7 @@ func ProtoToAuthorizer(p *pb.Authorizer) *Authorizer {
 		TokenName:             p.TokenKeyName, TokenSignature: p.TokenSignature, Status: p.Status,
 		CreationDate: protoToTime(p.CreationDate), LastModifiedDate: protoToTime(p.LastModifiedDate),
 		EnableCachingForHTTP: p.EnableCachingForHttp, CachingDisabled: p.CachingDisabled,
+		TokenSigningPublicKeys: p.TokenSigningPublicKeys, SigningDisabled: p.SigningDisabled,
 	}
 }
 
@@ -427,6 +465,8 @@ type ProvisioningTemplate struct {
 	CreationDate        time.Time
 	LastModifiedDate    time.Time
 	Type                string
+	PreProvisioningHook string
+	DefaultVersionID    int64
 }
 
 func ProvisioningTemplateToProto(t *ProvisioningTemplate) (*pb.ProvisioningTemplate, error) {
@@ -435,7 +475,18 @@ func ProvisioningTemplateToProto(t *ProvisioningTemplate) (*pb.ProvisioningTempl
 		Description: t.Description, Enabled: t.Enabled,
 		ProvisioningRoleArn: t.ProvisioningRoleARN, Tags: t.Tags,
 		CreationDate: timeToProto(t.CreationDate), LastModifiedDate: timeToProto(t.LastModifiedDate),
-		Type: t.Type,
+		Type: t.Type, DefaultVersionId: t.DefaultVersionID,
+	}
+	if t.PreProvisioningHook != "" {
+		var m map[string]interface{}
+		if err := json.Unmarshal([]byte(t.PreProvisioningHook), &m); err != nil {
+			return nil, fmt.Errorf("provisioning template %q hook unmarshal: %w", t.TemplateName, err)
+		}
+		s, err := mapToStruct(m)
+		if err != nil {
+			return nil, fmt.Errorf("provisioning template %q hook to struct: %w", t.TemplateName, err)
+		}
+		out.PreProvisioningHook = s
 	}
 	if t.TemplateBody != "" {
 		var m map[string]interface{}
@@ -457,7 +508,14 @@ func ProtoToProvisioningTemplate(p *pb.ProvisioningTemplate) (*ProvisioningTempl
 		Description: p.Description, Enabled: p.Enabled,
 		ProvisioningRoleARN: p.ProvisioningRoleArn, Tags: p.Tags,
 		CreationDate: protoToTime(p.CreationDate), LastModifiedDate: protoToTime(p.LastModifiedDate),
-		Type: p.Type,
+		Type: p.Type, DefaultVersionID: p.DefaultVersionId,
+	}
+	if p.PreProvisioningHook != nil {
+		data, err := json.Marshal(structToMap(p.PreProvisioningHook))
+		if err != nil {
+			return nil, fmt.Errorf("provisioning template %q hook marshal: %w", p.TemplateName, err)
+		}
+		t.PreProvisioningHook = string(data)
 	}
 	if p.TemplateBody != nil {
 		data, err := json.Marshal(structToMap(p.TemplateBody))
@@ -641,6 +699,8 @@ type SecurityProfile struct {
 	CreationDate                time.Time
 	LastModifiedDate            time.Time
 	Tags                        map[string]string
+	MetricsExportConfig         string
+	AdditionalMetricsToRetain   []string
 }
 
 // AlertTarget represents an alert destination for security profile violations.
@@ -767,6 +827,8 @@ func SecurityProfileToProto(s *SecurityProfile) (*pb.SecurityProfile, error) {
 		CreationDate:                timeToProto(s.CreationDate),
 		LastModifiedDate:            timeToProto(s.LastModifiedDate),
 		Tags:                        s.Tags,
+		MetricsExportConfig:         s.MetricsExportConfig,
+		AdditionalMetricsToRetain:   s.AdditionalMetricsToRetain,
 	}, nil
 }
 
@@ -793,6 +855,8 @@ func ProtoToSecurityProfile(p *pb.SecurityProfile) *SecurityProfile {
 		CreationDate:                protoToTime(p.CreationDate),
 		LastModifiedDate:            protoToTime(p.LastModifiedDate),
 		Tags:                        p.Tags,
+		MetricsExportConfig:         p.MetricsExportConfig,
+		AdditionalMetricsToRetain:   p.AdditionalMetricsToRetain,
 	}
 }
 

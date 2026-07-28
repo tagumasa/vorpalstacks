@@ -166,7 +166,9 @@ func (s *IoTService) DeleteThingShadow(ctx context.Context, reqCtx *request.Requ
 			"timestamp": time.Now().Unix(),
 			"thingName": thingName,
 		})
-		_ = brk.Publish(deleteTopic, notif)
+		if pubErr := brk.Publish(deleteTopic, notif); pubErr != nil {
+			slog.Error("shadow delete notification publish error", "error", pubErr)
+		}
 	}
 
 	return map[string]interface{}{}, nil

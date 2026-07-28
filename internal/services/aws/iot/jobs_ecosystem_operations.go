@@ -2,11 +2,13 @@ package iot
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -268,21 +270,39 @@ func (s *IoTService) CreateOTAUpdate(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	recTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		recTags[t.Key] = t.Value
+	}
 	otaID := uuid.New().String()
+	now := time.Now().Unix()
 	rec := map[string]interface{}{
-		"otaUpdateId":  name,
-		"otaUpdateArn": iotstore.BuildOTAUpdateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
-		"status":       "CREATE_COMPLETE",
-		"createdAt":    time.Now().Unix(),
+		"otaUpdateId":                   name,
+		"otaUpdateArn":                  iotstore.BuildOTAUpdateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
+		"description":                   request.GetParamCaseInsensitive(req.Parameters, "description"),
+		"targets":                       request.GetStringList(req.Parameters, "targets"),
+		"protocols":                     request.GetStringList(req.Parameters, "protocols"),
+		"targetSelection":               request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
+		"awsJobExecutionsRolloutConfig": request.GetParamCaseInsensitive(req.Parameters, "awsJobExecutionsRolloutConfig"),
+		"awsJobPresignedUrlConfig":      request.GetParamCaseInsensitive(req.Parameters, "awsJobPresignedUrlConfig"),
+		"awsJobAbortConfig":             request.GetParamCaseInsensitive(req.Parameters, "awsJobAbortConfig"),
+		"awsJobTimeoutConfig":           request.GetParamCaseInsensitive(req.Parameters, "awsJobTimeoutConfig"),
+		"roleArn":                       request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		"tags":                          recTags,
+		"status":                        "CREATE_COMPLETE",
+		"awsIotJobId":                   otaID,
+		"createdAt":                     now,
 	}
 	if err := store.PutGeneric("otaUpdate/"+name, rec); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"otaUpdateId":     name,
-		"otaUpdateArn":    iotstore.BuildOTAUpdateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
+		"otaUpdateArn":    rec["otaUpdateArn"],
 		"otaUpdateStatus": "CREATE_COMPLETE",
 		"awsIotJobId":     otaID,
+		"awsIotJobArn":    iotstore.BuildJobARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), otaID),
 	}, nil
 }
 
@@ -319,8 +339,32 @@ func (s *IoTService) GetOTAUpdate(ctx context.Context, reqCtx *request.RequestCo
 	if !exists {
 		return nil, iotstore.ErrJobNotFound
 	}
-	// AWS wraps the OTA update in otaUpdateInfo; returning it flat leaves the
-	// SDK's OtaUpdateInfo field nil.
+	// Strip empty-string fields that would break SDK deserialization.
+	// Complex types (configs, maps) must be omitted when empty, not sent as "".
+	for k, v := range rec {
+		if s, ok := v.(string); ok && s == "" {
+			switch k {
+			case "awsJobExecutionsRolloutConfig", "awsJobPresignedUrlConfig",
+				"awsJobAbortConfig", "awsJobTimeoutConfig":
+				delete(rec, k)
+			}
+		}
+		if v == nil {
+			delete(rec, k)
+		}
+	}
+	// Convert tags from map to []Tag format expected by SDK.
+	// GetGenericExists unmarshals JSON into map[string]interface{}, so the
+	// assertion must be on map[string]interface{}, not map[string]string.
+	if tagMap, ok := rec["tags"].(map[string]interface{}); ok && len(tagMap) > 0 {
+		tagList := make([]map[string]string, 0, len(tagMap))
+		for k, v := range tagMap {
+			tagList = append(tagList, map[string]string{"Key": k, "Value": fmt.Sprint(v)})
+		}
+		rec["tags"] = tagList
+	} else {
+		delete(rec, "tags")
+	}
 	return map[string]interface{}{"otaUpdateInfo": rec}, nil
 }
 

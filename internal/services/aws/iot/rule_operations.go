@@ -47,6 +47,13 @@ func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.Reques
 	}
 	rule.RuleDisabled = request.GetBoolParam(props, "ruleDisabled")
 
+	// Validate the IoT SQL statement before persisting.
+	if rule.SQL != "" {
+		if _, err := rules.NewParser(rule.SQL).Parse(); err != nil {
+			return nil, iotstore.ErrSqlParse
+		}
+	}
+
 	// Extract action configurations from the topicRulePayload.
 	rule.Actions = extractActionsFromProps(props)
 	if ea := request.GetMapParamCaseInsensitive(props, "errorAction"); ea != nil {
@@ -114,6 +121,13 @@ func (s *IoTService) ReplaceTopicRule(ctx context.Context, reqCtx *request.Reque
 		RuleDisabled:     &disabled,
 		Actions:          actionsMap,
 		ErrorAction:      errorAction,
+	}
+
+	// Validate the IoT SQL statement before persisting.
+	if opts.SQL != "" {
+		if _, err := rules.NewParser(opts.SQL).Parse(); err != nil {
+			return nil, iotstore.ErrSqlParse
+		}
 	}
 
 	updated, err := store.UpdateRule(ruleName, opts)

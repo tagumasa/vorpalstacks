@@ -45,6 +45,15 @@ func (s *IotStore) UpdateProvisioningTemplate(name string, opts ProvisioningTemp
 	if opts.TemplateBody != nil {
 		existing.TemplateBody = *opts.TemplateBody
 	}
+	if opts.DefaultVersionID != 0 {
+		existing.DefaultVersionID = opts.DefaultVersionID
+	}
+	if opts.PreProvisioningHook != "" {
+		existing.PreProvisioningHook = opts.PreProvisioningHook
+	}
+	if opts.RemovePreProvisioningHook {
+		existing.PreProvisioningHook = ""
+	}
 	existing.LastModifiedDate = time.Now().UTC()
 	return existing, s.provisioningTplPS.Update(existing)
 }

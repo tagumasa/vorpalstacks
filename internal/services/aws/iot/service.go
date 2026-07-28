@@ -48,8 +48,45 @@ type IoTService struct {
 	brokers     map[string]*broker.Broker
 	dispatchers map[string]*actions.Dispatcher
 	taskEngine  *taskEngine
+	throttle    *throttleLimiter
 	once        sync.Once
 	initialised bool
+}
+
+// throttleLimiter provides a simple sliding-window rate limiter for
+// data-plane Publish operations. AWS IoT throttles these operations per
+// account; the limiter returns ErrThrottling when the configured threshold
+// is exceeded within the window.
+type throttleLimiter struct {
+	mu     sync.Mutex
+	window time.Duration
+	limit  int
+	hits   []time.Time
+}
+
+func newThrottleLimiter(limit int, window time.Duration) *throttleLimiter {
+	return &throttleLimiter{window: window, limit: limit}
+}
+
+// allow returns true if the request is within the rate limit, false if
+// throttled. Thread-safe.
+func (t *throttleLimiter) allow() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	now := time.Now()
+	cutoff := now.Add(-t.window)
+	idx := 0
+	for ; idx < len(t.hits); idx++ {
+		if t.hits[idx].After(cutoff) {
+			break
+		}
+	}
+	t.hits = t.hits[idx:]
+	if len(t.hits) >= t.limit {
+		return false
+	}
+	t.hits = append(t.hits, now)
+	return true
 }
 
 // NewIoTService creates a new IoT Core service instance.
@@ -57,6 +94,7 @@ type IoTService struct {
 func NewIoTService(accountID string) *IoTService {
 	return &IoTService{
 		accountID: accountID,
+		throttle:  newThrottleLimiter(10000, time.Second),
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -100,6 +101,15 @@ func (s *IoTService) UpdateProvisioningTemplate(ctx context.Context, reqCtx *req
 		}
 		opts.TemplateBody = &tb
 	}
+	if dvid := request.GetIntParam(req.Parameters, "defaultVersionId"); dvid > 0 {
+		opts.DefaultVersionID = int64(dvid)
+	}
+	if hook := request.GetParamCaseInsensitive(req.Parameters, "preProvisioningHook"); hook != "" {
+		opts.PreProvisioningHook = hook
+	}
+	if request.GetBoolParam(req.Parameters, "removePreProvisioningHook") {
+		opts.RemovePreProvisioningHook = true
+	}
 
 	_, err = store.UpdateProvisioningTemplate(name, opts)
 	if err != nil {
@@ -171,7 +181,10 @@ func (s *IoTService) ListProvisioningTemplateVersions(ctx context.Context, reqCt
 	items := make([]map[string]interface{}, 0, len(versions))
 	for _, v := range versions {
 		var vidInt int32
-		fmt.Sscanf(v.VersionID, "%d", &vidInt)
+		if _, scanErr := fmt.Sscanf(v.VersionID, "%d", &vidInt); scanErr != nil {
+			slog.Warn("provisioning template version ID parse failed", "versionID", v.VersionID, "error", scanErr)
+			continue
+		}
 		items = append(items, map[string]interface{}{
 			"versionId":    vidInt,
 			"templateName": name,

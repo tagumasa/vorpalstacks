@@ -37,8 +37,8 @@ func (s *IotStore) UpdateAuthorizer(name string, opts AuthorizerUpdateOpts) (*Au
 	if opts.TokenName != "" {
 		existing.TokenName = opts.TokenName
 	}
-	if opts.TokenSignature != "" {
-		existing.TokenSignature = opts.TokenSignature
+	if opts.TokenSigningPublicKeys != nil {
+		existing.TokenSigningPublicKeys = opts.TokenSigningPublicKeys
 	}
 	if opts.EnableCaching != nil {
 		existing.EnableCachingForHTTP = *opts.EnableCaching

@@ -35,6 +35,8 @@ type Thing struct {
 	Version          int64                  `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
 	CreationDate     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	DefaultClientId  string                 `protobuf:"bytes,10,opt,name=default_client_id,json=defaultClientId,proto3" json:"default_client_id,omitempty"`
+	BillingGroupName string                 `protobuf:"bytes,11,opt,name=billing_group_name,json=billingGroupName,proto3" json:"billing_group_name,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -130,6 +132,20 @@ func (x *Thing) GetLastModifiedDate() *timestamppb.Timestamp {
 		return x.LastModifiedDate
 	}
 	return nil
+}
+
+func (x *Thing) GetDefaultClientId() string {
+	if x != nil {
+		return x.DefaultClientId
+	}
+	return ""
+}
+
+func (x *Thing) GetBillingGroupName() string {
+	if x != nil {
+		return x.BillingGroupName
+	}
+	return ""
 }
 
 // ThingType represents an IoT thing type.
@@ -905,27 +921,41 @@ func (x *TopicRule) GetErrorAction() *structpb.Struct {
 
 // Job represents an IoT job.
 type Job struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	JobArn             string                 `protobuf:"bytes,1,opt,name=job_arn,json=jobArn,proto3" json:"job_arn,omitempty"`
-	JobId              string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	Description        string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Version            int64                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
-	Force              bool                   `protobuf:"varint,5,opt,name=force,proto3" json:"force,omitempty"`
-	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastUpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_updated_at,json=lastUpdatedAt,proto3" json:"last_updated_at,omitempty"`
-	CompletedAt        string                 `protobuf:"bytes,8,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
-	JobTemplateArn     string                 `protobuf:"bytes,9,opt,name=job_template_arn,json=jobTemplateArn,proto3" json:"job_template_arn,omitempty"`
-	Status             string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
-	TargetSelection    string                 `protobuf:"bytes,11,opt,name=target_selection,json=targetSelection,proto3" json:"target_selection,omitempty"`
-	JobProcessDetails  int64                  `protobuf:"varint,12,opt,name=job_process_details,json=jobProcessDetails,proto3" json:"job_process_details,omitempty"`
-	ScheduledJobLaunch *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=scheduled_job_launch,json=scheduledJobLaunch,proto3" json:"scheduled_job_launch,omitempty"`
-	StartedAt          *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
-	ForceCanceledAt    *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=force_canceled_at,json=forceCanceledAt,proto3" json:"force_canceled_at,omitempty"`
-	Tags               map[string]string      `protobuf:"bytes,16,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Document           string                 `protobuf:"bytes,17,opt,name=document,proto3" json:"document,omitempty"`
-	Targets            []string               `protobuf:"bytes,18,rep,name=targets,proto3" json:"targets,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"open.v1"`
+	JobArn                     string                 `protobuf:"bytes,1,opt,name=job_arn,json=jobArn,proto3" json:"job_arn,omitempty"`
+	JobId                      string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	Description                string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Version                    int64                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
+	Force                      bool                   `protobuf:"varint,5,opt,name=force,proto3" json:"force,omitempty"`
+	CreatedAt                  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUpdatedAt              *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_updated_at,json=lastUpdatedAt,proto3" json:"last_updated_at,omitempty"`
+	CompletedAt                string                 `protobuf:"bytes,8,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	JobTemplateArn             string                 `protobuf:"bytes,9,opt,name=job_template_arn,json=jobTemplateArn,proto3" json:"job_template_arn,omitempty"`
+	Status                     string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	TargetSelection            string                 `protobuf:"bytes,11,opt,name=target_selection,json=targetSelection,proto3" json:"target_selection,omitempty"`
+	JobProcessDetails          int64                  `protobuf:"varint,12,opt,name=job_process_details,json=jobProcessDetails,proto3" json:"job_process_details,omitempty"`
+	ScheduledJobLaunch         *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=scheduled_job_launch,json=scheduledJobLaunch,proto3" json:"scheduled_job_launch,omitempty"`
+	StartedAt                  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	ForceCanceledAt            *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=force_canceled_at,json=forceCanceledAt,proto3" json:"force_canceled_at,omitempty"`
+	Tags                       map[string]string      `protobuf:"bytes,16,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Document                   string                 `protobuf:"bytes,17,opt,name=document,proto3" json:"document,omitempty"`
+	Targets                    []string               `protobuf:"bytes,18,rep,name=targets,proto3" json:"targets,omitempty"`
+	ReasonCode                 string                 `protobuf:"bytes,19,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	Comment                    string                 `protobuf:"bytes,20,opt,name=comment,proto3" json:"comment,omitempty"`
+	NamespaceId                string                 `protobuf:"bytes,21,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
+	ForceCanceledFlag          bool                   `protobuf:"varint,22,opt,name=force_canceled_flag,json=forceCanceledFlag,proto3" json:"force_canceled_flag,omitempty"`
+	IsConcurrent               bool                   `protobuf:"varint,23,opt,name=is_concurrent,json=isConcurrent,proto3" json:"is_concurrent,omitempty"`
+	PresignedUrlConfig         string                 `protobuf:"bytes,24,opt,name=presigned_url_config,json=presignedUrlConfig,proto3" json:"presigned_url_config,omitempty"`
+	JobExecutionsRolloutConfig string                 `protobuf:"bytes,25,opt,name=job_executions_rollout_config,json=jobExecutionsRolloutConfig,proto3" json:"job_executions_rollout_config,omitempty"`
+	AbortConfig                string                 `protobuf:"bytes,26,opt,name=abort_config,json=abortConfig,proto3" json:"abort_config,omitempty"`
+	TimeoutConfig              string                 `protobuf:"bytes,27,opt,name=timeout_config,json=timeoutConfig,proto3" json:"timeout_config,omitempty"`
+	JobExecutionsRetryConfig   string                 `protobuf:"bytes,28,opt,name=job_executions_retry_config,json=jobExecutionsRetryConfig,proto3" json:"job_executions_retry_config,omitempty"`
+	DocumentParameters         string                 `protobuf:"bytes,29,opt,name=document_parameters,json=documentParameters,proto3" json:"document_parameters,omitempty"`
+	SchedulingConfig           string                 `protobuf:"bytes,30,opt,name=scheduling_config,json=schedulingConfig,proto3" json:"scheduling_config,omitempty"`
+	ScheduledJobRollouts       string                 `protobuf:"bytes,31,opt,name=scheduled_job_rollouts,json=scheduledJobRollouts,proto3" json:"scheduled_job_rollouts,omitempty"`
+	DestinationPackageVersions string                 `protobuf:"bytes,32,opt,name=destination_package_versions,json=destinationPackageVersions,proto3" json:"destination_package_versions,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *Job) Reset() {
@@ -1082,6 +1112,104 @@ func (x *Job) GetTargets() []string {
 		return x.Targets
 	}
 	return nil
+}
+
+func (x *Job) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *Job) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+func (x *Job) GetNamespaceId() string {
+	if x != nil {
+		return x.NamespaceId
+	}
+	return ""
+}
+
+func (x *Job) GetForceCanceledFlag() bool {
+	if x != nil {
+		return x.ForceCanceledFlag
+	}
+	return false
+}
+
+func (x *Job) GetIsConcurrent() bool {
+	if x != nil {
+		return x.IsConcurrent
+	}
+	return false
+}
+
+func (x *Job) GetPresignedUrlConfig() string {
+	if x != nil {
+		return x.PresignedUrlConfig
+	}
+	return ""
+}
+
+func (x *Job) GetJobExecutionsRolloutConfig() string {
+	if x != nil {
+		return x.JobExecutionsRolloutConfig
+	}
+	return ""
+}
+
+func (x *Job) GetAbortConfig() string {
+	if x != nil {
+		return x.AbortConfig
+	}
+	return ""
+}
+
+func (x *Job) GetTimeoutConfig() string {
+	if x != nil {
+		return x.TimeoutConfig
+	}
+	return ""
+}
+
+func (x *Job) GetJobExecutionsRetryConfig() string {
+	if x != nil {
+		return x.JobExecutionsRetryConfig
+	}
+	return ""
+}
+
+func (x *Job) GetDocumentParameters() string {
+	if x != nil {
+		return x.DocumentParameters
+	}
+	return ""
+}
+
+func (x *Job) GetSchedulingConfig() string {
+	if x != nil {
+		return x.SchedulingConfig
+	}
+	return ""
+}
+
+func (x *Job) GetScheduledJobRollouts() string {
+	if x != nil {
+		return x.ScheduledJobRollouts
+	}
+	return ""
+}
+
+func (x *Job) GetDestinationPackageVersions() string {
+	if x != nil {
+		return x.DestinationPackageVersions
+	}
+	return ""
 }
 
 // JobExecution represents the execution of a job on a thing.
@@ -1288,19 +1416,21 @@ func (x *ShadowDocument) GetMetadata() string {
 
 // Authorizer represents a custom authorizer for MQTT connections.
 type Authorizer struct {
-	state                 protoimpl.MessageState `protogen:"open.v1"`
-	AuthorizerName        string                 `protobuf:"bytes,1,opt,name=authorizer_name,json=authorizerName,proto3" json:"authorizer_name,omitempty"`
-	AuthorizerArn         string                 `protobuf:"bytes,2,opt,name=authorizer_arn,json=authorizerArn,proto3" json:"authorizer_arn,omitempty"`
-	AuthorizerFunctionArn string                 `protobuf:"bytes,3,opt,name=authorizer_function_arn,json=authorizerFunctionArn,proto3" json:"authorizer_function_arn,omitempty"`
-	TokenKeyName          string                 `protobuf:"bytes,4,opt,name=token_key_name,json=tokenKeyName,proto3" json:"token_key_name,omitempty"`
-	TokenSignature        string                 `protobuf:"bytes,5,opt,name=token_signature,json=tokenSignature,proto3" json:"token_signature,omitempty"`
-	Status                bool                   `protobuf:"varint,6,opt,name=status,proto3" json:"status,omitempty"`
-	CreationDate          *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
-	LastModifiedDate      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
-	EnableCachingForHttp  bool                   `protobuf:"varint,9,opt,name=enable_caching_for_http,json=enableCachingForHttp,proto3" json:"enable_caching_for_http,omitempty"`
-	CachingDisabled       int64                  `protobuf:"varint,10,opt,name=caching_disabled,json=cachingDisabled,proto3" json:"caching_disabled,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizerName         string                 `protobuf:"bytes,1,opt,name=authorizer_name,json=authorizerName,proto3" json:"authorizer_name,omitempty"`
+	AuthorizerArn          string                 `protobuf:"bytes,2,opt,name=authorizer_arn,json=authorizerArn,proto3" json:"authorizer_arn,omitempty"`
+	AuthorizerFunctionArn  string                 `protobuf:"bytes,3,opt,name=authorizer_function_arn,json=authorizerFunctionArn,proto3" json:"authorizer_function_arn,omitempty"`
+	TokenKeyName           string                 `protobuf:"bytes,4,opt,name=token_key_name,json=tokenKeyName,proto3" json:"token_key_name,omitempty"`
+	TokenSignature         string                 `protobuf:"bytes,5,opt,name=token_signature,json=tokenSignature,proto3" json:"token_signature,omitempty"`
+	Status                 bool                   `protobuf:"varint,6,opt,name=status,proto3" json:"status,omitempty"`
+	CreationDate           *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	LastModifiedDate       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	EnableCachingForHttp   bool                   `protobuf:"varint,9,opt,name=enable_caching_for_http,json=enableCachingForHttp,proto3" json:"enable_caching_for_http,omitempty"`
+	CachingDisabled        int64                  `protobuf:"varint,10,opt,name=caching_disabled,json=cachingDisabled,proto3" json:"caching_disabled,omitempty"`
+	TokenSigningPublicKeys map[string]string      `protobuf:"bytes,11,rep,name=token_signing_public_keys,json=tokenSigningPublicKeys,proto3" json:"token_signing_public_keys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	SigningDisabled        bool                   `protobuf:"varint,12,opt,name=signing_disabled,json=signingDisabled,proto3" json:"signing_disabled,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *Authorizer) Reset() {
@@ -1401,6 +1531,20 @@ func (x *Authorizer) GetCachingDisabled() int64 {
 		return x.CachingDisabled
 	}
 	return 0
+}
+
+func (x *Authorizer) GetTokenSigningPublicKeys() map[string]string {
+	if x != nil {
+		return x.TokenSigningPublicKeys
+	}
+	return nil
+}
+
+func (x *Authorizer) GetSigningDisabled() bool {
+	if x != nil {
+		return x.SigningDisabled
+	}
+	return false
 }
 
 // RoleAlias represents an IoT role alias for IAM credential mapping.
@@ -1510,6 +1654,7 @@ type ProvisioningTemplate struct {
 	CreationDate        *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
 	Type                string                 `protobuf:"bytes,11,opt,name=type,proto3" json:"type,omitempty"`
+	DefaultVersionId    int64                  `protobuf:"varint,12,opt,name=default_version_id,json=defaultVersionId,proto3" json:"default_version_id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1619,6 +1764,13 @@ func (x *ProvisioningTemplate) GetType() string {
 		return x.Type
 	}
 	return ""
+}
+
+func (x *ProvisioningTemplate) GetDefaultVersionId() int64 {
+	if x != nil {
+		return x.DefaultVersionId
+	}
+	return 0
 }
 
 // DetectorModel represents an IoT Events detector model definition.
@@ -1868,6 +2020,8 @@ type SecurityProfile struct {
 	CreationDate                *timestamppb.Timestamp  `protobuf:"bytes,8,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate            *timestamppb.Timestamp  `protobuf:"bytes,9,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
 	Tags                        map[string]string       `protobuf:"bytes,10,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MetricsExportConfig         string                  `protobuf:"bytes,11,opt,name=metrics_export_config,json=metricsExportConfig,proto3" json:"metrics_export_config,omitempty"`
+	AdditionalMetricsToRetain   []string                `protobuf:"bytes,12,rep,name=additional_metrics_to_retain,json=additionalMetricsToRetain,proto3" json:"additional_metrics_to_retain,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -1968,6 +2122,20 @@ func (x *SecurityProfile) GetLastModifiedDate() *timestamppb.Timestamp {
 func (x *SecurityProfile) GetTags() map[string]string {
 	if x != nil {
 		return x.Tags
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetMetricsExportConfig() string {
+	if x != nil {
+		return x.MetricsExportConfig
+	}
+	return ""
+}
+
+func (x *SecurityProfile) GetAdditionalMetricsToRetain() []string {
+	if x != nil {
+		return x.AdditionalMetricsToRetain
 	}
 	return nil
 }
@@ -2927,7 +3095,7 @@ var File_storage_iot_proto protoreflect.FileDescriptor
 
 const file_storage_iot_proto_rawDesc = "" +
 	"\n" +
-	"\x11storage_iot.proto\x12\vstorage.iot\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xd7\x03\n" +
+	"\x11storage_iot.proto\x12\vstorage.iot\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xb1\x04\n" +
 	"\x05Thing\x12\x1d\n" +
 	"\n" +
 	"thing_name\x18\x01 \x01(\tR\tthingName\x12\x1b\n" +
@@ -2940,7 +3108,10 @@ const file_storage_iot_proto_rawDesc = "" +
 	"attributes\x12\x18\n" +
 	"\aversion\x18\a \x01(\x03R\aversion\x12?\n" +
 	"\rcreation_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
-	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x1a=\n" +
+	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12*\n" +
+	"\x11default_client_id\x18\n" +
+	" \x01(\tR\x0fdefaultClientId\x12,\n" +
+	"\x12billing_group_name\x18\v \x01(\tR\x10billingGroupName\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa3\x05\n" +
@@ -3048,7 +3219,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x13aws_iot_sql_version\x18\b \x01(\tR\x10awsIotSqlVersion\x121\n" +
 	"\aactions\x18\t \x01(\v2\x17.google.protobuf.StructR\aactions\x12:\n" +
 	"\ferror_action\x18\n" +
-	" \x01(\v2\x17.google.protobuf.StructR\verrorAction\"\xb6\x06\n" +
+	" \x01(\v2\x17.google.protobuf.StructR\verrorAction\"\xbd\v\n" +
 	"\x03Job\x12\x17\n" +
 	"\ajob_arn\x18\x01 \x01(\tR\x06jobArn\x12\x15\n" +
 	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12 \n" +
@@ -3070,7 +3241,22 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x11force_canceled_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x0fforceCanceledAt\x12.\n" +
 	"\x04tags\x18\x10 \x03(\v2\x1a.storage.iot.Job.TagsEntryR\x04tags\x12\x1a\n" +
 	"\bdocument\x18\x11 \x01(\tR\bdocument\x12\x18\n" +
-	"\atargets\x18\x12 \x03(\tR\atargets\x1a7\n" +
+	"\atargets\x18\x12 \x03(\tR\atargets\x12\x1f\n" +
+	"\vreason_code\x18\x13 \x01(\tR\n" +
+	"reasonCode\x12\x18\n" +
+	"\acomment\x18\x14 \x01(\tR\acomment\x12!\n" +
+	"\fnamespace_id\x18\x15 \x01(\tR\vnamespaceId\x12.\n" +
+	"\x13force_canceled_flag\x18\x16 \x01(\bR\x11forceCanceledFlag\x12#\n" +
+	"\ris_concurrent\x18\x17 \x01(\bR\fisConcurrent\x120\n" +
+	"\x14presigned_url_config\x18\x18 \x01(\tR\x12presignedUrlConfig\x12A\n" +
+	"\x1djob_executions_rollout_config\x18\x19 \x01(\tR\x1ajobExecutionsRolloutConfig\x12!\n" +
+	"\fabort_config\x18\x1a \x01(\tR\vabortConfig\x12%\n" +
+	"\x0etimeout_config\x18\x1b \x01(\tR\rtimeoutConfig\x12=\n" +
+	"\x1bjob_executions_retry_config\x18\x1c \x01(\tR\x18jobExecutionsRetryConfig\x12/\n" +
+	"\x13document_parameters\x18\x1d \x01(\tR\x12documentParameters\x12+\n" +
+	"\x11scheduling_config\x18\x1e \x01(\tR\x10schedulingConfig\x124\n" +
+	"\x16scheduled_job_rollouts\x18\x1f \x01(\tR\x14scheduledJobRollouts\x12@\n" +
+	"\x1cdestination_package_versions\x18  \x01(\tR\x1adestinationPackageVersions\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe6\x02\n" +
@@ -3094,7 +3280,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x0eversion_number\x18\x03 \x01(\x03R\rversionNumber\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x14\n" +
 	"\x05state\x18\x05 \x01(\tR\x05state\x12\x1a\n" +
-	"\bmetadata\x18\x06 \x01(\tR\bmetadata\"\xe8\x03\n" +
+	"\bmetadata\x18\x06 \x01(\tR\bmetadata\"\xce\x05\n" +
 	"\n" +
 	"Authorizer\x12'\n" +
 	"\x0fauthorizer_name\x18\x01 \x01(\tR\x0eauthorizerName\x12%\n" +
@@ -3107,7 +3293,12 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x12last_modified_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x125\n" +
 	"\x17enable_caching_for_http\x18\t \x01(\bR\x14enableCachingForHttp\x12)\n" +
 	"\x10caching_disabled\x18\n" +
-	" \x01(\x03R\x0fcachingDisabled\"\xcc\x02\n" +
+	" \x01(\x03R\x0fcachingDisabled\x12n\n" +
+	"\x19token_signing_public_keys\x18\v \x03(\v23.storage.iot.Authorizer.TokenSigningPublicKeysEntryR\x16tokenSigningPublicKeys\x12)\n" +
+	"\x10signing_disabled\x18\f \x01(\bR\x0fsigningDisabled\x1aI\n" +
+	"\x1bTokenSigningPublicKeysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcc\x02\n" +
 	"\tRoleAlias\x12\x1d\n" +
 	"\n" +
 	"role_alias\x18\x01 \x01(\tR\troleAlias\x12$\n" +
@@ -3116,7 +3307,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x1bcredential_duration_seconds\x18\x04 \x01(\x03R\x19credentialDurationSeconds\x12\x14\n" +
 	"\x05owner\x18\x05 \x01(\tR\x05owner\x12?\n" +
 	"\rcreation_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
-	"\x12last_modified_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\"\xf2\x04\n" +
+	"\x12last_modified_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\"\xa0\x05\n" +
 	"\x14ProvisioningTemplate\x12#\n" +
 	"\rtemplate_name\x18\x01 \x01(\tR\ftemplateName\x12!\n" +
 	"\ftemplate_arn\x18\x02 \x01(\tR\vtemplateArn\x12 \n" +
@@ -3129,7 +3320,8 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\rcreation_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
 	"\x12last_modified_date\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12\x12\n" +
-	"\x04type\x18\v \x01(\tR\x04type\x1a7\n" +
+	"\x04type\x18\v \x01(\tR\x04type\x12,\n" +
+	"\x12default_version_id\x18\f \x01(\x03R\x10defaultVersionId\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa6\x05\n" +
@@ -3162,7 +3354,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x06status\x18\b \x01(\tR\x06status\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfe\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf3\x06\n" +
 	"\x0fSecurityProfile\x122\n" +
 	"\x15security_profile_name\x18\x01 \x01(\tR\x13securityProfileName\x120\n" +
 	"\x14security_profile_arn\x18\x02 \x01(\tR\x12securityProfileArn\x12@\n" +
@@ -3174,7 +3366,9 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\rcreation_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
 	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12:\n" +
 	"\x04tags\x18\n" +
-	" \x03(\v2&.storage.iot.SecurityProfile.TagsEntryR\x04tags\x1aY\n" +
+	" \x03(\v2&.storage.iot.SecurityProfile.TagsEntryR\x04tags\x122\n" +
+	"\x15metrics_export_config\x18\v \x01(\tR\x13metricsExportConfig\x12?\n" +
+	"\x1cadditional_metrics_to_retain\x18\f \x03(\tR\x19additionalMetricsToRetain\x1aY\n" +
 	"\x11AlertTargetsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.storage.iot.AlertTargetR\x05value:\x028\x01\x1a7\n" +
@@ -3285,7 +3479,7 @@ func file_storage_iot_proto_rawDescGZIP() []byte {
 	return file_storage_iot_proto_rawDescData
 }
 
-var file_storage_iot_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_storage_iot_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_storage_iot_proto_goTypes = []any{
 	(*Thing)(nil),                          // 0: storage.iot.Thing
 	(*ThingType)(nil),                      // 1: storage.iot.ThingType
@@ -3322,91 +3516,93 @@ var file_storage_iot_proto_goTypes = []any{
 	nil,                                    // 32: storage.iot.BillingGroup.AttributesEntry
 	nil,                                    // 33: storage.iot.BillingGroup.TagsEntry
 	nil,                                    // 34: storage.iot.Job.TagsEntry
-	nil,                                    // 35: storage.iot.ProvisioningTemplate.TagsEntry
-	nil,                                    // 36: storage.iot.DetectorModel.TagsEntry
-	nil,                                    // 37: storage.iot.Input.TagsEntry
-	nil,                                    // 38: storage.iot.SecurityProfile.AlertTargetsEntry
-	nil,                                    // 39: storage.iot.SecurityProfile.TagsEntry
-	nil,                                    // 40: storage.iot.DomainConfiguration.TagsEntry
-	nil,                                    // 41: storage.iot.AlarmModel.TagsEntry
-	(*timestamppb.Timestamp)(nil),          // 42: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                // 43: google.protobuf.Struct
+	nil,                                    // 35: storage.iot.Authorizer.TokenSigningPublicKeysEntry
+	nil,                                    // 36: storage.iot.ProvisioningTemplate.TagsEntry
+	nil,                                    // 37: storage.iot.DetectorModel.TagsEntry
+	nil,                                    // 38: storage.iot.Input.TagsEntry
+	nil,                                    // 39: storage.iot.SecurityProfile.AlertTargetsEntry
+	nil,                                    // 40: storage.iot.SecurityProfile.TagsEntry
+	nil,                                    // 41: storage.iot.DomainConfiguration.TagsEntry
+	nil,                                    // 42: storage.iot.AlarmModel.TagsEntry
+	(*timestamppb.Timestamp)(nil),          // 43: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                // 44: google.protobuf.Struct
 }
 var file_storage_iot_proto_depIdxs = []int32{
 	28, // 0: storage.iot.Thing.attributes:type_name -> storage.iot.Thing.AttributesEntry
-	42, // 1: storage.iot.Thing.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 2: storage.iot.Thing.last_modified_date:type_name -> google.protobuf.Timestamp
+	43, // 1: storage.iot.Thing.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 2: storage.iot.Thing.last_modified_date:type_name -> google.protobuf.Timestamp
 	2,  // 3: storage.iot.ThingType.thing_type_properties:type_name -> storage.iot.ThingTypeProperty
 	29, // 4: storage.iot.ThingType.tags:type_name -> storage.iot.ThingType.TagsEntry
-	42, // 5: storage.iot.ThingType.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 6: storage.iot.ThingType.last_modified_date:type_name -> google.protobuf.Timestamp
-	42, // 7: storage.iot.ThingType.deprecation_date:type_name -> google.protobuf.Timestamp
+	43, // 5: storage.iot.ThingType.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 6: storage.iot.ThingType.last_modified_date:type_name -> google.protobuf.Timestamp
+	43, // 7: storage.iot.ThingType.deprecation_date:type_name -> google.protobuf.Timestamp
 	30, // 8: storage.iot.ThingGroup.attributes:type_name -> storage.iot.ThingGroup.AttributesEntry
 	31, // 9: storage.iot.ThingGroup.tags:type_name -> storage.iot.ThingGroup.TagsEntry
-	42, // 10: storage.iot.ThingGroup.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 11: storage.iot.ThingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
+	43, // 10: storage.iot.ThingGroup.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 11: storage.iot.ThingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
 	32, // 12: storage.iot.BillingGroup.attributes:type_name -> storage.iot.BillingGroup.AttributesEntry
 	33, // 13: storage.iot.BillingGroup.tags:type_name -> storage.iot.BillingGroup.TagsEntry
-	42, // 14: storage.iot.BillingGroup.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 15: storage.iot.BillingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
-	42, // 16: storage.iot.Certificate.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 17: storage.iot.Certificate.last_modified_date:type_name -> google.protobuf.Timestamp
-	42, // 18: storage.iot.Certificate.transfer_date:type_name -> google.protobuf.Timestamp
-	42, // 19: storage.iot.Policy.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 20: storage.iot.Policy.last_modified_date:type_name -> google.protobuf.Timestamp
-	43, // 21: storage.iot.TopicRule.actions:type_name -> google.protobuf.Struct
-	43, // 22: storage.iot.TopicRule.error_action:type_name -> google.protobuf.Struct
-	42, // 23: storage.iot.Job.created_at:type_name -> google.protobuf.Timestamp
-	42, // 24: storage.iot.Job.last_updated_at:type_name -> google.protobuf.Timestamp
-	42, // 25: storage.iot.Job.scheduled_job_launch:type_name -> google.protobuf.Timestamp
-	42, // 26: storage.iot.Job.started_at:type_name -> google.protobuf.Timestamp
-	42, // 27: storage.iot.Job.force_canceled_at:type_name -> google.protobuf.Timestamp
+	43, // 14: storage.iot.BillingGroup.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 15: storage.iot.BillingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
+	43, // 16: storage.iot.Certificate.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 17: storage.iot.Certificate.last_modified_date:type_name -> google.protobuf.Timestamp
+	43, // 18: storage.iot.Certificate.transfer_date:type_name -> google.protobuf.Timestamp
+	43, // 19: storage.iot.Policy.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 20: storage.iot.Policy.last_modified_date:type_name -> google.protobuf.Timestamp
+	44, // 21: storage.iot.TopicRule.actions:type_name -> google.protobuf.Struct
+	44, // 22: storage.iot.TopicRule.error_action:type_name -> google.protobuf.Struct
+	43, // 23: storage.iot.Job.created_at:type_name -> google.protobuf.Timestamp
+	43, // 24: storage.iot.Job.last_updated_at:type_name -> google.protobuf.Timestamp
+	43, // 25: storage.iot.Job.scheduled_job_launch:type_name -> google.protobuf.Timestamp
+	43, // 26: storage.iot.Job.started_at:type_name -> google.protobuf.Timestamp
+	43, // 27: storage.iot.Job.force_canceled_at:type_name -> google.protobuf.Timestamp
 	34, // 28: storage.iot.Job.tags:type_name -> storage.iot.Job.TagsEntry
-	43, // 29: storage.iot.JobExecution.status_details:type_name -> google.protobuf.Struct
-	42, // 30: storage.iot.ShadowDocument.version:type_name -> google.protobuf.Timestamp
-	42, // 31: storage.iot.ShadowDocument.timestamp:type_name -> google.protobuf.Timestamp
-	42, // 32: storage.iot.Authorizer.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 33: storage.iot.Authorizer.last_modified_date:type_name -> google.protobuf.Timestamp
-	42, // 34: storage.iot.RoleAlias.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 35: storage.iot.RoleAlias.last_modified_date:type_name -> google.protobuf.Timestamp
-	43, // 36: storage.iot.ProvisioningTemplate.pre_provisioning_hook:type_name -> google.protobuf.Struct
-	43, // 37: storage.iot.ProvisioningTemplate.template_body:type_name -> google.protobuf.Struct
-	35, // 38: storage.iot.ProvisioningTemplate.tags:type_name -> storage.iot.ProvisioningTemplate.TagsEntry
-	42, // 39: storage.iot.ProvisioningTemplate.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 40: storage.iot.ProvisioningTemplate.last_modified_date:type_name -> google.protobuf.Timestamp
-	43, // 41: storage.iot.DetectorModel.detector_model_definition:type_name -> google.protobuf.Struct
-	36, // 42: storage.iot.DetectorModel.tags:type_name -> storage.iot.DetectorModel.TagsEntry
-	42, // 43: storage.iot.DetectorModel.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 44: storage.iot.DetectorModel.last_modified_date:type_name -> google.protobuf.Timestamp
-	43, // 45: storage.iot.Input.input_definition:type_name -> google.protobuf.Struct
-	37, // 46: storage.iot.Input.tags:type_name -> storage.iot.Input.TagsEntry
-	42, // 47: storage.iot.Input.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 48: storage.iot.Input.last_modified_date:type_name -> google.protobuf.Timestamp
-	18, // 49: storage.iot.SecurityProfile.behaviors:type_name -> storage.iot.Behavior
-	38, // 50: storage.iot.SecurityProfile.alert_targets:type_name -> storage.iot.SecurityProfile.AlertTargetsEntry
-	42, // 51: storage.iot.SecurityProfile.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 52: storage.iot.SecurityProfile.last_modified_date:type_name -> google.protobuf.Timestamp
-	39, // 53: storage.iot.SecurityProfile.tags:type_name -> storage.iot.SecurityProfile.TagsEntry
-	19, // 54: storage.iot.Behavior.criteria:type_name -> storage.iot.BehaviorCriteria
-	20, // 55: storage.iot.BehaviorCriteria.statistical_threshold:type_name -> storage.iot.StatisticalThreshold
-	21, // 56: storage.iot.BehaviorCriteria.ml_detection_config:type_name -> storage.iot.MachineLearningDetectionConfig
-	18, // 57: storage.iot.ViolationEvent.behavior:type_name -> storage.iot.Behavior
-	22, // 58: storage.iot.ViolationEvent.metric_value:type_name -> storage.iot.MetricValue
-	42, // 59: storage.iot.ViolationEvent.violation_event_time:type_name -> google.protobuf.Timestamp
-	42, // 60: storage.iot.DomainConfiguration.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 61: storage.iot.DomainConfiguration.last_modified_date:type_name -> google.protobuf.Timestamp
-	40, // 62: storage.iot.DomainConfiguration.tags:type_name -> storage.iot.DomainConfiguration.TagsEntry
-	42, // 63: storage.iot.ProvisioningTemplateVersion.creation_date:type_name -> google.protobuf.Timestamp
-	43, // 64: storage.iot.AlarmModel.alarm_model_definition:type_name -> google.protobuf.Struct
-	41, // 65: storage.iot.AlarmModel.tags:type_name -> storage.iot.AlarmModel.TagsEntry
-	42, // 66: storage.iot.AlarmModel.creation_date:type_name -> google.protobuf.Timestamp
-	42, // 67: storage.iot.AlarmModel.last_modified_date:type_name -> google.protobuf.Timestamp
-	17, // 68: storage.iot.SecurityProfile.AlertTargetsEntry.value:type_name -> storage.iot.AlertTarget
-	69, // [69:69] is the sub-list for method output_type
-	69, // [69:69] is the sub-list for method input_type
-	69, // [69:69] is the sub-list for extension type_name
-	69, // [69:69] is the sub-list for extension extendee
-	0,  // [0:69] is the sub-list for field type_name
+	44, // 29: storage.iot.JobExecution.status_details:type_name -> google.protobuf.Struct
+	43, // 30: storage.iot.ShadowDocument.version:type_name -> google.protobuf.Timestamp
+	43, // 31: storage.iot.ShadowDocument.timestamp:type_name -> google.protobuf.Timestamp
+	43, // 32: storage.iot.Authorizer.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 33: storage.iot.Authorizer.last_modified_date:type_name -> google.protobuf.Timestamp
+	35, // 34: storage.iot.Authorizer.token_signing_public_keys:type_name -> storage.iot.Authorizer.TokenSigningPublicKeysEntry
+	43, // 35: storage.iot.RoleAlias.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 36: storage.iot.RoleAlias.last_modified_date:type_name -> google.protobuf.Timestamp
+	44, // 37: storage.iot.ProvisioningTemplate.pre_provisioning_hook:type_name -> google.protobuf.Struct
+	44, // 38: storage.iot.ProvisioningTemplate.template_body:type_name -> google.protobuf.Struct
+	36, // 39: storage.iot.ProvisioningTemplate.tags:type_name -> storage.iot.ProvisioningTemplate.TagsEntry
+	43, // 40: storage.iot.ProvisioningTemplate.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 41: storage.iot.ProvisioningTemplate.last_modified_date:type_name -> google.protobuf.Timestamp
+	44, // 42: storage.iot.DetectorModel.detector_model_definition:type_name -> google.protobuf.Struct
+	37, // 43: storage.iot.DetectorModel.tags:type_name -> storage.iot.DetectorModel.TagsEntry
+	43, // 44: storage.iot.DetectorModel.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 45: storage.iot.DetectorModel.last_modified_date:type_name -> google.protobuf.Timestamp
+	44, // 46: storage.iot.Input.input_definition:type_name -> google.protobuf.Struct
+	38, // 47: storage.iot.Input.tags:type_name -> storage.iot.Input.TagsEntry
+	43, // 48: storage.iot.Input.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 49: storage.iot.Input.last_modified_date:type_name -> google.protobuf.Timestamp
+	18, // 50: storage.iot.SecurityProfile.behaviors:type_name -> storage.iot.Behavior
+	39, // 51: storage.iot.SecurityProfile.alert_targets:type_name -> storage.iot.SecurityProfile.AlertTargetsEntry
+	43, // 52: storage.iot.SecurityProfile.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 53: storage.iot.SecurityProfile.last_modified_date:type_name -> google.protobuf.Timestamp
+	40, // 54: storage.iot.SecurityProfile.tags:type_name -> storage.iot.SecurityProfile.TagsEntry
+	19, // 55: storage.iot.Behavior.criteria:type_name -> storage.iot.BehaviorCriteria
+	20, // 56: storage.iot.BehaviorCriteria.statistical_threshold:type_name -> storage.iot.StatisticalThreshold
+	21, // 57: storage.iot.BehaviorCriteria.ml_detection_config:type_name -> storage.iot.MachineLearningDetectionConfig
+	18, // 58: storage.iot.ViolationEvent.behavior:type_name -> storage.iot.Behavior
+	22, // 59: storage.iot.ViolationEvent.metric_value:type_name -> storage.iot.MetricValue
+	43, // 60: storage.iot.ViolationEvent.violation_event_time:type_name -> google.protobuf.Timestamp
+	43, // 61: storage.iot.DomainConfiguration.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 62: storage.iot.DomainConfiguration.last_modified_date:type_name -> google.protobuf.Timestamp
+	41, // 63: storage.iot.DomainConfiguration.tags:type_name -> storage.iot.DomainConfiguration.TagsEntry
+	43, // 64: storage.iot.ProvisioningTemplateVersion.creation_date:type_name -> google.protobuf.Timestamp
+	44, // 65: storage.iot.AlarmModel.alarm_model_definition:type_name -> google.protobuf.Struct
+	42, // 66: storage.iot.AlarmModel.tags:type_name -> storage.iot.AlarmModel.TagsEntry
+	43, // 67: storage.iot.AlarmModel.creation_date:type_name -> google.protobuf.Timestamp
+	43, // 68: storage.iot.AlarmModel.last_modified_date:type_name -> google.protobuf.Timestamp
+	17, // 69: storage.iot.SecurityProfile.AlertTargetsEntry.value:type_name -> storage.iot.AlertTarget
+	70, // [70:70] is the sub-list for method output_type
+	70, // [70:70] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_storage_iot_proto_init() }
@@ -3420,7 +3616,7 @@ func file_storage_iot_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_iot_proto_rawDesc), len(file_storage_iot_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   42,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

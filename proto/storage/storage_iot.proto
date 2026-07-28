@@ -18,6 +18,8 @@ message Thing {
   int64 version = 7;
   google.protobuf.Timestamp creation_date = 8;
   google.protobuf.Timestamp last_modified_date = 9;
+  string default_client_id = 10;
+  string billing_group_name = 11;
 }
 
 // ThingType represents an IoT thing type.
@@ -132,6 +134,20 @@ message Job {
   map<string, string> tags = 16;
   string document = 17;
   repeated string targets = 18;
+  string reason_code = 19;
+  string comment = 20;
+  string namespace_id = 21;
+  bool force_canceled_flag = 22;
+  bool is_concurrent = 23;
+  string presigned_url_config = 24;
+  string job_executions_rollout_config = 25;
+  string abort_config = 26;
+  string timeout_config = 27;
+  string job_executions_retry_config = 28;
+  string document_parameters = 29;
+  string scheduling_config = 30;
+  string scheduled_job_rollouts = 31;
+  string destination_package_versions = 32;
 }
 
 // JobExecution represents the execution of a job on a thing.
@@ -170,6 +186,8 @@ message Authorizer {
   google.protobuf.Timestamp last_modified_date = 8;
   bool enable_caching_for_http = 9;
   int64 caching_disabled = 10;
+  map<string, string> token_signing_public_keys = 11;
+  bool signing_disabled = 12;
 }
 
 // RoleAlias represents an IoT role alias for IAM credential mapping.
@@ -196,6 +214,7 @@ message ProvisioningTemplate {
   google.protobuf.Timestamp creation_date = 9;
   google.protobuf.Timestamp last_modified_date = 10;
   string type = 11;
+  int64 default_version_id = 12;
 }
 
 // DetectorModel represents an IoT Events detector model definition.
@@ -238,6 +257,8 @@ message SecurityProfile {
   google.protobuf.Timestamp creation_date = 8;
   google.protobuf.Timestamp last_modified_date = 9;
   map<string, string> tags = 10;
+  string metrics_export_config = 11;
+  repeated string additional_metrics_to_retain = 12;
 }
 
 // AlertTarget represents an alert destination for security profile violations.

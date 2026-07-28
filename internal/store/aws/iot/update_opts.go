@@ -39,27 +39,40 @@ type CertificateUpdateOpts struct {
 
 // JobUpdateOpts specifies partial updates for UpdateJob and CancelJob.
 type JobUpdateOpts struct {
-	Description string   // empty = no change
-	Status      string   // empty = no change; "CANCELED" for CancelJob
-	Targets     []string // nil = no change; set by AssociateTargetsWithJob
+	Description                string   // empty = no change
+	Status                     string   // empty = no change; "CANCELED" for CancelJob
+	Targets                    []string // nil = no change; set by AssociateTargetsWithJob
+	ReasonCode                 string
+	Comment                    string
+	NamespaceID                string
+	PresignedUrlConfig         string
+	JobExecutionsRolloutConfig string
+	AbortConfig                string
+	TimeoutConfig              string
+	JobExecutionsRetryConfig   string
+	SchedulingConfig           string
+	ScheduledJobRollouts       string
 }
 
 // AuthorizerUpdateOpts specifies partial updates for UpdateAuthorizer.
 type AuthorizerUpdateOpts struct {
-	FunctionARN    string
-	TokenName      string
-	TokenSignature string
-	EnableCaching  *bool  // nil = no change
-	Status         string // "" = no change, "ACTIVE"/"INACTIVE"
+	FunctionARN            string
+	TokenName              string
+	TokenSigningPublicKeys map[string]string
+	EnableCaching          *bool  // nil = no change
+	Status                 string // "" = no change, "ACTIVE"/"INACTIVE"
 }
 
 // ProvisioningTemplateUpdateOpts specifies partial updates for
 // UpdateProvisioningTemplate.
 type ProvisioningTemplateUpdateOpts struct {
-	Description  string
-	RoleARN      string
-	Enabled      *bool   // nil = no change
-	TemplateBody *string // nil = no change
+	Description               string
+	RoleARN                   string
+	Enabled                   *bool   // nil = no change
+	TemplateBody              *string // nil = no change
+	DefaultVersionID          int64
+	PreProvisioningHook       string
+	RemovePreProvisioningHook bool
 }
 
 // RoleAliasUpdateOpts specifies partial updates for UpdateRoleAlias.

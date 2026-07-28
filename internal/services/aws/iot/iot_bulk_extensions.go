@@ -2,11 +2,18 @@ package iot
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +21,7 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/services/aws/iot/policy"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
@@ -88,7 +96,7 @@ func (s *IoTService) bulkCreate(reqCtx *request.RequestContext, category string,
 	}
 	name := request.GetParamCaseInsensitive(req.Parameters, nameKey)
 	if name == "" {
-		name = uuid.New().String()
+		return nil, iotstore.ErrMissingParam
 	}
 	// Reject duplicates: AWS returns ResourceAlreadyExistsException (409)
 	// when a named resource already exists. Only check when the caller
@@ -349,9 +357,16 @@ func (s *IoTService) PutVerificationStateOnViolation(ctx context.Context, reqCtx
 // ---- Phase 7: Custom Metrics -----------------------------------------------
 
 func (s *IoTService) CreateCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	recTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		recTags[t.Key] = t.Value
+	}
 	rec, err := s.bulkCreate(reqCtx, "customMetric", req, "metricName", map[string]interface{}{
-		"metricType":  request.GetParamCaseInsensitive(req.Parameters, "metricType"),
-		"displayName": request.GetParamCaseInsensitive(req.Parameters, "displayName"),
+		"metricType":         request.GetParamCaseInsensitive(req.Parameters, "metricType"),
+		"displayName":        request.GetParamCaseInsensitive(req.Parameters, "displayName"),
+		"clientRequestToken": request.GetParamCaseInsensitive(req.Parameters, "clientRequestToken"),
+		"tags":               recTags,
 	})
 	if err != nil {
 		return nil, err
@@ -421,6 +436,7 @@ func (s *IoTService) UpdateCustomMetric(ctx context.Context, reqCtx *request.Req
 
 func (s *IoTService) CreateDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, err := s.bulkCreate(reqCtx, "dimension", req, "name", map[string]interface{}{
+		"type":         request.GetParamCaseInsensitive(req.Parameters, "type"),
 		"stringValues": request.GetStringList(req.Parameters, "stringValues"),
 	})
 	if err != nil {
@@ -448,6 +464,7 @@ func (s *IoTService) DescribeDimension(ctx context.Context, reqCtx *request.Requ
 	return map[string]interface{}{
 		"name":             rec["name"],
 		"arn":              iotstore.BuildDimensionARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
+		"type":             rec["type"],
 		"stringValues":     rec["stringValues"],
 		"creationDate":     rec["creationDate"],
 		"lastModifiedDate": rec["lastModifiedDate"],
@@ -489,10 +506,16 @@ func (s *IoTService) UpdateDimension(ctx context.Context, reqCtx *request.Reques
 
 func (s *IoTService) CreateMitigationAction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := request.GetMapParamCaseInsensitive(req.Parameters, "actionParams")
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	recTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		recTags[t.Key] = t.Value
+	}
 	rec, err := s.bulkCreate(reqCtx, "mitigationAction", req, "actionName", map[string]interface{}{
 		"actionType":   deriveMitigationActionType(params),
 		"actionParams": params,
 		"roleArn":      request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		"tags":         recTags,
 	})
 	if err != nil {
 		return nil, err
@@ -901,6 +924,7 @@ func (s *IoTService) CreateAuditSuppression(ctx context.Context, reqCtx *request
 		"expirationDate":       parseTimestampParam(request.GetParamCaseInsensitive(req.Parameters, "expirationDate")),
 		"suppressIndefinitely": request.GetBoolParam(req.Parameters, "suppressIndefinitely"),
 		"description":          request.GetParamCaseInsensitive(req.Parameters, "description"),
+		"clientRequestToken":   request.GetParamCaseInsensitive(req.Parameters, "clientRequestToken"),
 	}
 	if err := store.PutGeneric(auditSuppressionKey(checkName, resourceIdentifier), rec); err != nil {
 		return nil, err
@@ -1100,9 +1124,10 @@ func (s *IoTService) ListAuditMitigationActionsTasks(ctx context.Context, reqCtx
 
 func (s *IoTService) CreateScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, err := s.bulkCreate(reqCtx, "scheduledAudit", req, "scheduledAuditName", map[string]interface{}{
-		"frequency":            request.GetParamCaseInsensitive(req.Parameters, "frequency"),
-		"targetCheckNames":     request.GetStringList(req.Parameters, "targetCheckNames"),
-		"auditChecksToInclude": request.GetMapParamCaseInsensitive(req.Parameters, "auditChecksToInclude"),
+		"frequency":        request.GetParamCaseInsensitive(req.Parameters, "frequency"),
+		"dayOfMonth":       request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
+		"dayOfWeek":        request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
+		"targetCheckNames": request.GetStringList(req.Parameters, "targetCheckNames"),
 	})
 	if err != nil {
 		return nil, err
@@ -1152,9 +1177,10 @@ func (s *IoTService) ListScheduledAudits(ctx context.Context, reqCtx *request.Re
 }
 func (s *IoTService) UpdateScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, exists, err := s.bulkUpdate(reqCtx, "scheduledAudit", req, "scheduledAuditName", map[string]interface{}{
-		"frequency":            request.GetParamCaseInsensitive(req.Parameters, "frequency"),
-		"targetCheckNames":     request.GetStringList(req.Parameters, "targetCheckNames"),
-		"auditChecksToInclude": request.GetMapParamCaseInsensitive(req.Parameters, "auditChecksToInclude"),
+		"frequency":        request.GetParamCaseInsensitive(req.Parameters, "frequency"),
+		"dayOfMonth":       request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
+		"dayOfWeek":        request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
+		"targetCheckNames": request.GetStringList(req.Parameters, "targetCheckNames"),
 	})
 	if err != nil {
 		return nil, err
@@ -1212,6 +1238,9 @@ func (s *IoTService) AssociateTargetsWithJob(ctx context.Context, reqCtx *reques
 func (s *IoTService) TestAuthorization(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
 	clientID := request.GetParamCaseInsensitive(req.Parameters, "clientId")
+	cognitoIdentityPoolId := request.GetParamCaseInsensitive(req.Parameters, "cognitoIdentityPoolId")
+	policyNamesToAdd := request.GetStringList(req.Parameters, "policyNamesToAdd")
+	policyNamesToSkip := request.GetStringList(req.Parameters, "policyNamesToSkip")
 	if principal == "" {
 		return map[string]interface{}{"authResults": []map[string]interface{}{}}, nil
 	}
@@ -1225,9 +1254,34 @@ func (s *IoTService) TestAuthorization(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
+	// Merge additional policies supplied by the caller (policyNamesToAdd).
+	skipSet := make(map[string]bool, len(policyNamesToSkip))
+	for _, n := range policyNamesToSkip {
+		skipSet[n] = true
+	}
+	for _, n := range policyNamesToAdd {
+		if !skipSet[n] {
+			policyNames = append(policyNames, n)
+		}
+	}
+	// When cognitoIdentityPoolId is supplied, also include policies attached
+	// to the cognito identity pool principal.
+	if cognitoIdentityPoolId != "" {
+		cognitoPolicies, err := store.ListPoliciesForPrincipal(cognitoIdentityPoolId)
+		if err == nil {
+			for _, n := range cognitoPolicies {
+				if !skipSet[n] {
+					policyNames = append(policyNames, n)
+				}
+			}
+		}
+	}
 	var versions []*policy.PolicyVersion
 	matchedNames := make([]string, 0, len(policyNames))
 	for _, name := range policyNames {
+		if skipSet[name] {
+			continue
+		}
 		p, gErr := store.GetPolicy(name)
 		if gErr != nil {
 			continue
@@ -1336,7 +1390,7 @@ func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.Reque
 	}
 
 	// Execute the fleet metric's query to compute the current value.
-	queryString, _ := rec["query"].(string)
+	queryString, _ := rec["queryString"].(string)
 	aggField, _ := rec["aggregationField"].(string)
 	aggType, _ := rec["aggregationType"].(string)
 
@@ -1402,7 +1456,7 @@ func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.Reque
 
 func (s *IoTService) CreateFleetMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, err := s.bulkCreate(reqCtx, "fleetMetric", req, "metricName", map[string]interface{}{
-		"query":            request.GetParamCaseInsensitive(req.Parameters, "query"),
+		"queryString":      request.GetParamCaseInsensitive(req.Parameters, "queryString"),
 		"aggregationType":  request.GetMapParamCaseInsensitive(req.Parameters, "aggregationType"),
 		"period":           int64(request.GetIntParam(req.Parameters, "period")),
 		"aggregationField": request.GetParamCaseInsensitive(req.Parameters, "aggregationField"),
@@ -1434,7 +1488,7 @@ func (s *IoTService) DescribeFleetMetric(ctx context.Context, reqCtx *request.Re
 	return map[string]interface{}{
 		"metricName":       rec["name"],
 		"metricArn":        iotstore.BuildFleetMetricARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"query":            rec["query"],
+		"queryString":      rec["queryString"],
 		"aggregationType":  rec["aggregationType"],
 		"period":           rec["period"],
 		"aggregationField": rec["aggregationField"],
@@ -1466,7 +1520,7 @@ func (s *IoTService) ListFleetMetrics(ctx context.Context, reqCtx *request.Reque
 }
 func (s *IoTService) UpdateFleetMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, exists, err := s.bulkUpdate(reqCtx, "fleetMetric", req, "metricName", map[string]interface{}{
-		"query":            request.GetParamCaseInsensitive(req.Parameters, "query"),
+		"queryString":      request.GetParamCaseInsensitive(req.Parameters, "queryString"),
 		"aggregationType":  request.GetMapParamCaseInsensitive(req.Parameters, "aggregationType"),
 		"period":           int64(request.GetIntParam(req.Parameters, "period")),
 		"aggregationField": request.GetParamCaseInsensitive(req.Parameters, "aggregationField"),
@@ -1684,7 +1738,8 @@ func (s *IoTService) UpdateEncryptionConfiguration(ctx context.Context, reqCtx *
 		return nil, err
 	}
 	rec := map[string]interface{}{
-		"kmsKeyArn": request.GetParamCaseInsensitive(req.Parameters, "kmsKeyArn"),
+		"kmsKeyArn":        request.GetParamCaseInsensitive(req.Parameters, "kmsKeyArn"),
+		"kmsAccessRoleArn": request.GetParamCaseInsensitive(req.Parameters, "kmsAccessRoleArn"),
 	}
 	et := request.GetParamCaseInsensitive(req.Parameters, "encryptionType")
 	if et == "" {
@@ -1897,9 +1952,8 @@ func (s *IoTService) ConfirmTopicRuleDestination(ctx context.Context, reqCtx *re
 
 // CreateProvisioningClaim issues a temporary provisioning claim bound to an
 // existing provisioning template. AWS uses the claim for just-in-time
-// provisioning during device manufacturing. Without a real JITP pipeline we
-// validate the template and return a minimal claim so callers can detect
-// ResourceNotFoundException for missing templates.
+// provisioning during device manufacturing. The claim consists of a
+// short-lived self-signed X.509 certificate and its private key.
 func (s *IoTService) CreateProvisioningClaim(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	templateName := request.GetParamCaseInsensitive(req.Parameters, "templateName")
 	if templateName == "" {
@@ -1916,15 +1970,54 @@ func (s *IoTService) CreateProvisioningClaim(ctx context.Context, reqCtx *reques
 	if tmpl == nil || tmpl.TemplateName == "" {
 		return nil, iotstore.ErrTemplateNotFound
 	}
+
+	// Generate an ECDSA P-256 private key for the claim certificate.
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	// Build a self-signed X.509 certificate valid for 1 hour.
 	certID := uuid.New().String()
+	now := time.Now().UTC()
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject: pkix.Name{
+			CommonName:   certID,
+			Organization: []string{"vorpalstacks-iot-provisioning-claim"},
+		},
+		NotBefore:             now.Add(-1 * time.Minute),
+		NotAfter:              now.Add(1 * time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  false,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	if err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+
+	certPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+	if err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+	pubKeyPEM := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubKeyBytes}))
+	privKeyBytes, err := x509.MarshalPKCS8PrivateKey(privKey)
+	if err != nil {
+		return nil, iotstore.ErrInternalFailure
+	}
+	privKeyPEM := string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privKeyBytes}))
+
 	return map[string]interface{}{
 		"certificateId":  certID,
-		"certificatePem": "",
+		"certificatePem": certPEM,
 		"keyPair": map[string]interface{}{
-			"PublicKey":  "",
-			"PrivateKey": "",
+			"PublicKey":  pubKeyPEM,
+			"PrivateKey": privKeyPEM,
 		},
-		"expiration": time.Now().Add(time.Hour).UTC().Unix(),
+		"expiration": now.Add(time.Hour).UTC().Unix(),
 	}, nil
 }
 
@@ -1944,6 +2037,11 @@ func (s *IoTService) CreateStream(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	recTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		recTags[t.Key] = t.Value
+	}
 	now := time.Now().UTC().Unix()
 	rec := map[string]interface{}{
 		"streamId":      streamID,
@@ -1952,6 +2050,7 @@ func (s *IoTService) CreateStream(ctx context.Context, reqCtx *request.RequestCo
 		"description":   request.GetParamCaseInsensitive(req.Parameters, "description"),
 		"files":         req.Parameters["files"],
 		"roleArn":       request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		"tags":          recTags,
 		"createdAt":     now,
 		"lastUpdatedAt": now,
 	}
