@@ -234,6 +234,30 @@ type LoaderJob struct {
 	TotalErrors   int64                  `protobuf:"varint,8,opt,name=total_errors,json=totalErrors,proto3" json:"total_errors,omitempty"`
 	OverallStatus string                 `protobuf:"bytes,9,opt,name=overall_status,json=overallStatus,proto3" json:"overall_status,omitempty"`
 	Details       map[string]string      `protobuf:"bytes,10,rep,name=details,proto3" json:"details,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Input parameters persisted from StartLoaderJob (Phase 2).
+	S3BucketRegion                    string            `protobuf:"bytes,11,opt,name=s3_bucket_region,json=s3BucketRegion,proto3" json:"s3_bucket_region,omitempty"`
+	IamRoleArn                        string            `protobuf:"bytes,12,opt,name=iam_role_arn,json=iamRoleArn,proto3" json:"iam_role_arn,omitempty"`
+	Mode                              string            `protobuf:"bytes,13,opt,name=mode,proto3" json:"mode,omitempty"`
+	FailOnError                       bool              `protobuf:"varint,14,opt,name=fail_on_error,json=failOnError,proto3" json:"fail_on_error,omitempty"`
+	Parallelism                       string            `protobuf:"bytes,15,opt,name=parallelism,proto3" json:"parallelism,omitempty"`
+	ParserConfiguration               map[string]string `protobuf:"bytes,16,rep,name=parser_configuration,json=parserConfiguration,proto3" json:"parser_configuration,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	UpdateSingleCardinalityProperties bool              `protobuf:"varint,17,opt,name=update_single_cardinality_properties,json=updateSingleCardinalityProperties,proto3" json:"update_single_cardinality_properties,omitempty"`
+	QueueRequest                      bool              `protobuf:"varint,18,opt,name=queue_request,json=queueRequest,proto3" json:"queue_request,omitempty"`
+	Dependencies                      []string          `protobuf:"bytes,19,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
+	UserProvidedEdgeIds               bool              `protobuf:"varint,20,opt,name=user_provided_edge_ids,json=userProvidedEdgeIds,proto3" json:"user_provided_edge_ids,omitempty"`
+	EdgeOnlyLoad                      bool              `protobuf:"varint,21,opt,name=edge_only_load,json=edgeOnlyLoad,proto3" json:"edge_only_load,omitempty"`
+	// Status output fields matching AWS Neptune loader status response (Phase 3).
+	FullUri                string   `protobuf:"bytes,22,opt,name=full_uri,json=fullUri,proto3" json:"full_uri,omitempty"`
+	RunNumber              int32    `protobuf:"varint,23,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
+	RetryNumber            int32    `protobuf:"varint,24,opt,name=retry_number,json=retryNumber,proto3" json:"retry_number,omitempty"`
+	TotalDuplicates        int64    `protobuf:"varint,25,opt,name=total_duplicates,json=totalDuplicates,proto3" json:"total_duplicates,omitempty"`
+	ParsingErrors          int64    `protobuf:"varint,26,opt,name=parsing_errors,json=parsingErrors,proto3" json:"parsing_errors,omitempty"`
+	DatatypeMismatchErrors int64    `protobuf:"varint,27,opt,name=datatype_mismatch_errors,json=datatypeMismatchErrors,proto3" json:"datatype_mismatch_errors,omitempty"`
+	InsertErrors           int64    `protobuf:"varint,28,opt,name=insert_errors,json=insertErrors,proto3" json:"insert_errors,omitempty"`
+	FailedFeeds            []string `protobuf:"bytes,29,rep,name=failed_feeds,json=failedFeeds,proto3" json:"failed_feeds,omitempty"`
+	ErrorLog               string   `protobuf:"bytes,30,opt,name=error_log,json=errorLog,proto3" json:"error_log,omitempty"`
+	// Queue management (Phase 8).
+	QueuePosition int32 `protobuf:"varint,31,opt,name=queue_position,json=queuePosition,proto3" json:"queue_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -336,6 +360,153 @@ func (x *LoaderJob) GetDetails() map[string]string {
 		return x.Details
 	}
 	return nil
+}
+
+func (x *LoaderJob) GetS3BucketRegion() string {
+	if x != nil {
+		return x.S3BucketRegion
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetIamRoleArn() string {
+	if x != nil {
+		return x.IamRoleArn
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetFailOnError() bool {
+	if x != nil {
+		return x.FailOnError
+	}
+	return false
+}
+
+func (x *LoaderJob) GetParallelism() string {
+	if x != nil {
+		return x.Parallelism
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetParserConfiguration() map[string]string {
+	if x != nil {
+		return x.ParserConfiguration
+	}
+	return nil
+}
+
+func (x *LoaderJob) GetUpdateSingleCardinalityProperties() bool {
+	if x != nil {
+		return x.UpdateSingleCardinalityProperties
+	}
+	return false
+}
+
+func (x *LoaderJob) GetQueueRequest() bool {
+	if x != nil {
+		return x.QueueRequest
+	}
+	return false
+}
+
+func (x *LoaderJob) GetDependencies() []string {
+	if x != nil {
+		return x.Dependencies
+	}
+	return nil
+}
+
+func (x *LoaderJob) GetUserProvidedEdgeIds() bool {
+	if x != nil {
+		return x.UserProvidedEdgeIds
+	}
+	return false
+}
+
+func (x *LoaderJob) GetEdgeOnlyLoad() bool {
+	if x != nil {
+		return x.EdgeOnlyLoad
+	}
+	return false
+}
+
+func (x *LoaderJob) GetFullUri() string {
+	if x != nil {
+		return x.FullUri
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetRunNumber() int32 {
+	if x != nil {
+		return x.RunNumber
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetRetryNumber() int32 {
+	if x != nil {
+		return x.RetryNumber
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetTotalDuplicates() int64 {
+	if x != nil {
+		return x.TotalDuplicates
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetParsingErrors() int64 {
+	if x != nil {
+		return x.ParsingErrors
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetDatatypeMismatchErrors() int64 {
+	if x != nil {
+		return x.DatatypeMismatchErrors
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetInsertErrors() int64 {
+	if x != nil {
+		return x.InsertErrors
+	}
+	return 0
+}
+
+func (x *LoaderJob) GetFailedFeeds() []string {
+	if x != nil {
+		return x.FailedFeeds
+	}
+	return nil
+}
+
+func (x *LoaderJob) GetErrorLog() string {
+	if x != nil {
+		return x.ErrorLog
+	}
+	return ""
+}
+
+func (x *LoaderJob) GetQueuePosition() int32 {
+	if x != nil {
+		return x.QueuePosition
+	}
+	return 0
 }
 
 type GraphStatistics struct {
@@ -487,7 +658,7 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"start_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x16\n" +
 	"\x06result\x18\a \x01(\tR\x06result\x12\x14\n" +
-	"\x05error\x18\b \x01(\tR\x05error\"\xce\x03\n" +
+	"\x05error\x18\b \x01(\tR\x05error\"\x8e\v\n" +
 	"\tLoaderJob\x12\x17\n" +
 	"\aload_id\x18\x01 \x01(\tR\x06loadId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x16\n" +
@@ -500,8 +671,34 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\ftotal_errors\x18\b \x01(\x03R\vtotalErrors\x12%\n" +
 	"\x0eoverall_status\x18\t \x01(\tR\roverallStatus\x12A\n" +
 	"\adetails\x18\n" +
-	" \x03(\v2'.storage.neptune.LoaderJob.DetailsEntryR\adetails\x1a:\n" +
+	" \x03(\v2'.storage.neptune.LoaderJob.DetailsEntryR\adetails\x12(\n" +
+	"\x10s3_bucket_region\x18\v \x01(\tR\x0es3BucketRegion\x12 \n" +
+	"\fiam_role_arn\x18\f \x01(\tR\n" +
+	"iamRoleArn\x12\x12\n" +
+	"\x04mode\x18\r \x01(\tR\x04mode\x12\"\n" +
+	"\rfail_on_error\x18\x0e \x01(\bR\vfailOnError\x12 \n" +
+	"\vparallelism\x18\x0f \x01(\tR\vparallelism\x12f\n" +
+	"\x14parser_configuration\x18\x10 \x03(\v23.storage.neptune.LoaderJob.ParserConfigurationEntryR\x13parserConfiguration\x12O\n" +
+	"$update_single_cardinality_properties\x18\x11 \x01(\bR!updateSingleCardinalityProperties\x12#\n" +
+	"\rqueue_request\x18\x12 \x01(\bR\fqueueRequest\x12\"\n" +
+	"\fdependencies\x18\x13 \x03(\tR\fdependencies\x123\n" +
+	"\x16user_provided_edge_ids\x18\x14 \x01(\bR\x13userProvidedEdgeIds\x12$\n" +
+	"\x0eedge_only_load\x18\x15 \x01(\bR\fedgeOnlyLoad\x12\x19\n" +
+	"\bfull_uri\x18\x16 \x01(\tR\afullUri\x12\x1d\n" +
+	"\n" +
+	"run_number\x18\x17 \x01(\x05R\trunNumber\x12!\n" +
+	"\fretry_number\x18\x18 \x01(\x05R\vretryNumber\x12)\n" +
+	"\x10total_duplicates\x18\x19 \x01(\x03R\x0ftotalDuplicates\x12%\n" +
+	"\x0eparsing_errors\x18\x1a \x01(\x03R\rparsingErrors\x128\n" +
+	"\x18datatype_mismatch_errors\x18\x1b \x01(\x03R\x16datatypeMismatchErrors\x12#\n" +
+	"\rinsert_errors\x18\x1c \x01(\x03R\finsertErrors\x12!\n" +
+	"\ffailed_feeds\x18\x1d \x03(\tR\vfailedFeeds\x12\x1b\n" +
+	"\terror_log\x18\x1e \x01(\tR\berrorLog\x12%\n" +
+	"\x0equeue_position\x18\x1f \x01(\x05R\rqueuePosition\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aF\n" +
+	"\x18ParserConfigurationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcd\x04\n" +
 	"\x0fGraphStatistics\x12\x16\n" +
@@ -539,30 +736,32 @@ func file_storage_neptune_proto_rawDescGZIP() []byte {
 	return file_storage_neptune_proto_rawDescData
 }
 
-var file_storage_neptune_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_storage_neptune_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_storage_neptune_proto_goTypes = []any{
 	(*DBClusterEndpoint)(nil),     // 0: storage.neptune.DBClusterEndpoint
 	(*QueryState)(nil),            // 1: storage.neptune.QueryState
 	(*LoaderJob)(nil),             // 2: storage.neptune.LoaderJob
 	(*GraphStatistics)(nil),       // 3: storage.neptune.GraphStatistics
 	nil,                           // 4: storage.neptune.LoaderJob.DetailsEntry
-	nil,                           // 5: storage.neptune.GraphStatistics.LabelCountsEntry
-	nil,                           // 6: storage.neptune.GraphStatistics.RelCountsEntry
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	nil,                           // 5: storage.neptune.LoaderJob.ParserConfigurationEntry
+	nil,                           // 6: storage.neptune.GraphStatistics.LabelCountsEntry
+	nil,                           // 7: storage.neptune.GraphStatistics.RelCountsEntry
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
 }
 var file_storage_neptune_proto_depIdxs = []int32{
-	7, // 0: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
-	7, // 1: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
-	7, // 2: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
-	7, // 3: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
+	8, // 0: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
+	8, // 1: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
+	8, // 2: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
+	8, // 3: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
 	4, // 4: storage.neptune.LoaderJob.details:type_name -> storage.neptune.LoaderJob.DetailsEntry
-	5, // 5: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
-	6, // 6: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	5, // 5: storage.neptune.LoaderJob.parser_configuration:type_name -> storage.neptune.LoaderJob.ParserConfigurationEntry
+	6, // 6: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
+	7, // 7: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_storage_neptune_proto_init() }
@@ -576,7 +775,7 @@ func file_storage_neptune_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_neptune_proto_rawDesc), len(file_storage_neptune_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

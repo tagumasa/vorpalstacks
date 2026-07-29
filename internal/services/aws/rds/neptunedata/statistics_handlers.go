@@ -3,13 +3,20 @@ package neptunedata
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// errLimitReached is a sentinel error returned by appendNodeRecords and
+// appendEdgeRecords when the pagination limit is exhausted. It signals a
+// normal stop of iteration, not a genuine error.
+var errLimitReached = errors.New("limit reached")
 
 // GetPropertygraphStatistics returns auto-computed property graph statistics
 // including node and edge counts grouped by label.
@@ -80,7 +87,22 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 		s.mu.Lock()
 		s.statsDisabled = false
 		s.mu.Unlock()
-		s.refreshStatistics(reqCtx)
+		// L10: Use a timeout to prevent indefinite blocking on refresh.
+		// The statistics refresh scans all nodes and edges; on very large
+		// graphs this can take significant time. A 30s timeout prevents
+		// the handler from hanging indefinitely.
+		refreshCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		done := make(chan struct{})
+		go func() {
+			s.refreshStatistics(reqCtx)
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-refreshCtx.Done():
+			logs.Warn("ManagePropertygraphStatistics: refresh timed out after 30s")
+		}
 		return map[string]interface{}{
 			"status":  "200",
 			"payload": map[string]interface{}{"statisticsId": generateQueryID()},
@@ -180,6 +202,16 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 
+	// M8: Read the encoding preference from the Accept-Encoding HTTP header
+	// (Smithy httpHeader trait). Currently only "gzip" is defined in the
+	// Encoding enum. Framework-level gzip middleware is required for actual
+	// compression; we log the request for diagnostics.
+	acceptEncoding := req.Headers.Get("Accept-Encoding")
+	if acceptEncoding != "" {
+		logs.Debug("GetPropertygraphStream: client requested encoding",
+			logs.String("accept-encoding", acceptEncoding))
+	}
+
 	limit := request.GetIntParam(req.Parameters, "limit")
 	if limit <= 0 {
 		limit = 1000
@@ -232,9 +264,10 @@ func appendNodeRecords(reader graphengine.GraphReader, records []interface{}, re
 	if remaining <= 0 {
 		return records, remaining
 	}
-	_ = reader.ForEachNode(func(node *graphengine.Node) error {
+	// M7: Propagate iteration errors instead of silently swallowing them.
+	err := reader.ForEachNode(func(node *graphengine.Node) error {
 		if remaining <= 0 {
-			return fmt.Errorf("limit reached")
+			return errLimitReached
 		}
 		label := ""
 		if len(node.Labels) > 0 {
@@ -257,6 +290,9 @@ func appendNodeRecords(reader graphengine.GraphReader, records []interface{}, re
 		remaining--
 		return nil
 	})
+	if err != nil && !errors.Is(err, errLimitReached) {
+		logs.Warn("GetPropertygraphStream: node iteration error", logs.Err(err))
+	}
 	return records, remaining
 }
 
@@ -264,9 +300,10 @@ func appendEdgeRecords(reader graphengine.GraphReader, records []interface{}, re
 	if remaining <= 0 {
 		return records, remaining
 	}
-	_ = reader.ForEachEdge(func(edge *graphengine.Edge) error {
+	// M7: Propagate iteration errors instead of silently swallowing them.
+	err := reader.ForEachEdge(func(edge *graphengine.Edge) error {
 		if remaining <= 0 {
-			return fmt.Errorf("limit reached")
+			return errLimitReached
 		}
 		value := map[string]interface{}{
 			"~id":   fmt.Sprintf("%d", edge.ID),
@@ -287,5 +324,8 @@ func appendEdgeRecords(reader graphengine.GraphReader, records []interface{}, re
 		remaining--
 		return nil
 	})
+	if err != nil && !errors.Is(err, errLimitReached) {
+		logs.Warn("GetPropertygraphStream: edge iteration error", logs.Err(err))
+	}
 	return records, remaining
 }

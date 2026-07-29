@@ -2,6 +2,7 @@ package neptunedata
 
 import (
 	"fmt"
+	"strings"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/gremlinparser"
@@ -45,22 +46,137 @@ func traversalToSteps(trav *gremlinparser.Traversal) []map[string]interface{} {
 	return steps
 }
 
-// profileGremlinQuery returns an explain plan augmented with profiling metrics.
-func profileGremlinQuery(query string) (map[string]interface{}, error) {
+// profileOptions holds the parameters from the Smithy jsonName-prefixed
+// profile query fields. These control the level of detail in profiling output.
+type profileOptions struct {
+	results    *bool  // profile.results: include step results
+	chop       *int   // profile.chop: truncate result strings to N chars
+	serializer string // profile.serializer: output format for results
+	indexOps   *bool  // profile.indexOps: include index operation details
+}
+
+// formatExplainOutput converts the explain plan map to a text representation
+// matching the AWS Neptune explain query response format.
+func formatExplainOutput(plan map[string]interface{}) string {
+	steps, ok := plan["steps"].([]map[string]interface{})
+	if !ok {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("***************************************************\n")
+	b.WriteString("*                 Gremlin Explain                 *\n")
+	b.WriteString("***************************************************\n")
+	for i, step := range steps {
+		name, _ := step["name"].(string)
+		fmt.Fprintf(&b, "%d\t%s", i+1, name)
+		if args, ok := step["args"].([]interface{}); ok && len(args) > 0 {
+			b.WriteString("(")
+			for j, arg := range args {
+				if j > 0 {
+					b.WriteString(",")
+				}
+				fmt.Fprintf(&b, "%v", arg)
+			}
+			b.WriteString(")")
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+// formatProfileOutput converts the profile plan map to a text representation
+// matching the AWS Neptune profile query response format. Includes profiling
+// metrics when profile options are set.
+func formatProfileOutput(plan map[string]interface{}, opts profileOptions) string {
+	var b strings.Builder
+	b.WriteString("***************************************************\n")
+	b.WriteString("*                 Gremlin Profile                 *\n")
+	b.WriteString("***************************************************\n")
+
+	if steps, ok := plan["steps"].([]map[string]interface{}); ok {
+		for i, step := range steps {
+			name, _ := step["name"].(string)
+			fmt.Fprintf(&b, "%d\t%s", i+1, name)
+			if args, ok := step["args"].([]interface{}); ok && len(args) > 0 {
+				b.WriteString("(")
+				for j, arg := range args {
+					if j > 0 {
+						b.WriteString(",")
+					}
+					fmt.Fprintf(&b, "%v", arg)
+				}
+				b.WriteString(")")
+			}
+			b.WriteString("\n")
+
+			// Include profiling metrics when available
+			if prof, ok := step["profile"].(map[string]interface{}); ok {
+				fmt.Fprintf(&b, "\t\tmetrics: ")
+				metrics, _ := prof["metrics"].(map[string]interface{})
+				first := true
+				for k, v := range metrics {
+					if !first {
+						b.WriteString(", ")
+					}
+					fmt.Fprintf(&b, "%s=%v", k, v)
+					first = false
+				}
+				b.WriteString("\n")
+			}
+		}
+	}
+
+	// Include index operations if requested
+	if opts.indexOps != nil && *opts.indexOps {
+		if prof, ok := plan["profile"].(map[string]interface{}); ok {
+			if indices, ok := prof["indices"].(map[string]interface{}); ok && len(indices) > 0 {
+				b.WriteString("\nIndex Operations:\n")
+				for name, data := range indices {
+					fmt.Fprintf(&b, "\t%s: %v\n", name, data)
+				}
+			}
+		}
+	}
+
+	return b.String()
+}
+
+// profileGremlinQueryEx returns an explain plan augmented with profiling
+// metrics, honouring the profile.* options.
+func profileGremlinQueryEx(query string, opts profileOptions) (map[string]interface{}, error) {
 	plan, err := explainGremlinQuery(query)
 	if err != nil {
 		return nil, err
 	}
-	plan["profile"] = map[string]interface{}{
+
+	chopVal := 250
+	if opts.chop != nil {
+		chopVal = *opts.chop
+	}
+
+	profMetrics := map[string]interface{}{
 		"metrics": map[string]interface{}{
-			"dur":     0,
-			"count":   1,
-			"size":    0,
-			"time":    0,
-			"incTime": 0,
+			"dur":        0,
+			"count":      1,
+			"size":       0,
+			"time":       0,
+			"incTime":    0,
+			"traversers": map[string]interface{}{"count": 0},
 		},
 		"indices": map[string]interface{}{},
+		"results": map[string]interface{}{
+			"chop": chopVal,
+		},
 	}
+
+	// Attach profiling data to each step
+	if steps, ok := plan["steps"].([]map[string]interface{}); ok {
+		for i := range steps {
+			steps[i]["profile"] = profMetrics
+		}
+	}
+
+	plan["profile"] = profMetrics
 	return plan, nil
 }
 

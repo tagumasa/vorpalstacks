@@ -41,6 +41,33 @@ message LoaderJob {
   int64 total_errors = 8;
   string overall_status = 9;
   map<string, string> details = 10;
+
+  // Input parameters persisted from StartLoaderJob (Phase 2).
+  string s3_bucket_region = 11;
+  string iam_role_arn = 12;
+  string mode = 13;
+  bool fail_on_error = 14;
+  string parallelism = 15;
+  map<string, string> parser_configuration = 16;
+  bool update_single_cardinality_properties = 17;
+  bool queue_request = 18;
+  repeated string dependencies = 19;
+  bool user_provided_edge_ids = 20;
+  bool edge_only_load = 21;
+
+  // Status output fields matching AWS Neptune loader status response (Phase 3).
+  string full_uri = 22;
+  int32 run_number = 23;
+  int32 retry_number = 24;
+  int64 total_duplicates = 25;
+  int64 parsing_errors = 26;
+  int64 datatype_mismatch_errors = 27;
+  int64 insert_errors = 28;
+  repeated string failed_feeds = 29;
+  string error_log = 30;
+
+  // Queue management (Phase 8).
+  int32 queue_position = 31;
 }
 
 message GraphStatistics {

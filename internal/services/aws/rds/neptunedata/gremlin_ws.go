@@ -25,13 +25,24 @@ const (
 // gremlinUpgrader is the WebSocket upgrader for TinkerPop Gremlin Server
 // connections. Accepts all origins in test mode; production deployments
 // should restrict CheckOrigin.
+// M17: Supports all standard TinkerPop Gremlin Server subprotocols so
+// that GraphBinary and older GraphSON clients can connect.
 var gremlinUpgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
-	Subprotocols: []string{"graphson-v3"},
+	Subprotocols: []string{
+		"application/vnd.graphbinary-v1.0",
+		"application/vnd.gremlin-v3.0+json",
+		"application/vnd.gremlin-v3.0+json;types=false",
+		"application/vnd.gremlin-v2.0+json",
+		"application/vnd.gremlin-v1.0+json",
+		"application/json",
+		// Legacy alias kept for backwards compatibility.
+		"graphson-v3",
+	},
 }
 
 // GremlinWSServer handles WebSocket connections for the TinkerPop Gremlin
@@ -89,7 +100,8 @@ func (s *GremlinWSServer) ServeHTTP(w http.ResponseWriter, r *http.Request, clus
 
 	logs.Info("Gremlin WebSocket connected",
 		logs.String("connId", ws.id),
-		logs.String("cluster", clusterID))
+		logs.String("cluster", clusterID),
+		logs.String("remoteAddr", r.RemoteAddr))
 
 	go s.writePump(ws)
 	go s.readPump(ws)
@@ -99,6 +111,10 @@ func (s *GremlinWSServer) ServeHTTP(w http.ResponseWriter, r *http.Request, clus
 // to handleMessage. Exits when the connection is closed or a read error occurs.
 func (s *GremlinWSServer) readPump(ws *gremlinWSConn) {
 	defer func() {
+		if r := recover(); r != nil {
+			logs.Error("Gremlin WebSocket readPump panicked",
+				logs.String("connId", ws.id), logs.Any("panic", r))
+		}
 		ws.mu.Lock()
 		if !ws.closed {
 			ws.closed = true
@@ -137,6 +153,20 @@ func (s *GremlinWSServer) readPump(ws *gremlinWSConn) {
 // writePump pumps messages from the send channel to the WebSocket connection.
 // Sends periodic ping frames for keep-alive. Exits when sendCh is closed.
 func (s *GremlinWSServer) writePump(ws *gremlinWSConn) {
+	defer func() {
+		if r := recover(); r != nil {
+			logs.Error("Gremlin WebSocket writePump panicked",
+				logs.String("connId", ws.id), logs.Any("panic", r))
+		}
+		ws.mu.Lock()
+		if !ws.closed {
+			ws.closed = true
+			close(ws.sendCh)
+		}
+		ws.mu.Unlock()
+		_ = ws.conn.Close()
+	}()
+
 	ticker := time.NewTicker(wsKeepAliveInterval)
 	defer ticker.Stop()
 
@@ -293,7 +323,8 @@ func updateSession(ws *gremlinWSConn, req *GremlinRequest, result interface{}) {
 }
 
 // sendResponse serialises and queues a GremlinResponse for sending on the
-// WebSocket connection.
+// WebSocket connection. If the send buffer is full (M1 fix), the connection
+// is force-closed to prevent silent message loss.
 func (s *GremlinWSServer) sendResponse(ws *gremlinWSConn, resp GremlinResponse) {
 	msg, err := encodeResponseToJSON(resp)
 	if err != nil {
@@ -301,14 +332,24 @@ func (s *GremlinWSServer) sendResponse(ws *gremlinWSConn, resp GremlinResponse) 
 		return
 	}
 	ws.mu.RLock()
-	defer ws.mu.RUnlock()
 	if ws.closed {
+		ws.mu.RUnlock()
 		return
 	}
 	select {
 	case ws.sendCh <- msg:
+		ws.mu.RUnlock()
 	default:
-		logs.Warn("Gremlin WS send buffer full, dropping response",
-			logs.String("connId", ws.id))
+		// M1: Buffer is full — upgrade to write lock to force-close.
+		ws.mu.RUnlock()
+		ws.mu.Lock()
+		if !ws.closed {
+			logs.Warn("Gremlin WS send buffer full, force-closing connection",
+				logs.String("connId", ws.id))
+			ws.closed = true
+			close(ws.sendCh)
+			_ = ws.conn.Close()
+		}
+		ws.mu.Unlock()
 	}
 }

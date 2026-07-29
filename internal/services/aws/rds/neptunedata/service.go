@@ -38,6 +38,7 @@ const (
 	loaderJobTTL       = 1 * time.Hour
 	statsCacheTTL      = 10 * time.Minute
 	statsLastAccessTTL = 30 * time.Minute
+	maxConcurrentLoads = 64
 )
 
 // NeptuneDataService implements the Neptune Data API service, handling Gremlin,
@@ -66,11 +67,13 @@ type NeptuneDataService struct {
 	activeEngines      map[string]*clusterEngineEntry
 	enginesMu          sync.RWMutex
 	graphCache         *graphengine.Cache
+	dispatcherRunning  atomic.Bool
 }
 
 // clusterEngineEntry holds the graph engine instance for a single DB cluster.
 type clusterEngineEntry struct {
-	db *graphengine.DB
+	db     *graphengine.DB
+	region string
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -156,9 +159,11 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 		"cancelled": true,
 	}
 	terminalLoaderStates := map[string]bool{
-		"LOAD_COMPLETED": true,
-		"LOAD_FAILED":    true,
-		"CANCELLED":      true,
+		"LOAD_COMPLETED":              true,
+		"LOAD_FAILED":                 true,
+		"CANCELLED":                   true,
+		"LOAD_CANCELLED_DUE_TO_ERROR": true,
+		"LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED": true,
 	}
 
 	s.stores.Range(func(_, value any) bool {
@@ -344,7 +349,7 @@ func (s *NeptuneDataService) Open(region, clusterID string) (int, error) {
 	}
 
 	s.enginesMu.Lock()
-	entry := &clusterEngineEntry{db: db}
+	entry := &clusterEngineEntry{db: db, region: region}
 	s.activeEngines[clusterID] = entry
 	s.enginesMu.Unlock()
 
@@ -576,6 +581,13 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 	return map[string]interface{}{
 		"status":    "healthy",
 		"startTime": s.startTime.UTC().Format(timeutils.ISO8601UTCFormat),
+		// M16: dbEngineVersion — the engine version string used by clients
+		// for feature detection. Neptune 1.x series.
+		"dbEngineVersion": "1.3.3.0",
+		"role":            "writer",
+		// M16: dfeQueryEngine — DFE (Distributed Forwarding Engine) state.
+		// "Disabled" indicates TinkerPop-only execution (no DFE).
+		"dfeQueryEngine": "Disabled",
 		"gremlin": map[string]interface{}{
 			"version": "3.7.x",
 		},
@@ -586,10 +598,29 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 			"version": "1.1",
 		},
 		"labMode": map[string]interface{}{},
+		// M16: rollingBackTrxCount — number of currently rolling-back
+		// transactions. 0 when healthy.
+		"rollingBackTrxCount": 0,
+		// M16: rollingBackTrxEarliestStartTime — empty when no rollbacks.
+		"rollingBackTrxEarliestStartTime": "",
+		// M16: features — engine feature flags (e.g. Streams, ML).
+		"features": map[string]interface{}{
+			"streams": map[string]interface{}{
+				"property_graph": map[string]interface{}{
+					"results": map[string]interface{}{
+						"status": "enabled",
+					},
+				},
+				"sparql": map[string]interface{}{
+					"results": map[string]interface{}{
+						"status": "disabled",
+					},
+				},
+			},
+		},
 		"settings": map[string]interface{}{
 			"neptune lab mode": "DISABLED",
 		},
-		"role": "writer",
 	}, nil
 }
 
@@ -897,6 +928,10 @@ func (s *NeptuneDataService) refreshStatisticsForRegion(region string) {
 
 func refreshStatisticsWithReader(reader graphengine.GraphReader, region string, s *NeptuneDataService) {
 	if reader == nil {
+		// M21: Log when no graph reader is available so silent failures
+		// are diagnosable.
+		logs.Warn("refreshStatistics: no graph reader available",
+			logs.String("region", region))
 		return
 	}
 
@@ -942,4 +977,165 @@ var tokenCounter int64
 func generateFastResetToken() string {
 	id := atomic.AddInt64(&tokenCounter, 1)
 	return fmt.Sprintf("frt-%d-%d", time.Now().UnixNano(), id)
+}
+
+// startLoaderDispatcher launches the loader job dispatcher if it is not
+// already running. The dispatcher scans for LOAD_QUEUED jobs whose
+// dependencies are satisfied and starts them, respecting the maxConcurrentLoads
+// limit. It exits when no more queued jobs remain.
+func (s *NeptuneDataService) startLoaderDispatcher() {
+	if s.dispatcherRunning.Swap(true) {
+		return
+	}
+	go s.loaderDispatchLoop()
+}
+
+// loaderDispatchLoop repeatedly scans for dispatchable queued loader jobs
+// until none remain. Uses a short poll interval to keep latency low without
+// busy-waiting.
+func (s *NeptuneDataService) loaderDispatchLoop() {
+	defer s.dispatcherRunning.Store(false)
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		dispatched, err := s.dispatchQueuedJobs()
+		if err != nil {
+			logs.Warn("loader dispatcher error", logs.Err(err))
+		}
+		if dispatched == 0 {
+			jobs, err := s.countQueuedJobs()
+			if err != nil || jobs == 0 {
+				return
+			}
+		}
+	}
+}
+
+// countQueuedJobs counts LOAD_QUEUED jobs across all regional stores.
+func (s *NeptuneDataService) countQueuedJobs() (int, error) {
+	count := 0
+	s.stores.Range(func(_, val any) bool {
+		store, ok := val.(*neptunestore.NeptuneStore)
+		if !ok {
+			return true
+		}
+		jobs, err := store.ListLoaderJobs()
+		if err != nil {
+			return true
+		}
+		for _, job := range jobs {
+			if job.GetStatus() == "LOAD_QUEUED" {
+				count++
+			}
+		}
+		return true
+	})
+	return count, nil
+}
+
+// dispatchQueuedJobs scans all stores for LOAD_QUEUED jobs whose dependencies
+// are satisfied and launches them, respecting the concurrency limit.
+// Returns the number of jobs dispatched in this pass.
+func (s *NeptuneDataService) dispatchQueuedJobs() (int, error) {
+	dispatched := 0
+
+	s.stores.Range(func(regionVal, val any) bool {
+		region, rok := regionVal.(string)
+		store, ok := val.(*neptunestore.NeptuneStore)
+		if !ok || !rok {
+			return true
+		}
+
+		jobs, err := store.ListLoaderJobs()
+		if err != nil {
+			return true
+		}
+
+		running := 0
+		for _, job := range jobs {
+			if job.GetStatus() == "LOAD_IN_PROGRESS" {
+				running++
+			}
+		}
+
+		for _, job := range jobs {
+			if job.GetStatus() != "LOAD_QUEUED" {
+				continue
+			}
+			if running >= maxConcurrentLoads {
+				break
+			}
+
+			if !s.dependenciesSatisfied(store, job) {
+				continue
+			}
+
+			clusterDB := s.GetClusterEngineForRegion(region)
+
+			// BUG 4 fix: re-read the job from the store to detect a
+			// concurrent CancelLoaderJob before transitioning to
+			// LOAD_IN_PROGRESS. Without this, the dispatcher's snapshot
+			// can overwrite a CANCELLED status set between ListLoaderJobs
+			// and UpdateLoaderJob.
+			current, err := store.GetLoaderJob(job.GetLoadId())
+			if err != nil || current == nil || current.GetStatus() != "LOAD_QUEUED" {
+				continue
+			}
+
+			current.Status = "LOAD_IN_PROGRESS"
+			_ = store.UpdateLoaderJob(current)
+
+			s.launchLoaderJob(region, current, clusterDB)
+			running++
+			dispatched++
+		}
+		return true
+	})
+
+	return dispatched, nil
+}
+
+// dependenciesSatisfied checks whether all dependency load IDs are in a
+// LOAD_COMPLETED state. If any dependency failed, the job is marked
+// LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED.
+func (s *NeptuneDataService) dependenciesSatisfied(store *neptunestore.NeptuneStore, job *pb.LoaderJob) bool {
+	for _, depID := range job.GetDependencies() {
+		dep, err := store.GetLoaderJob(depID)
+		if err != nil || dep == nil {
+			job.Status = "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED"
+			job.EndTime = timestamppb.Now()
+			job.ErrorLog = fmt.Sprintf("dependency %s not found", depID)
+			_ = store.UpdateLoaderJob(job)
+			return false
+		}
+		depStatus := dep.GetStatus()
+		if depStatus == "LOAD_FAILED" || depStatus == "CANCELLED" || depStatus == "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED" {
+			job.Status = "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED"
+			job.EndTime = timestamppb.Now()
+			job.ErrorLog = fmt.Sprintf("dependency %s is in failed state: %s", depID, depStatus)
+			_ = store.UpdateLoaderJob(job)
+			return false
+		}
+		if depStatus != "LOAD_COMPLETED" {
+			return false
+		}
+	}
+	return true
+}
+
+// GetClusterEngineForRegion returns the graph engine DB for a cluster in the
+// given region. Used by the loader dispatcher which operates outside of a
+// per-request context. If multiple clusters exist in the same region, the
+// first match is returned.
+func (s *NeptuneDataService) GetClusterEngineForRegion(region string) *graphengine.DB {
+	s.enginesMu.RLock()
+	defer s.enginesMu.RUnlock()
+	for _, entry := range s.activeEngines {
+		if entry.region == region {
+			return entry.db
+		}
+	}
+	return nil
 }
