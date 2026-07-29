@@ -20,6 +20,7 @@ type LifecycleWorker struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
+	startOnce      sync.Once
 }
 
 // NewLifecycleWorker creates a new LifecycleWorker with a 5-minute default interval.
@@ -34,10 +35,12 @@ func NewLifecycleWorker(svc *S3Service, sm *storage.RegionStorageManager, accoun
 
 // Start launches the lifecycle enforcement goroutine.
 func (w *LifecycleWorker) Start() {
-	w.ctx, w.cancel = context.WithCancel(context.Background())
-	w.wg.Add(1)
-	go w.run()
-	logs.Info("s3: lifecycle worker started", logs.Any("interval", w.interval))
+	w.startOnce.Do(func() {
+		w.ctx, w.cancel = context.WithCancel(context.Background())
+		w.wg.Add(1)
+		go w.run()
+		logs.Info("s3: lifecycle worker started", logs.Any("interval", w.interval))
+	})
 }
 
 // Close gracefully stops the lifecycle worker.
@@ -132,6 +135,21 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 	}
 }
 
+// isProtectedByObjectLock checks whether an object is protected from
+// deletion by a legal hold or an active retention period. Lifecycle
+// expiration must respect Object Lock just like any other delete operation.
+func isProtectedByObjectLock(obj *s3store.Object, now time.Time) bool {
+	if obj.ObjectLockLegalHold != nil && obj.ObjectLockLegalHold.Status == s3store.ObjectLockLegalHoldOn {
+		return true
+	}
+	if obj.ObjectLockRetention != nil {
+		if obj.ObjectLockRetention.RetainUntilDate.After(now) {
+			return true
+		}
+	}
+	return false
+}
+
 // expireObjectsByAge deletes objects older than the specified number of days.
 func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int, now time.Time) {
 	regionStore, err := w.storageManager.GetStorage(w.accountID)
@@ -155,6 +173,9 @@ func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int
 
 		for _, obj := range result.Objects {
 			if obj.IsDeleteMarker {
+				continue
+			}
+			if isProtectedByObjectLock(obj, now) {
 				continue
 			}
 			if obj.LastModified.Before(cutoff) {
@@ -193,6 +214,9 @@ func (w *LifecycleWorker) expireObjectsAll(bucketName, prefix string) {
 
 		for _, obj := range result.Objects {
 			if obj.IsDeleteMarker {
+				continue
+			}
+			if isProtectedByObjectLock(obj, time.Now()) {
 				continue
 			}
 			if err := objectStore.Delete(context.Background(), bucketName, obj.Key); err != nil {
@@ -270,6 +294,9 @@ func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, no
 
 		for _, obj := range result.Objects {
 			if obj.IsLatest || obj.IsDeleteMarker {
+				continue
+			}
+			if isProtectedByObjectLock(obj, now) {
 				continue
 			}
 			if obj.LastModified.Before(cutoff) {

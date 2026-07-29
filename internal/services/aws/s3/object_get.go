@@ -71,12 +71,17 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		}
 
 		if input.IfMatch != "" {
-			if strings.Trim(obj.ETag, "\"") != strings.Trim(input.IfMatch, "\"") {
+			if input.IfMatch == "*" {
+				// Wildcard: object must exist. HeadWithVersion succeeded, so it does.
+			} else if strings.Trim(obj.ETag, "\"") != strings.Trim(input.IfMatch, "\"") {
 				return nil, ErrPreconditionFailed
 			}
 		}
 		if input.IfNoneMatch != "" {
-			if strings.Trim(obj.ETag, "\"") == strings.Trim(input.IfNoneMatch, "\"") {
+			if input.IfNoneMatch == "*" {
+				// Wildcard: object must not exist. Since it exists, return NotModified.
+				return nil, ErrNotModified
+			} else if strings.Trim(obj.ETag, "\"") == strings.Trim(input.IfNoneMatch, "\"") {
 				return nil, ErrNotModified
 			}
 		}

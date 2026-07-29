@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"fmt"
+
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -30,6 +32,11 @@ func (o *BucketOperations) PutBucketOwnershipControls(ctx *request.RequestContex
 
 	config := &s3store.OwnershipControls{}
 	for _, rule := range input.OwnershipControls.Rules {
+		switch rule.ObjectOwnership {
+		case "BucketOwnerEnforced", "BucketOwnerPreferred", "ObjectWriter":
+		default:
+			return NewInvalidArgumentError(fmt.Sprintf("invalid ObjectOwnership: %s (must be BucketOwnerEnforced, BucketOwnerPreferred, or ObjectWriter)", rule.ObjectOwnership))
+		}
 		config.Rules = append(config.Rules, s3store.OwnershipControlsRule{
 			ObjectOwnership: rule.ObjectOwnership,
 		})

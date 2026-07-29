@@ -2,6 +2,7 @@ package s3
 
 import (
 	"encoding/json"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -35,18 +36,77 @@ func (o *BucketOperations) PutBucketPolicy(ctx *request.RequestContext, input *P
 	return store.buckets.SetPolicy(input.Bucket, input.Policy)
 }
 
+// policyContainsPublicAccess checks whether a bucket policy grants public
+// access. A statement is considered public if:
+// - Effect is "Allow" AND
+// - Principal is "*" (or contains wildcard account) AND
+// - Either no Condition is set, or the Condition does not restrict access
+//   (e.g. IpAddress with 0.0.0.0/0 or ::/0)
 func policyContainsPublicAccess(policy string) bool {
 	var p struct {
 		Statement []struct {
-			Principal interface{} `json:"Principal"`
+			Effect    string                 `json:"Effect"`
+			Principal interface{}            `json:"Principal"`
+			Condition map[string]interface{} `json:"Condition"`
 		} `json:"Statement"`
 	}
 	if err := json.Unmarshal([]byte(policy), &p); err != nil {
 		return false
 	}
 	for _, stmt := range p.Statement {
-		if isPublicPrincipal(stmt.Principal) {
+		if !strings.EqualFold(stmt.Effect, "Allow") {
+			continue
+		}
+		if !isPublicPrincipal(stmt.Principal) {
+			continue
+		}
+		// Principal is "*" and Effect is Allow — check if Condition restricts.
+		if stmt.Condition == nil || conditionIsEffectivelyPublic(stmt.Condition) {
 			return true
+		}
+	}
+	return false
+}
+
+// conditionIsEffectivelyPublic returns true when a Condition block either
+// does not restrict access or uses a permissive IP range like 0.0.0.0/0.
+func conditionIsEffectivelyPublic(condition map[string]interface{}) bool {
+	for condOp, condVal := range condition {
+		vals, ok := condVal.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		opLower := strings.ToLower(condOp)
+		switch opLower {
+		case "ipaddress":
+			// IpAddress with 0.0.0.0/0 or ::/0 is effectively public.
+			for _, v := range vals {
+				if ipMatchesAll(v) {
+					return true
+				}
+			}
+		case "stringlike":
+			// StringLike with "*" wildcard on any key is effectively public.
+			for _, v := range vals {
+				if v == "*" {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// ipMatchesAll checks whether a CIDR value matches all IP addresses.
+func ipMatchesAll(val interface{}) bool {
+	switch v := val.(type) {
+	case string:
+		return v == "0.0.0.0/0" || v == "::/0"
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok && (s == "0.0.0.0/0" || s == "::/0") {
+				return true
+			}
 		}
 	}
 	return false

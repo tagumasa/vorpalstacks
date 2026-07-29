@@ -103,9 +103,11 @@ func (m *EncryptionManager) Decrypt(ciphertext []byte, sseMetadata *s3store.SSEO
 }
 
 // DecryptWithCustomerKey decrypts ciphertext using a customer-provided key.
+// Returns an error if sseMetadata is nil — callers must not invoke this
+// method on unencrypted objects (fail-closed).
 func (m *EncryptionManager) DecryptWithCustomerKey(ciphertext []byte, sseMetadata *s3store.SSEObjectMetadata, bucket, key string, customerKey []byte) (*DecryptionResult, error) {
 	if sseMetadata == nil {
-		return &DecryptionResult{DecryptedData: ciphertext}, nil
+		return nil, fmt.Errorf("cannot decrypt: SSE metadata is nil (object may be unencrypted)")
 	}
 
 	switch sseMetadata.EncryptionType {

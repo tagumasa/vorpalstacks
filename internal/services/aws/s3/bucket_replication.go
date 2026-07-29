@@ -1,9 +1,11 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -243,8 +245,18 @@ func (s *S3Service) replicateObject(ctx context.Context, reqCtx *request.Request
 			continue
 		}
 
-		_, err = destStores.objects.Put(ctx, destBucketName, key, reader, srcObj.ContentType, srcObj.Metadata)
+		data, err := io.ReadAll(reader)
 		reader.Close()
+		if err != nil {
+			logs.Warn("s3: replication source read failed", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(err))
+			continue
+		}
+
+		if srcObj.SSEMetadata != nil {
+			_, err = destStores.objects.PutEncrypted(ctx, destBucketName, key, data, srcObj.ContentType, srcObj.Metadata, srcObj.SSEMetadata, srcObj.StorageClass, nil)
+		} else {
+			_, err = destStores.objects.Put(ctx, destBucketName, key, bytes.NewReader(data), srcObj.ContentType, srcObj.Metadata)
+		}
 		if err != nil {
 			logs.Warn("s3: replication write failed", logs.String("destBucket", destBucketName), logs.String("key", key), logs.Err(err))
 			continue

@@ -1,7 +1,9 @@
 package s3
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -10,7 +12,19 @@ import (
 // handleServiceRequest handles service-level S3 operations (e.g. ListBuckets).
 func (h *S3Handler) handleServiceRequest(ctx *request.RequestContext, r *http.Request) (interface{}, int, error) {
 	if r.Method == "GET" {
-		result, err := h.bucketOps.ListBuckets(ctx, &ListBucketsInput{})
+		input := &ListBucketsInput{
+			ContinuationToken: r.URL.Query().Get("continuation-token"),
+			Prefix:            r.URL.Query().Get("prefix"),
+			BucketRegion:      r.URL.Query().Get("bucket-region"),
+		}
+		if mb := r.URL.Query().Get("max-buckets"); mb != "" {
+			n, err := strconv.Atoi(mb)
+			if err != nil {
+				return nil, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid max-buckets value: %s", mb))
+			}
+			input.MaxBuckets = n
+		}
+		result, err := h.bucketOps.ListBuckets(ctx, input)
 		return result, http.StatusOK, err
 	}
 	return nil, http.StatusMethodNotAllowed, awserrors.NewAWSError("MethodNotAllowed", "The specified method is not allowed against this resource.", http.StatusMethodNotAllowed)

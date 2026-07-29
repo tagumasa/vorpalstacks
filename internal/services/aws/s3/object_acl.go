@@ -100,7 +100,10 @@ func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.Req
 	} else if input.AccessControlPolicy != nil {
 		acp = input.AccessControlPolicy
 	} else {
-		grants := ParseGrantHeaders(input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
+		grants, err := ParseGrantHeaders(input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
+		if err != nil {
+			return NewInvalidArgumentError(err.Error())
+		}
 		if len(grants) > 0 {
 			acp = &s3store.AccessControlPolicy{Owner: owner, Grants: grants}
 		} else {

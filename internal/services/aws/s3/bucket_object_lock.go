@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"fmt"
+
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -50,11 +52,38 @@ func (o *BucketOperations) PutObjectLockConfiguration(ctx *request.RequestContex
 	}
 
 	if input.ObjectLockConfiguration.Rule != nil && input.ObjectLockConfiguration.Rule.DefaultRetention != nil {
+		dr := input.ObjectLockConfiguration.Rule.DefaultRetention
+
+		// Validate Mode: must be GOVERNANCE or COMPLIANCE
+		if dr.Mode != string(s3store.ObjectLockRetentionModeGovernance) && dr.Mode != string(s3store.ObjectLockRetentionModeCompliance) {
+			return NewInvalidArgumentError(fmt.Sprintf("invalid retention mode: %s (must be GOVERNANCE or COMPLIANCE)", dr.Mode))
+		}
+
+		// Days/Years are mutually exclusive: exactly one must be specified
+		hasDays := dr.Days != nil
+		hasYears := dr.Years != nil
+		if hasDays && hasYears {
+			return NewInvalidArgumentError("Days and Years are mutually exclusive; specify exactly one")
+		}
+		if !hasDays && !hasYears {
+			return NewInvalidArgumentError("either Days or Years must be specified in DefaultRetention")
+		}
+		if hasDays {
+			if *dr.Days < 1 || *dr.Days > 3650 {
+				return NewInvalidArgumentError(fmt.Sprintf("Days must be between 1 and 3650, got %d", *dr.Days))
+			}
+		}
+		if hasYears {
+			if *dr.Years < 1 || *dr.Years > 100 {
+				return NewInvalidArgumentError(fmt.Sprintf("Years must be between 1 and 100, got %d", *dr.Years))
+			}
+		}
+
 		config.Rule = &s3store.ObjectLockRule{
 			DefaultRetention: &s3store.DefaultRetention{
-				Mode:  s3store.ObjectLockRetentionMode(input.ObjectLockConfiguration.Rule.DefaultRetention.Mode),
-				Days:  input.ObjectLockConfiguration.Rule.DefaultRetention.Days,
-				Years: input.ObjectLockConfiguration.Rule.DefaultRetention.Years,
+				Mode:  s3store.ObjectLockRetentionMode(dr.Mode),
+				Days:  dr.Days,
+				Years: dr.Years,
 			},
 		}
 	}

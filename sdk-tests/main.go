@@ -29,6 +29,9 @@ func main() {
 
 	tester := testutil.NewTestRunner(*endpoint, *region, *verbose)
 
+	// Remove stale Lambda Docker containers from previous runs.
+	tester.CleanupStaleContainers()
+
 	var targetServices []string
 	if *services == "" || *services == "all" {
 		cat := testutil.TestCategory(*testType)

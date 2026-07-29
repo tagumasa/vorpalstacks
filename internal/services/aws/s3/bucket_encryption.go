@@ -36,8 +36,8 @@ type ApplyServerSideEncryptionByDefault struct {
 
 // PutBucketEncryption sets the encryption configuration for an S3 bucket.
 func (o *BucketOperations) PutBucketEncryption(ctx *request.RequestContext, input *PutBucketEncryptionInput) error {
-	if len(input.ServerSideEncryptionConfiguration.Rules) == 0 {
-		return fmt.Errorf("at least one rule is required")
+	if input.ServerSideEncryptionConfiguration == nil || len(input.ServerSideEncryptionConfiguration.Rules) != 1 {
+		return NewInvalidArgumentError("exactly one encryption rule is required")
 	}
 
 	rule := input.ServerSideEncryptionConfiguration.Rules[0]

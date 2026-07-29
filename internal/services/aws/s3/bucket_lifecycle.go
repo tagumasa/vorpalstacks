@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -86,9 +87,67 @@ func (o *BucketOperations) PutBucketLifecycleConfiguration(ctx *request.RequestC
 		return NewInvalidArgumentError("lifecycle configuration must contain at least one rule")
 	}
 
+	validStorageClasses := map[string]bool{
+		"STANDARD": true, "STANDARD_IA": true, "ONEZONE_IA": true,
+		"INTELLIGENT_TIERING": true, "GLACIER": true, "DEEP_ARCHIVE": true,
+		"GLACIER_IR": true, "OUTPOSTS": true, "EXPRESS_ONEZONE": true,
+		"SNOW": true,
+	}
+
 	for _, rule := range input.LifecycleConfiguration.Rules {
 		if rule.Status != "Enabled" && rule.Status != "Disabled" {
 			return NewInvalidArgumentError("rule status must be Enabled or Disabled")
+		}
+
+		if rule.Expiration != nil {
+			hasDays := rule.Expiration.Days != nil
+			hasDate := rule.Expiration.Date != nil
+			if hasDays && hasDate {
+				return NewInvalidArgumentError("Expiration Days and Date are mutually exclusive")
+			}
+			if hasDays && (*rule.Expiration.Days < 1 || *rule.Expiration.Days > 3650) {
+				return NewInvalidArgumentError(fmt.Sprintf("Expiration Days must be between 1 and 3650, got %d", *rule.Expiration.Days))
+			}
+		}
+
+		for _, t := range rule.Transitions {
+			hasDays := t.Days != nil
+			hasDate := t.Date != nil
+			if hasDays && hasDate {
+				return NewInvalidArgumentError("Transition Days and Date are mutually exclusive")
+			}
+			if hasDays && (*t.Days < 0 || *t.Days > 3650) {
+				return NewInvalidArgumentError(fmt.Sprintf("Transition Days must be between 0 and 3650, got %d", *t.Days))
+			}
+			if t.StorageClass != "" && !validStorageClasses[t.StorageClass] {
+				return NewInvalidArgumentError(fmt.Sprintf("invalid StorageClass: %s", t.StorageClass))
+			}
+		}
+
+		for _, t := range rule.NoncurrentVersionTransitions {
+			if t.NoncurrentDays != nil {
+				nd := *t.NoncurrentDays
+				if nd < 1 || nd > 3650 {
+					return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionTransition NoncurrentDays must be between 1 and 3650, got %d", nd))
+				}
+			}
+			if t.StorageClass != "" && !validStorageClasses[t.StorageClass] {
+				return NewInvalidArgumentError(fmt.Sprintf("invalid NoncurrentVersionTransition StorageClass: %s", t.StorageClass))
+			}
+		}
+
+		if rule.AbortIncompleteMultipartUpload != nil && rule.AbortIncompleteMultipartUpload.DaysAfterInitiation != nil {
+			d := *rule.AbortIncompleteMultipartUpload.DaysAfterInitiation
+			if d < 1 || d > 3650 {
+				return NewInvalidArgumentError(fmt.Sprintf("AbortIncompleteMultipartUpload DaysAfterInitiation must be between 1 and 3650, got %d", d))
+			}
+		}
+
+		if rule.NoncurrentVersionExpiration != nil && rule.NoncurrentVersionExpiration.NoncurrentDays != nil {
+			d := *rule.NoncurrentVersionExpiration.NoncurrentDays
+			if d < 1 || d > 3650 {
+				return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionExpiration NoncurrentDays must be between 1 and 3650, got %d", d))
+			}
 		}
 	}
 

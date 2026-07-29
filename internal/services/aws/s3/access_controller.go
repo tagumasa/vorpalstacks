@@ -40,6 +40,12 @@ type AccessCheck struct {
 }
 
 // CheckAccess evaluates whether an operation should be allowed.
+// Evaluation order follows AWS S3 semantics:
+// 1. Owner → Allow (root bypass)
+// 2. Bucket Policy explicit Deny → Deny (overrides ACL)
+// 3. Bucket Policy explicit Allow → Allow
+// 4. ACL Allow → Allow
+// 5. Default Deny
 func (ac *AccessController) CheckAccess(
 	ctx context.Context,
 	stores *s3Stores,
@@ -54,21 +60,32 @@ func (ac *AccessController) CheckAccess(
 		return nil
 	}
 
-	if err := ac.evaluateACL(check, bucket, stores); err == nil {
-		return nil
-	}
-
+	// Evaluate bucket policy first so explicit Deny overrides ACL Allow.
 	if bucket.Policy != "" {
-		if err := ac.evaluateBucketPolicy(check, bucket); err == nil {
+		decision := ac.evaluateBucketPolicyDecision(check, bucket)
+		if decision.Effect == policy.DecisionEffectDeny {
+			return ErrAccessDenied
+		}
+		if decision.Effect == policy.DecisionEffectAllow {
 			return nil
 		}
+		// DefaultDeny: fall through to ACL
+	}
+
+	if err := ac.evaluateACL(check, bucket, stores); err == nil {
+		return nil
 	}
 
 	return ErrAccessDenied
 }
 
 // CheckObjectAccess evaluates whether an operation on an object should be allowed.
-// It checks bucket ownership, object ACL, and bucket policy.
+// Evaluation order follows AWS S3 semantics:
+// 1. Owner → Allow (root bypass)
+// 2. Bucket Policy explicit Deny → Deny (overrides ACL)
+// 3. Bucket Policy explicit Allow → Allow
+// 4. Object ACL Allow → Allow
+// 5. Default Deny
 func (ac *AccessController) CheckObjectAccess(
 	ctx context.Context,
 	stores *s3Stores,
@@ -83,14 +100,20 @@ func (ac *AccessController) CheckObjectAccess(
 		return nil
 	}
 
-	if err := ac.evaluateObjectACL(ctx, check, bucket, stores); err == nil {
-		return nil
-	}
-
+	// Evaluate bucket policy first so explicit Deny overrides ACL Allow.
 	if bucket.Policy != "" {
-		if err := ac.evaluateBucketPolicy(check, bucket); err == nil {
+		decision := ac.evaluateBucketPolicyDecision(check, bucket)
+		if decision.Effect == policy.DecisionEffectDeny {
+			return ErrAccessDenied
+		}
+		if decision.Effect == policy.DecisionEffectAllow {
 			return nil
 		}
+		// DefaultDeny: fall through to ACL
+	}
+
+	if err := ac.evaluateObjectACL(ctx, check, bucket, stores); err == nil {
+		return nil
 	}
 
 	return ErrAccessDenied
@@ -168,16 +191,18 @@ func (ac *AccessController) evaluateObjectACL(
 	return ac.evaluateACL(check, bucket, stores)
 }
 
-func (ac *AccessController) evaluateBucketPolicy(check *AccessCheck, bucket *s3store.Bucket) error {
+// evaluateBucketPolicyDecision evaluates the bucket policy and returns the
+// full decision (Allow, explicit Deny, or DefaultDeny).
+func (ac *AccessController) evaluateBucketPolicyDecision(check *AccessCheck, bucket *s3store.Bucket) *policy.Decision {
 	if bucket.PublicAccessBlock != nil && bucket.PublicAccessBlock.RestrictPublicBuckets {
 		if check.PrincipalType == request.PrincipalTypeAnonymous {
-			return ErrAccessDenied
+			return &policy.Decision{Effect: policy.DecisionEffectDeny, Reason: "anonymous access restricted by PublicAccessBlock"}
 		}
 	}
 
 	policyDoc, err := policy.ParseDocument(bucket.Policy)
 	if err != nil {
-		return ErrAccessDenied
+		return &policy.Decision{Effect: policy.DecisionEffectDeny, Reason: "invalid bucket policy"}
 	}
 
 	evalCtx := &policy.EvaluationContext{
@@ -191,12 +216,7 @@ func (ac *AccessController) evaluateBucketPolicy(check *AccessCheck, bucket *s3s
 		SecureTransport:  check.SecureTransport,
 	}
 
-	decision := ac.policyEvaluator.Evaluate(evalCtx, []*policy.Document{policyDoc})
-	if decision.Effect == policy.DecisionEffectAllow {
-		return nil
-	}
-
-	return ErrAccessDenied
+	return ac.policyEvaluator.Evaluate(evalCtx, []*policy.Document{policyDoc})
 }
 
 func (ac *AccessController) grantMatchesPrincipal(grant *s3store.Grant, check *AccessCheck) bool {

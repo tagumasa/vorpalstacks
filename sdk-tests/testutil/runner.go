@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -99,6 +100,38 @@ func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
 
 func (r *TestRunner) Endpoint() string { return r.endpoint }
 func (r *TestRunner) Region() string   { return r.region }
+
+// CleanupStaleContainers removes orphaned Lambda Docker containers left by
+// previous test runs. The server's cleanupOrphanedContainers() only runs at
+// startup, so containers created during a test run (that failed or was
+// aborted) survive until the next server restart. Calling this before each
+// test run ensures a clean state without requiring a server restart.
+func (r *TestRunner) CleanupStaleContainers() {
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		return
+	}
+
+	listCmd := exec.Command(dockerPath, "ps", "-a", "--filter", "name=lambda-",
+		"--format", "{{.ID}}")
+	var out bytes.Buffer
+	listCmd.Stdout = &out
+	if err := listCmd.Run(); err != nil {
+		return
+	}
+
+	ids := strings.Fields(out.String())
+	if len(ids) == 0 {
+		return
+	}
+
+	for _, id := range ids {
+		rmCmd := exec.Command(dockerPath, "rm", "-f", id)
+		rmCmd.Run()
+	}
+
+	fmt.Printf("  Cleaned up %d stale Lambda container(s)\n", len(ids))
+}
 
 func (r *TestRunner) GetAllServices() []string {
 	return r.GetServicesByCategory("")

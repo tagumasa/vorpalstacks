@@ -94,7 +94,19 @@ func CannedACLToPolicy(cannedACL string, owner *s3store.ACLOwner) (*s3store.Acce
 			&s3store.Grant{Grantee: &s3store.Grantee{Type: s3store.GranteeTypeGroup, URI: s3store.LogDeliveryGroup}, Permission: s3store.PermissionReadACP},
 			&s3store.Grant{Grantee: &s3store.Grantee{Type: s3store.GranteeTypeGroup, URI: s3store.LogDeliveryGroup}, Permission: s3store.PermissionWrite},
 		)
-	case "bucket-owner-read", "bucket-owner-full-control", "aws-exec-read":
+	case "bucket-owner-read":
+		grants = append(grants, &s3store.Grant{
+			Grantee:    &s3store.Grantee{Type: s3store.GranteeTypeCanonicalUser, ID: owner.ID, DisplayName: owner.DisplayName},
+			Permission: s3store.PermissionRead,
+		})
+	case "bucket-owner-full-control":
+		grants = append(grants, &s3store.Grant{
+			Grantee:    &s3store.Grantee{Type: s3store.GranteeTypeCanonicalUser, ID: owner.ID, DisplayName: owner.DisplayName},
+			Permission: s3store.PermissionFullControl,
+		})
+	case "aws-exec-read":
+		// AWS grants READ to the Amazon EC2 service principal. vorpalstacks
+		// has no EC2 service group, so only owner FULL_CONTROL applies.
 	default:
 		return nil, NewInvalidArgumentError(fmt.Sprintf("invalid canned ACL: %s", cannedACL))
 	}
@@ -103,12 +115,13 @@ func CannedACLToPolicy(cannedACL string, owner *s3store.ACLOwner) (*s3store.Acce
 }
 
 // ParseGrantHeaders parses grant headers into a list of grants.
-func ParseGrantHeaders(grantFullControl, grantRead, grantReadACP, grantWrite, grantWriteACP string) []*s3store.Grant {
+// Returns an error if any grant header value cannot be parsed.
+func ParseGrantHeaders(grantFullControl, grantRead, grantReadACP, grantWrite, grantWriteACP string) ([]*s3store.Grant, error) {
 	var grants []*s3store.Grant
 
-	parseGrantees := func(header string, permission s3store.Permission) {
+	parseGrantees := func(header string, permission s3store.Permission) error {
 		if header == "" {
-			return
+			return nil
 		}
 		grantees := strings.Split(header, ",")
 		for _, g := range grantees {
@@ -117,19 +130,30 @@ func ParseGrantHeaders(grantFullControl, grantRead, grantReadACP, grantWrite, gr
 				continue
 			}
 			grantee := ParseGrantee(g)
-			if grantee != nil {
-				grants = append(grants, &s3store.Grant{Grantee: grantee, Permission: permission})
+			if grantee == nil {
+				return fmt.Errorf("invalid grant header value: %q", g)
 			}
+			grants = append(grants, &s3store.Grant{Grantee: grantee, Permission: permission})
+		}
+		return nil
+	}
+
+	for _, item := range []struct {
+		header     string
+		permission s3store.Permission
+	}{
+		{grantFullControl, s3store.PermissionFullControl},
+		{grantRead, s3store.PermissionRead},
+		{grantReadACP, s3store.PermissionReadACP},
+		{grantWrite, s3store.PermissionWrite},
+		{grantWriteACP, s3store.PermissionWriteACP},
+	} {
+		if err := parseGrantees(item.header, item.permission); err != nil {
+			return nil, err
 		}
 	}
 
-	parseGrantees(grantFullControl, s3store.PermissionFullControl)
-	parseGrantees(grantRead, s3store.PermissionRead)
-	parseGrantees(grantReadACP, s3store.PermissionReadACP)
-	parseGrantees(grantWrite, s3store.PermissionWrite)
-	parseGrantees(grantWriteACP, s3store.PermissionWriteACP)
-
-	return grants
+	return grants, nil
 }
 
 // ParseGrantee parses a grantee string into a Grantee struct.

@@ -681,12 +681,23 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 		}
 	}
 
-	var parts []s3store.ObjectPart
+	// Build the parts list. AWS accepts duplicate part numbers and uses
+	// the value from the last occurrence, so we build a map keyed by
+	// PartNumber that naturally keeps the last value.
+	partsMap := make(map[int]string)
+	var orderedPartNumbers []int
 	for _, p := range input.Parts {
-		etag := strings.Trim(p.ETag, "\"")
+		if _, exists := partsMap[p.PartNumber]; !exists {
+			orderedPartNumbers = append(orderedPartNumbers, p.PartNumber)
+		}
+		partsMap[p.PartNumber] = strings.Trim(p.ETag, "\"")
+	}
+
+	var parts []s3store.ObjectPart
+	for _, pn := range orderedPartNumbers {
 		parts = append(parts, s3store.ObjectPart{
-			PartNumber: p.PartNumber,
-			ETag:       etag,
+			PartNumber: pn,
+			ETag:       partsMap[pn],
 		})
 	}
 
@@ -890,6 +901,14 @@ func (o *ObjectOperations) ListMultipartUploads(ctx context.Context, reqCtx *req
 			UploadId:     u.UploadID,
 			Initiated:    u.Initiated,
 			StorageClass: string(u.StorageClass),
+			Initiator: &Owner{
+				ID:          u.Initiator,
+				DisplayName: u.Initiator,
+			},
+			Owner: &Owner{
+				ID:          u.Owner,
+				DisplayName: u.Owner,
+			},
 		})
 	}
 

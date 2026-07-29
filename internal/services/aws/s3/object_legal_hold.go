@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -46,9 +47,14 @@ func (o *ObjectOperations) PutObjectLegalHold(ctx context.Context, reqCtx *reque
 		return NewInvalidArgumentError("LegalHold is required")
 	}
 
-	status := s3store.ObjectLockLegalHoldOff
-	if input.LegalHold.Status == "ON" {
+	var status s3store.ObjectLockLegalHoldStatus
+	switch input.LegalHold.Status {
+	case "ON":
 		status = s3store.ObjectLockLegalHoldOn
+	case "OFF":
+		status = s3store.ObjectLockLegalHoldOff
+	default:
+		return NewInvalidArgumentError(fmt.Sprintf("invalid legal hold status: %s (must be ON or OFF)", input.LegalHold.Status))
 	}
 
 	legalHold := &s3store.ObjectLockLegalHold{Status: status}

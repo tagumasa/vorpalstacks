@@ -2,13 +2,13 @@ package s3
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
-	"sort"
-
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -141,6 +141,16 @@ func (o *BucketOperations) DeleteBucket(ctx *request.RequestContext, input *Dele
 	if err != nil {
 		return err
 	}
+
+	bucket, err := store.buckets.Get(input.Bucket)
+	if err != nil {
+		return err
+	}
+
+	if bucket.ObjectLockEnabled {
+		logs.Warn("s3: deleting bucket with Object Lock enabled", logs.String("bucket", input.Bucket))
+	}
+
 	count, err := store.objects.CountByBucket(input.Bucket)
 	if err != nil {
 		return err
@@ -202,12 +212,20 @@ func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBu
 }
 
 // ListBucketsInput contains the input parameters for the ListBuckets operation.
-type ListBucketsInput struct{}
+type ListBucketsInput struct {
+	MaxBuckets         int
+	ContinuationToken  string
+	Prefix             string
+	BucketRegion       string
+}
 
 // ListBucketsOutput contains the output result of the ListBuckets operation.
 type ListBucketsOutput struct {
-	Owner   *Owner
-	Buckets []*BucketInfo
+	Owner             *Owner
+	Buckets           []*BucketInfo
+	Prefix            string
+	ContinuationToken string
+	IsTruncated       bool
 }
 
 // ToXML converts the ListBucketsOutput to XML format.
@@ -220,6 +238,21 @@ func (o *ListBucketsOutput) ToXML() string {
 		result.WriteString(`</ID><DisplayName>`)
 		result.WriteString(xmlEscape(o.Owner.DisplayName))
 		result.WriteString(`</DisplayName></Owner>`)
+	}
+	if o.Prefix != "" {
+		result.WriteString(`<Prefix>`)
+		result.WriteString(xmlEscape(o.Prefix))
+		result.WriteString(`</Prefix>`)
+	}
+	if o.ContinuationToken != "" {
+		result.WriteString(`<ContinuationToken>`)
+		result.WriteString(xmlEscape(o.ContinuationToken))
+		result.WriteString(`</ContinuationToken>`)
+	}
+	if o.IsTruncated {
+		result.WriteString(`<IsTruncated>true</IsTruncated>`)
+	} else {
+		result.WriteString(`<IsTruncated>false</IsTruncated>`)
 	}
 	result.WriteString(`<Buckets>`)
 	if len(o.Buckets) > 0 {
@@ -270,6 +303,7 @@ type BucketInfo struct {
 }
 
 // ListBuckets lists all buckets in the account.
+// Supports pagination via MaxBuckets/ContinuationToken (AWS S3 ListBuckets v2).
 func (o *BucketOperations) ListBuckets(ctx *request.RequestContext, input *ListBucketsInput) (*ListBucketsOutput, error) {
 	store, err := o.svc.store(ctx)
 	if err != nil {
@@ -280,8 +314,14 @@ func (o *BucketOperations) ListBuckets(ctx *request.RequestContext, input *ListB
 		return nil, err
 	}
 
-	bucketInfos := make([]*BucketInfo, 0)
+	bucketInfos := make([]*BucketInfo, 0, len(buckets))
 	for _, b := range buckets {
+		if input.Prefix != "" && !strings.HasPrefix(b.Name, input.Prefix) {
+			continue
+		}
+		if input.BucketRegion != "" && b.Region != input.BucketRegion {
+			continue
+		}
 		bucketInfos = append(bucketInfos, &BucketInfo{
 			Name:         b.Name,
 			CreationDate: b.CreationDate,
@@ -292,11 +332,48 @@ func (o *BucketOperations) ListBuckets(ctx *request.RequestContext, input *ListB
 		return bucketInfos[i].Name < bucketInfos[j].Name
 	})
 
+	// Apply ContinuationToken (offset by name).
+	startIdx := 0
+	if input.ContinuationToken != "" {
+		for i, b := range bucketInfos {
+			if b.Name > input.ContinuationToken {
+				startIdx = i
+				break
+			}
+			// If we reach the end, no more results.
+			if i == len(bucketInfos)-1 {
+				startIdx = len(bucketInfos)
+			}
+		}
+	}
+
+	// Default page size is 10000 per AWS spec when no pagination params given.
+	// Smithy range for MaxBuckets is 1-10000.
+	maxBuckets := input.MaxBuckets
+	if maxBuckets <= 0 || maxBuckets > 10000 {
+		maxBuckets = 10000
+	}
+
+	endIdx := startIdx + maxBuckets
+	var nextToken string
+	isTruncated := false
+	if endIdx < len(bucketInfos) {
+		nextToken = bucketInfos[endIdx-1].Name
+		isTruncated = true
+	} else {
+		endIdx = len(bucketInfos)
+	}
+
+	paged := bucketInfos[startIdx:endIdx]
+
 	return &ListBucketsOutput{
 		Owner: &Owner{
 			ID:          o.svc.accountID,
 			DisplayName: o.svc.accountID,
 		},
-		Buckets: bucketInfos,
+		Buckets:           paged,
+		Prefix:            input.Prefix,
+		ContinuationToken: nextToken,
+		IsTruncated:       isTruncated,
 	}, nil
 }

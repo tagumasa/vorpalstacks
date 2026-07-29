@@ -1,6 +1,9 @@
 package s3
 
 import (
+	"fmt"
+	"strings"
+
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -65,9 +68,58 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 		return err
 	}
 
+	// Track Id uniqueness across all configurations.
+	seenIds := make(map[string]bool)
+
+	validateId := func(id string) error {
+		if id == "" {
+			return nil
+		}
+		if seenIds[id] {
+			return NewInvalidArgumentError(fmt.Sprintf("duplicate notification configuration Id: %s", id))
+		}
+		seenIds[id] = true
+		return nil
+	}
+
+	validateArn := func(arn, expectedService string) error {
+		if arn == "" {
+			return NewInvalidArgumentError("notification ARN is required")
+		}
+		parts := strings.SplitN(arn, ":", 6)
+		if len(parts) < 6 || parts[0] != "arn" {
+			return NewInvalidArgumentError(fmt.Sprintf("invalid ARN format: %s", arn))
+		}
+		if parts[2] != expectedService {
+			return NewInvalidArgumentError(fmt.Sprintf("expected ARN service %s, got %s in: %s", expectedService, parts[2], arn))
+		}
+		return nil
+	}
+
+	validateEvents := func(events []string) error {
+		if len(events) == 0 {
+			return NewInvalidArgumentError("at least one event must be specified")
+		}
+		for _, e := range events {
+			if !strings.HasPrefix(e, "s3:") {
+				return NewInvalidArgumentError(fmt.Sprintf("invalid event name: %s (must start with s3:)", e))
+			}
+		}
+		return nil
+	}
+
 	config := &s3store.NotificationConfiguration{}
 
 	for _, tc := range input.NotificationConfiguration.TopicConfigurations {
+		if err := validateId(tc.Id); err != nil {
+			return err
+		}
+		if err := validateArn(tc.TopicArn, "sns"); err != nil {
+			return err
+		}
+		if err := validateEvents(tc.Events); err != nil {
+			return err
+		}
 		topicConfig := s3store.TopicNotificationConfiguration{
 			Id:       tc.Id,
 			TopicArn: tc.TopicArn,
@@ -88,6 +140,15 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 	}
 
 	for _, qc := range input.NotificationConfiguration.QueueConfigurations {
+		if err := validateId(qc.Id); err != nil {
+			return err
+		}
+		if err := validateArn(qc.QueueArn, "sqs"); err != nil {
+			return err
+		}
+		if err := validateEvents(qc.Events); err != nil {
+			return err
+		}
 		queueConfig := s3store.QueueNotificationConfiguration{
 			Id:       qc.Id,
 			QueueArn: qc.QueueArn,
@@ -108,6 +169,15 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 	}
 
 	for _, lc := range input.NotificationConfiguration.LambdaConfigurations {
+		if err := validateId(lc.Id); err != nil {
+			return err
+		}
+		if err := validateArn(lc.LambdaFunctionArn, "lambda"); err != nil {
+			return err
+		}
+		if err := validateEvents(lc.Events); err != nil {
+			return err
+		}
 		lambdaConfig := s3store.LambdaNotificationConfiguration{
 			Id:                lc.Id,
 			LambdaFunctionArn: lc.LambdaFunctionArn,

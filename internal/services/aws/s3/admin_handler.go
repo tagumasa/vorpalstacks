@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
@@ -52,6 +53,7 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 		bucketInfos = append(bucketInfos, &pb.Bucket{
 			Name:         b.Name,
 			Creationdate: b.CreationDate.Format(timeutils.ISO8601UTCFormat),
+			Bucketregion: b.Region,
 		})
 	}
 
@@ -64,6 +66,10 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) CreateBucket(ctx context.Context, req *connect.Request[pb.CreateBucketRequest]) (*connect.Response[pb.CreateBucketOutput], error) {
 	if req.Msg.Bucket == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("bucket name is required"))
+	}
+
+	if err := validateBucketName(req.Msg.Bucket); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid bucket name: %s", req.Msg.Bucket))
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
@@ -92,6 +98,14 @@ func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb
 	objectStore := h.getObjectStore(req.Header())
 	if bucketStore == nil || objectStore == nil {
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
+	}
+
+	bucket, err := bucketStore.Get(req.Msg.Bucket)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	if bucket.ObjectLockEnabled {
+		logs.Warn("s3: admin deleting bucket with Object Lock enabled", logs.String("bucket", req.Msg.Bucket))
 	}
 
 	count, err := objectStore.CountByBucket(req.Msg.Bucket)
