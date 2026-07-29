@@ -4,7 +4,6 @@ import (
 	"context"
 	"regexp"
 	"strconv"
-	"time"
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/pagination"
@@ -51,40 +50,10 @@ func getListGroupName(params map[string]interface{}) string {
 
 // CreateSchedule creates a new schedule in EventBridge Scheduler.
 func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrValidation
-	}
-	if !namePattern.MatchString(name) {
-		return nil, ErrValidation
-	}
-
-	scheduleExpression := request.GetStringParam(req.Parameters, "ScheduleExpression")
-	if scheduleExpression == "" {
-		return nil, ErrValidation
-	}
-
-	if !isValidScheduleExpression(scheduleExpression) {
-		return nil, ErrInvalidScheduleExpression
-	}
-
+	// Parse target and flexible time window from request parameters.
 	target, err := parseTarget(req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-	if target == nil {
-		return nil, ErrInvalidTarget
-	}
-
-	if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
-		return nil, err
-	}
-
-	if target.RoleArn != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-			return nil, err
-		}
 	}
 
 	flexibleTimeWindow, err := parseFlexibleTimeWindow(req.Parameters)
@@ -95,7 +64,39 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
+	// Build the common spec and run full validation (H1 shared layer).
+	spec := &ScheduleSpec{
+		Name:                       request.GetStringParam(req.Parameters, "Name"),
+		GroupName:                  request.GetStringParam(req.Parameters, "GroupName"),
+		ScheduleExpression:         request.GetStringParam(req.Parameters, "ScheduleExpression"),
+		ScheduleExpressionTimezone: request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone"),
+		Description:                request.GetStringParam(req.Parameters, "Description"),
+		State:                      request.GetStringParam(req.Parameters, "State"),
+		KmsKeyArn:                  request.GetStringParam(req.Parameters, "KmsKeyArn"),
+		StartDate:                  request.GetStringParam(req.Parameters, "StartDate"),
+		EndDate:                    request.GetStringParam(req.Parameters, "EndDate"),
+		ActionAfterCompletion:      request.GetStringParam(req.Parameters, "ActionAfterCompletion"),
+		Target:                     target,
+		FlexibleTimeWindow:         flexibleTimeWindow,
+	}
+
+	validated, err := ValidateScheduleFields(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	if target.RoleArn != "" {
+		validator := reqCtx.GetIAMValidator()
+		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := s.validateVpcConfig(ctx, reqCtx.GetRegion(), target); err != nil {
+		return nil, err
+	}
+
+	groupName := spec.GroupName
 	if groupName == "" {
 		groupName = "default"
 	}
@@ -105,8 +106,28 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
+	// ClientToken idempotency: if the same token was used within the TTL
+	// window, return the previously created resource's ARN (M5).
+	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
+	tokenClaimed := false
+	if clientToken != "" {
+		if err := validateClientToken(clientToken); err != nil {
+			return nil, err
+		}
+		expectedArn := store.BuildScheduleARN(groupName, spec.Name)
+		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule"); !created {
+			return map[string]interface{}{
+				"ScheduleArn": entry.ResourceArn,
+			}, nil
+		}
+		tokenClaimed = true
+	}
+
 	if groupName != "default" {
 		if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
+			if tokenClaimed {
+				store.ClientTokens().Release(clientToken)
+			}
 			if err == schedulerstore.ErrScheduleGroupNotFound {
 				return nil, ErrScheduleGroupNotFound
 			}
@@ -115,47 +136,24 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 	}
 
 	schedule := &schedulerstore.Schedule{
-		Name:                       name,
+		Name:                       spec.Name,
 		GroupName:                  groupName,
-		ScheduleExpression:         scheduleExpression,
+		ScheduleExpression:         spec.ScheduleExpression,
 		Target:                     target,
 		FlexibleTimeWindow:         flexibleTimeWindow,
-		State:                      schedulerstore.ScheduleStateEnabled,
-		ScheduleExpressionTimezone: request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone"),
-		Description:                request.GetStringParam(req.Parameters, "Description"),
-		KmsKeyArn:                  request.GetStringParam(req.Parameters, "KmsKeyArn"),
-	}
-
-	if startDateStr := request.GetStringParam(req.Parameters, "StartDate"); startDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, startDateStr); err == nil {
-			schedule.StartDate = &t
-		} else {
-			return nil, ErrInvalidDate
-		}
-	}
-	if endDateStr := request.GetStringParam(req.Parameters, "EndDate"); endDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, endDateStr); err == nil {
-			schedule.EndDate = &t
-		} else {
-			return nil, ErrInvalidDate
-		}
-	}
-
-	if stateStr := request.GetStringParam(req.Parameters, "State"); stateStr != "" {
-		if stateStr != "ENABLED" && stateStr != "DISABLED" {
-			return nil, ErrInvalidState
-		}
-		schedule.State = schedulerstore.ScheduleState(stateStr)
-	}
-
-	if actionStr := request.GetStringParam(req.Parameters, "ActionAfterCompletion"); actionStr != "" {
-		if actionStr != "DELETE" && actionStr != "NONE" {
-			return nil, ErrInvalidActionAfterCompletion
-		}
-		schedule.ActionAfterCompletion = schedulerstore.ActionAfterCompletion(actionStr)
+		State:                      validated.State,
+		ScheduleExpressionTimezone: spec.ScheduleExpressionTimezone,
+		Description:                spec.Description,
+		KmsKeyArn:                  spec.KmsKeyArn,
+		StartDate:                  validated.StartDate,
+		EndDate:                    validated.EndDate,
+		ActionAfterCompletion:      validated.ActionAfterCompletion,
 	}
 
 	if err := store.CreateSchedule(ctx, schedule); err != nil {
+		if tokenClaimed {
+			store.ClientTokens().Release(clientToken)
+		}
 		if err == schedulerstore.ErrScheduleAlreadyExists {
 			return nil, ErrScheduleAlreadyExists
 		}
@@ -236,32 +234,12 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 	// the request replace the existing values, including empty strings which
 	// clear the field. Required fields (ScheduleExpression, Target,
 	// FlexibleTimeWindow) must be provided and are validated below.
-	scheduleExpression := request.GetStringParam(req.Parameters, "ScheduleExpression")
-	if scheduleExpression == "" {
-		return nil, ErrValidation
-	}
-	if !isValidScheduleExpression(scheduleExpression) {
-		return nil, ErrInvalidScheduleExpression
-	}
-	existing.ScheduleExpression = scheduleExpression
 
+	// Parse target and flexible time window from request parameters.
 	target, err := parseTarget(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	if target == nil {
-		return nil, ErrInvalidTarget
-	}
-	if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
-		return nil, err
-	}
-	if target.RoleArn != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-			return nil, err
-		}
-	}
-	existing.Target = target
 
 	flexibleTimeWindow, err := parseFlexibleTimeWindow(req.Parameters)
 	if err != nil {
@@ -270,49 +248,50 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 	if flexibleTimeWindow == nil {
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
+
+	// Build the common spec and run full validation (H1 shared layer).
+	spec := &ScheduleSpec{
+		Name:                       name,
+		GroupName:                  groupName,
+		ScheduleExpression:         request.GetStringParam(req.Parameters, "ScheduleExpression"),
+		ScheduleExpressionTimezone: request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone"),
+		Description:                request.GetStringParam(req.Parameters, "Description"),
+		State:                      request.GetStringParam(req.Parameters, "State"),
+		KmsKeyArn:                  request.GetStringParam(req.Parameters, "KmsKeyArn"),
+		StartDate:                  request.GetStringParam(req.Parameters, "StartDate"),
+		EndDate:                    request.GetStringParam(req.Parameters, "EndDate"),
+		ActionAfterCompletion:      request.GetStringParam(req.Parameters, "ActionAfterCompletion"),
+		Target:                     target,
+		FlexibleTimeWindow:         flexibleTimeWindow,
+	}
+
+	validated, err := ValidateScheduleFields(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	if target.RoleArn != "" {
+		validator := reqCtx.GetIAMValidator()
+		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := s.validateVpcConfig(ctx, reqCtx.GetRegion(), target); err != nil {
+		return nil, err
+	}
+
+	// Apply validated fields to the existing schedule.
+	existing.ScheduleExpression = spec.ScheduleExpression
+	existing.Target = target
 	existing.FlexibleTimeWindow = flexibleTimeWindow
-
-	// Optional fields — full PUT replacement. Empty/unset applies the
-	// AWS default, not preservation of the previous value.
-	existing.Description = request.GetStringParam(req.Parameters, "Description")
-	existing.ScheduleExpressionTimezone = request.GetStringParam(req.Parameters, "ScheduleExpressionTimezone")
-	existing.KmsKeyArn = request.GetStringParam(req.Parameters, "KmsKeyArn")
-
-	stateStr := request.GetStringParam(req.Parameters, "State")
-	if stateStr == "" {
-		existing.State = schedulerstore.ScheduleStateEnabled
-	} else if stateStr != "ENABLED" && stateStr != "DISABLED" {
-		return nil, ErrInvalidState
-	} else {
-		existing.State = schedulerstore.ScheduleState(stateStr)
-	}
-
-	actionStr := request.GetStringParam(req.Parameters, "ActionAfterCompletion")
-	if actionStr == "" {
-		existing.ActionAfterCompletion = schedulerstore.ActionAfterCompletionNone
-	} else if actionStr != "DELETE" && actionStr != "NONE" {
-		return nil, ErrInvalidActionAfterCompletion
-	} else {
-		existing.ActionAfterCompletion = schedulerstore.ActionAfterCompletion(actionStr)
-	}
-	if startDateStr := request.GetStringParam(req.Parameters, "StartDate"); startDateStr != "" {
-		t, parseErr := time.Parse(time.RFC3339, startDateStr)
-		if parseErr != nil {
-			return nil, ErrInvalidDate
-		}
-		existing.StartDate = &t
-	} else {
-		existing.StartDate = nil
-	}
-	if endDateStr := request.GetStringParam(req.Parameters, "EndDate"); endDateStr != "" {
-		t, parseErr := time.Parse(time.RFC3339, endDateStr)
-		if parseErr != nil {
-			return nil, ErrInvalidDate
-		}
-		existing.EndDate = &t
-	} else {
-		existing.EndDate = nil
-	}
+	existing.Description = spec.Description
+	existing.ScheduleExpressionTimezone = spec.ScheduleExpressionTimezone
+	existing.KmsKeyArn = spec.KmsKeyArn
+	existing.State = validated.State
+	existing.ActionAfterCompletion = validated.ActionAfterCompletion
+	existing.StartDate = validated.StartDate
+	existing.EndDate = validated.EndDate
 
 	if err := store.UpdateSchedule(ctx, existing); err != nil {
 		return nil, ErrInternalServer
@@ -331,12 +310,14 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := int32(100)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
-		if parsed, err := strconv.Atoi(mr); err == nil {
-			if parsed < 1 || parsed > 100 {
-				return nil, ErrValidation
-			}
-			maxResults = int32(parsed)
+		parsed, err := strconv.Atoi(mr)
+		if err != nil {
+			return nil, ErrValidation
 		}
+		if parsed < 1 || parsed > 100 {
+			return nil, ErrValidation
+		}
+		maxResults = int32(parsed)
 	}
 
 	store, err := s.store(reqCtx)

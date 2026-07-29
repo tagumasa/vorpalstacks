@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -18,10 +19,11 @@ type SchedulerStore struct {
 	*common.BaseStore
 	schedulesStore *common.BaseStore
 	*common.TagStore
-	arnBuilder *svcarn.ARNBuilder
-	accountID  string
-	region     string
-	createMu   sync.Mutex
+	clientTokens *ClientTokenStore
+	arnBuilder   *svcarn.ARNBuilder
+	accountID    string
+	region       string
+	createMu     sync.Mutex
 }
 
 // NewSchedulerStore creates a new Scheduler store instance.
@@ -38,9 +40,22 @@ func NewSchedulerStore(store storage.BasicStorage, accountID, region string) *Sc
 		BaseStore:      common.NewBaseStore(store.Bucket("scheduler-groups-"+region), "scheduler-groups"),
 		schedulesStore: common.NewBaseStore(store.Bucket("scheduler-schedules-"+region), "scheduler-schedules"),
 		TagStore:       common.NewTagStoreWithRegion(store, "scheduler", region),
+		clientTokens:   NewClientTokenStore(),
 		arnBuilder:     svcarn.NewARNBuilder(accountID, region),
 		accountID:      accountID,
 		region:         region,
+	}
+}
+
+// ClientTokens returns the per-region ClientToken idempotency store (M5).
+func (s *SchedulerStore) ClientTokens() *ClientTokenStore {
+	return s.clientTokens
+}
+
+// Stop releases background resources associated with this store.
+func (s *SchedulerStore) Stop() {
+	if s.clientTokens != nil {
+		s.clientTokens.Stop()
 	}
 }
 
@@ -65,6 +80,16 @@ func (s *SchedulerStore) buildScheduleARN(groupName, scheduleName string) string
 // BuildScheduleARNFromName builds an ARN for a schedule with the default group.
 func (s *SchedulerStore) BuildScheduleARNFromName(name string) string {
 	return s.buildScheduleARN("default", name)
+}
+
+// BuildScheduleARN builds an ARN for a schedule with an explicit group.
+func (s *SchedulerStore) BuildScheduleARN(groupName, name string) string {
+	return s.buildScheduleARN(groupName, name)
+}
+
+// BuildScheduleGroupARN builds an ARN for a schedule group.
+func (s *SchedulerStore) BuildScheduleGroupARN(name string) string {
+	return s.buildScheduleGroupARN(name)
 }
 
 // ScheduleGroup operations
@@ -140,9 +165,17 @@ func (s *SchedulerStore) DeleteScheduleGroup(ctx context.Context, name string) e
 		return ErrScheduleGroupNotEmpty
 	}
 
-	_ = s.TagStore.Delete(arn)
-
-	return s.BaseStore.Delete(arn)
+	// Delete the primary resource first so tag metadata I/O errors never
+	// block resource lifecycle (Minor 4). Tag cleanup is best-effort.
+	if err := s.BaseStore.Delete(arn); err != nil {
+		return err
+	}
+	if err := s.TagStore.Delete(arn); err != nil {
+		logs.Warn("Failed to clean up tags for deleted schedule group (orphaned tags may remain)",
+			logs.String("arn", arn),
+			logs.Err(err))
+	}
+	return nil
 }
 
 // ListScheduleGroups lists schedule groups with optional filtering.
@@ -309,11 +342,19 @@ func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name str
 	if !s.schedulesStore.Exists(key) {
 		return ErrScheduleNotFound
 	}
-	// Clean up any tags associated with this schedule so they do not
-	// become orphaned entries in the TagStore (S-B7).
+	// Delete the primary resource first so tag metadata I/O errors never
+	// block resource lifecycle (Minor 4). Tag cleanup is best-effort:
+	// orphaned tag entries are harmless and can be reaped later.
+	if err := s.schedulesStore.Delete(key); err != nil {
+		return err
+	}
 	arn := s.buildScheduleARN(groupName, name)
-	_ = s.TagStore.Delete(arn)
-	return s.schedulesStore.Delete(key)
+	if err := s.TagStore.Delete(arn); err != nil {
+		logs.Warn("Failed to clean up tags for deleted schedule (orphaned tags may remain)",
+			logs.String("arn", arn),
+			logs.Err(err))
+	}
+	return nil
 }
 
 // ListSchedules lists schedules with optional filtering.

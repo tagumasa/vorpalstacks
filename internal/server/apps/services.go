@@ -337,6 +337,9 @@ func (a *App) initS3(st *serviceState) error {
 
 func (a *App) initScheduler(st *serviceState) error {
 	st.schedulerService = svcscheduler.NewSchedulerService(a.server.StorageManager(), st.accountID)
+	if iamStore := a.server.IAMStore(); iamStore != nil {
+		st.schedulerService.SetRoleProvider(iamStore.Roles())
+	}
 	st.schedulerService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }

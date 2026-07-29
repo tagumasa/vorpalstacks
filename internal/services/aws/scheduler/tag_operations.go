@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -22,6 +23,26 @@ func schedulerMapError(err error) error {
 func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
+		// ValidateResource ensures the ARN refers to an existing schedule
+		// or schedule group before tag operations proceed (M12). Without
+		// this, tags could be applied to non-existent resources.
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
+			// Scheduler ARNs are formatted as:
+			//   arn:aws:scheduler:<region>:<account>:schedule/<group>/<name>
+			//   arn:aws:scheduler:<region>:<account>:schedule-group/<name>
+			if strings.Contains(resourceKey, ":schedule-group/") {
+				groupName := extractResourceName(resourceKey, "schedule-group/")
+				if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
+					return ErrScheduleGroupNotFound
+				}
+			} else if strings.Contains(resourceKey, ":schedule/") {
+				groupName, schedName := extractScheduleNames(resourceKey)
+				if _, err := store.GetSchedule(ctx, groupName, schedName); err != nil {
+					return ErrScheduleNotFound
+				}
+			}
+			return nil
+		},
 		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
 			if err := store.TagFromSlice(resourceKey, tags); err != nil {
 				logs.Debug("Failed to tag resource", logs.String("arn", resourceKey), logs.String("error", err.Error()))
@@ -47,6 +68,37 @@ func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandler
 		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
 		MapError:      schedulerMapError,
 	}
+}
+
+// extractResourceName extracts the resource name from an ARN after the
+// given prefix (e.g. "schedule-group/").
+func extractResourceName(arn, prefix string) string {
+	idx := strings.Index(arn, prefix)
+	if idx < 0 {
+		return ""
+	}
+	return arn[idx+len(prefix):]
+}
+
+// extractScheduleNames extracts the group name and schedule name from a
+// schedule ARN: ...:schedule/<group>/<name>
+func extractScheduleNames(arn string) (groupName, scheduleName string) {
+	idx := strings.Index(arn, ":schedule/")
+	if idx < 0 {
+		return "", ""
+	}
+	rest := arn[idx+len(":schedule/"):]
+	parts := strings.SplitN(rest, "/", 2)
+	if len(parts) >= 1 {
+		groupName = parts[0]
+	}
+	if groupName == "" {
+		groupName = "default"
+	}
+	if len(parts) >= 2 {
+		scheduleName = parts[1]
+	}
+	return groupName, scheduleName
 }
 
 // TagResource adds or overwrites tags on an EventBridge Scheduler schedule.

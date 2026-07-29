@@ -213,10 +213,10 @@ func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBu
 
 // ListBucketsInput contains the input parameters for the ListBuckets operation.
 type ListBucketsInput struct {
-	MaxBuckets         int
-	ContinuationToken  string
-	Prefix             string
-	BucketRegion       string
+	MaxBuckets        int
+	ContinuationToken string
+	Prefix            string
+	BucketRegion      string
 }
 
 // ListBucketsOutput contains the output result of the ListBuckets operation.

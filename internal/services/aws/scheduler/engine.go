@@ -16,7 +16,6 @@ import (
 	"github.com/robfig/cron/v3"
 
 	"vorpalstacks/internal/common/defaults"
-	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
@@ -1218,7 +1217,11 @@ func (e *Engine) checkRetries() {
 							logs.Any("panic", r))
 					}
 				}()
-				e.processRetryRecord(rs, rec, now)
+				// Propagate e.ctx so retry processing stops when the engine
+				// shuts down (H8). Previously e.ctx was used inside
+				// processRetryRecord but the passed context was ignored,
+				// causing retry goroutines to outlive the engine.
+				e.processRetryRecord(e.ctx, rs, rec, now)
 			}()
 		}
 	}
@@ -1226,7 +1229,9 @@ func (e *Engine) checkRetries() {
 
 // processRetryRecord attempts redelivery of a single RetryRecord and handles
 // the outcome: success -> delete, failure -> update next attempt or route to DLQ.
-func (e *Engine) processRetryRecord(rs *schedulerstore.RetryStore, record *schedulerstore.RetryRecord, now time.Time) {
+// The ctx parameter is propagated from checkRetries so that engine shutdown
+// cancels in-flight retry processing (H8).
+func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.RetryStore, record *schedulerstore.RetryRecord, now time.Time) {
 	var target schedulerstore.Target
 	if err := json.Unmarshal([]byte(record.Target), &target); err != nil {
 		logs.Error("Failed to deserialise target from retry record",
@@ -1252,7 +1257,7 @@ func (e *Engine) processRetryRecord(rs *schedulerstore.RetryStore, record *sched
 	// is discarded — matching the user's intent to cancel (M-3).
 	schedStore := e.getStoreForSchedule(schedule)
 	if schedStore != nil {
-		if _, err := schedStore.GetSchedule(e.ctx, record.GroupName, record.ScheduleName); err != nil {
+		if _, err := schedStore.GetSchedule(ctx, record.GroupName, record.ScheduleName); err != nil {
 			logs.Debug("Schedule no longer exists, discarding retry record",
 				logs.String("schedule", record.ScheduleName),
 				logs.String("recordId", record.ID))
@@ -1269,10 +1274,10 @@ func (e *Engine) processRetryRecord(rs *schedulerstore.RetryStore, record *sched
 			logs.String("schedule", record.ScheduleName),
 			logs.String("recordId", record.ID),
 			logs.Int("attempts", record.AttemptCount))
-		e.routeToDLQ(e.ctx, schedule, &target, "maximum event age exceeded")
+		e.routeToDLQ(ctx, schedule, &target, "maximum event age exceeded")
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(e.ctx, schedule)
+		e.maybeAutoDelete(ctx, schedule)
 		return
 	}
 
@@ -1285,15 +1290,15 @@ func (e *Engine) processRetryRecord(rs *schedulerstore.RetryStore, record *sched
 			logs.String("recordId", record.ID),
 			logs.Int("attempts", record.AttemptCount),
 			logs.Int("maxRetries", maxRetries))
-		e.routeToDLQ(e.ctx, schedule, &target, "retry policy exhausted")
+		e.routeToDLQ(ctx, schedule, &target, "retry policy exhausted")
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(e.ctx, schedule)
+		e.maybeAutoDelete(ctx, schedule)
 		return
 	}
 
 	// Attempt delivery.
-	err := e.deliverToTarget(e.ctx, schedule, &target)
+	err := e.deliverToTarget(ctx, schedule, &target)
 	if err == nil {
 		logs.Debug("Retry delivery succeeded",
 			logs.String("schedule", record.ScheduleName),
@@ -1301,7 +1306,7 @@ func (e *Engine) processRetryRecord(rs *schedulerstore.RetryStore, record *sched
 			logs.Int("attempts", record.AttemptCount+1))
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(e.ctx, schedule)
+		e.maybeAutoDelete(ctx, schedule)
 		return
 	}
 
@@ -1453,10 +1458,13 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 	messageBody := scheduleInput(target, schedule.Name)
 
 	// Honour SqsParameters.MessageGroupId for FIFO queues. AWS requires
-	// MessageGroupId when the target is a FIFO queue.
+	// MessageGroupId when the target is a FIFO queue. Fall back to the
+	// schedule name if not explicitly set, matching routeToDLQ behaviour (M10).
 	sendOpts := eventbus.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
+	} else if strings.HasSuffix(queueName, ".fifo") {
+		sendOpts.MessageGroupID = schedule.Name
 	}
 
 	logs.Debug("Sending to SQS for schedule",
@@ -1479,110 +1487,31 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 		return fmt.Errorf("event bus not configured")
 	}
 
-	parts := strings.Split(target.Arn, ":")
-	if len(parts) < 6 {
-		logs.Debug("Invalid SNS ARN", logs.String("arn", target.Arn))
-		return fmt.Errorf("invalid SNS ARN: %s", target.Arn)
+	snsInvoker := e.bus.SNSInvoker()
+	if snsInvoker == nil {
+		return fmt.Errorf("SNS invoker not available")
 	}
-	topicArn := target.Arn
 
 	message := scheduleInput(target, schedule.Name)
 
-	result, err := e.bus.SNSInvoker().ListSubscriptionsByTopic(ctx, topicArn)
+	// Delegate to the SNS service's Publish API. This ensures the SNS
+	// service handles topic policy evaluation, subscription filtering,
+	// message persistence, fan-out to all subscription endpoints (SQS,
+	// Lambda, HTTP, etc.), and EventBridge bus event publication (H7).
+	messageID, err := snsInvoker.PublishToTopic(ctx, target.Arn, message, "", nil)
 	if err != nil {
-		logs.Debug("Failed to list SNS subscriptions",
+		logs.Debug("Failed to publish to SNS topic",
 			logs.String("schedule", schedule.Name),
-			logs.String("topicArn", topicArn),
+			logs.String("topicArn", target.Arn),
 			logs.String("error", err.Error()))
 		return err
 	}
 
-	for _, sub := range result {
-		if sub.PendingConfirmation {
-			continue
-		}
-		switch sub.Protocol {
-		case "sqs":
-			e.deliverSNSToSQS(ctx, schedule, sub, message)
-		case "lambda":
-			e.deliverSNSToLambda(ctx, schedule, sub, message)
-		default:
-			logs.Debug("Unsupported SNS subscription protocol",
-				logs.String("schedule", schedule.Name),
-				logs.String("protocol", sub.Protocol))
-		}
-	}
-
 	logs.Debug("SNS delivery completed",
 		logs.String("schedule", schedule.Name),
-		logs.String("topic", topicArn),
-		logs.Int("subscriptions", len(result)))
+		logs.String("topic", target.Arn),
+		logs.String("messageId", messageID))
 	return nil
-}
-
-func (e *Engine) deliverSNSToSQS(ctx context.Context, schedule *schedulerstore.Schedule, sub eventbus.SubscriptionInfo, message string) {
-	if e.bus == nil {
-		return
-	}
-
-	endpointParts := strings.Split(sub.Endpoint, ":")
-	if len(endpointParts) < 6 {
-		return
-	}
-	queueName := endpointParts[5]
-	queueURL := endpoint.SQSQueueURL(e.accountID, queueName)
-
-	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, message, eventbus.SQSSendOptions{})
-	if err != nil {
-		logs.Debug("Failed to deliver SNS to SQS",
-			logs.String("schedule", schedule.Name),
-			logs.String("queue", queueName),
-			logs.String("error", err.Error()))
-	}
-}
-
-func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstore.Schedule, sub eventbus.SubscriptionInfo, message string) {
-	if e.bus == nil {
-		return
-	}
-
-	functionName := svcarn.ExtractFunctionNameFromARN(sub.Endpoint)
-	if functionName == "" {
-		return
-	}
-
-	payload := map[string]interface{}{
-		"Records": []map[string]interface{}{
-			{
-				"EventSource":          "aws:sns",
-				"EventVersion":         "1.0",
-				"EventSubscriptionArn": sub.SubscriptionARN,
-				"Sns": map[string]interface{}{
-					"Type":      "Notification",
-					"MessageId": fmt.Sprintf("%d", time.Now().UnixNano()),
-					"TopicArn":  sub.TopicARN,
-					"Message":   message,
-					"Timestamp": time.Now().UTC().Format(time.RFC3339),
-				},
-			},
-		},
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		logs.Debug("Failed to marshal Lambda payload",
-			logs.String("schedule", schedule.Name),
-			logs.String("function", functionName),
-			logs.String("error", err.Error()))
-		return
-	}
-
-	_, _, err = e.bus.LambdaInvoker().InvokeForGateway(ctx, sub.Endpoint, payloadBytes)
-	if err != nil {
-		logs.Debug("Failed to deliver SNS to Lambda",
-			logs.String("schedule", schedule.Name),
-			logs.String("function", functionName),
-			logs.String("error", err.Error()))
-	}
 }
 
 func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) error {

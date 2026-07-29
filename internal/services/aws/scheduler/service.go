@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
@@ -21,6 +22,7 @@ type SchedulerService struct {
 	accountID      string
 	engine         *Engine
 	stores         sync.Map
+	roleProvider   iam.RolePolicyProvider
 }
 
 // NewSchedulerService creates a new Scheduler service instance.
@@ -115,6 +117,22 @@ func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.S
 	})
 }
 
+// SetRoleProvider injects the IAM role policy provider so that the admin
+// console handler can validate RoleArn trust policies (H1).
+func (s *SchedulerService) SetRoleProvider(rp iam.RolePolicyProvider) {
+	s.roleProvider = rp
+}
+
+// RoleProvider returns the injected IAM role policy provider, or nil.
+func (s *SchedulerService) RoleProvider() iam.RolePolicyProvider {
+	return s.roleProvider
+}
+
+// AccountID returns the account ID for this service.
+func (s *SchedulerService) AccountID() string {
+	return s.accountID
+}
+
 // StartEngine starts the scheduler engine.
 func (s *SchedulerService) StartEngine() error {
 	if s.engine != nil {
@@ -123,12 +141,22 @@ func (s *SchedulerService) StartEngine() error {
 	return nil
 }
 
-// StopEngine stops the scheduler engine.
+// StopEngine stops the scheduler engine and cleans up per-region store
+// resources (ClientTokenStore background goroutines) (Minor 1).
 func (s *SchedulerService) StopEngine() error {
+	var firstErr error
 	if s.engine != nil {
-		return s.engine.Stop()
+		firstErr = s.engine.Stop()
 	}
-	return nil
+	// Stop all cached per-region stores to release their ClientTokenStore
+	// background cleanup goroutines.
+	s.stores.Range(func(_, v interface{}) bool {
+		if store, ok := v.(*schedulerstore.SchedulerStore); ok {
+			store.Stop()
+		}
+		return true
+	})
+	return firstErr
 }
 
 // RegisterHandlers registers the Scheduler service handlers with the dispatcher.

@@ -31,7 +31,33 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	// Parse and validate tags BEFORE creating the group so that invalid
+	// tag counts are rejected without creating an orphan resource (Minor 2).
+	parsedTags := tags.ParseTags(req.Parameters, "Tags")
+	if len(parsedTags) > 200 {
+		return nil, ErrValidation
+	}
+
+	// ClientToken idempotency (M5).
+	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
+	tokenClaimed := false
+	if clientToken != "" {
+		if err := validateClientToken(clientToken); err != nil {
+			return nil, err
+		}
+		expectedArn := store.BuildScheduleGroupARN(name)
+		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule-group"); !created {
+			return map[string]interface{}{
+				"ScheduleGroupArn": entry.ResourceArn,
+			}, nil
+		}
+		tokenClaimed = true
+	}
+
 	if err := store.CreateScheduleGroup(ctx, group); err != nil {
+		if tokenClaimed {
+			store.ClientTokens().Release(clientToken)
+		}
 		if err == schedulerstore.ErrScheduleGroupAlreadyExists {
 			return nil, ErrScheduleGroupAlreadyExists
 		}
@@ -39,11 +65,19 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 		return nil, ErrInternalServer
 	}
 
-	parsedTags := tags.ParseTags(req.Parameters, "Tags")
+	// Apply tags atomically: if tagging fails after group creation, roll
+	// back the group so we never leave an orphan resource (M7).
 	if len(parsedTags) > 0 {
 		arn := group.ARN
 		if err := store.TagFromSlice(arn, parsedTags); err != nil {
-			logs.Debug("Failed to tag schedule group", logs.String("arn", arn), logs.String("error", err.Error()))
+			logs.Warn("Failed to tag schedule group, rolling back",
+				logs.String("arn", arn),
+				logs.String("error", err.Error()))
+			if tokenClaimed {
+				store.ClientTokens().Release(clientToken)
+			}
+			_ = store.DeleteScheduleGroup(ctx, name)
+			return nil, ErrInternalServer
 		}
 	}
 
@@ -114,12 +148,14 @@ func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *reque
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := int32(100)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
-		if parsed, err := strconv.Atoi(mr); err == nil {
-			if parsed < 1 || parsed > 100 {
-				return nil, ErrValidation
-			}
-			maxResults = int32(parsed)
+		parsed, err := strconv.Atoi(mr)
+		if err != nil {
+			return nil, ErrValidation
 		}
+		if parsed < 1 || parsed > 100 {
+			return nil, ErrValidation
+		}
+		maxResults = int32(parsed)
 	}
 
 	store, err := s.store(reqCtx)

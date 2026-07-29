@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
@@ -19,13 +18,9 @@ var (
 )
 
 func isValidScheduleExpression(expr string) bool {
-	// Smithy model: ScheduleExpression max length is 256 characters.
-	if len(expr) > 256 {
-		return false
-	}
-	return atExpressionRegex.MatchString(expr) ||
-		validateRateExpression(expr) ||
-		cronExpressionRegex.MatchString(expr)
+	// Delegate to the full validator which checks cron field count (H5)
+	// and at() semantic date validity (H6) in addition to format.
+	return isValidScheduleExpressionFull(expr)
 }
 
 // validateRateExpression checks a rate() expression against the AWS rules:
@@ -147,10 +142,12 @@ func getStringFromMap(m map[string]interface{}, keys ...string) string {
 
 func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) *schedulerstore.RetryPolicy {
 	rp := &schedulerstore.RetryPolicy{}
-	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok && val >= 60 && val <= 86400 {
+	// Accept the raw values without range filtering. Range validation is
+	// performed by validateTarget in schedule_validators.go (H2).
+	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok {
 		rp.MaximumEventAgeInSeconds = &val
 	}
-	if val, ok := getFloatField(retryPolicy, "maximumRetryAttempts", "MaximumRetryAttempts"); ok && val >= 0 && val <= 185 {
+	if val, ok := getFloatField(retryPolicy, "maximumRetryAttempts", "MaximumRetryAttempts"); ok {
 		rp.MaximumRetryAttempts = &val
 	}
 	return rp
@@ -344,21 +341,17 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 		ftw.Mode = schedulerstore.FlexibleTimeWindowModeOff
 	}
 
-	// AWS: "If you set Mode to FLEXIBLE, you must also set
-	// MaximumWindowInMinutes." Reject when missing or out of range.
-	if ftw.Mode == schedulerstore.FlexibleTimeWindowModeFlexible {
-		if ftw.MaximumWindowInMinutes == nil || *ftw.MaximumWindowInMinutes < 1 || *ftw.MaximumWindowInMinutes > 1440 {
-			return nil, ErrInvalidFlexibleTimeWindow
-		}
-	}
+	// Mode enum and MaximumWindowInMinutes range validation is performed
+	// by validateFlexibleTimeWindow in schedule_validators.go (H3).
 
 	return ftw, nil
 }
 
 // validateVpcConfig validates the AwsVpcConfiguration subnets and security
 // groups against the EC2 service via the event bus. All resources must exist
-// and belong to the same VPC.
-func (s *SchedulerService) validateVpcConfig(ctx context.Context, reqCtx *request.RequestContext, target *schedulerstore.Target) error {
+// and belong to the same VPC. Accepts region directly so both the HTTP API
+// and admin console paths can call it (Minor 3).
+func (s *SchedulerService) validateVpcConfig(ctx context.Context, region string, target *schedulerstore.Target) error {
 	if s.engine == nil || s.engine.bus == nil {
 		return nil
 	}
@@ -374,8 +367,6 @@ func (s *SchedulerService) validateVpcConfig(ctx context.Context, reqCtx *reques
 	if ec2 == nil {
 		return fmt.Errorf("scheduler: EC2 service not available for VPC configuration validation")
 	}
-
-	region := reqCtx.GetRegion()
 
 	for _, subnetId := range vpc.Subnets {
 		if _, _, err := ec2.LookupSubnet(ctx, region, subnetId); err != nil {

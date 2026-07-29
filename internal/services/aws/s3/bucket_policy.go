@@ -38,10 +38,10 @@ func (o *BucketOperations) PutBucketPolicy(ctx *request.RequestContext, input *P
 
 // policyContainsPublicAccess checks whether a bucket policy grants public
 // access. A statement is considered public if:
-// - Effect is "Allow" AND
-// - Principal is "*" (or contains wildcard account) AND
-// - Either no Condition is set, or the Condition does not restrict access
-//   (e.g. IpAddress with 0.0.0.0/0 or ::/0)
+//   - Effect is "Allow" AND
+//   - Principal is "*" (or contains wildcard account) AND
+//   - Either no Condition is set, or the Condition does not restrict access
+//     (e.g. IpAddress with 0.0.0.0/0 or ::/0)
 func policyContainsPublicAccess(policy string) bool {
 	var p struct {
 		Statement []struct {
