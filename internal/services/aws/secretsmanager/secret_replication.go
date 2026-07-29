@@ -25,6 +25,151 @@ var (
 	ErrReplicaNotFound = awserrors.NewAWSError("ResourceNotFoundException", "Replica region not found in replication configuration", http.StatusNotFound)
 )
 
+// replicateSecretToRegions is the shared replication engine used by both
+// ReplicateSecretToRegions and CreateSecret (when AddReplicaRegions is
+// provided inline). It replicates the secret and its versions to each
+// target region, tracking per-replica success/failure accurately (M9).
+//
+// Parameters:
+//   - store: the primary-region store
+//   - secret: the primary secret (mutated: ReplicationStatus updated)
+//   - regions: the replica regions to create
+//   - forceOverwrite: when true, overwrite existing replicas in target regions (M8)
+//   - primaryRegion: the source region for replica-side metadata
+func (s *SecretsManagerService) replicateSecretToRegions(
+	store secretsmanagerstore.SecretStoreInterface,
+	secret *secretsmanagerstore.Secret,
+	regions []replicaRegion,
+	forceOverwrite bool,
+	primaryRegion string,
+) {
+	for _, replicaRegion := range regions {
+		// M8: Check for existing replica. When forceOverwrite is true,
+		// delete the old replica first; otherwise skip with a warning.
+		alreadyExists := false
+		for _, existing := range secret.ReplicationStatus {
+			if existing.Region == replicaRegion.Region {
+				alreadyExists = true
+				break
+			}
+		}
+		if alreadyExists && !forceOverwrite {
+			// Already replicating — skip silently (caller handles errors).
+			continue
+		}
+
+		regionStorage, err := s.storageManager.GetStorage(replicaRegion.Region)
+		if err != nil {
+			secret.ReplicationStatus = upsertReplicationStatus(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
+				Region:        replicaRegion.Region,
+				KmsKeyId:      replicaRegion.KmsKeyId,
+				Status:        "Failed",
+				StatusMessage: fmt.Sprintf("Region %s is not available: %v", replicaRegion.Region, err),
+			})
+			continue
+		}
+
+		replicaStore := secretsmanagerstore.NewSecretStore(regionStorage, s.accountID, replicaRegion.Region)
+
+		// M8: When forceOverwrite is true, delete any existing secret in
+		// the target region before creating the replica.  This covers
+		// both existing replicas (tracked in ReplicationStatus) and
+		// unrelated secrets with the same name in the target region
+		// (C2: CreateSecret inline replication where ReplicationStatus
+		// is still empty, so alreadyExists is false).
+		if forceOverwrite {
+			_ = replicaStore.DeleteSecret(secret.Name)
+		}
+
+		replica := secretsmanagerstore.NewSecret(secret.Name)
+		replica.Description = secret.Description
+		replica.KmsKeyId = replicaRegion.KmsKeyId
+		replica.SecretString = secret.SecretString
+		replica.SecretBinary = secret.SecretBinary
+		replica.Tags = make(map[string]string)
+		for k, v := range secret.Tags {
+			replica.Tags[k] = v
+		}
+
+		if _, err := replicaStore.CreateSecret(replica); err != nil {
+			secret.ReplicationStatus = upsertReplicationStatus(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
+				Region:        replicaRegion.Region,
+				KmsKeyId:      replicaRegion.KmsKeyId,
+				Status:        "Failed",
+				StatusMessage: err.Error(),
+			})
+			continue
+		}
+
+		// M9: Track version sync failures accurately. If any version
+		// fails to sync, the replica status reflects "Failed" instead
+		// of the misleading "InSync".
+		syncFailures := 0
+		if (len(secret.SecretString) > 0 || len(secret.SecretBinary) > 0) && replica.CurrentVersion != "" {
+			srcVersions, err := store.ListSecretVersions(secret.Name)
+			if err == nil && len(srcVersions) > 0 {
+				for _, v := range srcVersions {
+					versionKey := fmt.Sprintf("%s/%s/%s", s.accountID, secret.Name, v.VersionId)
+					var srcVersion secretsmanagerstore.SecretVersion
+					if srcErr := store.GetBaseStore().Get(versionKey, &srcVersion); srcErr == nil {
+						replicaVersion := secretsmanagerstore.NewSecretVersion(srcVersion.VersionId)
+						replicaVersion.SecretName = secret.Name
+						replicaVersion.SecretString = srcVersion.SecretString
+						replicaVersion.SecretBinary = srcVersion.SecretBinary
+						replicaVersion.VersionStages = srcVersion.VersionStages
+						if err := replicaStore.CreateVersionDirect(secret.Name, replicaVersion); err != nil {
+							syncFailures++
+							logs.Warn("Failed to create version on replica",
+								logs.String("region", replicaRegion.Region),
+								logs.String("version", v.VersionId),
+								logs.Err(err))
+						}
+					}
+				}
+			}
+		}
+
+		replica.ReplicationStatus = []secretsmanagerstore.ReplicationStatus{
+			{
+				Region:           primaryRegion,
+				KmsKeyId:         "",
+				Status:           "InSync",
+				LastAccessedDate: time.Now().UTC(),
+			},
+		}
+
+		if err := replicaStore.UpdateSecretMetadata(replica); err != nil {
+			logs.Error("Failed to set replication status on replica", logs.String("region", replicaRegion.Region), logs.Err(err))
+		}
+
+		finalStatus := "InSync"
+		statusMessage := ""
+		if syncFailures > 0 {
+			finalStatus = "Failed"
+			statusMessage = fmt.Sprintf("%d version(s) failed to sync", syncFailures)
+		}
+		secret.ReplicationStatus = upsertReplicationStatus(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
+			Region:           replicaRegion.Region,
+			KmsKeyId:         replicaRegion.KmsKeyId,
+			Status:           finalStatus,
+			StatusMessage:    statusMessage,
+			LastAccessedDate: time.Now().UTC(),
+		})
+	}
+}
+
+// upsertReplicationStatus appends or replaces a replication status entry
+// for the given region.
+func upsertReplicationStatus(statuses []secretsmanagerstore.ReplicationStatus, rs secretsmanagerstore.ReplicationStatus) []secretsmanagerstore.ReplicationStatus {
+	for i, existing := range statuses {
+		if existing.Region == rs.Region {
+			statuses[i] = rs
+			return statuses
+		}
+	}
+	return append(statuses, rs)
+}
+
 // ReplicateSecretToRegions replicates a secret to one or more regions.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ReplicateSecretToRegions.html
 func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -56,88 +201,22 @@ func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, re
 		return nil, awserrors.NewAWSError("InvalidParameterException", "AddReplicaRegions must not be empty", http.StatusBadRequest)
 	}
 
-	for _, existing := range secret.ReplicationStatus {
-		for _, newRegion := range addReplicaRegions {
-			if existing.Region == newRegion.Region {
-				return nil, ErrSecretAlreadyReplicating
-			}
-		}
-	}
+	// M8: ForceOverwriteReplicaSecret controls whether existing replicas
+	// are overwritten in the target regions.
+	forceOverwrite := request.GetBoolParam(req.Parameters, "ForceOverwriteReplicaSecret")
 
-	for _, replicaRegion := range addReplicaRegions {
-		regionStorage, err := s.storageManager.GetStorage(replicaRegion.Region)
-		if err != nil {
-			secret.ReplicationStatus = append(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
-				Region:        replicaRegion.Region,
-				KmsKeyId:      replicaRegion.KmsKeyId,
-				Status:        "FAILED",
-				StatusMessage: fmt.Sprintf("Region %s is not available: %v", replicaRegion.Region, err),
-			})
-			continue
-		}
-
-		replicaStore := secretsmanagerstore.NewSecretStore(regionStorage, s.accountID, replicaRegion.Region)
-
-		replica := secretsmanagerstore.NewSecret(secret.Name)
-		replica.Description = secret.Description
-		replica.KmsKeyId = replicaRegion.KmsKeyId
-		replica.SecretString = secret.SecretString
-		replica.SecretBinary = secret.SecretBinary
-		replica.Tags = make(map[string]string)
-		for k, v := range secret.Tags {
-			replica.Tags[k] = v
-		}
-
-		if _, err := replicaStore.CreateSecret(replica); err != nil {
-			secret.ReplicationStatus = append(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
-				Region:        replicaRegion.Region,
-				KmsKeyId:      replicaRegion.KmsKeyId,
-				Status:        "FAILED",
-				StatusMessage: err.Error(),
-			})
-			continue
-		}
-
-		if (len(secret.SecretString) > 0 || len(secret.SecretBinary) > 0) && replica.CurrentVersion != "" {
-			srcVersions, err := store.ListSecretVersions(secret.Name)
-			if err == nil && len(srcVersions) > 0 {
-				for _, v := range srcVersions {
-					versionKey := fmt.Sprintf("%s/%s/%s", s.accountID, secret.Name, v.VersionId)
-					var srcVersion secretsmanagerstore.SecretVersion
-					if srcErr := store.GetBaseStore().Get(versionKey, &srcVersion); srcErr == nil {
-						replicaVersion := secretsmanagerstore.NewSecretVersion(srcVersion.VersionId)
-						replicaVersion.SecretName = secret.Name
-						replicaVersion.SecretString = srcVersion.SecretString
-						replicaVersion.SecretBinary = srcVersion.SecretBinary
-						replicaVersion.VersionStages = srcVersion.VersionStages
-						if err := replicaStore.CreateVersionDirect(secret.Name, replicaVersion); err != nil {
-							logs.Warn("Failed to create version on replica", logs.String("region", replicaRegion.Region), logs.Err(err))
-						}
-					}
+	// Check for duplicates when not force-overwriting.
+	if !forceOverwrite {
+		for _, existing := range secret.ReplicationStatus {
+			for _, newRegion := range addReplicaRegions {
+				if existing.Region == newRegion.Region {
+					return nil, ErrSecretAlreadyReplicating
 				}
 			}
 		}
-
-		replica.ReplicationStatus = []secretsmanagerstore.ReplicationStatus{
-			{
-				Region:           reqCtx.GetRegion(),
-				KmsKeyId:         "",
-				Status:           "InSync",
-				LastAccessedDate: time.Now().UTC(),
-			},
-		}
-
-		if err := replicaStore.UpdateSecretMetadata(replica); err != nil {
-			logs.Error("Failed to set replication status on replica", logs.String("region", replicaRegion.Region), logs.Err(err))
-		}
-
-		secret.ReplicationStatus = append(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{
-			Region:           replicaRegion.Region,
-			KmsKeyId:         replicaRegion.KmsKeyId,
-			Status:           "InSync",
-			LastAccessedDate: time.Now().UTC(),
-		})
 	}
+
+	s.replicateSecretToRegions(store, secret, addReplicaRegions, forceOverwrite, reqCtx.GetRegion())
 
 	if err := store.UpdateSecretMetadata(secret); err != nil {
 		return nil, mapStoreError(err)
@@ -189,9 +268,25 @@ func (s *SecretsManagerService) RemoveRegionsFromReplication(ctx context.Context
 				regionStorage, storeErr := s.storageManager.GetStorage(rs.Region)
 				if storeErr == nil {
 					replicaStore := secretsmanagerstore.NewSecretStore(regionStorage, s.accountID, rs.Region)
-					if err := replicaStore.DeleteSecret(secret.Name); err != nil {
-						logs.Warn("Failed to delete replica secret", logs.String("region", rs.Region), logs.Err(err))
+					if delErr := replicaStore.DeleteSecret(secret.Name); delErr != nil {
+						// M15: Replica deletion failed. Keep the entry
+						// with status "Failed" so the orphaned replica
+						// is visible in DescribeSecret, rather than
+						// silently disappearing from the replication
+						// status.
+						logs.Warn("Failed to delete replica secret; keeping status as Failed",
+							logs.String("region", rs.Region), logs.Err(delErr))
+						rs.Status = "Failed"
+						rs.StatusMessage = fmt.Sprintf("Failed to delete replica: %v", delErr)
+						remainingStatus = append(remainingStatus, rs)
 					}
+				} else {
+					// Region storage unavailable — can't delete.
+					logs.Warn("Region storage unavailable for replica deletion",
+						logs.String("region", rs.Region), logs.Err(storeErr))
+					rs.Status = "Failed"
+					rs.StatusMessage = fmt.Sprintf("Region %s storage unavailable: %v", rs.Region, storeErr)
+					remainingStatus = append(remainingStatus, rs)
 				}
 				break
 			}
@@ -243,7 +338,10 @@ func (s *SecretsManagerService) StopReplicationToReplica(ctx context.Context, re
 		return nil, ErrNoReplicationConfigured
 	}
 
+	// L2: Update the replica's LastAccessedDate to reflect the promotion
+	// to a standalone secret, matching AWS behaviour.
 	secret.ReplicationStatus = nil
+	secret.LastAccessedDate = time.Now().UTC()
 	if err := store.UpdateSecretMetadata(secret); err != nil {
 		return nil, mapStoreError(err)
 	}

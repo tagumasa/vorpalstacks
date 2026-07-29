@@ -24,7 +24,10 @@ const (
 )
 
 // validateSecretTags validates tag count, key length, and value length against
-// AWS Secrets Manager quotas.
+// AWS Secrets Manager quotas.  Tag count overflow uses
+// InvalidParameterException — it is documented for both CreateSecret and
+// TagResource, whereas LimitExceededException is only documented for
+// CreateSecret.
 func validateSecretTags(tags []types.Tag) error {
 	if len(tags) > maxTagsPerSecret {
 		return awserrors.NewAWSError("InvalidParameterException",

@@ -486,6 +486,8 @@ func (s *SecretStore) RestoreSecret(name string) error {
 	}
 	secret.DeletedDate = nil
 	secret.ScheduledDeletionDate = nil
+	// L3: AWS updates LastChangedDate when a secret is restored.
+	secret.LastChangedDate = time.Now().UTC()
 	return s.Put(key, &secret)
 }
 

@@ -3,6 +3,7 @@ package secretsmanager
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -10,11 +11,30 @@ import (
 
 	"github.com/google/uuid"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
+
+// errRotationLambdaNotFound indicates that the configured rotation Lambda
+// function does not exist. RotateSecret maps this to
+// ResourceNotFoundException (L5) rather than the generic
+// InvalidRequestException used for contract violations.
+var errRotationLambdaNotFound = errors.New("rotation Lambda function not found")
+
+// isLambdaNotFoundInvokeError checks whether an invoke error from
+// InvokeForGateway indicates that the Lambda function does not exist.
+// LambdaService returns an AWSError with Code "ResourceNotFoundException"
+// when the function is not found.
+func isLambdaNotFoundInvokeError(err error) bool {
+	var awsErr *awserrors.AWSError
+	if errors.As(err, &awsErr) {
+		return awsErr.Code == "ResourceNotFoundException"
+	}
+	return false
+}
 
 const (
 	rotationStepCreate = "createSecret"
@@ -132,7 +152,7 @@ func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, regio
 			return nil
 		}
 		if !sec.NextRotationDate.IsZero() && sec.NextRotationDate.Before(now) {
-			if err := rc.svc.executeRotation(ctx, store, sec); err != nil {
+			if err := rc.svc.executeRotation(ctx, store, sec, ""); err != nil {
 				rc.logError("automatic rotation failed",
 					logs.String("secret", sec.Name),
 					logs.Err(err))
@@ -180,7 +200,11 @@ type rotationLambdaResponse struct {
 //
 // Steps 1-3 invoke the rotation Lambda; step 4 is handled locally by the
 // service after all Lambda invocations succeed.
-func (s *SecretsManagerService) executeRotation(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret) error {
+//
+// If clientRequestToken is non-empty, it is used as the rotation cycle token
+// (passed to the Lambda as ClientRequestToken in the payload and used as the
+// pending version ID). Otherwise a token is auto-generated.
+func (s *SecretsManagerService) executeRotation(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret, clientRequestToken string) error {
 	if s.bus == nil {
 		return fmt.Errorf("event bus not configured for secret rotation")
 	}
@@ -190,7 +214,12 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 		return fmt.Errorf("lambda invoker not configured on event bus")
 	}
 
-	clientToken := uuid.New().String()[:32]
+	// Use the caller-provided ClientRequestToken when available (M3);
+	// otherwise auto-generate one for this rotation cycle.
+	clientToken := clientRequestToken
+	if clientToken == "" {
+		clientToken = uuid.New().String()[:32]
+	}
 
 	steps := []string{rotationStepCreate, rotationStepSet, rotationStepTest}
 
@@ -207,7 +236,17 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 
 		statusCode, respBytes, invokeErr := lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
 		if invokeErr != nil {
+			// Distinguish Lambda-not-found from other invocation errors
+			// (L5). AWS returns ResourceNotFoundException when the
+			// rotation Lambda doesn't exist.
+			if errors.Is(invokeErr, errRotationLambdaNotFound) || isLambdaNotFoundInvokeError(invokeErr) {
+				return fmt.Errorf("%w: %v", errRotationLambdaNotFound, invokeErr)
+			}
 			return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
+		}
+
+		if statusCode == 404 {
+			return fmt.Errorf("%w at step %s", errRotationLambdaNotFound, step)
 		}
 
 		if statusCode != 200 {

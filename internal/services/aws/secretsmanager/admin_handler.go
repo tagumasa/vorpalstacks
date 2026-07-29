@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -55,7 +56,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 
 	maxResults := req.Msg.Maxresults
 	if maxResults <= 0 {
-		maxResults = 50
+		maxResults = 100
 	}
 
 	opts := common.ListOptions{
@@ -117,6 +118,35 @@ func (h *AdminHandler) CreateSecret(ctx context.Context, req *connect.Request[pb
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
 	}
+	// Align with HTTP API validation (Batch 7).
+	if len(req.Msg.Name) > 512 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("secret name must be between 1 and 512 characters long"))
+	}
+	if len(req.Msg.Description) > 2048 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("description must be between 0 and 2048 characters long"))
+	}
+	// SecretString and SecretBinary are mutually exclusive.
+	if req.Msg.Secretstring != "" && len(req.Msg.Secretbinary) > 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("you can't specify both SecretString and SecretBinary in the same request"))
+	}
+	// ClientRequestToken length 32-64 when provided.
+	if req.Msg.Clientrequesttoken != "" {
+		if len(req.Msg.Clientrequesttoken) < 32 || len(req.Msg.Clientrequesttoken) > 64 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ClientRequestToken must be 32 to 64 characters long"))
+		}
+	}
+	// Validate tag quotas (count, key length, value length).
+	if len(req.Msg.Tags) > maxTagsPerSecret {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("you can't have more than %d tags on a secret", maxTagsPerSecret))
+	}
+	for _, tag := range req.Msg.Tags {
+		if tag.Key == "" || len(tag.Key) > maxTagKeyLength {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("tag key length must be between 1 and %d characters", maxTagKeyLength))
+		}
+		if len(tag.Value) > maxTagValueLength {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("tag value length must be between 0 and %d characters", maxTagValueLength))
+		}
+	}
 
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
@@ -124,12 +154,13 @@ func (h *AdminHandler) CreateSecret(ctx context.Context, req *connect.Request[pb
 	}
 
 	secret := &secretsmanagerstore.Secret{
-		Name:         req.Msg.Name,
-		Description:  req.Msg.Description,
-		SecretString: req.Msg.Secretstring,
-		SecretBinary: req.Msg.Secretbinary,
-		KmsKeyId:     req.Msg.Kmskeyid,
-		Type:         req.Msg.Type,
+		Name:             req.Msg.Name,
+		Description:      req.Msg.Description,
+		SecretString:     req.Msg.Secretstring,
+		SecretBinary:     req.Msg.Secretbinary,
+		KmsKeyId:         req.Msg.Kmskeyid,
+		Type:             req.Msg.Type,
+		InitialVersionId: req.Msg.Clientrequesttoken,
 	}
 
 	if len(req.Msg.Tags) > 0 {
@@ -171,13 +202,52 @@ func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.StoreErrorToGRPC(getErr)
 	}
 
-	if err := store.DeleteSecret(req.Msg.Secretid); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	forceDelete := false
+	if req.Msg.Forcedeletewithoutrecovery != nil {
+		forceDelete = *req.Msg.Forcedeletewithoutrecovery
+	}
+	hasRecoveryWindow := req.Msg.Recoverywindowindays > 0
+
+	// You can't use both ForceDeleteWithoutRecovery and RecoveryWindowInDays.
+	if forceDelete && hasRecoveryWindow {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("you can't use ForceDeleteWithoutRecovery in conjunction with RecoveryWindowInDays"))
+	}
+	// RecoveryWindowInDays must be between 7 and 30 (inclusive).
+	if hasRecoveryWindow && !forceDelete {
+		if req.Msg.Recoverywindowindays < 7 || req.Msg.Recoverywindowindays > 30 {
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				fmt.Errorf("RecoveryWindowInDays must be between 7 and 30 days"))
+		}
+	}
+
+	// You can't delete a primary secret that is replicated to other Regions.
+	if len(secret.ReplicationStatus) > 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("You can't delete a primary secret that is replicated to other Regions. Remove the replicas first."))
+	}
+
+	var deletionDate time.Time
+	if forceDelete {
+		if err := store.DeleteSecret(req.Msg.Secretid); err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
+		deletionDate = time.Now().UTC()
+	} else {
+		recoveryWindow := int(req.Msg.Recoverywindowindays)
+		if recoveryWindow == 0 {
+			recoveryWindow = 30
+		}
+		deletionDate = time.Now().UTC().AddDate(0, 0, recoveryWindow)
+		if err := store.ScheduleDeletion(req.Msg.Secretid, deletionDate); err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(err)
+		}
 	}
 
 	resp := &pb.DeleteSecretResponse{
-		Arn:  secret.ARN,
-		Name: secret.Name,
+		Arn:          secret.ARN,
+		Name:         secret.Name,
+		Deletiondate: deletionDate.Format(time.RFC3339),
 	}
 
 	return connect.NewResponse(resp), nil

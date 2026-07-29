@@ -55,6 +55,11 @@ type SecretVersion struct {
 	VersionStages    []string  `json:"versionStages"`
 	CreatedDate      time.Time `json:"createdDate"`
 	LastAccessedDate time.Time `json:"lastAccessedDate"`
+	// KmsKeyIds lists the KMS keys used to encrypt this version.  On
+	// vorpalstacks secrets are encrypted with a single platform key so
+	// this slice is typically empty in stored data, but the field exists
+	// for API output compatibility (M16).
+	KmsKeyIds []string `json:"kmsKeyIds,omitempty"`
 }
 
 // ReplicationStatus represents the replication status of a secret.

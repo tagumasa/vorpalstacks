@@ -2,6 +2,8 @@ package secretsmanager
 
 import (
 	"context"
+	stderrors "errors"
+	"net/http"
 	"time"
 
 	"vorpalstacks/internal/common/errors"
@@ -97,6 +99,17 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	scheduleExpression := nestedString(rotationRulesRaw, "ScheduleExpression")
 	duration := nestedString(rotationRulesRaw, "Duration")
 
+	// M3: ClientRequestToken — idempotency token for rotation. When
+	// provided, passed to executeRotation as the rotation cycle token.
+	// Smithy ClientRequestTokenType length 32-64.
+	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
+	if clientRequestToken != "" {
+		if len(clientRequestToken) < 32 || len(clientRequestToken) > 64 {
+			return nil, errors.NewAWSError("InvalidParameterException",
+				"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
+		}
+	}
+
 	// B11: RotateImmediately defaults to true per AWS spec.
 	rotateImmediately := true
 	if request.HasParam(req.Parameters, "RotateImmediately") {
@@ -136,13 +149,19 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 			// not persist a failed rotation as if it succeeded.
 			origLastRotated := secret.LastRotatedDate
 			origNextRotation := secret.NextRotationDate
-			if rotErr := s.executeRotation(ctx, store, secret); rotErr != nil {
+			if rotErr := s.executeRotation(ctx, store, secret, clientRequestToken); rotErr != nil {
 				secret.LastRotatedDate = origLastRotated
 				secret.NextRotationDate = origNextRotation
 				secret.LastChangedDate = time.Now().UTC()
 				_ = store.UpdateSecretMetadata(secret)
+				// L5: Distinguish Lambda-not-found (ResourceNotFoundException)
+				// from contract violations (InvalidRequestException).
+				if stderrors.Is(rotErr, errRotationLambdaNotFound) {
+					return nil, errors.NewAWSError("ResourceNotFoundException",
+						rotErr.Error(), http.StatusNotFound)
+				}
 				return nil, errors.NewAWSError("InvalidRequestException",
-					rotErr.Error(), 400)
+					rotErr.Error(), http.StatusBadRequest)
 			}
 			versionId = secret.CurrentVersion
 			rotatedViaLambda = true

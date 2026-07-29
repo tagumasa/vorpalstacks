@@ -34,6 +34,17 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
 	versionStages := request.GetStringList(req.Parameters, "VersionStages")
 
+	// M6: RotationToken is an opaque token used for cross-account rotation
+	// validation. Accept it so rotation Lambda PutSecretValue calls don't
+	// error. Smithy RotationTokenType: length 36-256, pattern alphanumeric+dash.
+	rotationToken := request.GetStringParam(req.Parameters, "RotationToken")
+	if rotationToken != "" {
+		if len(rotationToken) < 36 || len(rotationToken) > 256 {
+			return nil, awserrors.NewAWSError("InvalidParameterException",
+				"RotationToken must be between 36 and 256 characters long.", http.StatusBadRequest)
+		}
+	}
+
 	// B6: At least one of SecretString or SecretBinary must be provided.
 	if secretString == "" && secretBinaryStr == "" {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
@@ -181,6 +192,12 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	}
 
 	secretFilter := buildSecretFilter(includePlannedDeletion, filters)
+
+	// L4: When SortBy is not specified, AWS defaults to sorting by name
+	// in ascending order.
+	if sortBy == "" {
+		sortBy = "name"
+	}
 
 	var secrets []*secretsmanagerstore.Secret
 	var nextMarker string
@@ -435,6 +452,8 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 }
 
 // ListSecretVersionIds lists the versions of a secret.
+// Supports MaxResults (1-100), NextToken pagination, and IncludeDeprecated
+// filtering (H1, M16).
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ListSecretVersionIds.html
 func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
@@ -457,12 +476,55 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 		return nil, mapStoreError(err)
 	}
 
-	versionList := []interface{}{}
-	for _, version := range versions {
+	// IncludeDeprecated defaults to false: versions without staging
+	// labels are considered deprecated and excluded unless explicitly
+	// requested (H1).
+	includeDeprecated := request.GetBoolParam(req.Parameters, "IncludeDeprecated")
+	if !includeDeprecated {
+		filtered := make([]secretsmanagerstore.SecretVersion, 0, len(versions))
+		for _, v := range versions {
+			if len(v.VersionStages) > 0 {
+				filtered = append(filtered, v)
+			}
+		}
+		versions = filtered
+	}
+
+	// Pagination: offset-based NextToken matching the ListSecrets sorted-
+	// result pattern (H1).  Smithy MaxResultsType range is 1-100; clamp
+	// explicitly because GetMaxItems allows up to AbsoluteMaxItems (1000).
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	if maxResults > 100 {
+		maxResults = 100
+	}
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+
+	skipCount := 0
+	if nextToken != "" {
+		if n, e := fmt.Sscanf(nextToken, "%d", &skipCount); n != 1 || e != nil || skipCount < 0 || skipCount >= len(versions) {
+			return nil, awserrors.NewAWSError("InvalidNextTokenException",
+				"Your request has an invalid next token.", http.StatusBadRequest)
+		}
+	}
+
+	end := skipCount + maxResults
+	if end > len(versions) {
+		end = len(versions)
+	}
+	paged := versions[skipCount:end]
+
+	versionList := make([]interface{}, 0, len(paged))
+	for _, version := range paged {
 		entry := map[string]interface{}{
 			"VersionId":     version.VersionId,
 			"VersionStages": version.VersionStages,
 			"CreatedDate":   version.CreatedDate.Unix(),
+		}
+		if !version.LastAccessedDate.IsZero() {
+			entry["LastAccessedDate"] = version.LastAccessedDate.Unix()
+		}
+		if len(version.KmsKeyIds) > 0 {
+			entry["KmsKeyIds"] = version.KmsKeyIds
 		}
 		versionList = append(versionList, entry)
 	}
@@ -471,6 +533,9 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 		"ARN":      secret.ARN,
 		"Name":     secret.Name,
 		"Versions": versionList,
+	}
+	if end < len(versions) {
+		pagination.SetNextToken(result, "NextToken", fmt.Sprintf("%d", end))
 	}
 	return result, nil
 }
@@ -497,6 +562,13 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 	if moveToVersionId == "" && removeFromVersionId == "" {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
 			"You must specify either MoveToVersionId or RemoveFromVersionId.", http.StatusBadRequest)
+	}
+
+	// M13: MoveToVersionId == RemoveFromVersionId is a no-op "move" that
+	// AWS rejects with InvalidParameterException.
+	if moveToVersionId != "" && removeFromVersionId != "" && moveToVersionId == removeFromVersionId {
+		return nil, awserrors.NewAWSError("InvalidParameterException",
+			"MoveToVersionId and RemoveFromVersionId must not be the same version.", http.StatusBadRequest)
 	}
 
 	secret, err := s.resolveSecret(reqCtx, secretId)
@@ -565,11 +637,25 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 }
 
 // BatchGetSecretValue retrieves multiple secret values.
+// You must include either SecretIdList or Filters, but not both.
+// MaxResults (1-20) and NextToken pagination are supported when using
+// Filters (H2).
 func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretIdList := request.GetStringList(req.Parameters, "SecretIdList")
-	if len(secretIdList) == 0 {
-		return nil, awserrors.ErrMissingParameter
+	filters := request.GetListParam(req.Parameters, "Filters")
+
+	// Mutual exclusion: exactly one of SecretIdList or Filters must be
+	// provided (H2).  AWS: "You must include Filters or SecretIdList,
+	// but not both."
+	if len(secretIdList) == 0 && len(filters) == 0 {
+		return nil, awserrors.NewAWSError("InvalidParameterException",
+			"You must include either Filters or SecretIdList, but not both.", http.StatusBadRequest)
 	}
+	if len(secretIdList) > 0 && len(filters) > 0 {
+		return nil, awserrors.NewAWSError("InvalidParameterException",
+			"You can't specify both Filters and SecretIdList in the same request.", http.StatusBadRequest)
+	}
+
 	if len(secretIdList) > 20 {
 		return nil, awserrors.NewAWSError("ValidationException",
 			"You can include up to 20 secrets in a batch.", http.StatusBadRequest)
@@ -580,10 +666,55 @@ func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
+	// Build the list of secret IDs to retrieve.
+	//
+	// When using Filters, we list all matching secrets first, apply
+	// pagination, then retrieve values for the current page (H2).
+	var targetIds []string
+	var nextToken string
+	var isTruncated bool
+
+	if len(filters) > 0 {
+		secretFilter := buildSecretFilter(true, filters)
+		result, err := store.ListSecrets(common.ListOptions{}, secretFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		// Smithy MaxResultsBatchType range is 1-20; clamp explicitly.
+		maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
+		if maxResults > 20 {
+			maxResults = 20
+		}
+		token := pagination.GetMarker(req.Parameters, "NextToken")
+
+		skipCount := 0
+		if token != "" {
+			if n, e := fmt.Sscanf(token, "%d", &skipCount); n != 1 || e != nil || skipCount < 0 || skipCount >= len(result.Items) {
+				return nil, awserrors.NewAWSError("InvalidNextTokenException",
+					"Your request has an invalid next token.", http.StatusBadRequest)
+			}
+		}
+
+		end := skipCount + maxResults
+		if end > len(result.Items) {
+			end = len(result.Items)
+		}
+		for _, sec := range result.Items[skipCount:end] {
+			targetIds = append(targetIds, sec.Name)
+		}
+		if end < len(result.Items) {
+			isTruncated = true
+			nextToken = fmt.Sprintf("%d", end)
+		}
+	} else {
+		targetIds = secretIdList
+	}
+
 	secretValues := []interface{}{}
 	apiErrors := []interface{}{}
 
-	for _, secretId := range secretIdList {
+	for _, secretId := range targetIds {
 		secret, err := s.resolveSecret(reqCtx, secretId)
 		if err != nil {
 			apiErrors = append(apiErrors, map[string]interface{}{
@@ -627,6 +758,9 @@ func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx 
 	}
 	if len(apiErrors) > 0 {
 		result["Errors"] = apiErrors
+	}
+	if isTruncated {
+		pagination.SetNextToken(result, "NextToken", nextToken)
 	}
 
 	return result, nil
