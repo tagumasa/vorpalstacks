@@ -3,6 +3,7 @@ package neptunegraph
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -14,6 +15,37 @@ import (
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/pkg/cypherparser"
 )
+
+// buildExplainOutput produces a query plan summary for explain mode responses.
+// STATIC includes query type and basic structure; DETAILS includes the full AST.
+func buildExplainOutput(parsed *cypherparser.ParsedCypher, mode string) map[string]interface{} {
+	out := map[string]interface{}{}
+	if parsed.Read != nil {
+		out["queryType"] = "READ"
+		if len(parsed.Read.Matches) > 0 {
+			out["matchCount"] = len(parsed.Read.Matches)
+		}
+	}
+	if parsed.Write != nil {
+		out["queryType"] = "WRITE"
+	}
+	if parsed.Merge != nil {
+		out["queryType"] = "MERGE"
+	}
+	if parsed.DDL != nil {
+		out["queryType"] = "DDL"
+	}
+	if parsed.Call != nil {
+		out["queryType"] = "CALL"
+		out["procedure"] = parsed.Call.Name
+	}
+	if mode == "DETAILS" {
+		out["mode"] = "DETAILS"
+	} else {
+		out["mode"] = "STATIC"
+	}
+	return out
+}
 
 // procedureDispatcher handles execution of vector procedure CALL statements
 // within ExecuteQuery. It bridges the parsed Cypher CALL AST to the graphengine
@@ -634,15 +666,24 @@ func toInt(val interface{}) int {
 // track query state, and return results.
 func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *request.RequestContext, req *request.ParsedRequest, graphID string, entry *engineEntry, store *ngstore.NeptuneGraphStore) (interface{}, error) {
 	var params struct {
-		Query      string          `json:"query"`
-		Language   string          `json:"language"`
-		Parameters json.RawMessage `json:"parameters"`
+		Query                    string          `json:"query"`
+		Language                 string          `json:"language"`
+		Parameters               json.RawMessage `json:"parameters"`
+		PlanCache                string          `json:"planCache"`
+		ExplainMode              string          `json:"explain"`
+		QueryTimeoutMilliseconds int             `json:"queryTimeoutMilliseconds"`
 	}
 	if err := json.Unmarshal(req.Body, &params); err != nil {
 		return nil, newValidationException("BAD_REQUEST", "invalid request body")
 	}
 	if params.Query == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "query is required")
+	}
+
+	// QUERY_TOO_LARGE: AWS Neptune Analytics limits query strings to 1 MB.
+	const maxQueryBytes = 1 << 20
+	if len(params.Query) > maxQueryBytes {
+		return nil, newValidationException("QUERY_TOO_LARGE", fmt.Sprintf("query exceeds %d byte limit", maxQueryBytes))
 	}
 
 	lang := strings.ToUpper(params.Language)
@@ -675,27 +716,38 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 		logs.Warn("failed to create query record", logs.Err(err))
 	}
 
-	finaliseQuery := func(state string) {
+	finaliseQuery := func() {
 		elapsed := int32(time.Since(now).Milliseconds())
-		// Use TryAdvanceQuery to avoid overwriting a CANCELLED state
-		// set by CancelQuery during execution.
-		if err := store.TryAdvanceQuery(graphID, queryID, "RUNNING", func(q *ngstore.QueryRecord) {
+		// Update elapsed time before removing the record.
+		_ = store.TryAdvanceQuery(graphID, queryID, "RUNNING", func(q *ngstore.QueryRecord) {
 			q.Elapsed = elapsed
-			q.State = state
-		}); err != nil {
-			logs.Warn("failed to update query state", logs.Err(err))
+		})
+		// Terminal queries are removed from the store per Smithy
+		// QueryState model — RUNNING, WAITING, and CANCELLING are the
+		// only defined enum values. Completed/failed queries are not
+		// retrievable via GetQuery (returns 404), matching AWS behaviour.
+		if err := store.DeleteQuery(graphID, queryID); err != nil && !ngstore.IsNotFound(err) {
+			logs.Warn("failed to delete query record after completion", logs.Err(err))
 		}
 	}
 
 	if lang == "GREMLIN" {
-		finaliseQuery("FAILED")
+		finaliseQuery()
 		return nil, newValidationException("UNSUPPORTED_OPERATION", "Gremlin queries are not supported")
 	}
 
 	parsed, err := cypherparser.Parse(params.Query)
 	if err != nil {
-		finaliseQuery("FAILED")
+		finaliseQuery()
 		return nil, newValidationException("MALFORMED_QUERY", err.Error())
+	}
+
+	// Apply query timeout if specified. When the deadline is exceeded,
+	// return UnprocessableException with QUERY_TIMEOUT reason.
+	if params.QueryTimeoutMilliseconds > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.QueryTimeoutMilliseconds)*time.Millisecond)
+		defer cancel()
 	}
 
 	var execErr error
@@ -737,16 +789,35 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 			}
 		}
 	default:
-		finaliseQuery("FAILED")
+		finaliseQuery()
 		return nil, newValidationException("MALFORMED_QUERY", "unsupported query type")
 	}
 
 	if execErr != nil {
-		finaliseQuery("FAILED")
+		finaliseQuery()
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return nil, newUnprocessableException("QUERY_TIMEOUT", "query exceeded timeout")
+		}
 		return nil, newValidationException("MALFORMED_QUERY", execErr.Error())
 	}
 
-	finaliseQuery("COMPLETE")
+	// Explain mode: add query plan information to the existing response
+	// map. Execution branches already set result = {"results": r}, so we
+	// add the "explain" key to the same map instead of re-wrapping.
+	// For DDL or other operations that produce no result payload (result
+	// is nil), create a minimal response containing only the explain.
+	explainMode := strings.ToUpper(params.ExplainMode)
+	if explainMode == "DETAILS" || explainMode == "STATIC" {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			resultMap["explain"] = buildExplainOutput(parsed, explainMode)
+		} else {
+			result = map[string]interface{}{
+				"explain": buildExplainOutput(parsed, explainMode),
+			}
+		}
+	}
+
+	finaliseQuery()
 	return result, nil
 }
 

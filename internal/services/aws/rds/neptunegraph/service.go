@@ -346,7 +346,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem = request.GetIntParam(req.Parameters, "provisionedMemory")
 		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("provisionedMemory must be between %d and %d", minProvisionedMemory, maxProvisionedMemory))
+			return nil, newValidationException("CONSTRAINT_VIOLATION", fmt.Sprintf("provisionedMemory must be between %d and %d", minProvisionedMemory, maxProvisionedMemory))
 		}
 	}
 
@@ -354,7 +354,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	if request.HasParam(req.Parameters, "replicaCount") {
 		replicaCount = request.GetIntParam(req.Parameters, "replicaCount")
 		if replicaCount < 0 || replicaCount > maxReplicaCount {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", "replicaCount must be between 0 and 2")
+			return nil, newValidationException("CONSTRAINT_VIOLATION", "replicaCount must be between 0 and 2")
 		}
 	}
 
@@ -410,7 +410,10 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	graph.Status = "AVAILABLE"
 	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("failed to update graph status", logs.Err(err))
+		logs.Error("failed to update graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
+		graph.Status = "CREATING"
+		graph.Endpoint = ""
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status: %w", err))
 	}
 
 	if tags := parseTagsFromParams(req.Parameters); len(tags) > 0 {
@@ -503,7 +506,7 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
 		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", "provisionedMemory")
+			return nil, newValidationException("CONSTRAINT_VIOLATION", "provisionedMemory")
 		}
 		graph.ProvisionedMemory = int32Ptr(int32(mem))
 	}
@@ -549,7 +552,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	skipSnapshot := request.GetBoolParam(req.Parameters, "skipSnapshot")
 
 	var snapshotID string
-	if !skipSnapshot {
+	if !skipSnapshot && graph.Status != "DELETING" {
 		snapshotID = generateID("gs-")
 		now := time.Now().UTC()
 		snapshot := &ngstore.GraphSnapshot{
@@ -630,7 +633,8 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	if err := store.DeleteGraph(graphID); err != nil {
-		logs.Warn("failed to delete graph", logs.String("graphId", graphID), logs.Err(err))
+		logs.Error("failed to delete graph from store", logs.String("graphId", graphID), logs.Err(err))
+		return nil, newInternalServerException(fmt.Errorf("failed to delete graph: %w", err))
 	}
 
 	return graphToResponse(graph), nil

@@ -2,13 +2,186 @@ package neptunegraph
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage/graphengine"
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// populateDetailedStats computes property-level statistics for DETAILED mode
+// GetGraphSummary responses. It iterates all nodes and edges once, collecting:
+//   - numNodeProperties / numEdgeProperties: distinct property name counts
+//   - totalNodePropertyValues / totalEdgePropertyValues: total key-value pairs
+//   - nodeProperties / edgeProperties: per-label property name → count maps
+//   - nodeStructures / edgeStructures: per-label structural summaries
+func populateDetailedStats(db *graphengine.DB, summary *ngstore.GraphDataSummary) {
+	nodePropNames := make(map[string]bool)
+	edgePropNames := make(map[string]bool)
+	var totalNodePropVals, totalEdgePropVals int64
+
+	// Per-label property accumulators.
+	nodeLabelProps := make(map[string]map[string]int64)
+	edgeLabelProps := make(map[string]map[string]int64)
+	nodeLabelCounts := make(map[string]int64)
+	edgeLabelCounts := make(map[string]int64)
+
+	// Track distinct outgoing edge labels per node label.
+	nodeLabelOutLabels := make(map[string]map[string]bool)
+
+	_ = db.ForEachNode(func(node *graphengine.Node) error {
+		for _, label := range node.Labels {
+			nodeLabelCounts[label]++
+		}
+		for k := range node.Props {
+			if k == "~id" {
+				continue
+			}
+			nodePropNames[k] = true
+			totalNodePropVals++
+			for _, label := range node.Labels {
+				if nodeLabelProps[label] == nil {
+					nodeLabelProps[label] = make(map[string]int64)
+				}
+				nodeLabelProps[label][k]++
+			}
+		}
+		return nil
+	})
+
+	_ = db.ForEachEdge(func(edge *graphengine.Edge) error {
+		edgeLabelCounts[edge.Label]++
+		if edge.Props != nil {
+			for k := range edge.Props {
+				edgePropNames[k] = true
+				totalEdgePropVals++
+				if edgeLabelProps[edge.Label] == nil {
+					edgeLabelProps[edge.Label] = make(map[string]int64)
+				}
+				edgeLabelProps[edge.Label][k]++
+			}
+		}
+
+		// Track outgoing edge labels per source node label.
+		fromNode, err := db.GetNode(edge.From)
+		if err == nil && fromNode != nil {
+			for _, label := range fromNode.Labels {
+				if nodeLabelOutLabels[label] == nil {
+					nodeLabelOutLabels[label] = make(map[string]bool)
+				}
+				nodeLabelOutLabels[label][edge.Label] = true
+			}
+		}
+		return nil
+	})
+
+	summary.NumNodeProperties = int64Ptr(int64(len(nodePropNames)))
+	summary.NumEdgeProperties = int64Ptr(int64(len(edgePropNames)))
+	summary.TotalNodePropertyValues = int64Ptr(totalNodePropVals)
+	summary.TotalEdgePropertyValues = int64Ptr(totalEdgePropVals)
+
+	// nodeProperties: per-label sorted property name → count map
+	if len(nodeLabelProps) > 0 {
+		labels := make([]string, 0, len(nodeLabelProps))
+		for label := range nodeLabelProps {
+			labels = append(labels, label)
+		}
+		sort.Strings(labels)
+		for _, label := range labels {
+			props := nodeLabelProps[label]
+			m := make(map[string]int64)
+			propNames := make([]string, 0, len(props))
+			for p := range props {
+				propNames = append(propNames, p)
+			}
+			sort.Strings(propNames)
+			for _, p := range propNames {
+				m[p] = props[p]
+			}
+			summary.NodeProperties = append(summary.NodeProperties, m)
+		}
+	}
+
+	// edgeProperties: per-label sorted property name → count map
+	if len(edgeLabelProps) > 0 {
+		labels := make([]string, 0, len(edgeLabelProps))
+		for label := range edgeLabelProps {
+			labels = append(labels, label)
+		}
+		sort.Strings(labels)
+		for _, label := range labels {
+			props := edgeLabelProps[label]
+			m := make(map[string]int64)
+			propNames := make([]string, 0, len(props))
+			for p := range props {
+				propNames = append(propNames, p)
+			}
+			sort.Strings(propNames)
+			for _, p := range propNames {
+				m[p] = props[p]
+			}
+			summary.EdgeProperties = append(summary.EdgeProperties, m)
+		}
+	}
+
+	// nodeStructures: per-label structure with count, properties, outgoing labels
+	if len(nodeLabelCounts) > 0 {
+		labels := make([]string, 0, len(nodeLabelCounts))
+		for label := range nodeLabelCounts {
+			labels = append(labels, label)
+		}
+		sort.Strings(labels)
+		for _, label := range labels {
+			ns := ngstore.NodeStructure{
+				Count: int64Ptr(nodeLabelCounts[label]),
+			}
+			if props, ok := nodeLabelProps[label]; ok {
+				propNames := make([]string, 0, len(props))
+				for p := range props {
+					propNames = append(propNames, p)
+				}
+				sort.Strings(propNames)
+				ns.NodeProperties = propNames
+			}
+			if outLabels, ok := nodeLabelOutLabels[label]; ok && len(outLabels) > 0 {
+				sorted := make([]string, 0, len(outLabels))
+				for ol := range outLabels {
+					sorted = append(sorted, ol)
+				}
+				sort.Strings(sorted)
+				ns.DistinctOutgoingEdgeLabels = sorted
+			}
+			summary.NodeStructures = append(summary.NodeStructures, ns)
+		}
+	}
+
+	// edgeStructures: per-label structure with count, properties
+	if len(edgeLabelCounts) > 0 {
+		labels := make([]string, 0, len(edgeLabelCounts))
+		for label := range edgeLabelCounts {
+			labels = append(labels, label)
+		}
+		sort.Strings(labels)
+		for _, label := range labels {
+			es := ngstore.EdgeStructure{
+				Count: int64Ptr(edgeLabelCounts[label]),
+			}
+			if props, ok := edgeLabelProps[label]; ok {
+				propNames := make([]string, 0, len(props))
+				for p := range props {
+					propNames = append(propNames, p)
+				}
+				sort.Strings(propNames)
+				es.EdgeProperties = propNames
+			}
+			summary.EdgeStructures = append(summary.EdgeStructures, es)
+		}
+	}
+}
 
 func resolveGraphIdentifier(params map[string]interface{}) string {
 	if id := request.GetStringParam(params, "graphIdentifier"); id != "" {
@@ -126,9 +299,10 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
-// CancelQuery cancels a running query by transitioning it to CANCELLED state.
-// If the query has already reached a terminal state (COMPLETE, FAILED, CANCELLED),
-// the current record is returned idempotently.
+// CancelQuery cancels a running query by transitioning it to CANCELLING state.
+// Per Smithy QueryState model, only RUNNING/WAITING/CANCELLING are valid states.
+// Terminal queries are deleted (not stored with a terminal state), so a query
+// that still exists is either RUNNING or CANCELLING.
 func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -153,12 +327,12 @@ func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	switch query.State {
-	case "COMPLETE", "FAILED", "CANCELLED":
+	// If already CANCELLING, return idempotently.
+	if query.State == "CANCELLING" || query.State == "WAITING" {
 		return queryToResponse(query), nil
 	}
 
-	query.State = "CANCELLED"
+	query.State = "CANCELLING"
 	if err := store.UpdateQuery(query); err != nil {
 		logs.Warn("failed to cancel query", logs.String("queryId", queryID), logs.Err(err))
 		return nil, err
@@ -227,6 +401,13 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 			labels = append(labels, label)
 		}
 		summary.EdgeLabels = labels
+	}
+
+	// DETAILED mode: compute property statistics by iterating all nodes
+	// and edges. This is O(n) but GetGraphSummary is not a hot path.
+	mode := request.GetStringParam(req.Parameters, "mode")
+	if strings.ToUpper(mode) == "DETAILED" {
+		populateDetailedStats(entry.db, summary)
 	}
 
 	return map[string]interface{}{

@@ -131,6 +131,12 @@ func graphDataSummaryToResponse(s *ngstore.GraphDataSummary) map[string]interfac
 	if s.TotalEdgePropertyValues != nil {
 		r["totalEdgePropertyValues"] = *s.TotalEdgePropertyValues
 	}
+	if len(s.NodeProperties) > 0 {
+		r["nodeProperties"] = s.NodeProperties
+	}
+	if len(s.EdgeProperties) > 0 {
+		r["edgeProperties"] = s.EdgeProperties
+	}
 	if len(s.NodeStructures) > 0 {
 		ns := make([]interface{}, 0, len(s.NodeStructures))
 		for _, n := range s.NodeStructures {

@@ -163,15 +163,15 @@ func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if task.Status == "SUCCEEDED" || task.Status == "FAILED" || task.Status == "CANCELLED" {
+	if task.Status == "SUCCEEDED" || task.Status == "FAILED" || task.Status == "CANCELLED" || task.Status == "CANCELLING" {
 		return exportTaskSummaryToResponse(task), nil
 	}
 
 	originalStatus := task.Status
-	task.Status = "CANCELLED"
+	task.Status = "CANCELLING"
 	task.StatusReason = "Cancelled by user"
 	if err := store.TryAdvanceExportTask(taskID, originalStatus, func(t *ngstore.ExportTask) {
-		t.Status = "CANCELLED"
+		t.Status = "CANCELLING"
 		t.StatusReason = "Cancelled by user"
 	}); err != nil {
 		logs.Warn("failed to cancel export task", logs.String("taskId", taskID), logs.Err(err))
@@ -186,7 +186,7 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 
 	task, err := store.GetExportTask(taskID)
 	if err != nil {
-		logs.Warn("failed to get export task", logs.String("taskId", taskID), logs.Err(err))
+		logs.Error("failed to get export task", logs.String("taskId", taskID), logs.Err(err))
 		return
 	}
 
@@ -195,6 +195,36 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 	})
 	if err != nil {
 		logs.Warn("failed to advance export task to EXPORTING", logs.String("taskId", taskID), logs.Err(err))
+		// Detect concurrent CancelExportTask: status may have transitioned
+		// from INITIALIZING to CANCELLING before the goroutine started.
+		current, getErr := store.GetExportTask(taskID)
+		if getErr == nil {
+			if current.Status == "CANCELLING" {
+				_ = store.TryAdvanceExportTask(taskID, "CANCELLING", func(t *ngstore.ExportTask) {
+					t.Status = "CANCELLED"
+				})
+			} else if current.Status != "CANCELLED" {
+				// Task is still INITIALIZING (INITIALIZING->EXPORTING
+				// failed). failExportTask hardcodes "EXPORTING" as the
+				// expected state, which would silently fail here because
+				// the actual state is INITIALIZING. Transition directly
+				// from the current state to FAILED instead.
+				now := time.Now().UTC()
+				sinceStart := int64(0)
+				if current.StartTime != nil {
+					sinceStart = int64(now.Sub(*current.StartTime).Seconds())
+				}
+				_ = store.TryAdvanceExportTask(taskID, current.Status, func(t *ngstore.ExportTask) {
+					t.Status = "FAILED"
+					t.StatusReason = "failed to advance to EXPORTING"
+					t.ExportTaskDetails = &ngstore.ExportTaskDetails{
+						ProgressPercentage: int32Ptr(0),
+						StartTime:          t.StartTime,
+						TimeElapsedSeconds: int64Ptr(sinceStart),
+					}
+				})
+			}
+		}
 		return
 	}
 
@@ -228,7 +258,7 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 
 	var nodeCount, edgeCount int64
 	if format == "CSV" || format == "CSV+BINARY" {
-		nodeCount, edgeCount, err = exportGraphCSV(entry.db, filePath)
+		nodeCount, edgeCount, err = exportGraphCSV(entry.db, filePath, task.ExportFilter)
 	} else {
 		failExportTask(store, taskID, task, "unsupported export format: "+task.Format)
 		return
@@ -240,7 +270,20 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 	}
 
 	task, err = store.GetExportTask(taskID)
-	if err != nil || task.Status == "CANCELLED" {
+	if err != nil {
+		return
+	}
+	// If CancelExportTask set CANCELLING during the export, complete the
+	// transition to CANCELLED here. The TryAdvanceExportTask at line 251
+	// would fail anyway (status is no longer EXPORTING), so we handle
+	// the cancellation explicitly before returning.
+	if task.Status == "CANCELLING" {
+		_ = store.TryAdvanceExportTask(taskID, "CANCELLING", func(t *ngstore.ExportTask) {
+			t.Status = "CANCELLED"
+		})
+		return
+	}
+	if task.Status == "CANCELLED" {
 		return
 	}
 
@@ -261,6 +304,14 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 	})
 	if err != nil {
 		logs.Warn("failed to advance export task to SUCCEEDED", logs.String("taskId", taskID), logs.Err(err))
+		// Detect concurrent CancelExportTask: status may have transitioned
+		// from EXPORTING to CANCELLING while the export was running.
+		current, getErr := store.GetExportTask(taskID)
+		if getErr == nil && current.Status == "CANCELLING" {
+			_ = store.TryAdvanceExportTask(taskID, "CANCELLING", func(t *ngstore.ExportTask) {
+				t.Status = "CANCELLED"
+			})
+		}
 	}
 }
 
@@ -282,7 +333,115 @@ func failExportTask(store *ngstore.NeptuneGraphStore, taskID string, task *ngsto
 	})
 }
 
-func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
+// shouldExportNode returns true if the node passes the vertex filter.
+// If no filter is set, all nodes pass.
+func shouldExportNode(node *graphengine.Node, filter *ngstore.ExportFilter) bool {
+	if filter == nil || len(filter.VertexFilter) == 0 {
+		return true
+	}
+	for _, label := range node.Labels {
+		if _, ok := filter.VertexFilter[label]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// shouldExportEdge returns true if the edge passes the edge filter.
+// If no filter is set, all edges pass.
+func shouldExportEdge(edge *graphengine.Edge, filter *ngstore.ExportFilter) bool {
+	if filter == nil || len(filter.EdgeFilter) == 0 {
+		return true
+	}
+	_, ok := filter.EdgeFilter[edge.Label]
+	return ok
+}
+
+// filterNodeProps returns the properties to export for a node after applying
+// the ExportFilter. If the filter specifies properties for the node's label,
+// only those properties are included (renamed via SourcePropertyName if set).
+func filterNodeProps(node *graphengine.Node, filter *ngstore.ExportFilter) graphengine.Props {
+	if filter == nil || len(filter.VertexFilter) == 0 {
+		return node.Props
+	}
+	result := make(graphengine.Props)
+	for _, label := range node.Labels {
+		elem, ok := filter.VertexFilter[label]
+		if !ok {
+			continue
+		}
+		for propName, attrs := range elem.Properties {
+			if val, hasProp := node.Props[propName]; hasProp {
+				outKey := propName
+				if attrs.SourcePropertyName != nil && *attrs.SourcePropertyName != "" {
+					outKey = *attrs.SourcePropertyName
+				}
+				result[outKey] = formatPropByType(val, attrs.OutputType)
+			}
+		}
+	}
+	// If the label matched but no properties were specified, export all.
+	if len(result) == 0 {
+		for _, label := range node.Labels {
+			if elem, ok := filter.VertexFilter[label]; ok && len(elem.Properties) == 0 {
+				return node.Props
+			}
+		}
+	}
+	return result
+}
+
+// filterEdgeProps returns the properties to export for an edge after applying
+// the ExportFilter.
+func filterEdgeProps(edge *graphengine.Edge, filter *ngstore.ExportFilter) graphengine.Props {
+	if filter == nil || len(filter.EdgeFilter) == 0 {
+		return edge.Props
+	}
+	elem, ok := filter.EdgeFilter[edge.Label]
+	if !ok {
+		return edge.Props
+	}
+	if len(elem.Properties) == 0 {
+		return edge.Props
+	}
+	result := make(graphengine.Props)
+	for propName, attrs := range elem.Properties {
+		if val, hasProp := edge.Props[propName]; hasProp {
+			outKey := propName
+			if attrs.SourcePropertyName != nil && *attrs.SourcePropertyName != "" {
+				outKey = *attrs.SourcePropertyName
+			}
+			result[outKey] = formatPropByType(val, attrs.OutputType)
+		}
+	}
+	return result
+}
+
+// formatPropByType converts a property value according to the specified output type.
+func formatPropByType(val interface{}, outputType *string) interface{} {
+	if outputType == nil {
+		return val
+	}
+	switch strings.ToUpper(*outputType) {
+	case "STRING":
+		return fmt.Sprintf("%v", val)
+	case "NUMBER":
+		switch v := val.(type) {
+		case float64:
+			return v
+		case int:
+			return float64(v)
+		case int64:
+			return float64(v)
+		default:
+			return val
+		}
+	default:
+		return val
+	}
+}
+
+func exportGraphCSV(db *graphengine.DB, filePath string, filter *ngstore.ExportFilter) (int64, int64, error) {
 	nodesFile := filePath
 	if !strings.HasSuffix(strings.ToLower(filePath), ".csv") {
 		nodesFile = filePath + "_nodes.csv"
@@ -312,17 +471,25 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 	edgeW := csv.NewWriter(ef)
 	defer edgeW.Flush()
 
+	// Collect property keys from filtered nodes and edges.
 	var propKeys []string
-
 	allPropKeys := make(map[string]bool)
 	_ = db.ForEachNode(func(node *graphengine.Node) error {
-		for k := range node.Props {
+		if !shouldExportNode(node, filter) {
+			return nil
+		}
+		props := filterNodeProps(node, filter)
+		for k := range props {
 			allPropKeys[k] = true
 		}
 		return nil
 	})
 	_ = db.ForEachEdge(func(edge *graphengine.Edge) error {
-		for k := range edge.Props {
+		if !shouldExportEdge(edge, filter) {
+			return nil
+		}
+		props := filterEdgeProps(edge, filter)
+		for k := range props {
 			allPropKeys[k] = true
 		}
 		return nil
@@ -347,11 +514,15 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 	}
 
 	err = db.ForEachNode(func(node *graphengine.Node) error {
+		if !shouldExportNode(node, filter) {
+			return nil
+		}
+		props := filterNodeProps(node, filter)
 		record := make([]string, 0, 2+len(propKeys))
 		record = append(record, fmt.Sprintf("%d", node.ID))
 		record = append(record, strings.Join(node.Labels, ";"))
 		for _, k := range propKeys {
-			record = append(record, formatPropValue(node.Props[k]))
+			record = append(record, formatPropValue(props[k]))
 		}
 		if err := nodeW.Write(record); err != nil {
 			return err
@@ -364,13 +535,17 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 	}
 
 	err = db.ForEachEdge(func(edge *graphengine.Edge) error {
+		if !shouldExportEdge(edge, filter) {
+			return nil
+		}
+		props := filterEdgeProps(edge, filter)
 		record := make([]string, 0, 4+len(propKeys))
 		record = append(record, fmt.Sprintf("%d", edge.ID))
 		record = append(record, edge.Label)
 		record = append(record, fmt.Sprintf("%d", edge.From))
 		record = append(record, fmt.Sprintf("%d", edge.To))
 		for _, k := range propKeys {
-			record = append(record, formatPropValue(edge.Props[k]))
+			record = append(record, formatPropValue(props[k]))
 		}
 		if err := edgeW.Write(record); err != nil {
 			return err

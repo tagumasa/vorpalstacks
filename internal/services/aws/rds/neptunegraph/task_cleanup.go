@@ -12,6 +12,7 @@ var terminalTaskStatuses = map[string]bool{
 	"SUCCEEDED": true,
 	"FAILED":    true,
 	"CANCELLED": true,
+	"DELETED":   true,
 }
 
 func (s *NeptuneGraphService) cleanupExpiredTasks(store *ngstore.NeptuneGraphStore) {

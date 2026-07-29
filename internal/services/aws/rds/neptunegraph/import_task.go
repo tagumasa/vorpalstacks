@@ -294,15 +294,15 @@ func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if task.Status == "SUCCEEDED" || task.Status == "FAILED" || task.Status == "CANCELLED" {
+	if task.Status == "SUCCEEDED" || task.Status == "FAILED" || task.Status == "CANCELLED" || task.Status == "CANCELLING" {
 		return importTaskSummaryToResponse(task), nil
 	}
 
 	originalStatus := task.Status
-	task.Status = "CANCELLED"
+	task.Status = "CANCELLING"
 	task.StatusReason = "Cancelled by user"
 	if err := store.TryAdvanceImportTask(taskID, originalStatus, func(t *ngstore.ImportTask) {
-		t.Status = "CANCELLED"
+		t.Status = "CANCELLING"
 		t.StatusReason = "Cancelled by user"
 	}); err != nil {
 		logs.Warn("failed to cancel import task", logs.String("taskId", taskID), logs.Err(err))
@@ -378,6 +378,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 	task, err := store.GetImportTask(taskID)
 	if err != nil {
 		logs.Warn("failed to get import task", logs.String("taskId", taskID), logs.Err(err))
+		finaliseImportedGraph(store, graphID, false, "failed to get import task")
 		return
 	}
 
@@ -439,10 +440,21 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 	}
 
 	err = store.TryAdvanceImportTask(taskID, "INITIALIZING", func(t *ngstore.ImportTask) {
-		t.Status = "IN_PROGRESS"
+		t.Status = "IMPORTING"
 	})
 	if err != nil {
-		logs.Warn("failed to advance import task to IN_PROGRESS", logs.String("taskId", taskID), logs.Err(err))
+		logs.Warn("failed to advance import task to IMPORTING", logs.String("taskId", taskID), logs.Err(err))
+		// Detect concurrent CancelImportTask: status may have transitioned
+		// from INITIALIZING to CANCELLING before the goroutine started.
+		current, getErr := store.GetImportTask(taskID)
+		if getErr == nil && current.Status == "CANCELLING" {
+			_ = store.TryAdvanceImportTask(taskID, "CANCELLING", func(t *ngstore.ImportTask) {
+				t.Status = "CANCELLED"
+			})
+			finaliseImportedGraph(store, graphID, false, "Import cancelled")
+		} else {
+			finaliseImportedGraph(store, graphID, false, "failed to advance to IMPORTING")
+		}
 		return
 	}
 
@@ -479,13 +491,24 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 		Status:               stringPtr(finalStatus),
 	}
 
-	err = store.TryAdvanceImportTask(taskID, "IN_PROGRESS", func(t *ngstore.ImportTask) {
+	err = store.TryAdvanceImportTask(taskID, "IMPORTING", func(t *ngstore.ImportTask) {
 		t.Status = finalStatus
 		t.StatusReason = statusReason
 		t.ImportTaskDetails = details
 	})
 	if err != nil {
 		logs.Warn("failed to advance import task to final state", logs.String("taskId", taskID), logs.Err(err))
+		// Detect concurrent CancelImportTask: status may have transitioned
+		// from IMPORTING to CANCELLING while the import was running.
+		current, getErr := store.GetImportTask(taskID)
+		if getErr == nil && current.Status == "CANCELLING" {
+			_ = store.TryAdvanceImportTask(taskID, "CANCELLING", func(t *ngstore.ImportTask) {
+				t.Status = "CANCELLED"
+			})
+			finaliseImportedGraph(store, graphID, false, "Import cancelled")
+		} else {
+			finaliseImportedGraph(store, graphID, finalStatus == "SUCCEEDED", statusReason)
+		}
 		return
 	}
 

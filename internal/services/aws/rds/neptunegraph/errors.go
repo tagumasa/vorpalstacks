@@ -39,6 +39,12 @@ func newValidationException(reason, message string) *httpError {
 	return newHTTPError(http.StatusBadRequest, "ValidationException", fmt.Sprintf("%s: %s", reason, message))
 }
 
+// newUnprocessableException creates a 422 UnprocessableException error, used
+// for query execution failures such as timeout or resource limit exceeded.
+func newUnprocessableException(reason, message string) *httpError {
+	return newHTTPError(422, "UnprocessableException", fmt.Sprintf("%s: %s", reason, message))
+}
+
 // newResourceNotFoundException creates a 404 ResourceNotFoundException error.
 func newResourceNotFoundException(resourceType, id string) *httpError {
 	return newHTTPError(http.StatusNotFound, "ResourceNotFoundException", fmt.Sprintf("Resource %s '%s' not found", resourceType, id))
