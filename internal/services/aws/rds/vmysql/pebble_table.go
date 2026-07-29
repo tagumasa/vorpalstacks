@@ -7,6 +7,7 @@ import (
 	"github.com/dolthub/go-mysql-server/sql/types"
 	"github.com/dolthub/vitess/go/vt/proto/query"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/rdbengine"
 )
 
@@ -277,7 +278,23 @@ func (s *pebbleAutoIncSetter) Close(ctx *sql.Context) error { return nil }
 
 // --- IndexAlterableTable ---
 
+// CreateIndex persists secondary-index metadata so that CREATE TABLE
+// with inline index definitions (e.g. UNIQUE KEY) and standalone
+// CREATE INDEX both succeed. The index is NOT used for query-plan
+// optimisation: pebbleIndex.CanSupport returns false (line 415), so the
+// go-mysql-server planner falls back to primary-key / full-table scan.
+// This is acceptable for vmysql Phase 0c — the index metadata round-
+// trips correctly through SHOW INDEX / information_schema, but lookups
+// are not accelerated. A warning is logged on every CreateIndex call so
+// operators are aware that the index is metadata-only.
+//
+// Note: RenameIndex (line 303) calls t.store.CreateIndex directly, not
+// this method, so it is unaffected by the warning.
 func (t *pebbleTable) CreateIndex(ctx *sql.Context, indexDef sql.IndexDef) error {
+	logs.Warn("vmysql: secondary index saved as metadata only (not used for lookups)",
+		logs.String("db", t.dbName),
+		logs.String("table", t.name),
+		logs.String("index", indexDef.Name))
 	columns := make([]string, len(indexDef.Columns))
 	for i, col := range indexDef.Columns {
 		columns[i] = col.Name

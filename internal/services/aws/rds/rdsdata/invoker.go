@@ -17,7 +17,7 @@ func (s *RDSDataService) ExecuteStatementForInvoker(ctx context.Context, resourc
 	if err := validateSQL(sqlStr); err != nil {
 		return nil, err
 	}
-	engine, _, err := s.resolveEngine(resourceArn)
+	engine, instanceID, err := s.resolveEngine(resourceArn)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (s *RDSDataService) ExecuteStatementForInvoker(ctx context.Context, resourc
 		return nil, err
 	}
 
-	return executeSQL(engine, newSQLContext(database), sqlStr, includeResultMetadata, formatRecordsAs)
+	return executeSQL(engine, newSQLContext(database), sqlStr, includeResultMetadata, formatRecordsAs, instanceID)
 }
 
 // ExecuteStatementInTxForInvoker runs a SQL statement within an existing transaction.
@@ -39,7 +39,7 @@ func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, res
 	if err := validateTransactionID(transactionId, false); err != nil {
 		return nil, err
 	}
-	engine, _, err := s.resolveEngine(resourceArn)
+	engine, instanceID, err := s.resolveEngine(resourceArn)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +64,15 @@ func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, res
 		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", transactionId))
 	}
 
+	// Serialise concurrent statements on the same transaction (see M13).
+	entry.execMu.Lock()
+	defer entry.execMu.Unlock()
+
 	sqlCtx := entry.sqlCtx
 	if sqlCtx == nil {
 		sqlCtx = newSQLContext(entry.database)
 	}
-	return executeSQL(engine, sqlCtx, sqlStr, includeResultMetadata, formatRecordsAs)
+	return executeSQL(engine, sqlCtx, sqlStr, includeResultMetadata, formatRecordsAs, instanceID)
 }
 
 // BeginTransactionForInvoker is the EventBus invoker entry point for BeginTransaction.
@@ -92,7 +96,7 @@ func (s *RDSDataService) BeginTransactionForInvoker(ctx context.Context, resourc
 		sqlCtx = newSQLContext(database)
 	}
 
-	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, ""); err != nil {
+	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, "", instanceID); err != nil {
 		return "", mapSQLError(err)
 	}
 
@@ -139,7 +143,7 @@ func (s *RDSDataService) CommitTransactionForInvoker(ctx context.Context, resour
 	if commitCtx == nil {
 		commitCtx = newSQLContext(entry.database)
 	}
-	_, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, "")
+	_, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, "", "")
 	return err
 }
 
@@ -170,6 +174,6 @@ func (s *RDSDataService) RollbackTransactionForInvoker(ctx context.Context, reso
 	if rollbackCtx == nil {
 		rollbackCtx = newSQLContext(entry.database)
 	}
-	_, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "")
+	_, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "", "")
 	return err
 }

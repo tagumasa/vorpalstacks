@@ -175,6 +175,22 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 			fmt.Errorf("engine %q is not supported on this platform: %v", engine, err))
 	}
 
+	// Validate referenced resource existence before persisting. AWS
+	// returns DBSubnetGroupNotFoundFault / DBParameterGroupNotFoundFault
+	// when the named groups do not exist at create time.
+	if name := req.Msg.Dbsubnetgroupname; name != "" {
+		if _, err := store.GetSubnetGroup(name); err != nil {
+			return nil, connect.NewError(connect.CodeNotFound,
+				fmt.Errorf("DB Subnet Group %q not found", name))
+		}
+	}
+	if name := req.Msg.Dbparametergroupname; name != "" {
+		if _, err := store.GetParameterGroup(name); err != nil {
+			return nil, connect.NewError(connect.CodeNotFound,
+				fmt.Errorf("DB Parameter Group %q not found", name))
+		}
+	}
+
 	now := time.Now()
 	instance := &storerds.DBInstance{
 		DBInstanceIdentifier:       id,
@@ -318,6 +334,13 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// M6: DeletionProtection must be checked before any destructive
+	// action, matching DeleteDBCluster (line ~559) and AWS behaviour.
+	if instance.DeletionProtection {
+		return nil, connect.NewError(connect.CodeFailedPrecondition,
+			fmt.Errorf("cannot delete instance when DeletionProtection is enabled"))
+	}
+
 	// AWS default: SkipFinalSnapshot=false means a final snapshot is
 	// required. Reject the request if the caller did not provide a
 	// FinalDBSnapshotIdentifier in that case, mirroring AWS behaviour.
@@ -368,16 +391,17 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 		// bucket.
 		if h.snapOp != nil && instance.Engine == "mysql" {
 			if err := h.snapOp.SnapshotData(id, req.Msg.Finaldbsnapshotidentifier); err != nil {
-				logs.Warn("rds-admin: SnapshotData for final snapshot failed",
-					logs.String("instance", id),
-					logs.String("snapshot", req.Msg.Finaldbsnapshotidentifier),
-					logs.Err(err))
+				_ = store.DeleteInstanceSnapshot(req.Msg.Finaldbsnapshotidentifier)
+				return nil, connect.NewError(connect.CodeInternal,
+					fmt.Errorf("final snapshot data capture failed for instance %q: %v", id, err))
 			}
 		}
 	}
 
 	if eng, engErr := h.engines(instance.Engine); engErr == nil {
-		eng.Close(id)
+		if closeErr := eng.Close(id); closeErr != nil {
+			return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("failed to stop engine for instance %q: %w", id, closeErr))
+		}
 	}
 
 	instance.DBInstanceStatus = "deleting"
@@ -434,6 +458,23 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 	if _, err := h.engines(engine); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument,
 			fmt.Errorf("engine %q is not supported on this platform: %v", engine, err))
+	}
+
+	// Validate referenced resource existence before persisting. AWS
+	// returns DBSubnetGroupNotFoundFault /
+	// DBClusterParameterGroupNotFoundFault when the named groups do not
+	// exist at create time.
+	if name := req.Msg.Dbsubnetgroupname; name != "" {
+		if _, err := store.GetSubnetGroup(name); err != nil {
+			return nil, connect.NewError(connect.CodeNotFound,
+				fmt.Errorf("DB Subnet Group %q not found", name))
+		}
+	}
+	if name := req.Msg.Dbclusterparametergroupname; name != "" {
+		if _, err := store.GetClusterParameterGroup(name); err != nil {
+			return nil, connect.NewError(connect.CodeNotFound,
+				fmt.Errorf("DB Cluster Parameter Group %q not found", name))
+		}
 	}
 
 	now := time.Now()
@@ -902,20 +943,30 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	// AWS RDS DescribeEvents explicitly does NOT support Filters per the
-	// API reference ("This parameter isn't currently supported."). The
-	// proto carries the field because the Smithy model includes Filter
-	// generically on every paginated operation; silently ignoring it
-	// matches AWS behaviour. SourceIdentifier / SourceType /
-	// EventCategories / StartTime / EndTime / Duration are the supported
-	// selectors and are honoured below.
-	if len(req.Msg.Filters) > 0 {
-		logs.Warn("rds-admin: DescribeEvents ignores Filters (not supported by AWS RDS)")
+	// AWS RDS DescribeEvents does not officially support the Filters
+	// parameter ("This parameter isn't currently supported."). However,
+	// the proto3 enum mapping for SourceType assigns
+	// BLUE_GREEN_DEPLOYMENT the zero value, making it indistinguishable
+	// from "unset" (see sourceTypeToString comment above). To work
+	// around this without a proto-breaking change, the admin console
+	// client may pass a Filter with name "source-type" and a string
+	// value to explicitly select a source type that cannot be expressed
+	// through the proto enum's zero-value field. This is our own
+	// extension; the AWS API ignores Filters entirely.
+	var sourceTypeStr string
+	for _, f := range req.Msg.Filters {
+		if strings.EqualFold(f.Name, "source-type") && len(f.Values) > 0 {
+			sourceTypeStr = f.Values[0]
+		} else {
+			logs.Warn("rds-admin: DescribeEvents ignores unsupported Filter",
+				logs.String("filter", f.Name))
+		}
 	}
-
-	sourceType, err := sourceTypeToString(req.Msg.Sourcetype)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	if sourceTypeStr == "" {
+		sourceTypeStr, err = sourceTypeToString(req.Msg.Sourcetype)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
 	}
 
 	var startTime time.Time
@@ -951,7 +1002,7 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 	}
 
 	opts := storerds.EventListOptions{
-		SourceType:       sourceType,
+		SourceType:       sourceTypeStr,
 		SourceIdentifier: req.Msg.Sourceidentifier,
 		StartTime:        startTime,
 		EndTime:          endTime,
@@ -1026,13 +1077,11 @@ func generateDbiResourceId() string {
 // the AWS DescribeEvents API contract (omit SourceType => events of every
 // source type).
 //
-// Consequence: clients cannot filter exclusively for blue-green-deployment
-// events via the proto enum, because wire value 0 is reserved for "unset".
-// AWS's own string-typed wire protocol does not suffer this limitation; the
-// proto3 enum mapping introduces the ambiguity. The proper fix is to add
-// SOURCE_TYPE_UNSPECIFIED = 0 to the proto and renumber
-// BLUE_GREEN_DEPLOYMENT to a non-zero slot — a proto-breaking change
-// deferred to a separate batch (see audit/gap-rds-shared memory).
+// Workaround: DescribeEvents checks the Filters parameter for a "source-type"
+// filter before calling this function. The admin console client can pass a
+// Filter with name "source-type" and value "blue-green-deployment" to select
+// blue-green events explicitly, bypassing the proto3 zero-value ambiguity
+// without requiring a proto-breaking renumber.
 func sourceTypeToString(st pb.SourceType) (string, error) {
 	switch st {
 	case pb.SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP:
@@ -1986,6 +2035,15 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// Reject snapshots of instances in terminal or in-flight states.
+	// AWS returns InvalidDBInstanceStateFault when the source instance
+	// is not in a state that allows snapshot creation.
+	switch instance.DBInstanceStatus {
+	case "deleting", "failed", "inaccessible-encryption-credentials":
+		return nil, connect.NewError(connect.CodeFailedPrecondition,
+			fmt.Errorf("cannot create snapshot for instance %q in status %q", instanceID, instance.DBInstanceStatus))
+	}
+
 	now := time.Now()
 	arn := arnutil.NewARNBuilder(h.accountId, region).RDS().Snapshot(snapshotID)
 	snap := &storerds.DBInstanceSnapshot{
@@ -2031,13 +2089,14 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 	// Capture row-level data for MySQL instances so that
 	// RestoreDBInstanceFromDBSnapshot can recover user tables. Without
 	// this call the snapshot is metadata-only and restore produces an
-	// empty instance.
+	// empty instance. Fail-closed: if data capture fails, remove the
+	// metadata snapshot and return an error so the caller knows the
+	// snapshot is not usable.
 	if h.snapOp != nil && instance.Engine == "mysql" {
 		if err := h.snapOp.SnapshotData(instanceID, snapshotID); err != nil {
-			logs.Warn("rds-admin: SnapshotData for manual snapshot failed",
-				logs.String("instance", instanceID),
-				logs.String("snapshot", snapshotID),
-				logs.Err(err))
+			_ = store.DeleteInstanceSnapshot(snapshotID)
+			return nil, connect.NewError(connect.CodeInternal,
+				fmt.Errorf("snapshot data capture failed for instance %q: %v", instanceID, err))
 		}
 	}
 

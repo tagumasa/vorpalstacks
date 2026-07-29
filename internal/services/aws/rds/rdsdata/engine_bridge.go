@@ -59,13 +59,14 @@ func newSQLContext(database string) *sql.Context {
 //   - The marshalled response is bounded to maxResponseBytes; an oversized
 //     response surfaces as StatementTimeoutException, matching AWS which
 //     terminates the call when binary response data exceeds 1 MiB.
-func executeSQL(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string) (*ExecuteStatementResponse, error) {
-	return executeSQLOpts(engine, sqlCtx, sqlStr, includeMetadata, formatRecordsAs, nil)
+func executeSQL(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string, instanceID string) (*ExecuteStatementResponse, error) {
+	return executeSQLOpts(engine, sqlCtx, sqlStr, includeMetadata, formatRecordsAs, nil, instanceID)
 }
 
 // executeSQLOpts is the option-bearing form of executeSQL. resultSetOpts is
 // optional; nil leaves DECIMAL / BIGINT formatting at the engine default.
-func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string, resultSetOpts *ResultSetOptions) (*ExecuteStatementResponse, error) {
+// instanceID is included in StatementTimeoutException as dbConnectionId.
+func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string, resultSetOpts *ResultSetOptions, instanceID string) (*ExecuteStatementResponse, error) {
 	// Bind a deadline to the underlying context so engine.Query and any
 	// downstream iterators observe StatementTimeout. AWS Data API's default
 	// is 45 seconds for ExecuteStatement.
@@ -84,6 +85,11 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	}
 	qCh := make(chan queryResult, 1)
 	go func() {
+		defer func() {
+			if re := recover(); re != nil {
+				qCh <- queryResult{err: fmt.Errorf("internal panic during query planning: %v", re)}
+			}
+		}()
 		schema, iter, _, err := engine.Query(sqlCtx, sqlStr)
 		qCh <- queryResult{schema, iter, err}
 	}()
@@ -94,14 +100,14 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	case qr := <-qCh:
 		if qr.err != nil {
 			if parentCtx.Err() == context.DeadlineExceeded {
-				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout), instanceID)
 			}
 			return nil, qr.err
 		}
 		schema = qr.schema
 		rowIter = qr.iter
 	case <-parentCtx.Done():
-		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout), instanceID)
 	}
 
 	// Wrap RowIterToRows in the same goroutine + select pattern so that a
@@ -113,6 +119,11 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	}
 	rCh := make(chan rowsResult, 1)
 	go func() {
+		defer func() {
+			if re := recover(); re != nil {
+				rCh <- rowsResult{err: fmt.Errorf("internal panic during row iteration: %v", re)}
+			}
+		}()
 		var rows []sql.Row
 		var err error
 		if rowIter != nil {
@@ -126,7 +137,7 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	case rr := <-rCh:
 		if rr.err != nil {
 			if parentCtx.Err() == context.DeadlineExceeded {
-				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+				return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout), instanceID)
 			}
 			return nil, fmt.Errorf("failed to read rows: %w", rr.err)
 		}
@@ -138,7 +149,7 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 		if rowIter != nil {
 			rowIter.Close(sqlCtx)
 		}
-		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout))
+		return nil, statementTimeout(fmt.Sprintf("statement exceeded %v timeout", defaultStatementTimeout), instanceID)
 	}
 
 	resp := &ExecuteStatementResponse{}
@@ -185,7 +196,7 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	// 1 MB, the call is terminated.' Enforce after assembly so the cap
 	// reflects the actual payload the client would receive.
 	if approxResponseSize(resp) > maxResponseBytes {
-		return nil, statementTimeout(fmt.Sprintf("response size exceeds %d bytes", maxResponseBytes))
+		return nil, statementTimeout(fmt.Sprintf("response size exceeds %d bytes", maxResponseBytes), instanceID)
 	}
 
 	return resp, nil
@@ -679,7 +690,8 @@ func splitSQL(sqlStr string) []string {
 // supported'). It also validates that TypeHint=DECIMAL StringValues match
 // a strict numeric pattern and TypeHint=JSON StringValues are valid JSON,
 // preventing SQL injection via raw string concatenation in
-// fieldToSQLString. Returns InvalidParameterException on the first
+// fieldToSQLString. The AWS Data API Field is a union — at most one value
+// discriminator may be set. Returns InvalidParameterException on the first
 // violation.
 func validateParameters(params []SqlParameter) error {
 	for _, p := range params {
@@ -688,6 +700,34 @@ func validateParameters(params []SqlParameter) error {
 		}
 		if p.Value == nil {
 			return invalidParam(fmt.Sprintf("parameter %q has no value", p.Name))
+		}
+		// Enforce the Field union constraint: at most one discriminator
+		// may be set. AWS treats multiple simultaneous values as a
+		// malformed request.
+		setCount := 0
+		if p.Value.IsNull != nil {
+			setCount++
+		}
+		if p.Value.StringValue != nil {
+			setCount++
+		}
+		if p.Value.LongValue != nil {
+			setCount++
+		}
+		if p.Value.DoubleValue != nil {
+			setCount++
+		}
+		if p.Value.BooleanValue != nil {
+			setCount++
+		}
+		if len(p.Value.BlobValue) > 0 {
+			setCount++
+		}
+		if p.Value.ArrayValue != nil {
+			setCount++
+		}
+		if setCount > 1 {
+			return invalidParam(fmt.Sprintf("parameter %q has multiple value discriminators set; Field is a union — set at most one", p.Name))
 		}
 		if p.Value.ArrayValue != nil {
 			return invalidParam(fmt.Sprintf("array parameters are not supported (parameter %q)", p.Name))

@@ -53,6 +53,11 @@ type staleEntry struct {
 	database string
 	schema   string
 	sqlCtx   *sql.Context
+	// execMu serialises SQL execution within the same transaction.
+	// go-mysql-server's *sql.Context is not thread-safe; without this
+	// mutex, two concurrent ExecuteStatement calls sharing the same
+	// TransactionID would race on the shared sqlCtx.
+	execMu sync.Mutex
 	// bgWg tracks outstanding ContinueAfterTimeout statements for
 	// CommitTransaction / RollbackTransaction, which must wait for
 	// in-flight background statements before issuing COMMIT / ROLLBACK.
@@ -279,6 +284,9 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 		}
 		txCtx = entry.sqlCtx
 		txEntry = entry
+		// Serialise concurrent statements on the same transaction.
+		// go-mysql-server's *sql.Context is not thread-safe.
+		txEntry.execMu.Lock()
 	}
 
 	sqlCtx := txCtx
@@ -287,11 +295,20 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 	}
 
 	if input.ContinueAfterTimeout {
+		// execMu will be unlocked by the background goroutine's defer
+		// so the lock covers the entire background execution window.
 		return s.executeWithContinueAfterTimeout(engine, sqlCtx, txEntry, instanceID, sqlStr,
 			input.IncludeResultMetadata, input.FormatRecordsAs, input.ResultSetOptions, input.Sql)
 	}
 
-	result, err := executeSQLOpts(engine, sqlCtx, sqlStr, input.IncludeResultMetadata, input.FormatRecordsAs, input.ResultSetOptions)
+	// Non-ContinueAfterTimeout: release execMu after execution.
+	defer func() {
+		if txEntry != nil {
+			txEntry.execMu.Unlock()
+		}
+	}()
+
+	result, err := executeSQLOpts(engine, sqlCtx, sqlStr, input.IncludeResultMetadata, input.FormatRecordsAs, input.ResultSetOptions, instanceID)
 	if err != nil {
 		return nil, mapSQLError(err)
 	}
@@ -347,9 +364,21 @@ func (s *RDSDataService) executeWithContinueAfterTimeout(
 		defer wg.Done()
 		defer bgCancel()
 		if txEntry != nil {
+			defer txEntry.execMu.Unlock()
+		}
+		if txEntry != nil {
 			defer txEntry.bgCount.Add(-1)
 		}
-		resp, err := executeSQLOpts(engine, bgSqlCtx, sqlStr, includeMetadata, formatRecordsAs, resultSetOpts)
+		defer func() {
+			if re := recover(); re != nil {
+				logs.Error("rdsdata: panic in background ContinueAfterTimeout statement",
+					logs.Any("panic", re),
+					logs.String("instance", instanceID),
+					logs.String("sql", truncateSQL(originalSQL)))
+				resultCh <- execResult{nil, fmt.Errorf("internal panic: %v", re)}
+			}
+		}()
+		resp, err := executeSQLOpts(engine, bgSqlCtx, sqlStr, includeMetadata, formatRecordsAs, resultSetOpts, instanceID)
 		if err != nil {
 			logs.Warn("rdsdata: background ContinueAfterTimeout statement failed",
 				logs.Err(err),
@@ -376,7 +405,7 @@ func (s *RDSDataService) executeWithContinueAfterTimeout(
 			logs.String("instance", instanceID), logs.String("sql", truncateSQL(originalSQL)))
 		return nil, statementTimeout(fmt.Sprintf(
 			"statement exceeded %v timeout; execution continues in the background",
-			defaultStatementTimeout))
+			defaultStatementTimeout), instanceID)
 	}
 }
 
@@ -433,6 +462,9 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 			database = entry.database
 		}
 		txCtx = entry.sqlCtx
+		// Serialise concurrent statements on the same transaction (M13).
+		entry.execMu.Lock()
+		defer entry.execMu.Unlock()
 	}
 
 	// AWS Data API spec: BatchExecuteStatement exists to run the same SQL
@@ -454,7 +486,7 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 		if sqlCtx == nil {
 			sqlCtx = newSQLContext(database)
 		}
-		res, err := executeSQL(engine, sqlCtx, sqlWithParams, false, "")
+		res, err := executeSQL(engine, sqlCtx, sqlWithParams, false, "", instanceID)
 		if err != nil {
 			return nil, mapSQLError(err)
 		}
@@ -495,7 +527,7 @@ func (s *RDSDataService) ExecuteSql(ctx context.Context, reqCtx *request.Request
 	sqlCtx := newSQLContext(input.Database)
 	var sqlResults []SqlStatementResult
 	for _, stmt := range statements {
-		res, err := executeSQL(engine, sqlCtx, stmt, true, "")
+		res, err := executeSQL(engine, sqlCtx, stmt, true, "", instanceID)
 		if err != nil {
 			return nil, mapSQLError(err)
 		}
@@ -552,7 +584,7 @@ func (s *RDSDataService) BeginTransaction(ctx context.Context, reqCtx *request.R
 		sqlCtx = newSQLContext(input.Database)
 	}
 
-	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, ""); err != nil {
+	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, "", instanceID); err != nil {
 		return nil, mapSQLError(err)
 	}
 
@@ -618,8 +650,16 @@ func (s *RDSDataService) CommitTransaction(ctx context.Context, reqCtx *request.
 	if !waitForBg(&entry.bgWg, defaultStatementTimeout) {
 		return nil, statementTimeout(fmt.Sprintf(
 			"CommitTransaction timed out waiting for a background statement; retry %s",
-			input.TransactionID))
+			input.TransactionID), "")
 	}
+
+	// Acquire execMu to wait for any in-flight (non-background)
+	// ExecuteStatement or BatchExecuteStatement that is still running
+	// on this transaction's sql.Context. bgWg only tracks
+	// ContinueAfterTimeout background goroutines; regular statements
+	// hold execMu instead.
+	entry.execMu.Lock()
+	defer entry.execMu.Unlock()
 
 	// Background statements are done (or none were running). Atomically
 	// remove from the map so a concurrent retry cannot double-commit.
@@ -635,7 +675,7 @@ func (s *RDSDataService) CommitTransaction(ctx context.Context, reqCtx *request.
 	if commitCtx == nil {
 		commitCtx = newSQLContext(entry.database)
 	}
-	if _, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, ""); err != nil {
+	if _, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, "", ""); err != nil {
 		return nil, mapSQLError(err)
 	}
 
@@ -677,8 +717,12 @@ func (s *RDSDataService) RollbackTransaction(ctx context.Context, reqCtx *reques
 	if !waitForBg(&entry.bgWg, defaultStatementTimeout) {
 		return nil, statementTimeout(fmt.Sprintf(
 			"RollbackTransaction timed out waiting for a background statement; retry %s",
-			input.TransactionID))
+			input.TransactionID), "")
 	}
+
+	// Wait for in-flight ExecuteStatement / BatchExecuteStatement (M13).
+	entry.execMu.Lock()
+	defer entry.execMu.Unlock()
 
 	// Atomically remove from the map (see CommitTransaction).
 	s.mu.Lock()
@@ -693,7 +737,7 @@ func (s *RDSDataService) RollbackTransaction(ctx context.Context, reqCtx *reques
 	if rollbackCtx == nil {
 		rollbackCtx = newSQLContext(entry.database)
 	}
-	if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, ""); err != nil {
+	if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "", ""); err != nil {
 		return nil, mapSQLError(err)
 	}
 
@@ -967,15 +1011,20 @@ func (s *RDSDataService) purgeExpired() {
 	// slice has bgCount == 0 (checked above under s.mu), which means all
 	// background statements have completed.
 	for _, entry := range expired {
+		// Acquire execMu to avoid racing with an in-flight ExecuteStatement
+		// that holds execMu but was not yet visible to the bgCount check
+		// above (normal statements do not increment bgCount).
+		entry.execMu.Lock()
 		rollbackCtx := entry.sqlCtx
 		if rollbackCtx == nil {
 			rollbackCtx = newSQLContext(entry.database)
 		}
-		if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, ""); err != nil {
+		if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "", ""); err != nil {
 			logs.Warn("rdsdata: failed to roll back expired transaction",
 				logs.Err(err),
 				logs.String("database", entry.database))
 		}
+		entry.execMu.Unlock()
 	}
 }
 

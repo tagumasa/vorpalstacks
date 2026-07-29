@@ -138,8 +138,18 @@ var supportedMysqlVersions = []MysqlEngineVersion{
 	{"8.0.40", "mysql8.0", "8.0", "MySQL 8.0.40"},
 	{"8.0.41", "mysql8.0", "8.0", "MySQL 8.0.41"},
 	{"8.0.42", "mysql8.0", "8.0", "MySQL 8.0.42"},
+	{"8.0.43", "mysql8.0", "8.0", "MySQL 8.0.43"},
+	{"8.0.44", "mysql8.0", "8.0", "MySQL 8.0.44"},
+	{"8.0.45", "mysql8.0", "8.0", "MySQL 8.0.45"},
+	{"8.0.46", "mysql8.0", "8.0", "MySQL 8.0.46"},
 	{"8.4.3", "mysql8.4", "8.4", "MySQL 8.4.3"},
 	{"8.4.4", "mysql8.4", "8.4", "MySQL 8.4.4"},
+	{"8.4.5", "mysql8.4", "8.4", "MySQL 8.4.5"},
+	{"8.4.6", "mysql8.4", "8.4", "MySQL 8.4.6"},
+	{"8.4.7", "mysql8.4", "8.4", "MySQL 8.4.7"},
+	{"8.4.8", "mysql8.4", "8.4", "MySQL 8.4.8"},
+	{"8.4.9", "mysql8.4", "8.4", "MySQL 8.4.9"},
+	{"8.4.10", "mysql8.4", "8.4", "MySQL 8.4.10"},
 }
 
 // supportedNeptuneVersions enumerates the Neptune engine versions this
@@ -157,6 +167,13 @@ var supportedNeptuneVersions = []NeptuneEngineVersion{
 	{"1.4.0.1", "neptune1", true},
 	{"1.4.1.0", "neptune1", true},
 	{"1.4.2.0", "neptune1", true},
+	{"1.4.3.0", "neptune1", true},
+	{"1.4.4.0", "neptune1", true},
+	{"1.4.5.0", "neptune1", true},
+	{"1.4.5.1", "neptune1", true},
+	{"1.4.6.0", "neptune1", true},
+	{"1.4.6.2", "neptune1", true},
+	{"1.4.7.0", "neptune1", true},
 }
 
 // SupportedMysqlVersions returns the list of supported MySQL engine

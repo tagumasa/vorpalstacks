@@ -82,11 +82,15 @@ func SecretsError(msg string) *awserrors.AWSError {
 	return awserrors.NewAWSError("SecretsErrorException", msg, http.StatusBadRequest)
 }
 
-// statementTimeout corresponds to StatementTimeoutException (HTTP 400). The
-// optional dbConnectionId field is not surfaced in the AWSError helper; if
-// needed it can be threaded through later.
-func statementTimeout(msg string) *awserrors.AWSError {
-	return awserrors.NewAWSError("StatementTimeoutException", msg, http.StatusBadRequest)
+// statementTimeout corresponds to StatementTimeoutException (HTTP 400).
+// The dbConnectionId field identifies the database connection that timed
+// out, allowing clients to correlate the timeout with a specific instance.
+func statementTimeout(msg, dbConnectionId string) *awserrors.AWSError {
+	e := awserrors.NewAWSError("StatementTimeoutException", msg, http.StatusBadRequest)
+	if dbConnectionId != "" {
+		e = e.WithField("dbConnectionId", dbConnectionId)
+	}
+	return e
 }
 
 // serviceUnavailable corresponds to ServiceUnavailableError (HTTP 503).
