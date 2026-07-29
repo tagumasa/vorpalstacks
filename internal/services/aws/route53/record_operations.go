@@ -79,7 +79,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 	for _, c := range changesList {
 		changeMap, ok := c.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, awserrors.NewAWSError("InvalidChangeBatch", "Each element in Changes must be a map", 400)
 		}
 
 		action, _ := changeMap["Action"].(string)
@@ -88,7 +88,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		}
 		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
 		if rrsRaw == nil {
-			continue
+			return nil, awserrors.NewAWSError("InvalidChangeBatch", "ResourceRecordSet is required for each change", 400)
 		}
 
 		name := request.GetStringParam(rrsRaw, "Name")
@@ -102,6 +102,9 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		}
 		if rrs.Type == "" {
 			rrs.Type = strings.ToUpper(request.GetStringParam(rrsRaw, "type"))
+		}
+		if rrs.Type == "" {
+			return nil, awserrors.NewAWSError("InvalidInput", "Type is required for resource record set", 400)
 		}
 		if rrs.TTL == 0 {
 			rrs.TTL = int64(request.GetIntParam(rrsRaw, "ttl"))
@@ -155,6 +158,24 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 				HostedZoneID:         request.GetStringParam(aliasRaw, "HostedZoneId"),
 				DNSName:              request.GetStringParam(aliasRaw, "DNSName"),
 				EvaluateTargetHealth: request.GetBoolParam(aliasRaw, "EvaluateTargetHealth"),
+			}
+		}
+
+		// M1/H2: Validate TTL and HealthCheckId only for CREATE/UPSERT.
+		// DELETE only requires Name + Type (+ SetIdentifier); AWS does
+		// not enforce TTL or HealthCheckId existence on deletion.
+		if action != "DELETE" {
+			// M1: Non-alias records must have TTL > 0.
+			if rrs.AliasTarget == nil && rrs.TTL <= 0 {
+				return nil, awserrors.NewAWSError("InvalidInput", "TTL is required and must be greater than 0 for non-alias resource record sets", 400)
+			}
+
+			// H2: Verify that the referenced HealthCheckId exists.
+			if rrs.HealthCheckID != "" {
+				if !st.HealthChecks().Exists(rrs.HealthCheckID) {
+					return nil, awserrors.NewAWSError("InvalidChangeBatch",
+						fmt.Sprintf("No health check found with id: %s", rrs.HealthCheckID), 400)
+				}
 			}
 		}
 
@@ -273,21 +294,30 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	startRecordType = strings.ToUpper(startRecordType)
 
 	var filtered []*route53store.ResourceRecordSet
-	started := startRecordName == "" && startRecordType == ""
+	started := startRecordName == ""
 
 	for _, rs := range recordSets {
+		if !started {
+			// Use lexicographic comparison so that if the start
+			// record was deleted, pagination continues from the
+			// next record instead of returning nothing.
+			rsName := strings.ToLower(rs.Name)
+			nameCmp := strings.Compare(rsName, startRecordName)
+			if nameCmp > 0 {
+				started = true
+			} else if nameCmp == 0 {
+				typeCmp := strings.Compare(rs.Type, startRecordType)
+				if typeCmp > 0 {
+					started = true
+				} else if typeCmp == 0 {
+					if startRecordIdentifier == "" || rs.SetIdentifier >= startRecordIdentifier {
+						started = true
+					}
+				}
+			}
+		}
 		if started {
 			filtered = append(filtered, rs)
-		} else if strings.EqualFold(rs.Name, startRecordName) && strings.EqualFold(rs.Type, startRecordType) {
-			if startRecordIdentifier != "" {
-				if rs.SetIdentifier == startRecordIdentifier {
-					started = true
-					filtered = append(filtered, rs)
-				}
-			} else {
-				started = true
-				filtered = append(filtered, rs)
-			}
 		}
 	}
 

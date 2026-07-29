@@ -18,6 +18,21 @@ type ProtoGenerator struct {
 	mapWrappers map[string]string
 }
 
+// adminExtraFields defines fields that are not present in the Smithy
+// model but are needed for the admin console proto. Keyed by the proto
+// message name (e.g. "HostedZone"). These fields are appended after
+// all Smithy-derived fields.
+var adminExtraFields = map[string][]FieldData{
+	"HostedZone": {
+		{
+			Name:      "VPCs",
+			NameLower: "vpcs",
+			Type:      "repeated VPC",
+			Number:    stableFieldNumber("VPCs"),
+		},
+	},
+}
+
 // NewProtoGenerator creates a new ProtoGenerator
 func NewProtoGenerator(reader ProtoDataReader) *ProtoGenerator {
 	return &ProtoGenerator{
@@ -255,6 +270,15 @@ func (g *ProtoGenerator) buildFieldsForShape(ctx context.Context, shape *ShapeIn
 			HTTPLocationName:        member.HTTPLocationName,
 			DefaultPayloadMediaType: member.DefaultPayloadMediaType,
 		})
+	}
+
+	// Inject admin-specific extra fields that are not in the Smithy
+	// model but are needed for the admin console (e.g. VPCs on
+	// HostedZone). These are keyed by proto message name so they only
+	// affect the matching shape.
+	shapeName := toProtoMessageName(shape.ShapeID)
+	if extras, ok := adminExtraFields[shapeName]; ok {
+		fields = append(fields, extras...)
 	}
 
 	return fields, nil

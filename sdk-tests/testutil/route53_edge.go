@@ -45,7 +45,7 @@ func (r *TestRunner) runRoute53EdgeTests(tc *route53TestContext) []TestResult {
 			Name:            aws.String("invalid name with spaces"),
 			CallerReference: aws.String(fmt.Sprintf("badref-%d", tc.uniq)),
 		})
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+		if err := AssertErrorContains(err, "InvalidDomainName"); err != nil {
 			return err
 		}
 		return nil

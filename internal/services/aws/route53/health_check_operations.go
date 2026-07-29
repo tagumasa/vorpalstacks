@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -26,6 +27,11 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 	}
 
 	config := parseHealthCheckConfig(healthCheckConfigMap, s.defaultHCPort)
+
+	// H4/H5: Validate Type enum and field ranges before persisting.
+	if err := validateHealthCheckConfig(config); err != nil {
+		return nil, err
+	}
 
 	healthCheck := &route53store.HealthCheck{
 		ID:                 generateHealthCheckId(),
@@ -97,6 +103,12 @@ func (s *Route53Service) DeleteHealthCheck(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
+
+	// H7: Reject deletion if any record set references this health check.
+	if st.RecordSets().IsHealthCheckReferenced(healthCheckId) {
+		return nil, NewHealthCheckInUseError(healthCheckId)
+	}
+
 	st.Tags().Raw().Delete("healthcheck/" + healthCheckId)
 
 	if err := st.HealthChecks().Delete(healthCheckId); err != nil {
@@ -119,6 +131,15 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 	healthCheck, err := s.getHealthCheckById(reqCtx, healthCheckId)
 	if err != nil {
 		return nil, err
+	}
+
+	// M11: Verify HealthCheckVersion matches when provided.
+	if reqVersion := request.GetIntParam(req.Parameters, "HealthCheckVersion"); reqVersion > 0 {
+		existingVersion, _ := strconv.ParseInt(healthCheck.HealthCheckVersion, 10, 64)
+		if int64(reqVersion) != existingVersion {
+			return nil, NewHealthCheckVersionMismatchError(
+				healthCheck.HealthCheckVersion, fmt.Sprintf("%d", reqVersion))
+		}
 	}
 
 	healthCheckConfig := request.GetMapParam(req.Parameters, "HealthCheckConfig")
@@ -257,11 +278,25 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 		return nil, mapStoreError(err)
 	}
 
+	// M4: Parse and include Comment in ChangeInfo response.
+	comment := request.GetStringParam(req.Parameters, "Comment")
+	changeId := generateChangeId()
+	now := time.Now()
+	if err := st.Changes().Create(&route53store.ChangeInfo{
+		ID:          changeId,
+		Status:      "INSYNC",
+		SubmittedAt: now,
+		Comment:     comment,
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + generateChangeId(),
+			"Id":          "/change/" + changeId,
 			"Status":      "INSYNC",
-			"SubmittedAt": time.Now().Format(time.RFC3339),
+			"SubmittedAt": now.Format(time.RFC3339),
+			"Comment":     comment,
 		},
 	}, nil
 }
@@ -294,7 +329,13 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 	}
 
 	if len(newVPCs) == len(zone.VPCs) {
-		return nil, awserrors.NewAWSError("InvalidInput", "VPC is not associated with the hosted zone", 400)
+		// M3: Use VPCAssociationNotFound instead of InvalidInput.
+		return nil, NewVPCAssociationNotFoundError(vpcId)
+	}
+
+	// H8: Prevent removing the last VPC association from a private zone.
+	if len(newVPCs) == 0 {
+		return nil, NewLastVPCAssociationError()
 	}
 
 	zone.VPCs = newVPCs
@@ -306,11 +347,25 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 		return nil, mapStoreError(err)
 	}
 
+	// M4: Parse and include Comment in ChangeInfo response.
+	comment := request.GetStringParam(req.Parameters, "Comment")
+	changeId := generateChangeId()
+	now := time.Now()
+	if err := st.Changes().Create(&route53store.ChangeInfo{
+		ID:          changeId,
+		Status:      "INSYNC",
+		SubmittedAt: now,
+		Comment:     comment,
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + generateChangeId(),
+			"Id":          "/change/" + changeId,
 			"Status":      "INSYNC",
-			"SubmittedAt": time.Now().Format(time.RFC3339),
+			"SubmittedAt": now.Format(time.RFC3339),
+			"Comment":     comment,
 		},
 	}, nil
 }

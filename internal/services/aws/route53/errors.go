@@ -2,6 +2,7 @@
 package route53
 
 import (
+	"fmt"
 	"net/http"
 
 	"vorpalstacks/internal/common/errors"
@@ -23,6 +24,14 @@ var (
 	ErrNoSuchChange = errors.NewAWSError("NoSuchChange", "The change does not exist.", http.StatusNotFound)
 	// ErrInvalidInput is returned when the input is invalid.
 	ErrInvalidInput = errors.NewAWSError("InvalidInput", "The input is invalid.", http.StatusBadRequest)
+	// ErrHealthCheckInUse is returned when attempting to delete a health check that is referenced by a record set.
+	ErrHealthCheckInUse = errors.NewAWSError("HealthCheckInUse", "The health check is in use by one or more resource record sets.", http.StatusBadRequest)
+	// ErrHealthCheckVersionMismatch is returned when the HealthCheckVersion does not match the current version.
+	ErrHealthCheckVersionMismatch = errors.NewAWSError("HealthCheckVersionMismatch", "The HealthCheckVersion does not match the current version.", http.StatusBadRequest)
+	// ErrLastVPCAssociation is returned when attempting to disassociate the last VPC from a private hosted zone.
+	ErrLastVPCAssociation = errors.NewAWSError("LastVPCAssociation", "The VPC that you're trying to disassociate is the last VPC that is associated with the hosted zone.", http.StatusBadRequest)
+	// ErrVPCAssociationNotFound is returned when attempting to disassociate a VPC that is not associated with the hosted zone.
+	ErrVPCAssociationNotFound = errors.NewAWSError("VPCAssociationNotFound", "The VPC is not associated with the hosted zone.", http.StatusBadRequest)
 )
 
 // NewNoSuchHostedZoneError creates a new error for a hosted zone that does not exist.
@@ -53,6 +62,31 @@ func NewHealthCheckAlreadyExistsError() *errors.AWSError {
 // NewNoSuchChangeError creates a new error for a change that does not exist.
 func NewNoSuchChangeError(id string) *errors.AWSError {
 	return errors.NewAWSError("NoSuchChange", "No change found with id: "+id, http.StatusNotFound)
+}
+
+// NewHealthCheckInUseError creates a new error for a health check that is in use.
+func NewHealthCheckInUseError(id string) *errors.AWSError {
+	return errors.NewAWSError("HealthCheckInUse", "The health check "+id+" is in use by one or more resource record sets.", http.StatusBadRequest)
+}
+
+// NewHealthCheckVersionMismatchError creates a new error for a version mismatch.
+// expected is the current (server-side) version; actual is the version the
+// client sent.
+func NewHealthCheckVersionMismatchError(expected, actual string) *errors.AWSError {
+	return errors.NewAWSError("HealthCheckVersionMismatch",
+		fmt.Sprintf("Health check version mismatch: expected %s, got %s", expected, actual), http.StatusBadRequest)
+}
+
+// NewLastVPCAssociationError creates a new error for the last VPC association.
+func NewLastVPCAssociationError() *errors.AWSError {
+	return errors.NewAWSError("LastVPCAssociation",
+		"The VPC that you're trying to disassociate is the last VPC that is associated with the hosted zone. After some other VPCs are associated, try again.", http.StatusBadRequest)
+}
+
+// NewVPCAssociationNotFoundError creates a new error for a VPC association that does not exist.
+func NewVPCAssociationNotFoundError(vpcId string) *errors.AWSError {
+	return errors.NewAWSError("VPCAssociationNotFound",
+		fmt.Sprintf("The VPC %s is not associated with the hosted zone.", vpcId), http.StatusBadRequest)
 }
 
 // storeErrorMappings maps store-level sentinel errors to AWS API errors.

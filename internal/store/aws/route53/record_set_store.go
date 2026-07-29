@@ -103,6 +103,16 @@ func (s *RecordSetStore) Exists(key string) bool {
 	return s.BaseStore.Exists(key)
 }
 
+// IsHealthCheckReferenced reports whether any record set in any hosted
+// zone references the given health check ID. Used by DeleteHealthCheck
+// to enforce the HealthCheckInUse constraint.
+func (s *RecordSetStore) IsHealthCheckReferenced(hcId string) bool {
+	_, err := common.FindFirst[ResourceRecordSet](s.BaseStore, func(rs *ResourceRecordSet) bool {
+		return rs.HealthCheckID == hcId
+	})
+	return err == nil
+}
+
 func recordSetKey(hostedZoneId, name, recordType, setIdentifier string) string {
 	if setIdentifier != "" {
 		return fmt.Sprintf("%s#%s#%s#%s", hostedZoneId, escapeKeyPart(name), recordType, escapeKeyPart(setIdentifier))

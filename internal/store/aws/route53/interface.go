@@ -37,6 +37,7 @@ type RecordSetStoreInterface interface {
 	Upsert(hostedZoneId string, recordSet *ResourceRecordSet) error
 	Delete(hostedZoneId, name, recordType, setIdentifier string) error
 	Exists(key string) bool
+	IsHealthCheckReferenced(hcId string) bool
 	Raw() *RecordSetStore
 }
 

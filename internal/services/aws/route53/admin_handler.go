@@ -165,6 +165,20 @@ func (h *AdminHandler) DeleteHostedZone(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
+	// H_admin: Reject deletion if the zone contains user-created record
+	// sets (anything other than the default NS and SOA records), matching
+	// the HTTP API behaviour in hosted_zone_operations.go.
+	recordSets, err := stores.RecordSets().List(req.Msg.Id)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	for _, rs := range recordSets {
+		if rs.Type != "NS" && rs.Type != "SOA" {
+			return nil, connect.NewError(connect.CodeFailedPrecondition,
+				fmt.Errorf("hosted zone must be empty before it can be deleted"))
+		}
+	}
+
 	stores.Tags().Raw().Delete("hostedzone/" + req.Msg.Id)
 
 	if err := stores.HostedZones().Delete(req.Msg.Id); err != nil {
@@ -188,6 +202,16 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 			Privatezone: proto.Bool(z.Config.PrivateZone),
 		}
 	}
+	// L3: Output VPCs so the admin console can display associations.
+	if len(z.VPCs) > 0 {
+		pbZone.Vpcs = make([]*pb.VPC, len(z.VPCs))
+		for i, vpc := range z.VPCs {
+			pbZone.Vpcs[i] = &pb.VPC{
+				Vpcid:     vpc.VPCID,
+				Vpcregion: awsVPCRegionToProto(vpc.VPCRegion),
+			}
+		}
+	}
 	return pbZone
 }
 
@@ -206,4 +230,14 @@ func protoVPCRegionToAWS(region pb.VPCRegion) string {
 	}
 	parts := strings.Split(strings.ToLower(strings.TrimPrefix(name, prefix)), "_")
 	return strings.Join(parts, "-")
+}
+
+// awsVPCRegionToProto converts an AWS region string (e.g. "us-east-1")
+// to a proto VPCRegion enum value.
+func awsVPCRegionToProto(region string) pb.VPCRegion {
+	name := "V_P_C_REGION_" + strings.ToUpper(strings.ReplaceAll(region, "-", "_"))
+	if val, ok := pb.VPCRegion_value[name]; ok {
+		return pb.VPCRegion(val)
+	}
+	return pb.VPCRegion(0)
 }

@@ -191,6 +191,59 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	return config
 }
 
+// validateHealthCheckConfig validates the parsed HealthCheckConfig against
+// AWS constraints: Type enum, numeric ranges, and string length limits.
+func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
+	if config == nil {
+		return awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
+	}
+
+	// H4: Type must be one of the 8 valid values.
+	validTypes := map[string]bool{
+		"HTTP": true, "HTTPS": true, "HTTP_STR_MATCH": true,
+		"HTTPS_STR_MATCH": true, "TCP": true,
+		"CALCULATED": true, "CLOUDWATCH_METRIC": true,
+		"RECOVERY_CONTROL": true,
+	}
+	if !validTypes[config.Type] {
+		return awserrors.NewAWSError("InvalidInput",
+			fmt.Sprintf("Invalid or missing health check type: %q. Must be one of: HTTP, HTTPS, HTTP_STR_MATCH, HTTPS_STR_MATCH, TCP, CALCULATED, CLOUDWATCH_METRIC, RECOVERY_CONTROL", config.Type), 400)
+	}
+
+	// H5: Numeric range validation (only validates when the field is set).
+	if config.Port > 65535 {
+		return awserrors.NewAWSError("InvalidInput", "Port must be between 1 and 65535", 400)
+	}
+	if config.FailureThreshold > 10 {
+		return awserrors.NewAWSError("InvalidInput", "FailureThreshold must be between 1 and 10", 400)
+	}
+	if config.RequestInterval > 0 && (config.RequestInterval < 10 || config.RequestInterval > 30) {
+		return awserrors.NewAWSError("InvalidInput", "RequestInterval must be between 10 and 30", 400)
+	}
+	if config.HealthThreshold > 256 {
+		return awserrors.NewAWSError("InvalidInput", "HealthThreshold must be between 0 and 256", 400)
+	}
+
+	// H5: String length validation (AWS docs constraints).
+	if len(config.ResourcePath) > 255 {
+		return awserrors.NewAWSError("InvalidInput", "ResourcePath must not exceed 255 characters", 400)
+	}
+	if len(config.SearchString) > 255 {
+		return awserrors.NewAWSError("InvalidInput", "SearchString must not exceed 255 characters", 400)
+	}
+	if len(config.FullyQualifiedDomainName) > 255 {
+		return awserrors.NewAWSError("InvalidInput", "FullyQualifiedDomainName must not exceed 255 characters", 400)
+	}
+	if len(config.IPAddress) > 45 {
+		return awserrors.NewAWSError("InvalidInput", "IPAddress must not exceed 45 characters", 400)
+	}
+	if len(config.RoutingControlArn) > 255 {
+		return awserrors.NewAWSError("InvalidInput", "RoutingControlArn must not exceed 255 characters", 400)
+	}
+
+	return nil
+}
+
 func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updates map[string]interface{}) {
 	if config == nil || updates == nil {
 		return
@@ -257,6 +310,35 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 		for _, c := range childrenRaw {
 			if child, ok := c.(string); ok {
 				config.ChildHealthChecks = append(config.ChildHealthChecks, child)
+			}
+		}
+	}
+
+	// M5: Process ResetElements — reset specified fields to their default
+	// values. Applied AFTER field updates so that resets take precedence.
+	if resetsRaw, ok := updates["ResetElements"].([]interface{}); ok {
+		for _, r := range resetsRaw {
+			field, ok := r.(string)
+			if !ok {
+				continue
+			}
+			switch field {
+			case "FullyQualifiedDomainName":
+				config.FullyQualifiedDomainName = ""
+			case "Regions":
+				config.Regions = nil
+			case "ResourcePath":
+				config.ResourcePath = ""
+			case "ChildHealthChecks":
+				config.ChildHealthChecks = nil
+			case "IPAddress":
+				config.IPAddress = ""
+			case "Port":
+				config.Port = 0
+			case "SearchString":
+				config.SearchString = ""
+			case "Type":
+				config.Type = ""
 			}
 		}
 	}
@@ -332,10 +414,41 @@ func buildDelegationSetResponse(nameServers []string, delegationSetID string) de
 }
 
 func (s *Route53Service) healthCheckToResponse(hc *route53store.HealthCheck) map[string]interface{} {
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"Id":                 hc.ID,
 		"CallerReference":    hc.CallerReference,
 		"HealthCheckConfig":  s.healthCheckConfigToResponse(hc.HealthCheckConfig),
 		"HealthCheckVersion": hc.HealthCheckVersion,
 	}
+
+	// M6: Output CloudWatchAlarmConfiguration when populated on the store
+	// object, or derive minimal info from AlarmIdentifier for
+	// CLOUDWATCH_METRIC health checks.
+	if hc.CloudWatchAlarmConfiguration != nil {
+		cwa := hc.CloudWatchAlarmConfiguration
+		cwaMap := map[string]interface{}{
+			"AlarmName": cwa.AlarmName,
+		}
+		if cwa.AlarmRegion != "" {
+			cwaMap["AlarmRegion"] = cwa.AlarmRegion
+		}
+		if len(cwa.Dimensions) > 0 {
+			dims := make([]interface{}, len(cwa.Dimensions))
+			for i, d := range cwa.Dimensions {
+				dims[i] = map[string]interface{}{
+					"Name":  d.Name,
+					"Value": d.Value,
+				}
+			}
+			cwaMap["Dimensions"] = protocol.XMLElements{ElementName: "Dimension", Items: dims}
+		}
+		result["CloudWatchAlarmConfiguration"] = cwaMap
+	} else if hc.HealthCheckConfig != nil && hc.HealthCheckConfig.AlarmIdentifier != nil {
+		result["CloudWatchAlarmConfiguration"] = map[string]interface{}{
+			"AlarmName":   hc.HealthCheckConfig.AlarmIdentifier.Name,
+			"AlarmRegion": hc.HealthCheckConfig.AlarmIdentifier.Region,
+		}
+	}
+
+	return result
 }

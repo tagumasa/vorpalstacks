@@ -8091,6 +8091,7 @@ type HostedZone struct {
 	Linkedservice          *LinkedService         `protobuf:"bytes,438614164,opt,name=linkedservice,proto3" json:"linkedservice,omitempty"`
 	Name                   string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Resourcerecordsetcount int64                  `protobuf:"varint,334391116,opt,name=resourcerecordsetcount,proto3" json:"resourcerecordsetcount,omitempty"`
+	Vpcs                   []*VPC                 `protobuf:"bytes,424064898,rep,name=vpcs,proto3" json:"vpcs,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -8172,6 +8173,13 @@ func (x *HostedZone) GetResourcerecordsetcount() int64 {
 		return x.Resourcerecordsetcount
 	}
 	return 0
+}
+
+func (x *HostedZone) GetVpcs() []*VPC {
+	if x != nil {
+		return x.Vpcs
+	}
+	return nil
 }
 
 type HostedZoneAlreadyExists struct {
@@ -15551,7 +15559,7 @@ const file_route53_proto_rawDesc = "" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2\x1a.route53.HealthCheckRegionR\x06region\x12<\n" +
 	"\fstatusreport\x18\xb2\xbc\xaa\r \x01(\v2\x15.route53.StatusReportR\fstatusreport\"9\n" +
 	"\x1aHealthCheckVersionMismatch\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd4\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xfa\x02\n" +
 	"\n" +
 	"HostedZone\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x124\n" +
@@ -15560,7 +15568,8 @@ const file_route53_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12@\n" +
 	"\rlinkedservice\x18\x94\xf1\x92\xd1\x01 \x01(\v2\x16.route53.LinkedServiceR\rlinkedservice\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12:\n" +
-	"\x16resourcerecordsetcount\x18\xccι\x9f\x01 \x01(\x03R\x16resourcerecordsetcount\"6\n" +
+	"\x16resourcerecordsetcount\x18\xccι\x9f\x01 \x01(\x03R\x16resourcerecordsetcount\x12$\n" +
+	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcs\"6\n" +
 	"\x17HostedZoneAlreadyExists\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"k\n" +
 	"\x10HostedZoneConfig\x12\x1c\n" +
@@ -16730,213 +16739,214 @@ var file_route53_proto_depIdxs = []int32{
 	152, // 74: route53.HostedZone.config:type_name -> route53.HostedZoneConfig
 	154, // 75: route53.HostedZone.features:type_name -> route53.HostedZoneFeatures
 	182, // 76: route53.HostedZone.linkedservice:type_name -> route53.LinkedService
-	0,   // 77: route53.HostedZoneFeatures.acceleratedrecoverystatus:type_name -> route53.AcceleratedRecoveryStatus
-	153, // 78: route53.HostedZoneFeatures.failurereasons:type_name -> route53.HostedZoneFailureReasons
-	9,   // 79: route53.HostedZoneLimit.type:type_name -> route53.HostedZoneLimitType
-	159, // 80: route53.HostedZoneSummary.owner:type_name -> route53.HostedZoneOwner
-	37,  // 81: route53.ListCidrBlocksResponse.cidrblocks:type_name -> route53.CidrBlockSummary
-	45,  // 82: route53.ListCidrCollectionsResponse.cidrcollections:type_name -> route53.CollectionSummary
-	221, // 83: route53.ListCidrLocationsResponse.cidrlocations:type_name -> route53.LocationSummary
-	106, // 84: route53.ListGeoLocationsResponse.geolocationdetailslist:type_name -> route53.GeoLocationDetails
-	144, // 85: route53.ListHealthChecksResponse.healthchecks:type_name -> route53.HealthCheck
-	150, // 86: route53.ListHostedZonesByNameResponse.hostedzones:type_name -> route53.HostedZone
-	19,  // 87: route53.ListHostedZonesByVPCRequest.vpcregion:type_name -> route53.VPCRegion
-	161, // 88: route53.ListHostedZonesByVPCResponse.hostedzonesummaries:type_name -> route53.HostedZoneSummary
-	10,  // 89: route53.ListHostedZonesRequest.hostedzonetype:type_name -> route53.HostedZoneType
-	150, // 90: route53.ListHostedZonesResponse.hostedzones:type_name -> route53.HostedZone
-	237, // 91: route53.ListQueryLoggingConfigsResponse.queryloggingconfigs:type_name -> route53.QueryLoggingConfig
-	12,  // 92: route53.ListResourceRecordSetsRequest.startrecordtype:type_name -> route53.RRType
-	12,  // 93: route53.ListResourceRecordSetsResponse.nextrecordtype:type_name -> route53.RRType
-	240, // 94: route53.ListResourceRecordSetsResponse.resourcerecordsets:type_name -> route53.ResourceRecordSet
-	74,  // 95: route53.ListReusableDelegationSetsResponse.delegationsets:type_name -> route53.DelegationSet
-	18,  // 96: route53.ListTagsForResourceRequest.resourcetype:type_name -> route53.TagResourceType
-	241, // 97: route53.ListTagsForResourceResponse.resourcetagset:type_name -> route53.ResourceTagSet
-	18,  // 98: route53.ListTagsForResourcesRequest.resourcetype:type_name -> route53.TagResourceType
-	241, // 99: route53.ListTagsForResourcesResponse.resourcetagsets:type_name -> route53.ResourceTagSet
-	260, // 100: route53.ListTrafficPoliciesResponse.trafficpolicysummaries:type_name -> route53.TrafficPolicySummary
-	12,  // 101: route53.ListTrafficPolicyInstancesByHostedZoneRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	12,  // 102: route53.ListTrafficPolicyInstancesByHostedZoneResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	258, // 103: route53.ListTrafficPolicyInstancesByHostedZoneResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
-	12,  // 104: route53.ListTrafficPolicyInstancesByPolicyRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	12,  // 105: route53.ListTrafficPolicyInstancesByPolicyResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	258, // 106: route53.ListTrafficPolicyInstancesByPolicyResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
-	12,  // 107: route53.ListTrafficPolicyInstancesRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	12,  // 108: route53.ListTrafficPolicyInstancesResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
-	258, // 109: route53.ListTrafficPolicyInstancesResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
-	255, // 110: route53.ListTrafficPolicyVersionsResponse.trafficpolicies:type_name -> route53.TrafficPolicy
-	271, // 111: route53.ListVPCAssociationAuthorizationsResponse.vpcs:type_name -> route53.VPC
-	24,  // 112: route53.ResourceRecordSet.aliastarget:type_name -> route53.AliasTarget
-	43,  // 113: route53.ResourceRecordSet.cidrroutingconfig:type_name -> route53.CidrRoutingConfig
-	14,  // 114: route53.ResourceRecordSet.failover:type_name -> route53.ResourceRecordSetFailover
-	105, // 115: route53.ResourceRecordSet.geolocation:type_name -> route53.GeoLocation
-	107, // 116: route53.ResourceRecordSet.geoproximitylocation:type_name -> route53.GeoProximityLocation
-	15,  // 117: route53.ResourceRecordSet.region:type_name -> route53.ResourceRecordSetRegion
-	239, // 118: route53.ResourceRecordSet.resourcerecords:type_name -> route53.ResourceRecord
-	12,  // 119: route53.ResourceRecordSet.type:type_name -> route53.RRType
-	18,  // 120: route53.ResourceTagSet.resourcetype:type_name -> route53.TagResourceType
-	244, // 121: route53.ResourceTagSet.tags:type_name -> route53.Tag
-	16,  // 122: route53.ReusableDelegationSetLimit.type:type_name -> route53.ReusableDelegationSetLimitType
-	12,  // 123: route53.TestDNSAnswerRequest.recordtype:type_name -> route53.RRType
-	12,  // 124: route53.TestDNSAnswerResponse.recordtype:type_name -> route53.RRType
-	12,  // 125: route53.TrafficPolicy.type:type_name -> route53.RRType
-	12,  // 126: route53.TrafficPolicyInstance.trafficpolicytype:type_name -> route53.RRType
-	12,  // 127: route53.TrafficPolicySummary.type:type_name -> route53.RRType
-	23,  // 128: route53.UpdateHealthCheckRequest.alarmidentifier:type_name -> route53.AlarmIdentifier
-	11,  // 129: route53.UpdateHealthCheckRequest.insufficientdatahealthstatus:type_name -> route53.InsufficientDataHealthStatus
-	7,   // 130: route53.UpdateHealthCheckRequest.regions:type_name -> route53.HealthCheckRegion
-	13,  // 131: route53.UpdateHealthCheckRequest.resetelements:type_name -> route53.ResettableElementName
-	144, // 132: route53.UpdateHealthCheckResponse.healthcheck:type_name -> route53.HealthCheck
-	150, // 133: route53.UpdateHostedZoneCommentResponse.hostedzone:type_name -> route53.HostedZone
-	255, // 134: route53.UpdateTrafficPolicyCommentResponse.trafficpolicy:type_name -> route53.TrafficPolicy
-	258, // 135: route53.UpdateTrafficPolicyInstanceResponse.trafficpolicyinstance:type_name -> route53.TrafficPolicyInstance
-	19,  // 136: route53.VPC.vpcregion:type_name -> route53.VPCRegion
-	21,  // 137: route53.Route53Service.ActivateKeySigningKey:input_type -> route53.ActivateKeySigningKeyRequest
-	25,  // 138: route53.Route53Service.AssociateVPCWithHostedZone:input_type -> route53.AssociateVPCWithHostedZoneRequest
-	29,  // 139: route53.Route53Service.ChangeCidrCollection:input_type -> route53.ChangeCidrCollectionRequest
-	32,  // 140: route53.Route53Service.ChangeResourceRecordSets:input_type -> route53.ChangeResourceRecordSetsRequest
-	34,  // 141: route53.Route53Service.ChangeTagsForResource:input_type -> route53.ChangeTagsForResourceRequest
-	50,  // 142: route53.Route53Service.CreateCidrCollection:input_type -> route53.CreateCidrCollectionRequest
-	52,  // 143: route53.Route53Service.CreateHealthCheck:input_type -> route53.CreateHealthCheckRequest
-	54,  // 144: route53.Route53Service.CreateHostedZone:input_type -> route53.CreateHostedZoneRequest
-	56,  // 145: route53.Route53Service.CreateKeySigningKey:input_type -> route53.CreateKeySigningKeyRequest
-	58,  // 146: route53.Route53Service.CreateQueryLoggingConfig:input_type -> route53.CreateQueryLoggingConfigRequest
-	60,  // 147: route53.Route53Service.CreateReusableDelegationSet:input_type -> route53.CreateReusableDelegationSetRequest
-	64,  // 148: route53.Route53Service.CreateTrafficPolicy:input_type -> route53.CreateTrafficPolicyRequest
-	62,  // 149: route53.Route53Service.CreateTrafficPolicyInstance:input_type -> route53.CreateTrafficPolicyInstanceRequest
-	66,  // 150: route53.Route53Service.CreateTrafficPolicyVersion:input_type -> route53.CreateTrafficPolicyVersionRequest
-	68,  // 151: route53.Route53Service.CreateVPCAssociationAuthorization:input_type -> route53.CreateVPCAssociationAuthorizationRequest
-	72,  // 152: route53.Route53Service.DeactivateKeySigningKey:input_type -> route53.DeactivateKeySigningKeyRequest
-	80,  // 153: route53.Route53Service.DeleteCidrCollection:input_type -> route53.DeleteCidrCollectionRequest
-	82,  // 154: route53.Route53Service.DeleteHealthCheck:input_type -> route53.DeleteHealthCheckRequest
-	84,  // 155: route53.Route53Service.DeleteHostedZone:input_type -> route53.DeleteHostedZoneRequest
-	86,  // 156: route53.Route53Service.DeleteKeySigningKey:input_type -> route53.DeleteKeySigningKeyRequest
-	88,  // 157: route53.Route53Service.DeleteQueryLoggingConfig:input_type -> route53.DeleteQueryLoggingConfigRequest
-	90,  // 158: route53.Route53Service.DeleteReusableDelegationSet:input_type -> route53.DeleteReusableDelegationSetRequest
-	94,  // 159: route53.Route53Service.DeleteTrafficPolicy:input_type -> route53.DeleteTrafficPolicyRequest
-	92,  // 160: route53.Route53Service.DeleteTrafficPolicyInstance:input_type -> route53.DeleteTrafficPolicyInstanceRequest
-	96,  // 161: route53.Route53Service.DeleteVPCAssociationAuthorization:input_type -> route53.DeleteVPCAssociationAuthorizationRequest
-	99,  // 162: route53.Route53Service.DisableHostedZoneDNSSEC:input_type -> route53.DisableHostedZoneDNSSECRequest
-	101, // 163: route53.Route53Service.DisassociateVPCFromHostedZone:input_type -> route53.DisassociateVPCFromHostedZoneRequest
-	103, // 164: route53.Route53Service.EnableHostedZoneDNSSEC:input_type -> route53.EnableHostedZoneDNSSECRequest
-	108, // 165: route53.Route53Service.GetAccountLimit:input_type -> route53.GetAccountLimitRequest
-	110, // 166: route53.Route53Service.GetChange:input_type -> route53.GetChangeRequest
-	112, // 167: route53.Route53Service.GetCheckerIpRanges:input_type -> route53.GetCheckerIpRangesRequest
-	114, // 168: route53.Route53Service.GetDNSSEC:input_type -> route53.GetDNSSECRequest
-	116, // 169: route53.Route53Service.GetGeoLocation:input_type -> route53.GetGeoLocationRequest
-	122, // 170: route53.Route53Service.GetHealthCheck:input_type -> route53.GetHealthCheckRequest
-	118, // 171: route53.Route53Service.GetHealthCheckCount:input_type -> route53.GetHealthCheckCountRequest
-	120, // 172: route53.Route53Service.GetHealthCheckLastFailureReason:input_type -> route53.GetHealthCheckLastFailureReasonRequest
-	124, // 173: route53.Route53Service.GetHealthCheckStatus:input_type -> route53.GetHealthCheckStatusRequest
-	130, // 174: route53.Route53Service.GetHostedZone:input_type -> route53.GetHostedZoneRequest
-	126, // 175: route53.Route53Service.GetHostedZoneCount:input_type -> route53.GetHostedZoneCountRequest
-	128, // 176: route53.Route53Service.GetHostedZoneLimit:input_type -> route53.GetHostedZoneLimitRequest
-	132, // 177: route53.Route53Service.GetQueryLoggingConfig:input_type -> route53.GetQueryLoggingConfigRequest
-	136, // 178: route53.Route53Service.GetReusableDelegationSet:input_type -> route53.GetReusableDelegationSetRequest
-	134, // 179: route53.Route53Service.GetReusableDelegationSetLimit:input_type -> route53.GetReusableDelegationSetLimitRequest
-	142, // 180: route53.Route53Service.GetTrafficPolicy:input_type -> route53.GetTrafficPolicyRequest
-	140, // 181: route53.Route53Service.GetTrafficPolicyInstance:input_type -> route53.GetTrafficPolicyInstanceRequest
-	138, // 182: route53.Route53Service.GetTrafficPolicyInstanceCount:input_type -> route53.GetTrafficPolicyInstanceCountRequest
-	183, // 183: route53.Route53Service.ListCidrBlocks:input_type -> route53.ListCidrBlocksRequest
-	185, // 184: route53.Route53Service.ListCidrCollections:input_type -> route53.ListCidrCollectionsRequest
-	187, // 185: route53.Route53Service.ListCidrLocations:input_type -> route53.ListCidrLocationsRequest
-	189, // 186: route53.Route53Service.ListGeoLocations:input_type -> route53.ListGeoLocationsRequest
-	191, // 187: route53.Route53Service.ListHealthChecks:input_type -> route53.ListHealthChecksRequest
-	197, // 188: route53.Route53Service.ListHostedZones:input_type -> route53.ListHostedZonesRequest
-	193, // 189: route53.Route53Service.ListHostedZonesByName:input_type -> route53.ListHostedZonesByNameRequest
-	195, // 190: route53.Route53Service.ListHostedZonesByVPC:input_type -> route53.ListHostedZonesByVPCRequest
-	199, // 191: route53.Route53Service.ListQueryLoggingConfigs:input_type -> route53.ListQueryLoggingConfigsRequest
-	201, // 192: route53.Route53Service.ListResourceRecordSets:input_type -> route53.ListResourceRecordSetsRequest
-	203, // 193: route53.Route53Service.ListReusableDelegationSets:input_type -> route53.ListReusableDelegationSetsRequest
-	205, // 194: route53.Route53Service.ListTagsForResource:input_type -> route53.ListTagsForResourceRequest
-	207, // 195: route53.Route53Service.ListTagsForResources:input_type -> route53.ListTagsForResourcesRequest
-	209, // 196: route53.Route53Service.ListTrafficPolicies:input_type -> route53.ListTrafficPoliciesRequest
-	215, // 197: route53.Route53Service.ListTrafficPolicyInstances:input_type -> route53.ListTrafficPolicyInstancesRequest
-	211, // 198: route53.Route53Service.ListTrafficPolicyInstancesByHostedZone:input_type -> route53.ListTrafficPolicyInstancesByHostedZoneRequest
-	213, // 199: route53.Route53Service.ListTrafficPolicyInstancesByPolicy:input_type -> route53.ListTrafficPolicyInstancesByPolicyRequest
-	217, // 200: route53.Route53Service.ListTrafficPolicyVersions:input_type -> route53.ListTrafficPolicyVersionsRequest
-	219, // 201: route53.Route53Service.ListVPCAssociationAuthorizations:input_type -> route53.ListVPCAssociationAuthorizationsRequest
-	245, // 202: route53.Route53Service.TestDNSAnswer:input_type -> route53.TestDNSAnswerRequest
-	261, // 203: route53.Route53Service.UpdateHealthCheck:input_type -> route53.UpdateHealthCheckRequest
-	263, // 204: route53.Route53Service.UpdateHostedZoneComment:input_type -> route53.UpdateHostedZoneCommentRequest
-	265, // 205: route53.Route53Service.UpdateHostedZoneFeatures:input_type -> route53.UpdateHostedZoneFeaturesRequest
-	267, // 206: route53.Route53Service.UpdateTrafficPolicyComment:input_type -> route53.UpdateTrafficPolicyCommentRequest
-	269, // 207: route53.Route53Service.UpdateTrafficPolicyInstance:input_type -> route53.UpdateTrafficPolicyInstanceRequest
-	22,  // 208: route53.Route53Service.ActivateKeySigningKey:output_type -> route53.ActivateKeySigningKeyResponse
-	26,  // 209: route53.Route53Service.AssociateVPCWithHostedZone:output_type -> route53.AssociateVPCWithHostedZoneResponse
-	30,  // 210: route53.Route53Service.ChangeCidrCollection:output_type -> route53.ChangeCidrCollectionResponse
-	33,  // 211: route53.Route53Service.ChangeResourceRecordSets:output_type -> route53.ChangeResourceRecordSetsResponse
-	35,  // 212: route53.Route53Service.ChangeTagsForResource:output_type -> route53.ChangeTagsForResourceResponse
-	51,  // 213: route53.Route53Service.CreateCidrCollection:output_type -> route53.CreateCidrCollectionResponse
-	53,  // 214: route53.Route53Service.CreateHealthCheck:output_type -> route53.CreateHealthCheckResponse
-	55,  // 215: route53.Route53Service.CreateHostedZone:output_type -> route53.CreateHostedZoneResponse
-	57,  // 216: route53.Route53Service.CreateKeySigningKey:output_type -> route53.CreateKeySigningKeyResponse
-	59,  // 217: route53.Route53Service.CreateQueryLoggingConfig:output_type -> route53.CreateQueryLoggingConfigResponse
-	61,  // 218: route53.Route53Service.CreateReusableDelegationSet:output_type -> route53.CreateReusableDelegationSetResponse
-	65,  // 219: route53.Route53Service.CreateTrafficPolicy:output_type -> route53.CreateTrafficPolicyResponse
-	63,  // 220: route53.Route53Service.CreateTrafficPolicyInstance:output_type -> route53.CreateTrafficPolicyInstanceResponse
-	67,  // 221: route53.Route53Service.CreateTrafficPolicyVersion:output_type -> route53.CreateTrafficPolicyVersionResponse
-	69,  // 222: route53.Route53Service.CreateVPCAssociationAuthorization:output_type -> route53.CreateVPCAssociationAuthorizationResponse
-	73,  // 223: route53.Route53Service.DeactivateKeySigningKey:output_type -> route53.DeactivateKeySigningKeyResponse
-	81,  // 224: route53.Route53Service.DeleteCidrCollection:output_type -> route53.DeleteCidrCollectionResponse
-	83,  // 225: route53.Route53Service.DeleteHealthCheck:output_type -> route53.DeleteHealthCheckResponse
-	85,  // 226: route53.Route53Service.DeleteHostedZone:output_type -> route53.DeleteHostedZoneResponse
-	87,  // 227: route53.Route53Service.DeleteKeySigningKey:output_type -> route53.DeleteKeySigningKeyResponse
-	89,  // 228: route53.Route53Service.DeleteQueryLoggingConfig:output_type -> route53.DeleteQueryLoggingConfigResponse
-	91,  // 229: route53.Route53Service.DeleteReusableDelegationSet:output_type -> route53.DeleteReusableDelegationSetResponse
-	95,  // 230: route53.Route53Service.DeleteTrafficPolicy:output_type -> route53.DeleteTrafficPolicyResponse
-	93,  // 231: route53.Route53Service.DeleteTrafficPolicyInstance:output_type -> route53.DeleteTrafficPolicyInstanceResponse
-	97,  // 232: route53.Route53Service.DeleteVPCAssociationAuthorization:output_type -> route53.DeleteVPCAssociationAuthorizationResponse
-	100, // 233: route53.Route53Service.DisableHostedZoneDNSSEC:output_type -> route53.DisableHostedZoneDNSSECResponse
-	102, // 234: route53.Route53Service.DisassociateVPCFromHostedZone:output_type -> route53.DisassociateVPCFromHostedZoneResponse
-	104, // 235: route53.Route53Service.EnableHostedZoneDNSSEC:output_type -> route53.EnableHostedZoneDNSSECResponse
-	109, // 236: route53.Route53Service.GetAccountLimit:output_type -> route53.GetAccountLimitResponse
-	111, // 237: route53.Route53Service.GetChange:output_type -> route53.GetChangeResponse
-	113, // 238: route53.Route53Service.GetCheckerIpRanges:output_type -> route53.GetCheckerIpRangesResponse
-	115, // 239: route53.Route53Service.GetDNSSEC:output_type -> route53.GetDNSSECResponse
-	117, // 240: route53.Route53Service.GetGeoLocation:output_type -> route53.GetGeoLocationResponse
-	123, // 241: route53.Route53Service.GetHealthCheck:output_type -> route53.GetHealthCheckResponse
-	119, // 242: route53.Route53Service.GetHealthCheckCount:output_type -> route53.GetHealthCheckCountResponse
-	121, // 243: route53.Route53Service.GetHealthCheckLastFailureReason:output_type -> route53.GetHealthCheckLastFailureReasonResponse
-	125, // 244: route53.Route53Service.GetHealthCheckStatus:output_type -> route53.GetHealthCheckStatusResponse
-	131, // 245: route53.Route53Service.GetHostedZone:output_type -> route53.GetHostedZoneResponse
-	127, // 246: route53.Route53Service.GetHostedZoneCount:output_type -> route53.GetHostedZoneCountResponse
-	129, // 247: route53.Route53Service.GetHostedZoneLimit:output_type -> route53.GetHostedZoneLimitResponse
-	133, // 248: route53.Route53Service.GetQueryLoggingConfig:output_type -> route53.GetQueryLoggingConfigResponse
-	137, // 249: route53.Route53Service.GetReusableDelegationSet:output_type -> route53.GetReusableDelegationSetResponse
-	135, // 250: route53.Route53Service.GetReusableDelegationSetLimit:output_type -> route53.GetReusableDelegationSetLimitResponse
-	143, // 251: route53.Route53Service.GetTrafficPolicy:output_type -> route53.GetTrafficPolicyResponse
-	141, // 252: route53.Route53Service.GetTrafficPolicyInstance:output_type -> route53.GetTrafficPolicyInstanceResponse
-	139, // 253: route53.Route53Service.GetTrafficPolicyInstanceCount:output_type -> route53.GetTrafficPolicyInstanceCountResponse
-	184, // 254: route53.Route53Service.ListCidrBlocks:output_type -> route53.ListCidrBlocksResponse
-	186, // 255: route53.Route53Service.ListCidrCollections:output_type -> route53.ListCidrCollectionsResponse
-	188, // 256: route53.Route53Service.ListCidrLocations:output_type -> route53.ListCidrLocationsResponse
-	190, // 257: route53.Route53Service.ListGeoLocations:output_type -> route53.ListGeoLocationsResponse
-	192, // 258: route53.Route53Service.ListHealthChecks:output_type -> route53.ListHealthChecksResponse
-	198, // 259: route53.Route53Service.ListHostedZones:output_type -> route53.ListHostedZonesResponse
-	194, // 260: route53.Route53Service.ListHostedZonesByName:output_type -> route53.ListHostedZonesByNameResponse
-	196, // 261: route53.Route53Service.ListHostedZonesByVPC:output_type -> route53.ListHostedZonesByVPCResponse
-	200, // 262: route53.Route53Service.ListQueryLoggingConfigs:output_type -> route53.ListQueryLoggingConfigsResponse
-	202, // 263: route53.Route53Service.ListResourceRecordSets:output_type -> route53.ListResourceRecordSetsResponse
-	204, // 264: route53.Route53Service.ListReusableDelegationSets:output_type -> route53.ListReusableDelegationSetsResponse
-	206, // 265: route53.Route53Service.ListTagsForResource:output_type -> route53.ListTagsForResourceResponse
-	208, // 266: route53.Route53Service.ListTagsForResources:output_type -> route53.ListTagsForResourcesResponse
-	210, // 267: route53.Route53Service.ListTrafficPolicies:output_type -> route53.ListTrafficPoliciesResponse
-	216, // 268: route53.Route53Service.ListTrafficPolicyInstances:output_type -> route53.ListTrafficPolicyInstancesResponse
-	212, // 269: route53.Route53Service.ListTrafficPolicyInstancesByHostedZone:output_type -> route53.ListTrafficPolicyInstancesByHostedZoneResponse
-	214, // 270: route53.Route53Service.ListTrafficPolicyInstancesByPolicy:output_type -> route53.ListTrafficPolicyInstancesByPolicyResponse
-	218, // 271: route53.Route53Service.ListTrafficPolicyVersions:output_type -> route53.ListTrafficPolicyVersionsResponse
-	220, // 272: route53.Route53Service.ListVPCAssociationAuthorizations:output_type -> route53.ListVPCAssociationAuthorizationsResponse
-	246, // 273: route53.Route53Service.TestDNSAnswer:output_type -> route53.TestDNSAnswerResponse
-	262, // 274: route53.Route53Service.UpdateHealthCheck:output_type -> route53.UpdateHealthCheckResponse
-	264, // 275: route53.Route53Service.UpdateHostedZoneComment:output_type -> route53.UpdateHostedZoneCommentResponse
-	266, // 276: route53.Route53Service.UpdateHostedZoneFeatures:output_type -> route53.UpdateHostedZoneFeaturesResponse
-	268, // 277: route53.Route53Service.UpdateTrafficPolicyComment:output_type -> route53.UpdateTrafficPolicyCommentResponse
-	270, // 278: route53.Route53Service.UpdateTrafficPolicyInstance:output_type -> route53.UpdateTrafficPolicyInstanceResponse
-	208, // [208:279] is the sub-list for method output_type
-	137, // [137:208] is the sub-list for method input_type
-	137, // [137:137] is the sub-list for extension type_name
-	137, // [137:137] is the sub-list for extension extendee
-	0,   // [0:137] is the sub-list for field type_name
+	271, // 77: route53.HostedZone.vpcs:type_name -> route53.VPC
+	0,   // 78: route53.HostedZoneFeatures.acceleratedrecoverystatus:type_name -> route53.AcceleratedRecoveryStatus
+	153, // 79: route53.HostedZoneFeatures.failurereasons:type_name -> route53.HostedZoneFailureReasons
+	9,   // 80: route53.HostedZoneLimit.type:type_name -> route53.HostedZoneLimitType
+	159, // 81: route53.HostedZoneSummary.owner:type_name -> route53.HostedZoneOwner
+	37,  // 82: route53.ListCidrBlocksResponse.cidrblocks:type_name -> route53.CidrBlockSummary
+	45,  // 83: route53.ListCidrCollectionsResponse.cidrcollections:type_name -> route53.CollectionSummary
+	221, // 84: route53.ListCidrLocationsResponse.cidrlocations:type_name -> route53.LocationSummary
+	106, // 85: route53.ListGeoLocationsResponse.geolocationdetailslist:type_name -> route53.GeoLocationDetails
+	144, // 86: route53.ListHealthChecksResponse.healthchecks:type_name -> route53.HealthCheck
+	150, // 87: route53.ListHostedZonesByNameResponse.hostedzones:type_name -> route53.HostedZone
+	19,  // 88: route53.ListHostedZonesByVPCRequest.vpcregion:type_name -> route53.VPCRegion
+	161, // 89: route53.ListHostedZonesByVPCResponse.hostedzonesummaries:type_name -> route53.HostedZoneSummary
+	10,  // 90: route53.ListHostedZonesRequest.hostedzonetype:type_name -> route53.HostedZoneType
+	150, // 91: route53.ListHostedZonesResponse.hostedzones:type_name -> route53.HostedZone
+	237, // 92: route53.ListQueryLoggingConfigsResponse.queryloggingconfigs:type_name -> route53.QueryLoggingConfig
+	12,  // 93: route53.ListResourceRecordSetsRequest.startrecordtype:type_name -> route53.RRType
+	12,  // 94: route53.ListResourceRecordSetsResponse.nextrecordtype:type_name -> route53.RRType
+	240, // 95: route53.ListResourceRecordSetsResponse.resourcerecordsets:type_name -> route53.ResourceRecordSet
+	74,  // 96: route53.ListReusableDelegationSetsResponse.delegationsets:type_name -> route53.DelegationSet
+	18,  // 97: route53.ListTagsForResourceRequest.resourcetype:type_name -> route53.TagResourceType
+	241, // 98: route53.ListTagsForResourceResponse.resourcetagset:type_name -> route53.ResourceTagSet
+	18,  // 99: route53.ListTagsForResourcesRequest.resourcetype:type_name -> route53.TagResourceType
+	241, // 100: route53.ListTagsForResourcesResponse.resourcetagsets:type_name -> route53.ResourceTagSet
+	260, // 101: route53.ListTrafficPoliciesResponse.trafficpolicysummaries:type_name -> route53.TrafficPolicySummary
+	12,  // 102: route53.ListTrafficPolicyInstancesByHostedZoneRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	12,  // 103: route53.ListTrafficPolicyInstancesByHostedZoneResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	258, // 104: route53.ListTrafficPolicyInstancesByHostedZoneResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
+	12,  // 105: route53.ListTrafficPolicyInstancesByPolicyRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	12,  // 106: route53.ListTrafficPolicyInstancesByPolicyResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	258, // 107: route53.ListTrafficPolicyInstancesByPolicyResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
+	12,  // 108: route53.ListTrafficPolicyInstancesRequest.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	12,  // 109: route53.ListTrafficPolicyInstancesResponse.trafficpolicyinstancetypemarker:type_name -> route53.RRType
+	258, // 110: route53.ListTrafficPolicyInstancesResponse.trafficpolicyinstances:type_name -> route53.TrafficPolicyInstance
+	255, // 111: route53.ListTrafficPolicyVersionsResponse.trafficpolicies:type_name -> route53.TrafficPolicy
+	271, // 112: route53.ListVPCAssociationAuthorizationsResponse.vpcs:type_name -> route53.VPC
+	24,  // 113: route53.ResourceRecordSet.aliastarget:type_name -> route53.AliasTarget
+	43,  // 114: route53.ResourceRecordSet.cidrroutingconfig:type_name -> route53.CidrRoutingConfig
+	14,  // 115: route53.ResourceRecordSet.failover:type_name -> route53.ResourceRecordSetFailover
+	105, // 116: route53.ResourceRecordSet.geolocation:type_name -> route53.GeoLocation
+	107, // 117: route53.ResourceRecordSet.geoproximitylocation:type_name -> route53.GeoProximityLocation
+	15,  // 118: route53.ResourceRecordSet.region:type_name -> route53.ResourceRecordSetRegion
+	239, // 119: route53.ResourceRecordSet.resourcerecords:type_name -> route53.ResourceRecord
+	12,  // 120: route53.ResourceRecordSet.type:type_name -> route53.RRType
+	18,  // 121: route53.ResourceTagSet.resourcetype:type_name -> route53.TagResourceType
+	244, // 122: route53.ResourceTagSet.tags:type_name -> route53.Tag
+	16,  // 123: route53.ReusableDelegationSetLimit.type:type_name -> route53.ReusableDelegationSetLimitType
+	12,  // 124: route53.TestDNSAnswerRequest.recordtype:type_name -> route53.RRType
+	12,  // 125: route53.TestDNSAnswerResponse.recordtype:type_name -> route53.RRType
+	12,  // 126: route53.TrafficPolicy.type:type_name -> route53.RRType
+	12,  // 127: route53.TrafficPolicyInstance.trafficpolicytype:type_name -> route53.RRType
+	12,  // 128: route53.TrafficPolicySummary.type:type_name -> route53.RRType
+	23,  // 129: route53.UpdateHealthCheckRequest.alarmidentifier:type_name -> route53.AlarmIdentifier
+	11,  // 130: route53.UpdateHealthCheckRequest.insufficientdatahealthstatus:type_name -> route53.InsufficientDataHealthStatus
+	7,   // 131: route53.UpdateHealthCheckRequest.regions:type_name -> route53.HealthCheckRegion
+	13,  // 132: route53.UpdateHealthCheckRequest.resetelements:type_name -> route53.ResettableElementName
+	144, // 133: route53.UpdateHealthCheckResponse.healthcheck:type_name -> route53.HealthCheck
+	150, // 134: route53.UpdateHostedZoneCommentResponse.hostedzone:type_name -> route53.HostedZone
+	255, // 135: route53.UpdateTrafficPolicyCommentResponse.trafficpolicy:type_name -> route53.TrafficPolicy
+	258, // 136: route53.UpdateTrafficPolicyInstanceResponse.trafficpolicyinstance:type_name -> route53.TrafficPolicyInstance
+	19,  // 137: route53.VPC.vpcregion:type_name -> route53.VPCRegion
+	21,  // 138: route53.Route53Service.ActivateKeySigningKey:input_type -> route53.ActivateKeySigningKeyRequest
+	25,  // 139: route53.Route53Service.AssociateVPCWithHostedZone:input_type -> route53.AssociateVPCWithHostedZoneRequest
+	29,  // 140: route53.Route53Service.ChangeCidrCollection:input_type -> route53.ChangeCidrCollectionRequest
+	32,  // 141: route53.Route53Service.ChangeResourceRecordSets:input_type -> route53.ChangeResourceRecordSetsRequest
+	34,  // 142: route53.Route53Service.ChangeTagsForResource:input_type -> route53.ChangeTagsForResourceRequest
+	50,  // 143: route53.Route53Service.CreateCidrCollection:input_type -> route53.CreateCidrCollectionRequest
+	52,  // 144: route53.Route53Service.CreateHealthCheck:input_type -> route53.CreateHealthCheckRequest
+	54,  // 145: route53.Route53Service.CreateHostedZone:input_type -> route53.CreateHostedZoneRequest
+	56,  // 146: route53.Route53Service.CreateKeySigningKey:input_type -> route53.CreateKeySigningKeyRequest
+	58,  // 147: route53.Route53Service.CreateQueryLoggingConfig:input_type -> route53.CreateQueryLoggingConfigRequest
+	60,  // 148: route53.Route53Service.CreateReusableDelegationSet:input_type -> route53.CreateReusableDelegationSetRequest
+	64,  // 149: route53.Route53Service.CreateTrafficPolicy:input_type -> route53.CreateTrafficPolicyRequest
+	62,  // 150: route53.Route53Service.CreateTrafficPolicyInstance:input_type -> route53.CreateTrafficPolicyInstanceRequest
+	66,  // 151: route53.Route53Service.CreateTrafficPolicyVersion:input_type -> route53.CreateTrafficPolicyVersionRequest
+	68,  // 152: route53.Route53Service.CreateVPCAssociationAuthorization:input_type -> route53.CreateVPCAssociationAuthorizationRequest
+	72,  // 153: route53.Route53Service.DeactivateKeySigningKey:input_type -> route53.DeactivateKeySigningKeyRequest
+	80,  // 154: route53.Route53Service.DeleteCidrCollection:input_type -> route53.DeleteCidrCollectionRequest
+	82,  // 155: route53.Route53Service.DeleteHealthCheck:input_type -> route53.DeleteHealthCheckRequest
+	84,  // 156: route53.Route53Service.DeleteHostedZone:input_type -> route53.DeleteHostedZoneRequest
+	86,  // 157: route53.Route53Service.DeleteKeySigningKey:input_type -> route53.DeleteKeySigningKeyRequest
+	88,  // 158: route53.Route53Service.DeleteQueryLoggingConfig:input_type -> route53.DeleteQueryLoggingConfigRequest
+	90,  // 159: route53.Route53Service.DeleteReusableDelegationSet:input_type -> route53.DeleteReusableDelegationSetRequest
+	94,  // 160: route53.Route53Service.DeleteTrafficPolicy:input_type -> route53.DeleteTrafficPolicyRequest
+	92,  // 161: route53.Route53Service.DeleteTrafficPolicyInstance:input_type -> route53.DeleteTrafficPolicyInstanceRequest
+	96,  // 162: route53.Route53Service.DeleteVPCAssociationAuthorization:input_type -> route53.DeleteVPCAssociationAuthorizationRequest
+	99,  // 163: route53.Route53Service.DisableHostedZoneDNSSEC:input_type -> route53.DisableHostedZoneDNSSECRequest
+	101, // 164: route53.Route53Service.DisassociateVPCFromHostedZone:input_type -> route53.DisassociateVPCFromHostedZoneRequest
+	103, // 165: route53.Route53Service.EnableHostedZoneDNSSEC:input_type -> route53.EnableHostedZoneDNSSECRequest
+	108, // 166: route53.Route53Service.GetAccountLimit:input_type -> route53.GetAccountLimitRequest
+	110, // 167: route53.Route53Service.GetChange:input_type -> route53.GetChangeRequest
+	112, // 168: route53.Route53Service.GetCheckerIpRanges:input_type -> route53.GetCheckerIpRangesRequest
+	114, // 169: route53.Route53Service.GetDNSSEC:input_type -> route53.GetDNSSECRequest
+	116, // 170: route53.Route53Service.GetGeoLocation:input_type -> route53.GetGeoLocationRequest
+	122, // 171: route53.Route53Service.GetHealthCheck:input_type -> route53.GetHealthCheckRequest
+	118, // 172: route53.Route53Service.GetHealthCheckCount:input_type -> route53.GetHealthCheckCountRequest
+	120, // 173: route53.Route53Service.GetHealthCheckLastFailureReason:input_type -> route53.GetHealthCheckLastFailureReasonRequest
+	124, // 174: route53.Route53Service.GetHealthCheckStatus:input_type -> route53.GetHealthCheckStatusRequest
+	130, // 175: route53.Route53Service.GetHostedZone:input_type -> route53.GetHostedZoneRequest
+	126, // 176: route53.Route53Service.GetHostedZoneCount:input_type -> route53.GetHostedZoneCountRequest
+	128, // 177: route53.Route53Service.GetHostedZoneLimit:input_type -> route53.GetHostedZoneLimitRequest
+	132, // 178: route53.Route53Service.GetQueryLoggingConfig:input_type -> route53.GetQueryLoggingConfigRequest
+	136, // 179: route53.Route53Service.GetReusableDelegationSet:input_type -> route53.GetReusableDelegationSetRequest
+	134, // 180: route53.Route53Service.GetReusableDelegationSetLimit:input_type -> route53.GetReusableDelegationSetLimitRequest
+	142, // 181: route53.Route53Service.GetTrafficPolicy:input_type -> route53.GetTrafficPolicyRequest
+	140, // 182: route53.Route53Service.GetTrafficPolicyInstance:input_type -> route53.GetTrafficPolicyInstanceRequest
+	138, // 183: route53.Route53Service.GetTrafficPolicyInstanceCount:input_type -> route53.GetTrafficPolicyInstanceCountRequest
+	183, // 184: route53.Route53Service.ListCidrBlocks:input_type -> route53.ListCidrBlocksRequest
+	185, // 185: route53.Route53Service.ListCidrCollections:input_type -> route53.ListCidrCollectionsRequest
+	187, // 186: route53.Route53Service.ListCidrLocations:input_type -> route53.ListCidrLocationsRequest
+	189, // 187: route53.Route53Service.ListGeoLocations:input_type -> route53.ListGeoLocationsRequest
+	191, // 188: route53.Route53Service.ListHealthChecks:input_type -> route53.ListHealthChecksRequest
+	197, // 189: route53.Route53Service.ListHostedZones:input_type -> route53.ListHostedZonesRequest
+	193, // 190: route53.Route53Service.ListHostedZonesByName:input_type -> route53.ListHostedZonesByNameRequest
+	195, // 191: route53.Route53Service.ListHostedZonesByVPC:input_type -> route53.ListHostedZonesByVPCRequest
+	199, // 192: route53.Route53Service.ListQueryLoggingConfigs:input_type -> route53.ListQueryLoggingConfigsRequest
+	201, // 193: route53.Route53Service.ListResourceRecordSets:input_type -> route53.ListResourceRecordSetsRequest
+	203, // 194: route53.Route53Service.ListReusableDelegationSets:input_type -> route53.ListReusableDelegationSetsRequest
+	205, // 195: route53.Route53Service.ListTagsForResource:input_type -> route53.ListTagsForResourceRequest
+	207, // 196: route53.Route53Service.ListTagsForResources:input_type -> route53.ListTagsForResourcesRequest
+	209, // 197: route53.Route53Service.ListTrafficPolicies:input_type -> route53.ListTrafficPoliciesRequest
+	215, // 198: route53.Route53Service.ListTrafficPolicyInstances:input_type -> route53.ListTrafficPolicyInstancesRequest
+	211, // 199: route53.Route53Service.ListTrafficPolicyInstancesByHostedZone:input_type -> route53.ListTrafficPolicyInstancesByHostedZoneRequest
+	213, // 200: route53.Route53Service.ListTrafficPolicyInstancesByPolicy:input_type -> route53.ListTrafficPolicyInstancesByPolicyRequest
+	217, // 201: route53.Route53Service.ListTrafficPolicyVersions:input_type -> route53.ListTrafficPolicyVersionsRequest
+	219, // 202: route53.Route53Service.ListVPCAssociationAuthorizations:input_type -> route53.ListVPCAssociationAuthorizationsRequest
+	245, // 203: route53.Route53Service.TestDNSAnswer:input_type -> route53.TestDNSAnswerRequest
+	261, // 204: route53.Route53Service.UpdateHealthCheck:input_type -> route53.UpdateHealthCheckRequest
+	263, // 205: route53.Route53Service.UpdateHostedZoneComment:input_type -> route53.UpdateHostedZoneCommentRequest
+	265, // 206: route53.Route53Service.UpdateHostedZoneFeatures:input_type -> route53.UpdateHostedZoneFeaturesRequest
+	267, // 207: route53.Route53Service.UpdateTrafficPolicyComment:input_type -> route53.UpdateTrafficPolicyCommentRequest
+	269, // 208: route53.Route53Service.UpdateTrafficPolicyInstance:input_type -> route53.UpdateTrafficPolicyInstanceRequest
+	22,  // 209: route53.Route53Service.ActivateKeySigningKey:output_type -> route53.ActivateKeySigningKeyResponse
+	26,  // 210: route53.Route53Service.AssociateVPCWithHostedZone:output_type -> route53.AssociateVPCWithHostedZoneResponse
+	30,  // 211: route53.Route53Service.ChangeCidrCollection:output_type -> route53.ChangeCidrCollectionResponse
+	33,  // 212: route53.Route53Service.ChangeResourceRecordSets:output_type -> route53.ChangeResourceRecordSetsResponse
+	35,  // 213: route53.Route53Service.ChangeTagsForResource:output_type -> route53.ChangeTagsForResourceResponse
+	51,  // 214: route53.Route53Service.CreateCidrCollection:output_type -> route53.CreateCidrCollectionResponse
+	53,  // 215: route53.Route53Service.CreateHealthCheck:output_type -> route53.CreateHealthCheckResponse
+	55,  // 216: route53.Route53Service.CreateHostedZone:output_type -> route53.CreateHostedZoneResponse
+	57,  // 217: route53.Route53Service.CreateKeySigningKey:output_type -> route53.CreateKeySigningKeyResponse
+	59,  // 218: route53.Route53Service.CreateQueryLoggingConfig:output_type -> route53.CreateQueryLoggingConfigResponse
+	61,  // 219: route53.Route53Service.CreateReusableDelegationSet:output_type -> route53.CreateReusableDelegationSetResponse
+	65,  // 220: route53.Route53Service.CreateTrafficPolicy:output_type -> route53.CreateTrafficPolicyResponse
+	63,  // 221: route53.Route53Service.CreateTrafficPolicyInstance:output_type -> route53.CreateTrafficPolicyInstanceResponse
+	67,  // 222: route53.Route53Service.CreateTrafficPolicyVersion:output_type -> route53.CreateTrafficPolicyVersionResponse
+	69,  // 223: route53.Route53Service.CreateVPCAssociationAuthorization:output_type -> route53.CreateVPCAssociationAuthorizationResponse
+	73,  // 224: route53.Route53Service.DeactivateKeySigningKey:output_type -> route53.DeactivateKeySigningKeyResponse
+	81,  // 225: route53.Route53Service.DeleteCidrCollection:output_type -> route53.DeleteCidrCollectionResponse
+	83,  // 226: route53.Route53Service.DeleteHealthCheck:output_type -> route53.DeleteHealthCheckResponse
+	85,  // 227: route53.Route53Service.DeleteHostedZone:output_type -> route53.DeleteHostedZoneResponse
+	87,  // 228: route53.Route53Service.DeleteKeySigningKey:output_type -> route53.DeleteKeySigningKeyResponse
+	89,  // 229: route53.Route53Service.DeleteQueryLoggingConfig:output_type -> route53.DeleteQueryLoggingConfigResponse
+	91,  // 230: route53.Route53Service.DeleteReusableDelegationSet:output_type -> route53.DeleteReusableDelegationSetResponse
+	95,  // 231: route53.Route53Service.DeleteTrafficPolicy:output_type -> route53.DeleteTrafficPolicyResponse
+	93,  // 232: route53.Route53Service.DeleteTrafficPolicyInstance:output_type -> route53.DeleteTrafficPolicyInstanceResponse
+	97,  // 233: route53.Route53Service.DeleteVPCAssociationAuthorization:output_type -> route53.DeleteVPCAssociationAuthorizationResponse
+	100, // 234: route53.Route53Service.DisableHostedZoneDNSSEC:output_type -> route53.DisableHostedZoneDNSSECResponse
+	102, // 235: route53.Route53Service.DisassociateVPCFromHostedZone:output_type -> route53.DisassociateVPCFromHostedZoneResponse
+	104, // 236: route53.Route53Service.EnableHostedZoneDNSSEC:output_type -> route53.EnableHostedZoneDNSSECResponse
+	109, // 237: route53.Route53Service.GetAccountLimit:output_type -> route53.GetAccountLimitResponse
+	111, // 238: route53.Route53Service.GetChange:output_type -> route53.GetChangeResponse
+	113, // 239: route53.Route53Service.GetCheckerIpRanges:output_type -> route53.GetCheckerIpRangesResponse
+	115, // 240: route53.Route53Service.GetDNSSEC:output_type -> route53.GetDNSSECResponse
+	117, // 241: route53.Route53Service.GetGeoLocation:output_type -> route53.GetGeoLocationResponse
+	123, // 242: route53.Route53Service.GetHealthCheck:output_type -> route53.GetHealthCheckResponse
+	119, // 243: route53.Route53Service.GetHealthCheckCount:output_type -> route53.GetHealthCheckCountResponse
+	121, // 244: route53.Route53Service.GetHealthCheckLastFailureReason:output_type -> route53.GetHealthCheckLastFailureReasonResponse
+	125, // 245: route53.Route53Service.GetHealthCheckStatus:output_type -> route53.GetHealthCheckStatusResponse
+	131, // 246: route53.Route53Service.GetHostedZone:output_type -> route53.GetHostedZoneResponse
+	127, // 247: route53.Route53Service.GetHostedZoneCount:output_type -> route53.GetHostedZoneCountResponse
+	129, // 248: route53.Route53Service.GetHostedZoneLimit:output_type -> route53.GetHostedZoneLimitResponse
+	133, // 249: route53.Route53Service.GetQueryLoggingConfig:output_type -> route53.GetQueryLoggingConfigResponse
+	137, // 250: route53.Route53Service.GetReusableDelegationSet:output_type -> route53.GetReusableDelegationSetResponse
+	135, // 251: route53.Route53Service.GetReusableDelegationSetLimit:output_type -> route53.GetReusableDelegationSetLimitResponse
+	143, // 252: route53.Route53Service.GetTrafficPolicy:output_type -> route53.GetTrafficPolicyResponse
+	141, // 253: route53.Route53Service.GetTrafficPolicyInstance:output_type -> route53.GetTrafficPolicyInstanceResponse
+	139, // 254: route53.Route53Service.GetTrafficPolicyInstanceCount:output_type -> route53.GetTrafficPolicyInstanceCountResponse
+	184, // 255: route53.Route53Service.ListCidrBlocks:output_type -> route53.ListCidrBlocksResponse
+	186, // 256: route53.Route53Service.ListCidrCollections:output_type -> route53.ListCidrCollectionsResponse
+	188, // 257: route53.Route53Service.ListCidrLocations:output_type -> route53.ListCidrLocationsResponse
+	190, // 258: route53.Route53Service.ListGeoLocations:output_type -> route53.ListGeoLocationsResponse
+	192, // 259: route53.Route53Service.ListHealthChecks:output_type -> route53.ListHealthChecksResponse
+	198, // 260: route53.Route53Service.ListHostedZones:output_type -> route53.ListHostedZonesResponse
+	194, // 261: route53.Route53Service.ListHostedZonesByName:output_type -> route53.ListHostedZonesByNameResponse
+	196, // 262: route53.Route53Service.ListHostedZonesByVPC:output_type -> route53.ListHostedZonesByVPCResponse
+	200, // 263: route53.Route53Service.ListQueryLoggingConfigs:output_type -> route53.ListQueryLoggingConfigsResponse
+	202, // 264: route53.Route53Service.ListResourceRecordSets:output_type -> route53.ListResourceRecordSetsResponse
+	204, // 265: route53.Route53Service.ListReusableDelegationSets:output_type -> route53.ListReusableDelegationSetsResponse
+	206, // 266: route53.Route53Service.ListTagsForResource:output_type -> route53.ListTagsForResourceResponse
+	208, // 267: route53.Route53Service.ListTagsForResources:output_type -> route53.ListTagsForResourcesResponse
+	210, // 268: route53.Route53Service.ListTrafficPolicies:output_type -> route53.ListTrafficPoliciesResponse
+	216, // 269: route53.Route53Service.ListTrafficPolicyInstances:output_type -> route53.ListTrafficPolicyInstancesResponse
+	212, // 270: route53.Route53Service.ListTrafficPolicyInstancesByHostedZone:output_type -> route53.ListTrafficPolicyInstancesByHostedZoneResponse
+	214, // 271: route53.Route53Service.ListTrafficPolicyInstancesByPolicy:output_type -> route53.ListTrafficPolicyInstancesByPolicyResponse
+	218, // 272: route53.Route53Service.ListTrafficPolicyVersions:output_type -> route53.ListTrafficPolicyVersionsResponse
+	220, // 273: route53.Route53Service.ListVPCAssociationAuthorizations:output_type -> route53.ListVPCAssociationAuthorizationsResponse
+	246, // 274: route53.Route53Service.TestDNSAnswer:output_type -> route53.TestDNSAnswerResponse
+	262, // 275: route53.Route53Service.UpdateHealthCheck:output_type -> route53.UpdateHealthCheckResponse
+	264, // 276: route53.Route53Service.UpdateHostedZoneComment:output_type -> route53.UpdateHostedZoneCommentResponse
+	266, // 277: route53.Route53Service.UpdateHostedZoneFeatures:output_type -> route53.UpdateHostedZoneFeaturesResponse
+	268, // 278: route53.Route53Service.UpdateTrafficPolicyComment:output_type -> route53.UpdateTrafficPolicyCommentResponse
+	270, // 279: route53.Route53Service.UpdateTrafficPolicyInstance:output_type -> route53.UpdateTrafficPolicyInstanceResponse
+	209, // [209:280] is the sub-list for method output_type
+	138, // [138:209] is the sub-list for method input_type
+	138, // [138:138] is the sub-list for extension type_name
+	138, // [138:138] is the sub-list for extension extendee
+	0,   // [0:138] is the sub-list for field type_name
 }
 
 func init() { file_route53_proto_init() }

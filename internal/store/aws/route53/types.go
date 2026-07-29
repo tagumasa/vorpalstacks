@@ -15,6 +15,7 @@ type HostedZone struct {
 	VPCs                   []*VPC            `json:"vpcs,omitempty"`
 	DelegationSetID        string            `json:"delegationSetId,omitempty"`
 	NameServers            []string          `json:"nameServers,omitempty"`
+	ChangeID               string            `json:"changeId,omitempty"`
 	Region                 string            `json:"region"`
 	AccountID              string            `json:"accountId"`
 	CreatedAt              time.Time         `json:"createdAt"`

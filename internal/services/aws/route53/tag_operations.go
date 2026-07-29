@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
+	route53store "vorpalstacks/internal/store/aws/route53"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -38,13 +39,18 @@ func parseResourceParams(params map[string]interface{}) (string, string, string,
 
 // ChangeTagsForResource adds or removes tags for a Route 53 resource.
 func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_, _, resourceKey, err := parseResourceParams(req.Parameters)
+	normalizedType, resourceId, resourceKey, err := parseResourceParams(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
+		return nil, err
+	}
+
+	// H6: Verify resource exists before applying tag operations.
+	if err := s.verifyResourceExists(st, normalizedType, resourceId); err != nil {
 		return nil, err
 	}
 
@@ -78,6 +84,16 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		}
 	}
 
+	// M8: Validate tag Key (max 128) and Value (max 256) lengths.
+	for _, t := range addTags {
+		if len(t.Key) > 128 {
+			return nil, awserrors.NewAWSError("InvalidInput", "Tag key must not exceed 128 characters", 400)
+		}
+		if len(t.Value) > 256 {
+			return nil, awserrors.NewAWSError("InvalidInput", "Tag value must not exceed 256 characters", 400)
+		}
+	}
+
 	removeTagKeys := tags.ParseTagKeysWithQueryFallback(req.Parameters, "RemoveTagKeys")
 	if len(removeTagKeys) == 0 {
 		removeTagKeys = tags.ParseTagKeysAsSlice(req.Parameters, "RemoveTagKeys")
@@ -90,6 +106,23 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 				removeTagKeys = []string{k}
 			}
 		}
+	}
+
+	// M9: Enforce 50-tag limit — compute the resulting key set
+	// after applying both AddTags and RemoveTagKeys.
+	existingTags, _ := st.Tags().ListTagsForResource(resourceKey)
+	keySet := make(map[string]bool)
+	for _, t := range existingTags {
+		keySet[t.Key] = true
+	}
+	for _, k := range removeTagKeys {
+		delete(keySet, k)
+	}
+	for _, t := range addTags {
+		keySet[t.Key] = true
+	}
+	if len(keySet) > 50 {
+		return nil, awserrors.NewAWSError("InvalidInput", "Maximum of 50 tags allowed per resource", 400)
 	}
 
 	if len(addTags) > 0 {
@@ -119,6 +152,11 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
+	// H6: Verify resource exists before listing tags.
+	if err := s.verifyResourceExists(st, normalizedType, resourceId); err != nil {
+		return nil, err
+	}
+
 	tags, err := st.Tags().ListTagsForResource(resourceKey)
 	if err != nil {
 		return nil, awserrors.NewAWSError("ListTags", err.Error(), 500)
@@ -139,4 +177,20 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 			"Tags":         protocol.XMLElements{ElementName: "Tag", Items: tagItems},
 		},
 	}, nil
+}
+
+// verifyResourceExists checks whether the specified resource exists
+// in the store, returning NoSuchHostedZone or NoSuchHealthCheck if not.
+func (s *Route53Service) verifyResourceExists(st *route53store.Route53Stores, resourceType, resourceId string) error {
+	switch resourceType {
+	case "hostedzone":
+		if !st.HostedZones().Exists(resourceId) {
+			return NewNoSuchHostedZoneError(resourceId)
+		}
+	case "healthcheck":
+		if !st.HealthChecks().Exists(resourceId) {
+			return NewNoSuchHealthCheckError(resourceId)
+		}
+	}
+	return nil
 }

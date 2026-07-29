@@ -54,21 +54,37 @@ func (s *DNSServer) Start() error {
 	handler.HandleFunc(".", s.handleDNSRequest)
 
 	addr := fmt.Sprintf("%s:%d", s.bindAddr, s.port)
+	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return fmt.Errorf("resolve UDP addr: %w", err)
+	}
+
+	// L9: Bind synchronously so that port conflicts are detected
+	// before reporting started=true. Previously, ListenAndServe ran
+	// in a goroutine and bind failures were silently logged while
+	// started remained true.
+	udpListener, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		return fmt.Errorf("listen UDP: %w", err)
+	}
+
+	tcpListener, err := net.Listen("tcp", addr)
+	if err != nil {
+		udpListener.Close()
+		return fmt.Errorf("listen TCP: %w", err)
+	}
 
 	s.udpServer = &dns.Server{
-		Addr:    addr,
-		Net:     "udp",
 		Handler: handler,
 	}
 
 	s.tcpServer = &dns.Server{
-		Addr:    addr,
-		Net:     "tcp",
 		Handler: handler,
 	}
 
 	go func() {
-		if err := s.udpServer.ListenAndServe(); err != nil {
+		s.udpServer.PacketConn = udpListener
+		if err := s.udpServer.ActivateAndServe(); err != nil {
 			select {
 			case <-s.shutdownCh:
 			default:
@@ -78,7 +94,8 @@ func (s *DNSServer) Start() error {
 	}()
 
 	go func() {
-		if err := s.tcpServer.ListenAndServe(); err != nil {
+		s.tcpServer.Listener = tcpListener
+		if err := s.tcpServer.ActivateAndServe(); err != nil {
 			select {
 			case <-s.shutdownCh:
 			default:
@@ -88,7 +105,7 @@ func (s *DNSServer) Start() error {
 	}()
 
 	s.started = true
-	logs.Info("DNS server started", logs.String("address", fmt.Sprintf("%s:%d", s.bindAddr, s.port)))
+	logs.Info("DNS server started", logs.String("address", addr))
 	return nil
 }
 
@@ -133,6 +150,8 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m.RecursionAvailable = false
 
 	if len(r.Question) == 0 {
+		// L6: Return FORMERR per DNS spec for empty question section.
+		m.Rcode = dns.RcodeFormatError
 		if err := w.WriteMsg(m); err != nil {
 			logs.Error("DNS write error", logs.Err(err))
 		}
@@ -181,15 +200,25 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func (s *DNSServer) findHostedZone(qname string) *route53store.HostedZone {
-	zones, err := s.store.List("", 100)
-	if err != nil {
-		return nil
+	// L7: Paginate through all hosted zones instead of capping at 100.
+	var allZones []*route53store.HostedZone
+	marker := ""
+	for {
+		result, err := s.store.List(marker, 100)
+		if err != nil {
+			return nil
+		}
+		allZones = append(allZones, result.HostedZones...)
+		if !result.IsTruncated {
+			break
+		}
+		marker = result.Marker
 	}
 
 	var bestMatch *route53store.HostedZone
 	bestMatchLen := 0
 
-	for _, zone := range zones.HostedZones {
+	for _, zone := range allZones {
 		zoneName := strings.ToLower(dns.CanonicalName(zone.Name))
 		if strings.HasSuffix(qname, zoneName) && len(zoneName) > bestMatchLen {
 			bestMatch = zone
@@ -203,9 +232,8 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string,
 	var rrs []dns.RR
 
 	ttl := uint32(rs.TTL)
-	if ttl == 0 {
-		ttl = 300
-	}
+	// L5: Respect TTL=0 per RFC 1035 ("do not cache") instead of
+	// silently overriding to 300.
 
 	if rs.AliasTarget != nil {
 		switch qtype {
@@ -295,24 +323,27 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string,
 			rr := &dns.SOA{}
 			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: ttl}
 			parts := strings.Fields(record.Value)
-			if len(parts) >= 7 {
-				rr.Ns = dns.Fqdn(parts[0])
-				rr.Mbox = dns.Fqdn(parts[1])
-				if serial, err := strconv.ParseUint(parts[2], 10, 32); err == nil {
-					rr.Serial = uint32(serial)
-				}
-				if refresh, err := strconv.ParseUint(parts[3], 10, 32); err == nil {
-					rr.Refresh = uint32(refresh)
-				}
-				if retry, err := strconv.ParseUint(parts[4], 10, 32); err == nil {
-					rr.Retry = uint32(retry)
-				}
-				if expire, err := strconv.ParseUint(parts[5], 10, 32); err == nil {
-					rr.Expire = uint32(expire)
-				}
-				if minttl, err := strconv.ParseUint(parts[6], 10, 32); err == nil {
-					rr.Minttl = uint32(minttl)
-				}
+			// L4: Fail-closed for malformed SOA — skip the record
+			// instead of emitting one with zero-valued fields.
+			if len(parts) < 7 {
+				break
+			}
+			rr.Ns = dns.Fqdn(parts[0])
+			rr.Mbox = dns.Fqdn(parts[1])
+			if serial, err := strconv.ParseUint(parts[2], 10, 32); err == nil {
+				rr.Serial = uint32(serial)
+			}
+			if refresh, err := strconv.ParseUint(parts[3], 10, 32); err == nil {
+				rr.Refresh = uint32(refresh)
+			}
+			if retry, err := strconv.ParseUint(parts[4], 10, 32); err == nil {
+				rr.Retry = uint32(retry)
+			}
+			if expire, err := strconv.ParseUint(parts[5], 10, 32); err == nil {
+				rr.Expire = uint32(expire)
+			}
+			if minttl, err := strconv.ParseUint(parts[6], 10, 32); err == nil {
+				rr.Minttl = uint32(minttl)
 			}
 			rrs = append(rrs, rr)
 		case "PTR":

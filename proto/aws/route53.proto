@@ -2088,6 +2088,8 @@ message HostedZone {
 
   int64 resourcerecordsetcount = 334391116;
 
+  repeated VPC vpcs = 424064898;
+
 }
 
 

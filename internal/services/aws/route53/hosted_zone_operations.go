@@ -29,8 +29,9 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	if !strings.HasSuffix(name, ".") {
 		name = name + "."
 	}
-	if strings.Contains(name, " ") || len(name) < 2 {
-		return nil, awserrors.NewAWSError("InvalidInput", "Invalid hosted zone name", 400)
+	// M10: Validate domain name format per RFC 1035.
+	if err := validateDomainName(name); err != nil {
+		return nil, err
 	}
 
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
@@ -83,6 +84,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		NameServers:            nameServers,
 		Region:                 reqCtx.GetRegion(),
 		AccountID:              s.accountID,
+		CreatedAt:              time.Now(),
 	}
 
 	st, err := s.store(reqCtx)
@@ -92,10 +94,21 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 
 	// Idempotent: if same CallerReference already exists, return existing zone
 	if existing, err := st.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
-		return map[string]interface{}{
+		// H9: Include ChangeInfo in idempotent return — AWS spec requires
+		// {HostedZone, ChangeInfo, DelegationSet} and the SDK parser fails
+		// on null ChangeInfo.
+		result := map[string]interface{}{
 			"HostedZone":    s.hostedZoneToResponse(existing),
 			"DelegationSet": buildDelegationSetResponse(existing.NameServers, existing.DelegationSetID),
-		}, nil
+		}
+		if existing.ChangeID != "" {
+			result["ChangeInfo"] = map[string]interface{}{
+				"Id":          "/change/" + existing.ChangeID,
+				"Status":      "INSYNC",
+				"SubmittedAt": existing.CreatedAt.Format(time.RFC3339),
+			}
+		}
+		return result, nil
 	}
 
 	if err := st.HostedZones().Create(zone); err != nil {
@@ -130,6 +143,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	}
 
 	zone.ResourceRecordSetCount = 2
+	zone.ChangeID = generateChangeId()
 	if err := st.HostedZones().Update(zone); err != nil {
 		return nil, mapStoreError(err)
 	}
@@ -141,10 +155,9 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	changeId := generateChangeId()
-	now := time.Now()
+	now := zone.CreatedAt
 	if err := st.Changes().Create(&route53store.ChangeInfo{
-		ID:          changeId,
+		ID:          zone.ChangeID,
 		Status:      "INSYNC",
 		SubmittedAt: now,
 		Comment:     comment,
@@ -155,7 +168,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	return map[string]interface{}{
 		"HostedZone": s.hostedZoneToResponse(zone),
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + changeId,
+			"Id":          "/change/" + zone.ChangeID,
 			"Status":      "INSYNC",
 			"SubmittedAt": now.Format(time.RFC3339),
 		},
@@ -205,22 +218,33 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 	if delegationSetId != "" {
 		delegationSetId = strings.TrimPrefix(delegationSetId, "/delegationset/")
 	}
+	// M2: HostedZoneType filter (private/public).
+	hostedZoneType := request.GetStringParam(req.Parameters, "HostedZoneType")
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if delegationSetId != "" {
+	// When any server-side filter is specified, list all zones and
+	// filter in memory before paginating.
+	if delegationSetId != "" || hostedZoneType != "" {
 		allZones, err := st.HostedZones().ListByName()
 		if err != nil {
 			return nil, mapStoreError(err)
 		}
 		var filtered []*route53store.HostedZone
 		for _, z := range allZones {
-			if z.DelegationSetID == delegationSetId {
-				filtered = append(filtered, z)
+			if delegationSetId != "" && z.DelegationSetID != delegationSetId {
+				continue
 			}
+			if hostedZoneType == "private" && !z.Private {
+				continue
+			}
+			if hostedZoneType == "public" && z.Private {
+				continue
+			}
+			filtered = append(filtered, z)
 		}
 
 		effectiveMax := maxItems
@@ -400,6 +424,10 @@ func (s *Route53Service) UpdateHostedZoneComment(ctx context.Context, reqCtx *re
 	}
 
 	comment := request.GetStringParam(req.Parameters, "Comment")
+	// L2: Validate comment length (AWS max 256 characters).
+	if len(comment) > 256 {
+		return nil, awserrors.NewAWSError("InvalidInput", "Comment must not exceed 256 characters", 400)
+	}
 	if zone.Config == nil {
 		zone.Config = &route53store.HostedZoneConfig{}
 	}
@@ -449,7 +477,46 @@ func (s *Route53Service) GetDNSSEC(ctx context.Context, reqCtx *request.RequestC
 	return map[string]interface{}{
 		"Status": map[string]interface{}{
 			"ServeSignature": "NOT_SIGNING",
+			"StatusMessage":  "",
 		},
 		"KeySigningKeys": []interface{}{},
 	}, nil
+}
+
+// validateDomainName validates a DNS domain name per RFC 1035.
+func validateDomainName(name string) error {
+	// Remove trailing dot for validation.
+	n := strings.TrimSuffix(name, ".")
+	if n == "" {
+		return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name is required", 400)
+	}
+	if len(n) > 253 {
+		return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name must not exceed 253 characters", 400)
+	}
+	labels := strings.Split(n, ".")
+	for _, label := range labels {
+		if label == "" {
+			return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name contains an empty label", 400)
+		}
+		if len(label) > 63 {
+			return awserrors.NewAWSError("InvalidDomainName", "DNS label must not exceed 63 characters", 400)
+		}
+		for i, c := range label {
+			isAlnum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+			isHyphen := c == '-'
+			if !isAlnum && !isHyphen {
+				return awserrors.NewAWSError("InvalidDomainName",
+					fmt.Sprintf("Invalid character in DNS label %q", label), 400)
+			}
+			if i == 0 && isHyphen {
+				return awserrors.NewAWSError("InvalidDomainName",
+					fmt.Sprintf("DNS label %q must not start with a hyphen", label), 400)
+			}
+			if i == len(label)-1 && isHyphen {
+				return awserrors.NewAWSError("InvalidDomainName",
+					fmt.Sprintf("DNS label %q must not end with a hyphen", label), 400)
+			}
+		}
+	}
+	return nil
 }
