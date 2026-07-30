@@ -203,8 +203,9 @@ type ErrorReportConfiguration struct {
 
 // S3ErrorReportConfiguration defines the S3 location for error reports.
 type S3ErrorReportConfiguration struct {
-	BucketName      string `json:"bucketName"`
-	ObjectKeyPrefix string `json:"objectKeyPrefix,omitempty"`
+	BucketName       string `json:"bucketName"`
+	ObjectKeyPrefix  string `json:"objectKeyPrefix,omitempty"`
+	EncryptionOption string `json:"encryptionOption,omitempty"`
 }
 
 // TargetConfiguration defines the target configuration for a scheduled query.
@@ -212,14 +213,24 @@ type TargetConfiguration struct {
 	TimestreamConfiguration *TimestreamConfiguration `json:"timestreamConfiguration"`
 }
 
-// TimestreamConfiguration defines the target Timestream table configuration.
+// TimestreamConfiguration defines the target Timestream table configuration
+// for a scheduled query (Smithy: com.amazonaws.timestreamquery#TimestreamConfiguration).
 type TimestreamConfiguration struct {
-	DatabaseName         string                `json:"databaseName"`
-	TableName            string                `json:"tableName"`
-	TimeColumn           string                `json:"timeColumn,omitempty"`
-	DimensionMappings    []DimensionMapping    `json:"dimensionMappings,omitempty"`
-	MultiMeasureMappings *MultiMeasureMappings `json:"multiMeasureMappings,omitempty"`
-	MixedMeasureMappings []MixedMeasureMapping `json:"mixedMeasureMappings,omitempty"`
+	DatabaseName         string                  `json:"databaseName"`
+	TableName            string                  `json:"tableName"`
+	TimeColumn           string                  `json:"timeColumn,omitempty"`
+	DimensionMappings    []QueryDimensionMapping `json:"dimensionMappings,omitempty"`
+	MultiMeasureMappings *MultiMeasureMappings   `json:"multiMeasureMappings,omitempty"`
+	MixedMeasureMappings []MixedMeasureMapping   `json:"mixedMeasureMappings,omitempty"`
+	MeasureNameColumn    string                  `json:"measureNameColumn,omitempty"`
+}
+
+// QueryDimensionMapping defines the dimension mapping for scheduled query
+// target configuration (Smithy: com.amazonaws.timestreamquery#DimensionMapping).
+// Both Name and DimensionValueType are member-level required.
+type QueryDimensionMapping struct {
+	Name               string `json:"name"`
+	DimensionValueType string `json:"dimensionValueType,omitempty"`
 }
 
 // DimensionMapping defines the mapping from source columns to dimensions.
@@ -240,6 +251,7 @@ type DestinationColumn struct {
 
 // MultiMeasureMappings defines mappings for multi-measure records.
 type MultiMeasureMappings struct {
+	TargetMultiMeasureName        string                         `json:"targetMultiMeasureName,omitempty"`
 	MultiMeasureAttributeMappings []MultiMeasureAttributeMapping `json:"multiMeasureAttributeMappings"`
 }
 
@@ -293,9 +305,35 @@ type ScheduledQueryRun struct {
 	InvocationTime    time.Time         `json:"invocationTime"`
 	TriggerTime       time.Time         `json:"triggerTime"`
 	RunStatus         ScheduleRunStatus `json:"runStatus"`
+	TriggerType       string            `json:"triggerType,omitempty"`
 	ExecutionStats    *ExecutionStats   `json:"executionStats,omitempty"`
 	Error             string            `json:"error,omitempty"`
 	CompletionTime    time.Time         `json:"completionTime,omitempty"`
+}
+
+// TriggerType constants aligned to the Smithy ScheduledQueryRunStatus enum
+// prefix semantics (AUTO_TRIGGER_* vs MANUAL_TRIGGER_*).
+const (
+	TriggerTypeManual = "MANUAL"
+	TriggerTypeAuto   = "AUTO"
+)
+
+// ScheduledQueryRunStatusFromTrigger derives the API-visible run-status enum
+// value from the trigger type and the internal run status.
+func ScheduledQueryRunStatusFromTrigger(triggerType string, status ScheduleRunStatus) string {
+	failed := status == ScheduleRunStatusFailed
+	switch triggerType {
+	case TriggerTypeAuto:
+		if failed {
+			return ScheduledQueryRunStatusAutoTriggerFailure
+		}
+		return ScheduledQueryRunStatusAutoTriggerSuccess
+	default:
+		if failed {
+			return ScheduledQueryRunStatusManualTriggerFailure
+		}
+		return ScheduledQueryRunStatusManualTriggerSuccess
+	}
 }
 
 // ExecutionStats contains statistics about a scheduled query execution.
@@ -441,12 +479,24 @@ const (
 	S3EncryptionOptionSSEKMS S3EncryptionOption = "SSE_KMS"
 )
 
+// ProvisionedCapacitySettings stores the provisioned capacity configuration
+// for Timestream Query (Smithy: ProvisionedCapacityRequest/Response).
+type ProvisionedCapacitySettings struct {
+	ActiveQueryTCU          int64  `json:"activeQueryTCU,omitempty"`
+	TargetQueryTCU          int64  `json:"targetQueryTCU,omitempty"`
+	SNSTopicARN             string `json:"snsTopicArn,omitempty"`
+	RoleARN                 string `json:"roleArn,omitempty"`
+	LastUpdateStatus        string `json:"lastUpdateStatus,omitempty"`
+	LastUpdateStatusMessage string `json:"lastUpdateStatusMessage,omitempty"`
+}
+
 // AccountSettings represents the account settings for Timestream.
 type AccountSettings struct {
-	MaxQueryTCU             int64  `json:"maxQueryTCU,omitempty"`
-	QueryPricingMode        string `json:"queryPricingMode,omitempty"`
-	EncryptionConfiguration string `json:"encryptionConfiguration,omitempty"`
-	QueryComputeType        string `json:"queryComputeType,omitempty"`
+	MaxQueryTCU             int64                        `json:"maxQueryTCU,omitempty"`
+	QueryPricingMode        string                       `json:"queryPricingMode,omitempty"`
+	EncryptionConfiguration string                       `json:"encryptionConfiguration,omitempty"`
+	QueryComputeType        string                       `json:"queryComputeType,omitempty"`
+	ProvisionedCapacity     *ProvisionedCapacitySettings `json:"provisionedCapacity,omitempty"`
 }
 
 const (

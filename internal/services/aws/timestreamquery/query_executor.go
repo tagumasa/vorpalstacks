@@ -2,13 +2,10 @@ package timestreamquery
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
@@ -28,15 +25,13 @@ func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *re
 	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
 	if err != nil {
 		logs.Debug("Timestream SQL parse error", logs.String("query", processedSQL), logs.Err(err))
-		return nil, awserrors.NewAWSError("InvalidQueryException",
-			fmt.Sprintf("SQL parse error: %v", err), http.StatusBadRequest)
+		return nil, ErrValidationException
 	}
 
 	selectStmt, ok := stmt.(*sqlparser.Select)
 	if !ok {
 		logs.Debug("Timestream query rejected: not a SELECT statement", logs.String("query", processedSQL))
-		return nil, awserrors.NewAWSError("InvalidQueryException",
-			"only SELECT statements are supported", http.StatusBadRequest)
+		return nil, ErrValidationException
 	}
 
 	databaseName, tableName, err := s.extractTableInfo(selectStmt)
@@ -175,22 +170,19 @@ func (s *TimestreamQueryService) convertCastOperator(sql string) string {
 func (s *TimestreamQueryService) extractTableInfo(selectStmt *sqlparser.Select) (databaseName, tableName string, err error) {
 	if len(selectStmt.From) == 0 {
 		logs.Debug("Timestream query rejected: no table specified in FROM clause")
-		return "", "", awserrors.NewAWSError("InvalidQueryException",
-			"no table specified in FROM clause", http.StatusBadRequest)
+		return "", "", ErrQueryExecutionError
 	}
 
 	aliasedTableExpr, ok := selectStmt.From[0].(*sqlparser.AliasedTableExpr)
 	if !ok {
 		logs.Debug("Timestream query rejected: unsupported table expression")
-		return "", "", awserrors.NewAWSError("InvalidQueryException",
-			"unsupported table expression", http.StatusBadRequest)
+		return "", "", ErrQueryExecutionError
 	}
 
 	tableNameExpr, ok := aliasedTableExpr.Expr.(sqlparser.TableName)
 	if !ok {
 		logs.Debug("Timestream query rejected: unsupported table name format")
-		return "", "", awserrors.NewAWSError("InvalidQueryException",
-			"unsupported table name format", http.StatusBadRequest)
+		return "", "", ErrQueryExecutionError
 	}
 
 	if !tableNameExpr.Qualifier.IsEmpty() {

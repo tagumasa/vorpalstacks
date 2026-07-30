@@ -61,6 +61,33 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 			Name:         sq.Name,
 			Creationtime: sq.CreationTime.Format(timeutils.ISO8601UTCFormat),
 		}
+		// L11: Enrich admin handler projection with State, LastRunStatus,
+		// ErrorReportConfiguration, and TargetDestination.
+		summary.State = pb.ScheduledQueryState_SCHEDULED_QUERY_STATE_ENABLED
+		if sq.ScheduledQueryStatus == timestreamstore.ScheduledQueryStatusDisabled {
+			summary.State = pb.ScheduledQueryState_SCHEDULED_QUERY_STATE_DISABLED
+		}
+		if sq.LastRunStatus != "" {
+			summary.Lastrunstatus = mapLastRunStatusToProto(sq.LastRunStatus)
+		}
+		if sq.ErrorReportConfiguration != nil && sq.ErrorReportConfiguration.S3Configuration != nil {
+			summary.Errorreportconfiguration = &pb.ErrorReportConfiguration{
+				S3Configuration: &pb.S3Configuration{
+					Bucketname: sq.ErrorReportConfiguration.S3Configuration.BucketName,
+				},
+			}
+			if sq.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix != "" {
+				summary.Errorreportconfiguration.S3Configuration.Objectkeyprefix = sq.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix
+			}
+		}
+		if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
+			summary.Targetdestination = &pb.TargetDestination{
+				Timestreamdestination: &pb.TimestreamDestination{
+					Databasename: sq.TargetConfiguration.TimestreamConfiguration.DatabaseName,
+					Tablename:    sq.TargetConfiguration.TimestreamConfiguration.TableName,
+				},
+			}
+		}
 		if !sq.PreviousRunTime.IsZero() {
 			summary.Previousinvocationtime = sq.PreviousRunTime.Format(timeutils.ISO8601UTCFormat)
 		}
@@ -78,4 +105,21 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 // NewConnectHandler creates a gRPC-Web connect handler for the Timestream Query admin console.
 func NewConnectHandler(svc *TimestreamQueryService) (string, http.Handler) {
 	return timestreamqueryconnect.NewTimestreamQueryServiceHandler(NewAdminHandler(svc))
+}
+
+// mapLastRunStatusToProto maps the store-level ScheduledQueryRunStatus string
+// to the proto enum used by the admin console.
+func mapLastRunStatusToProto(status string) pb.ScheduledQueryRunStatus {
+	switch status {
+	case timestreamstore.ScheduledQueryRunStatusManualTriggerSuccess:
+		return pb.ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_MANUAL_TRIGGER_SUCCESS
+	case timestreamstore.ScheduledQueryRunStatusManualTriggerFailure:
+		return pb.ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_MANUAL_TRIGGER_FAILURE
+	case timestreamstore.ScheduledQueryRunStatusAutoTriggerFailure:
+		return pb.ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_AUTO_TRIGGER_FAILURE
+	case timestreamstore.ScheduledQueryRunStatusAutoTriggerSuccess:
+		return pb.ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_AUTO_TRIGGER_SUCCESS
+	default:
+		return pb.ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_MANUAL_TRIGGER_SUCCESS
+	}
 }

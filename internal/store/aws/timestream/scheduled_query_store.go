@@ -151,7 +151,7 @@ func NewScheduledQueryRunStore(store storage.BasicStorage, region string) *Sched
 }
 
 // CreateRun creates a new scheduled query run.
-func (s *ScheduledQueryRunStore) CreateRun(scheduledQueryARN string, invocationTime, triggerTime time.Time) (*ScheduledQueryRun, error) {
+func (s *ScheduledQueryRunStore) CreateRun(scheduledQueryARN string, invocationTime, triggerTime time.Time, triggerType string) (*ScheduledQueryRun, error) {
 	runID := fmt.Sprintf("%d-%s", triggerTime.UnixNano(), strings.TrimPrefix(scheduledQueryARN, "arn:"))
 	runARN := scheduledQueryARN + "/run/" + runID
 
@@ -161,6 +161,7 @@ func (s *ScheduledQueryRunStore) CreateRun(scheduledQueryARN string, invocationT
 		InvocationTime:    invocationTime,
 		TriggerTime:       triggerTime,
 		RunStatus:         ScheduleRunStatusPending,
+		TriggerType:       triggerType,
 	}
 
 	if err := s.PutProto(runARN, ScheduledQueryRunToProto(run)); err != nil {

@@ -233,7 +233,7 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 			ScheduledQueryArn: aws.String(fmt.Sprintf("arn:aws:timestream:us-east-1:000000000000:scheduled-query/%s", dupSQName)),
 		})
 		_, err = tc.queryClient.CreateScheduledQuery(tc.ctx, dupInput)
-		return AssertErrorContains(err, "ResourceAlreadyExistsException")
+		return AssertErrorContains(err, "ConflictException")
 	}))
 
 	return results

@@ -241,8 +241,9 @@ func S3ErrorReportConfigurationToProto(s *S3ErrorReportConfiguration) *pb.S3Erro
 		return nil
 	}
 	return &pb.S3ErrorReportConfiguration{
-		BucketName:      s.BucketName,
-		ObjectKeyPrefix: s.ObjectKeyPrefix,
+		BucketName:       s.BucketName,
+		ObjectKeyPrefix:  s.ObjectKeyPrefix,
+		EncryptionOption: s.EncryptionOption,
 	}
 }
 
@@ -252,8 +253,9 @@ func ProtoToS3ErrorReportConfiguration(p *pb.S3ErrorReportConfiguration) *S3Erro
 		return nil
 	}
 	return &S3ErrorReportConfiguration{
-		BucketName:      p.BucketName,
-		ObjectKeyPrefix: p.ObjectKeyPrefix,
+		BucketName:       p.BucketName,
+		ObjectKeyPrefix:  p.ObjectKeyPrefix,
+		EncryptionOption: p.EncryptionOption,
 	}
 }
 
@@ -425,6 +427,7 @@ func MultiMeasureMappingsToProto(m *MultiMeasureMappings) *pb.MultiMeasureMappin
 		return nil
 	}
 	return &pb.MultiMeasureMappings{
+		TargetMultiMeasureName:        m.TargetMultiMeasureName,
 		MultiMeasureAttributeMappings: multiMeasureAttributeMappingsToProto(m.MultiMeasureAttributeMappings),
 	}
 }
@@ -435,6 +438,7 @@ func ProtoToMultiMeasureMappings(p *pb.MultiMeasureMappings) *MultiMeasureMappin
 		return nil
 	}
 	return &MultiMeasureMappings{
+		TargetMultiMeasureName:        p.TargetMultiMeasureName,
 		MultiMeasureAttributeMappings: protoToMultiMeasureAttributeMappings(p.MultiMeasureAttributeMappings),
 	}
 }
@@ -493,6 +497,52 @@ func protoToMixedMeasureMappings(pbs []*pb.MixedMeasureMapping) []MixedMeasureMa
 
 // TimestreamConfiguration conversion
 
+// QueryDimensionMapping conversion
+
+// QueryDimensionMappingToProto converts a QueryDimensionMapping to its protobuf representation.
+func QueryDimensionMappingToProto(d *QueryDimensionMapping) *pb.QueryDimensionMapping {
+	if d == nil {
+		return nil
+	}
+	return &pb.QueryDimensionMapping{
+		Name:               d.Name,
+		DimensionValueType: d.DimensionValueType,
+	}
+}
+
+// ProtoToQueryDimensionMapping converts a protobuf QueryDimensionMapping to its internal representation.
+func ProtoToQueryDimensionMapping(p *pb.QueryDimensionMapping) *QueryDimensionMapping {
+	if p == nil {
+		return nil
+	}
+	return &QueryDimensionMapping{
+		Name:               p.Name,
+		DimensionValueType: p.DimensionValueType,
+	}
+}
+
+func queryDimensionMappingsToProto(ds []QueryDimensionMapping) []*pb.QueryDimensionMapping {
+	if ds == nil {
+		return nil
+	}
+	result := make([]*pb.QueryDimensionMapping, len(ds))
+	for i, d := range ds {
+		result[i] = QueryDimensionMappingToProto(&d)
+	}
+	return result
+}
+
+func protoToQueryDimensionMappings(pbs []*pb.QueryDimensionMapping) []QueryDimensionMapping {
+	if pbs == nil {
+		return nil
+	}
+	result := make([]QueryDimensionMapping, len(pbs))
+	for i, pb := range pbs {
+		result[i] = *ProtoToQueryDimensionMapping(pb)
+	}
+	return result
+}
+
 // TimestreamConfigurationToProto converts a TimestreamConfiguration to its protobuf representation.
 func TimestreamConfigurationToProto(t *TimestreamConfiguration) *pb.TimestreamConfiguration {
 	if t == nil {
@@ -502,9 +552,10 @@ func TimestreamConfigurationToProto(t *TimestreamConfiguration) *pb.TimestreamCo
 		DatabaseName:         t.DatabaseName,
 		TableName:            t.TableName,
 		TimeColumn:           t.TimeColumn,
-		DimensionMappings:    dimensionMappingsToProto(t.DimensionMappings),
+		DimensionMappings:    queryDimensionMappingsToProto(t.DimensionMappings),
 		MultiMeasureMappings: MultiMeasureMappingsToProto(t.MultiMeasureMappings),
 		MixedMeasureMappings: mixedMeasureMappingsToProto(t.MixedMeasureMappings),
+		MeasureNameColumn:    t.MeasureNameColumn,
 	}
 }
 
@@ -517,9 +568,10 @@ func ProtoToTimestreamConfiguration(p *pb.TimestreamConfiguration) *TimestreamCo
 		DatabaseName:         p.DatabaseName,
 		TableName:            p.TableName,
 		TimeColumn:           p.TimeColumn,
-		DimensionMappings:    protoToDimensionMappings(p.DimensionMappings),
+		DimensionMappings:    protoToQueryDimensionMappings(p.DimensionMappings),
 		MultiMeasureMappings: ProtoToMultiMeasureMappings(p.MultiMeasureMappings),
 		MixedMeasureMappings: protoToMixedMeasureMappings(p.MixedMeasureMappings),
+		MeasureNameColumn:    p.MeasureNameColumn,
 	}
 }
 
@@ -640,6 +692,7 @@ func ScheduledQueryRunToProto(s *ScheduledQueryRun) *pb.ScheduledQueryRun {
 		InvocationTime:    timestamppb.New(s.InvocationTime),
 		TriggerTime:       timestamppb.New(s.TriggerTime),
 		RunStatus:         string(s.RunStatus),
+		TriggerType:       s.TriggerType,
 		ExecutionStats:    ExecutionStatsToProto(s.ExecutionStats),
 		Error:             s.Error,
 		CompletionTime:    timestamppb.New(s.CompletionTime),
@@ -657,6 +710,7 @@ func ProtoToScheduledQueryRun(p *pb.ScheduledQueryRun) *ScheduledQueryRun {
 		InvocationTime:    p.InvocationTime.AsTime(),
 		TriggerTime:       p.TriggerTime.AsTime(),
 		RunStatus:         ScheduleRunStatus(p.RunStatus),
+		TriggerType:       p.TriggerType,
 		ExecutionStats:    ProtoToExecutionStats(p.ExecutionStats),
 		Error:             p.Error,
 		CompletionTime:    p.CompletionTime.AsTime(),
@@ -987,6 +1041,38 @@ func ProtoToBatchLoadTaskDescription(p *pb.BatchLoadTaskDescription) *BatchLoadT
 
 // AccountSettings conversion
 
+// ProvisionedCapacitySettings conversion
+
+// ProvisionedCapacitySettingsToProto converts ProvisionedCapacitySettings to its protobuf representation.
+func ProvisionedCapacitySettingsToProto(p *ProvisionedCapacitySettings) *pb.ProvisionedCapacitySettings {
+	if p == nil {
+		return nil
+	}
+	return &pb.ProvisionedCapacitySettings{
+		ActiveQueryTcu:          p.ActiveQueryTCU,
+		TargetQueryTcu:          p.TargetQueryTCU,
+		SnsTopicArn:             p.SNSTopicARN,
+		RoleArn:                 p.RoleARN,
+		LastUpdateStatus:        p.LastUpdateStatus,
+		LastUpdateStatusMessage: p.LastUpdateStatusMessage,
+	}
+}
+
+// ProtoToProvisionedCapacitySettings converts protobuf ProvisionedCapacitySettings to its internal representation.
+func ProtoToProvisionedCapacitySettings(p *pb.ProvisionedCapacitySettings) *ProvisionedCapacitySettings {
+	if p == nil {
+		return nil
+	}
+	return &ProvisionedCapacitySettings{
+		ActiveQueryTCU:          p.ActiveQueryTcu,
+		TargetQueryTCU:          p.TargetQueryTcu,
+		SNSTopicARN:             p.SnsTopicArn,
+		RoleARN:                 p.RoleArn,
+		LastUpdateStatus:        p.LastUpdateStatus,
+		LastUpdateStatusMessage: p.LastUpdateStatusMessage,
+	}
+}
+
 // AccountSettingsToProto converts AccountSettings to its protobuf representation.
 func AccountSettingsToProto(a *AccountSettings) *pb.AccountSettings {
 	if a == nil {
@@ -997,6 +1083,7 @@ func AccountSettingsToProto(a *AccountSettings) *pb.AccountSettings {
 		QueryPricingMode:        a.QueryPricingMode,
 		EncryptionConfiguration: a.EncryptionConfiguration,
 		QueryComputeType:        a.QueryComputeType,
+		ProvisionedCapacity:     ProvisionedCapacitySettingsToProto(a.ProvisionedCapacity),
 	}
 }
 
@@ -1010,5 +1097,6 @@ func ProtoToAccountSettings(p *pb.AccountSettings) *AccountSettings {
 		QueryPricingMode:        p.QueryPricingMode,
 		EncryptionConfiguration: p.EncryptionConfiguration,
 		QueryComputeType:        p.QueryComputeType,
+		ProvisionedCapacity:     ProtoToProvisionedCapacitySettings(p.ProvisionedCapacity),
 	}
 }

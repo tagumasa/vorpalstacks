@@ -241,7 +241,7 @@ func (s *AccountSettingsStore) GetAccountSettings() (*AccountSettings, error) {
 }
 
 // UpdateAccountSettings updates account settings.
-func (s *AccountSettingsStore) UpdateAccountSettings(maxQueryTCU *int64, queryPricingMode, queryComputeType, encryptionConfiguration string) (*AccountSettings, error) {
+func (s *AccountSettingsStore) UpdateAccountSettings(maxQueryTCU *int64, queryPricingMode, queryComputeType, encryptionConfiguration string, provisionedCapacity *ProvisionedCapacitySettings) (*AccountSettings, error) {
 	settings, err := s.GetAccountSettings()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account settings: %w", err)
@@ -258,6 +258,14 @@ func (s *AccountSettingsStore) UpdateAccountSettings(maxQueryTCU *int64, queryPr
 	}
 	if encryptionConfiguration != "" {
 		settings.EncryptionConfiguration = encryptionConfiguration
+	}
+	if provisionedCapacity != nil {
+		settings.ProvisionedCapacity = provisionedCapacity
+	}
+	// C3: When switching to ON_DEMAND, clear any lingering ProvisionedCapacity
+	// settings so stale config does not persist after the mode change.
+	if queryComputeType == QueryComputeTypeOnDemand {
+		settings.ProvisionedCapacity = nil
 	}
 
 	key := s.accountID

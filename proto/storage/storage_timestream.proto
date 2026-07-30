@@ -65,6 +65,7 @@ message NotificationConfiguration {
 message S3ErrorReportConfiguration {
   string bucket_name = 1;
   string object_key_prefix = 2;
+  string encryption_option = 3;
 }
 
 // ErrorReportConfiguration defines where to store error reports for failed query executions.
@@ -88,6 +89,13 @@ message DimensionMapping {
   DestinationColumn destination_column = 2;
 }
 
+// QueryDimensionMapping defines the dimension mapping for scheduled query
+// target configuration (Smithy: com.amazonaws.timestreamquery#DimensionMapping).
+message QueryDimensionMapping {
+  string name = 1;
+  string dimension_value_type = 2;
+}
+
 // MultiMeasureAttributeMapping defines the mapping for a multi-measure attribute.
 message MultiMeasureAttributeMapping {
   SourceColumn source_column = 1;
@@ -97,6 +105,7 @@ message MultiMeasureAttributeMapping {
 
 // MultiMeasureMappings defines mappings for multi-measure records.
 message MultiMeasureMappings {
+  string target_multi_measure_name = 2;
   repeated MultiMeasureAttributeMapping multi_measure_attribute_mappings = 1;
 }
 
@@ -114,9 +123,10 @@ message TimestreamConfiguration {
   string database_name = 1;
   string table_name = 2;
   string time_column = 3;
-  repeated DimensionMapping dimension_mappings = 4;
+  repeated QueryDimensionMapping dimension_mappings = 4;
   MultiMeasureMappings multi_measure_mappings = 5;
   repeated MixedMeasureMapping mixed_measure_mappings = 6;
+  string measure_name_column = 7;
 }
 
 // TargetConfiguration defines the target configuration for a scheduled query.
@@ -167,6 +177,7 @@ message ScheduledQueryRun {
   ExecutionStats execution_stats = 6;
   string error = 7;
   google.protobuf.Timestamp completion_time = 8;
+  string trigger_type = 9;
 }
 
 // BatchLoadTask represents a batch load task for importing data into Timestream.
@@ -264,10 +275,22 @@ message BatchLoadTaskDescription {
   BatchLoadProgressReport progress_report = 13;
 }
 
+// ProvisionedCapacitySettings stores the provisioned capacity configuration
+// for Timestream Query (Smithy: ProvisionedCapacityRequest/Response).
+message ProvisionedCapacitySettings {
+  int64 active_query_tcu = 1;
+  int64 target_query_tcu = 2;
+  string sns_topic_arn = 3;
+  string role_arn = 4;
+  string last_update_status = 5;
+  string last_update_status_message = 6;
+}
+
 // AccountSettings represents the account settings for Timestream.
 message AccountSettings {
   int64 max_query_tcu = 1;
   string query_pricing_mode = 2;
   string encryption_configuration = 3;
   string query_compute_type = 4;
+  ProvisionedCapacitySettings provisioned_capacity = 5;
 }

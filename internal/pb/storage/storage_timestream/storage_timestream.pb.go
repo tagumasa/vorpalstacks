@@ -504,11 +504,12 @@ func (x *NotificationConfiguration) GetSnsConfiguration() *SNSConfiguration {
 
 // S3ErrorReportConfiguration defines the S3 location for error reports.
 type S3ErrorReportConfiguration struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	BucketName      string                 `protobuf:"bytes,1,opt,name=bucket_name,json=bucketName,proto3" json:"bucket_name,omitempty"`
-	ObjectKeyPrefix string                 `protobuf:"bytes,2,opt,name=object_key_prefix,json=objectKeyPrefix,proto3" json:"object_key_prefix,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	BucketName       string                 `protobuf:"bytes,1,opt,name=bucket_name,json=bucketName,proto3" json:"bucket_name,omitempty"`
+	ObjectKeyPrefix  string                 `protobuf:"bytes,2,opt,name=object_key_prefix,json=objectKeyPrefix,proto3" json:"object_key_prefix,omitempty"`
+	EncryptionOption string                 `protobuf:"bytes,3,opt,name=encryption_option,json=encryptionOption,proto3" json:"encryption_option,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *S3ErrorReportConfiguration) Reset() {
@@ -551,6 +552,13 @@ func (x *S3ErrorReportConfiguration) GetBucketName() string {
 func (x *S3ErrorReportConfiguration) GetObjectKeyPrefix() string {
 	if x != nil {
 		return x.ObjectKeyPrefix
+	}
+	return ""
+}
+
+func (x *S3ErrorReportConfiguration) GetEncryptionOption() string {
+	if x != nil {
+		return x.EncryptionOption
 	}
 	return ""
 }
@@ -743,6 +751,60 @@ func (x *DimensionMapping) GetDestinationColumn() *DestinationColumn {
 	return nil
 }
 
+// QueryDimensionMapping defines the dimension mapping for scheduled query
+// target configuration (Smithy: com.amazonaws.timestreamquery#DimensionMapping).
+type QueryDimensionMapping struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Name               string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	DimensionValueType string                 `protobuf:"bytes,2,opt,name=dimension_value_type,json=dimensionValueType,proto3" json:"dimension_value_type,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *QueryDimensionMapping) Reset() {
+	*x = QueryDimensionMapping{}
+	mi := &file_storage_timestream_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryDimensionMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryDimensionMapping) ProtoMessage() {}
+
+func (x *QueryDimensionMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_timestream_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryDimensionMapping.ProtoReflect.Descriptor instead.
+func (*QueryDimensionMapping) Descriptor() ([]byte, []int) {
+	return file_storage_timestream_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *QueryDimensionMapping) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *QueryDimensionMapping) GetDimensionValueType() string {
+	if x != nil {
+		return x.DimensionValueType
+	}
+	return ""
+}
+
 // MultiMeasureAttributeMapping defines the mapping for a multi-measure attribute.
 type MultiMeasureAttributeMapping struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
@@ -755,7 +817,7 @@ type MultiMeasureAttributeMapping struct {
 
 func (x *MultiMeasureAttributeMapping) Reset() {
 	*x = MultiMeasureAttributeMapping{}
-	mi := &file_storage_timestream_proto_msgTypes[13]
+	mi := &file_storage_timestream_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -767,7 +829,7 @@ func (x *MultiMeasureAttributeMapping) String() string {
 func (*MultiMeasureAttributeMapping) ProtoMessage() {}
 
 func (x *MultiMeasureAttributeMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[13]
+	mi := &file_storage_timestream_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -780,7 +842,7 @@ func (x *MultiMeasureAttributeMapping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MultiMeasureAttributeMapping.ProtoReflect.Descriptor instead.
 func (*MultiMeasureAttributeMapping) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{13}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *MultiMeasureAttributeMapping) GetSourceColumn() *SourceColumn {
@@ -807,6 +869,7 @@ func (x *MultiMeasureAttributeMapping) GetMeasureValueType() string {
 // MultiMeasureMappings defines mappings for multi-measure records.
 type MultiMeasureMappings struct {
 	state                         protoimpl.MessageState          `protogen:"open.v1"`
+	TargetMultiMeasureName        string                          `protobuf:"bytes,2,opt,name=target_multi_measure_name,json=targetMultiMeasureName,proto3" json:"target_multi_measure_name,omitempty"`
 	MultiMeasureAttributeMappings []*MultiMeasureAttributeMapping `protobuf:"bytes,1,rep,name=multi_measure_attribute_mappings,json=multiMeasureAttributeMappings,proto3" json:"multi_measure_attribute_mappings,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -814,7 +877,7 @@ type MultiMeasureMappings struct {
 
 func (x *MultiMeasureMappings) Reset() {
 	*x = MultiMeasureMappings{}
-	mi := &file_storage_timestream_proto_msgTypes[14]
+	mi := &file_storage_timestream_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -826,7 +889,7 @@ func (x *MultiMeasureMappings) String() string {
 func (*MultiMeasureMappings) ProtoMessage() {}
 
 func (x *MultiMeasureMappings) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[14]
+	mi := &file_storage_timestream_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -839,7 +902,14 @@ func (x *MultiMeasureMappings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MultiMeasureMappings.ProtoReflect.Descriptor instead.
 func (*MultiMeasureMappings) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{14}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *MultiMeasureMappings) GetTargetMultiMeasureName() string {
+	if x != nil {
+		return x.TargetMultiMeasureName
+	}
+	return ""
 }
 
 func (x *MultiMeasureMappings) GetMultiMeasureAttributeMappings() []*MultiMeasureAttributeMapping {
@@ -863,7 +933,7 @@ type MixedMeasureMapping struct {
 
 func (x *MixedMeasureMapping) Reset() {
 	*x = MixedMeasureMapping{}
-	mi := &file_storage_timestream_proto_msgTypes[15]
+	mi := &file_storage_timestream_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -875,7 +945,7 @@ func (x *MixedMeasureMapping) String() string {
 func (*MixedMeasureMapping) ProtoMessage() {}
 
 func (x *MixedMeasureMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[15]
+	mi := &file_storage_timestream_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -888,7 +958,7 @@ func (x *MixedMeasureMapping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MixedMeasureMapping.ProtoReflect.Descriptor instead.
 func (*MixedMeasureMapping) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{15}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MixedMeasureMapping) GetMeasureName() string {
@@ -928,20 +998,21 @@ func (x *MixedMeasureMapping) GetMultiMeasureAttributeMappings() []*MultiMeasure
 
 // TimestreamConfiguration defines the target Timestream table configuration.
 type TimestreamConfiguration struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	DatabaseName         string                 `protobuf:"bytes,1,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	TableName            string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
-	TimeColumn           string                 `protobuf:"bytes,3,opt,name=time_column,json=timeColumn,proto3" json:"time_column,omitempty"`
-	DimensionMappings    []*DimensionMapping    `protobuf:"bytes,4,rep,name=dimension_mappings,json=dimensionMappings,proto3" json:"dimension_mappings,omitempty"`
-	MultiMeasureMappings *MultiMeasureMappings  `protobuf:"bytes,5,opt,name=multi_measure_mappings,json=multiMeasureMappings,proto3" json:"multi_measure_mappings,omitempty"`
-	MixedMeasureMappings []*MixedMeasureMapping `protobuf:"bytes,6,rep,name=mixed_measure_mappings,json=mixedMeasureMappings,proto3" json:"mixed_measure_mappings,omitempty"`
+	state                protoimpl.MessageState   `protogen:"open.v1"`
+	DatabaseName         string                   `protobuf:"bytes,1,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	TableName            string                   `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	TimeColumn           string                   `protobuf:"bytes,3,opt,name=time_column,json=timeColumn,proto3" json:"time_column,omitempty"`
+	DimensionMappings    []*QueryDimensionMapping `protobuf:"bytes,4,rep,name=dimension_mappings,json=dimensionMappings,proto3" json:"dimension_mappings,omitempty"`
+	MultiMeasureMappings *MultiMeasureMappings    `protobuf:"bytes,5,opt,name=multi_measure_mappings,json=multiMeasureMappings,proto3" json:"multi_measure_mappings,omitempty"`
+	MixedMeasureMappings []*MixedMeasureMapping   `protobuf:"bytes,6,rep,name=mixed_measure_mappings,json=mixedMeasureMappings,proto3" json:"mixed_measure_mappings,omitempty"`
+	MeasureNameColumn    string                   `protobuf:"bytes,7,opt,name=measure_name_column,json=measureNameColumn,proto3" json:"measure_name_column,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *TimestreamConfiguration) Reset() {
 	*x = TimestreamConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[16]
+	mi := &file_storage_timestream_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -953,7 +1024,7 @@ func (x *TimestreamConfiguration) String() string {
 func (*TimestreamConfiguration) ProtoMessage() {}
 
 func (x *TimestreamConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[16]
+	mi := &file_storage_timestream_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -966,7 +1037,7 @@ func (x *TimestreamConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimestreamConfiguration.ProtoReflect.Descriptor instead.
 func (*TimestreamConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{16}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *TimestreamConfiguration) GetDatabaseName() string {
@@ -990,7 +1061,7 @@ func (x *TimestreamConfiguration) GetTimeColumn() string {
 	return ""
 }
 
-func (x *TimestreamConfiguration) GetDimensionMappings() []*DimensionMapping {
+func (x *TimestreamConfiguration) GetDimensionMappings() []*QueryDimensionMapping {
 	if x != nil {
 		return x.DimensionMappings
 	}
@@ -1011,6 +1082,13 @@ func (x *TimestreamConfiguration) GetMixedMeasureMappings() []*MixedMeasureMappi
 	return nil
 }
 
+func (x *TimestreamConfiguration) GetMeasureNameColumn() string {
+	if x != nil {
+		return x.MeasureNameColumn
+	}
+	return ""
+}
+
 // TargetConfiguration defines the target configuration for a scheduled query.
 type TargetConfiguration struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
@@ -1021,7 +1099,7 @@ type TargetConfiguration struct {
 
 func (x *TargetConfiguration) Reset() {
 	*x = TargetConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[17]
+	mi := &file_storage_timestream_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1033,7 +1111,7 @@ func (x *TargetConfiguration) String() string {
 func (*TargetConfiguration) ProtoMessage() {}
 
 func (x *TargetConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[17]
+	mi := &file_storage_timestream_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1046,7 +1124,7 @@ func (x *TargetConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TargetConfiguration.ProtoReflect.Descriptor instead.
 func (*TargetConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{17}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TargetConfiguration) GetTimestreamConfiguration() *TimestreamConfiguration {
@@ -1080,7 +1158,7 @@ type ScheduledQuery struct {
 
 func (x *ScheduledQuery) Reset() {
 	*x = ScheduledQuery{}
-	mi := &file_storage_timestream_proto_msgTypes[18]
+	mi := &file_storage_timestream_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1092,7 +1170,7 @@ func (x *ScheduledQuery) String() string {
 func (*ScheduledQuery) ProtoMessage() {}
 
 func (x *ScheduledQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[18]
+	mi := &file_storage_timestream_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1105,7 +1183,7 @@ func (x *ScheduledQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduledQuery.ProtoReflect.Descriptor instead.
 func (*ScheduledQuery) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{18}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ScheduledQuery) GetArn() string {
@@ -1232,7 +1310,7 @@ type ExecutionStats struct {
 
 func (x *ExecutionStats) Reset() {
 	*x = ExecutionStats{}
-	mi := &file_storage_timestream_proto_msgTypes[19]
+	mi := &file_storage_timestream_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1244,7 +1322,7 @@ func (x *ExecutionStats) String() string {
 func (*ExecutionStats) ProtoMessage() {}
 
 func (x *ExecutionStats) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[19]
+	mi := &file_storage_timestream_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1257,7 +1335,7 @@ func (x *ExecutionStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecutionStats.ProtoReflect.Descriptor instead.
 func (*ExecutionStats) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{19}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ExecutionStats) GetDataWrites() int64 {
@@ -1313,13 +1391,14 @@ type ScheduledQueryRun struct {
 	ExecutionStats    *ExecutionStats        `protobuf:"bytes,6,opt,name=execution_stats,json=executionStats,proto3" json:"execution_stats,omitempty"`
 	Error             string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
 	CompletionTime    *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=completion_time,json=completionTime,proto3" json:"completion_time,omitempty"`
+	TriggerType       string                 `protobuf:"bytes,9,opt,name=trigger_type,json=triggerType,proto3" json:"trigger_type,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ScheduledQueryRun) Reset() {
 	*x = ScheduledQueryRun{}
-	mi := &file_storage_timestream_proto_msgTypes[20]
+	mi := &file_storage_timestream_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1331,7 +1410,7 @@ func (x *ScheduledQueryRun) String() string {
 func (*ScheduledQueryRun) ProtoMessage() {}
 
 func (x *ScheduledQueryRun) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[20]
+	mi := &file_storage_timestream_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1344,7 +1423,7 @@ func (x *ScheduledQueryRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduledQueryRun.ProtoReflect.Descriptor instead.
 func (*ScheduledQueryRun) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{20}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ScheduledQueryRun) GetArn() string {
@@ -1403,6 +1482,13 @@ func (x *ScheduledQueryRun) GetCompletionTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ScheduledQueryRun) GetTriggerType() string {
+	if x != nil {
+		return x.TriggerType
+	}
+	return ""
+}
+
 // BatchLoadTask represents a batch load task for importing data into Timestream.
 type BatchLoadTask struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -1419,7 +1505,7 @@ type BatchLoadTask struct {
 
 func (x *BatchLoadTask) Reset() {
 	*x = BatchLoadTask{}
-	mi := &file_storage_timestream_proto_msgTypes[21]
+	mi := &file_storage_timestream_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1431,7 +1517,7 @@ func (x *BatchLoadTask) String() string {
 func (*BatchLoadTask) ProtoMessage() {}
 
 func (x *BatchLoadTask) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[21]
+	mi := &file_storage_timestream_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1444,7 +1530,7 @@ func (x *BatchLoadTask) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchLoadTask.ProtoReflect.Descriptor instead.
 func (*BatchLoadTask) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{21}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *BatchLoadTask) GetTaskId() string {
@@ -1511,7 +1597,7 @@ type BatchLoadProgressReport struct {
 
 func (x *BatchLoadProgressReport) Reset() {
 	*x = BatchLoadProgressReport{}
-	mi := &file_storage_timestream_proto_msgTypes[22]
+	mi := &file_storage_timestream_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1523,7 +1609,7 @@ func (x *BatchLoadProgressReport) String() string {
 func (*BatchLoadProgressReport) ProtoMessage() {}
 
 func (x *BatchLoadProgressReport) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[22]
+	mi := &file_storage_timestream_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1536,7 +1622,7 @@ func (x *BatchLoadProgressReport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchLoadProgressReport.ProtoReflect.Descriptor instead.
 func (*BatchLoadProgressReport) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{22}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *BatchLoadProgressReport) GetBytesMetered() int64 {
@@ -1592,7 +1678,7 @@ type DataSourceS3Configuration struct {
 
 func (x *DataSourceS3Configuration) Reset() {
 	*x = DataSourceS3Configuration{}
-	mi := &file_storage_timestream_proto_msgTypes[23]
+	mi := &file_storage_timestream_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1604,7 +1690,7 @@ func (x *DataSourceS3Configuration) String() string {
 func (*DataSourceS3Configuration) ProtoMessage() {}
 
 func (x *DataSourceS3Configuration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[23]
+	mi := &file_storage_timestream_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1617,7 +1703,7 @@ func (x *DataSourceS3Configuration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceS3Configuration.ProtoReflect.Descriptor instead.
 func (*DataSourceS3Configuration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{23}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DataSourceS3Configuration) GetBucketName() string {
@@ -1648,7 +1734,7 @@ type CsvConfiguration struct {
 
 func (x *CsvConfiguration) Reset() {
 	*x = CsvConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[24]
+	mi := &file_storage_timestream_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1660,7 +1746,7 @@ func (x *CsvConfiguration) String() string {
 func (*CsvConfiguration) ProtoMessage() {}
 
 func (x *CsvConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[24]
+	mi := &file_storage_timestream_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1673,7 +1759,7 @@ func (x *CsvConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CsvConfiguration.ProtoReflect.Descriptor instead.
 func (*CsvConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{24}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CsvConfiguration) GetColumnSeparator() string {
@@ -1723,7 +1809,7 @@ type DataSourceConfiguration struct {
 
 func (x *DataSourceConfiguration) Reset() {
 	*x = DataSourceConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[25]
+	mi := &file_storage_timestream_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1735,7 +1821,7 @@ func (x *DataSourceConfiguration) String() string {
 func (*DataSourceConfiguration) ProtoMessage() {}
 
 func (x *DataSourceConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[25]
+	mi := &file_storage_timestream_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1748,7 +1834,7 @@ func (x *DataSourceConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceConfiguration.ProtoReflect.Descriptor instead.
 func (*DataSourceConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{25}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DataSourceConfiguration) GetDataFormat() string {
@@ -1783,7 +1869,7 @@ type DataModelS3Configuration struct {
 
 func (x *DataModelS3Configuration) Reset() {
 	*x = DataModelS3Configuration{}
-	mi := &file_storage_timestream_proto_msgTypes[26]
+	mi := &file_storage_timestream_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1795,7 +1881,7 @@ func (x *DataModelS3Configuration) String() string {
 func (*DataModelS3Configuration) ProtoMessage() {}
 
 func (x *DataModelS3Configuration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[26]
+	mi := &file_storage_timestream_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1808,7 +1894,7 @@ func (x *DataModelS3Configuration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataModelS3Configuration.ProtoReflect.Descriptor instead.
 func (*DataModelS3Configuration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{26}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DataModelS3Configuration) GetBucketName() string {
@@ -1840,7 +1926,7 @@ type DataModel struct {
 
 func (x *DataModel) Reset() {
 	*x = DataModel{}
-	mi := &file_storage_timestream_proto_msgTypes[27]
+	mi := &file_storage_timestream_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1852,7 +1938,7 @@ func (x *DataModel) String() string {
 func (*DataModel) ProtoMessage() {}
 
 func (x *DataModel) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[27]
+	mi := &file_storage_timestream_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1865,7 +1951,7 @@ func (x *DataModel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataModel.ProtoReflect.Descriptor instead.
 func (*DataModel) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{27}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DataModel) GetDimensionMappings() []*DimensionMapping {
@@ -1921,7 +2007,7 @@ type DataModelConfiguration struct {
 
 func (x *DataModelConfiguration) Reset() {
 	*x = DataModelConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[28]
+	mi := &file_storage_timestream_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1933,7 +2019,7 @@ func (x *DataModelConfiguration) String() string {
 func (*DataModelConfiguration) ProtoMessage() {}
 
 func (x *DataModelConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[28]
+	mi := &file_storage_timestream_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1946,7 +2032,7 @@ func (x *DataModelConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataModelConfiguration.ProtoReflect.Descriptor instead.
 func (*DataModelConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{28}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *DataModelConfiguration) GetDataModel() *DataModel {
@@ -1976,7 +2062,7 @@ type ReportS3Configuration struct {
 
 func (x *ReportS3Configuration) Reset() {
 	*x = ReportS3Configuration{}
-	mi := &file_storage_timestream_proto_msgTypes[29]
+	mi := &file_storage_timestream_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1988,7 +2074,7 @@ func (x *ReportS3Configuration) String() string {
 func (*ReportS3Configuration) ProtoMessage() {}
 
 func (x *ReportS3Configuration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[29]
+	mi := &file_storage_timestream_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2001,7 +2087,7 @@ func (x *ReportS3Configuration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportS3Configuration.ProtoReflect.Descriptor instead.
 func (*ReportS3Configuration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{29}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ReportS3Configuration) GetBucketName() string {
@@ -2042,7 +2128,7 @@ type ReportConfiguration struct {
 
 func (x *ReportConfiguration) Reset() {
 	*x = ReportConfiguration{}
-	mi := &file_storage_timestream_proto_msgTypes[30]
+	mi := &file_storage_timestream_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2054,7 +2140,7 @@ func (x *ReportConfiguration) String() string {
 func (*ReportConfiguration) ProtoMessage() {}
 
 func (x *ReportConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[30]
+	mi := &file_storage_timestream_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2067,7 +2153,7 @@ func (x *ReportConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportConfiguration.ProtoReflect.Descriptor instead.
 func (*ReportConfiguration) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{30}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ReportConfiguration) GetReportS3Configuration() *ReportS3Configuration {
@@ -2099,7 +2185,7 @@ type BatchLoadTaskDescription struct {
 
 func (x *BatchLoadTaskDescription) Reset() {
 	*x = BatchLoadTaskDescription{}
-	mi := &file_storage_timestream_proto_msgTypes[31]
+	mi := &file_storage_timestream_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2111,7 +2197,7 @@ func (x *BatchLoadTaskDescription) String() string {
 func (*BatchLoadTaskDescription) ProtoMessage() {}
 
 func (x *BatchLoadTaskDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[31]
+	mi := &file_storage_timestream_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2124,7 +2210,7 @@ func (x *BatchLoadTaskDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchLoadTaskDescription.ProtoReflect.Descriptor instead.
 func (*BatchLoadTaskDescription) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{31}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *BatchLoadTaskDescription) GetTaskId() string {
@@ -2218,20 +2304,107 @@ func (x *BatchLoadTaskDescription) GetProgressReport() *BatchLoadProgressReport 
 	return nil
 }
 
+// ProvisionedCapacitySettings stores the provisioned capacity configuration
+// for Timestream Query (Smithy: ProvisionedCapacityRequest/Response).
+type ProvisionedCapacitySettings struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	ActiveQueryTcu          int64                  `protobuf:"varint,1,opt,name=active_query_tcu,json=activeQueryTcu,proto3" json:"active_query_tcu,omitempty"`
+	TargetQueryTcu          int64                  `protobuf:"varint,2,opt,name=target_query_tcu,json=targetQueryTcu,proto3" json:"target_query_tcu,omitempty"`
+	SnsTopicArn             string                 `protobuf:"bytes,3,opt,name=sns_topic_arn,json=snsTopicArn,proto3" json:"sns_topic_arn,omitempty"`
+	RoleArn                 string                 `protobuf:"bytes,4,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	LastUpdateStatus        string                 `protobuf:"bytes,5,opt,name=last_update_status,json=lastUpdateStatus,proto3" json:"last_update_status,omitempty"`
+	LastUpdateStatusMessage string                 `protobuf:"bytes,6,opt,name=last_update_status_message,json=lastUpdateStatusMessage,proto3" json:"last_update_status_message,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *ProvisionedCapacitySettings) Reset() {
+	*x = ProvisionedCapacitySettings{}
+	mi := &file_storage_timestream_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProvisionedCapacitySettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProvisionedCapacitySettings) ProtoMessage() {}
+
+func (x *ProvisionedCapacitySettings) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_timestream_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProvisionedCapacitySettings.ProtoReflect.Descriptor instead.
+func (*ProvisionedCapacitySettings) Descriptor() ([]byte, []int) {
+	return file_storage_timestream_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ProvisionedCapacitySettings) GetActiveQueryTcu() int64 {
+	if x != nil {
+		return x.ActiveQueryTcu
+	}
+	return 0
+}
+
+func (x *ProvisionedCapacitySettings) GetTargetQueryTcu() int64 {
+	if x != nil {
+		return x.TargetQueryTcu
+	}
+	return 0
+}
+
+func (x *ProvisionedCapacitySettings) GetSnsTopicArn() string {
+	if x != nil {
+		return x.SnsTopicArn
+	}
+	return ""
+}
+
+func (x *ProvisionedCapacitySettings) GetRoleArn() string {
+	if x != nil {
+		return x.RoleArn
+	}
+	return ""
+}
+
+func (x *ProvisionedCapacitySettings) GetLastUpdateStatus() string {
+	if x != nil {
+		return x.LastUpdateStatus
+	}
+	return ""
+}
+
+func (x *ProvisionedCapacitySettings) GetLastUpdateStatusMessage() string {
+	if x != nil {
+		return x.LastUpdateStatusMessage
+	}
+	return ""
+}
+
 // AccountSettings represents the account settings for Timestream.
 type AccountSettings struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	MaxQueryTcu             int64                  `protobuf:"varint,1,opt,name=max_query_tcu,json=maxQueryTcu,proto3" json:"max_query_tcu,omitempty"`
-	QueryPricingMode        string                 `protobuf:"bytes,2,opt,name=query_pricing_mode,json=queryPricingMode,proto3" json:"query_pricing_mode,omitempty"`
-	EncryptionConfiguration string                 `protobuf:"bytes,3,opt,name=encryption_configuration,json=encryptionConfiguration,proto3" json:"encryption_configuration,omitempty"`
-	QueryComputeType        string                 `protobuf:"bytes,4,opt,name=query_compute_type,json=queryComputeType,proto3" json:"query_compute_type,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	MaxQueryTcu             int64                        `protobuf:"varint,1,opt,name=max_query_tcu,json=maxQueryTcu,proto3" json:"max_query_tcu,omitempty"`
+	QueryPricingMode        string                       `protobuf:"bytes,2,opt,name=query_pricing_mode,json=queryPricingMode,proto3" json:"query_pricing_mode,omitempty"`
+	EncryptionConfiguration string                       `protobuf:"bytes,3,opt,name=encryption_configuration,json=encryptionConfiguration,proto3" json:"encryption_configuration,omitempty"`
+	QueryComputeType        string                       `protobuf:"bytes,4,opt,name=query_compute_type,json=queryComputeType,proto3" json:"query_compute_type,omitempty"`
+	ProvisionedCapacity     *ProvisionedCapacitySettings `protobuf:"bytes,5,opt,name=provisioned_capacity,json=provisionedCapacity,proto3" json:"provisioned_capacity,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AccountSettings) Reset() {
 	*x = AccountSettings{}
-	mi := &file_storage_timestream_proto_msgTypes[32]
+	mi := &file_storage_timestream_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2243,7 +2416,7 @@ func (x *AccountSettings) String() string {
 func (*AccountSettings) ProtoMessage() {}
 
 func (x *AccountSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_timestream_proto_msgTypes[32]
+	mi := &file_storage_timestream_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2256,7 +2429,7 @@ func (x *AccountSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountSettings.ProtoReflect.Descriptor instead.
 func (*AccountSettings) Descriptor() ([]byte, []int) {
-	return file_storage_timestream_proto_rawDescGZIP(), []int{32}
+	return file_storage_timestream_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *AccountSettings) GetMaxQueryTcu() int64 {
@@ -2285,6 +2458,13 @@ func (x *AccountSettings) GetQueryComputeType() string {
 		return x.QueryComputeType
 	}
 	return ""
+}
+
+func (x *AccountSettings) GetProvisionedCapacity() *ProvisionedCapacitySettings {
+	if x != nil {
+		return x.ProvisionedCapacity
+	}
+	return nil
 }
 
 var File_storage_timestream_proto protoreflect.FileDescriptor
@@ -2325,11 +2505,12 @@ const file_storage_timestream_proto_rawDesc = "" +
 	"\x10SNSConfiguration\x12\x1b\n" +
 	"\ttopic_arn\x18\x01 \x01(\tR\btopicArn\"n\n" +
 	"\x19NotificationConfiguration\x12Q\n" +
-	"\x11sns_configuration\x18\x01 \x01(\v2$.storage.timestream.SNSConfigurationR\x10snsConfiguration\"i\n" +
+	"\x11sns_configuration\x18\x01 \x01(\v2$.storage.timestream.SNSConfigurationR\x10snsConfiguration\"\x96\x01\n" +
 	"\x1aS3ErrorReportConfiguration\x12\x1f\n" +
 	"\vbucket_name\x18\x01 \x01(\tR\n" +
 	"bucketName\x12*\n" +
-	"\x11object_key_prefix\x18\x02 \x01(\tR\x0fobjectKeyPrefix\"u\n" +
+	"\x11object_key_prefix\x18\x02 \x01(\tR\x0fobjectKeyPrefix\x12+\n" +
+	"\x11encryption_option\x18\x03 \x01(\tR\x10encryptionOption\"u\n" +
 	"\x18ErrorReportConfiguration\x12Y\n" +
 	"\x10s3_configuration\x18\x01 \x01(\v2..storage.timestream.S3ErrorReportConfigurationR\x0fs3Configuration\"\"\n" +
 	"\fSourceColumn\x12\x12\n" +
@@ -2338,28 +2519,33 @@ const file_storage_timestream_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"\xaf\x01\n" +
 	"\x10DimensionMapping\x12E\n" +
 	"\rsource_column\x18\x01 \x01(\v2 .storage.timestream.SourceColumnR\fsourceColumn\x12T\n" +
-	"\x12destination_column\x18\x02 \x01(\v2%.storage.timestream.DestinationColumnR\x11destinationColumn\"\xe1\x01\n" +
+	"\x12destination_column\x18\x02 \x01(\v2%.storage.timestream.DestinationColumnR\x11destinationColumn\"]\n" +
+	"\x15QueryDimensionMapping\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
+	"\x14dimension_value_type\x18\x02 \x01(\tR\x12dimensionValueType\"\xe1\x01\n" +
 	"\x1cMultiMeasureAttributeMapping\x12E\n" +
 	"\rsource_column\x18\x01 \x01(\v2 .storage.timestream.SourceColumnR\fsourceColumn\x12L\n" +
 	"#target_multi_measure_attribute_name\x18\x02 \x01(\tR\x1ftargetMultiMeasureAttributeName\x12,\n" +
-	"\x12measure_value_type\x18\x03 \x01(\tR\x10measureValueType\"\x91\x01\n" +
-	"\x14MultiMeasureMappings\x12y\n" +
+	"\x12measure_value_type\x18\x03 \x01(\tR\x10measureValueType\"\xcc\x01\n" +
+	"\x14MultiMeasureMappings\x129\n" +
+	"\x19target_multi_measure_name\x18\x02 \x01(\tR\x16targetMultiMeasureName\x12y\n" +
 	" multi_measure_attribute_mappings\x18\x01 \x03(\v20.storage.timestream.MultiMeasureAttributeMappingR\x1dmultiMeasureAttributeMappings\"\xb6\x02\n" +
 	"\x13MixedMeasureMapping\x12!\n" +
 	"\fmeasure_name\x18\x01 \x01(\tR\vmeasureName\x12#\n" +
 	"\rsource_column\x18\x02 \x01(\tR\fsourceColumn\x12.\n" +
 	"\x13target_measure_name\x18\x03 \x01(\tR\x11targetMeasureName\x12,\n" +
 	"\x12measure_value_type\x18\x04 \x01(\tR\x10measureValueType\x12y\n" +
-	" multi_measure_attribute_mappings\x18\x05 \x03(\v20.storage.timestream.MultiMeasureAttributeMappingR\x1dmultiMeasureAttributeMappings\"\x92\x03\n" +
+	" multi_measure_attribute_mappings\x18\x05 \x03(\v20.storage.timestream.MultiMeasureAttributeMappingR\x1dmultiMeasureAttributeMappings\"\xc7\x03\n" +
 	"\x17TimestreamConfiguration\x12#\n" +
 	"\rdatabase_name\x18\x01 \x01(\tR\fdatabaseName\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x02 \x01(\tR\ttableName\x12\x1f\n" +
 	"\vtime_column\x18\x03 \x01(\tR\n" +
-	"timeColumn\x12S\n" +
-	"\x12dimension_mappings\x18\x04 \x03(\v2$.storage.timestream.DimensionMappingR\x11dimensionMappings\x12^\n" +
+	"timeColumn\x12X\n" +
+	"\x12dimension_mappings\x18\x04 \x03(\v2).storage.timestream.QueryDimensionMappingR\x11dimensionMappings\x12^\n" +
 	"\x16multi_measure_mappings\x18\x05 \x01(\v2(.storage.timestream.MultiMeasureMappingsR\x14multiMeasureMappings\x12]\n" +
-	"\x16mixed_measure_mappings\x18\x06 \x03(\v2'.storage.timestream.MixedMeasureMappingR\x14mixedMeasureMappings\"}\n" +
+	"\x16mixed_measure_mappings\x18\x06 \x03(\v2'.storage.timestream.MixedMeasureMappingR\x14mixedMeasureMappings\x12.\n" +
+	"\x13measure_name_column\x18\a \x01(\tR\x11measureNameColumn\"}\n" +
 	"\x13TargetConfiguration\x12f\n" +
 	"\x18timestream_configuration\x18\x01 \x01(\v2+.storage.timestream.TimestreamConfigurationR\x17timestreamConfiguration\"\xa5\a\n" +
 	"\x0eScheduledQuery\x12\x10\n" +
@@ -2387,7 +2573,7 @@ const file_storage_timestream_proto_rawDesc = "" +
 	"\x11query_result_rows\x18\x05 \x01(\x03R\x0fqueryResultRows\x128\n" +
 	"\x18cumulative_bytes_scanned\x18\x06 \x01(\x03R\x16cumulativeBytesScanned\x127\n" +
 	"\x18execution_time_in_millis\x18\a \x01(\x03R\x15executionTimeInMillis\x12)\n" +
-	"\x10records_ingested\x18\b \x01(\x03R\x0frecordsIngested\"\xa0\x03\n" +
+	"\x10records_ingested\x18\b \x01(\x03R\x0frecordsIngested\"\xc3\x03\n" +
 	"\x11ScheduledQueryRun\x12\x10\n" +
 	"\x03arn\x18\x01 \x01(\tR\x03arn\x12.\n" +
 	"\x13scheduled_query_arn\x18\x02 \x01(\tR\x11scheduledQueryArn\x12C\n" +
@@ -2397,7 +2583,8 @@ const file_storage_timestream_proto_rawDesc = "" +
 	"run_status\x18\x05 \x01(\tR\trunStatus\x12K\n" +
 	"\x0fexecution_stats\x18\x06 \x01(\v2\".storage.timestream.ExecutionStatsR\x0eexecutionStats\x12\x14\n" +
 	"\x05error\x18\a \x01(\tR\x05error\x12C\n" +
-	"\x0fcompletion_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0ecompletionTime\"\xdb\x02\n" +
+	"\x0fcompletion_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0ecompletionTime\x12!\n" +
+	"\ftrigger_type\x18\t \x01(\tR\vtriggerType\"\xdb\x02\n" +
 	"\rBatchLoadTask\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12#\n" +
 	"\rdatabase_name\x18\x02 \x01(\tR\fdatabaseName\x12\x1d\n" +
@@ -2474,12 +2661,20 @@ const file_storage_timestream_proto_rawDesc = "" +
 	" \x01(\v2+.storage.timestream.DataSourceConfigurationR\x17dataSourceConfiguration\x12d\n" +
 	"\x18data_model_configuration\x18\v \x01(\v2*.storage.timestream.DataModelConfigurationR\x16dataModelConfiguration\x12Z\n" +
 	"\x14report_configuration\x18\f \x01(\v2'.storage.timestream.ReportConfigurationR\x13reportConfiguration\x12T\n" +
-	"\x0fprogress_report\x18\r \x01(\v2+.storage.timestream.BatchLoadProgressReportR\x0eprogressReport\"\xcc\x01\n" +
+	"\x0fprogress_report\x18\r \x01(\v2+.storage.timestream.BatchLoadProgressReportR\x0eprogressReport\"\x9b\x02\n" +
+	"\x1bProvisionedCapacitySettings\x12(\n" +
+	"\x10active_query_tcu\x18\x01 \x01(\x03R\x0eactiveQueryTcu\x12(\n" +
+	"\x10target_query_tcu\x18\x02 \x01(\x03R\x0etargetQueryTcu\x12\"\n" +
+	"\rsns_topic_arn\x18\x03 \x01(\tR\vsnsTopicArn\x12\x19\n" +
+	"\brole_arn\x18\x04 \x01(\tR\aroleArn\x12,\n" +
+	"\x12last_update_status\x18\x05 \x01(\tR\x10lastUpdateStatus\x12;\n" +
+	"\x1alast_update_status_message\x18\x06 \x01(\tR\x17lastUpdateStatusMessage\"\xb0\x02\n" +
 	"\x0fAccountSettings\x12\"\n" +
 	"\rmax_query_tcu\x18\x01 \x01(\x03R\vmaxQueryTcu\x12,\n" +
 	"\x12query_pricing_mode\x18\x02 \x01(\tR\x10queryPricingMode\x129\n" +
 	"\x18encryption_configuration\x18\x03 \x01(\tR\x17encryptionConfiguration\x12,\n" +
-	"\x12query_compute_type\x18\x04 \x01(\tR\x10queryComputeTypeB5Z3vorpalstacks/internal/pb/storage/storage_timestreamb\x06proto3"
+	"\x12query_compute_type\x18\x04 \x01(\tR\x10queryComputeType\x12b\n" +
+	"\x14provisioned_capacity\x18\x05 \x01(\v2/.storage.timestream.ProvisionedCapacitySettingsR\x13provisionedCapacityB5Z3vorpalstacks/internal/pb/storage/storage_timestreamb\x06proto3"
 
 var (
 	file_storage_timestream_proto_rawDescOnce sync.Once
@@ -2493,7 +2688,7 @@ func file_storage_timestream_proto_rawDescGZIP() []byte {
 	return file_storage_timestream_proto_rawDescData
 }
 
-var file_storage_timestream_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_storage_timestream_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_storage_timestream_proto_goTypes = []any{
 	(*RetentionProperties)(nil),          // 0: storage.timestream.RetentionProperties
 	(*PartitionKey)(nil),                 // 1: storage.timestream.PartitionKey
@@ -2508,81 +2703,84 @@ var file_storage_timestream_proto_goTypes = []any{
 	(*SourceColumn)(nil),                 // 10: storage.timestream.SourceColumn
 	(*DestinationColumn)(nil),            // 11: storage.timestream.DestinationColumn
 	(*DimensionMapping)(nil),             // 12: storage.timestream.DimensionMapping
-	(*MultiMeasureAttributeMapping)(nil), // 13: storage.timestream.MultiMeasureAttributeMapping
-	(*MultiMeasureMappings)(nil),         // 14: storage.timestream.MultiMeasureMappings
-	(*MixedMeasureMapping)(nil),          // 15: storage.timestream.MixedMeasureMapping
-	(*TimestreamConfiguration)(nil),      // 16: storage.timestream.TimestreamConfiguration
-	(*TargetConfiguration)(nil),          // 17: storage.timestream.TargetConfiguration
-	(*ScheduledQuery)(nil),               // 18: storage.timestream.ScheduledQuery
-	(*ExecutionStats)(nil),               // 19: storage.timestream.ExecutionStats
-	(*ScheduledQueryRun)(nil),            // 20: storage.timestream.ScheduledQueryRun
-	(*BatchLoadTask)(nil),                // 21: storage.timestream.BatchLoadTask
-	(*BatchLoadProgressReport)(nil),      // 22: storage.timestream.BatchLoadProgressReport
-	(*DataSourceS3Configuration)(nil),    // 23: storage.timestream.DataSourceS3Configuration
-	(*CsvConfiguration)(nil),             // 24: storage.timestream.CsvConfiguration
-	(*DataSourceConfiguration)(nil),      // 25: storage.timestream.DataSourceConfiguration
-	(*DataModelS3Configuration)(nil),     // 26: storage.timestream.DataModelS3Configuration
-	(*DataModel)(nil),                    // 27: storage.timestream.DataModel
-	(*DataModelConfiguration)(nil),       // 28: storage.timestream.DataModelConfiguration
-	(*ReportS3Configuration)(nil),        // 29: storage.timestream.ReportS3Configuration
-	(*ReportConfiguration)(nil),          // 30: storage.timestream.ReportConfiguration
-	(*BatchLoadTaskDescription)(nil),     // 31: storage.timestream.BatchLoadTaskDescription
-	(*AccountSettings)(nil),              // 32: storage.timestream.AccountSettings
-	(*timestamppb.Timestamp)(nil),        // 33: google.protobuf.Timestamp
+	(*QueryDimensionMapping)(nil),        // 13: storage.timestream.QueryDimensionMapping
+	(*MultiMeasureAttributeMapping)(nil), // 14: storage.timestream.MultiMeasureAttributeMapping
+	(*MultiMeasureMappings)(nil),         // 15: storage.timestream.MultiMeasureMappings
+	(*MixedMeasureMapping)(nil),          // 16: storage.timestream.MixedMeasureMapping
+	(*TimestreamConfiguration)(nil),      // 17: storage.timestream.TimestreamConfiguration
+	(*TargetConfiguration)(nil),          // 18: storage.timestream.TargetConfiguration
+	(*ScheduledQuery)(nil),               // 19: storage.timestream.ScheduledQuery
+	(*ExecutionStats)(nil),               // 20: storage.timestream.ExecutionStats
+	(*ScheduledQueryRun)(nil),            // 21: storage.timestream.ScheduledQueryRun
+	(*BatchLoadTask)(nil),                // 22: storage.timestream.BatchLoadTask
+	(*BatchLoadProgressReport)(nil),      // 23: storage.timestream.BatchLoadProgressReport
+	(*DataSourceS3Configuration)(nil),    // 24: storage.timestream.DataSourceS3Configuration
+	(*CsvConfiguration)(nil),             // 25: storage.timestream.CsvConfiguration
+	(*DataSourceConfiguration)(nil),      // 26: storage.timestream.DataSourceConfiguration
+	(*DataModelS3Configuration)(nil),     // 27: storage.timestream.DataModelS3Configuration
+	(*DataModel)(nil),                    // 28: storage.timestream.DataModel
+	(*DataModelConfiguration)(nil),       // 29: storage.timestream.DataModelConfiguration
+	(*ReportS3Configuration)(nil),        // 30: storage.timestream.ReportS3Configuration
+	(*ReportConfiguration)(nil),          // 31: storage.timestream.ReportConfiguration
+	(*BatchLoadTaskDescription)(nil),     // 32: storage.timestream.BatchLoadTaskDescription
+	(*ProvisionedCapacitySettings)(nil),  // 33: storage.timestream.ProvisionedCapacitySettings
+	(*AccountSettings)(nil),              // 34: storage.timestream.AccountSettings
+	(*timestamppb.Timestamp)(nil),        // 35: google.protobuf.Timestamp
 }
 var file_storage_timestream_proto_depIdxs = []int32{
 	1,  // 0: storage.timestream.Schema.composite_partition_key:type_name -> storage.timestream.PartitionKey
-	33, // 1: storage.timestream.Database.creation_time:type_name -> google.protobuf.Timestamp
-	33, // 2: storage.timestream.Database.last_updated_time:type_name -> google.protobuf.Timestamp
+	35, // 1: storage.timestream.Database.creation_time:type_name -> google.protobuf.Timestamp
+	35, // 2: storage.timestream.Database.last_updated_time:type_name -> google.protobuf.Timestamp
 	0,  // 3: storage.timestream.Table.retention_properties:type_name -> storage.timestream.RetentionProperties
 	2,  // 4: storage.timestream.Table.schema:type_name -> storage.timestream.Schema
-	33, // 5: storage.timestream.Table.creation_time:type_name -> google.protobuf.Timestamp
-	33, // 6: storage.timestream.Table.last_updated_time:type_name -> google.protobuf.Timestamp
+	35, // 5: storage.timestream.Table.creation_time:type_name -> google.protobuf.Timestamp
+	35, // 6: storage.timestream.Table.last_updated_time:type_name -> google.protobuf.Timestamp
 	6,  // 7: storage.timestream.NotificationConfiguration.sns_configuration:type_name -> storage.timestream.SNSConfiguration
 	8,  // 8: storage.timestream.ErrorReportConfiguration.s3_configuration:type_name -> storage.timestream.S3ErrorReportConfiguration
 	10, // 9: storage.timestream.DimensionMapping.source_column:type_name -> storage.timestream.SourceColumn
 	11, // 10: storage.timestream.DimensionMapping.destination_column:type_name -> storage.timestream.DestinationColumn
 	10, // 11: storage.timestream.MultiMeasureAttributeMapping.source_column:type_name -> storage.timestream.SourceColumn
-	13, // 12: storage.timestream.MultiMeasureMappings.multi_measure_attribute_mappings:type_name -> storage.timestream.MultiMeasureAttributeMapping
-	13, // 13: storage.timestream.MixedMeasureMapping.multi_measure_attribute_mappings:type_name -> storage.timestream.MultiMeasureAttributeMapping
-	12, // 14: storage.timestream.TimestreamConfiguration.dimension_mappings:type_name -> storage.timestream.DimensionMapping
-	14, // 15: storage.timestream.TimestreamConfiguration.multi_measure_mappings:type_name -> storage.timestream.MultiMeasureMappings
-	15, // 16: storage.timestream.TimestreamConfiguration.mixed_measure_mappings:type_name -> storage.timestream.MixedMeasureMapping
-	16, // 17: storage.timestream.TargetConfiguration.timestream_configuration:type_name -> storage.timestream.TimestreamConfiguration
+	14, // 12: storage.timestream.MultiMeasureMappings.multi_measure_attribute_mappings:type_name -> storage.timestream.MultiMeasureAttributeMapping
+	14, // 13: storage.timestream.MixedMeasureMapping.multi_measure_attribute_mappings:type_name -> storage.timestream.MultiMeasureAttributeMapping
+	13, // 14: storage.timestream.TimestreamConfiguration.dimension_mappings:type_name -> storage.timestream.QueryDimensionMapping
+	15, // 15: storage.timestream.TimestreamConfiguration.multi_measure_mappings:type_name -> storage.timestream.MultiMeasureMappings
+	16, // 16: storage.timestream.TimestreamConfiguration.mixed_measure_mappings:type_name -> storage.timestream.MixedMeasureMapping
+	17, // 17: storage.timestream.TargetConfiguration.timestream_configuration:type_name -> storage.timestream.TimestreamConfiguration
 	5,  // 18: storage.timestream.ScheduledQuery.schedule_configuration:type_name -> storage.timestream.ScheduleConfiguration
 	7,  // 19: storage.timestream.ScheduledQuery.notification_configuration:type_name -> storage.timestream.NotificationConfiguration
 	9,  // 20: storage.timestream.ScheduledQuery.error_report_configuration:type_name -> storage.timestream.ErrorReportConfiguration
-	17, // 21: storage.timestream.ScheduledQuery.target_configuration:type_name -> storage.timestream.TargetConfiguration
-	33, // 22: storage.timestream.ScheduledQuery.creation_time:type_name -> google.protobuf.Timestamp
-	33, // 23: storage.timestream.ScheduledQuery.previous_run_time:type_name -> google.protobuf.Timestamp
-	33, // 24: storage.timestream.ScheduledQuery.next_run_time:type_name -> google.protobuf.Timestamp
-	33, // 25: storage.timestream.ScheduledQueryRun.invocation_time:type_name -> google.protobuf.Timestamp
-	33, // 26: storage.timestream.ScheduledQueryRun.trigger_time:type_name -> google.protobuf.Timestamp
-	19, // 27: storage.timestream.ScheduledQueryRun.execution_stats:type_name -> storage.timestream.ExecutionStats
-	33, // 28: storage.timestream.ScheduledQueryRun.completion_time:type_name -> google.protobuf.Timestamp
-	33, // 29: storage.timestream.BatchLoadTask.creation_time:type_name -> google.protobuf.Timestamp
-	33, // 30: storage.timestream.BatchLoadTask.last_updated_time:type_name -> google.protobuf.Timestamp
-	33, // 31: storage.timestream.BatchLoadTask.resumable_until:type_name -> google.protobuf.Timestamp
-	23, // 32: storage.timestream.DataSourceConfiguration.data_source_s3_configuration:type_name -> storage.timestream.DataSourceS3Configuration
-	24, // 33: storage.timestream.DataSourceConfiguration.csv_configuration:type_name -> storage.timestream.CsvConfiguration
+	18, // 21: storage.timestream.ScheduledQuery.target_configuration:type_name -> storage.timestream.TargetConfiguration
+	35, // 22: storage.timestream.ScheduledQuery.creation_time:type_name -> google.protobuf.Timestamp
+	35, // 23: storage.timestream.ScheduledQuery.previous_run_time:type_name -> google.protobuf.Timestamp
+	35, // 24: storage.timestream.ScheduledQuery.next_run_time:type_name -> google.protobuf.Timestamp
+	35, // 25: storage.timestream.ScheduledQueryRun.invocation_time:type_name -> google.protobuf.Timestamp
+	35, // 26: storage.timestream.ScheduledQueryRun.trigger_time:type_name -> google.protobuf.Timestamp
+	20, // 27: storage.timestream.ScheduledQueryRun.execution_stats:type_name -> storage.timestream.ExecutionStats
+	35, // 28: storage.timestream.ScheduledQueryRun.completion_time:type_name -> google.protobuf.Timestamp
+	35, // 29: storage.timestream.BatchLoadTask.creation_time:type_name -> google.protobuf.Timestamp
+	35, // 30: storage.timestream.BatchLoadTask.last_updated_time:type_name -> google.protobuf.Timestamp
+	35, // 31: storage.timestream.BatchLoadTask.resumable_until:type_name -> google.protobuf.Timestamp
+	24, // 32: storage.timestream.DataSourceConfiguration.data_source_s3_configuration:type_name -> storage.timestream.DataSourceS3Configuration
+	25, // 33: storage.timestream.DataSourceConfiguration.csv_configuration:type_name -> storage.timestream.CsvConfiguration
 	12, // 34: storage.timestream.DataModel.dimension_mappings:type_name -> storage.timestream.DimensionMapping
-	15, // 35: storage.timestream.DataModel.mixed_measure_mappings:type_name -> storage.timestream.MixedMeasureMapping
-	14, // 36: storage.timestream.DataModel.multi_measure_mappings:type_name -> storage.timestream.MultiMeasureMappings
-	27, // 37: storage.timestream.DataModelConfiguration.data_model:type_name -> storage.timestream.DataModel
-	26, // 38: storage.timestream.DataModelConfiguration.data_model_s3_configuration:type_name -> storage.timestream.DataModelS3Configuration
-	29, // 39: storage.timestream.ReportConfiguration.report_s3_configuration:type_name -> storage.timestream.ReportS3Configuration
-	33, // 40: storage.timestream.BatchLoadTaskDescription.creation_time:type_name -> google.protobuf.Timestamp
-	33, // 41: storage.timestream.BatchLoadTaskDescription.last_updated_time:type_name -> google.protobuf.Timestamp
-	33, // 42: storage.timestream.BatchLoadTaskDescription.resumable_until:type_name -> google.protobuf.Timestamp
-	25, // 43: storage.timestream.BatchLoadTaskDescription.data_source_configuration:type_name -> storage.timestream.DataSourceConfiguration
-	28, // 44: storage.timestream.BatchLoadTaskDescription.data_model_configuration:type_name -> storage.timestream.DataModelConfiguration
-	30, // 45: storage.timestream.BatchLoadTaskDescription.report_configuration:type_name -> storage.timestream.ReportConfiguration
-	22, // 46: storage.timestream.BatchLoadTaskDescription.progress_report:type_name -> storage.timestream.BatchLoadProgressReport
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	16, // 35: storage.timestream.DataModel.mixed_measure_mappings:type_name -> storage.timestream.MixedMeasureMapping
+	15, // 36: storage.timestream.DataModel.multi_measure_mappings:type_name -> storage.timestream.MultiMeasureMappings
+	28, // 37: storage.timestream.DataModelConfiguration.data_model:type_name -> storage.timestream.DataModel
+	27, // 38: storage.timestream.DataModelConfiguration.data_model_s3_configuration:type_name -> storage.timestream.DataModelS3Configuration
+	30, // 39: storage.timestream.ReportConfiguration.report_s3_configuration:type_name -> storage.timestream.ReportS3Configuration
+	35, // 40: storage.timestream.BatchLoadTaskDescription.creation_time:type_name -> google.protobuf.Timestamp
+	35, // 41: storage.timestream.BatchLoadTaskDescription.last_updated_time:type_name -> google.protobuf.Timestamp
+	35, // 42: storage.timestream.BatchLoadTaskDescription.resumable_until:type_name -> google.protobuf.Timestamp
+	26, // 43: storage.timestream.BatchLoadTaskDescription.data_source_configuration:type_name -> storage.timestream.DataSourceConfiguration
+	29, // 44: storage.timestream.BatchLoadTaskDescription.data_model_configuration:type_name -> storage.timestream.DataModelConfiguration
+	31, // 45: storage.timestream.BatchLoadTaskDescription.report_configuration:type_name -> storage.timestream.ReportConfiguration
+	23, // 46: storage.timestream.BatchLoadTaskDescription.progress_report:type_name -> storage.timestream.BatchLoadProgressReport
+	33, // 47: storage.timestream.AccountSettings.provisioned_capacity:type_name -> storage.timestream.ProvisionedCapacitySettings
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_storage_timestream_proto_init() }
@@ -2596,7 +2794,7 @@ func file_storage_timestream_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_timestream_proto_rawDesc), len(file_storage_timestream_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

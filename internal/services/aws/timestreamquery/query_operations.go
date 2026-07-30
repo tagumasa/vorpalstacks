@@ -2,19 +2,20 @@ package timestreamquery
 
 import (
 	"context"
-	"fmt"
-	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/sqlparser"
 
 	"github.com/google/uuid"
 )
+
+// queryIDPattern matches the Smithy QueryId trait: ^[a-zA-Z0-9]+$, length 1-64.
+var queryIDPattern = regexp.MustCompile(`^[a-zA-Z0-9]{1,64}$`)
 
 // QueryStatus represents the status of a query execution.
 type QueryStatus string
@@ -88,7 +89,7 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	queryID := uuid.New().String()
+	queryID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	now := time.Now().UTC()
 
 	queryInfo := &QueryInfo{
@@ -130,7 +131,7 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 		logs.Warn("Failed to update query info", logs.Err(err))
 	}
 
-	maxRows := 100
+	maxRows := maxQueryRows
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
 		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
 			maxRows = val
@@ -176,7 +177,7 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 // CancelQuery cancels a running query.
 func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryID := request.GetParamCaseInsensitive(req.Parameters, "QueryId")
-	if queryID == "" {
+	if queryID == "" || !queryIDPattern.MatchString(queryID) {
 		return nil, ErrValidationException
 	}
 
@@ -209,6 +210,17 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 		return nil, ErrValidationException
 	}
 
+	// M6: Parse ValidateOnly. When true, AWS validates syntax only and
+	// does not compute column metadata.
+	validateOnly := false
+	if val, ok := req.Parameters["ValidateOnly"]; ok {
+		if b, ok := val.(bool); ok {
+			validateOnly = b
+		} else if s, ok := val.(string); ok {
+			validateOnly = strings.EqualFold(s, "true")
+		}
+	}
+
 	processedSQL := s.preprocessor.Process(queryString)
 
 	opts := sqlparser.ParserOptions{
@@ -217,11 +229,20 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
 	if err != nil {
 		logs.Debug("Timestream prepared statement SQL parse error", logs.String("query", processedSQL), logs.Err(err))
-		return nil, awserrors.NewAWSError("InvalidQueryException",
-			fmt.Sprintf("SQL parse error: %v", err), http.StatusBadRequest)
+		return nil, ErrValidationException
+	}
+
+	response := map[string]interface{}{
+		"QueryString": queryString,
+	}
+
+	if validateOnly {
+		// ValidateOnly=true: syntax validated, skip column/parameter extraction.
+		return response, nil
 	}
 
 	params := s.extractParameters(queryString)
+	response["Parameters"] = params
 
 	var columns []map[string]interface{}
 	if selectStmt, ok := stmt.(*sqlparser.Select); ok {
@@ -235,16 +256,14 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 			})
 		}
 	}
+	response["Columns"] = columns
 
-	return map[string]interface{}{
-		"QueryString": queryString,
-		"Parameters":  params,
-		"Columns":     columns,
-	}, nil
+	return response, nil
 }
 
 func (s *TimestreamQueryService) extractParameters(queryString string) []map[string]interface{} {
-	var params []map[string]interface{}
+	seen := make(map[string]string)
+	var order []string
 
 	for i := 0; i < len(queryString); i++ {
 		if queryString[i] == '@' {
@@ -253,15 +272,60 @@ func (s *TimestreamQueryService) extractParameters(queryString string) []map[str
 				j++
 			}
 			paramName := queryString[i+1 : j]
-			params = append(params, map[string]interface{}{
-				"Name": paramName,
-				"Type": "VARCHAR",
-			})
+
+			// Infer type from surrounding SQL context.
+			paramType := inferParamType(queryString, j)
+
+			if _, exists := seen[paramName]; !exists {
+				order = append(order, paramName)
+			}
+			// Prefer a more specific type over VARCHAR.
+			if existing, exists := seen[paramName]; !exists || (existing == "VARCHAR" && paramType != "VARCHAR") {
+				seen[paramName] = paramType
+			}
 			i = j - 1
 		}
 	}
 
+	params := make([]map[string]interface{}, 0, len(order))
+	for _, name := range order {
+		params = append(params, map[string]interface{}{
+			"Name": name,
+			"Type": seen[name],
+		})
+	}
 	return params
+}
+
+// inferParamType attempts to infer a parameter's type from the SQL text
+// immediately following the parameter. Timestream uses the :: cast operator
+// (e.g. @param::double). Falls back to VARCHAR when no type hint is found.
+func inferParamType(queryString string, pos int) string {
+	if pos+1 < len(queryString) && queryString[pos] == ':' && queryString[pos+1] == ':' {
+		start := pos + 2
+		end := start
+		for end < len(queryString) && (isAlphaNum(queryString[end]) || queryString[end] == '_') {
+			end++
+		}
+		if end > start {
+			castType := strings.ToUpper(queryString[start:end])
+			switch castType {
+			case "BIGINT", "INTEGER", "INT":
+				return "BIGINT"
+			case "DOUBLE", "FLOAT":
+				return "DOUBLE"
+			case "BOOLEAN", "BOOL":
+				return "BOOLEAN"
+			case "TIMESTAMP", "DATE", "TIME":
+				return "TIMESTAMP"
+			case "VARCHAR", "STRING":
+				return "VARCHAR"
+			default:
+				return castType
+			}
+		}
+	}
+	return "VARCHAR"
 }
 
 func (s *TimestreamQueryService) buildColumnInfoForPrepare(selectStmt *sqlparser.Select) []ColumnInfo {

@@ -2,7 +2,6 @@ package timestreamquery
 
 import (
 	"context"
-	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -72,6 +71,10 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 	notificationConfig := s.parseNotificationConfiguration(req.Parameters)
 	roleARN := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryExecutionRoleArn")
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
+	// L1: KmsKeyId targets Smithy StringValue2048 — length 1-2048.
+	if kmsKeyID != "" && len(kmsKeyID) > 2048 {
+		return nil, ErrValidationException
+	}
 	errorReportConfig := s.parseErrorReportConfiguration(req.Parameters)
 	targetConfig := s.parseTargetConfiguration(req.Parameters)
 	clientToken := request.GetParamCaseInsensitive(req.Parameters, "ClientToken")
@@ -112,7 +115,7 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 	)
 	if err != nil {
 		if err == tsstore.ErrScheduledQueryAlreadyExists {
-			return nil, ErrResourceAlreadyExists
+			return nil, ErrConflictException
 		}
 		return nil, ErrInternalServer
 	}
@@ -274,14 +277,21 @@ func (s *TimestreamQueryService) DescribeScheduledQuery(ctx context.Context, req
 	// Query the most recent run to populate LastRunSummary with full
 	// details (InvocationTime, TriggerTime, ExecutionStats,
 	// FailureReason) per the Smithy ScheduledQueryRunSummary shape.
+	// M5: Also collect failed runs for RecentlyFailedRuns.
 	var lastRun *tsstore.ScheduledQueryRun
+	var failedRuns []*tsstore.ScheduledQueryRun
 	runs, runErr := st.scheduledQueryRunStore.ListRuns(sq.ARN)
 	if runErr == nil && len(runs) > 0 {
 		lastRun = runs[len(runs)-1]
+		for _, r := range runs {
+			if r.RunStatus == tsstore.ScheduleRunStatusFailed {
+				failedRuns = append(failedRuns, r)
+			}
+		}
 	}
 
 	return map[string]interface{}{
-		"ScheduledQuery": s.formatScheduledQueryDescriptionResponse(sq, lastRun),
+		"ScheduledQuery": s.formatScheduledQueryDescriptionResponse(sq, lastRun, failedRuns),
 	}, nil
 }
 
@@ -397,8 +407,18 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 		return nil, ErrInternalServer
 	}
 
+	// M10: Parse InvocationTime (defaults to now). QueryInsights is accepted
+	// but currently not applied to the query execution (would require
+	// extending the query executor to collect per-query insights).
 	now := time.Now().UTC()
-	run, err := st.scheduledQueryRunStore.CreateRun(sq.ARN, now, now)
+	if invocationTimeStr := request.GetParamCaseInsensitive(req.Parameters, "InvocationTime"); invocationTimeStr != "" {
+		if parsed, err := time.Parse(time.RFC3339Nano, invocationTimeStr); err == nil {
+			now = parsed.UTC()
+		} else if parsed, err := time.Parse(time.RFC3339, invocationTimeStr); err == nil {
+			now = parsed.UTC()
+		}
+	}
+	run, err := st.scheduledQueryRunStore.CreateRun(sq.ARN, now, now, tsstore.TriggerTypeManual)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
@@ -485,10 +505,12 @@ func (s *TimestreamQueryService) parseErrorReportConfiguration(params map[string
 		return nil
 	}
 	objectKeyPrefix, _ := s3ConfigRaw["ObjectKeyPrefix"].(string)
+	encryptionOption, _ := s3ConfigRaw["EncryptionOption"].(string)
 	return &tsstore.ErrorReportConfiguration{
 		S3Configuration: &tsstore.S3ErrorReportConfiguration{
-			BucketName:      bucketName,
-			ObjectKeyPrefix: objectKeyPrefix,
+			BucketName:       bucketName,
+			ObjectKeyPrefix:  objectKeyPrefix,
+			EncryptionOption: encryptionOption,
 		},
 	}
 }
@@ -509,13 +531,126 @@ func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]inte
 		return nil
 	}
 	timeColumn, _ := tsConfigRaw["TimeColumn"].(string)
+	measureNameColumn, _ := tsConfigRaw["MeasureNameColumn"].(string)
+
+	// DimensionMappings (Smithy: [{Name, DimensionValueType}]).
+	var dimensionMappings []tsstore.QueryDimensionMapping
+	if dmList, ok := tsConfigRaw["DimensionMappings"].([]interface{}); ok {
+		for _, dm := range dmList {
+			dmMap, ok := dm.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, _ := dmMap["Name"].(string)
+			dvt, _ := dmMap["DimensionValueType"].(string)
+			if name != "" {
+				dimensionMappings = append(dimensionMappings, tsstore.QueryDimensionMapping{
+					Name:               name,
+					DimensionValueType: dvt,
+				})
+			}
+		}
+	}
+
+	// MultiMeasureMappings (Smithy: {TargetMultiMeasureName, MultiMeasureAttributeMappings}).
+	var multiMeasureMappings *tsstore.MultiMeasureMappings
+	if mmm, ok := tsConfigRaw["MultiMeasureMappings"].(map[string]interface{}); ok {
+		multiMeasureMappings = parseMultiMeasureMappings(mmm)
+	}
+
+	// MixedMeasureMappings (Smithy: list of MixedMeasureMapping).
+	var mixedMeasureMappings []tsstore.MixedMeasureMapping
+	if mmmList, ok := tsConfigRaw["MixedMeasureMappings"].([]interface{}); ok {
+		for _, m := range mmmList {
+			if mmmMap, ok := m.(map[string]interface{}); ok {
+				if mapping := parseMixedMeasureMapping(mmmMap); mapping != nil {
+					mixedMeasureMappings = append(mixedMeasureMappings, *mapping)
+				}
+			}
+		}
+	}
+
 	return &tsstore.TargetConfiguration{
 		TimestreamConfiguration: &tsstore.TimestreamConfiguration{
-			DatabaseName: databaseName,
-			TableName:    tableName,
-			TimeColumn:   timeColumn,
+			DatabaseName:         databaseName,
+			TableName:            tableName,
+			TimeColumn:           timeColumn,
+			DimensionMappings:    dimensionMappings,
+			MultiMeasureMappings: multiMeasureMappings,
+			MixedMeasureMappings: mixedMeasureMappings,
+			MeasureNameColumn:    measureNameColumn,
 		},
 	}
+}
+
+// parseMultiMeasureMappings parses MultiMeasureMappings from a raw map
+// (Smithy: {TargetMultiMeasureName, MultiMeasureAttributeMappings}).
+func parseMultiMeasureMappings(raw map[string]interface{}) *tsstore.MultiMeasureMappings {
+	mmm := &tsstore.MultiMeasureMappings{}
+	if v, ok := raw["TargetMultiMeasureName"].(string); ok {
+		mmm.TargetMultiMeasureName = v
+	}
+	if list, ok := raw["MultiMeasureAttributeMappings"].([]interface{}); ok {
+		for _, item := range list {
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			srcCol, _ := itemMap["SourceColumn"].(string)
+			targetName, _ := itemMap["TargetMultiMeasureAttributeName"].(string)
+			measureType, _ := itemMap["MeasureValueType"].(string)
+			if srcCol != "" {
+				mmm.MultiMeasureAttributeMappings = append(mmm.MultiMeasureAttributeMappings, tsstore.MultiMeasureAttributeMapping{
+					SourceColumn:                    &tsstore.SourceColumn{Name: srcCol},
+					TargetMultiMeasureAttributeName: targetName,
+					MeasureValueMeasureValueType:    tsstore.MeasureValueType(measureType),
+				})
+			}
+		}
+	}
+	if len(mmm.MultiMeasureAttributeMappings) == 0 {
+		return nil
+	}
+	return mmm
+}
+
+// parseMixedMeasureMapping parses a single MixedMeasureMapping from a raw map.
+func parseMixedMeasureMapping(raw map[string]interface{}) *tsstore.MixedMeasureMapping {
+	mapping := &tsstore.MixedMeasureMapping{}
+	if v, ok := raw["MeasureName"].(string); ok {
+		mapping.MeasureName = v
+	}
+	if v, ok := raw["SourceColumn"].(string); ok {
+		mapping.SourceColumn = v
+	}
+	if v, ok := raw["TargetMeasureName"].(string); ok {
+		mapping.TargetMeasureName = v
+	}
+	if v, ok := raw["MeasureValueType"].(string); ok {
+		mapping.MeasureValueMeasureValueType = tsstore.MeasureValueType(v)
+	}
+	if list, ok := raw["MultiMeasureAttributeMappings"].([]interface{}); ok {
+		for _, item := range list {
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			srcCol, _ := itemMap["SourceColumn"].(string)
+			targetName, _ := itemMap["TargetMultiMeasureAttributeName"].(string)
+			measureType, _ := itemMap["MeasureValueType"].(string)
+			if srcCol != "" {
+				mapping.MultiMeasureAttributeMappings = append(mapping.MultiMeasureAttributeMappings, tsstore.MultiMeasureAttributeMapping{
+					SourceColumn:                    &tsstore.SourceColumn{Name: srcCol},
+					TargetMultiMeasureAttributeName: targetName,
+					MeasureValueMeasureValueType:    tsstore.MeasureValueType(measureType),
+				})
+			}
+		}
+	}
+	if mapping.SourceColumn == "" && mapping.MeasureName == "" && len(mapping.MultiMeasureAttributeMappings) == 0 {
+		return nil
+	}
+	return mapping
 }
 
 // ListTagsForResource returns the tags for a scheduled query.
@@ -531,7 +666,7 @@ func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx
 
 	rawKey := tagutil.GetResourceKey(req.Parameters, cfg.Param)
 	if rawKey == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "ResourceARN is required.", http.StatusBadRequest)
+		return nil, ErrValidationException
 	}
 	resourceKey := rawKey
 	if cfg.ResourceKey != nil {
@@ -641,7 +776,7 @@ func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.Schedu
 	return response
 }
 
-func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, lastRun *tsstore.ScheduledQueryRun) map[string]interface{} {
+func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, lastRun *tsstore.ScheduledQueryRun, failedRuns []*tsstore.ScheduledQueryRun) map[string]interface{} {
 	response := s.formatScheduledQueryBaseResponse(sq)
 
 	response["QueryString"] = sq.QueryString
@@ -681,6 +816,68 @@ func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tss
 		}
 		if tsConfig.TimeColumn != "" {
 			tsMap["TimeColumn"] = tsConfig.TimeColumn
+		}
+		if tsConfig.MeasureNameColumn != "" {
+			tsMap["MeasureNameColumn"] = tsConfig.MeasureNameColumn
+		}
+		if len(tsConfig.DimensionMappings) > 0 {
+			dmList := make([]map[string]interface{}, len(tsConfig.DimensionMappings))
+			for i, dm := range tsConfig.DimensionMappings {
+				dmList[i] = map[string]interface{}{
+					"Name":               dm.Name,
+					"DimensionValueType": dm.DimensionValueType,
+				}
+			}
+			tsMap["DimensionMappings"] = dmList
+		}
+		if tsConfig.MultiMeasureMappings != nil && len(tsConfig.MultiMeasureMappings.MultiMeasureAttributeMappings) > 0 {
+			mmmMap := map[string]interface{}{}
+			if tsConfig.MultiMeasureMappings.TargetMultiMeasureName != "" {
+				mmmMap["TargetMultiMeasureName"] = tsConfig.MultiMeasureMappings.TargetMultiMeasureName
+			}
+			attrs := make([]map[string]interface{}, len(tsConfig.MultiMeasureMappings.MultiMeasureAttributeMappings))
+			for i, a := range tsConfig.MultiMeasureMappings.MultiMeasureAttributeMappings {
+				attrMap := map[string]interface{}{}
+				if a.SourceColumn != nil {
+					attrMap["SourceColumn"] = a.SourceColumn.Name
+				}
+				attrMap["TargetMultiMeasureAttributeName"] = a.TargetMultiMeasureAttributeName
+				attrMap["MeasureValueType"] = a.MeasureValueMeasureValueType
+				attrs[i] = attrMap
+			}
+			mmmMap["MultiMeasureAttributeMappings"] = attrs
+			tsMap["MultiMeasureMappings"] = mmmMap
+		}
+		if len(tsConfig.MixedMeasureMappings) > 0 {
+			mmmList := make([]map[string]interface{}, len(tsConfig.MixedMeasureMappings))
+			for i, m := range tsConfig.MixedMeasureMappings {
+				mMap := map[string]interface{}{}
+				if m.MeasureName != "" {
+					mMap["MeasureName"] = m.MeasureName
+				}
+				if m.SourceColumn != "" {
+					mMap["SourceColumn"] = m.SourceColumn
+				}
+				if m.TargetMeasureName != "" {
+					mMap["TargetMeasureName"] = m.TargetMeasureName
+				}
+				mMap["MeasureValueType"] = m.MeasureValueMeasureValueType
+				if len(m.MultiMeasureAttributeMappings) > 0 {
+					attrs := make([]map[string]interface{}, len(m.MultiMeasureAttributeMappings))
+					for j, a := range m.MultiMeasureAttributeMappings {
+						attrMap := map[string]interface{}{}
+						if a.SourceColumn != nil {
+							attrMap["SourceColumn"] = a.SourceColumn.Name
+						}
+						attrMap["TargetMultiMeasureAttributeName"] = a.TargetMultiMeasureAttributeName
+						attrMap["MeasureValueType"] = a.MeasureValueMeasureValueType
+						attrs[j] = attrMap
+					}
+					mMap["MultiMeasureAttributeMappings"] = attrs
+				}
+				mmmList[i] = mMap
+			}
+			tsMap["MixedMeasureMappings"] = mmmList
 		}
 		response["TargetConfiguration"] = map[string]interface{}{
 			"TimestreamConfiguration": tsMap,
@@ -727,6 +924,51 @@ func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tss
 			}
 		}
 		response["LastRunSummary"] = summary
+	}
+
+	// M5: Populate RecentlyFailedRuns (Smithy: ScheduledQueryRunSummaryList).
+	if len(failedRuns) > 0 {
+		recentlyFailed := make([]map[string]interface{}, 0, len(failedRuns))
+		for _, fr := range failedRuns {
+			summary := map[string]interface{}{
+				"RunStatus": tsstore.ScheduledQueryRunStatusFromTrigger(fr.TriggerType, fr.RunStatus),
+			}
+			if !fr.InvocationTime.IsZero() {
+				summary["InvocationTime"] = epochFloat(fr.InvocationTime)
+			}
+			if !fr.TriggerTime.IsZero() {
+				summary["TriggerTime"] = epochFloat(fr.TriggerTime)
+			}
+			if fr.Error != "" {
+				summary["FailureReason"] = fr.Error
+			}
+			if fr.ExecutionStats != nil {
+				stats := map[string]interface{}{}
+				if fr.ExecutionStats.DataWrites > 0 {
+					stats["DataWrites"] = fr.ExecutionStats.DataWrites
+				}
+				if fr.ExecutionStats.BytesMetered > 0 {
+					stats["BytesMetered"] = fr.ExecutionStats.BytesMetered
+				}
+				if fr.ExecutionStats.QueryResultRows > 0 {
+					stats["QueryResultRows"] = fr.ExecutionStats.QueryResultRows
+				}
+				if fr.ExecutionStats.CumulativeBytesScanned > 0 {
+					stats["CumulativeBytesScanned"] = fr.ExecutionStats.CumulativeBytesScanned
+				}
+				if fr.ExecutionStats.ExecutionTimeInMillis > 0 {
+					stats["ExecutionTimeInMillis"] = fr.ExecutionStats.ExecutionTimeInMillis
+				}
+				if fr.ExecutionStats.RecordsIngested > 0 {
+					stats["RecordsIngested"] = fr.ExecutionStats.RecordsIngested
+				}
+				if len(stats) > 0 {
+					summary["ExecutionStats"] = stats
+				}
+			}
+			recentlyFailed = append(recentlyFailed, summary)
+		}
+		response["RecentlyFailedRuns"] = recentlyFailed
 	}
 
 	return response
