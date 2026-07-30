@@ -104,6 +104,9 @@ func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.
 	if req.Msg.Queuename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
 	}
+	if !isValidQueueName(req.Msg.Queuename) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid queue name"))
+	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSQSStoreByRegion(region)

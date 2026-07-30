@@ -24,32 +24,53 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 	var awsAccountIDs []string
 	var actions []string
 
-	for i := 1; ; i++ {
-		accountID := request.GetParamCaseInsensitive(req.Parameters, "AWSAccountId."+strconv.Itoa(i))
-		if accountID == "" {
-			aidKey := "AWSAccountId." + strconv.Itoa(i)
-			if val, ok := req.Parameters[aidKey].(string); ok {
-				accountID = val
+	// Parse AWS account IDs: support JSON array, flattened query, and member.N formats.
+	if ids, ok := req.Parameters["AWSAccountIds"].([]interface{}); ok && len(ids) > 0 {
+		for _, id := range ids {
+			if s, ok := id.(string); ok && s != "" {
+				awsAccountIDs = append(awsAccountIDs, s)
 			}
 		}
-		if accountID == "" {
-			break
+	} else {
+		for i := 1; ; i++ {
+			accountID := request.GetParamCaseInsensitive(req.Parameters, "AWSAccountId."+strconv.Itoa(i))
+			if accountID == "" {
+				aidKey := "AWSAccountId." + strconv.Itoa(i)
+				if val, ok := req.Parameters[aidKey].(string); ok {
+					accountID = val
+				}
+			}
+			if accountID == "" {
+				break
+			}
+			awsAccountIDs = append(awsAccountIDs, accountID)
 		}
-		awsAccountIDs = append(awsAccountIDs, accountID)
 	}
 
-	for i := 1; ; i++ {
-		action := request.GetParamCaseInsensitive(req.Parameters, "Action."+strconv.Itoa(i))
-		if action == "" {
-			actKey := "Action." + strconv.Itoa(i)
-			if val, ok := req.Parameters[actKey].(string); ok {
-				action = val
+	// Parse actions: support JSON array, flattened query (ActionName.N), and legacy (Action.N) formats.
+	if acts, ok := req.Parameters["Actions"].([]interface{}); ok && len(acts) > 0 {
+		for _, a := range acts {
+			if s, ok := a.(string); ok && s != "" {
+				actions = append(actions, s)
 			}
 		}
-		if action == "" {
-			break
+	} else {
+		for i := 1; ; i++ {
+			action := request.GetParamCaseInsensitive(req.Parameters, "ActionName."+strconv.Itoa(i))
+			if action == "" {
+				actKey := "ActionName." + strconv.Itoa(i)
+				if val, ok := req.Parameters[actKey].(string); ok {
+					action = val
+				}
+			}
+			if action == "" {
+				action = request.GetParamCaseInsensitive(req.Parameters, "Action."+strconv.Itoa(i))
+			}
+			if action == "" {
+				break
+			}
+			actions = append(actions, action)
 		}
-		actions = append(actions, action)
 	}
 
 	store, err := s.store(reqCtx)

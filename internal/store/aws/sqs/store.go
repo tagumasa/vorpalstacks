@@ -60,27 +60,34 @@ type SQSStore struct {
 	messagesStore *common.BaseStore
 	tasksStore    *common.BaseStore
 	*common.TagStore
-	arnBuilder         *svcarn.ARNBuilder
-	accountID          string
-	region             string
-	baseURL            string
-	msgMutex           sync.RWMutex
-	purgeMutex         sync.Mutex
-	queueMutex         sync.RWMutex
-	purgeInProgress    map[string]time.Time
-	storage            storage.TransactionalStorage
-	deduplicationCache map[string]*deduplicationEntry
-	deduplicationMu    sync.RWMutex
-	sequenceCounter    int64
-	sequenceMu         sync.Mutex
-	ctx                context.Context
-	cancel             context.CancelFunc
-	wg                 sync.WaitGroup
+	arnBuilder          *svcarn.ARNBuilder
+	accountID           string
+	region              string
+	baseURL             string
+	msgMutex            sync.RWMutex
+	purgeMutex          sync.Mutex
+	queueMutex          sync.RWMutex
+	purgeInProgress     map[string]time.Time
+	storage             storage.TransactionalStorage
+	deduplicationCache  map[string]*deduplicationEntry
+	deduplicationMu     sync.RWMutex
+	sequenceCounters    map[string]int64
+	sequenceMu          sync.Mutex
+	receiveAttemptCache map[string]*receiveAttemptEntry
+	receiveAttemptMu    sync.Mutex
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	wg                  sync.WaitGroup
 }
 
 type deduplicationEntry struct {
 	messageID string
 	expiresAt time.Time
+}
+
+type receiveAttemptEntry struct {
+	messageIDs []string
+	createdAt  time.Time
 }
 
 // NewSQSStore creates a new SQS store with the specified storage, account ID, region, and base URL.
@@ -89,20 +96,21 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 	regionSuffix := "-" + region
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &SQSStore{
-		BaseStore:          common.NewBaseStore(store.Bucket("sqs-queues"+regionSuffix), "sqs-queues"),
-		messagesStore:      common.NewBaseStore(store.Bucket("sqs-messages"+regionSuffix), "sqs-messages"),
-		tasksStore:         common.NewBaseStore(store.Bucket("sqs-move-tasks"+regionSuffix), "sqs-move-tasks"),
-		TagStore:           common.NewTagStoreWithRegion(store, "sqs", region),
-		arnBuilder:         svcarn.NewARNBuilder(accountID, region),
-		accountID:          accountID,
-		region:             region,
-		baseURL:            baseURL,
-		storage:            ts,
-		purgeInProgress:    make(map[string]time.Time),
-		deduplicationCache: make(map[string]*deduplicationEntry),
-		sequenceCounter:    time.Now().UnixNano(),
-		ctx:                ctx,
-		cancel:             cancel,
+		BaseStore:           common.NewBaseStore(store.Bucket("sqs-queues"+regionSuffix), "sqs-queues"),
+		messagesStore:       common.NewBaseStore(store.Bucket("sqs-messages"+regionSuffix), "sqs-messages"),
+		tasksStore:          common.NewBaseStore(store.Bucket("sqs-move-tasks"+regionSuffix), "sqs-move-tasks"),
+		TagStore:            common.NewTagStoreWithRegion(store, "sqs", region),
+		arnBuilder:          svcarn.NewARNBuilder(accountID, region),
+		accountID:           accountID,
+		region:              region,
+		baseURL:             baseURL,
+		storage:             ts,
+		purgeInProgress:     make(map[string]time.Time),
+		deduplicationCache:  make(map[string]*deduplicationEntry),
+		sequenceCounters:    make(map[string]int64),
+		receiveAttemptCache: make(map[string]*receiveAttemptEntry),
+		ctx:                 ctx,
+		cancel:              cancel,
 	}
 	s.wg.Add(1)
 	go s.cleanupExpiredMessages()
@@ -318,15 +326,22 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 		return fmt.Errorf("invalid DLQ ARN: %s", dlqARN)
 	}
 
+	// M14: Preserve original SentTimestamp for standard queues. FIFO messages
+	// always have a MessageGroupID; only reset SentTimestamp for those.
+	sentTimestamp := msg.SentTimestamp
+	if msg.MessageGroupID != "" {
+		sentTimestamp = time.Now().UTC()
+	}
+
 	newMsg := &Message{
-		ID:                               uuid.New().String(),
+		ID:                               msg.ID,
 		Body:                             msg.Body,
 		MD5OfBody:                        msg.MD5OfBody,
 		MD5OfMessageAttributes:           msg.MD5OfMessageAttributes,
 		MessageAttributes:                msg.MessageAttributes,
 		QueueURL:                         dlqURL,
 		QueueARN:                         dlqARN,
-		SentTimestamp:                    time.Now().UTC(),
+		SentTimestamp:                    sentTimestamp,
 		ApproximateReceiveCount:          0,
 		ApproximateFirstReceiveTimestamp: time.Time{},
 		Attributes:                       make(map[string]string),
@@ -359,6 +374,12 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 }
 
 func calculateMessageAttributesMD5(attrs map[string]*MessageAttributeValue) string {
+	return CalculateMessageAttributesMD5(attrs)
+}
+
+// CalculateMessageAttributesMD5 computes the MD5 digest of message attributes
+// per the AWS SQS specification. Exported for cross-package use.
+func CalculateMessageAttributesMD5(attrs map[string]*MessageAttributeValue) string {
 	if len(attrs) == 0 {
 		return calculateMD5("")
 	}

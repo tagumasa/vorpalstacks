@@ -11,6 +11,25 @@ import (
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
+const maxBatchPayloadSize = 262144
+
+// messageEntrySize calculates the total byte size of a batch entry for the
+// BatchRequestTooLong check. Includes message body and all attribute data.
+func messageEntrySize(body string, attrs map[string]*sqsstore.MessageAttributeValue) int {
+	size := len(body)
+	for name, attr := range attrs {
+		size += len(name)
+		size += len(attr.DataType)
+		if attr.StringValue != nil {
+			size += len(*attr.StringValue)
+		}
+		if attr.BinaryValue != nil {
+			size += len(attr.BinaryValue)
+		}
+	}
+	return size
+}
+
 func convertStoreError(err error) error {
 	if err == nil {
 		return nil
@@ -47,6 +66,21 @@ func convertStoreError(err error) error {
 	}
 	if errors.Is(err, sqsstore.ErrInvalidQueueName) {
 		return ErrInvalidQueueName
+	}
+	if errors.Is(err, sqsstore.ErrOverLimit) {
+		return ErrOverLimit
+	}
+	if errors.Is(err, sqsstore.ErrInvalidAttributeValue) {
+		return ErrInvalidAttributeValue
+	}
+	if errors.Is(err, sqsstore.ErrBatchRequestTooLong) {
+		return ErrBatchRequestTooLong
+	}
+	if errors.Is(err, sqsstore.ErrInvalidDataType) {
+		return ErrInvalidParameterValue
+	}
+	if errors.Is(err, sqsstore.ErrTaskAlreadyTerminal) {
+		return ErrInvalidParameterValue
 	}
 	return err
 }
@@ -191,6 +225,25 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 	}
 	message.MessageAttributes = messageAttributes
 
+	// M11: Validate DataType for all message attributes
+	for _, attr := range messageAttributes {
+		if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
+			return nil, convertStoreError(err)
+		}
+	}
+
+	// M13: Parse MessageSystemAttributes (only AWSTraceHeader is valid for sends)
+	systemAttrs, err := parseMessageSystemAttributes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	if traceHeader, ok := systemAttrs["AWSTraceHeader"]; ok && traceHeader.StringValue != nil {
+		if message.Attributes == nil {
+			message.Attributes = make(map[string]string)
+		}
+		message.Attributes["AWSTraceHeader"] = *traceHeader.StringValue
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -206,14 +259,28 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 		"MD5OfMessageBody":       created.MD5OfBody,
 		"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
 	}
+	if len(systemAttrs) > 0 {
+		response["MD5OfMessageSystemAttributes"] = sqsstore.CalculateMessageAttributesMD5(systemAttrs)
+	}
 	if created.SequenceNumber != "" {
 		response["SequenceNumber"] = created.SequenceNumber
 	}
 	return response, nil
 }
 
+// batchSendEntry holds a parsed and validated SendMessageBatch entry awaiting
+// dispatch. All validation is completed before any SendMessage call.
+type batchSendEntry struct {
+	id          string
+	message     *sqsstore.Message
+	systemAttrs map[string]*sqsstore.MessageAttributeValue
+}
+
 // SendMessageBatch sends multiple messages to an SQS queue in a single request.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_SendMessageBatch.html
+//
+// B2: Two-pass design — all entries are parsed and validated before any message
+// is sent. This prevents partial sends when a later entry fails validation.
 func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
 	if queueURL == "" {
@@ -230,188 +297,313 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	entries := make([]map[string]interface{}, 0)
-	seenIDs := make(map[string]bool)
-	entryCount := 0
-
-	if jsonEntries, ok := req.Parameters["Entries"].([]interface{}); ok && len(jsonEntries) > 0 {
-		if len(jsonEntries) > 10 {
-			return nil, ErrTooManyEntriesInBatch
-		}
-		for _, entry := range jsonEntries {
-			entryMap, ok := entry.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			id, _ := entryMap["Id"].(string)
-			if id == "" {
-				continue
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			messageBody, _ := entryMap["MessageBody"].(string)
-			delaySeconds := int32(0)
-			if ds, ok := entryMap["DelaySeconds"].(float64); ok {
-				delaySeconds = int32(ds)
-			}
-
-			message := sqsstore.NewMessage(messageBody)
-			message.DelaySeconds = delaySeconds
-			if mgid, ok := entryMap["MessageGroupId"].(string); ok {
-				message.MessageGroupID = mgid
-			}
-			if mdid, ok := entryMap["MessageDeduplicationId"].(string); ok {
-				message.MessageDeduplicationID = mdid
-			}
-
-			if attrs, ok := entryMap["MessageAttributes"].(map[string]interface{}); ok {
-				messageAttributes := make(map[string]*sqsstore.MessageAttributeValue)
-				for attrName, attrVal := range attrs {
-					if attrMap, ok := attrVal.(map[string]interface{}); ok {
-						attr := &sqsstore.MessageAttributeValue{}
-						if dt, ok := attrMap["DataType"].(string); ok {
-							attr.DataType = dt
-						}
-						if sv, ok := attrMap["StringValue"].(string); ok {
-							attr.StringValue = &sv
-						}
-						if bv, ok := attrMap["BinaryValue"].(string); ok {
-							attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
-						}
-						messageAttributes[attrName] = attr
-					}
-				}
-				message.MessageAttributes = messageAttributes
-			}
-
-			created, err := store.SendMessage(queueURL, message)
-			if err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			batchEntry := map[string]interface{}{
-				"Id":                     id,
-				"MessageId":              created.ID,
-				"MD5OfMessageBody":       created.MD5OfBody,
-				"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
-			}
-			if created.SequenceNumber != "" {
-				batchEntry["SequenceNumber"] = created.SequenceNumber
-			}
-			entries = append(entries, batchEntry)
-		}
-	} else {
-		for i := 1; i <= 10; i++ {
-			id := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".Id")
-			if id == "" {
-				continue
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			if entryCount > 10 {
-				return nil, ErrTooManyEntriesInBatch
-			}
-
-			messageBody := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageBody")
-			delaySeconds := int32(request.GetIntParam(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".DelaySeconds"))
-
-			message := sqsstore.NewMessage(messageBody)
-			message.DelaySeconds = delaySeconds
-			message.MessageGroupID = request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageGroupId")
-			message.MessageDeduplicationID = request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageDeduplicationId")
-
-			msgAttrs := make(map[string]*sqsstore.MessageAttributeValue)
-			for j := 1; ; j++ {
-				attrName := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageAttribute."+strconv.Itoa(j)+".Name")
-				if attrName == "" {
-					break
-				}
-				dataType := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageAttribute."+strconv.Itoa(j)+".Value.DataType")
-				if dataType == "" {
-					break
-				}
-				attr := &sqsstore.MessageAttributeValue{DataType: dataType}
-				if sv := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageAttribute."+strconv.Itoa(j)+".Value.StringValue"); sv != "" {
-					attr.StringValue = &sv
-				}
-				if bv := request.GetParamCaseInsensitive(req.Parameters, "SendMessageBatchRequestEntry."+strconv.Itoa(i)+".MessageAttribute."+strconv.Itoa(j)+".Value.BinaryValue"); bv != "" {
-					attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
-				}
-				msgAttrs[attrName] = attr
-			}
-			if len(msgAttrs) > 0 {
-				message.MessageAttributes = msgAttrs
-			}
-
-			created, err := store.SendMessage(queueURL, message)
-			if err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			batchEntry := map[string]interface{}{
-				"Id":                     id,
-				"MessageId":              created.ID,
-				"MD5OfMessageBody":       created.MD5OfBody,
-				"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
-			}
-			if created.SequenceNumber != "" {
-				batchEntry["SequenceNumber"] = created.SequenceNumber
-			}
-			entries = append(entries, batchEntry)
-		}
+	// Pass 1: Parse and validate all entries (no sends).
+	parsed, err := parseBatchSendEntries(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(entries) == 0 {
-		return nil, ErrEmptyBatchRequest
-	}
-
+	// Pass 2: Send each validated message.
 	successEntries := make([]map[string]interface{}, 0)
 	failedEntries := make([]map[string]interface{}, 0)
-	for _, entry := range entries {
-		if _, ok := entry["MessageId"]; ok {
-			successEntries = append(successEntries, entry)
-		} else {
-			failedEntries = append(failedEntries, entry)
+
+	for _, e := range parsed {
+		created, sendErr := store.SendMessage(queueURL, e.message)
+		if sendErr != nil {
+			code, senderFault := mapStoreErrorToBatchCode(sendErr)
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"Id":          e.id,
+				"SenderFault": senderFault,
+				"Code":        code,
+				"Message":     sendErr.Error(),
+			})
+			continue
 		}
+
+		entry := map[string]interface{}{
+			"Id":                     e.id,
+			"MessageId":              created.ID,
+			"MD5OfMessageBody":       created.MD5OfBody,
+			"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
+		}
+		if len(e.systemAttrs) > 0 {
+			entry["MD5OfMessageSystemAttributes"] = sqsstore.CalculateMessageAttributesMD5(e.systemAttrs)
+		}
+		if created.SequenceNumber != "" {
+			entry["SequenceNumber"] = created.SequenceNumber
+		}
+		successEntries = append(successEntries, entry)
 	}
 
 	return map[string]interface{}{
 		"Successful": successEntries,
 		"Failed":     failedEntries,
 	}, nil
+}
+
+// parseBatchSendEntries extracts and validates all SendMessageBatch entries
+// from request parameters. Supports both JSON (SDK v2) and flattened query
+// (CLI / SDK v1) formats. Returns an error if any entry is malformed or
+// fails validation — no messages are sent until this returns successfully.
+func parseBatchSendEntries(params map[string]interface{}) ([]*batchSendEntry, error) {
+	if jsonEntries, ok := params["Entries"].([]interface{}); ok && len(jsonEntries) > 0 {
+		return parseBatchEntriesJSON(jsonEntries)
+	}
+	return parseBatchEntriesQuery(params)
+}
+
+func parseBatchEntriesJSON(jsonEntries []interface{}) ([]*batchSendEntry, error) {
+	if len(jsonEntries) > 10 {
+		return nil, ErrTooManyEntriesInBatch
+	}
+
+	seenIDs := make(map[string]bool)
+	batchTotalSize := 0
+	result := make([]*batchSendEntry, 0, len(jsonEntries))
+
+	for _, raw := range jsonEntries {
+		entryMap, ok := raw.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameterValue
+		}
+
+		id, _ := entryMap["Id"].(string)
+		if id == "" {
+			return nil, ErrInvalidParameterValue
+		}
+
+		if err := sqsstore.ValidateBatchEntryId(id); err != nil {
+			return nil, ErrInvalidBatchEntryId
+		}
+
+		if seenIDs[id] {
+			return nil, ErrBatchEntryIdsNotDistinct
+		}
+		seenIDs[id] = true
+
+		messageBody, _ := entryMap["MessageBody"].(string)
+		delaySeconds := int32(0)
+		if ds, ok := entryMap["DelaySeconds"].(float64); ok {
+			delaySeconds = int32(ds)
+		}
+
+		message := sqsstore.NewMessage(messageBody)
+		message.DelaySeconds = delaySeconds
+		if mgid, ok := entryMap["MessageGroupId"].(string); ok {
+			message.MessageGroupID = mgid
+		}
+		if mdid, ok := entryMap["MessageDeduplicationId"].(string); ok {
+			message.MessageDeduplicationID = mdid
+		}
+
+		if attrs, ok := entryMap["MessageAttributes"].(map[string]interface{}); ok {
+			msgAttrs := make(map[string]*sqsstore.MessageAttributeValue)
+			for attrName, attrVal := range attrs {
+				if attrMap, ok := attrVal.(map[string]interface{}); ok {
+					attr := &sqsstore.MessageAttributeValue{}
+					if dt, ok := attrMap["DataType"].(string); ok {
+						attr.DataType = dt
+					}
+					if sv, ok := attrMap["StringValue"].(string); ok {
+						attr.StringValue = &sv
+					}
+					if bv, ok := attrMap["BinaryValue"].(string); ok {
+						attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+					}
+					msgAttrs[attrName] = attr
+				}
+			}
+			message.MessageAttributes = msgAttrs
+		}
+
+		for _, attr := range message.MessageAttributes {
+			if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
+				return nil, convertStoreError(err)
+			}
+		}
+
+		batchTotalSize += messageEntrySize(messageBody, message.MessageAttributes)
+		if batchTotalSize > maxBatchPayloadSize {
+			return nil, ErrBatchRequestTooLong
+		}
+
+		sysAttrs, err := parseBatchEntrySystemAttributesJSON(entryMap)
+		if err != nil {
+			return nil, err
+		}
+		if len(sysAttrs) > 0 {
+			if message.Attributes == nil {
+				message.Attributes = make(map[string]string)
+			}
+			if th, ok := sysAttrs["AWSTraceHeader"]; ok && th.StringValue != nil {
+				message.Attributes["AWSTraceHeader"] = *th.StringValue
+			}
+		}
+
+		result = append(result, &batchSendEntry{
+			id:          id,
+			message:     message,
+			systemAttrs: sysAttrs,
+		})
+	}
+
+	if len(result) == 0 {
+		return nil, ErrEmptyBatchRequest
+	}
+	return result, nil
+}
+
+func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, error) {
+	seenIDs := make(map[string]bool)
+	entryCount := 0
+	batchTotalSize := 0
+	result := make([]*batchSendEntry, 0)
+
+	for i := 1; i <= 10; i++ {
+		prefix := "SendMessageBatchRequestEntry." + strconv.Itoa(i) + "."
+		id := request.GetParamCaseInsensitive(params, prefix+"Id")
+		if id == "" {
+			continue
+		}
+
+		if err := sqsstore.ValidateBatchEntryId(id); err != nil {
+			return nil, ErrInvalidBatchEntryId
+		}
+
+		if seenIDs[id] {
+			return nil, ErrBatchEntryIdsNotDistinct
+		}
+		seenIDs[id] = true
+		entryCount++
+
+		if entryCount > 10 {
+			return nil, ErrTooManyEntriesInBatch
+		}
+
+		messageBody := request.GetParamCaseInsensitive(params, prefix+"MessageBody")
+		delaySeconds := int32(request.GetIntParam(params, prefix+"DelaySeconds"))
+
+		message := sqsstore.NewMessage(messageBody)
+		message.DelaySeconds = delaySeconds
+		message.MessageGroupID = request.GetParamCaseInsensitive(params, prefix+"MessageGroupId")
+		message.MessageDeduplicationID = request.GetParamCaseInsensitive(params, prefix+"MessageDeduplicationId")
+
+		msgAttrs := make(map[string]*sqsstore.MessageAttributeValue)
+		for j := 1; ; j++ {
+			attrPrefix := prefix + "MessageAttribute." + strconv.Itoa(j) + "."
+			attrName := request.GetParamCaseInsensitive(params, attrPrefix+"Name")
+			if attrName == "" {
+				break
+			}
+			dataType := request.GetParamCaseInsensitive(params, attrPrefix+"Value.DataType")
+			if dataType == "" {
+				break
+			}
+			attr := &sqsstore.MessageAttributeValue{DataType: dataType}
+			if sv := request.GetParamCaseInsensitive(params, attrPrefix+"Value.StringValue"); sv != "" {
+				attr.StringValue = &sv
+			}
+			if bv := request.GetParamCaseInsensitive(params, attrPrefix+"Value.BinaryValue"); bv != "" {
+				attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+			}
+			msgAttrs[attrName] = attr
+		}
+		if len(msgAttrs) > 0 {
+			message.MessageAttributes = msgAttrs
+		}
+
+		for _, attr := range msgAttrs {
+			if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
+				return nil, convertStoreError(err)
+			}
+		}
+
+		batchTotalSize += messageEntrySize(messageBody, msgAttrs)
+		if batchTotalSize > maxBatchPayloadSize {
+			return nil, ErrBatchRequestTooLong
+		}
+
+		sysAttrs, err := parseBatchEntrySystemAttributesQuery(params, i)
+		if err != nil {
+			return nil, err
+		}
+		if len(sysAttrs) > 0 {
+			if message.Attributes == nil {
+				message.Attributes = make(map[string]string)
+			}
+			if th, ok := sysAttrs["AWSTraceHeader"]; ok && th.StringValue != nil {
+				message.Attributes["AWSTraceHeader"] = *th.StringValue
+			}
+		}
+
+		result = append(result, &batchSendEntry{
+			id:          id,
+			message:     message,
+			systemAttrs: sysAttrs,
+		})
+	}
+
+	if len(result) == 0 {
+		return nil, ErrEmptyBatchRequest
+	}
+	return result, nil
+}
+
+// parseBatchEntrySystemAttributesJSON extracts system attributes from a JSON
+// batch entry map. Only AWSTraceHeader is valid for sends (C5 enforcement
+// added in Batch C).
+func parseBatchEntrySystemAttributesJSON(entryMap map[string]interface{}) (map[string]*sqsstore.MessageAttributeValue, error) {
+	result := make(map[string]*sqsstore.MessageAttributeValue)
+	sysAttrs, ok := entryMap["MessageSystemAttributes"].(map[string]interface{})
+	if !ok {
+		return result, nil
+	}
+	for name, val := range sysAttrs {
+		if name != "AWSTraceHeader" {
+			return nil, ErrInvalidParameterValue
+		}
+		attrMap, ok := val.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		attr := &sqsstore.MessageAttributeValue{
+			DataType: request.GetStringParam(attrMap, "DataType"),
+		}
+		if sv, ok := attrMap["StringValue"].(string); ok && sv != "" {
+			attr.StringValue = &sv
+		}
+		if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
+			attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+		}
+		result[name] = attr
+	}
+	return result, nil
+}
+
+// parseBatchEntrySystemAttributesQuery extracts system attributes from
+// flattened query parameters for batch entry at position entryIndex.
+func parseBatchEntrySystemAttributesQuery(params map[string]interface{}, entryIndex int) (map[string]*sqsstore.MessageAttributeValue, error) {
+	result := make(map[string]*sqsstore.MessageAttributeValue)
+	for j := 1; ; j++ {
+		prefix := "SendMessageBatchRequestEntry." + strconv.Itoa(entryIndex) + ".MessageSystemAttribute." + strconv.Itoa(j) + "."
+		name := request.GetParamCaseInsensitive(params, prefix+"Name")
+		if name == "" {
+			break
+		}
+		if name != "AWSTraceHeader" {
+			return nil, ErrInvalidParameterValue
+		}
+		dataType := request.GetParamCaseInsensitive(params, prefix+"Value.DataType")
+		if dataType == "" {
+			break
+		}
+		attr := &sqsstore.MessageAttributeValue{DataType: dataType}
+		if sv := request.GetParamCaseInsensitive(params, prefix+"Value.StringValue"); sv != "" {
+			attr.StringValue = &sv
+		}
+		result[name] = attr
+	}
+	return result, nil
 }
 
 // ReceiveMessage receives one or more messages from an SQS queue.
@@ -453,12 +645,15 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 	// Parse message attribute names
 	msgAttrNames := request.GetStringList(req.Parameters, "MessageAttributeNames")
 
+	// M6: Parse ReceiveRequestAttemptId for FIFO receive dedup
+	receiveRequestAttemptId := request.GetParamCaseInsensitive(req.Parameters, "ReceiveRequestAttemptId")
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	messages, err := store.ReceiveMessage(queueURL, maxNumberOfMessages, visibilityTimeoutPtr, waitTimeSeconds)
+	messages, err := store.ReceiveMessage(queueURL, maxNumberOfMessages, visibilityTimeoutPtr, waitTimeSeconds, receiveRequestAttemptId)
 	if err != nil {
 		return nil, convertStoreError(err)
 	}
@@ -624,10 +819,11 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 			}
 
 			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
+				code, senderFault := mapStoreErrorToBatchCode(err)
 				failedEntries = append(failedEntries, map[string]interface{}{
 					"Id":          id,
-					"SenderFault": false,
-					"Code":        "ReceiptHandleIsInvalid",
+					"SenderFault": senderFault,
+					"Code":        code,
 					"Message":     err.Error(),
 				})
 				continue
@@ -673,10 +869,11 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 			}
 
 			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
+				code, senderFault := mapStoreErrorToBatchCode(err)
 				failedEntries = append(failedEntries, map[string]interface{}{
 					"Id":          id,
-					"SenderFault": false,
-					"Code":        "ReceiptHandleIsInvalid",
+					"SenderFault": senderFault,
+					"Code":        code,
 					"Message":     err.Error(),
 				})
 				continue
@@ -858,4 +1055,65 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		"Successful": successEntries,
 		"Failed":     failedEntries,
 	}, nil
+}
+
+// parseMessageSystemAttributes extracts MessageSystemAttributes from the
+// request parameters. Supports both JSON map and flattened query formats.
+// Only AWSTraceHeader is valid for sends (per MessageSystemAttributeNameForSends
+// enum). Unknown system attribute names are rejected with InvalidParameterValue.
+func parseMessageSystemAttributes(params map[string]interface{}) (map[string]*sqsstore.MessageAttributeValue, error) {
+	result := make(map[string]*sqsstore.MessageAttributeValue)
+
+	if jsonAttrs, ok := params["MessageSystemAttributes"].(map[string]interface{}); ok {
+		for name, val := range jsonAttrs {
+			if name != "AWSTraceHeader" {
+				return nil, ErrInvalidParameterValue
+			}
+			attrMap, ok := val.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			attrValue := &sqsstore.MessageAttributeValue{
+				DataType: request.GetStringParam(attrMap, "DataType"),
+			}
+			if sv, ok := attrMap["StringValue"].(string); ok && sv != "" {
+				attrValue.StringValue = &sv
+			}
+			if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
+				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+			}
+			result[name] = attrValue
+		}
+		return result, nil
+	}
+
+	for i := 1; ; i++ {
+		name := request.GetParamCaseInsensitive(params, "MessageSystemAttribute."+strconv.Itoa(i)+".Name")
+		if name == "" {
+			nameKey := "MessageSystemAttribute." + strconv.Itoa(i) + ".Name"
+			if val, ok := params[nameKey].(string); ok {
+				name = val
+			}
+		}
+		if name == "" {
+			break
+		}
+		if name != "AWSTraceHeader" {
+			return nil, ErrInvalidParameterValue
+		}
+		dataType := request.GetParamCaseInsensitive(params, "MessageSystemAttribute."+strconv.Itoa(i)+".Value.DataType")
+		if dataType == "" {
+			dataTypeKey := "MessageSystemAttribute." + strconv.Itoa(i) + ".Value.DataType"
+			if val, ok := params[dataTypeKey].(string); ok {
+				dataType = val
+			}
+		}
+		attrValue := &sqsstore.MessageAttributeValue{DataType: dataType}
+		if sv := request.GetParamCaseInsensitive(params, "MessageSystemAttribute."+strconv.Itoa(i)+".Value.StringValue"); sv != "" {
+			attrValue.StringValue = &sv
+		}
+		result[name] = attrValue
+	}
+
+	return result, nil
 }

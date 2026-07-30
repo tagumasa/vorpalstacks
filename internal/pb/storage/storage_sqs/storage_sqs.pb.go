@@ -593,18 +593,20 @@ func (x *Message) GetAttributes() map[string]string {
 
 // MessageMoveTask represents a message move task between queues.
 type MessageMoveTask struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	TaskId              string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	SourceQueueArn      string                 `protobuf:"bytes,2,opt,name=source_queue_arn,json=sourceQueueArn,proto3" json:"source_queue_arn,omitempty"`
-	DestinationQueueArn string                 `protobuf:"bytes,3,opt,name=destination_queue_arn,json=destinationQueueArn,proto3" json:"destination_queue_arn,omitempty"`
-	Status              string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	MaxNumberOfMessages int32                  `protobuf:"varint,5,opt,name=max_number_of_messages,json=maxNumberOfMessages,proto3" json:"max_number_of_messages,omitempty"`
-	MovedMessages       int32                  `protobuf:"varint,6,opt,name=moved_messages,json=movedMessages,proto3" json:"moved_messages,omitempty"`
-	FailureMessages     int32                  `protobuf:"varint,7,opt,name=failure_messages,json=failureMessages,proto3" json:"failure_messages,omitempty"`
-	StartTime           *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime             *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                             protoimpl.MessageState `protogen:"open.v1"`
+	TaskId                            string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	SourceQueueArn                    string                 `protobuf:"bytes,2,opt,name=source_queue_arn,json=sourceQueueArn,proto3" json:"source_queue_arn,omitempty"`
+	DestinationQueueArn               string                 `protobuf:"bytes,3,opt,name=destination_queue_arn,json=destinationQueueArn,proto3" json:"destination_queue_arn,omitempty"`
+	Status                            string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	MaxNumberOfMessages               int32                  `protobuf:"varint,5,opt,name=max_number_of_messages,json=maxNumberOfMessages,proto3" json:"max_number_of_messages,omitempty"`
+	MovedMessages                     int32                  `protobuf:"varint,6,opt,name=moved_messages,json=movedMessages,proto3" json:"moved_messages,omitempty"`
+	FailureMessages                   int32                  `protobuf:"varint,7,opt,name=failure_messages,json=failureMessages,proto3" json:"failure_messages,omitempty"`
+	StartTime                         *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime                           *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	ApproximateNumberOfMessagesToMove int32                  `protobuf:"varint,10,opt,name=approximate_number_of_messages_to_move,json=approximateNumberOfMessagesToMove,proto3" json:"approximate_number_of_messages_to_move,omitempty"`
+	FailureReason                     string                 `protobuf:"bytes,11,opt,name=failure_reason,json=failureReason,proto3" json:"failure_reason,omitempty"`
+	unknownFields                     protoimpl.UnknownFields
+	sizeCache                         protoimpl.SizeCache
 }
 
 func (x *MessageMoveTask) Reset() {
@@ -700,6 +702,20 @@ func (x *MessageMoveTask) GetEndTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *MessageMoveTask) GetApproximateNumberOfMessagesToMove() int32 {
+	if x != nil {
+		return x.ApproximateNumberOfMessagesToMove
+	}
+	return 0
+}
+
+func (x *MessageMoveTask) GetFailureReason() string {
+	if x != nil {
+		return x.FailureReason
+	}
+	return ""
+}
+
 var File_storage_sqs_proto protoreflect.FileDescriptor
 
 const file_storage_sqs_proto_rawDesc = "" +
@@ -782,7 +798,7 @@ const file_storage_sqs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\".storage.sqs.MessageAttributeValueR\x05value:\x028\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x99\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x93\x04\n" +
 	"\x0fMessageMoveTask\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12(\n" +
 	"\x10source_queue_arn\x18\x02 \x01(\tR\x0esourceQueueArn\x122\n" +
@@ -793,7 +809,10 @@ const file_storage_sqs_proto_rawDesc = "" +
 	"\x10failure_messages\x18\a \x01(\x05R\x0ffailureMessages\x129\n" +
 	"\n" +
 	"start_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
-	"\bend_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\aendTimeB.Z,vorpalstacks/internal/pb/storage/storage_sqsb\x06proto3"
+	"\bend_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12Q\n" +
+	"&approximate_number_of_messages_to_move\x18\n" +
+	" \x01(\x05R!approximateNumberOfMessagesToMove\x12%\n" +
+	"\x0efailure_reason\x18\v \x01(\tR\rfailureReasonB.Z,vorpalstacks/internal/pb/storage/storage_sqsb\x06proto3"
 
 var (
 	file_storage_sqs_proto_rawDescOnce sync.Once

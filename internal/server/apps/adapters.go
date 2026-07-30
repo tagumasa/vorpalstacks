@@ -86,7 +86,7 @@ func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesq
 
 // ReceiveMessage retrieves messages from the specified queue.
 func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]eventbus.ReceivedSQSMessage, error) {
-	msgs, err := a.store.ReceiveMessage(queueURL, maxMessages, visibilityTimeout, waitTimeSeconds)
+	msgs, err := a.store.ReceiveMessage(queueURL, maxMessages, visibilityTimeout, waitTimeSeconds, "")
 	if err != nil {
 		return nil, err
 	}

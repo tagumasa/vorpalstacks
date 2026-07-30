@@ -116,7 +116,7 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 			QueueUrl:      aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
 			ReceiptHandle: aws.String("fake-receipt-handle"),
 		})
-		if err := AssertErrorContains(err, "ReceiptHandleIsInvalid"); err != nil {
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
 			return err
 		}
 		return nil
@@ -128,7 +128,7 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 			ReceiptHandle:     aws.String("fake-receipt-handle"),
 			VisibilityTimeout: 30,
 		})
-		if err := AssertErrorContains(err, "ReceiptHandleIsInvalid"); err != nil {
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
 			return err
 		}
 		return nil

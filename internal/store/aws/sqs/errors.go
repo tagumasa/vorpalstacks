@@ -84,4 +84,23 @@ var (
 	// ErrQueueNameExistsWithDiffConfig is returned when a queue with the same
 	// name already exists but with different attributes.
 	ErrQueueNameExistsWithDiffConfig = errors.New("queue name exists with different configuration")
+
+	// ErrOverLimit is returned when a resource limit is exceeded.
+	ErrOverLimit = errors.New("over limit")
+
+	// ErrInvalidAttributeValue is returned when an attribute value is invalid
+	// or cannot be modified after queue creation.
+	ErrInvalidAttributeValue = errors.New("invalid attribute value")
+
+	// ErrBatchRequestTooLong is returned when a batch request payload exceeds
+	// the maximum allowed size (262144 bytes).
+	ErrBatchRequestTooLong = errors.New("batch request too long")
+
+	// ErrInvalidDataType is returned when a message attribute DataType is invalid.
+	ErrInvalidDataType = errors.New("invalid message attribute data type")
+
+	// ErrTaskAlreadyTerminal is returned when attempting to cancel a message
+	// move task that has already reached a terminal state (COMPLETED, FAILED,
+	// or CANCELLED).
+	ErrTaskAlreadyTerminal = errors.New("task already in terminal state")
 )

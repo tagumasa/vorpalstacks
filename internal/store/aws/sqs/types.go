@@ -151,13 +151,15 @@ func calculateMD5(s string) string {
 
 // MessageMoveTask represents a message move task between queues.
 type MessageMoveTask struct {
-	TaskId              string    `json:"taskId"`
-	SourceQueueARN      string    `json:"sourceQueueArn"`
-	DestinationQueueARN string    `json:"destinationQueueArn"`
-	Status              string    `json:"status"`
-	MaxNumberOfMessages int32     `json:"maxNumberOfMessages"`
-	MovedMessages       int32     `json:"movedMessages"`
-	FailureMessages     int32     `json:"failureMessages"`
-	StartTime           time.Time `json:"startTime"`
-	EndTime             time.Time `json:"endTime,omitempty"`
+	TaskId                            string    `json:"taskId"`
+	SourceQueueARN                    string    `json:"sourceQueueArn"`
+	DestinationQueueARN               string    `json:"destinationQueueArn"`
+	Status                            string    `json:"status"`
+	MaxNumberOfMessages               int32     `json:"maxNumberOfMessages"`
+	MovedMessages                     int32     `json:"movedMessages"`
+	FailureMessages                   int32     `json:"failureMessages"`
+	StartTime                         time.Time `json:"startTime"`
+	EndTime                           time.Time `json:"endTime,omitempty"`
+	ApproximateNumberOfMessagesToMove int32     `json:"approximateNumberOfMessagesToMove"`
+	FailureReason                     string    `json:"failureReason,omitempty"`
 }

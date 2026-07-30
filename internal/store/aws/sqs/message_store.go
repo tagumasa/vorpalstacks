@@ -80,8 +80,13 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 
 	if queue.FifoQueue {
 		s.sequenceMu.Lock()
-		s.sequenceCounter++
-		message.SequenceNumber = fmt.Sprintf("%d", s.sequenceCounter)
+		counter := s.sequenceCounters[queueURL]
+		if counter == 0 {
+			counter = time.Now().UnixNano()
+		}
+		counter++
+		s.sequenceCounters[queueURL] = counter
+		message.SequenceNumber = fmt.Sprintf("%d", counter)
 		s.sequenceMu.Unlock()
 	}
 
@@ -100,7 +105,7 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 }
 
 // ReceiveMessage retrieves messages from the specified queue.
-func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32) ([]*Message, error) {
+func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32, receiveRequestAttemptId string) ([]*Message, error) {
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
 		return nil, err
@@ -130,6 +135,13 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
+	// M6: FIFO receive dedup via ReceiveRequestAttemptId
+	if queue.FifoQueue && receiveRequestAttemptId != "" {
+		if cached := s.checkReceiveAttemptCache(queueURL, receiveRequestAttemptId, now); cached != nil {
+			return cached, nil
+		}
+	}
+
 	candidates := s.selectCandidates(queueURL, queue, maxNumberOfMessages, now)
 
 	var messages []*Message
@@ -142,10 +154,10 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		msg.ApproximateReceiveCount++
 
 		if queue.RedrivePolicy != nil && msg.ApproximateReceiveCount > queue.RedrivePolicy.MaxReceiveCount {
-			if err := s.moveToDLQ(msg, queue.RedrivePolicy.DeadLetterTargetARN); err != nil {
-				logs.Warn("Failed to move message to DLQ", logs.String("messageId", msg.ID), logs.Err(err))
+			if err := s.moveToDLQ(msg, queue.RedrivePolicy.DeadLetterTargetARN); err == nil {
+				continue
 			}
-			continue
+			logs.Warn("Failed to move message to DLQ, delivering to consumer", logs.String("messageId", msg.ID))
 		}
 
 		if msg.ReceiptHandle != "" {
@@ -178,6 +190,11 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		)
 
 		messages = append(messages, msg)
+	}
+
+	// M6: Cache the result for FIFO receive dedup
+	if queue.FifoQueue && receiveRequestAttemptId != "" && len(messages) > 0 {
+		s.cacheReceiveAttempt(queueURL, receiveRequestAttemptId, messages)
 	}
 
 	return messages, nil
@@ -299,6 +316,10 @@ func (s *SQSStore) isMessageExpired(m *pb.Message, retentionCutoff time.Time) bo
 
 // DeleteMessage deletes a message from the queue using the receipt handle.
 func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
+	if !s.Exists(queueURL) {
+		return ErrQueueNotFound
+	}
+
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
@@ -318,6 +339,10 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 
 // ChangeMessageVisibility changes the visibility timeout of a message.
 func (s *SQSStore) ChangeMessageVisibility(queueURL, receiptHandle string, visibilityTimeout int32) error {
+	if !s.Exists(queueURL) {
+		return ErrQueueNotFound
+	}
+
 	if err := validateVisibilityTimeout(visibilityTimeout); err != nil {
 		return err
 	}
@@ -415,4 +440,64 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 	}
 
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// M6: ReceiveRequestAttemptId FIFO receive dedup
+// ---------------------------------------------------------------------------
+
+const receiveAttemptCacheMaxSize = 500
+
+// checkReceiveAttemptCache returns cached messages from a previous receive with
+// the same attempt ID, if all messages are still in-flight. Returns nil on miss.
+func (s *SQSStore) checkReceiveAttemptCache(queueURL, attemptId string, now time.Time) []*Message {
+	key := queueURL + "#" + attemptId
+	s.receiveAttemptMu.Lock()
+	entry, exists := s.receiveAttemptCache[key]
+	s.receiveAttemptMu.Unlock()
+
+	if !exists {
+		return nil
+	}
+
+	var messages []*Message
+	for _, msgID := range entry.messageIDs {
+		var msgPb pb.Message
+		if err := s.messagesStore.GetProto(messageKey(queueURL, msgID), &msgPb); err != nil {
+			return nil
+		}
+		if !s.isMessageInFlight(&msgPb, now) {
+			return nil
+		}
+		messages = append(messages, ProtoToMessage(&msgPb))
+	}
+
+	return messages
+}
+
+// cacheReceiveAttempt stores the result of a FIFO receive for dedup.
+func (s *SQSStore) cacheReceiveAttempt(queueURL, attemptId string, messages []*Message) {
+	key := queueURL + "#" + attemptId
+	msgIDs := make([]string, len(messages))
+	for i, msg := range messages {
+		msgIDs[i] = msg.ID
+	}
+	s.receiveAttemptMu.Lock()
+	s.receiveAttemptCache[key] = &receiveAttemptEntry{
+		messageIDs: msgIDs,
+		createdAt:  time.Now(),
+	}
+	if len(s.receiveAttemptCache) > receiveAttemptCacheMaxSize {
+		s.cleanupReceiveAttemptCache()
+	}
+	s.receiveAttemptMu.Unlock()
+}
+
+func (s *SQSStore) cleanupReceiveAttemptCache() {
+	cutoff := time.Now().Add(-time.Duration(maxVisibilityTimeout) * time.Second)
+	for k, entry := range s.receiveAttemptCache {
+		if entry.createdAt.Before(cutoff) {
+			delete(s.receiveAttemptCache, k)
+		}
+	}
 }

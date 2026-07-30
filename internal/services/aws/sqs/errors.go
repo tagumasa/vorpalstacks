@@ -45,4 +45,10 @@ var (
 	ErrMissingDeduplicationId = awserrors.NewAWSError("InvalidParameterValue", "The request must contain the parameter MessageDeduplicationId.", 400)
 	// ErrInvalidParameterCombination is returned when mutually exclusive parameters are both set.
 	ErrInvalidParameterCombination = awserrors.NewAWSError("InvalidParameterCombination", "AttributeNames and MessageSystemAttributeNames are mutually exclusive.", 400)
+	// ErrOverLimit is returned when a resource limit is exceeded.
+	ErrOverLimit = awserrors.NewAWSError("OverLimit", "The specified request exceeds the limit.", 403).SetQueryErrorCode("AWS.SimpleQueueService.RequestThrottled;Sender")
+	// ErrInvalidAttributeValue is returned when an attribute value is invalid or immutable.
+	ErrInvalidAttributeValue = awserrors.NewAWSError("InvalidAttributeValue", "The attribute value is invalid.", 400)
+	// ErrBatchRequestTooLong is returned when a batch request payload exceeds 262144 bytes.
+	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", "Batch requests cannot be longer than 262144 bytes.", 400).SetQueryErrorCode("AWS.SimpleQueueService.BatchRequestTooLong;Sender")
 )

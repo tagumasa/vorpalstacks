@@ -85,4 +85,6 @@ message MessageMoveTask {
   int32 failure_messages = 7;
   google.protobuf.Timestamp start_time = 8;
   google.protobuf.Timestamp end_time = 9;
+  int32 approximate_number_of_messages_to_move = 10;
+  string failure_reason = 11;
 }

@@ -246,6 +246,9 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 			queue.ReceiveMessageWaitTimeSeconds = int32(val)
 
 		case "Policy":
+			if err := validatePolicyJSON(v); err != nil {
+				return err
+			}
 			queue.Policy = v
 
 		case "RedrivePolicy":
@@ -260,14 +263,53 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 			if err != nil {
 				return fmt.Errorf("invalid FifoQueue: %w", ErrInvalidParameterValue)
 			}
-			queue.FifoQueue = val
+			if val != queue.FifoQueue {
+				return ErrInvalidAttributeValue
+			}
 
 		case "ContentBasedDeduplication":
 			val, err := strconv.ParseBool(v)
 			if err != nil {
 				return fmt.Errorf("invalid ContentBasedDeduplication: %w", ErrInvalidParameterValue)
 			}
-			queue.ContentBasedDeduplication = val
+			if val != queue.ContentBasedDeduplication {
+				return ErrInvalidAttributeValue
+			}
+
+		case "KmsMasterKeyId":
+			if err := validateKmsMasterKeyId(v); err != nil {
+				return err
+			}
+		case "KmsDataKeyReusePeriodSeconds":
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return ErrInvalidParameterValue
+			}
+			if err := validateKmsDataKeyReusePeriod(int32(val)); err != nil {
+				return err
+			}
+
+		case "DeduplicationScope":
+			if err := validateDeduplicationScope(v); err != nil {
+				return err
+			}
+
+		case "FifoThroughputLimit":
+			if err := validateFifoThroughputLimit(v); err != nil {
+				return err
+			}
+
+		case "RedriveAllowPolicy":
+			if v != "" {
+				if err := validateRedriveAllowPolicyJSON(v); err != nil {
+					return err
+				}
+			}
+
+		case "SqsManagedSseEnabled":
+			if err := validateSqsManagedSseEnabled(v); err != nil {
+				return err
+			}
 
 		default:
 		}
@@ -279,6 +321,16 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 
 // AddPermission adds permission to a queue.
 func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string, actions []string) error {
+	if err := validatePermissionLabel(label); err != nil {
+		return err
+	}
+	if err := validateAWSAccountIDs(awsAccountIDs); err != nil {
+		return err
+	}
+	if err := validateSQSActionList(actions); err != nil {
+		return err
+	}
+
 	s.queueMutex.Lock()
 	defer s.queueMutex.Unlock()
 
@@ -289,6 +341,12 @@ func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string,
 
 	if queue.Permissions == nil {
 		queue.Permissions = make(map[string]*Permission)
+	}
+
+	if _, exists := queue.Permissions[label]; !exists {
+		if len(queue.Permissions) >= maxPermissionLabels {
+			return ErrOverLimit
+		}
 	}
 
 	queue.Permissions[label] = &Permission{

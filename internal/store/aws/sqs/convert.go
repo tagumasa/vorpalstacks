@@ -257,15 +257,17 @@ func MessageMoveTaskToProto(t *MessageMoveTask) *pb.MessageMoveTask {
 		return nil
 	}
 	return &pb.MessageMoveTask{
-		TaskId:              t.TaskId,
-		SourceQueueArn:      t.SourceQueueARN,
-		DestinationQueueArn: t.DestinationQueueARN,
-		Status:              t.Status,
-		MaxNumberOfMessages: t.MaxNumberOfMessages,
-		MovedMessages:       t.MovedMessages,
-		FailureMessages:     t.FailureMessages,
-		StartTime:           timestamppb.New(t.StartTime),
-		EndTime:             timeToProto(t.EndTime),
+		TaskId:                            t.TaskId,
+		SourceQueueArn:                    t.SourceQueueARN,
+		DestinationQueueArn:               t.DestinationQueueARN,
+		Status:                            t.Status,
+		MaxNumberOfMessages:               t.MaxNumberOfMessages,
+		MovedMessages:                     t.MovedMessages,
+		FailureMessages:                   t.FailureMessages,
+		StartTime:                         timestamppb.New(t.StartTime),
+		EndTime:                           timeToProto(t.EndTime),
+		ApproximateNumberOfMessagesToMove: t.ApproximateNumberOfMessagesToMove,
+		FailureReason:                     t.FailureReason,
 	}
 }
 
@@ -275,15 +277,17 @@ func ProtoToMessageMoveTask(p *pb.MessageMoveTask) *MessageMoveTask {
 		return nil
 	}
 	return &MessageMoveTask{
-		TaskId:              p.TaskId,
-		SourceQueueARN:      p.SourceQueueArn,
-		DestinationQueueARN: p.DestinationQueueArn,
-		Status:              p.Status,
-		MaxNumberOfMessages: p.MaxNumberOfMessages,
-		MovedMessages:       p.MovedMessages,
-		FailureMessages:     p.FailureMessages,
-		StartTime:           p.StartTime.AsTime(),
-		EndTime:             protoToTime(p.EndTime),
+		TaskId:                            p.TaskId,
+		SourceQueueARN:                    p.SourceQueueArn,
+		DestinationQueueARN:               p.DestinationQueueArn,
+		Status:                            p.Status,
+		MaxNumberOfMessages:               p.MaxNumberOfMessages,
+		MovedMessages:                     p.MovedMessages,
+		FailureMessages:                   p.FailureMessages,
+		StartTime:                         p.StartTime.AsTime(),
+		EndTime:                           protoToTime(p.EndTime),
+		ApproximateNumberOfMessagesToMove: p.ApproximateNumberOfMessagesToMove,
+		FailureReason:                     p.FailureReason,
 	}
 }
 

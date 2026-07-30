@@ -133,6 +133,9 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 				return ErrInvalidParameterValue
 			}
 		case "Policy":
+			if err := sqsstore.ValidatePolicyJSON(attrValue); err != nil {
+				return convertStoreError(err)
+			}
 			queue.Policy = attrValue
 		case "RedrivePolicy":
 			rdp, err := sqsstore.ParseRedrivePolicy(attrValue)
@@ -140,6 +143,32 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 				return ErrInvalidParameterValue
 			}
 			queue.RedrivePolicy = rdp
+		case "KmsDataKeyReusePeriodSeconds":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 60 || val > 86400 {
+					return ErrInvalidParameterValue
+				}
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "DeduplicationScope":
+			if attrValue != "queueMessageGroup" && attrValue != "queue" {
+				return ErrInvalidParameterValue
+			}
+		case "FifoThroughputLimit":
+			if attrValue != "perMessageGroupId" && attrValue != "perQueue" {
+				return ErrInvalidParameterValue
+			}
+		case "SqsManagedSseEnabled":
+			if _, err := strconv.ParseBool(attrValue); err != nil {
+				return ErrInvalidParameterValue
+			}
+		case "RedriveAllowPolicy":
+			if attrValue != "" {
+				if err := sqsstore.ValidateRedriveAllowPolicyJSON(attrValue); err != nil {
+					return convertStoreError(err)
+				}
+			}
 		}
 	}
 	return nil
@@ -166,9 +195,13 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	// FifoQueue=true requires the queue name to end with ".fifo".
-	// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_CreateQueue.html
+	// M10: Validate FIFO queue naming bidirectionally.
+	// FifoQueue=true requires ".fifo" suffix; ".fifo" suffix requires FifoQueue=true.
+	// Standard queue names cannot contain dots per AWS spec.
 	if queue.FifoQueue && !strings.HasSuffix(queueName, ".fifo") {
+		return nil, ErrInvalidParameterValue
+	}
+	if !queue.FifoQueue && strings.HasSuffix(queueName, ".fifo") {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -227,6 +260,9 @@ func (s *SQSService) GetQueueUrl(ctx context.Context, reqCtx *request.RequestCon
 	if queueName == "" {
 		return nil, ErrMissingParameter
 	}
+
+	// L10: QueueOwnerAWSAccountId parsed for future cross-account support.
+	_ = request.GetParamCaseInsensitive(req.Parameters, "QueueOwnerAWSAccountId")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -526,7 +562,6 @@ func (s *SQSService) CancelMessageMoveTask(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
-		"TaskId":                           task.TaskId,
 		"ApproximateNumberOfMessagesMoved": task.MovedMessages,
 	}, nil
 }
@@ -539,25 +574,49 @@ func (s *SQSService) ListMessageMoveTasks(ctx context.Context, reqCtx *request.R
 		return nil, ErrMissingParameter
 	}
 
+	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
+	if maxResults < 0 {
+		return nil, ErrInvalidParameterValue
+	}
+	if maxResults == 0 {
+		maxResults = 1
+	}
+	if maxResults > 10 {
+		maxResults = 10
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	tasks, err := store.ListMessageMoveTasks(sourceARN)
+	tasks, err := store.ListMessageMoveTasks(sourceARN, maxResults)
 	if err != nil {
 		return nil, convertStoreError(err)
 	}
 
 	var results []interface{}
 	for _, t := range tasks {
-		results = append(results, map[string]interface{}{
-			"TaskHandle":                   t.TaskId,
-			"SourceArn":                    t.SourceQueueARN,
-			"DestinationArn":               t.DestinationQueueARN,
-			"Status":                       t.Status,
-			"MaxNumberOfMessagesPerSecond": t.MaxNumberOfMessages,
-		})
+		entry := map[string]interface{}{
+			"Status":                           t.Status,
+			"SourceArn":                        t.SourceQueueARN,
+			"MaxNumberOfMessagesPerSecond":     t.MaxNumberOfMessages,
+			"ApproximateNumberOfMessagesMoved": t.MovedMessages,
+			"StartedTimestamp":                 t.StartTime.UnixMilli(),
+		}
+		if t.TaskId != "" && t.Status == "RUNNING" {
+			entry["TaskHandle"] = t.TaskId
+		}
+		if t.DestinationQueueARN != "" {
+			entry["DestinationArn"] = t.DestinationQueueARN
+		}
+		if t.ApproximateNumberOfMessagesToMove > 0 {
+			entry["ApproximateNumberOfMessagesToMove"] = t.ApproximateNumberOfMessagesToMove
+		}
+		if t.FailureReason != "" {
+			entry["FailureReason"] = t.FailureReason
+		}
+		results = append(results, entry)
 	}
 
 	return map[string]interface{}{

@@ -23,14 +23,14 @@ type SQSStoreInterface interface {
 	GetMessageCounts(queueURL string) (visible, notVisible, delayed int32)
 
 	SendMessage(queueURL string, message *Message) (*Message, error)
-	ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32) ([]*Message, error)
+	ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32, receiveRequestAttemptId string) ([]*Message, error)
 	DeleteMessage(queueURL, receiptHandle string) error
 	ChangeMessageVisibility(queueURL, receiptHandle string, visibilityTimeout int32) error
 	PurgeQueue(queueURL string) error
 
 	StartMessageMoveTask(sourceARN, destARN string, maxMessages int32) (*MessageMoveTask, error)
 	CancelMessageMoveTask(taskId string) (*MessageMoveTask, error)
-	ListMessageMoveTasks(sourceARN string) ([]*MessageMoveTask, error)
+	ListMessageMoveTasks(sourceARN string, maxResults int32) ([]*MessageMoveTask, error)
 	GetMessageMoveTask(taskId string) (*MessageMoveTask, error)
 
 	Storage() storage.BasicStorage
