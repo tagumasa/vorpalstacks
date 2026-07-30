@@ -31,9 +31,38 @@ type TrackingOptions struct {
 	HttpsPolicy          string `json:"httpsPolicy,omitempty"`
 }
 
+// SuppressionConfidenceThreshold carries the confidence verdict used by
+// the Auto Validation feature to decide whether an address should be
+// suppressed.  Per Smithy
+// com.amazonaws.sesv2#SuppressionConfidenceThreshold →
+// SuppressionConfidenceVerdictThreshold (MEDIUM/HIGH/MANAGED).
+type SuppressionConfidenceThreshold struct {
+	ConfidenceVerdictThreshold string `json:"confidenceVerdictThreshold,omitempty"`
+}
+
+// SuppressionConditionThreshold carries the Auto Validation settings for
+// suppression.  Per Smithy com.amazonaws.sesv2#SuppressionConditionThreshold:
+//   - ConditionThresholdEnabled (FeatureStatus: ENABLED/DISABLED) [required]
+//   - OverallConfidenceThreshold (SuppressionConfidenceThreshold)
+type SuppressionConditionThreshold struct {
+	ConditionThresholdEnabled  string                          `json:"conditionThresholdEnabled,omitempty"`
+	OverallConfidenceThreshold *SuppressionConfidenceThreshold `json:"overallConfidenceThreshold,omitempty"`
+}
+
+// SuppressionValidationOptions wraps the ConditionThreshold for
+// configuration-set-level suppression validation.  Per Smithy
+// com.amazonaws.sesv2#SuppressionValidationOptions.
+type SuppressionValidationOptions struct {
+	ConditionThreshold *SuppressionConditionThreshold `json:"conditionThreshold,omitempty"`
+}
+
 // SuppressionOptions specifies the suppression options for a configuration set.
+// Per Smithy com.amazonaws.sesv2#SuppressionOptions and the
+// PutConfigurationSetSuppressionOptionsRequest input shape.
 type SuppressionOptions struct {
-	SuppressedReasons []string `json:"suppressedReasons,omitempty"`
+	SuppressedReasons []string                      `json:"suppressedReasons,omitempty"`
+	SuppressionScope  string                        `json:"suppressionScope,omitempty"`
+	ValidationOptions *SuppressionValidationOptions `json:"validationOptions,omitempty"`
 }
 
 // VdmOptions specifies the Verifiable Deliverability Metrics options for a configuration set.

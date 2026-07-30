@@ -586,12 +586,32 @@ func (s *SESv2Service) PutConfigurationSetSendingOptions(ctx context.Context, re
 }
 
 // PutConfigurationSetSuppressionOptions updates the suppression options for a configuration set.
+// Per Smithy com.amazonaws.sesv2#PutConfigurationSetSuppressionOptionsRequest
+// the input carries SuppressedReasons, SuppressionScope (ACCOUNT/TENANT),
+// and ValidationOptions (Auto Validation threshold settings).
 func (s *SESv2Service) PutConfigurationSetSuppressionOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
 		if cs.SuppressionOptions == nil {
 			cs.SuppressionOptions = &sesv2store.SuppressionOptions{}
 		}
 		cs.SuppressionOptions.SuppressedReasons = request.GetStringList(params, "SuppressedReasons")
+		cs.SuppressionOptions.SuppressionScope = request.GetStringParam(params, "SuppressionScope")
+
+		if vo := request.GetMapParam(params, "ValidationOptions"); vo != nil {
+			if ct := request.GetMapParam(vo, "ConditionThreshold"); ct != nil {
+				threshold := &sesv2store.SuppressionConditionThreshold{
+					ConditionThresholdEnabled: request.GetStringParam(ct, "ConditionThresholdEnabled"),
+				}
+				if oct := request.GetMapParam(ct, "OverallConfidenceThreshold"); oct != nil {
+					threshold.OverallConfidenceThreshold = &sesv2store.SuppressionConfidenceThreshold{
+						ConfidenceVerdictThreshold: request.GetStringParam(oct, "ConfidenceVerdictThreshold"),
+					}
+				}
+				cs.SuppressionOptions.ValidationOptions = &sesv2store.SuppressionValidationOptions{
+					ConditionThreshold: threshold,
+				}
+			}
+		}
 	})
 }
 

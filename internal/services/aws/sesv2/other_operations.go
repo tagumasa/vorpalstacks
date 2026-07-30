@@ -2,7 +2,9 @@ package sesv2
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +17,20 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
+
+var contactListNameRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+// maxFilteredContactScan is the safety upper bound for the in-memory
+// filter path in ListContacts.  Without it, a pathological contact list
+// could cause unbounded memory and time consumption.  50k is well above
+// any realistic edge/on-prem list size.
+const maxFilteredContactScan = 50000
+
+// isValidContactListName validates that name matches the AWS spec
+// pattern [a-zA-Z0-9_-]+ (1-128 characters, checked separately).
+func isValidContactListName(name string) bool {
+	return contactListNameRe.MatchString(name)
+}
 
 func parseStoredTime(s string) float64 {
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
@@ -187,6 +203,10 @@ func (s *SESv2Service) ListDedicatedIpPools(ctx context.Context, reqCtx *request
 
 // GetSuppressedDestination retrieves details about a suppressed email destination.
 func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	emailAddress := request.GetStringParam(req.Parameters, "EmailAddress")
 	if emailAddress == "" {
 		return nil, ErrMissingParameter
@@ -205,18 +225,32 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
+	result := suppressedDestinationSummary(dest)
+	if len(dest.Attributes) > 0 {
+		result["Attributes"] = dest.Attributes
+	}
+
 	return map[string]interface{}{
-		"SuppressedDestination": suppressedDestinationSummary(dest),
+		"SuppressedDestination": result,
 	}, nil
 }
 
 // PutSuppressedDestination adds or updates a suppressed destination.
 func (s *SESv2Service) PutSuppressedDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	emailAddress := request.GetStringParam(req.Parameters, "EmailAddress")
 	reason := request.GetStringParam(req.Parameters, "Reason")
 
 	if emailAddress == "" {
 		return nil, ErrMissingParameter
+	}
+	// Per Smithy com.amazonaws.sesv2#SuppressionListReason the Reason
+	// field is required and must be BOUNCE or COMPLAINT.
+	if reason != "BOUNCE" && reason != "COMPLAINT" {
+		return nil, ErrBadRequest
 	}
 
 	store, err := s.store(reqCtx)
@@ -239,6 +273,10 @@ func (s *SESv2Service) PutSuppressedDestination(ctx context.Context, reqCtx *req
 
 // DeleteSuppressedDestination removes an email address from the suppression list.
 func (s *SESv2Service) DeleteSuppressedDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	emailAddress := request.GetStringParam(req.Parameters, "EmailAddress")
 	if emailAddress == "" {
 		return nil, ErrMissingParameter
@@ -262,6 +300,10 @@ func (s *SESv2Service) DeleteSuppressedDestination(ctx context.Context, reqCtx *
 // StartDate/EndDate Unix-time window. The previous impl returned the
 // unfiltered list, forcing clients to filter client-side.
 func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
@@ -414,6 +456,10 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 	if len(contactListName) > 128 {
 		return nil, ErrInvalidParameter
 	}
+	// Per AWS spec ContactListName must match [a-zA-Z0-9_-]+
+	if !isValidContactListName(contactListName) {
+		return nil, ErrInvalidParameter
+	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
 	if len(description) > 500 {
@@ -476,7 +522,13 @@ func (s *SESv2Service) GetContactList(ctx context.Context, reqCtx *request.Reque
 
 	result := map[string]interface{}{
 		"ContactListName":      cl.ContactListName,
+		"CreatedTimestamp":     float64(cl.CreatedTimestamp.Unix()),
 		"LastUpdatedTimestamp": float64(cl.LastUpdatedTimestamp.Unix()),
+	}
+
+	arn := store.BuildContactListArn(contactListName)
+	if tags, err := store.ListAsSlice(arn); err == nil && len(tags) > 0 {
+		result["Tags"] = tags
 	}
 
 	if cl.Description != "" {
@@ -614,6 +666,11 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 	contact := sesv2store.NewContact(emailAddress, contactListName)
 
 	if attrs := request.GetStringParam(req.Parameters, "AttributesData"); attrs != "" {
+		// Per AWS spec AttributesData must be a valid JSON object.
+		var jsonCheck map[string]interface{}
+		if err := json.Unmarshal([]byte(attrs), &jsonCheck); err != nil {
+			return nil, ErrBadRequest
+		}
 		contact.AttributesData = attrs
 	}
 
@@ -650,8 +707,10 @@ func (s *SESv2Service) GetContact(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	result := map[string]interface{}{
+		"ContactListName":      contact.ContactListName,
 		"EmailAddress":         contact.EmailAddress,
 		"UnsubscribeAll":       contact.UnsubscribeAll,
+		"CreatedTimestamp":     float64(contact.CreatedTimestamp.Unix()),
 		"LastUpdatedTimestamp": float64(contact.LastUpdatedTimestamp.Unix()),
 	}
 
@@ -664,6 +723,17 @@ func (s *SESv2Service) GetContact(ctx context.Context, reqCtx *request.RequestCo
 			})
 		}
 		result["TopicPreferences"] = topicPrefs
+	}
+
+	if len(contact.TopicDefaultPreferences) > 0 {
+		defaultPrefs := make([]map[string]interface{}, 0, len(contact.TopicDefaultPreferences))
+		for _, tp := range contact.TopicDefaultPreferences {
+			defaultPrefs = append(defaultPrefs, map[string]interface{}{
+				"TopicName":          tp.TopicName,
+				"SubscriptionStatus": tp.SubscriptionStatus,
+			})
+		}
+		result["TopicDefaultPreferences"] = defaultPrefs
 	}
 
 	if contact.AttributesData != "" {
@@ -731,13 +801,27 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 	// it in-memory. Pagination is layered on top of the filtered set so
 	// that NextToken remains stable across pages.
 	if filteredStatus != "" || topicFilterName != "" {
-		allOpts := common.ListOptions{MaxItems: 10000}
-		all, err := store.ListContacts(contactListName, allOpts)
-		if err != nil {
-			return nil, err
+		// Page through all contacts with a 50k safety cap — prevents
+		// unbounded memory/time consumption while covering realistic
+		// edge/on-prem list sizes.
+		var allItems []*sesv2store.Contact
+		listOpts := common.ListOptions{MaxItems: 1000}
+		for {
+			all, err := store.ListContacts(contactListName, listOpts)
+			if err != nil {
+				return nil, err
+			}
+			allItems = append(allItems, all.Items...)
+			if len(allItems) > maxFilteredContactScan {
+				return nil, ErrBadRequest
+			}
+			if !all.IsTruncated || all.NextMarker == "" {
+				break
+			}
+			listOpts.Marker = all.NextMarker
 		}
-		filtered := make([]*sesv2store.Contact, 0, len(all.Items))
-		for _, c := range all.Items {
+		filtered := make([]*sesv2store.Contact, 0, len(allItems))
+		for _, c := range allItems {
 			if !contactMatchesFilter(c, filteredStatus, topicFilterName, topicFilterUseDefault) {
 				continue
 			}
@@ -854,6 +938,16 @@ func contactSummary(c *sesv2store.Contact) map[string]interface{} {
 		}
 		m["TopicPreferences"] = prefs
 	}
+	if len(c.TopicDefaultPreferences) > 0 {
+		defaultPrefs := make([]map[string]interface{}, 0, len(c.TopicDefaultPreferences))
+		for _, tp := range c.TopicDefaultPreferences {
+			defaultPrefs = append(defaultPrefs, map[string]interface{}{
+				"TopicName":          tp.TopicName,
+				"SubscriptionStatus": tp.SubscriptionStatus,
+			})
+		}
+		m["TopicDefaultPreferences"] = defaultPrefs
+	}
 	if c.AttributesData != "" {
 		m["AttributesData"] = c.AttributesData
 	}
@@ -902,7 +996,14 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if _, ok := req.Parameters["AttributesData"]; ok {
-		contact.AttributesData = request.GetStringParam(req.Parameters, "AttributesData")
+		attrs := request.GetStringParam(req.Parameters, "AttributesData")
+		if attrs != "" {
+			var jsonCheck map[string]interface{}
+			if err := json.Unmarshal([]byte(attrs), &jsonCheck); err != nil {
+				return nil, ErrBadRequest
+			}
+		}
+		contact.AttributesData = attrs
 	}
 
 	if _, ok := req.Parameters["TopicPreferences"]; ok {

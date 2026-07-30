@@ -52,7 +52,7 @@ type SESv2StoreInterface interface {
 	GetAccount() (*Account, error)
 	PutAccountDetails(details *AccountDetails) error
 	PutSendingAttributes(sendingEnabled bool) error
-	PutSuppressionAttributes(reasons []string) error
+	PutSuppressionAttributes(attrs *SuppressionAttributes) error
 	PutVdmAttributes(vdm *VdmAttributes) error
 	PutDedicatedIpAutoWarmupEnabled(enabled bool) error
 

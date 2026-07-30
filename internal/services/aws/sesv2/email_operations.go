@@ -10,17 +10,81 @@ import (
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
+// validateFromAddress validates that fromEmailAddress is a syntactically
+// valid email address or domain.  This is a lightweight check (presence
+// of "@" for email, non-empty for domain) — not a full RFC 5322 parser.
+// The goal is to reject obviously malformed input early rather than
+// relying on the identity-lookup to fail.
+func validateFromAddress(addr string) bool {
+	if addr == "" {
+		return false
+	}
+	// Domain identity: no "@" — accept as long as non-empty.
+	if !strings.Contains(addr, "@") {
+		return true
+	}
+	// Email address: must have exactly one "@" with non-empty local
+	// and domain parts.
+	parts := strings.Split(addr, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	return parts[0] != "" && parts[1] != ""
+}
+
+// rejectTenantName returns ErrBadRequest when the caller supplies
+// TenantName.  Tenant management (48 ops) is not implemented in this
+// edge/on-prem build; silently ignoring TenantName would return
+// account-level results, which is misleading.  Fail-closed instead.
+func rejectTenantName(params map[string]interface{}) error {
+	if tn := request.GetStringParam(params, "TenantName"); tn != "" {
+		return ErrBadRequest
+	}
+	return nil
+}
+
+// parseListManagementOptions extracts the ListManagementOptions from
+// request parameters.  Returns nil when ContactListName is absent.
+func parseListManagementOptions(params map[string]interface{}) *sesv2store.ListManagementOptions {
+	lmm := request.GetMapParam(params, "ListManagementOptions")
+	if lmm == nil {
+		return nil
+	}
+	contactListName := request.GetStringParam(lmm, "ContactListName")
+	if contactListName == "" {
+		return nil
+	}
+	return &sesv2store.ListManagementOptions{
+		ContactListName: contactListName,
+		TopicName:       request.GetStringParam(lmm, "TopicName"),
+	}
+}
+
 // SendEmail sends an email using the SESv2 service.
 func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	fromEmailAddress := request.GetStringParam(req.Parameters, "FromEmailAddress")
 	if fromEmailAddress == "" {
 		return nil, ErrMissingParameter
 	}
+	if !validateFromAddress(fromEmailAddress) {
+		return nil, ErrBadRequest
+	}
+
 	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
 	feedbackForwardingEmailAddress := request.GetStringParam(req.Parameters, "FeedbackForwardingEmailAddress")
+	fromEmailAddressIdentityArn := request.GetStringParam(req.Parameters, "FromEmailAddressIdentityArn")
+	feedbackForwardingEmailAddressIdentityArn := request.GetStringParam(req.Parameters, "FeedbackForwardingEmailAddressIdentityArn")
+	listMgmtOpts := parseListManagementOptions(req.Parameters)
 
 	destMap := request.GetMapParam(req.Parameters, "Destination")
-	destination := parseDestination(destMap)
+	destination, err := parseDestination(destMap)
+	if err != nil {
+		return nil, err
+	}
 
 	contentMap := request.GetMapParam(req.Parameters, "Content")
 	content := parseContent(contentMap)
@@ -35,10 +99,13 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 
 	email := sesv2store.NewEmailRecord()
 	email.FromEmailAddress = fromEmailAddress
+	email.FromEmailAddressIdentityArn = fromEmailAddressIdentityArn
 	email.Destination = destination
 	email.Content = content
 	email.ConfigurationSetName = configurationSetName
 	email.FeedbackForwardingEmailAddress = feedbackForwardingEmailAddress
+	email.FeedbackForwardingEmailAddressIdentityArn = feedbackForwardingEmailAddressIdentityArn
+	email.ListManagementOptions = listMgmtOpts
 	email.Status = "SENT"
 	email.SentTimestamp = time.Now().UTC()
 
@@ -69,16 +136,40 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 // required. The previous implementation accepted an empty From and an
 // empty Entries slice, returning a success response with zero entries.
 func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectTenantName(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	fromEmailAddress := request.GetStringParam(req.Parameters, "FromEmailAddress")
 	if fromEmailAddress == "" {
 		return nil, ErrMissingParameter
 	}
+	if !validateFromAddress(fromEmailAddress) {
+		return nil, ErrBadRequest
+	}
 	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
 	feedbackForwardingEmailAddress := request.GetStringParam(req.Parameters, "FeedbackForwardingEmailAddress")
+	fromEmailAddressIdentityArn := request.GetStringParam(req.Parameters, "FromEmailAddressIdentityArn")
+	feedbackForwardingEmailAddressIdentityArn := request.GetStringParam(req.Parameters, "FeedbackForwardingEmailAddressIdentityArn")
+	listMgmtOpts := parseListManagementOptions(req.Parameters)
+
+	// DefaultEmailTags are applied to every entry in the bulk send,
+	// merged with per-entry ReplacementTags.
+	var defaultEmailTags []sesv2store.MessageTag
+	defaultTagsRaw := tagutil.ParseMessageTags(req.Parameters, "DefaultEmailTags")
+	if len(defaultTagsRaw) > 0 {
+		defaultEmailTags = make([]sesv2store.MessageTag, len(defaultTagsRaw))
+		for i, t := range defaultTagsRaw {
+			defaultEmailTags[i] = sesv2store.MessageTag{Name: t.Name, Value: t.Value}
+		}
+	}
 
 	defaultContent := parseContent(request.GetMapParam(req.Parameters, "DefaultContent"))
 
-	entries := parseBulkEmailEntries(req.Parameters)
+	entries, err := parseBulkEmailEntries(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if len(entries) == 0 {
 		return nil, ErrMissingParameter
 	}
@@ -96,9 +187,12 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 	for _, entry := range entries {
 		email := sesv2store.NewEmailRecord()
 		email.FromEmailAddress = fromEmailAddress
+		email.FromEmailAddressIdentityArn = fromEmailAddressIdentityArn
 		email.Destination = entry.Destination
 		email.ConfigurationSetName = configurationSetName
 		email.FeedbackForwardingEmailAddress = feedbackForwardingEmailAddress
+		email.FeedbackForwardingEmailAddressIdentityArn = feedbackForwardingEmailAddressIdentityArn
+		email.ListManagementOptions = listMgmtOpts
 		email.Status = "SENT"
 		email.SentTimestamp = time.Now().UTC()
 
@@ -116,8 +210,12 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 			}
 		}
 
+		// Merge DefaultEmailTags with per-entry ReplacementTags.
+		if len(defaultEmailTags) > 0 {
+			email.EmailTags = append(email.EmailTags, defaultEmailTags...)
+		}
 		if len(entry.ReplacementTags) > 0 {
-			email.EmailTags = entry.ReplacementTags
+			email.EmailTags = append(email.EmailTags, entry.ReplacementTags...)
 		}
 
 		if len(entry.ReplacementHeaders) > 0 {
@@ -143,23 +241,53 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-func parseDestination(destMap map[string]interface{}) *sesv2store.Destination {
+// isValidEmailAddress validates that addr is a syntactically valid email
+// address (must contain exactly one "@" with non-empty local and domain
+// parts).  Used for recipient addresses in Destination — unlike sender
+// identities, recipients cannot be bare domains.
+func isValidEmailAddress(addr string) bool {
+	if addr == "" {
+		return false
+	}
+	parts := strings.Split(addr, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	return parts[0] != "" && parts[1] != ""
+}
+
+func parseDestination(destMap map[string]interface{}) (*sesv2store.Destination, error) {
 	if destMap == nil {
-		return nil
+		return nil, nil
 	}
 
 	dest := &sesv2store.Destination{}
 	if to, ok := destMap["ToAddresses"].([]interface{}); ok {
 		dest.ToAddresses = toStringSlice(to)
+		for _, a := range dest.ToAddresses {
+			if !isValidEmailAddress(a) {
+				return nil, ErrBadRequest
+			}
+		}
 	}
 	if cc, ok := destMap["CcAddresses"].([]interface{}); ok {
 		dest.CcAddresses = toStringSlice(cc)
+		for _, a := range dest.CcAddresses {
+			if !isValidEmailAddress(a) {
+				return nil, ErrBadRequest
+			}
+		}
 	}
 	if bcc, ok := destMap["BccAddresses"].([]interface{}); ok {
 		dest.BccAddresses = toStringSlice(bcc)
+		for _, a := range dest.BccAddresses {
+			if !isValidEmailAddress(a) {
+				return nil, ErrBadRequest
+			}
+		}
 	}
 
-	return dest
+	return dest, nil
 }
 
 func parseContent(contentMap map[string]interface{}) *sesv2store.EmailContent {
@@ -261,17 +389,17 @@ func parseTemplate(tmplMap map[string]interface{}) *sesv2store.Template {
 	return tmpl
 }
 
-func parseBulkEmailEntries(params map[string]interface{}) []sesv2store.BulkEmailEntry {
+func parseBulkEmailEntries(params map[string]interface{}) ([]sesv2store.BulkEmailEntry, error) {
 	var entries []sesv2store.BulkEmailEntry
 
 	entriesIf, ok := params["BulkEmailEntries"]
 	if !ok {
-		return entries
+		return entries, nil
 	}
 
 	entryList, ok := entriesIf.([]interface{})
 	if !ok {
-		return entries
+		return entries, nil
 	}
 
 	for _, e := range entryList {
@@ -282,7 +410,11 @@ func parseBulkEmailEntries(params map[string]interface{}) []sesv2store.BulkEmail
 
 		entry := sesv2store.BulkEmailEntry{}
 		if dest, ok := entryMap["Destination"].(map[string]interface{}); ok {
-			entry.Destination = parseDestination(dest)
+			parsed, err := parseDestination(dest)
+			if err != nil {
+				return nil, err
+			}
+			entry.Destination = parsed
 		}
 
 		if tags, ok := entryMap["ReplacementTags"].([]interface{}); ok {
@@ -304,7 +436,7 @@ func parseBulkEmailEntries(params map[string]interface{}) []sesv2store.BulkEmail
 		entries = append(entries, entry)
 	}
 
-	return entries
+	return entries, nil
 }
 
 func toStringSlice(iface []interface{}) []string {

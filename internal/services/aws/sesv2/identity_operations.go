@@ -2,6 +2,7 @@ package sesv2
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -130,6 +131,9 @@ func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.
 	if emailIdentity == "" {
 		return nil, ErrMissingParameter
 	}
+	if !isValidIdentityFormat(emailIdentity) {
+		return nil, ErrBadRequest
+	}
 
 	parsedTags := tags.ParseTags(req.Parameters, "Tags")
 	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
@@ -195,10 +199,25 @@ func (s *SESv2Service) GetEmailIdentity(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	verificationStatus := "PENDING"
+	if identity.VerifiedForSending {
+		verificationStatus = "SUCCESS"
+	}
+
 	resp := map[string]interface{}{
 		"IdentityType":             identity.IdentityType,
 		"VerifiedForSendingStatus": identity.VerifiedForSending,
 		"FeedbackForwardingStatus": identity.FeedbackForwarding,
+		"VerificationStatus":       verificationStatus,
+	}
+
+	// VerificationInfo carries the last-success timestamp.  In our
+	// edge/on-prem implementation every identity is auto-verified at
+	// creation time, so LastSuccessTimestamp mirrors CreatedTimestamp.
+	if identity.VerifiedForSending {
+		resp["VerificationInfo"] = map[string]interface{}{
+			"LastSuccessTimestamp": float64(identity.CreatedTimestamp.Unix()),
+		}
 	}
 
 	if dkim := dkimAttributesToMap(identity.DkimAttributes); dkim != nil {
@@ -257,6 +276,9 @@ func (s *SESv2Service) DeleteEmailIdentity(ctx context.Context, reqCtx *request.
 func (s *SESv2Service) ListEmailIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pageSize := request.GetIntParam(req.Parameters, "PageSize")
 	if pageSize == 0 {
+		pageSize = 100
+	}
+	if pageSize > 100 {
 		pageSize = 100
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
@@ -323,21 +345,51 @@ func (s *SESv2Service) PutEmailIdentityDkimAttributes(ctx context.Context, reqCt
 // member selects the method (AWS_SES / EXTERNAL). The previous
 // implementation passed req.Parameters straight to parseDkimSigningAttributes,
 // so BYODKIM via this operation was completely non-functional.
+//
+// Per Smithy com.amazonaws.sesv2#PutEmailIdentityDkimSigningAttributesResponse
+// the response carries DkimStatus, DkimTokens, and SigningHostedZone so
+// the caller can publish the DNS records needed to complete verification.
 func (s *SESv2Service) PutEmailIdentityDkimSigningAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
-		ensureDkimAttributes(id)
-		signingAttrs := request.GetMapParam(params, "SigningAttributes")
-		byo := parseDkimSigningAttributes(signingAttrs)
-		if byo == nil {
-			// Caller is switching back to AWS-managed DKIM (or only set
-			// the top-level SigningAttributesOrigin parameter on its own).
-			if v := request.GetStringParam(params, "SigningAttributesOrigin"); v != "" {
-				id.DkimAttributes.SigningAttributesOrigin = v
-			}
-			return
+	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
+	if emailIdentity == "" {
+		return nil, ErrMissingParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	identity, err := store.GetEmailIdentity(emailIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	ensureDkimAttributes(identity)
+	signingAttrs := request.GetMapParam(req.Parameters, "SigningAttributes")
+	byo := parseDkimSigningAttributes(signingAttrs)
+	if byo == nil {
+		// Caller is switching back to AWS-managed DKIM (or only set
+		// the top-level SigningAttributesOrigin parameter on its own).
+		if v := request.GetStringParam(req.Parameters, "SigningAttributesOrigin"); v != "" {
+			identity.DkimAttributes.SigningAttributesOrigin = v
 		}
-		applyDkimSigningAttributes(id.DkimAttributes, byo)
-	})
+	} else {
+		applyDkimSigningAttributes(identity.DkimAttributes, byo)
+	}
+
+	if err := store.UpdateEmailIdentity(identity); err != nil {
+		return nil, err
+	}
+
+	resp := map[string]interface{}{
+		"DkimStatus": identity.DkimAttributes.Status,
+		"DkimTokens": identity.DkimAttributes.Tokens,
+	}
+	if identity.DkimAttributes.SigningHostedZone != "" {
+		resp["SigningHostedZone"] = identity.DkimAttributes.SigningHostedZone
+	}
+	return resp, nil
 }
 
 // PutEmailIdentityFeedbackAttributes updates the feedback attributes for an email identity.
@@ -476,4 +528,26 @@ func (s *SESv2Service) DeleteEmailIdentityPolicy(ctx context.Context, reqCtx *re
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+// isValidIdentityFormat validates that identity is a syntactically valid
+// email address or domain.  A domain has no "@" and must contain a dot
+// (e.g. "example.com").  An email address must have exactly one "@" with
+// non-empty local and domain parts.  This is a lightweight check — not a
+// full RFC 5321/5322 parser — intended to reject obviously malformed
+// input like "@@@" or "a@b@c".
+func isValidIdentityFormat(identity string) bool {
+	if identity == "" {
+		return false
+	}
+	// Domain identity: no "@" — must contain at least one dot.
+	if !strings.Contains(identity, "@") {
+		return strings.Contains(identity, ".")
+	}
+	// Email address: exactly one "@" with non-empty local and domain parts.
+	parts := strings.Split(identity, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	return parts[0] != "" && parts[1] != ""
 }

@@ -53,20 +53,33 @@ type Template struct {
 	TemplateContent *EmailTemplateContent `json:"templateContent,omitempty"`
 }
 
+// ListManagementOptions controls contact-list-level unsubscribe
+// handling for an individual email send.  Per Smithy
+// com.amazonaws.sesv2#ListManagementOptions the caller supplies
+// ContactListName and optionally TopicName so that SES can honour
+// the recipient's subscription preferences.
+type ListManagementOptions struct {
+	ContactListName string `json:"contactListName,omitempty"`
+	TopicName       string `json:"topicName,omitempty"`
+}
+
 // EmailRecord represents a sent email record.
 type EmailRecord struct {
-	MessageId                      string          `json:"messageId"`
-	FromEmailAddress               string          `json:"fromEmailAddress,omitempty"`
-	Destination                    *Destination    `json:"destination,omitempty"`
-	Content                        *EmailContent   `json:"content,omitempty"`
-	ReplyToAddresses               []string        `json:"replyToAddresses,omitempty"`
-	FeedbackForwardingEmailAddress string          `json:"feedbackForwardingEmailAddress,omitempty"`
-	EmailTags                      []MessageTag    `json:"emailTags,omitempty"`
-	ConfigurationSetName           string          `json:"configurationSetName,omitempty"`
-	ReplacementHeaders             []MessageHeader `json:"replacementHeaders,omitempty"`
-	Status                         string          `json:"status"`
-	CreatedTimestamp               time.Time       `json:"createdTimestamp"`
-	SentTimestamp                  time.Time       `json:"sentTimestamp,omitempty"`
+	MessageId                                 string                 `json:"messageId"`
+	FromEmailAddress                          string                 `json:"fromEmailAddress,omitempty"`
+	FromEmailAddressIdentityArn               string                 `json:"fromEmailAddressIdentityArn,omitempty"`
+	Destination                               *Destination           `json:"destination,omitempty"`
+	Content                                   *EmailContent          `json:"content,omitempty"`
+	ReplyToAddresses                          []string               `json:"replyToAddresses,omitempty"`
+	FeedbackForwardingEmailAddress            string                 `json:"feedbackForwardingEmailAddress,omitempty"`
+	FeedbackForwardingEmailAddressIdentityArn string                 `json:"feedbackForwardingEmailAddressIdentityArn,omitempty"`
+	EmailTags                                 []MessageTag           `json:"emailTags,omitempty"`
+	ConfigurationSetName                      string                 `json:"configurationSetName,omitempty"`
+	ListManagementOptions                     *ListManagementOptions `json:"listManagementOptions,omitempty"`
+	ReplacementHeaders                        []MessageHeader        `json:"replacementHeaders,omitempty"`
+	Status                                    string                 `json:"status"`
+	CreatedTimestamp                          time.Time              `json:"createdTimestamp"`
+	SentTimestamp                             time.Time              `json:"sentTimestamp,omitempty"`
 }
 
 // MessageTag represents a tag for an email message.

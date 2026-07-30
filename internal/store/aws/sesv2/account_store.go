@@ -30,9 +30,20 @@ type SendingAttributes struct {
 	DedicatedIpAutoWarmup bool    `json:"dedicatedIpAutoWarmupEnabled"`
 }
 
-// SuppressionAttributes represents the suppression reasons configured for an SESv2 account.
+// SuppressionAttributes represents the suppression reasons and validation
+// attributes configured for an SESv2 account.  Per Smithy
+// com.amazonaws.sesv2#SuppressionAttributes and the
+// PutAccountSuppressionAttributesRequest input shape.
 type SuppressionAttributes struct {
-	SuppressedReasons []string `json:"suppressedReasons,omitempty"`
+	SuppressedReasons    []string                         `json:"suppressedReasons,omitempty"`
+	ValidationAttributes *SuppressionValidationAttributes `json:"validationAttributes,omitempty"`
+}
+
+// SuppressionValidationAttributes wraps the ConditionThreshold for
+// account-level suppression validation.  Per Smithy
+// com.amazonaws.sesv2#SuppressionValidationAttributes.
+type SuppressionValidationAttributes struct {
+	ConditionThreshold *SuppressionConditionThreshold `json:"conditionThreshold,omitempty"`
 }
 
 // VdmAttributes represents the VDM (Visibility in Delivery Metrics) attributes for an account.
@@ -136,15 +147,23 @@ func (s *SESv2Store) PutSendingAttributes(sendingEnabled bool) error {
 	return s.accountStore.Put("account", account)
 }
 
-// PutSuppressionAttributes updates the suppression reasons for the SESv2 account.
-func (s *SESv2Store) PutSuppressionAttributes(reasons []string) error {
+// PutSuppressionAttributes updates the suppression reasons and validation
+// attributes for the SESv2 account.  Per Smithy
+// PutAccountSuppressionAttributesRequest the caller may supply
+// SuppressedReasons, ValidationAttributes, or both.
+func (s *SESv2Store) PutSuppressionAttributes(attrs *SuppressionAttributes) error {
 	s.accountMu.Lock()
 	defer s.accountMu.Unlock()
 	account, err := s.getAccountLocked()
 	if err != nil {
 		return err
 	}
-	account.SuppressionAttributes.SuppressedReasons = reasons
+	if attrs.SuppressedReasons != nil {
+		account.SuppressionAttributes.SuppressedReasons = attrs.SuppressedReasons
+	}
+	if attrs.ValidationAttributes != nil {
+		account.SuppressionAttributes.ValidationAttributes = attrs.ValidationAttributes
+	}
 	return s.accountStore.Put("account", account)
 }
 

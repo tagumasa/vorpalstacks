@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"text/template"
@@ -21,6 +22,16 @@ var (
 	awsVarPattern     = regexp.MustCompile(`\{\{([^#/^}{]+)\}\}`)
 	awsThisPattern    = regexp.MustCompile(`\{\{\s*this\s*\}\}`)
 	awsThisFieldStart = regexp.MustCompile(`\{\{\s*this\.`)
+
+	// unsupportedHandlebarsPatterns detect constructs that
+	// convertAWSTemplateSyntax cannot translate.  Matching any of these
+	// causes renderTemplateContent to return a BadRequest so the caller
+	// knows the template will not render correctly.
+	unsupportedHandlebarsPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`\{\{>`),  // partials: {{> name}}
+		regexp.MustCompile(`\{\{@`),  // @key, @index, etc.
+		regexp.MustCompile(` as \|`), // block params: #each xs as |x|
+	}
 )
 
 // convertAWSTemplateSyntax performs a best-effort translation from the
@@ -149,6 +160,11 @@ func (s *SESv2Service) GetEmailTemplate(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
+	arn := store.BuildTemplateArn(templateName)
+	if tags, err := store.ListAsSlice(arn); err == nil && len(tags) > 0 {
+		response["Tags"] = tags
+	}
+
 	return response, nil
 }
 
@@ -228,14 +244,8 @@ func (s *SESv2Service) ListEmailTemplates(ctx context.Context, reqCtx *request.R
 	templates := make([]map[string]interface{}, 0, len(result.Items))
 	for _, tmpl := range result.Items {
 		entry := map[string]interface{}{
-			"TemplateName": tmpl.TemplateName,
-		}
-		// Per Smithy com.amazonaws.sesv2#EmailTemplateMetadata the list
-		// response carries CreatedTimestamp alongside TemplateName. Older
-		// records persisted before the field was added serialise as the
-		// zero time; only emit the field when it carries useful data.
-		if !tmpl.CreatedTimestamp.IsZero() {
-			entry["CreatedTimestamp"] = float64(tmpl.CreatedTimestamp.Unix())
+			"TemplateName":     tmpl.TemplateName,
+			"CreatedTimestamp": float64(tmpl.CreatedTimestamp.Unix()),
 		}
 		templates = append(templates, entry)
 	}
@@ -313,6 +323,12 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 func renderTemplateContent(templateStr string, data map[string]interface{}) (string, error) {
 	if templateStr == "" {
 		return "", nil
+	}
+
+	for _, p := range unsupportedHandlebarsPatterns {
+		if p.MatchString(templateStr) {
+			return "", fmt.Errorf("template contains unsupported Handlebars syntax; use Go template syntax instead")
+		}
 	}
 
 	converted := convertAWSTemplateSyntax(templateStr)

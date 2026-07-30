@@ -20,6 +20,15 @@ func (s *SESv2Service) GetAccount(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
+	// Defensive nil guards for sub-structs — a stored account from an
+	// older format may have nil SendingAttributes or SuppressionAttributes.
+	if account.SendingAttributes == nil {
+		account.SendingAttributes = &sesv2store.SendingAttributes{}
+	}
+	if account.SuppressionAttributes == nil {
+		account.SuppressionAttributes = &sesv2store.SuppressionAttributes{}
+	}
+
 	result := map[string]interface{}{
 		"DedicatedIpAutoWarmupEnabled": account.SendingAttributes.DedicatedIpAutoWarmup,
 		"EnforcementStatus":            account.EnforcementStatus,
@@ -31,13 +40,21 @@ func (s *SESv2Service) GetAccount(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if account.Details != nil {
-		result["Details"] = map[string]interface{}{
+		details := map[string]interface{}{
 			"MailType":                        account.Details.MailType,
 			"AdditionalContactEmailAddresses": account.Details.AdditionalContactEmailAddresses,
 			"UseCaseDescription":              account.Details.UseCaseDescription,
 			"WebsiteURL":                      account.Details.WebsiteURL,
 			"ContactLanguage":                 account.Details.ContactLanguage,
 		}
+		// ReviewDetails is a read-only status managed by the service.
+		// In our edge/on-prem build production access is auto-granted.
+		if account.ProductionAccessEnabled {
+			details["ReviewDetails"] = map[string]interface{}{
+				"Status": "GRANTED",
+			}
+		}
+		result["Details"] = details
 	}
 
 	if account.VdmAttributes != nil {
@@ -87,14 +104,36 @@ func (s *SESv2Service) PutAccountSendingAttributes(ctx context.Context, reqCtx *
 }
 
 // PutAccountSuppressionAttributes updates the suppression attributes for the SES v2 account.
+// Per Smithy com.amazonaws.sesv2#PutAccountSuppressionAttributesRequest
+// the input carries SuppressedReasons and ValidationAttributes (Auto
+// Validation threshold settings).
 func (s *SESv2Service) PutAccountSuppressionAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	reasons := request.GetStringList(req.Parameters, "SuppressedReasons")
-	if err := store.PutSuppressionAttributes(reasons); err != nil {
+	attrs := &sesv2store.SuppressionAttributes{
+		SuppressedReasons: request.GetStringList(req.Parameters, "SuppressedReasons"),
+	}
+
+	if va := request.GetMapParam(req.Parameters, "ValidationAttributes"); va != nil {
+		if ct := request.GetMapParam(va, "ConditionThreshold"); ct != nil {
+			threshold := &sesv2store.SuppressionConditionThreshold{
+				ConditionThresholdEnabled: request.GetStringParam(ct, "ConditionThresholdEnabled"),
+			}
+			if oct := request.GetMapParam(ct, "OverallConfidenceThreshold"); oct != nil {
+				threshold.OverallConfidenceThreshold = &sesv2store.SuppressionConfidenceThreshold{
+					ConfidenceVerdictThreshold: request.GetStringParam(oct, "ConfidenceVerdictThreshold"),
+				}
+			}
+			attrs.ValidationAttributes = &sesv2store.SuppressionValidationAttributes{
+				ConditionThreshold: threshold,
+			}
+		}
+	}
+
+	if err := store.PutSuppressionAttributes(attrs); err != nil {
 		return nil, err
 	}
 
@@ -154,6 +193,9 @@ func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	vdmEnabledStr := request.GetStringParam(vdmAttrs, "VdmEnabled")
+	if vdmEnabledStr != "ENABLED" && vdmEnabledStr != "DISABLED" {
+		return nil, ErrBadRequest
+	}
 	vdm := &sesv2store.VdmAttributes{
 		VdmEnabled:                      vdmEnabledStr == "ENABLED",
 		AdditionalContactEmailAddresses: request.GetStringList(vdmAttrs, "AdditionalContactEmailAddresses"),
