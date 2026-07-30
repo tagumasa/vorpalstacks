@@ -36,11 +36,20 @@ var (
 	// ErrInvalidPrincipalArn is returned when the specified principal ARN is invalid.
 	ErrInvalidPrincipalArn = errors.NewAWSError("InvalidPrincipalArn", "The specified principal ARN is invalid.", http.StatusBadRequest)
 	// ErrInvalidSAMLAssertion is returned when the SAML assertion is invalid.
-	ErrInvalidSAMLAssertion = errors.NewAWSError("InvalidSAMLAssertion", "The SAML assertion is invalid.", http.StatusBadRequest)
+	// The Smithy aws.protocols#awsQueryError trait for AssumeRoleWithSAML's
+	// identity-token validation maps to "InvalidIdentityToken" (the same
+	// code used for invalid web identity tokens). Reusing this code keeps
+	// AWS SDK clients from having to special-case SAML vs WebIdentity
+	// response failures.
+	ErrInvalidSAMLAssertion = errors.NewAWSError("InvalidIdentityToken", "The SAML assertion is invalid.", http.StatusBadRequest)
 	// ErrInvalidWebIdentityToken is returned when the web identity token is invalid.
 	ErrInvalidWebIdentityToken = errors.NewAWSError("InvalidIdentityToken", "The web identity token is invalid.", http.StatusBadRequest)
 	// ErrInvalidEncodedMessage is returned when the encoded message is invalid.
-	ErrInvalidEncodedMessage = errors.NewAWSError("InvalidEncodedMessage", "The encoded message is invalid.", http.StatusBadRequest)
+	// The Smithy aws.protocols#awsQueryError trait value for the
+	// InvalidAuthorizationMessageException shape is "InvalidAuthorizationMessageException";
+	// emitting that exact code keeps AWS SDK clients from receiving an
+	// unrecognised error type when decoding fails.
+	ErrInvalidEncodedMessage = errors.NewAWSError("InvalidAuthorizationMessageException", "The encoded message is invalid.", http.StatusBadRequest)
 	// ErrInvalidAccessKeyId is returned when the access key ID is invalid.
 	ErrInvalidAccessKeyId = errors.NewAWSError("InvalidAccessKeyId", "The access key ID is invalid.", http.StatusBadRequest)
 	// ErrInvalidFederationName is returned when the federation name is invalid.
@@ -132,4 +141,9 @@ var (
 	// Smithy sourceIdentityType constraint (length 2-64, pattern
 	// [\w+=,.@-]*) or begins with the reserved "aws:" prefix.
 	ErrInvalidSourceIdentity = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'sourceIdentity' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@-]*", http.StatusBadRequest)
+	// ErrJWTPayloadSizeExceeded is returned by GetWebIdentityToken when
+	// the generated JWT payload exceeds the AWS-allowed size limit.
+	// Smithy JWTPayloadSizeExceededException, awsQueryError code
+	// "JWTPayloadSizeExceededException", httpResponseCode 400.
+	ErrJWTPayloadSizeExceeded = errors.NewAWSError("JWTPayloadSizeExceededException", "The payload size of the JWT token exceeds the allowed size.", http.StatusBadRequest)
 )

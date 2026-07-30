@@ -19,10 +19,35 @@ type CredentialsProvider interface {
 }
 
 // SessionCredentials represents temporary session credentials from STS.
+// In addition to the bare credentials, callers (notably the request
+// authoriser) receive the session-scoped principal identity, tags and
+// source identity so that ABAC condition keys and sts:SourceIdentity
+// references can be resolved at request time.
 type SessionCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	SessionToken    string
+
+	// PrincipalArn is the ARN of the principal that owns this session
+	// (AssumedRole, SAML, WebIdentity, FederatedUser, Root, etc.).
+	PrincipalArn string
+	// PrincipalType mirrors the session store's PrincipalType field so
+	// that consumers can distinguish role sessions from federated
+	// sessions without re-reading the underlying Session record.
+	PrincipalType string
+	// Tags carries the caller-supplied session tags and any transitive
+	// tags forwarded from a previous role session. They populate the
+	// EvaluationContext.SessionContext map for policy evaluation.
+	Tags map[string]string
+	// SourceIdentity is the caller-supplied SourceIdentity value, which
+	// surfaces as the aws:SourceIdentity / sts:SourceIdentity condition
+	// variable in policy evaluation.
+	SourceIdentity string
+	// Policy and PolicyArns carry the session-scoping policy through to
+	// the authorisation layer, where it is intersected with the
+	// assumed role's identity-based policies (H2).
+	Policy     string
+	PolicyArns []string
 }
 
 // SessionResolver resolves temporary session credentials by access key ID.

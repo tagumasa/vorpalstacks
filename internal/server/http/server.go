@@ -92,10 +92,24 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Create S3 store
 	s3Store := s3store.NewS3Store(storageMgr, blobStore, cfg.AccountID)
 
+	region := cfg.Region
+	if region == "" {
+		region = defaults.DefaultRegion
+	}
+
+	// Create STS session store for temporary credential verification.
+	// Initialised before the authorizer so ASIA-prefixed temporary
+	// credentials can be resolved at request time (H2/M1 enforcement).
+	stsSessionStore := stsstore.NewSessionStore(globalStore, region)
+
+	if os.Getenv("TEST_MODE") == "true" {
+		stsSessionStore.SeedTestDelegatedTokens()
+	}
+
 	var authorizer dispatcher.Authorizer
 	authEnabled := os.Getenv("AUTHORIZATION_ENABLED") == "true"
 	if authEnabled {
-		authorizer = authorization.NewAuthorizer(iamStore)
+		authorizer = authorization.NewAuthorizer(iamStore, stsSessionStore)
 	}
 
 	disp := dispatcher.NewDispatcher(
@@ -119,18 +133,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to build service index: %w", err)
 	}
 	classifier := classifier.NewClassifier(serviceIndex)
-
-	region := cfg.Region
-	if region == "" {
-		region = defaults.DefaultRegion
-	}
-
-	// Create STS session store for temporary credential verification
-	stsSessionStore := stsstore.NewSessionStore(globalStore, region)
-
-	if os.Getenv("TEST_MODE") == "true" {
-		stsSessionStore.SeedTestDelegatedTokens()
-	}
 
 	regionStorage, err := storageMgr.GetStorage(region)
 	if err != nil {

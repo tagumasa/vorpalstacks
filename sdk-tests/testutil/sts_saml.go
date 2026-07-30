@@ -90,7 +90,7 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
 			SAMLAssertion: aws.String(""),
 		})
-		if err := AssertErrorContains(err, "InvalidSAMLAssertion"); err != nil {
+		if err := AssertErrorContains(err, "InvalidIdentityToken"); err != nil {
 			return err
 		}
 		return nil

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -24,8 +25,16 @@ import (
 //
 // Root user access keys (UserName == iam.RootUserName) bypass all policy evaluation
 // and are granted unrestricted access, consistent with the AWS root user model.
+//
+// Temporary STS credentials (access keys prefixed with "ASIA") are resolved
+// via the SessionResolver and authorised against the assumed role's identity-
+// based policies intersected with any session policy the caller supplied.
+// Session tags surface in EvaluationContext.SessionContext as
+// aws:PrincipalTag/<key> values; the session's SourceIdentity surfaces as
+// sts:SourceIdentity for condition-key evaluation.
 type Authorizer struct {
 	iamStore          iam.IAMStoreInterface
+	sessionResolver   auth.SessionResolver
 	policyEvaluator   *policy.PolicyEvaluator
 	resourceExtractor *ResourceExtractor
 	actionMapper      *ActionMapper
@@ -47,13 +56,17 @@ type cachedPolicies struct {
 	cachedAt time.Time
 }
 
-// NewAuthorizer creates a new Authorizer instance with the given IAM store.
+// NewAuthorizer creates a new Authorizer instance with the given IAM store
+// and STS session resolver. The session resolver is consulted when the
+// caller presents an "ASIA" temporary access key; pass nil to disable
+// session-based authorisation (legacy permanent-key-only behaviour).
+//
 // It reads configuration from environment variables:
 // - AUTHORIZATION_DEFAULT_ACCESS_KEY_ID: Default access key ID to use when no signature is provided
 // - AUTHORIZATION_FAILURE_MODE: "permissive" (default) or "strict" - how to handle policy fetch errors
 // - AUTHORIZATION_CACHE_TTL_SECONDS: Cache TTL in seconds (default 300)
 // - AUTHORIZATION_CACHE_MAX_SIZE: Maximum number of cached entries (default 1000)
-func NewAuthorizer(iamStore iam.IAMStoreInterface) *Authorizer {
+func NewAuthorizer(iamStore iam.IAMStoreInterface, sessionResolver auth.SessionResolver) *Authorizer {
 	defaultAccessKeyID := os.Getenv("AUTHORIZATION_DEFAULT_ACCESS_KEY_ID")
 
 	failureMode := os.Getenv("AUTHORIZATION_FAILURE_MODE")
@@ -77,6 +90,7 @@ func NewAuthorizer(iamStore iam.IAMStoreInterface) *Authorizer {
 
 	a := &Authorizer{
 		iamStore:           iamStore,
+		sessionResolver:    sessionResolver,
 		policyEvaluator:    policy.NewPolicyEvaluator(),
 		resourceExtractor:  NewResourceExtractor(),
 		actionMapper:       NewActionMapper(),
@@ -116,6 +130,13 @@ func (a *Authorizer) Authorize(
 
 	accessKey, err := a.iamStore.AccessKeys().Get(accessKeyID)
 	if err != nil {
+		// IAM permanent key lookup failed. If the caller presents a
+		// temporary "ASIA" access key and we have a session resolver
+		// configured, attempt session-based authorisation before
+		// fail-closing (H2/M1 enforcement).
+		if strings.HasPrefix(accessKeyID, "ASIA") && a.sessionResolver != nil {
+			return a.authorizeSession(ctx, reqCtx, parsedReq, serviceName, r, accessKeyID)
+		}
 		// Fail-closed: deny access on store errors, but log the underlying
 		// cause so transient failures are diagnosable.
 		logs.Warn("Access key lookup failed during authorization",
@@ -305,6 +326,300 @@ func (a *Authorizer) buildEvaluationContext(
 			"service": serviceName,
 		},
 	}
+}
+
+// authorizeSession resolves an STS temporary credential (ASIA-prefixed access
+// key) via the session resolver and evaluates the assumed role's policies
+// intersected with any session policy the caller supplied. Session tags
+// surface as aws:PrincipalTag/<key> values and SourceIdentity as
+// sts:SourceIdentity in the policy evaluation context (M1/H2 enforcement).
+//
+// The Root principal type bypasses policy evaluation, matching the
+// permanent-key root-user behaviour. Federated users (GetFederationToken)
+// resolve to the underlying IAM user via the session's stored principal
+// name when the caller was a permanent IAM user.
+func (a *Authorizer) authorizeSession(
+	ctx context.Context,
+	reqCtx *request.RequestContext,
+	parsedReq *request.ParsedRequest,
+	serviceName string,
+	r *http.Request,
+	accessKeyID string,
+) (bool, error) {
+	sessionCreds, err := a.sessionResolver.ResolveSession(accessKeyID)
+	if err != nil || sessionCreds == nil {
+		logs.Warn("Session resolution failed during authorization",
+			logs.String("accessKeyId", accessKeyID), logs.Err(err))
+		return false, nil
+	}
+
+	// Root sessions bypass policy evaluation.
+	if sessionCreds.PrincipalType == "Root" || strings.HasSuffix(sessionCreds.PrincipalArn, ":root") {
+		reqCtx.Principal = iam.RootUserName
+		reqCtx.PrincipalID = iam.RootUserName
+		reqCtx.PrincipalType = request.PrincipalTypeUser
+		return true, nil
+	}
+
+	// For User / FederatedUser sessions (GetSessionToken,
+	// GetFederationToken), evaluate the underlying IAM user's effective
+	// policies — same policies as the permanent access key. For
+	// AssumedRole / SAML / WebIdentity sessions, evaluate the assumed
+	// role's identity-based policies.
+	var effectivePolicies []*policy.Document
+	if sessionCreds.PrincipalType == "User" || sessionCreds.PrincipalType == "FederatedUser" {
+		userName := extractUserNameFromArn(sessionCreds.PrincipalArn)
+		if userName == "" {
+			logs.Warn("Could not extract user name from session principal ARN",
+				logs.String("arn", sessionCreds.PrincipalArn))
+			return false, nil
+		}
+		effectivePolicies, err = a.getEffectivePolicies(ctx, userName)
+		if err != nil {
+			return false, nil
+		}
+		reqCtx.Principal = userName
+		reqCtx.PrincipalID = userName
+		reqCtx.PrincipalType = request.PrincipalTypeUser
+	} else {
+		effectivePolicies, _ = a.fetchEffectiveRolePolicies(ctx, sessionCreds.PrincipalArn)
+		reqCtx.Principal = sessionCreds.PrincipalArn
+		reqCtx.PrincipalID = sessionCreds.PrincipalArn
+		reqCtx.PrincipalType = request.PrincipalTypeRole
+	}
+
+	// Build the session evaluation context.
+	evalCtx := a.buildSessionEvaluationContext(reqCtx, parsedReq, serviceName, sessionCreds, r)
+
+	logs.Info("Evaluating session policies",
+		logs.String("principal", sessionCreds.PrincipalArn),
+		logs.String("principalType", sessionCreds.PrincipalType),
+		logs.String("action", evalCtx.Action),
+		logs.String("resource", evalCtx.Resource),
+	)
+
+	decision := a.policyEvaluator.Evaluate(evalCtx, effectivePolicies)
+	if decision.Effect != policy.DecisionEffectAllow {
+		return false, nil
+	}
+
+	// Session-scoping policies (inline Policy + managed PolicyArns).
+	// AWS intersection semantics: the role's identity-based policies
+	// AND every session policy must independently Allow. If any session
+	// policy denies (or fails to resolve), the request is denied.
+	sessionDocs, ok := a.collectSessionPolicyDocuments(sessionCreds)
+	if !ok {
+		return false, nil
+	}
+	for _, doc := range sessionDocs {
+		sessionDecision := a.policyEvaluator.Evaluate(evalCtx, []*policy.Document{doc})
+		if sessionDecision.Effect != policy.DecisionEffectAllow {
+			logs.Info("Session policy denied action",
+				logs.String("principal", sessionCreds.PrincipalArn),
+				logs.String("reason", sessionDecision.Reason))
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// collectSessionPolicyDocuments gathers all session-scoping policy
+// documents attached to a temporary credential: the inline Policy string
+// and each managed policy referenced by PolicyArns.
+//
+// Returns (docs, true) on success — docs may be nil/empty when the
+// session has no scoping policies, which is the normal case. Returns
+// (nil, false) when a document cannot be parsed or an ARN cannot be
+// resolved; the caller MUST treat ok=false as deny-closed.
+func (a *Authorizer) collectSessionPolicyDocuments(sessionCreds *auth.SessionCredentials) ([]*policy.Document, bool) {
+	var docs []*policy.Document
+
+	// Inline session policy (--policy on AssumeRole et al.).
+	if sessionCreds.Policy != "" {
+		doc, err := policy.ParseDocument(sessionCreds.Policy)
+		if err != nil {
+			logs.Warn("Failed to parse inline session policy",
+				logs.String("principal", sessionCreds.PrincipalArn), logs.Err(err))
+			return nil, false
+		}
+		docs = append(docs, doc)
+	}
+
+	// Managed-policy ARNs (--policy-arns on AssumeRole et al.). Each
+	// ARN references a managed policy whose default-version document
+	// acts as an additional session-scoping policy.
+	for _, arn := range sessionCreds.PolicyArns {
+		version, err := a.iamStore.Policies().GetDefaultVersion(arn)
+		if err != nil || version == nil {
+			logs.Warn("Failed to resolve session policy ARN",
+				logs.String("arn", arn),
+				logs.String("principal", sessionCreds.PrincipalArn), logs.Err(err))
+			return nil, false
+		}
+		doc, err := policy.ParseDocument(version.Document)
+		if err != nil || doc == nil {
+			logs.Warn("Failed to parse session policy ARN document",
+				logs.String("arn", arn),
+				logs.String("principal", sessionCreds.PrincipalArn), logs.Err(err))
+			return nil, false
+		}
+		docs = append(docs, doc)
+	}
+
+	return docs, true
+}
+
+// fetchEffectiveRolePolicies resolves the role referenced by the session
+// principal ARN and returns the role's identity-based policy documents
+// (inline + attached). Returns an empty document slice when the role
+// cannot be found so the caller fails closed (no implicit allow).
+func (a *Authorizer) fetchEffectiveRolePolicies(ctx context.Context, sessionPrincipalArn string) ([]*policy.Document, string) {
+	roleName := extractRoleNameFromAssumedRoleArn(sessionPrincipalArn)
+	if roleName == "" {
+		// Not an assumed-role ARN; fall through with an empty policy set.
+		return nil, ""
+	}
+	cacheKey := "role:" + roleName
+	if cached, ok := a.policyCache.Load(cacheKey); ok {
+		cp := cached.(*cachedPolicies)
+		if time.Since(cp.cachedAt) < a.cacheTTL {
+			return cp.policies, roleName
+		}
+	}
+
+	role, err := a.iamStore.Roles().Get(roleName)
+	if err != nil || role == nil {
+		return nil, roleName
+	}
+
+	var documents []*policy.Document
+
+	inlineNames, _ := a.iamStore.InlinePolicies().List("role", roleName)
+	for _, name := range inlineNames {
+		inline, err := a.iamStore.InlinePolicies().Get("role", roleName, name)
+		if err != nil || inline == nil {
+			continue
+		}
+		doc, err := policy.ParseDocument(inline.PolicyDocument)
+		if err != nil || doc == nil {
+			continue
+		}
+		documents = append(documents, doc)
+	}
+
+	attachedARNs, _ := a.iamStore.AttachedPolicies().ListAttachedPolicies("role", roleName)
+	for _, arn := range attachedARNs {
+		version, err := a.iamStore.Policies().GetDefaultVersion(arn)
+		if err != nil || version == nil {
+			continue
+		}
+		doc, err := policy.ParseDocument(version.Document)
+		if err != nil || doc == nil {
+			continue
+		}
+		documents = append(documents, doc)
+	}
+
+	a.policyCache.Store(cacheKey, &cachedPolicies{
+		policies: documents,
+		cachedAt: time.Now(),
+	})
+	a.enforceCacheSize()
+
+	logs.Info("Found policies for role", logs.Int("count", len(documents)), logs.String("role", roleName))
+	return documents, roleName
+}
+
+// buildSessionEvaluationContext constructs an EvaluationContext for an STS
+// temporary credential. Session tags populate the SessionContext map so
+// aws:PrincipalTag/<key> condition keys resolve; SourceIdentity surfaces
+// as sts:SourceIdentity.
+func (a *Authorizer) buildSessionEvaluationContext(
+	reqCtx *request.RequestContext,
+	parsedReq *request.ParsedRequest,
+	serviceName string,
+	sessionCreds *auth.SessionCredentials,
+	r *http.Request,
+) *policy.EvaluationContext {
+	accountID := reqCtx.GetAccountID()
+	if accountID == "" {
+		// Fallback: extract the account from the assumed-role ARN
+		// (arn:aws:iam::<account>:role/<name>).
+		accountID = extractAccountIDFromArn(sessionCreds.PrincipalArn)
+	}
+	action := a.actionMapper.Map(serviceName, parsedReq.Operation)
+	resource := a.resourceExtractor.Extract(
+		serviceName,
+		parsedReq.Operation,
+		parsedReq.Parameters,
+		accountID,
+		parsedReq.GetRegion(),
+	)
+
+	sessionContext := make(map[string]string, len(sessionCreds.Tags)+1)
+	for k, v := range sessionCreds.Tags {
+		sessionContext["aws:PrincipalTag/"+k] = v
+	}
+	if sessionCreds.SourceIdentity != "" {
+		sessionContext["sts:SourceIdentity"] = sessionCreds.SourceIdentity
+	}
+
+	return &policy.EvaluationContext{
+		Principal:        sessionCreds.PrincipalArn,
+		PrincipalAccount: accountID,
+		Action:           action,
+		Resource:         resource,
+		RequestTime:      time.Now(),
+		SourceIP:         extractSourceIP(r),
+		UserAgent:        r.UserAgent(),
+		SessionContext:   sessionContext,
+		ServiceContext: map[string]string{
+			"region":  parsedReq.GetRegion(),
+			"service": serviceName,
+		},
+	}
+}
+
+// extractRoleNameFromAssumedRoleARN returns the role name from an assumed-
+// role ARN (arn:aws:iam::<account>:role/<name>/<session>) or empty when
+// the ARN does not match the role shape.
+func extractRoleNameFromAssumedRoleArn(arn string) string {
+	// arn:aws:iam::<account>:role/<name> or
+	// arn:aws:sts::<account>:assumed-role/<name>/<session>
+	const stsAssumedPrefix = ":assumed-role/"
+	if idx := strings.Index(arn, stsAssumedPrefix); idx >= 0 {
+		rest := arn[idx+len(stsAssumedPrefix):]
+		if slash := strings.Index(rest, "/"); slash >= 0 {
+			return rest[:slash]
+		}
+		return rest
+	}
+	const roleSuffix = ":role/"
+	if idx := strings.Index(arn, roleSuffix); idx >= 0 {
+		return arn[idx+len(roleSuffix):]
+	}
+	return ""
+}
+
+// extractAccountIDFromArn returns the AWS account ID embedded in an IAM/STS
+// ARN (the 5th colon-separated segment) or empty when the ARN is malformed.
+func extractAccountIDFromArn(arn string) string {
+	parts := strings.SplitN(arn, ":", 6)
+	if len(parts) < 5 {
+		return ""
+	}
+	return parts[4]
+}
+
+// extractUserNameFromArn extracts the IAM user name from an ARN of the form
+// arn:aws:iam::<account>:user/<userName>. Returns empty for other ARN types.
+func extractUserNameFromArn(arn string) string {
+	const userSuffix = ":user/"
+	if idx := strings.Index(arn, userSuffix); idx >= 0 {
+		return arn[idx+len(userSuffix):]
+	}
+	return ""
 }
 
 // InvalidateCache removes the cached policies for a specific user.

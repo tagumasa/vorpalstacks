@@ -22,6 +22,13 @@ type Session struct { // #nosec G117
 	Tags                   map[string]string `json:"tags,omitempty"`
 	MultiFactorAuthPresent bool              `json:"mfa_present,omitempty"`
 	TransitiveTagKeys      []string          `json:"transitive_tag_keys,omitempty"`
+	// Policy and PolicyArns persist the session policy that the caller
+	// supplied when assuming the role. Without these fields the policy
+	// passed JSON validation and PackedPolicySize accounting but was
+	// discarded, leaving temporary credentials with full role
+	// permissions regardless of the requested scope (H2).
+	Policy     string   `json:"policy,omitempty"`
+	PolicyArns []string `json:"policy_arns,omitempty"`
 }
 
 // CreateSessionParams encapsulates the parameters for creating a new STS
@@ -38,4 +45,9 @@ type CreateSessionParams struct {
 	Tags                   map[string]string
 	MultiFactorAuthPresent bool
 	TransitiveTagKeys      []string
+	// Policy and PolicyArns carry the session-scoping policy through to
+	// the stored session (H2). They are validated (JSON parse +
+	// PackedPolicySize) at the handler level before reaching the store.
+	Policy     string
+	PolicyArns []string
 }

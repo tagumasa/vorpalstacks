@@ -93,6 +93,8 @@ func (s *SessionStore) Create(params CreateSessionParams) (*Session, error) {
 		Tags:                   params.Tags,
 		MultiFactorAuthPresent: params.MultiFactorAuthPresent,
 		TransitiveTagKeys:      params.TransitiveTagKeys,
+		Policy:                 params.Policy,
+		PolicyArns:             params.PolicyArns,
 	}
 
 	data, err := json.Marshal(session)
@@ -171,6 +173,12 @@ func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredenti
 		AccessKeyID:     session.AccessKeyId,
 		SecretAccessKey: session.SecretAccessKey,
 		SessionToken:    session.SessionToken,
+		PrincipalArn:    session.PrincipalArn,
+		PrincipalType:   session.PrincipalType,
+		Tags:            session.Tags,
+		SourceIdentity:  session.SourceIdentity,
+		Policy:          session.Policy,
+		PolicyArns:      session.PolicyArns,
 	}, nil
 }
 

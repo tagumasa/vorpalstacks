@@ -100,6 +100,49 @@ func extractTransitiveTagKeys(params map[string]interface{}) ([]string, error) {
 	return keys, nil
 }
 
+// extractPolicyArns parses PolicyArns.member.N.arn from the flat query-
+// parameter map. AWS Smithy policyDescriptorType defines the ARN shape; the
+// pack-size limit on the surrounding operation enforces an upper bound on
+// the number of entries indirectly. The slice preserves caller order.
+func extractPolicyArns(params map[string]interface{}) []string {
+	var arns []string
+	for i := 1; ; i++ {
+		key := fmt.Sprintf("PolicyArns.member.%d.arn", i)
+		arn := request.GetStringParam(params, key)
+		if arn == "" {
+			break
+		}
+		arns = append(arns, arn)
+	}
+	return arns
+}
+
+// extractProvidedContexts parses ProvidedContexts.member.N.ProviderArn and
+// ProvidedContexts.member.N.ContextAssertion from the flat query-parameter
+// map. Smithy ProvidedContextsListType limits the list to 1-5 entries; the
+// trust policy evaluator inspects sts:ProvidedContextProviderArn and
+// sts:ProvidedContextAssertion condition keys. Provided contexts are
+// signed-and-encrypted by STS in real AWS; VorpalStacks does not verify the
+// signature but exposes the values to the evaluation context for
+// compatibility with policy templates that reference them.
+func extractProvidedContexts(params map[string]interface{}) []ProvidedContextEntry {
+	var entries []ProvidedContextEntry
+	for i := 1; ; i++ {
+		providerKey := fmt.Sprintf("ProvidedContexts.member.%d.ProviderArn", i)
+		assertionKey := fmt.Sprintf("ProvidedContexts.member.%d.ContextAssertion", i)
+		providerArn := request.GetStringParam(params, providerKey)
+		contextAssertion := request.GetStringParam(params, assertionKey)
+		if providerArn == "" && contextAssertion == "" {
+			break
+		}
+		entries = append(entries, ProvidedContextEntry{
+			ProviderArn:      providerArn,
+			ContextAssertion: contextAssertion,
+		})
+	}
+	return entries
+}
+
 // resolveCallerSession looks up the caller's STS session when the request
 // includes a security token (temporary credentials). Returns nil for
 // permanent IAM credentials or when no session is found.
@@ -128,6 +171,20 @@ type assumeContext struct {
 	TokenCode    string
 	CallerName   string // IAM user name of the caller, for MFA device ownership check
 	MFAPresent   bool   // set to true by resolveRoleForAssume after successful MFA verification
+	// ProvidedContexts carries the parsed ProvidedContexts.member.N entries
+	// from the AssumeRole request. resolveRoleForAssume injects each entry's
+	// ProviderArn / ContextAssertion into evalCtx.Variables so that trust
+	// policy conditions referencing sts:ProvidedContext* can match.
+	ProvidedContexts []ProvidedContextEntry
+}
+
+// ProvidedContextEntry is the in-memory representation of one
+// ProvidedContext from the AssumeRole request. It mirrors the Smithy
+// ProvidedContext shape (ProviderArn + ContextAssertion) without coupling
+// the service layer to the Smithy-generated package.
+type ProvidedContextEntry struct {
+	ProviderArn      string
+	ContextAssertion string
 }
 
 // STSService provides AWS Security Token Service operations.
@@ -197,6 +254,22 @@ func (s *STSService) resolveRoleForAssume(reqCtx *request.RequestContext, roleAr
 				}
 				evalCtx.Variables["aws:MultiFactorAuthAge"] = "0"
 				evalCtx.TokenIssueTime = time.Now().UTC()
+			}
+		}
+		// M3: surface caller-supplied ProvidedContexts as
+		// sts:ProvidedContextProviderArn.N and
+		// sts:ProvidedContextAssertion.N variables on the trust-policy
+		// evaluation context so policy templates that reference the
+		// EC2 IMDS context-provider feature can match.
+		for i, pc := range actx.ProvidedContexts {
+			if pc.ProviderArn != "" || pc.ContextAssertion != "" {
+				if evalCtx.Variables == nil {
+					evalCtx.Variables = make(map[string]string)
+				}
+				keyProvider := fmt.Sprintf("sts:ProvidedContextProviderArn.%d", i+1)
+				keyAssertion := fmt.Sprintf("sts:ProvidedContextAssertion.%d", i+1)
+				evalCtx.Variables[keyProvider] = pc.ProviderArn
+				evalCtx.Variables[keyAssertion] = pc.ContextAssertion
 			}
 		}
 	}
@@ -413,12 +486,21 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	actx := &assumeContext{
-		ExternalId:   externalId,
-		SerialNumber: serialNumber,
-		TokenCode:    tokenCode,
-		CallerName:   callerName,
+		ExternalId:       externalId,
+		SerialNumber:     serialNumber,
+		TokenCode:        tokenCode,
+		CallerName:       callerName,
+		ProvidedContexts: extractProvidedContexts(req.Parameters),
 	}
 	role, err := s.resolveRoleForAssume(reqCtx, roleArn, callerArn, "sts:AssumeRole", actx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enforce role.MaxSessionDuration after role resolution. Without this
+	// gate a caller could request DurationSeconds beyond the role's
+	// configured maximum (security control bypass).
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -432,6 +514,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
+	policyArns := extractPolicyArns(req.Parameters)
 	session, err := store.Create(stsstore.CreateSessionParams{
 		PrincipalType:          "AssumedRole",
 		PrincipalName:          roleSessionName,
@@ -443,6 +526,8 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		Tags:                   mergedTags,
 		TransitiveTagKeys:      finalTransitiveKeys,
 		MultiFactorAuthPresent: actx.MFAPresent,
+		Policy:                 sessionPolicy,
+		PolicyArns:             policyArns,
 	})
 	if err != nil {
 		return nil, err
@@ -453,7 +538,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		_ = iamStore.Roles().UpdateRoleLastUsed(role.RoleName, reqCtx.GetRegion())
 	}
 
-	return map[string]interface{}{
+	return withSourceIdentity(map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
 			"SecretAccessKey": session.SecretAccessKey,
@@ -465,8 +550,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
 		"PackedPolicySize": packedPolicySize,
-		"SourceIdentity":   session.SourceIdentity,
-	}, nil
+	}, session.SourceIdentity), nil
 }
 
 // GetSessionToken returns a set of temporary credentials for an AWS account or IAM user.
@@ -497,7 +581,7 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 	}
 
 	// AWS caps GetSessionToken duration at 3600 seconds for root users.
-	isRoot := strings.Contains(callerArn, ":root")
+	isRoot := strings.HasSuffix(callerArn, ":root")
 	if isRoot && validDuration > 3600 {
 		return nil, ErrInvalidRootSessionDuration
 	}
@@ -550,22 +634,72 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 
 func computePackedPolicySize(policy string, params map[string]interface{}, tags map[string]string) int32 {
 	const maxPolicySize = 2048
+
+	// AWS serialises the session policy, managed-policy ARNs, session
+	// tags, transitive tag keys and source identity into a packed JSON
+	// document whose total byte length must not exceed maxPolicySize.
+	// The raw character counts alone underestimate the packed size
+	// because they ignore JSON structural overhead (quotes, brackets,
+	// key names, separators). We add per-element overhead so the
+	// reported percentage more closely tracks real AWS.
 	totalSize := len(policy)
+
+	// Managed-policy ARNs — each serialised as a JSON string element
+	// inside an array: ["arn:...","arn:..."]. Per-element overhead is
+	// 3 bytes (two quotes + one comma/bracket).
+	arnCount := 0
 	for i := 1; ; i++ {
 		arnKey := fmt.Sprintf("PolicyArns.member.%d.arn", i)
 		arn := request.GetStringParam(params, arnKey)
 		if arn == "" {
 			break
 		}
-		totalSize += len(arn)
+		totalSize += len(arn) + 3
+		arnCount++
+	}
+	if arnCount > 0 {
+		totalSize += 2 // array brackets
+	}
+
+	// Session tags — each serialised as {"Key":"...","Value":"..."}.
+	// Structural overhead per tag: {"Key":"","Value":""} = 20 bytes.
+	if len(tags) > 0 {
+		totalSize += 2 // array brackets
 	}
 	for key, value := range tags {
-		totalSize += len(key) + len(value)
+		totalSize += len(key) + len(value) + 20
 	}
-	if totalSize == 0 {
+
+	// Transitive tag keys — each serialised as a JSON string.
+	transitiveCount := 0
+	for i := 1; ; i++ {
+		key := fmt.Sprintf("TransitiveTagKeys.member.%d", i)
+		val := request.GetStringParam(params, key)
+		if val == "" {
+			break
+		}
+		totalSize += len(val) + 3
+		transitiveCount++
+	}
+	if transitiveCount > 0 {
+		totalSize += 2
+	}
+
+	if totalSize <= 0 {
 		return 0
 	}
 	return int32((totalSize * 100) / maxPolicySize)
+}
+
+// withSourceIdentity returns resp with the SourceIdentity field set only when
+// si is non-empty. The Smithy AssumeRole*Response shapes declare SourceIdentity
+// as an optional member; AWS Query protocol responses omit the field entirely
+// when the caller did not supply it, rather than serialising an empty string.
+func withSourceIdentity(resp map[string]interface{}, si string) map[string]interface{} {
+	if si != "" {
+		resp["SourceIdentity"] = si
+	}
+	return resp
 }
 
 func validateDurationSeconds(durationSeconds int) (int, error) {
@@ -576,6 +710,22 @@ func validateDurationSeconds(durationSeconds int) (int, error) {
 		return 0, ErrInvalidDuration
 	}
 	return durationSeconds, nil
+}
+
+// enforceRoleMaxSessionDuration rejects a DurationSeconds value that
+// exceeds the role's configured MaxSessionDuration. The caller must
+// already have normalised 0 → DefaultDurationSeconds via
+// validateDurationSeconds before calling. A roleMaxSessionDuration <= 0
+// means the role store defaulted it to 3600 already, so no enforcement
+// is needed.
+func enforceRoleMaxSessionDuration(durationSeconds, roleMaxSessionDuration int) error {
+	if roleMaxSessionDuration <= 0 {
+		return nil
+	}
+	if durationSeconds > roleMaxSessionDuration {
+		return ErrInvalidDuration
+	}
+	return nil
 }
 
 func (s *STSService) resolveCallerIdentity(reqCtx *request.RequestContext, req *request.ParsedRequest) (arn, name string) {
@@ -771,6 +921,11 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+	// Enforce role.MaxSessionDuration after role resolution (H1).
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
+	if err != nil {
+		return nil, err
+	}
 	packedPolicySize := computePackedPolicySize(sessionPolicy, req.Parameters, nil)
 	if packedPolicySize > 100 {
 		return nil, ErrPackedPolicyTooLarge
@@ -780,6 +935,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+	policyArns := extractPolicyArns(req.Parameters)
 	session, err := store.Create(stsstore.CreateSessionParams{
 		PrincipalType:   "SAML",
 		PrincipalName:   principalArn,
@@ -787,12 +943,28 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		RoleArn:         roleArn,
 		RoleSessionName: roleSessionName,
 		DurationSeconds: validDuration,
+		Policy:          sessionPolicy,
+		PolicyArns:      policyArns,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	// L5: extract Issuer / Subject (NameID) / Audience from the SAML assertion
+	// when it is parseable XML. Falls back to legacy placeholder values for
+	// non-XML tokens (the SDK test fixture is a base64 plain-text dummy).
+	samlIssuer, samlSubject, samlAudience := decodeSAMLFields(samlAssertion)
+	if samlIssuer == "" {
+		samlIssuer = "VorpalStacks"
+	}
+	if samlSubject == "" {
+		samlSubject = principalArn
+	}
+	if samlAudience == "" {
+		samlAudience = "STS"
+	}
+
+	return withSourceIdentity(map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
 			"SecretAccessKey": session.SecretAccessKey,
@@ -803,13 +975,18 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 			"AssumedRoleId": role.ID + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
-		"Subject":          principalArn,
+		"Subject":          samlSubject,
 		"SubjectType":      "persistent",
-		"Issuer":           "VorpalStacks",
+		"Issuer":           samlIssuer,
 		"NameQualifier":    "SAML",
-		"Audience":         "STS",
+		"Audience":         samlAudience,
 		"PackedPolicySize": packedPolicySize,
-	}, nil
+		// SourceIdentity is optional in the Smithy
+		// AssumeRoleWithSAMLResponse shape. AWS derives the value from the
+		// SAML assertion's saml:AttributeStatement, which VorpalStacks
+		// does not parse in TEST_MODE; withSourceIdentity omits the field
+		// until a real SAML parser is introduced.
+	}, ""), nil
 }
 
 // AssumeRoleWithWebIdentity returns a set of temporary security credentials for users who have been authenticated in a mobile or web application with a web identity provider.
@@ -878,6 +1055,12 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	// Enforce role.MaxSessionDuration after role resolution (H1).
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
+	if err != nil {
+		return nil, err
+	}
+
 	packedPolicySize := computePackedPolicySize(sessionPolicy, req.Parameters, nil)
 	if packedPolicySize > 100 {
 		return nil, ErrPackedPolicyTooLarge
@@ -887,6 +1070,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
+	policyArns := extractPolicyArns(req.Parameters)
 	session, err := store.Create(stsstore.CreateSessionParams{
 		PrincipalType:   "WebIdentity",
 		PrincipalName:   roleSessionName,
@@ -895,12 +1079,27 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		RoleSessionName: roleSessionName,
 		SourceIdentity:  sourceIdentity,
 		DurationSeconds: validDuration,
+		Policy:          sessionPolicy,
+		PolicyArns:      policyArns,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	// M5: SubjectFromWebIdentityToken should be the OIDC sub claim of the
+	// caller-supplied token. L4: Audience should be the aud claim. Both
+	// fall back to legacy defaults when the token is not a parseable JWT
+	// (e.g. the SDK test dummy 'dummy-web-identity-token').
+	subject := extractJWTClaim(webIdentityToken, "sub")
+	if subject == "" {
+		subject = roleSessionName
+	}
+	audience := extractJWTClaim(webIdentityToken, "aud")
+	if audience == "" {
+		audience = "sts.amazonaws.com"
+	}
+
+	return withSourceIdentity(map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
 			"SecretAccessKey": session.SecretAccessKey,
@@ -912,11 +1111,10 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
 		"Provider":                    providerId,
-		"SubjectFromWebIdentityToken": roleSessionName,
-		"Audience":                    "sts.amazonaws.com",
+		"SubjectFromWebIdentityToken": subject,
+		"Audience":                    audience,
 		"PackedPolicySize":            packedPolicySize,
-		"SourceIdentity":              session.SourceIdentity,
-	}, nil
+	}, session.SourceIdentity), nil
 }
 
 // AssumeRoot returns a set of temporary security credentials for performing
@@ -1018,9 +1216,11 @@ func (s *STSService) GetAccessKeyInfo(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidAccessKeyId
 	}
 
+	// The Smithy GetAccessKeyInfoResponse shape declares only the Account
+	// member; emitting an extra Status field would be non-compliant and
+	// could confuse SDK clients that strict-deserialise responses.
 	return map[string]interface{}{
 		"Account": reqCtx.GetAccountID(),
-		"Status":  "Active",
 	}, nil
 }
 
@@ -1042,7 +1242,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 	if callerArn == "" {
 		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	isRoot := strings.Contains(callerArn, ":root")
+	isRoot := strings.HasSuffix(callerArn, ":root")
 
 	validDuration, err := validateFederationDurationSeconds(durationSeconds, isRoot)
 	if err != nil {
@@ -1070,6 +1270,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+	policyArns := extractPolicyArns(req.Parameters)
 	session, err := store.Create(stsstore.CreateSessionParams{
 		PrincipalType:   "FederatedUser",
 		PrincipalName:   name,
@@ -1077,6 +1278,8 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		RoleSessionName: name,
 		DurationSeconds: validDuration,
 		Tags:            fedTags,
+		Policy:          policy,
+		PolicyArns:      policyArns,
 	})
 	if err != nil {
 		return nil, err
@@ -1181,11 +1384,26 @@ func (s *STSService) GetWebIdentityToken(ctx context.Context, reqCtx *request.Re
 		callerName = reqCtx.GetAccountID()
 	}
 
+	// M4: parse caller-supplied Tags and forward them to the JWT signer so
+	// external services consuming the token can read the caller-attached
+	// session tags from the standard "tags" JWT claim.
+	tags, err := extractSessionTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	token, expiration, err := webIdentityTokenManagerInstance.generateToken(
-		callerName, reqCtx.GetAccountID(), audiences, signingAlgorithm, validDuration,
+		callerName, reqCtx.GetAccountID(), audiences, signingAlgorithm, validDuration, tags,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	// Smithy GetWebIdentityToken can return JWTPayloadSizeExceededException
+	// when the serialised JWT exceeds the platform limit. AWS enforces a
+	// practical ceiling; we check the final token length as a guard.
+	if len(token) > 32768 {
+		return nil, ErrJWTPayloadSizeExceeded
 	}
 
 	return map[string]interface{}{

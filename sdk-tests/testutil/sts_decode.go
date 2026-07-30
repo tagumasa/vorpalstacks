@@ -45,7 +45,7 @@ func (r *TestRunner) runSTSDecodeTests(tc *stsTestContext) []TestResult {
 		_, err := tc.client.DecodeAuthorizationMessage(tc.ctx, &sts.DecodeAuthorizationMessageInput{
 			EncodedMessage: aws.String("not-valid-base64!!!"),
 		})
-		if err := AssertErrorContains(err, "InvalidEncodedMessage"); err != nil {
+		if err := AssertErrorContains(err, "InvalidAuthorizationMessageException"); err != nil {
 			return err
 		}
 		return nil
@@ -55,7 +55,7 @@ func (r *TestRunner) runSTSDecodeTests(tc *stsTestContext) []TestResult {
 		_, err := tc.client.DecodeAuthorizationMessage(tc.ctx, &sts.DecodeAuthorizationMessageInput{
 			EncodedMessage: aws.String(""),
 		})
-		if err := AssertErrorContains(err, "InvalidEncodedMessage"); err != nil {
+		if err := AssertErrorContains(err, "InvalidAuthorizationMessageException"); err != nil {
 			return err
 		}
 		return nil
