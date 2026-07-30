@@ -89,6 +89,10 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 		smType = "EXPRESS"
 	}
 
+	if err := validateDefinitionJSONataFields(req.Msg.Definition); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid JSONata fields: %w", err))
+	}
+
 	tags := make(map[string]string)
 	for _, t := range req.Msg.Tags {
 		tags[t.Key] = t.Value
@@ -96,14 +100,16 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 
 	now := time.Now().UTC()
 	sm := &sfnstore.StateMachine{
-		Name:         req.Msg.Name,
-		Definition:   req.Msg.Definition,
-		RoleArn:      req.Msg.Rolearn,
-		Type:         smType,
-		CreationDate: now,
-		UpdateDate:   now,
-		Status:       "ACTIVE",
-		Tags:         tags,
+		Name:               req.Msg.Name,
+		Definition:         req.Msg.Definition,
+		RoleArn:            req.Msg.Rolearn,
+		Type:               smType,
+		CreationDate:       now,
+		UpdateDate:         now,
+		Status:             "ACTIVE",
+		Tags:               tags,
+		VariableReferences: extractVariableReferences(req.Msg.Definition),
+		RevisionId:         generateRevisionId(),
 	}
 
 	if err := store.CreateStateMachine(ctx, sm); err != nil {

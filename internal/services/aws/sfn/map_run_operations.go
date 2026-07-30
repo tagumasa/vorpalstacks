@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -53,6 +54,9 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 	exec.ExecutionArn = executionArn
 
 	if err := store.CreateExecution(ctx, exec); err != nil {
+		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
+			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+executionArn, 400)
+		}
 		return nil, err
 	}
 
@@ -102,20 +106,83 @@ func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *reques
 		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
 	}
 
-	return map[string]interface{}{
-		"mapRunArn":           mr.MapRunArn,
-		"executionArn":        mr.ExecutionArn,
-		"stateMachineArn":     mr.StateMachineArn,
-		"name":                mr.Name,
-		"status":              mr.Status,
-		"startDate":           mr.StartDate,
-		"stopDate":            mr.StopDate,
-		"itemCount":           mr.ItemCount,
-		"maxConcurrency":      mr.MaxConcurrency,
-		"itemsProcessedCount": mr.ItemsProcessedCount,
-		"itemsFailedCount":    mr.ItemsFailedCount,
-		"itemsCancelledCount": mr.ItemsCancelledCount,
-	}, nil
+	return describeMapRunToResponse(mr), nil
+}
+
+// describeMapRunToResponse converts a MapRun record to the DescribeMapRun
+// response shape. Matches Smithy DescribeMapRunOutput.
+func describeMapRunToResponse(mr *sfnstore.MapRun) map[string]interface{} {
+	itemCounts := map[string]interface{}{
+		"pending":        mr.ItemCounts.Pending,
+		"running":        mr.ItemCounts.Running,
+		"succeeded":      mr.ItemCounts.Succeeded,
+		"failed":         mr.ItemCounts.Failed,
+		"timedOut":       mr.ItemCounts.TimedOut,
+		"aborted":        mr.ItemCounts.Aborted,
+		"total":          mr.ItemCounts.Total,
+		"resultsWritten": mr.ItemCounts.ResultsWritten,
+	}
+	if mr.ItemCounts.FailuresNotRedrivable != 0 {
+		itemCounts["failuresNotRedrivable"] = mr.ItemCounts.FailuresNotRedrivable
+	}
+	if mr.ItemCounts.PendingRedrive != 0 {
+		itemCounts["pendingRedrive"] = mr.ItemCounts.PendingRedrive
+	}
+
+	executionCounts := map[string]interface{}{
+		"pending":        mr.ExecutionCounts.Pending,
+		"running":        mr.ExecutionCounts.Running,
+		"succeeded":      mr.ExecutionCounts.Succeeded,
+		"failed":         mr.ExecutionCounts.Failed,
+		"timedOut":       mr.ExecutionCounts.TimedOut,
+		"aborted":        mr.ExecutionCounts.Aborted,
+		"total":          mr.ExecutionCounts.Total,
+		"resultsWritten": mr.ExecutionCounts.ResultsWritten,
+	}
+	if mr.ExecutionCounts.FailuresNotRedrivable != 0 {
+		executionCounts["failuresNotRedrivable"] = mr.ExecutionCounts.FailuresNotRedrivable
+	}
+	if mr.ExecutionCounts.PendingRedrive != 0 {
+		executionCounts["pendingRedrive"] = mr.ExecutionCounts.PendingRedrive
+	}
+
+	resp := map[string]interface{}{
+		"mapRunArn":                  mr.MapRunArn,
+		"executionArn":               mr.ExecutionArn,
+		"status":                     mr.Status,
+		"startDate":                  mr.StartDate,
+		"maxConcurrency":             mr.MaxConcurrency,
+		"itemCounts":                 itemCounts,
+		"executionCounts":            executionCounts,
+		"toleratedFailurePercentage": mr.ToleratedFailurePercentage,
+		"toleratedFailureCount":      mr.ToleratedFailureCount,
+		"redriveCount":               mr.RedriveCount,
+	}
+	if mr.StopDate != 0 {
+		resp["stopDate"] = mr.StopDate
+	}
+	if mr.RedriveDate != 0 {
+		resp["redriveDate"] = mr.RedriveDate
+	}
+
+	return resp
+}
+
+// mapRunListItemToResponse converts a MapRun record to the ListMapRuns
+// response shape. Matches Smithy MapRunListItem (5 fields only):
+// executionArn, mapRunArn, stateMachineArn, startDate, stopDate.
+// Item/execution counts and configuration live only in DescribeMapRunOutput.
+func mapRunListItemToResponse(mr *sfnstore.MapRun) map[string]interface{} {
+	resp := map[string]interface{}{
+		"executionArn":    mr.ExecutionArn,
+		"mapRunArn":       mr.MapRunArn,
+		"stateMachineArn": mr.StateMachineArn,
+		"startDate":       mr.StartDate,
+	}
+	if mr.StopDate != 0 {
+		resp["stopDate"] = mr.StopDate
+	}
+	return resp
 }
 
 // ListMapRuns lists map runs, optionally filtered by execution ARN.
@@ -130,9 +197,9 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit <= 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := store.ListAllMapRuns(ctx, executionArn, limit, nextToken)
@@ -142,20 +209,7 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 
 	mapRuns := make([]map[string]interface{}, 0, len(result.MapRuns))
 	for _, mr := range result.MapRuns {
-		mapRuns = append(mapRuns, map[string]interface{}{
-			"mapRunArn":           mr.MapRunArn,
-			"executionArn":        mr.ExecutionArn,
-			"stateMachineArn":     mr.StateMachineArn,
-			"name":                mr.Name,
-			"status":              mr.Status,
-			"startDate":           mr.StartDate,
-			"stopDate":            mr.StopDate,
-			"itemCount":           mr.ItemCount,
-			"maxConcurrency":      mr.MaxConcurrency,
-			"itemsProcessedCount": mr.ItemsProcessedCount,
-			"itemsFailedCount":    mr.ItemsFailedCount,
-			"itemsCancelledCount": mr.ItemsCancelledCount,
-		})
+		mapRuns = append(mapRuns, mapRunListItemToResponse(mr))
 	}
 
 	respNextToken := ""

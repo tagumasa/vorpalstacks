@@ -396,9 +396,11 @@ func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionCo
 		timeout = 60 * time.Second
 	}
 
-	result, err := e.store.WaitForTaskResult(ctx, task.TaskToken, timeout)
+	hbTimeout := time.Duration(heartbeatSeconds) * time.Second
+
+	result, err := e.store.WaitForTaskResult(ctx, task.TaskToken, timeout, hbTimeout)
 	if err != nil {
-		if err == sfnstore.ErrTaskTimeout {
+		if err == sfnstore.ErrTaskTimeout || err == sfnstore.ErrHeartbeatTimeout {
 			e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
 				ExecutionArn: execCtx.Execution.ExecutionArn,
 				EventId:      execCtx.nextEventId(),

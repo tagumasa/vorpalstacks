@@ -16,9 +16,13 @@ import (
 
 // PublishStateMachineVersion creates a new version of a state machine by snapshotting
 // its current definition. Each successive call increments the version number.
+// When revisionId is provided, the call enforces optimistic concurrency:
+// the current state machine revisionId must match for the version to be
+// published.
 func (s *StepFunctionService) PublishStateMachineVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	smArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
 	description := request.GetParamLowerFirst(req.Parameters, "description")
+	revisionId := request.GetParamLowerFirst(req.Parameters, "revisionId")
 
 	if smArn == "" {
 		return nil, NewInvalidArnException("stateMachineArn is required")
@@ -29,12 +33,16 @@ func (s *StepFunctionService) PublishStateMachineVersion(ctx context.Context, re
 		return nil, err
 	}
 
-	_, err = store.GetStateMachine(ctx, smArn)
+	sm, err := store.GetStateMachine(ctx, smArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
 			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + smArn)
 		}
 		return nil, err
+	}
+
+	if revisionId != "" && sm.RevisionId != revisionId {
+		return nil, NewInvalidParameterValue("revisionId mismatch: expected " + sm.RevisionId + ", got " + revisionId)
 	}
 
 	version, err := store.PublishStateMachineVersion(ctx, smArn, description)
@@ -105,9 +113,9 @@ func (s *StepFunctionService) DeleteStateMachineVersion(ctx context.Context, req
 // for a given state machine, ordered by version number descending.
 func (s *StepFunctionService) ListStateMachineVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	smArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
@@ -313,9 +321,9 @@ func (s *StepFunctionService) DeleteStateMachineAlias(ctx context.Context, reqCt
 // state machine.
 func (s *StepFunctionService) ListStateMachineAliases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	smArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
@@ -413,7 +421,7 @@ func parseRoutingConfiguration(req *request.ParsedRequest) ([]sfnstore.RoutingCo
 			}
 		}
 	default:
-		return nil, nil
+		return nil, NewInvalidDefinitionException("routingConfiguration must be a JSON array, got " + fmt.Sprintf("%T", rawValue))
 	}
 
 	var totalWeight int32
@@ -425,6 +433,9 @@ func parseRoutingConfiguration(req *request.ParsedRequest) ([]sfnstore.RoutingCo
 
 		if versionArn == "" {
 			return nil, NewInvalidDefinitionException("each routingConfiguration entry must have stateMachineVersionArn")
+		}
+		if weight < 0 || weight > 100 {
+			return nil, NewInvalidDefinitionException(fmt.Sprintf("routingConfiguration weight must be in [0, 100], got %d for %s", weight, versionArn))
 		}
 
 		config = append(config, sfnstore.RoutingConfiguration{

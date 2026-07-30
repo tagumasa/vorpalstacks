@@ -38,6 +38,10 @@ var (
 	// ErrTaskTimeout is returned when the task has timed out.
 	ErrTaskTimeout = errors.New("task timed out")
 
+	// ErrHeartbeatTimeout is returned when an activity task fails to send
+	// a heartbeat within the heartbeat interval.
+	ErrHeartbeatTimeout = errors.New("heartbeat timeout")
+
 	// ErrActivityQueueFull is returned when the activity task queue is full.
 	ErrActivityQueueFull = errors.New("activity task queue is full")
 

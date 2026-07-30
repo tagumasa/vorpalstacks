@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
@@ -27,6 +30,13 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 	roleArn := request.GetParamLowerFirst(req.Parameters, "roleArn")
 	smType := request.GetParamLowerFirst(req.Parameters, "type")
 	description := request.GetParamLowerFirst(req.Parameters, "description")
+	publish := false
+	if v, ok := req.Parameters["publish"]; ok {
+		if vBool, ok := v.(bool); ok {
+			publish = vBool
+		}
+	}
+	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
 
 	if name == "" {
 		return nil, NewInvalidName("State Machine name is required")
@@ -40,6 +50,9 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 
 	if smType == "" {
 		smType = "STANDARD"
+	}
+	if smType != "STANDARD" && smType != "EXPRESS" {
+		return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
 	}
 
 	if roleArn != "" {
@@ -62,6 +75,7 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		Description:        description,
 		Tags:               tags,
 		VariableReferences: extractVariableReferences(definition),
+		RevisionId:         generateRevisionId(),
 	}
 
 	if lcRaw, ok := req.Parameters["loggingConfiguration"]; ok {
@@ -71,6 +85,18 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 				sm.LoggingConfiguration = &lc
 			}
 		}
+	}
+
+	if ec, err := parseEncryptionConfiguration(req); err != nil {
+		return nil, err
+	} else {
+		sm.EncryptionConfiguration = ec
+	}
+
+	if tc, err := parseTracingConfiguration(req); err != nil {
+		return nil, err
+	} else {
+		sm.TracingConfiguration = tc
 	}
 
 	store, err := s.store(reqCtx)
@@ -90,10 +116,71 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"stateMachineArn": sm.StateMachineArn,
 		"creationDate":    sm.CreationDate.Unix(),
-	}, nil
+	}
+
+	if publish {
+		version, err := store.PublishStateMachineVersion(ctx, sm.StateMachineArn, versionDescription)
+		if err != nil {
+			return nil, err
+		}
+		resp["stateMachineVersionArn"] = version.StateMachineVersionArn
+	}
+
+	return resp, nil
+}
+
+// parseEncryptionConfiguration extracts the encryptionConfiguration parameter
+// from the request and validates it. Returns nil if the parameter is absent.
+func parseEncryptionConfiguration(req *request.ParsedRequest) (*sfnstore.EncryptionConfiguration, error) {
+	raw, ok := req.Parameters["encryptionConfiguration"]
+	if !ok || raw == nil {
+		return nil, nil
+	}
+
+	bytes, err := json.Marshal(raw)
+	if err != nil {
+		return nil, NewInvalidParameterValue("encryptionConfiguration is not serialisable: " + err.Error())
+	}
+	var ec sfnstore.EncryptionConfiguration
+	if err := json.Unmarshal(bytes, &ec); err != nil {
+		return nil, NewInvalidParameterValue("encryptionConfiguration is not valid JSON: " + err.Error())
+	}
+
+	if ec.Type == "" {
+		ec.Type = "AWS_OWNED_KEY"
+	}
+	if ec.Type != "AWS_OWNED_KEY" && ec.Type != "CUSTOMER_MANAGED_KMS_KEY" {
+		return nil, NewInvalidParameterValue("encryptionConfiguration.type must be AWS_OWNED_KEY or CUSTOMER_MANAGED_KMS_KEY, got " + ec.Type)
+	}
+	if ec.Type == "CUSTOMER_MANAGED_KMS_KEY" && ec.KmsKeyId == "" {
+		return nil, NewInvalidParameterValue("encryptionConfiguration.kmsKeyId is required when type is CUSTOMER_MANAGED_KMS_KEY")
+	}
+	return &ec, nil
+}
+
+// parseTracingConfiguration extracts the tracingConfiguration parameter from
+// the request. Returns nil if the parameter is absent.
+func parseTracingConfiguration(req *request.ParsedRequest) (*sfnstore.TracingConfiguration, error) {
+	raw, ok := req.Parameters["tracingConfiguration"]
+	if !ok || raw == nil {
+		return nil, nil
+	}
+	bytes, err := json.Marshal(raw)
+	if err != nil {
+		return nil, NewInvalidParameterValue("tracingConfiguration is not serialisable: " + err.Error())
+	}
+	var tc sfnstore.TracingConfiguration
+	if err := json.Unmarshal(bytes, &tc); err != nil {
+		return nil, NewInvalidParameterValue("tracingConfiguration is not valid JSON: " + err.Error())
+	}
+	return &tc, nil
+}
+
+func generateRevisionId() string {
+	return uuid.New().String()
 }
 
 // DeleteStateMachine deletes a state machine.
@@ -121,6 +208,30 @@ func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context
 		return nil, NewInvalidDefinitionException("definition is required")
 	}
 
+	severity := request.GetParamLowerFirst(req.Parameters, "severity")
+	if severity == "" {
+		severity = "ERROR"
+	}
+	if severity != "ERROR" && severity != "WARNING" {
+		return nil, NewInvalidParameterValue("severity must be ERROR or WARNING, got " + severity)
+	}
+
+	smType := request.GetParamLowerFirst(req.Parameters, "type")
+	if smType == "" {
+		smType = "STANDARD"
+	}
+	if smType != "STANDARD" && smType != "EXPRESS" {
+		return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
+	}
+
+	maxResults := int32(request.GetIntParam(req.Parameters, "maxResults"))
+	if maxResults < 0 || maxResults > 100 {
+		return nil, NewInvalidParameterValue("maxResults must be in [0, 100], got " + strconv.FormatInt(int64(maxResults), 10))
+	}
+	if maxResults == 0 {
+		maxResults = 100
+	}
+
 	var def map[string]interface{}
 	if err := json.Unmarshal([]byte(definition), &def); err != nil {
 		return map[string]interface{}{
@@ -129,32 +240,90 @@ func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context
 		}, nil
 	}
 
+	diagnostics := []map[string]string{}
+
 	if _, ok := def["StartAt"]; !ok {
-		return map[string]interface{}{
-			"result":      "FAIL",
-			"diagnostics": []map[string]string{{"severity": "ERROR", "code": "MissingStartAt", "message": "State machine definition must include 'StartAt'"}},
-		}, nil
+		diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "MissingStartAt", "message": "State machine definition must include 'StartAt'"})
 	}
 
 	states, ok := def["States"].(map[string]interface{})
 	if !ok {
-		return map[string]interface{}{
-			"result":      "FAIL",
-			"diagnostics": []map[string]string{{"severity": "ERROR", "code": "MissingStates", "message": "State machine definition must include 'States'"}},
-		}, nil
+		diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "MissingStates", "message": "State machine definition must include 'States'"})
 	}
 
 	startAt, _ := def["StartAt"].(string)
-	if _, exists := states[startAt]; !exists {
-		return map[string]interface{}{
-			"result":      "FAIL",
-			"diagnostics": []map[string]string{{"severity": "ERROR", "code": "InvalidStartAt", "message": fmt.Sprintf("StartAt '%s' does not reference a valid state", startAt)}},
-		}, nil
+	if states != nil && startAt != "" {
+		if _, exists := states[startAt]; !exists {
+			diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "InvalidStartAt", "message": fmt.Sprintf("StartAt '%s' does not reference a valid state", startAt)})
+		}
+	}
+
+	// Per-state validation: check Type enum and required fields per type.
+	validTypes := map[string]bool{
+		"Pass": true, "Task": true, "Choice": true, "Wait": true,
+		"Succeed": true, "Fail": true, "Parallel": true, "Map": true,
+	}
+	if states != nil {
+		for name, rawState := range states {
+			stateMap, ok := rawState.(map[string]interface{})
+			if !ok {
+				diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "InvalidState", "message": fmt.Sprintf("State '%s' is not an object", name)})
+				continue
+			}
+			stateType, _ := stateMap["Type"].(string)
+			if stateType == "" {
+				diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "MissingStateType", "message": fmt.Sprintf("State '%s' is missing Type", name)})
+				continue
+			}
+			if !validTypes[stateType] {
+				diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "InvalidStateType", "message": fmt.Sprintf("State '%s' has invalid Type '%s'", name, stateType)})
+				continue
+			}
+			if next, ok := stateMap["Next"].(string); ok {
+				if _, exists := states[next]; !exists {
+					diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "InvalidNext", "message": fmt.Sprintf("State '%s' references unknown Next state '%s'", name, next)})
+				}
+			}
+			if stateType == "Task" {
+				if _, ok := stateMap["Resource"]; !ok {
+					diagnostics = append(diagnostics, map[string]string{"severity": "ERROR", "code": "MissingResource", "message": fmt.Sprintf("Task state '%s' is missing Resource", name)})
+				}
+			}
+			if stateType == "Fail" {
+				if _, ok := stateMap["Cause"]; !ok {
+					if _, ok2 := stateMap["Error"]; !ok2 {
+						diagnostics = append(diagnostics, map[string]string{"severity": "WARNING", "code": "MissingFailDetails", "message": fmt.Sprintf("Fail state '%s' should specify Cause or Error", name)})
+					}
+				}
+			}
+		}
+	}
+
+	if severity == "ERROR" {
+		filtered := []map[string]string{}
+		for _, d := range diagnostics {
+			if d["severity"] == "ERROR" {
+				filtered = append(filtered, d)
+			}
+		}
+		diagnostics = filtered
+	}
+
+	truncated := false
+	if maxResults > 0 && len(diagnostics) > int(maxResults) {
+		diagnostics = diagnostics[:maxResults]
+		truncated = true
+	}
+
+	result := "OK"
+	if len(diagnostics) > 0 {
+		result = "FAIL"
 	}
 
 	return map[string]interface{}{
-		"result":      "OK",
-		"diagnostics": []map[string]string{},
+		"result":      result,
+		"diagnostics": diagnostics,
+		"truncated":   truncated,
 	}, nil
 }
 
@@ -228,9 +397,9 @@ func (s *StepFunctionService) GetStateMachine(ctx context.Context, reqCtx *reque
 
 // ListStateMachines returns a list of state machines.
 func (s *StepFunctionService) ListStateMachines(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
@@ -270,6 +439,15 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 	definition := request.GetParamLowerFirst(req.Parameters, "definition")
 	roleArn := request.GetParamLowerFirst(req.Parameters, "roleArn")
 	description := request.GetParamLowerFirst(req.Parameters, "description")
+	smType := request.GetParamLowerFirst(req.Parameters, "type")
+	publish := false
+	if v, ok := req.Parameters["publish"]; ok {
+		if vBool, ok := v.(bool); ok {
+			publish = vBool
+		}
+	}
+	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
+	revisionId := request.GetParamLowerFirst(req.Parameters, "revisionId")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -281,6 +459,10 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
 		}
 		return nil, err
+	}
+
+	if revisionId != "" && sm.RevisionId != revisionId {
+		return nil, NewInvalidParameterValue("revisionId mismatch: expected " + sm.RevisionId + ", got " + revisionId)
 	}
 
 	if definition != "" {
@@ -299,16 +481,53 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 	if description != "" {
 		sm.Description = description
 	}
+	if smType != "" {
+		if smType != "STANDARD" && smType != "EXPRESS" {
+			return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
+		}
+		sm.Type = smType
+	}
+	if lcRaw, ok := req.Parameters["loggingConfiguration"]; ok {
+		if lcBytes, err := json.Marshal(lcRaw); err == nil {
+			var lc sfnstore.LoggingConfiguration
+			if json.Unmarshal(lcBytes, &lc) == nil {
+				sm.LoggingConfiguration = &lc
+			}
+		}
+	}
+	if ec, err := parseEncryptionConfiguration(req); err != nil {
+		return nil, err
+	} else if ec != nil {
+		sm.EncryptionConfiguration = ec
+	}
+	if tc, err := parseTracingConfiguration(req); err != nil {
+		return nil, err
+	} else if tc != nil {
+		sm.TracingConfiguration = tc
+	}
+
 	sm.UpdateDate = time.Now().UTC()
+	sm.RevisionId = generateRevisionId()
 
 	if err := store.UpdateStateMachine(ctx, sm); err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"stateMachineArn": sm.StateMachineArn,
 		"updateDate":      sm.UpdateDate.Unix(),
-	}, nil
+		"revisionId":      sm.RevisionId,
+	}
+
+	if publish {
+		version, err := store.PublishStateMachineVersion(ctx, sm.StateMachineArn, versionDescription)
+		if err != nil {
+			return nil, err
+		}
+		resp["stateMachineVersionArn"] = version.StateMachineVersionArn
+	}
+
+	return resp, nil
 }
 
 // StartExecution starts an execution of a state machine.
@@ -344,6 +563,9 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 	exec.ExecutionArn = executionArn
 
 	if err := store.CreateExecution(ctx, exec); err != nil {
+		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
+			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+executionArn, 400)
+		}
 		return nil, err
 	}
 
@@ -396,9 +618,8 @@ func (s *StepFunctionService) StopExecution(ctx context.Context, reqCtx *request
 		"ABORTED":   true,
 	}
 	if terminalStates[exec.Status] {
-		stopDate := time.Now().UTC()
 		return map[string]interface{}{
-			"stopDate": stopDate.Unix(),
+			"stopDate": exec.StopDate.Unix(),
 		}, nil
 	}
 
@@ -441,9 +662,14 @@ func (s *StepFunctionService) DescribeExecution(ctx context.Context, reqCtx *req
 func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stateMachineArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
 	statusFilter := request.GetParamLowerFirst(req.Parameters, "statusFilter")
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	mapRunArn := request.GetParamLowerFirst(req.Parameters, "mapRunArn")
+	redriveFilter := request.GetParamLowerFirst(req.Parameters, "redriveFilter")
+	if redriveFilter != "" && redriveFilter != "REDRIVEN" && redriveFilter != "NOT_REDRIVEN" {
+		return nil, NewInvalidParameterValue("redriveFilter must be REDRIVEN or NOT_REDRIVEN, got " + redriveFilter)
+	}
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
@@ -455,7 +681,7 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + stateMachineArn)
 	}
-	result, err := store.ListExecutions(ctx, stateMachineArn, statusFilter, limit, nextToken)
+	result, err := store.ListExecutions(ctx, stateMachineArn, statusFilter, mapRunArn, redriveFilter, limit, nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -471,6 +697,24 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 		}
 		if !exec.StopDate.IsZero() {
 			executions[i]["stopDate"] = exec.StopDate.Unix()
+		}
+		if exec.MapRunArn != "" {
+			executions[i]["mapRunArn"] = exec.MapRunArn
+		}
+		if exec.ItemCount != 0 {
+			executions[i]["itemCount"] = exec.ItemCount
+		}
+		if exec.RedriveCount != 0 {
+			executions[i]["redriveCount"] = exec.RedriveCount
+		}
+		if !exec.RedriveDate.IsZero() {
+			executions[i]["redriveDate"] = exec.RedriveDate.Unix()
+		}
+		if exec.StateMachineAliasArn != "" {
+			executions[i]["stateMachineAliasArn"] = exec.StateMachineAliasArn
+		}
+		if exec.StateMachineVersionArn != "" {
+			executions[i]["stateMachineVersionArn"] = exec.StateMachineVersionArn
 		}
 	}
 
@@ -488,9 +732,9 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 // GetExecutionHistory returns the history of an execution.
 func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "executionArn")
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
@@ -507,9 +751,29 @@ func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	history := make([]map[string]interface{}, len(events))
-	for i, event := range events {
-		history[i] = historyEventToResponse(event)
+	includeExecutionData := true
+	if v, ok := req.Parameters["includeExecutionData"]; ok {
+		if vBool, ok := v.(bool); ok {
+			includeExecutionData = vBool
+		}
+	}
+
+	reverseOrder := false
+	if v, ok := req.Parameters["reverseOrder"]; ok {
+		if vBool, ok := v.(bool); ok {
+			reverseOrder = vBool
+		}
+	}
+
+	history := make([]map[string]interface{}, 0, len(events))
+	for _, event := range events {
+		history = append(history, historyEventToResponse(event, includeExecutionData))
+	}
+
+	if reverseOrder {
+		for i, j := 0, len(history)-1; i < j; i, j = i+1, j-1 {
+			history[i], history[j] = history[j], history[i]
+		}
 	}
 
 	response := map[string]interface{}{
@@ -527,8 +791,18 @@ func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *r
 func (s *StepFunctionService) CreateActivity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "name")
 
+	if name == "" {
+		return nil, NewInvalidName("Activity name is required")
+	}
+
 	activity := &sfnstore.Activity{
 		Name: name,
+	}
+
+	if ec, err := parseEncryptionConfiguration(req); err != nil {
+		return nil, err
+	} else {
+		activity.EncryptionConfiguration = ec
 	}
 
 	store, err := s.store(reqCtx)
@@ -537,6 +811,13 @@ func (s *StepFunctionService) CreateActivity(ctx context.Context, reqCtx *reques
 	}
 	if err := store.CreateActivity(ctx, activity); err != nil {
 		return nil, err
+	}
+
+	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags"))
+	if len(tags) > 0 {
+		if err := store.Tag(activity.ActivityArn, tags); err != nil {
+			return nil, err
+		}
 	}
 
 	return map[string]interface{}{
@@ -589,9 +870,9 @@ func (s *StepFunctionService) GetActivity(ctx context.Context, reqCtx *request.R
 
 // ListActivities returns a list of activities.
 func (s *StepFunctionService) ListActivities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if limit == 0 {
-		limit = 100
+	limit, err := parsePageLimit(req)
+	if err != nil {
+		return nil, err
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 

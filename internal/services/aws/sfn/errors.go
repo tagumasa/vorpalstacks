@@ -20,6 +20,9 @@ var (
 	ErrInvalidName = awserrors.NewAWSError("InvalidName", "Invalid Name", 400)
 	// ErrTaskTimedOut is returned when a task timed out.
 	ErrTaskTimedOut = awserrors.NewAWSError("TaskTimedOut", "Task timed out", 400)
+	// ErrTaskDoesNotExist is returned when a task token does not exist or
+	// the task it refers to is no longer in a state that accepts reports.
+	ErrTaskDoesNotExist = awserrors.NewAWSError("TaskDoesNotExist", "Task does not exist", 400)
 	// ErrTaskNotRunning is returned when a task is not running.
 	ErrTaskNotRunning = awserrors.NewAWSError("TaskNotRunning", "Task is not running", 400)
 	// ErrQueryEvaluationError is returned when a query evaluation fails.
@@ -59,6 +62,11 @@ func NewInvalidName(message string) *awserrors.AWSError {
 // NewInvalidExecutionType creates a new InvalidExecutionType error.
 func NewInvalidExecutionType(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidExecutionType", message, 400)
+}
+
+// NewInvalidParameterValue creates a new InvalidParameterValue error.
+func NewInvalidParameterValue(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidParameterValue", message, 400)
 }
 
 // NewMapRunDoesNotExist creates a new MapRunDoesNotExist error.

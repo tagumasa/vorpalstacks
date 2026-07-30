@@ -7,18 +7,22 @@ import (
 
 // StateMachine represents an AWS Step Functions state machine definition and metadata.
 type StateMachine struct {
-	StateMachineArn      string                `json:"stateMachineArn"`
-	Name                 string                `json:"name"`
-	Definition           string                `json:"definition"`
-	RoleArn              string                `json:"roleArn"`
-	Type                 string                `json:"type"`
-	CreationDate         time.Time             `json:"creationDate"`
-	UpdateDate           time.Time             `json:"updateDate"`
-	Description          string                `json:"description"`
-	Status               string                `json:"status"`
-	Tags                 map[string]string     `json:"tags"`
-	VariableReferences   map[string][]string   `json:"-"`
-	LoggingConfiguration *LoggingConfiguration `json:"loggingConfiguration,omitempty"`
+	StateMachineArn         string                   `json:"stateMachineArn"`
+	Name                    string                   `json:"name"`
+	Definition              string                   `json:"definition"`
+	RoleArn                 string                   `json:"roleArn"`
+	Type                    string                   `json:"type"`
+	CreationDate            time.Time                `json:"creationDate"`
+	UpdateDate              time.Time                `json:"updateDate"`
+	Description             string                   `json:"description"`
+	Status                  string                   `json:"status"`
+	Tags                    map[string]string        `json:"tags"`
+	VariableReferences      map[string][]string      `json:"-"`
+	LoggingConfiguration    *LoggingConfiguration    `json:"loggingConfiguration,omitempty"`
+	EncryptionConfiguration *EncryptionConfiguration `json:"encryptionConfiguration,omitempty"`
+	TracingConfiguration    *TracingConfiguration    `json:"tracingConfiguration,omitempty"`
+	Label                   string                   `json:"label,omitempty"`
+	RevisionId              string                   `json:"revisionId,omitempty"`
 }
 
 // LoggingConfiguration controls whether execution history is logged to
@@ -39,21 +43,39 @@ type CloudWatchLogsLogGroup struct {
 	LogGroupArn string `json:"logGroupArn,omitempty"`
 }
 
+// EncryptionConfiguration specifies KMS key for encrypting state machine data.
+type EncryptionConfiguration struct {
+	Type                  string `json:"type,omitempty"`
+	KmsKeyId              string `json:"kmsKeyId,omitempty"`
+	KmsDataKeyReusePeriod int32  `json:"kmsDataKeyReusePeriodSeconds,omitempty"`
+}
+
+// TracingConfiguration controls X-Ray tracing on state machine executions.
+type TracingConfiguration struct {
+	Enabled bool `json:"enabled"`
+}
+
 // Execution represents a single execution of a Step Functions state machine.
 type Execution struct {
-	ExecutionArn    string                  `json:"executionArn"`
-	StateMachineArn string                  `json:"stateMachineArn"`
-	Name            string                  `json:"name"`
-	Status          string                  `json:"status"`
-	Input           string                  `json:"input"`
-	Output          string                  `json:"output"`
-	TraceHeader     string                  `json:"traceHeader"`
-	InputDetails    *ExecutionInputDetails  `json:"inputDetails,omitempty"`
-	OutputDetails   *ExecutionOutputDetails `json:"outputDetails,omitempty"`
-	StartDate       time.Time               `json:"startDate"`
-	StopDate        time.Time               `json:"stopDate,omitempty"`
-	Error           string                  `json:"error,omitempty"`
-	Cause           string                  `json:"cause,omitempty"`
+	ExecutionArn           string                  `json:"executionArn"`
+	StateMachineArn        string                  `json:"stateMachineArn"`
+	StateMachineVersionArn string                  `json:"stateMachineVersionArn,omitempty"`
+	StateMachineAliasArn   string                  `json:"stateMachineAliasArn,omitempty"`
+	Name                   string                  `json:"name"`
+	Status                 string                  `json:"status"`
+	Input                  string                  `json:"input"`
+	Output                 string                  `json:"output"`
+	TraceHeader            string                  `json:"traceHeader"`
+	InputDetails           *ExecutionInputDetails  `json:"inputDetails,omitempty"`
+	OutputDetails          *ExecutionOutputDetails `json:"outputDetails,omitempty"`
+	StartDate              time.Time               `json:"startDate"`
+	StopDate               time.Time               `json:"stopDate,omitempty"`
+	Error                  string                  `json:"error,omitempty"`
+	Cause                  string                  `json:"cause,omitempty"`
+	MapRunArn              string                  `json:"mapRunArn,omitempty"`
+	ItemCount              int64                   `json:"itemCount,omitempty"`
+	RedriveCount           int64                   `json:"redriveCount,omitempty"`
+	RedriveDate            time.Time               `json:"redriveDate,omitempty"`
 }
 
 // ExecutionInputDetails describes the input included in an execution.
@@ -255,9 +277,10 @@ type SucceedStateEnteredEventDetails struct {
 
 // Activity represents an AWS Step Functions activity used by Task states.
 type Activity struct {
-	ActivityArn  string    `json:"activityArn"`
-	Name         string    `json:"name"`
-	CreationDate time.Time `json:"creationDate"`
+	ActivityArn             string                   `json:"activityArn"`
+	Name                    string                   `json:"name"`
+	CreationDate            time.Time                `json:"creationDate"`
+	EncryptionConfiguration *EncryptionConfiguration `json:"encryptionConfiguration,omitempty"`
 }
 
 // StateMachineDefinition represents the Amazon States Language definition of a state
@@ -837,21 +860,20 @@ func convertToMapBool(v interface{}, variable string) map[string]bool {
 // InputOutput represents input and output configuration for a state, supporting
 // JSONPath, Parameters, and payload template values.
 type InputOutput struct {
-	Value                interface{} `json:"-"`
-	Path                 string      `json:"Path,omitempty"`
-	Parameters           *Parameters `json:"Parameters,omitempty"`
-	PayloadTemplate      string      `json:"-"`
-	PayloadTemplateValue interface{} `json:"-"`
-	InputPath            string      `json:"InputPath,omitempty"`
-	ItemsPath            string      `json:"ItemsPath,omitempty"`
+	Path       string      `json:"Path,omitempty"`
+	Parameters *Parameters `json:"Parameters,omitempty"`
+	InputPath  string      `json:"InputPath,omitempty"`
+	ItemsPath  string      `json:"ItemsPath,omitempty"`
 }
 
 // UnmarshalJSON deserialises an InputOutput from JSON, accepting either a raw string
-// (payload template) or a structured object.
+// (payload template) or a structured object. The payload template is stored
+// on InputPath because the SL spec uses InputPath as the canonical field for
+// inline string payloads when no other structured fields are present.
 func (io *InputOutput) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		io.PayloadTemplate = s
+		io.InputPath = s
 		return nil
 	}
 	type Alias InputOutput
@@ -909,17 +931,18 @@ type ActivityListResult struct {
 
 // ActivityTask represents a single activity task dispatched to a worker.
 type ActivityTask struct {
-	TaskToken    string    `json:"taskToken"`
-	ActivityArn  string    `json:"activityArn"`
-	ExecutionArn string    `json:"executionArn"`
-	Input        string    `json:"input"`
-	Status       string    `json:"status"`
-	Output       string    `json:"output,omitempty"`
-	Error        string    `json:"error,omitempty"`
-	Cause        string    `json:"cause,omitempty"`
-	CreatedAt    time.Time `json:"createdAt"`
-	CompletedAt  time.Time `json:"completedAt,omitempty"`
-	WorkerName   string    `json:"workerName,omitempty"`
+	TaskToken       string    `json:"taskToken"`
+	ActivityArn     string    `json:"activityArn"`
+	ExecutionArn    string    `json:"executionArn"`
+	Input           string    `json:"input"`
+	Status          string    `json:"status"`
+	Output          string    `json:"output,omitempty"`
+	Error           string    `json:"error,omitempty"`
+	Cause           string    `json:"cause,omitempty"`
+	CreatedAt       time.Time `json:"createdAt"`
+	CompletedAt     time.Time `json:"completedAt,omitempty"`
+	LastHeartbeatAt time.Time `json:"lastHeartbeatAt,omitempty"`
+	WorkerName      string    `json:"workerName,omitempty"`
 }
 
 // ActivityTaskResult contains the outcome of an activity task, including output or
@@ -1007,23 +1030,54 @@ type StateMachineAliasListResult struct {
 	NextToken string
 }
 
+// MapRunItemCounts holds the per-status count of items processed by a
+// distributed map run. Matches Smithy MapRunItemCounts shape.
+type MapRunItemCounts struct {
+	Pending               int64 `json:"pending"`
+	Running               int64 `json:"running"`
+	Succeeded             int64 `json:"succeeded"`
+	Failed                int64 `json:"failed"`
+	TimedOut              int64 `json:"timedOut"`
+	Aborted               int64 `json:"aborted"`
+	Total                 int64 `json:"total"`
+	ResultsWritten        int64 `json:"resultsWritten"`
+	FailuresNotRedrivable int64 `json:"failuresNotRedrivable,omitempty"`
+	PendingRedrive        int64 `json:"pendingRedrive,omitempty"`
+}
+
+// MapRunExecutionCounts holds the per-status count of child workflow
+// executions started by a distributed map run. Matches Smithy
+// MapRunExecutionCounts shape.
+type MapRunExecutionCounts struct {
+	Pending               int64 `json:"pending"`
+	Running               int64 `json:"running"`
+	Succeeded             int64 `json:"succeeded"`
+	Failed                int64 `json:"failed"`
+	TimedOut              int64 `json:"timedOut"`
+	Aborted               int64 `json:"aborted"`
+	Total                 int64 `json:"total"`
+	ResultsWritten        int64 `json:"resultsWritten"`
+	FailuresNotRedrivable int64 `json:"failuresNotRedrivable,omitempty"`
+	PendingRedrive        int64 `json:"pendingRedrive,omitempty"`
+}
+
 // MapRun represents a distributed map state execution within a Step Functions
 // state machine. Map runs are persisted in Pebble so they survive restarts.
 type MapRun struct {
-	MapRunArn                  string  `json:"mapRunArn"`
-	ExecutionArn               string  `json:"executionArn"`
-	StateMachineArn            string  `json:"stateMachineArn"`
-	Name                       string  `json:"name"`
-	Status                     string  `json:"status"`
-	StartDate                  int64   `json:"startDate"`
-	StopDate                   int64   `json:"stopDate,omitempty"`
-	ItemCount                  int64   `json:"itemCount"`
-	MaxConcurrency             int64   `json:"maxConcurrency"`
-	ToleratedFailureCount      int64   `json:"toleratedFailureCount,omitempty"`
-	ToleratedFailurePercentage float32 `json:"toleratedFailurePercentage,omitempty"`
-	ItemsProcessedCount        int64   `json:"itemsProcessedCount"`
-	ItemsFailedCount           int64   `json:"itemsFailedCount"`
-	ItemsCancelledCount        int64   `json:"itemsCancelledCount"`
+	MapRunArn                  string                `json:"mapRunArn"`
+	ExecutionArn               string                `json:"executionArn"`
+	StateMachineArn            string                `json:"stateMachineArn"`
+	Name                       string                `json:"name"`
+	Status                     string                `json:"status"`
+	StartDate                  int64                 `json:"startDate"`
+	StopDate                   int64                 `json:"stopDate,omitempty"`
+	ItemCounts                 MapRunItemCounts      `json:"itemCounts"`
+	ExecutionCounts            MapRunExecutionCounts `json:"executionCounts"`
+	MaxConcurrency             int64                 `json:"maxConcurrency"`
+	ToleratedFailureCount      int64                 `json:"toleratedFailureCount,omitempty"`
+	ToleratedFailurePercentage float32               `json:"toleratedFailurePercentage,omitempty"`
+	RedriveCount               int64                 `json:"redriveCount,omitempty"`
+	RedriveDate                int64                 `json:"redriveDate,omitempty"`
 }
 
 // MapRunListResult holds a paginated list of map runs.

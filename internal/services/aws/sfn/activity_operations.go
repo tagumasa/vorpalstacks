@@ -75,7 +75,7 @@ func (s *StepFunctionService) SendTaskFailure(ctx context.Context, reqCtx *reque
 
 	if err := store.FailActivityTask(taskToken, errorMsg, cause); err != nil {
 		if errors.Is(err, sfnstore.ErrTaskNotFound) {
-			return nil, ErrTaskTimedOut
+			return nil, ErrTaskDoesNotExist
 		}
 		return nil, err
 	}
@@ -95,13 +95,20 @@ func (s *StepFunctionService) SendTaskHeartbeat(ctx context.Context, reqCtx *req
 	task, err := store.GetActivityTaskByToken(taskToken)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrTaskNotFound) {
-			return nil, ErrTaskTimedOut
+			return nil, ErrTaskDoesNotExist
 		}
 		return nil, err
 	}
 
 	if task == nil || task.Status != "RUNNING" {
-		return nil, ErrTaskTimedOut
+		return nil, ErrTaskDoesNotExist
+	}
+
+	if err := store.HeartbeatActivityTask(taskToken); err != nil {
+		if errors.Is(err, sfnstore.ErrTaskNotFound) {
+			return nil, ErrTaskDoesNotExist
+		}
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

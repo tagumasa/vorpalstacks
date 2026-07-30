@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -63,6 +63,9 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	newExec.TraceHeader = exec.TraceHeader
 
 	if err := store.CreateExecution(ctx, newExec); err != nil {
+		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
+			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+newExecutionArn, 400)
+		}
 		return nil, err
 	}
 
@@ -72,8 +75,12 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
-		defer func() { resilience.RecoverPanic("SFN redrive execution") }()
 		defer store.UnregisterExecution(newExecutionArn)
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("sfn: panic in redrive execution", logs.String("arn", newExecutionArn), logs.Any("panic", r))
+			}
+		}()
 		if err := executor.ExecuteStateMachine(execCtx, newExec); err != nil {
 			logs.Error("sfn: redrive execution failed", logs.String("arn", newExecutionArn), logs.Err(err))
 		}
@@ -91,6 +98,13 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 
 // TestState tests a single state within a state machine definition.
 // https://docs.aws.amazon.com/step-functions/latest/apireference/API_TestState.html
+//
+// Optional AWS parameters (roleArn, mock, context, stateConfiguration,
+// revealSecrets) are accepted but currently unused. The vorpalstacks
+// test runner executes the state in-memory against synthetic inputs, so
+// real IAM role assumption and service-call mocking are not exercised.
+// The framework ignores unknown request fields, so the parameters are
+// simply not read here.
 func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	definition := request.GetParamLowerFirst(req.Parameters, "definition")
 	stateName := request.GetParamLowerFirst(req.Parameters, "stateName")
@@ -107,6 +121,13 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 
 	if input == "" {
 		input = "{}"
+	}
+
+	if inspectionLevel == "" {
+		inspectionLevel = "INFO"
+	}
+	if inspectionLevel != "INFO" && inspectionLevel != "DEBUG" && inspectionLevel != "TRACE" {
+		return nil, NewInvalidParameterValue("inspectionLevel must be INFO, DEBUG, or TRACE, got " + inspectionLevel)
 	}
 
 	var def sfnstore.StateMachineDefinition

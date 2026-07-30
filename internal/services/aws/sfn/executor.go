@@ -59,7 +59,7 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 		logs.Error("Failed to parse state machine definition", logs.String("arn", execution.StateMachineArn), logs.Err(err))
 		execution.Cause = "Invalid state machine definition syntax"
 		execution.StopDate = time.Now().UTC()
-		if updateErr := e.store.UpdateExecution(ctx, execution); updateErr != nil {
+		if updateErr := e.updateExecutionWithRetry(ctx, execution); updateErr != nil {
 			logs.Error("Failed to update execution status to FAILED after definition error", logs.Err(updateErr))
 		}
 		return fmt.Errorf("failed to parse state machine definition: %w", err)
@@ -476,4 +476,22 @@ func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution,
 			logs.String("executionArn", execution.ExecutionArn),
 			logs.Err(err))
 	}
+}
+
+// updateExecutionWithRetry persists the execution record, retrying on
+// transient store errors. The first attempt is synchronous; the retry
+// uses a fresh context.Background() so the call still completes even when
+// the caller's context is already cancelled (e.g. parsing failed late
+// during shutdown).
+func (e *Executor) updateExecutionWithRetry(ctx context.Context, execution *sfnstore.Execution) error {
+	err := e.store.UpdateExecution(ctx, execution)
+	if err == nil {
+		return nil
+	}
+	retryCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if retryErr := e.store.UpdateExecution(retryCtx, execution); retryErr != nil {
+		return fmt.Errorf("update failed (initial: %v, retry: %v)", err, retryErr)
+	}
+	return nil
 }

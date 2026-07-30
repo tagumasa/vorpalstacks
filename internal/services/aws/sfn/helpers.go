@@ -1,8 +1,48 @@
 package sfn
 
 import (
+	"strconv"
+
+	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
+
+// parsePageLimit parses the maxResults parameter and validates it against
+// the AWS spec range [0, 1000]. Returns the default of 100 when not
+// provided. Returns an error if the value is outside the range.
+func parsePageLimit(req *request.ParsedRequest) (int32, error) {
+	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
+	if limit == 0 {
+		return 100, nil
+	}
+	if limit < 0 || limit > 1000 {
+		return 0, NewInvalidParameterValue("maxResults must be in [0, 1000], got " + strconv.FormatInt(int64(limit), 10))
+	}
+	return limit, nil
+}
+
+// computeRedriveStatus derives the AWS redriveStatus / redriveStatusReason
+// for DescribeExecution from the current execution state.
+//
+// Per AWS spec (ExecutionRedriveStatus enum), redriveStatus is
+// REDRIVABLE / NOT_REDRIVABLE / REDRIVABLE_BY_MAP_RUN. It mirrors what
+// RedriveExecution would return: NOT_REDRIVABLE with a reason when the
+// execution cannot be redriven.
+//
+// This is a derived field, never stored.
+func computeRedriveStatus(exec *sfnstore.Execution) (status string, reason string) {
+	switch exec.Status {
+	case "FAILED", "TIMED_OUT", "PENDING_REDRIVE":
+		return "REDRIVABLE", ""
+	case "RUNNING":
+		return "NOT_REDRIVABLE", "Execution is RUNNING and cannot be redriven"
+	case "SUCCEEDED":
+		return "NOT_REDRIVABLE", "Execution is SUCCEEDED and cannot be redriven"
+	case "ABORTED":
+		return "NOT_REDRIVABLE", "Execution is ABORTED and cannot be redriven"
+	}
+	return "", ""
+}
 
 func executionToResponse(exec *sfnstore.Execution) map[string]interface{} {
 	response := map[string]interface{}{
@@ -11,6 +51,19 @@ func executionToResponse(exec *sfnstore.Execution) map[string]interface{} {
 		"name":            exec.Name,
 		"status":          exec.Status,
 		"startDate":       exec.StartDate.Unix(),
+	}
+
+	if exec.InputDetails != nil {
+		response["inputDetails"] = map[string]interface{}{
+			"included": exec.InputDetails.Included,
+			"type":     exec.InputDetails.Type,
+		}
+	}
+	if exec.OutputDetails != nil {
+		response["outputDetails"] = map[string]interface{}{
+			"included": exec.OutputDetails.Included,
+			"type":     exec.OutputDetails.Type,
+		}
 	}
 
 	if exec.Input != "" {
@@ -30,6 +83,30 @@ func executionToResponse(exec *sfnstore.Execution) map[string]interface{} {
 	}
 	if exec.TraceHeader != "" {
 		response["traceHeader"] = exec.TraceHeader
+	}
+	if exec.StateMachineVersionArn != "" {
+		response["stateMachineVersionArn"] = exec.StateMachineVersionArn
+	}
+	if exec.StateMachineAliasArn != "" {
+		response["stateMachineAliasArn"] = exec.StateMachineAliasArn
+	}
+	if exec.MapRunArn != "" {
+		response["mapRunArn"] = exec.MapRunArn
+	}
+	if exec.ItemCount != 0 {
+		response["itemCount"] = exec.ItemCount
+	}
+	if exec.RedriveCount != 0 {
+		response["redriveCount"] = exec.RedriveCount
+	}
+	if !exec.RedriveDate.IsZero() {
+		response["redriveDate"] = exec.RedriveDate.Unix()
+	}
+	if rs, reason := computeRedriveStatus(exec); rs != "" {
+		response["redriveStatus"] = rs
+		if reason != "" {
+			response["redriveStatusReason"] = reason
+		}
 	}
 
 	return response
@@ -58,19 +135,45 @@ func stateMachineToResponse(sm *sfnstore.StateMachine) map[string]interface{} {
 	if !sm.UpdateDate.IsZero() {
 		response["updateDate"] = sm.UpdateDate.Unix()
 	}
+	if sm.RevisionId != "" {
+		response["revisionId"] = sm.RevisionId
+	}
+	if sm.Label != "" {
+		response["label"] = sm.Label
+	}
+	if sm.LoggingConfiguration != nil {
+		response["loggingConfiguration"] = sm.LoggingConfiguration
+	}
+	if sm.EncryptionConfiguration != nil {
+		response["encryptionConfiguration"] = sm.EncryptionConfiguration
+	}
+	if sm.TracingConfiguration != nil {
+		response["tracingConfiguration"] = sm.TracingConfiguration
+	}
 
 	return response
 }
 
 func activityToResponse(activity *sfnstore.Activity) map[string]interface{} {
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"activityArn":  activity.ActivityArn,
 		"name":         activity.Name,
 		"creationDate": activity.CreationDate.Unix(),
 	}
+	if activity.EncryptionConfiguration != nil {
+		response["encryptionConfiguration"] = activity.EncryptionConfiguration
+	}
+	return response
 }
 
-func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent) map[string]interface{} {
+// executionDataSensitiveFields lists the fields that contain input/output
+// data and should be omitted when includeExecutionData is false.
+var executionDataSensitiveFields = map[string]bool{
+	"input":  true,
+	"output": true,
+}
+
+func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent, includeExecutionData bool) map[string]interface{} {
 	response := map[string]interface{}{
 		"id":              event.EventId,
 		"previousEventId": event.PreviousEventId,
@@ -272,6 +375,45 @@ func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent) map[string]in
 			response["taskStateExitedEventDetails"] = map[string]interface{}{
 				"output": event.TaskStateExitedEventDetails.Output,
 				"name":   event.TaskStateExitedEventDetails.Name,
+			}
+		}
+	}
+
+	if !includeExecutionData {
+		for key := range response {
+			if executionDataSensitiveFields[key] {
+				delete(response, key)
+			}
+		}
+		for _, detailsKey := range []string{
+			"executionStartedEventDetails",
+			"executionSucceededEventDetails",
+			"taskStartedEventDetails",
+			"taskSucceededEventDetails",
+			"taskFailedEventDetails",
+			"passStateEnteredEventDetails",
+			"passStateExitedEventDetails",
+			"choiceStateEnteredEventDetails",
+			"choiceStateExitedEventDetails",
+			"waitStateEnteredEventDetails",
+			"waitStateExitedEventDetails",
+			"parallelStateEnteredEventDetails",
+			"parallelStateExitedEventDetails",
+			"mapStateEnteredEventDetails",
+			"mapStateExitedEventDetails",
+			"failStateEnteredEventDetails",
+			"succeedStateEnteredEventDetails",
+			"activityTaskScheduledEventDetails",
+			"activityTaskSucceededEventDetails",
+			"taskStateEnteredEventDetails",
+			"taskStateExitedEventDetails",
+		} {
+			if details, ok := response[detailsKey].(map[string]interface{}); ok {
+				for f := range details {
+					if executionDataSensitiveFields[f] {
+						delete(details, f)
+					}
+				}
 			}
 		}
 	}

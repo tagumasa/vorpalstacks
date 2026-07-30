@@ -322,7 +322,7 @@ func (s *StepFunctionStore) UpdateExecution(ctx context.Context, exec *Execution
 }
 
 // ListExecutions returns a paginated list of executions for a state machine.
-func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, limit int32, nextToken string) (*ExecutionListResult, error) {
+func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, mapRunArn string, redriveFilter string, limit int32, nextToken string) (*ExecutionListResult, error) {
 	opts := common.ListOptions{
 		Marker:   nextToken,
 		MaxItems: int(limit),
@@ -334,6 +334,21 @@ func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn 
 		}
 		if statusFilter != "" && e.Status != statusFilter {
 			return false
+		}
+		if mapRunArn != "" && e.MapRunArn != mapRunArn {
+			return false
+		}
+		if redriveFilter != "" {
+			switch redriveFilter {
+			case "REDRIVEN":
+				if e.RedriveCount == 0 {
+					return false
+				}
+			case "NOT_REDRIVEN":
+				if e.RedriveCount != 0 {
+					return false
+				}
+			}
 		}
 		return true
 	})
@@ -519,6 +534,28 @@ func (s *StepFunctionStore) GetActivityTaskByToken(taskToken string) (*ActivityT
 	return &task, nil
 }
 
+// HeartbeatActivityTask records the current time as the last heartbeat for
+// the task. Workers call this via SendTaskHeartbeat to keep the task alive
+// beyond the heartbeat interval. The actual timeout enforcement happens in
+// WaitForTaskResult, which polls LastHeartbeatAt.
+func (s *StepFunctionStore) HeartbeatActivityTask(taskToken string) error {
+	s.tasksMu.Lock()
+	defer s.tasksMu.Unlock()
+
+	var task ActivityTask
+	if err := s.tasksStore.Get(taskToken, &task); err != nil {
+		return ErrTaskNotFound
+	}
+
+	task.LastHeartbeatAt = time.Now().UTC()
+
+	if err := s.tasksStore.Put(taskToken, &task); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CompleteActivityTask marks an activity task as completed with output.
 func (s *StepFunctionStore) CompleteActivityTask(taskToken string, output string) error {
 	s.tasksMu.Lock()
@@ -581,7 +618,7 @@ func (s *StepFunctionStore) FailActivityTask(taskToken string, errorMsg string, 
 }
 
 // WaitForTaskResult waits for the result of an activity task.
-func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration) (*ActivityTaskResult, error) {
+func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration, heartbeatTimeout time.Duration) (*ActivityTaskResult, error) {
 	s.pendingTasksMu.Lock()
 	ch := make(chan *ActivityTaskResult, 1)
 	s.pendingTasks[taskToken] = ch
@@ -596,13 +633,45 @@ func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken str
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
-	select {
-	case result := <-ch:
-		return result, nil
-	case <-timer.C:
-		return nil, ErrTaskTimeout
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	// Heartbeat enforcement. When heartbeatTimeout > 0, the caller must
+	// send a heartbeat at least once per heartbeatTimeout. SendTaskHeartbeat
+	// updates LastHeartbeatAt; this loop polls for updates.
+	if heartbeatTimeout <= 0 {
+		select {
+		case result := <-ch:
+			return result, nil
+		case <-timer.C:
+			return nil, ErrTaskTimeout
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	hbTimer := time.NewTimer(heartbeatTimeout)
+	defer hbTimer.Stop()
+
+	for {
+		select {
+		case result := <-ch:
+			return result, nil
+		case <-timer.C:
+			return nil, ErrTaskTimeout
+		case <-hbTimer.C:
+			var task ActivityTask
+			if err := s.tasksStore.Get(taskToken, &task); err != nil {
+				return nil, ErrTaskNotFound
+			}
+			lastHB := task.LastHeartbeatAt
+			if lastHB.IsZero() {
+				lastHB = task.CreatedAt
+			}
+			if time.Since(lastHB) > heartbeatTimeout {
+				return nil, ErrHeartbeatTimeout
+			}
+			hbTimer.Reset(heartbeatTimeout)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 }
 

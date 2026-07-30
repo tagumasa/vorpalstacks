@@ -126,18 +126,23 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	mapRunArn := generateMapRunArn(e.store, e.region, e.accountID, execCtx.Execution.ExecutionArn, execCtx.CurrentState)
 	now := time.Now().UTC()
+	total := int64(len(itemsArray))
 	mapRunRecord := &sfnstore.MapRun{
-		MapRunArn:           mapRunArn,
-		ExecutionArn:        execCtx.Execution.ExecutionArn,
-		StateMachineArn:     execCtx.Execution.StateMachineArn,
-		Name:                execCtx.CurrentState,
-		Status:              "RUNNING",
-		StartDate:           now.Unix(),
-		ItemCount:           int64(len(itemsArray)),
-		MaxConcurrency:      int64(maxConcurrency),
-		ItemsProcessedCount: 0,
-		ItemsFailedCount:    0,
-		ItemsCancelledCount: 0,
+		MapRunArn:       mapRunArn,
+		ExecutionArn:    execCtx.Execution.ExecutionArn,
+		StateMachineArn: execCtx.Execution.StateMachineArn,
+		Name:            execCtx.CurrentState,
+		Status:          "RUNNING",
+		StartDate:       now.Unix(),
+		ItemCounts: sfnstore.MapRunItemCounts{
+			Pending: total,
+			Total:   total,
+		},
+		ExecutionCounts: sfnstore.MapRunExecutionCounts{
+			Pending: total,
+			Total:   total,
+		},
+		MaxConcurrency: int64(maxConcurrency),
 	}
 	if err := e.store.CreateMapRun(ctx, mapRunRecord); err != nil {
 		logs.Warn("failed to create map run record", logs.Err(err))
@@ -246,8 +251,17 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	wg.Wait()
 
-	mapRunRecord.ItemsProcessedCount = itemsProcessed
-	mapRunRecord.ItemsFailedCount = itemsFailed
+	totalItems := mapRunRecord.ItemCounts.Total
+	mapRunRecord.ItemCounts.Succeeded = itemsProcessed
+	mapRunRecord.ItemCounts.Failed = itemsFailed
+	mapRunRecord.ItemCounts.Running = 0
+	mapRunRecord.ItemCounts.Pending = 0
+	mapRunRecord.ItemCounts.Total = totalItems
+	mapRunRecord.ExecutionCounts.Succeeded = itemsProcessed
+	mapRunRecord.ExecutionCounts.Failed = itemsFailed
+	mapRunRecord.ExecutionCounts.Running = 0
+	mapRunRecord.ExecutionCounts.Pending = 0
+	mapRunRecord.ExecutionCounts.Total = totalItems
 	if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
 		logs.Warn("failed to update map run after completion", logs.Err(err))
 	}

@@ -18,7 +18,7 @@ type StepFunctionStoreInterface interface {
 	CreateExecution(ctx context.Context, exec *Execution) error
 	GetExecution(ctx context.Context, arn string) (*Execution, error)
 	UpdateExecution(ctx context.Context, exec *Execution) error
-	ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, limit int32, nextToken string) (*ExecutionListResult, error)
+	ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, mapRunArn string, redriveFilter string, limit int32, nextToken string) (*ExecutionListResult, error)
 	AddExecutionHistoryEvent(ctx context.Context, event *ExecutionHistoryEvent) error
 	GetExecutionHistory(ctx context.Context, executionArn string, limit int32, nextToken string) ([]*ExecutionHistoryEvent, string, error)
 	CreateActivity(ctx context.Context, activity *Activity) error
@@ -30,7 +30,8 @@ type StepFunctionStoreInterface interface {
 	GetActivityTaskByToken(taskToken string) (*ActivityTask, error)
 	CompleteActivityTask(taskToken string, output string) error
 	FailActivityTask(taskToken string, errorMsg string, cause string) error
-	WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration) (*ActivityTaskResult, error)
+	HeartbeatActivityTask(taskToken string) error
+	WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration, heartbeatTimeout time.Duration) (*ActivityTaskResult, error)
 	RegisterExecution(executionArn string, cancel context.CancelFunc)
 	CancelExecution(executionArn string) bool
 	UnregisterExecution(executionArn string)
