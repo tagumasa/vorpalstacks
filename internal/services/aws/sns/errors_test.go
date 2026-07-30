@@ -25,8 +25,8 @@ func TestSNSErrors(t *testing.T) {
 		assert.Equal(t, "EndpointDisabled: Endpoint is disabled", ErrEndpointDisabled.Error())
 		assert.Equal(t, 400, ErrEndpointDisabled.GetHTTPStatusCode())
 
-		assert.Equal(t, "FilterLimitExceeded: Filter limit exceeded", ErrFilterLimitExceeded.Error())
-		assert.Equal(t, 400, ErrFilterLimitExceeded.GetHTTPStatusCode())
+		assert.Equal(t, "FilterPolicyLimitExceeded: Filter policy limit exceeded", ErrFilterLimitExceeded.Error())
+		assert.Equal(t, 403, ErrFilterLimitExceeded.GetHTTPStatusCode())
 
 		assert.Equal(t, "Throttled: Request was throttled", ErrThrottled.Error())
 		assert.Equal(t, 429, ErrThrottled.GetHTTPStatusCode())

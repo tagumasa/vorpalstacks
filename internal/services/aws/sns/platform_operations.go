@@ -2,6 +2,7 @@ package sns
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -12,6 +13,17 @@ import (
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
+// validPlatforms lists the push notification platforms accepted by SNS.
+var validPlatforms = map[string]bool{
+	"APNS":         true,
+	"APNS_SANDBOX": true,
+	"GCM":          true,
+	"ADM":          true,
+	"BAIDU":        true,
+	"WNS":          true,
+	"MPNS":         true,
+}
+
 // CreatePlatformApplication creates a platform application for push notifications.
 func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
@@ -20,8 +32,15 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	if name == "" {
 		return nil, awserrors.NewInvalidParameterException("Name is required")
 	}
+	if len(name) > 100 {
+		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Name too long: %d characters (maximum 100)", len(name)))
+	}
 	if platform == "" {
 		return nil, awserrors.NewInvalidParameterException("Platform is required")
+	}
+	normalisedPlatform := strings.ToUpper(platform)
+	if !validPlatforms[normalisedPlatform] {
+		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid Platform: %s. Valid values: APNS, APNS_SANDBOX, GCM, ADM, BAIDU, WNS, MPNS", platform))
 	}
 
 	store, err := s.store(reqCtx)
@@ -31,7 +50,7 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 
 	app := &snsstore.PlatformApplication{
 		Name:       name,
-		Platform:   strings.ToUpper(platform),
+		Platform:   normalisedPlatform,
 		Attributes: parseAttributes(req.Parameters),
 	}
 
@@ -158,6 +177,12 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 	}
 	if token == "" {
 		return nil, awserrors.NewInvalidParameterException("Token is required")
+	}
+	if len(token) > 2048 {
+		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Token too long: %d bytes (maximum 2048)", len(token)))
+	}
+	if len(customUserData) > 2048 {
+		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("CustomUserData too long: %d bytes (maximum 2048)", len(customUserData)))
 	}
 
 	store, err := s.store(reqCtx)

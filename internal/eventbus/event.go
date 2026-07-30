@@ -101,6 +101,7 @@ type SNSDeliveryEvent struct {
 	MessageID         string                     `json:"message_id"`
 	Message           string                     `json:"message"`
 	Subject           string                     `json:"subject,omitempty"`
+	MessageStructure  string                     `json:"message_structure,omitempty"`
 	MessageGroupId    string                     `json:"message_group_id,omitempty"`
 	MessageAttributes map[string]json.RawMessage `json:"message_attributes,omitempty"`
 }

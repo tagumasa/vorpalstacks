@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -283,25 +284,6 @@ func (s *SNSStore) SetTopicAttributes(topicArn string, attributes map[string]str
 	}
 	for k, v := range attributes {
 		topic.Attributes[k] = v
-	}
-
-	if v, ok := topic.Attributes["FifoTopic"]; ok {
-		topic.FifoTopic = v == "true"
-	}
-	if v, ok := topic.Attributes["ContentBasedDeduplication"]; ok {
-		topic.ContentBasedDeduplication = v == "true"
-	}
-	if v, ok := topic.Attributes["KmsMasterKeyId"]; ok {
-		topic.KmsMasterKeyId = v
-	}
-	if v, ok := topic.Attributes["DisplayName"]; ok {
-		topic.DisplayName = v
-	}
-	if v, ok := topic.Attributes["Policy"]; ok {
-		topic.Policy = v
-	}
-	if v, ok := topic.Attributes["DeliveryPolicy"]; ok {
-		topic.DeliveryPolicy = v
 	}
 
 	topic.LastModifiedTime = time.Now().UTC()
@@ -600,14 +582,22 @@ func (s *SNSStore) RecordDeduplication(topicArn, messageDeduplicationId, message
 }
 
 // GetNextSequenceNumber returns the next sequence number for a FIFO topic message group.
-// The sequence number is a large, non-consecutive number that Amazon SNS assigns to each message.
+// AWS SNS assigns large, non-consecutive numbers to each message within a
+// message group. We emulate this by adding a random increment to each
+// successive counter value, producing numbers that are monotonically
+// increasing within a group but not sequentially numbered.
 func (s *SNSStore) GetNextSequenceNumber(topicArn, messageGroupId string) string {
 	key := topicArn + ":" + messageGroupId
 
 	s.sequenceMu.Lock()
 	defer s.sequenceMu.Unlock()
 
-	s.sequenceCounters[key]++
+	// Start from a large base to emulate AWS's 19-digit numbers.
+	if s.sequenceCounters[key] == 0 {
+		s.sequenceCounters[key] = 1000000000000000000 + int64(rand.Intn(89999999999999999))
+	}
+	// Add a random increment (1-1000) to make numbers non-consecutive.
+	s.sequenceCounters[key] += int64(rand.Intn(1000)) + 1
 	return fmt.Sprintf("%d", s.sequenceCounters[key])
 }
 
@@ -617,7 +607,7 @@ func (s *SNSStore) GetDataProtectionPolicy(topicArn string) (string, error) {
 	if err := s.BaseStore.Get(topicArn, &topic); err != nil {
 		return "", ErrTopicNotFound
 	}
-	return topic.DataProtectionPolicy, nil
+	return topic.GetDataProtectionPolicy(), nil
 }
 
 // PutDataProtectionPolicy sets the data protection policy for a topic.
@@ -630,7 +620,10 @@ func (s *SNSStore) PutDataProtectionPolicy(topicArn, policy string) error {
 		return ErrTopicNotFound
 	}
 
-	topic.DataProtectionPolicy = policy
+	if topic.Attributes == nil {
+		topic.Attributes = make(map[string]string)
+	}
+	topic.Attributes["DataProtectionPolicy"] = policy
 	topic.LastModifiedTime = time.Now().UTC()
 	return s.Put(topicArn, &topic)
 }

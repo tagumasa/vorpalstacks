@@ -49,23 +49,13 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 		if topic.Attributes == nil {
 			topic.Attributes = make(map[string]string)
 		}
-		topic.FifoTopic = true
 		topic.Attributes["FifoTopic"] = "true"
 		if _, ok := topic.Attributes["ContentBasedDeduplication"]; !ok {
 			topic.Attributes["ContentBasedDeduplication"] = "false"
 		}
 	}
 
-	for k, v := range topic.Attributes {
-		if k == "FifoTopic" && v == "true" {
-			topic.FifoTopic = true
-		}
-		if k == "ContentBasedDeduplication" && v == "true" {
-			topic.ContentBasedDeduplication = true
-		}
-	}
-
-	if topic.FifoTopic && !strings.HasSuffix(name, ".fifo") {
+	if topic.IsFifoTopic() && !isFifo {
 		return nil, awserrors.NewInvalidParameterException("FIFO Topic names must end with \".fifo\"")
 	}
 
@@ -127,13 +117,16 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 
 	attrs := make(map[string]string)
 	attrs["TopicArn"] = topic.Arn
-	attrs["DisplayName"] = topic.DisplayName
+	attrs["DisplayName"] = topic.GetDisplayName()
 	attrs["Owner"] = topic.Owner
 	attrs["SubscriptionsConfirmed"] = fmt.Sprintf("%d", topic.SubscriptionsConfirmed)
 	attrs["SubscriptionsDeleted"] = fmt.Sprintf("%d", topic.SubscriptionsDeleted)
 	attrs["SubscriptionsPending"] = fmt.Sprintf("%d", topic.SubscriptionsPending)
 
 	for k, v := range topic.Attributes {
+		if k == "DataProtectionPolicy" {
+			continue
+		}
 		if k == "Policy" && v == "" {
 			continue
 		}
@@ -149,18 +142,6 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 		attrs["Policy"] = injectPermissionsIntoPolicy(attrs["Policy"], topic.Arn, topic.Permissions)
 	}
 
-	if topic.FifoTopic {
-		attrs["FifoTopic"] = "true"
-	}
-	if topic.ContentBasedDeduplication {
-		attrs["ContentBasedDeduplication"] = "true"
-	}
-	if topic.KmsMasterKeyId != "" {
-		attrs["KmsMasterKeyId"] = topic.KmsMasterKeyId
-	}
-	if topic.EffectiveDeliveryPolicy != "" {
-		attrs["EffectiveDeliveryPolicy"] = topic.EffectiveDeliveryPolicy
-	}
 	if !topic.CreatedDate.IsZero() {
 		attrs["CreatedDate"] = topic.CreatedDate.UTC().Format(time.RFC3339)
 	}
@@ -188,6 +169,10 @@ func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	}
 
 	attrs := map[string]string{attributeName: attributeValue}
+
+	if err := validateTopicAttribute(attributeName, attributeValue); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

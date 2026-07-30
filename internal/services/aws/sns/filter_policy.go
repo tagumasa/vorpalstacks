@@ -8,8 +8,8 @@ import (
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
-// matchFilterPolicy evaluates whether a message's attributes satisfy the
-// subscription's filter policy. An empty filter policy matches all messages.
+// matchFilterPolicy evaluates whether a message satisfies the subscription's
+// filter policy, respecting the FilterPolicyScope setting.
 //
 // AWS SNS filter policy semantics:
 //   - Each key in the policy must match (AND semantics across keys).
@@ -17,9 +17,12 @@ import (
 //   - A missing message attribute fails the key unless the policy value
 //     contains {"exists": false}.
 //
+// When scope is "MessageBody", the policy keys refer to top-level properties
+// of the JSON message body instead of message attributes.
+//
 // Supported operators: exact match, {"prefix": "..."}, {"anything-but": [...]},
 // {"numeric": [op, val, ...]}, {"exists": bool}.
-func matchFilterPolicy(policyJSON string, attrs map[string]*snsstore.MessageAttribute) bool {
+func matchFilterPolicy(policyJSON string, scope string, attrs map[string]*snsstore.MessageAttribute, messageBody string) bool {
 	if strings.TrimSpace(policyJSON) == "" || policyJSON == "{}" {
 		return true
 	}
@@ -29,19 +32,55 @@ func matchFilterPolicy(policyJSON string, attrs map[string]*snsstore.MessageAttr
 		return false
 	}
 
+	var matchAttrs map[string]*snsstore.MessageAttribute
+	if scope == "MessageBody" {
+		matchAttrs = parseMessageBodyAttributes(messageBody)
+	} else {
+		matchAttrs = attrs
+	}
+
 	for attrName, rawValues := range policy {
 		var values []interface{}
 		if err := json.Unmarshal(rawValues, &values); err != nil {
 			return false
 		}
 
-		msgAttr, attrExists := attrs[attrName]
+		msgAttr, attrExists := matchAttrs[attrName]
 		if !matchPolicyValues(values, msgAttr, attrExists) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// parseMessageBodyAttributes parses a JSON message body into a pseudo
+// MessageAttribute map for MessageBody-scope filter policy matching.
+// Only top-level properties are extracted; nested objects/arrays are ignored.
+func parseMessageBodyAttributes(body string) map[string]*snsstore.MessageAttribute {
+	var bodyMap map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &bodyMap); err != nil {
+		return nil
+	}
+
+	result := make(map[string]*snsstore.MessageAttribute, len(bodyMap))
+	for k, v := range bodyMap {
+		switch val := v.(type) {
+		case string:
+			result[k] = &snsstore.MessageAttribute{Type: "String", StringValue: val}
+		case float64:
+			result[k] = &snsstore.MessageAttribute{Type: "Number", StringValue: strconv.FormatFloat(val, 'f', -1, 64)}
+		case bool:
+			result[k] = &snsstore.MessageAttribute{Type: "String", StringValue: strconv.FormatBool(val)}
+		default:
+			raw, err := json.Marshal(val)
+			if err != nil {
+				continue
+			}
+			result[k] = &snsstore.MessageAttribute{Type: "String.Array", StringValue: string(raw)}
+		}
+	}
+	return result
 }
 
 // matchPolicyValues checks whether any of the policy values match the

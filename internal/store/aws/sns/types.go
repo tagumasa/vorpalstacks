@@ -11,26 +11,52 @@ import (
 
 // Topic represents an SNS topic.
 type Topic struct {
-	Name                      string            `json:"name"`
-	Arn                       string            `json:"arn"`
-	DisplayName               string            `json:"display_name,omitempty"`
-	Policy                    string            `json:"policy,omitempty"`
-	DeliveryPolicy            string            `json:"delivery_policy,omitempty"`
-	EffectiveDeliveryPolicy   string            `json:"effective_delivery_policy,omitempty"`
-	Owner                     string            `json:"owner,omitempty"`
-	SubscriptionsConfirmed    int32             `json:"subscriptions_confirmed"`
-	SubscriptionsDeleted      int32             `json:"subscriptions_deleted"`
-	SubscriptionsPending      int32             `json:"subscriptions_pending"`
-	KmsMasterKeyId            string            `json:"kms_master_key_id,omitempty"`
-	FifoTopic                 bool              `json:"fifo_topic"`
-	ContentBasedDeduplication bool              `json:"content_based_deduplication"`
-	SignatureVersion          string            `json:"signature_version,omitempty"`
-	CreatedDate               time.Time         `json:"created_date"`
-	LastModifiedTime          time.Time         `json:"last_modified_time"`
-	Attributes                map[string]string `json:"attributes,omitempty"`
-	Tags                      map[string]string `json:"tags,omitempty"`
-	DataProtectionPolicy      string            `json:"data_protection_policy,omitempty"`
-	Permissions               []Permission      `json:"permissions,omitempty"`
+	Name                   string            `json:"name"`
+	Arn                    string            `json:"arn"`
+	Owner                  string            `json:"owner,omitempty"`
+	SubscriptionsConfirmed int32             `json:"subscriptions_confirmed"`
+	SubscriptionsDeleted   int32             `json:"subscriptions_deleted"`
+	SubscriptionsPending   int32             `json:"subscriptions_pending"`
+	CreatedDate            time.Time         `json:"created_date"`
+	LastModifiedTime       time.Time         `json:"last_modified_time"`
+	Attributes             map[string]string `json:"attributes,omitempty"`
+	Tags                   map[string]string `json:"tags,omitempty"`
+	Permissions            []Permission      `json:"permissions,omitempty"`
+}
+
+// IsFifoTopic returns whether the topic is a FIFO topic.
+func (t *Topic) IsFifoTopic() bool {
+	return strings.HasSuffix(t.Name, ".fifo")
+}
+
+// IsContentBasedDeduplication returns whether content-based deduplication is enabled.
+func (t *Topic) IsContentBasedDeduplication() bool {
+	return strings.EqualFold(t.Attributes["ContentBasedDeduplication"], "true")
+}
+
+// GetDisplayName returns the topic's display name.
+func (t *Topic) GetDisplayName() string {
+	return t.Attributes["DisplayName"]
+}
+
+// GetPolicy returns the topic's access policy JSON.
+func (t *Topic) GetPolicy() string {
+	return t.Attributes["Policy"]
+}
+
+// GetDeliveryPolicy returns the topic's delivery policy JSON.
+func (t *Topic) GetDeliveryPolicy() string {
+	return t.Attributes["DeliveryPolicy"]
+}
+
+// GetKmsMasterKeyId returns the topic's KMS master key ID.
+func (t *Topic) GetKmsMasterKeyId() string {
+	return t.Attributes["KmsMasterKeyId"]
+}
+
+// GetDataProtectionPolicy returns the topic's data protection policy.
+func (t *Topic) GetDataProtectionPolicy() string {
+	return t.Attributes["DataProtectionPolicy"]
 }
 
 // Subscription represents an SNS subscription.
@@ -45,10 +71,8 @@ type Subscription struct {
 	Endpoint                     string            `json:"endpoint"`
 	Owner                        string            `json:"owner"`
 	ConfirmationWasAuthenticated bool              `json:"confirmation_was_authenticated"`
-	TopicOwner                   string            `json:"topic_owner"`
 	PendingConfirmation          bool              `json:"pending_confirmation"`
 	ConfirmationToken            string            `json:"confirmation_token,omitempty"`
-	SubscriptionPrincipal        string            `json:"subscription_principal,omitempty"`
 	Attributes                   map[string]string `json:"attributes,omitempty"`
 	CreatedDate                  time.Time         `json:"created_date"`
 }
@@ -117,12 +141,9 @@ type MessageAttribute struct {
 
 // Permission represents an SNS topic permission.
 type Permission struct {
-	Label       string   `json:"label"`
-	AccountId   string   `json:"account_id,omitempty"`
-	ActionName  string   `json:"action_name,omitempty"`
-	AWAccountId string   `json:"aws_account_id,omitempty"`
-	Principals  []string `json:"principals,omitempty"`
-	Actions     []string `json:"actions,omitempty"`
+	Label      string   `json:"label"`
+	Principals []string `json:"principals,omitempty"`
+	Actions    []string `json:"actions,omitempty"`
 }
 
 // PlatformApplication represents an SNS platform application.

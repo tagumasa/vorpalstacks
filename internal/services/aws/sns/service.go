@@ -16,9 +16,10 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
+
+	"github.com/google/uuid"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	vcrypto "vorpalstacks/internal/utils/crypto"
@@ -86,7 +87,14 @@ func (s *SNSService) deliverAsync(msg *snsstore.Message, subs []*snsstore.Subscr
 	s.deliveryWg.Add(1)
 	go func() {
 		defer s.deliveryWg.Done()
-		defer func() { resilience.RecoverPanic("SNS deliverAsync") }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("SNS delivery panicked",
+					logs.String("messageId", msg.MessageId),
+					logs.String("topicArn", msg.TopicArn),
+					logs.Any("panic", r))
+			}
+		}()
 		s.deliverToSubscriptions(msg, subs, region)
 	}()
 }
@@ -114,6 +122,7 @@ func (s *SNSService) handleBusDelivery(ctx context.Context, evt *eventbus.SNSDel
 		TopicArn:           evt.TopicARN,
 		Message:            evt.Message,
 		Subject:            evt.Subject,
+		MessageStructure:   evt.MessageStructure,
 		MessageGroupId:     evt.MessageGroupId,
 		PublishedTimestamp: evt.EventTimestamp(),
 		ReceivedTimestamp:  evt.EventTimestamp(),
@@ -122,9 +131,15 @@ func (s *SNSService) handleBusDelivery(ctx context.Context, evt *eventbus.SNSDel
 	// Deserialise message attributes from raw JSON transport format.
 	for k, raw := range evt.MessageAttributes {
 		attr := &snsstore.MessageAttribute{}
-		if json.Unmarshal(raw, attr) == nil {
-			msg.MessageAttributes[k] = attr
+		if err := json.Unmarshal(raw, attr); err != nil {
+			logs.Warn("SNS bus delivery: failed to deserialise message attribute, skipping entry",
+				logs.String("topicArn", evt.TopicARN),
+				logs.String("messageId", evt.MessageID),
+				logs.String("attrKey", k),
+				logs.Err(err))
+			continue
 		}
+		msg.MessageAttributes[k] = attr
 	}
 
 	s.deliverToSubscriptions(msg, subsCopy, evt.Region)
@@ -275,7 +290,7 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 		return "", fmt.Errorf("failed to list subscriptions: %w", err)
 	}
 
-	messageID := fmt.Sprintf("%d", time.Now().UnixNano())
+	messageID := uuid.New().String()
 
 	if len(subscriptions.Items) > 0 {
 		msg := &snsstore.Message{
@@ -309,6 +324,7 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 				MessageID:         msg.MessageId,
 				Message:           message,
 				Subject:           subject,
+				MessageStructure:  msg.MessageStructure,
 				MessageAttributes: msgAttrs,
 			}
 			snsEvt.Region = region

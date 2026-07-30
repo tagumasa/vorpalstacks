@@ -16,7 +16,7 @@ var (
 	// ErrEndpointDisabled is returned when the endpoint is disabled.
 	ErrEndpointDisabled = awserrors.NewAWSError("EndpointDisabled", "Endpoint is disabled", 400)
 	// ErrFilterLimitExceeded is returned when the filter limit is exceeded.
-	ErrFilterLimitExceeded = awserrors.NewAWSError("FilterLimitExceeded", "Filter limit exceeded", 400)
+	ErrFilterLimitExceeded = awserrors.NewAWSError("FilterPolicyLimitExceeded", "Filter policy limit exceeded", 403)
 	// ErrThrottled is returned when the request is throttled.
 	ErrThrottled = awserrors.NewAWSError("Throttled", "Request was throttled", 429)
 	// ErrValidation is returned when validation fails.

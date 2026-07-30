@@ -54,7 +54,5 @@ type SNSStoreInterface interface {
 	SetEndpointAttributes(arn string, attributes map[string]string) error
 	ListEndpointsByPlatformApplication(platformAppArn string, opts common.ListOptions) (*common.ListResult[PlatformEndpoint], error)
 
-	Put(key string, data interface{}) error
-
 	Close()
 }

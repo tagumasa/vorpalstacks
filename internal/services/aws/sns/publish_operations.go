@@ -57,7 +57,11 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		return nil, err
 	}
 
-	if topic.FifoTopic {
+	if err := validatePublishParams(topic, message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
+		return nil, err
+	}
+
+	if topic.IsFifoTopic() {
 		if messageGroupId == "" {
 			return nil, awserrors.NewInvalidParameterException("MessageGroupId is required for FIFO topics")
 		}
@@ -68,7 +72,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 					"MessageId": existingMsgID,
 				}, nil
 			}
-		} else if !topic.ContentBasedDeduplication {
+		} else if !topic.IsContentBasedDeduplication() {
 			return nil, awserrors.NewInvalidParameterException("MessageDeduplicationId is required when ContentBasedDeduplication is false")
 		} else {
 			messageDeduplicationId = generateContentBasedDeduplicationId(message)
@@ -82,7 +86,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 
 	messageId := uuid.New().String()
 
-	if topic.FifoTopic && messageDeduplicationId != "" {
+	if topic.IsFifoTopic() && messageDeduplicationId != "" {
 		store.RecordDeduplication(topicArn, messageDeduplicationId, messageId)
 	}
 
@@ -96,7 +100,9 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		MessageDeduplicationId: messageDeduplicationId,
 	}
 
-	parseMessageAttributes(req.Parameters, msg)
+	if err := parseMessageAttributes(req.Parameters, msg); err != nil {
+		return nil, err
+	}
 
 	msg.PublishedTimestamp = time.Now().UTC()
 	msg.ReceivedTimestamp = time.Now().UTC()
@@ -125,10 +131,11 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 				}
 			}
 			snsEvt := &eventbus.SNSDeliveryEvent{
-				TopicARN:          topicArn,
-				MessageID:         messageId,
+				TopicARN:          topic.Arn,
+				MessageID:         msg.MessageId,
 				Message:           message,
 				Subject:           subject,
+				MessageStructure:  messageStructure,
 				MessageGroupId:    messageGroupId,
 				MessageAttributes: msgAttrs,
 			}
@@ -147,90 +154,15 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	result := map[string]interface{}{
 		"MessageId": messageId,
 	}
-	if topic.FifoTopic {
+	if topic.IsFifoTopic() {
 		result["SequenceNumber"] = store.GetNextSequenceNumber(topicArn, messageGroupId)
 	}
 	return result, nil
 }
 
-// parseMessageAttributes extracts SNS message attributes from a request params
-// map (either top-level req.Parameters or a PublishBatch entry map) and
-// populates the Message's MessageAttributes field.
-func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message) {
-	var attrs map[string]interface{}
-	for _, key := range []string{"MessageAttributes", "messageAttributes"} {
-		if m, ok := params[key].(map[string]interface{}); ok {
-			attrs = m
-			break
-		}
-	}
-	if attrs == nil {
-		return
-	}
-
-	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
-	for k, v := range attrs {
-		attrMap, ok := v.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		attr := &snsstore.MessageAttribute{
-			Type:        firstString(attrMap, "DataType", "dataType"),
-			StringValue: firstString(attrMap, "StringValue", "stringValue"),
-		}
-		if raw := firstString(attrMap, "BinaryValue", "binaryValue"); raw != "" {
-			if decoded, err := base64.StdEncoding.DecodeString(raw); err == nil {
-				attr.BinaryValue = decoded
-			}
-		}
-		msg.MessageAttributes[k] = attr
-	}
-}
-
-// firstString returns the first non-empty string value found for any of the
-// given keys in the map.
-func firstString(m map[string]interface{}, keys ...string) string {
-	for _, k := range keys {
-		if v, ok := m[k].(string); ok && v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-// messageAttributeValue returns the serialisable value for an SNS message
-// attribute. String/Number/String.Array types return the string value;
-// Binary types return the base64-encoded representation.
-func messageAttributeValue(attr *snsstore.MessageAttribute) string {
-	if len(attr.BinaryValue) > 0 {
-		return base64.StdEncoding.EncodeToString(attr.BinaryValue)
-	}
-	return attr.StringValue
-}
-
 func generateContentBasedDeduplicationId(message string) string {
 	hash := sha256.Sum256([]byte(message))
 	return hex.EncodeToString(hash[:32])
-}
-
-func extractProtocolMessage(msg *snsstore.Message, protocol string) string {
-	if msg.MessageStructure != "json" {
-		return msg.Message
-	}
-
-	var msgMap map[string]string
-	if err := json.Unmarshal([]byte(msg.Message), &msgMap); err != nil {
-		return msg.Message
-	}
-
-	if protocolMsg, ok := msgMap[protocol]; ok {
-		return protocolMsg
-	}
-	if defaultMsg, ok := msgMap["default"]; ok {
-		return defaultMsg
-	}
-
-	return msg.Message
 }
 
 func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions []*snsstore.Subscription, region string) {
@@ -239,7 +171,7 @@ func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions
 			continue
 		}
 
-		if !matchFilterPolicy(sub.GetFilterPolicy(), msg.MessageAttributes) {
+		if !matchFilterPolicy(sub.GetFilterPolicy(), sub.GetFilterPolicyScope(), msg.MessageAttributes, msg.Message) {
 			continue
 		}
 
@@ -251,6 +183,12 @@ func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions
 			deliveryErr = s.deliverToHTTP(msg, sub, region)
 		case "lambda":
 			deliveryErr = s.deliverToLambda(msg, sub, region)
+		default:
+			logs.Warn("SNS: no delivery handler for protocol, message dropped",
+				logs.String("protocol", sub.Protocol),
+				logs.String("subscriptionArn", sub.SubscriptionArn),
+				logs.String("messageId", msg.MessageId))
+			continue
 		}
 
 		if deliveryErr != nil {
@@ -306,7 +244,10 @@ func (s *SNSService) deliverToDLQ(msg *snsstore.Message, sub *snsstore.Subscript
 		}
 	}
 
-	protocolMessage := extractProtocolMessage(msg, "sqs")
+	protocolMessage, err := extractProtocolMessage(msg, "sqs")
+	if err != nil {
+		return fmt.Errorf("extract protocol message for DLQ: %w", err)
+	}
 
 	payload := map[string]interface{}{
 		"Type":      "Notification",
@@ -392,7 +333,10 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		}
 	}
 
-	protocolMessage := extractProtocolMessage(msg, "sqs")
+	protocolMessage, err := extractProtocolMessage(msg, "sqs")
+	if err != nil {
+		return fmt.Errorf("extract protocol message for SQS: %w", err)
+	}
 
 	var body string
 	if sub.IsRawMessageDelivery() {
@@ -451,17 +395,26 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 }
 
 func (s *SNSService) deliverToHTTP(msg *snsstore.Message, sub *snsstore.Subscription, region string) error {
-	protocolMessage := extractProtocolMessage(msg, sub.Protocol)
-	payload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
-
-	if signature, certURL := s.signPayload(payload, region); signature != "" {
-		payload["Signature"] = signature
-		payload["SigningCertURL"] = certURL
+	protocolMessage, err := extractProtocolMessage(msg, sub.Protocol)
+	if err != nil {
+		return fmt.Errorf("extract protocol message for HTTP: %w", err)
 	}
 
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("marshal HTTP notification: %w", err)
+	var jsonData []byte
+	if sub.IsRawMessageDelivery() {
+		jsonData = []byte(protocolMessage)
+	} else {
+		payload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
+
+		if signature, certURL := s.signPayload(payload, region); signature != "" {
+			payload["Signature"] = signature
+			payload["SigningCertURL"] = certURL
+		}
+
+		jsonData, err = json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("marshal HTTP notification: %w", err)
+		}
 	}
 
 	req, err := http.NewRequest("POST", sub.Endpoint, bytes.NewBuffer(jsonData))
@@ -594,23 +547,32 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 		return fmt.Errorf("resource policy denied invocation of %s", functionARN)
 	}
 
-	protocolMessage := extractProtocolMessage(msg, "lambda")
-	snsPayload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
-
-	record := map[string]interface{}{
-		"EventSource":          "aws:sns",
-		"EventVersion":         "1.0",
-		"EventSubscriptionArn": sub.SubscriptionArn,
-		"Sns":                  snsPayload,
-	}
-
-	eventEnvelope := map[string]interface{}{
-		"Records": []interface{}{record},
-	}
-
-	jsonData, err := json.Marshal(eventEnvelope)
+	protocolMessage, err := extractProtocolMessage(msg, "lambda")
 	if err != nil {
-		return fmt.Errorf("marshal Lambda event envelope: %w", err)
+		return fmt.Errorf("extract protocol message for Lambda: %w", err)
+	}
+
+	var jsonData []byte
+	if sub.IsRawMessageDelivery() {
+		jsonData = []byte(protocolMessage)
+	} else {
+		snsPayload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
+
+		record := map[string]interface{}{
+			"EventSource":          "aws:sns",
+			"EventVersion":         "1.0",
+			"EventSubscriptionArn": sub.SubscriptionArn,
+			"Sns":                  snsPayload,
+		}
+
+		eventEnvelope := map[string]interface{}{
+			"Records": []interface{}{record},
+		}
+
+		jsonData, err = json.Marshal(eventEnvelope)
+		if err != nil {
+			return fmt.Errorf("marshal Lambda event envelope: %w", err)
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -618,7 +580,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 
 	functionName := sub.Endpoint
 	if _, _, err := lambdaInvoker.InvokeForGateway(ctx, functionName, jsonData); err != nil {
-		return fmt.Errorf("invoke Lambda %s: %w", functionName, err)
+		return fmt.Errorf("invoke Lambda %s (subscription %s, messageId %s): %w", functionName, sub.SubscriptionArn, msg.MessageId, err)
 	}
 
 	return nil
@@ -646,14 +608,16 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 
 	entryMaps := request.GetListParam(req.Parameters, "PublishBatchRequestEntries")
 	if len(entryMaps) == 0 {
-		return nil, awserrors.NewInvalidParameterException("PublishBatchRequestEntries is required")
+		return nil, awserrors.NewAWSError("EmptyBatchRequest", "Batch request does not contain any entries", 400)
 	}
-	if len(entryMaps) > 10 {
-		return nil, awserrors.NewInvalidParameterException("PublishBatchRequestEntries cannot exceed 10 entries")
+	if len(entryMaps) > maxBatchEntries {
+		return nil, ErrTooManyEntriesInBatch
 	}
 
 	successful := make([]map[string]interface{}, 0)
 	failed := make([]map[string]interface{}, 0)
+	seenIds := make(map[string]bool, len(entryMaps))
+	batchTotalSize := 0
 
 	subscriptions, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{})
 	if err != nil {
@@ -674,6 +638,11 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			continue
 		}
 
+		if seenIds[id] {
+			return nil, ErrBatchEntryIdsNotDistinct
+		}
+		seenIds[id] = true
+
 		message, _ := entryMap["Message"].(string)
 		if message == "" {
 			failed = append(failed, map[string]interface{}{
@@ -690,7 +659,17 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 		messageDeduplicationId, _ := entryMap["MessageDeduplicationId"].(string)
 		messageStructure, _ := entryMap["MessageStructure"].(string)
 
-		if topic.FifoTopic {
+		if err := validatePublishParams(topic, message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
+			failed = append(failed, map[string]interface{}{
+				"Id":          id,
+				"Code":        "InvalidParameter",
+				"Message":     err.Error(),
+				"SenderFault": true,
+			})
+			continue
+		}
+
+		if topic.IsFifoTopic() {
 			if messageGroupId == "" {
 				failed = append(failed, map[string]interface{}{
 					"Id":          id,
@@ -702,7 +681,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			}
 
 			if messageDeduplicationId == "" {
-				if topic.ContentBasedDeduplication {
+				if topic.IsContentBasedDeduplication() {
 					messageDeduplicationId = generateContentBasedDeduplicationId(message)
 				} else {
 					failed = append(failed, map[string]interface{}{
@@ -726,7 +705,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 
 		messageId := uuid.New().String()
 
-		if topic.FifoTopic && messageDeduplicationId != "" {
+		if topic.IsFifoTopic() && messageDeduplicationId != "" {
 			store.RecordDeduplication(topicArn, messageDeduplicationId, messageId)
 		}
 
@@ -740,7 +719,20 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			MessageDeduplicationId: messageDeduplicationId,
 		}
 
-		parseMessageAttributes(entryMap, msg)
+		if err := parseMessageAttributes(entryMap, msg); err != nil {
+			failed = append(failed, map[string]interface{}{
+				"Id":          id,
+				"Code":        "InvalidParameter",
+				"Message":     err.Error(),
+				"SenderFault": true,
+			})
+			continue
+		}
+
+		batchTotalSize += messageEntrySize(message, subject, msg.MessageAttributes)
+		if batchTotalSize > maxBatchTotalSize {
+			return nil, awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Total batch request size %d exceeds maximum %d", batchTotalSize, maxBatchTotalSize), 400)
+		}
 
 		msg.PublishedTimestamp = time.Now().UTC()
 		msg.ReceivedTimestamp = time.Now().UTC()
@@ -769,6 +761,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 					MessageID:         messageId,
 					Message:           message,
 					Subject:           subject,
+					MessageStructure:  messageStructure,
 					MessageGroupId:    messageGroupId,
 					MessageAttributes: msgAttrs,
 				}
@@ -786,7 +779,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			"MessageId": messageId,
 		}
 
-		if topic.FifoTopic {
+		if topic.IsFifoTopic() {
 			sequenceNumber := store.GetNextSequenceNumber(topicArn, messageGroupId)
 			result["SequenceNumber"] = sequenceNumber
 		}

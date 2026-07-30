@@ -2,12 +2,27 @@ package sns
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
+
+// validActionNames lists the SNS action names accepted by AddPermission.
+var validActionNames = map[string]bool{
+	"Publish":                  true,
+	"GetTopicAttributes":       true,
+	"SetTopicAttributes":       true,
+	"Subscribe":                true,
+	"ListSubscriptionsByTopic": true,
+	"DeleteTopic":              true,
+	"Receive":                  true,
+	"AddPermission":            true,
+	"RemovePermission":         true,
+}
 
 // GetDataProtectionPolicy retrieves the data protection policy for the specified SNS topic.
 func (s *SNSService) GetDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -50,6 +65,11 @@ func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reques
 	policy := request.GetParamLowerFirst(req.Parameters, "DataProtectionPolicy")
 	if policy == "" {
 		return nil, awserrors.NewInvalidParameterException("DataProtectionPolicy is required")
+	}
+
+	var policyCheck interface{}
+	if err := json.Unmarshal([]byte(policy), &policyCheck); err != nil {
+		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid DataProtectionPolicy: not valid JSON: %s", err.Error()))
 	}
 
 	store, err := s.store(reqCtx)
@@ -105,6 +125,23 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 	}
 	if len(actionNames) == 0 {
 		return nil, awserrors.NewInvalidParameterException("ActionName is required")
+	}
+
+	for _, id := range awsAccountIds {
+		if len(id) != 12 {
+			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid AWS account ID %q: must be 12 digits", id))
+		}
+		for _, c := range id {
+			if c < '0' || c > '9' {
+				return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid AWS account ID %q: must be numeric", id))
+			}
+		}
+	}
+
+	for _, action := range actionNames {
+		if !validActionNames[action] {
+			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid action name %q", action))
+		}
 	}
 
 	permission := &snsstore.Permission{

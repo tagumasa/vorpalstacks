@@ -14,12 +14,22 @@ func numAttr(v string) *snsstore.MessageAttribute {
 	return &snsstore.MessageAttribute{Type: "Number", StringValue: v}
 }
 
+// matchAttr is a shorthand for MessageAttributes-scope matching with no body.
+func matchAttr(policy string, attrs map[string]*snsstore.MessageAttribute) bool {
+	return matchFilterPolicy(policy, "MessageAttributes", attrs, "")
+}
+
+// matchBody is a shorthand for MessageBody-scope matching.
+func matchBody(policy string, body string) bool {
+	return matchFilterPolicy(policy, "MessageBody", nil, body)
+}
+
 func TestMatchFilterPolicy_EmptyPolicyMatchesAll(t *testing.T) {
 	attrs := map[string]*snsstore.MessageAttribute{"event": strAttr("click")}
-	if !matchFilterPolicy("", attrs) {
+	if !matchAttr("", attrs) {
 		t.Error("empty policy should match all messages")
 	}
-	if !matchFilterPolicy("{}", attrs) {
+	if !matchAttr("{}", attrs) {
 		t.Error("{} policy should match all messages")
 	}
 }
@@ -29,10 +39,10 @@ func TestMatchFilterPolicy_ExactMatch(t *testing.T) {
 	matchAttrs := map[string]*snsstore.MessageAttribute{"event": strAttr("order_created")}
 	nomatchAttrs := map[string]*snsstore.MessageAttribute{"event": strAttr("order_deleted")}
 
-	if !matchFilterPolicy(policy, matchAttrs) {
+	if !matchAttr(policy, matchAttrs) {
 		t.Error("should match when attribute equals policy value")
 	}
-	if matchFilterPolicy(policy, nomatchAttrs) {
+	if matchAttr(policy, nomatchAttrs) {
 		t.Error("should not match when attribute differs")
 	}
 }
@@ -43,13 +53,13 @@ func TestMatchFilterPolicy_OrMatch(t *testing.T) {
 	match2 := map[string]*snsstore.MessageAttribute{"event": strAttr("order_updated")}
 	nomatch := map[string]*snsstore.MessageAttribute{"event": strAttr("order_deleted")}
 
-	if !matchFilterPolicy(policy, match1) {
+	if !matchAttr(policy, match1) {
 		t.Error("should match first value in OR")
 	}
-	if !matchFilterPolicy(policy, match2) {
+	if !matchAttr(policy, match2) {
 		t.Error("should match second value in OR")
 	}
-	if matchFilterPolicy(policy, nomatch) {
+	if matchAttr(policy, nomatch) {
 		t.Error("should not match when value not in list")
 	}
 }
@@ -64,10 +74,10 @@ func TestMatchFilterPolicy_AndAcrossKeys(t *testing.T) {
 		"event": strAttr("order_created"),
 	}
 
-	if !matchFilterPolicy(policy, match) {
+	if !matchAttr(policy, match) {
 		t.Error("should match when all keys match")
 	}
-	if matchFilterPolicy(policy, missingStore) {
+	if matchAttr(policy, missingStore) {
 		t.Error("should not match when one key is missing")
 	}
 }
@@ -77,10 +87,10 @@ func TestMatchFilterPolicy_Prefix(t *testing.T) {
 	match := map[string]*snsstore.MessageAttribute{"event": strAttr("ord-12345")}
 	nomatch := map[string]*snsstore.MessageAttribute{"event": strAttr("click")}
 
-	if !matchFilterPolicy(policy, match) {
+	if !matchAttr(policy, match) {
 		t.Error("prefix should match")
 	}
-	if matchFilterPolicy(policy, nomatch) {
+	if matchAttr(policy, nomatch) {
 		t.Error("prefix should not match non-matching value")
 	}
 }
@@ -90,10 +100,10 @@ func TestMatchFilterPolicy_AnythingBut(t *testing.T) {
 	match := map[string]*snsstore.MessageAttribute{"event": strAttr("production")}
 	nomatch := map[string]*snsstore.MessageAttribute{"event": strAttr("test")}
 
-	if !matchFilterPolicy(policy, match) {
+	if !matchAttr(policy, match) {
 		t.Error("anything-but should match non-excluded value")
 	}
-	if matchFilterPolicy(policy, nomatch) {
+	if matchAttr(policy, nomatch) {
 		t.Error("anything-but should not match excluded value")
 	}
 }
@@ -105,16 +115,16 @@ func TestMatchFilterPolicy_NumericRange(t *testing.T) {
 	nomatchHigh := map[string]*snsstore.MessageAttribute{"price": numAttr("100")}
 	nomatchNeg := map[string]*snsstore.MessageAttribute{"price": numAttr("-1")}
 
-	if !matchFilterPolicy(policy, matchLow) {
+	if !matchAttr(policy, matchLow) {
 		t.Error("50 should be in range [0, 100)")
 	}
-	if !matchFilterPolicy(policy, matchZero) {
+	if !matchAttr(policy, matchZero) {
 		t.Error("0 should be in range [0, 100)")
 	}
-	if matchFilterPolicy(policy, nomatchHigh) {
+	if matchAttr(policy, nomatchHigh) {
 		t.Error("100 should not be in range [0, 100)")
 	}
-	if matchFilterPolicy(policy, nomatchNeg) {
+	if matchAttr(policy, nomatchNeg) {
 		t.Error("-1 should not be in range [0, 100)")
 	}
 }
@@ -126,16 +136,16 @@ func TestMatchFilterPolicy_Exists(t *testing.T) {
 	withAttr := map[string]*snsstore.MessageAttribute{"special": strAttr("yes")}
 	withoutAttr := map[string]*snsstore.MessageAttribute{"other": strAttr("value")}
 
-	if !matchFilterPolicy(policyExists, withAttr) {
+	if !matchAttr(policyExists, withAttr) {
 		t.Error("exists:true should match when attribute present")
 	}
-	if matchFilterPolicy(policyExists, withoutAttr) {
+	if matchAttr(policyExists, withoutAttr) {
 		t.Error("exists:true should not match when attribute absent")
 	}
-	if matchFilterPolicy(policyNotExists, withAttr) {
+	if matchAttr(policyNotExists, withAttr) {
 		t.Error("exists:false should not match when attribute present")
 	}
-	if !matchFilterPolicy(policyNotExists, withoutAttr) {
+	if !matchAttr(policyNotExists, withoutAttr) {
 		t.Error("exists:false should match when attribute absent")
 	}
 }
@@ -144,7 +154,7 @@ func TestMatchFilterPolicy_MissingAttributeFails(t *testing.T) {
 	policy := `{"event": ["order_created"]}`
 	emptyAttrs := map[string]*snsstore.MessageAttribute{}
 
-	if matchFilterPolicy(policy, emptyAttrs) {
+	if matchAttr(policy, emptyAttrs) {
 		t.Error("missing attribute should fail match (unless exists:false)")
 	}
 }
@@ -153,14 +163,14 @@ func TestMatchFilterPolicy_AnythingBut_AbsentAttribute(t *testing.T) {
 	policy := `{"event": [{"anything-but": ["test"]}]}`
 	emptyAttrs := map[string]*snsstore.MessageAttribute{}
 
-	if matchFilterPolicy(policy, emptyAttrs) {
+	if matchAttr(policy, emptyAttrs) {
 		t.Error("anything-but should NOT match when attribute is absent")
 	}
 }
 
 func TestMatchFilterPolicy_InvalidJSON_FailClosed(t *testing.T) {
 	attrs := map[string]*snsstore.MessageAttribute{"event": strAttr("click")}
-	if matchFilterPolicy("not valid json", attrs) {
+	if matchAttr("not valid json", attrs) {
 		t.Error("invalid JSON policy should fail closed (no match)")
 	}
 }
@@ -171,13 +181,45 @@ func TestMatchFilterPolicy_AnythingBut_Array(t *testing.T) {
 	nomatch1 := map[string]*snsstore.MessageAttribute{"event": strAttr("test")}
 	nomatch2 := map[string]*snsstore.MessageAttribute{"event": strAttr("debug")}
 
-	if !matchFilterPolicy(policy, match) {
+	if !matchAttr(policy, match) {
 		t.Error("anything-but array should match non-excluded value")
 	}
-	if matchFilterPolicy(policy, nomatch1) {
+	if matchAttr(policy, nomatch1) {
 		t.Error("anything-but array should not match excluded 'test'")
 	}
-	if matchFilterPolicy(policy, nomatch2) {
+	if matchAttr(policy, nomatch2) {
 		t.Error("anything-but array should not match excluded 'debug'")
+	}
+}
+
+func TestMatchFilterPolicy_MessageBodyScope(t *testing.T) {
+	policy := `{"event_type": ["order_created"]}`
+
+	if !matchBody(policy, `{"event_type": "order_created", "data": {"id": 42}}`) {
+		t.Error("MessageBody scope should match when body property matches")
+	}
+	if matchBody(policy, `{"event_type": "order_deleted"}`) {
+		t.Error("MessageBody scope should not match when body property differs")
+	}
+	if matchBody(policy, `{"other": "value"}`) {
+		t.Error("MessageBody scope should not match when body property is absent")
+	}
+}
+
+func TestMatchFilterPolicy_MessageBodyScope_Numeric(t *testing.T) {
+	policy := `{"quantity": [{"numeric": [">=", 10]}]}`
+
+	if !matchBody(policy, `{"quantity": 50}`) {
+		t.Error("MessageBody numeric 50 should be >= 10")
+	}
+	if matchBody(policy, `{"quantity": 5}`) {
+		t.Error("MessageBody numeric 5 should not be >= 10")
+	}
+}
+
+func TestMatchFilterPolicy_MessageBodyScope_InvalidJSON(t *testing.T) {
+	policy := `{"event": ["test"]}`
+	if matchBody(policy, "not valid json") {
+		t.Error("MessageBody scope with invalid JSON body should fail closed")
 	}
 }

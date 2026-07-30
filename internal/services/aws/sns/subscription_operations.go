@@ -1,17 +1,34 @@
 package sns
 
 import (
+	"bytes"
 	"context"
 	"crypto/subtle"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
+
+	"github.com/google/uuid"
 )
+
+// autoConfirmedProtocols lists protocols that vorpalstacks auto-confirms at
+// Subscribe time, matching AWS behaviour. These subscriptions become
+// immediately active without a confirmation round-trip.
+var autoConfirmedProtocols = map[string]bool{
+	"sqs":         true,
+	"lambda":      true,
+	"application": true,
+}
 
 // Subscribe creates a subscription to an SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_Subscribe.html
@@ -57,13 +74,15 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	needsConfirmation := protocol == "email" || protocol == "email-json" || protocol == "http" || protocol == "https" || protocol == "sms"
+	needsConfirmation := !autoConfirmedProtocols[protocol]
 
 	returnSubscriptionArn := request.GetParamLowerFirst(req.Parameters, "ReturnSubscriptionArn")
 	if !needsConfirmation {
 		if err := store.AutoConfirmSubscription(created); err != nil {
 			return nil, err
 		}
+	} else if protocol == "http" || protocol == "https" {
+		s.sendSubscriptionConfirmation(created, reqCtx.GetRegion())
 	}
 
 	subArn := created.SubscriptionArn
@@ -246,6 +265,61 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		nextToken = result.NextMarker
 	}
 	return pagination.BuildListResponse("Subscriptions", subs, nextToken), nil
+}
+
+// sendSubscriptionConfirmation sends a SubscriptionConfirmation message
+// to an HTTP/HTTPS endpoint. This is best-effort: if the endpoint is
+// unreachable the subscription simply stays in pending state until the
+// subscriber retries.
+func (s *SNSService) sendSubscriptionConfirmation(sub *snsstore.Subscription, region string) {
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	payload := map[string]interface{}{
+		"Type":         "SubscriptionConfirmation",
+		"MessageId":    uuid.New().String(),
+		"Token":        sub.ConfirmationToken,
+		"TopicArn":     sub.TopicArn,
+		"Message":      fmt.Sprintf("You have chosen to subscribe to the topic %s.\nTo confirm the subscription, visit the SubscribeURL included in this message.", sub.TopicArn),
+		"SubscribeURL": fmt.Sprintf("https://sns.%s.amazonaws.com/?Action=ConfirmSubscription&TopicArn=%s&Token=%s", region, sub.TopicArn, sub.ConfirmationToken),
+		"Timestamp":    time.Now().UTC().Format(time.RFC3339),
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		logs.Warn("SNS: failed to marshal subscription confirmation",
+			logs.String("subscriptionArn", sub.SubscriptionArn),
+			logs.Err(err))
+		return
+	}
+
+	req, err := http.NewRequest("POST", sub.Endpoint, bytes.NewReader(body))
+	if err != nil {
+		logs.Warn("SNS: failed to create confirmation request",
+			logs.String("endpoint", sub.Endpoint),
+			logs.Err(err))
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-amz-sns-message-type", "SubscriptionConfirmation")
+	req.Header.Set("x-amz-sns-message-id", payload["MessageId"].(string))
+	req.Header.Set("x-amz-sns-topic-arn", sub.TopicArn)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		logs.Warn("SNS: failed to send subscription confirmation",
+			logs.String("endpoint", sub.Endpoint),
+			logs.String("subscriptionArn", sub.SubscriptionArn),
+			logs.Err(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	logs.Debug("SNS: subscription confirmation sent",
+		logs.String("endpoint", sub.Endpoint),
+		logs.Int("status", resp.StatusCode))
 }
 
 func buildSubscriptionList(items []*snsstore.Subscription) []map[string]interface{} {

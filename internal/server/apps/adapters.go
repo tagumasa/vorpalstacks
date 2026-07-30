@@ -117,10 +117,20 @@ func (a *sqsInvokerAdapter) DeleteMessage(_ context.Context, queueURL string, re
 	return a.store.DeleteMessage(queueURL, receiptHandle)
 }
 
+// snsStoreForInvoker is the minimal store interface needed by the SNS invoker
+// adapter. It intentionally includes Put (from BaseStore) because the event
+// bus needs to persist delivery metadata — this does not belong on the public
+// SNSStoreInterface.
+type snsStoreForInvoker interface {
+	GetTopic(topicArn string) (*storesns.Topic, error)
+	ListSubscriptionsByTopic(topicArn string, opts storecommon.ListOptions) (*storecommon.ListResult[storesns.Subscription], error)
+	Put(key string, data interface{}) error
+}
+
 // snsInvokerAdapter adapts the SNS concrete store and publisher to the
 // eventbus.SNSInvoker interface.
 type snsInvokerAdapter struct {
-	store     storesns.SNSStoreInterface
+	store     snsStoreForInvoker
 	publisher snsPublisher
 }
 

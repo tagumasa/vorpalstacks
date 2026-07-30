@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -71,6 +72,18 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 func (h *AdminHandler) CreateTopic(ctx context.Context, req *connect.Request[pb.CreateTopicInput]) (*connect.Response[pb.CreateTopicResponse], error) {
 	if req.Msg.GetName() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+	if len(req.Msg.GetName()) > 256 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("topic name must not exceed 256 characters"))
+	}
+	baseName := req.Msg.GetName()
+	if strings.HasSuffix(baseName, ".fifo") {
+		baseName = strings.TrimSuffix(baseName, ".fifo")
+	}
+	for _, c := range baseName {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("topic name can only contain alphanumeric characters, hyphens, and underscores"))
+		}
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())

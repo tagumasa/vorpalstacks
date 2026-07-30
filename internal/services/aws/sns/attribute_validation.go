@@ -3,10 +3,15 @@ package sns
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 )
+
+// kmsKeyIDRegex validates a bare KMS key ID in UUID hex format
+// (8-4-4-4-12 lowercase hex digits, case-insensitive).
+var kmsKeyIDRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 // validateSubscriptionAttribute validates well-known subscription attributes
 // that have structured values. Unknown attributes pass through without
@@ -21,6 +26,50 @@ func validateSubscriptionAttribute(name, value string) error {
 		return validateRedrivePolicy(value)
 	}
 	return nil
+}
+
+// validateTopicAttribute validates well-known topic attributes that have
+// structured values. Unknown attributes pass through without validation
+// (forward-compatible with future AWS additions).
+func validateTopicAttribute(name, value string) error {
+	switch name {
+	case "DeliveryPolicy":
+		return validateJSONAttribute(name, value)
+	case "Policy":
+		return validateJSONAttribute(name, value)
+	case "DisplayName":
+		if len(value) > 100 {
+			return awserrors.NewInvalidParameterException(fmt.Sprintf("DisplayName too long: %d characters (maximum 100)", len(value)))
+		}
+	case "KmsMasterKeyId":
+		if value != "" && !strings.HasPrefix(value, "arn:") && !isValidKmsKeyId(value) {
+			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid KmsMasterKeyId: %s", value))
+		}
+	}
+	return nil
+}
+
+// validateJSONAttribute validates that the value is valid JSON.
+func validateJSONAttribute(name, value string) error {
+	if value == "" {
+		return nil
+	}
+	var v interface{}
+	if err := json.Unmarshal([]byte(value), &v); err != nil {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid %s: not valid JSON: %s", name, err.Error()))
+	}
+	return nil
+}
+
+// isValidKmsKeyId checks whether a value is a valid bare KMS key identifier:
+// a UUID-format key ID or an alias name (prefixed with "alias/").
+// Key ARNs and alias ARNs are handled by the caller via the "arn:" prefix
+// check.
+func isValidKmsKeyId(value string) bool {
+	if strings.HasPrefix(value, "alias/") {
+		return len(value) > len("alias/")
+	}
+	return kmsKeyIDRegex.MatchString(value)
 }
 
 // validateFilterPolicy validates the JSON structure of a subscription filter
@@ -86,14 +135,14 @@ func validateFilterPolicyValue(raw interface{}) error {
 }
 
 // validateFilterPolicyScope validates the FilterPolicyScope attribute.
-// AWS accepts only "MessageAttributes" or "MessageBodyAttributes".
+// AWS accepts only "MessageAttributes" (default) or "MessageBody".
 func validateFilterPolicyScope(value string) error {
 	switch value {
-	case "MessageAttributes", "MessageBodyAttributes":
+	case "MessageAttributes", "MessageBody":
 		return nil
 	default:
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Invalid FilterPolicyScope: %s. Valid values: MessageAttributes, MessageBodyAttributes", value))
+			fmt.Sprintf("Invalid FilterPolicyScope: %s. Valid values: MessageAttributes, MessageBody", value))
 	}
 }
 

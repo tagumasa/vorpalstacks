@@ -53,8 +53,8 @@ func TestValidateFilterPolicy_TooManyAttributes(t *testing.T) {
 }
 
 func TestValidateFilterPolicyScope(t *testing.T) {
-	valid := []string{"MessageAttributes", "MessageBodyAttributes"}
-	invalid := []string{"", "Invalid", "messageAttributes", "messageattributes"}
+	valid := []string{"MessageAttributes", "MessageBody"}
+	invalid := []string{"", "Invalid", "messageAttributes", "messageattributes", "MessageBodyAttributes"}
 
 	for _, v := range valid {
 		if err := validateFilterPolicyScope(v); err != nil {
