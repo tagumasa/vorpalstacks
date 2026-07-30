@@ -268,6 +268,9 @@ func (a *App) initTimestreamQuery(st *serviceState) error {
 func (a *App) initTimestreamWrite(st *serviceState) error {
 	timestreamWriteService := svctimestreamwrite.NewTimestreamWriteService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamWriteService.SetStorageManager(a.server.StorageManager())
+	if eb := a.server.EventBus(); eb != nil {
+		timestreamWriteService.SetS3Invoker(eb.S3Invoker())
+	}
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
 	st.timestreamWriteService = timestreamWriteService
 	a.addShutdown("timestreamwrite", func(ctx context.Context) error {

@@ -5,6 +5,7 @@
 package timestreamwrite
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -12,6 +13,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -41,20 +43,31 @@ type TimestreamWriteService struct {
 	stores         sync.Map // region → *tsWriteStores
 	batchWg        sync.WaitGroup
 	storageManager *storage.RegionStorageManager
+	s3Invoker      eventbus.S3Invoker
+	batchCtx       context.Context
+	batchCancel    context.CancelFunc
 }
 
 // NewService creates a new Timestream Write service instance.
 func NewTimestreamWriteService(accountID, serverHost, dataPath string) *TimestreamWriteService {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &TimestreamWriteService{
-		accountID:  accountID,
-		serverHost: serverHost,
-		dataPath:   dataPath,
+		accountID:   accountID,
+		serverHost:  serverHost,
+		dataPath:    dataPath,
+		batchCtx:    ctx,
+		batchCancel: cancel,
 	}
 }
 
 // SetStorageManager injects the region storage manager for lazy store creation.
 func (s *TimestreamWriteService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetS3Invoker injects the S3 reader for batch load tasks that load data from S3.
+func (s *TimestreamWriteService) SetS3Invoker(invoker eventbus.S3Invoker) {
+	s.s3Invoker = invoker
 }
 
 func (s *TimestreamWriteService) createStoreGroup(region string) (*tsWriteStores, error) {
@@ -149,7 +162,6 @@ func (s *TimestreamWriteService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-write", "DescribeBatchLoadTask", s.DescribeBatchLoadTask)
 	d.RegisterHandlerForService("timestream-write", "ListBatchLoadTasks", s.ListBatchLoadTasks)
 	d.RegisterHandlerForService("timestream-write", "ResumeBatchLoadTask", s.ResumeBatchLoadTask)
-	d.RegisterHandlerForService("timestream-write", "DeleteBatchLoadTask", s.DeleteBatchLoadTask)
 }
 
 func (s *TimestreamWriteService) mapStoreError(err error) error {
@@ -165,5 +177,8 @@ func (s *TimestreamWriteService) mapStoreError(err error) error {
 
 // Close waits for any in-flight batch load simulation goroutines to finish.
 func (s *TimestreamWriteService) Close() {
+	if s.batchCancel != nil {
+		s.batchCancel()
+	}
 	s.batchWg.Wait()
 }

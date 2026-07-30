@@ -10,8 +10,13 @@ import (
 var (
 	// ErrResourceNotFound is returned when the specified resource does not exist.
 	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFoundException", "The requested resource could not be found.", http.StatusNotFound)
-	// ErrResourceAlreadyExists is returned when attempting to create a resource that already exists.
-	ErrResourceAlreadyExists = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", http.StatusConflict)
+	// ErrConflictException is returned when attempting to create a resource that already exists.
+	// Smithy declares ConflictException (HTTP 409) for CreateDatabase, CreateTable, and
+	// CreateBatchLoadTask. ResourceAlreadyExistsException does not exist in the SDK.
+	ErrConflictException = awserrors.NewAWSError("ConflictException", "The resource already exists.", http.StatusConflict)
+	// ErrRejectedRecordsException is returned when WriteRecords rejects all records.
+	// Smithy declares RejectedRecordsException (HTTP 419) for WriteRecords.
+	ErrRejectedRecordsException = awserrors.NewAWSError("RejectedRecordsException", "One or more records were rejected.", 419)
 	// ErrValidationException is returned when validation fails.
 	ErrValidationException = awserrors.NewAWSError("ValidationException", "The input fails to satisfy the constraints specified by an AWS service.", http.StatusBadRequest)
 	// ErrAccessDenied is returned when access is denied.
@@ -29,8 +34,8 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: tsstore.ErrDatabaseNotFound, AWS: ErrResourceNotFound},
 	{Store: tsstore.ErrTableNotFound, AWS: ErrResourceNotFound},
 	{Store: tsstore.ErrBatchLoadTaskNotFound, AWS: ErrResourceNotFound},
-	{Store: tsstore.ErrDatabaseAlreadyExists, AWS: ErrResourceAlreadyExists},
-	{Store: tsstore.ErrTableAlreadyExists, AWS: ErrResourceAlreadyExists},
-	{Store: tsstore.ErrBatchLoadTaskAlreadyExists, AWS: ErrResourceAlreadyExists},
+	{Store: tsstore.ErrDatabaseAlreadyExists, AWS: ErrConflictException},
+	{Store: tsstore.ErrTableAlreadyExists, AWS: ErrConflictException},
+	{Store: tsstore.ErrBatchLoadTaskAlreadyExists, AWS: ErrConflictException},
 	{Store: tsstore.ErrDatabaseNotEmpty, AWS: ErrValidationException},
 }

@@ -38,15 +38,19 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 	schema := s.parseSchema(req.Parameters["Schema"])
+	magneticStoreWriteProperties, err := s.parseMagneticStoreWriteProperties(req.Parameters["MagneticStoreWriteProperties"])
+	if err != nil {
+		return nil, err
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := st.tableStore.CreateTable(databaseName, tableName, retentionProperties, schema)
+	table, err := st.tableStore.CreateTable(databaseName, tableName, retentionProperties, schema, magneticStoreWriteProperties)
 	if err != nil {
 		if err == tsstore.ErrTableAlreadyExists {
-			return nil, ErrResourceAlreadyExists
+			return nil, ErrConflictException
 		}
 		if err == tsstore.ErrDatabaseNotFound {
 			return nil, ErrResourceNotFound
@@ -154,12 +158,16 @@ func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 	schema := s.parseSchema(req.Parameters["Schema"])
+	magneticStoreWriteProperties, err := s.parseMagneticStoreWriteProperties(req.Parameters["MagneticStoreWriteProperties"])
+	if err != nil {
+		return nil, err
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := st.tableStore.UpdateTable(databaseName, tableName, retentionProperties, schema)
+	table, err := st.tableStore.UpdateTable(databaseName, tableName, retentionProperties, schema, magneticStoreWriteProperties)
 	if err != nil {
 		if err == tsstore.ErrTableNotFound {
 			return nil, ErrResourceNotFound
@@ -294,6 +302,61 @@ func (s *TimestreamWriteService) parseSchema(data interface{}) *tsstore.Schema {
 	return schema
 }
 
+// parseMagneticStoreWriteProperties parses the MagneticStoreWriteProperties
+// parameter from a CreateTable/UpdateTable request. EnableMagneticStoreWrites
+// is REQUIRED by Smithy when MagneticStoreWriteProperties is provided.
+func (s *TimestreamWriteService) parseMagneticStoreWriteProperties(data interface{}) (*tsstore.MagneticStoreWriteProperties, error) {
+	if data == nil {
+		return nil, nil
+	}
+
+	mMap, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+
+	result := &tsstore.MagneticStoreWriteProperties{}
+
+	enableRaw, hasEnable := mMap["EnableMagneticStoreWrites"]
+	if !hasEnable {
+		enableRaw, hasEnable = mMap["enableMagneticStoreWrites"]
+	}
+	if !hasEnable {
+		return nil, ErrValidationException
+	}
+	if enable, ok := enableRaw.(bool); ok {
+		result.EnableMagneticStoreWrites = enable
+	} else {
+		return nil, ErrValidationException
+	}
+
+	if rdlRaw, ok := mMap["MagneticStoreRejectedDataLocation"]; ok {
+		if rdlMap, ok := rdlRaw.(map[string]interface{}); ok {
+			result.MagneticStoreRejectedDataLocation = &tsstore.MagneticStoreRejectedDataLocation{}
+			if s3Raw, ok := rdlMap["S3Configuration"]; ok {
+				if s3Map, ok := s3Raw.(map[string]interface{}); ok {
+					s3Config := &tsstore.MagneticStoreWriteS3Configuration{}
+					if bucket, ok := s3Map["BucketName"].(string); ok {
+						s3Config.BucketName = bucket
+					}
+					if prefix, ok := s3Map["ObjectKeyPrefix"].(string); ok {
+						s3Config.ObjectKeyPrefix = prefix
+					}
+					if enc, ok := s3Map["EncryptionOption"].(string); ok {
+						s3Config.EncryptionOption = enc
+					}
+					if kms, ok := s3Map["KmsKeyId"].(string); ok {
+						s3Config.KmsKeyId = kms
+					}
+					result.MagneticStoreRejectedDataLocation.S3Configuration = s3Config
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
 func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":             table.ARN,
@@ -328,6 +391,33 @@ func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags 
 		response["Schema"] = map[string]interface{}{
 			"CompositePartitionKey": cpk,
 		}
+	}
+
+	if table.MagneticStoreWriteProperties != nil {
+		mswp := map[string]interface{}{
+			"EnableMagneticStoreWrites": table.MagneticStoreWriteProperties.EnableMagneticStoreWrites,
+		}
+		if rdl := table.MagneticStoreWriteProperties.MagneticStoreRejectedDataLocation; rdl != nil {
+			rdlMap := map[string]interface{}{}
+			if s3 := rdl.S3Configuration; s3 != nil {
+				s3Map := map[string]interface{}{}
+				if s3.BucketName != "" {
+					s3Map["BucketName"] = s3.BucketName
+				}
+				if s3.ObjectKeyPrefix != "" {
+					s3Map["ObjectKeyPrefix"] = s3.ObjectKeyPrefix
+				}
+				if s3.EncryptionOption != "" {
+					s3Map["EncryptionOption"] = s3.EncryptionOption
+				}
+				if s3.KmsKeyId != "" {
+					s3Map["KmsKeyId"] = s3.KmsKeyId
+				}
+				rdlMap["S3Configuration"] = s3Map
+			}
+			mswp["MagneticStoreRejectedDataLocation"] = rdlMap
+		}
+		response["MagneticStoreWriteProperties"] = mswp
 	}
 
 	if len(tags) > 0 {

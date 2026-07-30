@@ -15,14 +15,15 @@ type Database struct {
 
 // Table represents an Amazon Timestream table.
 type Table struct {
-	TableName           string               `json:"tableName"`
-	DatabaseName        string               `json:"databaseName"`
-	ARN                 string               `json:"arn"`
-	TableStatus         TableStatus          `json:"tableStatus"`
-	RetentionProperties *RetentionProperties `json:"retentionProperties,omitempty"`
-	Schema              *Schema              `json:"schema,omitempty"`
-	CreationTime        time.Time            `json:"creationTime"`
-	LastUpdatedTime     time.Time            `json:"lastUpdatedTime"`
+	TableName                    string                        `json:"tableName"`
+	DatabaseName                 string                        `json:"databaseName"`
+	ARN                          string                        `json:"arn"`
+	TableStatus                  TableStatus                   `json:"tableStatus"`
+	RetentionProperties          *RetentionProperties          `json:"retentionProperties,omitempty"`
+	Schema                       *Schema                       `json:"schema,omitempty"`
+	MagneticStoreWriteProperties *MagneticStoreWriteProperties `json:"magneticStoreWriteProperties,omitempty"`
+	CreationTime                 time.Time                     `json:"creationTime"`
+	LastUpdatedTime              time.Time                     `json:"lastUpdatedTime"`
 }
 
 // TableStatus represents the status of a Timestream table.
@@ -44,6 +45,27 @@ type RetentionProperties struct {
 // Schema defines the schema for a Timestream table.
 type Schema struct {
 	CompositePartitionKey []PartitionKey `json:"compositePartitionKey,omitempty"`
+}
+
+// MagneticStoreWriteProperties configures magnetic store writes for a table.
+type MagneticStoreWriteProperties struct {
+	EnableMagneticStoreWrites         bool                               `json:"enableMagneticStoreWrites"`
+	MagneticStoreRejectedDataLocation *MagneticStoreRejectedDataLocation `json:"magneticStoreRejectedDataLocation,omitempty"`
+}
+
+// MagneticStoreRejectedDataLocation defines where to write error reports for
+// records rejected during magnetic store writes.
+type MagneticStoreRejectedDataLocation struct {
+	S3Configuration *MagneticStoreWriteS3Configuration `json:"s3Configuration,omitempty"`
+}
+
+// MagneticStoreWriteS3Configuration defines the S3 location configuration for
+// magnetic store rejected data reports.
+type MagneticStoreWriteS3Configuration struct {
+	BucketName       string `json:"bucketName,omitempty"`
+	ObjectKeyPrefix  string `json:"objectKeyPrefix,omitempty"`
+	EncryptionOption string `json:"encryptionOption,omitempty"`
+	KmsKeyId         string `json:"kmsKeyId,omitempty"`
 }
 
 // PartitionKey defines a partition key for a Timestream table.
@@ -400,6 +422,8 @@ type BatchLoadTaskDescription struct {
 	DataModelConfiguration  *DataModelConfiguration  `json:"dataModelConfiguration,omitempty"`
 	ReportConfiguration     *ReportConfiguration     `json:"reportConfiguration,omitempty"`
 	ProgressReport          *BatchLoadProgressReport `json:"progressReport,omitempty"`
+	ProcessedS3Keys         []string                 `json:"processedS3Keys,omitempty"`
+	ClientToken             string                   `json:"clientToken,omitempty"`
 }
 
 // BatchLoadProgressReport contains progress information for a batch load task.

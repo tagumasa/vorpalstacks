@@ -14,6 +14,19 @@ import (
 
 var timestreamNameRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_.-]{2,255}$`)
 
+// batchLoadTaskIdRegex validates BatchLoadTaskId per Smithy: ^[A-Z0-9]+$ (3-32 chars).
+var batchLoadTaskIdRegex = regexp.MustCompile(`^[A-Z0-9]{3,32}$`)
+
+// validateKmsKeyId checks that KmsKeyId is within Smithy StringValue2048 bounds (1-2048).
+func validateKmsKeyId(kmsKeyId string) bool {
+	return len(kmsKeyId) >= 1 && len(kmsKeyId) <= 2048
+}
+
+// validateClientToken checks that ClientToken is within Smithy ClientRequestToken bounds (1-64).
+func validateClientToken(token string) bool {
+	return len(token) >= 1 && len(token) <= 64
+}
+
 func isValidTimestreamName(name string) bool {
 	return timestreamNameRegex.MatchString(name)
 }
@@ -42,6 +55,10 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 	}
 
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
+	// L2: Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
+	if kmsKeyID != "" && !validateKmsKeyId(kmsKeyID) {
+		return nil, ErrValidationException
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
@@ -50,7 +67,7 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 	db, err := st.store.CreateDatabase(databaseName, kmsKeyID)
 	if err != nil {
 		if err == tsstore.ErrDatabaseAlreadyExists {
-			return nil, ErrResourceAlreadyExists
+			return nil, ErrConflictException
 		}
 		return nil, s.mapStoreError(err)
 	}
@@ -138,6 +155,10 @@ func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *req
 
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
 	if kmsKeyID == "" {
+		return nil, ErrValidationException
+	}
+	// L2: Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
+	if !validateKmsKeyId(kmsKeyID) {
 		return nil, ErrValidationException
 	}
 

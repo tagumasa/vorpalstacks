@@ -212,7 +212,7 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 		_, err = tc.writeClient.CreateDatabase(tc.ctx, &timestreamwrite.CreateDatabaseInput{
 			DatabaseName: aws.String(dupDBName),
 		})
-		return AssertErrorContains(err, "ResourceAlreadyExistsException")
+		return AssertErrorContains(err, "ConflictException")
 	}))
 
 	return results

@@ -128,7 +128,7 @@ func (r *TestRunner) runTimestreamBatchLoadTests(tc *tsTestContext) []TestResult
 
 	results = append(results, r.RunTest("timestream", "DescribeBatchLoadTask_NonExistent", func() error {
 		_, err := tc.writeClient.DescribeBatchLoadTask(tc.ctx, &timestreamwrite.DescribeBatchLoadTaskInput{
-			TaskId: aws.String("nonexistent-task-id"),
+			TaskId: aws.String("NONEXISTENTTASK123456"),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))

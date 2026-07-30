@@ -5,10 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_timestream"
 	"vorpalstacks/internal/store/aws/common"
 )
+
+var errStop = fmt.Errorf("stop iteration")
 
 // BatchLoadTaskStore manages batch load tasks in Timestream.
 type BatchLoadTaskStore struct {
@@ -28,7 +31,7 @@ func NewBatchLoadTaskStore(store storage.BasicStorage, tableStore *TableStore, r
 }
 
 // CreateBatchLoadTask creates a new batch load task.
-func (s *BatchLoadTaskStore) CreateBatchLoadTask(taskId, targetDatabaseName, targetTableName string, dataSourceConfig *DataSourceConfiguration, dataModelConfig *DataModelConfiguration, reportConfig *ReportConfiguration, recordVersion int64) (*BatchLoadTaskDescription, error) {
+func (s *BatchLoadTaskStore) CreateBatchLoadTask(taskId, clientToken, targetDatabaseName, targetTableName string, dataSourceConfig *DataSourceConfiguration, dataModelConfig *DataModelConfiguration, reportConfig *ReportConfiguration, recordVersion int64) (*BatchLoadTaskDescription, error) {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
@@ -45,6 +48,7 @@ func (s *BatchLoadTaskStore) CreateBatchLoadTask(taskId, targetDatabaseName, tar
 
 	task := &BatchLoadTaskDescription{
 		TaskId:                  taskId,
+		ClientToken:             clientToken,
 		TargetDatabaseName:      targetDatabaseName,
 		TargetTableName:         targetTableName,
 		TaskStatus:              BatchLoadStatusCreated,
@@ -149,6 +153,40 @@ func (s *BatchLoadTaskStore) DeleteBatchLoadTask(taskId string) error {
 		return ErrBatchLoadTaskNotFound
 	}
 	return s.BaseStore.Delete(taskId)
+}
+
+// FindByClientToken searches all batch load tasks for one with a matching
+// ClientToken. Returns the task and nil if found, or nil and ErrBatchLoadTaskNotFound
+// if no match exists. Used for @idempotencyToken semantics.
+func (s *BatchLoadTaskStore) FindByClientToken(clientToken string) (*BatchLoadTaskDescription, error) {
+	var found *BatchLoadTaskDescription
+	_ = s.ForEach(func(key string, value []byte) error {
+		var pbTask pb.BatchLoadTaskDescription
+		if err := proto.Unmarshal(value, &pbTask); err != nil {
+			return nil
+		}
+		if pbTask.ClientToken == clientToken && clientToken != "" {
+			found = ProtoToBatchLoadTaskDescription(&pbTask)
+			return errStop
+		}
+		return nil
+	})
+	if found != nil {
+		return found, nil
+	}
+	return nil, ErrBatchLoadTaskNotFound
+}
+
+// SaveProcessedKeys updates the list of processed S3 keys on a batch load task
+// for resume support.
+func (s *BatchLoadTaskStore) SaveProcessedKeys(taskId string, keys []string) error {
+	task, err := s.GetBatchLoadTask(taskId)
+	if err != nil {
+		return err
+	}
+	task.ProcessedS3Keys = keys
+	task.LastUpdatedTime = time.Now().UTC()
+	return s.PutProto(taskId, BatchLoadTaskDescriptionToProto(task))
 }
 
 // ListBatchLoadTasks lists batch load tasks with optional status filter and pagination.

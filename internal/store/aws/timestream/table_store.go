@@ -33,7 +33,7 @@ func NewTableStore(store storage.BasicStorage, databaseStore *Store, accountID, 
 }
 
 // CreateTable creates a new table in a database.
-func (s *TableStore) CreateTable(databaseName, tableName string, retentionProperties *RetentionProperties, schema *Schema) (*Table, error) {
+func (s *TableStore) CreateTable(databaseName, tableName string, retentionProperties *RetentionProperties, schema *Schema, magneticStoreWriteProperties *MagneticStoreWriteProperties) (*Table, error) {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
@@ -48,12 +48,13 @@ func (s *TableStore) CreateTable(databaseName, tableName string, retentionProper
 
 	now := time.Now().UTC()
 	table := &Table{
-		TableName:       tableName,
-		DatabaseName:    databaseName,
-		ARN:             s.arnBuilder.Timestream().Table(databaseName, tableName),
-		TableStatus:     TableStatusActive,
-		CreationTime:    now,
-		LastUpdatedTime: now,
+		TableName:                    tableName,
+		DatabaseName:                 databaseName,
+		ARN:                          s.arnBuilder.Timestream().Table(databaseName, tableName),
+		TableStatus:                  TableStatusActive,
+		MagneticStoreWriteProperties: magneticStoreWriteProperties,
+		CreationTime:                 now,
+		LastUpdatedTime:              now,
 	}
 
 	if retentionProperties != nil {
@@ -94,7 +95,7 @@ func (s *TableStore) GetTable(databaseName, tableName string) (*Table, error) {
 }
 
 // UpdateTable updates an existing table.
-func (s *TableStore) UpdateTable(databaseName, tableName string, retentionProperties *RetentionProperties, schema *Schema) (*Table, error) {
+func (s *TableStore) UpdateTable(databaseName, tableName string, retentionProperties *RetentionProperties, schema *Schema, magneticStoreWriteProperties *MagneticStoreWriteProperties) (*Table, error) {
 	table, err := s.GetTable(databaseName, tableName)
 	if err != nil {
 		return nil, err
@@ -105,6 +106,9 @@ func (s *TableStore) UpdateTable(databaseName, tableName string, retentionProper
 	}
 	if schema != nil {
 		table.Schema = schema
+	}
+	if magneticStoreWriteProperties != nil {
+		table.MagneticStoreWriteProperties = magneticStoreWriteProperties
 	}
 	table.LastUpdatedTime = time.Now().UTC()
 

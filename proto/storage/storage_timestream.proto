@@ -44,6 +44,27 @@ message Table {
   Schema schema = 6;
   google.protobuf.Timestamp creation_time = 7;
   google.protobuf.Timestamp last_updated_time = 8;
+  MagneticStoreWriteProperties magnetic_store_write_properties = 9;
+}
+
+// MagneticStoreWriteProperties configures magnetic store writes for a table.
+message MagneticStoreWriteProperties {
+  bool enable_magnetic_store_writes = 1;
+  MagneticStoreRejectedDataLocation magnetic_store_rejected_data_location = 2;
+}
+
+// MagneticStoreRejectedDataLocation defines where to write error reports for
+// records rejected during magnetic store writes.
+message MagneticStoreRejectedDataLocation {
+  MagneticStoreWriteS3Configuration s3_configuration = 1;
+}
+
+// MagneticStoreWriteS3Configuration defines the S3 location for rejected data.
+message MagneticStoreWriteS3Configuration {
+  string bucket_name = 1;
+  string object_key_prefix = 2;
+  string encryption_option = 3;
+  string kms_key_id = 4;
 }
 
 // ScheduleConfiguration defines the schedule for a scheduled query.
@@ -273,6 +294,8 @@ message BatchLoadTaskDescription {
   DataModelConfiguration data_model_configuration = 11;
   ReportConfiguration report_configuration = 12;
   BatchLoadProgressReport progress_report = 13;
+  repeated string processed_s3_keys = 14;
+  string client_token = 15;
 }
 
 // ProvisionedCapacitySettings stores the provisioned capacity configuration

@@ -139,14 +139,15 @@ func TableToProto(t *Table) *pb.Table {
 		return nil
 	}
 	return &pb.Table{
-		TableName:           t.TableName,
-		DatabaseName:        t.DatabaseName,
-		Arn:                 t.ARN,
-		TableStatus:         string(t.TableStatus),
-		RetentionProperties: RetentionPropertiesToProto(t.RetentionProperties),
-		Schema:              SchemaToProto(t.Schema),
-		CreationTime:        timestamppb.New(t.CreationTime),
-		LastUpdatedTime:     timestamppb.New(t.LastUpdatedTime),
+		TableName:                    t.TableName,
+		DatabaseName:                 t.DatabaseName,
+		Arn:                          t.ARN,
+		TableStatus:                  string(t.TableStatus),
+		RetentionProperties:          RetentionPropertiesToProto(t.RetentionProperties),
+		Schema:                       SchemaToProto(t.Schema),
+		MagneticStoreWriteProperties: MagneticStoreWritePropertiesToProto(t.MagneticStoreWriteProperties),
+		CreationTime:                 timestamppb.New(t.CreationTime),
+		LastUpdatedTime:              timestamppb.New(t.LastUpdatedTime),
 	}
 }
 
@@ -156,14 +157,85 @@ func ProtoToTable(p *pb.Table) *Table {
 		return nil
 	}
 	return &Table{
-		TableName:           p.TableName,
-		DatabaseName:        p.DatabaseName,
-		ARN:                 p.Arn,
-		TableStatus:         TableStatus(p.TableStatus),
-		RetentionProperties: ProtoToRetentionProperties(p.RetentionProperties),
-		Schema:              ProtoToSchema(p.Schema),
-		CreationTime:        p.CreationTime.AsTime(),
-		LastUpdatedTime:     p.LastUpdatedTime.AsTime(),
+		TableName:                    p.TableName,
+		DatabaseName:                 p.DatabaseName,
+		ARN:                          p.Arn,
+		TableStatus:                  TableStatus(p.TableStatus),
+		RetentionProperties:          ProtoToRetentionProperties(p.RetentionProperties),
+		Schema:                       ProtoToSchema(p.Schema),
+		MagneticStoreWriteProperties: ProtoToMagneticStoreWriteProperties(p.MagneticStoreWriteProperties),
+		CreationTime:                 p.CreationTime.AsTime(),
+		LastUpdatedTime:              p.LastUpdatedTime.AsTime(),
+	}
+}
+
+// MagneticStoreWriteProperties conversion
+
+// MagneticStoreWritePropertiesToProto converts a MagneticStoreWriteProperties to protobuf.
+func MagneticStoreWritePropertiesToProto(m *MagneticStoreWriteProperties) *pb.MagneticStoreWriteProperties {
+	if m == nil {
+		return nil
+	}
+	return &pb.MagneticStoreWriteProperties{
+		EnableMagneticStoreWrites:         m.EnableMagneticStoreWrites,
+		MagneticStoreRejectedDataLocation: MagneticStoreRejectedDataLocationToProto(m.MagneticStoreRejectedDataLocation),
+	}
+}
+
+// ProtoToMagneticStoreWriteProperties converts a protobuf MagneticStoreWriteProperties to internal.
+func ProtoToMagneticStoreWriteProperties(p *pb.MagneticStoreWriteProperties) *MagneticStoreWriteProperties {
+	if p == nil {
+		return nil
+	}
+	return &MagneticStoreWriteProperties{
+		EnableMagneticStoreWrites:         p.EnableMagneticStoreWrites,
+		MagneticStoreRejectedDataLocation: ProtoToMagneticStoreRejectedDataLocation(p.MagneticStoreRejectedDataLocation),
+	}
+}
+
+// MagneticStoreRejectedDataLocationToProto converts a MagneticStoreRejectedDataLocation to protobuf.
+func MagneticStoreRejectedDataLocationToProto(m *MagneticStoreRejectedDataLocation) *pb.MagneticStoreRejectedDataLocation {
+	if m == nil {
+		return nil
+	}
+	return &pb.MagneticStoreRejectedDataLocation{
+		S3Configuration: MagneticStoreWriteS3ConfigurationToProto(m.S3Configuration),
+	}
+}
+
+// ProtoToMagneticStoreRejectedDataLocation converts protobuf to internal.
+func ProtoToMagneticStoreRejectedDataLocation(p *pb.MagneticStoreRejectedDataLocation) *MagneticStoreRejectedDataLocation {
+	if p == nil {
+		return nil
+	}
+	return &MagneticStoreRejectedDataLocation{
+		S3Configuration: ProtoToMagneticStoreWriteS3Configuration(p.S3Configuration),
+	}
+}
+
+// MagneticStoreWriteS3ConfigurationToProto converts a MagneticStoreWriteS3Configuration to protobuf.
+func MagneticStoreWriteS3ConfigurationToProto(m *MagneticStoreWriteS3Configuration) *pb.MagneticStoreWriteS3Configuration {
+	if m == nil {
+		return nil
+	}
+	return &pb.MagneticStoreWriteS3Configuration{
+		BucketName:       m.BucketName,
+		ObjectKeyPrefix:  m.ObjectKeyPrefix,
+		EncryptionOption: m.EncryptionOption,
+		KmsKeyId:         m.KmsKeyId,
+	}
+}
+
+// ProtoToMagneticStoreWriteS3Configuration converts protobuf to internal.
+func ProtoToMagneticStoreWriteS3Configuration(p *pb.MagneticStoreWriteS3Configuration) *MagneticStoreWriteS3Configuration {
+	if p == nil {
+		return nil
+	}
+	return &MagneticStoreWriteS3Configuration{
+		BucketName:       p.BucketName,
+		ObjectKeyPrefix:  p.ObjectKeyPrefix,
+		EncryptionOption: p.EncryptionOption,
+		KmsKeyId:         p.KmsKeyId,
 	}
 }
 
@@ -1014,6 +1086,8 @@ func BatchLoadTaskDescriptionToProto(b *BatchLoadTaskDescription) *pb.BatchLoadT
 		DataModelConfiguration:  DataModelConfigurationToProto(b.DataModelConfiguration),
 		ReportConfiguration:     ReportConfigurationToProto(b.ReportConfiguration),
 		ProgressReport:          BatchLoadProgressReportToProto(b.ProgressReport),
+		ProcessedS3Keys:         b.ProcessedS3Keys,
+		ClientToken:             b.ClientToken,
 	}
 }
 
@@ -1036,6 +1110,8 @@ func ProtoToBatchLoadTaskDescription(p *pb.BatchLoadTaskDescription) *BatchLoadT
 		DataModelConfiguration:  ProtoToDataModelConfiguration(p.DataModelConfiguration),
 		ReportConfiguration:     ProtoToReportConfiguration(p.ReportConfiguration),
 		ProgressReport:          ProtoToBatchLoadProgressReport(p.ProgressReport),
+		ProcessedS3Keys:         p.ProcessedS3Keys,
+		ClientToken:             p.ClientToken,
 	}
 }
 

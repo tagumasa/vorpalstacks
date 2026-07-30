@@ -24,6 +24,10 @@ type AWSError struct {
 	// require beyond the standard __type/message/requestId triad (e.g.
 	// StatementTimeoutException carries a "dbConnectionId" field).
 	ExtraFields map[string]string
+	// RawFields holds additional JSON fields with complex values (arrays,
+	// objects) that cannot be expressed as strings (e.g.
+	// RejectedRecordsException carries a "RejectedRecords" array).
+	RawFields map[string]interface{}
 }
 
 // NewAWSError creates a new AWS error with the given code, message, and HTTP status.
@@ -61,6 +65,17 @@ func (e *AWSError) WithField(key, value string) *AWSError {
 	return e
 }
 
+// WithRawField adds a complex JSON field to the error response and returns
+// the error for chaining. Used for error types that carry arrays or nested
+// objects (e.g. RejectedRecordsException carries a RejectedRecords array).
+func (e *AWSError) WithRawField(key string, value interface{}) *AWSError {
+	if e.RawFields == nil {
+		e.RawFields = make(map[string]interface{})
+	}
+	e.RawFields[key] = value
+	return e
+}
+
 // ToXML converts the error to XML format.
 func (e *AWSError) ToXML() string {
 	var faultType string
@@ -94,12 +109,15 @@ func (e *AWSError) ToXML() string {
 
 // ToJSON converts the error to JSON format.
 func (e *AWSError) ToJSON() string {
-	data := map[string]string{
+	data := map[string]interface{}{
 		"__type":    e.Code,
 		"message":   e.Message,
 		"requestId": e.RequestID,
 	}
 	for k, v := range e.ExtraFields {
+		data[k] = v
+	}
+	for k, v := range e.RawFields {
 		data[k] = v
 	}
 	result, _ := json.Marshal(data)
@@ -114,6 +132,9 @@ func (e *AWSError) ToCBOR() []byte {
 		"requestId": e.RequestID,
 	}
 	for k, v := range e.ExtraFields {
+		data[k] = v
+	}
+	for k, v := range e.RawFields {
 		data[k] = v
 	}
 	result, _ := cbor.Marshal(data)

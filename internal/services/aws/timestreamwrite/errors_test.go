@@ -13,9 +13,9 @@ func TestTimestreamWriteErrors(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, ErrResourceNotFound.GetHTTPStatusCode())
 	})
 
-	t.Run("ErrResourceAlreadyExists", func(t *testing.T) {
-		assert.Equal(t, "ResourceAlreadyExistsException: The resource already exists.", ErrResourceAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrResourceAlreadyExists.GetHTTPStatusCode())
+	t.Run("ErrConflictException", func(t *testing.T) {
+		assert.Equal(t, "ConflictException: The resource already exists.", ErrConflictException.Error())
+		assert.Equal(t, http.StatusConflict, ErrConflictException.GetHTTPStatusCode())
 	})
 
 	t.Run("ErrValidationException", func(t *testing.T) {
@@ -41,5 +41,10 @@ func TestTimestreamWriteErrors(t *testing.T) {
 	t.Run("ErrServiceQuotaExceeded", func(t *testing.T) {
 		assert.Equal(t, "ServiceQuotaExceededException: The request exceeded the service quota.", ErrServiceQuotaExceeded.Error())
 		assert.Equal(t, http.StatusTooManyRequests, ErrServiceQuotaExceeded.GetHTTPStatusCode())
+	})
+
+	t.Run("ErrRejectedRecordsException", func(t *testing.T) {
+		assert.Equal(t, "RejectedRecordsException: One or more records were rejected.", ErrRejectedRecordsException.Error())
+		assert.Equal(t, 419, ErrRejectedRecordsException.GetHTTPStatusCode())
 	})
 }

@@ -46,13 +46,30 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 		return nil, s.mapStoreError(err)
 	}
 
+	// M6: When all records are rejected, raise RejectedRecordsException per
+	// Smithy (HTTP 419). The SDK expects errors.As(&types.RejectedRecordsException{}).
+	if len(rejectedRecords) == len(records) && len(records) > 0 {
+		exc := *ErrRejectedRecordsException
+		exc.WithRawField("RejectedRecords", s.formatRejectedRecords(rejectedRecords))
+		return nil, &exc
+	}
+
 	ingestedCount := int64(len(records) - len(rejectedRecords))
+
+	// M4: When the table has EnableMagneticStoreWrites=true, ingested records
+	// are also written to the magnetic store. Reflect this in the count.
+	magneticStoreCount := int64(0)
+	if table, terr := st.tableStore.GetTable(databaseName, tableName); terr == nil {
+		if table.MagneticStoreWriteProperties != nil && table.MagneticStoreWriteProperties.EnableMagneticStoreWrites {
+			magneticStoreCount = ingestedCount
+		}
+	}
 
 	response := map[string]interface{}{
 		"RecordsIngested": map[string]interface{}{
 			"Total":         ingestedCount,
 			"MemoryStore":   ingestedCount,
-			"MagneticStore": int64(0),
+			"MagneticStore": magneticStoreCount,
 		},
 	}
 

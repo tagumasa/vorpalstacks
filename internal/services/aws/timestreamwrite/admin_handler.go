@@ -115,13 +115,55 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	var tables []*pb.Table
 	for _, t := range result.Items {
-		tables = append(tables, &pb.Table{
+		table := &pb.Table{
 			Arn:             t.ARN,
 			Tablename:       t.TableName,
 			Databasename:    t.DatabaseName,
 			Creationtime:    t.CreationTime.Format(timeutils.ISO8601UTCFormat),
 			Lastupdatedtime: t.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
-		})
+		}
+
+		switch t.TableStatus {
+		case timestreamstore.TableStatusActive:
+			table.Tablestatus = pb.TableStatus_TABLE_STATUS_ACTIVE
+		case timestreamstore.TableStatusDeleting:
+			table.Tablestatus = pb.TableStatus_TABLE_STATUS_DELETING
+		case timestreamstore.TableStatusRestoring:
+			table.Tablestatus = pb.TableStatus_TABLE_STATUS_RESTORING
+		}
+
+		if t.RetentionProperties != nil {
+			table.Retentionproperties = &pb.RetentionProperties{
+				Memorystoreretentionperiodinhours:  t.RetentionProperties.MemoryStoreRetentionPeriodInHours,
+				Magneticstoreretentionperiodindays: t.RetentionProperties.MagneticStoreRetentionPeriodInDays,
+			}
+		}
+
+		if t.Schema != nil && len(t.Schema.CompositePartitionKey) > 0 {
+			schema := &pb.Schema{}
+			for _, pk := range t.Schema.CompositePartitionKey {
+				cpk := &pb.PartitionKey{}
+				switch pk.Type {
+				case "MEASURE":
+					cpk.Type = pb.PartitionKeyType_PARTITION_KEY_TYPE_MEASURE
+				default:
+					cpk.Type = pb.PartitionKeyType_PARTITION_KEY_TYPE_DIMENSION
+				}
+				if pk.Name != "" {
+					cpk.Name = pk.Name
+				}
+				switch pk.EnforcementInRecord {
+				case "REQUIRED":
+					cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_REQUIRED
+				default:
+					cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_OPTIONAL
+				}
+				schema.Compositepartitionkey = append(schema.Compositepartitionkey, cpk)
+			}
+			table.Schema = schema
+		}
+
+		tables = append(tables, table)
 	}
 
 	return connect.NewResponse(&pb.ListTablesResponse{
