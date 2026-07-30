@@ -10,12 +10,12 @@ type SSMStoreInterface interface {
 	GetParameterHistory(name string, maxResults int32, marker string) ([]*ParameterVersion, string, bool, error)
 	DeleteParameter(name string) error
 	DeleteParameters(names []string) (deleted []string, invalid []string)
-	DescribeParameters(filters map[string]string, maxResults int32, marker string) ([]*ParameterMetadata, string, error)
-	GetParametersByPath(path string, recursive bool, withDecryption bool, maxResults int32, marker string) ([]*Parameter, string, error)
+	DescribeParameters(filters []ParameterFilter, maxResults int32, marker string) ([]*ParameterMetadata, string, error)
+	GetParametersByPath(path string, recursive bool, withDecryption bool, filters []ParameterFilter, maxResults int32, marker string) ([]*Parameter, string, error)
 	AddTagsToResource(name string, tags map[string]string) error
 	RemoveTagsFromResource(name string, tagKeys []string) error
 	ListTagsForResource(name string) (map[string]string, error)
-	LabelParameterVersion(name string, parameterVersion int64, labels []string) error
+	LabelParameterVersion(name string, parameterVersion int64, labels []string) (invalidLabels []string, err error)
 	UnlabelParameterVersion(name string, parameterVersion int64, labels []string) ([]string, error)
 }
 

@@ -64,52 +64,40 @@ func parameterToResponse(p *ssmstore.Parameter, selector string) map[string]inte
 		"Selector":         selector,
 		"SourceResult":     "",
 		"LastModifiedDate": p.LastModifiedDate.Unix(),
+		"LastModifiedUser": lastModifiedUser(p.LastModifiedBy),
 		"ARN":              p.ARN,
 		"DataType":         p.DataType,
 	}
 }
 
+// lastModifiedUser maps the stored access-key identity to a principal-shaped
+// string. When a key is recorded we expose it directly; otherwise we fall
+// back to the platform identifier so the response field is always populated
+// (AWS returns a non-empty value for this field).
+func lastModifiedUser(by string) string {
+	if by != "" {
+		return by
+	}
+	return "vorpalstacks:admin"
+}
+
 // PutParameter adds or updates a parameter in the Parameter Store.
 func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
 
-	value := req.GetParam("Value")
-	paramType := req.GetParam("Type")
-	if paramType == "" {
-		paramType = "String"
-	}
-
-	switch ssmstore.ParameterType(paramType) {
-	case ssmstore.ParameterTypeString, ssmstore.ParameterTypeStringList, ssmstore.ParameterTypeSecureString:
-	default:
-		return nil, ErrInvalidParameterType
-	}
-
-	keyID := req.GetParam("KeyId")
-
-	if paramType == "SecureString" && s.kmsEncryptor != nil {
-		encryptedValue, err := s.encryptValue(ctx, value, keyID)
-		if err != nil {
-			return nil, err
-		}
-		value = encryptedValue
-	}
-
-	param := ssmstore.NewParameter(name, value, ssmstore.ParameterType(paramType))
-	param.Description = req.GetParam("Description")
-	param.KeyID = keyID
-	param.AllowedPattern = req.GetParam("AllowedPattern")
-	param.DataType = req.GetParam("DataType")
-	if param.DataType == "" {
-		param.DataType = "text"
-	}
-
-	tier := req.GetParam("Tier")
-	if tier != "" {
-		param.Tier = ssmstore.ParameterTier(tier)
+	param, err := normalisePutParameter(ParameterPutFields{
+		Name:           name,
+		Value:          req.GetParam("Value"),
+		Type:           req.GetParam("Type"),
+		Description:    req.GetParam("Description"),
+		KeyID:          req.GetParam("KeyId"),
+		AllowedPattern: req.GetParam("AllowedPattern"),
+		DataType:       req.GetParam("DataType"),
+		Tier:           req.GetParam("Tier"),
+		Policies:       req.GetParam("Policies"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	overwrite := getBoolParam(req, "Overwrite")
@@ -118,12 +106,18 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	version, err := store.PutParameter(param, overwrite)
+	version, err := s.putParameterWithEncryption(ctx, store, param, overwrite, reqCtx.Principal)
 	if err != nil {
 		if errors.Is(err, ssmstore.ErrParameterAlreadyExists) {
 			return nil, ErrParameterAlreadyExists
 		}
 		if errors.Is(err, ssmstore.ErrReservedParameterName) {
+			return nil, ErrParameterPatternMismatch
+		}
+		if errors.Is(err, ssmstore.ErrInvalidAllowedPattern) {
+			return nil, ErrInvalidAllowedPattern
+		}
+		if errors.Is(err, ssmstore.ErrParameterPatternMismatch) {
 			return nil, ErrParameterPatternMismatch
 		}
 		return nil, err
@@ -197,6 +191,9 @@ func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestCo
 func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	withDecryption := getBoolParam(req, "WithDecryption")
 	names := parseStringList(req.Parameters, "Names", "Names.")
+	if err := validateParameterNameList(names); err != nil {
+		return nil, err
+	}
 
 	if len(names) == 0 {
 		return map[string]interface{}{
@@ -209,19 +206,37 @@ func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	parameters, invalidNames := store.GetParameters(names, false)
 
-	params := make([]map[string]interface{}, 0, len(parameters))
-	for _, p := range parameters {
-		if withDecryption && p.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
-			decryptedValue, err := s.decryptValue(ctx, p.Value, p.KeyID)
-			if err != nil {
-				invalidNames = append(invalidNames, p.Name)
+	params := make([]map[string]interface{}, 0, len(names))
+	var invalidNames []string
+	for _, rawName := range names {
+		baseName, selector := parseParameterSelector(rawName)
+		var (
+			param *ssmstore.Parameter
+			err   error
+		)
+		switch {
+		case selector == "":
+			param, err = store.GetParameter(baseName, false)
+		case isNumericSelector(selector):
+			version, _ := strconv.ParseInt(selector, 10, 64)
+			param, err = store.GetParameterByVersion(baseName, version)
+		default:
+			param, err = store.GetParameterByLabel(baseName, selector)
+		}
+		if err != nil {
+			invalidNames = append(invalidNames, rawName)
+			continue
+		}
+		if withDecryption && param.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
+			decryptedValue, decErr := s.decryptValue(ctx, param.Value, param.KeyID)
+			if decErr != nil {
+				invalidNames = append(invalidNames, rawName)
 				continue
 			}
-			p.Value = decryptedValue
+			param.Value = decryptedValue
 		}
-		params = append(params, parameterToResponse(p, ""))
+		params = append(params, parameterToResponse(param, rawName))
 	}
 
 	return map[string]interface{}{
@@ -230,11 +245,18 @@ func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestC
 	}, nil
 }
 
+// isNumericSelector reports whether a parameter selector is a version number
+// (e.g. ":5") rather than a label (e.g. ":production").
+func isNumericSelector(selector string) bool {
+	_, err := strconv.ParseInt(selector, 10, 64)
+	return err == nil
+}
+
 // GetParametersByPath retrieves parameters under a specified path.
 func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	path := req.GetParam("Path")
-	if path == "" {
-		return nil, ErrInvalidParameterName
+	if err := validateHierarchyPath(path); err != nil {
+		return nil, err
 	}
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
@@ -242,14 +264,21 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 
 	recursive := getBoolParam(req, "Recursive")
 	withDecryption := getBoolParam(req, "WithDecryption")
-	maxResults := getIntParam(req, "MaxResults")
+	maxResults, err := validateMaxResultsForPath(getIntParam(req, "MaxResults"))
+	if err != nil {
+		return nil, err
+	}
+	filters, err := parseParameterFilters(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	parameters, nextMarker, err := store.GetParametersByPath(path, recursive, false, maxResults, nextToken)
+	parameters, nextMarker, err := store.GetParametersByPath(path, recursive, false, filters, maxResults, nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -300,6 +329,9 @@ func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.Reques
 // DeleteParameters removes multiple parameters from the Parameter Store.
 func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	names := parseStringList(req.Parameters, "Names", "Names.")
+	if err := validateParameterNameList(names); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -315,46 +347,15 @@ func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.Reque
 
 // DescribeParameters returns information about all parameters in the Parameter Store.
 func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxResults := getIntParam(req, "MaxResults")
+	maxResults, err := validateMaxResultsForPage(getIntParam(req, "MaxResults"))
+	if err != nil {
+		return nil, err
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
-	filters := make(map[string]string)
-
-	for _, filterKey := range []string{"ParameterFilters", "Filters"} {
-		if filterArr, ok := req.Parameters[filterKey]; ok {
-			if filterArr, ok := filterArr.([]interface{}); ok {
-				for _, f := range filterArr {
-					if fm, ok := f.(map[string]interface{}); ok {
-						key, _ := fm["Key"].(string)
-						values, _ := fm["Values"].([]interface{})
-						if key != "" && len(values) > 0 {
-							if v, ok := values[0].(string); ok {
-								filters[key] = v
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if len(filters) == 0 {
-		for i := 1; ; i++ {
-			filterKey := req.GetParam("ParameterFilters.member." + strconv.Itoa(i) + ".Key")
-			if filterKey == "" {
-				break
-			}
-			filterValue := req.GetParam("ParameterFilters.member." + strconv.Itoa(i) + ".Values.member.1")
-			if filterValue == "" {
-				filterValue = req.GetParam("Filters." + strconv.Itoa(i) + ".Key")
-				if filterValue == "" {
-					break
-				}
-				filterKey = filterValue
-				filterValue = req.GetParam("Filters." + strconv.Itoa(i) + ".Value")
-			}
-			filters[filterKey] = filterValue
-		}
+	filters, err := parseParameterFilters(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -373,12 +374,12 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 			"Type":             string(m.Type),
 			"KeyId":            m.KeyID,
 			"LastModifiedDate": m.LastModifiedDate.Unix(),
-			"LastModifiedUser": "N/A",
+			"LastModifiedUser": lastModifiedUser(m.LastModifiedBy),
 			"Description":      m.Description,
 			"AllowedPattern":   m.AllowedPattern,
 			"Version":          m.Version,
 			"Tier":             string(m.Tier),
-			"Policies":         []interface{}{},
+			"Policies":         policiesToResponse(m.Policies),
 			"DataType":         m.DataType,
 		})
 	}
@@ -398,7 +399,10 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		return nil, ErrInvalidParameterName
 	}
 
-	maxResults := getIntParam(req, "MaxResults")
+	maxResults, err := validateMaxResultsForPage(getIntParam(req, "MaxResults"))
+	if err != nil {
+		return nil, err
+	}
 	withDecryption := getBoolParam(req, "WithDecryption")
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
@@ -429,7 +433,7 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 			"Type":             string(v.Type),
 			"KeyId":            v.KeyID,
 			"LastModifiedDate": v.LastModifiedDate.Unix(),
-			"LastModifiedUser": "N/A",
+			"LastModifiedUser": lastModifiedUser(v.LastModifiedBy),
 			"Description":      v.Description,
 			"AllowedPattern":   v.AllowedPattern,
 			"Version":          v.Version,
@@ -460,8 +464,8 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 	}
 
 	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
-	if len(labels) == 0 {
-		return nil, ErrInvalidParameterLabel
+	if err := validateLabels(labels); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -479,7 +483,8 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 		parameterVersion = param.Version
 	}
 
-	if err := store.LabelParameterVersion(name, parameterVersion, labels); err != nil {
+	invalidLabels, err := store.LabelParameterVersion(name, parameterVersion, labels)
+	if err != nil {
 		if errors.Is(err, ssmstore.ErrParameterNotFound) {
 			return nil, ErrParameterNotFound
 		}
@@ -490,7 +495,7 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
-		"InvalidLabels":    []string{},
+		"InvalidLabels":    invalidLabels,
 		"ParameterVersion": parameterVersion,
 	}, nil
 }
@@ -503,8 +508,8 @@ func (s *SSMService) UnlabelParameterVersion(ctx context.Context, reqCtx *reques
 	}
 
 	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
-	if len(labels) == 0 {
-		return nil, ErrInvalidParameterLabel
+	if err := validateLabels(labels); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

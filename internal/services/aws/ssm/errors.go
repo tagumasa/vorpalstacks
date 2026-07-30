@@ -25,4 +25,15 @@ var (
 	ErrParameterVersionNotFound = awserrors.NewAWSError("ParameterVersionNotFound", "Parameter version not found", http.StatusBadRequest)
 	// ErrParameterPatternMismatch is returned when the parameter name uses a reserved prefix.
 	ErrParameterPatternMismatch = awserrors.NewAWSError("ParameterPatternMismatchException", "The parameter name is not valid", http.StatusBadRequest)
+	// ErrInvalidAllowedPattern is returned when the AllowedPattern is not a valid regular expression.
+	ErrInvalidAllowedPattern = awserrors.NewAWSError("InvalidAllowedPatternException", "The regular expression is invalid", http.StatusBadRequest)
+	// ErrInvalidResourceType is returned when a tag operation is given a
+	// ResourceType that this implementation does not support.
+	ErrInvalidResourceType = awserrors.NewAWSError("InvalidResourceType", "The resource type is not supported", http.StatusBadRequest)
+	// ErrInvalidFilterKey is returned when a DescribeParameters/GetParametersByPath
+	// filter Key is not in the Smithy ParameterStringFilterKey pattern.
+	ErrInvalidFilterKey = awserrors.NewAWSError("InvalidFilterKey", "The filter key is not valid", http.StatusBadRequest)
+	// ErrInvalidFilterOption is returned when a filter Option is not one of
+	// Equals/BeginsWith/Contains.
+	ErrInvalidFilterOption = awserrors.NewAWSError("InvalidFilterOption", "The filter option is not valid", http.StatusBadRequest)
 )

@@ -22,8 +22,8 @@ var (
 	// (e.g., String, StringList, SecureString).
 	ErrInvalidParameterType = errors.New("invalid parameter type")
 
-	// ErrInvalidParameterVersion is returned when the parameter version is
-	// not valid for the operation.
+	// ErrInvalidParameterVersion is returned when the parameter version is not
+	// valid for the operation.
 	ErrInvalidParameterVersion = errors.New("invalid parameter version")
 
 	// ErrParameterVersionNotFound is returned when the specified parameter
@@ -37,4 +37,12 @@ var (
 	// ErrReservedParameterName is returned when the parameter name uses a
 	// reserved prefix such as "aws" or "ssm".
 	ErrReservedParameterName = errors.New("parameter name uses a reserved prefix")
+
+	// ErrInvalidAllowedPattern is returned when an AllowedPattern value is
+	// not a valid regular expression.
+	ErrInvalidAllowedPattern = errors.New("parameter allowed pattern is not a valid regular expression")
+
+	// ErrParameterPatternMismatch is returned when a value would violate the
+	// AllowedPattern constraint already attached to a parameter.
+	ErrParameterPatternMismatch = errors.New("parameter value does not match allowed pattern")
 )

@@ -63,6 +63,9 @@ func ssmTagConfig(store ssmstore.SSMStoreInterface) tagutil.TagHandlerConfig {
 
 // AddTagsToResource adds or overwrites tags on an SSM parameter.
 func (s *SSMService) AddTagsToResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := validateResourceType(req); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -72,6 +75,9 @@ func (s *SSMService) AddTagsToResource(ctx context.Context, reqCtx *request.Requ
 
 // RemoveTagsFromResource removes the specified tags from an SSM parameter.
 func (s *SSMService) RemoveTagsFromResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := validateResourceType(req); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -81,9 +87,22 @@ func (s *SSMService) RemoveTagsFromResource(ctx context.Context, reqCtx *request
 
 // ListTagsForResource lists all tags assigned to an SSM parameter.
 func (s *SSMService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := validateResourceType(req); err != nil {
+		return nil, err
+	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	return tagutil.HandleList(ctx, req, ssmTagConfig(store))
+}
+
+// validateResourceType enforces the Smithy ResourceTypeForTagging enum. Only
+// "Parameter" is implemented in this edge/on-prem platform; any other value
+// is rejected with InvalidResourceType, matching the AWS contract.
+func validateResourceType(req *request.ParsedRequest) error {
+	if rt := req.GetParam("ResourceType"); rt != "" && rt != "Parameter" {
+		return ErrInvalidResourceType
+	}
+	return nil
 }

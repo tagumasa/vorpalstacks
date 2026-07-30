@@ -59,6 +59,23 @@ func (s *Store) buildARN(name string) string {
 	return s.arnBuilder.Build("ssm", "parameter/"+name)
 }
 
+// enforceAllowedPattern validates a parameter Value against an
+// AllowedPattern. AWS returns ParameterPatternMismatchException when
+// the value would violate the pattern. Empty pattern skips the check.
+func enforceAllowedPattern(pattern, value string) error {
+	if pattern == "" {
+		return nil
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return ErrInvalidAllowedPattern
+	}
+	if !re.MatchString(value) {
+		return ErrParameterPatternMismatch
+	}
+	return nil
+}
+
 // PutParameter stores a parameter in the parameter store.
 func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 	if err := ValidateParameterName(param.Name); err != nil {
@@ -73,10 +90,27 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 	var existingParam Parameter
 	err := s.BaseStore.Get(key, &existingParam)
 
+	// Operation gate: if the parameter exists and the caller did not opt in
+	// to Overwrite, reject the request before any input validation runs. AWS
+	// returns ParameterAlreadyExists regardless of whether the new Value
+	// would also violate an existing AllowedPattern.
+	if err == nil && !overwrite {
+		return 0, ErrParameterAlreadyExists
+	}
+
+	// Determine which AllowedPattern to validate against: the value in the
+	// current request takes precedence, falling back to the previously-stored
+	// pattern on Overwrite. A new parameter with no pattern specified skips
+	// validation entirely.
+	pattern := param.AllowedPattern
+	if pattern == "" && err == nil {
+		pattern = existingParam.AllowedPattern
+	}
+	if patternErr := enforceAllowedPattern(pattern, param.Value); patternErr != nil {
+		return 0, patternErr
+	}
+
 	if err == nil {
-		if !overwrite {
-			return 0, ErrParameterAlreadyExists
-		}
 		param.Version = existingParam.Version + 1
 	} else {
 		param.Version = 1
@@ -109,6 +143,7 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 		Type:             param.Type,
 		Tier:             param.Tier,
 		LastModifiedDate: param.LastModifiedDate,
+		LastModifiedBy:   param.LastModifiedBy,
 		DataType:         param.DataType,
 		Description:      param.Description,
 		KeyID:            param.KeyID,
@@ -150,6 +185,10 @@ func (s *Store) GetParameterByVersion(name string, version int64) (*Parameter, e
 		Name:             paramVersion.ParameterName,
 		Value:            paramVersion.Value,
 		Type:             paramVersion.Type,
+		Tier:             paramVersion.Tier,
+		Description:      paramVersion.Description,
+		KeyID:            paramVersion.KeyID,
+		AllowedPattern:   paramVersion.AllowedPattern,
 		Version:          paramVersion.Version,
 		LastModifiedDate: paramVersion.LastModifiedDate,
 		DataType:         paramVersion.DataType,
@@ -279,45 +318,14 @@ func (s *Store) DeleteParameters(names []string) (deleted []string, invalid []st
 }
 
 // DescribeParameters lists parameters with optional filters.
-func (s *Store) DescribeParameters(filters map[string]string, maxResults int32, marker string) ([]*ParameterMetadata, string, error) {
+func (s *Store) DescribeParameters(filters []ParameterFilter, maxResults int32, marker string) ([]*ParameterMetadata, string, error) {
 	opts := common.ListOptions{
 		MaxItems: int(maxResults),
 		Marker:   marker,
 	}
-	if maxResults <= 0 {
-		opts.MaxItems = 50
-	}
 
 	result, err := common.List[Parameter](s.BaseStore, opts, func(p *Parameter) bool {
-		for k, v := range filters {
-			switch k {
-			case "Type":
-				if string(p.Type) != v {
-					return false
-				}
-			case "KeyId":
-				if p.KeyID != v {
-					return false
-				}
-			case "Tier":
-				if string(p.Tier) != v {
-					return false
-				}
-			case "DataType":
-				if p.DataType != v {
-					return false
-				}
-			case "Name":
-				if !strings.HasPrefix(p.Name, v) {
-					return false
-				}
-			case "Path":
-				if !strings.HasPrefix(p.Name, v) {
-					return false
-				}
-			}
-		}
-		return true
+		return p.Matches(filters, false)
 	})
 	if err != nil {
 		return nil, "", err
@@ -332,13 +340,10 @@ func (s *Store) DescribeParameters(filters map[string]string, maxResults int32, 
 }
 
 // GetParametersByPath retrieves parameters under a specific path.
-func (s *Store) GetParametersByPath(path string, recursive bool, withDecryption bool, maxResults int32, marker string) ([]*Parameter, string, error) {
+func (s *Store) GetParametersByPath(path string, recursive bool, withDecryption bool, filters []ParameterFilter, maxResults int32, marker string) ([]*Parameter, string, error) {
 	opts := common.ListOptions{
 		MaxItems: int(maxResults),
 		Marker:   marker,
-	}
-	if maxResults <= 0 {
-		opts.MaxItems = 10
 	}
 
 	result, err := common.List[Parameter](s.BaseStore, opts, func(p *Parameter) bool {
@@ -346,16 +351,16 @@ func (s *Store) GetParametersByPath(path string, recursive bool, withDecryption 
 			return false
 		}
 		if len(p.Name) == len(path) {
-			return true
+			return recursive && p.Matches(filters, true)
 		}
 		if recursive {
-			return strings.HasSuffix(path, "/") || p.Name[len(path)] == '/'
+			return (strings.HasSuffix(path, "/") || p.Name[len(path)] == '/') && p.Matches(filters, true)
 		}
 		remainder := p.Name[len(path):]
 		if len(remainder) > 0 && remainder[0] == '/' {
 			remainder = remainder[1:]
 		}
-		return remainder != "" && !strings.Contains(remainder, "/")
+		return remainder != "" && !strings.Contains(remainder, "/") && p.Matches(filters, true)
 	})
 	if err != nil {
 		return nil, "", err
@@ -417,7 +422,10 @@ func ValidateParameterName(name string) error {
 }
 
 // LabelParameterVersion adds labels to a specific version of a parameter.
-func (s *Store) LabelParameterVersion(name string, parameterVersion int64, labels []string) error {
+// Returns the list of labels that could not be applied — AWS rejects only
+// the labels that would push the version over the 10-label cap and accepts
+// the rest.
+func (s *Store) LabelParameterVersion(name string, parameterVersion int64, labels []string) ([]string, error) {
 	key := s.paramKey(name)
 
 	s.mu.Lock()
@@ -425,13 +433,13 @@ func (s *Store) LabelParameterVersion(name string, parameterVersion int64, label
 
 	var param Parameter
 	if err := s.BaseStore.Get(key, &param); err != nil {
-		return ErrParameterNotFound
+		return nil, ErrParameterNotFound
 	}
 
 	hKey := s.historyKey(name, parameterVersion)
 	var paramVersion ParameterVersion
 	if err := s.historyStore.Get(hKey, &paramVersion); err != nil {
-		return ErrParameterVersionNotFound
+		return nil, ErrParameterVersionNotFound
 	}
 
 	if param.VersionLabels == nil {
@@ -452,6 +460,7 @@ func (s *Store) LabelParameterVersion(name string, parameterVersion int64, label
 	}
 
 	currentLabels := param.VersionLabels[parameterVersion]
+	var invalidLabels []string
 	for _, label := range labels {
 		found := false
 		for _, l := range currentLabels {
@@ -460,13 +469,21 @@ func (s *Store) LabelParameterVersion(name string, parameterVersion int64, label
 				break
 			}
 		}
-		if !found {
-			currentLabels = append(currentLabels, label)
+		if found {
+			continue
 		}
+		if len(currentLabels) >= 10 {
+			invalidLabels = append(invalidLabels, label)
+			continue
+		}
+		currentLabels = append(currentLabels, label)
 	}
 	param.VersionLabels[parameterVersion] = currentLabels
 
-	return s.Put(key, param)
+	if err := s.Put(key, param); err != nil {
+		return nil, err
+	}
+	return invalidLabels, nil
 }
 
 // UnlabelParameterVersion removes labels from a specific version of a parameter.

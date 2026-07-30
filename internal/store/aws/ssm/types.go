@@ -35,6 +35,7 @@ type Parameter struct {
 	KeyID            string             `json:"keyId,omitempty"`
 	Version          int64              `json:"version"`
 	LastModifiedDate time.Time          `json:"lastModifiedDate"`
+	LastModifiedBy   string             `json:"lastModifiedBy,omitempty"`
 	DataType         string             `json:"dataType,omitempty"`
 	AllowedPattern   string             `json:"allowedPattern,omitempty"`
 	Policies         string             `json:"policies,omitempty"`
@@ -52,6 +53,7 @@ type ParameterVersion struct {
 	Type             ParameterType `json:"type"`
 	Tier             ParameterTier `json:"tier,omitempty"`
 	LastModifiedDate time.Time     `json:"lastModifiedDate"`
+	LastModifiedBy   string        `json:"lastModifiedBy,omitempty"`
 	DataType         string        `json:"dataType,omitempty"`
 	Labels           []string      `json:"labels,omitempty"`
 	Description      string        `json:"description,omitempty"`
@@ -68,6 +70,7 @@ type ParameterMetadata struct {
 	KeyID            string        `json:"keyId,omitempty"`
 	Version          int64         `json:"version"`
 	LastModifiedDate time.Time     `json:"lastModifiedDate"`
+	LastModifiedBy   string        `json:"lastModifiedBy,omitempty"`
 	DataType         string        `json:"dataType,omitempty"`
 	AllowedPattern   string        `json:"allowedPattern,omitempty"`
 	Policies         string        `json:"policies,omitempty"`
@@ -98,6 +101,7 @@ func NewParameterMetadata(param *Parameter) *ParameterMetadata {
 		KeyID:            param.KeyID,
 		Version:          param.Version,
 		LastModifiedDate: param.LastModifiedDate,
+		LastModifiedBy:   param.LastModifiedBy,
 		DataType:         param.DataType,
 		AllowedPattern:   param.AllowedPattern,
 		Policies:         param.Policies,

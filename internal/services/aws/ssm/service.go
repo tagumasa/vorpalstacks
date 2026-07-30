@@ -84,6 +84,28 @@ func (s *SSMService) decryptValue(ctx context.Context, ciphertext, keyID string)
 	return s.kmsEncryptor.DecryptString(ctx, keyID, ciphertext)
 }
 
+// putParameterWithEncryption is the shared entry point for both the HTTP API
+// and the admin console gRPC handler. It mirrors the AWS contract for
+// PutParameter: SecureString values are encrypted with KMS before reaching
+// the store. Returning a version number matches the AWS PutParameter response.
+//
+// modifiedBy is recorded as the parameter's LastModifiedBy when non-empty.
+// When omitted the platform identifier is used, mirroring AWS's always-
+// populated LastModifiedUser output field.
+func (s *SSMService) putParameterWithEncryption(ctx context.Context, store ssmstore.SSMStoreInterface, param *ssmstore.Parameter, overwrite bool, modifiedBy string) (int64, error) {
+	if modifiedBy != "" {
+		param.LastModifiedBy = modifiedBy
+	}
+	if param.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
+		encryptedValue, err := s.encryptValue(ctx, param.Value, param.KeyID)
+		if err != nil {
+			return 0, err
+		}
+		param.Value = encryptedValue
+	}
+	return store.PutParameter(param, overwrite)
+}
+
 // RegisterHandlers registers all SSM operation handlers with the dispatcher.
 func (s *SSMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("ssm", "PutParameter", s.PutParameter)
