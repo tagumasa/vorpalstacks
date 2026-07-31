@@ -29,6 +29,7 @@ type APIGatewayService struct {
 	stores         sync.Map // region → *apiGatewayStores
 	storageManager *storage.RegionStorageManager
 	runtimeServer  *svcapigatewayruntime.RuntimeServer
+	acmInvoker     eventbus.ACMInvoker
 }
 
 // NewAPIGatewayService creates a new API Gateway service instance.
@@ -42,6 +43,13 @@ func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 // SetStorageManager injects the region storage manager for lazy store creation.
 func (s *APIGatewayService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetACMInvoker injects the ACM invoker for cross-service certificate usage
+// tracking. When a custom domain name references an ACM certificate, the
+// invoker records the association so that DeleteCertificate can enforce InUseBy.
+func (s *APIGatewayService) SetACMInvoker(invoker eventbus.ACMInvoker) {
+	s.acmInvoker = invoker
 }
 
 // InitRuntimeServer creates the runtime server using the same stores as the

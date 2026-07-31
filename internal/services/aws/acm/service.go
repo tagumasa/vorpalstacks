@@ -2,6 +2,7 @@
 package acm
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -95,4 +96,39 @@ func (s *ACMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("acm", "UntagResource", s.UntagResource)
 	d.RegisterHandlerForService("acm", "ListTagsForResource", s.ListTagsForResource)
 	d.RegisterHandlerForService("acm", "SearchCertificates", s.SearchCertificates)
+}
+
+// RegisterCertificateUsage implements eventbus.ACMInvoker. It records that
+// the resource identified by resourceArn is now using the ACM certificate
+// identified by certArn, in the specified region.
+func (s *ACMService) RegisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return fmt.Errorf("acm: failed to get store for region %s: %w", region, err)
+	}
+	return stores.certificates.AddInUseBy(certArn, resourceArn)
+}
+
+// UnregisterCertificateUsage implements eventbus.ACMInvoker. It removes the
+// resource identified by resourceArn from the certificate's InUseBy list,
+// indicating the resource no longer references the certificate.
+func (s *ACMService) UnregisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return fmt.Errorf("acm: failed to get store for region %s: %w", region, err)
+	}
+	return stores.certificates.RemoveInUseBy(certArn, resourceArn)
+}
+
+// CertificateExists implements eventbus.ACMInvoker. It performs a
+// pre-validation check before a cross-service consumer saves a resource that
+// references an ACM certificate. This eliminates the most common failure mode
+// (invalid cert ARN) before the resource is created, reducing the compensating
+// transaction path to Pebble I/O errors only.
+func (s *ACMService) CertificateExists(ctx context.Context, region, certArn string) bool {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return false
+	}
+	return stores.certificates.Exists(certArn)
 }

@@ -2,13 +2,15 @@
 package acm
 
 import (
+	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CertificateStore provides storage operations for ACM certificates.
@@ -111,7 +113,7 @@ func (s *CertificateStore) ListAll() ([]*Certificate, error) {
 }
 
 // ListWithFilters returns a paginated list of ACM certificates with advanced filtering.
-func (s *CertificateStore) ListWithFilters(filters ListFilters, marker string, maxItems int) (*CertificateListResult, error) {
+func (s *CertificateStore) ListWithFilters(filters ListFilters, nextToken string, maxItems int) (*CertificateListResult, error) {
 	allCerts, err := common.ListAll[Certificate](s.BaseStore)
 	if err != nil {
 		return nil, err
@@ -154,15 +156,17 @@ func (s *CertificateStore) ListWithFilters(filters ListFilters, marker string, m
 		})
 	}
 
-	// Paginate.
+	// Paginate using offset-based opaque token.
 	start := 0
-	if marker != "" {
-		for i, cert := range filtered {
-			if cert.CertificateArn == marker {
-				start = i + 1
-				break
-			}
+	if nextToken != "" {
+		n, parseErr := strconv.Atoi(nextToken)
+		if parseErr != nil {
+			return nil, NewStoreError("list_certificates", fmt.Errorf("invalid NextToken: %s", nextToken))
 		}
+		if n < 0 || n > len(filtered) {
+			return nil, NewStoreError("list_certificates", fmt.Errorf("invalid NextToken: %s", nextToken))
+		}
+		start = n
 	}
 
 	end := len(filtered)
@@ -176,15 +180,15 @@ func (s *CertificateStore) ListWithFilters(filters ListFilters, marker string, m
 		summaries[i] = CertificateToSummary(cert)
 	}
 
-	nextToken := ""
-	if end < len(filtered) && len(page) > 0 {
-		nextToken = page[len(page)-1].CertificateArn
+	token := ""
+	if end < len(filtered) {
+		token = strconv.Itoa(end)
 	}
 
 	return &CertificateListResult{
 		Certificates: summaries,
 		IsTruncated:  end < len(filtered),
-		NextToken:    nextToken,
+		NextToken:    token,
 	}, nil
 }
 
@@ -324,34 +328,42 @@ func (s *CertificateStore) Exists(arn string) bool {
 }
 
 // CertificateToSummary converts a Certificate to a CertificateSummary.
+// Per the Smithy DomainList constraint (max 100), the SAN summaries are
+// truncated to 100 entries and HasAdditionalSubjectAlternativeNames is set
+// accordingly.
 func CertificateToSummary(cert *Certificate) *CertificateSummary {
+	sans := cert.SubjectAlternativeNames
+	hasAdditional := len(sans) > 100
+	if hasAdditional {
+		sans = sans[:100]
+	}
 	summary := &CertificateSummary{
 		CertificateArn:                       cert.CertificateArn,
 		DomainName:                           cert.DomainName,
-		SubjectAlternativeNameSummaries:      cert.SubjectAlternativeNames,
-		HasAdditionalSubjectAlternativeNames: len(cert.SubjectAlternativeNames) > 100,
+		SubjectAlternativeNameSummaries:      sans,
+		HasAdditionalSubjectAlternativeNames: hasAdditional,
 		Status:                               cert.Status,
 		Type:                                 cert.Type,
 		RenewalEligibility:                   cert.RenewalEligibility,
 		KeyAlgorithm:                         cert.KeyAlgorithm,
 		InUse:                                len(cert.InUseBy) > 0,
-		Exported:                             cert.PrivateKey != "",
+		Exported:                             cert.WasExported,
 	}
 
 	if !cert.NotBefore.IsZero() {
-		summary.NotBefore = formatEpochSeconds(cert.NotBefore)
+		summary.NotBefore = timeutils.FormatEpochSeconds(cert.NotBefore)
 	}
 	if !cert.NotAfter.IsZero() {
-		summary.NotAfter = formatEpochSeconds(cert.NotAfter)
+		summary.NotAfter = timeutils.FormatEpochSeconds(cert.NotAfter)
 	}
 	if !cert.CreatedAt.IsZero() {
-		summary.CreatedAt = formatEpochSeconds(cert.CreatedAt)
+		summary.CreatedAt = timeutils.FormatEpochSeconds(cert.CreatedAt)
 	}
 	if !cert.IssuedAt.IsZero() {
-		summary.IssuedAt = formatEpochSeconds(cert.IssuedAt)
+		summary.IssuedAt = timeutils.FormatEpochSeconds(cert.IssuedAt)
 	}
 	if !cert.ImportedAt.IsZero() {
-		summary.ImportedAt = formatEpochSeconds(cert.ImportedAt)
+		summary.ImportedAt = timeutils.FormatEpochSeconds(cert.ImportedAt)
 	}
 
 	if cert.Options != nil {
@@ -362,7 +374,7 @@ func CertificateToSummary(cert *Certificate) *CertificateSummary {
 	summary.CertificateKeyPairOrigin = cert.CertificateKeyPairOrigin
 
 	if !cert.RevokedAt.IsZero() {
-		summary.RevokedAt = formatEpochSeconds(cert.RevokedAt)
+		summary.RevokedAt = timeutils.FormatEpochSeconds(cert.RevokedAt)
 	}
 
 	return summary
@@ -392,6 +404,58 @@ func (s *CertificateStore) PutAccountConfiguration(accountID, region string, con
 	return s.configStore.Put(key, config)
 }
 
-func formatEpochSeconds(t time.Time) float64 {
-	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
+// AddInUseBy records that a resource (identified by resourceArn) is using
+// the certificate identified by certArn. This is called by cross-service
+// consumers (CloudFront, API Gateway, etc.) via the ACMInvoker when they
+// associate an ACM certificate with a resource.
+func (s *CertificateStore) AddInUseBy(certArn, resourceArn string) error {
+	certId := s.extractCertificateId(certArn)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var cert Certificate
+	if err := s.BaseStore.Get(certId, &cert); err != nil {
+		return NewStoreError("add_in_use_by", ErrCertificateNotFound)
+	}
+	for _, existing := range cert.InUseBy {
+		if existing == resourceArn {
+			return nil
+		}
+	}
+	cert.InUseBy = append(cert.InUseBy, resourceArn)
+	if err := s.BaseStore.Put(certId, &cert); err != nil {
+		return NewStoreError("add_in_use_by", err)
+	}
+	return nil
+}
+
+// RemoveInUseBy removes a resource ARN from the certificate's InUseBy list.
+// This is called when a cross-service consumer disassociates an ACM
+// certificate from a resource (e.g. deleting a CloudFront distribution).
+func (s *CertificateStore) RemoveInUseBy(certArn, resourceArn string) error {
+	certId := s.extractCertificateId(certArn)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var cert Certificate
+	if err := s.BaseStore.Get(certId, &cert); err != nil {
+		return NewStoreError("remove_in_use_by", ErrCertificateNotFound)
+	}
+	filtered := cert.InUseBy[:0]
+	for _, existing := range cert.InUseBy {
+		if existing != resourceArn {
+			filtered = append(filtered, existing)
+		}
+	}
+	if len(filtered) == 0 {
+		cert.InUseBy = nil
+	} else {
+		cert.InUseBy = filtered
+	}
+	if err := s.BaseStore.Put(certId, &cert); err != nil {
+		return NewStoreError("remove_in_use_by", err)
+	}
+	return nil
 }

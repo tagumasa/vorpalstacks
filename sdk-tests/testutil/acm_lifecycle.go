@@ -52,12 +52,17 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
 
+		// Our edge implementation immediately issues certificates (no real
+		// validation phase), so the cert is in ISSUED status by the time
+		// ResendValidationEmail is called. AWS only allows resend on
+		// PENDING_VALIDATION certs, so this correctly returns
+		// InvalidStateException.
 		_, err = tc.client.ResendValidationEmail(tc.ctx, &acm.ResendValidationEmailInput{
 			CertificateArn:   resp.CertificateArn,
 			Domain:           aws.String(domain),
 			ValidationDomain: aws.String(domain),
 		})
-		return err
+		return AssertErrorContains(err, "InvalidStateException")
 	}))
 
 	results = append(results, r.RunTest("acm", "ResendValidationEmail_IssuedStatus", func() error {

@@ -287,3 +287,15 @@ type RDSDataInvoker interface {
 	CommitTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error
 	RollbackTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error
 }
+
+// ACMInvoker provides ACM certificate usage tracking for cross-service
+// consumers (e.g. CloudFront distribution management, API Gateway domain
+// management). When a service associates an ACM certificate with a resource,
+// it must register the resource ARN so that DeleteCertificate can enforce
+// the ResourceInUseError guard. Consumers call these methods instead of
+// holding a direct reference to the ACM store.
+type ACMInvoker interface {
+	RegisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error
+	UnregisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error
+	CertificateExists(ctx context.Context, region, certArn string) bool
+}

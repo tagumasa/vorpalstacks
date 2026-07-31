@@ -1,14 +1,9 @@
 package scheduler
 
 import (
-	"time"
-
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
+	"vorpalstacks/internal/utils/timeutils"
 )
-
-func formatEpochSeconds(t time.Time) float64 {
-	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
-}
 
 func scheduleToResponse(schedule *schedulerstore.Schedule) map[string]interface{} {
 	resp := map[string]interface{}{
@@ -17,8 +12,8 @@ func scheduleToResponse(schedule *schedulerstore.Schedule) map[string]interface{
 		"GroupName":            schedule.GroupName,
 		"ScheduleExpression":   schedule.ScheduleExpression,
 		"State":                string(schedule.State),
-		"CreationDate":         formatEpochSeconds(schedule.CreationDate),
-		"LastModificationDate": formatEpochSeconds(schedule.LastModificationDate),
+		"CreationDate":         timeutils.FormatEpochSeconds(schedule.CreationDate),
+		"LastModificationDate": timeutils.FormatEpochSeconds(schedule.LastModificationDate),
 	}
 
 	if schedule.Description != "" {
@@ -31,10 +26,10 @@ func scheduleToResponse(schedule *schedulerstore.Schedule) map[string]interface{
 		resp["KmsKeyArn"] = schedule.KmsKeyArn
 	}
 	if schedule.StartDate != nil {
-		resp["StartDate"] = formatEpochSeconds(*schedule.StartDate)
+		resp["StartDate"] = timeutils.FormatEpochSeconds(*schedule.StartDate)
 	}
 	if schedule.EndDate != nil {
-		resp["EndDate"] = formatEpochSeconds(*schedule.EndDate)
+		resp["EndDate"] = timeutils.FormatEpochSeconds(*schedule.EndDate)
 	}
 	if schedule.ActionAfterCompletion != "" {
 		resp["ActionAfterCompletion"] = string(schedule.ActionAfterCompletion)

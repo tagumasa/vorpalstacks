@@ -3,6 +3,7 @@ package cloudfront
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -1050,6 +1051,16 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 	config := parseDistributionConfig(configMap)
 	config.CallerReference = callerRef
 
+	certArn := ""
+	if config.ViewerCertificate != nil {
+		certArn = config.ViewerCertificate.ACMCertificateArn
+	}
+	if certArn != "" && s.acmInvoker != nil {
+		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
+			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+certArn, 404)
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -1061,7 +1072,15 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 
 	if config.WebACLId != "" && s.wafInvoker != nil {
 		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
+			_ = store.distributions.Delete(distribution.ID)
 			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		}
+	}
+
+	if certArn != "" && s.acmInvoker != nil {
+		if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), certArn, distribution.ARN); err != nil {
+			_ = store.distributions.Delete(distribution.ID)
+			return nil, fmt.Errorf("failed to register certificate usage: %w", err)
 		}
 	}
 
@@ -1099,6 +1118,16 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 	config := parseDistributionConfig(configMap)
 	config.CallerReference = callerRef
 
+	certArn := ""
+	if config.ViewerCertificate != nil {
+		certArn = config.ViewerCertificate.ACMCertificateArn
+	}
+	if certArn != "" && s.acmInvoker != nil {
+		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
+			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+certArn, 404)
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -1110,7 +1139,15 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 
 	if config.WebACLId != "" && s.wafInvoker != nil {
 		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
+			_ = store.distributions.Delete(distribution.ID)
 			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		}
+	}
+
+	if certArn != "" && s.acmInvoker != nil {
+		if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), certArn, distribution.ARN); err != nil {
+			_ = store.distributions.Delete(distribution.ID)
+			return nil, fmt.Errorf("failed to register certificate usage: %w", err)
 		}
 	}
 
@@ -1247,15 +1284,34 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
+	// Capture old state for compensation.
+	oldConfig := distribution.DistributionConfig
+	oldEnabled := distribution.Enabled
 	oldWebACLId := ""
-	if distribution.DistributionConfig != nil {
-		oldWebACLId = distribution.DistributionConfig.WebACLId
+	oldCertArn := ""
+	if oldConfig != nil {
+		oldWebACLId = oldConfig.WebACLId
+		if oldConfig.ViewerCertificate != nil {
+			oldCertArn = oldConfig.ViewerCertificate.ACMCertificateArn
+		}
 	}
 
 	newConfig := parseDistributionConfig(configMap)
 	if newConfig.CallerReference == "" {
 		newConfig.CallerReference = distribution.CallerReference
 	}
+
+	// Pre-validate new cert ARN before saving.
+	newCertArn := ""
+	if newConfig.ViewerCertificate != nil {
+		newCertArn = newConfig.ViewerCertificate.ACMCertificateArn
+	}
+	if newCertArn != "" && s.acmInvoker != nil && newCertArn != oldCertArn {
+		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), newCertArn) {
+			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+newCertArn, 404)
+		}
+	}
+
 	distribution.DistributionConfig = newConfig
 	distribution.Enabled = newConfig.Enabled
 
@@ -1278,6 +1334,35 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
+	}
+
+	// ACM cert operations with compensating transaction on failure.
+	if s.acmInvoker != nil && oldCertArn != newCertArn {
+		distArn := distribution.ARN
+		// Step 1: Unregister old cert.
+		if oldCertArn != "" {
+			if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, distArn); err != nil {
+				// Compensate: revert distribution config to old state.
+				distribution.DistributionConfig = oldConfig
+				distribution.Enabled = oldEnabled
+				_ = store.distributions.UpdateWithLastModified(id, distribution)
+				return nil, fmt.Errorf("failed to unregister old certificate usage: %w", err)
+			}
+		}
+		// Step 2: Register new cert.
+		if newCertArn != "" {
+			if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), newCertArn, distArn); err != nil {
+				// Compensate: re-register old cert (was unregistered in step 1).
+				if oldCertArn != "" {
+					_ = s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, distArn)
+				}
+				// Revert distribution config to old state.
+				distribution.DistributionConfig = oldConfig
+				distribution.Enabled = oldEnabled
+				_ = store.distributions.UpdateWithLastModified(id, distribution)
+				return nil, fmt.Errorf("failed to register new certificate usage: %w", err)
+			}
+		}
 	}
 
 	return map[string]interface{}{
@@ -1319,6 +1404,12 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 		return nil, awserrors.NewAWSError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
 	}
 
+	// Capture cert ARN before deletion for best-effort unregister after.
+	certArnForCleanup := ""
+	if distribution.DistributionConfig != nil && distribution.DistributionConfig.ViewerCertificate != nil {
+		certArnForCleanup = distribution.DistributionConfig.ViewerCertificate.ACMCertificateArn
+	}
+
 	if distribution.DistributionConfig != nil && s.wafInvoker != nil {
 		webACLId := distribution.DistributionConfig.WebACLId
 		if webACLId != "" {
@@ -1340,6 +1431,15 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
+	}
+
+	// Best-effort ACM unregister after successful deletion. A stale InUseBy
+	// reference is harmless (only over-blocks certificate deletion), whereas
+	// unregistering before deletion risks leaving a live resource unprotected.
+	if certArnForCleanup != "" && s.acmInvoker != nil {
+		if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), certArnForCleanup, distribution.ARN); err != nil {
+			log.Printf("warning: failed to unregister certificate usage for deleted distribution %s: %v", id, err)
+		}
 	}
 
 	return response.EmptyResponse(), nil

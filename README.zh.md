@@ -43,7 +43,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 
 | 服务 | 支持范围 | 备注 |
 |------|---------|------|
-| ACM | 完整 | |
+| ACM | 较全面 | 不支持 ACME 协议（19 个操作） |
 | API Gateway | 较全面 | 不支持客户端证书、文档或 SDK 生成 |
 | AppSync | 完整 | 74 个控制平面操作、GraphQL 执行、WebSocket pub/sub |
 | Athena | 较全面 | 不支持容量预留或 Notebook 会话 |

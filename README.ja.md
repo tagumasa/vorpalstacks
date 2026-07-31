@@ -42,7 +42,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 
 | サービス | カバレッジ | 備考 |
 |---------|-----------|------|
-| ACM | Full | |
+| ACM | Broad | ACMEプロトコル（19 ops）未対応 |
 | API Gateway | Broad | クライアント証明書、ドキュメント、SDK生成なし |
 | AppSync | Full | 74制御プレーン操作、GraphQL実行、WebSocket pub/sub |
 | Athena | Broad | キャパシティ予約、ノートブックセッションなし |

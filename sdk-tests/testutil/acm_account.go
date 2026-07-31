@@ -14,7 +14,7 @@ func (r *TestRunner) runACMAccountTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "GetAccountConfiguration_DefaultValues", func() error {
 		_, _ = tc.client.PutAccountConfiguration(tc.ctx, &acm.PutAccountConfigurationInput{
-			IdempotencyToken: aws.String(fmt.Sprintf("reset-%d", time.Now().UnixNano())),
+			IdempotencyToken: aws.String(fmt.Sprintf("reset_%d", time.Now().UnixNano())),
 			ExpiryEvents:     &types.ExpiryEventsConfiguration{DaysBeforeExpiry: aws.Int32(45)},
 		})
 		resp, err := tc.client.GetAccountConfiguration(tc.ctx, &acm.GetAccountConfigurationInput{})
@@ -35,7 +35,7 @@ func (r *TestRunner) runACMAccountTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "GetAccountConfiguration_RoundTrip", func() error {
 		_, err := tc.client.PutAccountConfiguration(tc.ctx, &acm.PutAccountConfigurationInput{
-			IdempotencyToken: aws.String(fmt.Sprintf("rt-%d", time.Now().UnixNano())),
+			IdempotencyToken: aws.String(fmt.Sprintf("rt_%d", time.Now().UnixNano())),
 			ExpiryEvents: &types.ExpiryEventsConfiguration{
 				DaysBeforeExpiry: aws.Int32(30),
 			},
@@ -57,7 +57,7 @@ func (r *TestRunner) runACMAccountTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "PutAccountConfiguration_VerifyUpdate", func() error {
-		token := fmt.Sprintf("put-%d", time.Now().UnixNano())
+		token := fmt.Sprintf("put_%d", time.Now().UnixNano())
 		_, err := tc.client.PutAccountConfiguration(tc.ctx, &acm.PutAccountConfigurationInput{
 			IdempotencyToken: aws.String(token),
 			ExpiryEvents: &types.ExpiryEventsConfiguration{

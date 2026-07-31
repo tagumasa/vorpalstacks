@@ -183,6 +183,9 @@ func (a *App) initCloudFront(st *serviceState) error {
 	if eb := a.server.EventBus(); eb != nil {
 		st.cloudFrontService.SetWAFInvoker(eb.WAFInvoker())
 	}
+	if st.acmService != nil {
+		st.cloudFrontService.SetACMInvoker(st.acmService)
+	}
 	st.cloudFrontService.RegisterHandlers(a.server.Dispatcher())
 	st.cloudFrontService.InitDistributionServer()
 	return nil

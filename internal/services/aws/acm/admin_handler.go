@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/acm"
@@ -50,6 +52,10 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 	maxItems := int(req.Msg.GetMaxitems())
 	if maxItems <= 0 {
 		maxItems = 100
+	}
+	// Smithy MaxItems: @range(1, 1000). Reject out-of-range instead of clamping.
+	if maxItems > 1000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("MaxItems must not exceed 1000"))
 	}
 
 	result, err := stores.certificates.List(marker, maxItems)
@@ -104,33 +110,107 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if req.Msg.Domainname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DomainName is required"))
+	domain, err := validateDomainName(req.Msg.Domainname)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// Validate SubjectAlternativeNames (Smithy DomainList: min 1, max 100,
+	// each entry must be a valid domain name).
+	sans := req.Msg.Subjectalternativenames
+	if len(sans) > 100 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("SubjectAlternativeNames must not exceed 100 entries"))
+	}
+	for _, san := range sans {
+		if _, err := validateDomainName(san); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid SAN %q: %w", san, err))
+		}
+	}
+
+	// Smithy IdempotencyToken: @length(1-32) + @pattern(^\w+$).
+	if err := validateIdempotencyToken(req.Msg.Idempotencytoken); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	keyAlgorithm := "RSA_2048"
+	if req.Msg.Keyalgorithm != 0 {
+		keyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
+	}
+
+	validationMethod := "DNS"
+	if req.Msg.Validationmethod == pb.ValidationMethod_VALIDATION_METHOD_EMAIL {
+		validationMethod = "EMAIL"
 	}
 
 	certId := acmstore.GenerateCertificateId()
 	certArn := stores.arnBuilder.BuildCertificateARN(certId)
 
-	cert := &acmstore.Certificate{
-		CertificateArn:          certArn,
-		DomainName:              req.Msg.Domainname,
-		SubjectAlternativeNames: req.Msg.Subjectalternativenames,
-		Status:                  "PENDING_VALIDATION",
-		Type:                    "AMAZON_ISSUED",
-		KeyAlgorithm:            "RSA_2048",
-		RenewalEligibility:      "INELIGIBLE",
-		AccountID:               h.service.accountID,
+	cert, err := generateAmazonIssuedCert(certArn, domain, sans, keyAlgorithm, validationMethod)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if req.Msg.Keyalgorithm != 0 {
-		cert.KeyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
+
+	cert.AccountID = h.service.accountID
+
+	// ManagedBy (Smithy CertificateManagedBy enum: CLOUDFRONT only).
+	if req.Msg.Managedby == pb.CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT {
+		cert.ManagedBy = "CLOUDFRONT"
 	}
+
+	// CertificateAuthorityArn (Smithy PcaArn: @length 20-2048 + pattern).
+	pcaArn, err := validateCertificateAuthorityArn(req.Msg.Certificateauthorityarn)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	cert.CertificateAuthorityArn = pcaArn
+
+	// Tags: convert proto Tags to types.Tag, validate, set on cert.
+	if len(req.Msg.Tags) > 0 {
+		tags := make([]types.Tag, 0, len(req.Msg.Tags))
+		for _, t := range req.Msg.Tags {
+			tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
+		}
+		if len(tags) > 50 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, NewTooManyTagsException("Tags must not exceed 50 entries"))
+		}
+		if err := validateACMTags(tags); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		cert.Tags = tags
+	}
+
+	// DomainValidationOptions: merge user-provided ValidationDomain overrides
+	// into the auto-generated DVOs from generateAmazonIssuedCert.
+	for _, dvo := range req.Msg.Domainvalidationoptions {
+		if err := validateDomainValidationFields(dvo.Domainname, dvo.Validationdomain); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		for _, dv := range cert.DomainValidationOptions {
+			if strings.EqualFold(dv.DomainName, dvo.Domainname) {
+				dv.ValidationDomain = strings.ToLower(dvo.Validationdomain)
+			}
+		}
+	}
+
 	if req.Msg.Options != nil {
 		ctlp := "DISABLED"
 		if req.Msg.Options.Certificatetransparencyloggingpreference == pb.CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_ENABLED {
 			ctlp = "ENABLED"
 		}
+		exportOpt := "DISABLED"
+		if req.Msg.Options.Export == pb.CertificateExport_CERTIFICATE_EXPORT_ENABLED {
+			exportOpt = "ENABLED"
+		}
 		cert.Options = &acmstore.CertificateOptions{
 			CertificateTransparencyLoggingPreference: ctlp,
+			Export:                                   exportOpt,
+		}
+	} else {
+		// Match the HTTP API default (certificate_operations.go:226-231):
+		// CTLPreference=ENABLED, Export=DISABLED.
+		cert.Options = &acmstore.CertificateOptions{
+			CertificateTransparencyLoggingPreference: "ENABLED",
+			Export:                                   "DISABLED",
 		}
 	}
 
@@ -152,6 +232,17 @@ func (h *AdminHandler) DeleteCertificate(ctx context.Context, req *connect.Reque
 
 	if req.Msg.Certificatearn == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("CertificateArn is required"))
+	}
+	if err := validateCertificateArn(req.Msg.Certificatearn); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	cert, err := stores.certificates.Get(req.Msg.Certificatearn)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	if len(cert.InUseBy) > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("certificate %s is in use", req.Msg.Certificatearn))
 	}
 
 	if err := stores.certificates.Delete(req.Msg.Certificatearn); err != nil {

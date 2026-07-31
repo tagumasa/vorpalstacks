@@ -3,6 +3,8 @@ package apigateway
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -10,6 +12,16 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// effectiveCertificateArn returns the ACM certificate ARN that a domain name
+// is configured to use, preferring the regional certificate over the edge
+// certificate. Returns empty string if no ACM certificate is configured.
+func effectiveCertificateArn(d *store.DomainName) string {
+	if d.RegionalCertificateArn != "" {
+		return d.RegionalCertificateArn
+	}
+	return d.CertificateArn
+}
 
 // CreateDomainName creates a new domain name for API Gateway.
 func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -56,6 +68,14 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 		domain.Tags = tagutil.MapInterfaceToTags(tags)
 	}
 
+	// Pre-validate certificate ARN before saving.
+	certArn := effectiveCertificateArn(domain)
+	if certArn != "" && s.acmInvoker != nil {
+		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
+			return nil, NewBadRequestException("The specified certificate ARN does not exist: " + certArn)
+		}
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -63,6 +83,13 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 	created, err := stores.domains.CreateDomainName(domain)
 	if err != nil {
 		return nil, err
+	}
+
+	if certArn != "" && s.acmInvoker != nil {
+		if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), certArn, created.DomainNameArn); err != nil {
+			_ = stores.domains.DeleteDomainName(created.DomainName)
+			return nil, fmt.Errorf("failed to register certificate usage: %w", err)
+		}
 	}
 
 	return s.toDomainNameResponse(created), nil
@@ -104,8 +131,26 @@ func (s *APIGatewayService) DeleteDomainName(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+	domain, err := stores.domains.GetDomainName(domainName)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	// Capture cert ARN before deletion for best-effort unregister after.
+	certArnForCleanup := effectiveCertificateArn(domain)
+	domainArn := domain.DomainNameArn
+
 	if err := stores.domains.DeleteDomainName(domainName); err != nil {
 		return nil, ErrNotFoundException
+	}
+
+	// Best-effort ACM unregister after successful deletion. A stale InUseBy
+	// reference is harmless (only over-blocks certificate deletion), whereas
+	// unregistering before deletion risks leaving a live resource unprotected.
+	if certArnForCleanup != "" && s.acmInvoker != nil {
+		if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), certArnForCleanup, domainArn); err != nil {
+			log.Printf("warning: failed to unregister certificate usage for deleted domain %s: %v", domainName, err)
+		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -130,6 +175,12 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 		return nil, ErrNotFoundException
 	}
 
+	// Capture old state for compensation.
+	oldCertArn := effectiveCertificateArn(domain)
+	oldCertArnValue := domain.CertificateArn
+	oldRegionalCertArnValue := domain.RegionalCertificateArn
+	oldCertificateName := domain.CertificateName
+
 	for _, po := range parsePatchOperations(req.Parameters) {
 		switch po.Path {
 		case "/certificateArn":
@@ -141,8 +192,46 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 		}
 	}
 
+	// Pre-validate new cert ARN.
+	newCertArn := effectiveCertificateArn(domain)
+	if newCertArn != "" && s.acmInvoker != nil && newCertArn != oldCertArn {
+		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), newCertArn) {
+			return nil, NewBadRequestException("The specified certificate ARN does not exist: " + newCertArn)
+		}
+	}
+
 	if err := stores.domains.UpdateDomainName(domain); err != nil {
 		return nil, err
+	}
+
+	// ACM cert operations with compensating transaction on failure.
+	if s.acmInvoker != nil && oldCertArn != newCertArn {
+		// Step 1: Unregister old cert.
+		if oldCertArn != "" {
+			if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, domain.DomainNameArn); err != nil {
+				// Compensate: revert to old cert values.
+				domain.CertificateArn = oldCertArnValue
+				domain.RegionalCertificateArn = oldRegionalCertArnValue
+				domain.CertificateName = oldCertificateName
+				_ = stores.domains.UpdateDomainName(domain)
+				return nil, fmt.Errorf("failed to unregister old certificate usage: %w", err)
+			}
+		}
+		// Step 2: Register new cert.
+		if newCertArn != "" {
+			if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), newCertArn, domain.DomainNameArn); err != nil {
+				// Compensate: re-register old cert (was unregistered in step 1).
+				if oldCertArn != "" {
+					_ = s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, domain.DomainNameArn)
+				}
+				// Revert to old cert values.
+				domain.CertificateArn = oldCertArnValue
+				domain.RegionalCertificateArn = oldRegionalCertArnValue
+				domain.CertificateName = oldCertificateName
+				_ = stores.domains.UpdateDomainName(domain)
+				return nil, fmt.Errorf("failed to register new certificate usage: %w", err)
+			}
+		}
 	}
 
 	return s.toDomainNameResponse(domain), nil

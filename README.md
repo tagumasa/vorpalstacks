@@ -43,7 +43,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 
 | Service | Coverage | Notes |
 |---------|----------|-------|
-| ACM | Full | |
+| ACM | Broad | No ACME protocol (19 ops) |
 | API Gateway | Broad | No client certificates, documentation, or SDK generation |
 | AppSync | Full | 74 control-plane operations, GraphQL execution, WebSocket pub/sub |
 | Athena | Broad | No capacity reservations or notebook sessions |

@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // namePattern matches the AWS Scheduler Name/GroupName constraint:
@@ -339,10 +340,10 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 			"State":     string(sch.State),
 		}
 		if sch.CreationDate != nil {
-			item["CreationDate"] = formatEpochSeconds(*sch.CreationDate)
+			item["CreationDate"] = timeutils.FormatEpochSeconds(*sch.CreationDate)
 		}
 		if sch.LastModificationDate != nil {
-			item["LastModificationDate"] = formatEpochSeconds(*sch.LastModificationDate)
+			item["LastModificationDate"] = timeutils.FormatEpochSeconds(*sch.LastModificationDate)
 		}
 		schedules[i] = item
 		if sch.Target != nil {

@@ -127,6 +127,9 @@ func (a *App) initACM(st *serviceState) error {
 func (a *App) initAPIGateway(st *serviceState) error {
 	st.apiGatewayService = svcapigateway.NewAPIGatewayService(st.accountID, st.region)
 	st.apiGatewayService.SetStorageManager(a.server.StorageManager())
+	if st.acmService != nil {
+		st.apiGatewayService.SetACMInvoker(st.acmService)
+	}
 	st.apiGatewayService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }

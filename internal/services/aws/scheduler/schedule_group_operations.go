@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CreateScheduleGroup creates a new schedule group in EventBridge Scheduler.
@@ -137,8 +138,8 @@ func (s *SchedulerService) GetScheduleGroup(ctx context.Context, reqCtx *request
 		"Arn":                  group.ARN,
 		"Name":                 group.Name,
 		"State":                string(group.State),
-		"CreationDate":         formatEpochSeconds(group.CreationDate),
-		"LastModificationDate": formatEpochSeconds(group.LastModificationDate),
+		"CreationDate":         timeutils.FormatEpochSeconds(group.CreationDate),
+		"LastModificationDate": timeutils.FormatEpochSeconds(group.LastModificationDate),
 	}, nil
 }
 
@@ -177,10 +178,10 @@ func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *reque
 			"State": string(g.State),
 		}
 		if g.CreationDate != nil {
-			item["CreationDate"] = formatEpochSeconds(*g.CreationDate)
+			item["CreationDate"] = timeutils.FormatEpochSeconds(*g.CreationDate)
 		}
 		if g.LastModificationDate != nil {
-			item["LastModificationDate"] = formatEpochSeconds(*g.LastModificationDate)
+			item["LastModificationDate"] = timeutils.FormatEpochSeconds(*g.LastModificationDate)
 		}
 		groups[i] = item
 	}

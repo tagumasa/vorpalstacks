@@ -29,11 +29,6 @@ func NewInvalidDomainValidationOptionsException(message string) *awserrors.AWSEr
 	return awserrors.NewAWSError("InvalidDomainValidationOptionsException", message, http.StatusBadRequest)
 }
 
-// NewRequestInProgressException creates a new request in progress exception.
-func NewRequestInProgressException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("RequestInProgressException", message, http.StatusBadRequest)
-}
-
 // NewInvalidStateException creates a new invalid state exception.
 func NewInvalidStateException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidStateException", message, http.StatusBadRequest)
@@ -47,4 +42,16 @@ func NewTooManyTagsException(message string) *awserrors.AWSError {
 // NewInternalServerException creates a new internal server exception.
 func NewInternalServerException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InternalServerException", message, http.StatusInternalServerError)
+}
+
+// NewInvalidTagException creates a new invalid tag exception (Smithy-declared
+// for ImportCertificate and RequestCertificate).
+func NewInvalidTagException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidTagException", message, http.StatusBadRequest)
+}
+
+// NewRequestInProgressException creates a new request in progress exception
+// (Smithy-declared for RenewCertificate).
+func NewRequestInProgressException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("RequestInProgressException", message, http.StatusBadRequest)
 }

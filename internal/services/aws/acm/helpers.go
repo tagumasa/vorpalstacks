@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
+	"vorpalstacks/internal/utils/aws/types"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // domainNamePattern validates domain names per the Smithy DomainNameString
@@ -17,6 +18,10 @@ import (
 // starts and ends with an alphanumeric character (hyphens allowed in the middle).
 // RE2-compatible rewrite of the Smithy Perl-syntax pattern.
 var domainNamePattern = regexp.MustCompile(`^(\*\.)?([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$`)
+
+// idempotencyTokenPattern validates IdempotencyToken per the Smithy
+// @pattern(^\w+$) constraint.
+var idempotencyTokenPattern = regexp.MustCompile(`^\w+$`)
 
 // validRevocationReasons contains the Smithy RevocationReason enum values.
 var validRevocationReasons = map[string]bool{
@@ -33,12 +38,91 @@ var validRevocationReasons = map[string]bool{
 	"A_A_COMPROMISE":         true,
 }
 
-func isValidRevocationReason(reason string) bool {
-	return validRevocationReasons[reason]
+// validKeyAlgorithmsMap contains the Smithy KeyAlgorithm enum values.
+var validKeyAlgorithmsMap = map[string]bool{
+	"RSA_1024":      true,
+	"RSA_2048":      true,
+	"RSA_3072":      true,
+	"RSA_4096":      true,
+	"EC_prime256v1": true,
+	"EC_secp384r1":  true,
+	"EC_secp521r1":  true,
 }
 
-func formatEpochSeconds(t time.Time) float64 {
-	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
+// validCertificateStatuses contains the Smithy CertificateStatus enum values.
+var validCertificateStatuses = map[string]bool{
+	"PENDING_VALIDATION":   true,
+	"ISSUED":               true,
+	"INACTIVE":             true,
+	"EXPIRED":              true,
+	"VALIDATION_TIMED_OUT": true,
+	"REVOKED":              true,
+	"FAILED":               true,
+}
+
+// validKeyPairOrigins contains the Smithy CertificateKeyPairOrigin enum values.
+var validKeyPairOrigins = map[string]bool{
+	"AWS_MANAGED":       true,
+	"ACME":              true,
+	"CUSTOMER_PROVIDED": true,
+}
+
+// validKeyUsageNames contains the Smithy KeyUsageName enum values.
+var validKeyUsageNames = map[string]bool{
+	"DIGITAL_SIGNATURE":   true,
+	"NON_REPUDIATION":     true,
+	"KEY_ENCIPHERMENT":    true,
+	"DATA_ENCIPHERMENT":   true,
+	"KEY_AGREEMENT":       true,
+	"CERTIFICATE_SIGNING": true,
+	"CRL_SIGNING":         true,
+	"ENCIPHER_ONLY":       true,
+	"DECIPHER_ONLY":       true,
+	"ANY":                 true,
+	"CUSTOM":              true,
+}
+
+// validExtendedKeyUsageNames contains the Smithy ExtendedKeyUsageName enum values.
+var validExtendedKeyUsageNames = map[string]bool{
+	"TLS_WEB_SERVER_AUTHENTICATION": true,
+	"TLS_WEB_CLIENT_AUTHENTICATION": true,
+	"CODE_SIGNING":                  true,
+	"EMAIL_PROTECTION":              true,
+	"TIME_STAMPING":                 true,
+	"OCSP_SIGNING":                  true,
+	"IPSEC_END_SYSTEM":              true,
+	"IPSEC_TUNNEL":                  true,
+	"IPSEC_USER":                    true,
+	"ANY":                           true,
+	"NONE":                          true,
+	"CUSTOM":                        true,
+}
+
+// validateEnumList validates that every value in the list is a member of the
+// given enum set. Returns nil if the list is empty.
+func validateEnumList(values []string, paramName string, validSet map[string]bool) error {
+	for _, v := range values {
+		if !validSet[v] {
+			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", paramName, v))
+		}
+	}
+	return nil
+}
+
+// validateSingleEnum validates a single-value enum parameter. Returns nil if
+// the value is empty (parameter not provided).
+func validateSingleEnum(value, paramName string, validSet map[string]bool) error {
+	if value == "" {
+		return nil
+	}
+	if !validSet[value] {
+		return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", paramName, value))
+	}
+	return nil
+}
+
+func isValidRevocationReason(reason string) bool {
+	return validRevocationReasons[reason]
 }
 
 func getMaxItems(params map[string]interface{}) int {
@@ -50,14 +134,33 @@ func parseCertificateArn(params map[string]interface{}, paramName string) (strin
 	if arn == "" {
 		return "", awserrors.NewValidationException(paramName + " is required")
 	}
-	if !strings.HasPrefix(arn, "arn:") || !strings.Contains(arn, ":certificate/") {
-		return "", NewInvalidArnError(arn)
+	if err := validateCertificateArn(arn); err != nil {
+		return "", err
 	}
 	return arn, nil
 }
 
-func parseDomainName(params map[string]interface{}) (string, error) {
-	domain := request.GetStringParam(params, "DomainName")
+// validateCertificateArn validates that the given string conforms to the
+// ACM ARN structure: arn:partition:acm:region:account-id:certificate/<id>.
+// Shared by the HTTP API (via parseCertificateArn) and the gRPC admin handler.
+func validateCertificateArn(arn string) error {
+	// ARN structure: arn:partition:service:region:account-id:resource
+	parts := strings.Split(arn, ":")
+	if len(parts) != 6 || parts[0] != "arn" || parts[2] != "acm" {
+		return NewInvalidArnError(arn)
+	}
+	if !strings.HasPrefix(parts[5], "certificate/") || len(parts[5]) <= len("certificate/") {
+		return NewInvalidArnError(arn)
+	}
+	return nil
+}
+
+// validateDomainName normalises and validates a domain name string against the
+// ACM DomainNameString constraints (253 chars total, 63 chars per label,
+// RFC-1123 hostname pattern). Wildcard labels ("*") are allowed in the
+// leftmost position. Both the HTTP API (parseDomainName) and the gRPC admin
+// handler call this function to ensure identical validation logic.
+func validateDomainName(domain string) (string, error) {
 	if domain == "" {
 		return "", awserrors.NewValidationException("DomainName is required")
 	}
@@ -75,6 +178,30 @@ func parseDomainName(params map[string]interface{}) (string, error) {
 		}
 	}
 	return domain, nil
+}
+
+// validateDomainValidationFields validates the DomainName and ValidationDomain
+// fields of a DomainValidationOption against the Smithy constraints. Shared by
+// the HTTP API (applyUserDomainValidationOptions) and the admin handler to
+// ensure consistent validation across both paths.
+func validateDomainValidationFields(domainName, validationDomain string) error {
+	if domainName == "" {
+		return NewInvalidDomainValidationOptionsException("DomainName is required in DomainValidationOptions")
+	}
+	if validationDomain == "" {
+		return NewInvalidDomainValidationOptionsException("ValidationDomain is required in DomainValidationOptions")
+	}
+	if !domainNamePattern.MatchString(domainName) {
+		return NewInvalidDomainValidationOptionsException(fmt.Sprintf("Invalid DomainName in DomainValidationOptions: %s", domainName))
+	}
+	if !domainNamePattern.MatchString(validationDomain) {
+		return NewInvalidDomainValidationOptionsException(fmt.Sprintf("Invalid ValidationDomain in DomainValidationOptions: %s", validationDomain))
+	}
+	return nil
+}
+
+func parseDomainName(params map[string]interface{}) (string, error) {
+	return validateDomainName(request.GetStringParam(params, "DomainName"))
 }
 
 func parseValidationMethod(params map[string]interface{}) (string, error) {
@@ -134,6 +261,52 @@ var validManagedByValues = map[string]bool{
 	"CLOUDFRONT": true,
 }
 
+// validExportOptionValues contains the Smithy CertificateExport enum values
+// used as a filter in ListCertificates.Includes.exportOption.
+var validExportOptionValues = map[string]bool{
+	"ENABLED":  true,
+	"DISABLED": true,
+}
+
+// validateIdempotencyToken validates an IdempotencyToken string against the
+// Smithy constraints (@length 1-32, @pattern ^\w+$). Shared by the HTTP API
+// (RequestCertificate) and the admin handler. No-op when token is empty.
+func validateIdempotencyToken(token string) error {
+	if token == "" {
+		return nil
+	}
+	if len(token) > 32 {
+		return awserrors.NewValidationException("IdempotencyToken must not exceed 32 characters")
+	}
+	if !idempotencyTokenPattern.MatchString(token) {
+		return awserrors.NewValidationException("IdempotencyToken must contain only alphanumeric characters and underscores")
+	}
+	return nil
+}
+
+// validateACMTags validates tag keys and values against the Smithy
+// constraints: TagKey @length(1-128) + pattern, TagValue @length(max 256)
+// + pattern. Returns InvalidTagException on violation.
+var tagKeyPattern = regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
+
+func validateACMTags(tags []types.Tag) error {
+	for _, t := range tags {
+		if len(t.Key) < 1 || len(t.Key) > 128 {
+			return NewInvalidTagException(fmt.Sprintf("Tag key length must be 1-128: got %d", len(t.Key)))
+		}
+		if len(t.Value) > 256 {
+			return NewInvalidTagException(fmt.Sprintf("Tag value length must not exceed 256: got %d", len(t.Value)))
+		}
+		if !tagKeyPattern.MatchString(t.Key) {
+			return NewInvalidTagException(fmt.Sprintf("Tag key contains invalid characters: %s", t.Key))
+		}
+		if !tagKeyPattern.MatchString(t.Value) {
+			return NewInvalidTagException(fmt.Sprintf("Tag value contains invalid characters: %s", t.Value))
+		}
+	}
+	return nil
+}
+
 func parseManagedBy(params map[string]interface{}) (string, error) {
 	mb := request.GetStringParam(params, "ManagedBy")
 	if mb == "" {
@@ -145,22 +318,28 @@ func parseManagedBy(params map[string]interface{}) (string, error) {
 	return mb, nil
 }
 
-func parseCertificateAuthorityArn(params map[string]interface{}) string {
-	return request.GetStringParam(params, "CertificateAuthorityArn")
+// pcaArnPattern validates PCA ARNs per the Smithy PcaArn pattern.
+var pcaArnPattern = regexp.MustCompile(`^arn:[\w+=/,.@-]+:acm-pca:[\w+=/,.@-]*:[0-9]+:[\w+=,.@-]+(/[\w+=,.@-]+)*$`)
+
+// validateCertificateAuthorityArn validates a PCA ARN string against the
+// Smithy PcaArn constraints. Shared by the HTTP API (via
+// parseCertificateAuthorityArn) and the admin handler.
+func validateCertificateAuthorityArn(arn string) (string, error) {
+	if arn == "" {
+		return "", nil
+	}
+	// Smithy PcaArn: @length(20-2048) + pattern.
+	if len(arn) < 20 || len(arn) > 2048 {
+		return "", awserrors.NewInvalidParameterException("CertificateAuthorityArn length must be 20-2048")
+	}
+	if !pcaArnPattern.MatchString(arn) {
+		return "", awserrors.NewInvalidParameterException("Invalid CertificateAuthorityArn format")
+	}
+	return arn, nil
 }
 
-func parseStringList(params map[string]interface{}, key string) []string {
-	var result []string
-	if raw, ok := params[key]; ok {
-		if arr, ok := raw.([]interface{}); ok {
-			for _, v := range arr {
-				if s, ok := v.(string); ok {
-					result = append(result, s)
-				}
-			}
-		}
-	}
-	return result
+func parseCertificateAuthorityArn(params map[string]interface{}) (string, error) {
+	return validateCertificateAuthorityArn(request.GetStringParam(params, "CertificateAuthorityArn"))
 }
 
 func certificateOptionsToResponse(opts *acmstorelib.CertificateOptions) map[string]interface{} {
@@ -217,15 +396,15 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 		"KeyAlgorithm":       cert.KeyAlgorithm,
 		"SignatureAlgorithm": cert.SignatureAlgorithm,
 		"RenewalEligibility": cert.RenewalEligibility,
-		"CreatedAt":          formatEpochSeconds(cert.CreatedAt),
+		"CreatedAt":          timeutils.FormatEpochSeconds(cert.CreatedAt),
 		"Options":            certificateOptionsToResponse(cert.Options),
 	}
 
 	if !cert.NotBefore.IsZero() {
-		result["NotBefore"] = formatEpochSeconds(cert.NotBefore)
+		result["NotBefore"] = timeutils.FormatEpochSeconds(cert.NotBefore)
 	}
 	if !cert.NotAfter.IsZero() {
-		result["NotAfter"] = formatEpochSeconds(cert.NotAfter)
+		result["NotAfter"] = timeutils.FormatEpochSeconds(cert.NotAfter)
 	}
 
 	if len(cert.InUseBy) > 0 {
@@ -245,15 +424,15 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 	}
 
 	if !cert.IssuedAt.IsZero() {
-		result["IssuedAt"] = formatEpochSeconds(cert.IssuedAt)
+		result["IssuedAt"] = timeutils.FormatEpochSeconds(cert.IssuedAt)
 	}
 
 	if !cert.ImportedAt.IsZero() {
-		result["ImportedAt"] = formatEpochSeconds(cert.ImportedAt)
+		result["ImportedAt"] = timeutils.FormatEpochSeconds(cert.ImportedAt)
 	}
 
 	if !cert.RevokedAt.IsZero() {
-		result["RevokedAt"] = formatEpochSeconds(cert.RevokedAt)
+		result["RevokedAt"] = timeutils.FormatEpochSeconds(cert.RevokedAt)
 	}
 
 	if cert.RevocationReason != "" {
@@ -296,7 +475,7 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 			"RenewalStatus":           cert.RenewalSummary.RenewalStatus,
 			"RenewalStatusReason":     cert.RenewalSummary.RenewalStatusReason,
 			"DomainValidationOptions": renewalDvos,
-			"UpdatedAt":               formatEpochSeconds(cert.RenewalSummary.UpdatedAt),
+			"UpdatedAt":               timeutils.FormatEpochSeconds(cert.RenewalSummary.UpdatedAt),
 		}
 	}
 

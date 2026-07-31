@@ -37,6 +37,7 @@ type CloudFrontService struct {
 	seedManagedPolicies sync.Once
 	distributionServer  *DistributionServer
 	wafInvoker          eventbus.WAFInvoker
+	acmInvoker          eventbus.ACMInvoker
 }
 
 // NewCloudFrontService creates a new CloudFront service instance.
@@ -134,6 +135,13 @@ func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, erro
 // SetWAFInvoker injects the WAF invoker for cross-service WebACL association.
 func (s *CloudFrontService) SetWAFInvoker(invoker eventbus.WAFInvoker) {
 	s.wafInvoker = invoker
+}
+
+// SetACMInvoker injects the ACM invoker for cross-service certificate usage
+// tracking. When a distribution references an ACM certificate, the invoker
+// records the association so that DeleteCertificate can enforce InUseBy.
+func (s *CloudFrontService) SetACMInvoker(invoker eventbus.ACMInvoker) {
+	s.acmInvoker = invoker
 }
 
 // AccountId returns the account ID.

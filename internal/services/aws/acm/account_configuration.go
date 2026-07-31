@@ -30,9 +30,14 @@ func (s *ACMService) GetAccountConfiguration(ctx context.Context, reqCtx *reques
 
 // PutAccountConfiguration updates the account configuration for ACM.
 func (s *ACMService) PutAccountConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// IdempotencyToken is REQUIRED per Smithy model.
-	if _, ok := req.Parameters["IdempotencyToken"]; !ok {
+	// IdempotencyToken is @required per Smithy model.
+	// Validate both presence and format (@length(1-32) + @pattern(^\w+$)).
+	token := request.GetStringParam(req.Parameters, "IdempotencyToken")
+	if token == "" {
 		return nil, awserrors.NewValidationException("IdempotencyToken is required")
+	}
+	if err := validateIdempotencyToken(token); err != nil {
+		return nil, err
 	}
 
 	daysBeforeExpiry := 45
@@ -44,9 +49,16 @@ func (s *ACMService) PutAccountConfiguration(ctx context.Context, reqCtx *reques
 					daysBeforeExpiry = int(val)
 				case int:
 					daysBeforeExpiry = val
+				default:
+					return nil, awserrors.NewInvalidParameterException("DaysBeforeExpiry must be a numeric value")
 				}
 			}
 		}
+	}
+
+	// Smithy: DaysBeforeExpiry is a PositiveInteger (@range min 1).
+	if daysBeforeExpiry < 1 {
+		return nil, awserrors.NewValidationException("DaysBeforeExpiry must be a positive integer (>= 1)")
 	}
 
 	config := &acmstore.AccountConfiguration{

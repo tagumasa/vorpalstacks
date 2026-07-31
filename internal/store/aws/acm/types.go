@@ -40,6 +40,7 @@ type Certificate struct {
 	Certificate              string              `json:"certificate,omitempty"`
 	CertificateChain         string              `json:"certificateChain,omitempty"`
 	PrivateKey               string              `json:"privateKey,omitempty"`
+	WasExported              bool                `json:"wasExported"`
 	Tags                     []types.Tag         `json:"tags,omitempty"`
 	AccountID                string              `json:"accountId"`
 	Region                   string              `json:"region"`
