@@ -12,12 +12,12 @@ import (
 func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
-		return nil, validationError("WebACLArn is required")
+		return nil, invalidParamError("WebACLArn is required")
 	}
 
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
-		return nil, validationError("ResourceArn is required")
+		return nil, invalidParamError("ResourceArn is required")
 	}
 
 	stores, err := s.store(reqCtx)
@@ -49,7 +49,7 @@ func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.Requ
 func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
-		return nil, validationError("ResourceArn is required")
+		return nil, invalidParamError("ResourceArn is required")
 	}
 
 	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
@@ -80,7 +80,7 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
-		return nil, validationError("WebACLArn is required")
+		return nil, invalidParamError("WebACLArn is required")
 	}
 
 	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
@@ -141,7 +141,7 @@ func matchesResourceType(resourceArn, resourceType string) bool {
 func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
-		return nil, validationError("ResourceArn is required")
+		return nil, invalidParamError("ResourceArn is required")
 	}
 
 	stores, err := s.store(reqCtx)

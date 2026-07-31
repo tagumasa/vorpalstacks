@@ -251,8 +251,8 @@ func notFoundError(resource string) error {
 	return awserrors.NewAWSError("WAFNonexistentItemException", fmt.Sprintf("%s not found", resource), http.StatusNotFound)
 }
 
-func validationError(msg string) error {
-	return awserrors.NewAWSError("ValidationException", msg, http.StatusBadRequest)
+func invalidParamError(msg string) error {
+	return awserrors.NewAWSError("WAFInvalidParameterException", msg, http.StatusBadRequest)
 }
 
 func lockTokenError() error {

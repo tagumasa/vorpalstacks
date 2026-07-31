@@ -14,11 +14,11 @@ import (
 func wafv2MapError(err error) error {
 	switch err.(type) {
 	case *tagutil.MissingResourceError:
-		return validationError("ResourceARN is required")
+		return invalidParamError("ResourceARN is required")
 	case *tagutil.MissingTagsError:
-		return validationError("Tags are required")
+		return invalidParamError("Tags are required")
 	case *tagutil.MissingTagKeysError:
-		return validationError("TagKeys are required")
+		return invalidParamError("TagKeys are required")
 	}
 	return err
 }
@@ -91,7 +91,7 @@ func (s *WAFv2Service) ListTagsForResource(ctx context.Context, reqCtx *request.
 func validateWAFv2Resource(stores *wafv2Stores, resourceArn string) error {
 	resourceType := extractResourceTypeFromARN(resourceArn)
 	if resourceType == "" {
-		return validationError(fmt.Sprintf("Unable to detect resource type from ARN: %s", resourceArn))
+		return invalidParamError(fmt.Sprintf("Unable to detect resource type from ARN: %s", resourceArn))
 	}
 
 	switch resourceType {
@@ -116,7 +116,7 @@ func validateWAFv2Resource(stores *wafv2Stores, resourceArn string) error {
 			return notFoundError("RegexPatternSet")
 		}
 	default:
-		return validationError(fmt.Sprintf("Unsupported WAFv2 resource type: %s", resourceType))
+		return invalidParamError(fmt.Sprintf("Unsupported WAFv2 resource type: %s", resourceType))
 	}
 
 	return nil

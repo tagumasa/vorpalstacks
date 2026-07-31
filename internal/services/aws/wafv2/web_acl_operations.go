@@ -16,7 +16,7 @@ import (
 func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
-		return nil, validationError("Name is required")
+		return nil, invalidParamError("Name is required")
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -25,16 +25,20 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
-	capacity := int64(request.GetIntParam(req.Parameters, "Capacity"))
-	if capacity == 0 {
-		capacity = 1500
-	}
+
+	// WebACL capacity is a read-only computed value in AWS (ConsumedCapacity).
+	// It is NOT a parameter of CreateWebACLRequest. We store a default until
+	// a WCU calculator is implemented.
+	capacity := int64(1500)
 
 	defaultAction := convertAction(request.GetMapParam(req.Parameters, "DefaultAction"))
 	if err := validateDefaultAction(defaultAction); err != nil {
 		return nil, err
 	}
-	rules := convertRules(req.Parameters["Rules"])
+	rules, err := parseRules(req.Parameters["Rules"])
+	if err != nil {
+		return nil, err
+	}
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
 
 	id, err := generateID()
@@ -42,12 +46,32 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
+	webACL := &wafstore.WebACL{
+		ID:                     id,
+		Name:                   name,
+		Description:            description,
+		Scope:                  scope,
+		Capacity:               capacity,
+		Rules:                  rules,
+		DefaultAction:          defaultAction,
+		VisibilityConfig:       visibilityConfig,
+		CustomResponseBodies:   req.Parameters["CustomResponseBodies"],
+		CaptchaConfig:          req.Parameters["CaptchaConfig"],
+		ChallengeConfig:        req.Parameters["ChallengeConfig"],
+		TokenDomains:           req.Parameters["TokenDomains"],
+		AssociationConfig:      req.Parameters["AssociationConfig"],
+		ApplicationConfig:      req.Parameters["ApplicationConfig"],
+		MonetizationConfig:     req.Parameters["MonetizationConfig"],
+		DataProtectionConfig:   req.Parameters["DataProtectionConfig"],
+		OnSourceDDoSProtection: req.Parameters["OnSourceDDoSProtectionConfig"],
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	webACL, err := stores.webACLs.Create(id, name, description, scope, capacity, rules, defaultAction, visibilityConfig)
+	webACL, err = stores.webACLs.Create(webACL)
 	if err != nil {
 		if wafstore.IsAlreadyExists(err) {
 			return nil, newAPIError("WAFDuplicateItemException", fmt.Sprintf("AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one: %s", name), 400)
@@ -70,7 +94,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	stores, err := s.store(reqCtx)
@@ -85,19 +109,56 @@ func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
+	webACLMap := map[string]interface{}{
+		"Id":               webACL.ID,
+		"Name":             webACL.Name,
+		"ARN":              webACL.ARN,
+		"Description":      webACL.Description,
+		"DefaultAction":    convertActionToResponse(webACL.DefaultAction),
+		"Rules":            convertRulesToResponse(webACL.Rules),
+		"VisibilityConfig": convertVisibilityConfigToResponse(webACL.VisibilityConfig),
+		"Capacity":         webACL.Capacity,
+	}
+	if webACL.LabelNamespace != "" {
+		webACLMap["LabelNamespace"] = webACL.LabelNamespace
+	}
+	if webACL.CustomResponseBodies != nil {
+		webACLMap["CustomResponseBodies"] = webACL.CustomResponseBodies
+	}
+	if webACL.CaptchaConfig != nil {
+		webACLMap["CaptchaConfig"] = webACL.CaptchaConfig
+	}
+	if webACL.ChallengeConfig != nil {
+		webACLMap["ChallengeConfig"] = webACL.ChallengeConfig
+	}
+	if webACL.TokenDomains != nil {
+		webACLMap["TokenDomains"] = webACL.TokenDomains
+	}
+	if webACL.AssociationConfig != nil {
+		webACLMap["AssociationConfig"] = webACL.AssociationConfig
+	}
+	if webACL.ApplicationConfig != nil {
+		webACLMap["ApplicationConfig"] = webACL.ApplicationConfig
+	}
+	if webACL.MonetizationConfig != nil {
+		webACLMap["MonetizationConfig"] = webACL.MonetizationConfig
+	}
+	if webACL.DataProtectionConfig != nil {
+		webACLMap["DataProtectionConfig"] = webACL.DataProtectionConfig
+	}
+	if webACL.OnSourceDDoSProtection != nil {
+		webACLMap["OnSourceDDoSProtectionConfig"] = webACL.OnSourceDDoSProtection
+	}
+
 	resp := map[string]interface{}{
-		"WebACL": map[string]interface{}{
-			"Id":               webACL.ID,
-			"Name":             webACL.Name,
-			"ARN":              webACL.ARN,
-			"Description":      webACL.Description,
-			"DefaultAction":    convertActionToResponse(webACL.DefaultAction),
-			"Rules":            convertRulesToResponse(webACL.Rules),
-			"VisibilityConfig": convertVisibilityConfigToResponse(webACL.VisibilityConfig),
-			"Capacity":         webACL.Capacity,
-			"Scope":            webACL.Scope,
-		},
+		"WebACL":    webACLMap,
 		"LockToken": webACL.LockToken,
+	}
+
+	region := reqCtx.GetRegion()
+	if region != "" {
+		resp["ApplicationIntegrationURL"] = fmt.Sprintf("https://console.aws.amazon.com/wafv2/%sv2/home#/webacl/%s/%s",
+			region, webACL.ID, webACL.Scope)
 	}
 
 	return resp, nil
@@ -132,12 +193,12 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	stores, err := s.store(reqCtx)
@@ -172,7 +233,11 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 	var rules []*wafstore.Rule
 	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
-		rules = convertRules(rulesRaw)
+		parsed, pErr := parseRules(rulesRaw)
+		if pErr != nil {
+			return nil, pErr
+		}
+		rules = parsed
 	}
 
 	daAction := convertAction(nil)
@@ -184,7 +249,35 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig, request.GetStringParam(req.Parameters, "Description"))
+	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig, request.GetStringParam(req.Parameters, "Description"), func(webACL *wafstore.WebACL) {
+		if v := req.Parameters["CustomResponseBodies"]; v != nil {
+			webACL.CustomResponseBodies = v
+		}
+		if v := req.Parameters["CaptchaConfig"]; v != nil {
+			webACL.CaptchaConfig = v
+		}
+		if v := req.Parameters["ChallengeConfig"]; v != nil {
+			webACL.ChallengeConfig = v
+		}
+		if v := req.Parameters["TokenDomains"]; v != nil {
+			webACL.TokenDomains = v
+		}
+		if v := req.Parameters["AssociationConfig"]; v != nil {
+			webACL.AssociationConfig = v
+		}
+		if v := req.Parameters["ApplicationConfig"]; v != nil {
+			webACL.ApplicationConfig = v
+		}
+		if v := req.Parameters["MonetizationConfig"]; v != nil {
+			webACL.MonetizationConfig = v
+		}
+		if v := req.Parameters["DataProtectionConfig"]; v != nil {
+			webACL.DataProtectionConfig = v
+		}
+		if v := req.Parameters["OnSourceDDoSProtectionConfig"]; v != nil {
+			webACL.OnSourceDDoSProtection = v
+		}
+	})
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
@@ -201,12 +294,12 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	stores, err := s.store(reqCtx)

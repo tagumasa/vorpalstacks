@@ -33,7 +33,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
-		return nil, validationError("Name is required")
+		return nil, invalidParamError("Name is required")
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -81,7 +81,7 @@ func (s *WAFv2Service) GetIPSet(ctx context.Context, reqCtx *request.RequestCont
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	ipSet, err := stores.ipSets.Get(id)
@@ -143,12 +143,12 @@ func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	addresses := parseAddressList(req.Parameters)
@@ -177,12 +177,12 @@ func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	deleted, err := stores.ipSets.Delete(id, lockToken)

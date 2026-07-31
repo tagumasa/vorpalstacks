@@ -2,6 +2,8 @@ package wafv2
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/pagination"
@@ -29,6 +31,10 @@ var awsManagedRuleGroups = []ManagedRuleGroupSummary{
 	{Name: strPtr("AWSManagedRulesWordPressRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Rules to block exploitation of WordPress specific vulnerabilities."), VersioningSupported: boolPtr(true)},
 	{Name: strPtr("AWSManagedRulesBotControlRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Rules to detect and block bot traffic."), VersioningSupported: boolPtr(true)},
 	{Name: strPtr("AWSManagedRulesATPRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Account Takeover Protection rules."), VersioningSupported: boolPtr(true)},
+	{Name: strPtr("AWSManagedRulesACFPRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Account Creation Fraud Prevention rules."), VersioningSupported: boolPtr(true)},
+	{Name: strPtr("AWSManagedRulesAnonymousIpList"), VendorName: strPtr("AWS"), Description: strPtr("Rules to block requests from anonymous IP addresses."), VersioningSupported: boolPtr(true)},
+	{Name: strPtr("AWSManagedRulesJavaRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Rules to block exploitation of Java specific vulnerabilities."), VersioningSupported: boolPtr(true)},
+	{Name: strPtr("AWSManagedRulesJTRRuleSet"), VendorName: strPtr("AWS"), Description: strPtr("Jack the Ripper rules for detecting credential stuffing patterns."), VersioningSupported: boolPtr(true)},
 }
 
 // ListAvailableManagedRuleGroups returns a paginated list of all available AWS-managed rule groups.
@@ -75,7 +81,7 @@ func (s *WAFv2Service) DescribeManagedRuleGroup(ctx context.Context, reqCtx *req
 	versionName := request.GetStringParam(req.Parameters, "VersionName")
 
 	if name == "" || vendorName == "" {
-		return nil, validationError("Name and VendorName are required")
+		return nil, invalidParamError("Name and VendorName are required")
 	}
 
 	for _, rg := range awsManagedRuleGroups {
@@ -98,6 +104,7 @@ func (s *WAFv2Service) DescribeManagedRuleGroup(ctx context.Context, reqCtx *req
 				"Capacity":       capacity,
 				"LabelNamespace": labelNamespace,
 				"VersionName":    versionNameResp,
+				"SnsTopicArn":    fmt.Sprintf("arn:aws:sns:us-east-1:123456789012:aws-managed-waf-%s", strings.ToLower(name)),
 				"Rules": []map[string]interface{}{
 					{"Name": name + "_Rule1", "Action": map[string]interface{}{"Block": map[string]interface{}{}}},
 					{"Name": name + "_Rule2", "Action": map[string]interface{}{"Count": map[string]interface{}{}}},
@@ -105,6 +112,9 @@ func (s *WAFv2Service) DescribeManagedRuleGroup(ctx context.Context, reqCtx *req
 				"AvailableLabels": []map[string]interface{}{
 					{"Name": labelNamespace + "rule1"},
 					{"Name": labelNamespace + "rule2"},
+				},
+				"ConsumedLabels": []map[string]interface{}{
+					{"Name": labelNamespace + "rule1"},
 				},
 			}, nil
 		}
@@ -119,7 +129,7 @@ func (s *WAFv2Service) ListAvailableManagedRuleGroupVersions(ctx context.Context
 	vendorName := request.GetStringParam(req.Parameters, "VendorName")
 
 	if name == "" || vendorName == "" {
-		return nil, validationError("Name and VendorName are required")
+		return nil, invalidParamError("Name and VendorName are required")
 	}
 
 	found := false
@@ -134,11 +144,14 @@ func (s *WAFv2Service) ListAvailableManagedRuleGroupVersions(ctx context.Context
 		return nil, notFoundError("ManagedRuleGroup")
 	}
 
-	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
-	versions := []map[string]interface{}{
-		{"Name": "Version_2026_03_01", "LastUpdated": now.Unix()},
-		{"Name": "Version_2026_02_01", "LastUpdated": time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC).Unix()},
-		{"Name": "Version_2026_01_01", "LastUpdated": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).Unix()},
+	now := time.Now()
+	versions := make([]map[string]interface{}, 0, 3)
+	for i := 0; i < 3; i++ {
+		t := now.AddDate(0, -i, 0)
+		versions = append(versions, map[string]interface{}{
+			"Name":        fmt.Sprintf("Version_%04d_%02d_01", t.Year(), t.Month()),
+			"LastUpdated": t.Unix(),
+		})
 	}
 
 	return map[string]interface{}{

@@ -10,6 +10,7 @@ import (
 type wafResourceAccessor[T any] struct {
 	getIDFn        func(*T) string
 	getNameFn      func(*T) string
+	getScopeFn     func(*T) string
 	getARNFn       func(*T) string
 	setARNFn       func(*T, string)
 	getLockTokenFn func(*T) string
@@ -61,6 +62,24 @@ func (s *ResourceStore[T]) FindByName(name string) (*T, error) {
 	})
 }
 
+// FindByNameAndScope checks whether a resource with the given name
+// exists within the specified scope. AWS WAF allows the same name
+// across different scopes (CLOUDFRONT vs REGIONAL).
+func (s *ResourceStore[T]) FindByNameAndScope(name, scope string) (*T, error) {
+	if s.accessor.getNameFn == nil {
+		return nil, nil
+	}
+	return common.FindFirst[T](s.BaseStore, func(r *T) bool {
+		if s.accessor.getNameFn(r) != name {
+			return false
+		}
+		if s.accessor.getScopeFn != nil && scope != "" {
+			return s.accessor.getScopeFn(r) == scope
+		}
+		return true
+	})
+}
+
 // Delete removes a WAF resource by ID, verifying the lock token if provided.
 // Returns the deleted resource so callers can perform cleanup (e.g., tag
 // deletion) without a separate Get call.
@@ -73,7 +92,7 @@ func (s *ResourceStore[T]) Delete(id, lockToken string) (*T, error) {
 		return nil, err
 	}
 
-	if lockToken != "" && s.accessor.getLockTokenFn(resource) != lockToken {
+	if lockToken == "" || s.accessor.getLockTokenFn(resource) != lockToken {
 		return nil, NewStoreError("delete_resource", ErrLockTokenMismatch)
 	}
 
@@ -94,7 +113,7 @@ func (s *ResourceStore[T]) UpdateWithLockToken(id, lockToken string, updateFn fu
 		return nil, err
 	}
 
-	if lockToken != "" && s.accessor.getLockTokenFn(resource) != lockToken {
+	if lockToken == "" || s.accessor.getLockTokenFn(resource) != lockToken {
 		return nil, NewStoreError(opName, ErrLockTokenMismatch)
 	}
 

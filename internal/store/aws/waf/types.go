@@ -11,20 +11,30 @@ import (
 
 // WebACL represents a WAF Web Access Control List.
 type WebACL struct {
-	ID               string            `json:"id"`
-	Name             string            `json:"name"`
-	ARN              string            `json:"arn"`
-	MetricName       string            `json:"metricName"`
-	Capacity         int64             `json:"capacity"`
-	Rules            []*Rule           `json:"rules"`
-	DefaultAction    interface{}       `json:"defaultAction"`
-	VisibilityConfig *VisibilityConfig `json:"visibilityConfig"`
-	Scope            string            `json:"scope"`
-	Description      string            `json:"description"`
-	LockToken        string            `json:"lockToken"`
-	Tags             []types.Tag       `json:"tags"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	ModifiedAt       time.Time         `json:"modifiedAt"`
+	ID                     string            `json:"id"`
+	Name                   string            `json:"name"`
+	ARN                    string            `json:"arn"`
+	MetricName             string            `json:"metricName"`
+	Capacity               int64             `json:"capacity"`
+	Rules                  []*Rule           `json:"rules"`
+	DefaultAction          interface{}       `json:"defaultAction"`
+	VisibilityConfig       *VisibilityConfig `json:"visibilityConfig"`
+	Scope                  string            `json:"scope"`
+	Description            string            `json:"description"`
+	LockToken              string            `json:"lockToken"`
+	Tags                   []types.Tag       `json:"tags"`
+	CustomResponseBodies   interface{}       `json:"customResponseBodies,omitempty"`
+	CaptchaConfig          interface{}       `json:"captchaConfig,omitempty"`
+	ChallengeConfig        interface{}       `json:"challengeConfig,omitempty"`
+	TokenDomains           interface{}       `json:"tokenDomains,omitempty"`
+	LabelNamespace         string            `json:"labelNamespace,omitempty"`
+	AssociationConfig      interface{}       `json:"associationConfig,omitempty"`
+	ApplicationConfig      interface{}       `json:"applicationConfig,omitempty"`
+	MonetizationConfig     interface{}       `json:"monetizationConfig,omitempty"`
+	DataProtectionConfig   interface{}       `json:"dataProtectionConfig,omitempty"`
+	OnSourceDDoSProtection interface{}       `json:"onSourceDDoSProtectionConfig,omitempty"`
+	CreatedAt              time.Time         `json:"createdAt"`
+	ModifiedAt             time.Time         `json:"modifiedAt"`
 }
 
 // Rule represents a WAF rule.
@@ -38,6 +48,9 @@ type Rule struct {
 	Statement        *Statement        `json:"statement"`
 	OverrideAction   *Action           `json:"overrideAction"`
 	VisibilityConfig *VisibilityConfig `json:"visibilityConfig"`
+	RuleLabels       interface{}       `json:"ruleLabels,omitempty"`
+	CaptchaConfig    interface{}       `json:"captchaConfig,omitempty"`
+	ChallengeConfig  interface{}       `json:"challengeConfig,omitempty"`
 	Tags             []types.Tag       `json:"tags"`
 }
 
@@ -381,18 +394,23 @@ type VisibilityConfig struct {
 
 // RuleGroup represents a WAF rule group.
 type RuleGroup struct {
-	ID               string            `json:"id"`
-	Name             string            `json:"name"`
-	ARN              string            `json:"arn"`
-	Scope            string            `json:"scope"`
-	Capacity         int64             `json:"capacity"`
-	Rules            []*Rule           `json:"rules"`
-	VisibilityConfig *VisibilityConfig `json:"visibilityConfig"`
-	Description      string            `json:"description"`
-	LockToken        string            `json:"lockToken"`
-	Tags             []types.Tag       `json:"tags"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	ModifiedAt       time.Time         `json:"modifiedAt"`
+	ID                   string            `json:"id"`
+	Name                 string            `json:"name"`
+	ARN                  string            `json:"arn"`
+	Scope                string            `json:"scope"`
+	Capacity             int64             `json:"capacity"`
+	Rules                []*Rule           `json:"rules"`
+	VisibilityConfig     *VisibilityConfig `json:"visibilityConfig"`
+	Description          string            `json:"description"`
+	LockToken            string            `json:"lockToken"`
+	Tags                 []types.Tag       `json:"tags"`
+	CustomResponseBodies interface{}       `json:"customResponseBodies,omitempty"`
+	LabelNamespace       string            `json:"labelNamespace,omitempty"`
+	AvailableLabels      interface{}       `json:"availableLabels,omitempty"`
+	ConsumedLabels       interface{}       `json:"consumedLabels,omitempty"`
+	MonetizationConfig   interface{}       `json:"monetizationConfig,omitempty"`
+	CreatedAt            time.Time         `json:"createdAt"`
+	ModifiedAt           time.Time         `json:"modifiedAt"`
 }
 
 // IPSet represents a WAF IP set.

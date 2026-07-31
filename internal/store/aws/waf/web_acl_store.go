@@ -13,6 +13,7 @@ const webACLBucketName = "waf_web_acls"
 var webACLAccessor = wafResourceAccessor[WebACL]{
 	getIDFn:        func(r *WebACL) string { return r.ID },
 	getNameFn:      func(r *WebACL) string { return r.Name },
+	getScopeFn:     func(r *WebACL) string { return r.Scope },
 	getARNFn:       func(r *WebACL) string { return r.ARN },
 	setARNFn:       func(r *WebACL, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *WebACL) string { return r.LockToken },
@@ -34,26 +35,16 @@ func NewWebACLStore(store storage.BasicStorage, accountId, region string) *WebAC
 
 // Create creates a new WAF Web ACL in the store.
 // Returns the created Web ACL or an error if creation fails.
-func (s *WebACLStore) Create(id, name, description, scope string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error) {
-	if existing, _ := s.FindByName(name); existing != nil {
+func (s *WebACLStore) Create(webACL *WebACL) (*WebACL, error) {
+	if existing, _ := s.FindByNameAndScope(webACL.Name, webACL.Scope); existing != nil {
 		return nil, ErrAlreadyExists
 	}
-	webACL := &WebACL{
-		ID:               id,
-		Name:             name,
-		Description:      description,
-		Scope:            scope,
-		Capacity:         capacity,
-		Rules:            rules,
-		DefaultAction:    defaultAction,
-		VisibilityConfig: visibilityConfig,
-		Tags:             []types.Tag{},
-		CreatedAt:        time.Now(),
-		ModifiedAt:       time.Now(),
+	if webACL.Tags == nil {
+		webACL.Tags = []types.Tag{}
 	}
-	webACL.ARN = s.arnBuilder.BuildWebACLARN(id, scope)
+	webACL.ARN = s.arnBuilder.BuildWebACLARN(webACL.ID, webACL.Scope)
 	SetTimestamps(&webACLAccessor, webACL)
-	if err := s.Put(id, webACL, "create_web_acl"); err != nil {
+	if err := s.Put(webACL.ID, webACL, "create_web_acl"); err != nil {
 		return nil, err
 	}
 	return webACL, nil
@@ -61,7 +52,7 @@ func (s *WebACLStore) Create(id, name, description, scope string, capacity int64
 
 // Update updates an existing WAF Web ACL in the store.
 // Returns the updated Web ACL or an error if the Web ACL does not exist or lock token is invalid.
-func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error) {
+func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string, extraFn ...func(*WebACL)) (*WebACL, error) {
 	return s.UpdateWithLockToken(id, lockToken, func(webACL *WebACL) error {
 		webACL.Capacity = capacity
 		webACL.Rules = rules
@@ -69,6 +60,11 @@ func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule
 		webACL.VisibilityConfig = visibilityConfig
 		if description != "" {
 			webACL.Description = description
+		}
+		for _, fn := range extraFn {
+			if fn != nil {
+				fn(webACL)
+			}
 		}
 		return nil
 	}, "update_web_acl")

@@ -14,6 +14,7 @@ const ruleKeyPrefix = "rule_"
 var ruleGroupAccessor = wafResourceAccessor[RuleGroup]{
 	getIDFn:        func(r *RuleGroup) string { return r.ID },
 	getNameFn:      func(r *RuleGroup) string { return r.Name },
+	getScopeFn:     func(r *RuleGroup) string { return r.Scope },
 	getARNFn:       func(r *RuleGroup) string { return r.ARN },
 	setARNFn:       func(r *RuleGroup, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *RuleGroup) string { return r.LockToken },
@@ -34,28 +35,19 @@ func NewRuleGroupStore(store storage.BasicStorage, accountId, region string) *Ru
 }
 
 // Create creates a new Rule Group.
-func (s *RuleGroupStore) Create(id, name, description string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig, scope string) (*RuleGroup, error) {
-	if existing, _ := s.FindByName(name); existing != nil {
+func (s *RuleGroupStore) Create(ruleGroup *RuleGroup) (*RuleGroup, error) {
+	if existing, _ := s.FindByNameAndScope(ruleGroup.Name, ruleGroup.Scope); existing != nil {
 		return nil, ErrAlreadyExists
 	}
-	if scope == "" {
-		scope = "REGIONAL"
+	if ruleGroup.Scope == "" {
+		ruleGroup.Scope = "REGIONAL"
 	}
-	ruleGroup := &RuleGroup{
-		ID:               id,
-		Name:             name,
-		Description:      description,
-		Scope:            scope,
-		Capacity:         capacity,
-		Rules:            rules,
-		VisibilityConfig: visibilityConfig,
-		Tags:             []types.Tag{},
-		CreatedAt:        time.Now(),
-		ModifiedAt:       time.Now(),
+	if ruleGroup.Tags == nil {
+		ruleGroup.Tags = []types.Tag{}
 	}
-	ruleGroup.ARN = s.arnBuilder.BuildRuleGroupARN(id, scope)
+	ruleGroup.ARN = s.arnBuilder.BuildRuleGroupARN(ruleGroup.ID, ruleGroup.Scope)
 	SetTimestamps(&ruleGroupAccessor, ruleGroup)
-	if err := s.Put(id, ruleGroup, "create_rule_group"); err != nil {
+	if err := s.Put(ruleGroup.ID, ruleGroup, "create_rule_group"); err != nil {
 		return nil, err
 	}
 	return ruleGroup, nil

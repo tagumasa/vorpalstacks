@@ -20,7 +20,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
-		return nil, validationError("Name is required")
+		return nil, invalidParamError("Name is required")
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -30,19 +30,34 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 
 	description := request.GetStringParam(req.Parameters, "Description")
 	capacity := int64(request.GetIntParam(req.Parameters, "Capacity"))
-	if capacity == 0 {
-		capacity = 10
+	if capacity <= 0 {
+		return nil, invalidParamError("Capacity is required and must be greater than 0")
 	}
 
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
-	rules := convertRules(req.Parameters["Rules"])
+	rules, err := parseRules(req.Parameters["Rules"])
+	if err != nil {
+		return nil, err
+	}
 
 	id, err := generateID()
 	if err != nil {
 		return nil, err
 	}
 
-	ruleGroup, err := stores.ruleGroups.Create(id, name, description, capacity, rules, visibilityConfig, scope)
+	ruleGroup := &wafstore.RuleGroup{
+		ID:                   id,
+		Name:                 name,
+		Description:          description,
+		Capacity:             capacity,
+		Rules:                rules,
+		VisibilityConfig:     visibilityConfig,
+		Scope:                scope,
+		CustomResponseBodies: req.Parameters["CustomResponseBodies"],
+		MonetizationConfig:   req.Parameters["MonetizationConfig"],
+	}
+
+	ruleGroup, err = stores.ruleGroups.Create(ruleGroup)
 	if err != nil {
 		if wafstore.IsAlreadyExists(err) {
 			return nil, newAPIError("WAFDuplicateItemException", fmt.Sprintf("AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one: %s", name), 400)
@@ -69,7 +84,7 @@ func (s *WAFv2Service) GetRuleGroup(ctx context.Context, reqCtx *request.Request
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	ruleGroup, err := stores.ruleGroups.Get(id)
@@ -82,16 +97,33 @@ func (s *WAFv2Service) GetRuleGroup(ctx context.Context, reqCtx *request.Request
 
 	rulesResp := convertRulesToResponse(ruleGroup.Rules)
 
+	rgMap := map[string]interface{}{
+		"Id":               ruleGroup.ID,
+		"Name":             ruleGroup.Name,
+		"ARN":              ruleGroup.ARN,
+		"Capacity":         ruleGroup.Capacity,
+		"Description":      ruleGroup.Description,
+		"Rules":            rulesResp,
+		"VisibilityConfig": convertVisibilityConfigToResponse(ruleGroup.VisibilityConfig),
+	}
+	if ruleGroup.LabelNamespace != "" {
+		rgMap["LabelNamespace"] = ruleGroup.LabelNamespace
+	}
+	if ruleGroup.CustomResponseBodies != nil {
+		rgMap["CustomResponseBodies"] = ruleGroup.CustomResponseBodies
+	}
+	if ruleGroup.AvailableLabels != nil {
+		rgMap["AvailableLabels"] = ruleGroup.AvailableLabels
+	}
+	if ruleGroup.ConsumedLabels != nil {
+		rgMap["ConsumedLabels"] = ruleGroup.ConsumedLabels
+	}
+	if ruleGroup.MonetizationConfig != nil {
+		rgMap["MonetizationConfig"] = ruleGroup.MonetizationConfig
+	}
+
 	return map[string]interface{}{
-		"RuleGroup": map[string]interface{}{
-			"Id":               ruleGroup.ID,
-			"Name":             ruleGroup.Name,
-			"ARN":              ruleGroup.ARN,
-			"Capacity":         ruleGroup.Capacity,
-			"Description":      ruleGroup.Description,
-			"Rules":            rulesResp,
-			"VisibilityConfig": convertVisibilityConfigToResponse(ruleGroup.VisibilityConfig),
-		},
+		"RuleGroup": rgMap,
 		"LockToken": ruleGroup.LockToken,
 	}, nil
 }
@@ -134,12 +166,12 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	ruleGroup, err := stores.ruleGroups.Get(id)
@@ -162,7 +194,11 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 	var rules []*wafstore.Rule
 	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
-		rules = convertRules(rulesRaw)
+		parsed, pErr := parseRules(rulesRaw)
+		if pErr != nil {
+			return nil, pErr
+		}
+		rules = parsed
 	}
 
 	ruleGroup, err = stores.ruleGroups.Update(id, lockToken, capacity, rules, visibilityConfig)
@@ -189,12 +225,12 @@ func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, validationError("Id is required")
+		return nil, invalidParamError("Id is required")
 	}
 
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
-		return nil, validationError("LockToken is required")
+		return nil, invalidParamError("LockToken is required")
 	}
 
 	deleted, err := stores.ruleGroups.Delete(id, lockToken)

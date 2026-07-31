@@ -4,8 +4,8 @@ package waf
 type WebACLStoreInterface interface {
 	Get(id string) (*WebACL, error)
 	GetByARN(arn string) (*WebACL, error)
-	Create(id, name, description, scope string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error)
-	Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error)
+	Create(webACL *WebACL) (*WebACL, error)
+	Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string, extraFn ...func(*WebACL)) (*WebACL, error)
 	Delete(id, lockToken string) (*WebACL, error)
 	List(marker string, maxItems int, scope string) (*WebACLListResult, error)
 	Raw() *WebACLStore
@@ -15,7 +15,7 @@ type WebACLStoreInterface interface {
 type RuleGroupStoreInterface interface {
 	Get(id string) (*RuleGroup, error)
 	GetByARN(arn string) (*RuleGroup, error)
-	Create(id, name, description string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig, scope string) (*RuleGroup, error)
+	Create(ruleGroup *RuleGroup) (*RuleGroup, error)
 	Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error)
 	Delete(id, lockToken string) (*RuleGroup, error)
 	List(marker string, maxItems int, scope string) (*RuleGroupListResult, error)

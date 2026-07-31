@@ -93,7 +93,13 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	webACL, err := store.Create(id, req.Msg.GetName(), req.Msg.GetDescription(), scope, 1500, nil, nil, nil)
+	webACL, err := store.Create(&wafstore.WebACL{
+		ID:          id,
+		Name:        req.Msg.GetName(),
+		Description: req.Msg.GetDescription(),
+		Scope:       scope,
+		Capacity:    1500,
+	})
 	if err != nil {
 		if wafstore.IsAlreadyExists(err) {
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)

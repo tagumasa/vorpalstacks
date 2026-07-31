@@ -13,6 +13,7 @@ const ipSetBucketName = "waf_ip_sets"
 var ipSetAccessor = wafResourceAccessor[IPSet]{
 	getIDFn:        func(r *IPSet) string { return r.ID },
 	getNameFn:      func(r *IPSet) string { return r.Name },
+	getScopeFn:     func(r *IPSet) string { return r.Scope },
 	getARNFn:       func(r *IPSet) string { return r.ARN },
 	setARNFn:       func(r *IPSet, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *IPSet) string { return r.LockToken },
@@ -34,7 +35,7 @@ func NewIPSetStore(store storage.BasicStorage, accountId, region string) *IPSetS
 
 // Create creates a new IP Set.
 func (s *IPSetStore) Create(id, name, description, ipAddressVersion string, addresses []string, scope string) (*IPSet, error) {
-	if existing, _ := s.FindByName(name); existing != nil {
+	if existing, _ := s.FindByNameAndScope(name, scope); existing != nil {
 		return nil, ErrAlreadyExists
 	}
 	ipSet := &IPSet{
