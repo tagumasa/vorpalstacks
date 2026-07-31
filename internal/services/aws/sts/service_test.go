@@ -279,7 +279,10 @@ func TestComputePackedPolicySize(t *testing.T) {
 	t.Run("policy with arns", func(t *testing.T) {
 		policy := `{"Version":"2012-10-17"}`
 		size := computePackedPolicySize(policy, params, nil)
-		totalLen := len(policy) + len("arn:aws:iam::123456789012:policy/test1") + len("arn:aws:iam::123456789012:policy/test2")
+		// Each ARN has 3 bytes overhead (quotes + comma), plus 2 for array brackets.
+		arn1 := "arn:aws:iam::123456789012:policy/test1"
+		arn2 := "arn:aws:iam::123456789012:policy/test2"
+		totalLen := len(policy) + len(arn1) + 3 + len(arn2) + 3 + 2
 		expected := int32((totalLen * 100) / 2048)
 		assert.Equal(t, expected, size)
 	})
@@ -288,7 +291,8 @@ func TestComputePackedPolicySize(t *testing.T) {
 		policy := `{"Version":"2012-10-17"}`
 		tags := map[string]string{"Department": "Engineering", "Project": "Alpha"}
 		size := computePackedPolicySize(policy, map[string]interface{}{}, tags)
-		tagLen := len("Department") + len("Engineering") + len("Project") + len("Alpha")
+		// Each tag has 20 bytes overhead ({"Key":"","Value":""}), plus 2 for array brackets.
+		tagLen := len("Department") + len("Engineering") + 20 + len("Project") + len("Alpha") + 20 + 2
 		expected := int32(((len(policy) + tagLen) * 100) / 2048)
 		assert.Equal(t, expected, size)
 	})
@@ -296,7 +300,8 @@ func TestComputePackedPolicySize(t *testing.T) {
 	t.Run("tags only", func(t *testing.T) {
 		tags := map[string]string{"Env": "prod"}
 		size := computePackedPolicySize("", map[string]interface{}{}, tags)
-		expected := int32(((len("Env") + len("prod")) * 100) / 2048)
+		// Tag overhead: 20 bytes per tag + 2 for array brackets.
+		expected := int32(((len("Env") + len("prod") + 20 + 2) * 100) / 2048)
 		assert.Equal(t, expected, size)
 	})
 }

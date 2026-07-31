@@ -57,10 +57,14 @@ export function RDSPage() {
   const [formInstUser, setFormInstUser] = useState("admin");
   const [formInstPass, setFormInstPass] = useState("");
 
-  // Cluster create form state
+  // Cluster create form state. Default engine is 'mysql' because that is
+  // the only engine wired with a backing EngineProvider on this platform
+  // (vmysql). aurora-mysql / aurora-postgresql are valid AWS-spec values
+  // but the backend rejects them with InvalidParameterValue (M-3); the
+  // previous default ('aurora-mysql') produced a guaranteed failure.
   const [showCreateCluster, setShowCreateCluster] = useState(false);
   const [formClusterId, setFormClusterId] = useState("");
-  const [formClusterEngine, setFormClusterEngine] = useState("aurora-mysql");
+  const [formClusterEngine, setFormClusterEngine] = useState("mysql");
   const [formClusterUser, setFormClusterUser] = useState("admin");
   const [formClusterPass, setFormClusterPass] = useState("");
 
@@ -136,7 +140,7 @@ export function RDSPage() {
   });
 
   const resetInstForm = () => { setFormInstId(""); setFormInstEngine("mysql"); setFormInstClass("db.t3.micro"); setFormInstStorage(20); setFormInstUser("admin"); setFormInstPass(""); };
-  const resetClusterForm = () => { setFormClusterId(""); setFormClusterEngine("aurora-mysql"); setFormClusterUser("admin"); setFormClusterPass(""); };
+  const resetClusterForm = () => { setFormClusterId(""); setFormClusterEngine("mysql"); setFormClusterUser("admin"); setFormClusterPass(""); };
 
   const allInstIds = instances.map((i) => i.dbinstanceidentifier);
   const allClusterIds = clusters.map((c) => c.dbclusteridentifier);
@@ -210,7 +214,7 @@ export function RDSPage() {
       {/* Create Instance Modal */}
       <ServiceCreateModal open={showCreateInst} onClose={() => setShowCreateInst(false)} title={t("services.rds.createInstance")} error={createInstMut.error} isPending={createInstMut.isPending} onCreate={() => createInstMut.mutate()} disabled={!formInstId}>
         <label>{t("services.rds.instanceIdField")}<input value={formInstId} onChange={(e) => setFormInstId(e.target.value)} placeholder="my-db-instance" className="modal-input" /></label>
-        <label>{t("services.rds.engineField")}<select value={formInstEngine} onChange={(e) => setFormInstEngine(e.target.value)} className="modal-input"><option value="mysql">mysql</option><option value="postgres">postgres</option></select></label>
+        <label>{t("services.rds.engineField")}<select value={formInstEngine} onChange={(e) => setFormInstEngine(e.target.value)} className="modal-input"><option value="mysql">mysql</option></select></label>
         <label>{t("services.rds.instanceClassField")}<input value={formInstClass} onChange={(e) => setFormInstClass(e.target.value)} placeholder="db.t3.micro" className="modal-input" /></label>
         <label>{t("services.rds.storageField")}<input type="number" value={formInstStorage} onChange={(e) => setFormInstStorage(Number(e.target.value))} className="modal-input" /></label>
         <label>{t("services.rds.usernameField")}<input value={formInstUser} onChange={(e) => setFormInstUser(e.target.value)} placeholder="admin" className="modal-input" /></label>
@@ -220,7 +224,7 @@ export function RDSPage() {
       {/* Create Cluster Modal */}
       <ServiceCreateModal open={showCreateCluster} onClose={() => setShowCreateCluster(false)} title={t("services.rds.createCluster")} error={createClusterMut.error} isPending={createClusterMut.isPending} onCreate={() => createClusterMut.mutate()} disabled={!formClusterId}>
         <label>{t("services.rds.clusterIdField")}<input value={formClusterId} onChange={(e) => setFormClusterId(e.target.value)} placeholder="my-db-cluster" className="modal-input" /></label>
-        <label>{t("services.rds.engineField")}<select value={formClusterEngine} onChange={(e) => setFormClusterEngine(e.target.value)} className="modal-input"><option value="aurora-mysql">aurora-mysql</option><option value="aurora-postgresql">aurora-postgresql</option></select></label>
+        <label>{t("services.rds.engineField")}<select value={formClusterEngine} onChange={(e) => setFormClusterEngine(e.target.value)} className="modal-input"><option value="mysql">mysql</option></select></label>
         <label>{t("services.rds.usernameField")}<input value={formClusterUser} onChange={(e) => setFormClusterUser(e.target.value)} placeholder="admin" className="modal-input" /></label>
         <label>{t("services.rds.passwordField")}<input type="password" value={formClusterPass} onChange={(e) => setFormClusterPass(e.target.value)} className="modal-input" /></label>
       </ServiceCreateModal>
