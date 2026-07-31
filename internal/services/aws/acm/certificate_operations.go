@@ -141,8 +141,14 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	}
 	certificateArn := stores.arnBuilder.BuildCertificateARN(certId)
 
-	validationMethod := parseValidationMethod(params)
-	keyAlgorithm := parseKeyAlgorithm(params)
+	validationMethod, err := parseValidationMethod(params)
+	if err != nil {
+		return nil, err
+	}
+	keyAlgorithm, err := parseKeyAlgorithm(params)
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse SubjectAlternativeNames early so they can be embedded in the x509 template.
 	var sans []string
@@ -242,9 +248,17 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	cert.DomainValidationOptions = domainValidationOptions
 
 	if optionsMap, ok := params["Options"].(map[string]interface{}); ok {
+		ctlp, err := parseCertificateTransparencyLoggingPreference(optionsMap)
+		if err != nil {
+			return nil, err
+		}
+		exportOpt, err := parseExportOption(optionsMap)
+		if err != nil {
+			return nil, err
+		}
 		cert.Options = &acmstorelib.CertificateOptions{
-			CertificateTransparencyLoggingPreference: parseCertificateTransparencyLoggingPreference(optionsMap),
-			Export:                                   parseExportOption(optionsMap),
+			CertificateTransparencyLoggingPreference: ctlp,
+			Export:                                   exportOpt,
 		}
 	} else {
 		cert.Options = &acmstorelib.CertificateOptions{
@@ -308,6 +322,11 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 	filters := acmstorelib.ListFilters{
 		SortBy:    request.GetStringParam(params, "SortBy"),
 		SortOrder: request.GetStringParam(params, "SortOrder"),
+	}
+	if filters.SortOrder != "" {
+		if err := validateSortOrder(filters.SortOrder); err != nil {
+			return nil, err
+		}
 	}
 
 	if raw, ok := params["CertificateStatuses"]; ok {
@@ -541,6 +560,9 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, awserrors.NewValidationException("Certificate is required")
 	}
 	certificate = decodeBase64PEM(certificate)
+	if len(certificate) > 32768 {
+		return nil, awserrors.NewValidationException("Certificate exceeds maximum length of 32768 bytes")
+	}
 
 	privateKey := request.GetStringParam(params, "PrivateKey")
 
@@ -551,10 +573,16 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 	}
 	if privateKey != "" {
 		privateKey = decodeBase64PEM(privateKey)
+		if len(privateKey) > 524288 {
+			return nil, awserrors.NewValidationException("PrivateKey exceeds maximum length of 524288 bytes")
+		}
 	}
 	certificateChain := request.GetStringParam(params, "CertificateChain")
 	if certificateChain != "" {
 		certificateChain = decodeBase64PEM(certificateChain)
+		if len(certificateChain) > 2097152 {
+			return nil, awserrors.NewValidationException("CertificateChain exceeds maximum length of 2097152 bytes")
+		}
 	}
 
 	tags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
@@ -567,9 +595,13 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 	certificateArn := stores.arnBuilder.BuildCertificateARN(certId)
 
 	now := time.Now().UTC()
+	domainName, err := extractDomainFromCert(certificate)
+	if err != nil {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("Invalid certificate: %v", err))
+	}
 	cert := &acmstorelib.Certificate{
 		CertificateArn:           certificateArn,
-		DomainName:               extractDomainFromCert(certificate),
+		DomainName:               domainName,
 		Serial:                   acmstorelib.GenerateCertificateSerial(),
 		Status:                   "ISSUED",
 		Type:                     "IMPORTED",
@@ -635,9 +667,17 @@ func (s *ACMService) UpdateCertificateOptions(ctx context.Context, reqCtx *reque
 		return nil, awserrors.NewValidationException("Options are required")
 	}
 
+	ctlp, err := parseCertificateTransparencyLoggingPreference(optionsMap)
+	if err != nil {
+		return nil, err
+	}
+	exportOpt, err := parseExportOption(optionsMap)
+	if err != nil {
+		return nil, err
+	}
 	cert.Options = &acmstorelib.CertificateOptions{
-		CertificateTransparencyLoggingPreference: parseCertificateTransparencyLoggingPreference(optionsMap),
-		Export:                                   parseExportOption(optionsMap),
+		CertificateTransparencyLoggingPreference: ctlp,
+		Export:                                   exportOpt,
 	}
 
 	if err := stores.certificates.Update(cert); err != nil {
@@ -684,9 +724,24 @@ func (s *ACMService) RenewCertificate(ctx context.Context, reqCtx *request.Reque
 	// ACM renewal transitions through PENDING_VALIDATION → SUCCESS; the
 	// platform re-signs synchronously so we persist the final state directly.
 	cert.IssuedAt = now
+	// Populate RenewalSummary.DomainValidationOptions (Smithy REQUIRED)
+	// by deep-copying the existing DVOs with updated validation status.
+	renewalDVOs := make([]*acmstorelib.DomainValidation, len(cert.DomainValidationOptions))
+	for i, dvo := range cert.DomainValidationOptions {
+		renewalDVOs[i] = &acmstorelib.DomainValidation{
+			DomainName:       dvo.DomainName,
+			ValidationDomain: dvo.ValidationDomain,
+			ValidationMethod: dvo.ValidationMethod,
+			ValidationStatus: "SUCCESS",
+			ValidationEmails: dvo.ValidationEmails,
+			ResourceRecord:   dvo.ResourceRecord,
+			HttpRedirect:     dvo.HttpRedirect,
+		}
+	}
 	cert.RenewalSummary = &acmstorelib.RenewalSummary{
-		RenewalStatus: "SUCCESS",
-		UpdatedAt:     now,
+		RenewalStatus:           "SUCCESS",
+		UpdatedAt:               now,
+		DomainValidationOptions: renewalDVOs,
 	}
 	for i := range cert.DomainValidationOptions {
 		cert.DomainValidationOptions[i].ValidationStatus = "SUCCESS"
@@ -898,21 +953,21 @@ func signatureAlgorithmForKeyAlgorithm(keyAlgorithm string) string {
 	}
 }
 
-func extractDomainFromCert(cert string) string {
+func extractDomainFromCert(cert string) (string, error) {
 	parsed, err := vcrypto.ParseCertificatePEM([]byte(cert))
 	if err != nil {
-		return "unknown"
+		return "", fmt.Errorf("failed to parse certificate: %w", err)
 	}
 
 	if len(parsed.DNSNames) > 0 {
-		return parsed.DNSNames[0]
+		return parsed.DNSNames[0], nil
 	}
 
 	if parsed.Subject.CommonName != "" {
-		return parsed.Subject.CommonName
+		return parsed.Subject.CommonName, nil
 	}
 
-	return "unknown"
+	return "", fmt.Errorf("no domain name found in certificate")
 }
 
 func determineKeyAlgorithm(cert string) string {

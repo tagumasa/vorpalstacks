@@ -45,6 +45,12 @@ type Certificate struct {
 	Region                   string              `json:"region"`
 }
 
+// HttpRedirect contains information for HTTP-based domain validation.
+type HttpRedirect struct {
+	StatusCode string `json:"statusCode"`
+	Location   string `json:"location"`
+}
+
 // DomainValidation represents domain validation details for a certificate.
 type DomainValidation struct {
 	DomainName       string          `json:"domainName"`
@@ -53,6 +59,7 @@ type DomainValidation struct {
 	ValidationMethod string          `json:"validationMethod"`
 	ValidationStatus string          `json:"validationStatus"`
 	ResourceRecord   *ResourceRecord `json:"resourceRecord,omitempty"`
+	HttpRedirect     *HttpRedirect   `json:"httpRedirect,omitempty"`
 }
 
 // ResourceRecord represents a DNS resource record for domain validation.

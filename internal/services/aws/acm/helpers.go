@@ -65,47 +65,69 @@ func parseDomainName(params map[string]interface{}) (string, error) {
 	if len(domain) > 253 || !domainNamePattern.MatchString(domain) {
 		return "", awserrors.NewValidationException("Invalid domain name: " + domain)
 	}
+	// Validate per-label 63 char limit per Smithy pattern.
+	for _, label := range strings.Split(domain, ".") {
+		if label == "*" {
+			continue
+		}
+		if len(label) > 63 {
+			return "", awserrors.NewValidationException("Invalid domain name: label exceeds 63 characters: " + label)
+		}
+	}
 	return domain, nil
 }
 
-func parseValidationMethod(params map[string]interface{}) string {
+func parseValidationMethod(params map[string]interface{}) (string, error) {
 	method := request.GetStringParam(params, "ValidationMethod")
 	if method == "" {
-		return "DNS"
+		return "DNS", nil
 	}
 	switch method {
 	case "DNS", "EMAIL", "HTTP":
-		return method
+		return method, nil
 	default:
-		return "DNS"
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ValidationMethod: %s. Valid values are DNS, EMAIL, HTTP.", method))
 	}
 }
 
-func parseKeyAlgorithm(params map[string]interface{}) string {
+func parseKeyAlgorithm(params map[string]interface{}) (string, error) {
 	algo := request.GetStringParam(params, "KeyAlgorithm")
 	if algo == "" {
-		return "RSA_2048"
+		return "RSA_2048", nil
 	}
-	return algo
+	switch algo {
+	case "RSA_1024", "RSA_2048", "RSA_3072", "RSA_4096",
+		"EC_prime256v1", "EC_secp384r1", "EC_secp521r1":
+		return algo, nil
+	default:
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid KeyAlgorithm: %s. Valid values are RSA_1024, RSA_2048, RSA_3072, RSA_4096, EC_prime256v1, EC_secp384r1, EC_secp521r1.", algo))
+	}
 }
 
-func parseCertificateTransparencyLoggingPreference(params map[string]interface{}) string {
+func parseCertificateTransparencyLoggingPreference(params map[string]interface{}) (string, error) {
 	pref := request.GetStringParam(params, "CertificateTransparencyLoggingPreference")
 	if pref == "" {
-		return "ENABLED"
+		return "ENABLED", nil
 	}
-	return pref
+	switch pref {
+	case "ENABLED", "DISABLED":
+		return pref, nil
+	default:
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid CertificateTransparencyLoggingPreference: %s. Valid values are ENABLED, DISABLED.", pref))
+	}
 }
 
-func parseExportOption(params map[string]interface{}) string {
+func parseExportOption(params map[string]interface{}) (string, error) {
 	export := request.GetStringParam(params, "Export")
 	if export == "" {
-		return "DISABLED"
+		return "DISABLED", nil
 	}
-	if export != "ENABLED" && export != "DISABLED" {
-		return "DISABLED"
+	switch export {
+	case "ENABLED", "DISABLED":
+		return export, nil
+	default:
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid Export: %s. Valid values are ENABLED, DISABLED.", export))
 	}
-	return export
 }
 
 var validManagedByValues = map[string]bool{
@@ -172,6 +194,12 @@ func domainValidationToResponse(dv *acmstorelib.DomainValidation) map[string]int
 			"Name":  dv.ResourceRecord.Name,
 			"Type":  dv.ResourceRecord.Type,
 			"Value": dv.ResourceRecord.Value,
+		}
+	}
+	if dv.HttpRedirect != nil {
+		result["HttpRedirect"] = map[string]interface{}{
+			"StatusCode": dv.HttpRedirect.StatusCode,
+			"Location":   dv.HttpRedirect.Location,
 		}
 	}
 	return result

@@ -13,7 +13,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 )
@@ -24,7 +26,11 @@ func (s *ACMService) SearchCertificates(ctx context.Context, reqCtx *request.Req
 
 	nextToken := request.GetStringParam(params, "NextToken")
 	maxResults := 500
-	if mr := request.GetIntParam(params, "MaxResults"); mr > 0 {
+	if mrRaw, ok := params["MaxResults"]; ok {
+		mr := request.GetIntParam(params, "MaxResults")
+		if mr < 1 {
+			return nil, awserrors.NewValidationException(fmt.Sprintf("MaxResults must be between 1 and 500, got %v", mrRaw))
+		}
 		maxResults = mr
 		if maxResults > 500 {
 			maxResults = 500
@@ -47,14 +53,27 @@ func (s *ACMService) SearchCertificates(ctx context.Context, reqCtx *request.Req
 	// Sort results.
 	sortBy := request.GetStringParam(params, "SortBy")
 	sortOrder := request.GetStringParam(params, "SortOrder")
+	if err := validateSearchSortBy(sortBy); err != nil {
+		return nil, err
+	}
+	if sortOrder != "" {
+		if err := validateSortOrder(sortOrder); err != nil {
+			return nil, err
+		}
+	}
 	sortCertificateSearchResults(filtered, sortBy, sortOrder)
 
 	// Paginate using offset-based tokens.
 	offset := 0
 	if nextToken != "" {
-		if n, parseErr := parseIntToken(nextToken); parseErr == nil && n >= 0 {
-			offset = n
+		n, parseErr := parseIntToken(nextToken)
+		if parseErr != nil {
+			return nil, NewInvalidParameterError(fmt.Sprintf("Invalid NextToken: %s", nextToken))
 		}
+		if n < 0 {
+			return nil, NewInvalidParameterError("Invalid NextToken: negative offset")
+		}
+		offset = n
 	}
 	if offset > len(filtered) {
 		offset = len(filtered)
@@ -83,115 +102,276 @@ func (s *ACMService) SearchCertificates(ctx context.Context, reqCtx *request.Req
 }
 
 // applyCertificateFilters filters certificates based on FilterStatement
-// parameters. Supports CertificateArn exact match, AcmCertificateMetadataFilter
-// (Status, Type, KeyAlgorithm, ValidationMethod, Exported, InUse), and
-// X509AttributeFilter (KeyAlgorithm, Subject.CommonName, SerialNumber).
+// parameters. Supports the full CertificateFilterStatement union type
+// including And/Or/Not compound operators and nested filter unions.
 func applyCertificateFilters(certs []*acmstorelib.Certificate, params map[string]interface{}) []*acmstorelib.Certificate {
-	// Check for direct CertificateArn filter.
-	if arnFilter := getFilterValue(params, "CertificateArn"); arnFilter != "" {
-		var result []*acmstorelib.Certificate
-		for _, c := range certs {
-			if c.CertificateArn == arnFilter {
-				result = append(result, c)
-			}
-		}
-		return result
+	filterStatement := getNestedValue(params, "FilterStatement")
+	if filterStatement == nil {
+		return certs
 	}
-
-	// Extract metadata filter values.
-	statuses := getFilterList(params, "AcmCertificateMetadataFilter.Status", "Status")
-	types := getFilterList(params, "AcmCertificateMetadataFilter.Type", "Type")
-	keyAlgos := getFilterList(params, "X509AttributeFilter.KeyAlgorithm", "KeyAlgorithm")
-	validationMethods := getFilterList(params, "AcmCertificateMetadataFilter.ValidationMethod", "ValidationMethod")
-	commonName := getFilterValue(params, "Subject.CommonName")
-	if commonName == "" {
-		commonName = getFilterValue(params, "X509AttributeFilter.Subject.CommonName")
-	}
-
-	var filtered []*acmstorelib.Certificate
+	var result []*acmstorelib.Certificate
 	for _, c := range certs {
-		if len(statuses) > 0 && !containsString(statuses, c.Status) {
-			continue
+		if evaluateFilterStatement(c, filterStatement) {
+			result = append(result, c)
 		}
-		if len(types) > 0 && !containsString(types, c.Type) {
-			continue
-		}
-		if len(validationMethods) > 0 {
-			vmMatched := false
-			for _, dvo := range c.DomainValidationOptions {
-				if containsString(validationMethods, dvo.ValidationMethod) {
-					vmMatched = true
-					break
-				}
-			}
-			if !vmMatched {
-				continue
-			}
-		}
-		if len(keyAlgos) > 0 && !containsString(keyAlgos, c.KeyAlgorithm) {
-			continue
-		}
-		if commonName != "" && !strings.Contains(strings.ToLower(c.Subject), strings.ToLower(commonName)) {
-			continue
-		}
-		filtered = append(filtered, c)
 	}
-	return filtered
+	return result
 }
 
-// getFilterValue extracts a scalar filter value from the FilterStatement
-// parameter hierarchy. It tries multiple key patterns.
-func getFilterValue(params map[string]interface{}, keys ...string) string {
-	prefixes := []string{
-		"FilterStatement.Filter.",
-		"FilterStatement.",
-		"Filter.",
-		"",
-	}
-	for _, prefix := range prefixes {
-		for _, key := range keys {
-			fullKey := prefix + key
-			if v := request.GetStringParam(params, fullKey); v != "" {
-				return v
-			}
+// getNestedValue extracts a nested value from a map by walking the key path.
+func getNestedValue(m map[string]interface{}, keys ...string) interface{} {
+	var current interface{} = m
+	for _, key := range keys {
+		cm, ok := current.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		current, ok = cm[key]
+		if !ok {
+			return nil
 		}
 	}
-	return ""
+	return current
 }
 
-// getFilterList extracts a list filter value from the FilterStatement
-// parameter hierarchy. Tries multiple key patterns.
-func getFilterList(params map[string]interface{}, keys ...string) []string {
-	prefixes := []string{
-		"FilterStatement.Filter.",
-		"FilterStatement.",
-		"Filter.",
-		"",
+// evaluateFilterStatement recursively evaluates a CertificateFilterStatement
+// against a certificate. The statement is a union type with And/Or/Not/Filter.
+func evaluateFilterStatement(cert *acmstorelib.Certificate, statement interface{}) bool {
+	if statement == nil {
+		return false
 	}
-	for _, prefix := range prefixes {
-		for _, key := range keys {
-			fullKey := prefix + key
-			// Try member.N format.
-			if vals := request.GetStringList(params, fullKey); len(vals) > 0 {
-				return vals
-			}
-			// Try direct list.
-			if raw, ok := params[fullKey]; ok {
-				if arr, ok := raw.([]interface{}); ok {
-					var result []string
-					for _, v := range arr {
-						if s, ok := v.(string); ok {
-							result = append(result, s)
-						}
-					}
-					if len(result) > 0 {
-						return result
-					}
-				}
+	stmtMap, ok := statement.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	if andList, ok := stmtMap["And"]; ok {
+		return evaluateAndFilter(cert, andList)
+	}
+	if orList, ok := stmtMap["Or"]; ok {
+		return evaluateOrFilter(cert, orList)
+	}
+	if notStmt, ok := stmtMap["Not"]; ok {
+		return !evaluateFilterStatement(cert, notStmt)
+	}
+	if filter, ok := stmtMap["Filter"]; ok {
+		return evaluateCertificateFilter(cert, filter)
+	}
+	return false
+}
+
+// evaluateAndFilter evaluates an And compound filter (all must match).
+func evaluateAndFilter(cert *acmstorelib.Certificate, list interface{}) bool {
+	arr, ok := list.([]interface{})
+	if !ok || len(arr) == 0 {
+		return false
+	}
+	for _, item := range arr {
+		if !evaluateFilterStatement(cert, item) {
+			return false
+		}
+	}
+	return true
+}
+
+// evaluateOrFilter evaluates an Or compound filter (any must match).
+func evaluateOrFilter(cert *acmstorelib.Certificate, list interface{}) bool {
+	arr, ok := list.([]interface{})
+	if !ok || len(arr) == 0 {
+		return false
+	}
+	for _, item := range arr {
+		if evaluateFilterStatement(cert, item) {
+			return true
+		}
+	}
+	return false
+}
+
+// evaluateCertificateFilter evaluates a CertificateFilter union against a cert.
+func evaluateCertificateFilter(cert *acmstorelib.Certificate, filter interface{}) bool {
+	filterMap, ok := filter.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	if arnFilter, ok := filterMap["CertificateArn"]; ok {
+		arnStr, _ := arnFilter.(string)
+		return arnStr == cert.CertificateArn
+	}
+	if x509Filter, ok := filterMap["X509AttributeFilter"]; ok {
+		return evaluateX509Filter(cert, x509Filter)
+	}
+	if metaFilter, ok := filterMap["AcmCertificateMetadataFilter"]; ok {
+		return evaluateMetadataFilter(cert, metaFilter)
+	}
+	return false
+}
+
+// evaluateX509Filter evaluates an X509AttributeFilter union against a cert.
+func evaluateX509Filter(cert *acmstorelib.Certificate, filter interface{}) bool {
+	filterMap, ok := filter.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	if subjectFilter, ok := filterMap["Subject"]; ok {
+		return evaluateSubjectFilter(cert, subjectFilter)
+	}
+	if keyAlgo, ok := filterMap["KeyAlgorithm"]; ok {
+		algoStr, _ := keyAlgo.(string)
+		return algoStr == cert.KeyAlgorithm
+	}
+	if serialNum, ok := filterMap["SerialNumber"]; ok {
+		serialStr, _ := serialNum.(string)
+		return serialStr == cert.Serial
+	}
+	if notAfter, ok := filterMap["NotAfter"]; ok {
+		return evaluateTimestampRange(cert.NotAfter, notAfter)
+	}
+	if notBefore, ok := filterMap["NotBefore"]; ok {
+		return evaluateTimestampRange(cert.NotBefore, notBefore)
+	}
+	return false
+}
+
+// evaluateSubjectFilter evaluates a SubjectFilter union against a cert.
+func evaluateSubjectFilter(cert *acmstorelib.Certificate, filter interface{}) bool {
+	filterMap, ok := filter.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	if commonName, ok := filterMap["CommonName"]; ok {
+		cnStr, _ := commonName.(string)
+		return strings.Contains(strings.ToLower(cert.Subject), strings.ToLower(cnStr))
+	}
+	return false
+}
+
+// evaluateMetadataFilter evaluates an AcmCertificateMetadataFilter union against a cert.
+func evaluateMetadataFilter(cert *acmstorelib.Certificate, filter interface{}) bool {
+	filterMap, ok := filter.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	if status, ok := filterMap["Status"]; ok {
+		statusStr, _ := status.(string)
+		return statusStr == cert.Status
+	}
+	if renewalStatus, ok := filterMap["RenewalStatus"]; ok {
+		rsStr, _ := renewalStatus.(string)
+		if cert.RenewalSummary == nil {
+			return rsStr == ""
+		}
+		return rsStr == cert.RenewalSummary.RenewalStatus
+	}
+	if certType, ok := filterMap["Type"]; ok {
+		typeStr, _ := certType.(string)
+		return typeStr == cert.Type
+	}
+	if inUse, ok := filterMap["InUse"]; ok {
+		inUseVal, _ := inUse.(bool)
+		return inUseVal == (len(cert.InUseBy) > 0)
+	}
+	if exported, ok := filterMap["Exported"]; ok {
+		exportedVal, _ := exported.(bool)
+		isExported := cert.Options != nil && cert.Options.Export == "ENABLED"
+		return exportedVal == isExported
+	}
+	if exportOption, ok := filterMap["ExportOption"]; ok {
+		eoStr, _ := exportOption.(string)
+		if cert.Options == nil {
+			return eoStr == "DISABLED"
+		}
+		return eoStr == cert.Options.Export
+	}
+	if managedBy, ok := filterMap["ManagedBy"]; ok {
+		mbStr, _ := managedBy.(string)
+		return mbStr == cert.ManagedBy
+	}
+	if validationMethod, ok := filterMap["ValidationMethod"]; ok {
+		vmStr, _ := validationMethod.(string)
+		for _, dvo := range cert.DomainValidationOptions {
+			if dvo.ValidationMethod == vmStr {
+				return true
 			}
 		}
+		return false
+	}
+	if certKeyPairOrigin, ok := filterMap["CertificateKeyPairOrigin"]; ok {
+		ckpoStr, _ := certKeyPairOrigin.(string)
+		return ckpoStr == cert.CertificateKeyPairOrigin
+	}
+	return false
+}
+
+// evaluateTimestampRange checks if a time falls within a TimestampRange.
+func evaluateTimestampRange(t time.Time, rangeVal interface{}) bool {
+	rangeMap, ok := rangeVal.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	start, startOk := rangeMap["Start"].(float64)
+	end, endOk := rangeMap["End"].(float64)
+	if !startOk && !endOk {
+		return false
+	}
+	if startOk {
+		startTime := time.Unix(int64(start), 0)
+		if t.Before(startTime) {
+			return false
+		}
+	}
+	if endOk {
+		endTime := time.Unix(int64(end), 0)
+		if t.After(endTime) {
+			return false
+		}
+	}
+	return true
+}
+
+// validSearchSortByValues contains all supported SortBy values for
+// SearchCertificates.  ACME scope-out values (ACME_ENDPOINT_ARN,
+// ACME_ACCOUNT_ID) are excluded as the ACME API is not implemented.
+var validSearchSortByValues = map[string]bool{
+	"CREATED_AT":                  true,
+	"NOT_AFTER":                   true,
+	"STATUS":                      true,
+	"RENEWAL_STATUS":              true,
+	"EXPORTED":                    true,
+	"IN_USE":                      true,
+	"NOT_BEFORE":                  true,
+	"KEY_ALGORITHM":               true,
+	"TYPE":                        true,
+	"CERTIFICATE_ARN":             true,
+	"COMMON_NAME":                 true,
+	"REVOKED_AT":                  true,
+	"RENEWAL_ELIGIBILITY":         true,
+	"ISSUED_AT":                   true,
+	"MANAGED_BY":                  true,
+	"EXPORT_OPTION":               true,
+	"VALIDATION_METHOD":           true,
+	"IMPORTED_AT":                 true,
+	"CERTIFICATE_KEY_PAIR_ORIGIN": true,
+}
+
+// validateSearchSortBy returns an error if sortBy is not a supported value.
+func validateSearchSortBy(sortBy string) error {
+	if sortBy == "" || sortBy == "CREATED_AT" {
+		return nil
+	}
+	if !validSearchSortByValues[sortBy] {
+		return NewInvalidParameterError(fmt.Sprintf("Invalid SortBy: %s", sortBy))
 	}
 	return nil
+}
+
+// validateSortOrder validates SortOrder parameter (ASCENDING/DESCENDING).
+func validateSortOrder(sortOrder string) error {
+	switch sortOrder {
+	case "ASCENDING", "DESCENDING":
+		return nil
+	default:
+		return NewInvalidParameterError(fmt.Sprintf("Invalid SortOrder: %s. Valid values are ASCENDING, DESCENDING.", sortOrder))
+	}
 }
 
 // sortCertificateSearchResults sorts the slice by the given field and order.
@@ -200,48 +380,101 @@ func sortCertificateSearchResults(certs []*acmstorelib.Certificate, sortBy, sort
 	less := func(i, j int) bool {
 		a, b := certs[i], certs[j]
 		switch sortBy {
-		case "CREATED_AT":
-			if ascending {
-				return a.CreatedAt.Before(b.CreatedAt)
-			}
-			return a.CreatedAt.After(b.CreatedAt)
-		case "CERTIFICATE_ARN":
-			if ascending {
-				return a.CertificateArn < b.CertificateArn
-			}
-			return a.CertificateArn > b.CertificateArn
-		case "STATUS":
-			if ascending {
-				return a.Status < b.Status
-			}
-			return a.Status > b.Status
-		case "TYPE":
-			if ascending {
-				return a.Type < b.Type
-			}
-			return a.Type > b.Type
-		case "KEY_ALGORITHM":
-			if ascending {
-				return a.KeyAlgorithm < b.KeyAlgorithm
-			}
-			return a.KeyAlgorithm > b.KeyAlgorithm
-		case "NOT_BEFORE":
-			if ascending {
-				return a.NotBefore.Before(b.NotBefore)
-			}
-			return a.NotBefore.After(b.NotBefore)
 		case "NOT_AFTER":
 			if ascending {
 				return a.NotAfter.Before(b.NotAfter)
 			}
 			return a.NotAfter.After(b.NotAfter)
-		case "IMPORTED_AT":
-			ai := a.ImportedAt
-			bi := b.ImportedAt
+		case "STATUS":
 			if ascending {
-				return ai.Before(bi)
+				return a.Status < b.Status
 			}
-			return ai.After(bi)
+			return a.Status > b.Status
+		case "RENEWAL_STATUS":
+			aVal, bVal := renewalStatus(a), renewalStatus(b)
+			if ascending {
+				return aVal < bVal
+			}
+			return aVal > bVal
+		case "EXPORTED":
+			aVal, bVal := isExported(a), isExported(b)
+			if ascending {
+				return aVal < bVal
+			}
+			return aVal > bVal
+		case "IN_USE":
+			aVal, bVal := isInUse(a), isInUse(b)
+			if ascending {
+				return aVal < bVal
+			}
+			return aVal > bVal
+		case "NOT_BEFORE":
+			if ascending {
+				return a.NotBefore.Before(b.NotBefore)
+			}
+			return a.NotBefore.After(b.NotBefore)
+		case "KEY_ALGORITHM":
+			if ascending {
+				return a.KeyAlgorithm < b.KeyAlgorithm
+			}
+			return a.KeyAlgorithm > b.KeyAlgorithm
+		case "TYPE":
+			if ascending {
+				return a.Type < b.Type
+			}
+			return a.Type > b.Type
+		case "CERTIFICATE_ARN":
+			if ascending {
+				return a.CertificateArn < b.CertificateArn
+			}
+			return a.CertificateArn > b.CertificateArn
+		case "COMMON_NAME":
+			if ascending {
+				return a.Subject < b.Subject
+			}
+			return a.Subject > b.Subject
+		case "REVOKED_AT":
+			if ascending {
+				return a.RevokedAt.Before(b.RevokedAt)
+			}
+			return a.RevokedAt.After(b.RevokedAt)
+		case "RENEWAL_ELIGIBILITY":
+			if ascending {
+				return a.RenewalEligibility < b.RenewalEligibility
+			}
+			return a.RenewalEligibility > b.RenewalEligibility
+		case "ISSUED_AT":
+			if ascending {
+				return a.IssuedAt.Before(b.IssuedAt)
+			}
+			return a.IssuedAt.After(b.IssuedAt)
+		case "MANAGED_BY":
+			if ascending {
+				return a.ManagedBy < b.ManagedBy
+			}
+			return a.ManagedBy > b.ManagedBy
+		case "EXPORT_OPTION":
+			aVal, bVal := exportOption(a), exportOption(b)
+			if ascending {
+				return aVal < bVal
+			}
+			return aVal > bVal
+		case "VALIDATION_METHOD":
+			aVal, bVal := validationMethod(a), validationMethod(b)
+			if ascending {
+				return aVal < bVal
+			}
+			return aVal > bVal
+		case "IMPORTED_AT":
+			if ascending {
+				return a.ImportedAt.Before(b.ImportedAt)
+			}
+			return a.ImportedAt.After(b.ImportedAt)
+		case "CERTIFICATE_KEY_PAIR_ORIGIN":
+			if ascending {
+				return a.CertificateKeyPairOrigin < b.CertificateKeyPairOrigin
+			}
+			return a.CertificateKeyPairOrigin > b.CertificateKeyPairOrigin
 		default:
 			if ascending {
 				return a.CreatedAt.Before(b.CreatedAt)
@@ -250,6 +483,47 @@ func sortCertificateSearchResults(certs []*acmstorelib.Certificate, sortBy, sort
 		}
 	}
 	sort.Slice(certs, less)
+}
+
+// renewalStatus returns the renewal status string, or empty if not set.
+func renewalStatus(cert *acmstorelib.Certificate) string {
+	if cert.RenewalSummary != nil {
+		return cert.RenewalSummary.RenewalStatus
+	}
+	return ""
+}
+
+// isExported returns 1 if the certificate is exported, 0 otherwise.
+func isExported(cert *acmstorelib.Certificate) int {
+	if cert.Options != nil && cert.Options.Export == "ENABLED" {
+		return 1
+	}
+	return 0
+}
+
+// isInUse returns 1 if the certificate is in use, 0 otherwise.
+func isInUse(cert *acmstorelib.Certificate) int {
+	if len(cert.InUseBy) > 0 {
+		return 1
+	}
+	return 0
+}
+
+// exportOption returns the export option string, or empty if not set.
+func exportOption(cert *acmstorelib.Certificate) string {
+	if cert.Options != nil {
+		return cert.Options.Export
+	}
+	return ""
+}
+
+// validationMethod returns the first validation method from domain
+// validation options, or empty if not set.
+func validationMethod(cert *acmstorelib.Certificate) string {
+	if len(cert.DomainValidationOptions) > 0 {
+		return cert.DomainValidationOptions[0].ValidationMethod
+	}
+	return ""
 }
 
 // buildCertificateSearchResult constructs the response object with
@@ -283,7 +557,7 @@ func buildCertificateSearchResult(cert *acmstorelib.Certificate) map[string]inte
 	}
 
 	// Parse X.509 attributes from the certificate PEM.
-	x509Attrs := extractX509Attributes(cert.Certificate)
+	x509Attrs, _ := extractX509Attributes(cert.Certificate)
 	if x509Attrs != nil {
 		result["X509Attributes"] = x509Attrs
 	}
@@ -293,17 +567,17 @@ func buildCertificateSearchResult(cert *acmstorelib.Certificate) map[string]inte
 
 // extractX509Attributes parses the PEM certificate and extracts X.509
 // attributes for the search result.
-func extractX509Attributes(certPEM string) map[string]interface{} {
+func extractX509Attributes(certPEM string) (map[string]interface{}, error) {
 	if certPEM == "" {
-		return nil
+		return nil, nil
 	}
 	block, _ := pem.Decode([]byte(certPEM))
 	if block == nil {
-		return nil
+		return nil, fmt.Errorf("invalid PEM certificate")
 	}
 	parsed, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to parse X.509 certificate: %w", err)
 	}
 
 	attrs := map[string]interface{}{
@@ -328,7 +602,7 @@ func extractX509Attributes(certPEM string) map[string]interface{} {
 		attrs["SubjectAlternativeNames"] = sans
 	}
 
-	return attrs
+	return attrs, nil
 }
 
 // buildDistinguishedName converts a pkix.Name to the ACM DistinguishedName
@@ -390,15 +664,6 @@ func ecCurveToAlgorithm(curve elliptic.Curve) string {
 // pkixName is an alias for crypto/x509/pkix.Name to simplify the
 // buildDistinguishedName signature.
 type pkixName = pkix.Name
-
-func containsString(slice []string, target string) bool {
-	for _, s := range slice {
-		if s == target {
-			return true
-		}
-	}
-	return false
-}
 
 func parseIntToken(token string) (int, error) {
 	return strconv.Atoi(token)

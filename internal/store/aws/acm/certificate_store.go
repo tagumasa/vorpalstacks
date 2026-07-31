@@ -37,6 +37,9 @@ func NewCertificateStore(store storage.BasicStorage, accountId, region string) *
 }
 
 func (s *CertificateStore) extractCertificateId(arn string) string {
+	if arn == "" {
+		return ""
+	}
 	parts := strings.Split(arn, "/")
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
