@@ -72,7 +72,10 @@ func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *req
 		return nil, NewBadRequestException("format is required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	types, nextToken, err := store.ListTypes(assoc.SourceApiId, opts)
 	if err != nil {
 		return mapStoreError(err)

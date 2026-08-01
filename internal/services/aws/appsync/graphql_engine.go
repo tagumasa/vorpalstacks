@@ -92,7 +92,7 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 	entry, err := e.loadSchema(ctx, reqCtx, apiId)
 	if err != nil {
 		return &graphqlExecutionResult{
-			Errors: []graphqlError{{Message: err.Error()}},
+			Errors: []graphqlError{{Message: err.Error(), ErrorType: "INTERNAL_FAILURE"}},
 		}
 	}
 	schema := entry.schema
@@ -106,7 +106,7 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 
 	if len(doc.Operations) == 0 {
 		return &graphqlExecutionResult{
-			Errors: []graphqlError{{Message: "No operations found in document"}},
+			Errors: []graphqlError{{Message: "No operations found in document", ErrorType: "BadRequestException"}},
 		}
 	}
 
@@ -120,14 +120,14 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 		}
 		if op == nil {
 			return &graphqlExecutionResult{
-				Errors: []graphqlError{{Message: fmt.Sprintf("Operation %q not found", gqlReq.OperationName)}},
+				Errors: []graphqlError{{Message: fmt.Sprintf("Operation %q not found", gqlReq.OperationName), ErrorType: "BadRequestException"}},
 			}
 		}
 	} else if len(doc.Operations) == 1 {
 		op = doc.Operations[0]
 	} else {
 		return &graphqlExecutionResult{
-			Errors: []graphqlError{{Message: "Must provide operation name when multiple operations exist"}},
+			Errors: []graphqlError{{Message: "Must provide operation name when multiple operations exist", ErrorType: "BadRequestException"}},
 		}
 	}
 
@@ -221,12 +221,15 @@ func (e *graphQLEngine) executeOperation(
 		}
 		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Mutation", nil, op.SelectionSet, variables, resolverMap, fragments)
 	case ast.Subscription:
-		if op.SelectionSet == nil {
-			return nil, nil
-		}
-		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Subscription", nil, op.SelectionSet, variables, resolverMap, fragments)
+		// AWS AppSync subscriptions require a WebSocket connection to the
+		// real-time endpoint (/graphql/realtime). The HTTP endpoint does not
+		// support subscription operations.
+		return nil, []graphqlError{{
+			Message:   "Subscriptions are not supported on the HTTP endpoint. Use the WebSocket real-time endpoint.",
+			ErrorType: "BadRequestException",
+		}}
 	default:
-		return nil, []graphqlError{{Message: fmt.Sprintf("Unsupported operation type: %s", op.Operation)}}
+		return nil, []graphqlError{{Message: fmt.Sprintf("Unsupported operation type: %s", op.Operation), ErrorType: "BadRequestException"}}
 	}
 }
 
@@ -365,7 +368,7 @@ func (e *graphQLEngine) resolveField(
 
 	args, err := e.resolveArguments(field, variables)
 	if err != nil {
-		return nil, []graphqlError{{Message: fmt.Sprintf("Failed to resolve arguments for %s.%s: %v", parentTypeName, fieldName, err)}}
+		return nil, []graphqlError{{Message: fmt.Sprintf("Failed to resolve arguments for %s.%s: %v", parentTypeName, fieldName, err), ErrorType: "BadRequestException"}}
 	}
 
 	if resolved, handled := e.resolveIntrospectionField(schema, parentTypeName, fieldName, parentSource, args); handled {
@@ -447,7 +450,7 @@ func (e *graphQLEngine) executeUnitResolver(
 	if resolver.RequestMappingTemplate != "" {
 		result, err := engine.Transform(resolver.RequestMappingTemplate)
 		if err != nil {
-			return nil, []graphqlError{{Message: fmt.Sprintf("Request template error: %v", err)}}
+			return nil, []graphqlError{{Message: fmt.Sprintf("Request template error: %v", err), ErrorType: "INTERNAL_FAILURE"}}
 		}
 
 		// Only $util.error() and $util.unauthorized() halt execution.
@@ -469,7 +472,7 @@ func (e *graphQLEngine) executeUnitResolver(
 	dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, resolver.DataSourceName, dsPayload)
 
 	if dsErr != nil {
-		return nil, []graphqlError{{Message: dsErr.Error()}}
+		return nil, []graphqlError{{Message: dsErr.Error(), ErrorType: "INTERNAL_FAILURE"}}
 	}
 
 	finalResult := dsResult
@@ -478,7 +481,7 @@ func (e *graphQLEngine) executeUnitResolver(
 		engine.AppSyncCtx.Result = dsResult
 		respStr, err := engine.Transform(resolver.ResponseMappingTemplate)
 		if err != nil {
-			return nil, []graphqlError{{Message: fmt.Sprintf("Response template error: %v", err)}}
+			return nil, []graphqlError{{Message: fmt.Sprintf("Response template error: %v", err), ErrorType: "INTERNAL_FAILURE"}}
 		}
 
 		if hasFatalAppSyncError(engine.AppSyncCtx) {
@@ -559,7 +562,7 @@ func (e *graphQLEngine) executePipelineResolver(
 	if resolver.RequestMappingTemplate != "" {
 		resStr, err := engine.Transform(resolver.RequestMappingTemplate)
 		if err != nil {
-			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline before template error: %v", err)}}
+			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline before template error: %v", err), ErrorType: "INTERNAL_FAILURE"}}
 		}
 		if hasFatalAppSyncError(engine.AppSyncCtx) {
 			return nil, collectAppSyncErrors(engine.AppSyncCtx)
@@ -577,7 +580,7 @@ func (e *graphQLEngine) executePipelineResolver(
 	for _, functionId := range resolver.PipelineConfig.Functions {
 		fn, err := e.store.GetFunction(apiId, functionId)
 		if err != nil {
-			return nil, []graphqlError{{Message: fmt.Sprintf("Function %s not found: %v", functionId, err)}}
+			return nil, []graphqlError{{Message: fmt.Sprintf("Function %s not found: %v", functionId, err), ErrorType: "INTERNAL_FAILURE"}}
 		}
 
 		fnEngine := vtl.NewEngine()
@@ -598,7 +601,7 @@ func (e *graphQLEngine) executePipelineResolver(
 		if fn.RequestMappingTemplate != "" {
 			fnResult, err := fnEngine.Transform(fn.RequestMappingTemplate)
 			if err != nil {
-				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s request template error: %v", functionId, err)}}
+				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s request template error: %v", functionId, err), ErrorType: "INTERNAL_FAILURE"}}
 			}
 			if hasFatalAppSyncError(fnEngine.AppSyncCtx) {
 				return nil, collectAppSyncErrors(fnEngine.AppSyncCtx)
@@ -615,14 +618,14 @@ func (e *graphQLEngine) executePipelineResolver(
 
 		dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, fn.DataSourceName, fnPayload)
 		if dsErr != nil {
-			return nil, []graphqlError{{Message: dsErr.Error()}}
+			return nil, []graphqlError{{Message: dsErr.Error(), ErrorType: "INTERNAL_FAILURE"}}
 		}
 
 		if fn.ResponseMappingTemplate != "" {
 			fnEngine.AppSyncCtx.Result = dsResult
 			respStr, err := fnEngine.Transform(fn.ResponseMappingTemplate)
 			if err != nil {
-				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s response template error: %v", functionId, err)}}
+				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s response template error: %v", functionId, err), ErrorType: "INTERNAL_FAILURE"}}
 			}
 			if hasFatalAppSyncError(fnEngine.AppSyncCtx) {
 				return nil, collectAppSyncErrors(fnEngine.AppSyncCtx)
@@ -651,7 +654,7 @@ func (e *graphQLEngine) executePipelineResolver(
 		engine.AppSyncCtx.Stash = stash
 		respStr, err := engine.Transform(resolver.ResponseMappingTemplate)
 		if err != nil {
-			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline after template error: %v", err)}}
+			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline after template error: %v", err), ErrorType: "INTERNAL_FAILURE"}}
 		}
 		if hasFatalAppSyncError(engine.AppSyncCtx) {
 			return nil, collectAppSyncErrors(engine.AppSyncCtx)
@@ -695,7 +698,7 @@ func collectAppSyncErrors(ctx *vtl.AppSyncContext) []graphqlError {
 	}
 	errs := make([]graphqlError, 0, len(ctx.Errors))
 	for _, ae := range ctx.Errors {
-		errs = append(errs, graphqlError{Message: ae.Message})
+		errs = append(errs, graphqlError{Message: ae.Message, ErrorType: ae.ErrorType})
 	}
 	return errs
 }
@@ -844,6 +847,7 @@ func convertGqlErrors(errs gqlerror.List) []graphqlError {
 		}
 		result = append(result, graphqlError{
 			Message:   e.Message,
+			ErrorType: "GraphQL Validation Error",
 			Locations: locs,
 		})
 	}

@@ -258,7 +258,10 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 		return mapStoreError(err)
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
 	apis, nextToken, err := store.ListGraphqlApis(opts, apiTypeFilter)
 	if err != nil {

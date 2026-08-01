@@ -198,7 +198,10 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 		return mapStoreError(err)
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	apis, nextToken, err := store.ListApis(opts)
 	if err != nil {
 		return mapStoreError(err)

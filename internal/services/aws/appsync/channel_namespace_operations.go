@@ -166,7 +166,10 @@ func (s *AppSyncService) ListChannelNamespaces(ctx context.Context, reqCtx *requ
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	namespaces, nextToken, err := store.ListChannelNamespaces(apiId, opts)
 	if err != nil {
 		return mapStoreError(err)

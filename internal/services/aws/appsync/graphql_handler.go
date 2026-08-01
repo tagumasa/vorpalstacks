@@ -96,7 +96,7 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 	status := http.StatusOK
 	if len(result.Errors) > 0 {
 		for _, e := range result.Errors {
-			if e.Message == "InternalFailureException" {
+			if e.ErrorType == "INTERNAL_FAILURE" {
 				status = http.StatusInternalServerError
 				break
 			}
@@ -138,29 +138,45 @@ func (s *AppSyncService) graphqlErrorResponse(status int, errType, message strin
 }
 
 // authorizeGraphQLRequest validates that the caller is authenticated to
-// execute queries against the GraphQL data-plane endpoint. The check
-// depends on the API's configured authentication type:
+// execute queries against the GraphQL data-plane endpoint. When the API
+// has multiple authentication providers (primary + additional), the
+// provider is selected based on the client's request:
 //
-//   - API_KEY: requires a valid, non-expired key in the x-api-key header.
-//   - AWS_IAM: handled by the dispatcher's IAM authoriser; no additional
-//     check is needed here.
-//   - OPENID_CONNECT / AMAZON_COGNITO_USER_POOLS / AWS_LAMBDA: deferred
-//     to future JWT and Lambda-authoriser integration work.
+//   - x-api-key header present → API_KEY auth (must be configured).
+//   - No x-api-key → AWS_IAM (handled by the dispatcher authoriser).
+//   - OPENID_CONNECT / AMAZON_COGNITO_USER_POOLS / AWS_LAMBDA:
+//     Not yet implemented; requests are denied (fail-closed).
 //
-// Returns a non-nil *graphqlResponse when the request is denied; nil when
-// the caller is authorised.
+// Returns nil when the caller is authorised; a non-nil *graphqlResponse
+// otherwise.
 func (s *AppSyncService) authorizeGraphQLRequest(store *appsyncstore.AppSyncStore, req *request.ParsedRequest, api *appsyncstore.GraphqlApi) *graphqlResponse {
-	switch api.AuthenticationType {
-	case "API_KEY":
-		return s.authorizeAPIKey(store, req, api)
-	case "AWS_IAM":
-		// IAM authentication is enforced by the dispatcher authoriser.
-		return nil
-	default:
-		// OPENID_CONNECT, AMAZON_COGNITO_USER_POOLS, AWS_LAMBDA:
-		// not yet implemented; allow requests to preserve existing behaviour.
+	// Build the set of configured auth types (primary + additional).
+	configured := map[string]bool{api.AuthenticationType: true}
+	for _, p := range api.AdditionalAuthenticationProviders {
+		configured[p.AuthenticationType] = true
+	}
+
+	// Detect the client's chosen auth method from request headers.
+	if req.Headers != nil {
+		if apiKey := req.Headers.Get("x-api-key"); apiKey != "" {
+			if configured["API_KEY"] {
+				return s.authorizeAPIKey(store, req, api)
+			}
+			return s.graphqlErrorResponse(http.StatusUnauthorized, "UnauthorizedException", "API key authentication is not configured for this API.")
+		}
+	}
+
+	// No API key header — fall back to IAM or other configured types.
+	if configured["AWS_IAM"] {
+		// IAM authentication is enforced by the dispatcher authoriser; if
+		// the request reached here it already passed IAM checks.
 		return nil
 	}
+
+	// OPENID_CONNECT, AMAZON_COGNITO_USER_POOLS, AWS_LAMBDA:
+	// JWT and Lambda-authoriser validation is not yet implemented.
+	// Fail closed to prevent unauthenticated access.
+	return s.graphqlErrorResponse(http.StatusUnauthorized, "UnauthorizedException", "You are not authorized to make this call.")
 }
 
 // authorizeAPIKey validates the x-api-key header against stored API keys.

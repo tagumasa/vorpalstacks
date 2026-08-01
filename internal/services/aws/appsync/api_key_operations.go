@@ -75,7 +75,10 @@ func (s *AppSyncService) ListApiKeys(ctx context.Context, reqCtx *request.Reques
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	keys, nextToken, err := store.ListApiKeys(apiId, opts)
 	if err != nil {
 		return mapStoreError(err)

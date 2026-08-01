@@ -64,6 +64,8 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
+	s.schemaCache.Delete(apiId)
+
 	return map[string]interface{}{
 		"resolver": resolverToMap(created),
 	}, nil
@@ -150,6 +152,8 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
+	s.schemaCache.Delete(apiId)
+
 	return map[string]interface{}{
 		"resolver": resolverToMap(updated),
 	}, nil
@@ -175,6 +179,8 @@ func (s *AppSyncService) DeleteResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
+	s.schemaCache.Delete(apiId)
+
 	return map[string]interface{}{}, nil
 }
 
@@ -192,7 +198,10 @@ func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.Requ
 		return nil, NewBadRequestException("apiId and typeName are required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	resolvers, nextToken, err := store.ListResolvers(apiId, typeName, opts)
 	if err != nil {
 		return mapStoreError(err)
@@ -226,7 +235,10 @@ func (s *AppSyncService) ListResolversByFunction(ctx context.Context, reqCtx *re
 		return nil, NewBadRequestException("apiId and functionId are required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	resolvers, nextToken, err := store.ListResolversByFunction(apiId, functionId, opts)
 	if err != nil {
 		return mapStoreError(err)

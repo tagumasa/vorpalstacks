@@ -189,7 +189,10 @@ func (s *AppSyncService) ListDataSources(ctx context.Context, reqCtx *request.Re
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	dataSources, nextToken, err := store.ListDataSources(apiId, opts)
 	if err != nil {
 		return mapStoreError(err)

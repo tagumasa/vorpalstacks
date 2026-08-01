@@ -56,7 +56,10 @@ func (s *AppSyncService) ListDomainNames(ctx context.Context, reqCtx *request.Re
 		return mapStoreError(err)
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	configs, nextToken, err := store.ListDomainNames(opts)
 	if err != nil {
 		return mapStoreError(err)

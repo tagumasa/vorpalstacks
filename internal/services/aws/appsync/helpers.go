@@ -15,15 +15,23 @@ import (
 
 // parsePaginationOptions extracts list pagination parameters from the request.
 // AppSync uses maxResults (int) and nextToken (string) in query params.
-func parsePaginationOptions(req *request.ParsedRequest) common.ListOptions {
-	opts := common.ListOptions{
-		MaxItems: request.GetIntParam(req.Parameters, "maxResults"),
+// Smithy MaxResults shape: range 0-25. When omitted (0), defaults to 25.
+// Values exceeding 25 are rejected with BadRequestException.
+func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, error) {
+	maxResults := request.GetIntParam(req.Parameters, "maxResults")
+	if maxResults > 25 {
+		return common.ListOptions{}, NewBadRequestException("maxResults must be between 1 and 25")
+	}
+	if maxResults < 0 {
+		return common.ListOptions{}, NewBadRequestException("maxResults must be between 0 and 25")
+	}
+	if maxResults == 0 {
+		maxResults = 25
+	}
+	return common.ListOptions{
+		MaxItems: maxResults,
 		Marker:   request.GetStringParam(req.Parameters, "nextToken"),
-	}
-	if opts.MaxItems <= 0 {
-		opts.MaxItems = 50
-	}
-	return opts
+	}, nil
 }
 
 // parseEventConfig parses an EventConfig from the request parameters.

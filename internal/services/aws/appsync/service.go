@@ -159,7 +159,7 @@ func (s *AppSyncService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("appsync", "EvaluateMappingTemplate", s.EvaluateMappingTemplate)
 
 	// GraphQL execution endpoint — dispatched via sentinel operation name
-	// from appsync_parser.go for POST /v1/apis/{apiId}/graphql
+	// from graphql_handler.go for POST /v1/apis/{apiId}/graphql
 	d.RegisterHandlerForService("appsync", "GraphQLExecution", s.HandleGraphQLExecution)
 
 	// Environment variable operations

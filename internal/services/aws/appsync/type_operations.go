@@ -152,7 +152,10 @@ func (s *AppSyncService) ListTypes(ctx context.Context, reqCtx *request.RequestC
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	opts := parsePaginationOptions(req)
+	opts, err := parsePaginationOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	types, nextToken, err := store.ListTypes(apiId, opts)
 	if err != nil {
 		return mapStoreError(err)

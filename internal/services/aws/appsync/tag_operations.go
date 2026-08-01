@@ -72,6 +72,30 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 	}
 }
 
+// extractApiScopedResource splits an "apis/{apiId}/{rest}" resource path
+// into the apiId and the remainder. Returns ok=false if the path does not
+// match the expected prefix.
+func extractApiScopedResource(resource string) (apiId, rest string, ok bool) {
+	const prefix = "apis/"
+	if !strings.HasPrefix(resource, prefix) {
+		return "", "", false
+	}
+	after := resource[len(prefix):]
+	idx := strings.Index(after, "/")
+	if idx <= 0 {
+		return "", "", false
+	}
+	return after[:idx], after[idx+1:], true
+}
+
+// firstSegment returns the first path segment of s (up to the next "/").
+func firstSegment(s string) string {
+	if idx := strings.Index(s, "/"); idx >= 0 {
+		return s[:idx]
+	}
+	return s
+}
+
 func validateAppSyncResource(store *appsyncstore.AppSyncStore, resourceArn string) error {
 	_, _, _, _, resource := arn.SplitARN(resourceArn)
 	if resource == "" {
@@ -79,54 +103,111 @@ func validateAppSyncResource(store *appsyncstore.AppSyncStore, resourceArn strin
 	}
 
 	switch {
+	// --- Api-scoped sub-resources (apis/{apiId}/...) ---
+
 	case strings.Contains(resource, "/channelNamespaces/"):
-		prefix := "apis/"
-		if !strings.HasPrefix(resource, prefix) {
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "channelNamespaces/") {
 			return NewBadRequestException(fmt.Sprintf("Invalid channel namespace ARN: %s", resourceArn))
 		}
-		withoutType := resource[len(prefix):]
-		idx := strings.Index(withoutType, "/channelNamespaces/")
-		if idx <= 0 {
-			return NewBadRequestException(fmt.Sprintf("Invalid channel namespace ARN: %s", resourceArn))
-		}
-		apiId := withoutType[:idx]
-		after := withoutType[idx+len("/channelNamespaces/"):]
-		name := strings.SplitN(after, "/", 2)[0]
-		_, err := store.GetChannelNamespace(apiId, name)
-		if err != nil {
+		name := firstSegment(strings.TrimPrefix(rest, "channelNamespaces/"))
+		if _, err := store.GetChannelNamespace(apiId, name); err != nil {
 			return NewNotFoundException("Channel namespace")
 		}
 
 	case strings.Contains(resource, "/datasources/"):
-		prefix := "apis/"
-		if !strings.HasPrefix(resource, prefix) {
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "datasources/") {
 			return NewBadRequestException(fmt.Sprintf("Invalid data source ARN: %s", resourceArn))
 		}
-		withoutType := resource[len(prefix):]
-		idx := strings.Index(withoutType, "/datasources/")
-		if idx <= 0 {
-			return NewBadRequestException(fmt.Sprintf("Invalid data source ARN: %s", resourceArn))
-		}
-		apiId := withoutType[:idx]
-		after := withoutType[idx+len("/datasources/"):]
-		name := strings.SplitN(after, "/", 2)[0]
-		_, err := store.GetDataSource(apiId, name)
-		if err != nil {
+		name := firstSegment(strings.TrimPrefix(rest, "datasources/"))
+		if _, err := store.GetDataSource(apiId, name); err != nil {
 			return NewNotFoundException("Data source")
 		}
 
+	case strings.Contains(resource, "/types/") && strings.Contains(resource, "/resolvers/"):
+		// Must precede the /types/ case.
+		// Path: apis/{apiId}/types/{typeName}/resolvers/{fieldName}
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "types/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid resolver ARN: %s", resourceArn))
+		}
+		afterType := strings.TrimPrefix(rest, "types/")
+		typeName := firstSegment(afterType)
+		afterTypeName := strings.TrimPrefix(afterType, typeName+"/")
+		if !strings.HasPrefix(afterTypeName, "resolvers/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid resolver ARN: %s", resourceArn))
+		}
+		fieldName := firstSegment(strings.TrimPrefix(afterTypeName, "resolvers/"))
+		if _, err := store.GetResolver(apiId, typeName, fieldName); err != nil {
+			return NewNotFoundException("Resolver")
+		}
+
+	case strings.Contains(resource, "/functions/"):
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "functions/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid function ARN: %s", resourceArn))
+		}
+		functionId := firstSegment(strings.TrimPrefix(rest, "functions/"))
+		if _, err := store.GetFunction(apiId, functionId); err != nil {
+			return NewNotFoundException("Function")
+		}
+
+	case strings.Contains(resource, "/types/"):
+		// Path: apis/{apiId}/types/{typeName}
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "types/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid type ARN: %s", resourceArn))
+		}
+		typeName := firstSegment(strings.TrimPrefix(rest, "types/"))
+		if _, err := store.GetType(apiId, typeName); err != nil {
+			return NewNotFoundException("Type")
+		}
+
+	case strings.Contains(resource, "/apikeys/"):
+		apiId, rest, ok := extractApiScopedResource(resource)
+		if !ok || !strings.HasPrefix(rest, "apikeys/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid API key ARN: %s", resourceArn))
+		}
+		keyId := firstSegment(strings.TrimPrefix(rest, "apikeys/"))
+		if _, err := store.GetApiKey(apiId, keyId); err != nil {
+			return NewNotFoundException("ApiKey")
+		}
+
+	case strings.HasSuffix(resource, "/ApiCaches"):
+		apiId, _, ok := extractApiScopedResource(resource)
+		if !ok {
+			return NewBadRequestException(fmt.Sprintf("Invalid API cache ARN: %s", resourceArn))
+		}
+		if _, err := store.GetApiCache(apiId); err != nil {
+			return NewNotFoundException("ApiCache")
+		}
+
+	// --- Top-level resources (not api-scoped) ---
+
+	case strings.HasPrefix(resource, "domainnames/"):
+		domainName := strings.TrimPrefix(resource, "domainnames/")
+		if domainName == "" {
+			return NewBadRequestException(fmt.Sprintf("Invalid domain name ARN: %s", resourceArn))
+		}
+		if _, err := store.GetDomainName(domainName); err != nil {
+			return NewNotFoundException("DomainName")
+		}
+
 	default:
+		// GraphQL API or Event API by id: apis/{apiId}
+		if !strings.HasPrefix(resource, "apis/") {
+			return NewBadRequestException(fmt.Sprintf("Invalid resource ARN: %s", resourceArn))
+		}
 		parts := strings.SplitN(resource, "/", 2)
 		if len(parts) < 2 {
 			return NewBadRequestException(fmt.Sprintf("Invalid resource ARN: %s", resourceArn))
 		}
 		id := parts[1]
-		_, errApi := store.GetApiById(id)
-		if errApi == nil {
+		if _, errApi := store.GetApiById(id); errApi == nil {
 			return nil
 		}
-		_, errGql := store.GetGraphqlApiById(id)
-		if errGql == nil {
+		if _, errGql := store.GetGraphqlApiById(id); errGql == nil {
 			return nil
 		}
 		return NewNotFoundException("API")
