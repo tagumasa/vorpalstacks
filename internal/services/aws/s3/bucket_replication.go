@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	"vorpalstacks/internal/utils/aws/types"
+	"vorpalstacks/internal/utils/ptrutil"
 )
 
 // PutBucketReplicationInput contains the input for PutBucketReplication.
@@ -30,7 +31,7 @@ type ReplicationConfigurationXML struct {
 // ReplicationRuleXML is the XML representation of a replication rule.
 type ReplicationRuleXML struct {
 	ID                      string                      `xml:"ID,omitempty"`
-	Priority                *int                        `xml:"Priority,omitempty"`
+	Priority                *int32                      `xml:"Priority,omitempty"`
 	Status                  string                      `xml:"Status"`
 	Filter                  *ReplicationFilterXML       `xml:"Filter,omitempty"`
 	Destination             *ReplicationDestinationXML  `xml:"Destination"`
@@ -156,7 +157,7 @@ func (o *BucketOperations) GetBucketReplication(ctx *request.RequestContext, inp
 		xmlRule := ReplicationRuleXML{
 			ID:       rule.ID,
 			Status:   rule.Status,
-			Priority: &rule.Priority,
+			Priority: ptrutil.PtrNonZero(rule.Priority),
 			Destination: &ReplicationDestinationXML{
 				Bucket:       rule.Destination.Bucket,
 				StorageClass: rule.Destination.StorageClass,

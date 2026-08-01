@@ -24,7 +24,7 @@ type CORSRuleInput struct {
 	AllowedMethods []string `xml:"AllowedMethod"`
 	AllowedOrigins []string `xml:"AllowedOrigin"`
 	ExposeHeaders  []string `xml:"ExposeHeader,omitempty"`
-	MaxAgeSeconds  *int     `xml:"MaxAgeSeconds,omitempty"`
+	MaxAgeSeconds  *int32   `xml:"MaxAgeSeconds,omitempty"`
 	ID             string   `xml:"ID,omitempty"`
 }
 

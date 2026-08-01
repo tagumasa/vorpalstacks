@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"google.golang.org/protobuf/proto"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
 )
@@ -66,7 +67,7 @@ func exprToAttributeValue(expr sqlparser.Expr) *dbstore.AttributeValue {
 			return &dbstore.AttributeValue{S: &s}
 		}
 	case *sqlparser.NullVal:
-		return &dbstore.AttributeValue{NULL: ptrBool(true)}
+		return &dbstore.AttributeValue{NULL: proto.Bool(true)}
 	case *sqlparser.BoolVal:
 		b := bool(*e)
 		return &dbstore.AttributeValue{BOOL: &b}
@@ -77,7 +78,7 @@ func exprToAttributeValue(expr sqlparser.Expr) *dbstore.AttributeValue {
 		l := tupleToAttributeList(e)
 		return &dbstore.AttributeValue{L: l}
 	}
-	return &dbstore.AttributeValue{NULL: ptrBool(true)}
+	return &dbstore.AttributeValue{NULL: proto.Bool(true)}
 }
 
 func tupleToAttributeList(tuple sqlparser.ValTuple) []*dbstore.AttributeValue {
@@ -101,7 +102,7 @@ func paramToAttributeValue(param interface{}) *dbstore.AttributeValue {
 			return &dbstore.AttributeValue{BOOL: &b}
 		}
 		if null, ok := v["NULL"].(bool); ok && null {
-			return &dbstore.AttributeValue{NULL: ptrBool(true)}
+			return &dbstore.AttributeValue{NULL: proto.Bool(true)}
 		}
 	case string:
 		return &dbstore.AttributeValue{S: &v}

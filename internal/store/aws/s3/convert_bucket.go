@@ -295,7 +295,7 @@ func replicationRuleToProto(r *ReplicationRule) *pb.ReplicationRule {
 	}
 	return &pb.ReplicationRule{
 		Id:                      r.ID,
-		Priority:                int32(r.Priority),
+		Priority:                r.Priority,
 		Status:                  r.Status,
 		Filter:                  replicationFilterToProto(r.Filter),
 		Destination:             replicationDestinationToProto(r.Destination),
@@ -309,7 +309,7 @@ func protoToReplicationRule(p *pb.ReplicationRule) *ReplicationRule {
 	}
 	return &ReplicationRule{
 		ID:                      p.Id,
-		Priority:                int(p.Priority),
+		Priority:                p.Priority,
 		Status:                  p.Status,
 		Filter:                  protoToReplicationFilter(p.Filter),
 		Destination:             protoToReplicationDestination(p.Destination),

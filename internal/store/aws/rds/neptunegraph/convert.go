@@ -63,10 +63,10 @@ func protoToGraph(p *pb.Graph) *Graph {
 		Region:             p.GetRegion(),
 	}
 	if v := p.GetProvisionedMemory(); v != 0 {
-		g.ProvisionedMemory = int32Ptr(v)
+		g.ProvisionedMemory = proto.Int32(v)
 	}
 	if v := p.GetReplicaCount(); v != 0 {
-		g.ReplicaCount = int32Ptr(v)
+		g.ReplicaCount = proto.Int32(v)
 	}
 	if p.VectorSearchConfiguration != nil {
 		g.VectorSearchConfiguration = &VectorSearchConfig{
@@ -255,13 +255,13 @@ func protoToImportTask(p *pb.ImportTaskRecord) *ImportTask {
 		FailOnError:        p.GetFailOnError(),
 	}
 	if v := p.GetReplicaCount(); v != 0 {
-		t.ReplicaCount = int32Ptr(v)
+		t.ReplicaCount = proto.Int32(v)
 	}
 	if v := p.GetMinProvisionedMemory(); v != 0 {
-		t.MinProvisionedMemory = int32Ptr(v)
+		t.MinProvisionedMemory = proto.Int32(v)
 	}
 	if v := p.GetMaxProvisionedMemory(); v != 0 {
-		t.MaxProvisionedMemory = int32Ptr(v)
+		t.MaxProvisionedMemory = proto.Int32(v)
 	}
 	if p.VectorSearchConfiguration != nil {
 		t.VectorSearchConfiguration = &VectorSearchConfig{
@@ -351,13 +351,13 @@ func protoToImportTaskDetails(p *pb.ImportTaskDetails) *ImportTaskDetails {
 		return nil
 	}
 	d := &ImportTaskDetails{
-		ProgressPercentage:   int32Ptr(p.GetProgressPercentage()),
-		TimeElapsedSeconds:   int64Ptr(p.GetTimeElapsedSeconds()),
-		StatementCount:       int64Ptr(p.GetStatementCount()),
-		DictionaryEntryCount: int64Ptr(p.GetDictionaryEntryCount()),
-		ErrorCount:           int32Ptr(p.GetErrorCount()),
-		ErrorDetails:         stringPtr(p.GetErrorDetails()),
-		Status:               stringPtr(p.GetStatus()),
+		ProgressPercentage:   proto.Int32(p.GetProgressPercentage()),
+		TimeElapsedSeconds:   proto.Int64(p.GetTimeElapsedSeconds()),
+		StatementCount:       proto.Int64(p.GetStatementCount()),
+		DictionaryEntryCount: proto.Int64(p.GetDictionaryEntryCount()),
+		ErrorCount:           proto.Int32(p.GetErrorCount()),
+		ErrorDetails:         proto.String(p.GetErrorDetails()),
+		Status:               proto.String(p.GetStatus()),
 	}
 	if p.StartTime != nil {
 		t := p.StartTime.AsTime()
@@ -487,8 +487,8 @@ func protoToExportFilterElement(p *pb.ExportFilterElement) *ExportFilterElement 
 	for k, v := range p.Properties {
 		pa := ExportFilterPropertyAttributes{
 			MultiValueHandling: v.GetMultiValueHandling(),
-			OutputType:         stringPtr(v.GetOutputType()),
-			SourcePropertyName: stringPtr(v.GetSourcePropertyName()),
+			OutputType:         proto.String(v.GetOutputType()),
+			SourcePropertyName: proto.String(v.GetSourcePropertyName()),
 		}
 		e.Properties[k] = pa
 	}
@@ -523,10 +523,10 @@ func protoToExportTaskDetails(p *pb.ExportTaskDetails) *ExportTaskDetails {
 		return nil
 	}
 	d := &ExportTaskDetails{
-		ProgressPercentage: int32Ptr(p.GetProgressPercentage()),
-		TimeElapsedSeconds: int64Ptr(p.GetTimeElapsedSeconds()),
-		NumEdgesWritten:    int64Ptr(p.GetNumEdgesWritten()),
-		NumVerticesWritten: int64Ptr(p.GetNumVerticesWritten()),
+		ProgressPercentage: proto.Int32(p.GetProgressPercentage()),
+		TimeElapsedSeconds: proto.Int64(p.GetTimeElapsedSeconds()),
+		NumEdgesWritten:    proto.Int64(p.GetNumEdgesWritten()),
+		NumVerticesWritten: proto.Int64(p.GetNumVerticesWritten()),
 	}
 	if p.StartTime != nil {
 		t := p.StartTime.AsTime()
@@ -548,7 +548,3 @@ func protoToTags(p *pb.TagMap) map[string]string {
 	}
 	return p.Tags
 }
-
-func int32Ptr(v int32) *int32    { return &v }
-func int64Ptr(v int64) *int64    { return &v }
-func stringPtr(v string) *string { return &v }

@@ -158,6 +158,6 @@ func writeCORSHeaders(w http.ResponseWriter, rule *s3store.CORSRule, origin stri
 		w.Header().Set("Access-Control-Expose-Headers", strings.Join(rule.ExposeHeaders, ", "))
 	}
 	if rule.MaxAgeSeconds != nil && *rule.MaxAgeSeconds > 0 {
-		w.Header().Set("Access-Control-Max-Age", strconv.Itoa(*rule.MaxAgeSeconds))
+		w.Header().Set("Access-Control-Max-Age", strconv.Itoa(int(*rule.MaxAgeSeconds)))
 	}
 }

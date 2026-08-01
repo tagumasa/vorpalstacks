@@ -485,10 +485,6 @@ func extractValueString(expr sqlparser.Expr, params *partiQLParams) string {
 	return ""
 }
 
-func ptrBool(b bool) *bool {
-	return &b
-}
-
 func extractTableNameFromStatement(statement string) string {
 	upper := strings.ToUpper(statement)
 	var rest string

@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
+	"vorpalstacks/internal/utils/ptrutil"
 )
 
 func timeToProto(t *time.Time) *timestamppb.Timestamp {
@@ -347,8 +348,8 @@ func defaultRetentionToProto(r *DefaultRetention) *pb.DefaultRetention {
 	}
 	return &pb.DefaultRetention{
 		Mode:  objectLockRetentionModeToProto(r.Mode),
-		Days:  intPtrToInt32(r.Days),
-		Years: intPtrToInt32(r.Years),
+		Days:  ptrutil.DerefOrZero(r.Days),
+		Years: ptrutil.DerefOrZero(r.Years),
 	}
 }
 
@@ -358,7 +359,7 @@ func protoToDefaultRetention(p *pb.DefaultRetention) *DefaultRetention {
 	}
 	return &DefaultRetention{
 		Mode:  protoToObjectLockRetentionMode(p.Mode),
-		Days:  int32ToInt32Ptr(p.Days),
-		Years: int32ToInt32Ptr(p.Years),
+		Days:  ptrutil.PtrNonZero(p.Days),
+		Years: ptrutil.PtrNonZero(p.Years),
 	}
 }

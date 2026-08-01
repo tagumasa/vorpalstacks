@@ -398,7 +398,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 				TimeElapsedSeconds: proto.Int64(sinceStart),
 				StatementCount:     proto.Int64(0),
 				ErrorCount:         proto.Int32(1),
-				Status:             stringPtr("FAILED"),
+				Status:             proto.String("FAILED"),
 			}
 		})
 		if err != nil {
@@ -430,7 +430,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 				TimeElapsedSeconds: proto.Int64(sinceStart),
 				StatementCount:     proto.Int64(0),
 				ErrorCount:         proto.Int32(1),
-				Status:             stringPtr("FAILED"),
+				Status:             proto.String("FAILED"),
 			}
 		})
 		if err != nil {
@@ -489,7 +489,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 		StatementCount:       proto.Int64(statementCount),
 		DictionaryEntryCount: proto.Int64(dictionaryCount),
 		ErrorCount:           proto.Int32(int32(errorCount)),
-		Status:               stringPtr(finalStatus),
+		Status:               proto.String(finalStatus),
 	}
 
 	err = store.TryAdvanceImportTask(taskID, "IMPORTING", func(t *ngstore.ImportTask) {

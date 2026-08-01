@@ -27,8 +27,8 @@ type ObjectLockRuleInput struct {
 // DefaultRetentionInput contains the default retention period for objects.
 type DefaultRetentionInput struct {
 	Mode  string `xml:"Mode"`
-	Days  *int   `xml:"Days,omitempty"`
-	Years *int   `xml:"Years,omitempty"`
+	Days  *int32 `xml:"Days,omitempty"`
+	Years *int32 `xml:"Years,omitempty"`
 }
 
 // PutObjectLockConfiguration applies an object lock configuration to a bucket.
@@ -115,8 +115,8 @@ type ObjectLockRuleOutput struct {
 // DefaultRetentionOutput contains the default retention period output.
 type DefaultRetentionOutput struct {
 	Mode  string `xml:"Mode"`
-	Days  *int   `xml:"Days,omitempty"`
-	Years *int   `xml:"Years,omitempty"`
+	Days  *int32 `xml:"Days,omitempty"`
+	Years *int32 `xml:"Years,omitempty"`
 }
 
 // GetObjectLockConfiguration retrieves the object lock configuration for a bucket.

@@ -3,13 +3,10 @@ package s3
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
-
-func boolPtr(v bool) *bool {
-	return &v
-}
 
 // PutBucketEncryptionInput is the input for PutBucketEncryption.
 type PutBucketEncryptionInput struct {
@@ -94,7 +91,7 @@ func (o *BucketOperations) GetBucketEncryption(ctx *request.RequestContext, inpu
 						SSEAlgorithm:   bucket.EncryptionConfig.SSEAlgorithm,
 						KMSMasterKeyID: bucket.EncryptionConfig.KMSMasterKeyID,
 					},
-					BucketKeyEnabled: boolPtr(bucket.EncryptionConfig.BucketKeyEnabled != nil && *bucket.EncryptionConfig.BucketKeyEnabled),
+					BucketKeyEnabled: proto.Bool(bucket.EncryptionConfig.BucketKeyEnabled != nil && *bucket.EncryptionConfig.BucketKeyEnabled),
 				},
 			},
 		},

@@ -955,5 +955,3 @@ func clampMaxResults(v int) int {
 	}
 	return v
 }
-
-func stringPtr(v string) *string { return &v }

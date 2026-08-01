@@ -2,6 +2,7 @@ package s3
 
 import (
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
+	"vorpalstacks/internal/utils/ptrutil"
 )
 
 func websiteConfigurationToProto(w *WebsiteConfiguration) *pb.WebsiteConfiguration {
@@ -95,8 +96,8 @@ func routingRuleConditionToProto(c *RoutingRuleCondition) *pb.RoutingRuleConditi
 		return nil
 	}
 	return &pb.RoutingRuleCondition{
-		HttpErrorCodeReturnedEquals: stringPtrToString(c.HTTPErrorCodeReturnedEquals),
-		KeyPrefixEquals:             stringPtrToString(c.KeyPrefixEquals),
+		HttpErrorCodeReturnedEquals: ptrutil.DerefOrZero(c.HTTPErrorCodeReturnedEquals),
+		KeyPrefixEquals:             ptrutil.DerefOrZero(c.KeyPrefixEquals),
 	}
 }
 
@@ -105,8 +106,8 @@ func protoToRoutingRuleCondition(p *pb.RoutingRuleCondition) *RoutingRuleConditi
 		return nil
 	}
 	return &RoutingRuleCondition{
-		HTTPErrorCodeReturnedEquals: stringToStringPtr(p.HttpErrorCodeReturnedEquals),
-		KeyPrefixEquals:             stringToStringPtr(p.KeyPrefixEquals),
+		HTTPErrorCodeReturnedEquals: ptrutil.PtrNonZero(p.HttpErrorCodeReturnedEquals),
+		KeyPrefixEquals:             ptrutil.PtrNonZero(p.KeyPrefixEquals),
 	}
 }
 
@@ -115,11 +116,11 @@ func routingRuleRedirectToProto(r *RoutingRuleRedirect) *pb.RoutingRuleRedirect 
 		return nil
 	}
 	return &pb.RoutingRuleRedirect{
-		HostName:             stringPtrToString(r.HostName),
-		HttpRedirectCode:     stringPtrToString(r.HTTPRedirectCode),
-		Protocol:             stringPtrToString(r.Protocol),
-		ReplaceKeyPrefixWith: stringPtrToString(r.ReplaceKeyPrefixWith),
-		ReplaceKeyWith:       stringPtrToString(r.ReplaceKeyWith),
+		HostName:             ptrutil.DerefOrZero(r.HostName),
+		HttpRedirectCode:     ptrutil.DerefOrZero(r.HTTPRedirectCode),
+		Protocol:             ptrutil.DerefOrZero(r.Protocol),
+		ReplaceKeyPrefixWith: ptrutil.DerefOrZero(r.ReplaceKeyPrefixWith),
+		ReplaceKeyWith:       ptrutil.DerefOrZero(r.ReplaceKeyWith),
 	}
 }
 
@@ -128,11 +129,11 @@ func protoToRoutingRuleRedirect(p *pb.RoutingRuleRedirect) *RoutingRuleRedirect 
 		return nil
 	}
 	return &RoutingRuleRedirect{
-		HostName:             stringToStringPtr(p.HostName),
-		HTTPRedirectCode:     stringToStringPtr(p.HttpRedirectCode),
-		Protocol:             stringToStringPtr(p.Protocol),
-		ReplaceKeyPrefixWith: stringToStringPtr(p.ReplaceKeyPrefixWith),
-		ReplaceKeyWith:       stringToStringPtr(p.ReplaceKeyWith),
+		HostName:             ptrutil.PtrNonZero(p.HostName),
+		HTTPRedirectCode:     ptrutil.PtrNonZero(p.HttpRedirectCode),
+		Protocol:             ptrutil.PtrNonZero(p.Protocol),
+		ReplaceKeyPrefixWith: ptrutil.PtrNonZero(p.ReplaceKeyPrefixWith),
+		ReplaceKeyWith:       ptrutil.PtrNonZero(p.ReplaceKeyWith),
 	}
 }
 
@@ -185,7 +186,7 @@ func corsRuleToProto(r *CORSRule) *pb.CORSRule {
 		AllowedMethods: r.AllowedMethods,
 		AllowedOrigins: r.AllowedOrigins,
 		ExposeHeaders:  r.ExposeHeaders,
-		MaxAgeSeconds:  intPtrToInt32(r.MaxAgeSeconds),
+		MaxAgeSeconds:  ptrutil.DerefOrZero(r.MaxAgeSeconds),
 		Id:             r.ID,
 	}
 }
@@ -199,7 +200,7 @@ func protoToCORSRule(p *pb.CORSRule) *CORSRule {
 		AllowedMethods: p.AllowedMethods,
 		AllowedOrigins: p.AllowedOrigins,
 		ExposeHeaders:  p.ExposeHeaders,
-		MaxAgeSeconds:  int32ToIntPtr(p.MaxAgeSeconds),
+		MaxAgeSeconds:  ptrutil.PtrNonZero(p.MaxAgeSeconds),
 		ID:             p.Id,
 	}
 }

@@ -57,7 +57,10 @@ func cognitoSrpHashSHA256Hex(data []byte) string {
 	h := sha256.Sum256(data)
 	return hex.EncodeToString(h[:])
 }
-func cognitoSrpHexHash(s string) string { b, _ := hex.DecodeString(s); return cognitoSrpHashSHA256Hex(b) }
+func cognitoSrpHexHash(s string) string {
+	b, _ := hex.DecodeString(s)
+	return cognitoSrpHashSHA256Hex(b)
+}
 
 func cognitoSrpPadHex(s string) string {
 	if len(s)%2 == 1 {
@@ -221,8 +224,8 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 		}
 		respResp, err := client.RespondToAuthChallenge(ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
 			ChallengeName: "PASSWORD_VERIFIER",
-			ClientId:       aws.String(srpClientID),
-			Session:        initResp.Session,
+			ClientId:      aws.String(srpClientID),
+			Session:       initResp.Session,
 			ChallengeResponses: map[string]string{
 				"USERNAME":                    srpUser,
 				"PASSWORD_CLAIM_SIGNATURE":    sig,
@@ -301,8 +304,8 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 		}
 		_, err = client.RespondToAuthChallenge(ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
 			ChallengeName: "PASSWORD_VERIFIER",
-			ClientId:       aws.String(srpClientID),
-			Session:        initResp.Session,
+			ClientId:      aws.String(srpClientID),
+			Session:       initResp.Session,
 			ChallengeResponses: map[string]string{
 				"USERNAME":                    srpUser,
 				"PASSWORD_CLAIM_SIGNATURE":    sig,

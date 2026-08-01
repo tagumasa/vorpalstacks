@@ -181,33 +181,33 @@ type LifecycleRuleAndOperator struct {
 // LifecycleExpiration represents the expiration configuration for a lifecycle rule.
 type LifecycleExpiration struct {
 	Date                      *time.Time `json:"date,omitempty"`
-	Days                      *int       `json:"days,omitempty"`
+	Days                      *int32     `json:"days,omitempty"`
 	ExpiredObjectDeleteMarker *bool      `json:"expired_object_delete_marker,omitempty"`
 }
 
 // LifecycleTransition represents the transition configuration for a lifecycle rule.
 type LifecycleTransition struct {
 	Date         *time.Time         `json:"date,omitempty"`
-	Days         *int               `json:"days,omitempty"`
+	Days         *int32             `json:"days,omitempty"`
 	StorageClass ObjectStorageClass `json:"storage_class"`
 }
 
 // NoncurrentVersionExpiration represents the expiration configuration for noncurrent object versions.
 type NoncurrentVersionExpiration struct {
-	NoncurrentDays          *int `json:"noncurrent_days,omitempty"`
-	NewerNoncurrentVersions *int `json:"newer_noncurrent_versions,omitempty"`
+	NoncurrentDays          *int32 `json:"noncurrent_days,omitempty"`
+	NewerNoncurrentVersions *int32 `json:"newer_noncurrent_versions,omitempty"`
 }
 
 // NoncurrentVersionTransition represents the transition configuration for noncurrent object versions.
 type NoncurrentVersionTransition struct {
-	NoncurrentDays          *int               `json:"noncurrent_days,omitempty"`
-	NewerNoncurrentVersions *int               `json:"newer_noncurrent_versions,omitempty"`
+	NoncurrentDays          *int32             `json:"noncurrent_days,omitempty"`
+	NewerNoncurrentVersions *int32             `json:"newer_noncurrent_versions,omitempty"`
 	StorageClass            ObjectStorageClass `json:"storage_class"`
 }
 
 // AbortIncompleteUpload represents the configuration for aborting incomplete multipart uploads.
 type AbortIncompleteUpload struct {
-	DaysAfterInitiation *int `json:"days_after_initiation,omitempty"`
+	DaysAfterInitiation *int32 `json:"days_after_initiation,omitempty"`
 }
 
 // WebsiteConfiguration represents the website configuration for an S3 bucket.
@@ -256,7 +256,7 @@ type CORSRule struct {
 	AllowedMethods []string `json:"allowed_methods"`
 	AllowedOrigins []string `json:"allowed_origins"`
 	ExposeHeaders  []string `json:"expose_headers,omitempty"`
-	MaxAgeSeconds  *int     `json:"max_age_seconds,omitempty"`
+	MaxAgeSeconds  *int32   `json:"max_age_seconds,omitempty"`
 	ID             string   `json:"id,omitempty"`
 }
 
@@ -426,8 +426,8 @@ type ObjectLockRule struct {
 // DefaultRetention represents the default retention settings for object lock.
 type DefaultRetention struct {
 	Mode  ObjectLockRetentionMode `json:"mode,omitempty"`
-	Days  *int                    `json:"days,omitempty"`
-	Years *int                    `json:"years,omitempty"`
+	Days  *int32                  `json:"days,omitempty"`
+	Years *int32                  `json:"years,omitempty"`
 }
 
 // ObjectLockRetentionMode represents the object lock retention mode.
@@ -556,7 +556,7 @@ type ReplicationConfiguration struct {
 // ReplicationRule defines a single replication rule.
 type ReplicationRule struct {
 	ID                      string                  `json:"id,omitempty"`
-	Priority                int                     `json:"priority,omitempty"`
+	Priority                int32                   `json:"priority,omitempty"`
 	Status                  string                  `json:"status,omitempty"`
 	Filter                  *ReplicationFilter      `json:"filter,omitempty"`
 	Destination             *ReplicationDestination `json:"destination,omitempty"`

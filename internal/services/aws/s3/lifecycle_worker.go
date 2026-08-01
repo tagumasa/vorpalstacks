@@ -115,7 +115,7 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 		if rule.Expiration != nil {
 			days := 0
 			if rule.Expiration.Days != nil && *rule.Expiration.Days > 0 {
-				days = *rule.Expiration.Days
+				days = int(*rule.Expiration.Days)
 			}
 			if days > 0 {
 				w.expireObjectsByAge(bucket.Name, prefix, days, now)
@@ -126,11 +126,11 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 		}
 
 		if rule.AbortIncompleteMultipartUpload != nil && rule.AbortIncompleteMultipartUpload.DaysAfterInitiation != nil && *rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
-			w.abortIncompleteUploads(bucket.Name, *rule.AbortIncompleteMultipartUpload.DaysAfterInitiation, now)
+			w.abortIncompleteUploads(bucket.Name, int(*rule.AbortIncompleteMultipartUpload.DaysAfterInitiation), now)
 		}
 
 		if rule.NoncurrentVersionExpiration != nil && rule.NoncurrentVersionExpiration.NoncurrentDays != nil && *rule.NoncurrentVersionExpiration.NoncurrentDays > 0 {
-			w.expireNoncurrentVersions(bucket.Name, prefix, *rule.NoncurrentVersionExpiration.NoncurrentDays, now)
+			w.expireNoncurrentVersions(bucket.Name, prefix, int(*rule.NoncurrentVersionExpiration.NoncurrentDays), now)
 		}
 	}
 }

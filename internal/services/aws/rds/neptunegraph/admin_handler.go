@@ -10,6 +10,7 @@ import (
 	"time"
 
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/ptrutil"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
@@ -476,13 +477,6 @@ func exportTaskSummaryToPb(t *ngstore.ExportTask) *pb.ExportTaskSummary {
 	}
 }
 
-func derefInt32(p *int32) int32 {
-	if p == nil {
-		return 0
-	}
-	return *p
-}
-
 func boolToStr(b bool) string {
 	if b {
 		return "true"
@@ -513,13 +507,6 @@ func int64ToStr(v *int64) string {
 		return ""
 	}
 	return strconv.FormatInt(*v, 10)
-}
-
-func strPtrToStr(v *string) string {
-	if v == nil {
-		return ""
-	}
-	return *v
 }
 
 func graphStatusToPb(s string) pb.GraphStatus {
@@ -684,8 +671,8 @@ func importTaskDetailsToPb(d *ngstore.ImportTaskDetails) *pb.ImportTaskDetails {
 		Statementcount:       int64ToStr(d.StatementCount),
 		Dictionaryentrycount: int64ToStr(d.DictionaryEntryCount),
 		Errorcount:           int32PtrToStr(d.ErrorCount),
-		Errordetails:         strPtrToStr(d.ErrorDetails),
-		Status:               strPtrToStr(d.Status),
+		Errordetails:         ptrutil.DerefOrZero(d.ErrorDetails),
+		Status:               ptrutil.DerefOrZero(d.Status),
 	}
 }
 
@@ -720,8 +707,8 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 		}
 		pbElem.Properties[k] = &pb.ExportFilterPropertyAttributes{
 			Multivaluehandling: mvh,
-			Outputtype:         strPtrToStr(v.OutputType),
-			Sourcepropertyname: strPtrToStr(v.SourcePropertyName),
+			Outputtype:         ptrutil.DerefOrZero(v.OutputType),
+			Sourcepropertyname: ptrutil.DerefOrZero(v.SourcePropertyName),
 		}
 	}
 	return pbElem

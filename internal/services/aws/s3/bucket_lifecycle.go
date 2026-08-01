@@ -52,33 +52,33 @@ type LifecycleRuleAndOperatorInput struct {
 // LifecycleExpirationInput defines when objects expire.
 type LifecycleExpirationInput struct {
 	Date                      *time.Time `xml:"Date,omitempty"`
-	Days                      *int       `xml:"Days,omitempty"`
+	Days                      *int32     `xml:"Days,omitempty"`
 	ExpiredObjectDeleteMarker *bool      `xml:"ExpiredObjectDeleteMarker,omitempty"`
 }
 
 // LifecycleTransitionInput defines when objects transition to another storage class.
 type LifecycleTransitionInput struct {
 	Date         *time.Time `xml:"Date,omitempty"`
-	Days         *int       `xml:"Days,omitempty"`
+	Days         *int32     `xml:"Days,omitempty"`
 	StorageClass string     `xml:"StorageClass"`
 }
 
 // NoncurrentVersionExpirationInput defines when noncurrent versions expire.
 type NoncurrentVersionExpirationInput struct {
-	NoncurrentDays          *int `xml:"NoncurrentDays,omitempty"`
-	NewerNoncurrentVersions *int `xml:"NewerNoncurrentVersions,omitempty"`
+	NoncurrentDays          *int32 `xml:"NoncurrentDays,omitempty"`
+	NewerNoncurrentVersions *int32 `xml:"NewerNoncurrentVersions,omitempty"`
 }
 
 // NoncurrentVersionTransitionInput defines when noncurrent versions transition.
 type NoncurrentVersionTransitionInput struct {
-	NoncurrentDays          *int   `xml:"NoncurrentDays,omitempty"`
-	NewerNoncurrentVersions *int   `xml:"NewerNoncurrentVersions,omitempty"`
+	NoncurrentDays          *int32 `xml:"NoncurrentDays,omitempty"`
+	NewerNoncurrentVersions *int32 `xml:"NewerNoncurrentVersions,omitempty"`
 	StorageClass            string `xml:"StorageClass"`
 }
 
 // AbortIncompleteUploadInput defines when incomplete multipart uploads are aborted.
 type AbortIncompleteUploadInput struct {
-	DaysAfterInitiation *int `xml:"DaysAfterInitiation,omitempty"`
+	DaysAfterInitiation *int32 `xml:"DaysAfterInitiation,omitempty"`
 }
 
 // PutBucketLifecycleConfiguration sets the lifecycle configuration for an S3 bucket.
@@ -269,33 +269,33 @@ type LifecycleRuleAndOperatorOutput struct {
 // LifecycleExpirationOutput represents expiration in the output.
 type LifecycleExpirationOutput struct {
 	Date                      *time.Time `xml:"Date,omitempty"`
-	Days                      *int       `xml:"Days,omitempty"`
+	Days                      *int32     `xml:"Days,omitempty"`
 	ExpiredObjectDeleteMarker *bool      `xml:"ExpiredObjectDeleteMarker,omitempty"`
 }
 
 // LifecycleTransitionOutput represents a transition in the output.
 type LifecycleTransitionOutput struct {
 	Date         *time.Time `xml:"Date,omitempty"`
-	Days         *int       `xml:"Days,omitempty"`
+	Days         *int32     `xml:"Days,omitempty"`
 	StorageClass string     `xml:"StorageClass"`
 }
 
 // NoncurrentVersionExpirationOutput represents noncurrent version expiration.
 type NoncurrentVersionExpirationOutput struct {
-	NoncurrentDays          *int `xml:"NoncurrentDays,omitempty"`
-	NewerNoncurrentVersions *int `xml:"NewerNoncurrentVersions,omitempty"`
+	NoncurrentDays          *int32 `xml:"NoncurrentDays,omitempty"`
+	NewerNoncurrentVersions *int32 `xml:"NewerNoncurrentVersions,omitempty"`
 }
 
 // NoncurrentVersionTransitionOutput represents noncurrent version transition.
 type NoncurrentVersionTransitionOutput struct {
-	NoncurrentDays          *int   `xml:"NoncurrentDays,omitempty"`
-	NewerNoncurrentVersions *int   `xml:"NewerNoncurrentVersions,omitempty"`
+	NoncurrentDays          *int32 `xml:"NoncurrentDays,omitempty"`
+	NewerNoncurrentVersions *int32 `xml:"NewerNoncurrentVersions,omitempty"`
 	StorageClass            string `xml:"StorageClass"`
 }
 
 // AbortIncompleteUploadOutput represents abort incomplete upload settings.
 type AbortIncompleteUploadOutput struct {
-	DaysAfterInitiation *int `xml:"DaysAfterInitiation,omitempty"`
+	DaysAfterInitiation *int32 `xml:"DaysAfterInitiation,omitempty"`
 }
 
 // GetBucketLifecycleConfiguration retrieves the lifecycle configuration for an S3 bucket.

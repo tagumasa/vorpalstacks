@@ -2,6 +2,7 @@ package s3
 
 import (
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
+	"vorpalstacks/internal/utils/ptrutil"
 )
 
 func lifecycleConfigurationToProto(c *LifecycleConfiguration) *pb.LifecycleConfiguration {
@@ -82,8 +83,8 @@ func lifecycleRuleFilterToProto(f *LifecycleRuleFilter) *pb.LifecycleRuleFilter 
 	}
 	return &pb.LifecycleRuleFilter{
 		Prefix:                f.Prefix,
-		ObjectSizeGreaterThan: int64PtrToInt64(f.ObjectSizeGreaterThan),
-		ObjectSizeLessThan:    int64PtrToInt64(f.ObjectSizeLessThan),
+		ObjectSizeGreaterThan: ptrutil.DerefOrZero(f.ObjectSizeGreaterThan),
+		ObjectSizeLessThan:    ptrutil.DerefOrZero(f.ObjectSizeLessThan),
 		And:                   lifecycleRuleAndOperatorToProto(f.And),
 		Tag:                   tagToProtoPtr(f.Tag),
 	}
@@ -95,8 +96,8 @@ func protoToLifecycleRuleFilter(p *pb.LifecycleRuleFilter) *LifecycleRuleFilter 
 	}
 	return &LifecycleRuleFilter{
 		Prefix:                p.Prefix,
-		ObjectSizeGreaterThan: int64ToInt64Ptr(p.ObjectSizeGreaterThan),
-		ObjectSizeLessThan:    int64ToInt64Ptr(p.ObjectSizeLessThan),
+		ObjectSizeGreaterThan: ptrutil.PtrNonZero(p.ObjectSizeGreaterThan),
+		ObjectSizeLessThan:    ptrutil.PtrNonZero(p.ObjectSizeLessThan),
 		And:                   protoToLifecycleRuleAndOperator(p.And),
 		Tag:                   protoToTagPtr(p.Tag),
 	}
@@ -109,8 +110,8 @@ func lifecycleRuleAndOperatorToProto(o *LifecycleRuleAndOperator) *pb.LifecycleR
 	return &pb.LifecycleRuleAndOperator{
 		Prefix:                o.Prefix,
 		Tags:                  tagsToProto(o.Tags),
-		ObjectSizeGreaterThan: int64PtrToInt64(o.ObjectSizeGreaterThan),
-		ObjectSizeLessThan:    int64PtrToInt64(o.ObjectSizeLessThan),
+		ObjectSizeGreaterThan: ptrutil.DerefOrZero(o.ObjectSizeGreaterThan),
+		ObjectSizeLessThan:    ptrutil.DerefOrZero(o.ObjectSizeLessThan),
 	}
 }
 
@@ -121,8 +122,8 @@ func protoToLifecycleRuleAndOperator(p *pb.LifecycleRuleAndOperator) *LifecycleR
 	return &LifecycleRuleAndOperator{
 		Prefix:                p.Prefix,
 		Tags:                  protoToTags(p.Tags),
-		ObjectSizeGreaterThan: int64ToInt64Ptr(p.ObjectSizeGreaterThan),
-		ObjectSizeLessThan:    int64ToInt64Ptr(p.ObjectSizeLessThan),
+		ObjectSizeGreaterThan: ptrutil.PtrNonZero(p.ObjectSizeGreaterThan),
+		ObjectSizeLessThan:    ptrutil.PtrNonZero(p.ObjectSizeLessThan),
 	}
 }
 
@@ -132,8 +133,8 @@ func lifecycleExpirationToProto(e *LifecycleExpiration) *pb.LifecycleExpiration 
 	}
 	return &pb.LifecycleExpiration{
 		Date:                      timeToProto(e.Date),
-		Days:                      intPtrToInt32(e.Days),
-		ExpiredObjectDeleteMarker: boolToBool(e.ExpiredObjectDeleteMarker),
+		Days:                      ptrutil.DerefOrZero(e.Days),
+		ExpiredObjectDeleteMarker: ptrutil.DerefOrZero(e.ExpiredObjectDeleteMarker),
 	}
 }
 
@@ -143,8 +144,8 @@ func protoToLifecycleExpiration(p *pb.LifecycleExpiration) *LifecycleExpiration 
 	}
 	return &LifecycleExpiration{
 		Date:                      protoToTime(p.Date),
-		Days:                      int32ToIntPtr(p.Days),
-		ExpiredObjectDeleteMarker: boolToBoolPtr(p.ExpiredObjectDeleteMarker),
+		Days:                      ptrutil.PtrNonZero(p.Days),
+		ExpiredObjectDeleteMarker: ptrutil.PtrNonZero(p.ExpiredObjectDeleteMarker),
 	}
 }
 
@@ -176,7 +177,7 @@ func lifecycleTransitionToProto(t *LifecycleTransition) *pb.LifecycleTransition 
 	}
 	return &pb.LifecycleTransition{
 		Date:         timeToProto(t.Date),
-		Days:         intPtrToInt32(t.Days),
+		Days:         ptrutil.DerefOrZero(t.Days),
 		StorageClass: objectStorageClassToProto(t.StorageClass),
 	}
 }
@@ -187,7 +188,7 @@ func protoToLifecycleTransition(p *pb.LifecycleTransition) *LifecycleTransition 
 	}
 	return &LifecycleTransition{
 		Date:         protoToTime(p.Date),
-		Days:         int32ToIntPtr(p.Days),
+		Days:         ptrutil.PtrNonZero(p.Days),
 		StorageClass: protoToObjectStorageClass(p.StorageClass),
 	}
 }
@@ -197,8 +198,8 @@ func noncurrentVersionExpirationToProto(e *NoncurrentVersionExpiration) *pb.Nonc
 		return nil
 	}
 	return &pb.NoncurrentVersionExpiration{
-		NoncurrentDays:          intPtrToInt32(e.NoncurrentDays),
-		NewerNoncurrentVersions: intPtrToInt32(e.NewerNoncurrentVersions),
+		NoncurrentDays:          ptrutil.DerefOrZero(e.NoncurrentDays),
+		NewerNoncurrentVersions: ptrutil.DerefOrZero(e.NewerNoncurrentVersions),
 	}
 }
 
@@ -207,8 +208,8 @@ func protoToNoncurrentVersionExpiration(p *pb.NoncurrentVersionExpiration) *Nonc
 		return nil
 	}
 	return &NoncurrentVersionExpiration{
-		NoncurrentDays:          int32ToIntPtr(p.NoncurrentDays),
-		NewerNoncurrentVersions: int32ToIntPtr(p.NewerNoncurrentVersions),
+		NoncurrentDays:          ptrutil.PtrNonZero(p.NoncurrentDays),
+		NewerNoncurrentVersions: ptrutil.PtrNonZero(p.NewerNoncurrentVersions),
 	}
 }
 
@@ -239,8 +240,8 @@ func noncurrentVersionTransitionToProto(t *NoncurrentVersionTransition) *pb.Nonc
 		return nil
 	}
 	return &pb.NoncurrentVersionTransition{
-		NoncurrentDays:          intPtrToInt32(t.NoncurrentDays),
-		NewerNoncurrentVersions: intPtrToInt32(t.NewerNoncurrentVersions),
+		NoncurrentDays:          ptrutil.DerefOrZero(t.NoncurrentDays),
+		NewerNoncurrentVersions: ptrutil.DerefOrZero(t.NewerNoncurrentVersions),
 		StorageClass:            objectStorageClassToProto(t.StorageClass),
 	}
 }
@@ -250,8 +251,8 @@ func protoToNoncurrentVersionTransition(p *pb.NoncurrentVersionTransition) *Nonc
 		return nil
 	}
 	return &NoncurrentVersionTransition{
-		NoncurrentDays:          int32ToIntPtr(p.NoncurrentDays),
-		NewerNoncurrentVersions: int32ToIntPtr(p.NewerNoncurrentVersions),
+		NoncurrentDays:          ptrutil.PtrNonZero(p.NoncurrentDays),
+		NewerNoncurrentVersions: ptrutil.PtrNonZero(p.NewerNoncurrentVersions),
 		StorageClass:            protoToObjectStorageClass(p.StorageClass),
 	}
 }
@@ -261,7 +262,7 @@ func abortIncompleteUploadToProto(a *AbortIncompleteUpload) *pb.AbortIncompleteU
 		return nil
 	}
 	return &pb.AbortIncompleteUpload{
-		DaysAfterInitiation: intPtrToInt32(a.DaysAfterInitiation),
+		DaysAfterInitiation: ptrutil.DerefOrZero(a.DaysAfterInitiation),
 	}
 }
 
@@ -270,6 +271,6 @@ func protoToAbortIncompleteUpload(p *pb.AbortIncompleteUpload) *AbortIncompleteU
 		return nil
 	}
 	return &AbortIncompleteUpload{
-		DaysAfterInitiation: int32ToIntPtr(p.DaysAfterInitiation),
+		DaysAfterInitiation: ptrutil.PtrNonZero(p.DaysAfterInitiation),
 	}
 }
