@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -30,6 +31,19 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 	if dsType == "" {
 		return nil, NewBadRequestException("type is required")
 	}
+	if !validateDataSourceType(dsType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", dsType))
+	}
+
+	metricsConfig := request.GetStringParam(req.Parameters, "metricsConfig")
+	if metricsConfig != "" && !validateEnabledDisabled(metricsConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
+	}
+
+	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
+	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
+	}
 
 	ds := &appsyncstore.DataSource{
 		ApiId:                    apiId,
@@ -42,10 +56,10 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
 		HttpConfig:               parseHttpConfig(req.Parameters),
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
-		MetricsConfig:            request.GetStringParam(req.Parameters, "metricsConfig"),
+		MetricsConfig:            metricsConfig,
 		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
 		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
-		RelationalDatabaseConfig: parseRelationalDatabaseConfig(req.Parameters),
+		RelationalDatabaseConfig: relDbCfg,
 	}
 
 	created, err := store.CreateDataSource(ds)
@@ -100,6 +114,19 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 	if dsType == "" {
 		return nil, NewBadRequestException("type is required")
 	}
+	if !validateDataSourceType(dsType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", dsType))
+	}
+
+	metricsConfig := request.GetStringParam(req.Parameters, "metricsConfig")
+	if metricsConfig != "" && !validateEnabledDisabled(metricsConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
+	}
+
+	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
+	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
+	}
 
 	ds := &appsyncstore.DataSource{
 		ApiId:                    apiId,
@@ -112,10 +139,10 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
 		HttpConfig:               parseHttpConfig(req.Parameters),
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
-		MetricsConfig:            request.GetStringParam(req.Parameters, "metricsConfig"),
+		MetricsConfig:            metricsConfig,
 		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
 		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
-		RelationalDatabaseConfig: parseRelationalDatabaseConfig(req.Parameters),
+		RelationalDatabaseConfig: relDbCfg,
 	}
 
 	updated, err := store.UpdateDataSource(ds)

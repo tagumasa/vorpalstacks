@@ -11,18 +11,6 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
-// validateApiKeyExpiry checks that the expires timestamp falls within the
-// AWS-valid range of 1 to 365 days from the current time.
-func validateApiKeyExpiry(expires int64) error {
-	now := time.Now().Unix()
-	minExpiry := now + 86400    // 1 day
-	maxExpiry := now + 31536000 // 365 days
-	if expires < minExpiry || expires > maxExpiry {
-		return ErrApiKeyValidityOutOfBoundsException
-	}
-	return nil
-}
-
 // CreateApiKey generates a new API key for a GraphQL API.
 func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)

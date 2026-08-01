@@ -2,7 +2,6 @@ package appsync
 
 import (
 	"context"
-	"errors"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -221,55 +220,4 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 		response["nextToken"] = nextToken
 	}
 	return response, nil
-}
-
-// mapStoreError converts a store-level error to the corresponding AppSync service error.
-// Uses errors.Is for unwrapping so that wrapped sentinel errors are correctly matched.
-func mapStoreError(err error) (interface{}, error) {
-	switch {
-	case errors.Is(err, appsyncstore.ErrApiNotFound):
-		return nil, NewNotFoundException("API")
-	case errors.Is(err, appsyncstore.ErrApiAlreadyExists):
-		return nil, NewConflictException("API already exists")
-	case errors.Is(err, appsyncstore.ErrChannelNamespaceNotFound):
-		return nil, NewNotFoundException("Channel namespace")
-	case errors.Is(err, appsyncstore.ErrChannelNamespaceExists):
-		return nil, NewConflictException("Channel namespace already exists")
-	case errors.Is(err, appsyncstore.ErrGraphqlApiNotFound):
-		return nil, NewNotFoundException("GraphQL API")
-	case errors.Is(err, appsyncstore.ErrGraphqlApiAlreadyExists):
-		return nil, NewConflictException("GraphQL API already exists")
-	case errors.Is(err, appsyncstore.ErrDataSourceNotFound):
-		return nil, NewNotFoundException("Data source")
-	case errors.Is(err, appsyncstore.ErrDataSourceAlreadyExists):
-		return nil, NewConflictException("Data source already exists")
-	case errors.Is(err, appsyncstore.ErrResolverNotFound):
-		return nil, NewNotFoundException("Resolver")
-	case errors.Is(err, appsyncstore.ErrResolverAlreadyExists):
-		return nil, NewConflictException("Resolver already exists")
-	case errors.Is(err, appsyncstore.ErrFunctionNotFound):
-		return nil, NewNotFoundException("Function")
-	case errors.Is(err, appsyncstore.ErrFunctionAlreadyExists):
-		return nil, NewConflictException("Function already exists")
-	case errors.Is(err, appsyncstore.ErrTypeNotFound):
-		return nil, NewNotFoundException("Type")
-	case errors.Is(err, appsyncstore.ErrTypeAlreadyExists):
-		return nil, NewConflictException("Type already exists")
-	case errors.Is(err, appsyncstore.ErrApiKeyNotFound):
-		return nil, NewNotFoundException("API key")
-	case errors.Is(err, appsyncstore.ErrApiCacheNotFound):
-		return nil, NewNotFoundException("API cache")
-	case errors.Is(err, appsyncstore.ErrApiCacheAlreadyExists):
-		return nil, NewConflictException("API cache already exists")
-	case errors.Is(err, appsyncstore.ErrDomainNameNotFound):
-		return nil, NewNotFoundException("Domain name")
-	case errors.Is(err, appsyncstore.ErrDomainNameAlreadyExists):
-		return nil, NewConflictException("Domain name already exists")
-	case errors.Is(err, appsyncstore.ErrApiAssociationNotFound):
-		return nil, NewNotFoundException("API association")
-	case errors.Is(err, appsyncstore.ErrMergedApiAssociationNotFound):
-		return nil, NewNotFoundException("Merged API association")
-	default:
-		return nil, ErrInternalFailureException
-	}
 }

@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -30,6 +31,30 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException("authenticationType is required")
 	}
 
+	if !validateAuthenticationType(authType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType: %s", authType))
+	}
+
+	apiType := request.GetStringParam(req.Parameters, "apiType")
+	if apiType != "" && !validateApiType(apiType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid apiType: %s", apiType))
+	}
+
+	visibility := request.GetStringParam(req.Parameters, "visibility")
+	if visibility != "" && !validateVisibility(visibility) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid visibility: %s", visibility))
+	}
+
+	introspectionConfig := request.GetStringParam(req.Parameters, "introspectionConfig")
+	if introspectionConfig != "" && !validateIntrospectionConfig(introspectionConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid introspectionConfig: %s", introspectionConfig))
+	}
+
+	logCfg := parseLogConfig(req.Parameters)
+	if logCfg != nil && logCfg.FieldLogLevel != "" && !validateFieldLogLevel(logCfg.FieldLogLevel) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid logConfig.fieldLogLevel: %s", logCfg.FieldLogLevel))
+	}
+
 	// Check combined API count quota (GraphQL + Event APIs per region).
 	graphqlCount, _ := store.CountGraphqlApis()
 	eventCount, _ := store.CountApis()
@@ -41,11 +66,11 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		Name:                              name,
 		AuthenticationType:                authType,
 		AdditionalAuthenticationProviders: parseAdditionalAuthProviders(req.Parameters),
-		ApiType:                           request.GetStringParam(req.Parameters, "apiType"),
+		ApiType:                           apiType,
 		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
-		IntrospectionConfig:               request.GetStringParam(req.Parameters, "introspectionConfig"),
+		IntrospectionConfig:               introspectionConfig,
 		LambdaAuthorizerConfig:            parseLambdaAuthorizerConfig(req.Parameters),
-		LogConfig:                         parseLogConfig(req.Parameters),
+		LogConfig:                         logCfg,
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
@@ -53,7 +78,7 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		ResolverCountLimit:                int32(request.GetIntParam(req.Parameters, "resolverCountLimit")),
 		Tags:                              parseTags(req.Parameters),
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
-		Visibility:                        request.GetStringParam(req.Parameters, "visibility"),
+		Visibility:                        visibility,
 		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
 		XrayEnabled:                       request.GetBoolParam(req.Parameters, "xrayEnabled"),
 	}
@@ -134,6 +159,19 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 	if authType == "" {
 		return nil, NewBadRequestException("authenticationType is required")
 	}
+	if !validateAuthenticationType(authType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType: %s", authType))
+	}
+
+	introspectionConfig := request.GetStringParam(req.Parameters, "introspectionConfig")
+	if introspectionConfig != "" && !validateIntrospectionConfig(introspectionConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid introspectionConfig: %s", introspectionConfig))
+	}
+
+	logCfg := parseLogConfig(req.Parameters)
+	if logCfg != nil && logCfg.FieldLogLevel != "" && !validateFieldLogLevel(logCfg.FieldLogLevel) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid logConfig.fieldLogLevel: %s", logCfg.FieldLogLevel))
+	}
 
 	// Fetch existing to preserve fields that were not provided in the request.
 	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
@@ -158,9 +196,9 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		AuthenticationType:                authType,
 		AdditionalAuthenticationProviders: parseAdditionalAuthProviders(req.Parameters),
 		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
-		IntrospectionConfig:               request.GetStringParam(req.Parameters, "introspectionConfig"),
+		IntrospectionConfig:               introspectionConfig,
 		LambdaAuthorizerConfig:            parseLambdaAuthorizerConfig(req.Parameters),
-		LogConfig:                         parseLogConfig(req.Parameters),
+		LogConfig:                         logCfg,
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),

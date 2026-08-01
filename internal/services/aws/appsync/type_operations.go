@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -29,6 +30,10 @@ func (s *AppSyncService) CreateType(ctx context.Context, reqCtx *request.Request
 	format := request.GetStringParam(req.Parameters, "format")
 	if format == "" {
 		return nil, NewBadRequestException("format is required")
+	}
+
+	if !validateTypeFormat(format) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
 	}
 
 	t := &appsyncstore.Type{
@@ -89,6 +94,10 @@ func (s *AppSyncService) UpdateType(ctx context.Context, reqCtx *request.Request
 	format := request.GetStringParam(req.Parameters, "format")
 	if format == "" {
 		return nil, NewBadRequestException("format is required")
+	}
+
+	if !validateTypeFormat(format) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
 	}
 
 	t := &appsyncstore.Type{

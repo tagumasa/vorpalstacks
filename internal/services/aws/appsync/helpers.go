@@ -414,30 +414,6 @@ func parseAppSyncRuntime(params map[string]interface{}) *appsyncstore.AppSyncRun
 	}
 }
 
-// validAppSyncRuntimeVersions maps each runtime name to its supported versions.
-var validAppSyncRuntimeVersions = map[string]map[string]bool{
-	"APPSYNC_JS": {"1.0.0": true},
-}
-
-// validateAppSyncRuntime checks that the runtime name and version are supported.
-// Returns nil if runtime is nil (not provided) or valid.
-func validateAppSyncRuntime(rt *appsyncstore.AppSyncRuntime) error {
-	if rt == nil {
-		return nil
-	}
-	versions, ok := validAppSyncRuntimeVersions[rt.Name]
-	if !ok {
-		return NewBadRequestException(fmt.Sprintf("Unsupported runtime name: %s", rt.Name))
-	}
-	if rt.RuntimeVersion == "" {
-		return NewBadRequestException("runtimeVersion is required when runtime is specified")
-	}
-	if !versions[rt.RuntimeVersion] {
-		return NewBadRequestException(fmt.Sprintf("Unsupported runtimeVersion %s for runtime %s", rt.RuntimeVersion, rt.Name))
-	}
-	return nil
-}
-
 // parseSourceApiAssociationConfig parses a SourceApiAssociationConfig from request parameters.
 // The config contains a MergeType field (AUTO_MERGE or MANUAL_MERGE).
 // Returns (nil, nil) when sourceApiAssociationConfig is absent.
@@ -502,18 +478,6 @@ func parseSyncConfig(params map[string]interface{}) *appsyncstore.SyncConfig {
 		}
 	}
 	return cfg
-}
-
-// validateCachingConfig validates the TTL range (1-3600 seconds) per AWS spec.
-// Returns nil if CachingConfig is nil (no caching configured).
-func validateCachingConfig(cc *appsyncstore.CachingConfig) error {
-	if cc == nil {
-		return nil
-	}
-	if cc.Ttl < 1 || cc.Ttl > 3600 {
-		return NewBadRequestException("cachingConfig.ttl must be between 1 and 3600 seconds")
-	}
-	return nil
 }
 
 // computeResolverCacheKey generates a SHA-256 cache key from the resolver

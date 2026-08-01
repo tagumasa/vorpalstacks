@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -41,11 +42,21 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		SyncConfig:              parseSyncConfig(req.Parameters),
 	}
 
+	kind := request.GetStringParam(req.Parameters, "kind")
+	if kind != "" && !validateResolverKind(kind) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
+	}
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
+		return nil, err
+	}
+	if err := validateSyncConfig(r.SyncConfig); err != nil {
 		return nil, err
 	}
 	if err := validateAppSyncRuntime(r.Runtime); err != nil {
 		return nil, err
+	}
+	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
 	}
 
 	created, err := store.CreateResolver(r)
@@ -117,11 +128,21 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		SyncConfig:              parseSyncConfig(req.Parameters),
 	}
 
+	kind := request.GetStringParam(req.Parameters, "kind")
+	if kind != "" && !validateResolverKind(kind) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
+	}
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
+		return nil, err
+	}
+	if err := validateSyncConfig(r.SyncConfig); err != nil {
 		return nil, err
 	}
 	if err := validateAppSyncRuntime(r.Runtime); err != nil {
 		return nil, err
+	}
+	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
 	}
 
 	updated, err := store.UpdateResolver(r)

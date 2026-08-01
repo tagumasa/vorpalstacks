@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -32,10 +33,16 @@ func (s *AppSyncService) CreateApiCache(ctx context.Context, reqCtx *request.Req
 	if cacheType == "" {
 		return nil, NewBadRequestException("type is required")
 	}
+	if !validateApiCacheType(cacheType) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid cache type: %s", cacheType))
+	}
 	ttl := request.GetInt64Param(req.Parameters, "ttl")
 	apiCachingBehavior := request.GetStringParam(req.Parameters, "apiCachingBehavior")
 	if apiCachingBehavior == "" {
 		return nil, NewBadRequestException("apiCachingBehavior is required")
+	}
+	if !validateApiCachingBehavior(apiCachingBehavior) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid apiCachingBehavior: %s", apiCachingBehavior))
 	}
 
 	cache := &appsyncstore.ApiCache{
@@ -46,6 +53,10 @@ func (s *AppSyncService) CreateApiCache(ctx context.Context, reqCtx *request.Req
 		TransitEncryptionEnabled: request.GetBoolParam(req.Parameters, "transitEncryptionEnabled"),
 		HealthMetricsConfig:      request.GetStringParam(req.Parameters, "healthMetricsConfig"),
 		Status:                   "CREATING",
+	}
+	hmc := cache.HealthMetricsConfig
+	if hmc != "" && !validateEnabledDisabled(hmc) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid healthMetricsConfig: %s", hmc))
 	}
 
 	if err := store.CreateApiCache(apiId, cache); err != nil {
@@ -109,6 +120,9 @@ func (s *AppSyncService) UpdateApiCache(ctx context.Context, reqCtx *request.Req
 	apiCachingBehavior := request.GetStringParam(req.Parameters, "apiCachingBehavior")
 
 	if cacheType != "" {
+		if !validateApiCacheType(cacheType) {
+			return nil, NewBadRequestException(fmt.Sprintf("Invalid cache type: %s", cacheType))
+		}
 		cache.Type = cacheType
 	}
 	// Use HasParam to distinguish "ttl not provided" from "ttl explicitly set to 0".
@@ -116,10 +130,16 @@ func (s *AppSyncService) UpdateApiCache(ctx context.Context, reqCtx *request.Req
 		cache.Ttl = ttl
 	}
 	if apiCachingBehavior != "" {
+		if !validateApiCachingBehavior(apiCachingBehavior) {
+			return nil, NewBadRequestException(fmt.Sprintf("Invalid apiCachingBehavior: %s", apiCachingBehavior))
+		}
 		cache.ApiCachingBehavior = apiCachingBehavior
 	}
 	healthMetrics := request.GetStringParam(req.Parameters, "healthMetricsConfig")
 	if healthMetrics != "" {
+		if !validateEnabledDisabled(healthMetrics) {
+			return nil, NewBadRequestException(fmt.Sprintf("Invalid healthMetricsConfig: %s", healthMetrics))
+		}
 		cache.HealthMetricsConfig = healthMetrics
 	}
 
