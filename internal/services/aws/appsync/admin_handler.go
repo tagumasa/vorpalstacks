@@ -134,8 +134,10 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	authType := "API_KEY"
+	var authType string
 	switch req.Msg.GetAuthenticationtype() {
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_API_KEY:
+		authType = "API_KEY"
 	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_IAM:
 		authType = "AWS_IAM"
 	case pb.AuthenticationType_AUTHENTICATION_TYPE_OPENID_CONNECT:
@@ -144,6 +146,9 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 		authType = "AMAZON_COGNITO_USER_POOLS"
 	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_LAMBDA:
 		authType = "AWS_LAMBDA"
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("unsupported authentication type: %v", req.Msg.GetAuthenticationtype()))
 	}
 
 	api := &appsyncstore.GraphqlApi{

@@ -2807,7 +2807,7 @@ func (x *ListEndpointsByPlatformApplicationResponse) GetNexttoken() string {
 
 type ListOriginationNumbersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2844,8 +2844,8 @@ func (*ListOriginationNumbersRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListOriginationNumbersRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3103,7 +3103,7 @@ func (x *ListPlatformApplicationsResponse) GetPlatformapplications() []*Platform
 
 type ListSMSSandboxPhoneNumbersInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3140,8 +3140,8 @@ func (*ListSMSSandboxPhoneNumbersInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSMSSandboxPhoneNumbersInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6194,12 +6194,13 @@ const file_sns_proto_rawDesc = "" +
 	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarn\"}\n" +
 	"*ListEndpointsByPlatformApplicationResponse\x12.\n" +
 	"\tendpoints\x18\xbe\xb4\xdd\a \x03(\v2\r.sns.EndpointR\tendpoints\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"d\n" +
-	"\x1dListOriginationNumbersRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"x\n" +
+	"\x1dListOriginationNumbersRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x84\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x84\x01\n" +
 	"\x1cListOriginationNumbersResult\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12C\n" +
 	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1b.sns.PhoneNumberInformationR\fphonenumbers\"@\n" +
@@ -6212,12 +6213,13 @@ const file_sns_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
 	" ListPlatformApplicationsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12O\n" +
-	"\x14platformapplications\x18\xaa\xa2\x81d \x03(\v2\x18.sns.PlatformApplicationR\x14platformapplications\"f\n" +
-	"\x1fListSMSSandboxPhoneNumbersInput\x12\"\n" +
+	"\x14platformapplications\x18\xaa\xa2\x81d \x03(\v2\x18.sns.PlatformApplicationR\x14platformapplications\"z\n" +
+	"\x1fListSMSSandboxPhoneNumbersInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x87\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x87\x01\n" +
 	" ListSMSSandboxPhoneNumbersResult\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12B\n" +
 	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1a.sns.SMSSandboxPhoneNumberR\fphonenumbers\"_\n" +
@@ -6776,6 +6778,8 @@ func file_sns_proto_init() {
 	file_sns_proto_msgTypes[4].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[6].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[36].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[55].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[61].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[97].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

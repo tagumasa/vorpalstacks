@@ -1,6 +1,7 @@
 package appsync
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -15,9 +16,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/fqdnrouter"
+	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 )
 
 const (
@@ -60,6 +63,7 @@ type wsConnection struct {
 	subscriptions map[string]*subscription
 	mu            sync.RWMutex
 	closed        bool
+	iamVerified   bool
 }
 
 // subscription represents a single channel subscription on a connection.
@@ -202,7 +206,12 @@ type EventServer struct {
 	connMu      sync.RWMutex
 	channels    *channelManager
 	bus         eventbus.Bus
+	storeLookup StoreLookupFunc
+	sigVerifier *auth.SignatureV4Verifier
 }
+
+// StoreLookupFunc resolves an API ID to its store for auth-mode enforcement.
+type StoreLookupFunc func(apiId string) (*appsyncstore.AppSyncStore, error)
 
 // NewEventServer creates a new EventServer ready to accept connections.
 func NewEventServer() *EventServer {
@@ -219,7 +228,248 @@ func (s *EventServer) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 }
 
-// DisconnectByApiId closes all WebSocket connections associated with the
+// SetStoreLookup injects the store lookup function used for Event API
+// auth-mode enforcement (R2-H1).
+func (s *EventServer) SetStoreLookup(fn StoreLookupFunc) {
+	s.storeLookup = fn
+}
+
+// SetSigVerifier injects the SigV4 verifier used for AWS_IAM auth mode
+// enforcement on HTTP publish and WebSocket connection upgrade (P-5).
+func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
+	s.sigVerifier = v
+}
+
+// authorizeEventOperation checks whether the caller is authenticated to
+// perform a publish or subscribe operation on the given channel.
+//
+// Enforcement rules:
+//   - If storeLookup is nil or apiId is empty → allow (test mode / no FQDN).
+//   - If the API has no EventConfig or no auth modes configured → allow.
+//   - If auth modes are configured → verify credentials for each type:
+//     API_KEY (store lookup + expiry), AWS_IAM (connection-level SigV4),
+//     AMAZON_COGNITO_USER_POOLS (JWT via CognitoTokenValidator),
+//     AWS_LAMBDA (Lambda authorizer invocation),
+//     OPENID_CONNECT (fail-closed — out of scope per docs/services.md).
+//
+// Returns nil when authorised; a non-nil error string when denied.
+func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId string, auth map[string]interface{}, isSubscribe bool, iamVerified bool) *string {
+	if s.storeLookup == nil || apiId == "" {
+		return nil
+	}
+
+	store, err := s.storeLookup(apiId)
+	if err != nil || store == nil {
+		return nil
+	}
+
+	api, apiErr := store.GetApiById(apiId)
+	if apiErr != nil || api == nil || api.EventConfig == nil {
+		return nil
+	}
+
+	var authModes []appsyncstore.AuthMode
+	if isSubscribe {
+		authModes = api.EventConfig.DefaultSubscribeAuthModes
+	} else {
+		authModes = api.EventConfig.DefaultPublishAuthModes
+	}
+
+	if len(authModes) == 0 {
+		return nil
+	}
+
+	for _, mode := range authModes {
+		switch mode.AuthType {
+		case "API_KEY":
+			if s.verifyAPIKey(store, apiId, auth) {
+				return nil
+			}
+		case "AWS_IAM":
+			if iamVerified {
+				return nil
+			}
+		case "AMAZON_COGNITO_USER_POOLS":
+			if s.verifyCognito(ctx, api.EventConfig.AuthProviders, auth) {
+				return nil
+			}
+		case "AWS_LAMBDA":
+			if s.verifyLambdaAuthorizer(ctx, api.EventConfig.AuthProviders, apiId, auth) {
+				return nil
+			}
+		case "OPENID_CONNECT":
+			// OIDC token verification requires external IdP connectivity.
+			// Out of scope per docs/services.md "No external IdP".
+			// Fail-closed: do not accept unverified credentials.
+		}
+	}
+
+	msg := "Unauthorized: valid authentication required for this operation"
+	return &msg
+}
+
+// verifyAPIKey looks up the provided API key in the store and checks expiry.
+func (s *EventServer) verifyAPIKey(store *appsyncstore.AppSyncStore, apiId string, auth map[string]interface{}) bool {
+	keyValue, ok := auth["x-api-key"].(string)
+	if !ok || keyValue == "" {
+		return false
+	}
+	apiKey, err := store.GetApiKey(apiId, keyValue)
+	if err != nil {
+		return false
+	}
+	if apiKey.Expires > 0 && time.Now().Unix() > apiKey.Expires {
+		return false
+	}
+	return true
+}
+
+// verifyCognito validates a Cognito JWT access token using the eventbus
+// CognitoTokenValidator. The AuthProvider with matching auth type provides
+// the user pool ID and region.
+func (s *EventServer) verifyCognito(ctx context.Context, providers []appsyncstore.AuthProvider, auth map[string]interface{}) bool {
+	if s.bus == nil || s.bus.CognitoTokenValidator() == nil {
+		return false
+	}
+	token := extractBearerToken(auth)
+	if token == "" {
+		return false
+	}
+	for _, p := range providers {
+		if p.AuthType != "AMAZON_COGNITO_USER_POOLS" || p.CognitoConfig == nil {
+			continue
+		}
+		if _, err := s.bus.CognitoTokenValidator().ValidateTokenForPool(ctx, p.CognitoConfig.AwsRegion, p.CognitoConfig.UserPoolId, token); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// verifyLambdaAuthorizer invokes the configured Lambda authorizer function
+// and evaluates the response for an authorisation decision.
+func (s *EventServer) verifyLambdaAuthorizer(ctx context.Context, providers []appsyncstore.AuthProvider, apiId string, auth map[string]interface{}) bool {
+	if s.bus == nil || s.bus.LambdaInvoker() == nil || len(auth) == 0 {
+		return false
+	}
+	for _, p := range providers {
+		if p.AuthType != "AWS_LAMBDA" || p.LambdaAuthorizerConfig == nil {
+			continue
+		}
+		functionName := extractFunctionNameFromAuthorizerUri(p.LambdaAuthorizerConfig.AuthorizerUri)
+		if functionName == "" {
+			continue
+		}
+		payload, _ := json.Marshal(map[string]interface{}{
+			"authorizationToken": auth,
+			"requestContext":     map[string]string{"apiId": apiId},
+		})
+		_, resp, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, functionName, payload)
+		if err != nil {
+			continue
+		}
+		var result struct {
+			IsAuthorized *bool `json:"isAuthorized"`
+		}
+		if json.Unmarshal(resp, &result) == nil && result.IsAuthorized != nil && *result.IsAuthorized {
+			return true
+		}
+	}
+	return false
+}
+
+// extractBearerToken extracts the JWT from the Authorization header value,
+// stripping the "Bearer " prefix if present.
+func extractBearerToken(auth map[string]interface{}) string {
+	v, ok := auth["Authorization"].(string)
+	if !ok || v == "" {
+		return ""
+	}
+	return strings.TrimPrefix(v, "Bearer ")
+}
+
+// extractFunctionNameFromAuthorizerUri extracts the Lambda function name
+// from an AppSync LambdaAuthorizerConfig AuthorizerUri.
+// Format: arn:aws:appsync:<region>:<account>:aws-lambda:<functionName>
+// or: arn:aws:lambda:<region>:<account>:function:<functionName>
+func extractFunctionNameFromAuthorizerUri(uri string) string {
+	parts := strings.Split(uri, ":")
+	if len(parts) == 0 {
+		return ""
+	}
+	return parts[len(parts)-1]
+}
+
+// isIAMAuthMode checks whether the given API has AWS_IAM in its
+// publish or subscribe auth modes.
+func (s *EventServer) isIAMAuthMode(apiId string, isSubscribe bool) bool {
+	if s.storeLookup == nil {
+		return false
+	}
+	store, err := s.storeLookup(apiId)
+	if err != nil || store == nil {
+		return false
+	}
+	api, err := store.GetApiById(apiId)
+	if err != nil || api == nil || api.EventConfig == nil {
+		return false
+	}
+	modes := api.EventConfig.DefaultPublishAuthModes
+	if isSubscribe {
+		modes = api.EventConfig.DefaultSubscribeAuthModes
+	}
+	for _, m := range modes {
+		if m.AuthType == "AWS_IAM" {
+			return true
+		}
+	}
+	return false
+}
+
+// lookupRegion resolves the store region for a given API ID.
+func (s *EventServer) lookupRegion(apiId string) string {
+	if s.storeLookup == nil {
+		return ""
+	}
+	store, err := s.storeLookup(apiId)
+	if err != nil || store == nil {
+		return ""
+	}
+	return store.GetRegion()
+}
+
+// verifyConnectionIAM checks whether the WebSocket upgrade request carries
+// a valid AWS_IAM signature. Returns true when the connection-level
+// ConnectionAuthModes include AWS_IAM and the signature verifies.
+func (s *EventServer) verifyConnectionIAM(r *http.Request, apiId string) bool {
+	if s.storeLookup == nil {
+		return false
+	}
+	store, err := s.storeLookup(apiId)
+	if err != nil || store == nil {
+		return false
+	}
+	api, err := store.GetApiById(apiId)
+	if err != nil || api == nil || api.EventConfig == nil {
+		return false
+	}
+	hasIAM := false
+	for _, m := range api.EventConfig.ConnectionAuthModes {
+		if m.AuthType == "AWS_IAM" {
+			hasIAM = true
+			break
+		}
+	}
+	if !hasIAM {
+		return false
+	}
+	if err := s.sigVerifier.VerifyRequest(r, "appsync", store.GetRegion()); err != nil {
+		logs.Warn("WebSocket IAM verification failed", logs.String("apiId", apiId), logs.Err(err))
+		return false
+	}
+	return true
+}
+
 // given API ID. Call this when an API is deleted to prevent stale connections
 // from receiving events for a non-existent API.
 func (s *EventServer) DisconnectByApiId(apiId string) {
@@ -237,6 +487,35 @@ func (s *EventServer) DisconnectByApiId(apiId string) {
 		if !ws.closed {
 			ws.closed = true
 			close(ws.sendCh)
+		}
+		ws.mu.Unlock()
+	}
+}
+
+// RemoveSubscriptionsByNamespace removes all subscriptions whose channel
+// falls under the given namespace. Channels use /{namespace}/{channel} format,
+// so we match on segment boundaries to avoid over-matching (e.g. namespace
+// "foo" must not affect "/foobar/baz").
+func (s *EventServer) RemoveSubscriptionsByNamespace(namespace string) {
+	if namespace == "" {
+		return
+	}
+	exact := "/" + namespace
+	prefix := exact + "/"
+	s.connMu.RLock()
+	var conns []*wsConnection
+	for _, ws := range s.connections {
+		conns = append(conns, ws)
+	}
+	s.connMu.RUnlock()
+
+	for _, ws := range conns {
+		ws.mu.Lock()
+		for subId, sub := range ws.subscriptions {
+			if sub.channel == exact || strings.HasPrefix(sub.channel, prefix) {
+				delete(ws.subscriptions, subId)
+				s.channels.unsubscribe(sub.channel, ws.id, subId)
+			}
 		}
 		ws.mu.Unlock()
 	}
@@ -260,6 +539,13 @@ func (s *EventServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // handleWebSocket upgrades an HTTP connection to WebSocket and manages the connection lifecycle.
 func (s *EventServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	apiId := s.extractApiId(r)
+
+	iamVerified := false
+	if s.sigVerifier != nil && apiId != "" {
+		iamVerified = s.verifyConnectionIAM(r, apiId)
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logs.Error("WebSocket upgrade failed", logs.Err(err))
@@ -270,10 +556,11 @@ func (s *EventServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	ws := &wsConnection{
 		id:            connId,
-		apiId:         s.extractApiId(r),
+		apiId:         apiId,
 		conn:          conn,
 		sendCh:        make(chan []byte, 256),
 		subscriptions: make(map[string]*subscription),
+		iamVerified:   iamVerified,
 	}
 
 	s.connMu.Lock()
@@ -294,6 +581,10 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 		s.writeHTTPError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
+	// Restore r.Body so that SigV4 VerifyRequest can re-read the payload
+	// to compute the correct body hash. Without this, VerifyRequest sees an
+	// empty body (EOF) and the signature can never match.
+	r.Body = io.NopCloser(bytes.NewReader(body))
 
 	var req struct {
 		Channel string   `json:"channel"`
@@ -322,6 +613,31 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 			s.writeHTTPError(w, http.StatusBadRequest, "Event at index %d exceeds 240KB", i)
 			return
 		}
+	}
+
+	// Enforce configured auth modes for HTTP publish.
+	apiId := s.extractApiId(r)
+	auth := map[string]interface{}{}
+	if apiKey := r.Header.Get("x-api-key"); apiKey != "" {
+		auth["x-api-key"] = apiKey
+	}
+	if authorization := r.Header.Get("Authorization"); authorization != "" {
+		auth["Authorization"] = authorization
+	}
+
+	// Verify SigV4 signature for AWS_IAM auth mode on HTTP requests.
+	iamVerified := false
+	if s.sigVerifier != nil && apiId != "" && r.Header.Get("Authorization") != "" {
+		if s.isIAMAuthMode(apiId, false) {
+			if err := s.sigVerifier.VerifyRequest(r, "appsync", s.lookupRegion(apiId)); err == nil {
+				iamVerified = true
+			}
+		}
+	}
+
+	if msg := s.authorizeEventOperation(r.Context(), apiId, auth, false, iamVerified); msg != nil {
+		s.writeHTTPError(w, http.StatusUnauthorized, "%s", *msg)
+		return
 	}
 
 	result := s.publishEvents(req.Channel, req.Events)
@@ -378,6 +694,9 @@ func (s *EventServer) extractApiId(r *http.Request) string {
 // readPump reads messages from the WebSocket connection and dispatches them.
 // This goroutine exits when the connection is closed.
 func (s *EventServer) readPump(ws *wsConnection) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	defer func() {
 		ws.mu.Lock()
 		if !ws.closed {
@@ -413,7 +732,7 @@ func (s *EventServer) readPump(ws *wsConnection) {
 			return
 		}
 
-		s.handleMessage(ws, message)
+		s.handleMessage(ctx, ws, message)
 	}
 }
 
@@ -464,7 +783,7 @@ func (s *EventServer) writePump(ws *wsConnection) {
 }
 
 // handleMessage dispatches an incoming WebSocket message based on its type.
-func (s *EventServer) handleMessage(ws *wsConnection, raw []byte) {
+func (s *EventServer) handleMessage(ctx context.Context, ws *wsConnection, raw []byte) {
 	var msg struct {
 		Type          string                 `json:"type"`
 		Id            string                 `json:"id"`
@@ -482,10 +801,10 @@ func (s *EventServer) handleMessage(ws *wsConnection, raw []byte) {
 		// Silently accepted — connection_ack already sent on upgrade
 
 	case "subscribe":
-		s.handleSubscribe(ws, msg.Id, msg.Channel, msg.Authorization)
+		s.handleSubscribe(ctx, ws, msg.Id, msg.Channel, msg.Authorization)
 
 	case "publish":
-		s.handlePublish(ws, msg.Id, msg.Channel, msg.Events, msg.Authorization)
+		s.handlePublish(ctx, ws, msg.Id, msg.Channel, msg.Events, msg.Authorization)
 
 	case "unsubscribe":
 		s.handleUnsubscribe(ws, msg.Id)
@@ -496,7 +815,7 @@ func (s *EventServer) handleMessage(ws *wsConnection, raw []byte) {
 }
 
 // handleSubscribe validates and registers a channel subscription.
-func (s *EventServer) handleSubscribe(ws *wsConnection, subId, channel string, auth map[string]interface{}) {
+func (s *EventServer) handleSubscribe(ctx context.Context, ws *wsConnection, subId, channel string, auth map[string]interface{}) {
 	if subId == "" || !subscriptionIDPattern.MatchString(subId) {
 		s.sendSubscribeError(ws, subId, "InvalidInput", "Invalid subscription ID format")
 		return
@@ -504,6 +823,12 @@ func (s *EventServer) handleSubscribe(ws *wsConnection, subId, channel string, a
 
 	if channel == "" || !channelPathPattern.MatchString(channel) {
 		s.sendSubscribeError(ws, subId, "InvalidInput", "Invalid channel format")
+		return
+	}
+
+	// Enforce configured auth modes.
+	if msg := s.authorizeEventOperation(ctx, ws.apiId, auth, true, ws.iamVerified); msg != nil {
+		s.sendSubscribeError(ws, subId, "UnauthorizedException", *msg)
 		return
 	}
 
@@ -537,7 +862,7 @@ func (s *EventServer) handleSubscribe(ws *wsConnection, subId, channel string, a
 }
 
 // handlePublish validates events and broadcasts them to matching subscribers.
-func (s *EventServer) handlePublish(ws *wsConnection, pubId, channel string, events []string, auth map[string]interface{}) {
+func (s *EventServer) handlePublish(ctx context.Context, ws *wsConnection, pubId, channel string, events []string, auth map[string]interface{}) {
 	if pubId == "" || !subscriptionIDPattern.MatchString(pubId) {
 		s.sendPublishError(ws, pubId, "InvalidInput", "Invalid publish ID format")
 		return
@@ -545,6 +870,12 @@ func (s *EventServer) handlePublish(ws *wsConnection, pubId, channel string, eve
 
 	if channel == "" || !channelPathPattern.MatchString(channel) {
 		s.sendPublishError(ws, pubId, "InvalidInput", "Invalid channel format")
+		return
+	}
+
+	// Enforce configured auth modes.
+	if msg := s.authorizeEventOperation(ctx, ws.apiId, auth, false, ws.iamVerified); msg != nil {
+		s.sendPublishError(ws, pubId, "UnauthorizedException", *msg)
 		return
 	}
 

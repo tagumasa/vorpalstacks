@@ -1,8 +1,6 @@
 package appsync
 
 import (
-	"encoding/json"
-
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -290,7 +288,7 @@ func (s *AppSyncStore) DeleteApiKey(apiId, id string) error {
 	return s.apiKeysStore.Delete(key)
 }
 
-// ListApiKeys lists API keys for a given API, optionally filtered by expiry.
+// ListApiKeys lists API keys for a given API.
 func (s *AppSyncStore) ListApiKeys(apiId string, opts common.ListOptions) ([]*ApiKey, string, error) {
 	prefixOpts := common.ListOptions{
 		Prefix:   apiId + "/",
@@ -383,7 +381,11 @@ func (s *AppSyncStore) GetDomainName(domainName string) (*DomainNameConfig, erro
 }
 
 // UpdateDomainName updates a domain name configuration.
+// Returns ErrDomainNameNotFound if the domain does not exist (R2-H3).
 func (s *AppSyncStore) UpdateDomainName(domainName *DomainNameConfig) error {
+	if !s.domainNamesStore.Exists(domainName.DomainName) {
+		return ErrDomainNameNotFound
+	}
 	return s.domainNamesStore.Put(domainName.DomainName, domainName)
 }
 
@@ -435,15 +437,19 @@ func (s *AppSyncStore) DisassociateApi(domainName string) error {
 }
 
 // --- Merged API Associations ---
-// Associations are stored with composite keys "mergedApiId/associationId" to
-// support efficient prefix-based listing by merged API. For source-side lookups
-// (where only associationId is known), GetMergedApiAssociationById performs a
-// full scan with filter.
+// Primary storage uses composite keys "mergedApiId/associationId" for efficient
+// prefix-based listing by merged API. A secondary index (associationId → mergedApiId)
+// enables O(1) reverse lookups in GetMergedApiAssociationById, eliminating the
+// previous O(n) full-scan approach.
 
-// CreateMergedApiAssociation persists a merged API association.
+// CreateMergedApiAssociation persists a merged API association and updates the
+// secondary index.
 func (s *AppSyncStore) CreateMergedApiAssociation(assoc *SourceApiAssociation) error {
 	key := assoc.MergedApiId + "/" + assoc.AssociationId
-	return s.mergedApiAssociationsStore.Put(key, assoc)
+	if err := s.mergedApiAssociationsStore.Put(key, assoc); err != nil {
+		return err
+	}
+	return s.mergedApiAssocIndexStore.Put(assoc.AssociationId, assoc.MergedApiId)
 }
 
 // GetMergedApiAssociation retrieves a merged API association by merged API ID and association ID.
@@ -457,24 +463,13 @@ func (s *AppSyncStore) GetMergedApiAssociation(mergedApiId, associationId string
 }
 
 // GetMergedApiAssociationById retrieves a merged API association by its UUID alone.
-// This is required for source-side operations (e.g. DisassociateMergedGraphqlApi)
-// where the mergedApiId is not available from the request path.
+// Uses the secondary index for O(1) lookup instead of a full scan.
 func (s *AppSyncStore) GetMergedApiAssociationById(associationId string) (*SourceApiAssociation, error) {
-	var found *SourceApiAssociation
-	err := s.mergedApiAssociationsStore.ForEach(func(key string, value []byte) error {
-		var assoc SourceApiAssociation
-		if err := json.Unmarshal(value, &assoc); err != nil {
-			return err
-		}
-		if assoc.AssociationId == associationId {
-			found = &assoc
-		}
-		return nil
-	})
-	if err != nil || found == nil {
+	var mergedApiId string
+	if err := s.mergedApiAssocIndexStore.Get(associationId, &mergedApiId); err != nil {
 		return nil, ErrMergedApiAssociationNotFound
 	}
-	return found, nil
+	return s.GetMergedApiAssociation(mergedApiId, associationId)
 }
 
 // UpdateMergedApiAssociation updates an existing merged API association.
@@ -483,10 +478,13 @@ func (s *AppSyncStore) UpdateMergedApiAssociation(assoc *SourceApiAssociation) e
 	return s.mergedApiAssociationsStore.Put(key, assoc)
 }
 
-// DeleteMergedApiAssociation removes a merged API association by merged API ID and association ID.
+// DeleteMergedApiAssociation removes a merged API association and its index entry.
 func (s *AppSyncStore) DeleteMergedApiAssociation(mergedApiId, associationId string) error {
 	key := mergedApiId + "/" + associationId
-	return s.mergedApiAssociationsStore.Delete(key)
+	if err := s.mergedApiAssociationsStore.Delete(key); err != nil {
+		return err
+	}
+	return s.mergedApiAssocIndexStore.Delete(associationId)
 }
 
 // ListMergedApiAssociations lists merged API associations for a given merged API.

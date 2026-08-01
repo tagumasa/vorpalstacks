@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -39,6 +40,35 @@ func NewAppSyncService(accountID string) *AppSyncService {
 func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	s.eventServer.SetEventBus(bus)
+	s.eventServer.SetStoreLookup(s.lookupStoreByApiId)
+}
+
+// SetSigVerifier injects the SigV4 verifier for AWS_IAM auth mode
+// enforcement on the Event API data-plane (P-5).
+func (s *AppSyncService) SetSigVerifier(v *auth.SignatureV4Verifier) {
+	s.eventServer.SetSigVerifier(v)
+}
+
+// lookupStoreByApiId searches all cached regional stores for one that
+// contains the given API ID. Used by EventServer for auth enforcement.
+func (s *AppSyncService) lookupStoreByApiId(apiId string) (*appsyncstore.AppSyncStore, error) {
+	var found *appsyncstore.AppSyncStore
+	s.stores.Range(func(_, v interface{}) bool {
+		store := v.(*appsyncstore.AppSyncStore)
+		if _, err := store.GetApiById(apiId); err == nil {
+			found = store
+			return false
+		}
+		if _, err := store.GetGraphqlApiById(apiId); err == nil {
+			found = store
+			return false
+		}
+		return true
+	})
+	if found == nil {
+		return nil, fmt.Errorf("api %s not found in any region", apiId)
+	}
+	return found, nil
 }
 
 // SetStorageManager injects the storage manager for admin console store access.

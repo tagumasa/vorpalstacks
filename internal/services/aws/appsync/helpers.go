@@ -13,6 +13,28 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// validateGraphqlApiExists checks that the given apiId refers to a GraphQL
+// API (v1). GraphQL-only child resources (DataSource, Resolver, Function,
+// Type) require this check. Returns NewNotFoundException when the API does
+// not exist or is not a GraphQL API (P-4).
+func validateGraphqlApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
+	if _, err := store.GetGraphqlApiById(apiId); err != nil {
+		return NewNotFoundException("Graphql API")
+	}
+	return nil
+}
+
+// validateEventApiExists checks that the given apiId refers to an Event API
+// (v2). Event API-only child resources (ChannelNamespace) require this check.
+// Returns NewNotFoundException when the API does not exist or is not an
+// Event API (P-4).
+func validateEventApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
+	if _, err := store.GetApiById(apiId); err != nil {
+		return NewNotFoundException("Event API")
+	}
+	return nil
+}
+
 // parsePaginationOptions extracts list pagination parameters from the request.
 // AppSync uses maxResults (int) and nextToken (string) in query params.
 // Smithy MaxResults shape: range 0-25. When omitted (0), defaults to 25.
@@ -77,9 +99,19 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 		}
 	}
 
-	ec.ConnectionAuthModes = parseAuthModes(request.GetArrayParam(ecRaw, "connectionAuthModes"))
-	ec.DefaultPublishAuthModes = parseAuthModes(request.GetArrayParam(ecRaw, "defaultPublishAuthModes"))
-	ec.DefaultSubscribeAuthModes = parseAuthModes(request.GetArrayParam(ecRaw, "defaultSubscribeAuthModes"))
+	var authErr error
+	ec.ConnectionAuthModes, authErr = parseAuthModes(request.GetArrayParam(ecRaw, "connectionAuthModes"))
+	if authErr != nil {
+		return nil, authErr
+	}
+	ec.DefaultPublishAuthModes, authErr = parseAuthModes(request.GetArrayParam(ecRaw, "defaultPublishAuthModes"))
+	if authErr != nil {
+		return nil, authErr
+	}
+	ec.DefaultSubscribeAuthModes, authErr = parseAuthModes(request.GetArrayParam(ecRaw, "defaultSubscribeAuthModes"))
+	if authErr != nil {
+		return nil, authErr
+	}
 
 	if logRaw := request.GetMapParam(ecRaw, "logConfig"); logRaw != nil {
 		ec.LogConfig = &appsyncstore.EventLogConfig{
@@ -92,16 +124,21 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 }
 
 // parseAuthModes converts a raw array of auth mode maps into a slice of AuthMode.
-func parseAuthModes(raw []interface{}) []appsyncstore.AuthMode {
+// Validates each authType against the AuthenticationType / event auth enum.
+func parseAuthModes(raw []interface{}) ([]appsyncstore.AuthMode, error) {
 	var modes []appsyncstore.AuthMode
 	for _, m := range raw {
 		if mMap, ok := m.(map[string]interface{}); ok {
+			authType := request.GetStringParam(mMap, "authType")
+			if authType != "" && !validAuthenticationTypes[authType] {
+				return nil, NewBadRequestException(fmt.Sprintf("Invalid authType: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", authType))
+			}
 			modes = append(modes, appsyncstore.AuthMode{
-				AuthType: request.GetStringParam(mMap, "authType"),
+				AuthType: authType,
 			})
 		}
 	}
-	return modes
+	return modes, nil
 }
 
 // parseTags extracts a map[string]string from the "tags" request parameter.

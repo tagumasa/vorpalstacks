@@ -20,10 +20,22 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 	if apiId == "" {
 		return nil, NewBadRequestException("apiId is required")
 	}
+	if err := validateEventApiExists(store, apiId); err != nil {
+		return nil, err
+	}
 
 	name := request.GetStringParam(req.Parameters, "name")
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
+	}
+
+	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
+	if err != nil {
+		return nil, err
+	}
+	subscribeAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "subscribeAuthModes"))
+	if err != nil {
+		return nil, err
 	}
 
 	ns := &appsyncstore.ChannelNamespace{
@@ -31,8 +43,8 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		Name:               name,
 		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
 		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
-		PublishAuthModes:   parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes")),
-		SubscribeAuthModes: parseAuthModes(request.GetArrayParam(req.Parameters, "subscribeAuthModes")),
+		PublishAuthModes:   publishAuthModes,
+		SubscribeAuthModes: subscribeAuthModes,
 		Tags:               parseTags(req.Parameters),
 	}
 
@@ -104,13 +116,22 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, NewBadRequestException("apiId and name are required")
 	}
 
+	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
+	if err != nil {
+		return nil, err
+	}
+	subscribeAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "subscribeAuthModes"))
+	if err != nil {
+		return nil, err
+	}
+
 	ns := &appsyncstore.ChannelNamespace{
 		ApiId:              apiId,
 		Name:               name,
 		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
 		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
-		PublishAuthModes:   parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes")),
-		SubscribeAuthModes: parseAuthModes(request.GetArrayParam(req.Parameters, "subscribeAuthModes")),
+		PublishAuthModes:   publishAuthModes,
+		SubscribeAuthModes: subscribeAuthModes,
 	}
 
 	updated, err := store.UpdateChannelNamespace(ns)
@@ -149,6 +170,10 @@ func (s *AppSyncService) DeleteChannelNamespace(ctx context.Context, reqCtx *req
 	if err := store.DeleteChannelNamespace(apiId, name); err != nil {
 		return mapStoreError(err)
 	}
+
+	// Clean up active subscriptions on the deleted namespace to prevent
+	// stale data delivery (R2-M4).
+	s.eventServer.RemoveSubscriptionsByNamespace(name)
 
 	return map[string]interface{}{}, nil
 }

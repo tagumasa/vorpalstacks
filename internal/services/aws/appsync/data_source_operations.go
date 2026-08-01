@@ -21,6 +21,9 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 	if apiId == "" {
 		return nil, NewBadRequestException("apiId is required")
 	}
+	if err := validateGraphqlApiExists(store, apiId); err != nil {
+		return nil, err
+	}
 
 	name := request.GetStringParam(req.Parameters, "name")
 	if name == "" {

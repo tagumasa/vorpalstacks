@@ -58,6 +58,12 @@ type TagHandlerConfig struct {
 	// If nil, returns nil (no body).
 	EmptyResponse func() (interface{}, error)
 
+	// ValidateTagsFunc validates parsed tags before they are persisted.
+	// If nil, no tag-set validation is performed.
+	// Use tags.ValidateTags for the standard AWS constraints (50 limit,
+	// aws: prefix, key/value length).
+	ValidateTagsFunc func(tags []types.Tag) error
+
 	// MapError maps handler errors to service-specific errors.
 	// Called on any non-nil error returned by the handler.
 	MapError func(error) error
@@ -98,6 +104,12 @@ func HandleTag(ctx context.Context, req *request.ParsedRequest, cfg TagHandlerCo
 
 	if cfg.Param.RequireTags && len(tags) == 0 {
 		return nil, applyMapError(cfg, &MissingTagsError{Param: cfg.Param.TagsParam})
+	}
+
+	if cfg.ValidateTagsFunc != nil && len(tags) > 0 {
+		if err := cfg.ValidateTagsFunc(tags); err != nil {
+			return nil, applyMapError(cfg, err)
+		}
 	}
 
 	if len(tags) > 0 && cfg.TagFunc != nil {

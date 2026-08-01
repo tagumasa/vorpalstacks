@@ -2,6 +2,7 @@
 package tags
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -529,3 +530,42 @@ func HasDuplicateKeys(tags []types.Tag) bool {
 	}
 	return false
 }
+
+// ValidateTags validates a tag set against the AWS Resource Groups Tagging API
+// constraints shared by most services:
+//   - Maximum 50 tags per resource.
+//   - Tag key: 1–128 characters, must not start with "aws:" (case-insensitive).
+//   - Tag value: 0–256 characters.
+//
+// Returns nil when the tag set is valid.
+func ValidateTags(tags []types.Tag) error {
+	if len(tags) > 50 {
+		return ErrTooManyTags
+	}
+	for _, t := range tags {
+		if len(t.Key) < 1 || len(t.Key) > 128 {
+			return ErrInvalidTagKey
+		}
+		if len(t.Value) > 256 {
+			return ErrInvalidTagValue
+		}
+		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
+			return ErrReservedTagKey
+		}
+	}
+	return nil
+}
+
+// ValidateTagMap validates a map[string]string against the same constraints as
+// ValidateTags. Provided as a convenience for services that store tags as maps.
+func ValidateTagMap(m map[string]string) error {
+	return ValidateTags(MapToTags(m))
+}
+
+// Sentinel errors returned by ValidateTags / ValidateTagMap.
+var (
+	ErrTooManyTags     = errors.New("number of tags exceeds the maximum of 50")
+	ErrInvalidTagKey   = errors.New("tag key must be 1-128 characters")
+	ErrInvalidTagValue = errors.New("tag value must be 0-256 characters")
+	ErrReservedTagKey  = errors.New("tag keys starting with 'aws:' are reserved")
+)

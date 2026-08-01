@@ -208,6 +208,19 @@ func validateSyncConfig(sc *appsyncstore.SyncConfig) error {
 }
 
 // ============================================================================
+// ApiCache TTL validation
+// ============================================================================
+
+// validateApiCacheTtl validates the ApiCache TTL range.
+// Smithy CreateApiCacheRequest.ttl documentation: "Valid values are 1–3,600 seconds."
+func validateApiCacheTtl(ttl int64) error {
+	if ttl < 1 || ttl > 3600 {
+		return NewBadRequestException("ttl must be between 1 and 3600 seconds")
+	}
+	return nil
+}
+
+// ============================================================================
 // Generic enum validators
 // ============================================================================
 

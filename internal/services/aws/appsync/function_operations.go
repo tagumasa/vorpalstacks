@@ -20,6 +20,9 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 	if apiId == "" {
 		return nil, NewBadRequestException("apiId is required")
 	}
+	if err := validateGraphqlApiExists(store, apiId); err != nil {
+		return nil, err
+	}
 
 	name := request.GetStringParam(req.Parameters, "name")
 	if name == "" {

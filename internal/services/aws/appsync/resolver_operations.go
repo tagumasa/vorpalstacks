@@ -24,6 +24,9 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 	if apiId == "" || typeName == "" || fieldName == "" {
 		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
 	}
+	if err := validateGraphqlApiExists(store, apiId); err != nil {
+		return nil, err
+	}
 
 	r := &appsyncstore.Resolver{
 		ApiId:                   apiId,

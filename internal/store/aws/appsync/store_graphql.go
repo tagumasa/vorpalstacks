@@ -3,7 +3,6 @@ package appsync
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/config"
@@ -242,21 +241,41 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 	}
 
 	// Remove merged API associations referencing this API as source or merged.
-	var assocKeys []string
-	_ = s.mergedApiAssociationsStore.ForEach(func(key string, value []byte) error {
+	// Use prefix scan for MergedApiId matches (O(log n)); full scan for
+	// SourceApiId matches (no secondary index, but API deletion is rare).
+	type assocCleanup struct {
+		key           string
+		associationId string
+	}
+	var assocsToDelete []assocCleanup
+	seen := make(map[string]bool)
+
+	// Prefix scan: associations where this API is the merged API.
+	_ = s.mergedApiAssociationsStore.ScanPrefix(apiId+"/", func(key string, value []byte) error {
 		var assoc SourceApiAssociation
-		if json.Unmarshal(value, &assoc) == nil {
-			if assoc.SourceApiId == apiId || assoc.MergedApiId == apiId {
-				assocKeys = append(assocKeys, key)
-			}
+		if json.Unmarshal(value, &assoc) == nil && !seen[assoc.AssociationId] {
+			seen[assoc.AssociationId] = true
+			assocsToDelete = append(assocsToDelete, assocCleanup{key: key, associationId: assoc.AssociationId})
 		}
 		return nil
 	})
-	for _, k := range assocKeys {
-		if err := s.mergedApiAssociationsStore.Delete(k); err != nil {
-			logs.Warn("failed to delete merged API association during API deletion",
-				logs.String("apiId", apiId), logs.String("assocKey", k), logs.Err(err))
+
+	// Full scan: associations where this API is the source API.
+	_ = s.mergedApiAssociationsStore.ForEach(func(key string, value []byte) error {
+		var assoc SourceApiAssociation
+		if json.Unmarshal(value, &assoc) == nil && assoc.SourceApiId == apiId && !seen[assoc.AssociationId] {
+			seen[assoc.AssociationId] = true
+			assocsToDelete = append(assocsToDelete, assocCleanup{key: key, associationId: assoc.AssociationId})
 		}
+		return nil
+	})
+
+	for _, entry := range assocsToDelete {
+		if err := s.mergedApiAssociationsStore.Delete(entry.key); err != nil {
+			logs.Warn("failed to delete merged API association during API deletion",
+				logs.String("apiId", apiId), logs.String("assocKey", entry.key), logs.Err(err))
+		}
+		_ = s.mergedApiAssocIndexStore.Delete(entry.associationId)
 	}
 
 	// Remove domain name associations referencing this API.
@@ -544,43 +563,33 @@ func (s *AppSyncStore) ListResolvers(apiId, typeName string, opts common.ListOpt
 }
 
 // ListResolversByFunction returns resolvers that reference a given function ID.
-// Performs a full scan filtered by functionId, then applies offset-based pagination
-// using the Marker as a decimal skip count.
+// Uses common.List with a filter function for opaque-token pagination
+// consistent with all other List operations (R2-M2).
 func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts common.ListOptions) ([]*Resolver, string, error) {
-	allResolvers, err := common.ListMatching[Resolver](s.resolversStore, apiId+"/", nil)
+	prefixOpts := common.ListOptions{
+		Prefix:   apiId + "/",
+		Marker:   opts.Marker,
+		MaxItems: opts.MaxItems,
+	}
+	result, err := common.List[Resolver](s.resolversStore, prefixOpts, func(r *Resolver) bool {
+		if r.PipelineConfig == nil {
+			return false
+		}
+		for _, fnId := range r.PipelineConfig.Functions {
+			if fnId == functionId {
+				return true
+			}
+		}
+		return false
+	})
 	if err != nil {
 		return nil, "", err
 	}
-
-	var filtered []*Resolver
-	for _, r := range allResolvers {
-		if r.PipelineConfig != nil {
-			for _, fnId := range r.PipelineConfig.Functions {
-				if fnId == functionId {
-					filtered = append(filtered, r)
-					break
-				}
-			}
-		}
+	var nextToken string
+	if result.IsTruncated {
+		nextToken = result.NextMarker
 	}
-
-	offset := 0
-	if opts.Marker != "" {
-		if n, err := strconv.Atoi(opts.Marker); err == nil {
-			offset = n
-		}
-	}
-
-	if offset >= len(filtered) {
-		return []*Resolver{}, "", nil
-	}
-
-	remaining := filtered[offset:]
-	if len(remaining) > opts.MaxItems {
-		nextToken := fmt.Sprintf("%d", offset+opts.MaxItems)
-		return remaining[:opts.MaxItems], nextToken, nil
-	}
-	return remaining, "", nil
+	return result.Items, nextToken, nil
 }
 
 // GetAllResolversForApi returns all resolvers for an API without pagination limits.

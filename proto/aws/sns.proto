@@ -825,7 +825,7 @@ message ListEndpointsByPlatformApplicationResponse {
 
 message ListOriginationNumbersRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -889,7 +889,7 @@ message ListPlatformApplicationsResponse {
 
 message ListSMSSandboxPhoneNumbersInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 

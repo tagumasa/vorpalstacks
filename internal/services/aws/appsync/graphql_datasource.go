@@ -184,6 +184,8 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return map[string]interface{}{}, nil
 
 	case "Scan":
+		// AWS AppSync DynamoDB data source returns up to 1000 items per Scan.
+		// Pagination via LastEvaluatedKey is not yet implemented (R2-L4).
 		items, err := invoker.Scan(ctx, region, tableName, 1000)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Scan failed: %w", err)
@@ -201,6 +203,8 @@ func (e *graphQLEngine) dispatchDynamoDB(
 				break
 			}
 		}
+		// AWS AppSync DynamoDB data source returns up to 1000 items per Query.
+		// Pagination via LastEvaluatedKey is not yet implemented (R2-L4).
 		items, err := invoker.Query(ctx, region, tableName, pkVal, 1000)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Query failed: %w", err)

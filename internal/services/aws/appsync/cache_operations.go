@@ -44,6 +44,9 @@ func (s *AppSyncService) CreateApiCache(ctx context.Context, reqCtx *request.Req
 	if !validateApiCachingBehavior(apiCachingBehavior) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid apiCachingBehavior: %s", apiCachingBehavior))
 	}
+	if err := validateApiCacheTtl(ttl); err != nil {
+		return nil, err
+	}
 
 	cache := &appsyncstore.ApiCache{
 		Type:                     cacheType,
@@ -127,6 +130,9 @@ func (s *AppSyncService) UpdateApiCache(ctx context.Context, reqCtx *request.Req
 	}
 	// Use HasParam to distinguish "ttl not provided" from "ttl explicitly set to 0".
 	if request.HasParam(req.Parameters, "ttl") {
+		if err := validateApiCacheTtl(ttl); err != nil {
+			return nil, err
+		}
 		cache.Ttl = ttl
 	}
 	if apiCachingBehavior != "" {

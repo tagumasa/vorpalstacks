@@ -21,6 +21,9 @@ func (s *AppSyncService) CreateType(ctx context.Context, reqCtx *request.Request
 	if apiId == "" {
 		return nil, NewBadRequestException("apiId is required")
 	}
+	if err := validateGraphqlApiExists(store, apiId); err != nil {
+		return nil, err
+	}
 
 	definition := request.GetStringParam(req.Parameters, "definition")
 	if definition == "" {

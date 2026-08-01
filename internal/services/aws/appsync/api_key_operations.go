@@ -23,8 +23,11 @@ func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.Reque
 		return nil, NewBadRequestException("apiId is required")
 	}
 
-	if _, err := store.GetGraphqlApiById(apiId); err != nil {
-		return mapStoreError(err)
+	// API keys can be created for both GraphQL APIs and Event APIs.
+	if err := validateGraphqlApiExists(store, apiId); err != nil {
+		if err := validateEventApiExists(store, apiId); err != nil {
+			return mapStoreError(err)
+		}
 	}
 
 	description := request.GetStringParam(req.Parameters, "description")

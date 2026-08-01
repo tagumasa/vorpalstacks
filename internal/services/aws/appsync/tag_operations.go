@@ -66,6 +66,12 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 			return map[string]interface{}{}, nil
 		},
 		MapError: appsyncMapError,
+		ValidateTagsFunc: func(t []types.Tag) error {
+			if err := tags.ValidateTags(t); err != nil {
+				return NewBadRequestException(err.Error())
+			}
+			return nil
+		},
 		ValidateResource: func(_ context.Context, resourceArn string) error {
 			return validateAppSyncResource(store, resourceArn)
 		},

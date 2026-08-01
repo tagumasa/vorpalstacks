@@ -34,6 +34,7 @@ type AppSyncStore struct {
 	domainNamesStore           *common.BaseStore
 	apiAssociationsStore       *common.BaseStore
 	mergedApiAssociationsStore *common.BaseStore
+	mergedApiAssocIndexStore   *common.BaseStore
 	TagStore                   *common.TagStore
 	arnBuilder                 *arn.ARNBuilder
 	accountId                  string
@@ -111,6 +112,12 @@ func mergedApiAssociationBucketName(region string) string {
 	return "appsync-merged-api-associations-" + region
 }
 
+// mergedApiAssocIndexBucketName returns the PebbleDB bucket name for the secondary index
+// that maps associationId → mergedApiId, enabling O(1) reverse lookups.
+func mergedApiAssocIndexBucketName(region string) string {
+	return "appsync-merged-api-assoc-index-" + region
+}
+
 // NewAppSyncStore creates a new store backed by the given storage and scoped to the specified account and region.
 func NewAppSyncStore(store storage.BasicStorage, accountId, region string) *AppSyncStore {
 	b := arn.NewARNBuilder(accountId, region)
@@ -130,6 +137,7 @@ func NewAppSyncStore(store storage.BasicStorage, accountId, region string) *AppS
 		domainNamesStore:           common.NewBaseStore(store.Bucket(domainNameBucketName(region)), "appsync-domain-names"),
 		apiAssociationsStore:       common.NewBaseStore(store.Bucket(apiAssociationBucketName(region)), "appsync-api-associations"),
 		mergedApiAssociationsStore: common.NewBaseStore(store.Bucket(mergedApiAssociationBucketName(region)), "appsync-merged-api-associations"),
+		mergedApiAssocIndexStore:   common.NewBaseStore(store.Bucket(mergedApiAssocIndexBucketName(region)), "appsync-merged-api-assoc-index"),
 		TagStore:                   common.NewTagStoreWithRegion(store, "appsync", region),
 		arnBuilder:                 b,
 		accountId:                  accountId,
@@ -385,22 +393,6 @@ func (s *AppSyncStore) CountApis() (int, error) {
 		return nil
 	})
 	return count, err
-}
-
-// ListAssociationsByMergedApi lists source API associations for a merged API.
-// The apiId parameter is the merged API identifier per AWS spec.
-func (s *AppSyncStore) ListAssociationsByMergedApi(apiId string, opts common.ListOptions) ([]*SourceApiAssociation, string, error) {
-	result, err := common.List[SourceApiAssociation](s.mergedApiAssociationsStore, opts, func(a *SourceApiAssociation) bool {
-		return a.MergedApiId == apiId
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	var nextToken string
-	if result.IsTruncated {
-		nextToken = result.NextMarker
-	}
-	return result.Items, nextToken, nil
 }
 
 // CreateChannelNamespace persists a new channel namespace scoped to an Event API.

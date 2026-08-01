@@ -167,6 +167,16 @@ func (a *App) initAppSync(st *serviceState) error {
 	st.appSyncService = svcappsync.NewAppSyncService(st.accountID)
 	st.appSyncService.SetEventBus(a.server.EventBus())
 	st.appSyncService.SetStorageManager(a.server.StorageManager())
+	if a.cfg.SignatureVerification {
+		st.appSyncService.SetSigVerifier(auth.NewSignatureV4Verifier(
+			auth.NewStaticCredentialsProvider(
+				a.cfg.AccessKeyID,
+				a.cfg.SecretAccessKey,
+				a.cfg.Region,
+				"",
+			),
+		))
+	}
 	st.appSyncService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("appsync", func(ctx context.Context) error {
 		st.appSyncService.ShutdownEventServer()

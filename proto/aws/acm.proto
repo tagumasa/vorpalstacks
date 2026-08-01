@@ -18,10 +18,60 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc AddTagsToCertificate(AddTagsToCertificateRequest) returns (common.Empty);
 
+  // Creates a domain validation for an ACME endpoint. Domain validations authorize the endpoint to issue certificates for specified domain names. You configure prevalidation to prove domain ownership.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc CreateAcmeDomainValidation(CreateAcmeDomainValidationRequest) returns (CreateAcmeDomainValidationResponse);
+
+  // Creates an ACME endpoint, which is a managed ACME server with a unique endpoint URL. After creation, ACME clients can use the endpoint URL to automate certificate issuance using the ACME protocol.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc CreateAcmeEndpoint(CreateAcmeEndpointRequest) returns (CreateAcmeEndpointResponse);
+
+  // Creates an external account binding (EAB) for an ACME endpoint. An EAB provides credentials that authorize an ACME client to register an account with the endpoint. Each EAB is associated with an IA...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc CreateAcmeExternalAccountBinding(CreateAcmeExternalAccountBindingRequest) returns (CreateAcmeExternalAccountBindingResponse);
+
+  // Deletes a domain validation. After deletion, the ACME endpoint can no longer issue certificates for the associated domain.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DeleteAcmeDomainValidation(DeleteAcmeDomainValidationRequest) returns (common.Empty);
+
+  // Deletes an ACME endpoint. After deletion, the endpoint URL is no longer accessible and ACME clients cannot issue certificates through it. Any existing external account bindings and domain validatio...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DeleteAcmeEndpoint(DeleteAcmeEndpointRequest) returns (common.Empty);
+
+  // Deletes an external account binding. Previously fetched credentials for this binding will no longer be usable for account registration. A deleted binding cannot be recovered.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DeleteAcmeExternalAccountBinding(DeleteAcmeExternalAccountBindingRequest) returns (common.Empty);
+
   // Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteCertificate(DeleteCertificateRequest) returns (common.Empty);
+
+  // Returns detailed metadata about the specified ACME account, including its status, public key thumbprint, and associated external account binding.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeAcmeAccount(DescribeAcmeAccountRequest) returns (DescribeAcmeAccountResponse);
+
+  // Returns detailed metadata about the specified domain validation, including its status, domain scope, and DNS resource records required for validation.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeAcmeDomainValidation(DescribeAcmeDomainValidationRequest) returns (DescribeAcmeDomainValidationResponse);
+
+  // Returns detailed metadata about the specified ACME endpoint, including its status, URL, authorization behavior, and certificate authority configuration.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeAcmeEndpoint(DescribeAcmeEndpointRequest) returns (DescribeAcmeEndpointResponse);
+
+  // Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeAcmeExternalAccountBinding(DescribeAcmeExternalAccountBindingRequest) returns (DescribeAcmeExternalAccountBindingResponse);
 
   // Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retriev...
   // HTTP:  
@@ -38,6 +88,11 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc GetAccountConfiguration(common.Empty) returns (GetAccountConfigurationResponse);
 
+  // Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc GetAcmeExternalAccountBindingCredentials(GetAcmeExternalAccountBindingCredentialsRequest) returns (GetAcmeExternalAccountBindingCredentialsResponse);
+
   // Retrieves a certificate and its certificate chain. The certificate may be either a public or private certificate issued using the ACM RequestCertificate action, or a certificate imported into ACM u...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -48,6 +103,26 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc ImportCertificate(ImportCertificateRequest) returns (ImportCertificateResponse);
 
+  // Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListAcmeAccounts(ListAcmeAccountsRequest) returns (ListAcmeAccountsResponse);
+
+  // Retrieves a list of domain validations for the specified ACME endpoint.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListAcmeDomainValidations(ListAcmeDomainValidationsRequest) returns (ListAcmeDomainValidationsResponse);
+
+  // Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListAcmeEndpoints(ListAcmeEndpointsRequest) returns (ListAcmeEndpointsResponse);
+
+  // Retrieves a list of external account bindings for the specified ACME endpoint.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListAcmeExternalAccountBindings(ListAcmeExternalAccountBindingsRequest) returns (ListAcmeExternalAccountBindingsResponse);
+
   // Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate. ...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -57,6 +132,11 @@ service ACMService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListTagsForCertificate(ListTagsForCertificateRequest) returns (ListTagsForCertificateResponse);
+
+  // Lists the tags associated with an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use ListTagsForCertificate instead. To ad...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListTagsForResource(ListTagsForResourceRequest) returns (ListTagsForResourceResponse);
 
   // Adds or modifies account-level configurations in ACM. The supported configuration option is DaysBeforeExpiry. This option specifies the number of days prior to certificate expiration when ACM start...
   // HTTP:  
@@ -83,6 +163,16 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc ResendValidationEmail(ResendValidationEmailRequest) returns (common.Empty);
 
+  // Revokes an ACME account, preventing it from requesting or revoking certificates. This operation is irreversible.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc RevokeAcmeAccount(RevokeAcmeAccountRequest) returns (common.Empty);
+
+  // Revokes an external account binding, preventing new ACME accounts from being registered using this binding. Existing ACME accounts that were previously registered using the binding are not affected...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc RevokeAcmeExternalAccountBinding(RevokeAcmeExternalAccountBindingRequest) returns (common.Empty);
+
   // Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -92,6 +182,26 @@ service ACMService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc SearchCertificates(SearchCertificatesRequest) returns (SearchCertificatesResponse);
+
+  // Adds one or more tags to an ACM resource. Tags are labels that you can use to identify and organize your Amazon Web Services resources. Each tag consists of a key and an optional value. Use this ac...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc TagResource(TagResourceRequest) returns (common.Empty);
+
+  // Removes one or more tags from an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use RemoveTagsFromCertificate instead. To ...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UntagResource(UntagResourceRequest) returns (common.Empty);
+
+  // Updates the prevalidation configuration of an existing domain validation.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UpdateAcmeDomainValidation(UpdateAcmeDomainValidationRequest) returns (common.Empty);
+
+  // Updates the configuration of an existing ACME endpoint. You can change the authorization behavior, contact requirement, or certificate authority settings.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UpdateAcmeEndpoint(UpdateAcmeEndpointRequest) returns (common.Empty);
 
   // Updates a certificate. You can use this function to specify whether to export your certificate. Certificate transparency logging opt-out is no longer available. For more information, see Certificat...
   // HTTP:  
@@ -115,6 +225,12 @@ message AccessDeniedException {
 // Contains ACM-specific metadata about a certificate.
 
 message AcmCertificateMetadata {
+
+  string acmeaccountid = 482433560;
+
+  string acmeendpointarn = 94900702;
+
+  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   string createdat = 258192751;
 
@@ -150,6 +266,12 @@ message AcmCertificateMetadata {
 
 message AcmCertificateMetadataFilter {
 
+  string acmeaccountid = 482433560;
+
+  string acmeendpointarn = 94900702;
+
+  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
+
   CertificateExport exportoption = 19500687;
 
   optional bool exported = 491164947;
@@ -170,6 +292,284 @@ message AcmCertificateMetadataFilter {
 
 
 
+// Contains detailed information about an ACME account.
+
+message AcmeAccount {
+
+  string accounturl = 410635830;
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+  repeated string contacts = 145625361;
+
+  string createdat = 258192751;
+
+  string publickeythumbprint = 265215433;
+
+  AcmeAccountStatus status = 6222352;
+
+}
+
+
+
+enum AcmeAccountStatus {
+
+  ACME_ACCOUNT_STATUS_DEACTIVATED = 0;
+
+  ACME_ACCOUNT_STATUS_REVOKED = 1;
+
+  ACME_ACCOUNT_STATUS_VALID = 2;
+
+}
+
+
+
+// Contains summary information about an ACME account.
+
+message AcmeAccountSummary {
+
+  string accounturl = 410635830;
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+  repeated string contacts = 145625361;
+
+  string createdat = 258192751;
+
+  string publickeythumbprint = 265215433;
+
+  AcmeAccountStatus status = 6222352;
+
+}
+
+
+
+enum AcmeAuthorizationBehavior {
+
+  ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED = 0;
+
+}
+
+
+
+enum AcmeContact {
+
+  ACME_CONTACT_REQUIRED = 0;
+
+  ACME_CONTACT_NOT_REQUIRED = 1;
+
+}
+
+
+
+// Contains detailed information about an ACME domain validation.
+
+message AcmeDomainValidation {
+
+  string acmedomainvalidationarn = 42437708;
+
+  string acmeendpointarn = 94900702;
+
+  string createdat = 258192751;
+
+  string domainname = 194914027;
+
+  FailureDetails failuredetails = 409582698;
+
+  PrevalidationDetails prevalidationdetails = 84866774;
+
+  PrevalidationType prevalidationtype = 170164414;
+
+  AcmeDomainValidationStatus status = 6222352;
+
+  string updatedat = 213581206;
+
+}
+
+
+
+enum AcmeDomainValidationFailureReason {
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE = 0;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_ACCESS_DENIED = 1;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_TIMED_OUT = 2;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_PUBLIC_DOMAIN = 3;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_INTERNAL_FAILURE = 4;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_NOT_ALLOWED = 5;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_MISMATCH = 6;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_HOSTED_ZONE_NOT_FOUND = 7;
+
+  ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_CHANGE_BATCH = 8;
+
+}
+
+
+
+enum AcmeDomainValidationStatus {
+
+  ACME_DOMAIN_VALIDATION_STATUS_VALIDATING = 0;
+
+  ACME_DOMAIN_VALIDATION_STATUS_INVALID = 1;
+
+  ACME_DOMAIN_VALIDATION_STATUS_DELETING = 2;
+
+  ACME_DOMAIN_VALIDATION_STATUS_VALID = 3;
+
+}
+
+
+
+// Contains summary information about an ACME domain validation.
+
+message AcmeDomainValidationSummary {
+
+  string acmedomainvalidationarn = 42437708;
+
+  string acmeendpointarn = 94900702;
+
+  string createdat = 258192751;
+
+  string domainname = 194914027;
+
+  FailureDetails failuredetails = 409582698;
+
+  PrevalidationDetails prevalidationdetails = 84866774;
+
+  PrevalidationType prevalidationtype = 170164414;
+
+  AcmeDomainValidationStatus status = 6222352;
+
+  string updatedat = 213581206;
+
+}
+
+
+
+// Contains detailed information about an ACME endpoint.
+
+message AcmeEndpoint {
+
+  string acmeendpointarn = 94900702;
+
+  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+
+  CertificateAuthority certificateauthority = 310340518;
+
+  repeated Tag certificatetags = 340578970;
+
+  AcmeContact contact = 330077380;
+
+  string createdat = 258192751;
+
+  string endpointurl = 31787414;
+
+  string failurereason = 232322142;
+
+  AcmeEndpointStatus status = 6222352;
+
+  string updatedat = 213581206;
+
+}
+
+
+
+enum AcmeEndpointStatus {
+
+  ACME_ENDPOINT_STATUS_ACTIVE = 0;
+
+  ACME_ENDPOINT_STATUS_DELETING = 1;
+
+  ACME_ENDPOINT_STATUS_CREATING = 2;
+
+  ACME_ENDPOINT_STATUS_FAILED = 3;
+
+}
+
+
+
+// Contains summary information about an ACME endpoint.
+
+message AcmeEndpointSummary {
+
+  string acmeendpointarn = 94900702;
+
+  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+
+  CertificateAuthority certificateauthority = 310340518;
+
+  repeated Tag certificatetags = 340578970;
+
+  AcmeContact contact = 330077380;
+
+  string createdat = 258192751;
+
+  string endpointurl = 31787414;
+
+  string failurereason = 232322142;
+
+  AcmeEndpointStatus status = 6222352;
+
+  string updatedat = 213581206;
+
+}
+
+
+
+// Contains detailed information about an ACME external account binding.
+
+message AcmeExternalAccountBinding {
+
+  string acmeendpointarn = 94900702;
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+  string createdat = 258192751;
+
+  string expiresat = 235981239;
+
+  string lastusedat = 171989482;
+
+  string revokedat = 63251417;
+
+  string rolearn = 322567169;
+
+  string updatedat = 213581206;
+
+}
+
+
+
+// Contains summary information about an ACME external account binding.
+
+message AcmeExternalAccountBindingSummary {
+
+  string acmeendpointarn = 94900702;
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+  string createdat = 258192751;
+
+  string expiresat = 235981239;
+
+  string lastusedat = 171989482;
+
+  string revokedat = 63251417;
+
+  string rolearn = 322567169;
+
+  string updatedat = 213581206;
+
+}
+
+
+
 message AddTagsToCertificateRequest {
 
   string certificatearn = 92693880;
@@ -180,13 +580,29 @@ message AddTagsToCertificateRequest {
 
 
 
+// Defines the certificate authority to use for an ACME endpoint.
+
+message CertificateAuthority {
+
+  PublicCertificateAuthority publiccertificateauthority = 433196117;
+
+}
+
+
+
 // Contains metadata about an ACM certificate. This structure is returned in the response to a DescribeCertificate request.
 
 message CertificateDetail {
 
+  string acmeaccountid = 482433560;
+
+  string acmeendpointarn = 94900702;
+
   string certificatearn = 92693880;
 
   string certificateauthorityarn = 266069181;
+
+  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   string createdat = 258192751;
 
@@ -282,6 +698,18 @@ message CertificateFilterStatement {
 
 
 
+enum CertificateKeyPairOrigin {
+
+  CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED = 0;
+
+  CERTIFICATE_KEY_PAIR_ORIGIN_ACME = 1;
+
+  CERTIFICATE_KEY_PAIR_ORIGIN_CUSTOMER_PROVIDED = 2;
+
+}
+
+
+
 enum CertificateManagedBy {
 
   CERTIFICATE_MANAGED_BY_CLOUDFRONT = 0;
@@ -351,6 +779,8 @@ enum CertificateStatus {
 message CertificateSummary {
 
   string certificatearn = 92693880;
+
+  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   string createdat = 258192751;
 
@@ -448,6 +878,80 @@ message ConflictException {
 
 
 
+message CreateAcmeDomainValidationRequest {
+
+  string acmeendpointarn = 94900702;
+
+  string domainname = 194914027;
+
+  string idempotencytoken = 56833648;
+
+  PrevalidationOptions prevalidationoptions = 339127734;
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
+message CreateAcmeDomainValidationResponse {
+
+  string acmedomainvalidationarn = 42437708;
+
+}
+
+
+
+message CreateAcmeEndpointRequest {
+
+  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+
+  CertificateAuthority certificateauthority = 310340518;
+
+  repeated Tag certificatetags = 340578970;
+
+  AcmeContact contact = 330077380;
+
+  string idempotencytoken = 56833648;
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
+message CreateAcmeEndpointResponse {
+
+  string acmeendpointarn = 94900702;
+
+}
+
+
+
+message CreateAcmeExternalAccountBindingRequest {
+
+  string acmeendpointarn = 94900702;
+
+  Expiration expiration = 245879945;
+
+  string idempotencytoken = 56833648;
+
+  string rolearn = 322567169;
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
+message CreateAcmeExternalAccountBindingResponse {
+
+  AcmeExternalAccountBinding externalaccountbinding = 30290275;
+
+}
+
+
+
 // Defines the X.500 relative distinguished name (RDN).
 
 message CustomAttribute {
@@ -460,9 +964,99 @@ message CustomAttribute {
 
 
 
+message DeleteAcmeDomainValidationRequest {
+
+  string acmedomainvalidationarn = 42437708;
+
+}
+
+
+
+message DeleteAcmeEndpointRequest {
+
+  string acmeendpointarn = 94900702;
+
+}
+
+
+
+message DeleteAcmeExternalAccountBindingRequest {
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+}
+
+
+
 message DeleteCertificateRequest {
 
   string certificatearn = 92693880;
+
+}
+
+
+
+message DescribeAcmeAccountRequest {
+
+  string accounturl = 410635830;
+
+  string acmeendpointarn = 94900702;
+
+}
+
+
+
+message DescribeAcmeAccountResponse {
+
+  AcmeAccount acmeaccount = 154325947;
+
+}
+
+
+
+message DescribeAcmeDomainValidationRequest {
+
+  string acmedomainvalidationarn = 42437708;
+
+}
+
+
+
+message DescribeAcmeDomainValidationResponse {
+
+  AcmeDomainValidation acmedomainvalidation = 329588885;
+
+}
+
+
+
+message DescribeAcmeEndpointRequest {
+
+  string acmeendpointarn = 94900702;
+
+}
+
+
+
+message DescribeAcmeEndpointResponse {
+
+  AcmeEndpoint acmeendpoint = 374256691;
+
+}
+
+
+
+message DescribeAcmeExternalAccountBindingRequest {
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+}
+
+
+
+message DescribeAcmeExternalAccountBindingResponse {
+
+  AcmeExternalAccountBinding externalaccountbinding = 30290275;
 
 }
 
@@ -536,6 +1130,56 @@ message DnsNameFilter {
 
 
 
+// DNS prevalidation details including the resource record for validation.
+
+message DnsPrevalidationDetails {
+
+  DomainScope domainscope = 142837280;
+
+  string hostedzoneid = 346531710;
+
+  ResourceRecord resourcerecord = 207153213;
+
+}
+
+
+
+// DNS prevalidation options for domain validation.
+
+message DnsPrevalidationOptions {
+
+  DomainScope domainscope = 142837280;
+
+  string hostedzoneid = 346531710;
+
+}
+
+
+
+// Specifies the scope of domain validation.
+
+message DomainScope {
+
+  DomainScopeOption exactdomain = 75573201;
+
+  DomainScopeOption subdomains = 260450007;
+
+  DomainScopeOption wildcards = 452219829;
+
+}
+
+
+
+enum DomainScopeOption {
+
+  DOMAIN_SCOPE_OPTION_DISABLED = 0;
+
+  DOMAIN_SCOPE_OPTION_ENABLED = 1;
+
+}
+
+
+
 enum DomainStatus {
 
   DOMAIN_STATUS_PENDING_VALIDATION = 0;
@@ -582,11 +1226,23 @@ message DomainValidationOption {
 
 
 
+// Specifies an expiration configuration.
+
+message Expiration {
+
+  TimeType type = 290836590;
+
+  string value = 289929579;
+
+}
+
+
+
 // Object containing expiration events options associated with an Amazon Web Services account.
 
 message ExpiryEventsConfiguration {
 
-  int32 daysbeforeexpiry = 292642703;
+  optional int32 daysbeforeexpiry = 292642703;
 
 }
 
@@ -651,6 +1307,18 @@ enum ExtendedKeyUsageName {
   EXTENDED_KEY_USAGE_NAME_OCSP_SIGNING = 10;
 
   EXTENDED_KEY_USAGE_NAME_TLS_WEB_SERVER_AUTHENTICATION = 11;
+
+}
+
+
+
+// Contains details about a failure.
+
+message FailureDetails {
+
+  string message = 235854213;
+
+  AcmeDomainValidationFailureReason reason = 20005178;
 
 }
 
@@ -744,6 +1412,24 @@ message GetAccountConfigurationResponse {
 
 
 
+message GetAcmeExternalAccountBindingCredentialsRequest {
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+}
+
+
+
+message GetAcmeExternalAccountBindingCredentialsResponse {
+
+  string keyid = 275906594;
+
+  string mackey = 443116120;
+
+}
+
+
+
 message GetCertificateRequest {
 
   string certificatearn = 92693880;
@@ -793,6 +1479,16 @@ message ImportCertificateRequest {
 message ImportCertificateResponse {
 
   string certificatearn = 92693880;
+
+}
+
+
+
+// The request processing has failed because of an unknown error, exception, or failure.
+
+message InternalServerException {
+
+  string message = 82970853;
 
 }
 
@@ -926,13 +1622,101 @@ message LimitExceededException {
 
 
 
+message ListAcmeAccountsRequest {
+
+  string acmeendpointarn = 94900702;
+
+  string maxresults = 275174450;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeAccountsResponse {
+
+  repeated AcmeAccountSummary acmeaccounts = 67331436;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeDomainValidationsRequest {
+
+  string acmeendpointarn = 94900702;
+
+  string maxresults = 275174450;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeDomainValidationsResponse {
+
+  repeated AcmeDomainValidationSummary acmedomainvalidations = 334678950;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeEndpointsRequest {
+
+  string maxresults = 275174450;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeEndpointsResponse {
+
+  repeated AcmeEndpointSummary acmeendpoints = 518373972;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeExternalAccountBindingsRequest {
+
+  string acmeendpointarn = 94900702;
+
+  string maxresults = 275174450;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
+message ListAcmeExternalAccountBindingsResponse {
+
+  repeated AcmeExternalAccountBindingSummary externalaccountbindings = 144129476;
+
+  string nexttoken = 216957566;
+
+}
+
+
+
 message ListCertificatesRequest {
+
+  repeated CertificateKeyPairOrigin certificatekeypairorigins = 296158823;
 
   repeated CertificateStatus certificatestatuses = 203375987;
 
   Filters includes = 162404509;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string nexttoken = 216957566;
 
@@ -970,6 +1754,22 @@ message ListTagsForCertificateResponse {
 
 
 
+message ListTagsForResourceRequest {
+
+  string resourcearn = 364280877;
+
+}
+
+
+
+message ListTagsForResourceResponse {
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
 // Defines a custom ASN.1 X.400 GeneralName using an object identifier (OID) and value. For more information, see NIST's definition of Object Identifier (OID).
 
 message OtherName {
@@ -977,6 +1777,56 @@ message OtherName {
   string objectidentifier = 389541722;
 
   string value = 289929579;
+
+}
+
+
+
+// Contains details about the prevalidation configuration.
+
+message PrevalidationDetails {
+
+  DnsPrevalidationDetails dnsprevalidation = 196969595;
+
+}
+
+
+
+// Specifies prevalidation options for domain validation.
+
+message PrevalidationOptions {
+
+  DnsPrevalidationOptions dnsprevalidation = 196969595;
+
+}
+
+
+
+enum PrevalidationType {
+
+  PREVALIDATION_TYPE_DNS_PREVALIDATION = 0;
+
+}
+
+
+
+// Configuration for a public certificate authority.
+
+message PublicCertificateAuthority {
+
+  repeated PublicKeyAlgorithm allowedkeyalgorithms = 469856557;
+
+}
+
+
+
+enum PublicKeyAlgorithm {
+
+  PUBLIC_KEY_ALGORITHM_EC_PRIME256_V1 = 0;
+
+  PUBLIC_KEY_ALGORITHM_RSA_2048 = 1;
+
+  PUBLIC_KEY_ALGORITHM_EC_SECP384_R1 = 2;
 
 }
 
@@ -1176,6 +2026,24 @@ enum RevocationReason {
 
 
 
+message RevokeAcmeAccountRequest {
+
+  string accounturl = 410635830;
+
+  string acmeendpointarn = 94900702;
+
+}
+
+
+
+message RevokeAcmeExternalAccountBindingRequest {
+
+  string acmeexternalaccountbindingarn = 521952268;
+
+}
+
+
+
 message RevokeCertificateRequest {
 
   string certificatearn = 92693880;
@@ -1198,7 +2066,7 @@ message SearchCertificatesRequest {
 
   CertificateFilterStatement filterstatement = 530491181;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1226,37 +2094,43 @@ enum SearchCertificatesSortBy {
 
   SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT = 1;
 
-  SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME = 2;
+  SEARCH_CERTIFICATES_SORT_BY_ACME_ENDPOINT_ARN = 2;
 
-  SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY = 3;
+  SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME = 3;
 
-  SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER = 4;
+  SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY = 4;
 
-  SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD = 5;
+  SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER = 5;
 
-  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS = 6;
+  SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD = 6;
 
-  SEARCH_CERTIFICATES_SORT_BY_STATUS = 7;
+  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS = 7;
 
-  SEARCH_CERTIFICATES_SORT_BY_EXPORTED = 8;
+  SEARCH_CERTIFICATES_SORT_BY_STATUS = 8;
 
-  SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE = 9;
+  SEARCH_CERTIFICATES_SORT_BY_EXPORTED = 9;
 
-  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY = 10;
+  SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE = 10;
 
-  SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN = 11;
+  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY = 11;
 
-  SEARCH_CERTIFICATES_SORT_BY_IN_USE = 12;
+  SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN = 12;
 
-  SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM = 13;
+  SEARCH_CERTIFICATES_SORT_BY_IN_USE = 13;
 
-  SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION = 14;
+  SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM = 14;
 
-  SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT = 15;
+  SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION = 15;
 
-  SEARCH_CERTIFICATES_SORT_BY_TYPE = 16;
+  SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT = 16;
 
-  SEARCH_CERTIFICATES_SORT_BY_CREATED_AT = 17;
+  SEARCH_CERTIFICATES_SORT_BY_TYPE = 17;
+
+  SEARCH_CERTIFICATES_SORT_BY_ACME_ACCOUNT_ID = 18;
+
+  SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_KEY_PAIR_ORIGIN = 19;
+
+  SEARCH_CERTIFICATES_SORT_BY_CREATED_AT = 20;
 
 }
 
@@ -1267,6 +2141,16 @@ enum SearchCertificatesSortOrder {
   SEARCH_CERTIFICATES_SORT_ORDER_ASCENDING = 0;
 
   SEARCH_CERTIFICATES_SORT_ORDER_DESCENDING = 1;
+
+}
+
+
+
+// A service quota has been exceeded.
+
+message ServiceQuotaExceededException {
+
+  string message = 82970853;
 
 }
 
@@ -1332,6 +2216,16 @@ message TagPolicyException {
 
 
 
+message TagResourceRequest {
+
+  string resourcearn = 364280877;
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
 // The request was denied because it exceeded a quota.
 
 message ThrottlingException {
@@ -1356,6 +2250,18 @@ message ThrottlingReason {
 
 
 
+enum TimeType {
+
+  TIME_TYPE_MINUTES = 0;
+
+  TIME_TYPE_DAYS = 1;
+
+  TIME_TYPE_HOURS = 2;
+
+}
+
+
+
 // Specifies a time range for filtering certificates.
 
 message TimestampRange {
@@ -1373,6 +2279,40 @@ message TimestampRange {
 message TooManyTagsException {
 
   string message = 82970853;
+
+}
+
+
+
+message UntagResourceRequest {
+
+  string resourcearn = 364280877;
+
+  repeated string tagkeys = 320659964;
+
+}
+
+
+
+message UpdateAcmeDomainValidationRequest {
+
+  string acmedomainvalidationarn = 42437708;
+
+  PrevalidationOptions prevalidationoptions = 339127734;
+
+}
+
+
+
+message UpdateAcmeEndpointRequest {
+
+  string acmeendpointarn = 94900702;
+
+  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+
+  CertificateAuthority certificateauthority = 310340518;
+
+  AcmeContact contact = 330077380;
 
 }
 
