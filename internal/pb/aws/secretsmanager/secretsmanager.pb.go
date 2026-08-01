@@ -297,7 +297,7 @@ func (x *APIErrorType) GetSecretid() string {
 type BatchGetSecretValueRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filters       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Secretidlist  []string               `protobuf:"bytes,398967021,rep,name=secretidlist,proto3" json:"secretidlist,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -342,8 +342,8 @@ func (x *BatchGetSecretValueRequest) GetFilters() []*Filter {
 }
 
 func (x *BatchGetSecretValueRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -853,7 +853,7 @@ func (x *DeleteResourcePolicyResponse) GetName() string {
 type DeleteSecretRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Forcedeletewithoutrecovery *bool                  `protobuf:"varint,179882315,opt,name=forcedeletewithoutrecovery,proto3,oneof" json:"forcedeletewithoutrecovery,omitempty"`
-	Recoverywindowindays       int64                  `protobuf:"varint,141399243,opt,name=recoverywindowindays,proto3" json:"recoverywindowindays,omitempty"`
+	Recoverywindowindays       *int64                 `protobuf:"varint,141399243,opt,name=recoverywindowindays,proto3,oneof" json:"recoverywindowindays,omitempty"`
 	Secretid                   string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -897,8 +897,8 @@ func (x *DeleteSecretRequest) GetForcedeletewithoutrecovery() bool {
 }
 
 func (x *DeleteSecretRequest) GetRecoverywindowindays() int64 {
-	if x != nil {
-		return x.Recoverywindowindays
+	if x != nil && x.Recoverywindowindays != nil {
+		return *x.Recoverywindowindays
 	}
 	return 0
 }
@@ -1374,7 +1374,7 @@ type GetRandomPasswordRequest struct {
 	Excludepunctuation      *bool                  `protobuf:"varint,78530732,opt,name=excludepunctuation,proto3,oneof" json:"excludepunctuation,omitempty"`
 	Excludeuppercase        *bool                  `protobuf:"varint,345594144,opt,name=excludeuppercase,proto3,oneof" json:"excludeuppercase,omitempty"`
 	Includespace            *bool                  `protobuf:"varint,216842628,opt,name=includespace,proto3,oneof" json:"includespace,omitempty"`
-	Passwordlength          int64                  `protobuf:"varint,216611365,opt,name=passwordlength,proto3" json:"passwordlength,omitempty"`
+	Passwordlength          *int64                 `protobuf:"varint,216611365,opt,name=passwordlength,proto3,oneof" json:"passwordlength,omitempty"`
 	Requireeachincludedtype *bool                  `protobuf:"varint,176215282,opt,name=requireeachincludedtype,proto3,oneof" json:"requireeachincludedtype,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -1453,8 +1453,8 @@ func (x *GetRandomPasswordRequest) GetIncludespace() bool {
 }
 
 func (x *GetRandomPasswordRequest) GetPasswordlength() int64 {
-	if x != nil {
-		return x.Passwordlength
+	if x != nil && x.Passwordlength != nil {
+		return *x.Passwordlength
 	}
 	return 0
 }
@@ -1989,7 +1989,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListSecretVersionIdsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Includedeprecated *bool                  `protobuf:"varint,299058751,opt,name=includedeprecated,proto3,oneof" json:"includedeprecated,omitempty"`
-	Maxresults        int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults        *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Secretid          string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -2034,8 +2034,8 @@ func (x *ListSecretVersionIdsRequest) GetIncludedeprecated() bool {
 }
 
 func (x *ListSecretVersionIdsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -2126,7 +2126,7 @@ type ListSecretsRequest struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Includeplanneddeletion *bool                  `protobuf:"varint,64231622,opt,name=includeplanneddeletion,proto3,oneof" json:"includeplanneddeletion,omitempty"`
-	Maxresults             int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults             *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken              string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Sortby                 SortByType             `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=secretsmanager.SortByType" json:"sortby,omitempty"`
 	Sortorder              SortOrderType          `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=secretsmanager.SortOrderType" json:"sortorder,omitempty"`
@@ -2179,8 +2179,8 @@ func (x *ListSecretsRequest) GetIncludeplanneddeletion() bool {
 }
 
 func (x *ListSecretsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3336,7 +3336,7 @@ func (x *RotateSecretResponse) GetVersionid() string {
 
 type RotationRulesType struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Automaticallyafterdays int64                  `protobuf:"varint,350893940,opt,name=automaticallyafterdays,proto3" json:"automaticallyafterdays,omitempty"`
+	Automaticallyafterdays *int64                 `protobuf:"varint,350893940,opt,name=automaticallyafterdays,proto3,oneof" json:"automaticallyafterdays,omitempty"`
 	Duration               string                 `protobuf:"bytes,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
 	Scheduleexpression     string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -3374,8 +3374,8 @@ func (*RotationRulesType) Descriptor() ([]byte, []int) {
 }
 
 func (x *RotationRulesType) GetAutomaticallyafterdays() int64 {
-	if x != nil {
-		return x.Automaticallyafterdays
+	if x != nil && x.Automaticallyafterdays != nil {
+		return *x.Automaticallyafterdays
 	}
 	return 0
 }
@@ -4438,14 +4438,15 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\fAPIErrorType\x12\x1f\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xbe\x01\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xd2\x01\n" +
 	"\x1aBatchGetSecretValueRequest\x123\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12\"\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12&\n" +
-	"\fsecretidlist\x18큟\xbe\x01 \x03(\tR\fsecretidlist\"\xc0\x01\n" +
+	"\fsecretidlist\x18큟\xbe\x01 \x03(\tR\fsecretidlistB\r\n" +
+	"\v_maxresults\"\xc0\x01\n" +
 	"\x1bBatchGetSecretValueResponse\x127\n" +
 	"\x06errors\x18\xa7\xc1\xb5O \x03(\v2\x1c.secretsmanager.APIErrorTypeR\x06errors\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12G\n" +
@@ -4479,12 +4480,13 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"K\n" +
 	"\x1cDeleteResourcePolicyResponse\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xd3\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xf1\x01\n" +
 	"\x13DeleteSecretRequest\x12F\n" +
-	"\x1aforcedeletewithoutrecovery\x18˒\xe3U \x01(\bH\x00R\x1aforcedeletewithoutrecovery\x88\x01\x01\x125\n" +
-	"\x14recoverywindowindays\x18˩\xb6C \x01(\x03R\x14recoverywindowindays\x12\x1e\n" +
+	"\x1aforcedeletewithoutrecovery\x18˒\xe3U \x01(\bH\x00R\x1aforcedeletewithoutrecovery\x88\x01\x01\x12:\n" +
+	"\x14recoverywindowindays\x18˩\xb6C \x01(\x03H\x01R\x14recoverywindowindays\x88\x01\x01\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x1d\n" +
-	"\x1b_forcedeletewithoutrecovery\"k\n" +
+	"\x1b_forcedeletewithoutrecoveryB\x17\n" +
+	"\x15_recoverywindowindays\"k\n" +
 	"\x14DeleteSecretResponse\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12&\n" +
 	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tR\fdeletiondate\x12\x15\n" +
@@ -4524,21 +4526,22 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"^\n" +
 	"\x06Filter\x129\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2$.secretsmanager.FilterNameStringTypeR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xb7\x04\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xcf\x04\n" +
 	"\x18GetRandomPasswordRequest\x120\n" +
 	"\x11excludecharacters\x18\xfeޒ\xa0\x01 \x01(\tR\x11excludecharacters\x122\n" +
 	"\x10excludelowercase\x18\x9b\xaa\xd9k \x01(\bH\x00R\x10excludelowercase\x88\x01\x01\x12.\n" +
 	"\x0eexcludenumbers\x18\xa6\xf6\x96g \x01(\bH\x01R\x0eexcludenumbers\x88\x01\x01\x126\n" +
 	"\x12excludepunctuation\x18\xac\x91\xb9% \x01(\bH\x02R\x12excludepunctuation\x88\x01\x01\x123\n" +
 	"\x10excludeuppercase\x18\xa0\xb2\xe5\xa4\x01 \x01(\bH\x03R\x10excludeuppercase\x88\x01\x01\x12*\n" +
-	"\fincludespace\x18\x84\x83\xb3g \x01(\bH\x04R\fincludespace\x88\x01\x01\x12)\n" +
-	"\x0epasswordlength\x18\xa5\xf4\xa4g \x01(\x03R\x0epasswordlength\x12@\n" +
-	"\x17requireeachincludedtype\x18\xf2\xa9\x83T \x01(\bH\x05R\x17requireeachincludedtype\x88\x01\x01B\x13\n" +
+	"\fincludespace\x18\x84\x83\xb3g \x01(\bH\x04R\fincludespace\x88\x01\x01\x12.\n" +
+	"\x0epasswordlength\x18\xa5\xf4\xa4g \x01(\x03H\x05R\x0epasswordlength\x88\x01\x01\x12@\n" +
+	"\x17requireeachincludedtype\x18\xf2\xa9\x83T \x01(\bH\x06R\x17requireeachincludedtype\x88\x01\x01B\x13\n" +
 	"\x11_excludelowercaseB\x11\n" +
 	"\x0f_excludenumbersB\x15\n" +
 	"\x13_excludepunctuationB\x13\n" +
 	"\x11_excludeuppercaseB\x0f\n" +
-	"\r_includespaceB\x1a\n" +
+	"\r_includespaceB\x11\n" +
+	"\x0f_passwordlengthB\x1a\n" +
 	"\x18_requireeachincludedtype\"G\n" +
 	"\x19GetRandomPasswordResponse\x12*\n" +
 	"\x0erandompassword\x18\x90\x8f\xca\xe3\x01 \x01(\tR\x0erandompassword\":\n" +
@@ -4569,30 +4572,32 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\x17InvalidRequestException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xcf\x01\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xe3\x01\n" +
 	"\x1bListSecretVersionIdsRequest\x125\n" +
-	"\x11includedeprecated\x18\xbf\x8c͎\x01 \x01(\bH\x00R\x11includedeprecated\x88\x01\x01\x12\"\n" +
+	"\x11includedeprecated\x18\xbf\x8c͎\x01 \x01(\bH\x00R\x11includedeprecated\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x14\n" +
-	"\x12_includedeprecated\"\xb4\x01\n" +
+	"\x12_includedeprecatedB\r\n" +
+	"\v_maxresults\"\xb4\x01\n" +
 	"\x1cListSecretVersionIdsResponse\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12F\n" +
-	"\bversions\x18\x8d\xf4\x9ax \x03(\v2'.secretsmanager.SecretVersionsListEntryR\bversions\"\xe1\x02\n" +
+	"\bversions\x18\x8d\xf4\x9ax \x03(\v2'.secretsmanager.SecretVersionsListEntryR\bversions\"\xf5\x02\n" +
 	"\x12ListSecretsRequest\x123\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12>\n" +
-	"\x16includeplanneddeletion\x18Ʊ\xd0\x1e \x01(\bH\x00R\x16includeplanneddeletion\x88\x01\x01\x12\"\n" +
+	"\x16includeplanneddeletion\x18Ʊ\xd0\x1e \x01(\bH\x00R\x16includeplanneddeletion\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x125\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1a.secretsmanager.SortByTypeR\x06sortby\x12?\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x1d.secretsmanager.SortOrderTypeR\tsortorderB\x19\n" +
-	"\x17_includeplanneddeletion\"{\n" +
+	"\x17_includeplanneddeletionB\r\n" +
+	"\v_maxresults\"{\n" +
 	"\x13ListSecretsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12C\n" +
 	"\n" +
@@ -4668,11 +4673,12 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\x14RotateSecretResponse\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xa3\x01\n" +
-	"\x11RotationRulesType\x12:\n" +
-	"\x16automaticallyafterdays\x18\xf4\uea27\x01 \x01(\x03R\x16automaticallyafterdays\x12\x1e\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xc3\x01\n" +
+	"\x11RotationRulesType\x12?\n" +
+	"\x16automaticallyafterdays\x18\xf4\uea27\x01 \x01(\x03H\x00R\x16automaticallyafterdays\x88\x01\x01\x12\x1e\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tR\bduration\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\"\xf2\b\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpressionB\x19\n" +
+	"\x17_automaticallyafterdays\"\xf2\b\n" +
 	"\x0fSecretListEntry\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12$\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12$\n" +
@@ -4980,6 +4986,7 @@ func file_secretsmanager_proto_init() {
 	if File_secretsmanager_proto != nil {
 		return
 	}
+	file_secretsmanager_proto_msgTypes[1].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[5].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[10].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[13].OneofWrappers = []any{}
@@ -4989,6 +4996,7 @@ func file_secretsmanager_proto_init() {
 	file_secretsmanager_proto_msgTypes[35].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[42].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[49].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[51].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[52].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[65].OneofWrappers = []any{}
 	type x struct{}

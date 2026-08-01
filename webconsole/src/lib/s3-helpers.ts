@@ -104,11 +104,11 @@ export function toObjectRows(
       id: `file:${o.key}`,
       key: o.key,
       displayKey: o.key.slice(currentPrefix.length),
-      size: formatBytes(o.size),
+      size: formatBytes(o.size ?? 0n),
       lastModified: o.lastmodified,
       storageClass: String(o.storageclass ?? "STANDARD"),
       isFolder: false,
-      rawSize: o.size,
+      rawSize: o.size ?? 0n,
     }));
   return [...folders, ...files];
 }

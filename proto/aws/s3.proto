@@ -591,7 +591,7 @@ message AbacStatus {
 
 message AbortIncompleteMultipartUpload {
 
-  int32 daysafterinitiation = 522354315;
+  optional int32 daysafterinitiation = 522354315;
 
 }
 
@@ -1105,7 +1105,7 @@ message CORSRule {
 
   string id = 384363361;
 
-  int32 maxageseconds = 315057526;
+  optional int32 maxageseconds = 315057526;
 
 }
 
@@ -1317,7 +1317,7 @@ message CompleteMultipartUploadRequest {
 
   string key = 219859213;
 
-  int64 mpuobjectsize = 522430190;
+  optional int64 mpuobjectsize = 522430190;
 
   CompletedMultipartUpload multipartupload = 362466695 [(aws.http_payload) = true];
 
@@ -1371,7 +1371,7 @@ message CompletedPart {
 
   string etag = 313323393;
 
-  int32 partnumber = 372082310;
+  optional int32 partnumber = 372082310;
 
 }
 
@@ -1833,11 +1833,11 @@ enum DataRedundancy {
 
 message DefaultRetention {
 
-  int32 days = 494075051;
+  optional int32 days = 494075051;
 
   ObjectLockRetentionMode mode = 323909427;
 
-  int32 years = 325150814;
+  optional int32 years = 325150814;
 
 }
 
@@ -2105,7 +2105,7 @@ message DeleteObjectRequest {
 
   string ifmatchlastmodifiedtime = 94688686;
 
-  int64 ifmatchsize = 398307783;
+  optional int64 ifmatchsize = 398307783;
 
   string key = 219859213;
 
@@ -2995,7 +2995,7 @@ message GetObjectAnnotationOutput {
 
   string checksumxxhash64 = 517436493;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string etag = 313323393;
 
@@ -3045,7 +3045,7 @@ message GetObjectAttributesOutput {
 
   GetObjectAttributesParts objectparts = 402544889;
 
-  int64 objectsize = 130133988;
+  optional int64 objectsize = 130133988;
 
   RequestCharged requestcharged = 388687891;
 
@@ -3063,7 +3063,7 @@ message GetObjectAttributesParts {
 
   optional bool istruncated = 242094042;
 
-  int32 maxparts = 398005914;
+  optional int32 maxparts = 398005914;
 
   string nextpartnumbermarker = 28931219;
 
@@ -3071,7 +3071,7 @@ message GetObjectAttributesParts {
 
   repeated ObjectPart parts = 213028806;
 
-  int32 totalpartscount = 56278317;
+  optional int32 totalpartscount = 56278317;
 
 }
 
@@ -3085,7 +3085,7 @@ message GetObjectAttributesRequest {
 
   string key = 219859213;
 
-  int32 maxparts = 398005914;
+  optional int32 maxparts = 398005914;
 
   repeated ObjectAttributes objectattributes = 370999888;
 
@@ -3185,7 +3185,7 @@ message GetObjectOutput {
 
   string contentlanguage = 108485649;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string contentrange = 11089360;
 
@@ -3203,7 +3203,7 @@ message GetObjectOutput {
 
   map<string, string> metadata = 470020449;
 
-  int32 missingmeta = 79140523;
+  optional int32 missingmeta = 79140523;
 
   ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
 
@@ -3211,7 +3211,7 @@ message GetObjectOutput {
 
   string objectlockretainuntildate = 264584249;
 
-  int32 partscount = 154996373;
+  optional int32 partscount = 154996373;
 
   ReplicationStatus replicationstatus = 529093900;
 
@@ -3229,7 +3229,7 @@ message GetObjectOutput {
 
   StorageClass storageclass = 393282631;
 
-  int32 tagcount = 339592595;
+  optional int32 tagcount = 339592595;
 
   string versionid = 338063515;
 
@@ -3257,7 +3257,7 @@ message GetObjectRequest {
 
   string key = 219859213;
 
-  int32 partnumber = 372082310;
+  optional int32 partnumber = 372082310;
 
   string range = 51505011;
 
@@ -3483,7 +3483,7 @@ message HeadObjectOutput {
 
   string contentlanguage = 108485649;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string contentrange = 11089360;
 
@@ -3501,7 +3501,7 @@ message HeadObjectOutput {
 
   map<string, string> metadata = 470020449;
 
-  int32 missingmeta = 79140523;
+  optional int32 missingmeta = 79140523;
 
   ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
 
@@ -3509,7 +3509,7 @@ message HeadObjectOutput {
 
   string objectlockretainuntildate = 264584249;
 
-  int32 partscount = 154996373;
+  optional int32 partscount = 154996373;
 
   ReplicationStatus replicationstatus = 529093900;
 
@@ -3527,7 +3527,7 @@ message HeadObjectOutput {
 
   StorageClass storageclass = 393282631;
 
-  int32 tagcount = 339592595;
+  optional int32 tagcount = 339592595;
 
   string versionid = 338063515;
 
@@ -3555,7 +3555,7 @@ message HeadObjectRequest {
 
   string key = 219859213;
 
-  int32 partnumber = 372082310;
+  optional int32 partnumber = 372082310;
 
   string range = 51505011;
 
@@ -4033,7 +4033,7 @@ message LifecycleExpiration {
 
   string date = 458388346;
 
-  int32 days = 494075051;
+  optional int32 days = 494075051;
 
   optional bool expiredobjectdeletemarker = 232733109;
 
@@ -4071,9 +4071,9 @@ message LifecycleRule {
 
 message LifecycleRuleAndOperator {
 
-  int64 objectsizegreaterthan = 283649577;
+  optional int64 objectsizegreaterthan = 283649577;
 
-  int64 objectsizelessthan = 436793998;
+  optional int64 objectsizelessthan = 436793998;
 
   string prefix = 273996266;
 
@@ -4089,9 +4089,9 @@ message LifecycleRuleFilter {
 
   LifecycleRuleAndOperator and = 297135431;
 
-  int64 objectsizegreaterthan = 283649577;
+  optional int64 objectsizegreaterthan = 283649577;
 
-  int64 objectsizelessthan = 436793998;
+  optional int64 objectsizelessthan = 436793998;
 
   string prefix = 273996266;
 
@@ -4225,7 +4225,7 @@ message ListBucketsRequest {
 
   string continuationtoken = 286270824;
 
-  int32 maxbuckets = 264636545;
+  optional int32 maxbuckets = 264636545;
 
   string prefix = 273996266;
 
@@ -4247,7 +4247,7 @@ message ListDirectoryBucketsRequest {
 
   string continuationtoken = 286270824;
 
-  int32 maxdirectorybuckets = 424013420;
+  optional int32 maxdirectorybuckets = 424013420;
 
 }
 
@@ -4267,7 +4267,7 @@ message ListMultipartUploadsOutput {
 
   string keymarker = 485505207;
 
-  int32 maxuploads = 111552074;
+  optional int32 maxuploads = 111552074;
 
   string nextkeymarker = 433290006;
 
@@ -4297,7 +4297,7 @@ message ListMultipartUploadsRequest {
 
   string keymarker = 485505207;
 
-  int32 maxuploads = 111552074;
+  optional int32 maxuploads = 111552074;
 
   string prefix = 273996266;
 
@@ -4311,7 +4311,7 @@ message ListMultipartUploadsRequest {
 
 message ListObjectAnnotationsOutput {
 
-  int32 annotationcount = 170196776;
+  optional int32 annotationcount = 170196776;
 
   string annotationprefix = 32054469;
 
@@ -4323,7 +4323,7 @@ message ListObjectAnnotationsOutput {
 
   string key = 219859213;
 
-  int32 maxannotationresults = 526250427;
+  optional int32 maxannotationresults = 526250427;
 
   string nextcontinuationtoken = 260840781;
 
@@ -4347,7 +4347,7 @@ message ListObjectAnnotationsRequest {
 
   string key = 219859213;
 
-  int32 maxannotationresults = 526250427;
+  optional int32 maxannotationresults = 526250427;
 
   RequestPayer requestpayer = 515404580;
 
@@ -4371,7 +4371,7 @@ message ListObjectVersionsOutput {
 
   string keymarker = 485505207;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   string name = 266367751;
 
@@ -4403,7 +4403,7 @@ message ListObjectVersionsRequest {
 
   string keymarker = 485505207;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   repeated OptionalObjectAttributes optionalobjectattributes = 147719620;
 
@@ -4431,7 +4431,7 @@ message ListObjectsOutput {
 
   string marker = 89353912;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   string name = 266367751;
 
@@ -4457,7 +4457,7 @@ message ListObjectsRequest {
 
   string marker = 89353912;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   repeated OptionalObjectAttributes optionalobjectattributes = 147719620;
 
@@ -4483,9 +4483,9 @@ message ListObjectsV2Output {
 
   optional bool istruncated = 242094042;
 
-  int32 keycount = 253426132;
+  optional int32 keycount = 253426132;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   string name = 266367751;
 
@@ -4515,7 +4515,7 @@ message ListObjectsV2Request {
 
   optional bool fetchowner = 402910551;
 
-  int32 maxkeys = 247655034;
+  optional int32 maxkeys = 247655034;
 
   repeated OptionalObjectAttributes optionalobjectattributes = 147719620;
 
@@ -4547,7 +4547,7 @@ message ListPartsOutput {
 
   string key = 219859213;
 
-  int32 maxparts = 398005914;
+  optional int32 maxparts = 398005914;
 
   string nextpartnumbermarker = 28931219;
 
@@ -4575,7 +4575,7 @@ message ListPartsRequest {
 
   string key = 219859213;
 
-  int32 maxparts = 398005914;
+  optional int32 maxparts = 398005914;
 
   string partnumbermarker = 376535672;
 
@@ -4859,9 +4859,9 @@ message NoSuchUpload {
 
 message NoncurrentVersionExpiration {
 
-  int32 newernoncurrentversions = 488220096;
+  optional int32 newernoncurrentversions = 488220096;
 
-  int32 noncurrentdays = 409704199;
+  optional int32 noncurrentdays = 409704199;
 
 }
 
@@ -4871,9 +4871,9 @@ message NoncurrentVersionExpiration {
 
 message NoncurrentVersionTransition {
 
-  int32 newernoncurrentversions = 488220096;
+  optional int32 newernoncurrentversions = 488220096;
 
-  int32 noncurrentdays = 409704199;
+  optional int32 noncurrentdays = 409704199;
 
   TransitionStorageClass storageclass = 393282631;
 
@@ -4933,7 +4933,7 @@ message Object {
 
   RestoreStatus restorestatus = 456059636;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
   ObjectStorageClass storageclass = 393282631;
 
@@ -5005,7 +5005,7 @@ message ObjectIdentifier {
 
   string lastmodifiedtime = 236912992;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
   string versionid = 338063515;
 
@@ -5139,9 +5139,9 @@ message ObjectPart {
 
   string checksumxxhash64 = 517436493;
 
-  int32 partnumber = 372082310;
+  optional int32 partnumber = 372082310;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
 }
 
@@ -5199,7 +5199,7 @@ message ObjectVersion {
 
   RestoreStatus restorestatus = 456059636;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
   ObjectVersionStorageClass storageclass = 393282631;
 
@@ -5323,9 +5323,9 @@ message Part {
 
   string lastmodified = 434048551;
 
-  int32 partnumber = 372082310;
+  optional int32 partnumber = 372082310;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
 }
 
@@ -5391,11 +5391,11 @@ message PolicyStatus {
 
 message Progress {
 
-  int64 bytesprocessed = 487068657;
+  optional int64 bytesprocessed = 487068657;
 
-  int64 bytesreturned = 121984684;
+  optional int64 bytesreturned = 121984684;
 
-  int64 bytesscanned = 186950329;
+  optional int64 bytesscanned = 186950329;
 
 }
 
@@ -5983,7 +5983,7 @@ message PutObjectOutput {
 
   ServerSideEncryption serversideencryption = 8898353;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
   string versionid = 338063515;
 
@@ -6031,7 +6031,7 @@ message PutObjectRequest {
 
   string contentlanguage = 108485649;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string contentmd5 = 507163915;
 
@@ -6083,7 +6083,7 @@ message PutObjectRequest {
 
   string websiteredirectlocation = 71844662;
 
-  int64 writeoffsetbytes = 496666419;
+  optional int64 writeoffsetbytes = 496666419;
 
 }
 
@@ -6197,7 +6197,7 @@ enum QuoteFields {
 
 message RecordExpiration {
 
-  int32 days = 494075051;
+  optional int32 days = 494075051;
 
   ExpirationState expiration = 245879945;
 
@@ -6329,7 +6329,7 @@ message ReplicationRule {
 
   string prefix = 273996266;
 
-  int32 priority = 109944618;
+  optional int32 priority = 109944618;
 
   SourceSelectionCriteria sourceselectioncriteria = 201951000;
 
@@ -6417,7 +6417,7 @@ enum ReplicationTimeStatus {
 
 message ReplicationTimeValue {
 
-  int32 minutes = 383358607;
+  optional int32 minutes = 383358607;
 
 }
 
@@ -6493,7 +6493,7 @@ message RestoreObjectRequest {
 
 message RestoreRequest {
 
-  int32 days = 494075051;
+  optional int32 days = 494075051;
 
   string description = 115243530;
 
@@ -6649,9 +6649,9 @@ message SSES3 {
 
 message ScanRange {
 
-  int64 end = 261322315;
+  optional int64 end = 261322315;
 
-  int64 start = 182978944;
+  optional int64 start = 182978944;
 
 }
 
@@ -6851,11 +6851,11 @@ enum SseKmsEncryptedObjectsStatus {
 
 message Stats {
 
-  int64 bytesprocessed = 487068657;
+  optional int64 bytesprocessed = 487068657;
 
-  int64 bytesreturned = 121984684;
+  optional int64 bytesreturned = 121984684;
 
-  int64 bytesscanned = 186950329;
+  optional int64 bytesscanned = 186950329;
 
 }
 
@@ -7053,7 +7053,7 @@ message Transition {
 
   string date = 458388346;
 
-  int32 days = 494075051;
+  optional int32 days = 494075051;
 
   TransitionStorageClass storageclass = 393282631;
 
@@ -7321,7 +7321,7 @@ message UploadPartRequest {
 
   string checksumxxhash64 = 517436493;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string contentmd5 = 507163915;
 
@@ -7409,7 +7409,7 @@ message WriteGetObjectResponseRequest {
 
   string contentlanguage = 108485649;
 
-  int64 contentlength = 227596631;
+  optional int64 contentlength = 227596631;
 
   string contentrange = 11089360;
 
@@ -7431,7 +7431,7 @@ message WriteGetObjectResponseRequest {
 
   map<string, string> metadata = 470020449;
 
-  int32 missingmeta = 79140523;
+  optional int32 missingmeta = 79140523;
 
   ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
 
@@ -7439,7 +7439,7 @@ message WriteGetObjectResponseRequest {
 
   string objectlockretainuntildate = 264584249;
 
-  int32 partscount = 154996373;
+  optional int32 partscount = 154996373;
 
   ReplicationStatus replicationstatus = 529093900;
 
@@ -7459,11 +7459,11 @@ message WriteGetObjectResponseRequest {
 
   ServerSideEncryption serversideencryption = 8898353;
 
-  int32 statuscode = 303830783;
+  optional int32 statuscode = 303830783;
 
   StorageClass storageclass = 393282631;
 
-  int32 tagcount = 339592595;
+  optional int32 tagcount = 339592595;
 
   string versionid = 338063515;
 

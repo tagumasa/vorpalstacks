@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
@@ -134,8 +135,8 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		Name:               graphName,
 		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "IMPORTING",
-		ProvisionedMemory:  int32Ptr(128),
-		ReplicaCount:       int32Ptr(1),
+		ProvisionedMemory:  proto.Int32(128),
+		ReplicaCount:       proto.Int32(1),
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
 		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
@@ -152,7 +153,7 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 	if request.HasParam(req.Parameters, "replicaCount") {
 		rc := request.GetIntParam(req.Parameters, "replicaCount")
 		if rc >= 0 && rc <= maxReplicaCount {
-			graph.ReplicaCount = int32Ptr(int32(rc))
+			graph.ReplicaCount = proto.Int32(int32(rc))
 		}
 	}
 
@@ -195,13 +196,13 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 
 	if request.HasParam(req.Parameters, "replicaCount") {
 		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		task.ReplicaCount = int32Ptr(int32(rc))
+		task.ReplicaCount = proto.Int32(int32(rc))
 	}
 	if request.HasParam(req.Parameters, "minProvisionedMemory") {
-		task.MinProvisionedMemory = int32Ptr(int32(request.GetIntParam(req.Parameters, "minProvisionedMemory")))
+		task.MinProvisionedMemory = proto.Int32(int32(request.GetIntParam(req.Parameters, "minProvisionedMemory")))
 	}
 	if request.HasParam(req.Parameters, "maxProvisionedMemory") {
-		task.MaxProvisionedMemory = int32Ptr(int32(request.GetIntParam(req.Parameters, "maxProvisionedMemory")))
+		task.MaxProvisionedMemory = proto.Int32(int32(request.GetIntParam(req.Parameters, "maxProvisionedMemory")))
 	}
 	if request.HasParam(req.Parameters, "importOptions") {
 		task.ImportOptions = parseImportOptions(req.Parameters)
@@ -392,11 +393,11 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 			now := time.Now().UTC()
 			sinceStart := int64(now.Sub(*t.StartTime).Seconds())
 			t.ImportTaskDetails = &ngstore.ImportTaskDetails{
-				ProgressPercentage: int32Ptr(0),
+				ProgressPercentage: proto.Int32(0),
 				StartTime:          t.StartTime,
-				TimeElapsedSeconds: int64Ptr(sinceStart),
-				StatementCount:     int64Ptr(0),
-				ErrorCount:         int32Ptr(1),
+				TimeElapsedSeconds: proto.Int64(sinceStart),
+				StatementCount:     proto.Int64(0),
+				ErrorCount:         proto.Int32(1),
 				Status:             stringPtr("FAILED"),
 			}
 		})
@@ -424,11 +425,11 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 			now := time.Now().UTC()
 			sinceStart := int64(now.Sub(*t.StartTime).Seconds())
 			t.ImportTaskDetails = &ngstore.ImportTaskDetails{
-				ProgressPercentage: int32Ptr(0),
+				ProgressPercentage: proto.Int32(0),
 				StartTime:          t.StartTime,
-				TimeElapsedSeconds: int64Ptr(sinceStart),
-				StatementCount:     int64Ptr(0),
-				ErrorCount:         int32Ptr(1),
+				TimeElapsedSeconds: proto.Int64(sinceStart),
+				StatementCount:     proto.Int64(0),
+				ErrorCount:         proto.Int32(1),
 				Status:             stringPtr("FAILED"),
 			}
 		})
@@ -482,12 +483,12 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 	now := time.Now().UTC()
 	sinceStart := int64(now.Sub(*task.StartTime).Seconds())
 	details := &ngstore.ImportTaskDetails{
-		ProgressPercentage:   int32Ptr(100),
+		ProgressPercentage:   proto.Int32(100),
 		StartTime:            task.StartTime,
-		TimeElapsedSeconds:   int64Ptr(sinceStart),
-		StatementCount:       int64Ptr(statementCount),
-		DictionaryEntryCount: int64Ptr(dictionaryCount),
-		ErrorCount:           int32Ptr(int32(errorCount)),
+		TimeElapsedSeconds:   proto.Int64(sinceStart),
+		StatementCount:       proto.Int64(statementCount),
+		DictionaryEntryCount: proto.Int64(dictionaryCount),
+		ErrorCount:           proto.Int32(int32(errorCount)),
 		Status:               stringPtr(finalStatus),
 	}
 

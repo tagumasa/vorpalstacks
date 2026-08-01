@@ -2611,8 +2611,8 @@ type AutoScalingSettingsDescription struct {
 	state               protoimpl.MessageState          `protogen:"open.v1"`
 	Autoscalingdisabled *bool                           `protobuf:"varint,183835736,opt,name=autoscalingdisabled,proto3,oneof" json:"autoscalingdisabled,omitempty"`
 	Autoscalingrolearn  string                          `protobuf:"bytes,348085703,opt,name=autoscalingrolearn,proto3" json:"autoscalingrolearn,omitempty"`
-	Maximumunits        int64                           `protobuf:"varint,501867481,opt,name=maximumunits,proto3" json:"maximumunits,omitempty"`
-	Minimumunits        int64                           `protobuf:"varint,190148659,opt,name=minimumunits,proto3" json:"minimumunits,omitempty"`
+	Maximumunits        *int64                          `protobuf:"varint,501867481,opt,name=maximumunits,proto3,oneof" json:"maximumunits,omitempty"`
+	Minimumunits        *int64                          `protobuf:"varint,190148659,opt,name=minimumunits,proto3,oneof" json:"minimumunits,omitempty"`
 	Scalingpolicies     []*AutoScalingPolicyDescription `protobuf:"bytes,289494257,rep,name=scalingpolicies,proto3" json:"scalingpolicies,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -2663,15 +2663,15 @@ func (x *AutoScalingSettingsDescription) GetAutoscalingrolearn() string {
 }
 
 func (x *AutoScalingSettingsDescription) GetMaximumunits() int64 {
-	if x != nil {
-		return x.Maximumunits
+	if x != nil && x.Maximumunits != nil {
+		return *x.Maximumunits
 	}
 	return 0
 }
 
 func (x *AutoScalingSettingsDescription) GetMinimumunits() int64 {
-	if x != nil {
-		return x.Minimumunits
+	if x != nil && x.Minimumunits != nil {
+		return *x.Minimumunits
 	}
 	return 0
 }
@@ -2687,8 +2687,8 @@ type AutoScalingSettingsUpdate struct {
 	state               protoimpl.MessageState   `protogen:"open.v1"`
 	Autoscalingdisabled *bool                    `protobuf:"varint,183835736,opt,name=autoscalingdisabled,proto3,oneof" json:"autoscalingdisabled,omitempty"`
 	Autoscalingrolearn  string                   `protobuf:"bytes,348085703,opt,name=autoscalingrolearn,proto3" json:"autoscalingrolearn,omitempty"`
-	Maximumunits        int64                    `protobuf:"varint,501867481,opt,name=maximumunits,proto3" json:"maximumunits,omitempty"`
-	Minimumunits        int64                    `protobuf:"varint,190148659,opt,name=minimumunits,proto3" json:"minimumunits,omitempty"`
+	Maximumunits        *int64                   `protobuf:"varint,501867481,opt,name=maximumunits,proto3,oneof" json:"maximumunits,omitempty"`
+	Minimumunits        *int64                   `protobuf:"varint,190148659,opt,name=minimumunits,proto3,oneof" json:"minimumunits,omitempty"`
 	Scalingpolicyupdate *AutoScalingPolicyUpdate `protobuf:"bytes,189139846,opt,name=scalingpolicyupdate,proto3" json:"scalingpolicyupdate,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -2739,15 +2739,15 @@ func (x *AutoScalingSettingsUpdate) GetAutoscalingrolearn() string {
 }
 
 func (x *AutoScalingSettingsUpdate) GetMaximumunits() int64 {
-	if x != nil {
-		return x.Maximumunits
+	if x != nil && x.Maximumunits != nil {
+		return *x.Maximumunits
 	}
 	return 0
 }
 
 func (x *AutoScalingSettingsUpdate) GetMinimumunits() int64 {
-	if x != nil {
-		return x.Minimumunits
+	if x != nil && x.Minimumunits != nil {
+		return *x.Minimumunits
 	}
 	return 0
 }
@@ -2762,8 +2762,8 @@ func (x *AutoScalingSettingsUpdate) GetScalingpolicyupdate() *AutoScalingPolicyU
 type AutoScalingTargetTrackingScalingPolicyConfigurationDescription struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Disablescalein   *bool                  `protobuf:"varint,464986377,opt,name=disablescalein,proto3,oneof" json:"disablescalein,omitempty"`
-	Scaleincooldown  int32                  `protobuf:"varint,45925876,opt,name=scaleincooldown,proto3" json:"scaleincooldown,omitempty"`
-	Scaleoutcooldown int32                  `protobuf:"varint,316995887,opt,name=scaleoutcooldown,proto3" json:"scaleoutcooldown,omitempty"`
+	Scaleincooldown  *int32                 `protobuf:"varint,45925876,opt,name=scaleincooldown,proto3,oneof" json:"scaleincooldown,omitempty"`
+	Scaleoutcooldown *int32                 `protobuf:"varint,316995887,opt,name=scaleoutcooldown,proto3,oneof" json:"scaleoutcooldown,omitempty"`
 	Targetvalue      float64                `protobuf:"fixed64,118247738,opt,name=targetvalue,proto3" json:"targetvalue,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2807,15 +2807,15 @@ func (x *AutoScalingTargetTrackingScalingPolicyConfigurationDescription) GetDisa
 }
 
 func (x *AutoScalingTargetTrackingScalingPolicyConfigurationDescription) GetScaleincooldown() int32 {
-	if x != nil {
-		return x.Scaleincooldown
+	if x != nil && x.Scaleincooldown != nil {
+		return *x.Scaleincooldown
 	}
 	return 0
 }
 
 func (x *AutoScalingTargetTrackingScalingPolicyConfigurationDescription) GetScaleoutcooldown() int32 {
-	if x != nil {
-		return x.Scaleoutcooldown
+	if x != nil && x.Scaleoutcooldown != nil {
+		return *x.Scaleoutcooldown
 	}
 	return 0
 }
@@ -2830,8 +2830,8 @@ func (x *AutoScalingTargetTrackingScalingPolicyConfigurationDescription) GetTarg
 type AutoScalingTargetTrackingScalingPolicyConfigurationUpdate struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Disablescalein   *bool                  `protobuf:"varint,464986377,opt,name=disablescalein,proto3,oneof" json:"disablescalein,omitempty"`
-	Scaleincooldown  int32                  `protobuf:"varint,45925876,opt,name=scaleincooldown,proto3" json:"scaleincooldown,omitempty"`
-	Scaleoutcooldown int32                  `protobuf:"varint,316995887,opt,name=scaleoutcooldown,proto3" json:"scaleoutcooldown,omitempty"`
+	Scaleincooldown  *int32                 `protobuf:"varint,45925876,opt,name=scaleincooldown,proto3,oneof" json:"scaleincooldown,omitempty"`
+	Scaleoutcooldown *int32                 `protobuf:"varint,316995887,opt,name=scaleoutcooldown,proto3,oneof" json:"scaleoutcooldown,omitempty"`
 	Targetvalue      float64                `protobuf:"fixed64,118247738,opt,name=targetvalue,proto3" json:"targetvalue,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2875,15 +2875,15 @@ func (x *AutoScalingTargetTrackingScalingPolicyConfigurationUpdate) GetDisablesc
 }
 
 func (x *AutoScalingTargetTrackingScalingPolicyConfigurationUpdate) GetScaleincooldown() int32 {
-	if x != nil {
-		return x.Scaleincooldown
+	if x != nil && x.Scaleincooldown != nil {
+		return *x.Scaleincooldown
 	}
 	return 0
 }
 
 func (x *AutoScalingTargetTrackingScalingPolicyConfigurationUpdate) GetScaleoutcooldown() int32 {
-	if x != nil {
-		return x.Scaleoutcooldown
+	if x != nil && x.Scaleoutcooldown != nil {
+		return *x.Scaleoutcooldown
 	}
 	return 0
 }
@@ -2961,7 +2961,7 @@ type BackupDetails struct {
 	Backupcreationdatetime string                 `protobuf:"bytes,368022476,opt,name=backupcreationdatetime,proto3" json:"backupcreationdatetime,omitempty"`
 	Backupexpirydatetime   string                 `protobuf:"bytes,471291762,opt,name=backupexpirydatetime,proto3" json:"backupexpirydatetime,omitempty"`
 	Backupname             string                 `protobuf:"bytes,467693789,opt,name=backupname,proto3" json:"backupname,omitempty"`
-	Backupsizebytes        int64                  `protobuf:"varint,147336318,opt,name=backupsizebytes,proto3" json:"backupsizebytes,omitempty"`
+	Backupsizebytes        *int64                 `protobuf:"varint,147336318,opt,name=backupsizebytes,proto3,oneof" json:"backupsizebytes,omitempty"`
 	Backupstatus           BackupStatus           `protobuf:"varint,382505546,opt,name=backupstatus,proto3,enum=dynamodb.BackupStatus" json:"backupstatus,omitempty"`
 	Backuptype             BackupType             `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupType" json:"backuptype,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -3027,8 +3027,8 @@ func (x *BackupDetails) GetBackupname() string {
 }
 
 func (x *BackupDetails) GetBackupsizebytes() int64 {
-	if x != nil {
-		return x.Backupsizebytes
+	if x != nil && x.Backupsizebytes != nil {
+		return *x.Backupsizebytes
 	}
 	return 0
 }
@@ -3141,7 +3141,7 @@ type BackupSummary struct {
 	Backupcreationdatetime string                 `protobuf:"bytes,368022476,opt,name=backupcreationdatetime,proto3" json:"backupcreationdatetime,omitempty"`
 	Backupexpirydatetime   string                 `protobuf:"bytes,471291762,opt,name=backupexpirydatetime,proto3" json:"backupexpirydatetime,omitempty"`
 	Backupname             string                 `protobuf:"bytes,467693789,opt,name=backupname,proto3" json:"backupname,omitempty"`
-	Backupsizebytes        int64                  `protobuf:"varint,147336318,opt,name=backupsizebytes,proto3" json:"backupsizebytes,omitempty"`
+	Backupsizebytes        *int64                 `protobuf:"varint,147336318,opt,name=backupsizebytes,proto3,oneof" json:"backupsizebytes,omitempty"`
 	Backupstatus           BackupStatus           `protobuf:"varint,382505546,opt,name=backupstatus,proto3,enum=dynamodb.BackupStatus" json:"backupstatus,omitempty"`
 	Backuptype             BackupType             `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupType" json:"backuptype,omitempty"`
 	Tablearn               string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
@@ -3210,8 +3210,8 @@ func (x *BackupSummary) GetBackupname() string {
 }
 
 func (x *BackupSummary) GetBackupsizebytes() int64 {
-	if x != nil {
-		return x.Backupsizebytes
+	if x != nil && x.Backupsizebytes != nil {
+		return *x.Backupsizebytes
 	}
 	return 0
 }
@@ -6761,10 +6761,10 @@ func (*DescribeLimitsInput) Descriptor() ([]byte, []int) {
 
 type DescribeLimitsOutput struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Accountmaxreadcapacityunits  int64                  `protobuf:"varint,318006242,opt,name=accountmaxreadcapacityunits,proto3" json:"accountmaxreadcapacityunits,omitempty"`
-	Accountmaxwritecapacityunits int64                  `protobuf:"varint,526094897,opt,name=accountmaxwritecapacityunits,proto3" json:"accountmaxwritecapacityunits,omitempty"`
-	Tablemaxreadcapacityunits    int64                  `protobuf:"varint,165993307,opt,name=tablemaxreadcapacityunits,proto3" json:"tablemaxreadcapacityunits,omitempty"`
-	Tablemaxwritecapacityunits   int64                  `protobuf:"varint,444127818,opt,name=tablemaxwritecapacityunits,proto3" json:"tablemaxwritecapacityunits,omitempty"`
+	Accountmaxreadcapacityunits  *int64                 `protobuf:"varint,318006242,opt,name=accountmaxreadcapacityunits,proto3,oneof" json:"accountmaxreadcapacityunits,omitempty"`
+	Accountmaxwritecapacityunits *int64                 `protobuf:"varint,526094897,opt,name=accountmaxwritecapacityunits,proto3,oneof" json:"accountmaxwritecapacityunits,omitempty"`
+	Tablemaxreadcapacityunits    *int64                 `protobuf:"varint,165993307,opt,name=tablemaxreadcapacityunits,proto3,oneof" json:"tablemaxreadcapacityunits,omitempty"`
+	Tablemaxwritecapacityunits   *int64                 `protobuf:"varint,444127818,opt,name=tablemaxwritecapacityunits,proto3,oneof" json:"tablemaxwritecapacityunits,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -6800,29 +6800,29 @@ func (*DescribeLimitsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeLimitsOutput) GetAccountmaxreadcapacityunits() int64 {
-	if x != nil {
-		return x.Accountmaxreadcapacityunits
+	if x != nil && x.Accountmaxreadcapacityunits != nil {
+		return *x.Accountmaxreadcapacityunits
 	}
 	return 0
 }
 
 func (x *DescribeLimitsOutput) GetAccountmaxwritecapacityunits() int64 {
-	if x != nil {
-		return x.Accountmaxwritecapacityunits
+	if x != nil && x.Accountmaxwritecapacityunits != nil {
+		return *x.Accountmaxwritecapacityunits
 	}
 	return 0
 }
 
 func (x *DescribeLimitsOutput) GetTablemaxreadcapacityunits() int64 {
-	if x != nil {
-		return x.Tablemaxreadcapacityunits
+	if x != nil && x.Tablemaxreadcapacityunits != nil {
+		return *x.Tablemaxreadcapacityunits
 	}
 	return 0
 }
 
 func (x *DescribeLimitsOutput) GetTablemaxwritecapacityunits() int64 {
-	if x != nil {
-		return x.Tablemaxwritecapacityunits
+	if x != nil && x.Tablemaxwritecapacityunits != nil {
+		return *x.Tablemaxwritecapacityunits
 	}
 	return 0
 }
@@ -7234,7 +7234,7 @@ func (x *Endpoint) GetCacheperiodinminutes() int64 {
 type ExecuteStatementInput struct {
 	state                               protoimpl.MessageState              `protogen:"open.v1"`
 	Consistentread                      *bool                               `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
-	Limit                               int32                               `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                               *int32                              `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken                           string                              `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Parameters                          []*AttributeValue                   `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	Returnconsumedcapacity              ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
@@ -7282,8 +7282,8 @@ func (x *ExecuteStatementInput) GetConsistentread() bool {
 }
 
 func (x *ExecuteStatementInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7617,7 +7617,7 @@ func (x *ExportConflictException) GetMessage() string {
 
 type ExportDescription struct {
 	state                          protoimpl.MessageState          `protogen:"open.v1"`
-	Billedsizebytes                int64                           `protobuf:"varint,443315368,opt,name=billedsizebytes,proto3" json:"billedsizebytes,omitempty"`
+	Billedsizebytes                *int64                          `protobuf:"varint,443315368,opt,name=billedsizebytes,proto3,oneof" json:"billedsizebytes,omitempty"`
 	Clienttoken                    string                          `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
 	Endtime                        string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Exportarn                      string                          `protobuf:"bytes,3661287,opt,name=exportarn,proto3" json:"exportarn,omitempty"`
@@ -7629,7 +7629,7 @@ type ExportDescription struct {
 	Failurecode                    string                          `protobuf:"bytes,84707897,opt,name=failurecode,proto3" json:"failurecode,omitempty"`
 	Failuremessage                 string                          `protobuf:"bytes,353556937,opt,name=failuremessage,proto3" json:"failuremessage,omitempty"`
 	Incrementalexportspecification *IncrementalExportSpecification `protobuf:"bytes,20792295,opt,name=incrementalexportspecification,proto3" json:"incrementalexportspecification,omitempty"`
-	Itemcount                      int64                           `protobuf:"varint,26280022,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Itemcount                      *int64                          `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	S3Bucket                       string                          `protobuf:"bytes,114031434,opt,name=s3bucket,proto3" json:"s3bucket,omitempty"`
 	S3Bucketowner                  string                          `protobuf:"bytes,351576129,opt,name=s3bucketowner,proto3" json:"s3bucketowner,omitempty"`
 	S3Prefix                       string                          `protobuf:"bytes,21529336,opt,name=s3prefix,proto3" json:"s3prefix,omitempty"`
@@ -7673,8 +7673,8 @@ func (*ExportDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExportDescription) GetBilledsizebytes() int64 {
-	if x != nil {
-		return x.Billedsizebytes
+	if x != nil && x.Billedsizebytes != nil {
+		return *x.Billedsizebytes
 	}
 	return 0
 }
@@ -7757,8 +7757,8 @@ func (x *ExportDescription) GetIncrementalexportspecification() *IncrementalExpo
 }
 
 func (x *ExportDescription) GetItemcount() int64 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -8592,9 +8592,9 @@ type GlobalSecondaryIndexDescription struct {
 	Backfilling           *bool                                          `protobuf:"varint,251413370,opt,name=backfilling,proto3,oneof" json:"backfilling,omitempty"`
 	Indexarn              string                                         `protobuf:"bytes,374335615,opt,name=indexarn,proto3" json:"indexarn,omitempty"`
 	Indexname             string                                         `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
-	Indexsizebytes        int64                                          `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3" json:"indexsizebytes,omitempty"`
+	Indexsizebytes        *int64                                         `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3,oneof" json:"indexsizebytes,omitempty"`
 	Indexstatus           IndexStatus                                    `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
-	Itemcount             int64                                          `protobuf:"varint,26280022,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Itemcount             *int64                                         `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema             []*KeySchemaElement                            `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Ondemandthroughput    *OnDemandThroughput                            `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
 	Projection            *Projection                                    `protobuf:"bytes,105045921,opt,name=projection,proto3" json:"projection,omitempty"`
@@ -8656,8 +8656,8 @@ func (x *GlobalSecondaryIndexDescription) GetIndexname() string {
 }
 
 func (x *GlobalSecondaryIndexDescription) GetIndexsizebytes() int64 {
-	if x != nil {
-		return x.Indexsizebytes
+	if x != nil && x.Indexsizebytes != nil {
+		return *x.Indexsizebytes
 	}
 	return 0
 }
@@ -8670,8 +8670,8 @@ func (x *GlobalSecondaryIndexDescription) GetIndexstatus() IndexStatus {
 }
 
 func (x *GlobalSecondaryIndexDescription) GetItemcount() int64 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -8849,9 +8849,9 @@ func (x *GlobalSecondaryIndexUpdate) GetUpdate() *UpdateGlobalSecondaryIndexActi
 
 type GlobalSecondaryIndexWarmThroughputDescription struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Readunitspersecond  int64                  `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3" json:"readunitspersecond,omitempty"`
+	Readunitspersecond  *int64                 `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3,oneof" json:"readunitspersecond,omitempty"`
 	Status              IndexStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.IndexStatus" json:"status,omitempty"`
-	Writeunitspersecond int64                  `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3" json:"writeunitspersecond,omitempty"`
+	Writeunitspersecond *int64                 `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3,oneof" json:"writeunitspersecond,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8887,8 +8887,8 @@ func (*GlobalSecondaryIndexWarmThroughputDescription) Descriptor() ([]byte, []in
 }
 
 func (x *GlobalSecondaryIndexWarmThroughputDescription) GetReadunitspersecond() int64 {
-	if x != nil {
-		return x.Readunitspersecond
+	if x != nil && x.Readunitspersecond != nil {
+		return *x.Readunitspersecond
 	}
 	return 0
 }
@@ -8901,8 +8901,8 @@ func (x *GlobalSecondaryIndexWarmThroughputDescription) GetStatus() IndexStatus 
 }
 
 func (x *GlobalSecondaryIndexWarmThroughputDescription) GetWriteunitspersecond() int64 {
-	if x != nil {
-		return x.Writeunitspersecond
+	if x != nil && x.Writeunitspersecond != nil {
+		return *x.Writeunitspersecond
 	}
 	return 0
 }
@@ -9083,7 +9083,7 @@ type GlobalTableGlobalSecondaryIndexSettingsUpdate struct {
 	state                                             protoimpl.MessageState     `protogen:"open.v1"`
 	Indexname                                         string                     `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
 	Provisionedwritecapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate `protobuf:"bytes,302140761,opt,name=provisionedwritecapacityautoscalingsettingsupdate,proto3" json:"provisionedwritecapacityautoscalingsettingsupdate,omitempty"`
-	Provisionedwritecapacityunits                     int64                      `protobuf:"varint,225881684,opt,name=provisionedwritecapacityunits,proto3" json:"provisionedwritecapacityunits,omitempty"`
+	Provisionedwritecapacityunits                     *int64                     `protobuf:"varint,225881684,opt,name=provisionedwritecapacityunits,proto3,oneof" json:"provisionedwritecapacityunits,omitempty"`
 	unknownFields                                     protoimpl.UnknownFields
 	sizeCache                                         protoimpl.SizeCache
 }
@@ -9133,8 +9133,8 @@ func (x *GlobalTableGlobalSecondaryIndexSettingsUpdate) GetProvisionedwritecapac
 }
 
 func (x *GlobalTableGlobalSecondaryIndexSettingsUpdate) GetProvisionedwritecapacityunits() int64 {
-	if x != nil {
-		return x.Provisionedwritecapacityunits
+	if x != nil && x.Provisionedwritecapacityunits != nil {
+		return *x.Provisionedwritecapacityunits
 	}
 	return 0
 }
@@ -9524,17 +9524,17 @@ type ImportTableDescription struct {
 	Clienttoken             string                   `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
 	Cloudwatchloggrouparn   string                   `protobuf:"bytes,171042008,opt,name=cloudwatchloggrouparn,proto3" json:"cloudwatchloggrouparn,omitempty"`
 	Endtime                 string                   `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Errorcount              int64                    `protobuf:"varint,311137001,opt,name=errorcount,proto3" json:"errorcount,omitempty"`
+	Errorcount              *int64                   `protobuf:"varint,311137001,opt,name=errorcount,proto3,oneof" json:"errorcount,omitempty"`
 	Failurecode             string                   `protobuf:"bytes,84707897,opt,name=failurecode,proto3" json:"failurecode,omitempty"`
 	Failuremessage          string                   `protobuf:"bytes,353556937,opt,name=failuremessage,proto3" json:"failuremessage,omitempty"`
 	Importarn               string                   `protobuf:"bytes,444379628,opt,name=importarn,proto3" json:"importarn,omitempty"`
 	Importstatus            ImportStatus             `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=dynamodb.ImportStatus" json:"importstatus,omitempty"`
-	Importeditemcount       int64                    `protobuf:"varint,202622198,opt,name=importeditemcount,proto3" json:"importeditemcount,omitempty"`
+	Importeditemcount       *int64                   `protobuf:"varint,202622198,opt,name=importeditemcount,proto3,oneof" json:"importeditemcount,omitempty"`
 	Inputcompressiontype    InputCompressionType     `protobuf:"varint,392699396,opt,name=inputcompressiontype,proto3,enum=dynamodb.InputCompressionType" json:"inputcompressiontype,omitempty"`
 	Inputformat             InputFormat              `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat" json:"inputformat,omitempty"`
 	Inputformatoptions      *InputFormatOptions      `protobuf:"bytes,249201403,opt,name=inputformatoptions,proto3" json:"inputformatoptions,omitempty"`
-	Processeditemcount      int64                    `protobuf:"varint,340163668,opt,name=processeditemcount,proto3" json:"processeditemcount,omitempty"`
-	Processedsizebytes      int64                    `protobuf:"varint,72287562,opt,name=processedsizebytes,proto3" json:"processedsizebytes,omitempty"`
+	Processeditemcount      *int64                   `protobuf:"varint,340163668,opt,name=processeditemcount,proto3,oneof" json:"processeditemcount,omitempty"`
+	Processedsizebytes      *int64                   `protobuf:"varint,72287562,opt,name=processedsizebytes,proto3,oneof" json:"processedsizebytes,omitempty"`
 	S3Bucketsource          *S3BucketSource          `protobuf:"bytes,202310037,opt,name=s3bucketsource,proto3" json:"s3bucketsource,omitempty"`
 	Starttime               string                   `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	Tablearn                string                   `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
@@ -9596,8 +9596,8 @@ func (x *ImportTableDescription) GetEndtime() string {
 }
 
 func (x *ImportTableDescription) GetErrorcount() int64 {
-	if x != nil {
-		return x.Errorcount
+	if x != nil && x.Errorcount != nil {
+		return *x.Errorcount
 	}
 	return 0
 }
@@ -9631,8 +9631,8 @@ func (x *ImportTableDescription) GetImportstatus() ImportStatus {
 }
 
 func (x *ImportTableDescription) GetImporteditemcount() int64 {
-	if x != nil {
-		return x.Importeditemcount
+	if x != nil && x.Importeditemcount != nil {
+		return *x.Importeditemcount
 	}
 	return 0
 }
@@ -9659,15 +9659,15 @@ func (x *ImportTableDescription) GetInputformatoptions() *InputFormatOptions {
 }
 
 func (x *ImportTableDescription) GetProcesseditemcount() int64 {
-	if x != nil {
-		return x.Processeditemcount
+	if x != nil && x.Processeditemcount != nil {
+		return *x.Processeditemcount
 	}
 	return 0
 }
 
 func (x *ImportTableDescription) GetProcessedsizebytes() int64 {
-	if x != nil {
-		return x.Processedsizebytes
+	if x != nil && x.Processedsizebytes != nil {
+		return *x.Processedsizebytes
 	}
 	return 0
 }
@@ -10671,7 +10671,7 @@ type ListBackupsInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Backuptype              BackupTypeFilter       `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupTypeFilter" json:"backuptype,omitempty"`
 	Exclusivestartbackuparn string                 `protobuf:"bytes,381696959,opt,name=exclusivestartbackuparn,proto3" json:"exclusivestartbackuparn,omitempty"`
-	Limit                   int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                   *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Tablename               string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	Timerangelowerbound     string                 `protobuf:"bytes,506236543,opt,name=timerangelowerbound,proto3" json:"timerangelowerbound,omitempty"`
 	Timerangeupperbound     string                 `protobuf:"bytes,420889434,opt,name=timerangeupperbound,proto3" json:"timerangeupperbound,omitempty"`
@@ -10724,8 +10724,8 @@ func (x *ListBackupsInput) GetExclusivestartbackuparn() string {
 }
 
 func (x *ListBackupsInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -10805,7 +10805,7 @@ func (x *ListBackupsOutput) GetLastevaluatedbackuparn() string {
 
 type ListContributorInsightsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Tablename     string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10843,8 +10843,8 @@ func (*ListContributorInsightsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListContributorInsightsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10917,7 +10917,7 @@ func (x *ListContributorInsightsOutput) GetNexttoken() string {
 
 type ListExportsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Tablearn      string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10955,8 +10955,8 @@ func (*ListExportsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListExportsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11030,7 +11030,7 @@ func (x *ListExportsOutput) GetNexttoken() string {
 type ListGlobalTablesInput struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestartglobaltablename string                 `protobuf:"bytes,89274086,opt,name=exclusivestartglobaltablename,proto3" json:"exclusivestartglobaltablename,omitempty"`
-	Limit                         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Regionname                    string                 `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -11074,8 +11074,8 @@ func (x *ListGlobalTablesInput) GetExclusivestartglobaltablename() string {
 }
 
 func (x *ListGlobalTablesInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11142,7 +11142,7 @@ func (x *ListGlobalTablesOutput) GetLastevaluatedglobaltablename() string {
 type ListImportsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Tablearn      string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11186,8 +11186,8 @@ func (x *ListImportsInput) GetNexttoken() string {
 }
 
 func (x *ListImportsInput) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -11254,7 +11254,7 @@ func (x *ListImportsOutput) GetNexttoken() string {
 type ListTablesInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestarttablename string                 `protobuf:"bytes,4554457,opt,name=exclusivestarttablename,proto3" json:"exclusivestarttablename,omitempty"`
-	Limit                   int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                   *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -11297,8 +11297,8 @@ func (x *ListTablesInput) GetExclusivestarttablename() string {
 }
 
 func (x *ListTablesInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11523,8 +11523,8 @@ type LocalSecondaryIndexDescription struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Indexarn       string                 `protobuf:"bytes,374335615,opt,name=indexarn,proto3" json:"indexarn,omitempty"`
 	Indexname      string                 `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
-	Indexsizebytes int64                  `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3" json:"indexsizebytes,omitempty"`
-	Itemcount      int64                  `protobuf:"varint,26280022,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Indexsizebytes *int64                 `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3,oneof" json:"indexsizebytes,omitempty"`
+	Itemcount      *int64                 `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema      []*KeySchemaElement    `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Projection     *Projection            `protobuf:"bytes,105045921,opt,name=projection,proto3" json:"projection,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -11576,15 +11576,15 @@ func (x *LocalSecondaryIndexDescription) GetIndexname() string {
 }
 
 func (x *LocalSecondaryIndexDescription) GetIndexsizebytes() int64 {
-	if x != nil {
-		return x.Indexsizebytes
+	if x != nil && x.Indexsizebytes != nil {
+		return *x.Indexsizebytes
 	}
 	return 0
 }
 
 func (x *LocalSecondaryIndexDescription) GetItemcount() int64 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -11665,8 +11665,8 @@ func (x *LocalSecondaryIndexInfo) GetProjection() *Projection {
 
 type OnDemandThroughput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Maxreadrequestunits  int64                  `protobuf:"varint,361996322,opt,name=maxreadrequestunits,proto3" json:"maxreadrequestunits,omitempty"`
-	Maxwriterequestunits int64                  `protobuf:"varint,99152185,opt,name=maxwriterequestunits,proto3" json:"maxwriterequestunits,omitempty"`
+	Maxreadrequestunits  *int64                 `protobuf:"varint,361996322,opt,name=maxreadrequestunits,proto3,oneof" json:"maxreadrequestunits,omitempty"`
+	Maxwriterequestunits *int64                 `protobuf:"varint,99152185,opt,name=maxwriterequestunits,proto3,oneof" json:"maxwriterequestunits,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -11702,22 +11702,22 @@ func (*OnDemandThroughput) Descriptor() ([]byte, []int) {
 }
 
 func (x *OnDemandThroughput) GetMaxreadrequestunits() int64 {
-	if x != nil {
-		return x.Maxreadrequestunits
+	if x != nil && x.Maxreadrequestunits != nil {
+		return *x.Maxreadrequestunits
 	}
 	return 0
 }
 
 func (x *OnDemandThroughput) GetMaxwriterequestunits() int64 {
-	if x != nil {
-		return x.Maxwriterequestunits
+	if x != nil && x.Maxwriterequestunits != nil {
+		return *x.Maxwriterequestunits
 	}
 	return 0
 }
 
 type OnDemandThroughputOverride struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Maxreadrequestunits int64                  `protobuf:"varint,361996322,opt,name=maxreadrequestunits,proto3" json:"maxreadrequestunits,omitempty"`
+	Maxreadrequestunits *int64                 `protobuf:"varint,361996322,opt,name=maxreadrequestunits,proto3,oneof" json:"maxreadrequestunits,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11753,8 +11753,8 @@ func (*OnDemandThroughputOverride) Descriptor() ([]byte, []int) {
 }
 
 func (x *OnDemandThroughputOverride) GetMaxreadrequestunits() int64 {
-	if x != nil {
-		return x.Maxreadrequestunits
+	if x != nil && x.Maxreadrequestunits != nil {
+		return *x.Maxreadrequestunits
 	}
 	return 0
 }
@@ -11824,7 +11824,7 @@ type PointInTimeRecoveryDescription struct {
 	Earliestrestorabledatetime string                    `protobuf:"bytes,440478879,opt,name=earliestrestorabledatetime,proto3" json:"earliestrestorabledatetime,omitempty"`
 	Latestrestorabledatetime   string                    `protobuf:"bytes,131030757,opt,name=latestrestorabledatetime,proto3" json:"latestrestorabledatetime,omitempty"`
 	Pointintimerecoverystatus  PointInTimeRecoveryStatus `protobuf:"varint,510838075,opt,name=pointintimerecoverystatus,proto3,enum=dynamodb.PointInTimeRecoveryStatus" json:"pointintimerecoverystatus,omitempty"`
-	Recoveryperiodindays       int32                     `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3" json:"recoveryperiodindays,omitempty"`
+	Recoveryperiodindays       *int32                    `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3,oneof" json:"recoveryperiodindays,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -11881,8 +11881,8 @@ func (x *PointInTimeRecoveryDescription) GetPointintimerecoverystatus() PointInT
 }
 
 func (x *PointInTimeRecoveryDescription) GetRecoveryperiodindays() int32 {
-	if x != nil {
-		return x.Recoveryperiodindays
+	if x != nil && x.Recoveryperiodindays != nil {
+		return *x.Recoveryperiodindays
 	}
 	return 0
 }
@@ -11890,7 +11890,7 @@ func (x *PointInTimeRecoveryDescription) GetRecoveryperiodindays() int32 {
 type PointInTimeRecoverySpecification struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Pointintimerecoveryenabled *bool                  `protobuf:"varint,294176170,opt,name=pointintimerecoveryenabled,proto3,oneof" json:"pointintimerecoveryenabled,omitempty"`
-	Recoveryperiodindays       int32                  `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3" json:"recoveryperiodindays,omitempty"`
+	Recoveryperiodindays       *int32                 `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3,oneof" json:"recoveryperiodindays,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -11933,8 +11933,8 @@ func (x *PointInTimeRecoverySpecification) GetPointintimerecoveryenabled() bool 
 }
 
 func (x *PointInTimeRecoverySpecification) GetRecoveryperiodindays() int32 {
-	if x != nil {
-		return x.Recoveryperiodindays
+	if x != nil && x.Recoveryperiodindays != nil {
+		return *x.Recoveryperiodindays
 	}
 	return 0
 }
@@ -12135,9 +12135,9 @@ type ProvisionedThroughputDescription struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Lastdecreasedatetime   string                 `protobuf:"bytes,494947041,opt,name=lastdecreasedatetime,proto3" json:"lastdecreasedatetime,omitempty"`
 	Lastincreasedatetime   string                 `protobuf:"bytes,490688181,opt,name=lastincreasedatetime,proto3" json:"lastincreasedatetime,omitempty"`
-	Numberofdecreasestoday int64                  `protobuf:"varint,34313772,opt,name=numberofdecreasestoday,proto3" json:"numberofdecreasestoday,omitempty"`
-	Readcapacityunits      int64                  `protobuf:"varint,43945489,opt,name=readcapacityunits,proto3" json:"readcapacityunits,omitempty"`
-	Writecapacityunits     int64                  `protobuf:"varint,26938032,opt,name=writecapacityunits,proto3" json:"writecapacityunits,omitempty"`
+	Numberofdecreasestoday *int64                 `protobuf:"varint,34313772,opt,name=numberofdecreasestoday,proto3,oneof" json:"numberofdecreasestoday,omitempty"`
+	Readcapacityunits      *int64                 `protobuf:"varint,43945489,opt,name=readcapacityunits,proto3,oneof" json:"readcapacityunits,omitempty"`
+	Writecapacityunits     *int64                 `protobuf:"varint,26938032,opt,name=writecapacityunits,proto3,oneof" json:"writecapacityunits,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -12187,22 +12187,22 @@ func (x *ProvisionedThroughputDescription) GetLastincreasedatetime() string {
 }
 
 func (x *ProvisionedThroughputDescription) GetNumberofdecreasestoday() int64 {
-	if x != nil {
-		return x.Numberofdecreasestoday
+	if x != nil && x.Numberofdecreasestoday != nil {
+		return *x.Numberofdecreasestoday
 	}
 	return 0
 }
 
 func (x *ProvisionedThroughputDescription) GetReadcapacityunits() int64 {
-	if x != nil {
-		return x.Readcapacityunits
+	if x != nil && x.Readcapacityunits != nil {
+		return *x.Readcapacityunits
 	}
 	return 0
 }
 
 func (x *ProvisionedThroughputDescription) GetWritecapacityunits() int64 {
-	if x != nil {
-		return x.Writecapacityunits
+	if x != nil && x.Writecapacityunits != nil {
+		return *x.Writecapacityunits
 	}
 	return 0
 }
@@ -12261,7 +12261,7 @@ func (x *ProvisionedThroughputExceededException) GetMessage() string {
 
 type ProvisionedThroughputOverride struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Readcapacityunits int64                  `protobuf:"varint,43945489,opt,name=readcapacityunits,proto3" json:"readcapacityunits,omitempty"`
+	Readcapacityunits *int64                 `protobuf:"varint,43945489,opt,name=readcapacityunits,proto3,oneof" json:"readcapacityunits,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -12297,8 +12297,8 @@ func (*ProvisionedThroughputOverride) Descriptor() ([]byte, []int) {
 }
 
 func (x *ProvisionedThroughputOverride) GetReadcapacityunits() int64 {
-	if x != nil {
-		return x.Readcapacityunits
+	if x != nil && x.Readcapacityunits != nil {
+		return *x.Readcapacityunits
 	}
 	return 0
 }
@@ -12739,7 +12739,7 @@ type QueryInput struct {
 	Indexname                 string                     `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
 	Keyconditionexpression    string                     `protobuf:"bytes,218579280,opt,name=keyconditionexpression,proto3" json:"keyconditionexpression,omitempty"`
 	Keyconditions             map[string]*Condition      `protobuf:"bytes,307034879,rep,name=keyconditions,proto3" json:"keyconditions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Limit                     int32                      `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                     *int32                     `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Projectionexpression      string                     `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3" json:"projectionexpression,omitempty"`
 	Queryfilter               map[string]*Condition      `protobuf:"bytes,107880942,rep,name=queryfilter,proto3" json:"queryfilter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Returnconsumedcapacity    ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
@@ -12851,8 +12851,8 @@ func (x *QueryInput) GetKeyconditions() map[string]*Condition {
 }
 
 func (x *QueryInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12902,10 +12902,10 @@ func (x *QueryInput) GetTablename() string {
 type QueryOutput struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Consumedcapacity *ConsumedCapacity          `protobuf:"bytes,449336620,opt,name=consumedcapacity,proto3" json:"consumedcapacity,omitempty"`
-	Count            int32                      `protobuf:"varint,31963285,opt,name=count,proto3" json:"count,omitempty"`
+	Count            *int32                     `protobuf:"varint,31963285,opt,name=count,proto3,oneof" json:"count,omitempty"`
 	Items            []*ItemListEntry           `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Lastevaluatedkey map[string]*AttributeValue `protobuf:"bytes,54319830,rep,name=lastevaluatedkey,proto3" json:"lastevaluatedkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Scannedcount     int32                      `protobuf:"varint,531161315,opt,name=scannedcount,proto3" json:"scannedcount,omitempty"`
+	Scannedcount     *int32                     `protobuf:"varint,531161315,opt,name=scannedcount,proto3,oneof" json:"scannedcount,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -12948,8 +12948,8 @@ func (x *QueryOutput) GetConsumedcapacity() *ConsumedCapacity {
 }
 
 func (x *QueryOutput) GetCount() int32 {
-	if x != nil {
-		return x.Count
+	if x != nil && x.Count != nil {
+		return *x.Count
 	}
 	return 0
 }
@@ -12969,8 +12969,8 @@ func (x *QueryOutput) GetLastevaluatedkey() map[string]*AttributeValue {
 }
 
 func (x *QueryOutput) GetScannedcount() int32 {
-	if x != nil {
-		return x.Scannedcount
+	if x != nil && x.Scannedcount != nil {
+		return *x.Scannedcount
 	}
 	return 0
 }
@@ -13592,9 +13592,9 @@ type ReplicaGlobalSecondaryIndexSettingsDescription struct {
 	Indexname                                   string                          `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
 	Indexstatus                                 IndexStatus                     `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
 	Provisionedreadcapacityautoscalingsettings  *AutoScalingSettingsDescription `protobuf:"bytes,85617667,opt,name=provisionedreadcapacityautoscalingsettings,proto3" json:"provisionedreadcapacityautoscalingsettings,omitempty"`
-	Provisionedreadcapacityunits                int64                           `protobuf:"varint,350750021,opt,name=provisionedreadcapacityunits,proto3" json:"provisionedreadcapacityunits,omitempty"`
+	Provisionedreadcapacityunits                *int64                          `protobuf:"varint,350750021,opt,name=provisionedreadcapacityunits,proto3,oneof" json:"provisionedreadcapacityunits,omitempty"`
 	Provisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription `protobuf:"bytes,168409114,opt,name=provisionedwritecapacityautoscalingsettings,proto3" json:"provisionedwritecapacityautoscalingsettings,omitempty"`
-	Provisionedwritecapacityunits               int64                           `protobuf:"varint,225881684,opt,name=provisionedwritecapacityunits,proto3" json:"provisionedwritecapacityunits,omitempty"`
+	Provisionedwritecapacityunits               *int64                          `protobuf:"varint,225881684,opt,name=provisionedwritecapacityunits,proto3,oneof" json:"provisionedwritecapacityunits,omitempty"`
 	unknownFields                               protoimpl.UnknownFields
 	sizeCache                                   protoimpl.SizeCache
 }
@@ -13651,8 +13651,8 @@ func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetProvisionedreadcapac
 }
 
 func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetProvisionedreadcapacityunits() int64 {
-	if x != nil {
-		return x.Provisionedreadcapacityunits
+	if x != nil && x.Provisionedreadcapacityunits != nil {
+		return *x.Provisionedreadcapacityunits
 	}
 	return 0
 }
@@ -13665,8 +13665,8 @@ func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetProvisionedwritecapa
 }
 
 func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetProvisionedwritecapacityunits() int64 {
-	if x != nil {
-		return x.Provisionedwritecapacityunits
+	if x != nil && x.Provisionedwritecapacityunits != nil {
+		return *x.Provisionedwritecapacityunits
 	}
 	return 0
 }
@@ -13675,7 +13675,7 @@ type ReplicaGlobalSecondaryIndexSettingsUpdate struct {
 	state                                            protoimpl.MessageState     `protogen:"open.v1"`
 	Indexname                                        string                     `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
 	Provisionedreadcapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate `protobuf:"bytes,57419900,opt,name=provisionedreadcapacityautoscalingsettingsupdate,proto3" json:"provisionedreadcapacityautoscalingsettingsupdate,omitempty"`
-	Provisionedreadcapacityunits                     int64                      `protobuf:"varint,350750021,opt,name=provisionedreadcapacityunits,proto3" json:"provisionedreadcapacityunits,omitempty"`
+	Provisionedreadcapacityunits                     *int64                     `protobuf:"varint,350750021,opt,name=provisionedreadcapacityunits,proto3,oneof" json:"provisionedreadcapacityunits,omitempty"`
 	unknownFields                                    protoimpl.UnknownFields
 	sizeCache                                        protoimpl.SizeCache
 }
@@ -13725,8 +13725,8 @@ func (x *ReplicaGlobalSecondaryIndexSettingsUpdate) GetProvisionedreadcapacityau
 }
 
 func (x *ReplicaGlobalSecondaryIndexSettingsUpdate) GetProvisionedreadcapacityunits() int64 {
-	if x != nil {
-		return x.Provisionedreadcapacityunits
+	if x != nil && x.Provisionedreadcapacityunits != nil {
+		return *x.Provisionedreadcapacityunits
 	}
 	return 0
 }
@@ -13781,9 +13781,9 @@ type ReplicaSettingsDescription struct {
 	Replicabillingmodesummary                          *BillingModeSummary                               `protobuf:"bytes,456333796,opt,name=replicabillingmodesummary,proto3" json:"replicabillingmodesummary,omitempty"`
 	Replicaglobalsecondaryindexsettings                []*ReplicaGlobalSecondaryIndexSettingsDescription `protobuf:"bytes,521234416,rep,name=replicaglobalsecondaryindexsettings,proto3" json:"replicaglobalsecondaryindexsettings,omitempty"`
 	Replicaprovisionedreadcapacityautoscalingsettings  *AutoScalingSettingsDescription                   `protobuf:"bytes,125131885,opt,name=replicaprovisionedreadcapacityautoscalingsettings,proto3" json:"replicaprovisionedreadcapacityautoscalingsettings,omitempty"`
-	Replicaprovisionedreadcapacityunits                int64                                             `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3" json:"replicaprovisionedreadcapacityunits,omitempty"`
+	Replicaprovisionedreadcapacityunits                *int64                                            `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3,oneof" json:"replicaprovisionedreadcapacityunits,omitempty"`
 	Replicaprovisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription                   `protobuf:"bytes,293841796,opt,name=replicaprovisionedwritecapacityautoscalingsettings,proto3" json:"replicaprovisionedwritecapacityautoscalingsettings,omitempty"`
-	Replicaprovisionedwritecapacityunits               int64                                             `protobuf:"varint,356738858,opt,name=replicaprovisionedwritecapacityunits,proto3" json:"replicaprovisionedwritecapacityunits,omitempty"`
+	Replicaprovisionedwritecapacityunits               *int64                                            `protobuf:"varint,356738858,opt,name=replicaprovisionedwritecapacityunits,proto3,oneof" json:"replicaprovisionedwritecapacityunits,omitempty"`
 	Replicastatus                                      ReplicaStatus                                     `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus" json:"replicastatus,omitempty"`
 	Replicatableclasssummary                           *TableClassSummary                                `protobuf:"bytes,519483614,opt,name=replicatableclasssummary,proto3" json:"replicatableclasssummary,omitempty"`
 	unknownFields                                      protoimpl.UnknownFields
@@ -13849,8 +13849,8 @@ func (x *ReplicaSettingsDescription) GetReplicaprovisionedreadcapacityautoscalin
 }
 
 func (x *ReplicaSettingsDescription) GetReplicaprovisionedreadcapacityunits() int64 {
-	if x != nil {
-		return x.Replicaprovisionedreadcapacityunits
+	if x != nil && x.Replicaprovisionedreadcapacityunits != nil {
+		return *x.Replicaprovisionedreadcapacityunits
 	}
 	return 0
 }
@@ -13863,8 +13863,8 @@ func (x *ReplicaSettingsDescription) GetReplicaprovisionedwritecapacityautoscali
 }
 
 func (x *ReplicaSettingsDescription) GetReplicaprovisionedwritecapacityunits() int64 {
-	if x != nil {
-		return x.Replicaprovisionedwritecapacityunits
+	if x != nil && x.Replicaprovisionedwritecapacityunits != nil {
+		return *x.Replicaprovisionedwritecapacityunits
 	}
 	return 0
 }
@@ -13888,7 +13888,7 @@ type ReplicaSettingsUpdate struct {
 	Regionname                                              string                                       `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
 	Replicaglobalsecondaryindexsettingsupdate               []*ReplicaGlobalSecondaryIndexSettingsUpdate `protobuf:"bytes,116195935,rep,name=replicaglobalsecondaryindexsettingsupdate,proto3" json:"replicaglobalsecondaryindexsettingsupdate,omitempty"`
 	Replicaprovisionedreadcapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate                   `protobuf:"bytes,245262702,opt,name=replicaprovisionedreadcapacityautoscalingsettingsupdate,proto3" json:"replicaprovisionedreadcapacityautoscalingsettingsupdate,omitempty"`
-	Replicaprovisionedreadcapacityunits                     int64                                        `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3" json:"replicaprovisionedreadcapacityunits,omitempty"`
+	Replicaprovisionedreadcapacityunits                     *int64                                       `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3,oneof" json:"replicaprovisionedreadcapacityunits,omitempty"`
 	Replicatableclass                                       TableClass                                   `protobuf:"varint,248679204,opt,name=replicatableclass,proto3,enum=dynamodb.TableClass" json:"replicatableclass,omitempty"`
 	unknownFields                                           protoimpl.UnknownFields
 	sizeCache                                               protoimpl.SizeCache
@@ -13946,8 +13946,8 @@ func (x *ReplicaSettingsUpdate) GetReplicaprovisionedreadcapacityautoscalingsett
 }
 
 func (x *ReplicaSettingsUpdate) GetReplicaprovisionedreadcapacityunits() int64 {
-	if x != nil {
-		return x.Replicaprovisionedreadcapacityunits
+	if x != nil && x.Replicaprovisionedreadcapacityunits != nil {
+		return *x.Replicaprovisionedreadcapacityunits
 	}
 	return 0
 }
@@ -14833,14 +14833,14 @@ type ScanInput struct {
 	Expressionattributevalues map[string]*AttributeValue `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Filterexpression          string                     `protobuf:"bytes,68019610,opt,name=filterexpression,proto3" json:"filterexpression,omitempty"`
 	Indexname                 string                     `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
-	Limit                     int32                      `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                     *int32                     `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Projectionexpression      string                     `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3" json:"projectionexpression,omitempty"`
 	Returnconsumedcapacity    ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
 	Scanfilter                map[string]*Condition      `protobuf:"bytes,272885755,rep,name=scanfilter,proto3" json:"scanfilter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Segment                   int32                      `protobuf:"varint,279654279,opt,name=segment,proto3" json:"segment,omitempty"`
+	Segment                   *int32                     `protobuf:"varint,279654279,opt,name=segment,proto3,oneof" json:"segment,omitempty"`
 	Select                    Select                     `protobuf:"varint,512305998,opt,name=select,proto3,enum=dynamodb.Select" json:"select,omitempty"`
 	Tablename                 string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Totalsegments             int32                      `protobuf:"varint,149136904,opt,name=totalsegments,proto3" json:"totalsegments,omitempty"`
+	Totalsegments             *int32                     `protobuf:"varint,149136904,opt,name=totalsegments,proto3,oneof" json:"totalsegments,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -14932,8 +14932,8 @@ func (x *ScanInput) GetIndexname() string {
 }
 
 func (x *ScanInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -14960,8 +14960,8 @@ func (x *ScanInput) GetScanfilter() map[string]*Condition {
 }
 
 func (x *ScanInput) GetSegment() int32 {
-	if x != nil {
-		return x.Segment
+	if x != nil && x.Segment != nil {
+		return *x.Segment
 	}
 	return 0
 }
@@ -14981,8 +14981,8 @@ func (x *ScanInput) GetTablename() string {
 }
 
 func (x *ScanInput) GetTotalsegments() int32 {
-	if x != nil {
-		return x.Totalsegments
+	if x != nil && x.Totalsegments != nil {
+		return *x.Totalsegments
 	}
 	return 0
 }
@@ -14990,10 +14990,10 @@ func (x *ScanInput) GetTotalsegments() int32 {
 type ScanOutput struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Consumedcapacity *ConsumedCapacity          `protobuf:"bytes,449336620,opt,name=consumedcapacity,proto3" json:"consumedcapacity,omitempty"`
-	Count            int32                      `protobuf:"varint,31963285,opt,name=count,proto3" json:"count,omitempty"`
+	Count            *int32                     `protobuf:"varint,31963285,opt,name=count,proto3,oneof" json:"count,omitempty"`
 	Items            []*ItemListEntry           `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Lastevaluatedkey map[string]*AttributeValue `protobuf:"bytes,54319830,rep,name=lastevaluatedkey,proto3" json:"lastevaluatedkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Scannedcount     int32                      `protobuf:"varint,531161315,opt,name=scannedcount,proto3" json:"scannedcount,omitempty"`
+	Scannedcount     *int32                     `protobuf:"varint,531161315,opt,name=scannedcount,proto3,oneof" json:"scannedcount,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -15036,8 +15036,8 @@ func (x *ScanOutput) GetConsumedcapacity() *ConsumedCapacity {
 }
 
 func (x *ScanOutput) GetCount() int32 {
-	if x != nil {
-		return x.Count
+	if x != nil && x.Count != nil {
+		return *x.Count
 	}
 	return 0
 }
@@ -15057,8 +15057,8 @@ func (x *ScanOutput) GetLastevaluatedkey() map[string]*AttributeValue {
 }
 
 func (x *ScanOutput) GetScannedcount() int32 {
-	if x != nil {
-		return x.Scannedcount
+	if x != nil && x.Scannedcount != nil {
+		return *x.Scannedcount
 	}
 	return 0
 }
@@ -15066,7 +15066,7 @@ func (x *ScanOutput) GetScannedcount() int32 {
 type SourceTableDetails struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Billingmode           BillingMode            `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
-	Itemcount             int64                  `protobuf:"varint,26280022,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Itemcount             *int64                 `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema             []*KeySchemaElement    `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Ondemandthroughput    *OnDemandThroughput    `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
 	Provisionedthroughput *ProvisionedThroughput `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
@@ -15074,7 +15074,7 @@ type SourceTableDetails struct {
 	Tablecreationdatetime string                 `protobuf:"bytes,152706380,opt,name=tablecreationdatetime,proto3" json:"tablecreationdatetime,omitempty"`
 	Tableid               string                 `protobuf:"bytes,449893011,opt,name=tableid,proto3" json:"tableid,omitempty"`
 	Tablename             string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Tablesizebytes        int64                  `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3" json:"tablesizebytes,omitempty"`
+	Tablesizebytes        *int64                 `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3,oneof" json:"tablesizebytes,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -15117,8 +15117,8 @@ func (x *SourceTableDetails) GetBillingmode() BillingMode {
 }
 
 func (x *SourceTableDetails) GetItemcount() int64 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -15173,8 +15173,8 @@ func (x *SourceTableDetails) GetTablename() string {
 }
 
 func (x *SourceTableDetails) GetTablesizebytes() int64 {
-	if x != nil {
-		return x.Tablesizebytes
+	if x != nil && x.Tablesizebytes != nil {
+		return *x.Tablesizebytes
 	}
 	return 0
 }
@@ -15574,7 +15574,7 @@ type TableDescription struct {
 	Globaltablesettingsreplicationmode GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode" json:"globaltablesettingsreplicationmode,omitempty"`
 	Globaltableversion                 string                             `protobuf:"bytes,68234287,opt,name=globaltableversion,proto3" json:"globaltableversion,omitempty"`
 	Globaltablewitnesses               []*GlobalTableWitnessDescription   `protobuf:"bytes,4521286,rep,name=globaltablewitnesses,proto3" json:"globaltablewitnesses,omitempty"`
-	Itemcount                          int64                              `protobuf:"varint,26280022,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Itemcount                          *int64                             `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema                          []*KeySchemaElement                `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Lateststreamarn                    string                             `protobuf:"bytes,207365682,opt,name=lateststreamarn,proto3" json:"lateststreamarn,omitempty"`
 	Lateststreamlabel                  string                             `protobuf:"bytes,328475293,opt,name=lateststreamlabel,proto3" json:"lateststreamlabel,omitempty"`
@@ -15590,7 +15590,7 @@ type TableDescription struct {
 	Tableclasssummary                  *TableClassSummary                 `protobuf:"bytes,4371552,opt,name=tableclasssummary,proto3" json:"tableclasssummary,omitempty"`
 	Tableid                            string                             `protobuf:"bytes,449893011,opt,name=tableid,proto3" json:"tableid,omitempty"`
 	Tablename                          string                             `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Tablesizebytes                     int64                              `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3" json:"tablesizebytes,omitempty"`
+	Tablesizebytes                     *int64                             `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3,oneof" json:"tablesizebytes,omitempty"`
 	Tablestatus                        TableStatus                        `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=dynamodb.TableStatus" json:"tablestatus,omitempty"`
 	Warmthroughput                     *TableWarmThroughputDescription    `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
@@ -15691,8 +15691,8 @@ func (x *TableDescription) GetGlobaltablewitnesses() []*GlobalTableWitnessDescri
 }
 
 func (x *TableDescription) GetItemcount() int64 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -15803,8 +15803,8 @@ func (x *TableDescription) GetTablename() string {
 }
 
 func (x *TableDescription) GetTablesizebytes() int64 {
-	if x != nil {
-		return x.Tablesizebytes
+	if x != nil && x.Tablesizebytes != nil {
+		return *x.Tablesizebytes
 	}
 	return 0
 }
@@ -15913,9 +15913,9 @@ func (x *TableNotFoundException) GetMessage() string {
 
 type TableWarmThroughputDescription struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Readunitspersecond  int64                  `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3" json:"readunitspersecond,omitempty"`
+	Readunitspersecond  *int64                 `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3,oneof" json:"readunitspersecond,omitempty"`
 	Status              TableStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.TableStatus" json:"status,omitempty"`
-	Writeunitspersecond int64                  `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3" json:"writeunitspersecond,omitempty"`
+	Writeunitspersecond *int64                 `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3,oneof" json:"writeunitspersecond,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -15951,8 +15951,8 @@ func (*TableWarmThroughputDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *TableWarmThroughputDescription) GetReadunitspersecond() int64 {
-	if x != nil {
-		return x.Readunitspersecond
+	if x != nil && x.Readunitspersecond != nil {
+		return *x.Readunitspersecond
 	}
 	return 0
 }
@@ -15965,8 +15965,8 @@ func (x *TableWarmThroughputDescription) GetStatus() TableStatus {
 }
 
 func (x *TableWarmThroughputDescription) GetWriteunitspersecond() int64 {
-	if x != nil {
-		return x.Writeunitspersecond
+	if x != nil && x.Writeunitspersecond != nil {
+		return *x.Writeunitspersecond
 	}
 	return 0
 }
@@ -17305,7 +17305,7 @@ type UpdateGlobalTableSettingsInput struct {
 	Globaltableglobalsecondaryindexsettingsupdate                []*GlobalTableGlobalSecondaryIndexSettingsUpdate `protobuf:"bytes,368411116,rep,name=globaltableglobalsecondaryindexsettingsupdate,proto3" json:"globaltableglobalsecondaryindexsettingsupdate,omitempty"`
 	Globaltablename                                              string                                           `protobuf:"bytes,283759402,opt,name=globaltablename,proto3" json:"globaltablename,omitempty"`
 	Globaltableprovisionedwritecapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate                       `protobuf:"bytes,435219182,opt,name=globaltableprovisionedwritecapacityautoscalingsettingsupdate,proto3" json:"globaltableprovisionedwritecapacityautoscalingsettingsupdate,omitempty"`
-	Globaltableprovisionedwritecapacityunits                     int64                                            `protobuf:"varint,127172283,opt,name=globaltableprovisionedwritecapacityunits,proto3" json:"globaltableprovisionedwritecapacityunits,omitempty"`
+	Globaltableprovisionedwritecapacityunits                     *int64                                           `protobuf:"varint,127172283,opt,name=globaltableprovisionedwritecapacityunits,proto3,oneof" json:"globaltableprovisionedwritecapacityunits,omitempty"`
 	Replicasettingsupdate                                        []*ReplicaSettingsUpdate                         `protobuf:"bytes,463498612,rep,name=replicasettingsupdate,proto3" json:"replicasettingsupdate,omitempty"`
 	unknownFields                                                protoimpl.UnknownFields
 	sizeCache                                                    protoimpl.SizeCache
@@ -17370,8 +17370,8 @@ func (x *UpdateGlobalTableSettingsInput) GetGlobaltableprovisionedwritecapacitya
 }
 
 func (x *UpdateGlobalTableSettingsInput) GetGlobaltableprovisionedwritecapacityunits() int64 {
-	if x != nil {
-		return x.Globaltableprovisionedwritecapacityunits
+	if x != nil && x.Globaltableprovisionedwritecapacityunits != nil {
+		return *x.Globaltableprovisionedwritecapacityunits
 	}
 	return 0
 }
@@ -18301,8 +18301,8 @@ func (x *UpdateTimeToLiveOutput) GetTimetolivespecification() *TimeToLiveSpecifi
 
 type WarmThroughput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Readunitspersecond  int64                  `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3" json:"readunitspersecond,omitempty"`
-	Writeunitspersecond int64                  `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3" json:"writeunitspersecond,omitempty"`
+	Readunitspersecond  *int64                 `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3,oneof" json:"readunitspersecond,omitempty"`
+	Writeunitspersecond *int64                 `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3,oneof" json:"writeunitspersecond,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -18338,15 +18338,15 @@ func (*WarmThroughput) Descriptor() ([]byte, []int) {
 }
 
 func (x *WarmThroughput) GetReadunitspersecond() int64 {
-	if x != nil {
-		return x.Readunitspersecond
+	if x != nil && x.Readunitspersecond != nil {
+		return *x.Readunitspersecond
 	}
 	return 0
 }
 
 func (x *WarmThroughput) GetWriteunitspersecond() int64 {
-	if x != nil {
-		return x.Writeunitspersecond
+	if x != nil && x.Writeunitspersecond != nil {
+		return *x.Writeunitspersecond
 	}
 	return 0
 }
@@ -18531,69 +18531,79 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
 	"policyname\x12\xa3\x01\n" +
-	"(targettrackingscalingpolicyconfiguration\x18\xbb\xbc\xa2\xe2\x01 \x01(\v2C.dynamodb.AutoScalingTargetTrackingScalingPolicyConfigurationUpdateR(targettrackingscalingpolicyconfiguration\"\xcb\x02\n" +
+	"(targettrackingscalingpolicyconfiguration\x18\xbb\xbc\xa2\xe2\x01 \x01(\v2C.dynamodb.AutoScalingTargetTrackingScalingPolicyConfigurationUpdateR(targettrackingscalingpolicyconfiguration\"\xf7\x02\n" +
 	"\x1eAutoScalingSettingsDescription\x128\n" +
 	"\x13autoscalingdisabled\x18ظ\xd4W \x01(\bH\x00R\x13autoscalingdisabled\x88\x01\x01\x122\n" +
-	"\x12autoscalingrolearn\x18ǻ\xfd\xa5\x01 \x01(\tR\x12autoscalingrolearn\x12&\n" +
-	"\fmaximumunits\x18\xd9ǧ\xef\x01 \x01(\x03R\fmaximumunits\x12%\n" +
-	"\fminimumunits\x18\xb3\xe0\xd5Z \x01(\x03R\fminimumunits\x12T\n" +
+	"\x12autoscalingrolearn\x18ǻ\xfd\xa5\x01 \x01(\tR\x12autoscalingrolearn\x12+\n" +
+	"\fmaximumunits\x18\xd9ǧ\xef\x01 \x01(\x03H\x01R\fmaximumunits\x88\x01\x01\x12*\n" +
+	"\fminimumunits\x18\xb3\xe0\xd5Z \x01(\x03H\x02R\fminimumunits\x88\x01\x01\x12T\n" +
 	"\x0fscalingpolicies\x18\U0006914a\x01 \x03(\v2&.dynamodb.AutoScalingPolicyDescriptionR\x0fscalingpoliciesB\x16\n" +
-	"\x14_autoscalingdisabled\"\xc8\x02\n" +
+	"\x14_autoscalingdisabledB\x0f\n" +
+	"\r_maximumunitsB\x0f\n" +
+	"\r_minimumunits\"\xf4\x02\n" +
 	"\x19AutoScalingSettingsUpdate\x128\n" +
 	"\x13autoscalingdisabled\x18ظ\xd4W \x01(\bH\x00R\x13autoscalingdisabled\x88\x01\x01\x122\n" +
-	"\x12autoscalingrolearn\x18ǻ\xfd\xa5\x01 \x01(\tR\x12autoscalingrolearn\x12&\n" +
-	"\fmaximumunits\x18\xd9ǧ\xef\x01 \x01(\x03R\fmaximumunits\x12%\n" +
-	"\fminimumunits\x18\xb3\xe0\xd5Z \x01(\x03R\fminimumunits\x12V\n" +
+	"\x12autoscalingrolearn\x18ǻ\xfd\xa5\x01 \x01(\tR\x12autoscalingrolearn\x12+\n" +
+	"\fmaximumunits\x18\xd9ǧ\xef\x01 \x01(\x03H\x01R\fmaximumunits\x88\x01\x01\x12*\n" +
+	"\fminimumunits\x18\xb3\xe0\xd5Z \x01(\x03H\x02R\fminimumunits\x88\x01\x01\x12V\n" +
 	"\x13scalingpolicyupdate\x18\x86\x97\x98Z \x01(\v2!.dynamodb.AutoScalingPolicyUpdateR\x13scalingpolicyupdateB\x16\n" +
-	"\x14_autoscalingdisabled\"\x86\x02\n" +
+	"\x14_autoscalingdisabledB\x0f\n" +
+	"\r_maximumunitsB\x0f\n" +
+	"\r_minimumunits\"\xb9\x02\n" +
 	">AutoScalingTargetTrackingScalingPolicyConfigurationDescription\x12/\n" +
-	"\x0edisablescalein\x18\x89\xc2\xdc\xdd\x01 \x01(\bH\x00R\x0edisablescalein\x88\x01\x01\x12+\n" +
-	"\x0fscaleincooldown\x18\xf4\x8b\xf3\x15 \x01(\x05R\x0fscaleincooldown\x12.\n" +
-	"\x10scaleoutcooldown\x18\xaf\xf2\x93\x97\x01 \x01(\x05R\x10scaleoutcooldown\x12#\n" +
+	"\x0edisablescalein\x18\x89\xc2\xdc\xdd\x01 \x01(\bH\x00R\x0edisablescalein\x88\x01\x01\x120\n" +
+	"\x0fscaleincooldown\x18\xf4\x8b\xf3\x15 \x01(\x05H\x01R\x0fscaleincooldown\x88\x01\x01\x123\n" +
+	"\x10scaleoutcooldown\x18\xaf\xf2\x93\x97\x01 \x01(\x05H\x02R\x10scaleoutcooldown\x88\x01\x01\x12#\n" +
 	"\vtargetvalue\x18\xba\xa2\xb18 \x01(\x01R\vtargetvalueB\x11\n" +
-	"\x0f_disablescalein\"\x81\x02\n" +
+	"\x0f_disablescaleinB\x12\n" +
+	"\x10_scaleincooldownB\x13\n" +
+	"\x11_scaleoutcooldown\"\xb4\x02\n" +
 	"9AutoScalingTargetTrackingScalingPolicyConfigurationUpdate\x12/\n" +
-	"\x0edisablescalein\x18\x89\xc2\xdc\xdd\x01 \x01(\bH\x00R\x0edisablescalein\x88\x01\x01\x12+\n" +
-	"\x0fscaleincooldown\x18\xf4\x8b\xf3\x15 \x01(\x05R\x0fscaleincooldown\x12.\n" +
-	"\x10scaleoutcooldown\x18\xaf\xf2\x93\x97\x01 \x01(\x05R\x10scaleoutcooldown\x12#\n" +
+	"\x0edisablescalein\x18\x89\xc2\xdc\xdd\x01 \x01(\bH\x00R\x0edisablescalein\x88\x01\x01\x120\n" +
+	"\x0fscaleincooldown\x18\xf4\x8b\xf3\x15 \x01(\x05H\x01R\x0fscaleincooldown\x88\x01\x01\x123\n" +
+	"\x10scaleoutcooldown\x18\xaf\xf2\x93\x97\x01 \x01(\x05H\x02R\x10scaleoutcooldown\x88\x01\x01\x12#\n" +
 	"\vtargetvalue\x18\xba\xa2\xb18 \x01(\x01R\vtargetvalueB\x11\n" +
-	"\x0f_disablescalein\"\x8e\x02\n" +
+	"\x0f_disablescaleinB\x12\n" +
+	"\x10_scaleincooldownB\x13\n" +
+	"\x11_scaleoutcooldown\"\x8e\x02\n" +
 	"\x11BackupDescription\x12A\n" +
 	"\rbackupdetails\x18\xf8\xa3\xe6\xb6\x01 \x01(\v2\x17.dynamodb.BackupDetailsR\rbackupdetails\x12P\n" +
 	"\x12sourcetabledetails\x18\xbb\x89\x9a\xf2\x01 \x01(\v2\x1c.dynamodb.SourceTableDetailsR\x12sourcetabledetails\x12d\n" +
 	"\x19sourcetablefeaturedetails\x18\x99\xa1\xa6\n" +
-	" \x01(\v2#.dynamodb.SourceTableFeatureDetailsR\x19sourcetablefeaturedetails\"\xef\x02\n" +
+	" \x01(\v2#.dynamodb.SourceTableFeatureDetailsR\x19sourcetablefeaturedetails\"\x88\x03\n" +
 	"\rBackupDetails\x12 \n" +
 	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tR\tbackuparn\x12:\n" +
 	"\x16backupcreationdatetime\x18̧\xbe\xaf\x01 \x01(\tR\x16backupcreationdatetime\x126\n" +
 	"\x14backupexpirydatetime\x18\xf2\xae\xdd\xe0\x01 \x01(\tR\x14backupexpirydatetime\x12\"\n" +
 	"\n" +
 	"backupname\x18\xdd\xe1\x81\xdf\x01 \x01(\tR\n" +
-	"backupname\x12+\n" +
-	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03R\x0fbackupsizebytes\x12>\n" +
+	"backupname\x120\n" +
+	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03H\x00R\x0fbackupsizebytes\x88\x01\x01\x12>\n" +
 	"\fbackupstatus\x18ʤ\xb2\xb6\x01 \x01(\x0e2\x16.dynamodb.BackupStatusR\fbackupstatus\x127\n" +
 	"\n" +
 	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x14.dynamodb.BackupTypeR\n" +
-	"backuptype\"3\n" +
+	"backuptypeB\x12\n" +
+	"\x10_backupsizebytes\"3\n" +
 	"\x14BackupInUseException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x17BackupNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xcf\x03\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe8\x03\n" +
 	"\rBackupSummary\x12 \n" +
 	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tR\tbackuparn\x12:\n" +
 	"\x16backupcreationdatetime\x18̧\xbe\xaf\x01 \x01(\tR\x16backupcreationdatetime\x126\n" +
 	"\x14backupexpirydatetime\x18\xf2\xae\xdd\xe0\x01 \x01(\tR\x14backupexpirydatetime\x12\"\n" +
 	"\n" +
 	"backupname\x18\xdd\xe1\x81\xdf\x01 \x01(\tR\n" +
-	"backupname\x12+\n" +
-	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03R\x0fbackupsizebytes\x12>\n" +
+	"backupname\x120\n" +
+	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03H\x00R\x0fbackupsizebytes\x88\x01\x01\x12>\n" +
 	"\fbackupstatus\x18ʤ\xb2\xb6\x01 \x01(\x0e2\x16.dynamodb.BackupStatusR\fbackupstatus\x127\n" +
 	"\n" +
 	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x14.dynamodb.BackupTypeR\n" +
 	"backuptype\x12\x1e\n" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12\x1c\n" +
 	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xbe\x01\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablenameB\x12\n" +
+	"\x10_backupsizebytes\"\xbe\x01\n" +
 	"\x1aBatchExecuteStatementInput\x12[\n" +
 	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12C\n" +
 	"\n" +
@@ -18915,12 +18925,16 @@ const file_dynamodb_proto_rawDesc = "" +
 	")DescribeKinesisStreamingDestinationOutput\x12o\n" +
 	"\x1dkinesisdatastreamdestinations\x18\x89\u009b\x02 \x03(\v2&.dynamodb.KinesisDataStreamDestinationR\x1dkinesisdatastreamdestinations\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\x15\n" +
-	"\x13DescribeLimitsInput\"\xa9\x02\n" +
-	"\x14DescribeLimitsOutput\x12D\n" +
-	"\x1baccountmaxreadcapacityunits\x18\xe2\xc7ї\x01 \x01(\x03R\x1baccountmaxreadcapacityunits\x12F\n" +
-	"\x1caccountmaxwritecapacityunits\x18\xb1\xa4\xee\xfa\x01 \x01(\x03R\x1caccountmaxwritecapacityunits\x12?\n" +
-	"\x19tablemaxreadcapacityunits\x18۶\x93O \x01(\x03R\x19tablemaxreadcapacityunits\x12B\n" +
-	"\x1atablemaxwritecapacityunits\x18ʴ\xe3\xd3\x01 \x01(\x03R\x1atablemaxwritecapacityunits\"6\n" +
+	"\x13DescribeLimitsInput\"\xbb\x03\n" +
+	"\x14DescribeLimitsOutput\x12I\n" +
+	"\x1baccountmaxreadcapacityunits\x18\xe2\xc7ї\x01 \x01(\x03H\x00R\x1baccountmaxreadcapacityunits\x88\x01\x01\x12K\n" +
+	"\x1caccountmaxwritecapacityunits\x18\xb1\xa4\xee\xfa\x01 \x01(\x03H\x01R\x1caccountmaxwritecapacityunits\x88\x01\x01\x12D\n" +
+	"\x19tablemaxreadcapacityunits\x18۶\x93O \x01(\x03H\x02R\x19tablemaxreadcapacityunits\x88\x01\x01\x12G\n" +
+	"\x1atablemaxwritecapacityunits\x18ʴ\xe3\xd3\x01 \x01(\x03H\x03R\x1atablemaxwritecapacityunits\x88\x01\x01B\x1e\n" +
+	"\x1c_accountmaxreadcapacityunitsB\x1f\n" +
+	"\x1d_accountmaxwritecapacityunitsB\x1c\n" +
+	"\x1a_tablemaxreadcapacityunitsB\x1d\n" +
+	"\x1b_tablemaxwritecapacityunits\"6\n" +
 	"\x12DescribeTableInput\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"K\n" +
 	"\x13DescribeTableOutput\x124\n" +
@@ -18939,10 +18953,10 @@ const file_dynamodb_proto_rawDesc = "" +
 	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionR$approximatecreationdatetimeprecision\"_\n" +
 	"\bEndpoint\x12\x1c\n" +
 	"\aaddress\x18\xf4\xc1\x95\x80\x01 \x01(\tR\aaddress\x125\n" +
-	"\x14cacheperiodinminutes\x18\xb1Ѝ\" \x01(\x03R\x14cacheperiodinminutes\"\xd7\x03\n" +
+	"\x14cacheperiodinminutes\x18\xb1Ѝ\" \x01(\x03R\x14cacheperiodinminutes\"\xe6\x03\n" +
 	"\x15ExecuteStatementInput\x12/\n" +
-	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12<\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x18.dynamodb.AttributeValueR\n" +
@@ -18950,7 +18964,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12\x82\x01\n" +
 	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
 	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatementB\x11\n" +
-	"\x0f_consistentread\"\xfd\x02\n" +
+	"\x0f_consistentreadB\b\n" +
+	"\x06_limit\"\xfd\x02\n" +
 	"\x16ExecuteStatementOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x120\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12e\n" +
@@ -18973,9 +18988,9 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x18.dynamodb.AttributeValueR\x05valueB\t\n" +
 	"\a_exists\"6\n" +
 	"\x17ExportConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc8\a\n" +
-	"\x11ExportDescription\x12,\n" +
-	"\x0fbilledsizebytes\x18\xa8\xe9\xb1\xd3\x01 \x01(\x03R\x0fbilledsizebytes\x12#\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf4\a\n" +
+	"\x11ExportDescription\x121\n" +
+	"\x0fbilledsizebytes\x18\xa8\xe9\xb1\xd3\x01 \x01(\x03H\x00R\x0fbilledsizebytes\x88\x01\x01\x12#\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12\x1f\n" +
 	"\texportarn\x18\xe7\xbb\xdf\x01 \x01(\tR\texportarn\x12>\n" +
@@ -18990,8 +19005,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"exporttype\x12#\n" +
 	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tR\vfailurecode\x12*\n" +
 	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tR\x0efailuremessage\x12s\n" +
-	"\x1eincrementalexportspecification\x18\xe7\x87\xf5\t \x01(\v2(.dynamodb.IncrementalExportSpecificationR\x1eincrementalexportspecification\x12\x1f\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03R\titemcount\x12\x1d\n" +
+	"\x1eincrementalexportspecification\x18\xe7\x87\xf5\t \x01(\v2(.dynamodb.IncrementalExportSpecificationR\x1eincrementalexportspecification\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x01R\titemcount\x88\x01\x01\x12\x1d\n" +
 	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tR\bs3bucket\x12(\n" +
 	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tR\rs3bucketowner\x12\x1d\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
@@ -19000,7 +19015,10 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\rs3ssekmskeyid\x18\xfe\xf0\xbc\x04 \x01(\tR\rs3ssekmskeyid\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x12\x1e\n" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12\x1c\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\"6\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableidB\x12\n" +
+	"\x10_billedsizebytesB\f\n" +
+	"\n" +
+	"_itemcount\"6\n" +
 	"\x17ExportNotFoundException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa9\x01\n" +
 	"\rExportSummary\x12\x1f\n" +
@@ -19081,14 +19099,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x18.dynamodb.WarmThroughputR\x0ewarmthroughput\"\xd0\x01\n" +
 	"%GlobalSecondaryIndexAutoScalingUpdate\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x85\x01\n" +
-	")provisionedwritecapacityautoscalingupdate\x18\xb6\xec\xfc\x96\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR)provisionedwritecapacityautoscalingupdate\"\xb8\x05\n" +
+	")provisionedwritecapacityautoscalingupdate\x18\xb6\xec\xfc\x96\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR)provisionedwritecapacityautoscalingupdate\"\xe3\x05\n" +
 	"\x1fGlobalSecondaryIndexDescription\x12(\n" +
 	"\vbackfilling\x18\xfa\x86\xf1w \x01(\bH\x00R\vbackfilling\x88\x01\x01\x12\x1e\n" +
 	"\bindexarn\x18\xffп\xb2\x01 \x01(\tR\bindexarn\x12\x1f\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12*\n" +
-	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03R\x0eindexsizebytes\x12;\n" +
-	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12\x1f\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03R\titemcount\x12<\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12/\n" +
+	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x01R\x0eindexsizebytes\x88\x01\x01\x12;\n" +
+	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x02R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x127\n" +
 	"\n" +
@@ -19096,7 +19114,10 @@ const file_dynamodb_proto_rawDesc = "" +
 	"projection\x12b\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2*.dynamodb.ProvisionedThroughputDescriptionR\x15provisionedthroughput\x12c\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v27.dynamodb.GlobalSecondaryIndexWarmThroughputDescriptionR\x0ewarmthroughputB\x0e\n" +
-	"\f_backfilling\"\xdd\x02\n" +
+	"\f_backfillingB\x11\n" +
+	"\x0f_indexsizebytesB\f\n" +
+	"\n" +
+	"_itemcount\"\xdd\x02\n" +
 	"\x18GlobalSecondaryIndexInfo\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
@@ -19108,11 +19129,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1aGlobalSecondaryIndexUpdate\x12F\n" +
 	"\x06create\x18\xfeȷ\xc8\x01 \x01(\v2*.dynamodb.CreateGlobalSecondaryIndexActionR\x06create\x12F\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2*.dynamodb.DeleteGlobalSecondaryIndexActionR\x06delete\x12E\n" +
-	"\x06update\x18\x95\x9d\x8cq \x01(\v2*.dynamodb.UpdateGlobalSecondaryIndexActionR\x06update\"\xca\x01\n" +
-	"-GlobalSecondaryIndexWarmThroughputDescription\x121\n" +
-	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03R\x12readunitspersecond\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.IndexStatusR\x06status\x124\n" +
-	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03R\x13writeunitspersecond\"}\n" +
+	"\x06update\x18\x95\x9d\x8cq \x01(\v2*.dynamodb.UpdateGlobalSecondaryIndexActionR\x06update\"\x83\x02\n" +
+	"-GlobalSecondaryIndexWarmThroughputDescription\x126\n" +
+	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x120\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.IndexStatusR\x06status\x129\n" +
+	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x01R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
+	"\x13_readunitspersecondB\x16\n" +
+	"\x14_writeunitspersecond\"}\n" +
 	"\vGlobalTable\x12,\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12@\n" +
 	"\x10replicationgroup\x18\xa1\xf7\x87[ \x03(\v2\x11.dynamodb.ReplicaR\x10replicationgroup\"@\n" +
@@ -19123,11 +19146,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0eglobaltablearn\x18\xee؉} \x01(\tR\x0eglobaltablearn\x12,\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12L\n" +
 	"\x11globaltablestatus\x18\x8d\x92\x9b\x04 \x01(\x0e2\x1b.dynamodb.GlobalTableStatusR\x11globaltablestatus\x12K\n" +
-	"\x10replicationgroup\x18\xa1\xf7\x87[ \x03(\v2\x1c.dynamodb.ReplicaDescriptionR\x10replicationgroup\"\xb1\x02\n" +
+	"\x10replicationgroup\x18\xa1\xf7\x87[ \x03(\v2\x1c.dynamodb.ReplicaDescriptionR\x10replicationgroup\"\xd8\x02\n" +
 	"-GlobalTableGlobalSecondaryIndexSettingsUpdate\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x95\x01\n" +
-	"1provisionedwritecapacityautoscalingsettingsupdate\x18ٚ\x89\x90\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR1provisionedwritecapacityautoscalingsettingsupdate\x12G\n" +
-	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03R\x1dprovisionedwritecapacityunits\";\n" +
+	"1provisionedwritecapacityautoscalingsettingsupdate\x18ٚ\x89\x90\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR1provisionedwritecapacityautoscalingsettingsupdate\x12L\n" +
+	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03H\x00R\x1dprovisionedwritecapacityunits\x88\x01\x01B \n" +
+	"\x1e_provisionedwritecapacityunits\";\n" +
 	"\x1cGlobalTableNotFoundException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x85\x01\n" +
 	"\x1dGlobalTableWitnessDescription\x12!\n" +
@@ -19152,29 +19176,33 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatR\vinputformat\x12C\n" +
 	"\x0es3bucketsource\x18\x95\x83\xbc` \x01(\v2\x18.dynamodb.S3BucketSourceR\x0es3bucketsource\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\"\xed\a\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\"\xd4\b\n" +
 	"\x16ImportTableDescription\x12#\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x127\n" +
 	"\x15cloudwatchloggrouparn\x18\xd8\xc9\xc7Q \x01(\tR\x15cloudwatchloggrouparn\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12\"\n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12'\n" +
 	"\n" +
-	"errorcount\x18饮\x94\x01 \x01(\x03R\n" +
-	"errorcount\x12#\n" +
+	"errorcount\x18饮\x94\x01 \x01(\x03H\x00R\n" +
+	"errorcount\x88\x01\x01\x12#\n" +
 	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tR\vfailurecode\x12*\n" +
 	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tR\x0efailuremessage\x12 \n" +
 	"\timportarn\x18\xec\xe3\xf2\xd3\x01 \x01(\tR\timportarn\x12=\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusR\fimportstatus\x12/\n" +
-	"\x11importeditemcount\x18\xf6\x89\xcf` \x01(\x03R\x11importeditemcount\x12V\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusR\fimportstatus\x124\n" +
+	"\x11importeditemcount\x18\xf6\x89\xcf` \x01(\x03H\x01R\x11importeditemcount\x88\x01\x01\x12V\n" +
 	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeR\x14inputcompressiontype\x12;\n" +
 	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatR\vinputformat\x12O\n" +
-	"\x12inputformatoptions\x18\xfb\x85\xeav \x01(\v2\x1c.dynamodb.InputFormatOptionsR\x12inputformatoptions\x122\n" +
-	"\x12processeditemcount\x18\xd4\xf8\x99\xa2\x01 \x01(\x03R\x12processeditemcount\x121\n" +
-	"\x12processedsizebytes\x18ʊ\xbc\" \x01(\x03R\x12processedsizebytes\x12C\n" +
+	"\x12inputformatoptions\x18\xfb\x85\xeav \x01(\v2\x1c.dynamodb.InputFormatOptionsR\x12inputformatoptions\x127\n" +
+	"\x12processeditemcount\x18\xd4\xf8\x99\xa2\x01 \x01(\x03H\x02R\x12processeditemcount\x88\x01\x01\x126\n" +
+	"\x12processedsizebytes\x18ʊ\xbc\" \x01(\x03H\x03R\x12processedsizebytes\x88\x01\x01\x12C\n" +
 	"\x0es3bucketsource\x18\x95\x83\xbc` \x01(\v2\x18.dynamodb.S3BucketSourceR\x0es3bucketsource\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x12\x1e\n" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12_\n" +
 	"\x17tablecreationparameters\x18\xbfߵ\xe8\x01 \x01(\v2!.dynamodb.TableCreationParametersR\x17tablecreationparameters\x12\x1c\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\"\xc3\x03\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableidB\r\n" +
+	"\v_errorcountB\x14\n" +
+	"\x12_importeditemcountB\x15\n" +
+	"\x13_processeditemcountB\x15\n" +
+	"\x13_processedsizebytes\"\xc3\x03\n" +
 	"\x10ImportTableInput\x12#\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12V\n" +
 	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeR\x14inputcompressiontype\x12;\n" +
@@ -19241,56 +19269,62 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tR\tstreamarn\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb7\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc6\x02\n" +
 	"\x10ListBackupsInput\x12=\n" +
 	"\n" +
 	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x1a.dynamodb.BackupTypeFilterR\n" +
 	"backuptype\x12<\n" +
-	"\x17exclusivestartbackuparn\x18\xbf\xf7\x80\xb6\x01 \x01(\tR\x17exclusivestartbackuparn\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12 \n" +
+	"\x17exclusivestartbackuparn\x18\xbf\xf7\x80\xb6\x01 \x01(\tR\x17exclusivestartbackuparn\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x124\n" +
 	"\x13timerangelowerbound\x18\xff\x9c\xb2\xf1\x01 \x01(\tR\x13timerangelowerbound\x124\n" +
-	"\x13timerangeupperbound\x18چ\xd9\xc8\x01 \x01(\tR\x13timerangeupperbound\"\x95\x01\n" +
+	"\x13timerangeupperbound\x18چ\xd9\xc8\x01 \x01(\tR\x13timerangeupperboundB\b\n" +
+	"\x06_limit\"\x95\x01\n" +
 	"\x11ListBackupsOutput\x12E\n" +
 	"\x0fbackupsummaries\x18\xd6\xf5\xf8\xb2\x01 \x03(\v2\x17.dynamodb.BackupSummaryR\x0fbackupsummaries\x129\n" +
-	"\x16lastevaluatedbackuparn\x18\xb0\xad\xbcy \x01(\tR\x16lastevaluatedbackuparn\"\x85\x01\n" +
-	"\x1cListContributorInsightsInput\x12\"\n" +
+	"\x16lastevaluatedbackuparn\x18\xb0\xad\xbcy \x01(\tR\x16lastevaluatedbackuparn\"\x99\x01\n" +
+	"\x1cListContributorInsightsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xad\x01\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablenameB\r\n" +
+	"\v_maxresults\"\xad\x01\n" +
 	"\x1dListContributorInsightsOutput\x12k\n" +
 	"\x1ccontributorinsightssummaries\x18\x9e\xdf\xe0l \x03(\v2$.dynamodb.ContributorInsightsSummaryR\x1ccontributorinsightssummaries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"w\n" +
-	"\x10ListExportsInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x8b\x01\n" +
+	"\x10ListExportsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\"{\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearnB\r\n" +
+	"\v_maxresults\"{\n" +
 	"\x11ListExportsOutput\x12E\n" +
 	"\x0fexportsummaries\x18\xe2\ued74\x01 \x03(\v2\x17.dynamodb.ExportSummaryR\x0fexportsummaries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x9d\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xac\x01\n" +
 	"\x15ListGlobalTablesInput\x12G\n" +
-	"\x1dexclusivestartglobaltablename\x18\xe6\xed\xc8* \x01(\tR\x1dexclusivestartglobaltablename\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12!\n" +
+	"\x1dexclusivestartglobaltablename\x18\xe6\xed\xc8* \x01(\tR\x1dexclusivestartglobaltablename\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\"\x9d\x01\n" +
+	"regionnameB\b\n" +
+	"\x06_limit\"\x9d\x01\n" +
 	"\x16ListGlobalTablesOutput\x12<\n" +
 	"\fglobaltables\x18\xa4\x8e\xcfe \x03(\v2\x15.dynamodb.GlobalTableR\fglobaltables\x12E\n" +
-	"\x1clastevaluatedglobaltablename\x18\x99\xf9\xa3K \x01(\tR\x1clastevaluatedglobaltablename\"s\n" +
+	"\x1clastevaluatedglobaltablename\x18\x99\xf9\xa3K \x01(\tR\x1clastevaluatedglobaltablename\"\x85\x01\n" +
 	"\x10ListImportsInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\"~\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x12\x1e\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearnB\v\n" +
+	"\t_pagesize\"~\n" +
 	"\x11ListImportsOutput\x12H\n" +
 	"\x11importsummarylist\x18\x85\xf6\x88\t \x03(\v2\x17.dynamodb.ImportSummaryR\x11importsummarylist\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"h\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"w\n" +
 	"\x0fListTablesInput\x12;\n" +
-	"\x17exclusivestarttablename\x18\xd9\xfd\x95\x02 \x01(\tR\x17exclusivestarttablename\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\"r\n" +
+	"\x17exclusivestarttablename\x18\xd9\xfd\x95\x02 \x01(\tR\x17exclusivestarttablename\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01B\b\n" +
+	"\x06_limit\"r\n" +
 	"\x10ListTablesOutput\x12:\n" +
 	"\x16lastevaluatedtablename\x18ꈩ\xd0\x01 \x01(\tR\x16lastevaluatedtablename\x12\"\n" +
 	"\n" +
@@ -19307,42 +19341,50 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x127\n" +
 	"\n" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
-	"projection\"\xa5\x02\n" +
+	"projection\"\xd0\x02\n" +
 	"\x1eLocalSecondaryIndexDescription\x12\x1e\n" +
 	"\bindexarn\x18\xffп\xb2\x01 \x01(\tR\bindexarn\x12\x1f\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12*\n" +
-	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03R\x0eindexsizebytes\x12\x1f\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03R\titemcount\x12<\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12/\n" +
+	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x00R\x0eindexsizebytes\x88\x01\x01\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x01R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x127\n" +
 	"\n" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
-	"projection\"\xb1\x01\n" +
+	"projectionB\x11\n" +
+	"\x0f_indexsizebytesB\f\n" +
+	"\n" +
+	"_itemcount\"\xb1\x01\n" +
 	"\x17LocalSecondaryIndexInfo\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x127\n" +
 	"\n" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
-	"projection\"\x81\x01\n" +
-	"\x12OnDemandThroughput\x124\n" +
-	"\x13maxreadrequestunits\x18\xa2\xc0ά\x01 \x01(\x03R\x13maxreadrequestunits\x125\n" +
-	"\x14maxwriterequestunits\x18\xb9\xe2\xa3/ \x01(\x03R\x14maxwriterequestunits\"R\n" +
-	"\x1aOnDemandThroughputOverride\x124\n" +
-	"\x13maxreadrequestunits\x18\xa2\xc0ά\x01 \x01(\x03R\x13maxreadrequestunits\"\xfc\x01\n" +
+	"projection\"\xbc\x01\n" +
+	"\x12OnDemandThroughput\x129\n" +
+	"\x13maxreadrequestunits\x18\xa2\xc0ά\x01 \x01(\x03H\x00R\x13maxreadrequestunits\x88\x01\x01\x12:\n" +
+	"\x14maxwriterequestunits\x18\xb9\xe2\xa3/ \x01(\x03H\x01R\x14maxwriterequestunits\x88\x01\x01B\x16\n" +
+	"\x14_maxreadrequestunitsB\x17\n" +
+	"\x15_maxwriterequestunits\"o\n" +
+	"\x1aOnDemandThroughputOverride\x129\n" +
+	"\x13maxreadrequestunits\x18\xa2\xc0ά\x01 \x01(\x03H\x00R\x13maxreadrequestunits\x88\x01\x01B\x16\n" +
+	"\x14_maxreadrequestunits\"\xfc\x01\n" +
 	"\x16ParameterizedStatement\x12<\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x18.dynamodb.AttributeValueR\n" +
 	"parameters\x12\x82\x01\n" +
 	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
-	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatement\"\xc1\x02\n" +
+	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatement\"\xdf\x02\n" +
 	"\x1ePointInTimeRecoveryDescription\x12B\n" +
 	"\x1aearliestrestorabledatetime\x18\x9fل\xd2\x01 \x01(\tR\x1aearliestrestorabledatetime\x12=\n" +
 	"\x18latestrestorabledatetime\x18彽> \x01(\tR\x18latestrestorabledatetime\x12e\n" +
-	"\x19pointintimerecoverystatus\x18\xbb\x8a\xcb\xf3\x01 \x01(\x0e2#.dynamodb.PointInTimeRecoveryStatusR\x19pointintimerecoverystatus\x125\n" +
-	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05R\x14recoveryperiodindays\"\xc1\x01\n" +
+	"\x19pointintimerecoverystatus\x18\xbb\x8a\xcb\xf3\x01 \x01(\x0e2#.dynamodb.PointInTimeRecoveryStatusR\x19pointintimerecoverystatus\x12:\n" +
+	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05H\x00R\x14recoveryperiodindays\x88\x01\x01B\x17\n" +
+	"\x15_recoveryperiodindays\"\xdf\x01\n" +
 	" PointInTimeRecoverySpecification\x12G\n" +
-	"\x1apointintimerecoveryenabled\x18\xaa\x8b\xa3\x8c\x01 \x01(\bH\x00R\x1apointintimerecoveryenabled\x88\x01\x01\x125\n" +
-	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05R\x14recoveryperiodindaysB\x1d\n" +
-	"\x1b_pointintimerecoveryenabled\"F\n" +
+	"\x1apointintimerecoveryenabled\x18\xaa\x8b\xa3\x8c\x01 \x01(\bH\x00R\x1apointintimerecoveryenabled\x88\x01\x01\x12:\n" +
+	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05H\x01R\x14recoveryperiodindays\x88\x01\x01B\x1d\n" +
+	"\x1b_pointintimerecoveryenabledB\x17\n" +
+	"\x15_recoveryperiodindays\"F\n" +
 	"'PointInTimeRecoveryUnavailableException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x17PolicyNotFoundException\x12\x1b\n" +
@@ -19353,18 +19395,22 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0eprojectiontype\x18\xe9\x99\xc89 \x01(\x0e2\x18.dynamodb.ProjectionTypeR\x0eprojectiontype\"{\n" +
 	"\x15ProvisionedThroughput\x12/\n" +
 	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03R\x11readcapacityunits\x121\n" +
-	"\x12writecapacityunits\x18\xb0\x95\xec\f \x01(\x03R\x12writecapacityunits\"\xb1\x02\n" +
+	"\x12writecapacityunits\x18\xb0\x95\xec\f \x01(\x03R\x12writecapacityunits\"\x88\x03\n" +
 	" ProvisionedThroughputDescription\x126\n" +
 	"\x14lastdecreasedatetime\x18ᕁ\xec\x01 \x01(\tR\x14lastdecreasedatetime\x126\n" +
-	"\x14lastincreasedatetime\x18\xb5\x9d\xfd\xe9\x01 \x01(\tR\x14lastincreasedatetime\x129\n" +
-	"\x16numberofdecreasestoday\x18\xac\xac\xae\x10 \x01(\x03R\x16numberofdecreasestoday\x12/\n" +
-	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03R\x11readcapacityunits\x121\n" +
-	"\x12writecapacityunits\x18\xb0\x95\xec\f \x01(\x03R\x12writecapacityunits\"\x93\x01\n" +
+	"\x14lastincreasedatetime\x18\xb5\x9d\xfd\xe9\x01 \x01(\tR\x14lastincreasedatetime\x12>\n" +
+	"\x16numberofdecreasestoday\x18\xac\xac\xae\x10 \x01(\x03H\x00R\x16numberofdecreasestoday\x88\x01\x01\x124\n" +
+	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03H\x01R\x11readcapacityunits\x88\x01\x01\x126\n" +
+	"\x12writecapacityunits\x18\xb0\x95\xec\f \x01(\x03H\x02R\x12writecapacityunits\x88\x01\x01B\x19\n" +
+	"\x17_numberofdecreasestodayB\x14\n" +
+	"\x12_readcapacityunitsB\x15\n" +
+	"\x13_writecapacityunits\"\x93\x01\n" +
 	"&ProvisionedThroughputExceededException\x12L\n" +
 	"\x11throttlingreasons\x18\xf4\xd2Ї\x01 \x03(\v2\x1a.dynamodb.ThrottlingReasonR\x11throttlingreasons\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"P\n" +
-	"\x1dProvisionedThroughputOverride\x12/\n" +
-	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03R\x11readcapacityunits\"\xf7\x05\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"k\n" +
+	"\x1dProvisionedThroughputOverride\x124\n" +
+	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03H\x00R\x11readcapacityunits\x88\x01\x01B\x14\n" +
+	"\x12_readcapacityunits\"\xf7\x05\n" +
 	"\x03Put\x124\n" +
 	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tR\x13conditionexpression\x12j\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v2+.dynamodb.Put.ExpressionattributenamesEntryR\x18expressionattributenames\x12n\n" +
@@ -19430,7 +19476,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x17PutResourcePolicyOutput\x12\"\n" +
 	"\n" +
 	"revisionid\x18\x86\xa3\x9e\xee\x01 \x01(\tR\n" +
-	"revisionid\"\xce\f\n" +
+	"revisionid\"\xdd\f\n" +
 	"\n" +
 	"QueryInput\x12,\n" +
 	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12R\n" +
@@ -19442,12 +19488,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x10filterexpression\x18\x9a˷  \x01(\tR\x10filterexpression\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x129\n" +
 	"\x16keyconditionexpression\x18Ђ\x9dh \x01(\tR\x16keyconditionexpression\x12Q\n" +
-	"\rkeyconditions\x18\xff\xf5\xb3\x92\x01 \x03(\v2'.dynamodb.QueryInput.KeyconditionsEntryR\rkeyconditions\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x125\n" +
+	"\rkeyconditions\x18\xff\xf5\xb3\x92\x01 \x03(\v2'.dynamodb.QueryInput.KeyconditionsEntryR\rkeyconditions\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x125\n" +
 	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tR\x14projectionexpression\x12J\n" +
 	"\vqueryfilter\x18\xeeø3 \x03(\v2%.dynamodb.QueryInput.QueryfilterEntryR\vqueryfilter\x12[\n" +
 	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x123\n" +
-	"\x10scanindexforward\x18\x8a\xdfث\x01 \x01(\bH\x01R\x10scanindexforward\x88\x01\x01\x12,\n" +
+	"\x10scanindexforward\x18\x8a\xdfث\x01 \x01(\bH\x02R\x10scanindexforward\x88\x01\x01\x12,\n" +
 	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectR\x06select\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1a^\n" +
 	"\x16ExclusivestartkeyEntry\x12\x10\n" +
@@ -19465,17 +19511,20 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x10QueryfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
 	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x11\n" +
-	"\x0f_consistentreadB\x13\n" +
-	"\x11_scanindexforward\"\x87\x03\n" +
+	"\x0f_consistentreadB\b\n" +
+	"\x06_limitB\x13\n" +
+	"\x11_scanindexforward\"\xac\x03\n" +
 	"\vQueryOutput\x12J\n" +
-	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x17\n" +
-	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x120\n" +
+	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x1c\n" +
+	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05H\x00R\x05count\x88\x01\x01\x120\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12Z\n" +
-	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2+.dynamodb.QueryOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12&\n" +
-	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1a]\n" +
+	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2+.dynamodb.QueryOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12+\n" +
+	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05H\x01R\fscannedcount\x88\x01\x01\x1a]\n" +
 	"\x15LastevaluatedkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\",\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\b\n" +
+	"\x06_countB\x0f\n" +
+	"\r_scannedcount\",\n" +
 	"\aReplica\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
@@ -19531,40 +19580,46 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12h\n" +
 	"\x1aondemandthroughputoverride\x18\xb2\x9d\x9e\x97\x01 \x01(\v2$.dynamodb.OnDemandThroughputOverrideR\x1aondemandthroughputoverride\x12q\n" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12c\n" +
-	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v27.dynamodb.GlobalSecondaryIndexWarmThroughputDescriptionR\x0ewarmthroughput\"\xbd\x04\n" +
+	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v27.dynamodb.GlobalSecondaryIndexWarmThroughputDescriptionR\x0ewarmthroughput\"\x8a\x05\n" +
 	".ReplicaGlobalSecondaryIndexSettingsDescription\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12;\n" +
 	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12\x8b\x01\n" +
-	"*provisionedreadcapacityautoscalingsettings\x18\x83\xd8\xe9( \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR*provisionedreadcapacityautoscalingsettings\x12F\n" +
-	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03R\x1cprovisionedreadcapacityunits\x12\x8d\x01\n" +
-	"+provisionedwritecapacityautoscalingsettings\x18\x9a\xf0\xa6P \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR+provisionedwritecapacityautoscalingsettings\x12G\n" +
-	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03R\x1dprovisionedwritecapacityunits\"\xa9\x02\n" +
+	"*provisionedreadcapacityautoscalingsettings\x18\x83\xd8\xe9( \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR*provisionedreadcapacityautoscalingsettings\x12K\n" +
+	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03H\x00R\x1cprovisionedreadcapacityunits\x88\x01\x01\x12\x8d\x01\n" +
+	"+provisionedwritecapacityautoscalingsettings\x18\x9a\xf0\xa6P \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR+provisionedwritecapacityautoscalingsettings\x12L\n" +
+	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03H\x01R\x1dprovisionedwritecapacityunits\x88\x01\x01B\x1f\n" +
+	"\x1d_provisionedreadcapacityunitsB \n" +
+	"\x1e_provisionedwritecapacityunits\"\xcf\x02\n" +
 	")ReplicaGlobalSecondaryIndexSettingsUpdate\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x92\x01\n" +
-	"0provisionedreadcapacityautoscalingsettingsupdate\x18\xfcа\x1b \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR0provisionedreadcapacityautoscalingsettingsupdate\x12F\n" +
-	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03R\x1cprovisionedreadcapacityunits\"7\n" +
+	"0provisionedreadcapacityautoscalingsettingsupdate\x18\xfcа\x1b \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR0provisionedreadcapacityautoscalingsettingsupdate\x12K\n" +
+	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03H\x00R\x1cprovisionedreadcapacityunits\x88\x01\x01B\x1f\n" +
+	"\x1d_provisionedreadcapacityunits\"7\n" +
 	"\x18ReplicaNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb8\a\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x93\b\n" +
 	"\x1aReplicaSettingsDescription\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
 	"regionname\x12^\n" +
 	"\x19replicabillingmodesummary\x18\xe4\xb3\xcc\xd9\x01 \x01(\v2\x1c.dynamodb.BillingModeSummaryR\x19replicabillingmodesummary\x12\x8e\x01\n" +
 	"#replicaglobalsecondaryindexsettings\x18\xf0\xcf\xc5\xf8\x01 \x03(\v28.dynamodb.ReplicaGlobalSecondaryIndexSettingsDescriptionR#replicaglobalsecondaryindexsettings\x12\x99\x01\n" +
-	"1replicaprovisionedreadcapacityautoscalingsettings\x18\xed\xb8\xd5; \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR1replicaprovisionedreadcapacityautoscalingsettings\x12S\n" +
-	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03R#replicaprovisionedreadcapacityunits\x12\x9c\x01\n" +
-	"2replicaprovisionedwritecapacityautoscalingsettings\x18\x84\u05ce\x8c\x01 \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR2replicaprovisionedwritecapacityautoscalingsettings\x12V\n" +
-	"$replicaprovisionedwritecapacityunits\x18\xaa\u038d\xaa\x01 \x01(\x03R$replicaprovisionedwritecapacityunits\x12A\n" +
+	"1replicaprovisionedreadcapacityautoscalingsettings\x18\xed\xb8\xd5; \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR1replicaprovisionedreadcapacityautoscalingsettings\x12X\n" +
+	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03H\x00R#replicaprovisionedreadcapacityunits\x88\x01\x01\x12\x9c\x01\n" +
+	"2replicaprovisionedwritecapacityautoscalingsettings\x18\x84\u05ce\x8c\x01 \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR2replicaprovisionedwritecapacityautoscalingsettings\x12[\n" +
+	"$replicaprovisionedwritecapacityunits\x18\xaa\u038d\xaa\x01 \x01(\x03H\x01R$replicaprovisionedwritecapacityunits\x88\x01\x01\x12A\n" +
 	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusR\rreplicastatus\x12[\n" +
-	"\x18replicatableclasssummary\x18\xde\xe1\xda\xf7\x01 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x18replicatableclasssummary\"\x90\x04\n" +
+	"\x18replicatableclasssummary\x18\xde\xe1\xda\xf7\x01 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x18replicatableclasssummaryB&\n" +
+	"$_replicaprovisionedreadcapacityunitsB'\n" +
+	"%_replicaprovisionedwritecapacityunits\"\xbd\x04\n" +
 	"\x15ReplicaSettingsUpdate\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
 	"regionname\x12\x94\x01\n" +
 	")replicaglobalsecondaryindexsettingsupdate\x18߄\xb47 \x03(\v23.dynamodb.ReplicaGlobalSecondaryIndexSettingsUpdateR)replicaglobalsecondaryindexsettingsupdate\x12\xa0\x01\n" +
-	"7replicaprovisionedreadcapacityautoscalingsettingsupdate\x18\xee\xd2\xf9t \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR7replicaprovisionedreadcapacityautoscalingsettingsupdate\x12S\n" +
-	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03R#replicaprovisionedreadcapacityunits\x12E\n" +
-	"\x11replicatableclass\x18\xa4\x96\xcav \x01(\x0e2\x14.dynamodb.TableClassR\x11replicatableclass\"\x85\x01\n" +
+	"7replicaprovisionedreadcapacityautoscalingsettingsupdate\x18\xee\xd2\xf9t \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR7replicaprovisionedreadcapacityautoscalingsettingsupdate\x12X\n" +
+	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03H\x00R#replicaprovisionedreadcapacityunits\x88\x01\x01\x12E\n" +
+	"\x11replicatableclass\x18\xa4\x96\xcav \x01(\x0e2\x14.dynamodb.TableClassR\x11replicatableclassB&\n" +
+	"$_replicaprovisionedreadcapacityunits\"\x85\x01\n" +
 	"\rReplicaUpdate\x129\n" +
 	"\x06create\x18\xfeȷ\xc8\x01 \x01(\v2\x1d.dynamodb.CreateReplicaActionR\x06create\x129\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2\x1d.dynamodb.DeleteReplicaActionR\x06delete\"?\n" +
@@ -19627,8 +19682,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tR\x0ekmsmasterkeyid\x12/\n" +
 	"\assetype\x18\xa3\xe8\xf5\xcd\x01 \x01(\x0e2\x11.dynamodb.SSETypeR\assetypeB\n" +
 	"\n" +
-	"\b_enabled\"\xde\n" +
-	"\n" +
+	"\b_enabled\"\x95\v\n" +
 	"\tScanInput\x12,\n" +
 	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12R\n" +
 	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12/\n" +
@@ -19637,17 +19691,17 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v21.dynamodb.ScanInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12t\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v22.dynamodb.ScanInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x12-\n" +
 	"\x10filterexpression\x18\x9a˷  \x01(\tR\x10filterexpression\x12\x1f\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x125\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x125\n" +
 	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tR\x14projectionexpression\x12[\n" +
 	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12G\n" +
 	"\n" +
 	"scanfilter\x18\xfbϏ\x82\x01 \x03(\v2#.dynamodb.ScanInput.ScanfilterEntryR\n" +
-	"scanfilter\x12\x1c\n" +
-	"\asegment\x18\x87߬\x85\x01 \x01(\x05R\asegment\x12,\n" +
+	"scanfilter\x12!\n" +
+	"\asegment\x18\x87߬\x85\x01 \x01(\x05H\x02R\asegment\x88\x01\x01\x12,\n" +
 	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectR\x06select\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12'\n" +
-	"\rtotalsegments\x18\x88̎G \x01(\x05R\rtotalsegments\x1a^\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12,\n" +
+	"\rtotalsegments\x18\x88̎G \x01(\x05H\x03R\rtotalsegments\x88\x01\x01\x1a^\n" +
 	"\x16ExclusivestartkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1aK\n" +
@@ -19660,28 +19714,37 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0fScanfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
 	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x11\n" +
-	"\x0f_consistentread\"\x85\x03\n" +
+	"\x0f_consistentreadB\b\n" +
+	"\x06_limitB\n" +
+	"\n" +
+	"\b_segmentB\x10\n" +
+	"\x0e_totalsegments\"\xaa\x03\n" +
 	"\n" +
 	"ScanOutput\x12J\n" +
-	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x17\n" +
-	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x120\n" +
+	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x1c\n" +
+	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05H\x00R\x05count\x88\x01\x01\x120\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12Y\n" +
-	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2*.dynamodb.ScanOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12&\n" +
-	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1a]\n" +
+	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2*.dynamodb.ScanOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12+\n" +
+	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05H\x01R\fscannedcount\x88\x01\x01\x1a]\n" +
 	"\x15LastevaluatedkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\x9e\x04\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\b\n" +
+	"\x06_countB\x0f\n" +
+	"\r_scannedcount\"\xc9\x04\n" +
 	"\x12SourceTableDetails\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12\x1f\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03R\titemcount\x12<\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x00R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12\x1e\n" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x127\n" +
 	"\x15tablecreationdatetime\x18̺\xe8H \x01(\tR\x15tablecreationdatetime\x12\x1c\n" +
 	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12)\n" +
-	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03R\x0etablesizebytes\"\xca\x03\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12.\n" +
+	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\x01R\x0etablesizebytes\x88\x01\x01B\f\n" +
+	"\n" +
+	"_itemcountB\x11\n" +
+	"\x0f_tablesizebytes\"\xca\x03\n" +
 	"\x19SourceTableFeatureDetails\x12^\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2\".dynamodb.GlobalSecondaryIndexInfoR\x16globalsecondaryindexes\x12[\n" +
 	"\x15localsecondaryindexes\x18\xf7\xbc\xe3\xac\x01 \x03(\v2!.dynamodb.LocalSecondaryIndexInfoR\x15localsecondaryindexes\x12D\n" +
@@ -19711,7 +19774,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12I\n" +
 	"\x10ssespecification\x18\x9c\xad\x8e\x0f \x01(\v2\x1a.dynamodb.SSESpecificationR\x10ssespecification\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xd0\x0f\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xfb\x0f\n" +
 	"\x10TableDescription\x12F\n" +
 	"\x0farchivalsummary\x18\xea\x9f\xe8\x18 \x01(\v2\x19.dynamodb.ArchivalSummaryR\x0farchivalsummary\x12U\n" +
 	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12O\n" +
@@ -19721,8 +19784,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2).dynamodb.GlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x7f\n" +
 	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x121\n" +
 	"\x12globaltableversion\x18\xaf\xd8\xc4  \x01(\tR\x12globaltableversion\x12^\n" +
-	"\x14globaltablewitnesses\x18\xc6\xfa\x93\x02 \x03(\v2'.dynamodb.GlobalTableWitnessDescriptionR\x14globaltablewitnesses\x12\x1f\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03R\titemcount\x12<\n" +
+	"\x14globaltablewitnesses\x18\xc6\xfa\x93\x02 \x03(\v2'.dynamodb.GlobalTableWitnessDescriptionR\x14globaltablewitnesses\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x01R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12+\n" +
 	"\x0flateststreamarn\x18\xb2\xcc\xf0b \x01(\tR\x0flateststreamarn\x120\n" +
 	"\x11lateststreamlabel\x18\x9d\xc5М\x01 \x01(\tR\x11lateststreamlabel\x12b\n" +
@@ -19737,19 +19800,24 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12L\n" +
 	"\x11tableclasssummary\x18\xe0\xe8\x8a\x02 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x11tableclasssummary\x12\x1c\n" +
 	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12)\n" +
-	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03R\x0etablesizebytes\x12:\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12.\n" +
+	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\x02R\x0etablesizebytes\x88\x01\x01\x12:\n" +
 	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x15.dynamodb.TableStatusR\vtablestatus\x12T\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2(.dynamodb.TableWarmThroughputDescriptionR\x0ewarmthroughputB\x1c\n" +
-	"\x1a_deletionprotectionenabled\"2\n" +
+	"\x1a_deletionprotectionenabledB\f\n" +
+	"\n" +
+	"_itemcountB\x11\n" +
+	"\x0f_tablesizebytes\"2\n" +
 	"\x13TableInUseException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16TableNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbb\x01\n" +
-	"\x1eTableWarmThroughputDescription\x121\n" +
-	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03R\x12readunitspersecond\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.TableStatusR\x06status\x124\n" +
-	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03R\x13writeunitspersecond\"4\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf4\x01\n" +
+	"\x1eTableWarmThroughputDescription\x126\n" +
+	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x120\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.TableStatusR\x06status\x129\n" +
+	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x01R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
+	"\x13_readunitspersecondB\x16\n" +
+	"\x14_writeunitspersecond\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"_\n" +
@@ -19845,14 +19913,15 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12B\n" +
 	"\x0ereplicaupdates\x18\xa0\xe8\xa9| \x03(\v2\x17.dynamodb.ReplicaUpdateR\x0ereplicaupdates\"w\n" +
 	"\x17UpdateGlobalTableOutput\x12\\\n" +
-	"\x16globaltabledescription\x18\xb5\x90\x91\xa3\x01 \x01(\v2 .dynamodb.GlobalTableDescriptionR\x16globaltabledescription\"\xad\x05\n" +
+	"\x16globaltabledescription\x18\xb5\x90\x91\xa3\x01 \x01(\v2 .dynamodb.GlobalTableDescriptionR\x16globaltabledescription\"\xdf\x05\n" +
 	"\x1eUpdateGlobalTableSettingsInput\x12Q\n" +
 	"\x16globaltablebillingmode\x18\xbb\x86\xa8\x88\x01 \x01(\x0e2\x15.dynamodb.BillingModeR\x16globaltablebillingmode\x12\xa1\x01\n" +
 	"-globaltableglobalsecondaryindexsettingsupdate\x18\xec\x83֯\x01 \x03(\v27.dynamodb.GlobalTableGlobalSecondaryIndexSettingsUpdateR-globaltableglobalsecondaryindexsettingsupdate\x12,\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12\xab\x01\n" +
-	"<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x18\xee\xd5\xc3\xcf\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x12]\n" +
-	"(globaltableprovisionedwritecapacityunits\x18\xbb\xfd\xd1< \x01(\x03R(globaltableprovisionedwritecapacityunits\x12Y\n" +
-	"\x15replicasettingsupdate\x18\xf4ځ\xdd\x01 \x03(\v2\x1f.dynamodb.ReplicaSettingsUpdateR\x15replicasettingsupdate\"\xa3\x01\n" +
+	"<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x18\xee\xd5\xc3\xcf\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x12b\n" +
+	"(globaltableprovisionedwritecapacityunits\x18\xbb\xfd\xd1< \x01(\x03H\x00R(globaltableprovisionedwritecapacityunits\x88\x01\x01\x12Y\n" +
+	"\x15replicasettingsupdate\x18\xf4ځ\xdd\x01 \x03(\v2\x1f.dynamodb.ReplicaSettingsUpdateR\x15replicasettingsupdateB+\n" +
+	")_globaltableprovisionedwritecapacityunits\"\xa3\x01\n" +
 	"\x1fUpdateGlobalTableSettingsOutput\x12,\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12R\n" +
 	"\x0freplicasettings\x18\xbb\xfb߉\x01 \x03(\v2$.dynamodb.ReplicaSettingsDescriptionR\x0freplicasettings\"\x9a\f\n" +
@@ -19946,10 +20015,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12_\n" +
 	"\x17timetolivespecification\x18\xd1\xf5ϖ\x01 \x01(\v2!.dynamodb.TimeToLiveSpecificationR\x17timetolivespecification\"y\n" +
 	"\x16UpdateTimeToLiveOutput\x12_\n" +
-	"\x17timetolivespecification\x18\xd1\xf5ϖ\x01 \x01(\v2!.dynamodb.TimeToLiveSpecificationR\x17timetolivespecification\"y\n" +
-	"\x0eWarmThroughput\x121\n" +
-	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03R\x12readunitspersecond\x124\n" +
-	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03R\x13writeunitspersecond\"\x8b\x01\n" +
+	"\x17timetolivespecification\x18\xd1\xf5ϖ\x01 \x01(\v2!.dynamodb.TimeToLiveSpecificationR\x17timetolivespecification\"\xb2\x01\n" +
+	"\x0eWarmThroughput\x126\n" +
+	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x129\n" +
+	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x01R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
+	"\x13_readunitspersecondB\x16\n" +
+	"\x14_writeunitspersecond\"\x8b\x01\n" +
 	"\fWriteRequest\x12A\n" +
 	"\rdeleterequest\x18\xa8\x93\xeb\xe3\x01 \x01(\v2\x17.dynamodb.DeleteRequestR\rdeleterequest\x128\n" +
 	"\n" +
@@ -21239,24 +21310,53 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[7].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[8].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[9].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[11].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[14].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[20].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[42].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[78].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[88].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[92].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[94].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[101].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[107].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[110].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[114].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[122].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[136].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[141].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[143].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[145].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[147].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[149].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[151].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[156].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[158].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[159].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[161].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[162].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[167].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[169].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[174].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[176].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[177].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[187].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[188].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[190].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[191].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[198].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[201].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[205].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[206].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[207].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[208].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[210].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[215].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[218].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[224].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[243].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[251].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[257].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

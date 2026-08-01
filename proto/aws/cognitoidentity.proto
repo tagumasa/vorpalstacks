@@ -374,7 +374,7 @@ message GetOpenIdTokenForDeveloperIdentityInput {
 
   map<string, string> principaltags = 346698229;
 
-  int64 tokenduration = 402772367;
+  optional int64 tokenduration = 402772367;
 
 }
 
@@ -616,7 +616,7 @@ message LookupDeveloperIdentityInput {
 
   string identitypoolid = 23936765;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 

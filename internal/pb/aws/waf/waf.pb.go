@@ -6286,7 +6286,7 @@ func (x *GetSampledRequestsRequest) GetWebaclid() string {
 
 type GetSampledRequestsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Populationsize  int64                  `protobuf:"varint,140605436,opt,name=populationsize,proto3" json:"populationsize,omitempty"`
+	Populationsize  *int64                 `protobuf:"varint,140605436,opt,name=populationsize,proto3,oneof" json:"populationsize,omitempty"`
 	Sampledrequests []*SampledHTTPRequest  `protobuf:"bytes,3233688,rep,name=sampledrequests,proto3" json:"sampledrequests,omitempty"`
 	Timewindow      *TimeWindow            `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -6324,8 +6324,8 @@ func (*GetSampledRequestsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSampledRequestsResponse) GetPopulationsize() int64 {
-	if x != nil {
-		return x.Populationsize
+	if x != nil && x.Populationsize != nil {
+		return *x.Populationsize
 	}
 	return 0
 }
@@ -7050,7 +7050,7 @@ func (x *IPSetUpdate) GetIpsetdescriptor() *IPSetDescriptor {
 
 type ListActivatedRulesInRuleGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Rulegroupid   string                 `protobuf:"bytes,287757320,opt,name=rulegroupid,proto3" json:"rulegroupid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7088,8 +7088,8 @@ func (*ListActivatedRulesInRuleGroupRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListActivatedRulesInRuleGroupRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7162,7 +7162,7 @@ func (x *ListActivatedRulesInRuleGroupResponse) GetNextmarker() string {
 
 type ListByteMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7199,8 +7199,8 @@ func (*ListByteMatchSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListByteMatchSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7266,7 +7266,7 @@ func (x *ListByteMatchSetsResponse) GetNextmarker() string {
 
 type ListGeoMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7303,8 +7303,8 @@ func (*ListGeoMatchSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGeoMatchSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7370,7 +7370,7 @@ func (x *ListGeoMatchSetsResponse) GetNextmarker() string {
 
 type ListIPSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7407,8 +7407,8 @@ func (*ListIPSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListIPSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7474,7 +7474,7 @@ func (x *ListIPSetsResponse) GetNextmarker() string {
 
 type ListLoggingConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7511,8 +7511,8 @@ func (*ListLoggingConfigurationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListLoggingConfigurationsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7578,7 +7578,7 @@ func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
 
 type ListRateBasedRulesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7615,8 +7615,8 @@ func (*ListRateBasedRulesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRateBasedRulesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7682,7 +7682,7 @@ func (x *ListRateBasedRulesResponse) GetRules() []*RuleSummary {
 
 type ListRegexMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7719,8 +7719,8 @@ func (*ListRegexMatchSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexMatchSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7786,7 +7786,7 @@ func (x *ListRegexMatchSetsResponse) GetRegexmatchsets() []*RegexMatchSetSummary
 
 type ListRegexPatternSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7823,8 +7823,8 @@ func (*ListRegexPatternSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexPatternSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7890,7 +7890,7 @@ func (x *ListRegexPatternSetsResponse) GetRegexpatternsets() []*RegexPatternSetS
 
 type ListRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7927,8 +7927,8 @@ func (*ListRuleGroupsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRuleGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7994,7 +7994,7 @@ func (x *ListRuleGroupsResponse) GetRulegroups() []*RuleGroupSummary {
 
 type ListRulesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8031,8 +8031,8 @@ func (*ListRulesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRulesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8098,7 +8098,7 @@ func (x *ListRulesResponse) GetRules() []*RuleSummary {
 
 type ListSizeConstraintSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8135,8 +8135,8 @@ func (*ListSizeConstraintSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSizeConstraintSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8202,7 +8202,7 @@ func (x *ListSizeConstraintSetsResponse) GetSizeconstraintsets() []*SizeConstrai
 
 type ListSqlInjectionMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8239,8 +8239,8 @@ func (*ListSqlInjectionMatchSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSqlInjectionMatchSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8306,7 +8306,7 @@ func (x *ListSqlInjectionMatchSetsResponse) GetSqlinjectionmatchsets() []*SqlInj
 
 type ListSubscribedRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8343,8 +8343,8 @@ func (*ListSubscribedRuleGroupsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscribedRuleGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8410,7 +8410,7 @@ func (x *ListSubscribedRuleGroupsResponse) GetRulegroups() []*SubscribedRuleGrou
 
 type ListTagsForResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8448,8 +8448,8 @@ func (*ListTagsForResourceRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8522,7 +8522,7 @@ func (x *ListTagsForResourceResponse) GetTaginfoforresource() *TagInfoForResourc
 
 type ListWebACLsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8559,8 +8559,8 @@ func (*ListWebACLsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListWebACLsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8626,7 +8626,7 @@ func (x *ListWebACLsResponse) GetWebacls() []*WebACLSummary {
 
 type ListXssMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8663,8 +8663,8 @@ func (*ListXssMatchSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListXssMatchSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -13638,13 +13638,14 @@ const file_waf_proto_rawDesc = "" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x0f.waf.TimeWindowR\n" +
 	"timewindow\x12\x1d\n" +
-	"\bwebaclid\x18\xd3\xcc\xec_ \x01(\tR\bwebaclid\"\xc1\x01\n" +
-	"\x1aGetSampledRequestsResponse\x12)\n" +
-	"\x0epopulationsize\x18\xfc\xef\x85C \x01(\x03R\x0epopulationsize\x12D\n" +
+	"\bwebaclid\x18\xd3\xcc\xec_ \x01(\tR\bwebaclid\"\xd9\x01\n" +
+	"\x1aGetSampledRequestsResponse\x12.\n" +
+	"\x0epopulationsize\x18\xfc\xef\x85C \x01(\x03H\x00R\x0epopulationsize\x88\x01\x01\x12D\n" +
 	"\x0fsampledrequests\x18\x98\xaf\xc5\x01 \x03(\v2\x17.waf.SampledHTTPRequestR\x0fsampledrequests\x122\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x0f.waf.TimeWindowR\n" +
-	"timewindow\"S\n" +
+	"timewindowB\x11\n" +
+	"\x0f_populationsize\"S\n" +
 	"\x1bGetSizeConstraintSetRequest\x124\n" +
 	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\"g\n" +
 	"\x1cGetSizeConstraintSetResponse\x12G\n" +
@@ -13684,168 +13685,184 @@ const file_waf_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"~\n" +
 	"\vIPSetUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x12A\n" +
-	"\x0fipsetdescriptor\x18\x86\xb4\xf7k \x01(\v2\x14.waf.IPSetDescriptorR\x0fipsetdescriptor\"\x8a\x01\n" +
-	"$ListActivatedRulesInRuleGroupRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x0fipsetdescriptor\x18\x86\xb4\xf7k \x01(\v2\x14.waf.IPSetDescriptorR\x0fipsetdescriptor\"\x99\x01\n" +
+	"$ListActivatedRulesInRuleGroupRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12$\n" +
-	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\"\x8a\x01\n" +
+	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupidB\b\n" +
+	"\x06_limit\"\x8a\x01\n" +
 	"%ListActivatedRulesInRuleGroupResponse\x12=\n" +
 	"\x0eactivatedrules\x18\xe4\xe6\x8d$ \x03(\v2\x12.waf.ActivatedRuleR\x0eactivatedrules\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"X\n" +
-	"\x18ListByteMatchSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"g\n" +
+	"\x18ListByteMatchSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x83\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x83\x01\n" +
 	"\x19ListByteMatchSetsResponse\x12B\n" +
 	"\rbytematchsets\x18\xc2\xfb\xf3\xf8\x01 \x03(\v2\x18.waf.ByteMatchSetSummaryR\rbytematchsets\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"W\n" +
-	"\x17ListGeoMatchSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"f\n" +
+	"\x17ListGeoMatchSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"~\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"~\n" +
 	"\x18ListGeoMatchSetsResponse\x12>\n" +
 	"\fgeomatchsets\x18\x97\xea\xa8Q \x03(\v2\x17.waf.GeoMatchSetSummaryR\fgeomatchsets\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"Q\n" +
-	"\x11ListIPSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"`\n" +
+	"\x11ListIPSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"g\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"g\n" +
 	"\x12ListIPSetsResponse\x12-\n" +
 	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x11.waf.IPSetSummaryR\x06ipsets\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"`\n" +
-	" ListLoggingConfigurationsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"o\n" +
+	" ListLoggingConfigurationsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x9c\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x9c\x01\n" +
 	"!ListLoggingConfigurationsResponse\x12S\n" +
 	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x19.waf.LoggingConfigurationR\x15loggingconfigurations\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"Y\n" +
-	"\x19ListRateBasedRulesRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"h\n" +
+	"\x19ListRateBasedRulesRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"k\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"k\n" +
 	"\x1aListRateBasedRulesResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12)\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"Y\n" +
-	"\x19ListRegexMatchSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"h\n" +
+	"\x19ListRegexMatchSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x86\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x86\x01\n" +
 	"\x1aListRegexMatchSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12D\n" +
-	"\x0eregexmatchsets\x18删E \x03(\v2\x19.waf.RegexMatchSetSummaryR\x0eregexmatchsets\"[\n" +
-	"\x1bListRegexPatternSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x0eregexmatchsets\x18删E \x03(\v2\x19.waf.RegexMatchSetSummaryR\x0eregexmatchsets\"j\n" +
+	"\x1bListRegexPatternSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8f\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x8f\x01\n" +
 	"\x1cListRegexPatternSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12K\n" +
-	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1b.waf.RegexPatternSetSummaryR\x10regexpatternsets\"U\n" +
-	"\x15ListRuleGroupsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1b.waf.RegexPatternSetSummaryR\x10regexpatternsets\"d\n" +
+	"\x15ListRuleGroupsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"w\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"w\n" +
 	"\x16ListRuleGroupsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x129\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x15.waf.RuleGroupSummaryR\n" +
-	"rulegroups\"P\n" +
-	"\x10ListRulesRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"rulegroups\"_\n" +
+	"\x10ListRulesRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"b\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"b\n" +
 	"\x11ListRulesResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12)\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"]\n" +
-	"\x1dListSizeConstraintSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"l\n" +
+	"\x1dListSizeConstraintSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x97\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x97\x01\n" +
 	"\x1eListSizeConstraintSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12Q\n" +
-	"\x12sizeconstraintsets\x18\xef\xe1ȵ\x01 \x03(\v2\x1d.waf.SizeConstraintSetSummaryR\x12sizeconstraintsets\"`\n" +
-	" ListSqlInjectionMatchSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x12sizeconstraintsets\x18\xef\xe1ȵ\x01 \x03(\v2\x1d.waf.SizeConstraintSetSummaryR\x12sizeconstraintsets\"o\n" +
+	" ListSqlInjectionMatchSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xa2\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\xa2\x01\n" +
 	"!ListSqlInjectionMatchSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12Y\n" +
-	"\x15sqlinjectionmatchsets\x18Ɉ\xb7\x0e \x03(\v2 .waf.SqlInjectionMatchSetSummaryR\x15sqlinjectionmatchsets\"_\n" +
-	"\x1fListSubscribedRuleGroupsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x15sqlinjectionmatchsets\x18Ɉ\xb7\x0e \x03(\v2 .waf.SqlInjectionMatchSetSummaryR\x15sqlinjectionmatchsets\"n\n" +
+	"\x1fListSubscribedRuleGroupsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8b\x01\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x8b\x01\n" +
 	" ListSubscribedRuleGroupsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12C\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x1f.waf.SubscribedRuleGroupSummaryR\n" +
-	"rulegroups\"\x80\x01\n" +
-	"\x1aListTagsForResourceRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"rulegroups\"\x8f\x01\n" +
+	"\x1aListTagsForResourceRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\"\x8d\x01\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\b\n" +
+	"\x06_limit\"\x8d\x01\n" +
 	"\x1bListTagsForResourceResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12J\n" +
-	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x17.waf.TagInfoForResourceR\x12taginfoforresource\"R\n" +
-	"\x12ListWebACLsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x17.waf.TagInfoForResourceR\x12taginfoforresource\"a\n" +
+	"\x12ListWebACLsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"j\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"j\n" +
 	"\x13ListWebACLsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12/\n" +
-	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x12.waf.WebACLSummaryR\awebacls\"W\n" +
-	"\x17ListXssMatchSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x12.waf.WebACLSummaryR\awebacls\"f\n" +
+	"\x17ListXssMatchSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x7f\n" +
+	"nextmarkerB\b\n" +
+	"\x06_limit\"\x7f\n" +
 	"\x18ListXssMatchSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -15124,6 +15141,23 @@ func file_waf_proto_init() {
 		return
 	}
 	file_waf_proto_msgTypes[25].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[92].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[107].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[109].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[111].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[113].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[115].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[117].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[119].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[121].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[123].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[125].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[127].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[129].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[131].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[133].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[135].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[137].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[140].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

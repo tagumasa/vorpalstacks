@@ -47,7 +47,7 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, err := store.ListStateMachines(ctx, req.Msg.Maxresults, req.Msg.Nexttoken)
+	result, err := store.ListStateMachines(ctx, req.Msg.GetMaxresults(), req.Msg.Nexttoken)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}

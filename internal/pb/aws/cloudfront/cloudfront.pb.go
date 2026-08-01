@@ -3520,14 +3520,14 @@ type CacheBehavior struct {
 	Allowedmethods             *AllowedMethods             `protobuf:"bytes,56383476,opt,name=allowedmethods,proto3" json:"allowedmethods,omitempty"`
 	Cachepolicyid              string                      `protobuf:"bytes,431434163,opt,name=cachepolicyid,proto3" json:"cachepolicyid,omitempty"`
 	Compress                   *bool                       `protobuf:"varint,235468462,opt,name=compress,proto3,oneof" json:"compress,omitempty"`
-	Defaultttl                 int64                       `protobuf:"varint,391646391,opt,name=defaultttl,proto3" json:"defaultttl,omitempty"`
+	Defaultttl                 *int64                      `protobuf:"varint,391646391,opt,name=defaultttl,proto3,oneof" json:"defaultttl,omitempty"`
 	Fieldlevelencryptionid     string                      `protobuf:"bytes,450714616,opt,name=fieldlevelencryptionid,proto3" json:"fieldlevelencryptionid,omitempty"`
 	Forwardedvalues            *ForwardedValues            `protobuf:"bytes,34815362,opt,name=forwardedvalues,proto3" json:"forwardedvalues,omitempty"`
 	Functionassociations       *FunctionAssociations       `protobuf:"bytes,457445650,opt,name=functionassociations,proto3" json:"functionassociations,omitempty"`
 	Grpcconfig                 *GrpcConfig                 `protobuf:"bytes,406090728,opt,name=grpcconfig,proto3" json:"grpcconfig,omitempty"`
 	Lambdafunctionassociations *LambdaFunctionAssociations `protobuf:"bytes,46888655,opt,name=lambdafunctionassociations,proto3" json:"lambdafunctionassociations,omitempty"`
-	Maxttl                     int64                       `protobuf:"varint,451484784,opt,name=maxttl,proto3" json:"maxttl,omitempty"`
-	Minttl                     int64                       `protobuf:"varint,420784162,opt,name=minttl,proto3" json:"minttl,omitempty"`
+	Maxttl                     *int64                      `protobuf:"varint,451484784,opt,name=maxttl,proto3,oneof" json:"maxttl,omitempty"`
+	Minttl                     *int64                      `protobuf:"varint,420784162,opt,name=minttl,proto3,oneof" json:"minttl,omitempty"`
 	Originrequestpolicyid      string                      `protobuf:"bytes,298538616,opt,name=originrequestpolicyid,proto3" json:"originrequestpolicyid,omitempty"`
 	Pathpattern                string                      `protobuf:"bytes,266478053,opt,name=pathpattern,proto3" json:"pathpattern,omitempty"`
 	Realtimelogconfigarn       string                      `protobuf:"bytes,152963408,opt,name=realtimelogconfigarn,proto3" json:"realtimelogconfigarn,omitempty"`
@@ -3593,8 +3593,8 @@ func (x *CacheBehavior) GetCompress() bool {
 }
 
 func (x *CacheBehavior) GetDefaultttl() int64 {
-	if x != nil {
-		return x.Defaultttl
+	if x != nil && x.Defaultttl != nil {
+		return *x.Defaultttl
 	}
 	return 0
 }
@@ -3635,15 +3635,15 @@ func (x *CacheBehavior) GetLambdafunctionassociations() *LambdaFunctionAssociati
 }
 
 func (x *CacheBehavior) GetMaxttl() int64 {
-	if x != nil {
-		return x.Maxttl
+	if x != nil && x.Maxttl != nil {
+		return *x.Maxttl
 	}
 	return 0
 }
 
 func (x *CacheBehavior) GetMinttl() int64 {
-	if x != nil {
-		return x.Minttl
+	if x != nil && x.Minttl != nil {
+		return *x.Minttl
 	}
 	return 0
 }
@@ -3870,8 +3870,8 @@ func (x *CachePolicyAlreadyExists) GetMessage() string {
 type CachePolicyConfig struct {
 	state                                    protoimpl.MessageState                    `protogen:"open.v1"`
 	Comment                                  string                                    `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
-	Defaultttl                               int64                                     `protobuf:"varint,391646391,opt,name=defaultttl,proto3" json:"defaultttl,omitempty"`
-	Maxttl                                   int64                                     `protobuf:"varint,451484784,opt,name=maxttl,proto3" json:"maxttl,omitempty"`
+	Defaultttl                               *int64                                    `protobuf:"varint,391646391,opt,name=defaultttl,proto3,oneof" json:"defaultttl,omitempty"`
+	Maxttl                                   *int64                                    `protobuf:"varint,451484784,opt,name=maxttl,proto3,oneof" json:"maxttl,omitempty"`
 	Minttl                                   int64                                     `protobuf:"varint,420784162,opt,name=minttl,proto3" json:"minttl,omitempty"`
 	Name                                     string                                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Parametersincachekeyandforwardedtoorigin *ParametersInCacheKeyAndForwardedToOrigin `protobuf:"bytes,298859768,opt,name=parametersincachekeyandforwardedtoorigin,proto3" json:"parametersincachekeyandforwardedtoorigin,omitempty"`
@@ -3917,15 +3917,15 @@ func (x *CachePolicyConfig) GetComment() string {
 }
 
 func (x *CachePolicyConfig) GetDefaultttl() int64 {
-	if x != nil {
-		return x.Defaultttl
+	if x != nil && x.Defaultttl != nil {
+		return *x.Defaultttl
 	}
 	return 0
 }
 
 func (x *CachePolicyConfig) GetMaxttl() int64 {
-	if x != nil {
-		return x.Maxttl
+	if x != nil && x.Maxttl != nil {
+		return *x.Maxttl
 	}
 	return 0
 }
@@ -4950,9 +4950,9 @@ func (x *ConflictingAlias) GetDistributionid() string {
 type ConflictingAliasesList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*ConflictingAlias    `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
-	Quantity      int32                  `protobuf:"varint,200749817,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Quantity      *int32                 `protobuf:"varint,200749817,opt,name=quantity,proto3,oneof" json:"quantity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4995,8 +4995,8 @@ func (x *ConflictingAliasesList) GetItems() []*ConflictingAlias {
 }
 
 func (x *ConflictingAliasesList) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -5009,8 +5009,8 @@ func (x *ConflictingAliasesList) GetNextmarker() string {
 }
 
 func (x *ConflictingAliasesList) GetQuantity() int32 {
-	if x != nil {
-		return x.Quantity
+	if x != nil && x.Quantity != nil {
+		return *x.Quantity
 	}
 	return 0
 }
@@ -9269,7 +9269,7 @@ func (x *CreateVpcOriginResult) GetVpcorigin() *VpcOrigin {
 
 type CustomErrorResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Errorcachingminttl int64                  `protobuf:"varint,111450431,opt,name=errorcachingminttl,proto3" json:"errorcachingminttl,omitempty"`
+	Errorcachingminttl *int64                 `protobuf:"varint,111450431,opt,name=errorcachingminttl,proto3,oneof" json:"errorcachingminttl,omitempty"`
 	Errorcode          int32                  `protobuf:"varint,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
 	Responsecode       string                 `protobuf:"bytes,447553700,opt,name=responsecode,proto3" json:"responsecode,omitempty"`
 	Responsepagepath   string                 `protobuf:"bytes,523062007,opt,name=responsepagepath,proto3" json:"responsepagepath,omitempty"`
@@ -9308,8 +9308,8 @@ func (*CustomErrorResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CustomErrorResponse) GetErrorcachingminttl() int64 {
-	if x != nil {
-		return x.Errorcachingminttl
+	if x != nil && x.Errorcachingminttl != nil {
+		return *x.Errorcachingminttl
 	}
 	return 0
 }
@@ -9444,10 +9444,10 @@ type CustomOriginConfig struct {
 	Httpport               int32                  `protobuf:"varint,375976295,opt,name=httpport,proto3" json:"httpport,omitempty"`
 	Httpsport              int32                  `protobuf:"varint,153043918,opt,name=httpsport,proto3" json:"httpsport,omitempty"`
 	Ipaddresstype          IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
-	Originkeepalivetimeout int32                  `protobuf:"varint,214128603,opt,name=originkeepalivetimeout,proto3" json:"originkeepalivetimeout,omitempty"`
+	Originkeepalivetimeout *int32                 `protobuf:"varint,214128603,opt,name=originkeepalivetimeout,proto3,oneof" json:"originkeepalivetimeout,omitempty"`
 	Originmtlsconfig       *OriginMtlsConfig      `protobuf:"bytes,268477222,opt,name=originmtlsconfig,proto3" json:"originmtlsconfig,omitempty"`
 	Originprotocolpolicy   OriginProtocolPolicy   `protobuf:"varint,234303342,opt,name=originprotocolpolicy,proto3,enum=cloudfront.OriginProtocolPolicy" json:"originprotocolpolicy,omitempty"`
-	Originreadtimeout      int32                  `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3" json:"originreadtimeout,omitempty"`
+	Originreadtimeout      *int32                 `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3,oneof" json:"originreadtimeout,omitempty"`
 	Originsslprotocols     *OriginSslProtocols    `protobuf:"bytes,403853493,opt,name=originsslprotocols,proto3" json:"originsslprotocols,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -9505,8 +9505,8 @@ func (x *CustomOriginConfig) GetIpaddresstype() IpAddressType {
 }
 
 func (x *CustomOriginConfig) GetOriginkeepalivetimeout() int32 {
-	if x != nil {
-		return x.Originkeepalivetimeout
+	if x != nil && x.Originkeepalivetimeout != nil {
+		return *x.Originkeepalivetimeout
 	}
 	return 0
 }
@@ -9526,8 +9526,8 @@ func (x *CustomOriginConfig) GetOriginprotocolpolicy() OriginProtocolPolicy {
 }
 
 func (x *CustomOriginConfig) GetOriginreadtimeout() int32 {
-	if x != nil {
-		return x.Originreadtimeout
+	if x != nil && x.Originreadtimeout != nil {
+		return *x.Originreadtimeout
 	}
 	return 0
 }
@@ -9604,14 +9604,14 @@ type DefaultCacheBehavior struct {
 	Allowedmethods             *AllowedMethods             `protobuf:"bytes,56383476,opt,name=allowedmethods,proto3" json:"allowedmethods,omitempty"`
 	Cachepolicyid              string                      `protobuf:"bytes,431434163,opt,name=cachepolicyid,proto3" json:"cachepolicyid,omitempty"`
 	Compress                   *bool                       `protobuf:"varint,235468462,opt,name=compress,proto3,oneof" json:"compress,omitempty"`
-	Defaultttl                 int64                       `protobuf:"varint,391646391,opt,name=defaultttl,proto3" json:"defaultttl,omitempty"`
+	Defaultttl                 *int64                      `protobuf:"varint,391646391,opt,name=defaultttl,proto3,oneof" json:"defaultttl,omitempty"`
 	Fieldlevelencryptionid     string                      `protobuf:"bytes,450714616,opt,name=fieldlevelencryptionid,proto3" json:"fieldlevelencryptionid,omitempty"`
 	Forwardedvalues            *ForwardedValues            `protobuf:"bytes,34815362,opt,name=forwardedvalues,proto3" json:"forwardedvalues,omitempty"`
 	Functionassociations       *FunctionAssociations       `protobuf:"bytes,457445650,opt,name=functionassociations,proto3" json:"functionassociations,omitempty"`
 	Grpcconfig                 *GrpcConfig                 `protobuf:"bytes,406090728,opt,name=grpcconfig,proto3" json:"grpcconfig,omitempty"`
 	Lambdafunctionassociations *LambdaFunctionAssociations `protobuf:"bytes,46888655,opt,name=lambdafunctionassociations,proto3" json:"lambdafunctionassociations,omitempty"`
-	Maxttl                     int64                       `protobuf:"varint,451484784,opt,name=maxttl,proto3" json:"maxttl,omitempty"`
-	Minttl                     int64                       `protobuf:"varint,420784162,opt,name=minttl,proto3" json:"minttl,omitempty"`
+	Maxttl                     *int64                      `protobuf:"varint,451484784,opt,name=maxttl,proto3,oneof" json:"maxttl,omitempty"`
+	Minttl                     *int64                      `protobuf:"varint,420784162,opt,name=minttl,proto3,oneof" json:"minttl,omitempty"`
 	Originrequestpolicyid      string                      `protobuf:"bytes,298538616,opt,name=originrequestpolicyid,proto3" json:"originrequestpolicyid,omitempty"`
 	Realtimelogconfigarn       string                      `protobuf:"bytes,152963408,opt,name=realtimelogconfigarn,proto3" json:"realtimelogconfigarn,omitempty"`
 	Responseheaderspolicyid    string                      `protobuf:"bytes,244029524,opt,name=responseheaderspolicyid,proto3" json:"responseheaderspolicyid,omitempty"`
@@ -9676,8 +9676,8 @@ func (x *DefaultCacheBehavior) GetCompress() bool {
 }
 
 func (x *DefaultCacheBehavior) GetDefaultttl() int64 {
-	if x != nil {
-		return x.Defaultttl
+	if x != nil && x.Defaultttl != nil {
+		return *x.Defaultttl
 	}
 	return 0
 }
@@ -9718,15 +9718,15 @@ func (x *DefaultCacheBehavior) GetLambdafunctionassociations() *LambdaFunctionAs
 }
 
 func (x *DefaultCacheBehavior) GetMaxttl() int64 {
-	if x != nil {
-		return x.Maxttl
+	if x != nil && x.Maxttl != nil {
+		return *x.Maxttl
 	}
 	return 0
 }
 
 func (x *DefaultCacheBehavior) GetMinttl() int64 {
-	if x != nil {
-		return x.Minttl
+	if x != nil && x.Minttl != nil {
+		return *x.Minttl
 	}
 	return 0
 }
@@ -21538,7 +21538,7 @@ func (x *LambdaFunctionAssociations) GetQuantity() int32 {
 type ListAnycastIpListsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21581,8 +21581,8 @@ func (x *ListAnycastIpListsRequest) GetMarker() string {
 }
 
 func (x *ListAnycastIpListsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -21634,7 +21634,7 @@ func (x *ListAnycastIpListsResult) GetAnycastiplists() *AnycastIpListCollection 
 type ListCachePoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Type          CachePolicyType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.CachePolicyType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -21678,8 +21678,8 @@ func (x *ListCachePoliciesRequest) GetMarker() string {
 }
 
 func (x *ListCachePoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -21738,7 +21738,7 @@ func (x *ListCachePoliciesResult) GetCachepolicylist() *CachePolicyList {
 type ListCloudFrontOriginAccessIdentitiesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21781,8 +21781,8 @@ func (x *ListCloudFrontOriginAccessIdentitiesRequest) GetMarker() string {
 }
 
 func (x *ListCloudFrontOriginAccessIdentitiesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -21836,7 +21836,7 @@ type ListConflictingAliasesRequest struct {
 	Alias          string                 `protobuf:"bytes,48362232,opt,name=alias,proto3" json:"alias,omitempty"`
 	Distributionid string                 `protobuf:"bytes,142530791,opt,name=distributionid,proto3" json:"distributionid,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems       int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -21893,8 +21893,8 @@ func (x *ListConflictingAliasesRequest) GetMarker() string {
 }
 
 func (x *ListConflictingAliasesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -21946,7 +21946,7 @@ func (x *ListConflictingAliasesResult) GetConflictingaliaseslist() *ConflictingA
 type ListConnectionFunctionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -21990,8 +21990,8 @@ func (x *ListConnectionFunctionsRequest) GetMarker() string {
 }
 
 func (x *ListConnectionFunctionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22059,7 +22059,7 @@ type ListConnectionGroupsRequest struct {
 	state             protoimpl.MessageState            `protogen:"open.v1"`
 	Associationfilter *ConnectionGroupAssociationFilter `protobuf:"bytes,309904703,opt,name=associationfilter,proto3" json:"associationfilter,omitempty"`
 	Marker            string                            `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems          int32                             `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                            `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -22109,8 +22109,8 @@ func (x *ListConnectionGroupsRequest) GetMarker() string {
 }
 
 func (x *ListConnectionGroupsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22170,7 +22170,7 @@ func (x *ListConnectionGroupsResult) GetNextmarker() string {
 type ListContinuousDeploymentPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22213,8 +22213,8 @@ func (x *ListContinuousDeploymentPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListContinuousDeploymentPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22267,7 +22267,7 @@ type ListDistributionTenantsByCustomizationRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems       int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Webaclarn      string                 `protobuf:"bytes,82506659,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -22318,8 +22318,8 @@ func (x *ListDistributionTenantsByCustomizationRequest) GetMarker() string {
 }
 
 func (x *ListDistributionTenantsByCustomizationRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22387,7 +22387,7 @@ type ListDistributionTenantsRequest struct {
 	state             protoimpl.MessageState               `protogen:"open.v1"`
 	Associationfilter *DistributionTenantAssociationFilter `protobuf:"bytes,309904703,opt,name=associationfilter,proto3" json:"associationfilter,omitempty"`
 	Marker            string                               `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems          int32                                `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                               `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -22437,8 +22437,8 @@ func (x *ListDistributionTenantsRequest) GetMarker() string {
 }
 
 func (x *ListDistributionTenantsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22499,7 +22499,7 @@ type ListDistributionsByAnycastIpListIdRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Anycastiplistid string                 `protobuf:"bytes,431887875,opt,name=anycastiplistid,proto3" json:"anycastiplistid,omitempty"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems        int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems        *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -22549,8 +22549,8 @@ func (x *ListDistributionsByAnycastIpListIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByAnycastIpListIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22603,7 +22603,7 @@ type ListDistributionsByCachePolicyIdRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cachepolicyid string                 `protobuf:"bytes,431434163,opt,name=cachepolicyid,proto3" json:"cachepolicyid,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22653,8 +22653,8 @@ func (x *ListDistributionsByCachePolicyIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByCachePolicyIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22707,7 +22707,7 @@ type ListDistributionsByConnectionFunctionRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Connectionfunctionidentifier string                 `protobuf:"bytes,241101239,opt,name=connectionfunctionidentifier,proto3" json:"connectionfunctionidentifier,omitempty"`
 	Marker                       string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                     int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                     *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -22757,8 +22757,8 @@ func (x *ListDistributionsByConnectionFunctionRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByConnectionFunctionRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22811,7 +22811,7 @@ type ListDistributionsByConnectionModeRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Connectionmode ConnectionMode         `protobuf:"varint,82068023,opt,name=connectionmode,proto3,enum=cloudfront.ConnectionMode" json:"connectionmode,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems       int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -22861,8 +22861,8 @@ func (x *ListDistributionsByConnectionModeRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByConnectionModeRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -22915,7 +22915,7 @@ type ListDistributionsByKeyGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keygroupid    string                 `protobuf:"bytes,497763283,opt,name=keygroupid,proto3" json:"keygroupid,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22965,8 +22965,8 @@ func (x *ListDistributionsByKeyGroupRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByKeyGroupRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23018,7 +23018,7 @@ func (x *ListDistributionsByKeyGroupResult) GetDistributionidlist() *Distributio
 type ListDistributionsByOriginRequestPolicyIdRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems              int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems              *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Originrequestpolicyid string                 `protobuf:"bytes,298538616,opt,name=originrequestpolicyid,proto3" json:"originrequestpolicyid,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -23062,8 +23062,8 @@ func (x *ListDistributionsByOriginRequestPolicyIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByOriginRequestPolicyIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23122,7 +23122,7 @@ func (x *ListDistributionsByOriginRequestPolicyIdResult) GetDistributionidlist()
 type ListDistributionsByOwnedResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -23166,8 +23166,8 @@ func (x *ListDistributionsByOwnedResourceRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByOwnedResourceRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23226,7 +23226,7 @@ func (x *ListDistributionsByOwnedResourceResult) GetDistributionlist() *Distribu
 type ListDistributionsByRealtimeLogConfigRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems              int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems              *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Realtimelogconfigarn  string                 `protobuf:"bytes,152963408,opt,name=realtimelogconfigarn,proto3" json:"realtimelogconfigarn,omitempty"`
 	Realtimelogconfigname string                 `protobuf:"bytes,503770540,opt,name=realtimelogconfigname,proto3" json:"realtimelogconfigname,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -23271,8 +23271,8 @@ func (x *ListDistributionsByRealtimeLogConfigRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByRealtimeLogConfigRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23338,7 +23338,7 @@ func (x *ListDistributionsByRealtimeLogConfigResult) GetDistributionlist() *Dist
 type ListDistributionsByResponseHeadersPolicyIdRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Marker                  string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Responseheaderspolicyid string                 `protobuf:"bytes,244029524,opt,name=responseheaderspolicyid,proto3" json:"responseheaderspolicyid,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -23382,8 +23382,8 @@ func (x *ListDistributionsByResponseHeadersPolicyIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByResponseHeadersPolicyIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23442,7 +23442,7 @@ func (x *ListDistributionsByResponseHeadersPolicyIdResult) GetDistributionidlist
 type ListDistributionsByTrustStoreRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems             int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems             *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Truststoreidentifier string                 `protobuf:"bytes,327436686,opt,name=truststoreidentifier,proto3" json:"truststoreidentifier,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -23486,8 +23486,8 @@ func (x *ListDistributionsByTrustStoreRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByTrustStoreRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23546,7 +23546,7 @@ func (x *ListDistributionsByTrustStoreResult) GetDistributionlist() *Distributio
 type ListDistributionsByVpcOriginIdRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Vpcoriginid   string                 `protobuf:"bytes,365404648,opt,name=vpcoriginid,proto3" json:"vpcoriginid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -23590,8 +23590,8 @@ func (x *ListDistributionsByVpcOriginIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByVpcOriginIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23650,7 +23650,7 @@ func (x *ListDistributionsByVpcOriginIdResult) GetDistributionidlist() *Distribu
 type ListDistributionsByWebACLIdRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Webaclid      string                 `protobuf:"bytes,161274579,opt,name=webaclid,proto3" json:"webaclid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -23694,8 +23694,8 @@ func (x *ListDistributionsByWebACLIdRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsByWebACLIdRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23754,7 +23754,7 @@ func (x *ListDistributionsByWebACLIdResult) GetDistributionlist() *DistributionL
 type ListDistributionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -23797,8 +23797,8 @@ func (x *ListDistributionsRequest) GetMarker() string {
 }
 
 func (x *ListDistributionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23852,7 +23852,7 @@ type ListDomainConflictsRequest struct {
 	Domain                          string                  `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
 	Domaincontrolvalidationresource *DistributionResourceId `protobuf:"bytes,405541194,opt,name=domaincontrolvalidationresource,proto3" json:"domaincontrolvalidationresource,omitempty"`
 	Marker                          string                  `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                        int32                   `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                        *int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -23909,8 +23909,8 @@ func (x *ListDomainConflictsRequest) GetMarker() string {
 }
 
 func (x *ListDomainConflictsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -23970,7 +23970,7 @@ func (x *ListDomainConflictsResult) GetNextmarker() string {
 type ListFieldLevelEncryptionConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24013,8 +24013,8 @@ func (x *ListFieldLevelEncryptionConfigsRequest) GetMarker() string {
 }
 
 func (x *ListFieldLevelEncryptionConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24066,7 +24066,7 @@ func (x *ListFieldLevelEncryptionConfigsResult) GetFieldlevelencryptionlist() *F
 type ListFieldLevelEncryptionProfilesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24109,8 +24109,8 @@ func (x *ListFieldLevelEncryptionProfilesRequest) GetMarker() string {
 }
 
 func (x *ListFieldLevelEncryptionProfilesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24162,7 +24162,7 @@ func (x *ListFieldLevelEncryptionProfilesResult) GetFieldlevelencryptionprofilel
 type ListFunctionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -24206,8 +24206,8 @@ func (x *ListFunctionsRequest) GetMarker() string {
 }
 
 func (x *ListFunctionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24267,7 +24267,7 @@ type ListInvalidationsForDistributionTenantRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24317,8 +24317,8 @@ func (x *ListInvalidationsForDistributionTenantRequest) GetMarker() string {
 }
 
 func (x *ListInvalidationsForDistributionTenantRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24371,7 +24371,7 @@ type ListInvalidationsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Distributionid string                 `protobuf:"bytes,142530791,opt,name=distributionid,proto3" json:"distributionid,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems       int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -24421,8 +24421,8 @@ func (x *ListInvalidationsRequest) GetMarker() string {
 }
 
 func (x *ListInvalidationsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24474,7 +24474,7 @@ func (x *ListInvalidationsResult) GetInvalidationlist() *InvalidationList {
 type ListKeyGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24517,8 +24517,8 @@ func (x *ListKeyGroupsRequest) GetMarker() string {
 }
 
 func (x *ListKeyGroupsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24570,7 +24570,7 @@ func (x *ListKeyGroupsResult) GetKeygrouplist() *KeyGroupList {
 type ListKeyValueStoresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Status        string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -24614,8 +24614,8 @@ func (x *ListKeyValueStoresRequest) GetMarker() string {
 }
 
 func (x *ListKeyValueStoresRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24674,7 +24674,7 @@ func (x *ListKeyValueStoresResult) GetKeyvaluestorelist() *KeyValueStoreList {
 type ListOriginAccessControlsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24717,8 +24717,8 @@ func (x *ListOriginAccessControlsRequest) GetMarker() string {
 }
 
 func (x *ListOriginAccessControlsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24770,7 +24770,7 @@ func (x *ListOriginAccessControlsResult) GetOriginaccesscontrollist() *OriginAcc
 type ListOriginRequestPoliciesRequest struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Marker        string                  `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                   `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Type          OriginRequestPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.OriginRequestPolicyType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -24814,8 +24814,8 @@ func (x *ListOriginRequestPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListOriginRequestPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24874,7 +24874,7 @@ func (x *ListOriginRequestPoliciesResult) GetOriginrequestpolicylist() *OriginRe
 type ListPublicKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24917,8 +24917,8 @@ func (x *ListPublicKeysRequest) GetMarker() string {
 }
 
 func (x *ListPublicKeysRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -24970,7 +24970,7 @@ func (x *ListPublicKeysResult) GetPublickeylist() *PublicKeyList {
 type ListRealtimeLogConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25013,8 +25013,8 @@ func (x *ListRealtimeLogConfigsRequest) GetMarker() string {
 }
 
 func (x *ListRealtimeLogConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -25066,7 +25066,7 @@ func (x *ListRealtimeLogConfigsResult) GetRealtimelogconfigs() *RealtimeLogConfi
 type ListResponseHeadersPoliciesRequest struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Marker        string                    `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                     `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                    `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Type          ResponseHeadersPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.ResponseHeadersPolicyType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -25110,8 +25110,8 @@ func (x *ListResponseHeadersPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListResponseHeadersPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -25170,7 +25170,7 @@ func (x *ListResponseHeadersPoliciesResult) GetResponseheaderspolicylist() *Resp
 type ListStreamingDistributionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25213,8 +25213,8 @@ func (x *ListStreamingDistributionsRequest) GetMarker() string {
 }
 
 func (x *ListStreamingDistributionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -25354,7 +25354,7 @@ func (x *ListTagsForResourceResult) GetTags() *Tags {
 type ListTrustStoresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25397,8 +25397,8 @@ func (x *ListTrustStoresRequest) GetMarker() string {
 }
 
 func (x *ListTrustStoresRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -25458,7 +25458,7 @@ func (x *ListTrustStoresResult) GetTruststorelist() []*TrustStoreSummary {
 type ListVpcOriginsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25501,8 +25501,8 @@ func (x *ListVpcOriginsRequest) GetMarker() string {
 }
 
 func (x *ListVpcOriginsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -26629,8 +26629,8 @@ func (x *NoSuchStreamingDistribution) GetMessage() string {
 
 type Origin struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Connectionattempts        int32                  `protobuf:"varint,130111316,opt,name=connectionattempts,proto3" json:"connectionattempts,omitempty"`
-	Connectiontimeout         int32                  `protobuf:"varint,285150581,opt,name=connectiontimeout,proto3" json:"connectiontimeout,omitempty"`
+	Connectionattempts        *int32                 `protobuf:"varint,130111316,opt,name=connectionattempts,proto3,oneof" json:"connectionattempts,omitempty"`
+	Connectiontimeout         *int32                 `protobuf:"varint,285150581,opt,name=connectiontimeout,proto3,oneof" json:"connectiontimeout,omitempty"`
 	Customheaders             *CustomHeaders         `protobuf:"bytes,112565669,opt,name=customheaders,proto3" json:"customheaders,omitempty"`
 	Customoriginconfig        *CustomOriginConfig    `protobuf:"bytes,97020983,opt,name=customoriginconfig,proto3" json:"customoriginconfig,omitempty"`
 	Domainname                string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
@@ -26638,7 +26638,7 @@ type Origin struct {
 	Originaccesscontrolid     string                 `protobuf:"bytes,344049692,opt,name=originaccesscontrolid,proto3" json:"originaccesscontrolid,omitempty"`
 	Originpath                string                 `protobuf:"bytes,66064073,opt,name=originpath,proto3" json:"originpath,omitempty"`
 	Originshield              *OriginShield          `protobuf:"bytes,482702287,opt,name=originshield,proto3" json:"originshield,omitempty"`
-	Responsecompletiontimeout int32                  `protobuf:"varint,197954616,opt,name=responsecompletiontimeout,proto3" json:"responsecompletiontimeout,omitempty"`
+	Responsecompletiontimeout *int32                 `protobuf:"varint,197954616,opt,name=responsecompletiontimeout,proto3,oneof" json:"responsecompletiontimeout,omitempty"`
 	S3Originconfig            *S3OriginConfig        `protobuf:"bytes,78562208,opt,name=s3originconfig,proto3" json:"s3originconfig,omitempty"`
 	Vpcoriginconfig           *VpcOriginConfig       `protobuf:"bytes,107511973,opt,name=vpcoriginconfig,proto3" json:"vpcoriginconfig,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -26676,15 +26676,15 @@ func (*Origin) Descriptor() ([]byte, []int) {
 }
 
 func (x *Origin) GetConnectionattempts() int32 {
-	if x != nil {
-		return x.Connectionattempts
+	if x != nil && x.Connectionattempts != nil {
+		return *x.Connectionattempts
 	}
 	return 0
 }
 
 func (x *Origin) GetConnectiontimeout() int32 {
-	if x != nil {
-		return x.Connectiontimeout
+	if x != nil && x.Connectiontimeout != nil {
+		return *x.Connectiontimeout
 	}
 	return 0
 }
@@ -26739,8 +26739,8 @@ func (x *Origin) GetOriginshield() *OriginShield {
 }
 
 func (x *Origin) GetResponsecompletiontimeout() int32 {
-	if x != nil {
-		return x.Responsecompletiontimeout
+	if x != nil && x.Responsecompletiontimeout != nil {
+		return *x.Responsecompletiontimeout
 	}
 	return 0
 }
@@ -30350,7 +30350,7 @@ type ResponseHeadersPolicyCorsConfig struct {
 	Accesscontrolallowmethods     *ResponseHeadersPolicyAccessControlAllowMethods  `protobuf:"bytes,73974706,opt,name=accesscontrolallowmethods,proto3" json:"accesscontrolallowmethods,omitempty"`
 	Accesscontrolalloworigins     *ResponseHeadersPolicyAccessControlAllowOrigins  `protobuf:"bytes,454589053,opt,name=accesscontrolalloworigins,proto3" json:"accesscontrolalloworigins,omitempty"`
 	Accesscontrolexposeheaders    *ResponseHeadersPolicyAccessControlExposeHeaders `protobuf:"bytes,39057771,opt,name=accesscontrolexposeheaders,proto3" json:"accesscontrolexposeheaders,omitempty"`
-	Accesscontrolmaxagesec        int32                                            `protobuf:"varint,528754691,opt,name=accesscontrolmaxagesec,proto3" json:"accesscontrolmaxagesec,omitempty"`
+	Accesscontrolmaxagesec        *int32                                           `protobuf:"varint,528754691,opt,name=accesscontrolmaxagesec,proto3,oneof" json:"accesscontrolmaxagesec,omitempty"`
 	Originoverride                *bool                                            `protobuf:"varint,297680576,opt,name=originoverride,proto3,oneof" json:"originoverride,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -30422,8 +30422,8 @@ func (x *ResponseHeadersPolicyCorsConfig) GetAccesscontrolexposeheaders() *Respo
 }
 
 func (x *ResponseHeadersPolicyCorsConfig) GetAccesscontrolmaxagesec() int32 {
-	if x != nil {
-		return x.Accesscontrolmaxagesec
+	if x != nil && x.Accesscontrolmaxagesec != nil {
+		return *x.Accesscontrolmaxagesec
 	}
 	return 0
 }
@@ -31282,7 +31282,7 @@ func (x *S3Origin) GetOriginaccessidentity() string {
 type S3OriginConfig struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Originaccessidentity string                 `protobuf:"bytes,226897844,opt,name=originaccessidentity,proto3" json:"originaccessidentity,omitempty"`
-	Originreadtimeout    int32                  `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3" json:"originreadtimeout,omitempty"`
+	Originreadtimeout    *int32                 `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3,oneof" json:"originreadtimeout,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -31325,8 +31325,8 @@ func (x *S3OriginConfig) GetOriginaccessidentity() string {
 }
 
 func (x *S3OriginConfig) GetOriginreadtimeout() int32 {
-	if x != nil {
-		return x.Originreadtimeout
+	if x != nil && x.Originreadtimeout != nil {
+		return *x.Originreadtimeout
 	}
 	return 0
 }
@@ -35177,7 +35177,7 @@ type TrustStore struct {
 	Id                               string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Lastmodifiedtime                 string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
 	Name                             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Numberofcacertificates           int32                  `protobuf:"varint,203958970,opt,name=numberofcacertificates,proto3" json:"numberofcacertificates,omitempty"`
+	Numberofcacertificates           *int32                 `protobuf:"varint,203958970,opt,name=numberofcacertificates,proto3,oneof" json:"numberofcacertificates,omitempty"`
 	Reason                           string                 `protobuf:"bytes,20005178,opt,name=reason,proto3" json:"reason,omitempty"`
 	Status                           TrustStoreStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.TrustStoreStatus" json:"status,omitempty"`
 	Useclientcertificateocspendpoint *bool                  `protobuf:"varint,275801979,opt,name=useclientcertificateocspendpoint,proto3,oneof" json:"useclientcertificateocspendpoint,omitempty"`
@@ -35244,8 +35244,8 @@ func (x *TrustStore) GetName() string {
 }
 
 func (x *TrustStore) GetNumberofcacertificates() int32 {
-	if x != nil {
-		return x.Numberofcacertificates
+	if x != nil && x.Numberofcacertificates != nil {
+		return *x.Numberofcacertificates
 	}
 	return 0
 }
@@ -37853,7 +37853,7 @@ type UpdateRealtimeLogConfigRequest struct {
 	Endpoints     []*EndPoint            `protobuf:"bytes,436023390,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
 	Fields        []string               `protobuf:"bytes,319339933,rep,name=fields,proto3" json:"fields,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Samplingrate  int64                  `protobuf:"varint,272929747,opt,name=samplingrate,proto3" json:"samplingrate,omitempty"`
+	Samplingrate  *int64                 `protobuf:"varint,272929747,opt,name=samplingrate,proto3,oneof" json:"samplingrate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -37917,8 +37917,8 @@ func (x *UpdateRealtimeLogConfigRequest) GetName() string {
 }
 
 func (x *UpdateRealtimeLogConfigRequest) GetSamplingrate() int64 {
-	if x != nil {
-		return x.Samplingrate
+	if x != nil && x.Samplingrate != nil {
+		return *x.Samplingrate
 	}
 	return 0
 }
@@ -38817,8 +38817,8 @@ func (x *VpcOrigin) GetVpcoriginendpointconfig() *VpcOriginEndpointConfig {
 
 type VpcOriginConfig struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Originkeepalivetimeout int32                  `protobuf:"varint,214128603,opt,name=originkeepalivetimeout,proto3" json:"originkeepalivetimeout,omitempty"`
-	Originreadtimeout      int32                  `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3" json:"originreadtimeout,omitempty"`
+	Originkeepalivetimeout *int32                 `protobuf:"varint,214128603,opt,name=originkeepalivetimeout,proto3,oneof" json:"originkeepalivetimeout,omitempty"`
+	Originreadtimeout      *int32                 `protobuf:"varint,387717023,opt,name=originreadtimeout,proto3,oneof" json:"originreadtimeout,omitempty"`
 	Owneraccountid         string                 `protobuf:"bytes,369721751,opt,name=owneraccountid,proto3" json:"owneraccountid,omitempty"`
 	Vpcoriginid            string                 `protobuf:"bytes,365404648,opt,name=vpcoriginid,proto3" json:"vpcoriginid,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -38856,15 +38856,15 @@ func (*VpcOriginConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *VpcOriginConfig) GetOriginkeepalivetimeout() int32 {
-	if x != nil {
-		return x.Originkeepalivetimeout
+	if x != nil && x.Originkeepalivetimeout != nil {
+		return *x.Originkeepalivetimeout
 	}
 	return 0
 }
 
 func (x *VpcOriginConfig) GetOriginreadtimeout() int32 {
-	if x != nil {
-		return x.Originreadtimeout
+	if x != nil && x.Originreadtimeout != nil {
+		return *x.Originreadtimeout
 	}
 	return 0
 }
@@ -39298,33 +39298,36 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x12\x1c\n" +
 	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\"\x93\x01\n" +
 	"\x1aCaCertificatesBundleSource\x12u\n" +
-	"\x1ecacertificatesbundles3location\x18\x85Ҙ6 \x01(\v2*.cloudfront.CaCertificatesBundleS3LocationR\x1ecacertificatesbundles3location\"\xc7\t\n" +
+	"\x1ecacertificatesbundles3location\x18\x85Ҙ6 \x01(\v2*.cloudfront.CaCertificatesBundleS3LocationR\x1ecacertificatesbundles3location\"\xfb\t\n" +
 	"\rCacheBehavior\x12E\n" +
 	"\x0eallowedmethods\x18\xf4\xaf\xf1\x1a \x01(\v2\x1a.cloudfront.AllowedMethodsR\x0eallowedmethods\x12(\n" +
 	"\rcachepolicyid\x18\xb3\xd3\xdc\xcd\x01 \x01(\tR\rcachepolicyid\x12\"\n" +
-	"\bcompress\x18\xae\xed\xa3p \x01(\bH\x00R\bcompress\x88\x01\x01\x12\"\n" +
+	"\bcompress\x18\xae\xed\xa3p \x01(\bH\x00R\bcompress\x88\x01\x01\x12'\n" +
 	"\n" +
-	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03R\n" +
-	"defaultttl\x12:\n" +
+	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03H\x01R\n" +
+	"defaultttl\x88\x01\x01\x12:\n" +
 	"\x16fieldlevelencryptionid\x18\xf8\xb7\xf5\xd6\x01 \x01(\tR\x16fieldlevelencryptionid\x12H\n" +
 	"\x0fforwardedvalues\x18\x82\xfb\xcc\x10 \x01(\v2\x1b.cloudfront.ForwardedValuesR\x0fforwardedvalues\x12X\n" +
 	"\x14functionassociations\x18\x92\xa2\x90\xda\x01 \x01(\v2 .cloudfront.FunctionAssociationsR\x14functionassociations\x12:\n" +
 	"\n" +
 	"grpcconfig\x18\xe8\xe7\xd1\xc1\x01 \x01(\v2\x16.cloudfront.GrpcConfigR\n" +
 	"grpcconfig\x12i\n" +
-	"\x1alambdafunctionassociations\x18\xcf\xed\xad\x16 \x01(\v2&.cloudfront.LambdaFunctionAssociationsR\x1alambdafunctionassociations\x12\x1a\n" +
-	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03R\x06maxttl\x12\x1a\n" +
-	"\x06minttl\x18\xa2\xd0\xd2\xc8\x01 \x01(\x03R\x06minttl\x128\n" +
+	"\x1alambdafunctionassociations\x18\xcf\xed\xad\x16 \x01(\v2&.cloudfront.LambdaFunctionAssociationsR\x1alambdafunctionassociations\x12\x1f\n" +
+	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03H\x02R\x06maxttl\x88\x01\x01\x12\x1f\n" +
+	"\x06minttl\x18\xa2\xd0\xd2\xc8\x01 \x01(\x03H\x03R\x06minttl\x88\x01\x01\x128\n" +
 	"\x15originrequestpolicyid\x18\xf8\xac\xad\x8e\x01 \x01(\tR\x15originrequestpolicyid\x12#\n" +
 	"\vpathpattern\x18\xe5È\x7f \x01(\tR\vpathpattern\x125\n" +
 	"\x14realtimelogconfigarn\x18В\xf8H \x01(\tR\x14realtimelogconfigarn\x12;\n" +
 	"\x17responseheaderspolicyid\x18\u0530\xaet \x01(\tR\x17responseheaderspolicyid\x120\n" +
-	"\x0fsmoothstreaming\x18\xea\xf9\x97, \x01(\bH\x01R\x0fsmoothstreaming\x88\x01\x01\x12*\n" +
+	"\x0fsmoothstreaming\x18\xea\xf9\x97, \x01(\bH\x04R\x0fsmoothstreaming\x88\x01\x01\x12*\n" +
 	"\x0etargetoriginid\x18\xa8ԇ\xb6\x01 \x01(\tR\x0etargetoriginid\x12L\n" +
 	"\x10trustedkeygroups\x18\xa4\xa4\x9f\xd0\x01 \x01(\v2\x1c.cloudfront.TrustedKeyGroupsR\x10trustedkeygroups\x12E\n" +
 	"\x0etrustedsigners\x18艍' \x01(\v2\x1a.cloudfront.TrustedSignersR\x0etrustedsigners\x12W\n" +
 	"\x14viewerprotocolpolicy\x18\uece33 \x01(\x0e2 .cloudfront.ViewerProtocolPolicyR\x14viewerprotocolpolicyB\v\n" +
-	"\t_compressB\x12\n" +
+	"\t_compressB\r\n" +
+	"\v_defaultttlB\t\n" +
+	"\a_maxttlB\t\n" +
+	"\a_minttlB\x12\n" +
 	"\x10_smoothstreaming\"c\n" +
 	"\x0eCacheBehaviors\x122\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x19.cloudfront.CacheBehaviorR\x05items\x12\x1d\n" +
@@ -39334,16 +39337,18 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12-\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\"7\n" +
 	"\x18CachePolicyAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xbb\x02\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xdf\x02\n" +
 	"\x11CachePolicyConfig\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\"\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12'\n" +
 	"\n" +
-	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03R\n" +
-	"defaultttl\x12\x1a\n" +
-	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03R\x06maxttl\x12\x1a\n" +
+	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03H\x00R\n" +
+	"defaultttl\x88\x01\x01\x12\x1f\n" +
+	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03H\x01R\x06maxttl\x88\x01\x01\x12\x1a\n" +
 	"\x06minttl\x18\xa2\xd0\xd2\xc8\x01 \x01(\x03R\x06minttl\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x94\x01\n" +
-	"(parametersincachekeyandforwardedtoorigin\x18\xf8\xf9\xc0\x8e\x01 \x01(\v24.cloudfront.ParametersInCacheKeyAndForwardedToOriginR(parametersincachekeyandforwardedtoorigin\"\xa3\x01\n" +
+	"(parametersincachekeyandforwardedtoorigin\x18\xf8\xf9\xc0\x8e\x01 \x01(\v24.cloudfront.ParametersInCacheKeyAndForwardedToOriginR(parametersincachekeyandforwardedtooriginB\r\n" +
+	"\v_defaultttlB\t\n" +
+	"\a_maxttl\"\xa3\x01\n" +
 	"\x18CachePolicyCookiesConfig\x12P\n" +
 	"\x0ecookiebehavior\x18\xba؎) \x01(\x0e2%.cloudfront.CachePolicyCookieBehaviorR\x0ecookiebehavior\x125\n" +
 	"\acookies\x18Ź\xcf\xc7\x01 \x01(\v2\x17.cloudfront.CookieNamesR\acookies\"\xa0\x01\n" +
@@ -39408,14 +39413,16 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x10ConflictingAlias\x12\x1f\n" +
 	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x12\x17\n" +
 	"\x05alias\x18\xf8\xe5\x87\x17 \x01(\tR\x05alias\x12)\n" +
-	"\x0edistributionid\x18\xe7\xb1\xfbC \x01(\tR\x0edistributionid\"\xb2\x01\n" +
+	"\x0edistributionid\x18\xe7\xb1\xfbC \x01(\tR\x0edistributionid\"\xd6\x01\n" +
 	"\x16ConflictingAliasesList\x125\n" +
-	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1c.cloudfront.ConflictingAliasR\x05items\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1c.cloudfront.ConflictingAliasR\x05items\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12\x1d\n" +
-	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"3\n" +
+	"nextmarker\x12\"\n" +
+	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05H\x01R\bquantity\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\v\n" +
+	"\t_quantity\"3\n" +
 	"\x1dConnectionFunctionAssociation\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xfe\x02\n" +
 	"\x19ConnectionFunctionSummary\x127\n" +
@@ -39719,56 +39726,62 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x15CreateVpcOriginResult\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12<\n" +
-	"\tvpcorigin\x18\xcb\xd4\xf3K \x01(\v2\x15.cloudfront.VpcOriginB\x04\x88\xb5\x18\x01R\tvpcorigin\"\xc1\x01\n" +
-	"\x13CustomErrorResponse\x121\n" +
-	"\x12errorcachingminttl\x18\xbf\xb2\x925 \x01(\x03R\x12errorcachingminttl\x12\x1f\n" +
+	"\tvpcorigin\x18\xcb\xd4\xf3K \x01(\v2\x15.cloudfront.VpcOriginB\x04\x88\xb5\x18\x01R\tvpcorigin\"\xdd\x01\n" +
+	"\x13CustomErrorResponse\x126\n" +
+	"\x12errorcachingminttl\x18\xbf\xb2\x925 \x01(\x03H\x00R\x12errorcachingminttl\x88\x01\x01\x12\x1f\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\x05R\terrorcode\x12&\n" +
 	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\tR\fresponsecode\x12.\n" +
-	"\x10responsepagepath\x18\xf7\x95\xb5\xf9\x01 \x01(\tR\x10responsepagepath\"o\n" +
+	"\x10responsepagepath\x18\xf7\x95\xb5\xf9\x01 \x01(\tR\x10responsepagepathB\x15\n" +
+	"\x13_errorcachingminttl\"o\n" +
 	"\x14CustomErrorResponses\x128\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1f.cloudfront.CustomErrorResponseR\x05items\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"g\n" +
 	"\rCustomHeaders\x127\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1e.cloudfront.OriginCustomHeaderR\x05items\x12\x1d\n" +
-	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\x82\x04\n" +
+	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xbd\x04\n" +
 	"\x12CustomOriginConfig\x12\x1e\n" +
 	"\bhttpport\x18\xe7⣳\x01 \x01(\x05R\bhttpport\x12\x1f\n" +
 	"\thttpsport\x18·\xfdH \x01(\x05R\thttpsport\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x129\n" +
-	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05R\x16originkeepalivetimeout\x12L\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12>\n" +
+	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05H\x00R\x16originkeepalivetimeout\x88\x01\x01\x12L\n" +
 	"\x10originmtlsconfig\x18\xa6Ƃ\x80\x01 \x01(\v2\x1c.cloudfront.OriginMtlsConfigR\x10originmtlsconfig\x12W\n" +
-	"\x14originprotocolpolicy\x18\xee\xde\xdco \x01(\x0e2 .cloudfront.OriginProtocolPolicyR\x14originprotocolpolicy\x120\n" +
-	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05R\x11originreadtimeout\x12R\n" +
-	"\x12originsslprotocols\x18\xb5\xa1\xc9\xc0\x01 \x01(\v2\x1e.cloudfront.OriginSslProtocolsR\x12originsslprotocols\"\xe2\x01\n" +
+	"\x14originprotocolpolicy\x18\xee\xde\xdco \x01(\x0e2 .cloudfront.OriginProtocolPolicyR\x14originprotocolpolicy\x125\n" +
+	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05H\x01R\x11originreadtimeout\x88\x01\x01\x12R\n" +
+	"\x12originsslprotocols\x18\xb5\xa1\xc9\xc0\x01 \x01(\v2\x1e.cloudfront.OriginSslProtocolsR\x12originsslprotocolsB\x19\n" +
+	"\x17_originkeepalivetimeoutB\x14\n" +
+	"\x12_originreadtimeout\"\xe2\x01\n" +
 	"\x0eCustomizations\x12<\n" +
 	"\vcertificate\x18\x91ָ^ \x01(\v2\x17.cloudfront.CertificateR\vcertificate\x12U\n" +
 	"\x0fgeorestrictions\x18\x86\xfcƓ\x01 \x01(\v2'.cloudfront.GeoRestrictionCustomizationR\x0fgeorestrictions\x12;\n" +
-	"\x06webacl\x18\xc0웦\x01 \x01(\v2\x1f.cloudfront.WebAclCustomizationR\x06webacl\"\xa9\t\n" +
+	"\x06webacl\x18\xc0웦\x01 \x01(\v2\x1f.cloudfront.WebAclCustomizationR\x06webacl\"\xdd\t\n" +
 	"\x14DefaultCacheBehavior\x12E\n" +
 	"\x0eallowedmethods\x18\xf4\xaf\xf1\x1a \x01(\v2\x1a.cloudfront.AllowedMethodsR\x0eallowedmethods\x12(\n" +
 	"\rcachepolicyid\x18\xb3\xd3\xdc\xcd\x01 \x01(\tR\rcachepolicyid\x12\"\n" +
-	"\bcompress\x18\xae\xed\xa3p \x01(\bH\x00R\bcompress\x88\x01\x01\x12\"\n" +
+	"\bcompress\x18\xae\xed\xa3p \x01(\bH\x00R\bcompress\x88\x01\x01\x12'\n" +
 	"\n" +
-	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03R\n" +
-	"defaultttl\x12:\n" +
+	"defaultttl\x18\xb7\x99\xe0\xba\x01 \x01(\x03H\x01R\n" +
+	"defaultttl\x88\x01\x01\x12:\n" +
 	"\x16fieldlevelencryptionid\x18\xf8\xb7\xf5\xd6\x01 \x01(\tR\x16fieldlevelencryptionid\x12H\n" +
 	"\x0fforwardedvalues\x18\x82\xfb\xcc\x10 \x01(\v2\x1b.cloudfront.ForwardedValuesR\x0fforwardedvalues\x12X\n" +
 	"\x14functionassociations\x18\x92\xa2\x90\xda\x01 \x01(\v2 .cloudfront.FunctionAssociationsR\x14functionassociations\x12:\n" +
 	"\n" +
 	"grpcconfig\x18\xe8\xe7\xd1\xc1\x01 \x01(\v2\x16.cloudfront.GrpcConfigR\n" +
 	"grpcconfig\x12i\n" +
-	"\x1alambdafunctionassociations\x18\xcf\xed\xad\x16 \x01(\v2&.cloudfront.LambdaFunctionAssociationsR\x1alambdafunctionassociations\x12\x1a\n" +
-	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03R\x06maxttl\x12\x1a\n" +
-	"\x06minttl\x18\xa2\xd0\xd2\xc8\x01 \x01(\x03R\x06minttl\x128\n" +
+	"\x1alambdafunctionassociations\x18\xcf\xed\xad\x16 \x01(\v2&.cloudfront.LambdaFunctionAssociationsR\x1alambdafunctionassociations\x12\x1f\n" +
+	"\x06maxttl\x18\xf0\xb8\xa4\xd7\x01 \x01(\x03H\x02R\x06maxttl\x88\x01\x01\x12\x1f\n" +
+	"\x06minttl\x18\xa2\xd0\xd2\xc8\x01 \x01(\x03H\x03R\x06minttl\x88\x01\x01\x128\n" +
 	"\x15originrequestpolicyid\x18\xf8\xac\xad\x8e\x01 \x01(\tR\x15originrequestpolicyid\x125\n" +
 	"\x14realtimelogconfigarn\x18В\xf8H \x01(\tR\x14realtimelogconfigarn\x12;\n" +
 	"\x17responseheaderspolicyid\x18\u0530\xaet \x01(\tR\x17responseheaderspolicyid\x120\n" +
-	"\x0fsmoothstreaming\x18\xea\xf9\x97, \x01(\bH\x01R\x0fsmoothstreaming\x88\x01\x01\x12*\n" +
+	"\x0fsmoothstreaming\x18\xea\xf9\x97, \x01(\bH\x04R\x0fsmoothstreaming\x88\x01\x01\x12*\n" +
 	"\x0etargetoriginid\x18\xa8ԇ\xb6\x01 \x01(\tR\x0etargetoriginid\x12L\n" +
 	"\x10trustedkeygroups\x18\xa4\xa4\x9f\xd0\x01 \x01(\v2\x1c.cloudfront.TrustedKeyGroupsR\x10trustedkeygroups\x12E\n" +
 	"\x0etrustedsigners\x18艍' \x01(\v2\x1a.cloudfront.TrustedSignersR\x0etrustedsigners\x12W\n" +
 	"\x14viewerprotocolpolicy\x18\uece33 \x01(\x0e2 .cloudfront.ViewerProtocolPolicyR\x14viewerprotocolpolicyB\v\n" +
-	"\t_compressB\x12\n" +
+	"\t_compressB\r\n" +
+	"\v_defaultttlB\t\n" +
+	"\a_maxttlB\t\n" +
+	"\a_minttlB\x12\n" +
 	"\x10_smoothstreaming\"M\n" +
 	"\x1aDeleteAnycastIpListRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
@@ -40555,248 +40568,286 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\f_includebody\"{\n" +
 	"\x1aLambdaFunctionAssociations\x12>\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2%.cloudfront.LambdaFunctionAssociationR\x05items\x12\x1d\n" +
-	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"V\n" +
+	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"h\n" +
 	"\x19ListAnycastIpListsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"q\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"q\n" +
 	"\x18ListAnycastIpListsResult\x12U\n" +
-	"\x0eanycastiplists\x18\x95\x97\x9f\xe9\x01 \x01(\v2#.cloudfront.AnycastIpListCollectionB\x04\x88\xb5\x18\x01R\x0eanycastiplists\"\x8a\x01\n" +
+	"\x0eanycastiplists\x18\x95\x97\x9f\xe9\x01 \x01(\v2#.cloudfront.AnycastIpListCollectionB\x04\x88\xb5\x18\x01R\x0eanycastiplists\"\x9c\x01\n" +
 	"\x18ListCachePoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x123\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.cloudfront.CachePolicyTypeR\x04type\"i\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x123\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.cloudfront.CachePolicyTypeR\x04typeB\v\n" +
+	"\t_maxitems\"i\n" +
 	"\x17ListCachePoliciesResult\x12N\n" +
-	"\x0fcachepolicylist\x18\xc8Ȭ7 \x01(\v2\x1b.cloudfront.CachePolicyListB\x04\x88\xb5\x18\x01R\x0fcachepolicylist\"h\n" +
+	"\x0fcachepolicylist\x18\xc8Ȭ7 \x01(\v2\x1b.cloudfront.CachePolicyListB\x04\x88\xb5\x18\x01R\x0fcachepolicylist\"z\n" +
 	"+ListCloudFrontOriginAccessIdentitiesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xb6\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xb6\x01\n" +
 	"*ListCloudFrontOriginAccessIdentitiesResult\x12\x87\x01\n" +
-	"\"cloudfrontoriginaccessidentitylist\x18\xa8\xfc\x90v \x01(\v2..cloudfront.CloudFrontOriginAccessIdentityListB\x04\x88\xb5\x18\x01R\"cloudfrontoriginaccessidentitylist\"\x9e\x01\n" +
+	"\"cloudfrontoriginaccessidentitylist\x18\xa8\xfc\x90v \x01(\v2..cloudfront.CloudFrontOriginAccessIdentityListB\x04\x88\xb5\x18\x01R\"cloudfrontoriginaccessidentitylist\"\xb0\x01\n" +
 	"\x1dListConflictingAliasesRequest\x12\x17\n" +
 	"\x05alias\x18\xf8\xe5\x87\x17 \x01(\tR\x05alias\x12)\n" +
 	"\x0edistributionid\x18\xe7\xb1\xfbC \x01(\tR\x0edistributionid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x83\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x83\x01\n" +
 	"\x1cListConflictingAliasesResult\x12c\n" +
-	"\x16conflictingaliaseslist\x18Ԥ\x83? \x01(\v2\".cloudfront.ConflictingAliasesListB\x04\x88\xb5\x18\x01R\x16conflictingaliaseslist\"\x8f\x01\n" +
+	"\x16conflictingaliaseslist\x18Ԥ\x83? \x01(\v2\".cloudfront.ConflictingAliasesListB\x04\x88\xb5\x18\x01R\x16conflictingaliaseslist\"\xa1\x01\n" +
 	"\x1eListConnectionFunctionsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\xa0\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x122\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stageB\v\n" +
+	"\t_maxitems\"\xa0\x01\n" +
 	"\x1dListConnectionFunctionsResult\x12[\n" +
 	"\x13connectionfunctions\x18\xab״\xca\x01 \x03(\v2%.cloudfront.ConnectionFunctionSummaryR\x13connectionfunctions\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xb8\x01\n" +
+	"nextmarker\"\xca\x01\n" +
 	"\x1bListConnectionGroupsRequest\x12^\n" +
 	"\x11associationfilter\x18\xbf\x8a\xe3\x93\x01 \x01(\v2,.cloudfront.ConnectionGroupAssociationFilterR\x11associationfilter\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x93\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x93\x01\n" +
 	"\x1aListConnectionGroupsResult\x12Q\n" +
 	"\x10connectiongroups\x18\x9a\xf0\x9aW \x03(\v2\".cloudfront.ConnectionGroupSummaryR\x10connectiongroups\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"d\n" +
+	"nextmarker\"v\n" +
 	"'ListContinuousDeploymentPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xa6\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xa6\x01\n" +
 	"&ListContinuousDeploymentPoliciesResult\x12|\n" +
-	"\x1econtinuousdeploymentpolicylist\x18\xfc\xa5\xa1\xee\x01 \x01(\v2*.cloudfront.ContinuousDeploymentPolicyListB\x04\x88\xb5\x18\x01R\x1econtinuousdeploymentpolicylist\"\xb6\x01\n" +
+	"\x1econtinuousdeploymentpolicylist\x18\xfc\xa5\xa1\xee\x01 \x01(\v2*.cloudfront.ContinuousDeploymentPolicyListB\x04\x88\xb5\x18\x01R\x1econtinuousdeploymentpolicylist\"\xc8\x01\n" +
 	"-ListDistributionTenantsByCustomizationRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1f\n" +
-	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\"\xb5\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1f\n" +
+	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarnB\v\n" +
+	"\t_maxitems\"\xb5\x01\n" +
 	",ListDistributionTenantsByCustomizationResult\x12a\n" +
 	"\x16distributiontenantlist\x18\xfc\xde\xf5\xa8\x01 \x03(\v2%.cloudfront.DistributionTenantSummaryR\x16distributiontenantlist\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xbe\x01\n" +
+	"nextmarker\"\xd0\x01\n" +
 	"\x1eListDistributionTenantsRequest\x12a\n" +
 	"\x11associationfilter\x18\xbf\x8a\xe3\x93\x01 \x01(\v2/.cloudfront.DistributionTenantAssociationFilterR\x11associationfilter\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xa6\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xa6\x01\n" +
 	"\x1dListDistributionTenantsResult\x12a\n" +
 	"\x16distributiontenantlist\x18\xfc\xde\xf5\xa8\x01 \x03(\v2%.cloudfront.DistributionTenantSummaryR\x16distributiontenantlist\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x94\x01\n" +
+	"nextmarker\"\xa6\x01\n" +
 	")ListDistributionsByAnycastIpListIdRequest\x12,\n" +
 	"\x0fanycastiplistid\x18\x83\xac\xf8\xcd\x01 \x01(\tR\x0fanycastiplistid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"}\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"}\n" +
 	"(ListDistributionsByAnycastIpListIdResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\x8e\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xa0\x01\n" +
 	"'ListDistributionsByCachePolicyIdRequest\x12(\n" +
 	"\rcachepolicyid\x18\xb3\xd3\xdc\xcd\x01 \x01(\tR\rcachepolicyid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x82\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x82\x01\n" +
 	"&ListDistributionsByCachePolicyIdResult\x12X\n" +
-	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\xb0\x01\n" +
+	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\xc2\x01\n" +
 	",ListDistributionsByConnectionFunctionRequest\x12E\n" +
 	"\x1cconnectionfunctionidentifier\x18\xb7\xd3\xfbr \x01(\tR\x1cconnectionfunctionidentifier\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x80\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x80\x01\n" +
 	"+ListDistributionsByConnectionFunctionResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xac\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xbe\x01\n" +
 	"(ListDistributionsByConnectionModeRequest\x12E\n" +
 	"\x0econnectionmode\x18\xb7\x84\x91' \x01(\x0e2\x1a.cloudfront.ConnectionModeR\x0econnectionmode\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"|\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"|\n" +
 	"'ListDistributionsByConnectionModeResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\x83\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\x95\x01\n" +
 	"\"ListDistributionsByKeyGroupRequest\x12\"\n" +
 	"\n" +
 	"keygroupid\x18Ӈ\xad\xed\x01 \x01(\tR\n" +
 	"keygroupid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"}\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"}\n" +
 	"!ListDistributionsByKeyGroupResult\x12X\n" +
-	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\xa6\x01\n" +
+	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\xb8\x01\n" +
 	"/ListDistributionsByOriginRequestPolicyIdRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x128\n" +
-	"\x15originrequestpolicyid\x18\xf8\xac\xad\x8e\x01 \x01(\tR\x15originrequestpolicyid\"\x8a\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x128\n" +
+	"\x15originrequestpolicyid\x18\xf8\xac\xad\x8e\x01 \x01(\tR\x15originrequestpolicyidB\v\n" +
+	"\t_maxitems\"\x8a\x01\n" +
 	".ListDistributionsByOriginRequestPolicyIdResult\x12X\n" +
-	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\x8a\x01\n" +
+	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\x9c\x01\n" +
 	"'ListDistributionsByOwnedResourceRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x82\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\v\n" +
+	"\t_maxitems\"\x82\x01\n" +
 	"&ListDistributionsByOwnedResourceResult\x12X\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2#.cloudfront.DistributionIdOwnerListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xd9\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2#.cloudfront.DistributionIdOwnerListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xeb\x01\n" +
 	"+ListDistributionsByRealtimeLogConfigRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x125\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x125\n" +
 	"\x14realtimelogconfigarn\x18В\xf8H \x01(\tR\x14realtimelogconfigarn\x128\n" +
-	"\x15realtimelogconfigname\x18\xacۛ\xf0\x01 \x01(\tR\x15realtimelogconfigname\"\x7f\n" +
+	"\x15realtimelogconfigname\x18\xacۛ\xf0\x01 \x01(\tR\x15realtimelogconfignameB\v\n" +
+	"\t_maxitems\"\x7f\n" +
 	"*ListDistributionsByRealtimeLogConfigResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xab\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xbd\x01\n" +
 	"1ListDistributionsByResponseHeadersPolicyIdRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12;\n" +
-	"\x17responseheaderspolicyid\x18\u0530\xaet \x01(\tR\x17responseheaderspolicyid\"\x8c\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12;\n" +
+	"\x17responseheaderspolicyid\x18\u0530\xaet \x01(\tR\x17responseheaderspolicyidB\v\n" +
+	"\t_maxitems\"\x8c\x01\n" +
 	"0ListDistributionsByResponseHeadersPolicyIdResult\x12X\n" +
-	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\x99\x01\n" +
+	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\xab\x01\n" +
 	"$ListDistributionsByTrustStoreRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x126\n" +
-	"\x14truststoreidentifier\x18\x8e\x93\x91\x9c\x01 \x01(\tR\x14truststoreidentifier\"x\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x126\n" +
+	"\x14truststoreidentifier\x18\x8e\x93\x91\x9c\x01 \x01(\tR\x14truststoreidentifierB\v\n" +
+	"\t_maxitems\"x\n" +
 	"#ListDistributionsByTrustStoreResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\x88\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\x9a\x01\n" +
 	"%ListDistributionsByVpcOriginIdRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12$\n" +
-	"\vvpcoriginid\x18\xe8Þ\xae\x01 \x01(\tR\vvpcoriginid\"\x80\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12$\n" +
+	"\vvpcoriginid\x18\xe8Þ\xae\x01 \x01(\tR\vvpcoriginidB\v\n" +
+	"\t_maxitems\"\x80\x01\n" +
 	"$ListDistributionsByVpcOriginIdResult\x12X\n" +
-	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"~\n" +
+	"\x12distributionidlist\x18ӟ\xd7\xe5\x01 \x01(\v2\x1e.cloudfront.DistributionIdListB\x04\x88\xb5\x18\x01R\x12distributionidlist\"\x90\x01\n" +
 	"\"ListDistributionsByWebACLIdRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1d\n" +
-	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\"v\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1d\n" +
+	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclidB\v\n" +
+	"\t_maxitems\"v\n" +
 	"!ListDistributionsByWebACLIdResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"U\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"g\n" +
 	"\x18ListDistributionsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"l\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"l\n" +
 	"\x17ListDistributionsResult\x12Q\n" +
-	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xe5\x01\n" +
+	"\x10distributionlist\x18\xf4\xff\x83\x16 \x01(\v2\x1c.cloudfront.DistributionListB\x04\x88\xb5\x18\x01R\x10distributionlist\"\xf7\x01\n" +
 	"\x1aListDomainConflictsRequest\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12p\n" +
 	"\x1fdomaincontrolvalidationresource\x18ʢ\xb0\xc1\x01 \x01(\v2\".cloudfront.DistributionResourceIdR\x1fdomaincontrolvalidationresource\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x89\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x89\x01\n" +
 	"\x19ListDomainConflictsResult\x12H\n" +
 	"\x0fdomainconflicts\x18\xb1\xfe֚\x01 \x03(\v2\x1a.cloudfront.DomainConflictR\x0fdomainconflicts\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"c\n" +
+	"nextmarker\"u\n" +
 	"&ListFieldLevelEncryptionConfigsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x93\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x93\x01\n" +
 	"%ListFieldLevelEncryptionConfigsResult\x12j\n" +
-	"\x18fieldlevelencryptionlist\x18\xb7\xdaӭ\x01 \x01(\v2$.cloudfront.FieldLevelEncryptionListB\x04\x88\xb5\x18\x01R\x18fieldlevelencryptionlist\"d\n" +
+	"\x18fieldlevelencryptionlist\x18\xb7\xdaӭ\x01 \x01(\v2$.cloudfront.FieldLevelEncryptionListB\x04\x88\xb5\x18\x01R\x18fieldlevelencryptionlist\"v\n" +
 	"'ListFieldLevelEncryptionProfilesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xa9\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xa9\x01\n" +
 	"&ListFieldLevelEncryptionProfilesResult\x12\x7f\n" +
-	"\x1ffieldlevelencryptionprofilelist\x18\x80\xde\xc1\xc1\x01 \x01(\v2+.cloudfront.FieldLevelEncryptionProfileListB\x04\x88\xb5\x18\x01R\x1ffieldlevelencryptionprofilelist\"\x85\x01\n" +
+	"\x1ffieldlevelencryptionprofilelist\x18\x80\xde\xc1\xc1\x01 \x01(\v2+.cloudfront.FieldLevelEncryptionProfileListB\x04\x88\xb5\x18\x01R\x1ffieldlevelencryptionprofilelist\"\x97\x01\n" +
 	"\x14ListFunctionsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\\\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x122\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stageB\v\n" +
+	"\t_maxitems\"\\\n" +
 	"\x13ListFunctionsResult\x12E\n" +
-	"\ffunctionlist\x18\x96\xca\xf6\" \x01(\v2\x18.cloudfront.FunctionListB\x04\x88\xb5\x18\x01R\ffunctionlist\"~\n" +
+	"\ffunctionlist\x18\x96\xca\xf6\" \x01(\v2\x18.cloudfront.FunctionListB\x04\x88\xb5\x18\x01R\ffunctionlist\"\x90\x01\n" +
 	"-ListInvalidationsForDistributionTenantRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x81\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x81\x01\n" +
 	",ListInvalidationsForDistributionTenantResult\x12Q\n" +
-	"\x10invalidationlist\x18ښ\xe4\x1b \x01(\v2\x1c.cloudfront.InvalidationListB\x04\x88\xb5\x18\x01R\x10invalidationlist\"\x80\x01\n" +
+	"\x10invalidationlist\x18ښ\xe4\x1b \x01(\v2\x1c.cloudfront.InvalidationListB\x04\x88\xb5\x18\x01R\x10invalidationlist\"\x92\x01\n" +
 	"\x18ListInvalidationsRequest\x12)\n" +
 	"\x0edistributionid\x18\xe7\xb1\xfbC \x01(\tR\x0edistributionid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"l\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"l\n" +
 	"\x17ListInvalidationsResult\x12Q\n" +
-	"\x10invalidationlist\x18ښ\xe4\x1b \x01(\v2\x1c.cloudfront.InvalidationListB\x04\x88\xb5\x18\x01R\x10invalidationlist\"Q\n" +
+	"\x10invalidationlist\x18ښ\xe4\x1b \x01(\v2\x1c.cloudfront.InvalidationListB\x04\x88\xb5\x18\x01R\x10invalidationlist\"c\n" +
 	"\x14ListKeyGroupsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"]\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"]\n" +
 	"\x13ListKeyGroupsResult\x12F\n" +
-	"\fkeygrouplist\x18\xe8\xceŦ\x01 \x01(\v2\x18.cloudfront.KeyGroupListB\x04\x88\xb5\x18\x01R\fkeygrouplist\"q\n" +
+	"\fkeygrouplist\x18\xe8\xceŦ\x01 \x01(\v2\x18.cloudfront.KeyGroupListB\x04\x88\xb5\x18\x01R\fkeygrouplist\"\x83\x01\n" +
 	"\x19ListKeyValueStoresRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"p\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x19\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06statusB\v\n" +
+	"\t_maxitems\"p\n" +
 	"\x18ListKeyValueStoresResult\x12T\n" +
-	"\x11keyvaluestorelist\x18\xfb\x8c\xee\x13 \x01(\v2\x1d.cloudfront.KeyValueStoreListB\x04\x88\xb5\x18\x01R\x11keyvaluestorelist\"\\\n" +
+	"\x11keyvaluestorelist\x18\xfb\x8c\xee\x13 \x01(\v2\x1d.cloudfront.KeyValueStoreListB\x04\x88\xb5\x18\x01R\x11keyvaluestorelist\"n\n" +
 	"\x1fListOriginAccessControlsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x88\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x88\x01\n" +
 	"\x1eListOriginAccessControlsResult\x12f\n" +
-	"\x17originaccesscontrollist\x18\x93\x91\xe4B \x01(\v2#.cloudfront.OriginAccessControlListB\x04\x88\xb5\x18\x01R\x17originaccesscontrollist\"\x9a\x01\n" +
+	"\x17originaccesscontrollist\x18\x93\x91\xe4B \x01(\v2#.cloudfront.OriginAccessControlListB\x04\x88\xb5\x18\x01R\x17originaccesscontrollist\"\xac\x01\n" +
 	" ListOriginRequestPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12;\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2#.cloudfront.OriginRequestPolicyTypeR\x04type\"\x8a\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12;\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2#.cloudfront.OriginRequestPolicyTypeR\x04typeB\v\n" +
+	"\t_maxitems\"\x8a\x01\n" +
 	"\x1fListOriginRequestPoliciesResult\x12g\n" +
-	"\x17originrequestpolicylist\x18\xb7\xd7\xc6\xdd\x01 \x01(\v2#.cloudfront.OriginRequestPolicyListB\x04\x88\xb5\x18\x01R\x17originrequestpolicylist\"R\n" +
+	"\x17originrequestpolicylist\x18\xb7\xd7\xc6\xdd\x01 \x01(\v2#.cloudfront.OriginRequestPolicyListB\x04\x88\xb5\x18\x01R\x17originrequestpolicylist\"d\n" +
 	"\x15ListPublicKeysRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"`\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"`\n" +
 	"\x14ListPublicKeysResult\x12H\n" +
-	"\rpublickeylist\x18Ⱦ\xfa= \x01(\v2\x19.cloudfront.PublicKeyListB\x04\x88\xb5\x18\x01R\rpublickeylist\"Z\n" +
+	"\rpublickeylist\x18Ⱦ\xfa= \x01(\v2\x19.cloudfront.PublicKeyListB\x04\x88\xb5\x18\x01R\rpublickeylist\"l\n" +
 	"\x1dListRealtimeLogConfigsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"x\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"x\n" +
 	"\x1cListRealtimeLogConfigsResult\x12X\n" +
-	"\x12realtimelogconfigs\x18\xc2\xe2\x86\xd8\x01 \x01(\v2\x1e.cloudfront.RealtimeLogConfigsB\x04\x88\xb5\x18\x01R\x12realtimelogconfigs\"\x9e\x01\n" +
+	"\x12realtimelogconfigs\x18\xc2\xe2\x86\xd8\x01 \x01(\v2\x1e.cloudfront.RealtimeLogConfigsB\x04\x88\xb5\x18\x01R\x12realtimelogconfigs\"\xb0\x01\n" +
 	"\"ListResponseHeadersPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12=\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2%.cloudfront.ResponseHeadersPolicyTypeR\x04type\"\x91\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12=\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2%.cloudfront.ResponseHeadersPolicyTypeR\x04typeB\v\n" +
+	"\t_maxitems\"\x91\x01\n" +
 	"!ListResponseHeadersPoliciesResult\x12l\n" +
-	"\x19responseheaderspolicylist\x18\xdb\xef\xe6\x04 \x01(\v2%.cloudfront.ResponseHeadersPolicyListB\x04\x88\xb5\x18\x01R\x19responseheaderspolicylist\"^\n" +
+	"\x19responseheaderspolicylist\x18\xdb\xef\xe6\x04 \x01(\v2%.cloudfront.ResponseHeadersPolicyListB\x04\x88\xb5\x18\x01R\x19responseheaderspolicylist\"p\n" +
 	"!ListStreamingDistributionsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x90\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x90\x01\n" +
 	" ListStreamingDistributionsResult\x12l\n" +
 	"\x19streamingdistributionlist\x18⨳& \x01(\v2%.cloudfront.StreamingDistributionListB\x04\x88\xb5\x18\x01R\x19streamingdistributionlist\";\n" +
 	"\x1aListTagsForResourceRequest\x12\x1d\n" +
 	"\bresource\x18\x96\xb0\xc3\x1d \x01(\tR\bresource\"K\n" +
 	"\x19ListTagsForResourceResult\x12.\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x01(\v2\x10.cloudfront.TagsB\x04\x88\xb5\x18\x01R\x04tags\"S\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x01(\v2\x10.cloudfront.TagsB\x04\x88\xb5\x18\x01R\x04tags\"e\n" +
 	"\x16ListTrustStoresRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x85\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x85\x01\n" +
 	"\x15ListTrustStoresResult\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12H\n" +
-	"\x0etruststorelist\x18\x8b\x90\xfe\" \x03(\v2\x1d.cloudfront.TrustStoreSummaryR\x0etruststorelist\"R\n" +
+	"\x0etruststorelist\x18\x8b\x90\xfe\" \x03(\v2\x1d.cloudfront.TrustStoreSummaryR\x0etruststorelist\"d\n" +
 	"\x15ListVpcOriginsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"`\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"`\n" +
 	"\x14ListVpcOriginsResult\x12H\n" +
 	"\rvpcoriginlist\x18\xa7\xcf\xedT \x01(\v2\x19.cloudfront.VpcOriginListB\x04\x88\xb5\x18\x01R\rvpcoriginlist\"\xb9\x01\n" +
 	"\rLoggingConfig\x12\x19\n" +
@@ -40855,10 +40906,10 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x1bNoSuchResponseHeadersPolicy\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
 	"\x1bNoSuchStreamingDistribution\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xac\x05\n" +
-	"\x06Origin\x121\n" +
-	"\x12connectionattempts\x18Ԯ\x85> \x01(\x05R\x12connectionattempts\x120\n" +
-	"\x11connectiontimeout\x18\xf5\x9a\xfc\x87\x01 \x01(\x05R\x11connectiontimeout\x12B\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x86\x06\n" +
+	"\x06Origin\x126\n" +
+	"\x12connectionattempts\x18Ԯ\x85> \x01(\x05H\x00R\x12connectionattempts\x88\x01\x01\x125\n" +
+	"\x11connectiontimeout\x18\xf5\x9a\xfc\x87\x01 \x01(\x05H\x01R\x11connectiontimeout\x88\x01\x01\x12B\n" +
 	"\rcustomheaders\x18\xa5\xbb\xd65 \x01(\v2\x19.cloudfront.CustomHeadersR\rcustomheaders\x12Q\n" +
 	"\x12customoriginconfig\x18\xb7ء. \x01(\v2\x1e.cloudfront.CustomOriginConfigR\x12customoriginconfig\x12!\n" +
 	"\n" +
@@ -40869,10 +40920,13 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\n" +
 	"originpath\x18ɝ\xc0\x1f \x01(\tR\n" +
 	"originpath\x12@\n" +
-	"\foriginshield\x18\xcf\xe7\x95\xe6\x01 \x01(\v2\x18.cloudfront.OriginShieldR\foriginshield\x12?\n" +
-	"\x19responsecompletiontimeout\x18\xb8\x98\xb2^ \x01(\x05R\x19responsecompletiontimeout\x12E\n" +
+	"\foriginshield\x18\xcf\xe7\x95\xe6\x01 \x01(\v2\x18.cloudfront.OriginShieldR\foriginshield\x12D\n" +
+	"\x19responsecompletiontimeout\x18\xb8\x98\xb2^ \x01(\x05H\x02R\x19responsecompletiontimeout\x88\x01\x01\x12E\n" +
 	"\x0es3originconfig\x18\xa0\x87\xbb% \x01(\v2\x1a.cloudfront.S3OriginConfigR\x0es3originconfig\x12H\n" +
-	"\x0fvpcoriginconfig\x18\xa5\x81\xa23 \x01(\v2\x1b.cloudfront.VpcOriginConfigR\x0fvpcoriginconfig\"\x91\x01\n" +
+	"\x0fvpcoriginconfig\x18\xa5\x81\xa23 \x01(\v2\x1b.cloudfront.VpcOriginConfigR\x0fvpcoriginconfigB\x15\n" +
+	"\x13_connectionattemptsB\x14\n" +
+	"\x12_connectiontimeoutB\x1c\n" +
+	"\x1a_responsecompletiontimeout\"\x91\x01\n" +
 	"\x13OriginAccessControl\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12f\n" +
 	"\x19originaccesscontrolconfig\x18\xe1\xfe\xcaD \x01(\v2%.cloudfront.OriginAccessControlConfigR\x19originaccesscontrolconfig\"?\n" +
@@ -41116,16 +41170,17 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\t_override\"Z\n" +
 	"'ResponseHeadersPolicyContentTypeOptions\x12\"\n" +
 	"\boverride\x18\xde\xc0\xb3B \x01(\bH\x00R\boverride\x88\x01\x01B\v\n" +
-	"\t_override\"\x8b\x06\n" +
+	"\t_override\"\xab\x06\n" +
 	"\x1fResponseHeadersPolicyCorsConfig\x12M\n" +
 	"\x1daccesscontrolallowcredentials\x18\xaa\xe9̸\x01 \x01(\bH\x00R\x1daccesscontrolallowcredentials\x88\x01\x01\x12|\n" +
 	"\x19accesscontrolallowheaders\x18\xa2\x9c\xf6\xba\x01 \x01(\v2:.cloudfront.ResponseHeadersPolicyAccessControlAllowHeadersR\x19accesscontrolallowheaders\x12{\n" +
 	"\x19accesscontrolallowmethods\x18\xb2\x87\xa3# \x01(\v2:.cloudfront.ResponseHeadersPolicyAccessControlAllowMethodsR\x19accesscontrolallowmethods\x12|\n" +
 	"\x19accesscontrolalloworigins\x18\xfd\xf4\xe1\xd8\x01 \x01(\v2:.cloudfront.ResponseHeadersPolicyAccessControlAllowOriginsR\x19accesscontrolalloworigins\x12~\n" +
-	"\x1aaccesscontrolexposeheaders\x18\xeb\xf2\xcf\x12 \x01(\v2;.cloudfront.ResponseHeadersPolicyAccessControlExposeHeadersR\x1aaccesscontrolexposeheaders\x12:\n" +
-	"\x16accesscontrolmaxagesec\x18\x83А\xfc\x01 \x01(\x05R\x16accesscontrolmaxagesec\x12/\n" +
-	"\x0eoriginoverride\x18\xc0\xfd\xf8\x8d\x01 \x01(\bH\x01R\x0eoriginoverride\x88\x01\x01B \n" +
-	"\x1e_accesscontrolallowcredentialsB\x11\n" +
+	"\x1aaccesscontrolexposeheaders\x18\xeb\xf2\xcf\x12 \x01(\v2;.cloudfront.ResponseHeadersPolicyAccessControlExposeHeadersR\x1aaccesscontrolexposeheaders\x12?\n" +
+	"\x16accesscontrolmaxagesec\x18\x83А\xfc\x01 \x01(\x05H\x01R\x16accesscontrolmaxagesec\x88\x01\x01\x12/\n" +
+	"\x0eoriginoverride\x18\xc0\xfd\xf8\x8d\x01 \x01(\bH\x02R\x0eoriginoverride\x88\x01\x01B \n" +
+	"\x1e_accesscontrolallowcredentialsB\x19\n" +
+	"\x17_accesscontrolmaxagesecB\x11\n" +
 	"\x0f_originoverride\"\x8a\x01\n" +
 	"!ResponseHeadersPolicyCustomHeader\x12\x1a\n" +
 	"\x06header\x18\x81\xb3\xbe\x8a\x01 \x01(\tR\x06header\x12\"\n" +
@@ -41198,10 +41253,11 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x125\n" +
-	"\x14originaccessidentity\x18\xb4ߘl \x01(\tR\x14originaccessidentity\"y\n" +
+	"\x14originaccessidentity\x18\xb4ߘl \x01(\tR\x14originaccessidentity\"\x94\x01\n" +
 	"\x0eS3OriginConfig\x125\n" +
-	"\x14originaccessidentity\x18\xb4ߘl \x01(\tR\x14originaccessidentity\x120\n" +
-	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05R\x11originreadtimeout\"[\n" +
+	"\x14originaccessidentity\x18\xb4ߘl \x01(\tR\x14originaccessidentity\x125\n" +
+	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05H\x00R\x11originreadtimeout\x88\x01\x01B\x14\n" +
+	"\x12_originreadtimeout\"[\n" +
 	"\x17SessionStickinessConfig\x12\x1c\n" +
 	"\aidlettl\x18\xfe\x95ƾ\x01 \x01(\x05R\aidlettl\x12\"\n" +
 	"\n" +
@@ -41433,17 +41489,18 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\rTrafficConfig\x12f\n" +
 	"\x12singleheaderconfig\x18\x8b\xbbޒ\x01 \x01(\v22.cloudfront.ContinuousDeploymentSingleHeaderConfigR\x12singleheaderconfig\x12f\n" +
 	"\x12singleweightconfig\x18\xf0\x8a\xc7\xcc\x01 \x01(\v22.cloudfront.ContinuousDeploymentSingleWeightConfigR\x12singleweightconfig\x12B\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2*.cloudfront.ContinuousDeploymentPolicyTypeR\x04type\"\x85\x03\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2*.cloudfront.ContinuousDeploymentPolicyTypeR\x04type\"\xa5\x03\n" +
 	"\n" +
 	"TrustStore\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12-\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x16numberofcacertificates\x18\xbaՠa \x01(\x05R\x16numberofcacertificates\x12\x19\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12>\n" +
+	"\x16numberofcacertificates\x18\xbaՠa \x01(\x05H\x00R\x16numberofcacertificates\x88\x01\x01\x12\x19\n" +
 	"\x06reason\x18\xba\x82\xc5\t \x01(\tR\x06reason\x127\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.cloudfront.TrustStoreStatusR\x06status\x12S\n" +
-	" useclientcertificateocspendpoint\x18\xfb\xce\xc1\x83\x01 \x01(\bH\x00R useclientcertificateocspendpoint\x88\x01\x01B#\n" +
+	" useclientcertificateocspendpoint\x18\xfb\xce\xc1\x83\x01 \x01(\bH\x01R useclientcertificateocspendpoint\x88\x01\x01B\x19\n" +
+	"\x17_numberofcacertificatesB#\n" +
 	"!_useclientcertificateocspendpoint\"\xfe\x01\n" +
 	"\x10TrustStoreConfig\x12F\n" +
 	"\x1aadvertisetruststorecanames\x18\xac\xe3\xad_ \x01(\bH\x00R\x1aadvertisetruststorecanames\x88\x01\x01\x12@\n" +
@@ -41627,13 +41684,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x0fpublickeyconfig\x18\xee\xec\xfcl \x01(\v2\x1b.cloudfront.PublicKeyConfigB\x04\x88\xb5\x18\x01R\x0fpublickeyconfig\"m\n" +
 	"\x15UpdatePublicKeyResult\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12<\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\v2\x15.cloudfront.PublicKeyB\x04\x88\xb5\x18\x01R\tpublickey\"\xc9\x01\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\v2\x15.cloudfront.PublicKeyB\x04\x88\xb5\x18\x01R\tpublickey\"\xdf\x01\n" +
 	"\x1eUpdateRealtimeLogConfigRequest\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x126\n" +
 	"\tendpoints\x18\xde\xe0\xf4\xcf\x01 \x03(\v2\x14.cloudfront.EndPointR\tendpoints\x12\x1a\n" +
 	"\x06fields\x18\x9d\xfb\xa2\x98\x01 \x03(\tR\x06fields\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fsamplingrate\x18ӧ\x92\x82\x01 \x01(\x03R\fsamplingrate\"o\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12+\n" +
+	"\fsamplingrate\x18ӧ\x92\x82\x01 \x01(\x03H\x00R\fsamplingrate\x88\x01\x01B\x0f\n" +
+	"\r_samplingrate\"o\n" +
 	"\x1dUpdateRealtimeLogConfigResult\x12N\n" +
 	"\x11realtimelogconfig\x18\xa9\xac\xde- \x01(\v2\x1d.cloudfront.RealtimeLogConfigR\x11realtimelogconfig\"\xc9\x01\n" +
 	"\"UpdateResponseHeadersPolicyRequest\x12\x12\n" +
@@ -41700,12 +41758,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12-\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12`\n" +
-	"\x17vpcoriginendpointconfig\x18\xfe\xee\xe2\x15 \x01(\v2#.cloudfront.VpcOriginEndpointConfigR\x17vpcoriginendpointconfig\"\xd0\x01\n" +
-	"\x0fVpcOriginConfig\x129\n" +
-	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05R\x16originkeepalivetimeout\x120\n" +
-	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05R\x11originreadtimeout\x12*\n" +
+	"\x17vpcoriginendpointconfig\x18\xfe\xee\xe2\x15 \x01(\v2#.cloudfront.VpcOriginEndpointConfigR\x17vpcoriginendpointconfig\"\x8b\x02\n" +
+	"\x0fVpcOriginConfig\x12>\n" +
+	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05H\x00R\x16originkeepalivetimeout\x88\x01\x01\x125\n" +
+	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05H\x01R\x11originreadtimeout\x88\x01\x01\x12*\n" +
 	"\x0eowneraccountid\x18\x97\x83\xa6\xb0\x01 \x01(\tR\x0eowneraccountid\x12$\n" +
-	"\vvpcoriginid\x18\xe8Þ\xae\x01 \x01(\tR\vvpcoriginid\"\xb4\x02\n" +
+	"\vvpcoriginid\x18\xe8Þ\xae\x01 \x01(\tR\vvpcoriginidB\x19\n" +
+	"\x17_originkeepalivetimeoutB\x14\n" +
+	"\x12_originreadtimeout\"\xb4\x02\n" +
 	"\x17VpcOriginEndpointConfig\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x1e\n" +
 	"\bhttpport\x18\xe7⣳\x01 \x01(\x05R\bhttpport\x12\x1f\n" +
@@ -43678,7 +43738,9 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[2].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[7].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[18].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[22].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[39].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[42].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[46].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[48].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[50].OneofWrappers = []any{}
@@ -43687,6 +43749,8 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[72].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[78].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[112].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[116].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[119].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[121].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[159].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[161].OneofWrappers = []any{}
@@ -43699,7 +43763,46 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[286].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[323].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[339].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[341].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[343].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[345].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[347].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[349].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[351].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[353].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[355].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[357].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[359].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[361].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[363].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[365].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[367].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[369].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[371].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[373].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[375].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[377].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[379].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[381].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[383].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[385].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[387].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[389].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[391].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[393].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[395].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[397].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[399].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[401].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[403].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[405].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[407].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[409].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[411].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[415].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[417].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[419].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[442].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[447].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[465].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[471].OneofWrappers = []any{}
@@ -43714,6 +43817,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[519].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[520].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[522].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[525].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[533].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[535].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[537].OneofWrappers = []any{}
@@ -43725,8 +43829,10 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[610].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[621].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[627].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[649].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[655].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[662].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[665].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[667].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

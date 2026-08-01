@@ -46,7 +46,7 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 	}
 
 	opts := storecommon.ListOptions{
-		MaxItems: int(req.Msg.Maxresults),
+		MaxItems: int(req.Msg.GetMaxresults()),
 		Marker:   req.Msg.Nexttoken,
 	}
 	if opts.MaxItems <= 0 {

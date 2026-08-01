@@ -2022,7 +2022,7 @@ type ApiCache struct {
 	Healthmetricsconfig      CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig" json:"healthmetricsconfig,omitempty"`
 	Status                   ApiCacheStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.ApiCacheStatus" json:"status,omitempty"`
 	Transitencryptionenabled *bool                    `protobuf:"varint,166976639,opt,name=transitencryptionenabled,proto3,oneof" json:"transitencryptionenabled,omitempty"`
-	Ttl                      int64                    `protobuf:"varint,489374300,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl                      *int64                   `protobuf:"varint,489374300,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
 	Type                     ApiCacheType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -2094,8 +2094,8 @@ func (x *ApiCache) GetTransitencryptionenabled() bool {
 }
 
 func (x *ApiCache) GetTtl() int64 {
-	if x != nil {
-		return x.Ttl
+	if x != nil && x.Ttl != nil {
+		return *x.Ttl
 	}
 	return 0
 }
@@ -2109,9 +2109,9 @@ func (x *ApiCache) GetType() ApiCacheType {
 
 type ApiKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Deletes       int64                  `protobuf:"varint,265381308,opt,name=deletes,proto3" json:"deletes,omitempty"`
+	Deletes       *int64                 `protobuf:"varint,265381308,opt,name=deletes,proto3,oneof" json:"deletes,omitempty"`
 	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Expires       int64                  `protobuf:"varint,512673668,opt,name=expires,proto3" json:"expires,omitempty"`
+	Expires       *int64                 `protobuf:"varint,512673668,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
 	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2148,8 +2148,8 @@ func (*ApiKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *ApiKey) GetDeletes() int64 {
-	if x != nil {
-		return x.Deletes
+	if x != nil && x.Deletes != nil {
+		return *x.Deletes
 	}
 	return 0
 }
@@ -2162,8 +2162,8 @@ func (x *ApiKey) GetDescription() string {
 }
 
 func (x *ApiKey) GetExpires() int64 {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return 0
 }
@@ -3229,9 +3229,9 @@ func (x *CodeError) GetValue() string {
 
 type CodeErrorLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Column        int32                  `protobuf:"varint,368628264,opt,name=column,proto3" json:"column,omitempty"`
-	Line          int32                  `protobuf:"varint,400234024,opt,name=line,proto3" json:"line,omitempty"`
-	Span          int32                  `protobuf:"varint,151093954,opt,name=span,proto3" json:"span,omitempty"`
+	Column        *int32                 `protobuf:"varint,368628264,opt,name=column,proto3,oneof" json:"column,omitempty"`
+	Line          *int32                 `protobuf:"varint,400234024,opt,name=line,proto3,oneof" json:"line,omitempty"`
+	Span          *int32                 `protobuf:"varint,151093954,opt,name=span,proto3,oneof" json:"span,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3267,22 +3267,22 @@ func (*CodeErrorLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *CodeErrorLocation) GetColumn() int32 {
-	if x != nil {
-		return x.Column
+	if x != nil && x.Column != nil {
+		return *x.Column
 	}
 	return 0
 }
 
 func (x *CodeErrorLocation) GetLine() int32 {
-	if x != nil {
-		return x.Line
+	if x != nil && x.Line != nil {
+		return *x.Line
 	}
 	return 0
 }
 
 func (x *CodeErrorLocation) GetSpan() int32 {
-	if x != nil {
-		return x.Span
+	if x != nil && x.Span != nil {
+		return *x.Span
 	}
 	return 0
 }
@@ -3635,7 +3635,7 @@ type CreateApiKeyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
 	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Expires       int64                  `protobuf:"varint,512673668,opt,name=expires,proto3" json:"expires,omitempty"`
+	Expires       *int64                 `protobuf:"varint,512673668,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3685,8 +3685,8 @@ func (x *CreateApiKeyRequest) GetDescription() string {
 }
 
 func (x *CreateApiKeyRequest) GetExpires() int64 {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return 0
 }
@@ -4286,7 +4286,7 @@ type CreateFunctionRequest struct {
 	Datasourcename          string                 `protobuf:"bytes,231923996,opt,name=datasourcename,proto3" json:"datasourcename,omitempty"`
 	Description             string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Functionversion         string                 `protobuf:"bytes,43418548,opt,name=functionversion,proto3" json:"functionversion,omitempty"`
-	Maxbatchsize            int32                  `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                 `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Name                    string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Requestmappingtemplate  string                 `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
 	Responsemappingtemplate string                 `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3" json:"responsemappingtemplate,omitempty"`
@@ -4362,8 +4362,8 @@ func (x *CreateFunctionRequest) GetFunctionversion() string {
 }
 
 func (x *CreateFunctionRequest) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -4460,8 +4460,8 @@ type CreateGraphqlApiRequest struct {
 	Name                              string                              `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Openidconnectconfig               *OpenIDConnectConfig                `protobuf:"bytes,357500045,opt,name=openidconnectconfig,proto3" json:"openidconnectconfig,omitempty"`
 	Ownercontact                      string                              `protobuf:"bytes,17074121,opt,name=ownercontact,proto3" json:"ownercontact,omitempty"`
-	Querydepthlimit                   int32                               `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3" json:"querydepthlimit,omitempty"`
-	Resolvercountlimit                int32                               `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3" json:"resolvercountlimit,omitempty"`
+	Querydepthlimit                   *int32                              `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3,oneof" json:"querydepthlimit,omitempty"`
+	Resolvercountlimit                *int32                              `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3,oneof" json:"resolvercountlimit,omitempty"`
 	Tags                              map[string]string                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Userpoolconfig                    *UserPoolConfig                     `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
 	Visibility                        GraphQLApiVisibility                `protobuf:"varint,523761126,opt,name=visibility,proto3,enum=appsync.GraphQLApiVisibility" json:"visibility,omitempty"`
@@ -4578,15 +4578,15 @@ func (x *CreateGraphqlApiRequest) GetOwnercontact() string {
 }
 
 func (x *CreateGraphqlApiRequest) GetQuerydepthlimit() int32 {
-	if x != nil {
-		return x.Querydepthlimit
+	if x != nil && x.Querydepthlimit != nil {
+		return *x.Querydepthlimit
 	}
 	return 0
 }
 
 func (x *CreateGraphqlApiRequest) GetResolvercountlimit() int32 {
-	if x != nil {
-		return x.Resolvercountlimit
+	if x != nil && x.Resolvercountlimit != nil {
+		return *x.Resolvercountlimit
 	}
 	return 0
 }
@@ -4671,7 +4671,7 @@ type CreateResolverRequest struct {
 	Datasourcename          string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3" json:"datasourcename,omitempty"`
 	Fieldname               string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
 	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
 	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
 	Requestmappingtemplate  string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
@@ -4756,8 +4756,8 @@ func (x *CreateResolverRequest) GetKind() ResolverKind {
 }
 
 func (x *CreateResolverRequest) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -5177,7 +5177,7 @@ func (x *DataSourceIntrospectionModel) GetSdl() string {
 
 type DataSourceIntrospectionModelField struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
-	Length        int64                                  `protobuf:"varint,63976982,opt,name=length,proto3" json:"length,omitempty"`
+	Length        *int64                                 `protobuf:"varint,63976982,opt,name=length,proto3,oneof" json:"length,omitempty"`
 	Name          string                                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Type          *DataSourceIntrospectionModelFieldType `protobuf:"bytes,287830350,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -5215,8 +5215,8 @@ func (*DataSourceIntrospectionModelField) Descriptor() ([]byte, []int) {
 }
 
 func (x *DataSourceIntrospectionModelField) GetLength() int64 {
-	if x != nil {
-		return x.Length
+	if x != nil && x.Length != nil {
+		return *x.Length
 	}
 	return 0
 }
@@ -6265,9 +6265,9 @@ func (*DeleteTypeResponse) Descriptor() ([]byte, []int) {
 
 type DeltaSyncConfig struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Basetablettl       int64                  `protobuf:"varint,458768025,opt,name=basetablettl,proto3" json:"basetablettl,omitempty"`
+	Basetablettl       *int64                 `protobuf:"varint,458768025,opt,name=basetablettl,proto3,oneof" json:"basetablettl,omitempty"`
 	Deltasynctablename string                 `protobuf:"bytes,459106938,opt,name=deltasynctablename,proto3" json:"deltasynctablename,omitempty"`
-	Deltasynctablettl  int64                  `protobuf:"varint,344917499,opt,name=deltasynctablettl,proto3" json:"deltasynctablettl,omitempty"`
+	Deltasynctablettl  *int64                 `protobuf:"varint,344917499,opt,name=deltasynctablettl,proto3,oneof" json:"deltasynctablettl,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -6303,8 +6303,8 @@ func (*DeltaSyncConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeltaSyncConfig) GetBasetablettl() int64 {
-	if x != nil {
-		return x.Basetablettl
+	if x != nil && x.Basetablettl != nil {
+		return *x.Basetablettl
 	}
 	return 0
 }
@@ -6317,8 +6317,8 @@ func (x *DeltaSyncConfig) GetDeltasynctablename() string {
 }
 
 func (x *DeltaSyncConfig) GetDeltasynctablettl() int64 {
-	if x != nil {
-		return x.Deltasynctablettl
+	if x != nil && x.Deltasynctablettl != nil {
+		return *x.Deltasynctablettl
 	}
 	return 0
 }
@@ -7503,7 +7503,7 @@ type FunctionConfiguration struct {
 	Functionarn             string                 `protobuf:"bytes,451665297,opt,name=functionarn,proto3" json:"functionarn,omitempty"`
 	Functionid              string                 `protobuf:"bytes,156610413,opt,name=functionid,proto3" json:"functionid,omitempty"`
 	Functionversion         string                 `protobuf:"bytes,43418548,opt,name=functionversion,proto3" json:"functionversion,omitempty"`
-	Maxbatchsize            int32                  `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                 `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Name                    string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Requestmappingtemplate  string                 `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
 	Responsemappingtemplate string                 `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3" json:"responsemappingtemplate,omitempty"`
@@ -7586,8 +7586,8 @@ func (x *FunctionConfiguration) GetFunctionversion() string {
 }
 
 func (x *FunctionConfiguration) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -7991,7 +7991,7 @@ type GetDataSourceIntrospectionRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Includemodelssdl *bool                  `protobuf:"varint,127754667,opt,name=includemodelssdl,proto3,oneof" json:"includemodelssdl,omitempty"`
 	Introspectionid  string                 `protobuf:"bytes,284517058,opt,name=introspectionid,proto3" json:"introspectionid,omitempty"`
-	Maxresults       int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults       *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -8042,8 +8042,8 @@ func (x *GetDataSourceIntrospectionRequest) GetIntrospectionid() string {
 }
 
 func (x *GetDataSourceIntrospectionRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9144,8 +9144,8 @@ type GraphqlApi struct {
 	Openidconnectconfig               *OpenIDConnectConfig                `protobuf:"bytes,357500045,opt,name=openidconnectconfig,proto3" json:"openidconnectconfig,omitempty"`
 	Owner                             string                              `protobuf:"bytes,359091413,opt,name=owner,proto3" json:"owner,omitempty"`
 	Ownercontact                      string                              `protobuf:"bytes,17074121,opt,name=ownercontact,proto3" json:"ownercontact,omitempty"`
-	Querydepthlimit                   int32                               `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3" json:"querydepthlimit,omitempty"`
-	Resolvercountlimit                int32                               `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3" json:"resolvercountlimit,omitempty"`
+	Querydepthlimit                   *int32                              `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3,oneof" json:"querydepthlimit,omitempty"`
+	Resolvercountlimit                *int32                              `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3,oneof" json:"resolvercountlimit,omitempty"`
 	Tags                              map[string]string                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Uris                              map[string]string                   `protobuf:"bytes,77629579,rep,name=uris,proto3" json:"uris,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Userpoolconfig                    *UserPoolConfig                     `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
@@ -9292,15 +9292,15 @@ func (x *GraphqlApi) GetOwnercontact() string {
 }
 
 func (x *GraphqlApi) GetQuerydepthlimit() int32 {
-	if x != nil {
-		return x.Querydepthlimit
+	if x != nil && x.Querydepthlimit != nil {
+		return *x.Querydepthlimit
 	}
 	return 0
 }
 
 func (x *GraphqlApi) GetResolvercountlimit() int32 {
-	if x != nil {
-		return x.Resolvercountlimit
+	if x != nil && x.Resolvercountlimit != nil {
+		return *x.Resolvercountlimit
 	}
 	return 0
 }
@@ -9601,7 +9601,7 @@ func (x *InternalFailureException) GetMessage() string {
 
 type LambdaAuthorizerConfig struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Authorizerresultttlinseconds int32                  `protobuf:"varint,135440208,opt,name=authorizerresultttlinseconds,proto3" json:"authorizerresultttlinseconds,omitempty"`
+	Authorizerresultttlinseconds *int32                 `protobuf:"varint,135440208,opt,name=authorizerresultttlinseconds,proto3,oneof" json:"authorizerresultttlinseconds,omitempty"`
 	Authorizeruri                string                 `protobuf:"bytes,525146137,opt,name=authorizeruri,proto3" json:"authorizeruri,omitempty"`
 	Identityvalidationexpression string                 `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3" json:"identityvalidationexpression,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -9639,8 +9639,8 @@ func (*LambdaAuthorizerConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaAuthorizerConfig) GetAuthorizerresultttlinseconds() int32 {
-	if x != nil {
-		return x.Authorizerresultttlinseconds
+	if x != nil && x.Authorizerresultttlinseconds != nil {
+		return *x.Authorizerresultttlinseconds
 	}
 	return 0
 }
@@ -9838,7 +9838,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListApiKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9882,8 +9882,8 @@ func (x *ListApiKeysRequest) GetApiid() string {
 }
 
 func (x *ListApiKeysRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9949,7 +9949,7 @@ func (x *ListApiKeysResponse) GetNexttoken() string {
 
 type ListApisRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9986,8 +9986,8 @@ func (*ListApisRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListApisRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10054,7 +10054,7 @@ func (x *ListApisResponse) GetNexttoken() string {
 type ListChannelNamespacesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10098,8 +10098,8 @@ func (x *ListChannelNamespacesRequest) GetApiid() string {
 }
 
 func (x *ListChannelNamespacesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10166,7 +10166,7 @@ func (x *ListChannelNamespacesResponse) GetNexttoken() string {
 type ListDataSourcesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10210,8 +10210,8 @@ func (x *ListDataSourcesRequest) GetApiid() string {
 }
 
 func (x *ListDataSourcesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10277,7 +10277,7 @@ func (x *ListDataSourcesResponse) GetNexttoken() string {
 
 type ListDomainNamesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10314,8 +10314,8 @@ func (*ListDomainNamesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDomainNamesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10382,7 +10382,7 @@ func (x *ListDomainNamesResponse) GetNexttoken() string {
 type ListFunctionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10426,8 +10426,8 @@ func (x *ListFunctionsRequest) GetApiid() string {
 }
 
 func (x *ListFunctionsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10494,7 +10494,7 @@ func (x *ListFunctionsResponse) GetNexttoken() string {
 type ListGraphqlApisRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apitype       GraphQLApiType         `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType" json:"apitype,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Owner         Ownership              `protobuf:"varint,359091413,opt,name=owner,proto3,enum=appsync.Ownership" json:"owner,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10539,8 +10539,8 @@ func (x *ListGraphqlApisRequest) GetApitype() GraphQLApiType {
 }
 
 func (x *ListGraphqlApisRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10615,7 +10615,7 @@ type ListResolversByFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
 	Functionid    string                 `protobuf:"bytes,156610413,opt,name=functionid,proto3" json:"functionid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10666,8 +10666,8 @@ func (x *ListResolversByFunctionRequest) GetFunctionid() string {
 }
 
 func (x *ListResolversByFunctionRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10734,7 +10734,7 @@ func (x *ListResolversByFunctionResponse) GetResolvers() []*Resolver {
 type ListResolversRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Typename      string                 `protobuf:"bytes,475024751,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10779,8 +10779,8 @@ func (x *ListResolversRequest) GetApiid() string {
 }
 
 func (x *ListResolversRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10854,7 +10854,7 @@ func (x *ListResolversResponse) GetResolvers() []*Resolver {
 type ListSourceApiAssociationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10898,8 +10898,8 @@ func (x *ListSourceApiAssociationsRequest) GetApiid() string {
 }
 
 func (x *ListSourceApiAssociationsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11055,7 +11055,7 @@ type ListTypesByAssociationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Associationid       string                 `protobuf:"bytes,424136370,opt,name=associationid,proto3" json:"associationid,omitempty"`
 	Format              TypeDefinitionFormat   `protobuf:"varint,429753683,opt,name=format,proto3,enum=appsync.TypeDefinitionFormat" json:"format,omitempty"`
-	Maxresults          int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults          *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Mergedapiidentifier string                 `protobuf:"bytes,445201257,opt,name=mergedapiidentifier,proto3" json:"mergedapiidentifier,omitempty"`
 	Nexttoken           string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -11107,8 +11107,8 @@ func (x *ListTypesByAssociationRequest) GetFormat() TypeDefinitionFormat {
 }
 
 func (x *ListTypesByAssociationRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11183,7 +11183,7 @@ type ListTypesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
 	Format        TypeDefinitionFormat   `protobuf:"varint,429753683,opt,name=format,proto3,enum=appsync.TypeDefinitionFormat" json:"format,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11234,8 +11234,8 @@ func (x *ListTypesRequest) GetFormat() TypeDefinitionFormat {
 }
 
 func (x *ListTypesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11405,9 +11405,9 @@ func (x *NotFoundException) GetMessage() string {
 
 type OpenIDConnectConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Authttl       int64                  `protobuf:"varint,457364410,opt,name=authttl,proto3" json:"authttl,omitempty"`
+	Authttl       *int64                 `protobuf:"varint,457364410,opt,name=authttl,proto3,oneof" json:"authttl,omitempty"`
 	Clientid      string                 `protobuf:"bytes,5306436,opt,name=clientid,proto3" json:"clientid,omitempty"`
-	Iatttl        int64                  `protobuf:"varint,170754408,opt,name=iatttl,proto3" json:"iatttl,omitempty"`
+	Iatttl        *int64                 `protobuf:"varint,170754408,opt,name=iatttl,proto3,oneof" json:"iatttl,omitempty"`
 	Issuer        string                 `protobuf:"bytes,426769079,opt,name=issuer,proto3" json:"issuer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11444,8 +11444,8 @@ func (*OpenIDConnectConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *OpenIDConnectConfig) GetAuthttl() int64 {
-	if x != nil {
-		return x.Authttl
+	if x != nil && x.Authttl != nil {
+		return *x.Authttl
 	}
 	return 0
 }
@@ -11458,8 +11458,8 @@ func (x *OpenIDConnectConfig) GetClientid() string {
 }
 
 func (x *OpenIDConnectConfig) GetIatttl() int64 {
-	if x != nil {
-		return x.Iatttl
+	if x != nil && x.Iatttl != nil {
+		return *x.Iatttl
 	}
 	return 0
 }
@@ -11858,7 +11858,7 @@ type Resolver struct {
 	Datasourcename          string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3" json:"datasourcename,omitempty"`
 	Fieldname               string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
 	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
 	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
 	Requestmappingtemplate  string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
@@ -11937,8 +11937,8 @@ func (x *Resolver) GetKind() ResolverKind {
 }
 
 func (x *Resolver) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -13079,7 +13079,7 @@ type UpdateApiKeyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apiid         string                 `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
 	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Expires       int64                  `protobuf:"varint,512673668,opt,name=expires,proto3" json:"expires,omitempty"`
+	Expires       *int64                 `protobuf:"varint,512673668,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
 	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13130,8 +13130,8 @@ func (x *UpdateApiKeyRequest) GetDescription() string {
 }
 
 func (x *UpdateApiKeyRequest) GetExpires() int64 {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return 0
 }
@@ -13715,7 +13715,7 @@ type UpdateFunctionRequest struct {
 	Description             string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Functionid              string                 `protobuf:"bytes,156610413,opt,name=functionid,proto3" json:"functionid,omitempty"`
 	Functionversion         string                 `protobuf:"bytes,43418548,opt,name=functionversion,proto3" json:"functionversion,omitempty"`
-	Maxbatchsize            int32                  `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                 `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Name                    string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Requestmappingtemplate  string                 `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
 	Responsemappingtemplate string                 `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3" json:"responsemappingtemplate,omitempty"`
@@ -13798,8 +13798,8 @@ func (x *UpdateFunctionRequest) GetFunctionversion() string {
 }
 
 func (x *UpdateFunctionRequest) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -13896,8 +13896,8 @@ type UpdateGraphqlApiRequest struct {
 	Name                              string                              `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Openidconnectconfig               *OpenIDConnectConfig                `protobuf:"bytes,357500045,opt,name=openidconnectconfig,proto3" json:"openidconnectconfig,omitempty"`
 	Ownercontact                      string                              `protobuf:"bytes,17074121,opt,name=ownercontact,proto3" json:"ownercontact,omitempty"`
-	Querydepthlimit                   int32                               `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3" json:"querydepthlimit,omitempty"`
-	Resolvercountlimit                int32                               `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3" json:"resolvercountlimit,omitempty"`
+	Querydepthlimit                   *int32                              `protobuf:"varint,70244048,opt,name=querydepthlimit,proto3,oneof" json:"querydepthlimit,omitempty"`
+	Resolvercountlimit                *int32                              `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3,oneof" json:"resolvercountlimit,omitempty"`
 	Userpoolconfig                    *UserPoolConfig                     `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
 	Xrayenabled                       *bool                               `protobuf:"varint,467402691,opt,name=xrayenabled,proto3,oneof" json:"xrayenabled,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
@@ -14012,15 +14012,15 @@ func (x *UpdateGraphqlApiRequest) GetOwnercontact() string {
 }
 
 func (x *UpdateGraphqlApiRequest) GetQuerydepthlimit() int32 {
-	if x != nil {
-		return x.Querydepthlimit
+	if x != nil && x.Querydepthlimit != nil {
+		return *x.Querydepthlimit
 	}
 	return 0
 }
 
 func (x *UpdateGraphqlApiRequest) GetResolvercountlimit() int32 {
-	if x != nil {
-		return x.Resolvercountlimit
+	if x != nil && x.Resolvercountlimit != nil {
+		return *x.Resolvercountlimit
 	}
 	return 0
 }
@@ -14091,7 +14091,7 @@ type UpdateResolverRequest struct {
 	Datasourcename          string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3" json:"datasourcename,omitempty"`
 	Fieldname               string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
 	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3" json:"maxbatchsize,omitempty"`
+	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
 	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
 	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
 	Requestmappingtemplate  string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3" json:"requestmappingtemplate,omitempty"`
@@ -14176,8 +14176,8 @@ func (x *UpdateResolverRequest) GetKind() ResolverKind {
 }
 
 func (x *UpdateResolverRequest) GetMaxbatchsize() int32 {
-	if x != nil {
-		return x.Maxbatchsize
+	if x != nil && x.Maxbatchsize != nil {
+		return *x.Maxbatchsize
 	}
 	return 0
 }
@@ -14603,22 +14603,27 @@ const file_appsync_proto_rawDesc = "" +
 	"\x10deploymentdetail\x18\xc0\xbd\xa3! \x01(\tR\x10deploymentdetail\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\"\xed\x03\n" +
+	"domainname\"\xfa\x03\n" +
 	"\bApiCache\x12O\n" +
 	"\x12apicachingbehavior\x18\x8fͩ\xe9\x01 \x01(\x0e2\x1b.appsync.ApiCachingBehaviorR\x12apicachingbehavior\x12A\n" +
 	"\x17atrestencryptionenabled\x18\xa1\xe8\xe8\xd8\x01 \x01(\bH\x00R\x17atrestencryptionenabled\x88\x01\x01\x12V\n" +
 	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigR\x13healthmetricsconfig\x123\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.appsync.ApiCacheStatusR\x06status\x12B\n" +
-	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x01R\x18transitencryptionenabled\x88\x01\x01\x12\x14\n" +
-	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03R\x03ttl\x12-\n" +
+	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x01R\x18transitencryptionenabled\x88\x01\x01\x12\x19\n" +
+	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03H\x02R\x03ttl\x88\x01\x01\x12-\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04typeB\x1a\n" +
 	"\x18_atrestencryptionenabledB\x1b\n" +
-	"\x19_transitencryptionenabled\"}\n" +
-	"\x06ApiKey\x12\x1b\n" +
-	"\adeletes\x18\xbc\xcb\xc5~ \x01(\x03R\adeletes\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1c\n" +
-	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03R\aexpires\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\";\n" +
+	"\x19_transitencryptionenabledB\x06\n" +
+	"\x04_ttl\"\x9f\x01\n" +
+	"\x06ApiKey\x12 \n" +
+	"\adeletes\x18\xbc\xcb\xc5~ \x01(\x03H\x00R\adeletes\x88\x01\x01\x12$\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12!\n" +
+	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03H\x01R\aexpires\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02idB\n" +
+	"\n" +
+	"\b_deletesB\n" +
+	"\n" +
+	"\b_expires\";\n" +
 	"\x1cApiKeyLimitExceededException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
 	"\"ApiKeyValidityOutOfBoundsException\x12\x1b\n" +
@@ -14690,11 +14695,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\tCodeError\x12\x1f\n" +
 	"\terrortype\x18\xdaʯW \x01(\tR\terrortype\x129\n" +
 	"\blocation\x18\xa7\xd3\xd6_ \x01(\v2\x1a.appsync.CodeErrorLocationR\blocation\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"^\n" +
-	"\x11CodeErrorLocation\x12\x1a\n" +
-	"\x06column\x18\xa8\xa4\xe3\xaf\x01 \x01(\x05R\x06column\x12\x16\n" +
-	"\x04line\x18\xa8\xac\xec\xbe\x01 \x01(\x05R\x04line\x12\x15\n" +
-	"\x04span\x18\u0085\x86H \x01(\x05R\x04span\"\x84\x01\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\x8a\x01\n" +
+	"\x11CodeErrorLocation\x12\x1f\n" +
+	"\x06column\x18\xa8\xa4\xe3\xaf\x01 \x01(\x05H\x00R\x06column\x88\x01\x01\x12\x1b\n" +
+	"\x04line\x18\xa8\xac\xec\xbe\x01 \x01(\x05H\x01R\x04line\x88\x01\x01\x12\x1a\n" +
+	"\x04span\x18\u0085\x86H \x01(\x05H\x02R\x04span\x88\x01\x01B\t\n" +
+	"\a_columnB\a\n" +
+	"\x05_lineB\a\n" +
+	"\x05_span\"\x84\x01\n" +
 	"\rCognitoConfig\x12.\n" +
 	"\x10appidclientregex\x18\xb6\x80\xc8\xe3\x01 \x01(\tR\x10appidclientregex\x12\x1f\n" +
 	"\tawsregion\x18\x93\xd2\xfe  \x01(\tR\tawsregion\x12\"\n" +
@@ -14722,11 +14730,13 @@ const file_appsync_proto_rawDesc = "" +
 	"\x18_atrestencryptionenabledB\x1b\n" +
 	"\x19_transitencryptionenabled\"K\n" +
 	"\x16CreateApiCacheResponse\x121\n" +
-	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"r\n" +
+	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"\x83\x01\n" +
 	"\x13CreateApiKeyRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1c\n" +
-	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03R\aexpires\"C\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12!\n" +
+	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03H\x00R\aexpires\x88\x01\x01B\n" +
+	"\n" +
+	"\b_expires\"C\n" +
 	"\x14CreateApiKeyResponse\x12+\n" +
 	"\x06apikey\x18\x9f\x96\xf1\xe9\x01 \x01(\v2\x0f.appsync.ApiKeyR\x06apikey\"\x82\x02\n" +
 	"\x10CreateApiRequest\x12:\n" +
@@ -14783,23 +14793,25 @@ const file_appsync_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
 	"\x18CreateDomainNameResponse\x12H\n" +
-	"\x10domainnameconfig\x18\xe5Ѱ\x1a \x01(\v2\x19.appsync.DomainNameConfigR\x10domainnameconfig\"\xed\x03\n" +
+	"\x10domainnameconfig\x18\xe5Ѱ\x1a \x01(\v2\x19.appsync.DomainNameConfigR\x10domainnameconfig\"\x83\x04\n" +
 	"\x15CreateFunctionRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12+\n" +
-	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12\x15\n" +
+	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12<\n" +
 	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tR\x17responsemappingtemplate\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
-	"syncconfig\"q\n" +
+	"syncconfigB\x0f\n" +
+	"\r_maxbatchsize\"q\n" +
 	"\x16CreateFunctionResponse\x12W\n" +
-	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\xd6\t\n" +
+	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\x8b\n" +
+	"\n" +
 	"\x17CreateGraphqlApiRequest\x12z\n" +
 	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x124\n" +
 	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12N\n" +
@@ -14811,31 +14823,33 @@ const file_appsync_proto_rawDesc = "" +
 	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tR\x19mergedapiexecutionrolearn\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12%\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x12+\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05R\x0fquerydepthlimit\x121\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05R\x12resolvercountlimit\x12B\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x00R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x01R\x12resolvercountlimit\x88\x01\x01\x12B\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.appsync.CreateGraphqlApiRequest.TagsEntryR\x04tags\x12C\n" +
 	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12A\n" +
 	"\n" +
 	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityR\n" +
 	"visibility\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x00R\vxrayenabled\x88\x01\x01\x1a7\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x02R\vxrayenabled\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
+	"\x10_querydepthlimitB\x15\n" +
+	"\x13_resolvercountlimitB\x0e\n" +
 	"\f_xrayenabled\"S\n" +
 	"\x18CreateGraphqlApiResponse\x127\n" +
 	"\n" +
 	"graphqlapi\x18\x8fգ\x94\x01 \x01(\v2\x13.appsync.GraphqlApiR\n" +
-	"graphqlapi\"\xc8\x05\n" +
+	"graphqlapi\"\xde\x05\n" +
 	"\x15CreateResolverRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12 \n" +
 	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12M\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12M\n" +
 	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12<\n" +
@@ -14844,7 +14858,8 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12\x1e\n" +
-	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypename\"K\n" +
+	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\x0f\n" +
+	"\r_maxbatchsize\"K\n" +
 	"\x16CreateResolverResponse\x121\n" +
 	"\bresolver\x18\xc4\xdd\xd4\xcd\x01 \x01(\v2\x11.appsync.ResolverR\bresolver\"\x8a\x01\n" +
 	"\x11CreateTypeRequest\x12\x17\n" +
@@ -14879,11 +14894,12 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"primarykey\x18\x91\xe4\xf81 \x01(\v2*.appsync.DataSourceIntrospectionModelIndexR\n" +
 	"primarykey\x12\x13\n" +
-	"\x03sdl\x18\xdb\xe2\x93\x01 \x01(\tR\x03sdl\"\x9d\x01\n" +
-	"!DataSourceIntrospectionModelField\x12\x19\n" +
-	"\x06length\x18\x96\xec\xc0\x1e \x01(\x03R\x06length\x12\x15\n" +
+	"\x03sdl\x18\xdb\xe2\x93\x01 \x01(\tR\x03sdl\"\xad\x01\n" +
+	"!DataSourceIntrospectionModelField\x12\x1e\n" +
+	"\x06length\x18\x96\xec\xc0\x1e \x01(\x03H\x00R\x06length\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12F\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\v2..appsync.DataSourceIntrospectionModelFieldTypeR\x04type\"\xba\x01\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\v2..appsync.DataSourceIntrospectionModelFieldTypeR\x04typeB\t\n" +
+	"\a_length\"\xba\x01\n" +
 	"%DataSourceIntrospectionModelFieldType\x12\x16\n" +
 	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\tR\x04kind\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12F\n" +
@@ -14935,11 +14951,13 @@ const file_appsync_proto_rawDesc = "" +
 	"\x11DeleteTypeRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x1e\n" +
 	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypename\"\x14\n" +
-	"\x12DeleteTypeResponse\"\x9f\x01\n" +
-	"\x0fDeltaSyncConfig\x12&\n" +
-	"\fbasetablettl\x18\x99\xfd\xe0\xda\x01 \x01(\x03R\fbasetablettl\x122\n" +
-	"\x12deltasynctablename\x18\xfa\xd4\xf5\xda\x01 \x01(\tR\x12deltasynctablename\x120\n" +
-	"\x11deltasynctablettl\x18\xfb\x8b\xbc\xa4\x01 \x01(\x03R\x11deltasynctablettl\"<\n" +
+	"\x12DeleteTypeResponse\"\xd0\x01\n" +
+	"\x0fDeltaSyncConfig\x12+\n" +
+	"\fbasetablettl\x18\x99\xfd\xe0\xda\x01 \x01(\x03H\x00R\fbasetablettl\x88\x01\x01\x122\n" +
+	"\x12deltasynctablename\x18\xfa\xd4\xf5\xda\x01 \x01(\tR\x12deltasynctablename\x125\n" +
+	"\x11deltasynctablettl\x18\xfb\x8b\xbc\xa4\x01 \x01(\x03H\x01R\x11deltasynctablettl\x88\x01\x01B\x0f\n" +
+	"\r_basetablettlB\x14\n" +
+	"\x12_deltasynctablettl\"<\n" +
 	"\x16DisassociateApiRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
@@ -15024,7 +15042,7 @@ const file_appsync_proto_rawDesc = "" +
 	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\x16.appsync.EventLogLevelR\bloglevel\"/\n" +
 	"\x14FlushApiCacheRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\"\x17\n" +
-	"\x15FlushApiCacheResponse\"\x9d\x04\n" +
+	"\x15FlushApiCacheResponse\"\xb3\x04\n" +
 	"\x15FunctionConfiguration\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12$\n" +
@@ -15033,15 +15051,16 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"functionid\x18\xed\xde\xd6J \x01(\tR\n" +
 	"functionid\x12+\n" +
-	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12\x15\n" +
+	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12<\n" +
 	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tR\x17responsemappingtemplate\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
-	"syncconfig\">\n" +
+	"syncconfigB\x0f\n" +
+	"\r_maxbatchsize\">\n" +
 	"\x18GetApiAssociationRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
@@ -15060,15 +15079,16 @@ const file_appsync_proto_rawDesc = "" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"g\n" +
 	"\x1bGetChannelNamespaceResponse\x12H\n" +
-	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xdf\x01\n" +
+	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xf3\x01\n" +
 	"!GetDataSourceIntrospectionRequest\x122\n" +
 	"\x10includemodelssdl\x18\xab\xc3\xf5< \x01(\bH\x00R\x10includemodelssdl\x88\x01\x01\x12,\n" +
-	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tR\x0fintrospectionid\x12\"\n" +
+	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tR\x0fintrospectionid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\x13\n" +
-	"\x11_includemodelssdl\"\xce\x02\n" +
+	"\x11_includemodelssdlB\r\n" +
+	"\v_maxresults\"\xce\x02\n" +
 	"\"GetDataSourceIntrospectionResponse\x12,\n" +
 	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tR\x0fintrospectionid\x12[\n" +
 	"\x13introspectionresult\x18\xf6\x84\xd9m \x01(\v2&.appsync.DataSourceIntrospectionResultR\x13introspectionresult\x12[\n" +
@@ -15137,7 +15157,7 @@ const file_appsync_proto_rawDesc = "" +
 	"\x0fGetTypeResponse\x12%\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\v2\r.appsync.TypeR\x04type\"5\n" +
 	"\x16GraphQLSchemaException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x88\f\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbd\f\n" +
 	"\n" +
 	"GraphqlApi\x12z\n" +
 	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x12\x17\n" +
@@ -15154,9 +15174,9 @@ const file_appsync_proto_rawDesc = "" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12\x18\n" +
 	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\tR\x05owner\x12%\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x12+\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05R\x0fquerydepthlimit\x121\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05R\x12resolvercountlimit\x125\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x00R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x01R\x12resolvercountlimit\x88\x01\x01\x125\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.appsync.GraphqlApi.TagsEntryR\x04tags\x124\n" +
 	"\x04uris\x18\x8b\x91\x82% \x03(\v2\x1d.appsync.GraphqlApi.UrisEntryR\x04uris\x12C\n" +
 	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12A\n" +
@@ -15164,7 +15184,7 @@ const file_appsync_proto_rawDesc = "" +
 	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityR\n" +
 	"visibility\x12&\n" +
 	"\fwafwebaclarn\x18\xef\xb2\xfc\xd9\x01 \x01(\tR\fwafwebaclarn\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x00R\vxrayenabled\x88\x01\x01\x1a6\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x02R\vxrayenabled\x88\x01\x01\x1a6\n" +
 	"\bDnsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -15173,7 +15193,9 @@ const file_appsync_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
 	"\tUrisEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
+	"\x10_querydepthlimitB\x15\n" +
+	"\x13_resolvercountlimitB\x0e\n" +
 	"\f_xrayenabled\"\x84\x01\n" +
 	"\rHandlerConfig\x127\n" +
 	"\bbehavior\x18\xa8\xfc\xa6\x7f \x01(\x0e2\x18.appsync.HandlerBehaviorR\bbehavior\x12:\n" +
@@ -15188,11 +15210,12 @@ const file_appsync_proto_rawDesc = "" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12=\n" +
 	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x15.appsync.LambdaConfigR\flambdaconfig\"7\n" +
 	"\x18InternalFailureException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd0\x01\n" +
-	"\x16LambdaAuthorizerConfig\x12E\n" +
-	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05R\x1cauthorizerresultttlinseconds\x12(\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf6\x01\n" +
+	"\x16LambdaAuthorizerConfig\x12J\n" +
+	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05H\x00R\x1cauthorizerresultttlinseconds\x88\x01\x01\x12(\n" +
 	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tR\rauthorizeruri\x12E\n" +
-	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tR\x1cidentityvalidationexpression\"F\n" +
+	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tR\x1cidentityvalidationexpressionB\x1f\n" +
+	"\x1d_authorizerresultttlinseconds\"F\n" +
 	"\fLambdaConfig\x126\n" +
 	"\n" +
 	"invoketype\x18\xa6\xee\xbe8 \x01(\x0e2\x13.appsync.InvokeTypeR\n" +
@@ -15202,97 +15225,107 @@ const file_appsync_proto_rawDesc = "" +
 	"\x16LambdaDataSourceConfig\x12/\n" +
 	"\x11lambdafunctionarn\x18\xdaȏ\x06 \x01(\tR\x11lambdafunctionarn\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"r\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x86\x01\n" +
 	"\x12ListApiKeysRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"e\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"e\n" +
 	"\x13ListApiKeysResponse\x12-\n" +
 	"\aapikeys\x18\x98\xf9\xaa\x97\x01 \x03(\v2\x0f.appsync.ApiKeyR\aapikeys\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"V\n" +
-	"\x0fListApisRequest\x12\"\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"j\n" +
+	"\x0fListApisRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"X\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"X\n" +
 	"\x10ListApisResponse\x12#\n" +
 	"\x04apis\x18\x9d\xbc\xac\x1f \x03(\v2\f.appsync.ApiR\x04apis\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"|\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x90\x01\n" +
 	"\x1cListChannelNamespacesRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x8c\x01\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x8c\x01\n" +
 	"\x1dListChannelNamespacesResponse\x12J\n" +
 	"\x11channelnamespaces\x18\xe9\xea\xe6\x11 \x03(\v2\x19.appsync.ChannelNamespaceR\x11channelnamespaces\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"v\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x8a\x01\n" +
 	"\x16ListDataSourcesRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"u\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"u\n" +
 	"\x17ListDataSourcesResponse\x129\n" +
 	"\vdatasources\x18\xf2\xc5\xd1\xe3\x01 \x03(\v2\x13.appsync.DataSourceR\vdatasources\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"]\n" +
-	"\x16ListDomainNamesRequest\x12\"\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"q\n" +
+	"\x16ListDomainNamesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x86\x01\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x86\x01\n" +
 	"\x17ListDomainNamesResponse\x12J\n" +
 	"\x11domainnameconfigs\x18\xb6ˏ? \x03(\v2\x19.appsync.DomainNameConfigR\x11domainnameconfigs\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"t\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x88\x01\n" +
 	"\x14ListFunctionsRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"y\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"y\n" +
 	"\x15ListFunctionsResponse\x12?\n" +
 	"\tfunctions\x18ς\xa9* \x03(\v2\x1e.appsync.FunctionConfigurationR\tfunctions\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc1\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xd5\x01\n" +
 	"\x16ListGraphqlApisRequest\x124\n" +
-	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12\"\n" +
+	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12,\n" +
-	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\x0e2\x12.appsync.OwnershipR\x05owner\"t\n" +
+	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\x0e2\x12.appsync.OwnershipR\x05ownerB\r\n" +
+	"\v_maxresults\"t\n" +
 	"\x17ListGraphqlApisResponse\x128\n" +
 	"\vgraphqlapis\x18\xc8اT \x03(\v2\x13.appsync.GraphqlApiR\vgraphqlapis\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa1\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xb5\x01\n" +
 	"\x1eListResolversByFunctionRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12!\n" +
 	"\n" +
 	"functionid\x18\xed\xde\xd6J \x01(\tR\n" +
-	"functionid\x12\"\n" +
+	"functionid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"v\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"v\n" +
 	"\x1fListResolversByFunctionResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x122\n" +
-	"\tresolvers\x18\x91\xfe\xe1A \x03(\v2\x11.appsync.ResolverR\tresolvers\"\x94\x01\n" +
+	"\tresolvers\x18\x91\xfe\xe1A \x03(\v2\x11.appsync.ResolverR\tresolvers\"\xa8\x01\n" +
 	"\x14ListResolversRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypename\"l\n" +
+	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\r\n" +
+	"\v_maxresults\"l\n" +
 	"\x15ListResolversResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x122\n" +
-	"\tresolvers\x18\x91\xfe\xe1A \x03(\v2\x11.appsync.ResolverR\tresolvers\"\x80\x01\n" +
+	"\tresolvers\x18\x91\xfe\xe1A \x03(\v2\x11.appsync.ResolverR\tresolvers\"\x94\x01\n" +
 	" ListSourceApiAssociationsRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\"\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xb4\x01\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\xb4\x01\n" +
 	"!ListSourceApiAssociationsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12n\n" +
 	"\x1dsourceapiassociationsummaries\x18\xae\xe3\xc4\xde\x01 \x03(\v2$.appsync.SourceApiAssociationSummaryR\x1dsourceapiassociationsummaries\"A\n" +
@@ -15302,25 +15335,27 @@ const file_appsync_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2..appsync.ListTagsForResourceResponse.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xff\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x93\x02\n" +
 	"\x1dListTypesByAssociationRequest\x12(\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tR\rassociationid\x129\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\x12\"\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x124\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x124\n" +
 	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"j\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"j\n" +
 	"\x1eListTypesByAssociationResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12'\n" +
-	"\x05types\x18\x9b\x89\x83\xff\x01 \x03(\v2\r.appsync.TypeR\x05types\"\xab\x01\n" +
+	"\x05types\x18\x9b\x89\x83\xff\x01 \x03(\v2\r.appsync.TypeR\x05types\"\xbf\x01\n" +
 	"\x10ListTypesRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x129\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\x12\"\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"]\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"]\n" +
 	"\x11ListTypesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12'\n" +
 	"\x05types\x18\x9b\x89\x83\xff\x01 \x03(\v2\r.appsync.TypeR\x05types\"\xdf\x01\n" +
@@ -15330,12 +15365,15 @@ const file_appsync_proto_rawDesc = "" +
 	"\rfieldloglevel\x18\xd8\xd9\xd7y \x01(\x0e2\x16.appsync.FieldLogLevelR\rfieldloglevelB\x18\n" +
 	"\x16_excludeverbosecontent\"0\n" +
 	"\x11NotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x89\x01\n" +
-	"\x13OpenIDConnectConfig\x12\x1c\n" +
-	"\aauthttl\x18\xba\xa7\x8b\xda\x01 \x01(\x03R\aauthttl\x12\x1d\n" +
-	"\bclientid\x18\xc4\xf0\xc3\x02 \x01(\tR\bclientid\x12\x19\n" +
-	"\x06iatttl\x18肶Q \x01(\x03R\x06iatttl\x12\x1a\n" +
-	"\x06issuer\x18\xb7\xf5\xbf\xcb\x01 \x01(\tR\x06issuer\"d\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xaa\x01\n" +
+	"\x13OpenIDConnectConfig\x12!\n" +
+	"\aauthttl\x18\xba\xa7\x8b\xda\x01 \x01(\x03H\x00R\aauthttl\x88\x01\x01\x12\x1d\n" +
+	"\bclientid\x18\xc4\xf0\xc3\x02 \x01(\tR\bclientid\x12\x1e\n" +
+	"\x06iatttl\x18肶Q \x01(\x03H\x01R\x06iatttl\x88\x01\x01\x12\x1a\n" +
+	"\x06issuer\x18\xb7\xf5\xbf\xcb\x01 \x01(\tR\x06issuerB\n" +
+	"\n" +
+	"\b_authttlB\t\n" +
+	"\a_iatttl\"d\n" +
 	"!OpenSearchServiceDataSourceConfig\x12\x1f\n" +
 	"\tawsregion\x18\x93\xd2\xfe  \x01(\tR\tawsregion\x12\x1e\n" +
 	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tR\bendpoint\"1\n" +
@@ -15364,14 +15402,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tR\x06schema\"\xed\x01\n" +
 	"\"RelationalDatabaseDataSourceConfig\x12X\n" +
 	"\x15rdshttpendpointconfig\x18\xa4ĺ\x8e\x01 \x01(\v2\x1e.appsync.RdsHttpEndpointConfigR\x15rdshttpendpointconfig\x12m\n" +
-	"\x1crelationaldatabasesourcetype\x18\x8d\xa8\xa2\x93\x01 \x01(\x0e2%.appsync.RelationalDatabaseSourceTypeR\x1crelationaldatabasesourcetype\"\xc7\x05\n" +
+	"\x1crelationaldatabasesourcetype\x18\x8d\xa8\xa2\x93\x01 \x01(\x0e2%.appsync.RelationalDatabaseSourceTypeR\x1crelationaldatabasesourcetype\"\xdd\x05\n" +
 	"\bResolver\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12 \n" +
 	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12M\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12M\n" +
 	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12#\n" +
@@ -15381,7 +15419,8 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12\x1e\n" +
-	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypename\"<\n" +
+	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\x0f\n" +
+	"\r_maxbatchsize\"<\n" +
 	"\x1dServiceQuotaExceededException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8a\x05\n" +
 	"\x14SourceApiAssociation\x12*\n" +
@@ -15457,12 +15496,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03R\x03ttl\x12-\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04type\"K\n" +
 	"\x16UpdateApiCacheResponse\x121\n" +
-	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"\x86\x01\n" +
+	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"\x97\x01\n" +
 	"\x13UpdateApiKeyRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1c\n" +
-	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03R\aexpires\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"C\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12!\n" +
+	"\aexpires\x18\x84\x8f\xbb\xf4\x01 \x01(\x03H\x00R\aexpires\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02idB\n" +
+	"\n" +
+	"\b_expires\"C\n" +
 	"\x14UpdateApiKeyResponse\x12+\n" +
 	"\x06apikey\x18\x9f\x96\xf1\xe9\x01 \x01(\v2\x0f.appsync.ApiKeyR\x06apikey\"\xa5\x01\n" +
 	"\x10UpdateApiRequest\x12\x17\n" +
@@ -15507,7 +15548,7 @@ const file_appsync_proto_rawDesc = "" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
 	"domainname\"d\n" +
 	"\x18UpdateDomainNameResponse\x12H\n" +
-	"\x10domainnameconfig\x18\xe5Ѱ\x1a \x01(\v2\x19.appsync.DomainNameConfigR\x10domainnameconfig\"\x90\x04\n" +
+	"\x10domainnameconfig\x18\xe5Ѱ\x1a \x01(\v2\x19.appsync.DomainNameConfigR\x10domainnameconfig\"\xa6\x04\n" +
 	"\x15UpdateFunctionRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
@@ -15516,17 +15557,18 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"functionid\x18\xed\xde\xd6J \x01(\tR\n" +
 	"functionid\x12+\n" +
-	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12\x15\n" +
+	"\x0ffunctionversion\x18\xb4\x87\xda\x14 \x01(\tR\x0ffunctionversion\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12<\n" +
 	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tR\x17responsemappingtemplate\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
-	"syncconfig\"q\n" +
+	"syncconfigB\x0f\n" +
+	"\r_maxbatchsize\"q\n" +
 	"\x16UpdateFunctionResponse\x12W\n" +
-	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\xf9\a\n" +
+	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\xae\b\n" +
 	"\x17UpdateGraphqlApiRequest\x12z\n" +
 	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12N\n" +
@@ -15538,24 +15580,26 @@ const file_appsync_proto_rawDesc = "" +
 	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tR\x19mergedapiexecutionrolearn\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12%\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x12+\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05R\x0fquerydepthlimit\x121\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05R\x12resolvercountlimit\x12C\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tR\fownercontact\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x00R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x01R\x12resolvercountlimit\x88\x01\x01\x12C\n" +
 	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x00R\vxrayenabled\x88\x01\x01B\x0e\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x02R\vxrayenabled\x88\x01\x01B\x12\n" +
+	"\x10_querydepthlimitB\x15\n" +
+	"\x13_resolvercountlimitB\x0e\n" +
 	"\f_xrayenabled\"S\n" +
 	"\x18UpdateGraphqlApiResponse\x127\n" +
 	"\n" +
 	"graphqlapi\x18\x8fգ\x94\x01 \x01(\v2\x13.appsync.GraphqlApiR\n" +
-	"graphqlapi\"\xc8\x05\n" +
+	"graphqlapi\"\xde\x05\n" +
 	"\x15UpdateResolverRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12)\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12 \n" +
 	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12%\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05R\fmaxbatchsize\x12M\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x00R\fmaxbatchsize\x88\x01\x01\x12M\n" +
 	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12:\n" +
 	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tR\x16requestmappingtemplate\x12<\n" +
@@ -15564,7 +15608,8 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12\x1e\n" +
-	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypename\"K\n" +
+	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\x0f\n" +
+	"\r_maxbatchsize\"K\n" +
 	"\x16UpdateResolverResponse\x121\n" +
 	"\bresolver\x18\xc4\xdd\xd4\xcd\x01 \x01(\v2\x11.appsync.ResolverR\bresolver\"\x91\x02\n" +
 	"!UpdateSourceApiAssociationRequest\x12(\n" +
@@ -16503,14 +16548,40 @@ func file_appsync_proto_init() {
 	}
 	file_appsync_proto_msgTypes[2].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[4].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[5].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[25].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[30].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[32].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[42].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[44].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[46].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[52].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[76].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[84].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[98].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[107].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[119].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[130].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[136].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[141].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[143].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[145].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[147].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[149].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[151].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[153].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[155].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[157].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[159].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[163].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[165].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[167].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[169].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[177].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[197].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[207].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[209].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[211].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

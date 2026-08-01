@@ -853,9 +853,9 @@ message AccountQuota {
 
   string accountquotaname = 370733632;
 
-  int64 max = 480764858;
+  optional int64 max = 480764858;
 
-  int64 used = 178671057;
+  optional int64 used = 178671057;
 
 }
 
@@ -959,13 +959,13 @@ message AddTagsToResourceMessage {
 
 message AdditionalStorageVolume {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 iops = 500513057;
+  optional int32 iops = 500513057;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -979,13 +979,13 @@ message AdditionalStorageVolume {
 
 message AdditionalStorageVolumeOutput {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 iops = 500513057;
+  optional int32 iops = 500513057;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -1127,21 +1127,21 @@ message AvailabilityZone {
 
 message AvailableAdditionalStorageVolumesOption {
 
-  int32 maxiops = 94551037;
+  optional int32 maxiops = 94551037;
 
   double maxiopspergib = 246799832;
 
-  int32 maxstoragesize = 492016524;
+  optional int32 maxstoragesize = 492016524;
 
-  int32 maxstoragethroughput = 231880041;
+  optional int32 maxstoragethroughput = 231880041;
 
-  int32 miniops = 522437851;
+  optional int32 miniops = 522437851;
 
   double miniopspergib = 511052642;
 
-  int32 minstoragesize = 208793958;
+  optional int32 minstoragesize = 208793958;
 
-  int32 minstoragethroughput = 205668327;
+  optional int32 minstoragethroughput = 205668327;
 
   string storagetype = 154478743;
 
@@ -1369,9 +1369,9 @@ message CloudwatchLogsExportConfiguration {
 
 message ClusterPendingModifiedValues {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   CertificateDetails certificatedetails = 450099239;
 
@@ -1381,7 +1381,7 @@ message ClusterPendingModifiedValues {
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string masteruserpassword = 326176122;
 
@@ -1409,13 +1409,13 @@ enum ClusterScalabilityType {
 
 message ConnectionPoolConfiguration {
 
-  int32 connectionborrowtimeout = 374352488;
+  optional int32 connectionborrowtimeout = 374352488;
 
   string initquery = 363231170;
 
-  int32 maxconnectionspercent = 325223332;
+  optional int32 maxconnectionspercent = 325223332;
 
-  int32 maxidleconnectionspercent = 55486246;
+  optional int32 maxidleconnectionspercent = 55486246;
 
   repeated string sessionpinningfilters = 192759388;
 
@@ -1427,13 +1427,13 @@ message ConnectionPoolConfiguration {
 
 message ConnectionPoolConfigurationInfo {
 
-  int32 connectionborrowtimeout = 374352488;
+  optional int32 connectionborrowtimeout = 374352488;
 
   string initquery = 363231170;
 
-  int32 maxconnectionspercent = 325223332;
+  optional int32 maxconnectionspercent = 325223332;
 
-  int32 maxidleconnectionspercent = 55486246;
+  optional int32 maxidleconnectionspercent = 55486246;
 
   repeated string sessionpinningfilters = 192759388;
 
@@ -1597,7 +1597,7 @@ message CreateBlueGreenDeploymentRequest {
 
   repeated Tag tags = 381526209;
 
-  int32 targetallocatedstorage = 89579947;
+  optional int32 targetallocatedstorage = 89579947;
 
   string targetdbclusterparametergroupname = 491206010;
 
@@ -1607,9 +1607,9 @@ message CreateBlueGreenDeploymentRequest {
 
   string targetengineversion = 121840823;
 
-  int32 targetiops = 189332302;
+  optional int32 targetiops = 189332302;
 
-  int32 targetstoragethroughput = 270198852;
+  optional int32 targetstoragethroughput = 270198852;
 
   string targetstoragetype = 462201058;
 
@@ -1689,15 +1689,15 @@ message CreateDBClusterEndpointMessage {
 
 message CreateDBClusterMessage {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   repeated string availabilityzones = 109527122;
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -1751,7 +1751,7 @@ message CreateDBClusterMessage {
 
   string globalclusteridentifier = 114980092;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -1765,7 +1765,7 @@ message CreateDBClusterMessage {
 
   string masterusername = 110287892;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -1775,9 +1775,9 @@ message CreateDBClusterMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string presignedurl = 334334652;
 
@@ -1871,13 +1871,13 @@ message CreateDBInstanceMessage {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string backuptarget = 426947907;
 
@@ -1937,7 +1937,7 @@ message CreateDBInstanceMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -1953,9 +1953,9 @@ message CreateDBInstanceMessage {
 
   string masterusername = 110287892;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -1971,9 +1971,9 @@ message CreateDBInstanceMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -1981,13 +1981,13 @@ message CreateDBInstanceMessage {
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
   optional bool storageencrypted = 378808047;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -2011,7 +2011,7 @@ message CreateDBInstanceReadReplicaMessage {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
@@ -2059,13 +2059,13 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional bool enableperformanceinsights = 485203758;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -2077,9 +2077,9 @@ message CreateDBInstanceReadReplicaMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string presignedurl = 334334652;
 
@@ -2093,7 +2093,7 @@ message CreateDBInstanceReadReplicaMessage {
 
   string sourcedbinstanceidentifier = 330655991;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -2193,7 +2193,7 @@ message CreateDBProxyRequest {
 
   EngineFamily enginefamily = 298996604;
 
-  int32 idleclienttimeout = 96765376;
+  optional int32 idleclienttimeout = 96765376;
 
   optional bool requiretls = 503360838;
 
@@ -2243,7 +2243,7 @@ message CreateDBSecurityGroupResult {
 
 message CreateDBShardGroupMessage {
 
-  int32 computeredundancy = 518573958;
+  optional int32 computeredundancy = 518573958;
 
   string dbclusteridentifier = 340406993;
 
@@ -2525,7 +2525,7 @@ message DBCluster {
 
   ActivityStreamStatus activitystreamstatus = 476622623;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated DBClusterRole associatedroles = 428985325;
 
@@ -2537,13 +2537,13 @@ message DBCluster {
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int64 backtrackconsumedchangerecords = 90708912;
+  optional int64 backtrackconsumedchangerecords = 90708912;
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
-  int32 capacity = 107253930;
+  optional int32 capacity = 107253930;
 
   CertificateDetails certificatedetails = 450099239;
 
@@ -2619,7 +2619,7 @@ message DBCluster {
 
   optional bool internetaccessgatewayenabled = 452956890;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -2633,7 +2633,7 @@ message DBCluster {
 
   string masterusername = 110287892;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -2649,9 +2649,9 @@ message DBCluster {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -2681,7 +2681,7 @@ message DBCluster {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -2711,13 +2711,13 @@ message DBClusterAlreadyExistsFault {
 
 message DBClusterAutomatedBackup {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated string availabilityzones = 109527122;
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string clustercreatetime = 119020389;
 
@@ -2737,7 +2737,7 @@ message DBClusterAutomatedBackup {
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -2745,7 +2745,7 @@ message DBClusterAutomatedBackup {
 
   string masterusername = 110287892;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -2759,7 +2759,7 @@ message DBClusterAutomatedBackup {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -2845,13 +2845,13 @@ message DBClusterBacktrackNotFoundFault {
 
 message DBClusterCapacityInfo {
 
-  int32 currentcapacity = 171966615;
+  optional int32 currentcapacity = 171966615;
 
   string dbclusteridentifier = 340406993;
 
-  int32 pendingcapacity = 405898457;
+  optional int32 pendingcapacity = 405898457;
 
-  int32 secondsbeforetimeout = 141553913;
+  optional int32 secondsbeforetimeout = 141553913;
 
   string timeoutaction = 444876627;
 
@@ -2937,7 +2937,7 @@ message DBClusterMember {
 
   optional bool isclusterwriter = 506087795;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
 }
 
@@ -3095,11 +3095,11 @@ message DBClusterRoleQuotaExceededFault {
 
 message DBClusterSnapshot {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated string availabilityzones = 109527122;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string clustercreatetime = 119020389;
 
@@ -3127,9 +3127,9 @@ message DBClusterSnapshot {
 
   string masterusername = 110287892;
 
-  int32 percentprogress = 66105414;
+  optional int32 percentprogress = 66105414;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -3145,7 +3145,7 @@ message DBClusterSnapshot {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -3341,7 +3341,7 @@ message DBInstance {
 
   repeated AdditionalStorageVolumeOutput additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated DBInstanceRole associatedroles = 428985325;
 
@@ -3355,7 +3355,7 @@ message DBInstance {
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string backuptarget = 426947907;
 
@@ -3395,7 +3395,7 @@ message DBInstance {
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
-  int32 dbinstanceport = 122890396;
+  optional int32 dbinstanceport = 122890396;
 
   string dbiresourceid = 483153532;
 
@@ -3421,7 +3421,7 @@ message DBInstance {
 
   string instancecreatetime = 479568832;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   optional bool isstorageconfigupgradeavailable = 401311200;
 
@@ -3437,9 +3437,9 @@ message DBInstance {
 
   string masterusername = 110287892;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -3461,7 +3461,7 @@ message DBInstance {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
   string preferredbackupwindow = 39404485;
 
@@ -3469,7 +3469,7 @@ message DBInstance {
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -3493,7 +3493,7 @@ message DBInstance {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -3529,13 +3529,13 @@ message DBInstanceAutomatedBackup {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   string availabilityzone = 391476601;
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string backuptarget = 426947907;
 
@@ -3561,7 +3561,7 @@ message DBInstanceAutomatedBackup {
 
   string instancecreatetime = 479568832;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -3573,7 +3573,7 @@ message DBInstanceAutomatedBackup {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -3585,7 +3585,7 @@ message DBInstanceAutomatedBackup {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -3873,7 +3873,7 @@ message DBProxy {
 
   string enginefamily = 298996604;
 
-  int32 idleclienttimeout = 96765376;
+  optional int32 idleclienttimeout = 96765376;
 
   optional bool requiretls = 503360838;
 
@@ -4045,7 +4045,7 @@ message DBProxyTarget {
 
   string endpoint = 132634269;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string rdsresourceid = 200404394;
 
@@ -4273,7 +4273,7 @@ message DBSecurityGroupQuotaExceededFault {
 
 message DBShardGroup {
 
-  int32 computeredundancy = 518573958;
+  optional int32 computeredundancy = 518573958;
 
   string dbclusteridentifier = 340406993;
 
@@ -4325,11 +4325,11 @@ message DBSnapshot {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string dbinstanceidentifier = 272754580;
 
@@ -4353,7 +4353,7 @@ message DBSnapshot {
 
   string instancecreatetime = 479568832;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -4367,9 +4367,9 @@ message DBSnapshot {
 
   string originalsnapshotcreatetime = 134270140;
 
-  int32 percentprogress = 66105414;
+  optional int32 percentprogress = 66105414;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -4393,7 +4393,7 @@ message DBSnapshot {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -4989,7 +4989,7 @@ message DescribeBlueGreenDeploymentsRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5015,7 +5015,7 @@ message DescribeCertificatesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5031,7 +5031,7 @@ message DescribeDBClusterAutomatedBackupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5049,7 +5049,7 @@ message DescribeDBClusterBacktracksMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5065,7 +5065,7 @@ message DescribeDBClusterEndpointsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5081,7 +5081,7 @@ message DescribeDBClusterParameterGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5097,7 +5097,7 @@ message DescribeDBClusterParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string source = 31630329;
 
@@ -5141,7 +5141,7 @@ message DescribeDBClusterSnapshotsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string snapshottype = 399375494;
 
@@ -5161,7 +5161,7 @@ message DescribeDBClustersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5187,7 +5187,7 @@ message DescribeDBEngineVersionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5207,7 +5207,7 @@ message DescribeDBInstanceAutomatedBackupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5223,7 +5223,7 @@ message DescribeDBInstancesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5233,11 +5233,11 @@ message DescribeDBInstancesMessage {
 
 message DescribeDBLogFilesDetails {
 
-  int64 lastwritten = 484158293;
+  optional int64 lastwritten = 484158293;
 
   string logfilename = 420656629;
 
-  int64 size = 105352829;
+  optional int64 size = 105352829;
 
 }
 
@@ -5249,9 +5249,9 @@ message DescribeDBLogFilesMessage {
 
   string dbinstanceidentifier = 272754580;
 
-  int64 filelastwritten = 380474223;
+  optional int64 filelastwritten = 380474223;
 
-  int64 filesize = 346241219;
+  optional int64 filesize = 346241219;
 
   string filenamecontains = 258161154;
 
@@ -5259,7 +5259,7 @@ message DescribeDBLogFilesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5285,7 +5285,7 @@ message DescribeDBMajorEngineVersionsRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5311,7 +5311,7 @@ message DescribeDBParameterGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5325,7 +5325,7 @@ message DescribeDBParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string source = 31630329;
 
@@ -5341,7 +5341,7 @@ message DescribeDBProxiesRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5367,7 +5367,7 @@ message DescribeDBProxyEndpointsRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5391,7 +5391,7 @@ message DescribeDBProxyTargetGroupsRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string targetgroupname = 385716593;
 
@@ -5417,7 +5417,7 @@ message DescribeDBProxyTargetsRequest {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string targetgroupname = 385716593;
 
@@ -5447,7 +5447,7 @@ message DescribeDBRecommendationsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5463,7 +5463,7 @@ message DescribeDBSecurityGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5477,7 +5477,7 @@ message DescribeDBShardGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5523,7 +5523,7 @@ message DescribeDBSnapshotTenantDatabasesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string snapshottype = 399375494;
 
@@ -5549,7 +5549,7 @@ message DescribeDBSnapshotsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string snapshottype = 399375494;
 
@@ -5567,7 +5567,7 @@ message DescribeDBSubnetGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5583,7 +5583,7 @@ message DescribeEngineDefaultClusterParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5607,7 +5607,7 @@ message DescribeEngineDefaultParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5641,7 +5641,7 @@ message DescribeEventSubscriptionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string subscriptionname = 181900944;
 
@@ -5653,7 +5653,7 @@ message DescribeEventSubscriptionsMessage {
 
 message DescribeEventsMessage {
 
-  int32 duration = 348604718;
+  optional int32 duration = 348604718;
 
   string endtime = 63911884;
 
@@ -5663,7 +5663,7 @@ message DescribeEventsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string sourceidentifier = 190015756;
 
@@ -5683,7 +5683,7 @@ message DescribeExportTasksMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string sourcearn = 439903072;
 
@@ -5701,7 +5701,7 @@ message DescribeGlobalClustersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5715,7 +5715,7 @@ message DescribeIntegrationsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5743,7 +5743,7 @@ message DescribeOptionGroupOptionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -5761,7 +5761,7 @@ message DescribeOptionGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string optiongroupname = 303464901;
 
@@ -5787,7 +5787,7 @@ message DescribeOrderableDBInstanceOptionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   optional bool vpc = 500923177;
 
@@ -5803,7 +5803,7 @@ message DescribePendingMaintenanceActionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string resourceidentifier = 279224111;
 
@@ -5825,7 +5825,7 @@ message DescribeReservedDBInstancesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   optional bool multiaz = 354702794;
 
@@ -5853,7 +5853,7 @@ message DescribeReservedDBInstancesOfferingsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   optional bool multiaz = 354702794;
 
@@ -5881,7 +5881,7 @@ message DescribeServerlessV2PlatformVersionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string serverlessv2platformversion = 348862429;
 
@@ -5897,7 +5897,7 @@ message DescribeSourceRegionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string regionname = 112086463;
 
@@ -5913,7 +5913,7 @@ message DescribeTenantDatabasesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string tenantdbname = 443960809;
 
@@ -6037,7 +6037,7 @@ message DownloadDBLogFilePortionMessage {
 
   string marker = 89353912;
 
-  int32 numberoflines = 93443161;
+  optional int32 numberoflines = 93443161;
 
 }
 
@@ -6095,7 +6095,7 @@ message Endpoint {
 
   string hostedzoneid = 346531710;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
 }
 
@@ -6267,7 +6267,7 @@ message ExportTask {
 
   string kmskeyid = 46523533;
 
-  int32 percentprogress = 66105414;
+  optional int32 percentprogress = 66105414;
 
   string s3bucket = 114031434;
 
@@ -6285,7 +6285,7 @@ message ExportTask {
 
   string taskstarttime = 200950330;
 
-  int32 totalextracteddataingb = 71329474;
+  optional int32 totalextracteddataingb = 71329474;
 
   string warningmessage = 497413775;
 
@@ -7217,15 +7217,15 @@ message ModifyActivityStreamResponse {
 
 message ModifyAdditionalStorageVolume {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 iops = 500513057;
+  optional int32 iops = 500513057;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
   optional bool setfordelete = 264542082;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -7255,11 +7255,11 @@ message ModifyCertificatesResult {
 
 message ModifyCurrentDBClusterCapacityMessage {
 
-  int32 capacity = 107253930;
+  optional int32 capacity = 107253930;
 
   string dbclusteridentifier = 340406993;
 
-  int32 secondsbeforetimeout = 141553913;
+  optional int32 secondsbeforetimeout = 141553913;
 
   string timeoutaction = 444876627;
 
@@ -7299,7 +7299,7 @@ message ModifyDBClusterEndpointMessage {
 
 message ModifyDBClusterMessage {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool allowenginemodechange = 486170464;
 
@@ -7311,9 +7311,9 @@ message ModifyDBClusterMessage {
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -7353,7 +7353,7 @@ message ModifyDBClusterMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   optional bool managemasteruserpassword = 71308055;
 
@@ -7363,7 +7363,7 @@ message ModifyDBClusterMessage {
 
   string masterusersecretkmskeyid = 430618134;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -7375,9 +7375,9 @@ message ModifyDBClusterMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -7447,7 +7447,7 @@ message ModifyDBInstanceMessage {
 
   repeated ModifyAdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool allowmajorversionupgrade = 40687812;
 
@@ -7459,7 +7459,7 @@ message ModifyDBInstanceMessage {
 
   string awsbackuprecoverypointarn = 496169795;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -7475,7 +7475,7 @@ message ModifyDBInstanceMessage {
 
   string dbparametergroupname = 174683359;
 
-  int32 dbportnumber = 107009294;
+  optional int32 dbportnumber = 107009294;
 
   repeated string dbsecuritygroups = 420763246;
 
@@ -7511,7 +7511,7 @@ message ModifyDBInstanceMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
@@ -7523,9 +7523,9 @@ message ModifyDBInstanceMessage {
 
   string masterusersecretkmskeyid = 430618134;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -7541,7 +7541,7 @@ message ModifyDBInstanceMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
   string preferredbackupwindow = 39404485;
 
@@ -7549,17 +7549,17 @@ message ModifyDBInstanceMessage {
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
   ReplicaMode replicamode = 134604609;
 
-  int32 resumefullautomationmodeminutes = 286496333;
+  optional int32 resumefullautomationmodeminutes = 286496333;
 
   optional bool rotatemasteruserpassword = 30523131;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -7627,7 +7627,7 @@ message ModifyDBProxyRequest {
 
   DefaultAuthScheme defaultauthscheme = 436791396;
 
-  int32 idleclienttimeout = 96765376;
+  optional int32 idleclienttimeout = 96765376;
 
   string newdbproxyname = 134374587;
 
@@ -7687,7 +7687,7 @@ message ModifyDBRecommendationMessage {
 
 message ModifyDBShardGroupMessage {
 
-  int32 computeredundancy = 518573958;
+  optional int32 computeredundancy = 518573958;
 
   string dbshardgroupidentifier = 111693640;
 
@@ -7909,7 +7909,7 @@ message Option {
 
   optional bool persistent = 433628641;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   repeated VpcSecurityGroupMembership vpcsecuritygroupmemberships = 288528211;
 
@@ -7929,7 +7929,7 @@ message OptionConfiguration {
 
   string optionversion = 306144137;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   repeated string vpcsecuritygroupmemberships = 288528211;
 
@@ -8005,7 +8005,7 @@ message OptionGroupOption {
 
   optional bool copyablecrossaccount = 252766940;
 
-  int32 defaultport = 501321242;
+  optional int32 defaultport = 501321242;
 
   string description = 115243530;
 
@@ -8157,23 +8157,23 @@ message OrderableDBInstanceOption {
 
   string licensemodel = 59641010;
 
-  int32 maxiopsperdbinstance = 408072995;
+  optional int32 maxiopsperdbinstance = 408072995;
 
   double maxiopspergib = 246799832;
 
-  int32 maxstoragesize = 492016524;
+  optional int32 maxstoragesize = 492016524;
 
-  int32 maxstoragethroughputperdbinstance = 29414919;
+  optional int32 maxstoragethroughputperdbinstance = 29414919;
 
   double maxstoragethroughputperiops = 3684931;
 
-  int32 miniopsperdbinstance = 497359021;
+  optional int32 miniopsperdbinstance = 497359021;
 
   double miniopspergib = 511052642;
 
-  int32 minstoragesize = 208793958;
+  optional int32 minstoragesize = 208793958;
 
-  int32 minstoragethroughputperdbinstance = 258587249;
+  optional int32 minstoragethroughputperdbinstance = 258587249;
 
   double minstoragethroughputperiops = 65365041;
 
@@ -8325,11 +8325,11 @@ message PendingModifiedValues {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   AutomationMode automationmode = 234653746;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -8347,7 +8347,7 @@ message PendingModifiedValues {
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
@@ -8359,13 +8359,13 @@ message PendingModifiedValues {
 
   PendingCloudwatchLogsExports pendingcloudwatchlogsexports = 188240935;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
   string resumefullautomationmodetime = 491133479;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -8381,7 +8381,7 @@ message PerformanceInsightsMetricDimensionGroup {
 
   string group = 91525165;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
 }
 
@@ -8459,7 +8459,7 @@ message PromoteReadReplicaDBClusterResult {
 
 message PromoteReadReplicaMessage {
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string dbinstanceidentifier = 272754580;
 
@@ -8493,7 +8493,7 @@ message ProvisionedIopsNotAvailableInAZFault {
 
 message PurchaseReservedDBInstancesOfferingMessage {
 
-  int32 dbinstancecount = 162916176;
+  optional int32 dbinstancecount = 162916176;
 
   string reserveddbinstanceid = 68820086;
 
@@ -8517,11 +8517,11 @@ message PurchaseReservedDBInstancesOfferingResult {
 
 message Range {
 
-  int32 from = 410269078;
+  optional int32 from = 410269078;
 
-  int32 step = 124909872;
+  optional int32 step = 124909872;
 
-  int32 to = 32872005;
+  optional int32 to = 32872005;
 
 }
 
@@ -8771,9 +8771,9 @@ message ReservedDBInstance {
 
   string dbinstanceclass = 423358041;
 
-  int32 dbinstancecount = 162916176;
+  optional int32 dbinstancecount = 162916176;
 
-  int32 duration = 348604718;
+  optional int32 duration = 348604718;
 
   double fixedprice = 409544735;
 
@@ -8853,7 +8853,7 @@ message ReservedDBInstancesOffering {
 
   string dbinstanceclass = 423358041;
 
-  int32 duration = 348604718;
+  optional int32 duration = 348604718;
 
   double fixedprice = 409544735;
 
@@ -8949,9 +8949,9 @@ message RestoreDBClusterFromS3Message {
 
   repeated string availabilityzones = 109527122;
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string charactersetname = 488468644;
 
@@ -8995,7 +8995,7 @@ message RestoreDBClusterFromS3Message {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9041,9 +9041,9 @@ message RestoreDBClusterFromSnapshotMessage {
 
   repeated string availabilityzones = 109527122;
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   optional bool copytagstosnapshot = 457270425;
 
@@ -9081,11 +9081,11 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -9095,9 +9095,9 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9135,9 +9135,9 @@ message RestoreDBClusterFromSnapshotResult {
 
 message RestoreDBClusterToPointInTimeMessage {
 
-  int64 backtrackwindow = 265584658;
+  optional int64 backtrackwindow = 265584658;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   optional bool copytagstosnapshot = 457270425;
 
@@ -9169,11 +9169,11 @@ message RestoreDBClusterToPointInTimeMessage {
 
   string enginemode = 292587685;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -9183,9 +9183,9 @@ message RestoreDBClusterToPointInTimeMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9233,13 +9233,13 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string backuptarget = 426947907;
 
@@ -9289,7 +9289,7 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   string enginelifecyclesupport = 29464465;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
@@ -9303,7 +9303,7 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9311,7 +9311,7 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   optional bool publiclyaccessible = 256833310;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -9343,13 +9343,13 @@ message RestoreDBInstanceFromS3Message {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -9385,7 +9385,7 @@ message RestoreDBInstanceFromS3Message {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -9399,9 +9399,9 @@ message RestoreDBInstanceFromS3Message {
 
   string masterusername = 110287892;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -9413,9 +9413,9 @@ message RestoreDBInstanceFromS3Message {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 performanceinsightsretentionperiod = 50117548;
+  optional int32 performanceinsightsretentionperiod = 50117548;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9437,7 +9437,7 @@ message RestoreDBInstanceFromS3Message {
 
   optional bool storageencrypted = 378808047;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -9467,13 +9467,13 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   repeated AdditionalStorageVolume additionalstoragevolumes = 307082949;
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string backuptarget = 426947907;
 
@@ -9517,7 +9517,7 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   string enginelifecyclesupport = 29464465;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
@@ -9525,7 +9525,7 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   string masterusersecretkmskeyid = 430618134;
 
-  int32 maxallocatedstorage = 7107036;
+  optional int32 maxallocatedstorage = 7107036;
 
   optional bool multiaz = 354702794;
 
@@ -9533,7 +9533,7 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -9549,7 +9549,7 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   string sourcedbiresourceid = 422726821;
 
-  int32 storagethroughput = 465264045;
+  optional int32 storagethroughput = 465264045;
 
   string storagetype = 154478743;
 
@@ -9665,13 +9665,13 @@ message ScalingConfiguration {
 
   optional bool autopause = 174051809;
 
-  int32 maxcapacity = 453778390;
+  optional int32 maxcapacity = 453778390;
 
-  int32 mincapacity = 195482820;
+  optional int32 mincapacity = 195482820;
 
-  int32 secondsbeforetimeout = 141553913;
+  optional int32 secondsbeforetimeout = 141553913;
 
-  int32 secondsuntilautopause = 181181478;
+  optional int32 secondsuntilautopause = 181181478;
 
   string timeoutaction = 444876627;
 
@@ -9685,13 +9685,13 @@ message ScalingConfigurationInfo {
 
   optional bool autopause = 174051809;
 
-  int32 maxcapacity = 453778390;
+  optional int32 maxcapacity = 453778390;
 
-  int32 mincapacity = 195482820;
+  optional int32 mincapacity = 195482820;
 
-  int32 secondsbeforetimeout = 141553913;
+  optional int32 secondsbeforetimeout = 141553913;
 
-  int32 secondsuntilautopause = 181181478;
+  optional int32 secondsuntilautopause = 181181478;
 
   string timeoutaction = 444876627;
 
@@ -9751,7 +9751,7 @@ message ServerlessV2ScalingConfiguration {
 
   double mincapacity = 195482820;
 
-  int32 secondsuntilautopause = 181181478;
+  optional int32 secondsuntilautopause = 181181478;
 
 }
 
@@ -9765,7 +9765,7 @@ message ServerlessV2ScalingConfigurationInfo {
 
   double mincapacity = 195482820;
 
-  int32 secondsuntilautopause = 181181478;
+  optional int32 secondsuntilautopause = 181181478;
 
 }
 
@@ -9929,7 +9929,7 @@ message StartDBClusterResult {
 
 message StartDBInstanceAutomatedBackupsReplicationMessage {
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string kmskeyid = 46523533;
 
@@ -10175,7 +10175,7 @@ message SwitchoverBlueGreenDeploymentRequest {
 
   string bluegreendeploymentidentifier = 142726945;
 
-  int32 switchovertimeout = 159363487;
+  optional int32 switchovertimeout = 159363487;
 
 }
 

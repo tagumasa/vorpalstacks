@@ -1770,7 +1770,7 @@ enum DeliveryEventType {
 
 message DeliveryOptions {
 
-  int64 maxdeliveryseconds = 16229983;
+  optional int64 maxdeliveryseconds = 16229983;
 
   string sendingpoolname = 89398333;
 
@@ -1962,11 +1962,11 @@ message DomainDeliverabilityCampaign {
 
   string imageurl = 361905604;
 
-  int64 inboxcount = 96442763;
+  optional int64 inboxcount = 96442763;
 
   string lastseendatetime = 2010772;
 
-  int64 projectedvolume = 71581402;
+  optional int64 projectedvolume = 71581402;
 
   double readdeleterate = 249983513;
 
@@ -1974,7 +1974,7 @@ message DomainDeliverabilityCampaign {
 
   repeated string sendingips = 344517626;
 
-  int64 spamcount = 224064008;
+  optional int64 spamcount = 224064008;
 
   string subject = 7939312;
 
@@ -2002,13 +2002,13 @@ message DomainIspPlacement {
 
   double inboxpercentage = 81442932;
 
-  int64 inboxrawcount = 215061115;
+  optional int64 inboxrawcount = 215061115;
 
   string ispname = 79681213;
 
   double spampercentage = 364813289;
 
-  int64 spamrawcount = 440722366;
+  optional int64 spamrawcount = 440722366;
 
 }
 
@@ -2282,9 +2282,9 @@ enum ExportSourceType {
 
 message ExportStatistics {
 
-  int32 exportedrecordscount = 401601812;
+  optional int32 exportedrecordscount = 401601812;
 
-  int32 processedrecordscount = 507944491;
+  optional int32 processedrecordscount = 507944491;
 
 }
 
@@ -2556,7 +2556,7 @@ message GetDedicatedIpsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   string poolname = 81872585;
 
@@ -2832,7 +2832,7 @@ message GetImportJobResponse {
 
   string createdtimestamp = 334753274;
 
-  int32 failedrecordscount = 528801670;
+  optional int32 failedrecordscount = 528801670;
 
   FailureInfo failureinfo = 451945802;
 
@@ -2844,7 +2844,7 @@ message GetImportJobResponse {
 
   JobStatus jobstatus = 108973639;
 
-  int32 processedrecordscount = 507944491;
+  optional int32 processedrecordscount = 507944491;
 
 }
 
@@ -3072,7 +3072,7 @@ message ImportJobSummary {
 
   string createdtimestamp = 334753274;
 
-  int32 failedrecordscount = 528801670;
+  optional int32 failedrecordscount = 528801670;
 
   ImportDestination importdestination = 146287461;
 
@@ -3080,7 +3080,7 @@ message ImportJobSummary {
 
   JobStatus jobstatus = 108973639;
 
-  int32 processedrecordscount = 507944491;
+  optional int32 processedrecordscount = 507944491;
 
 }
 
@@ -3188,7 +3188,7 @@ message ListConfigurationSetsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3210,7 +3210,7 @@ message ListContactListsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3246,7 +3246,7 @@ message ListContactsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3268,7 +3268,7 @@ message ListCustomVerificationEmailTemplatesRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3292,7 +3292,7 @@ message ListDedicatedIpPoolsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3316,7 +3316,7 @@ message ListDeliverabilityTestReportsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3342,7 +3342,7 @@ message ListDomainDeliverabilityCampaignsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   string startdate = 445135996;
 
@@ -3370,7 +3370,7 @@ message ListEmailIdentitiesRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3394,7 +3394,7 @@ message ListEmailTemplatesRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3422,7 +3422,7 @@ message ListExportJobsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3448,7 +3448,7 @@ message ListImportJobsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3484,7 +3484,7 @@ message ListMultiRegionEndpointsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3524,7 +3524,7 @@ message ListRecommendationsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3550,7 +3550,7 @@ message ListReputationEntitiesRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3574,7 +3574,7 @@ message ListResourceTenantsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   string resourcearn = 364280877;
 
@@ -3602,7 +3602,7 @@ message ListSuppressedDestinationsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   repeated SuppressionListReason reasons = 176801663;
 
@@ -3658,7 +3658,7 @@ message ListTenantResourcesRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   string tenantname = 173338119;
 
@@ -3684,7 +3684,7 @@ message ListTenantsRequest {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
 }
 
@@ -3800,7 +3800,7 @@ message MessageInsightsDataSource {
 
   MessageInsightsFilters include = 100816392;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string startdate = 445135996;
 
@@ -4150,7 +4150,7 @@ message PutConfigurationSetDeliveryOptionsRequest {
 
   string configurationsetname = 403457485;
 
-  int64 maxdeliveryseconds = 16229983;
+  optional int64 maxdeliveryseconds = 16229983;
 
   string sendingpoolname = 89398333;
 
@@ -4750,7 +4750,7 @@ message SOARecord {
 
   string primarynameserver = 522614982;
 
-  int64 serialnumber = 418274661;
+  optional int64 serialnumber = 418274661;
 
 }
 
@@ -5614,13 +5614,13 @@ enum VerificationStatus {
 
 message VolumeStatistics {
 
-  int64 inboxrawcount = 215061115;
+  optional int64 inboxrawcount = 215061115;
 
-  int64 projectedinbox = 411471566;
+  optional int64 projectedinbox = 411471566;
 
-  int64 projectedspam = 40322687;
+  optional int64 projectedspam = 40322687;
 
-  int64 spamrawcount = 440722366;
+  optional int64 spamrawcount = 440722366;
 
 }
 

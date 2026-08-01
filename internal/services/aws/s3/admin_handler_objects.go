@@ -51,7 +51,7 @@ func (h *AdminHandler) ListObjectsV2(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	maxKeys := int(req.Msg.Maxkeys)
+	maxKeys := int(req.Msg.GetMaxkeys())
 	if maxKeys <= 0 {
 		maxKeys = 1000
 	}
@@ -78,7 +78,7 @@ func (h *AdminHandler) ListObjectsV2(ctx context.Context, req *connect.Request[p
 			Key:          obj.Key,
 			Lastmodified: obj.LastModified.Format(timeutils.ISO8601UTCFormat),
 			Etag:         formatETag(obj.ETag),
-			Size:         obj.Size,
+			Size:         proto.Int64(obj.Size),
 			Storageclass: pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD,
 		})
 	}
@@ -92,8 +92,8 @@ func (h *AdminHandler) ListObjectsV2(ctx context.Context, req *connect.Request[p
 		Name:              req.Msg.Bucket,
 		Prefix:            req.Msg.Prefix,
 		Delimiter:         req.Msg.Delimiter,
-		Maxkeys:           int32(maxKeys),
-		Keycount:          int32(len(contents) + len(commonPrefixes)),
+		Maxkeys:           proto.Int32(int32(maxKeys)),
+		Keycount:          proto.Int32(int32(len(contents) + len(commonPrefixes))),
 		Istruncated:       proto.Bool(result.IsTruncated),
 		Contents:          contents,
 		Commonprefixes:    commonPrefixes,
@@ -132,7 +132,7 @@ func (h *AdminHandler) HeadObject(ctx context.Context, req *connect.Request[pb.H
 	}
 
 	output := &pb.HeadObjectOutput{
-		Contentlength:      contentLength,
+		Contentlength:      proto.Int64(contentLength),
 		Contenttype:        obj.ContentType,
 		Contentencoding:    obj.ContentEncoding,
 		Contentlanguage:    obj.ContentLanguage,
@@ -181,7 +181,7 @@ func (h *AdminHandler) GetObject(ctx context.Context, req *connect.Request[pb.Ge
 	}
 
 	output := &pb.GetObjectOutput{
-		Contentlength:      contentLength,
+		Contentlength:      proto.Int64(contentLength),
 		Contenttype:        obj.ContentType,
 		Contentencoding:    obj.ContentEncoding,
 		Contentlanguage:    obj.ContentLanguage,

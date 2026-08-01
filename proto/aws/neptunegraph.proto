@@ -307,7 +307,7 @@ message CreateGraphInput {
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   map<string, string> tags = 337046433;
 
@@ -335,11 +335,11 @@ message CreateGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -401,15 +401,15 @@ message CreateGraphUsingImportTaskInput {
 
   string kmskeyidentifier = 271380819;
 
-  int32 maxprovisionedmemory = 212406631;
+  optional int32 maxprovisionedmemory = 212406631;
 
-  int32 minprovisionedmemory = 410054529;
+  optional int32 minprovisionedmemory = 410054529;
 
   ParquetType parquettype = 239821940;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string rolearn = 170019745;
 
@@ -501,11 +501,11 @@ message DeleteGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -807,11 +807,11 @@ message GetGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -1063,11 +1063,11 @@ message GraphSummary {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   GraphStatus status = 441153520;
 
@@ -1183,7 +1183,7 @@ message ListExportTasksInput {
 
   string graphidentifier = 49625581;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1205,7 +1205,7 @@ message ListGraphSnapshotsInput {
 
   string graphidentifier = 49625581;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1225,7 +1225,7 @@ message ListGraphSnapshotsOutput {
 
 message ListGraphsInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1245,7 +1245,7 @@ message ListGraphsOutput {
 
 message ListImportTasksInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1267,7 +1267,7 @@ message ListPrivateGraphEndpointsInput {
 
   string graphidentifier = 49625581;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1491,11 +1491,11 @@ message ResetGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -1525,11 +1525,11 @@ message RestoreGraphFromSnapshotInput {
 
   string graphname = 300324709;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string snapshotidentifier = 275392359;
 
@@ -1557,11 +1557,11 @@ message RestoreGraphFromSnapshotOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -1681,11 +1681,11 @@ message StartGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -1769,11 +1769,11 @@ message StopGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 
@@ -1863,7 +1863,7 @@ message UpdateGraphInput {
 
   string graphidentifier = 49625581;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
@@ -1889,11 +1889,11 @@ message UpdateGraphOutput {
 
   string name = 221887975;
 
-  int32 provisionedmemory = 1604091;
+  optional int32 provisionedmemory = 1604091;
 
   string publicconnectivity = 454618760;
 
-  int32 replicacount = 508743359;
+  optional int32 replicacount = 508743359;
 
   string sourcesnapshotid = 450029490;
 

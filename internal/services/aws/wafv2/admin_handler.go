@@ -45,7 +45,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxItems := int(req.Msg.Limit)
+	maxItems := int(req.Msg.GetLimit())
 	if maxItems <= 0 {
 		maxItems = 100
 	}

@@ -530,7 +530,7 @@ message ChangeCidrCollectionRequest {
 
   repeated CidrCollectionChange changes = 516230891;
 
-  int64 collectionversion = 95829948;
+  optional int64 collectionversion = 95829948;
 
   string id = 384350465;
 
@@ -650,7 +650,7 @@ message CidrCollection {
 
   string name = 266367751;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -854,7 +854,7 @@ message CollectionSummary {
 
   string name = 266367751;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -1542,7 +1542,7 @@ message GeoProximityLocation {
 
   string awsregion = 245430451;
 
-  int32 bias = 60849893;
+  optional int32 bias = 60849893;
 
   Coordinates coordinates = 231283401;
 
@@ -1960,11 +1960,11 @@ message HealthCheckConfig {
 
   optional bool enablesni = 70122887;
 
-  int32 failurethreshold = 176846565;
+  optional int32 failurethreshold = 176846565;
 
   string fullyqualifieddomainname = 459321509;
 
-  int32 healththreshold = 215873163;
+  optional int32 healththreshold = 215873163;
 
   string ipaddress = 169333741;
 
@@ -1974,11 +1974,11 @@ message HealthCheckConfig {
 
   optional bool measurelatency = 87136848;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   repeated HealthCheckRegion regions = 36200107;
 
-  int32 requestinterval = 350673112;
+  optional int32 requestinterval = 350673112;
 
   string resourcepath = 117584551;
 
@@ -2086,7 +2086,7 @@ message HostedZone {
 
   string name = 266367751;
 
-  int64 resourcerecordsetcount = 334391116;
+  optional int64 resourcerecordsetcount = 334391116;
 
   repeated VPC vpcs = 424064898;
 
@@ -2390,13 +2390,13 @@ message KeySigningKey {
 
   string digestalgorithmmnemonic = 209907099;
 
-  int32 digestalgorithmtype = 255175667;
+  optional int32 digestalgorithmtype = 255175667;
 
   string digestvalue = 277868387;
 
-  int32 flag = 504820984;
+  optional int32 flag = 504820984;
 
-  int32 keytag = 245478853;
+  optional int32 keytag = 245478853;
 
   string kmsarn = 205584974;
 
@@ -2408,7 +2408,7 @@ message KeySigningKey {
 
   string signingalgorithmmnemonic = 379080734;
 
-  int32 signingalgorithmtype = 407768874;
+  optional int32 signingalgorithmtype = 407768874;
 
   string status = 6222352;
 
@@ -3322,13 +3322,13 @@ message ResourceRecordSet {
 
   string setidentifier = 201408985;
 
-  int64 ttl = 526904700;
+  optional int64 ttl = 526904700;
 
   string trafficpolicyinstanceid = 251421439;
 
   RRType type = 290836590;
 
-  int64 weight = 422581466;
+  optional int64 weight = 422581466;
 
 }
 
@@ -3738,15 +3738,15 @@ message UpdateHealthCheckRequest {
 
   optional bool enablesni = 70122887;
 
-  int32 failurethreshold = 176846565;
+  optional int32 failurethreshold = 176846565;
 
   string fullyqualifieddomainname = 459321509;
 
   string healthcheckid = 312971637;
 
-  int64 healthcheckversion = 89568396;
+  optional int64 healthcheckversion = 89568396;
 
-  int32 healththreshold = 215873163;
+  optional int32 healththreshold = 215873163;
 
   string ipaddress = 169333741;
 
@@ -3754,7 +3754,7 @@ message UpdateHealthCheckRequest {
 
   optional bool inverted = 55175513;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   repeated HealthCheckRegion regions = 36200107;
 

@@ -47,7 +47,7 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxResults := req.Msg.Maxresults
+	maxResults := req.Msg.GetMaxresults()
 	if maxResults <= 0 {
 		maxResults = 50
 	}

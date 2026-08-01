@@ -103,7 +103,7 @@ func toPbIntegration(i *apigatewaystore.Integration) *pb.Integration {
 		pbI.Contenthandling = toPbContentHandling(i.ContentHandling)
 	}
 	if i.TimeoutInMillis > 0 {
-		pbI.Timeoutinmillis = int32Ptr(i.TimeoutInMillis)
+		pbI.Timeoutinmillis = proto.Int32(i.TimeoutInMillis)
 	}
 	if len(i.IntegrationResponses) > 0 {
 		pbI.Integrationresponses = make(map[string]*pb.IntegrationResponse)
@@ -316,7 +316,7 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 			pbStage.Throttle = make(map[string]*pb.ThrottleSettings)
 			for k, v := range as.Throttle {
 				pbStage.Throttle[k] = &pb.ThrottleSettings{
-					Burstlimit: int32Ptr(int32(v.BurstLimit)),
+					Burstlimit: proto.Int32(int32(v.BurstLimit)),
 					Ratelimit:  v.RateLimit,
 				}
 			}
@@ -325,14 +325,14 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 	}
 	if p.Quota != nil {
 		pbP.Quota = &pb.QuotaSettings{
-			Limit:  int32Ptr(int32(p.Quota.Limit)),
-			Offset: int32Ptr(int32(p.Quota.Offset)),
+			Limit:  proto.Int32(int32(p.Quota.Limit)),
+			Offset: proto.Int32(int32(p.Quota.Offset)),
 			Period: toPbQuotaPeriodType(p.Quota.Period),
 		}
 	}
 	if p.Throttle != nil {
 		pbP.Throttle = &pb.ThrottleSettings{
-			Burstlimit: int32Ptr(int32(p.Throttle.BurstLimit)),
+			Burstlimit: proto.Int32(int32(p.Throttle.BurstLimit)),
 			Ratelimit:  p.Throttle.RateLimit,
 		}
 	}
@@ -358,7 +358,7 @@ func toPbAuthorizer(a *apigatewaystore.Authorizer) *pb.Authorizer {
 		Authorizercredentials:        a.AuthorizerCredentials,
 		Identitysource:               a.IdentitySource,
 		Identityvalidationexpression: a.IdentityValidationExpression,
-		Authorizerresultttlinseconds: int32Ptr(a.AuthorizerResultTtlInSeconds),
+		Authorizerresultttlinseconds: proto.Int32(a.AuthorizerResultTtlInSeconds),
 		Providerarns:                 a.ProviderArns,
 	}
 }
@@ -474,10 +474,10 @@ func toPbMethodSetting(ms *apigatewaystore.MethodSetting) *pb.MethodSetting {
 		Metricsenabled:                      proto.Bool(ms.MetricsEnabled),
 		Logginglevel:                        ms.LoggingLevel,
 		Datatraceenabled:                    proto.Bool(ms.DataTraceEnabled),
-		Throttlingburstlimit:                int32Ptr(ms.ThrottlingBurstLimit),
+		Throttlingburstlimit:                proto.Int32(ms.ThrottlingBurstLimit),
 		Throttlingratelimit:                 ms.ThrottlingRateLimit,
 		Cachingenabled:                      proto.Bool(ms.CachingEnabled),
-		Cachettlinseconds:                   int32Ptr(ms.CacheTtlInSeconds),
+		Cachettlinseconds:                   proto.Int32(ms.CacheTtlInSeconds),
 		Cachedataencrypted:                  proto.Bool(ms.CacheDataEncrypted),
 		Requireauthorizationforcachecontrol: proto.Bool(ms.RequireAuthorizationForCacheControl),
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
@@ -65,8 +66,8 @@ func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInp
 	}
 
 	limit := 100
-	if req.Msg.Limit > 0 {
-		limit = int(req.Msg.Limit)
+	if req.Msg.GetLimit() > 0 {
+		limit = int(req.Msg.GetLimit())
 	}
 	if limit > 1000 {
 		limit = 1000
@@ -91,8 +92,8 @@ func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInp
 
 	output := &pb.ScanOutput{
 		Items:        pbItems,
-		Count:        int32(len(items)),
-		Scannedcount: int32(len(items)),
+		Count:        proto.Int32(int32(len(items))),
+		Scannedcount: proto.Int32(int32(len(items))),
 	}
 	if nextMarker != "" && len(items) > 0 {
 		lastItem := items[len(items)-1]

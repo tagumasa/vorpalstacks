@@ -230,7 +230,7 @@ message DescribeAccountSettingsRequest {
 
 message DescribeAccountSettingsResponse {
 
-  int32 maxquerytcu = 285295370;
+  optional int32 maxquerytcu = 285295370;
 
   QueryComputeResponse querycompute = 358277613;
 
@@ -340,17 +340,17 @@ message ExecuteScheduledQueryRequest {
 
 message ExecutionStats {
 
-  int64 bytesmetered = 232712245;
+  optional int64 bytesmetered = 232712245;
 
-  int64 cumulativebytesscanned = 413524176;
+  optional int64 cumulativebytesscanned = 413524176;
 
-  int64 datawrites = 406476830;
+  optional int64 datawrites = 406476830;
 
-  int64 executiontimeinmillis = 447596178;
+  optional int64 executiontimeinmillis = 447596178;
 
-  int64 queryresultrows = 240264704;
+  optional int64 queryresultrows = 240264704;
 
-  int64 recordsingested = 159925469;
+  optional int64 recordsingested = 159925469;
 
 }
 
@@ -384,7 +384,7 @@ message LastUpdate {
 
   string statusmessage = 72590095;
 
-  int32 targetquerytcu = 183880621;
+  optional int32 targetquerytcu = 183880621;
 
 }
 
@@ -404,7 +404,7 @@ enum LastUpdateStatus {
 
 message ListScheduledQueriesRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -424,7 +424,7 @@ message ListScheduledQueriesResponse {
 
 message ListTagsForResourceRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -564,7 +564,7 @@ message ProvisionedCapacityRequest {
 
 message ProvisionedCapacityResponse {
 
-  int32 activequerytcu = 136246688;
+  optional int32 activequerytcu = 136246688;
 
   LastUpdate lastupdate = 331125817;
 
@@ -632,21 +632,21 @@ enum QueryInsightsMode {
 
 message QueryInsightsResponse {
 
-  int64 outputbytes = 318971400;
+  optional int64 outputbytes = 318971400;
 
-  int64 outputrows = 138873322;
+  optional int64 outputrows = 138873322;
 
   QuerySpatialCoverage queryspatialcoverage = 200825688;
 
-  int64 querytablecount = 28893653;
+  optional int64 querytablecount = 28893653;
 
   QueryTemporalRange querytemporalrange = 200957543;
 
-  int64 unloadpartitioncount = 467201664;
+  optional int64 unloadpartitioncount = 467201664;
 
-  int64 unloadwrittenbytes = 247315473;
+  optional int64 unloadwrittenbytes = 247315473;
 
-  int64 unloadwrittenrows = 20403789;
+  optional int64 unloadwrittenrows = 20403789;
 
 }
 
@@ -666,7 +666,7 @@ message QueryRequest {
 
   string clienttoken = 137297356;
 
-  int32 maxrows = 251920525;
+  optional int32 maxrows = 251920525;
 
   string nexttoken = 216957566;
 
@@ -724,9 +724,9 @@ message QuerySpatialCoverageMax {
 
 message QueryStatus {
 
-  int64 cumulativebytesmetered = 196882576;
+  optional int64 cumulativebytesmetered = 196882576;
 
-  int64 cumulativebytesscanned = 413524176;
+  optional int64 cumulativebytesscanned = 413524176;
 
   double progresspercentage = 211894727;
 
@@ -750,7 +750,7 @@ message QueryTemporalRangeMax {
 
   string tablearn = 431669347;
 
-  int64 value = 289929579;
+  optional int64 value = 289929579;
 
 }
 
@@ -956,13 +956,13 @@ enum ScheduledQueryInsightsMode {
 
 message ScheduledQueryInsightsResponse {
 
-  int64 outputbytes = 318971400;
+  optional int64 outputbytes = 318971400;
 
-  int64 outputrows = 138873322;
+  optional int64 outputrows = 138873322;
 
   QuerySpatialCoverage queryspatialcoverage = 200825688;
 
-  int64 querytablecount = 28893653;
+  optional int64 querytablecount = 28893653;
 
   QueryTemporalRange querytemporalrange = 200957543;
 
@@ -1192,7 +1192,7 @@ message UntagResourceResponse {
 
 message UpdateAccountSettingsRequest {
 
-  int32 maxquerytcu = 285295370;
+  optional int32 maxquerytcu = 285295370;
 
   QueryComputeRequest querycompute = 358277613;
 
@@ -1204,7 +1204,7 @@ message UpdateAccountSettingsRequest {
 
 message UpdateAccountSettingsResponse {
 
-  int32 maxquerytcu = 285295370;
+  optional int32 maxquerytcu = 285295370;
 
   QueryComputeResponse querycompute = 358277613;
 

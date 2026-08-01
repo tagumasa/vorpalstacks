@@ -140,7 +140,7 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxItems := int(req.Msg.Maxitems)
+	maxItems := int(req.Msg.GetMaxitems())
 	if maxItems <= 0 {
 		maxItems = 100
 	}

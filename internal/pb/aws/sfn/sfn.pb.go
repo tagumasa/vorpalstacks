@@ -1389,11 +1389,11 @@ func (x *ActivityScheduleFailedEventDetails) GetError() string {
 
 type ActivityScheduledEventDetails struct {
 	state              protoimpl.MessageState            `protogen:"open.v1"`
-	Heartbeatinseconds int64                             `protobuf:"varint,125718754,opt,name=heartbeatinseconds,proto3" json:"heartbeatinseconds,omitempty"`
+	Heartbeatinseconds *int64                            `protobuf:"varint,125718754,opt,name=heartbeatinseconds,proto3,oneof" json:"heartbeatinseconds,omitempty"`
 	Input              string                            `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
 	Inputdetails       *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
 	Resource           string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
-	Timeoutinseconds   int64                             `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3" json:"timeoutinseconds,omitempty"`
+	Timeoutinseconds   *int64                            `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3,oneof" json:"timeoutinseconds,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1429,8 +1429,8 @@ func (*ActivityScheduledEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityScheduledEventDetails) GetHeartbeatinseconds() int64 {
-	if x != nil {
-		return x.Heartbeatinseconds
+	if x != nil && x.Heartbeatinseconds != nil {
+		return *x.Heartbeatinseconds
 	}
 	return 0
 }
@@ -1457,8 +1457,8 @@ func (x *ActivityScheduledEventDetails) GetResource() string {
 }
 
 func (x *ActivityScheduledEventDetails) GetTimeoutinseconds() int64 {
-	if x != nil {
-		return x.Timeoutinseconds
+	if x != nil && x.Timeoutinseconds != nil {
+		return *x.Timeoutinseconds
 	}
 	return 0
 }
@@ -1701,8 +1701,8 @@ func (x *AssignedVariablesDetails) GetTruncated() bool {
 
 type BillingDetails struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Billeddurationinmilliseconds int64                  `protobuf:"varint,65131593,opt,name=billeddurationinmilliseconds,proto3" json:"billeddurationinmilliseconds,omitempty"`
-	Billedmemoryusedinmb         int64                  `protobuf:"varint,459756940,opt,name=billedmemoryusedinmb,proto3" json:"billedmemoryusedinmb,omitempty"`
+	Billeddurationinmilliseconds *int64                 `protobuf:"varint,65131593,opt,name=billeddurationinmilliseconds,proto3,oneof" json:"billeddurationinmilliseconds,omitempty"`
+	Billedmemoryusedinmb         *int64                 `protobuf:"varint,459756940,opt,name=billedmemoryusedinmb,proto3,oneof" json:"billedmemoryusedinmb,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -1738,15 +1738,15 @@ func (*BillingDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *BillingDetails) GetBilleddurationinmilliseconds() int64 {
-	if x != nil {
-		return x.Billeddurationinmilliseconds
+	if x != nil && x.Billeddurationinmilliseconds != nil {
+		return *x.Billeddurationinmilliseconds
 	}
 	return 0
 }
 
 func (x *BillingDetails) GetBilledmemoryusedinmb() int64 {
-	if x != nil {
-		return x.Billedmemoryusedinmb
+	if x != nil && x.Billedmemoryusedinmb != nil {
+		return *x.Billedmemoryusedinmb
 	}
 	return 0
 }
@@ -2778,7 +2778,7 @@ type DescribeExecutionOutput struct {
 	Name                   string                                `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Output                 string                                `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
 	Outputdetails          *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
-	Redrivecount           int32                                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3" json:"redrivecount,omitempty"`
+	Redrivecount           *int32                                `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	Redrivedate            string                                `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
 	Redrivestatus          ExecutionRedriveStatus                `protobuf:"varint,247102059,opt,name=redrivestatus,proto3,enum=sfn.ExecutionRedriveStatus" json:"redrivestatus,omitempty"`
 	Redrivestatusreason    string                                `protobuf:"bytes,339085215,opt,name=redrivestatusreason,proto3" json:"redrivestatusreason,omitempty"`
@@ -2887,8 +2887,8 @@ func (x *DescribeExecutionOutput) GetOutputdetails() *CloudWatchEventsExecutionD
 }
 
 func (x *DescribeExecutionOutput) GetRedrivecount() int32 {
-	if x != nil {
-		return x.Redrivecount
+	if x != nil && x.Redrivecount != nil {
+		return *x.Redrivecount
 	}
 	return 0
 }
@@ -3014,7 +3014,7 @@ type DescribeMapRunOutput struct {
 	Itemcounts                 *MapRunItemCounts      `protobuf:"bytes,334548339,opt,name=itemcounts,proto3" json:"itemcounts,omitempty"`
 	Maprunarn                  string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
 	Maxconcurrency             int32                  `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
-	Redrivecount               int32                  `protobuf:"varint,473458696,opt,name=redrivecount,proto3" json:"redrivecount,omitempty"`
+	Redrivecount               *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	Redrivedate                string                 `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
 	Startdate                  string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Status                     MapRunStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.MapRunStatus" json:"status,omitempty"`
@@ -3091,8 +3091,8 @@ func (x *DescribeMapRunOutput) GetMaxconcurrency() int32 {
 }
 
 func (x *DescribeMapRunOutput) GetRedrivecount() int32 {
-	if x != nil {
-		return x.Redrivecount
+	if x != nil && x.Redrivecount != nil {
+		return *x.Redrivecount
 	}
 	return 0
 }
@@ -3653,7 +3653,7 @@ func (x *DescribeStateMachineOutput) GetVariablereferences() map[string]string {
 
 type EncryptionConfiguration struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Kmsdatakeyreuseperiodseconds int32                  `protobuf:"varint,440747764,opt,name=kmsdatakeyreuseperiodseconds,proto3" json:"kmsdatakeyreuseperiodseconds,omitempty"`
+	Kmsdatakeyreuseperiodseconds *int32                 `protobuf:"varint,440747764,opt,name=kmsdatakeyreuseperiodseconds,proto3,oneof" json:"kmsdatakeyreuseperiodseconds,omitempty"`
 	Kmskeyid                     string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Type                         EncryptionType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.EncryptionType" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -3691,8 +3691,8 @@ func (*EncryptionConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *EncryptionConfiguration) GetKmsdatakeyreuseperiodseconds() int32 {
-	if x != nil {
-		return x.Kmsdatakeyreuseperiodseconds
+	if x != nil && x.Kmsdatakeyreuseperiodseconds != nil {
+		return *x.Kmsdatakeyreuseperiodseconds
 	}
 	return 0
 }
@@ -4018,10 +4018,10 @@ func (x *ExecutionLimitExceeded) GetMessage() string {
 type ExecutionListItem struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn           string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Itemcount              int32                  `protobuf:"varint,349613174,opt,name=itemcount,proto3" json:"itemcount,omitempty"`
+	Itemcount              *int32                 `protobuf:"varint,349613174,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Maprunarn              string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
 	Name                   string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Redrivecount           int32                  `protobuf:"varint,473458696,opt,name=redrivecount,proto3" json:"redrivecount,omitempty"`
+	Redrivecount           *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	Redrivedate            string                 `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
 	Startdate              string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Statemachinealiasarn   string                 `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
@@ -4071,8 +4071,8 @@ func (x *ExecutionListItem) GetExecutionarn() string {
 }
 
 func (x *ExecutionListItem) GetItemcount() int32 {
-	if x != nil {
-		return x.Itemcount
+	if x != nil && x.Itemcount != nil {
+		return *x.Itemcount
 	}
 	return 0
 }
@@ -4092,8 +4092,8 @@ func (x *ExecutionListItem) GetName() string {
 }
 
 func (x *ExecutionListItem) GetRedrivecount() int32 {
-	if x != nil {
-		return x.Redrivecount
+	if x != nil && x.Redrivecount != nil {
+		return *x.Redrivecount
 	}
 	return 0
 }
@@ -4193,7 +4193,7 @@ func (x *ExecutionNotRedrivable) GetMessage() string {
 
 type ExecutionRedrivenEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Redrivecount  int32                  `protobuf:"varint,473458696,opt,name=redrivecount,proto3" json:"redrivecount,omitempty"`
+	Redrivecount  *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4229,8 +4229,8 @@ func (*ExecutionRedrivenEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionRedrivenEventDetails) GetRedrivecount() int32 {
-	if x != nil {
-		return x.Redrivecount
+	if x != nil && x.Redrivecount != nil {
+		return *x.Redrivecount
 	}
 	return 0
 }
@@ -4523,7 +4523,7 @@ type GetExecutionHistoryInput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn         string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	Includeexecutiondata *bool                  `protobuf:"varint,203899608,opt,name=includeexecutiondata,proto3,oneof" json:"includeexecutiondata,omitempty"`
-	Maxresults           int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults           *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken            string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Reverseorder         *bool                  `protobuf:"varint,364411768,opt,name=reverseorder,proto3,oneof" json:"reverseorder,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -4575,8 +4575,8 @@ func (x *GetExecutionHistoryInput) GetIncludeexecutiondata() bool {
 }
 
 func (x *GetExecutionHistoryInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -4677,7 +4677,7 @@ type HistoryEvent struct {
 	Maprunredriveneventdetails               *MapRunRedrivenEventDetails               `protobuf:"bytes,465066264,opt,name=maprunredriveneventdetails,proto3" json:"maprunredriveneventdetails,omitempty"`
 	Maprunstartedeventdetails                *MapRunStartedEventDetails                `protobuf:"bytes,183119902,opt,name=maprunstartedeventdetails,proto3" json:"maprunstartedeventdetails,omitempty"`
 	Mapstatestartedeventdetails              *MapStateStartedEventDetails              `protobuf:"bytes,463022434,opt,name=mapstatestartedeventdetails,proto3" json:"mapstatestartedeventdetails,omitempty"`
-	Previouseventid                          int64                                     `protobuf:"varint,261811790,opt,name=previouseventid,proto3" json:"previouseventid,omitempty"`
+	Previouseventid                          *int64                                    `protobuf:"varint,261811790,opt,name=previouseventid,proto3,oneof" json:"previouseventid,omitempty"`
 	Stateenteredeventdetails                 *StateEnteredEventDetails                 `protobuf:"bytes,479306524,opt,name=stateenteredeventdetails,proto3" json:"stateenteredeventdetails,omitempty"`
 	Stateexitedeventdetails                  *StateExitedEventDetails                  `protobuf:"bytes,30960782,opt,name=stateexitedeventdetails,proto3" json:"stateexitedeventdetails,omitempty"`
 	Taskfailedeventdetails                   *TaskFailedEventDetails                   `protobuf:"bytes,309753628,opt,name=taskfailedeventdetails,proto3" json:"taskfailedeventdetails,omitempty"`
@@ -4921,8 +4921,8 @@ func (x *HistoryEvent) GetMapstatestartedeventdetails() *MapStateStartedEventDet
 }
 
 func (x *HistoryEvent) GetPreviouseventid() int64 {
-	if x != nil {
-		return x.Previouseventid
+	if x != nil && x.Previouseventid != nil {
+		return *x.Previouseventid
 	}
 	return 0
 }
@@ -5068,11 +5068,11 @@ type InspectionData struct {
 	Afterresultselector        string                  `protobuf:"bytes,443240414,opt,name=afterresultselector,proto3" json:"afterresultselector,omitempty"`
 	Errordetails               *InspectionErrorDetails `protobuf:"bytes,192899050,opt,name=errordetails,proto3" json:"errordetails,omitempty"`
 	Input                      string                  `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
-	Maxconcurrency             int32                   `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
+	Maxconcurrency             *int32                  `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
 	Request                    *InspectionDataRequest  `protobuf:"bytes,514460083,opt,name=request,proto3" json:"request,omitempty"`
 	Response                   *InspectionDataResponse `protobuf:"bytes,425574879,opt,name=response,proto3" json:"response,omitempty"`
 	Result                     string                  `protobuf:"bytes,171406885,opt,name=result,proto3" json:"result,omitempty"`
-	Toleratedfailurecount      int32                   `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3" json:"toleratedfailurecount,omitempty"`
+	Toleratedfailurecount      *int32                  `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3,oneof" json:"toleratedfailurecount,omitempty"`
 	Toleratedfailurepercentage float32                 `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3" json:"toleratedfailurepercentage,omitempty"`
 	Variables                  string                  `protobuf:"bytes,162226883,opt,name=variables,proto3" json:"variables,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -5187,8 +5187,8 @@ func (x *InspectionData) GetInput() string {
 }
 
 func (x *InspectionData) GetMaxconcurrency() int32 {
-	if x != nil {
-		return x.Maxconcurrency
+	if x != nil && x.Maxconcurrency != nil {
+		return *x.Maxconcurrency
 	}
 	return 0
 }
@@ -5215,8 +5215,8 @@ func (x *InspectionData) GetResult() string {
 }
 
 func (x *InspectionData) GetToleratedfailurecount() int32 {
-	if x != nil {
-		return x.Toleratedfailurecount
+	if x != nil && x.Toleratedfailurecount != nil {
+		return *x.Toleratedfailurecount
 	}
 	return 0
 }
@@ -5389,9 +5389,9 @@ func (x *InspectionDataResponse) GetStatusmessage() string {
 
 type InspectionErrorDetails struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Catchindex                  int32                  `protobuf:"varint,290365641,opt,name=catchindex,proto3" json:"catchindex,omitempty"`
-	Retrybackoffintervalseconds int32                  `protobuf:"varint,137754128,opt,name=retrybackoffintervalseconds,proto3" json:"retrybackoffintervalseconds,omitempty"`
-	Retryindex                  int32                  `protobuf:"varint,6599888,opt,name=retryindex,proto3" json:"retryindex,omitempty"`
+	Catchindex                  *int32                 `protobuf:"varint,290365641,opt,name=catchindex,proto3,oneof" json:"catchindex,omitempty"`
+	Retrybackoffintervalseconds *int32                 `protobuf:"varint,137754128,opt,name=retrybackoffintervalseconds,proto3,oneof" json:"retrybackoffintervalseconds,omitempty"`
+	Retryindex                  *int32                 `protobuf:"varint,6599888,opt,name=retryindex,proto3,oneof" json:"retryindex,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -5427,22 +5427,22 @@ func (*InspectionErrorDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *InspectionErrorDetails) GetCatchindex() int32 {
-	if x != nil {
-		return x.Catchindex
+	if x != nil && x.Catchindex != nil {
+		return *x.Catchindex
 	}
 	return 0
 }
 
 func (x *InspectionErrorDetails) GetRetrybackoffintervalseconds() int32 {
-	if x != nil {
-		return x.Retrybackoffintervalseconds
+	if x != nil && x.Retrybackoffintervalseconds != nil {
+		return *x.Retrybackoffintervalseconds
 	}
 	return 0
 }
 
 func (x *InspectionErrorDetails) GetRetryindex() int32 {
-	if x != nil {
-		return x.Retryindex
+	if x != nil && x.Retryindex != nil {
+		return *x.Retryindex
 	}
 	return 0
 }
@@ -6093,7 +6093,7 @@ type LambdaFunctionScheduledEventDetails struct {
 	Inputdetails     *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
 	Resource         string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Taskcredentials  *TaskCredentials                  `protobuf:"bytes,257843259,opt,name=taskcredentials,proto3" json:"taskcredentials,omitempty"`
-	Timeoutinseconds int64                             `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3" json:"timeoutinseconds,omitempty"`
+	Timeoutinseconds *int64                            `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3,oneof" json:"timeoutinseconds,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -6157,8 +6157,8 @@ func (x *LambdaFunctionScheduledEventDetails) GetTaskcredentials() *TaskCredenti
 }
 
 func (x *LambdaFunctionScheduledEventDetails) GetTimeoutinseconds() int64 {
-	if x != nil {
-		return x.Timeoutinseconds
+	if x != nil && x.Timeoutinseconds != nil {
+		return *x.Timeoutinseconds
 	}
 	return 0
 }
@@ -6321,7 +6321,7 @@ func (x *LambdaFunctionTimedOutEventDetails) GetError() string {
 
 type ListActivitiesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6358,8 +6358,8 @@ func (*ListActivitiesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListActivitiesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6426,7 +6426,7 @@ func (x *ListActivitiesOutput) GetNexttoken() string {
 type ListExecutionsInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Maprunarn       string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
-	Maxresults      int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Redrivefilter   ExecutionRedriveFilter `protobuf:"varint,437804251,opt,name=redrivefilter,proto3,enum=sfn.ExecutionRedriveFilter" json:"redrivefilter,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
@@ -6473,8 +6473,8 @@ func (x *ListExecutionsInput) GetMaprunarn() string {
 }
 
 func (x *ListExecutionsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6562,7 +6562,7 @@ func (x *ListExecutionsOutput) GetNexttoken() string {
 type ListMapRunsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6606,8 +6606,8 @@ func (x *ListMapRunsInput) GetExecutionarn() string {
 }
 
 func (x *ListMapRunsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6673,7 +6673,7 @@ func (x *ListMapRunsOutput) GetNexttoken() string {
 
 type ListStateMachineAliasesInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults      int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -6711,8 +6711,8 @@ func (*ListStateMachineAliasesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachineAliasesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6785,7 +6785,7 @@ func (x *ListStateMachineAliasesOutput) GetStatemachinealiases() []*StateMachine
 
 type ListStateMachineVersionsInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults      int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -6823,8 +6823,8 @@ func (*ListStateMachineVersionsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachineVersionsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6897,7 +6897,7 @@ func (x *ListStateMachineVersionsOutput) GetStatemachineversions() []*StateMachi
 
 type ListStateMachinesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6934,8 +6934,8 @@ func (*ListStateMachinesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachinesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7193,7 +7193,7 @@ func (x *LoggingConfiguration) GetLevel() LogLevel {
 
 type MapIterationEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Index         int32                  `protobuf:"varint,151693740,opt,name=index,proto3" json:"index,omitempty"`
+	Index         *int32                 `protobuf:"varint,151693740,opt,name=index,proto3,oneof" json:"index,omitempty"`
 	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7230,8 +7230,8 @@ func (*MapIterationEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MapIterationEventDetails) GetIndex() int32 {
-	if x != nil {
-		return x.Index
+	if x != nil && x.Index != nil {
+		return *x.Index
 	}
 	return 0
 }
@@ -7247,9 +7247,9 @@ type MapRunExecutionCounts struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Aborted               int64                  `protobuf:"varint,381485777,opt,name=aborted,proto3" json:"aborted,omitempty"`
 	Failed                int64                  `protobuf:"varint,11325365,opt,name=failed,proto3" json:"failed,omitempty"`
-	Failuresnotredrivable int64                  `protobuf:"varint,119492388,opt,name=failuresnotredrivable,proto3" json:"failuresnotredrivable,omitempty"`
+	Failuresnotredrivable *int64                 `protobuf:"varint,119492388,opt,name=failuresnotredrivable,proto3,oneof" json:"failuresnotredrivable,omitempty"`
 	Pending               int64                  `protobuf:"varint,431980349,opt,name=pending,proto3" json:"pending,omitempty"`
-	Pendingredrive        int64                  `protobuf:"varint,405645200,opt,name=pendingredrive,proto3" json:"pendingredrive,omitempty"`
+	Pendingredrive        *int64                 `protobuf:"varint,405645200,opt,name=pendingredrive,proto3,oneof" json:"pendingredrive,omitempty"`
 	Resultswritten        int64                  `protobuf:"varint,88286449,opt,name=resultswritten,proto3" json:"resultswritten,omitempty"`
 	Running               int64                  `protobuf:"varint,343848781,opt,name=running,proto3" json:"running,omitempty"`
 	Succeeded             int64                  `protobuf:"varint,186019827,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
@@ -7304,8 +7304,8 @@ func (x *MapRunExecutionCounts) GetFailed() int64 {
 }
 
 func (x *MapRunExecutionCounts) GetFailuresnotredrivable() int64 {
-	if x != nil {
-		return x.Failuresnotredrivable
+	if x != nil && x.Failuresnotredrivable != nil {
+		return *x.Failuresnotredrivable
 	}
 	return 0
 }
@@ -7318,8 +7318,8 @@ func (x *MapRunExecutionCounts) GetPending() int64 {
 }
 
 func (x *MapRunExecutionCounts) GetPendingredrive() int64 {
-	if x != nil {
-		return x.Pendingredrive
+	if x != nil && x.Pendingredrive != nil {
+		return *x.Pendingredrive
 	}
 	return 0
 }
@@ -7415,9 +7415,9 @@ type MapRunItemCounts struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Aborted               int64                  `protobuf:"varint,381485777,opt,name=aborted,proto3" json:"aborted,omitempty"`
 	Failed                int64                  `protobuf:"varint,11325365,opt,name=failed,proto3" json:"failed,omitempty"`
-	Failuresnotredrivable int64                  `protobuf:"varint,119492388,opt,name=failuresnotredrivable,proto3" json:"failuresnotredrivable,omitempty"`
+	Failuresnotredrivable *int64                 `protobuf:"varint,119492388,opt,name=failuresnotredrivable,proto3,oneof" json:"failuresnotredrivable,omitempty"`
 	Pending               int64                  `protobuf:"varint,431980349,opt,name=pending,proto3" json:"pending,omitempty"`
-	Pendingredrive        int64                  `protobuf:"varint,405645200,opt,name=pendingredrive,proto3" json:"pendingredrive,omitempty"`
+	Pendingredrive        *int64                 `protobuf:"varint,405645200,opt,name=pendingredrive,proto3,oneof" json:"pendingredrive,omitempty"`
 	Resultswritten        int64                  `protobuf:"varint,88286449,opt,name=resultswritten,proto3" json:"resultswritten,omitempty"`
 	Running               int64                  `protobuf:"varint,343848781,opt,name=running,proto3" json:"running,omitempty"`
 	Succeeded             int64                  `protobuf:"varint,186019827,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
@@ -7472,8 +7472,8 @@ func (x *MapRunItemCounts) GetFailed() int64 {
 }
 
 func (x *MapRunItemCounts) GetFailuresnotredrivable() int64 {
-	if x != nil {
-		return x.Failuresnotredrivable
+	if x != nil && x.Failuresnotredrivable != nil {
+		return *x.Failuresnotredrivable
 	}
 	return 0
 }
@@ -7486,8 +7486,8 @@ func (x *MapRunItemCounts) GetPending() int64 {
 }
 
 func (x *MapRunItemCounts) GetPendingredrive() int64 {
-	if x != nil {
-		return x.Pendingredrive
+	if x != nil && x.Pendingredrive != nil {
+		return *x.Pendingredrive
 	}
 	return 0
 }
@@ -7606,7 +7606,7 @@ func (x *MapRunListItem) GetStopdate() string {
 type MapRunRedrivenEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maprunarn     string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
-	Redrivecount  int32                  `protobuf:"varint,473458696,opt,name=redrivecount,proto3" json:"redrivecount,omitempty"`
+	Redrivecount  *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7649,8 +7649,8 @@ func (x *MapRunRedrivenEventDetails) GetMaprunarn() string {
 }
 
 func (x *MapRunRedrivenEventDetails) GetRedrivecount() int32 {
-	if x != nil {
-		return x.Redrivecount
+	if x != nil && x.Redrivecount != nil {
+		return *x.Redrivecount
 	}
 	return 0
 }
@@ -7701,7 +7701,7 @@ func (x *MapRunStartedEventDetails) GetMaprunarn() string {
 
 type MapStateStartedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Length        int32                  `protobuf:"varint,63976982,opt,name=length,proto3" json:"length,omitempty"`
+	Length        *int32                 `protobuf:"varint,63976982,opt,name=length,proto3,oneof" json:"length,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7737,8 +7737,8 @@ func (*MapStateStartedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MapStateStartedEventDetails) GetLength() int32 {
-	if x != nil {
-		return x.Length
+	if x != nil && x.Length != nil {
+		return *x.Length
 	}
 	return 0
 }
@@ -9793,13 +9793,13 @@ func (x *TaskFailedEventDetails) GetResourcetype() string {
 
 type TaskScheduledEventDetails struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Heartbeatinseconds int64                  `protobuf:"varint,125718754,opt,name=heartbeatinseconds,proto3" json:"heartbeatinseconds,omitempty"`
+	Heartbeatinseconds *int64                 `protobuf:"varint,125718754,opt,name=heartbeatinseconds,proto3,oneof" json:"heartbeatinseconds,omitempty"`
 	Parameters         string                 `protobuf:"bytes,145043162,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	Region             string                 `protobuf:"bytes,52100734,opt,name=region,proto3" json:"region,omitempty"`
 	Resource           string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype       string                 `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
 	Taskcredentials    *TaskCredentials       `protobuf:"bytes,257843259,opt,name=taskcredentials,proto3" json:"taskcredentials,omitempty"`
-	Timeoutinseconds   int64                  `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3" json:"timeoutinseconds,omitempty"`
+	Timeoutinseconds   *int64                 `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3,oneof" json:"timeoutinseconds,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9835,8 +9835,8 @@ func (*TaskScheduledEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskScheduledEventDetails) GetHeartbeatinseconds() int64 {
-	if x != nil {
-		return x.Heartbeatinseconds
+	if x != nil && x.Heartbeatinseconds != nil {
+		return *x.Heartbeatinseconds
 	}
 	return 0
 }
@@ -9877,8 +9877,8 @@ func (x *TaskScheduledEventDetails) GetTaskcredentials() *TaskCredentials {
 }
 
 func (x *TaskScheduledEventDetails) GetTimeoutinseconds() int64 {
-	if x != nil {
-		return x.Timeoutinseconds
+	if x != nil && x.Timeoutinseconds != nil {
+		return *x.Timeoutinseconds
 	}
 	return 0
 }
@@ -10323,8 +10323,8 @@ type TestStateConfiguration struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Errorcausedbystate       string                 `protobuf:"bytes,313873103,opt,name=errorcausedbystate,proto3" json:"errorcausedbystate,omitempty"`
 	Mapitemreaderdata        string                 `protobuf:"bytes,503260646,opt,name=mapitemreaderdata,proto3" json:"mapitemreaderdata,omitempty"`
-	Mapiterationfailurecount int32                  `protobuf:"varint,419587762,opt,name=mapiterationfailurecount,proto3" json:"mapiterationfailurecount,omitempty"`
-	Retrierretrycount        int32                  `protobuf:"varint,275735648,opt,name=retrierretrycount,proto3" json:"retrierretrycount,omitempty"`
+	Mapiterationfailurecount *int32                 `protobuf:"varint,419587762,opt,name=mapiterationfailurecount,proto3,oneof" json:"mapiterationfailurecount,omitempty"`
+	Retrierretrycount        *int32                 `protobuf:"varint,275735648,opt,name=retrierretrycount,proto3,oneof" json:"retrierretrycount,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -10374,15 +10374,15 @@ func (x *TestStateConfiguration) GetMapitemreaderdata() string {
 }
 
 func (x *TestStateConfiguration) GetMapiterationfailurecount() int32 {
-	if x != nil {
-		return x.Mapiterationfailurecount
+	if x != nil && x.Mapiterationfailurecount != nil {
+		return *x.Mapiterationfailurecount
 	}
 	return 0
 }
 
 func (x *TestStateConfiguration) GetRetrierretrycount() int32 {
-	if x != nil {
-		return x.Retrierretrycount
+	if x != nil && x.Retrierretrycount != nil {
+		return *x.Retrierretrycount
 	}
 	return 0
 }
@@ -10774,8 +10774,8 @@ func (*UntagResourceOutput) Descriptor() ([]byte, []int) {
 type UpdateMapRunInput struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Maprunarn                  string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
-	Maxconcurrency             int32                  `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
-	Toleratedfailurecount      int64                  `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3" json:"toleratedfailurecount,omitempty"`
+	Maxconcurrency             *int32                 `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
+	Toleratedfailurecount      *int64                 `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3,oneof" json:"toleratedfailurecount,omitempty"`
 	Toleratedfailurepercentage float32                `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3" json:"toleratedfailurepercentage,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -10819,15 +10819,15 @@ func (x *UpdateMapRunInput) GetMaprunarn() string {
 }
 
 func (x *UpdateMapRunInput) GetMaxconcurrency() int32 {
-	if x != nil {
-		return x.Maxconcurrency
+	if x != nil && x.Maxconcurrency != nil {
+		return *x.Maxconcurrency
 	}
 	return 0
 }
 
 func (x *UpdateMapRunInput) GetToleratedfailurecount() int64 {
-	if x != nil {
-		return x.Toleratedfailurecount
+	if x != nil && x.Toleratedfailurecount != nil {
+		return *x.Toleratedfailurecount
 	}
 	return 0
 }
@@ -11210,7 +11210,7 @@ func (x *ValidateStateMachineDefinitionDiagnostic) GetSeverity() ValidateStateMa
 type ValidateStateMachineDefinitionInput struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
 	Definition    string                                 `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
-	Maxresults    int32                                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Severity      ValidateStateMachineDefinitionSeverity `protobuf:"varint,268193715,opt,name=severity,proto3,enum=sfn.ValidateStateMachineDefinitionSeverity" json:"severity,omitempty"`
 	Type          StateMachineType                       `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11255,8 +11255,8 @@ func (x *ValidateStateMachineDefinitionInput) GetDefinition() string {
 }
 
 func (x *ValidateStateMachineDefinitionInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11407,13 +11407,15 @@ const file_sfn_proto_rawDesc = "" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"V\n" +
 	"\"ActivityScheduleFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\x8a\x02\n" +
-	"\x1dActivityScheduledEventDetails\x121\n" +
-	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03R\x12heartbeatinseconds\x12\x18\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xc0\x02\n" +
+	"\x1dActivityScheduledEventDetails\x126\n" +
+	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03H\x00R\x12heartbeatinseconds\x88\x01\x01\x12\x18\n" +
 	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1d\n" +
-	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12.\n" +
-	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03R\x10timeoutinseconds\"A\n" +
+	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x123\n" +
+	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x01R\x10timeoutinseconds\x88\x01\x01B\x15\n" +
+	"\x13_heartbeatinsecondsB\x13\n" +
+	"\x11_timeoutinseconds\"A\n" +
 	"\x1bActivityStartedEventDetails\x12\"\n" +
 	"\n" +
 	"workername\x18\xb5\xfe\x96\xfb\x01 \x01(\tR\n" +
@@ -11429,10 +11431,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\x18AssignedVariablesDetails\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\x8f\x01\n" +
-	"\x0eBillingDetails\x12E\n" +
-	"\x1cbilleddurationinmilliseconds\x18ɨ\x87\x1f \x01(\x03R\x1cbilleddurationinmilliseconds\x126\n" +
-	"\x14billedmemoryusedinmb\x18\x8c\xab\x9d\xdb\x01 \x01(\x03R\x14billedmemoryusedinmb\"X\n" +
+	"_truncated\"\xd3\x01\n" +
+	"\x0eBillingDetails\x12J\n" +
+	"\x1cbilleddurationinmilliseconds\x18ɨ\x87\x1f \x01(\x03H\x00R\x1cbilleddurationinmilliseconds\x88\x01\x01\x12;\n" +
+	"\x14billedmemoryusedinmb\x18\x8c\xab\x9d\xdb\x01 \x01(\x03H\x01R\x14billedmemoryusedinmb\x88\x01\x01B\x1f\n" +
+	"\x1d_billeddurationinmillisecondsB\x17\n" +
+	"\x15_billedmemoryusedinmb\"X\n" +
 	"$CloudWatchEventsExecutionDataDetails\x12#\n" +
 	"\bincluded\x18\xba\xa5\xec\xf6\x01 \x01(\bH\x00R\bincluded\x88\x01\x01B\v\n" +
 	"\t_included\"=\n" +
@@ -11494,7 +11498,7 @@ const file_sfn_proto_rawDesc = "" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"z\n" +
 	"\x16DescribeExecutionInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\x8b\a\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\xa1\a\n" +
 	"\x17DescribeExecutionOutput\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12&\n" +
@@ -11504,8 +11508,8 @@ const file_sfn_proto_rawDesc = "" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1a\n" +
 	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12S\n" +
-	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\routputdetails\x12&\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05R\fredrivecount\x12#\n" +
+	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\routputdetails\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01\x12#\n" +
 	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12D\n" +
 	"\rredrivestatus\x18\xeb\xf4\xe9u \x01(\x0e2\x1b.sfn.ExecutionRedriveStatusR\rredrivestatus\x124\n" +
 	"\x13redrivestatusreason\x18\x9f\x8fء\x01 \x01(\tR\x13redrivestatusreason\x12 \n" +
@@ -11515,9 +11519,10 @@ const file_sfn_proto_rawDesc = "" +
 	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x120\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\x1d\n" +
 	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x12#\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheader\"6\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheaderB\x0f\n" +
+	"\r_redrivecount\"6\n" +
 	"\x13DescribeMapRunInput\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"\xc8\x04\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"\xde\x04\n" +
 	"\x14DescribeMapRunOutput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12H\n" +
 	"\x0fexecutioncounts\x18և\xa4\x97\x01 \x01(\v2\x1a.sfn.MapRunExecutionCountsR\x0fexecutioncounts\x129\n" +
@@ -11525,14 +11530,15 @@ const file_sfn_proto_rawDesc = "" +
 	"itemcounts\x18\xf3\x9aß\x01 \x01(\v2\x15.sfn.MapRunItemCountsR\n" +
 	"itemcounts\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12)\n" +
-	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05R\x0emaxconcurrency\x12&\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05R\fredrivecount\x12#\n" +
+	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05R\x0emaxconcurrency\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01\x12#\n" +
 	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12-\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x11.sfn.MapRunStatusR\x06status\x12\x1d\n" +
 	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x127\n" +
 	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03R\x15toleratedfailurecount\x12A\n" +
-	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentage\"X\n" +
+	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentageB\x0f\n" +
+	"\r_redrivecount\"X\n" +
 	"\x1eDescribeStateMachineAliasInput\x126\n" +
 	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xbc\x02\n" +
 	"\x1fDescribeStateMachineAliasOutput\x12%\n" +
@@ -11593,11 +11599,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\x12variablereferences\x18\xac\xe4\xfcG \x03(\v27.sfn.DescribeStateMachineOutput.VariablereferencesEntryR\x12variablereferences\x1aE\n" +
 	"\x17VariablereferencesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xae\x01\n" +
-	"\x17EncryptionConfiguration\x12F\n" +
-	"\x1ckmsdatakeyreuseperiodseconds\x18\xf4\x8d\x95\xd2\x01 \x01(\x05R\x1ckmsdatakeyreuseperiodseconds\x12\x1e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd4\x01\n" +
+	"\x17EncryptionConfiguration\x12K\n" +
+	"\x1ckmsdatakeyreuseperiodseconds\x18\xf4\x8d\x95\xd2\x01 \x01(\x05H\x00R\x1ckmsdatakeyreuseperiodseconds\x88\x01\x01\x12\x1e\n" +
 	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12+\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x13.sfn.EncryptionTypeR\x04type\"\x89\x01\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x13.sfn.EncryptionTypeR\x04typeB\x1f\n" +
+	"\x1d_kmsdatakeyreuseperiodseconds\"\x89\x01\n" +
 	"\x1cEvaluationFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
@@ -11614,24 +11621,28 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"5\n" +
 	"\x16ExecutionLimitExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf6\x03\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9f\x04\n" +
 	"\x11ExecutionListItem\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12 \n" +
-	"\titemcount\x18\xf6\xd8ڦ\x01 \x01(\x05R\titemcount\x12\x1f\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12%\n" +
+	"\titemcount\x18\xf6\xd8ڦ\x01 \x01(\x05H\x00R\titemcount\x88\x01\x01\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12&\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05R\fredrivecount\x12#\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x01R\fredrivecount\x88\x01\x01\x12#\n" +
 	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x126\n" +
 	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x129\n" +
 	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x120\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"5\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdateB\f\n" +
+	"\n" +
+	"_itemcountB\x0f\n" +
+	"\r_redrivecount\"5\n" +
 	"\x16ExecutionNotRedrivable\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"G\n" +
-	"\x1dExecutionRedrivenEventDetails\x12&\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05R\fredrivecount\"\x97\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"]\n" +
+	"\x1dExecutionRedrivenEventDetails\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01B\x0f\n" +
+	"\r_redrivecount\"\x97\x02\n" +
 	"\x1cExecutionStartedEventDetails\x12\x18\n" +
 	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1b\n" +
@@ -11651,20 +11662,21 @@ const file_sfn_proto_rawDesc = "" +
 	"workername\"S\n" +
 	"\x15GetActivityTaskOutput\x12\x18\n" +
 	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12 \n" +
-	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\x9a\x02\n" +
+	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\xae\x02\n" +
 	"\x18GetExecutionHistoryInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12:\n" +
-	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12\"\n" +
+	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12+\n" +
-	"\freverseorder\x18\xf8\xf6\xe1\xad\x01 \x01(\bH\x01R\freverseorder\x88\x01\x01B\x17\n" +
-	"\x15_includeexecutiondataB\x0f\n" +
+	"\freverseorder\x18\xf8\xf6\xe1\xad\x01 \x01(\bH\x02R\freverseorder\x88\x01\x01B\x17\n" +
+	"\x15_includeexecutiondataB\r\n" +
+	"\v_maxresultsB\x0f\n" +
 	"\r_reverseorder\"k\n" +
 	"\x19GetExecutionHistoryOutput\x12-\n" +
 	"\x06events\x18\x85\xc7\xe3\x96\x01 \x03(\v2\x11.sfn.HistoryEventR\x06events\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xaf \n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc8 \n" +
 	"\fHistoryEvent\x12c\n" +
 	"\x1aactivityfailedeventdetails\x18\x9c\xcb\xfe\x82\x01 \x01(\v2\x1f.sfn.ActivityFailedEventDetailsR\x1aactivityfailedeventdetails\x12z\n" +
 	"\"activityschedulefailedeventdetails\x18\xff\xc9\xf5f \x01(\v2'.sfn.ActivityScheduleFailedEventDetailsR\"activityschedulefailedeventdetails\x12k\n" +
@@ -11693,8 +11705,8 @@ const file_sfn_proto_rawDesc = "" +
 	"\x18maprunfailedeventdetails\x18\xae\x87\xb0\x0e \x01(\v2\x1d.sfn.MapRunFailedEventDetailsR\x18maprunfailedeventdetails\x12c\n" +
 	"\x1amaprunredriveneventdetails\x18\x98\xb2\xe1\xdd\x01 \x01(\v2\x1f.sfn.MapRunRedrivenEventDetailsR\x1amaprunredriveneventdetails\x12_\n" +
 	"\x19maprunstartedeventdetails\x18\x9e\xe0\xa8W \x01(\v2\x1e.sfn.MapRunStartedEventDetailsR\x19maprunstartedeventdetails\x12f\n" +
-	"\x1bmapstatestartedeventdetails\x18\xe2\xd2\xe4\xdc\x01 \x01(\v2 .sfn.MapStateStartedEventDetailsR\x1bmapstatestartedeventdetails\x12+\n" +
-	"\x0fpreviouseventid\x18\xce\xdc\xeb| \x01(\x03R\x0fpreviouseventid\x12]\n" +
+	"\x1bmapstatestartedeventdetails\x18\xe2\xd2\xe4\xdc\x01 \x01(\v2 .sfn.MapStateStartedEventDetailsR\x1bmapstatestartedeventdetails\x120\n" +
+	"\x0fpreviouseventid\x18\xce\xdc\xeb| \x01(\x03H\x00R\x0fpreviouseventid\x88\x01\x01\x12]\n" +
 	"\x18stateenteredeventdetails\x18\x9c\xc6\xc6\xe4\x01 \x01(\v2\x1d.sfn.StateEnteredEventDetailsR\x18stateenteredeventdetails\x12Y\n" +
 	"\x17stateexitedeventdetails\x18\x8e\xd9\xe1\x0e \x01(\v2\x1c.sfn.StateExitedEventDetailsR\x17stateexitedeventdetails\x12W\n" +
 	"\x16taskfailedeventdetails\x18\x9c\xeeٓ\x01 \x01(\v2\x1b.sfn.TaskFailedEventDetailsR\x16taskfailedeventdetails\x12_\n" +
@@ -11706,11 +11718,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\x19tasksucceededeventdetails\x18\x9c\xe2\xfc\t \x01(\v2\x1e.sfn.TaskSucceededEventDetailsR\x19tasksucceededeventdetails\x12]\n" +
 	"\x18tasktimedouteventdetails\x18\xe0\x9d؝\x01 \x01(\v2\x1d.sfn.TaskTimedOutEventDetailsR\x18tasktimedouteventdetails\x12 \n" +
 	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\tR\ttimestamp\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.HistoryEventTypeR\x04type\"W\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.HistoryEventTypeR\x04typeB\x12\n" +
+	"\x10_previouseventid\"W\n" +
 	" HistoryEventExecutionDataDetails\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xf0\x06\n" +
+	"_truncated\"\xa7\a\n" +
 	"\x0eInspectionData\x12*\n" +
 	"\x0eafterarguments\x18\xac\xb8\xc0\xae\x01 \x01(\tR\x0eafterarguments\x12*\n" +
 	"\x0eafterinputpath\x18ɗ\xbc\xa9\x01 \x01(\tR\x0eafterinputpath\x12-\n" +
@@ -11722,14 +11735,16 @@ const file_sfn_proto_rawDesc = "" +
 	"\x0fafterresultpath\x18\xc0\xf6\xf6\xe4\x01 \x01(\tR\x0fafterresultpath\x124\n" +
 	"\x13afterresultselector\x18ޟ\xad\xd3\x01 \x01(\tR\x13afterresultselector\x12B\n" +
 	"\ferrordetails\x18\xea\xcf\xfd[ \x01(\v2\x1b.sfn.InspectionErrorDetailsR\ferrordetails\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12)\n" +
-	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05R\x0emaxconcurrency\x128\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12.\n" +
+	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05H\x00R\x0emaxconcurrency\x88\x01\x01\x128\n" +
 	"\arequest\x18\xb3\x93\xa8\xf5\x01 \x01(\v2\x1a.sfn.InspectionDataRequestR\arequest\x12;\n" +
 	"\bresponse\x18߃\xf7\xca\x01 \x01(\v2\x1b.sfn.InspectionDataResponseR\bresponse\x12\x19\n" +
-	"\x06result\x18\xa5\xec\xddQ \x01(\tR\x06result\x127\n" +
-	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x05R\x15toleratedfailurecount\x12A\n" +
+	"\x06result\x18\xa5\xec\xddQ \x01(\tR\x06result\x12<\n" +
+	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x05H\x01R\x15toleratedfailurecount\x88\x01\x01\x12A\n" +
 	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentage\x12\x1f\n" +
-	"\tvariables\x18\xc3ŭM \x01(\tR\tvariables\"\x9e\x01\n" +
+	"\tvariables\x18\xc3ŭM \x01(\tR\tvariablesB\x11\n" +
+	"\x0f_maxconcurrencyB\x18\n" +
+	"\x16_toleratedfailurecount\"\x9e\x01\n" +
 	"\x15InspectionDataRequest\x12\x16\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x12\x1c\n" +
 	"\aheaders\x18곗\xb3\x01 \x01(\tR\aheaders\x12\x19\n" +
@@ -11743,15 +11758,18 @@ const file_sfn_proto_rawDesc = "" +
 	"\n" +
 	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
 	"statuscode\x12(\n" +
-	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tR\rstatusmessage\"\xa4\x01\n" +
-	"\x16InspectionErrorDetails\x12\"\n" +
+	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tR\rstatusmessage\"\xf1\x01\n" +
+	"\x16InspectionErrorDetails\x12'\n" +
 	"\n" +
-	"catchindex\x18\xc9\xc1\xba\x8a\x01 \x01(\x05R\n" +
-	"catchindex\x12C\n" +
-	"\x1bretrybackoffintervalseconds\x18\x90\xec\xd7A \x01(\x05R\x1bretrybackoffintervalseconds\x12!\n" +
+	"catchindex\x18\xc9\xc1\xba\x8a\x01 \x01(\x05H\x00R\n" +
+	"catchindex\x88\x01\x01\x12H\n" +
+	"\x1bretrybackoffintervalseconds\x18\x90\xec\xd7A \x01(\x05H\x01R\x1bretrybackoffintervalseconds\x88\x01\x01\x12&\n" +
 	"\n" +
-	"retryindex\x18\xd0\xe9\x92\x03 \x01(\x05R\n" +
-	"retryindex\")\n" +
+	"retryindex\x18\xd0\xe9\x92\x03 \x01(\x05H\x02R\n" +
+	"retryindex\x88\x01\x01B\r\n" +
+	"\v_catchindexB\x1e\n" +
+	"\x1c_retrybackoffintervalsecondsB\r\n" +
+	"\v_retryindex\")\n" +
 	"\n" +
 	"InvalidArn\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
@@ -11783,13 +11801,14 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\\\n" +
 	"(LambdaFunctionScheduleFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xa0\x02\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xba\x02\n" +
 	"#LambdaFunctionScheduledEventDetails\x12\x18\n" +
 	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12A\n" +
-	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x12.\n" +
-	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03R\x10timeoutinseconds\"Y\n" +
+	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x123\n" +
+	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x00R\x10timeoutinseconds\x88\x01\x01B\x13\n" +
+	"\x11_timeoutinseconds\"Y\n" +
 	"%LambdaFunctionStartFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\x92\x01\n" +
@@ -11798,63 +11817,69 @@ const file_sfn_proto_rawDesc = "" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\"V\n" +
 	"\"LambdaFunctionTimedOutEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"Z\n" +
-	"\x13ListActivitiesInput\x12\"\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"n\n" +
+	"\x13ListActivitiesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"q\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"q\n" +
 	"\x14ListActivitiesOutput\x128\n" +
 	"\n" +
 	"activities\x18\x99\xe5\xd3N \x03(\v2\x15.sfn.ActivityListItemR\n" +
 	"activities\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xad\x02\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc1\x02\n" +
 	"\x13ListExecutionsInput\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\"\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12E\n" +
 	"\rredrivefilter\x18۹\xe1\xd0\x01 \x01(\x0e2\x1b.sfn.ExecutionRedriveFilterR\rredrivefilter\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12;\n" +
-	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusR\fstatusfilter\"r\n" +
+	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusR\fstatusfilterB\r\n" +
+	"\v_maxresults\"r\n" +
 	"\x14ListExecutionsOutput\x129\n" +
 	"\n" +
 	"executions\x18ӑ\x896 \x03(\v2\x16.sfn.ExecutionListItemR\n" +
 	"executions\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x7f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x93\x01\n" +
 	"\x10ListMapRunsInput\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\"\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"f\n" +
 	"\x11ListMapRunsOutput\x120\n" +
 	"\amapruns\x18\x98\xa9\xc5\x10 \x03(\v2\x13.sfn.MapRunListItemR\amapruns\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x91\x01\n" +
-	"\x1cListStateMachineAliasesInput\x12\"\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa5\x01\n" +
+	"\x1cListStateMachineAliasesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\x96\x01\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\r\n" +
+	"\v_maxresults\"\x96\x01\n" +
 	"\x1dListStateMachineAliasesOutput\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12T\n" +
-	"\x13statemachinealiases\x18\x96\xb2\xe4\xd7\x01 \x03(\v2\x1e.sfn.StateMachineAliasListItemR\x13statemachinealiases\"\x92\x01\n" +
-	"\x1dListStateMachineVersionsInput\x12\"\n" +
+	"\x13statemachinealiases\x18\x96\xb2\xe4\xd7\x01 \x03(\v2\x1e.sfn.StateMachineAliasListItemR\x13statemachinealiases\"\xa6\x01\n" +
+	"\x1dListStateMachineVersionsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\x9a\x01\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\r\n" +
+	"\v_maxresults\"\x9a\x01\n" +
 	"\x1eListStateMachineVersionsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12W\n" +
-	"\x14statemachineversions\x18\xa7\xbb\xc5? \x03(\v2 .sfn.StateMachineVersionListItemR\x14statemachineversions\"]\n" +
-	"\x16ListStateMachinesInput\x12\"\n" +
+	"\x14statemachineversions\x18\xa7\xbb\xc5? \x03(\v2 .sfn.StateMachineVersionListItemR\x14statemachineversions\"q\n" +
+	"\x16ListStateMachinesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x7f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x7f\n" +
 	"\x17ListStateMachinesOutput\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12C\n" +
 	"\rstatemachines\x18\xf5\x8e\x86\xce\x01 \x03(\v2\x19.sfn.StateMachineListItemR\rstatemachines\"?\n" +
@@ -11868,48 +11893,55 @@ const file_sfn_proto_rawDesc = "" +
 	"\fdestinations\x18\xa5\xdab \x03(\v2\x13.sfn.LogDestinationR\fdestinations\x12:\n" +
 	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12'\n" +
 	"\x05level\x18\xde\xcf\xe7\xdc\x01 \x01(\x0e2\r.sfn.LogLevelR\x05levelB\x17\n" +
-	"\x15_includeexecutiondata\"J\n" +
-	"\x18MapIterationEventDetails\x12\x17\n" +
-	"\x05index\x18\xacӪH \x01(\x05R\x05index\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\xf6\x02\n" +
+	"\x15_includeexecutiondata\"Y\n" +
+	"\x18MapIterationEventDetails\x12\x1c\n" +
+	"\x05index\x18\xacӪH \x01(\x05H\x00R\x05index\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04nameB\b\n" +
+	"\x06_index\"\xad\x03\n" +
 	"\x15MapRunExecutionCounts\x12\x1c\n" +
 	"\aaborted\x18х\xf4\xb5\x01 \x01(\x03R\aaborted\x12\x19\n" +
-	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x127\n" +
-	"\x15failuresnotredrivable\x18\xa4\x9e\xfd8 \x01(\x03R\x15failuresnotredrivable\x12\x1c\n" +
-	"\apending\x18\xbd\xfe\xfd\xcd\x01 \x01(\x03R\apending\x12*\n" +
-	"\x0ependingredrive\x18\x90϶\xc1\x01 \x01(\x03R\x0ependingredrive\x12)\n" +
+	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x12<\n" +
+	"\x15failuresnotredrivable\x18\xa4\x9e\xfd8 \x01(\x03H\x00R\x15failuresnotredrivable\x88\x01\x01\x12\x1c\n" +
+	"\apending\x18\xbd\xfe\xfd\xcd\x01 \x01(\x03R\apending\x12/\n" +
+	"\x0ependingredrive\x18\x90϶\xc1\x01 \x01(\x03H\x01R\x0ependingredrive\x88\x01\x01\x12)\n" +
 	"\x0eresultswritten\x18\xf1Ɍ* \x01(\x03R\x0eresultswritten\x12\x1c\n" +
 	"\arunning\x18\xcd\xee\xfa\xa3\x01 \x01(\x03R\arunning\x12\x1f\n" +
 	"\tsucceeded\x18\xf3\xdf\xd9X \x01(\x03R\tsucceeded\x12\x1e\n" +
 	"\btimedout\x18\xe5\xcb\xe0\x9f\x01 \x01(\x03R\btimedout\x12\x17\n" +
-	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05total\"L\n" +
+	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05totalB\x18\n" +
+	"\x16_failuresnotredrivableB\x11\n" +
+	"\x0f_pendingredrive\"L\n" +
 	"\x18MapRunFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xf1\x02\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xa8\x03\n" +
 	"\x10MapRunItemCounts\x12\x1c\n" +
 	"\aaborted\x18х\xf4\xb5\x01 \x01(\x03R\aaborted\x12\x19\n" +
-	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x127\n" +
-	"\x15failuresnotredrivable\x18\xa4\x9e\xfd8 \x01(\x03R\x15failuresnotredrivable\x12\x1c\n" +
-	"\apending\x18\xbd\xfe\xfd\xcd\x01 \x01(\x03R\apending\x12*\n" +
-	"\x0ependingredrive\x18\x90϶\xc1\x01 \x01(\x03R\x0ependingredrive\x12)\n" +
+	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x12<\n" +
+	"\x15failuresnotredrivable\x18\xa4\x9e\xfd8 \x01(\x03H\x00R\x15failuresnotredrivable\x88\x01\x01\x12\x1c\n" +
+	"\apending\x18\xbd\xfe\xfd\xcd\x01 \x01(\x03R\apending\x12/\n" +
+	"\x0ependingredrive\x18\x90϶\xc1\x01 \x01(\x03H\x01R\x0ependingredrive\x88\x01\x01\x12)\n" +
 	"\x0eresultswritten\x18\xf1Ɍ* \x01(\x03R\x0eresultswritten\x12\x1c\n" +
 	"\arunning\x18\xcd\xee\xfa\xa3\x01 \x01(\x03R\arunning\x12\x1f\n" +
 	"\tsucceeded\x18\xf3\xdf\xd9X \x01(\x03R\tsucceeded\x12\x1e\n" +
 	"\btimedout\x18\xe5\xcb\xe0\x9f\x01 \x01(\x03R\btimedout\x12\x17\n" +
-	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05total\"\xc8\x01\n" +
+	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05totalB\x18\n" +
+	"\x16_failuresnotredrivableB\x11\n" +
+	"\x0f_pendingredrive\"\xc8\x01\n" +
 	"\x0eMapRunListItem\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"e\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"{\n" +
 	"\x1aMapRunRedrivenEventDetails\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12&\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05R\fredrivecount\"<\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01B\x0f\n" +
+	"\r_redrivecount\"<\n" +
 	"\x19MapRunStartedEventDetails\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"8\n" +
-	"\x1bMapStateStartedEventDetails\x12\x19\n" +
-	"\x06length\x18\x96\xec\xc0\x1e \x01(\x05R\x06length\"7\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"H\n" +
+	"\x1bMapStateStartedEventDetails\x12\x1e\n" +
+	"\x06length\x18\x96\xec\xc0\x1e \x01(\x05H\x00R\x06length\x88\x01\x01B\t\n" +
+	"\a_length\"7\n" +
 	"\x18MissingRequiredParameter\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
 	"\x0fMockErrorOutput\x12\x17\n" +
@@ -12037,17 +12069,19 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xc5\x02\n" +
-	"\x19TaskScheduledEventDetails\x121\n" +
-	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03R\x12heartbeatinseconds\x12!\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xfb\x02\n" +
+	"\x19TaskScheduledEventDetails\x126\n" +
+	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03H\x00R\x12heartbeatinseconds\x88\x01\x01\x12!\n" +
 	"\n" +
 	"parameters\x18\xdaݔE \x01(\tR\n" +
 	"parameters\x12\x19\n" +
 	"\x06region\x18\xfe\xfc\xeb\x18 \x01(\tR\x06region\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
 	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\x12A\n" +
-	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x12.\n" +
-	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03R\x10timeoutinseconds\"\x95\x01\n" +
+	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x123\n" +
+	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x01R\x10timeoutinseconds\x88\x01\x01B\x15\n" +
+	"\x13_heartbeatinsecondsB\x13\n" +
+	"\x11_timeoutinseconds\"\x95\x01\n" +
 	"\x1bTaskStartFailedEventDetails\x12\x17\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
@@ -12077,12 +12111,14 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xf0\x01\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xad\x02\n" +
 	"\x16TestStateConfiguration\x122\n" +
 	"\x12errorcausedbystate\x18ϥՕ\x01 \x01(\tR\x12errorcausedbystate\x120\n" +
-	"\x11mapitemreaderdata\x18\xe6\xcb\xfc\xef\x01 \x01(\tR\x11mapitemreaderdata\x12>\n" +
-	"\x18mapiterationfailurecount\x18\xb2͉\xc8\x01 \x01(\x05R\x18mapiterationfailurecount\x120\n" +
-	"\x11retrierretrycount\x18\xe0Ƚ\x83\x01 \x01(\x05R\x11retrierretrycount\"\xc6\x03\n" +
+	"\x11mapitemreaderdata\x18\xe6\xcb\xfc\xef\x01 \x01(\tR\x11mapitemreaderdata\x12C\n" +
+	"\x18mapiterationfailurecount\x18\xb2͉\xc8\x01 \x01(\x05H\x00R\x18mapiterationfailurecount\x88\x01\x01\x125\n" +
+	"\x11retrierretrycount\x18\xe0Ƚ\x83\x01 \x01(\x05H\x01R\x11retrierretrycount\x88\x01\x01B\x1b\n" +
+	"\x19_mapiterationfailurecountB\x14\n" +
+	"\x12_retrierretrycount\"\xc6\x03\n" +
 	"\x0eTestStateInput\x12\x1b\n" +
 	"\acontext\x18\xfd\xa0\x9cd \x01(\tR\acontext\x12!\n" +
 	"\n" +
@@ -12114,12 +12150,14 @@ const file_sfn_proto_rawDesc = "" +
 	"\x12UntagResourceInput\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12\x1b\n" +
 	"\atagkeys\x18\x9c\x9f\xca% \x03(\tR\atagkeys\"\x15\n" +
-	"\x13UntagResourceOutput\"\xdb\x01\n" +
+	"\x13UntagResourceOutput\"\x92\x02\n" +
 	"\x11UpdateMapRunInput\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12)\n" +
-	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05R\x0emaxconcurrency\x127\n" +
-	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03R\x15toleratedfailurecount\x12A\n" +
-	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentage\"\x14\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12.\n" +
+	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05H\x00R\x0emaxconcurrency\x88\x01\x01\x12<\n" +
+	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03H\x01R\x15toleratedfailurecount\x88\x01\x01\x12A\n" +
+	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentageB\x11\n" +
+	"\x0f_maxconcurrencyB\x18\n" +
+	"\x16_toleratedfailurecount\"\x14\n" +
 	"\x12UpdateMapRunOutput\"\xd7\x01\n" +
 	"\x1cUpdateStateMachineAliasInput\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12Y\n" +
@@ -12154,16 +12192,17 @@ const file_sfn_proto_rawDesc = "" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12\x1d\n" +
 	"\blocation\x18\xa7\xd3\xd6_ \x01(\tR\blocation\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12J\n" +
-	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverity\"\xe7\x01\n" +
+	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverity\"\xfb\x01\n" +
 	"#ValidateStateMachineDefinitionInput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
-	"definition\x12\"\n" +
+	"definition\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12J\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12J\n" +
 	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverity\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\"\xf9\x01\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04typeB\r\n" +
+	"\v_maxresults\"\xf9\x01\n" +
 	"$ValidateStateMachineDefinitionOutput\x12R\n" +
 	"\vdiagnostics\x18\xf8\xa7\x82L \x03(\v2-.sfn.ValidateStateMachineDefinitionDiagnosticR\vdiagnostics\x12H\n" +
 	"\x06result\x18\xa5\xec\xddQ \x01(\x0e2-.sfn.ValidateStateMachineDefinitionResultCodeR\x06result\x12%\n" +
@@ -12766,15 +12805,41 @@ func file_sfn_proto_init() {
 	if File_sfn_proto != nil {
 		return
 	}
+	file_sfn_proto_msgTypes[6].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[11].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[12].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[13].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[20].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[33].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[35].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[42].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[49].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[51].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[57].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[59].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[60].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[61].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[64].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[79].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[83].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[85].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[87].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[89].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[91].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[93].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[98].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[99].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[100].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[102].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[104].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[106].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[145].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[153].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[154].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[157].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[160].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[164].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[167].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[168].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -1137,9 +1137,9 @@ func (x *AlarmMuteRuleSummary) GetStatus() AlarmMuteRuleStatus {
 
 type AlarmPromQLCriteria struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Pendingperiod  int32                  `protobuf:"varint,308773910,opt,name=pendingperiod,proto3" json:"pendingperiod,omitempty"`
+	Pendingperiod  *int32                 `protobuf:"varint,308773910,opt,name=pendingperiod,proto3,oneof" json:"pendingperiod,omitempty"`
 	Query          string                 `protobuf:"bytes,512354180,opt,name=query,proto3" json:"query,omitempty"`
-	Recoveryperiod int32                  `protobuf:"varint,403988320,opt,name=recoveryperiod,proto3" json:"recoveryperiod,omitempty"`
+	Recoveryperiod *int32                 `protobuf:"varint,403988320,opt,name=recoveryperiod,proto3,oneof" json:"recoveryperiod,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1175,8 +1175,8 @@ func (*AlarmPromQLCriteria) Descriptor() ([]byte, []int) {
 }
 
 func (x *AlarmPromQLCriteria) GetPendingperiod() int32 {
-	if x != nil {
-		return x.Pendingperiod
+	if x != nil && x.Pendingperiod != nil {
+		return *x.Pendingperiod
 	}
 	return 0
 }
@@ -1189,8 +1189,8 @@ func (x *AlarmPromQLCriteria) GetQuery() string {
 }
 
 func (x *AlarmPromQLCriteria) GetRecoveryperiod() int32 {
-	if x != nil {
-		return x.Recoveryperiod
+	if x != nil && x.Recoveryperiod != nil {
+		return *x.Recoveryperiod
 	}
 	return 0
 }
@@ -1449,8 +1449,8 @@ type CompositeAlarm struct {
 	Actionssuppressedby                ActionsSuppressedBy    `protobuf:"varint,377750064,opt,name=actionssuppressedby,proto3,enum=cloudwatch.ActionsSuppressedBy" json:"actionssuppressedby,omitempty"`
 	Actionssuppressedreason            string                 `protobuf:"bytes,20815779,opt,name=actionssuppressedreason,proto3" json:"actionssuppressedreason,omitempty"`
 	Actionssuppressor                  string                 `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3" json:"actionssuppressor,omitempty"`
-	Actionssuppressorextensionperiod   int32                  `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3" json:"actionssuppressorextensionperiod,omitempty"`
-	Actionssuppressorwaitperiod        int32                  `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3" json:"actionssuppressorwaitperiod,omitempty"`
+	Actionssuppressorextensionperiod   *int32                 `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3,oneof" json:"actionssuppressorextensionperiod,omitempty"`
+	Actionssuppressorwaitperiod        *int32                 `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3,oneof" json:"actionssuppressorwaitperiod,omitempty"`
 	Alarmactions                       []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
 	Alarmarn                           string                 `protobuf:"bytes,276019462,opt,name=alarmarn,proto3" json:"alarmarn,omitempty"`
 	Alarmconfigurationupdatedtimestamp string                 `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3" json:"alarmconfigurationupdatedtimestamp,omitempty"`
@@ -1527,15 +1527,15 @@ func (x *CompositeAlarm) GetActionssuppressor() string {
 }
 
 func (x *CompositeAlarm) GetActionssuppressorextensionperiod() int32 {
-	if x != nil {
-		return x.Actionssuppressorextensionperiod
+	if x != nil && x.Actionssuppressorextensionperiod != nil {
+		return *x.Actionssuppressorextensionperiod
 	}
 	return 0
 }
 
 func (x *CompositeAlarm) GetActionssuppressorwaitperiod() int32 {
-	if x != nil {
-		return x.Actionssuppressorwaitperiod
+	if x != nil && x.Actionssuppressorwaitperiod != nil {
+		return *x.Actionssuppressorwaitperiod
 	}
 	return 0
 }
@@ -1724,7 +1724,7 @@ type DashboardEntry struct {
 	Dashboardarn  string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
 	Dashboardname string                 `protobuf:"bytes,506599873,opt,name=dashboardname,proto3" json:"dashboardname,omitempty"`
 	Lastmodified  string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Size          int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size          *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1781,8 +1781,8 @@ func (x *DashboardEntry) GetLastmodified() string {
 }
 
 func (x *DashboardEntry) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -2602,7 +2602,7 @@ type DescribeAlarmHistoryInput struct {
 	Alarmtypes         []AlarmType            `protobuf:"varint,445751884,rep,packed,name=alarmtypes,proto3,enum=cloudwatch.AlarmType" json:"alarmtypes,omitempty"`
 	Enddate            string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
 	Historyitemtype    HistoryItemType        `protobuf:"varint,442439537,opt,name=historyitemtype,proto3,enum=cloudwatch.HistoryItemType" json:"historyitemtype,omitempty"`
-	Maxrecords         int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Nexttoken          string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Scanby             ScanBy                 `protobuf:"varint,344142854,opt,name=scanby,proto3,enum=cloudwatch.ScanBy" json:"scanby,omitempty"`
 	Startdate          string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
@@ -2676,8 +2676,8 @@ func (x *DescribeAlarmHistoryInput) GetHistoryitemtype() HistoryItemType {
 }
 
 func (x *DescribeAlarmHistoryInput) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -2761,7 +2761,7 @@ type DescribeAlarmsForMetricInput struct {
 	Extendedstatistic string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
 	Metricname        string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Namespace         string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Period            int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
+	Period            *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Statistic         Statistic              `protobuf:"varint,67293470,opt,name=statistic,proto3,enum=cloudwatch.Statistic" json:"statistic,omitempty"`
 	Unit              StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -2827,8 +2827,8 @@ func (x *DescribeAlarmsForMetricInput) GetNamespace() string {
 }
 
 func (x *DescribeAlarmsForMetricInput) GetPeriod() int32 {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return 0
 }
@@ -2898,7 +2898,7 @@ type DescribeAlarmsInput struct {
 	Alarmnames          []string               `protobuf:"bytes,90874583,rep,name=alarmnames,proto3" json:"alarmnames,omitempty"`
 	Alarmtypes          []AlarmType            `protobuf:"varint,445751884,rep,packed,name=alarmtypes,proto3,enum=cloudwatch.AlarmType" json:"alarmtypes,omitempty"`
 	Childrenofalarmname string                 `protobuf:"bytes,204127700,opt,name=childrenofalarmname,proto3" json:"childrenofalarmname,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Parentsofalarmname  string                 `protobuf:"bytes,512433260,opt,name=parentsofalarmname,proto3" json:"parentsofalarmname,omitempty"`
 	Statevalue          StateValue             `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
@@ -2972,8 +2972,8 @@ func (x *DescribeAlarmsInput) GetChildrenofalarmname() string {
 }
 
 func (x *DescribeAlarmsInput) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -3063,7 +3063,7 @@ type DescribeAnomalyDetectorsInput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectortypes []AnomalyDetectorType  `protobuf:"varint,274334014,rep,packed,name=anomalydetectortypes,proto3,enum=cloudwatch.AnomalyDetectorType" json:"anomalydetectortypes,omitempty"`
 	Dimensions           []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Maxresults           int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults           *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Metricname           string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Namespace            string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Nexttoken            string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
@@ -3116,8 +3116,8 @@ func (x *DescribeAnomalyDetectorsInput) GetDimensions() []*Dimension {
 }
 
 func (x *DescribeAnomalyDetectorsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3197,7 +3197,7 @@ func (x *DescribeAnomalyDetectorsOutput) GetNexttoken() string {
 
 type DescribeInsightRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3234,8 +3234,8 @@ func (*DescribeInsightRulesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeInsightRulesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -4266,7 +4266,7 @@ func (x *GetDatasetOutput) GetKmskeyarn() string {
 type GetInsightRuleReportInput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Endtime             string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Maxcontributorcount int32                  `protobuf:"varint,272640614,opt,name=maxcontributorcount,proto3" json:"maxcontributorcount,omitempty"`
+	Maxcontributorcount *int32                 `protobuf:"varint,272640614,opt,name=maxcontributorcount,proto3,oneof" json:"maxcontributorcount,omitempty"`
 	Metrics             []string               `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
 	Orderby             string                 `protobuf:"bytes,353010019,opt,name=orderby,proto3" json:"orderby,omitempty"`
 	Period              int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
@@ -4314,8 +4314,8 @@ func (x *GetInsightRuleReportInput) GetEndtime() string {
 }
 
 func (x *GetInsightRuleReportInput) GetMaxcontributorcount() int32 {
-	if x != nil {
-		return x.Maxcontributorcount
+	if x != nil && x.Maxcontributorcount != nil {
+		return *x.Maxcontributorcount
 	}
 	return 0
 }
@@ -4359,7 +4359,7 @@ type GetInsightRuleReportOutput struct {
 	state                  protoimpl.MessageState        `protogen:"open.v1"`
 	Aggregatevalue         float64                       `protobuf:"fixed64,225313242,opt,name=aggregatevalue,proto3" json:"aggregatevalue,omitempty"`
 	Aggregationstatistic   string                        `protobuf:"bytes,333233758,opt,name=aggregationstatistic,proto3" json:"aggregationstatistic,omitempty"`
-	Approximateuniquecount int64                         `protobuf:"varint,55617722,opt,name=approximateuniquecount,proto3" json:"approximateuniquecount,omitempty"`
+	Approximateuniquecount *int64                        `protobuf:"varint,55617722,opt,name=approximateuniquecount,proto3,oneof" json:"approximateuniquecount,omitempty"`
 	Contributors           []*InsightRuleContributor     `protobuf:"bytes,168168444,rep,name=contributors,proto3" json:"contributors,omitempty"`
 	Keylabels              []string                      `protobuf:"bytes,16074444,rep,name=keylabels,proto3" json:"keylabels,omitempty"`
 	Metricdatapoints       []*InsightRuleMetricDatapoint `protobuf:"bytes,117991067,rep,name=metricdatapoints,proto3" json:"metricdatapoints,omitempty"`
@@ -4412,8 +4412,8 @@ func (x *GetInsightRuleReportOutput) GetAggregationstatistic() string {
 }
 
 func (x *GetInsightRuleReportOutput) GetApproximateuniquecount() int64 {
-	if x != nil {
-		return x.Approximateuniquecount
+	if x != nil && x.Approximateuniquecount != nil {
+		return *x.Approximateuniquecount
 	}
 	return 0
 }
@@ -4443,7 +4443,7 @@ type GetMetricDataInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Endtime           string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Labeloptions      *LabelOptions          `protobuf:"bytes,184949902,opt,name=labeloptions,proto3" json:"labeloptions,omitempty"`
-	Maxdatapoints     int32                  `protobuf:"varint,97504835,opt,name=maxdatapoints,proto3" json:"maxdatapoints,omitempty"`
+	Maxdatapoints     *int32                 `protobuf:"varint,97504835,opt,name=maxdatapoints,proto3,oneof" json:"maxdatapoints,omitempty"`
 	Metricdataqueries []*MetricDataQuery     `protobuf:"bytes,92209504,rep,name=metricdataqueries,proto3" json:"metricdataqueries,omitempty"`
 	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Scanby            ScanBy                 `protobuf:"varint,344142854,opt,name=scanby,proto3,enum=cloudwatch.ScanBy" json:"scanby,omitempty"`
@@ -4497,8 +4497,8 @@ func (x *GetMetricDataInput) GetLabeloptions() *LabelOptions {
 }
 
 func (x *GetMetricDataInput) GetMaxdatapoints() int32 {
-	if x != nil {
-		return x.Maxdatapoints
+	if x != nil && x.Maxdatapoints != nil {
+		return *x.Maxdatapoints
 	}
 	return 0
 }
@@ -5886,7 +5886,7 @@ func (x *LimitExceededFault) GetMessage() string {
 type ListAlarmMuteRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Alarmname     string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
-	Maxrecords    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Statuses      []AlarmMuteRuleStatus  `protobuf:"varint,374056024,rep,packed,name=statuses,proto3,enum=cloudwatch.AlarmMuteRuleStatus" json:"statuses,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -5931,8 +5931,8 @@ func (x *ListAlarmMuteRulesInput) GetAlarmname() string {
 }
 
 func (x *ListAlarmMuteRulesInput) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -6109,7 +6109,7 @@ func (x *ListDashboardsOutput) GetNexttoken() string {
 
 type ListManagedInsightRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -6147,8 +6147,8 @@ func (*ListManagedInsightRulesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListManagedInsightRulesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6221,7 +6221,7 @@ func (x *ListManagedInsightRulesOutput) GetNexttoken() string {
 
 type ListMetricStreamsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6258,8 +6258,8 @@ func (*ListMetricStreamsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMetricStreamsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6856,12 +6856,12 @@ type MetricAlarm struct {
 	Alarmdescription                   string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
 	Alarmname                          string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
 	Comparisonoperator                 ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
-	Datapointstoalarm                  int32                  `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3" json:"datapointstoalarm,omitempty"`
+	Datapointstoalarm                  *int32                 `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3,oneof" json:"datapointstoalarm,omitempty"`
 	Dimensions                         []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Evaluatelowsamplecountpercentile   string                 `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3" json:"evaluatelowsamplecountpercentile,omitempty"`
 	Evaluationcriteria                 *EvaluationCriteria    `protobuf:"bytes,307988387,opt,name=evaluationcriteria,proto3" json:"evaluationcriteria,omitempty"`
-	Evaluationinterval                 int32                  `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3" json:"evaluationinterval,omitempty"`
-	Evaluationperiods                  int32                  `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3" json:"evaluationperiods,omitempty"`
+	Evaluationinterval                 *int32                 `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3,oneof" json:"evaluationinterval,omitempty"`
+	Evaluationperiods                  *int32                 `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3,oneof" json:"evaluationperiods,omitempty"`
 	Evaluationstate                    EvaluationState        `protobuf:"varint,338863857,opt,name=evaluationstate,proto3,enum=cloudwatch.EvaluationState" json:"evaluationstate,omitempty"`
 	Extendedstatistic                  string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
 	Insufficientdataactions            []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
@@ -6869,7 +6869,7 @@ type MetricAlarm struct {
 	Metrics                            []*MetricDataQuery     `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
 	Namespace                          string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Okactions                          []string               `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
-	Period                             int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
+	Period                             *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Statereason                        string                 `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
 	Statereasondata                    string                 `protobuf:"bytes,262771075,opt,name=statereasondata,proto3" json:"statereasondata,omitempty"`
 	Statetransitionedtimestamp         string                 `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3" json:"statetransitionedtimestamp,omitempty"`
@@ -6964,8 +6964,8 @@ func (x *MetricAlarm) GetComparisonoperator() ComparisonOperator {
 }
 
 func (x *MetricAlarm) GetDatapointstoalarm() int32 {
-	if x != nil {
-		return x.Datapointstoalarm
+	if x != nil && x.Datapointstoalarm != nil {
+		return *x.Datapointstoalarm
 	}
 	return 0
 }
@@ -6992,15 +6992,15 @@ func (x *MetricAlarm) GetEvaluationcriteria() *EvaluationCriteria {
 }
 
 func (x *MetricAlarm) GetEvaluationinterval() int32 {
-	if x != nil {
-		return x.Evaluationinterval
+	if x != nil && x.Evaluationinterval != nil {
+		return *x.Evaluationinterval
 	}
 	return 0
 }
 
 func (x *MetricAlarm) GetEvaluationperiods() int32 {
-	if x != nil {
-		return x.Evaluationperiods
+	if x != nil && x.Evaluationperiods != nil {
+		return *x.Evaluationperiods
 	}
 	return 0
 }
@@ -7055,8 +7055,8 @@ func (x *MetricAlarm) GetOkactions() []string {
 }
 
 func (x *MetricAlarm) GetPeriod() int32 {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return 0
 }
@@ -7182,7 +7182,7 @@ type MetricDataQuery struct {
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Label         string                 `protobuf:"bytes,516747934,opt,name=label,proto3" json:"label,omitempty"`
 	Metricstat    *MetricStat            `protobuf:"bytes,167166628,opt,name=metricstat,proto3" json:"metricstat,omitempty"`
-	Period        int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
+	Period        *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Returndata    *bool                  `protobuf:"varint,512985704,opt,name=returndata,proto3,oneof" json:"returndata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7254,8 +7254,8 @@ func (x *MetricDataQuery) GetMetricstat() *MetricStat {
 }
 
 func (x *MetricDataQuery) GetPeriod() int32 {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return 0
 }
@@ -7357,7 +7357,7 @@ type MetricDatum struct {
 	Dimensions        []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Metricname        string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Statisticvalues   *StatisticSet          `protobuf:"bytes,92623908,opt,name=statisticvalues,proto3" json:"statisticvalues,omitempty"`
-	Storageresolution int32                  `protobuf:"varint,194430293,opt,name=storageresolution,proto3" json:"storageresolution,omitempty"`
+	Storageresolution *int32                 `protobuf:"varint,194430293,opt,name=storageresolution,proto3,oneof" json:"storageresolution,omitempty"`
 	Timestamp         string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Unit              StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
 	Value             float64                `protobuf:"fixed64,289929579,opt,name=value,proto3" json:"value,omitempty"`
@@ -7425,8 +7425,8 @@ func (x *MetricDatum) GetStatisticvalues() *StatisticSet {
 }
 
 func (x *MetricDatum) GetStorageresolution() int32 {
-	if x != nil {
-		return x.Storageresolution
+	if x != nil && x.Storageresolution != nil {
+		return *x.Storageresolution
 	}
 	return 0
 }
@@ -8207,8 +8207,8 @@ type PutCompositeAlarmInput struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Actionsenabled                   *bool                  `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
 	Actionssuppressor                string                 `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3" json:"actionssuppressor,omitempty"`
-	Actionssuppressorextensionperiod int32                  `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3" json:"actionssuppressorextensionperiod,omitempty"`
-	Actionssuppressorwaitperiod      int32                  `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3" json:"actionssuppressorwaitperiod,omitempty"`
+	Actionssuppressorextensionperiod *int32                 `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3,oneof" json:"actionssuppressorextensionperiod,omitempty"`
+	Actionssuppressorwaitperiod      *int32                 `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3,oneof" json:"actionssuppressorwaitperiod,omitempty"`
 	Alarmactions                     []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
 	Alarmdescription                 string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
 	Alarmname                        string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
@@ -8265,15 +8265,15 @@ func (x *PutCompositeAlarmInput) GetActionssuppressor() string {
 }
 
 func (x *PutCompositeAlarmInput) GetActionssuppressorextensionperiod() int32 {
-	if x != nil {
-		return x.Actionssuppressorextensionperiod
+	if x != nil && x.Actionssuppressorextensionperiod != nil {
+		return *x.Actionssuppressorextensionperiod
 	}
 	return 0
 }
 
 func (x *PutCompositeAlarmInput) GetActionssuppressorwaitperiod() int32 {
-	if x != nil {
-		return x.Actionssuppressorwaitperiod
+	if x != nil && x.Actionssuppressorwaitperiod != nil {
+		return *x.Actionssuppressorwaitperiod
 	}
 	return 0
 }
@@ -8638,19 +8638,19 @@ type PutMetricAlarmInput struct {
 	Alarmdescription                 string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
 	Alarmname                        string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
 	Comparisonoperator               ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
-	Datapointstoalarm                int32                  `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3" json:"datapointstoalarm,omitempty"`
+	Datapointstoalarm                *int32                 `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3,oneof" json:"datapointstoalarm,omitempty"`
 	Dimensions                       []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Evaluatelowsamplecountpercentile string                 `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3" json:"evaluatelowsamplecountpercentile,omitempty"`
 	Evaluationcriteria               *EvaluationCriteria    `protobuf:"bytes,307988387,opt,name=evaluationcriteria,proto3" json:"evaluationcriteria,omitempty"`
-	Evaluationinterval               int32                  `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3" json:"evaluationinterval,omitempty"`
-	Evaluationperiods                int32                  `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3" json:"evaluationperiods,omitempty"`
+	Evaluationinterval               *int32                 `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3,oneof" json:"evaluationinterval,omitempty"`
+	Evaluationperiods                *int32                 `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3,oneof" json:"evaluationperiods,omitempty"`
 	Extendedstatistic                string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
 	Insufficientdataactions          []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
 	Metricname                       string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Metrics                          []*MetricDataQuery     `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
 	Namespace                        string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Okactions                        []string               `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
-	Period                           int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
+	Period                           *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Statistic                        Statistic              `protobuf:"varint,67293470,opt,name=statistic,proto3,enum=cloudwatch.Statistic" json:"statistic,omitempty"`
 	Tags                             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Threshold                        float64                `protobuf:"fixed64,394884505,opt,name=threshold,proto3" json:"threshold,omitempty"`
@@ -8727,8 +8727,8 @@ func (x *PutMetricAlarmInput) GetComparisonoperator() ComparisonOperator {
 }
 
 func (x *PutMetricAlarmInput) GetDatapointstoalarm() int32 {
-	if x != nil {
-		return x.Datapointstoalarm
+	if x != nil && x.Datapointstoalarm != nil {
+		return *x.Datapointstoalarm
 	}
 	return 0
 }
@@ -8755,15 +8755,15 @@ func (x *PutMetricAlarmInput) GetEvaluationcriteria() *EvaluationCriteria {
 }
 
 func (x *PutMetricAlarmInput) GetEvaluationinterval() int32 {
-	if x != nil {
-		return x.Evaluationinterval
+	if x != nil && x.Evaluationinterval != nil {
+		return *x.Evaluationinterval
 	}
 	return 0
 }
 
 func (x *PutMetricAlarmInput) GetEvaluationperiods() int32 {
-	if x != nil {
-		return x.Evaluationperiods
+	if x != nil && x.Evaluationperiods != nil {
+		return *x.Evaluationperiods
 	}
 	return 0
 }
@@ -8811,8 +8811,8 @@ func (x *PutMetricAlarmInput) GetOkactions() []string {
 }
 
 func (x *PutMetricAlarmInput) GetPeriod() int32 {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return 0
 }
@@ -10116,11 +10116,13 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"expiredate\x125\n" +
 	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tR\x14lastupdatedtimestamp\x12\x1d\n" +
 	"\bmutetype\x18\xbd\xf5\x835 \x01(\tR\bmutetype\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06status\"\x85\x01\n" +
-	"\x13AlarmPromQLCriteria\x12(\n" +
-	"\rpendingperiod\x18\x96\x88\x9e\x93\x01 \x01(\x05R\rpendingperiod\x12\x18\n" +
-	"\x05query\x18\x84ϧ\xf4\x01 \x01(\tR\x05query\x12*\n" +
-	"\x0erecoveryperiod\x18\xe0\xbe\xd1\xc0\x01 \x01(\x05R\x0erecoveryperiod\"\xfc\x04\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06status\"\xb4\x01\n" +
+	"\x13AlarmPromQLCriteria\x12-\n" +
+	"\rpendingperiod\x18\x96\x88\x9e\x93\x01 \x01(\x05H\x00R\rpendingperiod\x88\x01\x01\x12\x18\n" +
+	"\x05query\x18\x84ϧ\xf4\x01 \x01(\tR\x05query\x12/\n" +
+	"\x0erecoveryperiod\x18\xe0\xbe\xd1\xc0\x01 \x01(\x05H\x01R\x0erecoveryperiod\x88\x01\x01B\x10\n" +
+	"\x0e_pendingperiodB\x11\n" +
+	"\x0f_recoveryperiod\"\xfc\x04\n" +
 	"\x0fAnomalyDetector\x12R\n" +
 	"\rconfiguration\x18\xda\xc8\xfb\xd2\x01 \x01(\v2(.cloudwatch.AnomalyDetectorConfigurationR\rconfiguration\x129\n" +
 	"\n" +
@@ -10143,14 +10145,14 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x1bAssociateDatasetKmsKeyInput\x120\n" +
 	"\x11datasetidentifier\x18\xf9\xa8\xb7\xe3\x01 \x01(\tR\x11datasetidentifier\x12\x1f\n" +
 	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\"\x1e\n" +
-	"\x1cAssociateDatasetKmsKeyOutput\"\xa6\b\n" +
+	"\x1cAssociateDatasetKmsKeyOutput\"\xf5\b\n" +
 	"\x0eCompositeAlarm\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12U\n" +
 	"\x13actionssuppressedby\x18\xb0\x84\x90\xb4\x01 \x01(\x0e2\x1f.cloudwatch.ActionsSuppressedByR\x13actionssuppressedby\x12;\n" +
 	"\x17actionssuppressedreason\x18\xa3\xbf\xf6\t \x01(\tR\x17actionssuppressedreason\x120\n" +
-	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12M\n" +
-	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05R actionssuppressorextensionperiod\x12C\n" +
-	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05R\x1bactionssuppressorwaitperiod\x12&\n" +
+	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12R\n" +
+	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x01R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
+	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x02R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
 	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12\x1e\n" +
 	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tR\balarmarn\x12Q\n" +
 	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tR\"alarmconfigurationupdatedtimestamp\x12-\n" +
@@ -10166,16 +10168,19 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
 	"statevalueB\x11\n" +
-	"\x0f_actionsenabled\">\n" +
+	"\x0f_actionsenabledB#\n" +
+	"!_actionssuppressorextensionperiodB\x1e\n" +
+	"\x1c_actionssuppressorwaitperiod\">\n" +
 	"\x1fConcurrentModificationException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"0\n" +
 	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xa0\x01\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xae\x01\n" +
 	"\x0eDashboardEntry\x12%\n" +
 	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12(\n" +
 	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\"\xa6\x01\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01B\a\n" +
+	"\x05_size\"\xa6\x01\n" +
 	"\x1aDashboardInvalidInputError\x12k\n" +
 	"\x1bdashboardvalidationmessages\x18\xa9\x88\xb1\x11 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
@@ -10229,7 +10234,7 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x91\x01\n" +
 	"\x1fDescribeAlarmContributorsOutput\x12M\n" +
 	"\x11alarmcontributors\x18\x89\xe1\xe2~ \x03(\v2\x1c.cloudwatch.AlarmContributorR\x11alarmcontributors\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa9\x03\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xbd\x03\n" +
 	"\x19DescribeAlarmHistoryInput\x122\n" +
 	"\x12alarmcontributorid\x18\x87\xebّ\x01 \x01(\tR\x12alarmcontributorid\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x129\n" +
@@ -10237,16 +10242,17 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"alarmtypes\x18\xcc\xc4\xc6\xd4\x01 \x03(\x0e2\x15.cloudwatch.AlarmTypeR\n" +
 	"alarmtypes\x12\x1b\n" +
 	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12I\n" +
-	"\x0fhistoryitemtype\x18\xf1\xae\xfc\xd2\x01 \x01(\x0e2\x1b.cloudwatch.HistoryItemTypeR\x0fhistoryitemtype\x12!\n" +
+	"\x0fhistoryitemtype\x18\xf1\xae\xfc\xd2\x01 \x01(\x0e2\x1b.cloudwatch.HistoryItemTypeR\x0fhistoryitemtype\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x1f\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
 	"\x06scanby\x18\x86茤\x01 \x01(\x0e2\x12.cloudwatch.ScanByR\x06scanby\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\"\x8c\x01\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdateB\r\n" +
+	"\v_maxrecords\"\x8c\x01\n" +
 	"\x1aDescribeAlarmHistoryOutput\x12M\n" +
 	"\x11alarmhistoryitems\x18\xf7\xe4\xebH \x03(\v2\x1c.cloudwatch.AlarmHistoryItemR\x11alarmhistoryitems\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd4\x02\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xe4\x02\n" +
 	"\x1cDescribeAlarmsForMetricInput\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
@@ -10255,12 +10261,13 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x19\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x126\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x00R\x06period\x88\x01\x01\x126\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\"_\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\t\n" +
+	"\a_period\"_\n" +
 	"\x1dDescribeAlarmsForMetricOutput\x12>\n" +
-	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\"\xb0\x03\n" +
+	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\"\xc4\x03\n" +
 	"\x13DescribeAlarmsInput\x12%\n" +
 	"\factionprefix\x18\xd4\xed\xa2  \x01(\tR\factionprefix\x12+\n" +
 	"\x0falarmnameprefix\x18\xf6\xc5\xfc- \x01(\tR\x0falarmnameprefix\x12!\n" +
@@ -10270,40 +10277,43 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"alarmtypes\x18\xcc\xc4\xc6\xd4\x01 \x03(\x0e2\x15.cloudwatch.AlarmTypeR\n" +
 	"alarmtypes\x123\n" +
-	"\x13childrenofalarmname\x18\xd4\xfb\xaaa \x01(\tR\x13childrenofalarmname\x12!\n" +
+	"\x13childrenofalarmname\x18\xd4\xfb\xaaa \x01(\tR\x13childrenofalarmname\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x1f\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x122\n" +
 	"\x12parentsofalarmname\x18츬\xf4\x01 \x01(\tR\x12parentsofalarmname\x12:\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
-	"statevalue\"\xc0\x01\n" +
+	"statevalueB\r\n" +
+	"\v_maxrecords\"\xc0\x01\n" +
 	"\x14DescribeAlarmsOutput\x12G\n" +
 	"\x0fcompositealarms\x18\xbf\x95\x8af \x03(\v2\x1a.cloudwatch.CompositeAlarmR\x0fcompositealarms\x12>\n" +
 	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xbd\x02\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd1\x02\n" +
 	"\x1dDescribeAnomalyDetectorsInput\x12W\n" +
 	"\x14anomalydetectortypes\x18\xbe\x82\xe8\x82\x01 \x03(\x0e2\x1f.cloudwatch.AnomalyDetectorTypeR\x14anomalydetectortypes\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x12\"\n" +
+	"dimensions\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12!\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12!\n" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12 \n" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x8e\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x8e\x01\n" +
 	"\x1eDescribeAnomalyDetectorsOutput\x12K\n" +
 	"\x10anomalydetectors\x18\xa6\xbc\xa6\xbe\x01 \x03(\v2\x1b.cloudwatch.AnomalyDetectorR\x10anomalydetectors\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"`\n" +
-	"\x19DescribeInsightRulesInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"t\n" +
+	"\x19DescribeInsightRulesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"}\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"}\n" +
 	"\x1aDescribeInsightRulesOutput\x12>\n" +
 	"\finsightrules\x18\xf3\x91\xce) \x03(\v2\x17.cloudwatch.InsightRuleR\finsightrules\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"<\n" +
@@ -10376,30 +10386,33 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x10GetDatasetOutput\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12 \n" +
 	"\tdatasetid\x18\xef\xef\xe4\xe8\x01 \x01(\tR\tdatasetid\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\"\x86\x02\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\"\xa3\x02\n" +
 	"\x19GetInsightRuleReportInput\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x124\n" +
-	"\x13maxcontributorcount\x18\xe6Ԁ\x82\x01 \x01(\x05R\x13maxcontributorcount\x12\x1c\n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x129\n" +
+	"\x13maxcontributorcount\x18\xe6Ԁ\x82\x01 \x01(\x05H\x00R\x13maxcontributorcount\x88\x01\x01\x12\x1c\n" +
 	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\tR\ametrics\x12\x1c\n" +
 	"\aorderby\x18オ\xa8\x01 \x01(\tR\aorderby\x12\x19\n" +
 	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12\x1d\n" +
 	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"\xfd\x02\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\x16\n" +
+	"\x14_maxcontributorcount\"\x9d\x03\n" +
 	"\x1aGetInsightRuleReportOutput\x12)\n" +
 	"\x0eaggregatevalue\x18ڃ\xb8k \x01(\x01R\x0eaggregatevalue\x126\n" +
-	"\x14aggregationstatistic\x18\xde\xfc\xf2\x9e\x01 \x01(\tR\x14aggregationstatistic\x129\n" +
-	"\x16approximateuniquecount\x18\xba\xd1\xc2\x1a \x01(\x03R\x16approximateuniquecount\x12I\n" +
+	"\x14aggregationstatistic\x18\xde\xfc\xf2\x9e\x01 \x01(\tR\x14aggregationstatistic\x12>\n" +
+	"\x16approximateuniquecount\x18\xba\xd1\xc2\x1a \x01(\x03H\x00R\x16approximateuniquecount\x88\x01\x01\x12I\n" +
 	"\fcontributors\x18\xfc\x97\x98P \x03(\v2\".cloudwatch.InsightRuleContributorR\fcontributors\x12\x1f\n" +
 	"\tkeylabels\x18̍\xd5\a \x03(\tR\tkeylabels\x12U\n" +
-	"\x10metricdatapoints\x18\x9b͡8 \x03(\v2&.cloudwatch.InsightRuleMetricDatapointR\x10metricdatapoints\"\xdc\x02\n" +
+	"\x10metricdatapoints\x18\x9b͡8 \x03(\v2&.cloudwatch.InsightRuleMetricDatapointR\x10metricdatapointsB\x19\n" +
+	"\x17_approximateuniquecount\"\xf3\x02\n" +
 	"\x12GetMetricDataInput\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12?\n" +
-	"\flabeloptions\x18\x8e\xb9\x98X \x01(\v2\x18.cloudwatch.LabelOptionsR\flabeloptions\x12'\n" +
-	"\rmaxdatapoints\x18Ü\xbf. \x01(\x05R\rmaxdatapoints\x12L\n" +
+	"\flabeloptions\x18\x8e\xb9\x98X \x01(\v2\x18.cloudwatch.LabelOptionsR\flabeloptions\x12,\n" +
+	"\rmaxdatapoints\x18Ü\xbf. \x01(\x05H\x00R\rmaxdatapoints\x88\x01\x01\x12L\n" +
 	"\x11metricdataqueries\x18\xe0\x82\xfc+ \x03(\v2\x1b.cloudwatch.MetricDataQueryR\x11metricdataqueries\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
 	"\x06scanby\x18\x86茤\x01 \x01(\x0e2\x12.cloudwatch.ScanByR\x06scanby\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"\xbf\x01\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\x10\n" +
+	"\x0e_maxdatapoints\"\xbf\x01\n" +
 	"\x13GetMetricDataOutput\x127\n" +
 	"\bmessages\x18ֿ\x84\xc3\x01 \x03(\v2\x17.cloudwatch.MessageDataR\bmessages\x12N\n" +
 	"\x11metricdataresults\x18\x8a\x82\x9e\xb2\x01 \x03(\v2\x1c.cloudwatch.MetricDataResultR\x11metricdataresults\x12\x1f\n" +
@@ -10499,14 +10512,15 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x16LimitExceededException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"1\n" +
 	"\x12LimitExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbf\x01\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd3\x01\n" +
 	"\x17ListAlarmMuteRulesInput\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12!\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x1f\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12?\n" +
-	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\bstatuses\"\x99\x01\n" +
+	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\bstatusesB\r\n" +
+	"\v_maxrecords\"\x99\x01\n" +
 	"\x18ListAlarmMuteRulesOutput\x12\\\n" +
 	"\x16alarmmuterulesummaries\x18\xd4\xe8\x9e\xd2\x01 \x03(\v2 .cloudwatch.AlarmMuteRuleSummaryR\x16alarmmuterulesummaries\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"l\n" +
@@ -10515,21 +10529,23 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x83\x01\n" +
 	"\x14ListDashboardsOutput\x12J\n" +
 	"\x10dashboardentries\x18\xba\xa3\x85\x86\x01 \x03(\v2\x1a.cloudwatch.DashboardEntryR\x10dashboardentries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x89\x01\n" +
-	"\x1cListManagedInsightRulesInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x9d\x01\n" +
+	"\x1cListManagedInsightRulesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\"\x8c\x01\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\r\n" +
+	"\v_maxresults\"\x8c\x01\n" +
 	"\x1dListManagedInsightRulesOutput\x12J\n" +
 	"\fmanagedrules\x18\xda\xdf\xc0\xa5\x01 \x03(\v2\".cloudwatch.ManagedRuleDescriptionR\fmanagedrules\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"]\n" +
-	"\x16ListMetricStreamsInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"q\n" +
+	"\x16ListMetricStreamsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"w\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"w\n" +
 	"\x17ListMetricStreamsOutput\x12;\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2\x1d.cloudwatch.MetricStreamEntryR\aentries\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x82\x03\n" +
@@ -10576,7 +10592,7 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"\xf0\f\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"\xd2\r\n" +
 	"\vMetricAlarm\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12&\n" +
 	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12\x1e\n" +
@@ -10584,15 +10600,15 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tR\"alarmconfigurationupdatedtimestamp\x12-\n" +
 	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12Q\n" +
-	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x12/\n" +
-	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05R\x11datapointstoalarm\x129\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x124\n" +
+	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x01R\x11datapointstoalarm\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12M\n" +
 	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tR evaluatelowsamplecountpercentile\x12R\n" +
-	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x121\n" +
-	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05R\x12evaluationinterval\x12/\n" +
-	"\x11evaluationperiods\x18脶f \x01(\x05R\x11evaluationperiods\x12I\n" +
+	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x126\n" +
+	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\x02R\x12evaluationinterval\x88\x01\x01\x124\n" +
+	"\x11evaluationperiods\x18脶f \x01(\x05H\x03R\x11evaluationperiods\x88\x01\x01\x12I\n" +
 	"\x0fevaluationstate\x18\xf1\xcdʡ\x01 \x01(\x0e2\x1b.cloudwatch.EvaluationStateR\x0fevaluationstate\x120\n" +
 	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tR\x11extendedstatistic\x12<\n" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12!\n" +
@@ -10601,8 +10617,8 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"metricname\x129\n" +
 	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12 \n" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12 \n" +
-	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x19\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12$\n" +
+	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x04R\x06period\x88\x01\x01\x12$\n" +
 	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12+\n" +
 	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tR\x0fstatereasondata\x12A\n" +
 	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tR\x1astatetransitionedtimestamp\x128\n" +
@@ -10615,10 +10631,14 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tR\x11thresholdmetricid\x12-\n" +
 	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tR\x10treatmissingdata\x12/\n" +
 	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\x11\n" +
-	"\x0f_actionsenabled\"[\n" +
+	"\x0f_actionsenabledB\x14\n" +
+	"\x12_datapointstoalarmB\x15\n" +
+	"\x13_evaluationintervalB\x14\n" +
+	"\x12_evaluationperiodsB\t\n" +
+	"\a_period\"[\n" +
 	"\x15MetricCharacteristics\x12/\n" +
 	"\x0eperiodicspikes\x18\xf4\xe5\xc3\xd8\x01 \x01(\bH\x00R\x0eperiodicspikes\x88\x01\x01B\x11\n" +
-	"\x0f_periodicspikes\"\x91\x02\n" +
+	"\x0f_periodicspikes\"\xa1\x02\n" +
 	"\x0fMetricDataQuery\x12\x1f\n" +
 	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x12!\n" +
 	"\n" +
@@ -10628,11 +10648,12 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x129\n" +
 	"\n" +
 	"metricstat\x18\xa4\x85\xdbO \x01(\v2\x16.cloudwatch.MetricStatR\n" +
-	"metricstat\x12\x19\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12'\n" +
+	"metricstat\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x00R\x06period\x88\x01\x01\x12'\n" +
 	"\n" +
-	"returndata\x18\xe8\x94\xce\xf4\x01 \x01(\bH\x00R\n" +
-	"returndata\x88\x01\x01B\r\n" +
+	"returndata\x18\xe8\x94\xce\xf4\x01 \x01(\bH\x01R\n" +
+	"returndata\x88\x01\x01B\t\n" +
+	"\a_periodB\r\n" +
 	"\v_returndata\"\xf3\x01\n" +
 	"\x10MetricDataResult\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x18\n" +
@@ -10644,7 +10665,7 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"timestamps\x18\x91\x90\xe9e \x03(\tR\n" +
 	"timestamps\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\x01R\x06values\"\x85\x03\n" +
+	"\x06values\x18\xdcĴj \x03(\x01R\x06values\"\xa0\x03\n" +
 	"\vMetricDatum\x12\x19\n" +
 	"\x06counts\x18\xa6\xa7\xa06 \x03(\x01R\x06counts\x129\n" +
 	"\n" +
@@ -10653,12 +10674,13 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12E\n" +
-	"\x0fstatisticvalues\x18\xa4\xa8\x95, \x01(\v2\x18.cloudwatch.StatisticSetR\x0fstatisticvalues\x12/\n" +
-	"\x11storageresolution\x18Պ\xdb\\ \x01(\x05R\x11storageresolution\x12\x1f\n" +
+	"\x0fstatisticvalues\x18\xa4\xa8\x95, \x01(\v2\x18.cloudwatch.StatisticSetR\x0fstatisticvalues\x124\n" +
+	"\x11storageresolution\x18Պ\xdb\\ \x01(\x05H\x00R\x11storageresolution\x88\x01\x01\x12\x1f\n" +
 	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12/\n" +
 	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01R\x05value\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\x01R\x06values\"i\n" +
+	"\x06values\x18\xdcĴj \x03(\x01R\x06valuesB\x14\n" +
+	"\x12_storageresolution\"i\n" +
 	"\x19MetricMathAnomalyDetector\x12L\n" +
 	"\x11metricdataqueries\x18\xe0\x82\xfc+ \x03(\v2\x1b.cloudwatch.MetricDataQueryR\x11metricdataqueries\"\xa0\x01\n" +
 	"\n" +
@@ -10720,12 +10742,12 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12m\n" +
 	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x16\n" +
 	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\"\x1a\n" +
-	"\x18PutAnomalyDetectorOutput\"\xc4\x04\n" +
+	"\x18PutAnomalyDetectorOutput\"\x93\x05\n" +
 	"\x16PutCompositeAlarmInput\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x120\n" +
-	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12M\n" +
-	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05R actionssuppressorextensionperiod\x12C\n" +
-	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05R\x1bactionssuppressorwaitperiod\x12&\n" +
+	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12R\n" +
+	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x01R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
+	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x02R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
 	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12-\n" +
 	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12 \n" +
@@ -10733,7 +10755,9 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
 	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\x11\n" +
-	"\x0f_actionsenabled\"\x8f\x01\n" +
+	"\x0f_actionsenabledB#\n" +
+	"!_actionssuppressorextensionperiodB\x1e\n" +
+	"\x1c_actionssuppressorwaitperiod\"\x8f\x01\n" +
 	"\x11PutDashboardInput\x12'\n" +
 	"\rdashboardbody\x18\xe4\xdb\xcf\x01 \x01(\tR\rdashboardbody\x12(\n" +
 	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\x12'\n" +
@@ -10751,21 +10775,22 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x1bPutManagedInsightRulesInput\x12?\n" +
 	"\fmanagedrules\x18\xda\xdf\xc0\xa5\x01 \x03(\v2\x17.cloudwatch.ManagedRuleR\fmanagedrules\"Z\n" +
 	"\x1cPutManagedInsightRulesOutput\x12:\n" +
-	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2\x1a.cloudwatch.PartialFailureR\bfailures\"\xd7\t\n" +
+	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2\x1a.cloudwatch.PartialFailureR\bfailures\"\xb9\n" +
+	"\n" +
 	"\x13PutMetricAlarmInput\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12&\n" +
 	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12-\n" +
 	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12Q\n" +
-	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x12/\n" +
-	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05R\x11datapointstoalarm\x129\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x124\n" +
+	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x01R\x11datapointstoalarm\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12M\n" +
 	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tR evaluatelowsamplecountpercentile\x12R\n" +
-	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x121\n" +
-	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05R\x12evaluationinterval\x12/\n" +
-	"\x11evaluationperiods\x18脶f \x01(\x05R\x11evaluationperiods\x120\n" +
+	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x126\n" +
+	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\x02R\x12evaluationinterval\x88\x01\x01\x124\n" +
+	"\x11evaluationperiods\x18脶f \x01(\x05H\x03R\x11evaluationperiods\x88\x01\x01\x120\n" +
 	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tR\x11extendedstatistic\x12<\n" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12!\n" +
 	"\n" +
@@ -10773,15 +10798,19 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"metricname\x129\n" +
 	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12 \n" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12 \n" +
-	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x19\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x126\n" +
+	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x04R\x06period\x88\x01\x01\x126\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\x12 \n" +
 	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\x12/\n" +
 	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tR\x11thresholdmetricid\x12-\n" +
 	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tR\x10treatmissingdata\x12/\n" +
 	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\x11\n" +
-	"\x0f_actionsenabled\"\x9c\x02\n" +
+	"\x0f_actionsenabledB\x14\n" +
+	"\x12_datapointstoalarmB\x15\n" +
+	"\x13_evaluationintervalB\x14\n" +
+	"\x12_evaluationperiodsB\t\n" +
+	"\a_period\"\x9c\x02\n" +
 	"\x12PutMetricDataInput\x12L\n" +
 	"\x10entitymetricdata\x18\xbf\xa1\xeb\x91\x01 \x03(\v2\x1c.cloudwatch.EntityMetricDataR\x10entitymetricdata\x12:\n" +
 	"\n" +
@@ -11438,13 +11467,27 @@ func file_cloudwatch_proto_init() {
 	if File_cloudwatch_proto != nil {
 		return
 	}
+	file_cloudwatch_proto_msgTypes[3].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[8].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[11].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[28].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[30].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[32].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[34].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[36].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[57].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[58].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[59].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[64].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[69].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[84].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[88].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[90].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[92].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[101].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[102].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[103].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[105].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[118].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[121].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[125].OneofWrappers = []any{}

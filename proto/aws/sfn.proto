@@ -274,7 +274,7 @@ message ActivityScheduleFailedEventDetails {
 
 message ActivityScheduledEventDetails {
 
-  int64 heartbeatinseconds = 125718754;
+  optional int64 heartbeatinseconds = 125718754;
 
   string input = 433614716;
 
@@ -282,7 +282,7 @@ message ActivityScheduledEventDetails {
 
   string resource = 165642230;
 
-  int64 timeoutinseconds = 472710197;
+  optional int64 timeoutinseconds = 472710197;
 
 }
 
@@ -346,9 +346,9 @@ message AssignedVariablesDetails {
 
 message BillingDetails {
 
-  int64 billeddurationinmilliseconds = 65131593;
+  optional int64 billeddurationinmilliseconds = 65131593;
 
-  int64 billedmemoryusedinmb = 459756940;
+  optional int64 billedmemoryusedinmb = 459756940;
 
 }
 
@@ -574,7 +574,7 @@ message DescribeExecutionOutput {
 
   CloudWatchEventsExecutionDataDetails outputdetails = 393734643;
 
-  int32 redrivecount = 473458696;
+  optional int32 redrivecount = 473458696;
 
   string redrivedate = 152812125;
 
@@ -620,7 +620,7 @@ message DescribeMapRunOutput {
 
   int32 maxconcurrency = 100901405;
 
-  int32 redrivecount = 473458696;
+  optional int32 redrivecount = 473458696;
 
   string redrivedate = 152812125;
 
@@ -752,7 +752,7 @@ message DescribeStateMachineOutput {
 
 message EncryptionConfiguration {
 
-  int32 kmsdatakeyreuseperiodseconds = 440747764;
+  optional int32 kmsdatakeyreuseperiodseconds = 440747764;
 
   string kmskeyid = 510698477;
 
@@ -848,13 +848,13 @@ message ExecutionListItem {
 
   string executionarn = 314526573;
 
-  int32 itemcount = 349613174;
+  optional int32 itemcount = 349613174;
 
   string maprunarn = 18199994;
 
   string name = 221887975;
 
-  int32 redrivecount = 473458696;
+  optional int32 redrivecount = 473458696;
 
   string redrivedate = 152812125;
 
@@ -910,7 +910,7 @@ enum ExecutionRedriveStatus {
 
 message ExecutionRedrivenEventDetails {
 
-  int32 redrivecount = 473458696;
+  optional int32 redrivecount = 473458696;
 
 }
 
@@ -1002,7 +1002,7 @@ message GetExecutionHistoryInput {
 
   optional bool includeexecutiondata = 203899608;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1082,7 +1082,7 @@ message HistoryEvent {
 
   MapStateStartedEventDetails mapstatestartedeventdetails = 463022434;
 
-  int64 previouseventid = 261811790;
+  optional int64 previouseventid = 261811790;
 
   StateEnteredEventDetails stateenteredeventdetails = 479306524;
 
@@ -1288,7 +1288,7 @@ message InspectionData {
 
   string input = 433614716;
 
-  int32 maxconcurrency = 100901405;
+  optional int32 maxconcurrency = 100901405;
 
   InspectionDataRequest request = 514460083;
 
@@ -1296,7 +1296,7 @@ message InspectionData {
 
   string result = 171406885;
 
-  int32 toleratedfailurecount = 41834811;
+  optional int32 toleratedfailurecount = 41834811;
 
   float toleratedfailurepercentage = 116496164;
 
@@ -1346,11 +1346,11 @@ message InspectionDataResponse {
 
 message InspectionErrorDetails {
 
-  int32 catchindex = 290365641;
+  optional int32 catchindex = 290365641;
 
-  int32 retrybackoffintervalseconds = 137754128;
+  optional int32 retrybackoffintervalseconds = 137754128;
 
-  int32 retryindex = 6599888;
+  optional int32 retryindex = 6599888;
 
 }
 
@@ -1542,7 +1542,7 @@ message LambdaFunctionScheduledEventDetails {
 
   TaskCredentials taskcredentials = 257843259;
 
-  int64 timeoutinseconds = 472710197;
+  optional int64 timeoutinseconds = 472710197;
 
 }
 
@@ -1586,7 +1586,7 @@ message LambdaFunctionTimedOutEventDetails {
 
 message ListActivitiesInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1608,7 +1608,7 @@ message ListExecutionsInput {
 
   string maprunarn = 18199994;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1636,7 +1636,7 @@ message ListMapRunsInput {
 
   string executionarn = 314526573;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1656,7 +1656,7 @@ message ListMapRunsOutput {
 
 message ListStateMachineAliasesInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1678,7 +1678,7 @@ message ListStateMachineAliasesOutput {
 
 message ListStateMachineVersionsInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1700,7 +1700,7 @@ message ListStateMachineVersionsOutput {
 
 message ListStateMachinesInput {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1776,7 +1776,7 @@ message LoggingConfiguration {
 
 message MapIterationEventDetails {
 
-  int32 index = 151693740;
+  optional int32 index = 151693740;
 
   string name = 221887975;
 
@@ -1792,11 +1792,11 @@ message MapRunExecutionCounts {
 
   int64 failed = 11325365;
 
-  int64 failuresnotredrivable = 119492388;
+  optional int64 failuresnotredrivable = 119492388;
 
   int64 pending = 431980349;
 
-  int64 pendingredrive = 405645200;
+  optional int64 pendingredrive = 405645200;
 
   int64 resultswritten = 88286449;
 
@@ -1832,11 +1832,11 @@ message MapRunItemCounts {
 
   int64 failed = 11325365;
 
-  int64 failuresnotredrivable = 119492388;
+  optional int64 failuresnotredrivable = 119492388;
 
   int64 pending = 431980349;
 
-  int64 pendingredrive = 405645200;
+  optional int64 pendingredrive = 405645200;
 
   int64 resultswritten = 88286449;
 
@@ -1876,7 +1876,7 @@ message MapRunRedrivenEventDetails {
 
   string maprunarn = 18199994;
 
-  int32 redrivecount = 473458696;
+  optional int32 redrivecount = 473458696;
 
 }
 
@@ -1910,7 +1910,7 @@ enum MapRunStatus {
 
 message MapStateStartedEventDetails {
 
-  int32 length = 63976982;
+  optional int32 length = 63976982;
 
 }
 
@@ -2402,7 +2402,7 @@ message TaskFailedEventDetails {
 
 message TaskScheduledEventDetails {
 
-  int64 heartbeatinseconds = 125718754;
+  optional int64 heartbeatinseconds = 125718754;
 
   string parameters = 145043162;
 
@@ -2414,7 +2414,7 @@ message TaskScheduledEventDetails {
 
   TaskCredentials taskcredentials = 257843259;
 
-  int64 timeoutinseconds = 472710197;
+  optional int64 timeoutinseconds = 472710197;
 
 }
 
@@ -2544,9 +2544,9 @@ message TestStateConfiguration {
 
   string mapitemreaderdata = 503260646;
 
-  int32 mapiterationfailurecount = 419587762;
+  optional int32 mapiterationfailurecount = 419587762;
 
-  int32 retrierretrycount = 275735648;
+  optional int32 retrierretrycount = 275735648;
 
 }
 
@@ -2638,9 +2638,9 @@ message UpdateMapRunInput {
 
   string maprunarn = 18199994;
 
-  int32 maxconcurrency = 100901405;
+  optional int32 maxconcurrency = 100901405;
 
-  int64 toleratedfailurecount = 41834811;
+  optional int64 toleratedfailurecount = 41834811;
 
   float toleratedfailurepercentage = 116496164;
 
@@ -2728,7 +2728,7 @@ message ValidateStateMachineDefinitionInput {
 
   string definition = 68443297;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   ValidateStateMachineDefinitionSeverity severity = 268193715;
 

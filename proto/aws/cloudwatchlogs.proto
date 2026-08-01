@@ -613,7 +613,7 @@ message AccountPolicy {
 
   string accountid = 516110962;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string policydocument = 178107627;
 
@@ -673,7 +673,7 @@ message AggregateLogGroupSummary {
 
   repeated GroupingIdentifier groupingidentifiers = 363642629;
 
-  int32 loggroupcount = 176522920;
+  optional int32 loggroupcount = 176522920;
 
 }
 
@@ -717,9 +717,9 @@ message Anomaly {
 
   optional bool suppressed = 141710296;
 
-  int64 suppresseddate = 533956404;
+  optional int64 suppresseddate = 533956404;
 
-  int64 suppresseduntil = 437063138;
+  optional int64 suppresseduntil = 437063138;
 
 }
 
@@ -733,9 +733,9 @@ message AnomalyDetector {
 
   AnomalyDetectorStatus anomalydetectorstatus = 458778431;
 
-  int64 anomalyvisibilitytime = 287987260;
+  optional int64 anomalyvisibilitytime = 287987260;
 
-  int64 creationtimestamp = 206588645;
+  optional int64 creationtimestamp = 206588645;
 
   string detectorname = 114651981;
 
@@ -745,7 +745,7 @@ message AnomalyDetector {
 
   string kmskeyid = 510698477;
 
-  int64 lastmodifiedtimestamp = 40019279;
+  optional int64 lastmodifiedtimestamp = 40019279;
 
   repeated string loggrouparnlist = 374867736;
 
@@ -837,7 +837,7 @@ message CancelImportTaskRequest {
 
 message CancelImportTaskResponse {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string importid = 513429114;
 
@@ -845,7 +845,7 @@ message CancelImportTaskResponse {
 
   ImportStatus importstatus = 31427999;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
 }
 
@@ -999,7 +999,7 @@ message CreateImportTaskRequest {
 
 message CreateImportTaskResponse {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string importdestinationarn = 94477180;
 
@@ -1011,7 +1011,7 @@ message CreateImportTaskResponse {
 
 message CreateLogAnomalyDetectorRequest {
 
-  int64 anomalyvisibilitytime = 287987260;
+  optional int64 anomalyvisibilitytime = 287987260;
 
   string detectorname = 114651981;
 
@@ -1081,7 +1081,7 @@ message CreateLookupTableRequest {
 
 message CreateLookupTableResponse {
 
-  int64 createdat = 370722959;
+  optional int64 createdat = 370722959;
 
   string lookuptablearn = 150245445;
 
@@ -1095,7 +1095,7 @@ message CreateScheduledQueryRequest {
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
-  int64 endtimeoffset = 214490153;
+  optional int64 endtimeoffset = 214490153;
 
   string executionrolearn = 230613553;
 
@@ -1107,13 +1107,13 @@ message CreateScheduledQueryRequest {
 
   string querystring = 520568967;
 
-  int64 scheduleendtime = 111645113;
+  optional int64 scheduleendtime = 111645113;
 
   string scheduleexpression = 287794975;
 
-  int64 schedulestarttime = 464194170;
+  optional int64 schedulestarttime = 464194170;
 
-  int64 starttimeoffset = 308525274;
+  optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 
@@ -1605,7 +1605,7 @@ message DescribeConfigurationTemplatesRequest {
 
   repeated DeliveryDestinationType deliverydestinationtypes = 46370829;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   repeated string logtypes = 460758815;
 
@@ -1631,7 +1631,7 @@ message DescribeConfigurationTemplatesResponse {
 
 message DescribeDeliveriesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1651,7 +1651,7 @@ message DescribeDeliveriesResponse {
 
 message DescribeDeliveryDestinationsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1671,7 +1671,7 @@ message DescribeDeliveryDestinationsResponse {
 
 message DescribeDeliverySourcesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1693,7 +1693,7 @@ message DescribeDestinationsRequest {
 
   string destinationnameprefix = 160941145;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1713,7 +1713,7 @@ message DescribeDestinationsResponse {
 
 message DescribeExportTasksRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1761,7 +1761,7 @@ message DescribeImportTaskBatchesRequest {
 
   string importid = 513429114;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1791,7 +1791,7 @@ message DescribeImportTasksRequest {
 
   ImportStatus importstatus = 31427999;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -1835,7 +1835,7 @@ message DescribeLogGroupsRequest {
 
   optional bool includelinkedaccounts = 56034131;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   LogGroupClass loggroupclass = 518605953;
 
@@ -1865,7 +1865,7 @@ message DescribeLogStreamsRequest {
 
   optional bool descending = 378787644;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string loggroupidentifier = 468281308;
 
@@ -1895,7 +1895,7 @@ message DescribeLookupTablesRequest {
 
   string lookuptablenameprefix = 505420195;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1917,7 +1917,7 @@ message DescribeMetricFiltersRequest {
 
   string filternameprefix = 46988721;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string loggroupname = 95756236;
 
@@ -1945,7 +1945,7 @@ message DescribeQueriesRequest {
 
   string loggroupname = 95756236;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1969,7 +1969,7 @@ message DescribeQueriesResponse {
 
 message DescribeQueryDefinitionsRequest {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -1993,7 +1993,7 @@ message DescribeQueryDefinitionsResponse {
 
 message DescribeResourcePoliciesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -2019,7 +2019,7 @@ message DescribeSubscriptionFiltersRequest {
 
   string filternameprefix = 46988721;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string loggroupname = 95756236;
 
@@ -2047,7 +2047,7 @@ message Destination {
 
   string arn = 359604989;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string destinationname = 284844189;
 
@@ -2197,7 +2197,7 @@ message ExportTask {
 
   ExportTaskExecutionInfo executioninfo = 110255734;
 
-  int64 from = 365789302;
+  optional int64 from = 365789302;
 
   string loggroupname = 95756236;
 
@@ -2207,7 +2207,7 @@ message ExportTask {
 
   string taskname = 82438536;
 
-  int64 to = 38094885;
+  optional int64 to = 38094885;
 
 }
 
@@ -2217,9 +2217,9 @@ message ExportTask {
 
 message ExportTaskExecutionInfo {
 
-  int64 completiontime = 45320599;
+  optional int64 completiontime = 45320599;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
 }
 
@@ -2261,11 +2261,11 @@ message FieldIndex {
 
   string fieldindexname = 52826287;
 
-  int64 firsteventtime = 236445651;
+  optional int64 firsteventtime = 236445651;
 
-  int64 lasteventtime = 54472587;
+  optional int64 lasteventtime = 54472587;
 
-  int64 lastscantime = 464250390;
+  optional int64 lastscantime = 464250390;
 
   string loggroupidentifier = 468281308;
 
@@ -2287,13 +2287,13 @@ message FieldsData {
 
 message FilterLogEventsRequest {
 
-  int64 endtime = 329679852;
+  optional int64 endtime = 329679852;
 
   string filterpattern = 144868248;
 
   optional bool interleaved = 405276841;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string loggroupidentifier = 468281308;
 
@@ -2307,7 +2307,7 @@ message FilterLogEventsRequest {
 
   optional bool startfromhead = 472305066;
 
-  int64 starttime = 178154767;
+  optional int64 starttime = 178154767;
 
   optional bool unmask = 363382499;
 
@@ -2333,13 +2333,13 @@ message FilteredLogEvent {
 
   string eventid = 255267571;
 
-  int64 ingestiontime = 179367957;
+  optional int64 ingestiontime = 179367957;
 
   string logstreamname = 438025123;
 
   string message = 82970853;
 
-  int64 timestamp = 310629668;
+  optional int64 timestamp = 310629668;
 
 }
 
@@ -2365,7 +2365,7 @@ message GetDataProtectionPolicyRequest {
 
 message GetDataProtectionPolicyResponse {
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string loggroupidentifier = 468281308;
 
@@ -2473,9 +2473,9 @@ message GetLogAnomalyDetectorResponse {
 
   AnomalyDetectorStatus anomalydetectorstatus = 458778431;
 
-  int64 anomalyvisibilitytime = 287987260;
+  optional int64 anomalyvisibilitytime = 287987260;
 
-  int64 creationtimestamp = 206588645;
+  optional int64 creationtimestamp = 206588645;
 
   string detectorname = 114651981;
 
@@ -2485,7 +2485,7 @@ message GetLogAnomalyDetectorResponse {
 
   string kmskeyid = 510698477;
 
-  int64 lastmodifiedtimestamp = 40019279;
+  optional int64 lastmodifiedtimestamp = 40019279;
 
   repeated string loggrouparnlist = 374867736;
 
@@ -2495,9 +2495,9 @@ message GetLogAnomalyDetectorResponse {
 
 message GetLogEventsRequest {
 
-  int64 endtime = 329679852;
+  optional int64 endtime = 329679852;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string loggroupidentifier = 468281308;
 
@@ -2509,7 +2509,7 @@ message GetLogEventsRequest {
 
   optional bool startfromhead = 472305066;
 
-  int64 starttime = 178154767;
+  optional int64 starttime = 178154767;
 
   optional bool unmask = 363382499;
 
@@ -2553,7 +2553,7 @@ message GetLogGroupFieldsRequest {
 
   string loggroupname = 95756236;
 
-  int64 time = 490511333;
+  optional int64 time = 490511333;
 
 }
 
@@ -2633,13 +2633,13 @@ message GetLookupTableResponse {
 
   string kmskeyid = 510698477;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string lookuptablearn = 150245445;
 
   string lookuptablename = 443998607;
 
-  int64 sizebytes = 244232000;
+  optional int64 sizebytes = 244232000;
 
   string tablebody = 438636408;
 
@@ -2649,7 +2649,7 @@ message GetLookupTableResponse {
 
 message GetQueryResultsRequest {
 
-  int32 maxitems = 486225716;
+  optional int32 maxitems = 486225716;
 
   string nexttoken = 115833246;
 
@@ -2685,7 +2685,7 @@ message GetScheduledQueryHistoryRequest {
 
   string identifier = 145074239;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2719,21 +2719,21 @@ message GetScheduledQueryRequest {
 
 message GetScheduledQueryResponse {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
-  int64 endtimeoffset = 214490153;
+  optional int64 endtimeoffset = 214490153;
 
   string executionrolearn = 230613553;
 
   ExecutionStatus lastexecutionstatus = 7800596;
 
-  int64 lasttriggeredtime = 397057656;
+  optional int64 lasttriggeredtime = 397057656;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -2743,17 +2743,17 @@ message GetScheduledQueryResponse {
 
   string querystring = 520568967;
 
-  int64 scheduleendtime = 111645113;
+  optional int64 scheduleendtime = 111645113;
 
   string scheduleexpression = 287794975;
 
-  int64 schedulestarttime = 464194170;
+  optional int64 schedulestarttime = 464194170;
 
   ScheduleType scheduletype = 75972645;
 
   string scheduledqueryarn = 240292916;
 
-  int64 starttimeoffset = 308525274;
+  optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 
@@ -2773,9 +2773,9 @@ message GetTransformerRequest {
 
 message GetTransformerResponse {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
-  int64 lastmodifiedtime = 374093504;
+  optional int64 lastmodifiedtime = 374093504;
 
   string loggroupidentifier = 468281308;
 
@@ -2813,7 +2813,7 @@ message GroupingIdentifier {
 
 message Import {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string errormessage = 136873289;
 
@@ -2829,7 +2829,7 @@ message Import {
 
   ImportStatus importstatus = 31427999;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
 }
 
@@ -2853,9 +2853,9 @@ message ImportBatch {
 
 message ImportFilter {
 
-  int64 endeventtime = 345758432;
+  optional int64 endeventtime = 345758432;
 
-  int64 starteventtime = 406085597;
+  optional int64 starteventtime = 406085597;
 
 }
 
@@ -2865,7 +2865,7 @@ message ImportFilter {
 
 message ImportStatistics {
 
-  int64 bytesimported = 216355553;
+  optional int64 bytesimported = 216355553;
 
 }
 
@@ -2889,7 +2889,7 @@ enum ImportStatus {
 
 message IndexPolicy {
 
-  int64 lastupdatetime = 189280082;
+  optional int64 lastupdatetime = 189280082;
 
   string loggroupidentifier = 468281308;
 
@@ -3069,7 +3069,7 @@ message ListAggregateLogGroupSummariesRequest {
 
   optional bool includelinkedaccounts = 56034131;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   LogGroupClass loggroupclass = 518605953;
 
@@ -3095,7 +3095,7 @@ message ListAnomaliesRequest {
 
   string anomalydetectorarn = 446490540;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -3139,7 +3139,7 @@ message ListLogAnomalyDetectorsRequest {
 
   string filterloggrouparn = 72011610;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string nexttoken = 115833246;
 
@@ -3159,7 +3159,7 @@ message ListLogAnomalyDetectorsResponse {
 
 message ListLogGroupsForQueryRequest {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -3189,7 +3189,7 @@ message ListLogGroupsRequest {
 
   optional bool includelinkedaccounts = 56034131;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   LogGroupClass loggroupclass = 518605953;
 
@@ -3215,7 +3215,7 @@ message ListLogGroupsResponse {
 
 message ListScheduledQueriesRequest {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -3241,7 +3241,7 @@ message ListSourcesForS3TableIntegrationRequest {
 
   string integrationarn = 432021733;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -3263,7 +3263,7 @@ message ListSyslogConfigurationsRequest {
 
   string loggroupidentifier = 468281308;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -3339,7 +3339,7 @@ message ListToMap {
 
 message LiveTailSessionLogEvent {
 
-  int64 ingestiontime = 179367957;
+  optional int64 ingestiontime = 179367957;
 
   string loggroupidentifier = 468281308;
 
@@ -3347,7 +3347,7 @@ message LiveTailSessionLogEvent {
 
   string message = 82970853;
 
-  int64 timestamp = 310629668;
+  optional int64 timestamp = 310629668;
 
 }
 
@@ -3401,7 +3401,7 @@ message LogEvent {
 
   string message = 82970853;
 
-  int64 timestamp = 310629668;
+  optional int64 timestamp = 310629668;
 
 }
 
@@ -3441,7 +3441,7 @@ message LogGroup {
 
   optional bool bearertokenauthenticationenabled = 513390155;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   DataProtectionStatus dataprotectionstatus = 24294469;
 
@@ -3457,11 +3457,11 @@ message LogGroup {
 
   string loggroupname = 95756236;
 
-  int32 metricfiltercount = 347145747;
+  optional int32 metricfiltercount = 347145747;
 
-  int32 retentionindays = 258337482;
+  optional int32 retentionindays = 258337482;
 
-  int64 storedbytes = 260235622;
+  optional int64 storedbytes = 260235622;
 
 }
 
@@ -3485,7 +3485,7 @@ message LogGroupField {
 
   string name = 221887975;
 
-  int32 percent = 368704091;
+  optional int32 percent = 368704091;
 
 }
 
@@ -3511,17 +3511,17 @@ message LogStream {
 
   string arn = 359604989;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
-  int64 firsteventtimestamp = 354762842;
+  optional int64 firsteventtimestamp = 354762842;
 
-  int64 lasteventtimestamp = 338474610;
+  optional int64 lasteventtimestamp = 338474610;
 
-  int64 lastingestiontime = 56929529;
+  optional int64 lastingestiontime = 56929529;
 
   string logstreamname = 438025123;
 
-  int64 storedbytes = 260235622;
+  optional int64 storedbytes = 260235622;
 
   string uploadsequencetoken = 139889111;
 
@@ -3537,15 +3537,15 @@ message LookupTable {
 
   string kmskeyid = 510698477;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string lookuptablearn = 150245445;
 
   string lookuptablename = 443998607;
 
-  int64 recordscount = 324699757;
+  optional int64 recordscount = 324699757;
 
-  int64 sizebytes = 244232000;
+  optional int64 sizebytes = 244232000;
 
   repeated string tablefields = 295273623;
 
@@ -3581,7 +3581,7 @@ message MetricFilter {
 
   optional bool applyontransformedlogs = 99775525;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   repeated string emitsystemfielddimensions = 437431321;
 
@@ -3605,7 +3605,7 @@ message MetricFilterMatchRecord {
 
   string eventmessage = 299743039;
 
-  int64 eventnumber = 220470463;
+  optional int64 eventnumber = 220470463;
 
   map<string, string> extractedvalues = 341078182;
 
@@ -3875,11 +3875,11 @@ enum OutputFormat {
 
 message OutputLogEvent {
 
-  int64 ingestiontime = 179367957;
+  optional int64 ingestiontime = 179367957;
 
   string message = 82970853;
 
-  int64 timestamp = 310629668;
+  optional int64 timestamp = 310629668;
 
 }
 
@@ -3989,7 +3989,7 @@ message ParseWAF {
 
 message PatternToken {
 
-  int32 dynamictokenposition = 9081241;
+  optional int32 dynamictokenposition = 9081241;
 
   map<string, int64> enumerations = 14171326;
 
@@ -4139,7 +4139,7 @@ message PutDataProtectionPolicyRequest {
 
 message PutDataProtectionPolicyResponse {
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string loggroupidentifier = 468281308;
 
@@ -4469,9 +4469,9 @@ message QueryCompileError {
 
 message QueryCompileErrorLocation {
 
-  int32 endcharoffset = 14912634;
+  optional int32 endcharoffset = 14912634;
 
-  int32 startcharoffset = 391795325;
+  optional int32 startcharoffset = 391795325;
 
 }
 
@@ -4481,7 +4481,7 @@ message QueryCompileErrorLocation {
 
 message QueryDefinition {
 
-  int64 lastmodified = 410744903;
+  optional int64 lastmodified = 410744903;
 
   repeated string loggroupnames = 337702569;
 
@@ -4505,11 +4505,11 @@ message QueryInfo {
 
   double bytesscanned = 533301977;
 
-  int64 createtime = 297700189;
+  optional int64 createtime = 297700189;
 
   string loggroupname = 95756236;
 
-  int64 queryduration = 97719576;
+  optional int64 queryduration = 97719576;
 
   string queryid = 336975759;
 
@@ -4617,11 +4617,11 @@ message RejectedEntityInfo {
 
 message RejectedLogEventsInfo {
 
-  int32 expiredlogeventendindex = 299438860;
+  optional int32 expiredlogeventendindex = 299438860;
 
-  int32 toonewlogeventstartindex = 397251384;
+  optional int32 toonewlogeventstartindex = 397251384;
 
-  int32 toooldlogeventendindex = 96023564;
+  optional int32 toooldlogeventendindex = 96023564;
 
 }
 
@@ -4685,7 +4685,7 @@ message ResourceNotFoundException {
 
 message ResourcePolicy {
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string policydocument = 178107627;
 
@@ -4745,7 +4745,7 @@ message S3DeliveryConfiguration {
 
 message S3TableIntegrationSource {
 
-  int64 createdtimestamp = 462845754;
+  optional int64 createdtimestamp = 462845754;
 
   DataSource datasource = 345762713;
 
@@ -4837,15 +4837,15 @@ enum ScheduledQueryState {
 
 message ScheduledQuerySummary {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
   ExecutionStatus lastexecutionstatus = 7800596;
 
-  int64 lasttriggeredtime = 397057656;
+  optional int64 lasttriggeredtime = 397057656;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string name = 221887975;
 
@@ -5047,7 +5047,7 @@ message StartQueryRequest {
 
   int64 endtime = 329679852;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -5107,7 +5107,7 @@ message SubscriptionFilter {
 
   optional bool applyontransformedlogs = 99775525;
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string destinationarn = 427601315;
 
@@ -5159,7 +5159,7 @@ message SuppressionPeriod {
 
   SuppressionUnit suppressionunit = 423868455;
 
-  int32 value = 39769035;
+  optional int32 value = 39769035;
 
 }
 
@@ -5201,7 +5201,7 @@ enum SuppressionUnit {
 
 message SyslogConfiguration {
 
-  int64 createdat = 370722959;
+  optional int64 createdat = 370722959;
 
   string loggrouparn = 6742512;
 
@@ -5317,7 +5317,7 @@ message TransformedLogRecord {
 
   string eventmessage = 299743039;
 
-  int64 eventnumber = 220470463;
+  optional int64 eventnumber = 220470463;
 
   string transformedeventmessage = 209045014;
 
@@ -5337,7 +5337,7 @@ message TriggerHistoryRecord {
 
   string queryid = 336975759;
 
-  int64 triggeredtimestamp = 257556475;
+  optional int64 triggeredtimestamp = 257556475;
 
 }
 
@@ -5461,7 +5461,7 @@ message UpdateLogAnomalyDetectorRequest {
 
   string anomalydetectorarn = 446490540;
 
-  int64 anomalyvisibilitytime = 287987260;
+  optional int64 anomalyvisibilitytime = 287987260;
 
   optional bool enabled = 49525663;
 
@@ -5489,7 +5489,7 @@ message UpdateLookupTableRequest {
 
 message UpdateLookupTableResponse {
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   string lookuptablearn = 150245445;
 
@@ -5503,7 +5503,7 @@ message UpdateScheduledQueryRequest {
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
-  int64 endtimeoffset = 214490153;
+  optional int64 endtimeoffset = 214490153;
 
   string executionrolearn = 230613553;
 
@@ -5515,13 +5515,13 @@ message UpdateScheduledQueryRequest {
 
   string querystring = 520568967;
 
-  int64 scheduleendtime = 111645113;
+  optional int64 scheduleendtime = 111645113;
 
   string scheduleexpression = 287794975;
 
-  int64 schedulestarttime = 464194170;
+  optional int64 schedulestarttime = 464194170;
 
-  int64 starttimeoffset = 308525274;
+  optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 
@@ -5533,21 +5533,21 @@ message UpdateScheduledQueryRequest {
 
 message UpdateScheduledQueryResponse {
 
-  int64 creationtime = 53551750;
+  optional int64 creationtime = 53551750;
 
   string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
-  int64 endtimeoffset = 214490153;
+  optional int64 endtimeoffset = 214490153;
 
   string executionrolearn = 230613553;
 
   ExecutionStatus lastexecutionstatus = 7800596;
 
-  int64 lasttriggeredtime = 397057656;
+  optional int64 lasttriggeredtime = 397057656;
 
-  int64 lastupdatedtime = 388324342;
+  optional int64 lastupdatedtime = 388324342;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -5557,17 +5557,17 @@ message UpdateScheduledQueryResponse {
 
   string querystring = 520568967;
 
-  int64 scheduleendtime = 111645113;
+  optional int64 scheduleendtime = 111645113;
 
   string scheduleexpression = 287794975;
 
-  int64 schedulestarttime = 464194170;
+  optional int64 schedulestarttime = 464194170;
 
   ScheduleType scheduletype = 75972645;
 
   string scheduledqueryarn = 240292916;
 
-  int64 starttimeoffset = 308525274;
+  optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 

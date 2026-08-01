@@ -1114,7 +1114,7 @@ message CacheBehavior {
 
   optional bool compress = 235468462;
 
-  int64 defaultttl = 391646391;
+  optional int64 defaultttl = 391646391;
 
   string fieldlevelencryptionid = 450714616;
 
@@ -1126,9 +1126,9 @@ message CacheBehavior {
 
   LambdaFunctionAssociations lambdafunctionassociations = 46888655;
 
-  int64 maxttl = 451484784;
+  optional int64 maxttl = 451484784;
 
-  int64 minttl = 420784162;
+  optional int64 minttl = 420784162;
 
   string originrequestpolicyid = 298538616;
 
@@ -1194,9 +1194,9 @@ message CachePolicyConfig {
 
   string comment = 407871487;
 
-  int64 defaultttl = 391646391;
+  optional int64 defaultttl = 391646391;
 
-  int64 maxttl = 451484784;
+  optional int64 maxttl = 451484784;
 
   int64 minttl = 420784162;
 
@@ -1514,11 +1514,11 @@ message ConflictingAliasesList {
 
   repeated ConflictingAlias items = 3553328;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string nextmarker = 531333283;
 
-  int32 quantity = 200749817;
+  optional int32 quantity = 200749817;
 
 }
 
@@ -2454,7 +2454,7 @@ message CreateVpcOriginResult {
 
 message CustomErrorResponse {
 
-  int64 errorcachingminttl = 111450431;
+  optional int64 errorcachingminttl = 111450431;
 
   int32 errorcode = 34663193;
 
@@ -2500,13 +2500,13 @@ message CustomOriginConfig {
 
   IpAddressType ipaddresstype = 459110693;
 
-  int32 originkeepalivetimeout = 214128603;
+  optional int32 originkeepalivetimeout = 214128603;
 
   OriginMtlsConfig originmtlsconfig = 268477222;
 
   OriginProtocolPolicy originprotocolpolicy = 234303342;
 
-  int32 originreadtimeout = 387717023;
+  optional int32 originreadtimeout = 387717023;
 
   OriginSslProtocols originsslprotocols = 403853493;
 
@@ -2548,7 +2548,7 @@ message DefaultCacheBehavior {
 
   optional bool compress = 235468462;
 
-  int64 defaultttl = 391646391;
+  optional int64 defaultttl = 391646391;
 
   string fieldlevelencryptionid = 450714616;
 
@@ -2560,9 +2560,9 @@ message DefaultCacheBehavior {
 
   LambdaFunctionAssociations lambdafunctionassociations = 46888655;
 
-  int64 maxttl = 451484784;
+  optional int64 maxttl = 451484784;
 
-  int64 minttl = 420784162;
+  optional int64 minttl = 420784162;
 
   string originrequestpolicyid = 298538616;
 
@@ -5298,7 +5298,7 @@ message ListAnycastIpListsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5316,7 +5316,7 @@ message ListCachePoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   CachePolicyType type = 290836590;
 
@@ -5338,7 +5338,7 @@ message ListCloudFrontOriginAccessIdentitiesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5362,7 +5362,7 @@ message ListConflictingAliasesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5380,7 +5380,7 @@ message ListConnectionFunctionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   FunctionStage stage = 236325838;
 
@@ -5404,7 +5404,7 @@ message ListConnectionGroupsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5424,7 +5424,7 @@ message ListContinuousDeploymentPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5444,7 +5444,7 @@ message ListDistributionTenantsByCustomizationRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string webaclarn = 82506659;
 
@@ -5468,7 +5468,7 @@ message ListDistributionTenantsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5490,7 +5490,7 @@ message ListDistributionsByAnycastIpListIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5510,7 +5510,7 @@ message ListDistributionsByCachePolicyIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5530,7 +5530,7 @@ message ListDistributionsByConnectionFunctionRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5550,7 +5550,7 @@ message ListDistributionsByConnectionModeRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5570,7 +5570,7 @@ message ListDistributionsByKeyGroupRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5588,7 +5588,7 @@ message ListDistributionsByOriginRequestPolicyIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string originrequestpolicyid = 298538616;
 
@@ -5608,7 +5608,7 @@ message ListDistributionsByOwnedResourceRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string resourcearn = 364280877;
 
@@ -5628,7 +5628,7 @@ message ListDistributionsByRealtimeLogConfigRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string realtimelogconfigarn = 152963408;
 
@@ -5650,7 +5650,7 @@ message ListDistributionsByResponseHeadersPolicyIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string responseheaderspolicyid = 244029524;
 
@@ -5670,7 +5670,7 @@ message ListDistributionsByTrustStoreRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string truststoreidentifier = 327436686;
 
@@ -5690,7 +5690,7 @@ message ListDistributionsByVpcOriginIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string vpcoriginid = 365404648;
 
@@ -5712,7 +5712,7 @@ message ListDistributionsByWebACLIdRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string webaclid = 161274579;
 
@@ -5736,7 +5736,7 @@ message ListDistributionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5760,7 +5760,7 @@ message ListDomainConflictsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5780,7 +5780,7 @@ message ListFieldLevelEncryptionConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5798,7 +5798,7 @@ message ListFieldLevelEncryptionProfilesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5816,7 +5816,7 @@ message ListFunctionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   FunctionStage stage = 236325838;
 
@@ -5838,7 +5838,7 @@ message ListInvalidationsForDistributionTenantRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5860,7 +5860,7 @@ message ListInvalidationsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5880,7 +5880,7 @@ message ListKeyGroupsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5898,7 +5898,7 @@ message ListKeyValueStoresRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string status = 6222352;
 
@@ -5918,7 +5918,7 @@ message ListOriginAccessControlsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5936,7 +5936,7 @@ message ListOriginRequestPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   OriginRequestPolicyType type = 290836590;
 
@@ -5956,7 +5956,7 @@ message ListPublicKeysRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5974,7 +5974,7 @@ message ListRealtimeLogConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -5992,7 +5992,7 @@ message ListResponseHeadersPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   ResponseHeadersPolicyType type = 290836590;
 
@@ -6014,7 +6014,7 @@ message ListStreamingDistributionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -6054,7 +6054,7 @@ message ListTrustStoresRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -6074,7 +6074,7 @@ message ListVpcOriginsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -6402,9 +6402,9 @@ message NoSuchStreamingDistribution {
 
 message Origin {
 
-  int32 connectionattempts = 130111316;
+  optional int32 connectionattempts = 130111316;
 
-  int32 connectiontimeout = 285150581;
+  optional int32 connectiontimeout = 285150581;
 
   CustomHeaders customheaders = 112565669;
 
@@ -6420,7 +6420,7 @@ message Origin {
 
   OriginShield originshield = 482702287;
 
-  int32 responsecompletiontimeout = 197954616;
+  optional int32 responsecompletiontimeout = 197954616;
 
   S3OriginConfig s3originconfig = 78562208;
 
@@ -7440,7 +7440,7 @@ message ResponseHeadersPolicyCorsConfig {
 
   ResponseHeadersPolicyAccessControlExposeHeaders accesscontrolexposeheaders = 39057771;
 
-  int32 accesscontrolmaxagesec = 528754691;
+  optional int32 accesscontrolmaxagesec = 528754691;
 
   optional bool originoverride = 297680576;
 
@@ -7660,7 +7660,7 @@ message S3OriginConfig {
 
   string originaccessidentity = 226897844;
 
-  int32 originreadtimeout = 387717023;
+  optional int32 originreadtimeout = 387717023;
 
 }
 
@@ -8578,7 +8578,7 @@ message TrustStore {
 
   string name = 266367751;
 
-  int32 numberofcacertificates = 203958970;
+  optional int32 numberofcacertificates = 203958970;
 
   string reason = 20005178;
 
@@ -9148,7 +9148,7 @@ message UpdateRealtimeLogConfigRequest {
 
   string name = 266367751;
 
-  int64 samplingrate = 272929747;
+  optional int64 samplingrate = 272929747;
 
 }
 
@@ -9382,9 +9382,9 @@ message VpcOrigin {
 
 message VpcOriginConfig {
 
-  int32 originkeepalivetimeout = 214128603;
+  optional int32 originkeepalivetimeout = 214128603;
 
-  int32 originreadtimeout = 387717023;
+  optional int32 originreadtimeout = 387717023;
 
   string owneraccountid = 369721751;
 

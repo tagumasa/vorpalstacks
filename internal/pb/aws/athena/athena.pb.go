@@ -1151,9 +1151,9 @@ func (x *ApplicationDPUSizes) GetSupporteddpusizes() []int32 {
 
 type AthenaError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Errorcategory int32                  `protobuf:"varint,315958414,opt,name=errorcategory,proto3" json:"errorcategory,omitempty"`
+	Errorcategory *int32                 `protobuf:"varint,315958414,opt,name=errorcategory,proto3,oneof" json:"errorcategory,omitempty"`
 	Errormessage  string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
-	Errortype     int32                  `protobuf:"varint,398848954,opt,name=errortype,proto3" json:"errortype,omitempty"`
+	Errortype     *int32                 `protobuf:"varint,398848954,opt,name=errortype,proto3,oneof" json:"errortype,omitempty"`
 	Retryable     *bool                  `protobuf:"varint,83386186,opt,name=retryable,proto3,oneof" json:"retryable,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1190,8 +1190,8 @@ func (*AthenaError) Descriptor() ([]byte, []int) {
 }
 
 func (x *AthenaError) GetErrorcategory() int32 {
-	if x != nil {
-		return x.Errorcategory
+	if x != nil && x.Errorcategory != nil {
+		return *x.Errorcategory
 	}
 	return 0
 }
@@ -1204,8 +1204,8 @@ func (x *AthenaError) GetErrormessage() string {
 }
 
 func (x *AthenaError) GetErrortype() int32 {
-	if x != nil {
-		return x.Errortype
+	if x != nil && x.Errortype != nil {
+		return *x.Errortype
 	}
 	return 0
 }
@@ -1627,7 +1627,7 @@ func (x *CalculationResult) GetStdouts3Uri() string {
 
 type CalculationStatistics struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dpuexecutioninmillis int64                  `protobuf:"varint,174857936,opt,name=dpuexecutioninmillis,proto3" json:"dpuexecutioninmillis,omitempty"`
+	Dpuexecutioninmillis *int64                 `protobuf:"varint,174857936,opt,name=dpuexecutioninmillis,proto3,oneof" json:"dpuexecutioninmillis,omitempty"`
 	Progress             string                 `protobuf:"bytes,439787879,opt,name=progress,proto3" json:"progress,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -1664,8 +1664,8 @@ func (*CalculationStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *CalculationStatistics) GetDpuexecutioninmillis() int64 {
-	if x != nil {
-		return x.Dpuexecutioninmillis
+	if x != nil && x.Dpuexecutioninmillis != nil {
+		return *x.Dpuexecutioninmillis
 	}
 	return 0
 }
@@ -2328,8 +2328,8 @@ type ColumnInfo struct {
 	Label         string                 `protobuf:"bytes,516747934,opt,name=label,proto3" json:"label,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nullable      ColumnNullable         `protobuf:"varint,373261405,opt,name=nullable,proto3,enum=athena.ColumnNullable" json:"nullable,omitempty"`
-	Precision     int32                  `protobuf:"varint,110022584,opt,name=precision,proto3" json:"precision,omitempty"`
-	Scale         int32                  `protobuf:"varint,139628050,opt,name=scale,proto3" json:"scale,omitempty"`
+	Precision     *int32                 `protobuf:"varint,110022584,opt,name=precision,proto3,oneof" json:"precision,omitempty"`
+	Scale         *int32                 `protobuf:"varint,139628050,opt,name=scale,proto3,oneof" json:"scale,omitempty"`
 	Schemaname    string                 `protobuf:"bytes,443785942,opt,name=schemaname,proto3" json:"schemaname,omitempty"`
 	Tablename     string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	Type          string                 `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
@@ -2403,15 +2403,15 @@ func (x *ColumnInfo) GetNullable() ColumnNullable {
 }
 
 func (x *ColumnInfo) GetPrecision() int32 {
-	if x != nil {
-		return x.Precision
+	if x != nil && x.Precision != nil {
+		return *x.Precision
 	}
 	return 0
 }
 
 func (x *ColumnInfo) GetScale() int32 {
-	if x != nil {
-		return x.Scale
+	if x != nil && x.Scale != nil {
+		return *x.Scale
 	}
 	return 0
 }
@@ -4081,9 +4081,9 @@ type EngineConfiguration struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Additionalconfigs      map[string]string      `protobuf:"bytes,341218716,rep,name=additionalconfigs,proto3" json:"additionalconfigs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Classifications        []*Classification      `protobuf:"bytes,129400407,rep,name=classifications,proto3" json:"classifications,omitempty"`
-	Coordinatordpusize     int32                  `protobuf:"varint,158247866,opt,name=coordinatordpusize,proto3" json:"coordinatordpusize,omitempty"`
-	Defaultexecutordpusize int32                  `protobuf:"varint,42210020,opt,name=defaultexecutordpusize,proto3" json:"defaultexecutordpusize,omitempty"`
-	Maxconcurrentdpus      int32                  `protobuf:"varint,349976345,opt,name=maxconcurrentdpus,proto3" json:"maxconcurrentdpus,omitempty"`
+	Coordinatordpusize     *int32                 `protobuf:"varint,158247866,opt,name=coordinatordpusize,proto3,oneof" json:"coordinatordpusize,omitempty"`
+	Defaultexecutordpusize *int32                 `protobuf:"varint,42210020,opt,name=defaultexecutordpusize,proto3,oneof" json:"defaultexecutordpusize,omitempty"`
+	Maxconcurrentdpus      *int32                 `protobuf:"varint,349976345,opt,name=maxconcurrentdpus,proto3,oneof" json:"maxconcurrentdpus,omitempty"`
 	Sparkproperties        map[string]string      `protobuf:"bytes,157244376,rep,name=sparkproperties,proto3" json:"sparkproperties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -4134,22 +4134,22 @@ func (x *EngineConfiguration) GetClassifications() []*Classification {
 }
 
 func (x *EngineConfiguration) GetCoordinatordpusize() int32 {
-	if x != nil {
-		return x.Coordinatordpusize
+	if x != nil && x.Coordinatordpusize != nil {
+		return *x.Coordinatordpusize
 	}
 	return 0
 }
 
 func (x *EngineConfiguration) GetDefaultexecutordpusize() int32 {
-	if x != nil {
-		return x.Defaultexecutordpusize
+	if x != nil && x.Defaultexecutordpusize != nil {
+		return *x.Defaultexecutordpusize
 	}
 	return 0
 }
 
 func (x *EngineConfiguration) GetMaxconcurrentdpus() int32 {
-	if x != nil {
-		return x.Maxconcurrentdpus
+	if x != nil && x.Maxconcurrentdpus != nil {
+		return *x.Maxconcurrentdpus
 	}
 	return 0
 }
@@ -4216,11 +4216,11 @@ func (x *EngineVersion) GetSelectedengineversion() string {
 type ExecutorsSummary struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Executorid          string                 `protobuf:"bytes,307566450,opt,name=executorid,proto3" json:"executorid,omitempty"`
-	Executorsize        int64                  `protobuf:"varint,220298710,opt,name=executorsize,proto3" json:"executorsize,omitempty"`
+	Executorsize        *int64                 `protobuf:"varint,220298710,opt,name=executorsize,proto3,oneof" json:"executorsize,omitempty"`
 	Executorstate       ExecutorState          `protobuf:"varint,187122914,opt,name=executorstate,proto3,enum=athena.ExecutorState" json:"executorstate,omitempty"`
 	Executortype        ExecutorType           `protobuf:"varint,213715221,opt,name=executortype,proto3,enum=athena.ExecutorType" json:"executortype,omitempty"`
-	Startdatetime       int64                  `protobuf:"varint,88518355,opt,name=startdatetime,proto3" json:"startdatetime,omitempty"`
-	Terminationdatetime int64                  `protobuf:"varint,253850405,opt,name=terminationdatetime,proto3" json:"terminationdatetime,omitempty"`
+	Startdatetime       *int64                 `protobuf:"varint,88518355,opt,name=startdatetime,proto3,oneof" json:"startdatetime,omitempty"`
+	Terminationdatetime *int64                 `protobuf:"varint,253850405,opt,name=terminationdatetime,proto3,oneof" json:"terminationdatetime,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -4263,8 +4263,8 @@ func (x *ExecutorsSummary) GetExecutorid() string {
 }
 
 func (x *ExecutorsSummary) GetExecutorsize() int64 {
-	if x != nil {
-		return x.Executorsize
+	if x != nil && x.Executorsize != nil {
+		return *x.Executorsize
 	}
 	return 0
 }
@@ -4284,15 +4284,15 @@ func (x *ExecutorsSummary) GetExecutortype() ExecutorType {
 }
 
 func (x *ExecutorsSummary) GetStartdatetime() int64 {
-	if x != nil {
-		return x.Startdatetime
+	if x != nil && x.Startdatetime != nil {
+		return *x.Startdatetime
 	}
 	return 0
 }
 
 func (x *ExecutorsSummary) GetTerminationdatetime() int64 {
-	if x != nil {
-		return x.Terminationdatetime
+	if x != nil && x.Terminationdatetime != nil {
+		return *x.Terminationdatetime
 	}
 	return 0
 }
@@ -5495,7 +5495,7 @@ func (x *GetQueryExecutionOutput) GetQueryexecution() *QueryExecution {
 
 type GetQueryResultsInput struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults       int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults       *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queryexecutionid string                 `protobuf:"bytes,467615503,opt,name=queryexecutionid,proto3" json:"queryexecutionid,omitempty"`
 	Queryresulttype  QueryResultType        `protobuf:"varint,3724043,opt,name=queryresulttype,proto3,enum=athena.QueryResultType" json:"queryresulttype,omitempty"`
@@ -5534,8 +5534,8 @@ func (*GetQueryResultsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetQueryResultsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -5565,7 +5565,7 @@ type GetQueryResultsOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Resultset     *ResultSet             `protobuf:"bytes,146844365,opt,name=resultset,proto3" json:"resultset,omitempty"`
-	Updatecount   int64                  `protobuf:"varint,312282732,opt,name=updatecount,proto3" json:"updatecount,omitempty"`
+	Updatecount   *int64                 `protobuf:"varint,312282732,opt,name=updatecount,proto3,oneof" json:"updatecount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5615,8 +5615,8 @@ func (x *GetQueryResultsOutput) GetResultset() *ResultSet {
 }
 
 func (x *GetQueryResultsOutput) GetUpdatecount() int64 {
-	if x != nil {
-		return x.Updatecount
+	if x != nil && x.Updatecount != nil {
+		return *x.Updatecount
 	}
 	return 0
 }
@@ -6635,7 +6635,7 @@ func (x *InvalidRequestException) GetMessage() string {
 
 type ListApplicationDPUSizesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6672,8 +6672,8 @@ func (*ListApplicationDPUSizesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListApplicationDPUSizesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6739,7 +6739,7 @@ func (x *ListApplicationDPUSizesOutput) GetNexttoken() string {
 
 type ListCalculationExecutionsRequest struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Maxresults    int32                     `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                    `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Sessionid     string                    `protobuf:"bytes,20529723,opt,name=sessionid,proto3" json:"sessionid,omitempty"`
 	Statefilter   CalculationExecutionState `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.CalculationExecutionState" json:"statefilter,omitempty"`
@@ -6778,8 +6778,8 @@ func (*ListCalculationExecutionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListCalculationExecutionsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6859,7 +6859,7 @@ func (x *ListCalculationExecutionsResponse) GetNexttoken() string {
 
 type ListCapacityReservationsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6896,8 +6896,8 @@ func (*ListCapacityReservationsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListCapacityReservationsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6963,7 +6963,7 @@ func (x *ListCapacityReservationsOutput) GetNexttoken() string {
 
 type ListDataCatalogsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7001,8 +7001,8 @@ func (*ListDataCatalogsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDataCatalogsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7076,7 +7076,7 @@ func (x *ListDataCatalogsOutput) GetNexttoken() string {
 type ListDatabasesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Catalogname   string                 `protobuf:"bytes,518825212,opt,name=catalogname,proto3" json:"catalogname,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7121,8 +7121,8 @@ func (x *ListDatabasesInput) GetCatalogname() string {
 }
 
 func (x *ListDatabasesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7195,7 +7195,7 @@ func (x *ListDatabasesOutput) GetNexttoken() string {
 
 type ListEngineVersionsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7232,8 +7232,8 @@ func (*ListEngineVersionsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListEngineVersionsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7300,7 +7300,7 @@ func (x *ListEngineVersionsOutput) GetNexttoken() string {
 type ListExecutorsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Executorstatefilter ExecutorState          `protobuf:"varint,208448852,opt,name=executorstatefilter,proto3,enum=athena.ExecutorState" json:"executorstatefilter,omitempty"`
-	Maxresults          int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults          *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Sessionid           string                 `protobuf:"bytes,20529723,opt,name=sessionid,proto3" json:"sessionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -7345,8 +7345,8 @@ func (x *ListExecutorsRequest) GetExecutorstatefilter() ExecutorState {
 }
 
 func (x *ListExecutorsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7427,7 +7427,7 @@ func (x *ListExecutorsResponse) GetSessionid() string {
 
 type ListNamedQueriesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7465,8 +7465,8 @@ func (*ListNamedQueriesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListNamedQueriesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7540,7 +7540,7 @@ func (x *ListNamedQueriesOutput) GetNexttoken() string {
 type ListNotebookMetadataInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filters       *FilterDefinition      `protobuf:"bytes,188393197,opt,name=filters,proto3" json:"filters,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7585,8 +7585,8 @@ func (x *ListNotebookMetadataInput) GetFilters() *FilterDefinition {
 }
 
 func (x *ListNotebookMetadataInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7659,7 +7659,7 @@ func (x *ListNotebookMetadataOutput) GetNotebookmetadatalist() []*NotebookMetada
 
 type ListNotebookSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Notebookid    string                 `protobuf:"bytes,157637214,opt,name=notebookid,proto3" json:"notebookid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7697,8 +7697,8 @@ func (*ListNotebookSessionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListNotebookSessionsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7771,7 +7771,7 @@ func (x *ListNotebookSessionsResponse) GetNotebooksessionslist() []*NotebookSess
 
 type ListPreparedStatementsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7809,8 +7809,8 @@ func (*ListPreparedStatementsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPreparedStatementsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7883,7 +7883,7 @@ func (x *ListPreparedStatementsOutput) GetPreparedstatements() []*PreparedStatem
 
 type ListQueryExecutionsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7921,8 +7921,8 @@ func (*ListQueryExecutionsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueryExecutionsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -7995,7 +7995,7 @@ func (x *ListQueryExecutionsOutput) GetQueryexecutionids() []string {
 
 type ListSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Statefilter   SessionState           `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.SessionState" json:"statefilter,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
@@ -8034,8 +8034,8 @@ func (*ListSessionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSessionsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8118,7 +8118,7 @@ type ListTableMetadataInput struct {
 	Catalogname   string                 `protobuf:"bytes,518825212,opt,name=catalogname,proto3" json:"catalogname,omitempty"`
 	Databasename  string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
 	Expression    string                 `protobuf:"bytes,193051916,opt,name=expression,proto3" json:"expression,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8177,8 +8177,8 @@ func (x *ListTableMetadataInput) GetExpression() string {
 }
 
 func (x *ListTableMetadataInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8251,7 +8251,7 @@ func (x *ListTableMetadataOutput) GetTablemetadatalist() []*TableMetadata {
 
 type ListTagsForResourceInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8289,8 +8289,8 @@ func (*ListTagsForResourceInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8363,7 +8363,7 @@ func (x *ListTagsForResourceOutput) GetTags() []*Tag {
 
 type ListWorkGroupsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8400,8 +8400,8 @@ func (*ListWorkGroupsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListWorkGroupsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9416,15 +9416,15 @@ func (x *QueryExecutionContext) GetDatabase() string {
 type QueryExecutionStatistics struct {
 	state                            protoimpl.MessageState  `protogen:"open.v1"`
 	Datamanifestlocation             string                  `protobuf:"bytes,329970068,opt,name=datamanifestlocation,proto3" json:"datamanifestlocation,omitempty"`
-	Datascannedinbytes               int64                   `protobuf:"varint,125540604,opt,name=datascannedinbytes,proto3" json:"datascannedinbytes,omitempty"`
+	Datascannedinbytes               *int64                  `protobuf:"varint,125540604,opt,name=datascannedinbytes,proto3,oneof" json:"datascannedinbytes,omitempty"`
 	Dpucount                         float64                 `protobuf:"fixed64,296377724,opt,name=dpucount,proto3" json:"dpucount,omitempty"`
-	Engineexecutiontimeinmillis      int64                   `protobuf:"varint,228680528,opt,name=engineexecutiontimeinmillis,proto3" json:"engineexecutiontimeinmillis,omitempty"`
-	Queryplanningtimeinmillis        int64                   `protobuf:"varint,482562295,opt,name=queryplanningtimeinmillis,proto3" json:"queryplanningtimeinmillis,omitempty"`
-	Queryqueuetimeinmillis           int64                   `protobuf:"varint,221814191,opt,name=queryqueuetimeinmillis,proto3" json:"queryqueuetimeinmillis,omitempty"`
+	Engineexecutiontimeinmillis      *int64                  `protobuf:"varint,228680528,opt,name=engineexecutiontimeinmillis,proto3,oneof" json:"engineexecutiontimeinmillis,omitempty"`
+	Queryplanningtimeinmillis        *int64                  `protobuf:"varint,482562295,opt,name=queryplanningtimeinmillis,proto3,oneof" json:"queryplanningtimeinmillis,omitempty"`
+	Queryqueuetimeinmillis           *int64                  `protobuf:"varint,221814191,opt,name=queryqueuetimeinmillis,proto3,oneof" json:"queryqueuetimeinmillis,omitempty"`
 	Resultreuseinformation           *ResultReuseInformation `protobuf:"bytes,261773827,opt,name=resultreuseinformation,proto3" json:"resultreuseinformation,omitempty"`
-	Servicepreprocessingtimeinmillis int64                   `protobuf:"varint,185806899,opt,name=servicepreprocessingtimeinmillis,proto3" json:"servicepreprocessingtimeinmillis,omitempty"`
-	Serviceprocessingtimeinmillis    int64                   `protobuf:"varint,81556436,opt,name=serviceprocessingtimeinmillis,proto3" json:"serviceprocessingtimeinmillis,omitempty"`
-	Totalexecutiontimeinmillis       int64                   `protobuf:"varint,251249322,opt,name=totalexecutiontimeinmillis,proto3" json:"totalexecutiontimeinmillis,omitempty"`
+	Servicepreprocessingtimeinmillis *int64                  `protobuf:"varint,185806899,opt,name=servicepreprocessingtimeinmillis,proto3,oneof" json:"servicepreprocessingtimeinmillis,omitempty"`
+	Serviceprocessingtimeinmillis    *int64                  `protobuf:"varint,81556436,opt,name=serviceprocessingtimeinmillis,proto3,oneof" json:"serviceprocessingtimeinmillis,omitempty"`
+	Totalexecutiontimeinmillis       *int64                  `protobuf:"varint,251249322,opt,name=totalexecutiontimeinmillis,proto3,oneof" json:"totalexecutiontimeinmillis,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -9467,8 +9467,8 @@ func (x *QueryExecutionStatistics) GetDatamanifestlocation() string {
 }
 
 func (x *QueryExecutionStatistics) GetDatascannedinbytes() int64 {
-	if x != nil {
-		return x.Datascannedinbytes
+	if x != nil && x.Datascannedinbytes != nil {
+		return *x.Datascannedinbytes
 	}
 	return 0
 }
@@ -9481,22 +9481,22 @@ func (x *QueryExecutionStatistics) GetDpucount() float64 {
 }
 
 func (x *QueryExecutionStatistics) GetEngineexecutiontimeinmillis() int64 {
-	if x != nil {
-		return x.Engineexecutiontimeinmillis
+	if x != nil && x.Engineexecutiontimeinmillis != nil {
+		return *x.Engineexecutiontimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryExecutionStatistics) GetQueryplanningtimeinmillis() int64 {
-	if x != nil {
-		return x.Queryplanningtimeinmillis
+	if x != nil && x.Queryplanningtimeinmillis != nil {
+		return *x.Queryplanningtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryExecutionStatistics) GetQueryqueuetimeinmillis() int64 {
-	if x != nil {
-		return x.Queryqueuetimeinmillis
+	if x != nil && x.Queryqueuetimeinmillis != nil {
+		return *x.Queryqueuetimeinmillis
 	}
 	return 0
 }
@@ -9509,22 +9509,22 @@ func (x *QueryExecutionStatistics) GetResultreuseinformation() *ResultReuseInfor
 }
 
 func (x *QueryExecutionStatistics) GetServicepreprocessingtimeinmillis() int64 {
-	if x != nil {
-		return x.Servicepreprocessingtimeinmillis
+	if x != nil && x.Servicepreprocessingtimeinmillis != nil {
+		return *x.Servicepreprocessingtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryExecutionStatistics) GetServiceprocessingtimeinmillis() int64 {
-	if x != nil {
-		return x.Serviceprocessingtimeinmillis
+	if x != nil && x.Serviceprocessingtimeinmillis != nil {
+		return *x.Serviceprocessingtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryExecutionStatistics) GetTotalexecutiontimeinmillis() int64 {
-	if x != nil {
-		return x.Totalexecutiontimeinmillis
+	if x != nil && x.Totalexecutiontimeinmillis != nil {
+		return *x.Totalexecutiontimeinmillis
 	}
 	return 0
 }
@@ -9727,10 +9727,10 @@ func (x *QueryRuntimeStatistics) GetTimeline() *QueryRuntimeStatisticsTimeline {
 
 type QueryRuntimeStatisticsRows struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Inputbytes    int64                  `protobuf:"varint,431684783,opt,name=inputbytes,proto3" json:"inputbytes,omitempty"`
-	Inputrows     int64                  `protobuf:"varint,30551127,opt,name=inputrows,proto3" json:"inputrows,omitempty"`
-	Outputbytes   int64                  `protobuf:"varint,318971400,opt,name=outputbytes,proto3" json:"outputbytes,omitempty"`
-	Outputrows    int64                  `protobuf:"varint,138873322,opt,name=outputrows,proto3" json:"outputrows,omitempty"`
+	Inputbytes    *int64                 `protobuf:"varint,431684783,opt,name=inputbytes,proto3,oneof" json:"inputbytes,omitempty"`
+	Inputrows     *int64                 `protobuf:"varint,30551127,opt,name=inputrows,proto3,oneof" json:"inputrows,omitempty"`
+	Outputbytes   *int64                 `protobuf:"varint,318971400,opt,name=outputbytes,proto3,oneof" json:"outputbytes,omitempty"`
+	Outputrows    *int64                 `protobuf:"varint,138873322,opt,name=outputrows,proto3,oneof" json:"outputrows,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9766,41 +9766,41 @@ func (*QueryRuntimeStatisticsRows) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryRuntimeStatisticsRows) GetInputbytes() int64 {
-	if x != nil {
-		return x.Inputbytes
+	if x != nil && x.Inputbytes != nil {
+		return *x.Inputbytes
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsRows) GetInputrows() int64 {
-	if x != nil {
-		return x.Inputrows
+	if x != nil && x.Inputrows != nil {
+		return *x.Inputrows
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsRows) GetOutputbytes() int64 {
-	if x != nil {
-		return x.Outputbytes
+	if x != nil && x.Outputbytes != nil {
+		return *x.Outputbytes
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsRows) GetOutputrows() int64 {
-	if x != nil {
-		return x.Outputrows
+	if x != nil && x.Outputrows != nil {
+		return *x.Outputrows
 	}
 	return 0
 }
 
 type QueryRuntimeStatisticsTimeline struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	Engineexecutiontimeinmillis      int64                  `protobuf:"varint,228680528,opt,name=engineexecutiontimeinmillis,proto3" json:"engineexecutiontimeinmillis,omitempty"`
-	Queryplanningtimeinmillis        int64                  `protobuf:"varint,482562295,opt,name=queryplanningtimeinmillis,proto3" json:"queryplanningtimeinmillis,omitempty"`
-	Queryqueuetimeinmillis           int64                  `protobuf:"varint,221814191,opt,name=queryqueuetimeinmillis,proto3" json:"queryqueuetimeinmillis,omitempty"`
-	Servicepreprocessingtimeinmillis int64                  `protobuf:"varint,185806899,opt,name=servicepreprocessingtimeinmillis,proto3" json:"servicepreprocessingtimeinmillis,omitempty"`
-	Serviceprocessingtimeinmillis    int64                  `protobuf:"varint,81556436,opt,name=serviceprocessingtimeinmillis,proto3" json:"serviceprocessingtimeinmillis,omitempty"`
-	Totalexecutiontimeinmillis       int64                  `protobuf:"varint,251249322,opt,name=totalexecutiontimeinmillis,proto3" json:"totalexecutiontimeinmillis,omitempty"`
+	Engineexecutiontimeinmillis      *int64                 `protobuf:"varint,228680528,opt,name=engineexecutiontimeinmillis,proto3,oneof" json:"engineexecutiontimeinmillis,omitempty"`
+	Queryplanningtimeinmillis        *int64                 `protobuf:"varint,482562295,opt,name=queryplanningtimeinmillis,proto3,oneof" json:"queryplanningtimeinmillis,omitempty"`
+	Queryqueuetimeinmillis           *int64                 `protobuf:"varint,221814191,opt,name=queryqueuetimeinmillis,proto3,oneof" json:"queryqueuetimeinmillis,omitempty"`
+	Servicepreprocessingtimeinmillis *int64                 `protobuf:"varint,185806899,opt,name=servicepreprocessingtimeinmillis,proto3,oneof" json:"servicepreprocessingtimeinmillis,omitempty"`
+	Serviceprocessingtimeinmillis    *int64                 `protobuf:"varint,81556436,opt,name=serviceprocessingtimeinmillis,proto3,oneof" json:"serviceprocessingtimeinmillis,omitempty"`
+	Totalexecutiontimeinmillis       *int64                 `protobuf:"varint,251249322,opt,name=totalexecutiontimeinmillis,proto3,oneof" json:"totalexecutiontimeinmillis,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -9836,56 +9836,56 @@ func (*QueryRuntimeStatisticsTimeline) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetEngineexecutiontimeinmillis() int64 {
-	if x != nil {
-		return x.Engineexecutiontimeinmillis
+	if x != nil && x.Engineexecutiontimeinmillis != nil {
+		return *x.Engineexecutiontimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetQueryplanningtimeinmillis() int64 {
-	if x != nil {
-		return x.Queryplanningtimeinmillis
+	if x != nil && x.Queryplanningtimeinmillis != nil {
+		return *x.Queryplanningtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetQueryqueuetimeinmillis() int64 {
-	if x != nil {
-		return x.Queryqueuetimeinmillis
+	if x != nil && x.Queryqueuetimeinmillis != nil {
+		return *x.Queryqueuetimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetServicepreprocessingtimeinmillis() int64 {
-	if x != nil {
-		return x.Servicepreprocessingtimeinmillis
+	if x != nil && x.Servicepreprocessingtimeinmillis != nil {
+		return *x.Servicepreprocessingtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetServiceprocessingtimeinmillis() int64 {
-	if x != nil {
-		return x.Serviceprocessingtimeinmillis
+	if x != nil && x.Serviceprocessingtimeinmillis != nil {
+		return *x.Serviceprocessingtimeinmillis
 	}
 	return 0
 }
 
 func (x *QueryRuntimeStatisticsTimeline) GetTotalexecutiontimeinmillis() int64 {
-	if x != nil {
-		return x.Totalexecutiontimeinmillis
+	if x != nil && x.Totalexecutiontimeinmillis != nil {
+		return *x.Totalexecutiontimeinmillis
 	}
 	return 0
 }
 
 type QueryStage struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Executiontime  int64                  `protobuf:"varint,379716053,opt,name=executiontime,proto3" json:"executiontime,omitempty"`
-	Inputbytes     int64                  `protobuf:"varint,431684783,opt,name=inputbytes,proto3" json:"inputbytes,omitempty"`
-	Inputrows      int64                  `protobuf:"varint,30551127,opt,name=inputrows,proto3" json:"inputrows,omitempty"`
-	Outputbytes    int64                  `protobuf:"varint,318971400,opt,name=outputbytes,proto3" json:"outputbytes,omitempty"`
-	Outputrows     int64                  `protobuf:"varint,138873322,opt,name=outputrows,proto3" json:"outputrows,omitempty"`
+	Executiontime  *int64                 `protobuf:"varint,379716053,opt,name=executiontime,proto3,oneof" json:"executiontime,omitempty"`
+	Inputbytes     *int64                 `protobuf:"varint,431684783,opt,name=inputbytes,proto3,oneof" json:"inputbytes,omitempty"`
+	Inputrows      *int64                 `protobuf:"varint,30551127,opt,name=inputrows,proto3,oneof" json:"inputrows,omitempty"`
+	Outputbytes    *int64                 `protobuf:"varint,318971400,opt,name=outputbytes,proto3,oneof" json:"outputbytes,omitempty"`
+	Outputrows     *int64                 `protobuf:"varint,138873322,opt,name=outputrows,proto3,oneof" json:"outputrows,omitempty"`
 	Querystageplan *QueryStagePlanNode    `protobuf:"bytes,36313545,opt,name=querystageplan,proto3" json:"querystageplan,omitempty"`
-	Stageid        int64                  `protobuf:"varint,328165497,opt,name=stageid,proto3" json:"stageid,omitempty"`
+	Stageid        *int64                 `protobuf:"varint,328165497,opt,name=stageid,proto3,oneof" json:"stageid,omitempty"`
 	State          string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
 	Substages      []*QueryStage          `protobuf:"bytes,114732779,rep,name=substages,proto3" json:"substages,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -9923,36 +9923,36 @@ func (*QueryStage) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryStage) GetExecutiontime() int64 {
-	if x != nil {
-		return x.Executiontime
+	if x != nil && x.Executiontime != nil {
+		return *x.Executiontime
 	}
 	return 0
 }
 
 func (x *QueryStage) GetInputbytes() int64 {
-	if x != nil {
-		return x.Inputbytes
+	if x != nil && x.Inputbytes != nil {
+		return *x.Inputbytes
 	}
 	return 0
 }
 
 func (x *QueryStage) GetInputrows() int64 {
-	if x != nil {
-		return x.Inputrows
+	if x != nil && x.Inputrows != nil {
+		return *x.Inputrows
 	}
 	return 0
 }
 
 func (x *QueryStage) GetOutputbytes() int64 {
-	if x != nil {
-		return x.Outputbytes
+	if x != nil && x.Outputbytes != nil {
+		return *x.Outputbytes
 	}
 	return 0
 }
 
 func (x *QueryStage) GetOutputrows() int64 {
-	if x != nil {
-		return x.Outputrows
+	if x != nil && x.Outputrows != nil {
+		return *x.Outputrows
 	}
 	return 0
 }
@@ -9965,8 +9965,8 @@ func (x *QueryStage) GetQuerystageplan() *QueryStagePlanNode {
 }
 
 func (x *QueryStage) GetStageid() int64 {
-	if x != nil {
-		return x.Stageid
+	if x != nil && x.Stageid != nil {
+		return *x.Stageid
 	}
 	return 0
 }
@@ -10276,7 +10276,7 @@ func (x *ResultConfigurationUpdates) GetRemoveoutputlocation() bool {
 type ResultReuseByAgeConfiguration struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Enabled         *bool                  `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
-	Maxageinminutes int32                  `protobuf:"varint,211566877,opt,name=maxageinminutes,proto3" json:"maxageinminutes,omitempty"`
+	Maxageinminutes *int32                 `protobuf:"varint,211566877,opt,name=maxageinminutes,proto3,oneof" json:"maxageinminutes,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -10319,8 +10319,8 @@ func (x *ResultReuseByAgeConfiguration) GetEnabled() bool {
 }
 
 func (x *ResultReuseByAgeConfiguration) GetMaxageinminutes() int32 {
-	if x != nil {
-		return x.Maxageinminutes
+	if x != nil && x.Maxageinminutes != nil {
+		return *x.Maxageinminutes
 	}
 	return 0
 }
@@ -10661,8 +10661,8 @@ type SessionConfiguration struct {
 	state                       protoimpl.MessageState   `protogen:"open.v1"`
 	Encryptionconfiguration     *EncryptionConfiguration `protobuf:"bytes,225764215,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
 	Executionrole               string                   `protobuf:"bytes,253307658,opt,name=executionrole,proto3" json:"executionrole,omitempty"`
-	Idletimeoutseconds          int64                    `protobuf:"varint,61279260,opt,name=idletimeoutseconds,proto3" json:"idletimeoutseconds,omitempty"`
-	Sessionidletimeoutinminutes int32                    `protobuf:"varint,515304989,opt,name=sessionidletimeoutinminutes,proto3" json:"sessionidletimeoutinminutes,omitempty"`
+	Idletimeoutseconds          *int64                   `protobuf:"varint,61279260,opt,name=idletimeoutseconds,proto3,oneof" json:"idletimeoutseconds,omitempty"`
+	Sessionidletimeoutinminutes *int32                   `protobuf:"varint,515304989,opt,name=sessionidletimeoutinminutes,proto3,oneof" json:"sessionidletimeoutinminutes,omitempty"`
 	Workingdirectory            string                   `protobuf:"bytes,478970252,opt,name=workingdirectory,proto3" json:"workingdirectory,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -10713,15 +10713,15 @@ func (x *SessionConfiguration) GetExecutionrole() string {
 }
 
 func (x *SessionConfiguration) GetIdletimeoutseconds() int64 {
-	if x != nil {
-		return x.Idletimeoutseconds
+	if x != nil && x.Idletimeoutseconds != nil {
+		return *x.Idletimeoutseconds
 	}
 	return 0
 }
 
 func (x *SessionConfiguration) GetSessionidletimeoutinminutes() int32 {
-	if x != nil {
-		return x.Sessionidletimeoutinminutes
+	if x != nil && x.Sessionidletimeoutinminutes != nil {
+		return *x.Sessionidletimeoutinminutes
 	}
 	return 0
 }
@@ -10735,7 +10735,7 @@ func (x *SessionConfiguration) GetWorkingdirectory() string {
 
 type SessionStatistics struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dpuexecutioninmillis int64                  `protobuf:"varint,174857936,opt,name=dpuexecutioninmillis,proto3" json:"dpuexecutioninmillis,omitempty"`
+	Dpuexecutioninmillis *int64                 `protobuf:"varint,174857936,opt,name=dpuexecutioninmillis,proto3,oneof" json:"dpuexecutioninmillis,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -10771,8 +10771,8 @@ func (*SessionStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *SessionStatistics) GetDpuexecutioninmillis() int64 {
-	if x != nil {
-		return x.Dpuexecutioninmillis
+	if x != nil && x.Dpuexecutioninmillis != nil {
+		return *x.Dpuexecutioninmillis
 	}
 	return 0
 }
@@ -11218,7 +11218,7 @@ type StartSessionRequest struct {
 	Executionrole               string                   `protobuf:"bytes,253307658,opt,name=executionrole,proto3" json:"executionrole,omitempty"`
 	Monitoringconfiguration     *MonitoringConfiguration `protobuf:"bytes,364891928,opt,name=monitoringconfiguration,proto3" json:"monitoringconfiguration,omitempty"`
 	Notebookversion             string                   `protobuf:"bytes,528689837,opt,name=notebookversion,proto3" json:"notebookversion,omitempty"`
-	Sessionidletimeoutinminutes int32                    `protobuf:"varint,515304989,opt,name=sessionidletimeoutinminutes,proto3" json:"sessionidletimeoutinminutes,omitempty"`
+	Sessionidletimeoutinminutes *int32                   `protobuf:"varint,515304989,opt,name=sessionidletimeoutinminutes,proto3,oneof" json:"sessionidletimeoutinminutes,omitempty"`
 	Tags                        []*Tag                   `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Workgroup                   string                   `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields               protoimpl.UnknownFields
@@ -11305,8 +11305,8 @@ func (x *StartSessionRequest) GetNotebookversion() string {
 }
 
 func (x *StartSessionRequest) GetSessionidletimeoutinminutes() int32 {
-	if x != nil {
-		return x.Sessionidletimeoutinminutes
+	if x != nil && x.Sessionidletimeoutinminutes != nil {
+		return *x.Sessionidletimeoutinminutes
 	}
 	return 0
 }
@@ -12984,7 +12984,7 @@ func (x *WorkGroup) GetState() WorkGroupState {
 type WorkGroupConfiguration struct {
 	state                                   protoimpl.MessageState                   `protogen:"open.v1"`
 	Additionalconfiguration                 string                                   `protobuf:"bytes,389584375,opt,name=additionalconfiguration,proto3" json:"additionalconfiguration,omitempty"`
-	Bytesscannedcutoffperquery              int64                                    `protobuf:"varint,265761289,opt,name=bytesscannedcutoffperquery,proto3" json:"bytesscannedcutoffperquery,omitempty"`
+	Bytesscannedcutoffperquery              *int64                                   `protobuf:"varint,265761289,opt,name=bytesscannedcutoffperquery,proto3,oneof" json:"bytesscannedcutoffperquery,omitempty"`
 	Customercontentencryptionconfiguration  *CustomerContentEncryptionConfiguration  `protobuf:"bytes,165213900,opt,name=customercontentencryptionconfiguration,proto3" json:"customercontentencryptionconfiguration,omitempty"`
 	Enableminimumencryptionconfiguration    *bool                                    `protobuf:"varint,238637616,opt,name=enableminimumencryptionconfiguration,proto3,oneof" json:"enableminimumencryptionconfiguration,omitempty"`
 	Enforceworkgroupconfiguration           *bool                                    `protobuf:"varint,152602624,opt,name=enforceworkgroupconfiguration,proto3,oneof" json:"enforceworkgroupconfiguration,omitempty"`
@@ -13040,8 +13040,8 @@ func (x *WorkGroupConfiguration) GetAdditionalconfiguration() string {
 }
 
 func (x *WorkGroupConfiguration) GetBytesscannedcutoffperquery() int64 {
-	if x != nil {
-		return x.Bytesscannedcutoffperquery
+	if x != nil && x.Bytesscannedcutoffperquery != nil {
+		return *x.Bytesscannedcutoffperquery
 	}
 	return 0
 }
@@ -13140,7 +13140,7 @@ func (x *WorkGroupConfiguration) GetResultconfiguration() *ResultConfiguration {
 type WorkGroupConfigurationUpdates struct {
 	state                                        protoimpl.MessageState                   `protogen:"open.v1"`
 	Additionalconfiguration                      string                                   `protobuf:"bytes,389584375,opt,name=additionalconfiguration,proto3" json:"additionalconfiguration,omitempty"`
-	Bytesscannedcutoffperquery                   int64                                    `protobuf:"varint,265761289,opt,name=bytesscannedcutoffperquery,proto3" json:"bytesscannedcutoffperquery,omitempty"`
+	Bytesscannedcutoffperquery                   *int64                                   `protobuf:"varint,265761289,opt,name=bytesscannedcutoffperquery,proto3,oneof" json:"bytesscannedcutoffperquery,omitempty"`
 	Customercontentencryptionconfiguration       *CustomerContentEncryptionConfiguration  `protobuf:"bytes,165213900,opt,name=customercontentencryptionconfiguration,proto3" json:"customercontentencryptionconfiguration,omitempty"`
 	Enableminimumencryptionconfiguration         *bool                                    `protobuf:"varint,238637616,opt,name=enableminimumencryptionconfiguration,proto3,oneof" json:"enableminimumencryptionconfiguration,omitempty"`
 	Enforceworkgroupconfiguration                *bool                                    `protobuf:"varint,152602624,opt,name=enforceworkgroupconfiguration,proto3,oneof" json:"enforceworkgroupconfiguration,omitempty"`
@@ -13197,8 +13197,8 @@ func (x *WorkGroupConfigurationUpdates) GetAdditionalconfiguration() string {
 }
 
 func (x *WorkGroupConfigurationUpdates) GetBytesscannedcutoffperquery() int64 {
-	if x != nil {
-		return x.Bytesscannedcutoffperquery
+	if x != nil && x.Bytesscannedcutoffperquery != nil {
+		return *x.Bytesscannedcutoffperquery
 	}
 	return 0
 }
@@ -13394,12 +13394,15 @@ const file_athena_proto_rawDesc = "" +
 	"\vs3acloption\x18\x99\xaf\xb4. \x01(\x0e2\x13.athena.S3AclOptionR\vs3acloption\"~\n" +
 	"\x13ApplicationDPUSizes\x126\n" +
 	"\x14applicationruntimeid\x18\x87ᣏ\x01 \x01(\tR\x14applicationruntimeid\x12/\n" +
-	"\x11supporteddpusizes\x18\xb7\xaa\xd4l \x03(\x05R\x11supporteddpusizes\"\xb5\x01\n" +
-	"\vAthenaError\x12(\n" +
-	"\rerrorcategory\x18\x8e\xc9Ԗ\x01 \x01(\x05R\rerrorcategory\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12 \n" +
-	"\terrortype\x18\xba痾\x01 \x01(\x05R\terrortype\x12$\n" +
-	"\tretryable\x18ʾ\xe1' \x01(\bH\x00R\tretryable\x88\x01\x01B\f\n" +
+	"\x11supporteddpusizes\x18\xb7\xaa\xd4l \x03(\x05R\x11supporteddpusizes\"\xdf\x01\n" +
+	"\vAthenaError\x12-\n" +
+	"\rerrorcategory\x18\x8e\xc9Ԗ\x01 \x01(\x05H\x00R\rerrorcategory\x88\x01\x01\x12&\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12%\n" +
+	"\terrortype\x18\xba痾\x01 \x01(\x05H\x01R\terrortype\x88\x01\x01\x12$\n" +
+	"\tretryable\x18ʾ\xe1' \x01(\bH\x02R\tretryable\x88\x01\x01B\x10\n" +
+	"\x0e_errorcategoryB\f\n" +
+	"\n" +
+	"_errortypeB\f\n" +
 	"\n" +
 	"_retryable\"B\n" +
 	"\x17BatchGetNamedQueryInput\x12'\n" +
@@ -13426,10 +13429,11 @@ const file_athena_proto_rawDesc = "" +
 	"resulttype\x18\xed\xfc\xbe| \x01(\tR\n" +
 	"resulttype\x12'\n" +
 	"\rstderrors3uri\x18\xc5\xd8\xd8l \x01(\tR\rstderrors3uri\x12#\n" +
-	"\vstdouts3uri\x18\xef\xd4\xf4/ \x01(\tR\vstdouts3uri\"n\n" +
-	"\x15CalculationStatistics\x125\n" +
-	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03R\x14dpuexecutioninmillis\x12\x1e\n" +
-	"\bprogress\x18\xe7\xc2\xda\xd1\x01 \x01(\tR\bprogress\"\xe8\x01\n" +
+	"\vstdouts3uri\x18\xef\xd4\xf4/ \x01(\tR\vstdouts3uri\"\x8c\x01\n" +
+	"\x15CalculationStatistics\x12:\n" +
+	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03H\x00R\x14dpuexecutioninmillis\x88\x01\x01\x12\x1e\n" +
+	"\bprogress\x18\xe7\xc2\xda\xd1\x01 \x01(\tR\bprogressB\x17\n" +
+	"\x15_dpuexecutioninmillis\"\xe8\x01\n" +
 	"\x11CalculationStatus\x121\n" +
 	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tR\x12completiondatetime\x12;\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateR\x05state\x12/\n" +
@@ -13483,22 +13487,25 @@ const file_athena_proto_rawDesc = "" +
 	"\x06Column\x12\x1c\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"\xf3\x02\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"\x95\x03\n" +
 	"\n" +
 	"ColumnInfo\x12,\n" +
 	"\rcasesensitive\x18\x8c\xba\xa4{ \x01(\bH\x00R\rcasesensitive\x88\x01\x01\x12$\n" +
 	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tR\vcatalogname\x12\x18\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x126\n" +
-	"\bnullable\x18݈\xfe\xb1\x01 \x01(\x0e2\x16.athena.ColumnNullableR\bnullable\x12\x1f\n" +
-	"\tprecision\x18\xb8\x9f\xbb4 \x01(\x05R\tprecision\x12\x17\n" +
-	"\x05scale\x18\x92\x9c\xcaB \x01(\x05R\x05scale\x12\"\n" +
+	"\bnullable\x18݈\xfe\xb1\x01 \x01(\x0e2\x16.athena.ColumnNullableR\bnullable\x12$\n" +
+	"\tprecision\x18\xb8\x9f\xbb4 \x01(\x05H\x01R\tprecision\x88\x01\x01\x12\x1c\n" +
+	"\x05scale\x18\x92\x9c\xcaB \x01(\x05H\x02R\x05scale\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"schemaname\x18\xd6\xc5\xce\xd3\x01 \x01(\tR\n" +
 	"schemaname\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04typeB\x10\n" +
-	"\x0e_casesensitive\"\x80\x01\n" +
+	"\x0e_casesensitiveB\f\n" +
+	"\n" +
+	"_precisionB\b\n" +
+	"\x06_scale\"\x80\x01\n" +
 	"\x1eCreateCapacityReservationInput\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12#\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\v.athena.TagR\x04tags\x12\"\n" +
@@ -13616,32 +13623,38 @@ const file_athena_proto_rawDesc = "" +
 	"\x15DeleteWorkGroupOutput\"}\n" +
 	"\x17EncryptionConfiguration\x12G\n" +
 	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2\x18.athena.EncryptionOptionR\x10encryptionoption\x12\x19\n" +
-	"\x06kmskey\x18\xaa\xa1\xd06 \x01(\tR\x06kmskey\"\xc9\x04\n" +
+	"\x06kmskey\x18\xaa\xa1\xd06 \x01(\tR\x06kmskey\"\xa0\x05\n" +
 	"\x13EngineConfiguration\x12d\n" +
 	"\x11additionalconfigs\x18\x9c\xabڢ\x01 \x03(\v22.athena.EngineConfiguration.AdditionalconfigsEntryR\x11additionalconfigs\x12C\n" +
-	"\x0fclassifications\x18\xd7\xfc\xd9= \x03(\v2\x16.athena.ClassificationR\x0fclassifications\x121\n" +
-	"\x12coordinatordpusize\x18\xba\u05faK \x01(\x05R\x12coordinatordpusize\x129\n" +
-	"\x16defaultexecutordpusize\x18䥐\x14 \x01(\x05R\x16defaultexecutordpusize\x120\n" +
-	"\x11maxconcurrentdpus\x18\x99\xee\xf0\xa6\x01 \x01(\x05R\x11maxconcurrentdpus\x12]\n" +
+	"\x0fclassifications\x18\xd7\xfc\xd9= \x03(\v2\x16.athena.ClassificationR\x0fclassifications\x126\n" +
+	"\x12coordinatordpusize\x18\xba\u05faK \x01(\x05H\x00R\x12coordinatordpusize\x88\x01\x01\x12>\n" +
+	"\x16defaultexecutordpusize\x18䥐\x14 \x01(\x05H\x01R\x16defaultexecutordpusize\x88\x01\x01\x125\n" +
+	"\x11maxconcurrentdpus\x18\x99\xee\xf0\xa6\x01 \x01(\x05H\x02R\x11maxconcurrentdpus\x88\x01\x01\x12]\n" +
 	"\x0fsparkproperties\x18ط\xfdJ \x03(\v20.athena.EngineConfiguration.SparkpropertiesEntryR\x0fsparkproperties\x1aD\n" +
 	"\x16AdditionalconfigsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aB\n" +
 	"\x14SparkpropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x15\n" +
+	"\x13_coordinatordpusizeB\x19\n" +
+	"\x17_defaultexecutordpusizeB\x14\n" +
+	"\x12_maxconcurrentdpus\"\x84\x01\n" +
 	"\rEngineVersion\x12:\n" +
 	"\x16effectiveengineversion\x18\xf5\xafͶ\x01 \x01(\tR\x16effectiveengineversion\x127\n" +
-	"\x15selectedengineversion\x18㛗_ \x01(\tR\x15selectedengineversion\"\xb8\x02\n" +
+	"\x15selectedengineversion\x18㛗_ \x01(\tR\x15selectedengineversion\"\x82\x03\n" +
 	"\x10ExecutorsSummary\x12\"\n" +
 	"\n" +
 	"executorid\x18\xf2\xaeԒ\x01 \x01(\tR\n" +
-	"executorid\x12%\n" +
-	"\fexecutorsize\x18\xd6\xfb\x85i \x01(\x03R\fexecutorsize\x12>\n" +
+	"executorid\x12*\n" +
+	"\fexecutorsize\x18\xd6\xfb\x85i \x01(\x03H\x00R\fexecutorsize\x88\x01\x01\x12>\n" +
 	"\rexecutorstate\x18≝Y \x01(\x0e2\x15.athena.ExecutorStateR\rexecutorstate\x12;\n" +
-	"\fexecutortype\x18\x95\x92\xf4e \x01(\x0e2\x14.athena.ExecutorTypeR\fexecutortype\x12'\n" +
-	"\rstartdatetime\x18\xd3ݚ* \x01(\x03R\rstartdatetime\x123\n" +
-	"\x13terminationdatetime\x18\xa5\xe6\x85y \x01(\x03R\x13terminationdatetime\"8\n" +
+	"\fexecutortype\x18\x95\x92\xf4e \x01(\x0e2\x14.athena.ExecutorTypeR\fexecutortype\x12,\n" +
+	"\rstartdatetime\x18\xd3ݚ* \x01(\x03H\x01R\rstartdatetime\x88\x01\x01\x128\n" +
+	"\x13terminationdatetime\x18\xa5\xe6\x85y \x01(\x03H\x02R\x13terminationdatetime\x88\x01\x01B\x0f\n" +
+	"\r_executorsizeB\x10\n" +
+	"\x0e_startdatetimeB\x16\n" +
+	"\x14_terminationdatetime\"8\n" +
 	"\x13ExportNotebookInput\x12!\n" +
 	"\n" +
 	"notebookid\x18\u07b4\x95K \x01(\tR\n" +
@@ -13714,18 +13727,20 @@ const file_athena_proto_rawDesc = "" +
 	"\x16GetQueryExecutionInput\x12.\n" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"\\\n" +
 	"\x17GetQueryExecutionOutput\x12A\n" +
-	"\x0equeryexecution\x18\xe4\xe2\xd2\x1d \x01(\v2\x16.athena.QueryExecutionR\x0equeryexecution\"\xd1\x01\n" +
-	"\x14GetQueryResultsInput\x12\"\n" +
+	"\x0equeryexecution\x18\xe4\xe2\xd2\x1d \x01(\v2\x16.athena.QueryExecutionR\x0equeryexecution\"\xe5\x01\n" +
+	"\x14GetQueryResultsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\x12D\n" +
-	"\x0fqueryresulttype\x18\x8b\xa6\xe3\x01 \x01(\x0e2\x17.athena.QueryResultTypeR\x0fqueryresulttype\"\x92\x01\n" +
+	"\x0fqueryresulttype\x18\x8b\xa6\xe3\x01 \x01(\x0e2\x17.athena.QueryResultTypeR\x0fqueryresulttypeB\r\n" +
+	"\v_maxresults\"\xa7\x01\n" +
 	"\x15GetQueryResultsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x122\n" +
-	"\tresultset\x18\xcdՂF \x01(\v2\x11.athena.ResultSetR\tresultset\x12$\n" +
-	"\vupdatecount\x18\xec\x9c\xf4\x94\x01 \x01(\x03R\vupdatecount\"P\n" +
+	"\tresultset\x18\xcdՂF \x01(\v2\x11.athena.ResultSetR\tresultset\x12)\n" +
+	"\vupdatecount\x18\xec\x9c\xf4\x94\x01 \x01(\x03H\x00R\vupdatecount\x88\x01\x01B\x0e\n" +
+	"\f_updatecount\"P\n" +
 	"\x1eGetQueryRuntimeStatisticsInput\x12.\n" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"|\n" +
 	"\x1fGetQueryRuntimeStatisticsOutput\x12Y\n" +
@@ -13790,157 +13805,173 @@ const file_athena_proto_rawDesc = "" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"d\n" +
 	"\x17InvalidRequestException\x12,\n" +
 	"\x0fathenaerrorcode\x18Ɛ\xe8\x9f\x01 \x01(\tR\x0fathenaerrorcode\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"c\n" +
-	"\x1cListApplicationDPUSizesInput\x12\"\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"w\n" +
+	"\x1cListApplicationDPUSizesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x92\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x92\x01\n" +
 	"\x1dListApplicationDPUSizesOutput\x12P\n" +
 	"\x13applicationdpusizes\x18˽\xdd\x1c \x03(\v2\x1b.athena.ApplicationDPUSizesR\x13applicationdpusizes\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd0\x01\n" +
-	" ListCalculationExecutionsRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xe4\x01\n" +
+	" ListCalculationExecutionsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1f\n" +
 	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\x12F\n" +
-	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2!.athena.CalculationExecutionStateR\vstatefilter\"\x88\x01\n" +
+	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2!.athena.CalculationExecutionStateR\vstatefilterB\r\n" +
+	"\v_maxresults\"\x88\x01\n" +
 	"!ListCalculationExecutionsResponse\x12B\n" +
 	"\fcalculations\x18\xe0\xc4\xe0\x9f\x01 \x03(\v2\x1a.athena.CalculationSummaryR\fcalculations\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"d\n" +
-	"\x1dListCapacityReservationsInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"x\n" +
+	"\x1dListCapacityReservationsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x96\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x96\x01\n" +
 	"\x1eListCapacityReservationsOutput\x12S\n" +
 	"\x14capacityreservations\x18Á\xe4\xe1\x01 \x03(\v2\x1b.athena.CapacityReservationR\x14capacityreservations\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"~\n" +
-	"\x15ListDataCatalogsInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x92\x01\n" +
+	"\x15ListDataCatalogsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"\x8b\x01\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"\x8b\x01\n" +
 	"\x16ListDataCatalogsOutput\x12P\n" +
 	"\x13datacatalogssummary\x18\xd0ʃ\xee\x01 \x03(\v2\x1a.athena.DataCatalogSummaryR\x13datacatalogssummary\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa1\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb5\x01\n" +
 	"\x12ListDatabasesInput\x12$\n" +
-	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tR\vcatalogname\x12\"\n" +
+	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tR\vcatalogname\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"p\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"p\n" +
 	"\x13ListDatabasesOutput\x128\n" +
 	"\fdatabaselist\x18\xc1\xe8\u07bb\x01 \x03(\v2\x10.athena.DatabaseR\fdatabaselist\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"^\n" +
-	"\x17ListEngineVersionsInput\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"r\n" +
+	"\x17ListEngineVersionsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"~\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"~\n" +
 	"\x18ListEngineVersionsOutput\x12A\n" +
 	"\x0eengineversions\x18\xf3\x8c\xbd\xee\x01 \x03(\v2\x15.athena.EngineVersionR\x0eengineversions\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc8\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xdc\x01\n" +
 	"\x14ListExecutorsRequest\x12J\n" +
-	"\x13executorstatefilter\x18\xd4ڲc \x01(\x0e2\x15.athena.ExecutorStateR\x13executorstatefilter\x12\"\n" +
+	"\x13executorstatefilter\x18\xd4ڲc \x01(\x0e2\x15.athena.ExecutorStateR\x13executorstatefilter\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1f\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\"\xa3\x01\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionidB\r\n" +
+	"\v_maxresults\"\xa3\x01\n" +
 	"\x15ListExecutorsResponse\x12H\n" +
 	"\x10executorssummary\x18\xac\xb2\xf4\xd6\x01 \x03(\v2\x18.athena.ExecutorsSummaryR\x10executorssummary\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1f\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\"~\n" +
-	"\x15ListNamedQueriesInput\x12\"\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\"\x92\x01\n" +
+	"\x15ListNamedQueriesInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"b\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"b\n" +
 	"\x16ListNamedQueriesOutput\x12'\n" +
 	"\rnamedqueryids\x18\xfd\xef\xf3\x02 \x03(\tR\rnamedqueryids\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb9\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xcd\x01\n" +
 	"\x19ListNotebookMetadataInput\x125\n" +
-	"\afilters\x18\xed\xcd\xeaY \x01(\v2\x18.athena.FilterDefinitionR\afilters\x12\"\n" +
+	"\afilters\x18\xed\xcd\xeaY \x01(\v2\x18.athena.FilterDefinitionR\afilters\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"\x8f\x01\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"\x8f\x01\n" +
 	"\x1aListNotebookMetadataOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12P\n" +
-	"\x14notebookmetadatalist\x18\xe2\xe0\x9c\x98\x01 \x03(\v2\x18.athena.NotebookMetadataR\x14notebookmetadatalist\"\x85\x01\n" +
-	"\x1bListNotebookSessionsRequest\x12\"\n" +
+	"\x14notebookmetadatalist\x18\xe2\xe0\x9c\x98\x01 \x03(\v2\x18.athena.NotebookMetadataR\x14notebookmetadatalist\"\x99\x01\n" +
+	"\x1bListNotebookSessionsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12!\n" +
 	"\n" +
 	"notebookid\x18\u07b4\x95K \x01(\tR\n" +
-	"notebookid\"\x96\x01\n" +
+	"notebookidB\r\n" +
+	"\v_maxresults\"\x96\x01\n" +
 	"\x1cListNotebookSessionsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12U\n" +
-	"\x14notebooksessionslist\x18\xea\xeb\x95v \x03(\v2\x1e.athena.NotebookSessionSummaryR\x14notebooksessionslist\"\x84\x01\n" +
-	"\x1bListPreparedStatementsInput\x12\"\n" +
+	"\x14notebooksessionslist\x18\xea\xeb\x95v \x03(\v2\x1e.athena.NotebookSessionSummaryR\x14notebooksessionslist\"\x98\x01\n" +
+	"\x1bListPreparedStatementsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"\x95\x01\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"\x95\x01\n" +
 	"\x1cListPreparedStatementsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12T\n" +
-	"\x12preparedstatements\x18\x93\xef\xa0\xfb\x01 \x03(\v2 .athena.PreparedStatementSummaryR\x12preparedstatements\"\x81\x01\n" +
-	"\x18ListQueryExecutionsInput\x12\"\n" +
+	"\x12preparedstatements\x18\x93\xef\xa0\xfb\x01 \x03(\v2 .athena.PreparedStatementSummaryR\x12preparedstatements\"\x95\x01\n" +
+	"\x18ListQueryExecutionsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"n\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"n\n" +
 	"\x19ListQueryExecutionsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x120\n" +
-	"\x11queryexecutionids\x18\xc8\xe3\xc3\xeb\x01 \x03(\tR\x11queryexecutionids\"\xb7\x01\n" +
-	"\x13ListSessionsRequest\x12\"\n" +
+	"\x11queryexecutionids\x18\xc8\xe3\xc3\xeb\x01 \x03(\tR\x11queryexecutionids\"\xcb\x01\n" +
+	"\x13ListSessionsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x129\n" +
 	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2\x14.athena.SessionStateR\vstatefilter\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"o\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"o\n" +
 	"\x14ListSessionsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x126\n" +
-	"\bsessions\x18\xed\x95\xea\xb4\x01 \x03(\v2\x16.athena.SessionSummaryR\bsessions\"\xef\x01\n" +
+	"\bsessions\x18\xed\x95\xea\xb4\x01 \x03(\v2\x16.athena.SessionSummaryR\bsessions\"\x83\x02\n" +
 	"\x16ListTableMetadataInput\x12$\n" +
 	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tR\vcatalogname\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12!\n" +
 	"\n" +
 	"expression\x18\x8c\xfa\x86\\ \x01(\tR\n" +
-	"expression\x12\"\n" +
+	"expression\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"\x83\x01\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
+	"\v_maxresults\"\x83\x01\n" +
 	"\x17ListTableMetadataOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12G\n" +
-	"\x11tablemetadatalist\x18\xff\xab\xdc\xfd\x01 \x03(\v2\x15.athena.TableMetadataR\x11tablemetadatalist\"\x85\x01\n" +
-	"\x18ListTagsForResourceInput\x12\"\n" +
+	"\x11tablemetadatalist\x18\xff\xab\xdc\xfd\x01 \x03(\v2\x15.athena.TableMetadataR\x11tablemetadatalist\"\x99\x01\n" +
+	"\x18ListTagsForResourceInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\"a\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\r\n" +
+	"\v_maxresults\"a\n" +
 	"\x19ListTagsForResourceOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\v.athena.TagR\x04tags\"Z\n" +
-	"\x13ListWorkGroupsInput\x12\"\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\v.athena.TagR\x04tags\"n\n" +
+	"\x13ListWorkGroupsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"t\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"t\n" +
 	"\x14ListWorkGroupsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12;\n" +
 	"\n" +
@@ -14025,18 +14056,25 @@ const file_athena_proto_rawDesc = "" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"T\n" +
 	"\x15QueryExecutionContext\x12\x1b\n" +
 	"\acatalog\x18\xb9\xf7\x835 \x01(\tR\acatalog\x12\x1e\n" +
-	"\bdatabase\x18\xd9\xe1Є\x01 \x01(\tR\bdatabase\"\x9d\x05\n" +
+	"\bdatabase\x18\xd9\xe1Є\x01 \x01(\tR\bdatabase\"\x96\a\n" +
 	"\x18QueryExecutionStatistics\x126\n" +
-	"\x14datamanifestlocation\x18\x94㫝\x01 \x01(\tR\x14datamanifestlocation\x121\n" +
-	"\x12datascannedinbytes\x18\xfc\xb1\xee; \x01(\x03R\x12datascannedinbytes\x12\x1e\n" +
-	"\bdpucount\x18\xfc\xba\xa9\x8d\x01 \x01(\x01R\bdpucount\x12C\n" +
-	"\x1bengineexecutiontimeinmillis\x18\xd0ƅm \x01(\x03R\x1bengineexecutiontimeinmillis\x12@\n" +
-	"\x19queryplanningtimeinmillis\x18\xf7\xa1\x8d\xe6\x01 \x01(\x03R\x19queryplanningtimeinmillis\x129\n" +
-	"\x16queryqueuetimeinmillis\x18\xaf\xbb\xe2i \x01(\x03R\x16queryqueuetimeinmillis\x12Y\n" +
-	"\x16resultreuseinformation\x18\x83\xb4\xe9| \x01(\v2\x1e.athena.ResultReuseInformationR\x16resultreuseinformation\x12M\n" +
-	" servicepreprocessingtimeinmillis\x18\xb3\xe0\xccX \x01(\x03R servicepreprocessingtimeinmillis\x12G\n" +
-	"\x1dserviceprocessingtimeinmillis\x18\xd4\xe7\xf1& \x01(\x03R\x1dserviceprocessingtimeinmillis\x12A\n" +
-	"\x1atotalexecutiontimeinmillis\x18\xaa\x85\xe7w \x01(\x03R\x1atotalexecutiontimeinmillis\"\x9f\x02\n" +
+	"\x14datamanifestlocation\x18\x94㫝\x01 \x01(\tR\x14datamanifestlocation\x126\n" +
+	"\x12datascannedinbytes\x18\xfc\xb1\xee; \x01(\x03H\x00R\x12datascannedinbytes\x88\x01\x01\x12\x1e\n" +
+	"\bdpucount\x18\xfc\xba\xa9\x8d\x01 \x01(\x01R\bdpucount\x12H\n" +
+	"\x1bengineexecutiontimeinmillis\x18\xd0ƅm \x01(\x03H\x01R\x1bengineexecutiontimeinmillis\x88\x01\x01\x12E\n" +
+	"\x19queryplanningtimeinmillis\x18\xf7\xa1\x8d\xe6\x01 \x01(\x03H\x02R\x19queryplanningtimeinmillis\x88\x01\x01\x12>\n" +
+	"\x16queryqueuetimeinmillis\x18\xaf\xbb\xe2i \x01(\x03H\x03R\x16queryqueuetimeinmillis\x88\x01\x01\x12Y\n" +
+	"\x16resultreuseinformation\x18\x83\xb4\xe9| \x01(\v2\x1e.athena.ResultReuseInformationR\x16resultreuseinformation\x12R\n" +
+	" servicepreprocessingtimeinmillis\x18\xb3\xe0\xccX \x01(\x03H\x04R servicepreprocessingtimeinmillis\x88\x01\x01\x12L\n" +
+	"\x1dserviceprocessingtimeinmillis\x18\xd4\xe7\xf1& \x01(\x03H\x05R\x1dserviceprocessingtimeinmillis\x88\x01\x01\x12F\n" +
+	"\x1atotalexecutiontimeinmillis\x18\xaa\x85\xe7w \x01(\x03H\x06R\x1atotalexecutiontimeinmillis\x88\x01\x01B\x15\n" +
+	"\x13_datascannedinbytesB\x1e\n" +
+	"\x1c_engineexecutiontimeinmillisB\x1c\n" +
+	"\x1a_queryplanningtimeinmillisB\x19\n" +
+	"\x17_queryqueuetimeinmillisB#\n" +
+	"!_servicepreprocessingtimeinmillisB \n" +
+	"\x1e_serviceprocessingtimeinmillisB\x1d\n" +
+	"\x1b_totalexecutiontimeinmillis\"\x9f\x02\n" +
 	"\x14QueryExecutionStatus\x128\n" +
 	"\vathenaerror\x18\xd1\xf7\x90' \x01(\v2\x13.athena.AthenaErrorR\vathenaerror\x121\n" +
 	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tR\x12completiondatetime\x125\n" +
@@ -14052,38 +14090,57 @@ const file_athena_proto_rawDesc = "" +
 	"\x16QueryRuntimeStatistics\x127\n" +
 	"\voutputstage\x18\xb3ר\x1d \x01(\v2\x12.athena.QueryStageR\voutputstage\x129\n" +
 	"\x04rows\x18\xb9\xa5\x96S \x01(\v2\".athena.QueryRuntimeStatisticsRowsR\x04rows\x12F\n" +
-	"\btimeline\x18\xf7\x87ކ\x01 \x01(\v2&.athena.QueryRuntimeStatisticsTimelineR\btimeline\"\xaa\x01\n" +
-	"\x1aQueryRuntimeStatisticsRows\x12\"\n" +
+	"\btimeline\x18\xf7\x87ކ\x01 \x01(\v2&.athena.QueryRuntimeStatisticsTimelineR\btimeline\"\xfa\x01\n" +
+	"\x1aQueryRuntimeStatisticsRows\x12'\n" +
 	"\n" +
-	"inputbytes\x18\xaf\xf9\xeb\xcd\x01 \x01(\x03R\n" +
-	"inputbytes\x12\x1f\n" +
-	"\tinputrows\x18\xd7\xd8\xc8\x0e \x01(\x03R\tinputrows\x12$\n" +
-	"\voutputbytes\x18\x88\xbc\x8c\x98\x01 \x01(\x03R\voutputbytes\x12!\n" +
+	"inputbytes\x18\xaf\xf9\xeb\xcd\x01 \x01(\x03H\x00R\n" +
+	"inputbytes\x88\x01\x01\x12$\n" +
+	"\tinputrows\x18\xd7\xd8\xc8\x0e \x01(\x03H\x01R\tinputrows\x88\x01\x01\x12)\n" +
+	"\voutputbytes\x18\x88\xbc\x8c\x98\x01 \x01(\x03H\x02R\voutputbytes\x88\x01\x01\x12&\n" +
 	"\n" +
-	"outputrows\x18ꓜB \x01(\x03R\n" +
-	"outputrows\"\xbd\x03\n" +
-	"\x1eQueryRuntimeStatisticsTimeline\x12C\n" +
-	"\x1bengineexecutiontimeinmillis\x18\xd0ƅm \x01(\x03R\x1bengineexecutiontimeinmillis\x12@\n" +
-	"\x19queryplanningtimeinmillis\x18\xf7\xa1\x8d\xe6\x01 \x01(\x03R\x19queryplanningtimeinmillis\x129\n" +
-	"\x16queryqueuetimeinmillis\x18\xaf\xbb\xe2i \x01(\x03R\x16queryqueuetimeinmillis\x12M\n" +
-	" servicepreprocessingtimeinmillis\x18\xb3\xe0\xccX \x01(\x03R servicepreprocessingtimeinmillis\x12G\n" +
-	"\x1dserviceprocessingtimeinmillis\x18\xd4\xe7\xf1& \x01(\x03R\x1dserviceprocessingtimeinmillis\x12A\n" +
-	"\x1atotalexecutiontimeinmillis\x18\xaa\x85\xe7w \x01(\x03R\x1atotalexecutiontimeinmillis\"\xf8\x02\n" +
+	"outputrows\x18ꓜB \x01(\x03H\x03R\n" +
+	"outputrows\x88\x01\x01B\r\n" +
+	"\v_inputbytesB\f\n" +
 	"\n" +
-	"QueryStage\x12(\n" +
-	"\rexecutiontime\x18Ճ\x88\xb5\x01 \x01(\x03R\rexecutiontime\x12\"\n" +
+	"_inputrowsB\x0e\n" +
+	"\f_outputbytesB\r\n" +
+	"\v_outputrows\"\x9a\x05\n" +
+	"\x1eQueryRuntimeStatisticsTimeline\x12H\n" +
+	"\x1bengineexecutiontimeinmillis\x18\xd0ƅm \x01(\x03H\x00R\x1bengineexecutiontimeinmillis\x88\x01\x01\x12E\n" +
+	"\x19queryplanningtimeinmillis\x18\xf7\xa1\x8d\xe6\x01 \x01(\x03H\x01R\x19queryplanningtimeinmillis\x88\x01\x01\x12>\n" +
+	"\x16queryqueuetimeinmillis\x18\xaf\xbb\xe2i \x01(\x03H\x02R\x16queryqueuetimeinmillis\x88\x01\x01\x12R\n" +
+	" servicepreprocessingtimeinmillis\x18\xb3\xe0\xccX \x01(\x03H\x03R servicepreprocessingtimeinmillis\x88\x01\x01\x12L\n" +
+	"\x1dserviceprocessingtimeinmillis\x18\xd4\xe7\xf1& \x01(\x03H\x04R\x1dserviceprocessingtimeinmillis\x88\x01\x01\x12F\n" +
+	"\x1atotalexecutiontimeinmillis\x18\xaa\x85\xe7w \x01(\x03H\x05R\x1atotalexecutiontimeinmillis\x88\x01\x01B\x1e\n" +
+	"\x1c_engineexecutiontimeinmillisB\x1c\n" +
+	"\x1a_queryplanningtimeinmillisB\x19\n" +
+	"\x17_queryqueuetimeinmillisB#\n" +
+	"!_servicepreprocessingtimeinmillisB \n" +
+	"\x1e_serviceprocessingtimeinmillisB\x1d\n" +
+	"\x1b_totalexecutiontimeinmillis\"\xf0\x03\n" +
 	"\n" +
-	"inputbytes\x18\xaf\xf9\xeb\xcd\x01 \x01(\x03R\n" +
-	"inputbytes\x12\x1f\n" +
-	"\tinputrows\x18\xd7\xd8\xc8\x0e \x01(\x03R\tinputrows\x12$\n" +
-	"\voutputbytes\x18\x88\xbc\x8c\x98\x01 \x01(\x03R\voutputbytes\x12!\n" +
+	"QueryStage\x12-\n" +
+	"\rexecutiontime\x18Ճ\x88\xb5\x01 \x01(\x03H\x00R\rexecutiontime\x88\x01\x01\x12'\n" +
 	"\n" +
-	"outputrows\x18ꓜB \x01(\x03R\n" +
-	"outputrows\x12E\n" +
-	"\x0equerystageplan\x18ɳ\xa8\x11 \x01(\v2\x1a.athena.QueryStagePlanNodeR\x0equerystageplan\x12\x1c\n" +
-	"\astageid\x18\xf9н\x9c\x01 \x01(\x03R\astageid\x12\x18\n" +
+	"inputbytes\x18\xaf\xf9\xeb\xcd\x01 \x01(\x03H\x01R\n" +
+	"inputbytes\x88\x01\x01\x12$\n" +
+	"\tinputrows\x18\xd7\xd8\xc8\x0e \x01(\x03H\x02R\tinputrows\x88\x01\x01\x12)\n" +
+	"\voutputbytes\x18\x88\xbc\x8c\x98\x01 \x01(\x03H\x03R\voutputbytes\x88\x01\x01\x12&\n" +
+	"\n" +
+	"outputrows\x18ꓜB \x01(\x03H\x04R\n" +
+	"outputrows\x88\x01\x01\x12E\n" +
+	"\x0equerystageplan\x18ɳ\xa8\x11 \x01(\v2\x1a.athena.QueryStagePlanNodeR\x0equerystageplan\x12!\n" +
+	"\astageid\x18\xf9н\x9c\x01 \x01(\x03H\x05R\astageid\x88\x01\x01\x12\x18\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x123\n" +
-	"\tsubstages\x18\xeb\xdd\xda6 \x03(\v2\x12.athena.QueryStageR\tsubstages\"\xb2\x01\n" +
+	"\tsubstages\x18\xeb\xdd\xda6 \x03(\v2\x12.athena.QueryStageR\tsubstagesB\x10\n" +
+	"\x0e_executiontimeB\r\n" +
+	"\v_inputbytesB\f\n" +
+	"\n" +
+	"_inputrowsB\x0e\n" +
+	"\f_outputbytesB\r\n" +
+	"\v_outputrowsB\n" +
+	"\n" +
+	"\b_stageid\"\xb2\x01\n" +
 	"\x12QueryStagePlanNode\x129\n" +
 	"\bchildren\x18\xf3\x9b\xf5Y \x03(\v2\x1a.athena.QueryStagePlanNodeR\bchildren\x12!\n" +
 	"\n" +
@@ -14111,12 +14168,13 @@ const file_athena_proto_rawDesc = "" +
 	"\x17_removeaclconfigurationB \n" +
 	"\x1e_removeencryptionconfigurationB\x1c\n" +
 	"\x1a_removeexpectedbucketownerB\x17\n" +
-	"\x15_removeoutputlocation\"{\n" +
+	"\x15_removeoutputlocation\"\x94\x01\n" +
 	"\x1dResultReuseByAgeConfiguration\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x12+\n" +
-	"\x0fmaxageinminutes\x18\x9d\x82\xf1d \x01(\x05R\x0fmaxageinminutesB\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x120\n" +
+	"\x0fmaxageinminutes\x18\x9d\x82\xf1d \x01(\x05H\x01R\x0fmaxageinminutes\x88\x01\x01B\n" +
 	"\n" +
-	"\b_enabled\"\x8a\x01\n" +
+	"\b_enabledB\x12\n" +
+	"\x10_maxageinminutes\"\x8a\x01\n" +
 	"\x18ResultReuseConfiguration\x12n\n" +
 	"\x1dresultreusebyageconfiguration\x18\xd3\xea\xb6\x06 \x01(\v2%.athena.ResultReuseByAgeConfigurationR\x1dresultreusebyageconfiguration\"n\n" +
 	"\x16ResultReuseInformation\x12;\n" +
@@ -14138,15 +14196,18 @@ const file_athena_proto_rawDesc = "" +
 	"\n" +
 	"\b_enabled\"<\n" +
 	"\x1dSessionAlreadyExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xc6\x02\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x87\x03\n" +
 	"\x14SessionConfiguration\x12\\\n" +
 	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2\x1f.athena.EncryptionConfigurationR\x17encryptionconfiguration\x12'\n" +
-	"\rexecutionrole\x18\x8a\xd6\xe4x \x01(\tR\rexecutionrole\x121\n" +
-	"\x12idletimeoutseconds\x18\x9c\x98\x9c\x1d \x01(\x03R\x12idletimeoutseconds\x12D\n" +
-	"\x1bsessionidletimeoutinminutes\x18\x9d\xdc\xdb\xf5\x01 \x01(\x05R\x1bsessionidletimeoutinminutes\x12.\n" +
-	"\x10workingdirectory\x18\x8c\x83\xb2\xe4\x01 \x01(\tR\x10workingdirectory\"J\n" +
-	"\x11SessionStatistics\x125\n" +
-	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03R\x14dpuexecutioninmillis\"\xa9\x02\n" +
+	"\rexecutionrole\x18\x8a\xd6\xe4x \x01(\tR\rexecutionrole\x126\n" +
+	"\x12idletimeoutseconds\x18\x9c\x98\x9c\x1d \x01(\x03H\x00R\x12idletimeoutseconds\x88\x01\x01\x12I\n" +
+	"\x1bsessionidletimeoutinminutes\x18\x9d\xdc\xdb\xf5\x01 \x01(\x05H\x01R\x1bsessionidletimeoutinminutes\x88\x01\x01\x12.\n" +
+	"\x10workingdirectory\x18\x8c\x83\xb2\xe4\x01 \x01(\tR\x10workingdirectoryB\x15\n" +
+	"\x13_idletimeoutsecondsB\x1e\n" +
+	"\x1c_sessionidletimeoutinminutes\"h\n" +
+	"\x11SessionStatistics\x12:\n" +
+	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03H\x00R\x14dpuexecutioninmillis\x88\x01\x01B\x17\n" +
+	"\x15_dpuexecutioninmillis\"\xa9\x02\n" +
 	"\rSessionStatus\x12$\n" +
 	"\venddatetime\x18荱\xb1\x01 \x01(\tR\venddatetime\x120\n" +
 	"\x11idlesincedatetime\x18\xe7\xa2\xeb\xd8\x01 \x01(\tR\x11idlesincedatetime\x126\n" +
@@ -14179,7 +14240,7 @@ const file_athena_proto_rawDesc = "" +
 	"\x18resultreuseconfiguration\x18\xffǛ\xe6\x01 \x01(\v2 .athena.ResultReuseConfigurationR\x18resultreuseconfiguration\x12 \n" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroup\"K\n" +
 	"\x19StartQueryExecutionOutput\x12.\n" +
-	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"\xd1\x04\n" +
+	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"\xf6\x04\n" +
 	"\x13StartSessionRequest\x122\n" +
 	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tR\x12clientrequesttoken\x125\n" +
 	"\x11copyworkgrouptags\x18\xf2\xe3\xdd\xcc\x01 \x01(\bH\x00R\x11copyworkgrouptags\x88\x01\x01\x12#\n" +
@@ -14187,11 +14248,12 @@ const file_athena_proto_rawDesc = "" +
 	"\x13engineconfiguration\x18\xe4\xb3\xf3\xa2\x01 \x01(\v2\x1b.athena.EngineConfigurationR\x13engineconfiguration\x12'\n" +
 	"\rexecutionrole\x18\x8a\xd6\xe4x \x01(\tR\rexecutionrole\x12]\n" +
 	"\x17monitoringconfiguration\x18\x98\x9e\xff\xad\x01 \x01(\v2\x1f.athena.MonitoringConfigurationR\x17monitoringconfiguration\x12,\n" +
-	"\x0fnotebookversion\x18\xadՌ\xfc\x01 \x01(\tR\x0fnotebookversion\x12D\n" +
-	"\x1bsessionidletimeoutinminutes\x18\x9d\xdc\xdb\xf5\x01 \x01(\x05R\x1bsessionidletimeoutinminutes\x12#\n" +
+	"\x0fnotebookversion\x18\xadՌ\xfc\x01 \x01(\tR\x0fnotebookversion\x12I\n" +
+	"\x1bsessionidletimeoutinminutes\x18\x9d\xdc\xdb\xf5\x01 \x01(\x05H\x01R\x1bsessionidletimeoutinminutes\x88\x01\x01\x12#\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\v.athena.TagR\x04tags\x12 \n" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\x14\n" +
-	"\x12_copyworkgrouptags\"g\n" +
+	"\x12_copyworkgrouptagsB\x1e\n" +
+	"\x1c_sessionidletimeoutinminutes\"g\n" +
 	"\x14StartSessionResponse\x12\x1f\n" +
 	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\x12.\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateR\x05state\"\\\n" +
@@ -14306,44 +14368,46 @@ const file_athena_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12F\n" +
 	"\x1cidentitycenterapplicationarn\x18\x9c槡\x01 \x01(\tR\x1cidentitycenterapplicationarn\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x120\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateR\x05state\"\xc6\v\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateR\x05state\"\xea\v\n" +
 	"\x16WorkGroupConfiguration\x12<\n" +
-	"\x17additionalconfiguration\x18\xf7\xab\xe2\xb9\x01 \x01(\tR\x17additionalconfiguration\x12A\n" +
-	"\x1abytesscannedcutoffperquery\x18\x89\xe4\xdc~ \x01(\x03R\x1abytesscannedcutoffperquery\x12\x89\x01\n" +
+	"\x17additionalconfiguration\x18\xf7\xab\xe2\xb9\x01 \x01(\tR\x17additionalconfiguration\x12F\n" +
+	"\x1abytesscannedcutoffperquery\x18\x89\xe4\xdc~ \x01(\x03H\x00R\x1abytesscannedcutoffperquery\x88\x01\x01\x12\x89\x01\n" +
 	"&customercontentencryptionconfiguration\x18\xcc\xed\xe3N \x01(\v2..athena.CustomerContentEncryptionConfigurationR&customercontentencryptionconfiguration\x12Z\n" +
-	"$enableminimumencryptionconfiguration\x18\xb0\xa4\xe5q \x01(\bH\x00R$enableminimumencryptionconfiguration\x88\x01\x01\x12L\n" +
-	"\x1denforceworkgroupconfiguration\x18\x80\x90\xe2H \x01(\bH\x01R\x1denforceworkgroupconfiguration\x88\x01\x01\x12Q\n" +
+	"$enableminimumencryptionconfiguration\x18\xb0\xa4\xe5q \x01(\bH\x01R$enableminimumencryptionconfiguration\x88\x01\x01\x12L\n" +
+	"\x1denforceworkgroupconfiguration\x18\x80\x90\xe2H \x01(\bH\x02R\x1denforceworkgroupconfiguration\x88\x01\x01\x12Q\n" +
 	"\x13engineconfiguration\x18\xe4\xb3\xf3\xa2\x01 \x01(\v2\x1b.athena.EngineConfigurationR\x13engineconfiguration\x12>\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\v2\x15.athena.EngineVersionR\rengineversion\x12'\n" +
 	"\rexecutionrole\x18\x8a\xd6\xe4x \x01(\tR\rexecutionrole\x12h\n" +
 	"\x1bidentitycenterconfiguration\x18\xc5\xe6\xffp \x01(\v2#.athena.IdentityCenterConfigurationR\x1bidentitycenterconfiguration\x12w\n" +
 	" managedqueryresultsconfiguration\x18\xc3\xe0\xf5K \x01(\v2(.athena.ManagedQueryResultsConfigurationR managedqueryresultsconfiguration\x12]\n" +
 	"\x17monitoringconfiguration\x18\x98\x9e\xff\xad\x01 \x01(\v2\x1f.athena.MonitoringConfigurationR\x17monitoringconfiguration\x12Q\n" +
-	"\x1fpublishcloudwatchmetricsenabled\x18\x83\x9a\x91\xeb\x01 \x01(\bH\x02R\x1fpublishcloudwatchmetricsenabled\x88\x01\x01\x12\x8c\x01\n" +
+	"\x1fpublishcloudwatchmetricsenabled\x18\x83\x9a\x91\xeb\x01 \x01(\bH\x03R\x1fpublishcloudwatchmetricsenabled\x88\x01\x01\x12\x8c\x01\n" +
 	"'queryresultss3accessgrantsconfiguration\x18\xb7\xf5\x89~ \x01(\v2/.athena.QueryResultsS3AccessGrantsConfigurationR'queryresultss3accessgrantsconfiguration\x12;\n" +
-	"\x14requesterpaysenabled\x18\x8cʂ\xd6\x01 \x01(\bH\x03R\x14requesterpaysenabled\x88\x01\x01\x12P\n" +
-	"\x13resultconfiguration\x18ϭ\xa3W \x01(\v2\x1b.athena.ResultConfigurationR\x13resultconfigurationB'\n" +
+	"\x14requesterpaysenabled\x18\x8cʂ\xd6\x01 \x01(\bH\x04R\x14requesterpaysenabled\x88\x01\x01\x12P\n" +
+	"\x13resultconfiguration\x18ϭ\xa3W \x01(\v2\x1b.athena.ResultConfigurationR\x13resultconfigurationB\x1d\n" +
+	"\x1b_bytesscannedcutoffperqueryB'\n" +
 	"%_enableminimumencryptionconfigurationB \n" +
 	"\x1e_enforceworkgroupconfigurationB\"\n" +
 	" _publishcloudwatchmetricsenabledB\x17\n" +
-	"\x15_requesterpaysenabled\"\xa5\r\n" +
+	"\x15_requesterpaysenabled\"\xc9\r\n" +
 	"\x1dWorkGroupConfigurationUpdates\x12<\n" +
-	"\x17additionalconfiguration\x18\xf7\xab\xe2\xb9\x01 \x01(\tR\x17additionalconfiguration\x12A\n" +
-	"\x1abytesscannedcutoffperquery\x18\x89\xe4\xdc~ \x01(\x03R\x1abytesscannedcutoffperquery\x12\x89\x01\n" +
+	"\x17additionalconfiguration\x18\xf7\xab\xe2\xb9\x01 \x01(\tR\x17additionalconfiguration\x12F\n" +
+	"\x1abytesscannedcutoffperquery\x18\x89\xe4\xdc~ \x01(\x03H\x00R\x1abytesscannedcutoffperquery\x88\x01\x01\x12\x89\x01\n" +
 	"&customercontentencryptionconfiguration\x18\xcc\xed\xe3N \x01(\v2..athena.CustomerContentEncryptionConfigurationR&customercontentencryptionconfiguration\x12Z\n" +
-	"$enableminimumencryptionconfiguration\x18\xb0\xa4\xe5q \x01(\bH\x00R$enableminimumencryptionconfiguration\x88\x01\x01\x12L\n" +
-	"\x1denforceworkgroupconfiguration\x18\x80\x90\xe2H \x01(\bH\x01R\x1denforceworkgroupconfiguration\x88\x01\x01\x12Q\n" +
+	"$enableminimumencryptionconfiguration\x18\xb0\xa4\xe5q \x01(\bH\x01R$enableminimumencryptionconfiguration\x88\x01\x01\x12L\n" +
+	"\x1denforceworkgroupconfiguration\x18\x80\x90\xe2H \x01(\bH\x02R\x1denforceworkgroupconfiguration\x88\x01\x01\x12Q\n" +
 	"\x13engineconfiguration\x18\xe4\xb3\xf3\xa2\x01 \x01(\v2\x1b.athena.EngineConfigurationR\x13engineconfiguration\x12>\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\v2\x15.athena.EngineVersionR\rengineversion\x12'\n" +
 	"\rexecutionrole\x18\x8a\xd6\xe4x \x01(\tR\rexecutionrole\x12\x8c\x01\n" +
 	"'managedqueryresultsconfigurationupdates\x18ُ\xe8d \x01(\v2/.athena.ManagedQueryResultsConfigurationUpdatesR'managedqueryresultsconfigurationupdates\x12]\n" +
 	"\x17monitoringconfiguration\x18\x98\x9e\xff\xad\x01 \x01(\v2\x1f.athena.MonitoringConfigurationR\x17monitoringconfiguration\x12Q\n" +
-	"\x1fpublishcloudwatchmetricsenabled\x18\x83\x9a\x91\xeb\x01 \x01(\bH\x02R\x1fpublishcloudwatchmetricsenabled\x88\x01\x01\x12\x8c\x01\n" +
+	"\x1fpublishcloudwatchmetricsenabled\x18\x83\x9a\x91\xeb\x01 \x01(\bH\x03R\x1fpublishcloudwatchmetricsenabled\x88\x01\x01\x12\x8c\x01\n" +
 	"'queryresultss3accessgrantsconfiguration\x18\xb7\xf5\x89~ \x01(\v2/.athena.QueryResultsS3AccessGrantsConfigurationR'queryresultss3accessgrantsconfiguration\x12R\n" +
-	" removebytesscannedcutoffperquery\x18\xb1\xb7\x9a> \x01(\bH\x03R removebytesscannedcutoffperquery\x88\x01\x01\x12k\n" +
-	",removecustomercontentencryptionconfiguration\x18Ĥ\xc1\xc7\x01 \x01(\bH\x04R,removecustomercontentencryptionconfiguration\x88\x01\x01\x12;\n" +
-	"\x14requesterpaysenabled\x18\x8cʂ\xd6\x01 \x01(\bH\x05R\x14requesterpaysenabled\x88\x01\x01\x12e\n" +
-	"\x1aresultconfigurationupdates\x18\xad\xd4\xd4. \x01(\v2\".athena.ResultConfigurationUpdatesR\x1aresultconfigurationupdatesB'\n" +
+	" removebytesscannedcutoffperquery\x18\xb1\xb7\x9a> \x01(\bH\x04R removebytesscannedcutoffperquery\x88\x01\x01\x12k\n" +
+	",removecustomercontentencryptionconfiguration\x18Ĥ\xc1\xc7\x01 \x01(\bH\x05R,removecustomercontentencryptionconfiguration\x88\x01\x01\x12;\n" +
+	"\x14requesterpaysenabled\x18\x8cʂ\xd6\x01 \x01(\bH\x06R\x14requesterpaysenabled\x88\x01\x01\x12e\n" +
+	"\x1aresultconfigurationupdates\x18\xad\xd4\xd4. \x01(\v2\".athena.ResultConfigurationUpdatesR\x1aresultconfigurationupdatesB\x1d\n" +
+	"\x1b_bytesscannedcutoffperqueryB'\n" +
 	"%_enableminimumencryptionconfigurationB \n" +
 	"\x1e_enforceworkgroupconfigurationB\"\n" +
 	" _publishcloudwatchmetricsenabledB#\n" +
@@ -15114,19 +15178,46 @@ func file_athena_proto_init() {
 		return
 	}
 	file_athena_proto_msgTypes[2].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[11].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[21].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[23].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[45].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[53].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[56].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[58].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[84].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[85].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[100].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[105].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[107].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[109].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[111].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[113].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[115].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[117].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[119].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[121].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[123].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[125].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[127].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[129].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[131].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[133].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[135].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[137].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[138].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[139].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[152].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[154].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[156].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[157].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[158].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[162].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[163].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[165].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[169].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[171].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[172].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[179].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[212].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[213].OneofWrappers = []any{}

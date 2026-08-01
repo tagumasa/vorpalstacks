@@ -826,11 +826,11 @@ message GetLoaderJobStatusInput {
 
   string errors = 437762695;
 
-  int32 errorsperpage = 97137031;
+  optional int32 errorsperpage = 97137031;
 
   string loadid = 284783053;
 
-  int32 page = 22936183;
+  optional int32 page = 22936183;
 
 }
 
@@ -1232,7 +1232,7 @@ message ListLoaderJobsInput {
 
   string includequeuedloads = 224102040;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
 }
 
@@ -1250,7 +1250,7 @@ message ListLoaderJobsOutput {
 
 message ListMLDataProcessingJobsInput {
 
-  int32 maxitems = 486225716;
+  optional int32 maxitems = 486225716;
 
   string neptuneiamrolearn = 306145623;
 
@@ -1268,7 +1268,7 @@ message ListMLDataProcessingJobsOutput {
 
 message ListMLEndpointsInput {
 
-  int32 maxitems = 486225716;
+  optional int32 maxitems = 486225716;
 
   string neptuneiamrolearn = 306145623;
 
@@ -1286,7 +1286,7 @@ message ListMLEndpointsOutput {
 
 message ListMLModelTrainingJobsInput {
 
-  int32 maxitems = 486225716;
+  optional int32 maxitems = 486225716;
 
   string neptuneiamrolearn = 306145623;
 
@@ -1304,7 +1304,7 @@ message ListMLModelTrainingJobsOutput {
 
 message ListMLModelTransformJobsInput {
 
-  int32 maxitems = 486225716;
+  optional int32 maxitems = 486225716;
 
   string neptuneiamrolearn = 306145623;
 

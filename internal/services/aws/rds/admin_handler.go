@@ -222,25 +222,25 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		// AWS-standard DBInstance parameters (RDS-5/RDS-20). These were
 		// previously dropped even though the UI sends allocatedstorage and
 		// masterusername.
-		AllocatedStorage:                   req.Msg.Allocatedstorage,
+		AllocatedStorage:                   req.Msg.GetAllocatedstorage(),
 		MasterUsername:                     req.Msg.Masterusername,
 		StorageType:                        req.Msg.Storagetype,
-		BackupRetentionPeriod:              req.Msg.Backupretentionperiod,
+		BackupRetentionPeriod:              req.Msg.GetBackupretentionperiod(),
 		LicenseModel:                       req.Msg.Licensemodel,
 		StorageEncrypted:                   req.Msg.GetStorageencrypted(),
 		KmsKeyId:                           req.Msg.Kmskeyid,
 		DeletionProtection:                 req.Msg.GetDeletionprotection(),
 		MultiAZ:                            req.Msg.GetMultiaz(),
-		Port:                               req.Msg.Port,
+		Port:                               req.Msg.GetPort(),
 		OptionGroupName:                    req.Msg.Optiongroupname,
-		Iops:                               req.Msg.Iops,
-		MaxAllocatedStorage:                req.Msg.Maxallocatedstorage,
-		StorageThroughput:                  req.Msg.Storagethroughput,
-		MonitoringInterval:                 req.Msg.Monitoringinterval,
+		Iops:                               req.Msg.GetIops(),
+		MaxAllocatedStorage:                req.Msg.GetMaxallocatedstorage(),
+		StorageThroughput:                  req.Msg.GetStoragethroughput(),
+		MonitoringInterval:                 req.Msg.GetMonitoringinterval(),
 		EnhancedMonitoringResourceArn:      req.Msg.Monitoringrolearn,
 		PerformanceInsightsEnabled:         req.Msg.GetEnableperformanceinsights(),
 		PerformanceInsightsKMSKeyId:        req.Msg.Performanceinsightskmskeyid,
-		PerformanceInsightsRetentionPeriod: req.Msg.Performanceinsightsretentionperiod,
+		PerformanceInsightsRetentionPeriod: req.Msg.GetPerformanceinsightsretentionperiod(),
 		CACertificateIdentifier:            req.Msg.Cacertificateidentifier,
 		CopyTagsToSnapshot:                 req.Msg.GetCopytagstosnapshot(),
 		EnabledCloudwatchLogsExports:       req.Msg.Enablecloudwatchlogsexports,
@@ -485,8 +485,8 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 		Status:                           "creating",
 		MasterUsername:                   req.Msg.Masterusername,
 		DatabaseName:                     req.Msg.Databasename,
-		Port:                             int(req.Msg.Port),
-		BackupRetentionPeriod:            int(req.Msg.Backupretentionperiod),
+		Port:                             int(req.Msg.GetPort()),
+		BackupRetentionPeriod:            int(req.Msg.GetBackupretentionperiod()),
 		AvailabilityZones:                req.Msg.Availabilityzones,
 		DBSubnetGroupName:                req.Msg.Dbsubnetgroupname,
 		DBClusterParameterGroupName:      req.Msg.Dbclusterparametergroupname,
@@ -985,14 +985,14 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 	}
 	// AWS RDS Duration is in minutes and pairs with StartTime to derive an
 	// implied end-of-window. An explicit EndTime overrides Duration.
-	if req.Msg.Duration > 0 && !startTime.IsZero() && endTime.IsZero() {
-		endTime = startTime.Add(time.Duration(req.Msg.Duration) * time.Minute)
+	if req.Msg.GetDuration() > 0 && !startTime.IsZero() && endTime.IsZero() {
+		endTime = startTime.Add(time.Duration(req.Msg.GetDuration()) * time.Minute)
 	}
 
 	// AWS RDS DescribeEvents MaxRecords constraints: min 20, max 100,
 	// default 100. Clamp explicitly so callers passing 1 or 1000 still
 	// receive a valid page rather than the raw value.
-	maxRecords := int(req.Msg.Maxrecords)
+	maxRecords := int(req.Msg.GetMaxrecords())
 	if maxRecords == 0 {
 		maxRecords = 100
 	} else if maxRecords < 20 {
@@ -1549,8 +1549,8 @@ func clusterToPb(c *storerds.DBCluster, accountId string) *pb.DBCluster {
 		Status:                           c.Status,
 		Masterusername:                   c.MasterUsername,
 		Databasename:                     c.DatabaseName,
-		Port:                             int32(c.Port),
-		Backupretentionperiod:            int32(c.BackupRetentionPeriod),
+		Port:                             proto.Int32(int32(c.Port)),
+		Backupretentionperiod:            proto.Int32(int32(c.BackupRetentionPeriod)),
 		Preferredbackupwindow:            c.PreferredBackupWindow,
 		Preferredmaintenancewindow:       c.PreferredMaintenanceWindow,
 		Multiaz:                          proto.Bool(c.MultiAZ),
@@ -1623,27 +1623,27 @@ func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 		Autominorversionupgrade:            proto.Bool(i.AutoMinorVersionUpgrade),
 		Copytagstosnapshot:                 proto.Bool(i.CopyTagsToSnapshot),
 		Dbinstancearn:                      i.DBInstanceArn,
-		Allocatedstorage:                   i.AllocatedStorage,
+		Allocatedstorage:                   proto.Int32(i.AllocatedStorage),
 		Masterusername:                     i.MasterUsername,
 		Storagetype:                        i.StorageType,
-		Backupretentionperiod:              i.BackupRetentionPeriod,
+		Backupretentionperiod:              proto.Int32(i.BackupRetentionPeriod),
 		Licensemodel:                       i.LicenseModel,
 		Storageencrypted:                   proto.Bool(i.StorageEncrypted),
 		Kmskeyid:                           i.KmsKeyId,
 		Deletionprotection:                 proto.Bool(i.DeletionProtection),
 		Multiaz:                            proto.Bool(i.MultiAZ),
 		Secondaryavailabilityzone:          i.SecondaryAvailabilityZone,
-		Iops:                               i.Iops,
-		Maxallocatedstorage:                i.MaxAllocatedStorage,
-		Storagethroughput:                  i.StorageThroughput,
-		Monitoringinterval:                 i.MonitoringInterval,
+		Iops:                               proto.Int32(i.Iops),
+		Maxallocatedstorage:                proto.Int32(i.MaxAllocatedStorage),
+		Storagethroughput:                  proto.Int32(i.StorageThroughput),
+		Monitoringinterval:                 proto.Int32(i.MonitoringInterval),
 		Enhancedmonitoringresourcearn:      i.EnhancedMonitoringResourceArn,
 		Performanceinsightsenabled:         proto.Bool(i.PerformanceInsightsEnabled),
 		Performanceinsightskmskeyid:        i.PerformanceInsightsKMSKeyId,
-		Performanceinsightsretentionperiod: i.PerformanceInsightsRetentionPeriod,
+		Performanceinsightsretentionperiod: proto.Int32(i.PerformanceInsightsRetentionPeriod),
 		Cacertificateidentifier:            i.CACertificateIdentifier,
 		Dbiresourceid:                      i.DbiResourceId,
-		Dbinstanceport:                     i.Port,
+		Dbinstanceport:                     proto.Int32(i.Port),
 		Vpcsecuritygroups:                  vpcSecurityGroupsToPb(i.VpcSecurityGroupIds),
 		Optiongroupmemberships:             optionGroupMembershipsToPb(i.OptionGroupName),
 	}
@@ -1656,7 +1656,7 @@ func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 	if i.Endpoint != nil {
 		p.Endpoint = &pb.Endpoint{
 			Address: i.Endpoint.Address,
-			Port:    int32(i.Endpoint.Port),
+			Port:    proto.Int32(int32(i.Endpoint.Port)),
 		}
 	}
 	return p
@@ -1874,7 +1874,7 @@ func snapshotToPb(s *storerds.DBClusterSnapshot, accountId string) *pb.DBCluster
 		Engine:                      s.Engine,
 		Engineversion:               s.EngineVersion,
 		Status:                      s.Status,
-		Port:                        int32(s.Port),
+		Port:                        proto.Int32(int32(s.Port)),
 		Vpcid:                       s.VpcId,
 		Storageencrypted:            proto.Bool(s.StorageEncrypted),
 		Kmskeyid:                    s.KmsKeyId,
@@ -1898,9 +1898,9 @@ func dbSnapshotToPb(s *storerds.DBInstanceSnapshot, accountId string) *pb.DBSnap
 		Engineversion:                    s.EngineVersion,
 		Snapshottype:                     s.SnapshotType,
 		Status:                           s.Status,
-		Allocatedstorage:                 int32(s.AllocatedStorage),
+		Allocatedstorage:                 proto.Int32(int32(s.AllocatedStorage)),
 		Storagetype:                      s.StorageType,
-		Port:                             int32(s.Port),
+		Port:                             proto.Int32(int32(s.Port)),
 		Availabilityzone:                 s.AvailabilityZone,
 		Vpcid:                            s.VpcId,
 		Masterusername:                   s.MasterUsername,

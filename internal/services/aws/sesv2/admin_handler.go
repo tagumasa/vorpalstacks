@@ -42,7 +42,7 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Pagesize)
+	limit := int(req.Msg.GetPagesize())
 	if limit <= 0 {
 		limit = 100
 	}

@@ -515,7 +515,7 @@ func (x *CancelMessageMoveTaskRequest) GetTaskhandle() string {
 
 type CancelMessageMoveTaskResult struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	Approximatenumberofmessagesmoved int64                  `protobuf:"varint,510181657,opt,name=approximatenumberofmessagesmoved,proto3" json:"approximatenumberofmessagesmoved,omitempty"`
+	Approximatenumberofmessagesmoved *int64                 `protobuf:"varint,510181657,opt,name=approximatenumberofmessagesmoved,proto3,oneof" json:"approximatenumberofmessagesmoved,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -551,8 +551,8 @@ func (*CancelMessageMoveTaskResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMessageMoveTaskResult) GetApproximatenumberofmessagesmoved() int64 {
-	if x != nil {
-		return x.Approximatenumberofmessagesmoved
+	if x != nil && x.Approximatenumberofmessagesmoved != nil {
+		return *x.Approximatenumberofmessagesmoved
 	}
 	return 0
 }
@@ -613,7 +613,7 @@ type ChangeMessageVisibilityBatchRequestEntry struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Receipthandle     string                 `protobuf:"bytes,134471750,opt,name=receipthandle,proto3" json:"receipthandle,omitempty"`
-	Visibilitytimeout int32                  `protobuf:"varint,460820073,opt,name=visibilitytimeout,proto3" json:"visibilitytimeout,omitempty"`
+	Visibilitytimeout *int32                 `protobuf:"varint,460820073,opt,name=visibilitytimeout,proto3,oneof" json:"visibilitytimeout,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -663,8 +663,8 @@ func (x *ChangeMessageVisibilityBatchRequestEntry) GetReceipthandle() string {
 }
 
 func (x *ChangeMessageVisibilityBatchRequestEntry) GetVisibilitytimeout() int32 {
-	if x != nil {
-		return x.Visibilitytimeout
+	if x != nil && x.Visibilitytimeout != nil {
+		return *x.Visibilitytimeout
 	}
 	return 0
 }
@@ -2071,7 +2071,7 @@ func (x *KmsThrottled) GetMessage() string {
 
 type ListDeadLetterSourceQueuesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queueurl      string                 `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2109,8 +2109,8 @@ func (*ListDeadLetterSourceQueuesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDeadLetterSourceQueuesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -2183,7 +2183,7 @@ func (x *ListDeadLetterSourceQueuesResult) GetQueueurls() []string {
 
 type ListMessageMoveTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Sourcearn     string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2220,8 +2220,8 @@ func (*ListMessageMoveTasksRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMessageMoveTasksRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -2279,13 +2279,13 @@ func (x *ListMessageMoveTasksResult) GetResults() []*ListMessageMoveTasksResultE
 
 type ListMessageMoveTasksResultEntry struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
-	Approximatenumberofmessagesmoved  int64                  `protobuf:"varint,510181657,opt,name=approximatenumberofmessagesmoved,proto3" json:"approximatenumberofmessagesmoved,omitempty"`
-	Approximatenumberofmessagestomove int64                  `protobuf:"varint,108945690,opt,name=approximatenumberofmessagestomove,proto3" json:"approximatenumberofmessagestomove,omitempty"`
+	Approximatenumberofmessagesmoved  *int64                 `protobuf:"varint,510181657,opt,name=approximatenumberofmessagesmoved,proto3,oneof" json:"approximatenumberofmessagesmoved,omitempty"`
+	Approximatenumberofmessagestomove *int64                 `protobuf:"varint,108945690,opt,name=approximatenumberofmessagestomove,proto3,oneof" json:"approximatenumberofmessagestomove,omitempty"`
 	Destinationarn                    string                 `protobuf:"bytes,375726595,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
 	Failurereason                     string                 `protobuf:"bytes,232322142,opt,name=failurereason,proto3" json:"failurereason,omitempty"`
-	Maxnumberofmessagespersecond      int32                  `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3" json:"maxnumberofmessagespersecond,omitempty"`
+	Maxnumberofmessagespersecond      *int32                 `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3,oneof" json:"maxnumberofmessagespersecond,omitempty"`
 	Sourcearn                         string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
-	Startedtimestamp                  int64                  `protobuf:"varint,397447975,opt,name=startedtimestamp,proto3" json:"startedtimestamp,omitempty"`
+	Startedtimestamp                  *int64                 `protobuf:"varint,397447975,opt,name=startedtimestamp,proto3,oneof" json:"startedtimestamp,omitempty"`
 	Status                            string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Taskhandle                        string                 `protobuf:"bytes,190544291,opt,name=taskhandle,proto3" json:"taskhandle,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
@@ -2323,15 +2323,15 @@ func (*ListMessageMoveTasksResultEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetApproximatenumberofmessagesmoved() int64 {
-	if x != nil {
-		return x.Approximatenumberofmessagesmoved
+	if x != nil && x.Approximatenumberofmessagesmoved != nil {
+		return *x.Approximatenumberofmessagesmoved
 	}
 	return 0
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetApproximatenumberofmessagestomove() int64 {
-	if x != nil {
-		return x.Approximatenumberofmessagestomove
+	if x != nil && x.Approximatenumberofmessagestomove != nil {
+		return *x.Approximatenumberofmessagestomove
 	}
 	return 0
 }
@@ -2351,8 +2351,8 @@ func (x *ListMessageMoveTasksResultEntry) GetFailurereason() string {
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetMaxnumberofmessagespersecond() int32 {
-	if x != nil {
-		return x.Maxnumberofmessagespersecond
+	if x != nil && x.Maxnumberofmessagespersecond != nil {
+		return *x.Maxnumberofmessagespersecond
 	}
 	return 0
 }
@@ -2365,8 +2365,8 @@ func (x *ListMessageMoveTasksResultEntry) GetSourcearn() string {
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetStartedtimestamp() int64 {
-	if x != nil {
-		return x.Startedtimestamp
+	if x != nil && x.Startedtimestamp != nil {
+		return *x.Startedtimestamp
 	}
 	return 0
 }
@@ -2475,7 +2475,7 @@ func (x *ListQueueTagsResult) GetTags() map[string]string {
 
 type ListQueuesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults      int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults      *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queuenameprefix string                 `protobuf:"bytes,269478416,opt,name=queuenameprefix,proto3" json:"queuenameprefix,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -2513,8 +2513,8 @@ func (*ListQueuesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueuesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3176,13 +3176,13 @@ func (x *ReceiptHandleIsInvalid) GetMessage() string {
 type ReceiveMessageRequest struct {
 	state                       protoimpl.MessageState       `protogen:"open.v1"`
 	Attributenames              []QueueAttributeName         `protobuf:"varint,394468622,rep,packed,name=attributenames,proto3,enum=sqs.QueueAttributeName" json:"attributenames,omitempty"`
-	Maxnumberofmessages         int32                        `protobuf:"varint,139866822,opt,name=maxnumberofmessages,proto3" json:"maxnumberofmessages,omitempty"`
+	Maxnumberofmessages         *int32                       `protobuf:"varint,139866822,opt,name=maxnumberofmessages,proto3,oneof" json:"maxnumberofmessages,omitempty"`
 	Messageattributenames       []string                     `protobuf:"bytes,332558373,rep,name=messageattributenames,proto3" json:"messageattributenames,omitempty"`
 	Messagesystemattributenames []MessageSystemAttributeName `protobuf:"varint,42109014,rep,packed,name=messagesystemattributenames,proto3,enum=sqs.MessageSystemAttributeName" json:"messagesystemattributenames,omitempty"`
 	Queueurl                    string                       `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
 	Receiverequestattemptid     string                       `protobuf:"bytes,455135954,opt,name=receiverequestattemptid,proto3" json:"receiverequestattemptid,omitempty"`
-	Visibilitytimeout           int32                        `protobuf:"varint,460820073,opt,name=visibilitytimeout,proto3" json:"visibilitytimeout,omitempty"`
-	Waittimeseconds             int32                        `protobuf:"varint,398991863,opt,name=waittimeseconds,proto3" json:"waittimeseconds,omitempty"`
+	Visibilitytimeout           *int32                       `protobuf:"varint,460820073,opt,name=visibilitytimeout,proto3,oneof" json:"visibilitytimeout,omitempty"`
+	Waittimeseconds             *int32                       `protobuf:"varint,398991863,opt,name=waittimeseconds,proto3,oneof" json:"waittimeseconds,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -3225,8 +3225,8 @@ func (x *ReceiveMessageRequest) GetAttributenames() []QueueAttributeName {
 }
 
 func (x *ReceiveMessageRequest) GetMaxnumberofmessages() int32 {
-	if x != nil {
-		return x.Maxnumberofmessages
+	if x != nil && x.Maxnumberofmessages != nil {
+		return *x.Maxnumberofmessages
 	}
 	return 0
 }
@@ -3260,15 +3260,15 @@ func (x *ReceiveMessageRequest) GetReceiverequestattemptid() string {
 }
 
 func (x *ReceiveMessageRequest) GetVisibilitytimeout() int32 {
-	if x != nil {
-		return x.Visibilitytimeout
+	if x != nil && x.Visibilitytimeout != nil {
+		return *x.Visibilitytimeout
 	}
 	return 0
 }
 
 func (x *ReceiveMessageRequest) GetWaittimeseconds() int32 {
-	if x != nil {
-		return x.Waittimeseconds
+	if x != nil && x.Waittimeseconds != nil {
+		return *x.Waittimeseconds
 	}
 	return 0
 }
@@ -3511,7 +3511,7 @@ func (x *SendMessageBatchRequest) GetQueueurl() string {
 
 type SendMessageBatchRequestEntry struct {
 	state                   protoimpl.MessageState                  `protogen:"open.v1"`
-	Delayseconds            int32                                   `protobuf:"varint,48268198,opt,name=delayseconds,proto3" json:"delayseconds,omitempty"`
+	Delayseconds            *int32                                  `protobuf:"varint,48268198,opt,name=delayseconds,proto3,oneof" json:"delayseconds,omitempty"`
 	Id                      string                                  `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Messageattributes       map[string]*MessageAttributeValue       `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Messagebody             string                                  `protobuf:"bytes,56920001,opt,name=messagebody,proto3" json:"messagebody,omitempty"`
@@ -3553,8 +3553,8 @@ func (*SendMessageBatchRequestEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *SendMessageBatchRequestEntry) GetDelayseconds() int32 {
-	if x != nil {
-		return x.Delayseconds
+	if x != nil && x.Delayseconds != nil {
+		return *x.Delayseconds
 	}
 	return 0
 }
@@ -3739,7 +3739,7 @@ func (x *SendMessageBatchResultEntry) GetSequencenumber() string {
 
 type SendMessageRequest struct {
 	state                   protoimpl.MessageState                  `protogen:"open.v1"`
-	Delayseconds            int32                                   `protobuf:"varint,48268198,opt,name=delayseconds,proto3" json:"delayseconds,omitempty"`
+	Delayseconds            *int32                                  `protobuf:"varint,48268198,opt,name=delayseconds,proto3,oneof" json:"delayseconds,omitempty"`
 	Messageattributes       map[string]*MessageAttributeValue       `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Messagebody             string                                  `protobuf:"bytes,56920001,opt,name=messagebody,proto3" json:"messagebody,omitempty"`
 	Messagededuplicationid  string                                  `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3" json:"messagededuplicationid,omitempty"`
@@ -3781,8 +3781,8 @@ func (*SendMessageRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *SendMessageRequest) GetDelayseconds() int32 {
-	if x != nil {
-		return x.Delayseconds
+	if x != nil && x.Delayseconds != nil {
+		return *x.Delayseconds
 	}
 	return 0
 }
@@ -3960,7 +3960,7 @@ func (x *SetQueueAttributesRequest) GetQueueurl() string {
 type StartMessageMoveTaskRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Destinationarn               string                 `protobuf:"bytes,375726595,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
-	Maxnumberofmessagespersecond int32                  `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3" json:"maxnumberofmessagespersecond,omitempty"`
+	Maxnumberofmessagespersecond *int32                 `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3,oneof" json:"maxnumberofmessagespersecond,omitempty"`
 	Sourcearn                    string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -4004,8 +4004,8 @@ func (x *StartMessageMoveTaskRequest) GetDestinationarn() string {
 }
 
 func (x *StartMessageMoveTaskRequest) GetMaxnumberofmessagespersecond() int32 {
-	if x != nil {
-		return x.Maxnumberofmessagespersecond
+	if x != nil && x.Maxnumberofmessagespersecond != nil {
+		return *x.Maxnumberofmessagespersecond
 	}
 	return 0
 }
@@ -4276,16 +4276,18 @@ const file_sqs_proto_rawDesc = "" +
 	"\x1cCancelMessageMoveTaskRequest\x12!\n" +
 	"\n" +
 	"taskhandle\x18\xa3\xf3\xedZ \x01(\tR\n" +
-	"taskhandle\"m\n" +
-	"\x1bCancelMessageMoveTaskResult\x12N\n" +
-	" approximatenumberofmessagesmoved\x18\x99\x82\xa3\xf3\x01 \x01(\x03R approximatenumberofmessagesmoved\"\x92\x01\n" +
+	"taskhandle\"\x97\x01\n" +
+	"\x1bCancelMessageMoveTaskResult\x12S\n" +
+	" approximatenumberofmessagesmoved\x18\x99\x82\xa3\xf3\x01 \x01(\x03H\x00R approximatenumberofmessagesmoved\x88\x01\x01B#\n" +
+	"!_approximatenumberofmessagesmoved\"\x92\x01\n" +
 	"#ChangeMessageVisibilityBatchRequest\x12K\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2-.sqs.ChangeMessageVisibilityBatchRequestEntryR\aentries\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\x99\x01\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\xb4\x01\n" +
 	"(ChangeMessageVisibilityBatchRequestEntry\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12'\n" +
-	"\rreceipthandle\x18\xc6\xc0\x8f@ \x01(\tR\rreceipthandle\x120\n" +
-	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05R\x11visibilitytimeout\"\xae\x01\n" +
+	"\rreceipthandle\x18\xc6\xc0\x8f@ \x01(\tR\rreceipthandle\x125\n" +
+	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05H\x00R\x11visibilitytimeout\x88\x01\x01B\x14\n" +
+	"\x12_visibilitytimeout\"\xae\x01\n" +
 	"\"ChangeMessageVisibilityBatchResult\x126\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1a.sqs.BatchResultErrorEntryR\x06failed\x12P\n" +
 	"\n" +
@@ -4372,48 +4374,55 @@ const file_sqs_proto_rawDesc = "" +
 	"\x10KmsOptInRequired\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
 	"\fKmsThrottled\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x88\x01\n" +
-	"!ListDeadLetterSourceQueuesRequest\x12\"\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9c\x01\n" +
+	"!ListDeadLetterSourceQueuesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"e\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurlB\r\n" +
+	"\v_maxresults\"e\n" +
 	" ListDeadLetterSourceQueuesResult\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tqueueurls\x18\xef\xb5\xe0\xe2\x01 \x03(\tR\tqueueurls\"c\n" +
-	"\x1bListMessageMoveTasksRequest\x12\"\n" +
+	"\tqueueurls\x18\xef\xb5\xe0\xe2\x01 \x03(\tR\tqueueurls\"w\n" +
+	"\x1bListMessageMoveTasksRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\"`\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12 \n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearnB\r\n" +
+	"\v_maxresults\"`\n" +
 	"\x1aListMessageMoveTasksResult\x12B\n" +
-	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2$.sqs.ListMessageMoveTasksResultEntryR\aresults\"\xef\x03\n" +
-	"\x1fListMessageMoveTasksResultEntry\x12N\n" +
-	" approximatenumberofmessagesmoved\x18\x99\x82\xa3\xf3\x01 \x01(\x03R approximatenumberofmessagesmoved\x12O\n" +
-	"!approximatenumberofmessagestomove\x18\x9a\xc2\xf93 \x01(\x03R!approximatenumberofmessagestomove\x12*\n" +
+	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2$.sqs.ListMessageMoveTasksResultEntryR\aresults\"\x84\x05\n" +
+	"\x1fListMessageMoveTasksResultEntry\x12S\n" +
+	" approximatenumberofmessagesmoved\x18\x99\x82\xa3\xf3\x01 \x01(\x03H\x00R approximatenumberofmessagesmoved\x88\x01\x01\x12T\n" +
+	"!approximatenumberofmessagestomove\x18\x9a\xc2\xf93 \x01(\x03H\x01R!approximatenumberofmessagestomove\x88\x01\x01\x12*\n" +
 	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tR\x0edestinationarn\x12'\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tR\rfailurereason\x12F\n" +
-	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05R\x1cmaxnumberofmessagespersecond\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\x12.\n" +
-	"\x10startedtimestamp\x18\xa7\xa6½\x01 \x01(\x03R\x10startedtimestamp\x12\x19\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tR\rfailurereason\x12K\n" +
+	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x02R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12 \n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\x123\n" +
+	"\x10startedtimestamp\x18\xa7\xa6½\x01 \x01(\x03H\x03R\x10startedtimestamp\x88\x01\x01\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12!\n" +
 	"\n" +
 	"taskhandle\x18\xa3\xf3\xedZ \x01(\tR\n" +
-	"taskhandle\"6\n" +
+	"taskhandleB#\n" +
+	"!_approximatenumberofmessagesmovedB$\n" +
+	"\"_approximatenumberofmessagestomoveB\x1f\n" +
+	"\x1d_maxnumberofmessagespersecondB\x13\n" +
+	"\x11_startedtimestamp\"6\n" +
 	"\x14ListQueueTagsRequest\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\x8a\x01\n" +
 	"\x13ListQueueTagsResult\x12:\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\".sqs.ListQueueTagsResult.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x86\x01\n" +
-	"\x11ListQueuesRequest\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x01\n" +
+	"\x11ListQueuesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12,\n" +
-	"\x0fqueuenameprefix\x18\x90Կ\x80\x01 \x01(\tR\x0fqueuenameprefix\"T\n" +
+	"\x0fqueuenameprefix\x18\x90Կ\x80\x01 \x01(\tR\x0fqueuenameprefixB\r\n" +
+	"\v_maxresults\"T\n" +
 	"\x10ListQueuesResult\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1f\n" +
 	"\tqueueurls\x18ω\xe8\x1d \x03(\tR\tqueueurls\"\x80\x04\n" +
@@ -4459,16 +4468,19 @@ const file_sqs_proto_rawDesc = "" +
 	"\x0fQueueNameExists\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16ReceiptHandleIsInvalid\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xef\x03\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc0\x04\n" +
 	"\x15ReceiveMessageRequest\x12C\n" +
-	"\x0eattributenames\x18\x8e\xba\x8c\xbc\x01 \x03(\x0e2\x17.sqs.QueueAttributeNameR\x0eattributenames\x123\n" +
-	"\x13maxnumberofmessages\x18\xc6\xe5\xd8B \x01(\x05R\x13maxnumberofmessages\x128\n" +
+	"\x0eattributenames\x18\x8e\xba\x8c\xbc\x01 \x03(\x0e2\x17.sqs.QueueAttributeNameR\x0eattributenames\x128\n" +
+	"\x13maxnumberofmessages\x18\xc6\xe5\xd8B \x01(\x05H\x00R\x13maxnumberofmessages\x88\x01\x01\x128\n" +
 	"\x15messageattributenames\x18\xa5\xe0ɞ\x01 \x03(\tR\x15messageattributenames\x12d\n" +
 	"\x1bmessagesystemattributenames\x18\u0590\x8a\x14 \x03(\x0e2\x1f.sqs.MessageSystemAttributeNameR\x1bmessagesystemattributenames\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x12<\n" +
-	"\x17receiverequestattemptid\x18ҥ\x83\xd9\x01 \x01(\tR\x17receiverequestattemptid\x120\n" +
-	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05R\x11visibilitytimeout\x12,\n" +
-	"\x0fwaittimeseconds\x18\xf7à\xbe\x01 \x01(\x05R\x0fwaittimeseconds\"D\n" +
+	"\x17receiverequestattemptid\x18ҥ\x83\xd9\x01 \x01(\tR\x17receiverequestattemptid\x125\n" +
+	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05H\x01R\x11visibilitytimeout\x88\x01\x01\x121\n" +
+	"\x0fwaittimeseconds\x18\xf7à\xbe\x01 \x01(\x05H\x02R\x0fwaittimeseconds\x88\x01\x01B\x16\n" +
+	"\x14_maxnumberofmessagesB\x14\n" +
+	"\x12_visibilitytimeoutB\x12\n" +
+	"\x10_waittimeseconds\"D\n" +
 	"\x14ReceiveMessageResult\x12,\n" +
 	"\bmessages\x18ֿ\x84\xc3\x01 \x03(\v2\f.sqs.MessageR\bmessages\"S\n" +
 	"\x17RemovePermissionRequest\x12\x18\n" +
@@ -4480,9 +4492,9 @@ const file_sqs_proto_rawDesc = "" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"z\n" +
 	"\x17SendMessageBatchRequest\x12?\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2!.sqs.SendMessageBatchRequestEntryR\aentries\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\x9e\x05\n" +
-	"\x1cSendMessageBatchRequestEntry\x12%\n" +
-	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05R\fdelayseconds\x12\x12\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\xb4\x05\n" +
+	"\x1cSendMessageBatchRequestEntry\x12*\n" +
+	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05H\x00R\fdelayseconds\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12i\n" +
 	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v28.sqs.SendMessageBatchRequestEntry.MessageattributesEntryR\x11messageattributes\x12#\n" +
 	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12:\n" +
@@ -4494,7 +4506,8 @@ const file_sqs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x1a.sqs.MessageAttributeValueR\x05value:\x028\x01\x1al\n" +
 	"\x1cMessagesystemattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
-	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01\"\x96\x01\n" +
+	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01B\x0f\n" +
+	"\r_delayseconds\"\x96\x01\n" +
 	"\x16SendMessageBatchResult\x126\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1a.sqs.BatchResultErrorEntryR\x06failed\x12D\n" +
 	"\n" +
@@ -4506,9 +4519,9 @@ const file_sqs_proto_rawDesc = "" +
 	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tR\x10md5ofmessagebody\x12F\n" +
 	"\x1cmd5ofmessagesystemattributes\x18\xce\xf9\x99\x91\x01 \x01(\tR\x1cmd5ofmessagesystemattributes\x12 \n" +
 	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12)\n" +
-	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"\x8c\x05\n" +
-	"\x12SendMessageRequest\x12%\n" +
-	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05R\fdelayseconds\x12_\n" +
+	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"\xa2\x05\n" +
+	"\x12SendMessageRequest\x12*\n" +
+	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05H\x00R\fdelayseconds\x88\x01\x01\x12_\n" +
 	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2..sqs.SendMessageRequest.MessageattributesEntryR\x11messageattributes\x12#\n" +
 	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12:\n" +
 	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tR\x16messagededuplicationid\x12*\n" +
@@ -4520,7 +4533,8 @@ const file_sqs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x1a.sqs.MessageAttributeValueR\x05value:\x028\x01\x1al\n" +
 	"\x1cMessagesystemattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
-	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01\"\x93\x02\n" +
+	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01B\x0f\n" +
+	"\r_delayseconds\"\x93\x02\n" +
 	"\x11SendMessageResult\x12:\n" +
 	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tR\x16md5ofmessageattributes\x12-\n" +
 	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tR\x10md5ofmessagebody\x12F\n" +
@@ -4534,11 +4548,12 @@ const file_sqs_proto_rawDesc = "" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd9\x01\n" +
 	"\x1bStartMessageMoveTaskRequest\x12*\n" +
-	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tR\x0edestinationarn\x12F\n" +
-	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05R\x1cmaxnumberofmessagespersecond\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\"?\n" +
+	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tR\x0edestinationarn\x12K\n" +
+	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x00R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12 \n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearnB\x1f\n" +
+	"\x1d_maxnumberofmessagespersecond\"?\n" +
 	"\x1aStartMessageMoveTaskResult\x12!\n" +
 	"\n" +
 	"taskhandle\x18\xa3\xf3\xedZ \x01(\tR\n" +
@@ -4821,6 +4836,16 @@ func file_sqs_proto_init() {
 		return
 	}
 	file_sqs_proto_msgTypes[3].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[5].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[7].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[38].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[40].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[42].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[45].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[58].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[64].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[67].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[70].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

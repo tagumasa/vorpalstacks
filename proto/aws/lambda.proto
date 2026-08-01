@@ -276,15 +276,15 @@ service LambdaService {
 
 message AccountLimit {
 
-  int64 codesizeunzipped = 508806555;
+  optional int64 codesizeunzipped = 508806555;
 
-  int64 codesizezipped = 26010534;
+  optional int64 codesizezipped = 26010534;
 
-  int32 concurrentexecutions = 333066772;
+  optional int32 concurrentexecutions = 333066772;
 
-  int64 totalcodesize = 202795702;
+  optional int64 totalcodesize = 202795702;
 
-  int32 unreservedconcurrentexecutions = 6163497;
+  optional int32 unreservedconcurrentexecutions = 6163497;
 
 }
 
@@ -294,9 +294,9 @@ message AccountLimit {
 
 message AccountUsage {
 
-  int64 functioncount = 204403569;
+  optional int64 functioncount = 204403569;
 
-  int64 totalcodesize = 202795702;
+  optional int64 totalcodesize = 202795702;
 
 }
 
@@ -490,9 +490,9 @@ message CallbackFailedDetails {
 
 message CallbackOptions {
 
-  int32 heartbeattimeoutseconds = 532445120;
+  optional int32 heartbeattimeoutseconds = 532445120;
 
-  int32 timeoutseconds = 336148022;
+  optional int32 timeoutseconds = 336148022;
 
 }
 
@@ -504,9 +504,9 @@ message CallbackStartedDetails {
 
   string callbackid = 70101916;
 
-  int32 heartbeattimeout = 35823659;
+  optional int32 heartbeattimeout = 35823659;
 
-  int32 timeout = 47808041;
+  optional int32 timeout = 47808041;
 
 }
 
@@ -614,7 +614,7 @@ enum CapacityProviderPredefinedMetricType {
 
 message CapacityProviderScalingConfig {
 
-  int32 maxvcpucount = 336271977;
+  optional int32 maxvcpucount = 336271977;
 
   CapacityProviderScalingMode scalingmode = 210356138;
 
@@ -894,7 +894,7 @@ message CodeVerificationFailedException {
 
 message Concurrency {
 
-  int32 reservedconcurrentexecutions = 40149212;
+  optional int32 reservedconcurrentexecutions = 40149212;
 
 }
 
@@ -966,7 +966,7 @@ message Cors {
 
   repeated string exposeheaders = 290364554;
 
-  int32 maxage = 243937897;
+  optional int32 maxage = 243937897;
 
 }
 
@@ -1044,7 +1044,7 @@ message CreateEventSourceMappingRequest {
 
   AmazonManagedKafkaEventSourceConfig amazonmanagedkafkaeventsourceconfig = 60136380;
 
-  int32 batchsize = 318039259;
+  optional int32 batchsize = 318039259;
 
   optional bool bisectbatchonfunctionerror = 276143707;
 
@@ -1066,15 +1066,15 @@ message CreateEventSourceMappingRequest {
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
-  int32 maximumbatchingwindowinseconds = 346663320;
+  optional int32 maximumbatchingwindowinseconds = 346663320;
 
-  int32 maximumrecordageinseconds = 102344982;
+  optional int32 maximumrecordageinseconds = 102344982;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
   EventSourceMappingMetricsConfig metricsconfig = 412971857;
 
-  int32 parallelizationfactor = 400337694;
+  optional int32 parallelizationfactor = 400337694;
 
   ProvisionedPollerConfig provisionedpollerconfig = 275676602;
 
@@ -1096,7 +1096,7 @@ message CreateEventSourceMappingRequest {
 
   repeated string topics = 219850038;
 
-  int32 tumblingwindowinseconds = 372493124;
+  optional int32 tumblingwindowinseconds = 372493124;
 
 }
 
@@ -1136,7 +1136,7 @@ message CreateFunctionRequest {
 
   LoggingConfig loggingconfig = 424359625;
 
-  int32 memorysize = 55523120;
+  optional int32 memorysize = 55523120;
 
   PackageType packagetype = 517524132;
 
@@ -1154,7 +1154,7 @@ message CreateFunctionRequest {
 
   TenancyConfig tenancyconfig = 215700986;
 
-  int32 timeout = 47808041;
+  optional int32 timeout = 47808041;
 
   TracingConfig tracingconfig = 19554860;
 
@@ -1294,7 +1294,7 @@ message DeleteFunctionRequest {
 
 message DeleteFunctionResponse {
 
-  int32 statuscode = 303830783;
+  optional int32 statuscode = 303830783;
 
 }
 
@@ -1360,9 +1360,9 @@ message DocumentDBEventSourceConfig {
 
 message DurableConfig {
 
-  int32 executiontimeout = 502184601;
+  optional int32 executiontimeout = 502184601;
 
-  int32 retentionperiodindays = 324977873;
+  optional int32 retentionperiodindays = 324977873;
 
 }
 
@@ -1586,7 +1586,7 @@ message Event {
 
   ContextSucceededDetails contextsucceededdetails = 278760906;
 
-  int32 eventid = 376916819;
+  optional int32 eventid = 376916819;
 
   string eventtimestamp = 184687758;
 
@@ -1670,7 +1670,7 @@ message EventSourceMappingConfiguration {
 
   AmazonManagedKafkaEventSourceConfig amazonmanagedkafkaeventsourceconfig = 60136380;
 
-  int32 batchsize = 318039259;
+  optional int32 batchsize = 318039259;
 
   optional bool bisectbatchonfunctionerror = 276143707;
 
@@ -1698,15 +1698,15 @@ message EventSourceMappingConfiguration {
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
-  int32 maximumbatchingwindowinseconds = 346663320;
+  optional int32 maximumbatchingwindowinseconds = 346663320;
 
-  int32 maximumrecordageinseconds = 102344982;
+  optional int32 maximumrecordageinseconds = 102344982;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
   EventSourceMappingMetricsConfig metricsconfig = 412971857;
 
-  int32 parallelizationfactor = 400337694;
+  optional int32 parallelizationfactor = 400337694;
 
   ProvisionedPollerConfig provisionedpollerconfig = 275676602;
 
@@ -1730,7 +1730,7 @@ message EventSourceMappingConfiguration {
 
   repeated string topics = 219850038;
 
-  int32 tumblingwindowinseconds = 372493124;
+  optional int32 tumblingwindowinseconds = 372493124;
 
   string uuid = 91981875;
 
@@ -2048,7 +2048,7 @@ message FunctionConfiguration {
 
   string codesha256 = 46450860;
 
-  int64 codesize = 74450158;
+  optional int64 codesize = 74450158;
 
   string configsha256 = 145714121;
 
@@ -2088,7 +2088,7 @@ message FunctionConfiguration {
 
   string masterarn = 74605927;
 
-  int32 memorysize = 55523120;
+  optional int32 memorysize = 55523120;
 
   PackageType packagetype = 517524132;
 
@@ -2114,7 +2114,7 @@ message FunctionConfiguration {
 
   TenancyConfig tenancyconfig = 215700986;
 
-  int32 timeout = 47808041;
+  optional int32 timeout = 47808041;
 
   TracingConfigResponse tracingconfig = 19554860;
 
@@ -2134,9 +2134,9 @@ message FunctionEventInvokeConfig {
 
   string lastmodified = 434048551;
 
-  int32 maximumeventageinseconds = 393041563;
+  optional int32 maximumeventageinseconds = 393041563;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
 }
 
@@ -2154,9 +2154,9 @@ enum FunctionResponseType {
 
 message FunctionScalingConfig {
 
-  int32 maxexecutionenvironments = 337598368;
+  optional int32 maxexecutionenvironments = 337598368;
 
-  int32 minexecutionenvironments = 123880642;
+  optional int32 minexecutionenvironments = 123880642;
 
 }
 
@@ -2300,7 +2300,7 @@ message GetDurableExecutionHistoryRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   optional bool reverseorder = 427445336;
 
@@ -2366,7 +2366,7 @@ message GetDurableExecutionStateRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -2420,7 +2420,7 @@ message GetFunctionConcurrencyRequest {
 
 message GetFunctionConcurrencyResponse {
 
-  int32 reservedconcurrentexecutions = 40149212;
+  optional int32 reservedconcurrentexecutions = 40149212;
 
 }
 
@@ -2596,7 +2596,7 @@ message GetLayerVersionResponse {
 
   string licenseinfo = 133903897;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -2634,13 +2634,13 @@ message GetProvisionedConcurrencyConfigRequest {
 
 message GetProvisionedConcurrencyConfigResponse {
 
-  int32 allocatedprovisionedconcurrentexecutions = 468402411;
+  optional int32 allocatedprovisionedconcurrentexecutions = 468402411;
 
-  int32 availableprovisionedconcurrentexecutions = 32168809;
+  optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
   string lastmodified = 434048551;
 
-  int32 requestedprovisionedconcurrentexecutions = 58431158;
+  optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
@@ -2858,7 +2858,7 @@ message InvocationResponse {
 
   bytes payload = 6526790 [(aws.http_payload) = true];
 
-  int32 statuscode = 303830783;
+  optional int32 statuscode = 303830783;
 
 }
 
@@ -2890,7 +2890,7 @@ message InvokeAsyncRequest {
 
 message InvokeAsyncResponse {
 
-  int32 status = 6222352;
+  optional int32 status = 6222352;
 
 }
 
@@ -2958,7 +2958,7 @@ message InvokeWithResponseStreamResponse {
 
   string responsestreamcontenttype = 65265032;
 
-  int32 statuscode = 303830783;
+  optional int32 statuscode = 303830783;
 
 }
 
@@ -3092,7 +3092,7 @@ message LambdaManagedInstancesCapacityProviderConfig {
 
   double executionenvironmentmemorygibpervcpu = 227590513;
 
-  int32 perexecutionenvironmentmaxconcurrency = 120967319;
+  optional int32 perexecutionenvironmentmaxconcurrency = 120967319;
 
 }
 
@@ -3192,7 +3192,7 @@ message Layer {
 
   string arn = 402345373;
 
-  int64 codesize = 74450158;
+  optional int64 codesize = 74450158;
 
   string signingjobarn = 343397691;
 
@@ -3224,7 +3224,7 @@ message LayerVersionContentOutput {
 
   string codesha256 = 46450860;
 
-  int64 codesize = 74450158;
+  optional int64 codesize = 74450158;
 
   string location = 465604039;
 
@@ -3252,7 +3252,7 @@ message LayerVersionsListItem {
 
   string licenseinfo = 133903897;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -3280,7 +3280,7 @@ message ListAliasesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3300,7 +3300,7 @@ message ListCapacityProvidersRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   CapacityProviderState state = 502047895;
 
@@ -3322,7 +3322,7 @@ message ListCodeSigningConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3346,7 +3346,7 @@ message ListDurableExecutionsByFunctionRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string qualifier = 526670560;
 
@@ -3382,7 +3382,7 @@ message ListEventSourceMappingsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3404,7 +3404,7 @@ message ListFunctionEventInvokeConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3426,7 +3426,7 @@ message ListFunctionUrlConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3448,7 +3448,7 @@ message ListFunctionVersionsByCapacityProviderRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3472,7 +3472,7 @@ message ListFunctionsByCodeSigningConfigRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3496,7 +3496,7 @@ message ListFunctionsRequest {
 
   string masterregion = 114009692;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3524,7 +3524,7 @@ message ListLayerVersionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3548,7 +3548,7 @@ message ListLayersRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3570,7 +3570,7 @@ message ListProvisionedConcurrencyConfigsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3608,7 +3608,7 @@ message ListVersionsByFunctionRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3890,15 +3890,15 @@ enum PropagateTagsMode {
 
 message ProvisionedConcurrencyConfigListItem {
 
-  int32 allocatedprovisionedconcurrentexecutions = 468402411;
+  optional int32 allocatedprovisionedconcurrentexecutions = 468402411;
 
-  int32 availableprovisionedconcurrentexecutions = 32168809;
+  optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
   string functionarn = 381920497;
 
   string lastmodified = 434048551;
 
-  int32 requestedprovisionedconcurrentexecutions = 58431158;
+  optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
@@ -3936,9 +3936,9 @@ enum ProvisionedConcurrencyStatusEnum {
 
 message ProvisionedPollerConfig {
 
-  int32 maximumpollers = 170898825;
+  optional int32 maximumpollers = 170898825;
 
-  int32 minimumpollers = 302938719;
+  optional int32 minimumpollers = 302938719;
 
   string pollergroupname = 316867254;
 
@@ -3994,7 +3994,7 @@ message PublishLayerVersionResponse {
 
   string licenseinfo = 133903897;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -4052,9 +4052,9 @@ message PutFunctionEventInvokeConfigRequest {
 
   string functionname = 468698147;
 
-  int32 maximumeventageinseconds = 393041563;
+  optional int32 maximumeventageinseconds = 393041563;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
   string qualifier = 526670560;
 
@@ -4114,13 +4114,13 @@ message PutProvisionedConcurrencyConfigRequest {
 
 message PutProvisionedConcurrencyConfigResponse {
 
-  int32 allocatedprovisionedconcurrentexecutions = 468402411;
+  optional int32 allocatedprovisionedconcurrentexecutions = 468402411;
 
-  int32 availableprovisionedconcurrentexecutions = 32168809;
+  optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
   string lastmodified = 434048551;
 
-  int32 requestedprovisionedconcurrentexecutions = 58431158;
+  optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
@@ -4280,9 +4280,9 @@ enum ResponseStreamingInvocationType {
 
 message RetryDetails {
 
-  int32 currentattempt = 340355832;
+  optional int32 currentattempt = 340355832;
 
-  int32 nextattemptdelayseconds = 502780186;
+  optional int32 nextattemptdelayseconds = 502780186;
 
 }
 
@@ -4450,7 +4450,7 @@ message S3FilesMountTimeoutException {
 
 message ScalingConfig {
 
-  int32 maximumconcurrency = 257783285;
+  optional int32 maximumconcurrency = 257783285;
 
 }
 
@@ -4804,7 +4804,7 @@ enum StateReasonCode {
 
 message StepDetails {
 
-  int32 attempt = 105696463;
+  optional int32 attempt = 105696463;
 
   ErrorObject error = 328047858;
 
@@ -4832,7 +4832,7 @@ message StepFailedDetails {
 
 message StepOptions {
 
-  int32 nextattemptdelayseconds = 502780186;
+  optional int32 nextattemptdelayseconds = 502780186;
 
 }
 
@@ -5112,7 +5112,7 @@ message UpdateEventSourceMappingRequest {
 
   AmazonManagedKafkaEventSourceConfig amazonmanagedkafkaeventsourceconfig = 60136380;
 
-  int32 batchsize = 318039259;
+  optional int32 batchsize = 318039259;
 
   optional bool bisectbatchonfunctionerror = 276143707;
 
@@ -5132,15 +5132,15 @@ message UpdateEventSourceMappingRequest {
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
-  int32 maximumbatchingwindowinseconds = 346663320;
+  optional int32 maximumbatchingwindowinseconds = 346663320;
 
-  int32 maximumrecordageinseconds = 102344982;
+  optional int32 maximumrecordageinseconds = 102344982;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
   EventSourceMappingMetricsConfig metricsconfig = 412971857;
 
-  int32 parallelizationfactor = 400337694;
+  optional int32 parallelizationfactor = 400337694;
 
   ProvisionedPollerConfig provisionedpollerconfig = 275676602;
 
@@ -5150,7 +5150,7 @@ message UpdateEventSourceMappingRequest {
 
   repeated SourceAccessConfiguration sourceaccessconfigurations = 371593554;
 
-  int32 tumblingwindowinseconds = 372493124;
+  optional int32 tumblingwindowinseconds = 372493124;
 
   string uuid = 91981875;
 
@@ -5216,7 +5216,7 @@ message UpdateFunctionConfigurationRequest {
 
   LoggingConfig loggingconfig = 424359625;
 
-  int32 memorysize = 55523120;
+  optional int32 memorysize = 55523120;
 
   string revisionid = 499618182;
 
@@ -5226,7 +5226,7 @@ message UpdateFunctionConfigurationRequest {
 
   SnapStart snapstart = 283273032;
 
-  int32 timeout = 47808041;
+  optional int32 timeout = 47808041;
 
   TracingConfig tracingconfig = 19554860;
 
@@ -5242,9 +5242,9 @@ message UpdateFunctionEventInvokeConfigRequest {
 
   string functionname = 468698147;
 
-  int32 maximumeventageinseconds = 393041563;
+  optional int32 maximumeventageinseconds = 393041563;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
   string qualifier = 526670560;
 
@@ -5354,7 +5354,7 @@ message WaitDetails {
 
 message WaitOptions {
 
-  int32 waitseconds = 305214910;
+  optional int32 waitseconds = 305214910;
 
 }
 
@@ -5376,7 +5376,7 @@ message WaitStartedDetails {
 
 message WaitSucceededDetails {
 
-  int32 duration = 348604718;
+  optional int32 duration = 348604718;
 
 }
 

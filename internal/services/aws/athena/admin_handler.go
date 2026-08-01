@@ -65,7 +65,7 @@ func (h *AdminHandler) CreateWorkGroup(ctx context.Context, req *connect.Request
 			}
 		}
 		wg.Configuration.PublishCloudWatchMetricsEnabled = req.Msg.Configuration.GetPublishcloudwatchmetricsenabled()
-		wg.Configuration.BytesScannedCutoffPerQuery = req.Msg.Configuration.Bytesscannedcutoffperquery
+		wg.Configuration.BytesScannedCutoffPerQuery = req.Msg.Configuration.GetBytesscannedcutoffperquery()
 		wg.Configuration.RequesterPaysEnabled = req.Msg.Configuration.GetRequesterpaysenabled()
 		if req.Msg.Configuration.Engineversion != nil {
 			wg.Configuration.EngineVersion = &athenastore.EngineVersion{
@@ -107,7 +107,7 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Maxresults)
+	limit := int(req.Msg.GetMaxresults())
 	if limit <= 0 {
 		limit = 100
 	}

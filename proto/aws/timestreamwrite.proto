@@ -134,17 +134,17 @@ enum BatchLoadDataFormat {
 
 message BatchLoadProgressReport {
 
-  int64 bytesmetered = 232712245;
+  optional int64 bytesmetered = 232712245;
 
-  int64 filefailures = 44779969;
+  optional int64 filefailures = 44779969;
 
-  int64 parsefailures = 330475280;
+  optional int64 parsefailures = 330475280;
 
-  int64 recordingestionfailures = 262421066;
+  optional int64 recordingestionfailures = 262421066;
 
-  int64 recordsingested = 159925469;
+  optional int64 recordsingested = 159925469;
 
-  int64 recordsprocessed = 27133172;
+  optional int64 recordsprocessed = 27133172;
 
 }
 
@@ -206,7 +206,7 @@ message BatchLoadTaskDescription {
 
   BatchLoadProgressReport progressreport = 345169253;
 
-  int64 recordversion = 282309505;
+  optional int64 recordversion = 282309505;
 
   ReportConfiguration reportconfiguration = 410368276;
 
@@ -242,7 +242,7 @@ message CreateBatchLoadTaskRequest {
 
   DataSourceConfiguration datasourceconfiguration = 256337787;
 
-  int64 recordversion = 282309505;
+  optional int64 recordversion = 282309505;
 
   ReportConfiguration reportconfiguration = 410368276;
 
@@ -410,7 +410,7 @@ message Database {
 
   string lastupdatedtime = 177046166;
 
-  int64 tablecount = 323868967;
+  optional int64 tablecount = 323868967;
 
 }
 
@@ -566,7 +566,7 @@ message InvalidEndpointException {
 
 message ListBatchLoadTasksRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -588,7 +588,7 @@ message ListBatchLoadTasksResponse {
 
 message ListDatabasesRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -610,7 +610,7 @@ message ListTablesRequest {
 
   string databasename = 89545052;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -794,7 +794,7 @@ message Record {
 
   TimeUnit timeunit = 181686379;
 
-  int64 version = 500028728;
+  optional int64 version = 500028728;
 
 }
 
@@ -804,11 +804,11 @@ message Record {
 
 message RecordsIngested {
 
-  int32 magneticstore = 200805165;
+  optional int32 magneticstore = 200805165;
 
-  int32 memorystore = 323607360;
+  optional int32 memorystore = 323607360;
 
-  int32 total = 218525086;
+  optional int32 total = 218525086;
 
 }
 
@@ -818,11 +818,11 @@ message RecordsIngested {
 
 message RejectedRecord {
 
-  int64 existingversion = 457856209;
+  optional int64 existingversion = 457856209;
 
   string reason = 20005178;
 
-  int32 recordindex = 221086889;
+  optional int32 recordindex = 221086889;
 
 }
 

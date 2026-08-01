@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
@@ -218,9 +219,9 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 					t.Status = "FAILED"
 					t.StatusReason = "failed to advance to EXPORTING"
 					t.ExportTaskDetails = &ngstore.ExportTaskDetails{
-						ProgressPercentage: int32Ptr(0),
+						ProgressPercentage: proto.Int32(0),
 						StartTime:          t.StartTime,
-						TimeElapsedSeconds: int64Ptr(sinceStart),
+						TimeElapsedSeconds: proto.Int64(sinceStart),
 					}
 				})
 			}
@@ -295,11 +296,11 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 		if details == nil {
 			details = &ngstore.ExportTaskDetails{}
 		}
-		details.ProgressPercentage = int32Ptr(100)
+		details.ProgressPercentage = proto.Int32(100)
 		details.StartTime = t.StartTime
-		details.TimeElapsedSeconds = int64Ptr(sinceStart)
-		details.NumVerticesWritten = int64Ptr(nodeCount)
-		details.NumEdgesWritten = int64Ptr(edgeCount)
+		details.TimeElapsedSeconds = proto.Int64(sinceStart)
+		details.NumVerticesWritten = proto.Int64(nodeCount)
+		details.NumEdgesWritten = proto.Int64(edgeCount)
 		t.ExportTaskDetails = details
 	})
 	if err != nil {
@@ -326,9 +327,9 @@ func failExportTask(store *ngstore.NeptuneGraphStore, taskID string, task *ngsto
 		t.Status = "FAILED"
 		t.StatusReason = reason
 		t.ExportTaskDetails = &ngstore.ExportTaskDetails{
-			ProgressPercentage: int32Ptr(0),
+			ProgressPercentage: proto.Int32(0),
 			StartTime:          t.StartTime,
-			TimeElapsedSeconds: int64Ptr(sinceStart),
+			TimeElapsedSeconds: proto.Int64(sinceStart),
 		}
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
@@ -79,10 +80,10 @@ func populateDetailedStats(db *graphengine.DB, summary *ngstore.GraphDataSummary
 		return nil
 	})
 
-	summary.NumNodeProperties = int64Ptr(int64(len(nodePropNames)))
-	summary.NumEdgeProperties = int64Ptr(int64(len(edgePropNames)))
-	summary.TotalNodePropertyValues = int64Ptr(totalNodePropVals)
-	summary.TotalEdgePropertyValues = int64Ptr(totalEdgePropVals)
+	summary.NumNodeProperties = proto.Int64(int64(len(nodePropNames)))
+	summary.NumEdgeProperties = proto.Int64(int64(len(edgePropNames)))
+	summary.TotalNodePropertyValues = proto.Int64(totalNodePropVals)
+	summary.TotalEdgePropertyValues = proto.Int64(totalEdgePropVals)
 
 	// nodeProperties: per-label sorted property name → count map
 	if len(nodeLabelProps) > 0 {
@@ -137,7 +138,7 @@ func populateDetailedStats(db *graphengine.DB, summary *ngstore.GraphDataSummary
 		sort.Strings(labels)
 		for _, label := range labels {
 			ns := ngstore.NodeStructure{
-				Count: int64Ptr(nodeLabelCounts[label]),
+				Count: proto.Int64(nodeLabelCounts[label]),
 			}
 			if props, ok := nodeLabelProps[label]; ok {
 				propNames := make([]string, 0, len(props))
@@ -168,7 +169,7 @@ func populateDetailedStats(db *graphengine.DB, summary *ngstore.GraphDataSummary
 		sort.Strings(labels)
 		for _, label := range labels {
 			es := ngstore.EdgeStructure{
-				Count: int64Ptr(edgeLabelCounts[label]),
+				Count: proto.Int64(edgeLabelCounts[label]),
 			}
 			if props, ok := edgeLabelProps[label]; ok {
 				propNames := make([]string, 0, len(props))
@@ -381,10 +382,10 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 	now := time.Now().UTC()
 
 	summary := &ngstore.GraphDataSummary{
-		NumNodes:      int64Ptr(stats.NodeCount),
-		NumEdges:      int64Ptr(stats.EdgeCount),
-		NumNodeLabels: int64Ptr(int64(len(stats.LabelCounts))),
-		NumEdgeLabels: int64Ptr(int64(len(stats.RelCounts))),
+		NumNodes:      proto.Int64(stats.NodeCount),
+		NumEdges:      proto.Int64(stats.EdgeCount),
+		NumNodeLabels: proto.Int64(int64(len(stats.LabelCounts))),
+		NumEdgeLabels: proto.Int64(int64(len(stats.RelCounts))),
 	}
 
 	if len(stats.LabelCounts) > 0 {

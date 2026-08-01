@@ -2629,11 +2629,11 @@ func (UpdateRuntimeOn) EnumDescriptor() ([]byte, []int) {
 
 type AccountLimit struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
-	Codesizeunzipped               int64                  `protobuf:"varint,508806555,opt,name=codesizeunzipped,proto3" json:"codesizeunzipped,omitempty"`
-	Codesizezipped                 int64                  `protobuf:"varint,26010534,opt,name=codesizezipped,proto3" json:"codesizezipped,omitempty"`
-	Concurrentexecutions           int32                  `protobuf:"varint,333066772,opt,name=concurrentexecutions,proto3" json:"concurrentexecutions,omitempty"`
-	Totalcodesize                  int64                  `protobuf:"varint,202795702,opt,name=totalcodesize,proto3" json:"totalcodesize,omitempty"`
-	Unreservedconcurrentexecutions int32                  `protobuf:"varint,6163497,opt,name=unreservedconcurrentexecutions,proto3" json:"unreservedconcurrentexecutions,omitempty"`
+	Codesizeunzipped               *int64                 `protobuf:"varint,508806555,opt,name=codesizeunzipped,proto3,oneof" json:"codesizeunzipped,omitempty"`
+	Codesizezipped                 *int64                 `protobuf:"varint,26010534,opt,name=codesizezipped,proto3,oneof" json:"codesizezipped,omitempty"`
+	Concurrentexecutions           *int32                 `protobuf:"varint,333066772,opt,name=concurrentexecutions,proto3,oneof" json:"concurrentexecutions,omitempty"`
+	Totalcodesize                  *int64                 `protobuf:"varint,202795702,opt,name=totalcodesize,proto3,oneof" json:"totalcodesize,omitempty"`
+	Unreservedconcurrentexecutions *int32                 `protobuf:"varint,6163497,opt,name=unreservedconcurrentexecutions,proto3,oneof" json:"unreservedconcurrentexecutions,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -2669,44 +2669,44 @@ func (*AccountLimit) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountLimit) GetCodesizeunzipped() int64 {
-	if x != nil {
-		return x.Codesizeunzipped
+	if x != nil && x.Codesizeunzipped != nil {
+		return *x.Codesizeunzipped
 	}
 	return 0
 }
 
 func (x *AccountLimit) GetCodesizezipped() int64 {
-	if x != nil {
-		return x.Codesizezipped
+	if x != nil && x.Codesizezipped != nil {
+		return *x.Codesizezipped
 	}
 	return 0
 }
 
 func (x *AccountLimit) GetConcurrentexecutions() int32 {
-	if x != nil {
-		return x.Concurrentexecutions
+	if x != nil && x.Concurrentexecutions != nil {
+		return *x.Concurrentexecutions
 	}
 	return 0
 }
 
 func (x *AccountLimit) GetTotalcodesize() int64 {
-	if x != nil {
-		return x.Totalcodesize
+	if x != nil && x.Totalcodesize != nil {
+		return *x.Totalcodesize
 	}
 	return 0
 }
 
 func (x *AccountLimit) GetUnreservedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Unreservedconcurrentexecutions
+	if x != nil && x.Unreservedconcurrentexecutions != nil {
+		return *x.Unreservedconcurrentexecutions
 	}
 	return 0
 }
 
 type AccountUsage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Functioncount int64                  `protobuf:"varint,204403569,opt,name=functioncount,proto3" json:"functioncount,omitempty"`
-	Totalcodesize int64                  `protobuf:"varint,202795702,opt,name=totalcodesize,proto3" json:"totalcodesize,omitempty"`
+	Functioncount *int64                 `protobuf:"varint,204403569,opt,name=functioncount,proto3,oneof" json:"functioncount,omitempty"`
+	Totalcodesize *int64                 `protobuf:"varint,202795702,opt,name=totalcodesize,proto3,oneof" json:"totalcodesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2742,15 +2742,15 @@ func (*AccountUsage) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountUsage) GetFunctioncount() int64 {
-	if x != nil {
-		return x.Functioncount
+	if x != nil && x.Functioncount != nil {
+		return *x.Functioncount
 	}
 	return 0
 }
 
 func (x *AccountUsage) GetTotalcodesize() int64 {
-	if x != nil {
-		return x.Totalcodesize
+	if x != nil && x.Totalcodesize != nil {
+		return *x.Totalcodesize
 	}
 	return 0
 }
@@ -3457,8 +3457,8 @@ func (x *CallbackFailedDetails) GetError() *EventError {
 
 type CallbackOptions struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Heartbeattimeoutseconds int32                  `protobuf:"varint,532445120,opt,name=heartbeattimeoutseconds,proto3" json:"heartbeattimeoutseconds,omitempty"`
-	Timeoutseconds          int32                  `protobuf:"varint,336148022,opt,name=timeoutseconds,proto3" json:"timeoutseconds,omitempty"`
+	Heartbeattimeoutseconds *int32                 `protobuf:"varint,532445120,opt,name=heartbeattimeoutseconds,proto3,oneof" json:"heartbeattimeoutseconds,omitempty"`
+	Timeoutseconds          *int32                 `protobuf:"varint,336148022,opt,name=timeoutseconds,proto3,oneof" json:"timeoutseconds,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -3494,15 +3494,15 @@ func (*CallbackOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *CallbackOptions) GetHeartbeattimeoutseconds() int32 {
-	if x != nil {
-		return x.Heartbeattimeoutseconds
+	if x != nil && x.Heartbeattimeoutseconds != nil {
+		return *x.Heartbeattimeoutseconds
 	}
 	return 0
 }
 
 func (x *CallbackOptions) GetTimeoutseconds() int32 {
-	if x != nil {
-		return x.Timeoutseconds
+	if x != nil && x.Timeoutseconds != nil {
+		return *x.Timeoutseconds
 	}
 	return 0
 }
@@ -3510,8 +3510,8 @@ func (x *CallbackOptions) GetTimeoutseconds() int32 {
 type CallbackStartedDetails struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Callbackid       string                 `protobuf:"bytes,70101916,opt,name=callbackid,proto3" json:"callbackid,omitempty"`
-	Heartbeattimeout int32                  `protobuf:"varint,35823659,opt,name=heartbeattimeout,proto3" json:"heartbeattimeout,omitempty"`
-	Timeout          int32                  `protobuf:"varint,47808041,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Heartbeattimeout *int32                 `protobuf:"varint,35823659,opt,name=heartbeattimeout,proto3,oneof" json:"heartbeattimeout,omitempty"`
+	Timeout          *int32                 `protobuf:"varint,47808041,opt,name=timeout,proto3,oneof" json:"timeout,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3554,15 +3554,15 @@ func (x *CallbackStartedDetails) GetCallbackid() string {
 }
 
 func (x *CallbackStartedDetails) GetHeartbeattimeout() int32 {
-	if x != nil {
-		return x.Heartbeattimeout
+	if x != nil && x.Heartbeattimeout != nil {
+		return *x.Heartbeattimeout
 	}
 	return 0
 }
 
 func (x *CallbackStartedDetails) GetTimeout() int32 {
-	if x != nil {
-		return x.Timeout
+	if x != nil && x.Timeout != nil {
+		return *x.Timeout
 	}
 	return 0
 }
@@ -3957,7 +3957,7 @@ func (x *CapacityProviderPermissionsConfig) GetCapacityprovideroperatorrolearn()
 
 type CapacityProviderScalingConfig struct {
 	state           protoimpl.MessageState         `protogen:"open.v1"`
-	Maxvcpucount    int32                          `protobuf:"varint,336271977,opt,name=maxvcpucount,proto3" json:"maxvcpucount,omitempty"`
+	Maxvcpucount    *int32                         `protobuf:"varint,336271977,opt,name=maxvcpucount,proto3,oneof" json:"maxvcpucount,omitempty"`
 	Scalingmode     CapacityProviderScalingMode    `protobuf:"varint,210356138,opt,name=scalingmode,proto3,enum=lambda.CapacityProviderScalingMode" json:"scalingmode,omitempty"`
 	Scalingpolicies []*TargetTrackingScalingPolicy `protobuf:"bytes,289494257,rep,name=scalingpolicies,proto3" json:"scalingpolicies,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -3995,8 +3995,8 @@ func (*CapacityProviderScalingConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *CapacityProviderScalingConfig) GetMaxvcpucount() int32 {
-	if x != nil {
-		return x.Maxvcpucount
+	if x != nil && x.Maxvcpucount != nil {
+		return *x.Maxvcpucount
 	}
 	return 0
 }
@@ -5037,7 +5037,7 @@ func (x *CodeVerificationFailedException) GetType() string {
 
 type Concurrency struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Reservedconcurrentexecutions int32                  `protobuf:"varint,40149212,opt,name=reservedconcurrentexecutions,proto3" json:"reservedconcurrentexecutions,omitempty"`
+	Reservedconcurrentexecutions *int32                 `protobuf:"varint,40149212,opt,name=reservedconcurrentexecutions,proto3,oneof" json:"reservedconcurrentexecutions,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -5073,8 +5073,8 @@ func (*Concurrency) Descriptor() ([]byte, []int) {
 }
 
 func (x *Concurrency) GetReservedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Reservedconcurrentexecutions
+	if x != nil && x.Reservedconcurrentexecutions != nil {
+		return *x.Reservedconcurrentexecutions
 	}
 	return 0
 }
@@ -5314,7 +5314,7 @@ type Cors struct {
 	Allowmethods     []string               `protobuf:"bytes,441007253,rep,name=allowmethods,proto3" json:"allowmethods,omitempty"`
 	Alloworigins     []string               `protobuf:"bytes,343821862,rep,name=alloworigins,proto3" json:"alloworigins,omitempty"`
 	Exposeheaders    []string               `protobuf:"bytes,290364554,rep,name=exposeheaders,proto3" json:"exposeheaders,omitempty"`
-	Maxage           int32                  `protobuf:"varint,243937897,opt,name=maxage,proto3" json:"maxage,omitempty"`
+	Maxage           *int32                 `protobuf:"varint,243937897,opt,name=maxage,proto3,oneof" json:"maxage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -5385,8 +5385,8 @@ func (x *Cors) GetExposeheaders() []string {
 }
 
 func (x *Cors) GetMaxage() int32 {
-	if x != nil {
-		return x.Maxage
+	if x != nil && x.Maxage != nil {
+		return *x.Maxage
 	}
 	return 0
 }
@@ -5726,7 +5726,7 @@ func (x *CreateCodeSigningConfigResponse) GetCodesigningconfig() *CodeSigningCon
 type CreateEventSourceMappingRequest struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
 	Amazonmanagedkafkaeventsourceconfig *AmazonManagedKafkaEventSourceConfig `protobuf:"bytes,60136380,opt,name=amazonmanagedkafkaeventsourceconfig,proto3" json:"amazonmanagedkafkaeventsourceconfig,omitempty"`
-	Batchsize                           int32                                `protobuf:"varint,318039259,opt,name=batchsize,proto3" json:"batchsize,omitempty"`
+	Batchsize                           *int32                               `protobuf:"varint,318039259,opt,name=batchsize,proto3,oneof" json:"batchsize,omitempty"`
 	Bisectbatchonfunctionerror          *bool                                `protobuf:"varint,276143707,opt,name=bisectbatchonfunctionerror,proto3,oneof" json:"bisectbatchonfunctionerror,omitempty"`
 	Destinationconfig                   *DestinationConfig                   `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Documentdbeventsourceconfig         *DocumentDBEventSourceConfig         `protobuf:"bytes,173060622,opt,name=documentdbeventsourceconfig,proto3" json:"documentdbeventsourceconfig,omitempty"`
@@ -5737,11 +5737,11 @@ type CreateEventSourceMappingRequest struct {
 	Functionresponsetypes               []FunctionResponseType               `protobuf:"varint,382292260,rep,packed,name=functionresponsetypes,proto3,enum=lambda.FunctionResponseType" json:"functionresponsetypes,omitempty"`
 	Kmskeyarn                           string                               `protobuf:"bytes,117627377,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
 	Loggingconfig                       *EventSourceMappingLoggingConfig     `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
-	Maximumbatchingwindowinseconds      int32                                `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3" json:"maximumbatchingwindowinseconds,omitempty"`
-	Maximumrecordageinseconds           int32                                `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3" json:"maximumrecordageinseconds,omitempty"`
-	Maximumretryattempts                int32                                `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumbatchingwindowinseconds      *int32                               `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3,oneof" json:"maximumbatchingwindowinseconds,omitempty"`
+	Maximumrecordageinseconds           *int32                               `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3,oneof" json:"maximumrecordageinseconds,omitempty"`
+	Maximumretryattempts                *int32                               `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	Metricsconfig                       *EventSourceMappingMetricsConfig     `protobuf:"bytes,412971857,opt,name=metricsconfig,proto3" json:"metricsconfig,omitempty"`
-	Parallelizationfactor               int32                                `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3" json:"parallelizationfactor,omitempty"`
+	Parallelizationfactor               *int32                               `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3,oneof" json:"parallelizationfactor,omitempty"`
 	Provisionedpollerconfig             *ProvisionedPollerConfig             `protobuf:"bytes,275676602,opt,name=provisionedpollerconfig,proto3" json:"provisionedpollerconfig,omitempty"`
 	Queues                              []string                             `protobuf:"bytes,222519730,rep,name=queues,proto3" json:"queues,omitempty"`
 	Scalingconfig                       *ScalingConfig                       `protobuf:"bytes,392871661,opt,name=scalingconfig,proto3" json:"scalingconfig,omitempty"`
@@ -5752,7 +5752,7 @@ type CreateEventSourceMappingRequest struct {
 	Startingpositiontimestamp           string                               `protobuf:"bytes,144323607,opt,name=startingpositiontimestamp,proto3" json:"startingpositiontimestamp,omitempty"`
 	Tags                                map[string]string                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Topics                              []string                             `protobuf:"bytes,219850038,rep,name=topics,proto3" json:"topics,omitempty"`
-	Tumblingwindowinseconds             int32                                `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3" json:"tumblingwindowinseconds,omitempty"`
+	Tumblingwindowinseconds             *int32                               `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3,oneof" json:"tumblingwindowinseconds,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -5795,8 +5795,8 @@ func (x *CreateEventSourceMappingRequest) GetAmazonmanagedkafkaeventsourceconfig
 }
 
 func (x *CreateEventSourceMappingRequest) GetBatchsize() int32 {
-	if x != nil {
-		return x.Batchsize
+	if x != nil && x.Batchsize != nil {
+		return *x.Batchsize
 	}
 	return 0
 }
@@ -5872,22 +5872,22 @@ func (x *CreateEventSourceMappingRequest) GetLoggingconfig() *EventSourceMapping
 }
 
 func (x *CreateEventSourceMappingRequest) GetMaximumbatchingwindowinseconds() int32 {
-	if x != nil {
-		return x.Maximumbatchingwindowinseconds
+	if x != nil && x.Maximumbatchingwindowinseconds != nil {
+		return *x.Maximumbatchingwindowinseconds
 	}
 	return 0
 }
 
 func (x *CreateEventSourceMappingRequest) GetMaximumrecordageinseconds() int32 {
-	if x != nil {
-		return x.Maximumrecordageinseconds
+	if x != nil && x.Maximumrecordageinseconds != nil {
+		return *x.Maximumrecordageinseconds
 	}
 	return 0
 }
 
 func (x *CreateEventSourceMappingRequest) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -5900,8 +5900,8 @@ func (x *CreateEventSourceMappingRequest) GetMetricsconfig() *EventSourceMapping
 }
 
 func (x *CreateEventSourceMappingRequest) GetParallelizationfactor() int32 {
-	if x != nil {
-		return x.Parallelizationfactor
+	if x != nil && x.Parallelizationfactor != nil {
+		return *x.Parallelizationfactor
 	}
 	return 0
 }
@@ -5977,8 +5977,8 @@ func (x *CreateEventSourceMappingRequest) GetTopics() []string {
 }
 
 func (x *CreateEventSourceMappingRequest) GetTumblingwindowinseconds() int32 {
-	if x != nil {
-		return x.Tumblingwindowinseconds
+	if x != nil && x.Tumblingwindowinseconds != nil {
+		return *x.Tumblingwindowinseconds
 	}
 	return 0
 }
@@ -6001,7 +6001,7 @@ type CreateFunctionRequest struct {
 	Kmskeyarn              string                         `protobuf:"bytes,117627377,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
 	Layers                 []string                       `protobuf:"bytes,478144896,rep,name=layers,proto3" json:"layers,omitempty"`
 	Loggingconfig          *LoggingConfig                 `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
-	Memorysize             int32                          `protobuf:"varint,55523120,opt,name=memorysize,proto3" json:"memorysize,omitempty"`
+	Memorysize             *int32                         `protobuf:"varint,55523120,opt,name=memorysize,proto3,oneof" json:"memorysize,omitempty"`
 	Packagetype            PackageType                    `protobuf:"varint,517524132,opt,name=packagetype,proto3,enum=lambda.PackageType" json:"packagetype,omitempty"`
 	Publish                *bool                          `protobuf:"varint,207759785,opt,name=publish,proto3,oneof" json:"publish,omitempty"`
 	Publishto              FunctionVersionLatestPublished `protobuf:"varint,524127682,opt,name=publishto,proto3,enum=lambda.FunctionVersionLatestPublished" json:"publishto,omitempty"`
@@ -6010,7 +6010,7 @@ type CreateFunctionRequest struct {
 	Snapstart              *SnapStart                     `protobuf:"bytes,283273032,opt,name=snapstart,proto3" json:"snapstart,omitempty"`
 	Tags                   map[string]string              `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tenancyconfig          *TenancyConfig                 `protobuf:"bytes,215700986,opt,name=tenancyconfig,proto3" json:"tenancyconfig,omitempty"`
-	Timeout                int32                          `protobuf:"varint,47808041,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout                *int32                         `protobuf:"varint,47808041,opt,name=timeout,proto3,oneof" json:"timeout,omitempty"`
 	Tracingconfig          *TracingConfig                 `protobuf:"bytes,19554860,opt,name=tracingconfig,proto3" json:"tracingconfig,omitempty"`
 	Vpcconfig              *VpcConfig                     `protobuf:"bytes,194980743,opt,name=vpcconfig,proto3" json:"vpcconfig,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -6160,8 +6160,8 @@ func (x *CreateFunctionRequest) GetLoggingconfig() *LoggingConfig {
 }
 
 func (x *CreateFunctionRequest) GetMemorysize() int32 {
-	if x != nil {
-		return x.Memorysize
+	if x != nil && x.Memorysize != nil {
+		return *x.Memorysize
 	}
 	return 0
 }
@@ -6223,8 +6223,8 @@ func (x *CreateFunctionRequest) GetTenancyconfig() *TenancyConfig {
 }
 
 func (x *CreateFunctionRequest) GetTimeout() int32 {
-	if x != nil {
-		return x.Timeout
+	if x != nil && x.Timeout != nil {
+		return *x.Timeout
 	}
 	return 0
 }
@@ -6905,7 +6905,7 @@ func (x *DeleteFunctionRequest) GetQualifier() string {
 
 type DeleteFunctionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Statuscode    int32                  `protobuf:"varint,303830783,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode    *int32                 `protobuf:"varint,303830783,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6941,8 +6941,8 @@ func (*DeleteFunctionResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteFunctionResponse) GetStatuscode() int32 {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return 0
 }
@@ -7217,8 +7217,8 @@ func (x *DocumentDBEventSourceConfig) GetFulldocument() FullDocument {
 
 type DurableConfig struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Executiontimeout      int32                  `protobuf:"varint,502184601,opt,name=executiontimeout,proto3" json:"executiontimeout,omitempty"`
-	Retentionperiodindays int32                  `protobuf:"varint,324977873,opt,name=retentionperiodindays,proto3" json:"retentionperiodindays,omitempty"`
+	Executiontimeout      *int32                 `protobuf:"varint,502184601,opt,name=executiontimeout,proto3,oneof" json:"executiontimeout,omitempty"`
+	Retentionperiodindays *int32                 `protobuf:"varint,324977873,opt,name=retentionperiodindays,proto3,oneof" json:"retentionperiodindays,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -7254,15 +7254,15 @@ func (*DurableConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *DurableConfig) GetExecutiontimeout() int32 {
-	if x != nil {
-		return x.Executiontimeout
+	if x != nil && x.Executiontimeout != nil {
+		return *x.Executiontimeout
 	}
 	return 0
 }
 
 func (x *DurableConfig) GetRetentionperiodindays() int32 {
-	if x != nil {
-		return x.Retentionperiodindays
+	if x != nil && x.Retentionperiodindays != nil {
+		return *x.Retentionperiodindays
 	}
 	return 0
 }
@@ -8069,7 +8069,7 @@ type Event struct {
 	Contextfaileddetails          *ContextFailedDetails          `protobuf:"bytes,449331754,opt,name=contextfaileddetails,proto3" json:"contextfaileddetails,omitempty"`
 	Contextstarteddetails         *ContextStartedDetails         `protobuf:"bytes,340244010,opt,name=contextstarteddetails,proto3" json:"contextstarteddetails,omitempty"`
 	Contextsucceededdetails       *ContextSucceededDetails       `protobuf:"bytes,278760906,opt,name=contextsucceededdetails,proto3" json:"contextsucceededdetails,omitempty"`
-	Eventid                       int32                          `protobuf:"varint,376916819,opt,name=eventid,proto3" json:"eventid,omitempty"`
+	Eventid                       *int32                         `protobuf:"varint,376916819,opt,name=eventid,proto3,oneof" json:"eventid,omitempty"`
 	Eventtimestamp                string                         `protobuf:"bytes,184687758,opt,name=eventtimestamp,proto3" json:"eventtimestamp,omitempty"`
 	Eventtype                     EventType                      `protobuf:"varint,468897896,opt,name=eventtype,proto3,enum=lambda.EventType" json:"eventtype,omitempty"`
 	Executionfaileddetails        *ExecutionFailedDetails        `protobuf:"bytes,177664947,opt,name=executionfaileddetails,proto3" json:"executionfaileddetails,omitempty"`
@@ -8207,8 +8207,8 @@ func (x *Event) GetContextsucceededdetails() *ContextSucceededDetails {
 }
 
 func (x *Event) GetEventid() int32 {
-	if x != nil {
-		return x.Eventid
+	if x != nil && x.Eventid != nil {
+		return *x.Eventid
 	}
 	return 0
 }
@@ -8498,7 +8498,7 @@ func (x *EventResult) GetTruncated() bool {
 type EventSourceMappingConfiguration struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
 	Amazonmanagedkafkaeventsourceconfig *AmazonManagedKafkaEventSourceConfig `protobuf:"bytes,60136380,opt,name=amazonmanagedkafkaeventsourceconfig,proto3" json:"amazonmanagedkafkaeventsourceconfig,omitempty"`
-	Batchsize                           int32                                `protobuf:"varint,318039259,opt,name=batchsize,proto3" json:"batchsize,omitempty"`
+	Batchsize                           *int32                               `protobuf:"varint,318039259,opt,name=batchsize,proto3,oneof" json:"batchsize,omitempty"`
 	Bisectbatchonfunctionerror          *bool                                `protobuf:"varint,276143707,opt,name=bisectbatchonfunctionerror,proto3,oneof" json:"bisectbatchonfunctionerror,omitempty"`
 	Destinationconfig                   *DestinationConfig                   `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Documentdbeventsourceconfig         *DocumentDBEventSourceConfig         `protobuf:"bytes,173060622,opt,name=documentdbeventsourceconfig,proto3" json:"documentdbeventsourceconfig,omitempty"`
@@ -8512,11 +8512,11 @@ type EventSourceMappingConfiguration struct {
 	Lastmodified                        string                               `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Lastprocessingresult                string                               `protobuf:"bytes,278539700,opt,name=lastprocessingresult,proto3" json:"lastprocessingresult,omitempty"`
 	Loggingconfig                       *EventSourceMappingLoggingConfig     `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
-	Maximumbatchingwindowinseconds      int32                                `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3" json:"maximumbatchingwindowinseconds,omitempty"`
-	Maximumrecordageinseconds           int32                                `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3" json:"maximumrecordageinseconds,omitempty"`
-	Maximumretryattempts                int32                                `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumbatchingwindowinseconds      *int32                               `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3,oneof" json:"maximumbatchingwindowinseconds,omitempty"`
+	Maximumrecordageinseconds           *int32                               `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3,oneof" json:"maximumrecordageinseconds,omitempty"`
+	Maximumretryattempts                *int32                               `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	Metricsconfig                       *EventSourceMappingMetricsConfig     `protobuf:"bytes,412971857,opt,name=metricsconfig,proto3" json:"metricsconfig,omitempty"`
-	Parallelizationfactor               int32                                `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3" json:"parallelizationfactor,omitempty"`
+	Parallelizationfactor               *int32                               `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3,oneof" json:"parallelizationfactor,omitempty"`
 	Provisionedpollerconfig             *ProvisionedPollerConfig             `protobuf:"bytes,275676602,opt,name=provisionedpollerconfig,proto3" json:"provisionedpollerconfig,omitempty"`
 	Queues                              []string                             `protobuf:"bytes,222519730,rep,name=queues,proto3" json:"queues,omitempty"`
 	Scalingconfig                       *ScalingConfig                       `protobuf:"bytes,392871661,opt,name=scalingconfig,proto3" json:"scalingconfig,omitempty"`
@@ -8528,7 +8528,7 @@ type EventSourceMappingConfiguration struct {
 	State                               string                               `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
 	Statetransitionreason               string                               `protobuf:"bytes,79099714,opt,name=statetransitionreason,proto3" json:"statetransitionreason,omitempty"`
 	Topics                              []string                             `protobuf:"bytes,219850038,rep,name=topics,proto3" json:"topics,omitempty"`
-	Tumblingwindowinseconds             int32                                `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3" json:"tumblingwindowinseconds,omitempty"`
+	Tumblingwindowinseconds             *int32                               `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3,oneof" json:"tumblingwindowinseconds,omitempty"`
 	Uuid                                string                               `protobuf:"bytes,91981875,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
@@ -8572,8 +8572,8 @@ func (x *EventSourceMappingConfiguration) GetAmazonmanagedkafkaeventsourceconfig
 }
 
 func (x *EventSourceMappingConfiguration) GetBatchsize() int32 {
-	if x != nil {
-		return x.Batchsize
+	if x != nil && x.Batchsize != nil {
+		return *x.Batchsize
 	}
 	return 0
 }
@@ -8670,22 +8670,22 @@ func (x *EventSourceMappingConfiguration) GetLoggingconfig() *EventSourceMapping
 }
 
 func (x *EventSourceMappingConfiguration) GetMaximumbatchingwindowinseconds() int32 {
-	if x != nil {
-		return x.Maximumbatchingwindowinseconds
+	if x != nil && x.Maximumbatchingwindowinseconds != nil {
+		return *x.Maximumbatchingwindowinseconds
 	}
 	return 0
 }
 
 func (x *EventSourceMappingConfiguration) GetMaximumrecordageinseconds() int32 {
-	if x != nil {
-		return x.Maximumrecordageinseconds
+	if x != nil && x.Maximumrecordageinseconds != nil {
+		return *x.Maximumrecordageinseconds
 	}
 	return 0
 }
 
 func (x *EventSourceMappingConfiguration) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -8698,8 +8698,8 @@ func (x *EventSourceMappingConfiguration) GetMetricsconfig() *EventSourceMapping
 }
 
 func (x *EventSourceMappingConfiguration) GetParallelizationfactor() int32 {
-	if x != nil {
-		return x.Parallelizationfactor
+	if x != nil && x.Parallelizationfactor != nil {
+		return *x.Parallelizationfactor
 	}
 	return 0
 }
@@ -8782,8 +8782,8 @@ func (x *EventSourceMappingConfiguration) GetTopics() []string {
 }
 
 func (x *EventSourceMappingConfiguration) GetTumblingwindowinseconds() int32 {
-	if x != nil {
-		return x.Tumblingwindowinseconds
+	if x != nil && x.Tumblingwindowinseconds != nil {
+		return *x.Tumblingwindowinseconds
 	}
 	return 0
 }
@@ -9596,7 +9596,7 @@ type FunctionConfiguration struct {
 	Architectures              []Architecture             `protobuf:"varint,530490948,rep,packed,name=architectures,proto3,enum=lambda.Architecture" json:"architectures,omitempty"`
 	Capacityproviderconfig     *CapacityProviderConfig    `protobuf:"bytes,52030623,opt,name=capacityproviderconfig,proto3" json:"capacityproviderconfig,omitempty"`
 	Codesha256                 string                     `protobuf:"bytes,46450860,opt,name=codesha256,proto3" json:"codesha256,omitempty"`
-	Codesize                   int64                      `protobuf:"varint,74450158,opt,name=codesize,proto3" json:"codesize,omitempty"`
+	Codesize                   *int64                     `protobuf:"varint,74450158,opt,name=codesize,proto3,oneof" json:"codesize,omitempty"`
 	Configsha256               string                     `protobuf:"bytes,145714121,opt,name=configsha256,proto3" json:"configsha256,omitempty"`
 	Deadletterconfig           *DeadLetterConfig          `protobuf:"bytes,79786642,opt,name=deadletterconfig,proto3" json:"deadletterconfig,omitempty"`
 	Description                string                     `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
@@ -9616,7 +9616,7 @@ type FunctionConfiguration struct {
 	Layers                     []*Layer                   `protobuf:"bytes,478144896,rep,name=layers,proto3" json:"layers,omitempty"`
 	Loggingconfig              *LoggingConfig             `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
 	Masterarn                  string                     `protobuf:"bytes,74605927,opt,name=masterarn,proto3" json:"masterarn,omitempty"`
-	Memorysize                 int32                      `protobuf:"varint,55523120,opt,name=memorysize,proto3" json:"memorysize,omitempty"`
+	Memorysize                 *int32                     `protobuf:"varint,55523120,opt,name=memorysize,proto3,oneof" json:"memorysize,omitempty"`
 	Packagetype                PackageType                `protobuf:"varint,517524132,opt,name=packagetype,proto3,enum=lambda.PackageType" json:"packagetype,omitempty"`
 	Revisionid                 string                     `protobuf:"bytes,499618182,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
 	Role                       string                     `protobuf:"bytes,271285818,opt,name=role,proto3" json:"role,omitempty"`
@@ -9629,7 +9629,7 @@ type FunctionConfiguration struct {
 	Statereason                string                     `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
 	Statereasoncode            StateReasonCode            `protobuf:"varint,319263936,opt,name=statereasoncode,proto3,enum=lambda.StateReasonCode" json:"statereasoncode,omitempty"`
 	Tenancyconfig              *TenancyConfig             `protobuf:"bytes,215700986,opt,name=tenancyconfig,proto3" json:"tenancyconfig,omitempty"`
-	Timeout                    int32                      `protobuf:"varint,47808041,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout                    *int32                     `protobuf:"varint,47808041,opt,name=timeout,proto3,oneof" json:"timeout,omitempty"`
 	Tracingconfig              *TracingConfigResponse     `protobuf:"bytes,19554860,opt,name=tracingconfig,proto3" json:"tracingconfig,omitempty"`
 	Version                    string                     `protobuf:"bytes,500028728,opt,name=version,proto3" json:"version,omitempty"`
 	Vpcconfig                  *VpcConfigResponse         `protobuf:"bytes,194980743,opt,name=vpcconfig,proto3" json:"vpcconfig,omitempty"`
@@ -9689,8 +9689,8 @@ func (x *FunctionConfiguration) GetCodesha256() string {
 }
 
 func (x *FunctionConfiguration) GetCodesize() int64 {
-	if x != nil {
-		return x.Codesize
+	if x != nil && x.Codesize != nil {
+		return *x.Codesize
 	}
 	return 0
 }
@@ -9829,8 +9829,8 @@ func (x *FunctionConfiguration) GetMasterarn() string {
 }
 
 func (x *FunctionConfiguration) GetMemorysize() int32 {
-	if x != nil {
-		return x.Memorysize
+	if x != nil && x.Memorysize != nil {
+		return *x.Memorysize
 	}
 	return 0
 }
@@ -9920,8 +9920,8 @@ func (x *FunctionConfiguration) GetTenancyconfig() *TenancyConfig {
 }
 
 func (x *FunctionConfiguration) GetTimeout() int32 {
-	if x != nil {
-		return x.Timeout
+	if x != nil && x.Timeout != nil {
+		return *x.Timeout
 	}
 	return 0
 }
@@ -9952,8 +9952,8 @@ type FunctionEventInvokeConfig struct {
 	Destinationconfig        *DestinationConfig     `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Functionarn              string                 `protobuf:"bytes,381920497,opt,name=functionarn,proto3" json:"functionarn,omitempty"`
 	Lastmodified             string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Maximumeventageinseconds int32                  `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3" json:"maximumeventageinseconds,omitempty"`
-	Maximumretryattempts     int32                  `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumeventageinseconds *int32                 `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3,oneof" json:"maximumeventageinseconds,omitempty"`
+	Maximumretryattempts     *int32                 `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -10010,23 +10010,23 @@ func (x *FunctionEventInvokeConfig) GetLastmodified() string {
 }
 
 func (x *FunctionEventInvokeConfig) GetMaximumeventageinseconds() int32 {
-	if x != nil {
-		return x.Maximumeventageinseconds
+	if x != nil && x.Maximumeventageinseconds != nil {
+		return *x.Maximumeventageinseconds
 	}
 	return 0
 }
 
 func (x *FunctionEventInvokeConfig) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
 
 type FunctionScalingConfig struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Maxexecutionenvironments int32                  `protobuf:"varint,337598368,opt,name=maxexecutionenvironments,proto3" json:"maxexecutionenvironments,omitempty"`
-	Minexecutionenvironments int32                  `protobuf:"varint,123880642,opt,name=minexecutionenvironments,proto3" json:"minexecutionenvironments,omitempty"`
+	Maxexecutionenvironments *int32                 `protobuf:"varint,337598368,opt,name=maxexecutionenvironments,proto3,oneof" json:"maxexecutionenvironments,omitempty"`
+	Minexecutionenvironments *int32                 `protobuf:"varint,123880642,opt,name=minexecutionenvironments,proto3,oneof" json:"minexecutionenvironments,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -10062,15 +10062,15 @@ func (*FunctionScalingConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *FunctionScalingConfig) GetMaxexecutionenvironments() int32 {
-	if x != nil {
-		return x.Maxexecutionenvironments
+	if x != nil && x.Maxexecutionenvironments != nil {
+		return *x.Maxexecutionenvironments
 	}
 	return 0
 }
 
 func (x *FunctionScalingConfig) GetMinexecutionenvironments() int32 {
-	if x != nil {
-		return x.Minexecutionenvironments
+	if x != nil && x.Minexecutionenvironments != nil {
+		return *x.Minexecutionenvironments
 	}
 	return 0
 }
@@ -10592,7 +10592,7 @@ type GetDurableExecutionHistoryRequest struct {
 	Durableexecutionarn  string                 `protobuf:"bytes,269346442,opt,name=durableexecutionarn,proto3" json:"durableexecutionarn,omitempty"`
 	Includeexecutiondata *bool                  `protobuf:"varint,194359928,opt,name=includeexecutiondata,proto3,oneof" json:"includeexecutiondata,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems             int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems             *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Reverseorder         *bool                  `protobuf:"varint,427445336,opt,name=reverseorder,proto3,oneof" json:"reverseorder,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -10650,8 +10650,8 @@ func (x *GetDurableExecutionHistoryRequest) GetMarker() string {
 }
 
 func (x *GetDurableExecutionHistoryRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -10888,7 +10888,7 @@ type GetDurableExecutionStateRequest struct {
 	Checkpointtoken     string                 `protobuf:"bytes,27028053,opt,name=checkpointtoken,proto3" json:"checkpointtoken,omitempty"`
 	Durableexecutionarn string                 `protobuf:"bytes,269346442,opt,name=durableexecutionarn,proto3" json:"durableexecutionarn,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems            int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems            *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -10945,8 +10945,8 @@ func (x *GetDurableExecutionStateRequest) GetMarker() string {
 }
 
 func (x *GetDurableExecutionStateRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11189,7 +11189,7 @@ func (x *GetFunctionConcurrencyRequest) GetFunctionname() string {
 
 type GetFunctionConcurrencyResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Reservedconcurrentexecutions int32                  `protobuf:"varint,40149212,opt,name=reservedconcurrentexecutions,proto3" json:"reservedconcurrentexecutions,omitempty"`
+	Reservedconcurrentexecutions *int32                 `protobuf:"varint,40149212,opt,name=reservedconcurrentexecutions,proto3,oneof" json:"reservedconcurrentexecutions,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -11225,8 +11225,8 @@ func (*GetFunctionConcurrencyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetFunctionConcurrencyResponse) GetReservedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Reservedconcurrentexecutions
+	if x != nil && x.Reservedconcurrentexecutions != nil {
+		return *x.Reservedconcurrentexecutions
 	}
 	return 0
 }
@@ -12017,7 +12017,7 @@ type GetLayerVersionResponse struct {
 	Layerarn                string                     `protobuf:"bytes,319652978,opt,name=layerarn,proto3" json:"layerarn,omitempty"`
 	Layerversionarn         string                     `protobuf:"bytes,174478342,opt,name=layerversionarn,proto3" json:"layerversionarn,omitempty"`
 	Licenseinfo             string                     `protobuf:"bytes,133903897,opt,name=licenseinfo,proto3" json:"licenseinfo,omitempty"`
-	Version                 int64                      `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version                 *int64                     `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -12109,8 +12109,8 @@ func (x *GetLayerVersionResponse) GetLicenseinfo() string {
 }
 
 func (x *GetLayerVersionResponse) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -12273,10 +12273,10 @@ func (x *GetProvisionedConcurrencyConfigRequest) GetQualifier() string {
 
 type GetProvisionedConcurrencyConfigResponse struct {
 	state                                    protoimpl.MessageState           `protogen:"open.v1"`
-	Allocatedprovisionedconcurrentexecutions int32                            `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
-	Availableprovisionedconcurrentexecutions int32                            `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3" json:"availableprovisionedconcurrentexecutions,omitempty"`
+	Allocatedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3,oneof" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
+	Availableprovisionedconcurrentexecutions *int32                           `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3,oneof" json:"availableprovisionedconcurrentexecutions,omitempty"`
 	Lastmodified                             string                           `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Requestedprovisionedconcurrentexecutions int32                            `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3" json:"requestedprovisionedconcurrentexecutions,omitempty"`
+	Requestedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3,oneof" json:"requestedprovisionedconcurrentexecutions,omitempty"`
 	Status                                   ProvisionedConcurrencyStatusEnum `protobuf:"varint,6222352,opt,name=status,proto3,enum=lambda.ProvisionedConcurrencyStatusEnum" json:"status,omitempty"`
 	Statusreason                             string                           `protobuf:"bytes,139234172,opt,name=statusreason,proto3" json:"statusreason,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
@@ -12314,15 +12314,15 @@ func (*GetProvisionedConcurrencyConfigResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetProvisionedConcurrencyConfigResponse) GetAllocatedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Allocatedprovisionedconcurrentexecutions
+	if x != nil && x.Allocatedprovisionedconcurrentexecutions != nil {
+		return *x.Allocatedprovisionedconcurrentexecutions
 	}
 	return 0
 }
 
 func (x *GetProvisionedConcurrencyConfigResponse) GetAvailableprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Availableprovisionedconcurrentexecutions
+	if x != nil && x.Availableprovisionedconcurrentexecutions != nil {
+		return *x.Availableprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -12335,8 +12335,8 @@ func (x *GetProvisionedConcurrencyConfigResponse) GetLastmodified() string {
 }
 
 func (x *GetProvisionedConcurrencyConfigResponse) GetRequestedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Requestedprovisionedconcurrentexecutions
+	if x != nil && x.Requestedprovisionedconcurrentexecutions != nil {
+		return *x.Requestedprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -13230,7 +13230,7 @@ type InvocationResponse struct {
 	Functionerror       string                 `protobuf:"bytes,246179982,opt,name=functionerror,proto3" json:"functionerror,omitempty"`
 	Logresult           string                 `protobuf:"bytes,367982401,opt,name=logresult,proto3" json:"logresult,omitempty"`
 	Payload             []byte                 `protobuf:"bytes,6526790,opt,name=payload,proto3" json:"payload,omitempty"`
-	Statuscode          int32                  `protobuf:"varint,303830783,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode          *int32                 `protobuf:"varint,303830783,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13301,8 +13301,8 @@ func (x *InvocationResponse) GetPayload() []byte {
 }
 
 func (x *InvocationResponse) GetStatuscode() int32 {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return 0
 }
@@ -13361,7 +13361,7 @@ func (x *InvokeAsyncRequest) GetInvokeargs() []byte {
 
 type InvokeAsyncResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        int32                  `protobuf:"varint,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *int32                 `protobuf:"varint,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13397,8 +13397,8 @@ func (*InvokeAsyncResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvokeAsyncResponse) GetStatus() int32 {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return 0
 }
@@ -13604,7 +13604,7 @@ type InvokeWithResponseStreamResponse struct {
 	Eventstream               *InvokeWithResponseStreamResponseEvent `protobuf:"bytes,26857888,opt,name=eventstream,proto3" json:"eventstream,omitempty"`
 	Executedversion           string                                 `protobuf:"bytes,457672809,opt,name=executedversion,proto3" json:"executedversion,omitempty"`
 	Responsestreamcontenttype string                                 `protobuf:"bytes,65265032,opt,name=responsestreamcontenttype,proto3" json:"responsestreamcontenttype,omitempty"`
-	Statuscode                int32                                  `protobuf:"varint,303830783,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode                *int32                                 `protobuf:"varint,303830783,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -13661,8 +13661,8 @@ func (x *InvokeWithResponseStreamResponse) GetResponsestreamcontenttype() string
 }
 
 func (x *InvokeWithResponseStreamResponse) GetStatuscode() int32 {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return 0
 }
@@ -14095,7 +14095,7 @@ type LambdaManagedInstancesCapacityProviderConfig struct {
 	state                                 protoimpl.MessageState `protogen:"open.v1"`
 	Capacityproviderarn                   string                 `protobuf:"bytes,109580344,opt,name=capacityproviderarn,proto3" json:"capacityproviderarn,omitempty"`
 	Executionenvironmentmemorygibpervcpu  float64                `protobuf:"fixed64,227590513,opt,name=executionenvironmentmemorygibpervcpu,proto3" json:"executionenvironmentmemorygibpervcpu,omitempty"`
-	Perexecutionenvironmentmaxconcurrency int32                  `protobuf:"varint,120967319,opt,name=perexecutionenvironmentmaxconcurrency,proto3" json:"perexecutionenvironmentmaxconcurrency,omitempty"`
+	Perexecutionenvironmentmaxconcurrency *int32                 `protobuf:"varint,120967319,opt,name=perexecutionenvironmentmaxconcurrency,proto3,oneof" json:"perexecutionenvironmentmaxconcurrency,omitempty"`
 	unknownFields                         protoimpl.UnknownFields
 	sizeCache                             protoimpl.SizeCache
 }
@@ -14145,8 +14145,8 @@ func (x *LambdaManagedInstancesCapacityProviderConfig) GetExecutionenvironmentme
 }
 
 func (x *LambdaManagedInstancesCapacityProviderConfig) GetPerexecutionenvironmentmaxconcurrency() int32 {
-	if x != nil {
-		return x.Perexecutionenvironmentmaxconcurrency
+	if x != nil && x.Perexecutionenvironmentmaxconcurrency != nil {
+		return *x.Perexecutionenvironmentmaxconcurrency
 	}
 	return 0
 }
@@ -14154,7 +14154,7 @@ func (x *LambdaManagedInstancesCapacityProviderConfig) GetPerexecutionenvironmen
 type Layer struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Arn                      string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Codesize                 int64                  `protobuf:"varint,74450158,opt,name=codesize,proto3" json:"codesize,omitempty"`
+	Codesize                 *int64                 `protobuf:"varint,74450158,opt,name=codesize,proto3,oneof" json:"codesize,omitempty"`
 	Signingjobarn            string                 `protobuf:"bytes,343397691,opt,name=signingjobarn,proto3" json:"signingjobarn,omitempty"`
 	Signingprofileversionarn string                 `protobuf:"bytes,432885567,opt,name=signingprofileversionarn,proto3" json:"signingprofileversionarn,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -14199,8 +14199,8 @@ func (x *Layer) GetArn() string {
 }
 
 func (x *Layer) GetCodesize() int64 {
-	if x != nil {
-		return x.Codesize
+	if x != nil && x.Codesize != nil {
+		return *x.Codesize
 	}
 	return 0
 }
@@ -14290,7 +14290,7 @@ func (x *LayerVersionContentInput) GetZipfile() []byte {
 type LayerVersionContentOutput struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Codesha256               string                 `protobuf:"bytes,46450860,opt,name=codesha256,proto3" json:"codesha256,omitempty"`
-	Codesize                 int64                  `protobuf:"varint,74450158,opt,name=codesize,proto3" json:"codesize,omitempty"`
+	Codesize                 *int64                 `protobuf:"varint,74450158,opt,name=codesize,proto3,oneof" json:"codesize,omitempty"`
 	Location                 string                 `protobuf:"bytes,465604039,opt,name=location,proto3" json:"location,omitempty"`
 	Signingjobarn            string                 `protobuf:"bytes,343397691,opt,name=signingjobarn,proto3" json:"signingjobarn,omitempty"`
 	Signingprofileversionarn string                 `protobuf:"bytes,432885567,opt,name=signingprofileversionarn,proto3" json:"signingprofileversionarn,omitempty"`
@@ -14336,8 +14336,8 @@ func (x *LayerVersionContentOutput) GetCodesha256() string {
 }
 
 func (x *LayerVersionContentOutput) GetCodesize() int64 {
-	if x != nil {
-		return x.Codesize
+	if x != nil && x.Codesize != nil {
+		return *x.Codesize
 	}
 	return 0
 }
@@ -14371,7 +14371,7 @@ type LayerVersionsListItem struct {
 	Description             string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Layerversionarn         string                 `protobuf:"bytes,174478342,opt,name=layerversionarn,proto3" json:"layerversionarn,omitempty"`
 	Licenseinfo             string                 `protobuf:"bytes,133903897,opt,name=licenseinfo,proto3" json:"licenseinfo,omitempty"`
-	Version                 int64                  `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version                 *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -14449,8 +14449,8 @@ func (x *LayerVersionsListItem) GetLicenseinfo() string {
 }
 
 func (x *LayerVersionsListItem) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -14520,7 +14520,7 @@ type ListAliasesRequest struct {
 	Functionname    string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Functionversion string                 `protobuf:"bytes,365780244,opt,name=functionversion,proto3" json:"functionversion,omitempty"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems        int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems        *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -14577,8 +14577,8 @@ func (x *ListAliasesRequest) GetMarker() string {
 }
 
 func (x *ListAliasesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14638,7 +14638,7 @@ func (x *ListAliasesResponse) GetNextmarker() string {
 type ListCapacityProvidersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	State         CapacityProviderState  `protobuf:"varint,502047895,opt,name=state,proto3,enum=lambda.CapacityProviderState" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14682,8 +14682,8 @@ func (x *ListCapacityProvidersRequest) GetMarker() string {
 }
 
 func (x *ListCapacityProvidersRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14750,7 +14750,7 @@ func (x *ListCapacityProvidersResponse) GetNextmarker() string {
 type ListCodeSigningConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14793,8 +14793,8 @@ func (x *ListCodeSigningConfigsRequest) GetMarker() string {
 }
 
 func (x *ListCodeSigningConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14856,7 +14856,7 @@ type ListDurableExecutionsByFunctionRequest struct {
 	Durableexecutionname string                 `protobuf:"bytes,251828526,opt,name=durableexecutionname,proto3" json:"durableexecutionname,omitempty"`
 	Functionname         string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems             int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems             *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Qualifier            string                 `protobuf:"bytes,526670560,opt,name=qualifier,proto3" json:"qualifier,omitempty"`
 	Reverseorder         *bool                  `protobuf:"varint,427445336,opt,name=reverseorder,proto3,oneof" json:"reverseorder,omitempty"`
 	Startedafter         string                 `protobuf:"bytes,284744661,opt,name=startedafter,proto3" json:"startedafter,omitempty"`
@@ -14918,8 +14918,8 @@ func (x *ListDurableExecutionsByFunctionRequest) GetMarker() string {
 }
 
 func (x *ListDurableExecutionsByFunctionRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15016,7 +15016,7 @@ type ListEventSourceMappingsRequest struct {
 	Eventsourcearn string                 `protobuf:"bytes,306357574,opt,name=eventsourcearn,proto3" json:"eventsourcearn,omitempty"`
 	Functionname   string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems       int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -15073,8 +15073,8 @@ func (x *ListEventSourceMappingsRequest) GetMarker() string {
 }
 
 func (x *ListEventSourceMappingsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15135,7 +15135,7 @@ type ListFunctionEventInvokeConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Functionname  string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15185,8 +15185,8 @@ func (x *ListFunctionEventInvokeConfigsRequest) GetMarker() string {
 }
 
 func (x *ListFunctionEventInvokeConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15247,7 +15247,7 @@ type ListFunctionUrlConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Functionname  string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15297,8 +15297,8 @@ func (x *ListFunctionUrlConfigsRequest) GetMarker() string {
 }
 
 func (x *ListFunctionUrlConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15359,7 +15359,7 @@ type ListFunctionVersionsByCapacityProviderRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Capacityprovidername string                 `protobuf:"bytes,466230132,opt,name=capacityprovidername,proto3" json:"capacityprovidername,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems             int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems             *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -15409,8 +15409,8 @@ func (x *ListFunctionVersionsByCapacityProviderRequest) GetMarker() string {
 }
 
 func (x *ListFunctionVersionsByCapacityProviderRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15479,7 +15479,7 @@ type ListFunctionsByCodeSigningConfigRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Codesigningconfigarn string                 `protobuf:"bytes,505282113,opt,name=codesigningconfigarn,proto3" json:"codesigningconfigarn,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems             int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems             *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -15529,8 +15529,8 @@ func (x *ListFunctionsByCodeSigningConfigRequest) GetMarker() string {
 }
 
 func (x *ListFunctionsByCodeSigningConfigRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15592,7 +15592,7 @@ type ListFunctionsRequest struct {
 	Functionversion FunctionVersion        `protobuf:"varint,365780244,opt,name=functionversion,proto3,enum=lambda.FunctionVersion" json:"functionversion,omitempty"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	Masterregion    string                 `protobuf:"bytes,114009692,opt,name=masterregion,proto3" json:"masterregion,omitempty"`
-	Maxitems        int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems        *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -15649,8 +15649,8 @@ func (x *ListFunctionsRequest) GetMasterregion() string {
 }
 
 func (x *ListFunctionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15713,7 +15713,7 @@ type ListLayerVersionsRequest struct {
 	Compatibleruntime      Runtime                `protobuf:"varint,238958294,opt,name=compatibleruntime,proto3,enum=lambda.Runtime" json:"compatibleruntime,omitempty"`
 	Layername              string                 `protobuf:"bytes,497423638,opt,name=layername,proto3" json:"layername,omitempty"`
 	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems               int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems               *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -15777,8 +15777,8 @@ func (x *ListLayerVersionsRequest) GetMarker() string {
 }
 
 func (x *ListLayerVersionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15840,7 +15840,7 @@ type ListLayersRequest struct {
 	Compatiblearchitecture Architecture           `protobuf:"varint,27235489,opt,name=compatiblearchitecture,proto3,enum=lambda.Architecture" json:"compatiblearchitecture,omitempty"`
 	Compatibleruntime      Runtime                `protobuf:"varint,238958294,opt,name=compatibleruntime,proto3,enum=lambda.Runtime" json:"compatibleruntime,omitempty"`
 	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems               int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems               *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -15897,8 +15897,8 @@ func (x *ListLayersRequest) GetMarker() string {
 }
 
 func (x *ListLayersRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15959,7 +15959,7 @@ type ListProvisionedConcurrencyConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Functionname  string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16009,8 +16009,8 @@ func (x *ListProvisionedConcurrencyConfigsRequest) GetMarker() string {
 }
 
 func (x *ListProvisionedConcurrencyConfigsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -16159,7 +16159,7 @@ type ListVersionsByFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Functionname  string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16209,8 +16209,8 @@ func (x *ListVersionsByFunctionRequest) GetMarker() string {
 }
 
 func (x *ListVersionsByFunctionRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -16973,11 +16973,11 @@ func (x *PropagateTags) GetMode() PropagateTagsMode {
 
 type ProvisionedConcurrencyConfigListItem struct {
 	state                                    protoimpl.MessageState           `protogen:"open.v1"`
-	Allocatedprovisionedconcurrentexecutions int32                            `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
-	Availableprovisionedconcurrentexecutions int32                            `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3" json:"availableprovisionedconcurrentexecutions,omitempty"`
+	Allocatedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3,oneof" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
+	Availableprovisionedconcurrentexecutions *int32                           `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3,oneof" json:"availableprovisionedconcurrentexecutions,omitempty"`
 	Functionarn                              string                           `protobuf:"bytes,381920497,opt,name=functionarn,proto3" json:"functionarn,omitempty"`
 	Lastmodified                             string                           `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Requestedprovisionedconcurrentexecutions int32                            `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3" json:"requestedprovisionedconcurrentexecutions,omitempty"`
+	Requestedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3,oneof" json:"requestedprovisionedconcurrentexecutions,omitempty"`
 	Status                                   ProvisionedConcurrencyStatusEnum `protobuf:"varint,6222352,opt,name=status,proto3,enum=lambda.ProvisionedConcurrencyStatusEnum" json:"status,omitempty"`
 	Statusreason                             string                           `protobuf:"bytes,139234172,opt,name=statusreason,proto3" json:"statusreason,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
@@ -17015,15 +17015,15 @@ func (*ProvisionedConcurrencyConfigListItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *ProvisionedConcurrencyConfigListItem) GetAllocatedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Allocatedprovisionedconcurrentexecutions
+	if x != nil && x.Allocatedprovisionedconcurrentexecutions != nil {
+		return *x.Allocatedprovisionedconcurrentexecutions
 	}
 	return 0
 }
 
 func (x *ProvisionedConcurrencyConfigListItem) GetAvailableprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Availableprovisionedconcurrentexecutions
+	if x != nil && x.Availableprovisionedconcurrentexecutions != nil {
+		return *x.Availableprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -17043,8 +17043,8 @@ func (x *ProvisionedConcurrencyConfigListItem) GetLastmodified() string {
 }
 
 func (x *ProvisionedConcurrencyConfigListItem) GetRequestedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Requestedprovisionedconcurrentexecutions
+	if x != nil && x.Requestedprovisionedconcurrentexecutions != nil {
+		return *x.Requestedprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -17117,8 +17117,8 @@ func (x *ProvisionedConcurrencyConfigNotFoundException) GetMessage() string {
 
 type ProvisionedPollerConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maximumpollers  int32                  `protobuf:"varint,170898825,opt,name=maximumpollers,proto3" json:"maximumpollers,omitempty"`
-	Minimumpollers  int32                  `protobuf:"varint,302938719,opt,name=minimumpollers,proto3" json:"minimumpollers,omitempty"`
+	Maximumpollers  *int32                 `protobuf:"varint,170898825,opt,name=maximumpollers,proto3,oneof" json:"maximumpollers,omitempty"`
+	Minimumpollers  *int32                 `protobuf:"varint,302938719,opt,name=minimumpollers,proto3,oneof" json:"minimumpollers,omitempty"`
 	Pollergroupname string                 `protobuf:"bytes,316867254,opt,name=pollergroupname,proto3" json:"pollergroupname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -17155,15 +17155,15 @@ func (*ProvisionedPollerConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *ProvisionedPollerConfig) GetMaximumpollers() int32 {
-	if x != nil {
-		return x.Maximumpollers
+	if x != nil && x.Maximumpollers != nil {
+		return *x.Maximumpollers
 	}
 	return 0
 }
 
 func (x *ProvisionedPollerConfig) GetMinimumpollers() int32 {
-	if x != nil {
-		return x.Minimumpollers
+	if x != nil && x.Minimumpollers != nil {
+		return *x.Minimumpollers
 	}
 	return 0
 }
@@ -17321,7 +17321,7 @@ type PublishLayerVersionResponse struct {
 	Layerarn                string                     `protobuf:"bytes,319652978,opt,name=layerarn,proto3" json:"layerarn,omitempty"`
 	Layerversionarn         string                     `protobuf:"bytes,174478342,opt,name=layerversionarn,proto3" json:"layerversionarn,omitempty"`
 	Licenseinfo             string                     `protobuf:"bytes,133903897,opt,name=licenseinfo,proto3" json:"licenseinfo,omitempty"`
-	Version                 int64                      `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version                 *int64                     `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -17413,8 +17413,8 @@ func (x *PublishLayerVersionResponse) GetLicenseinfo() string {
 }
 
 func (x *PublishLayerVersionResponse) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -17655,8 +17655,8 @@ type PutFunctionEventInvokeConfigRequest struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Destinationconfig        *DestinationConfig     `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Functionname             string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
-	Maximumeventageinseconds int32                  `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3" json:"maximumeventageinseconds,omitempty"`
-	Maximumretryattempts     int32                  `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumeventageinseconds *int32                 `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3,oneof" json:"maximumeventageinseconds,omitempty"`
+	Maximumretryattempts     *int32                 `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	Qualifier                string                 `protobuf:"bytes,526670560,opt,name=qualifier,proto3" json:"qualifier,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -17707,15 +17707,15 @@ func (x *PutFunctionEventInvokeConfigRequest) GetFunctionname() string {
 }
 
 func (x *PutFunctionEventInvokeConfigRequest) GetMaximumeventageinseconds() int32 {
-	if x != nil {
-		return x.Maximumeventageinseconds
+	if x != nil && x.Maximumeventageinseconds != nil {
+		return *x.Maximumeventageinseconds
 	}
 	return 0
 }
 
 func (x *PutFunctionEventInvokeConfigRequest) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -17989,10 +17989,10 @@ func (x *PutProvisionedConcurrencyConfigRequest) GetQualifier() string {
 
 type PutProvisionedConcurrencyConfigResponse struct {
 	state                                    protoimpl.MessageState           `protogen:"open.v1"`
-	Allocatedprovisionedconcurrentexecutions int32                            `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
-	Availableprovisionedconcurrentexecutions int32                            `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3" json:"availableprovisionedconcurrentexecutions,omitempty"`
+	Allocatedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,468402411,opt,name=allocatedprovisionedconcurrentexecutions,proto3,oneof" json:"allocatedprovisionedconcurrentexecutions,omitempty"`
+	Availableprovisionedconcurrentexecutions *int32                           `protobuf:"varint,32168809,opt,name=availableprovisionedconcurrentexecutions,proto3,oneof" json:"availableprovisionedconcurrentexecutions,omitempty"`
 	Lastmodified                             string                           `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Requestedprovisionedconcurrentexecutions int32                            `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3" json:"requestedprovisionedconcurrentexecutions,omitempty"`
+	Requestedprovisionedconcurrentexecutions *int32                           `protobuf:"varint,58431158,opt,name=requestedprovisionedconcurrentexecutions,proto3,oneof" json:"requestedprovisionedconcurrentexecutions,omitempty"`
 	Status                                   ProvisionedConcurrencyStatusEnum `protobuf:"varint,6222352,opt,name=status,proto3,enum=lambda.ProvisionedConcurrencyStatusEnum" json:"status,omitempty"`
 	Statusreason                             string                           `protobuf:"bytes,139234172,opt,name=statusreason,proto3" json:"statusreason,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
@@ -18030,15 +18030,15 @@ func (*PutProvisionedConcurrencyConfigResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutProvisionedConcurrencyConfigResponse) GetAllocatedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Allocatedprovisionedconcurrentexecutions
+	if x != nil && x.Allocatedprovisionedconcurrentexecutions != nil {
+		return *x.Allocatedprovisionedconcurrentexecutions
 	}
 	return 0
 }
 
 func (x *PutProvisionedConcurrencyConfigResponse) GetAvailableprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Availableprovisionedconcurrentexecutions
+	if x != nil && x.Availableprovisionedconcurrentexecutions != nil {
+		return *x.Availableprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -18051,8 +18051,8 @@ func (x *PutProvisionedConcurrencyConfigResponse) GetLastmodified() string {
 }
 
 func (x *PutProvisionedConcurrencyConfigResponse) GetRequestedprovisionedconcurrentexecutions() int32 {
-	if x != nil {
-		return x.Requestedprovisionedconcurrentexecutions
+	if x != nil && x.Requestedprovisionedconcurrentexecutions != nil {
+		return *x.Requestedprovisionedconcurrentexecutions
 	}
 	return 0
 }
@@ -18649,8 +18649,8 @@ func (x *ResourceNotReadyException) GetMessage() string {
 
 type RetryDetails struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Currentattempt          int32                  `protobuf:"varint,340355832,opt,name=currentattempt,proto3" json:"currentattempt,omitempty"`
-	Nextattemptdelayseconds int32                  `protobuf:"varint,502780186,opt,name=nextattemptdelayseconds,proto3" json:"nextattemptdelayseconds,omitempty"`
+	Currentattempt          *int32                 `protobuf:"varint,340355832,opt,name=currentattempt,proto3,oneof" json:"currentattempt,omitempty"`
+	Nextattemptdelayseconds *int32                 `protobuf:"varint,502780186,opt,name=nextattemptdelayseconds,proto3,oneof" json:"nextattemptdelayseconds,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -18686,15 +18686,15 @@ func (*RetryDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *RetryDetails) GetCurrentattempt() int32 {
-	if x != nil {
-		return x.Currentattempt
+	if x != nil && x.Currentattempt != nil {
+		return *x.Currentattempt
 	}
 	return 0
 }
 
 func (x *RetryDetails) GetNextattemptdelayseconds() int32 {
-	if x != nil {
-		return x.Nextattemptdelayseconds
+	if x != nil && x.Nextattemptdelayseconds != nil {
+		return *x.Nextattemptdelayseconds
 	}
 	return 0
 }
@@ -18961,7 +18961,7 @@ func (x *S3FilesMountTimeoutException) GetType() string {
 
 type ScalingConfig struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Maximumconcurrency int32                  `protobuf:"varint,257783285,opt,name=maximumconcurrency,proto3" json:"maximumconcurrency,omitempty"`
+	Maximumconcurrency *int32                 `protobuf:"varint,257783285,opt,name=maximumconcurrency,proto3,oneof" json:"maximumconcurrency,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -18997,8 +18997,8 @@ func (*ScalingConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *ScalingConfig) GetMaximumconcurrency() int32 {
-	if x != nil {
-		return x.Maximumconcurrency
+	if x != nil && x.Maximumconcurrency != nil {
+		return *x.Maximumconcurrency
 	}
 	return 0
 }
@@ -19869,7 +19869,7 @@ func (x *SourceAccessConfiguration) GetUri() string {
 
 type StepDetails struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Attempt              int32                  `protobuf:"varint,105696463,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	Attempt              *int32                 `protobuf:"varint,105696463,opt,name=attempt,proto3,oneof" json:"attempt,omitempty"`
 	Error                *ErrorObject           `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
 	Nextattempttimestamp string                 `protobuf:"bytes,217497488,opt,name=nextattempttimestamp,proto3" json:"nextattempttimestamp,omitempty"`
 	Result               string                 `protobuf:"bytes,273346629,opt,name=result,proto3" json:"result,omitempty"`
@@ -19908,8 +19908,8 @@ func (*StepDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *StepDetails) GetAttempt() int32 {
-	if x != nil {
-		return x.Attempt
+	if x != nil && x.Attempt != nil {
+		return *x.Attempt
 	}
 	return 0
 }
@@ -19989,7 +19989,7 @@ func (x *StepFailedDetails) GetRetrydetails() *RetryDetails {
 
 type StepOptions struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Nextattemptdelayseconds int32                  `protobuf:"varint,502780186,opt,name=nextattemptdelayseconds,proto3" json:"nextattemptdelayseconds,omitempty"`
+	Nextattemptdelayseconds *int32                 `protobuf:"varint,502780186,opt,name=nextattemptdelayseconds,proto3,oneof" json:"nextattemptdelayseconds,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -20025,8 +20025,8 @@ func (*StepOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *StepOptions) GetNextattemptdelayseconds() int32 {
-	if x != nil {
-		return x.Nextattemptdelayseconds
+	if x != nil && x.Nextattemptdelayseconds != nil {
+		return *x.Nextattemptdelayseconds
 	}
 	return 0
 }
@@ -21074,7 +21074,7 @@ func (x *UpdateCodeSigningConfigResponse) GetCodesigningconfig() *CodeSigningCon
 type UpdateEventSourceMappingRequest struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
 	Amazonmanagedkafkaeventsourceconfig *AmazonManagedKafkaEventSourceConfig `protobuf:"bytes,60136380,opt,name=amazonmanagedkafkaeventsourceconfig,proto3" json:"amazonmanagedkafkaeventsourceconfig,omitempty"`
-	Batchsize                           int32                                `protobuf:"varint,318039259,opt,name=batchsize,proto3" json:"batchsize,omitempty"`
+	Batchsize                           *int32                               `protobuf:"varint,318039259,opt,name=batchsize,proto3,oneof" json:"batchsize,omitempty"`
 	Bisectbatchonfunctionerror          *bool                                `protobuf:"varint,276143707,opt,name=bisectbatchonfunctionerror,proto3,oneof" json:"bisectbatchonfunctionerror,omitempty"`
 	Destinationconfig                   *DestinationConfig                   `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Documentdbeventsourceconfig         *DocumentDBEventSourceConfig         `protobuf:"bytes,173060622,opt,name=documentdbeventsourceconfig,proto3" json:"documentdbeventsourceconfig,omitempty"`
@@ -21084,16 +21084,16 @@ type UpdateEventSourceMappingRequest struct {
 	Functionresponsetypes               []FunctionResponseType               `protobuf:"varint,382292260,rep,packed,name=functionresponsetypes,proto3,enum=lambda.FunctionResponseType" json:"functionresponsetypes,omitempty"`
 	Kmskeyarn                           string                               `protobuf:"bytes,117627377,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
 	Loggingconfig                       *EventSourceMappingLoggingConfig     `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
-	Maximumbatchingwindowinseconds      int32                                `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3" json:"maximumbatchingwindowinseconds,omitempty"`
-	Maximumrecordageinseconds           int32                                `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3" json:"maximumrecordageinseconds,omitempty"`
-	Maximumretryattempts                int32                                `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumbatchingwindowinseconds      *int32                               `protobuf:"varint,346663320,opt,name=maximumbatchingwindowinseconds,proto3,oneof" json:"maximumbatchingwindowinseconds,omitempty"`
+	Maximumrecordageinseconds           *int32                               `protobuf:"varint,102344982,opt,name=maximumrecordageinseconds,proto3,oneof" json:"maximumrecordageinseconds,omitempty"`
+	Maximumretryattempts                *int32                               `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	Metricsconfig                       *EventSourceMappingMetricsConfig     `protobuf:"bytes,412971857,opt,name=metricsconfig,proto3" json:"metricsconfig,omitempty"`
-	Parallelizationfactor               int32                                `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3" json:"parallelizationfactor,omitempty"`
+	Parallelizationfactor               *int32                               `protobuf:"varint,400337694,opt,name=parallelizationfactor,proto3,oneof" json:"parallelizationfactor,omitempty"`
 	Provisionedpollerconfig             *ProvisionedPollerConfig             `protobuf:"bytes,275676602,opt,name=provisionedpollerconfig,proto3" json:"provisionedpollerconfig,omitempty"`
 	Scalingconfig                       *ScalingConfig                       `protobuf:"bytes,392871661,opt,name=scalingconfig,proto3" json:"scalingconfig,omitempty"`
 	Selfmanagedkafkaeventsourceconfig   *SelfManagedKafkaEventSourceConfig   `protobuf:"bytes,322222578,opt,name=selfmanagedkafkaeventsourceconfig,proto3" json:"selfmanagedkafkaeventsourceconfig,omitempty"`
 	Sourceaccessconfigurations          []*SourceAccessConfiguration         `protobuf:"bytes,371593554,rep,name=sourceaccessconfigurations,proto3" json:"sourceaccessconfigurations,omitempty"`
-	Tumblingwindowinseconds             int32                                `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3" json:"tumblingwindowinseconds,omitempty"`
+	Tumblingwindowinseconds             *int32                               `protobuf:"varint,372493124,opt,name=tumblingwindowinseconds,proto3,oneof" json:"tumblingwindowinseconds,omitempty"`
 	Uuid                                string                               `protobuf:"bytes,91981875,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
@@ -21137,8 +21137,8 @@ func (x *UpdateEventSourceMappingRequest) GetAmazonmanagedkafkaeventsourceconfig
 }
 
 func (x *UpdateEventSourceMappingRequest) GetBatchsize() int32 {
-	if x != nil {
-		return x.Batchsize
+	if x != nil && x.Batchsize != nil {
+		return *x.Batchsize
 	}
 	return 0
 }
@@ -21207,22 +21207,22 @@ func (x *UpdateEventSourceMappingRequest) GetLoggingconfig() *EventSourceMapping
 }
 
 func (x *UpdateEventSourceMappingRequest) GetMaximumbatchingwindowinseconds() int32 {
-	if x != nil {
-		return x.Maximumbatchingwindowinseconds
+	if x != nil && x.Maximumbatchingwindowinseconds != nil {
+		return *x.Maximumbatchingwindowinseconds
 	}
 	return 0
 }
 
 func (x *UpdateEventSourceMappingRequest) GetMaximumrecordageinseconds() int32 {
-	if x != nil {
-		return x.Maximumrecordageinseconds
+	if x != nil && x.Maximumrecordageinseconds != nil {
+		return *x.Maximumrecordageinseconds
 	}
 	return 0
 }
 
 func (x *UpdateEventSourceMappingRequest) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -21235,8 +21235,8 @@ func (x *UpdateEventSourceMappingRequest) GetMetricsconfig() *EventSourceMapping
 }
 
 func (x *UpdateEventSourceMappingRequest) GetParallelizationfactor() int32 {
-	if x != nil {
-		return x.Parallelizationfactor
+	if x != nil && x.Parallelizationfactor != nil {
+		return *x.Parallelizationfactor
 	}
 	return 0
 }
@@ -21270,8 +21270,8 @@ func (x *UpdateEventSourceMappingRequest) GetSourceaccessconfigurations() []*Sou
 }
 
 func (x *UpdateEventSourceMappingRequest) GetTumblingwindowinseconds() int32 {
-	if x != nil {
-		return x.Tumblingwindowinseconds
+	if x != nil && x.Tumblingwindowinseconds != nil {
+		return *x.Tumblingwindowinseconds
 	}
 	return 0
 }
@@ -21430,12 +21430,12 @@ type UpdateFunctionConfigurationRequest struct {
 	Kmskeyarn              string                  `protobuf:"bytes,117627377,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
 	Layers                 []string                `protobuf:"bytes,478144896,rep,name=layers,proto3" json:"layers,omitempty"`
 	Loggingconfig          *LoggingConfig          `protobuf:"bytes,424359625,opt,name=loggingconfig,proto3" json:"loggingconfig,omitempty"`
-	Memorysize             int32                   `protobuf:"varint,55523120,opt,name=memorysize,proto3" json:"memorysize,omitempty"`
+	Memorysize             *int32                  `protobuf:"varint,55523120,opt,name=memorysize,proto3,oneof" json:"memorysize,omitempty"`
 	Revisionid             string                  `protobuf:"bytes,499618182,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
 	Role                   string                  `protobuf:"bytes,271285818,opt,name=role,proto3" json:"role,omitempty"`
 	Runtime                Runtime                 `protobuf:"varint,359311308,opt,name=runtime,proto3,enum=lambda.Runtime" json:"runtime,omitempty"`
 	Snapstart              *SnapStart              `protobuf:"bytes,283273032,opt,name=snapstart,proto3" json:"snapstart,omitempty"`
-	Timeout                int32                   `protobuf:"varint,47808041,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout                *int32                  `protobuf:"varint,47808041,opt,name=timeout,proto3,oneof" json:"timeout,omitempty"`
 	Tracingconfig          *TracingConfig          `protobuf:"bytes,19554860,opt,name=tracingconfig,proto3" json:"tracingconfig,omitempty"`
 	Vpcconfig              *VpcConfig              `protobuf:"bytes,194980743,opt,name=vpcconfig,proto3" json:"vpcconfig,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -21564,8 +21564,8 @@ func (x *UpdateFunctionConfigurationRequest) GetLoggingconfig() *LoggingConfig {
 }
 
 func (x *UpdateFunctionConfigurationRequest) GetMemorysize() int32 {
-	if x != nil {
-		return x.Memorysize
+	if x != nil && x.Memorysize != nil {
+		return *x.Memorysize
 	}
 	return 0
 }
@@ -21599,8 +21599,8 @@ func (x *UpdateFunctionConfigurationRequest) GetSnapstart() *SnapStart {
 }
 
 func (x *UpdateFunctionConfigurationRequest) GetTimeout() int32 {
-	if x != nil {
-		return x.Timeout
+	if x != nil && x.Timeout != nil {
+		return *x.Timeout
 	}
 	return 0
 }
@@ -21623,8 +21623,8 @@ type UpdateFunctionEventInvokeConfigRequest struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Destinationconfig        *DestinationConfig     `protobuf:"bytes,184834158,opt,name=destinationconfig,proto3" json:"destinationconfig,omitempty"`
 	Functionname             string                 `protobuf:"bytes,468698147,opt,name=functionname,proto3" json:"functionname,omitempty"`
-	Maximumeventageinseconds int32                  `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3" json:"maximumeventageinseconds,omitempty"`
-	Maximumretryattempts     int32                  `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumeventageinseconds *int32                 `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3,oneof" json:"maximumeventageinseconds,omitempty"`
+	Maximumretryattempts     *int32                 `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	Qualifier                string                 `protobuf:"bytes,526670560,opt,name=qualifier,proto3" json:"qualifier,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -21675,15 +21675,15 @@ func (x *UpdateFunctionEventInvokeConfigRequest) GetFunctionname() string {
 }
 
 func (x *UpdateFunctionEventInvokeConfigRequest) GetMaximumeventageinseconds() int32 {
-	if x != nil {
-		return x.Maximumeventageinseconds
+	if x != nil && x.Maximumeventageinseconds != nil {
+		return *x.Maximumeventageinseconds
 	}
 	return 0
 }
 
 func (x *UpdateFunctionEventInvokeConfigRequest) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -22081,7 +22081,7 @@ func (x *WaitDetails) GetScheduledendtimestamp() string {
 
 type WaitOptions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Waitseconds   int32                  `protobuf:"varint,305214910,opt,name=waitseconds,proto3" json:"waitseconds,omitempty"`
+	Waitseconds   *int32                 `protobuf:"varint,305214910,opt,name=waitseconds,proto3,oneof" json:"waitseconds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22117,8 +22117,8 @@ func (*WaitOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *WaitOptions) GetWaitseconds() int32 {
-	if x != nil {
-		return x.Waitseconds
+	if x != nil && x.Waitseconds != nil {
+		return *x.Waitseconds
 	}
 	return 0
 }
@@ -22177,7 +22177,7 @@ func (x *WaitStartedDetails) GetScheduledendtimestamp() string {
 
 type WaitSucceededDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Duration      int32                  `protobuf:"varint,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration      *int32                 `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22213,8 +22213,8 @@ func (*WaitSucceededDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *WaitSucceededDetails) GetDuration() int32 {
-	if x != nil {
-		return x.Duration
+	if x != nil && x.Duration != nil {
+		return *x.Duration
 	}
 	return 0
 }
@@ -22223,16 +22223,23 @@ var File_lambda_proto protoreflect.FileDescriptor
 
 const file_lambda_proto_rawDesc = "" +
 	"\n" +
-	"\flambda.proto\x12\x06lambda\x1a\fcommon.proto\x1a\taws.proto\"\x95\x02\n" +
-	"\fAccountLimit\x12.\n" +
-	"\x10codesizeunzipped\x18\x9b\x8b\xcf\xf2\x01 \x01(\x03R\x10codesizeunzipped\x12)\n" +
-	"\x0ecodesizezipped\x18\xa6ǳ\f \x01(\x03R\x0ecodesizezipped\x126\n" +
-	"\x14concurrentexecutions\x18\x94\xe4\xe8\x9e\x01 \x01(\x05R\x14concurrentexecutions\x12'\n" +
-	"\rtotalcodesize\x18\xb6\xd5\xd9` \x01(\x03R\rtotalcodesize\x12I\n" +
-	"\x1eunreservedconcurrentexecutions\x18\xa9\x98\xf8\x02 \x01(\x05R\x1eunreservedconcurrentexecutions\"`\n" +
-	"\fAccountUsage\x12'\n" +
-	"\rfunctioncount\x18\xf1\xe6\xbba \x01(\x03R\rfunctioncount\x12'\n" +
-	"\rtotalcodesize\x18\xb6\xd5\xd9` \x01(\x03R\rtotalcodesize\"\x9f\x02\n" +
+	"\flambda.proto\x12\x06lambda\x1a\fcommon.proto\x1a\taws.proto\"\xa4\x03\n" +
+	"\fAccountLimit\x123\n" +
+	"\x10codesizeunzipped\x18\x9b\x8b\xcf\xf2\x01 \x01(\x03H\x00R\x10codesizeunzipped\x88\x01\x01\x12.\n" +
+	"\x0ecodesizezipped\x18\xa6ǳ\f \x01(\x03H\x01R\x0ecodesizezipped\x88\x01\x01\x12;\n" +
+	"\x14concurrentexecutions\x18\x94\xe4\xe8\x9e\x01 \x01(\x05H\x02R\x14concurrentexecutions\x88\x01\x01\x12,\n" +
+	"\rtotalcodesize\x18\xb6\xd5\xd9` \x01(\x03H\x03R\rtotalcodesize\x88\x01\x01\x12N\n" +
+	"\x1eunreservedconcurrentexecutions\x18\xa9\x98\xf8\x02 \x01(\x05H\x04R\x1eunreservedconcurrentexecutions\x88\x01\x01B\x13\n" +
+	"\x11_codesizeunzippedB\x11\n" +
+	"\x0f_codesizezippedB\x17\n" +
+	"\x15_concurrentexecutionsB\x10\n" +
+	"\x0e_totalcodesizeB!\n" +
+	"\x1f_unreservedconcurrentexecutions\"\x8e\x01\n" +
+	"\fAccountUsage\x12,\n" +
+	"\rfunctioncount\x18\xf1\xe6\xbba \x01(\x03H\x00R\rfunctioncount\x88\x01\x01\x12,\n" +
+	"\rtotalcodesize\x18\xb6\xd5\xd9` \x01(\x03H\x01R\rtotalcodesize\x88\x01\x01B\x10\n" +
+	"\x0e_functioncountB\x10\n" +
+	"\x0e_totalcodesize\"\x9f\x02\n" +
 	" AddLayerVersionPermissionRequest\x12\x19\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\tR\x06action\x12 \n" +
 	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\x12*\n" +
@@ -22295,16 +22302,21 @@ const file_lambda_proto_rawDesc = "" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x13.lambda.ErrorObjectR\x05error\x12\x1a\n" +
 	"\x06result\x18\xc5ૂ\x01 \x01(\tR\x06result\"E\n" +
 	"\x15CallbackFailedDetails\x12,\n" +
-	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x12.lambda.EventErrorR\x05error\"{\n" +
-	"\x0fCallbackOptions\x12<\n" +
-	"\x17heartbeattimeoutseconds\x18\xc0\xef\xf1\xfd\x01 \x01(\x05R\x17heartbeattimeoutseconds\x12*\n" +
-	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05R\x0etimeoutseconds\"\x87\x01\n" +
+	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x12.lambda.EventErrorR\x05error\"\xb4\x01\n" +
+	"\x0fCallbackOptions\x12A\n" +
+	"\x17heartbeattimeoutseconds\x18\xc0\xef\xf1\xfd\x01 \x01(\x05H\x00R\x17heartbeattimeoutseconds\x88\x01\x01\x12/\n" +
+	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\x01R\x0etimeoutseconds\x88\x01\x01B\x1a\n" +
+	"\x18_heartbeattimeoutsecondsB\x11\n" +
+	"\x0f_timeoutseconds\"\xb2\x01\n" +
 	"\x16CallbackStartedDetails\x12!\n" +
 	"\n" +
 	"callbackid\x18\x9c\u05f6! \x01(\tR\n" +
-	"callbackid\x12-\n" +
-	"\x10heartbeattimeout\x18\xab\xc0\x8a\x11 \x01(\x05R\x10heartbeattimeout\x12\x1b\n" +
-	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05R\atimeout\"K\n" +
+	"callbackid\x122\n" +
+	"\x10heartbeattimeout\x18\xab\xc0\x8a\x11 \x01(\x05H\x00R\x10heartbeattimeout\x88\x01\x01\x12 \n" +
+	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05H\x01R\atimeout\x88\x01\x01B\x13\n" +
+	"\x11_heartbeattimeoutB\n" +
+	"\n" +
+	"\b_timeout\"K\n" +
 	"\x18CallbackSucceededDetails\x12/\n" +
 	"\x06result\x18\xc5ૂ\x01 \x01(\v2\x13.lambda.EventResultR\x06result\"G\n" +
 	"\x17CallbackTimedOutDetails\x12,\n" +
@@ -22328,11 +22340,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"q\n" +
 	"!CapacityProviderPermissionsConfig\x12L\n" +
-	"\x1fcapacityprovideroperatorrolearn\x18\xb8\xd4ژ\x01 \x01(\tR\x1fcapacityprovideroperatorrolearn\"\xe4\x01\n" +
-	"\x1dCapacityProviderScalingConfig\x12&\n" +
-	"\fmaxvcpucount\x18鴬\xa0\x01 \x01(\x05R\fmaxvcpucount\x12H\n" +
+	"\x1fcapacityprovideroperatorrolearn\x18\xb8\xd4ژ\x01 \x01(\tR\x1fcapacityprovideroperatorrolearn\"\xfa\x01\n" +
+	"\x1dCapacityProviderScalingConfig\x12+\n" +
+	"\fmaxvcpucount\x18鴬\xa0\x01 \x01(\x05H\x00R\fmaxvcpucount\x88\x01\x01\x12H\n" +
 	"\vscalingmode\x18\xaa\x8f\xa7d \x01(\x0e2#.lambda.CapacityProviderScalingModeR\vscalingmode\x12Q\n" +
-	"\x0fscalingpolicies\x18\U0006914a\x01 \x03(\v2#.lambda.TargetTrackingScalingPolicyR\x0fscalingpolicies\"k\n" +
+	"\x0fscalingpolicies\x18\U0006914a\x01 \x03(\v2#.lambda.TargetTrackingScalingPolicyR\x0fscalingpoliciesB\x0f\n" +
+	"\r_maxvcpucount\"k\n" +
 	"\x19CapacityProviderVpcConfig\x12-\n" +
 	"\x10securitygroupids\x18\x85\x8a\xae\x06 \x03(\tR\x10securitygroupids\x12\x1f\n" +
 	"\tsubnetids\x18\x93\xdf\xf8~ \x03(\tR\tsubnetids\"a\n" +
@@ -22397,9 +22410,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"V\n" +
 	"\x1fCodeVerificationFailedException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"T\n" +
-	"\vConcurrency\x12E\n" +
-	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05R\x1creservedconcurrentexecutions\"\x9e\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"z\n" +
+	"\vConcurrency\x12J\n" +
+	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05H\x00R\x1creservedconcurrentexecutions\x88\x01\x01B\x1f\n" +
+	"\x1d_reservedconcurrentexecutions\"\x9e\x01\n" +
 	"\x0eContextDetails\x12-\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x13.lambda.ErrorObjectR\x05error\x12.\n" +
 	"\x0ereplaychildren\x18\xfe\xf7\xd4E \x01(\bH\x00R\x0ereplaychildren\x88\x01\x01\x12\x1a\n" +
@@ -22412,15 +22426,16 @@ const file_lambda_proto_rawDesc = "" +
 	"\x0f_replaychildren\"\x17\n" +
 	"\x15ContextStartedDetails\"J\n" +
 	"\x17ContextSucceededDetails\x12/\n" +
-	"\x06result\x18\xc5ૂ\x01 \x01(\v2\x13.lambda.EventResultR\x06result\"\x8d\x02\n" +
+	"\x06result\x18\xc5ૂ\x01 \x01(\v2\x13.lambda.EventResultR\x06result\"\x9d\x02\n" +
 	"\x04Cors\x123\n" +
 	"\x10allowcredentials\x18\x95\x8e\xaa\xe8\x01 \x01(\bH\x00R\x10allowcredentials\x88\x01\x01\x12&\n" +
 	"\fallowheaders\x18\x89\xab\xef\xf3\x01 \x03(\tR\fallowheaders\x12&\n" +
 	"\fallowmethods\x18\x95\xf9\xa4\xd2\x01 \x03(\tR\fallowmethods\x12&\n" +
 	"\falloworigins\x18\xa6\x9c\xf9\xa3\x01 \x03(\tR\falloworigins\x12(\n" +
-	"\rexposeheaders\x18\x8a\xb9\xba\x8a\x01 \x03(\tR\rexposeheaders\x12\x19\n" +
-	"\x06maxage\x18\xe9\xe4\xa8t \x01(\x05R\x06maxageB\x13\n" +
-	"\x11_allowcredentials\"\xf3\x01\n" +
+	"\rexposeheaders\x18\x8a\xb9\xba\x8a\x01 \x03(\tR\rexposeheaders\x12\x1e\n" +
+	"\x06maxage\x18\xe9\xe4\xa8t \x01(\x05H\x01R\x06maxage\x88\x01\x01B\x13\n" +
+	"\x11_allowcredentialsB\t\n" +
+	"\a_maxage\"\xf3\x01\n" +
 	"\x12CreateAliasRequest\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12,\n" +
@@ -22450,25 +22465,25 @@ const file_lambda_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
 	"\x1fCreateCodeSigningConfigResponse\x12J\n" +
-	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xae\x10\n" +
+	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xea\x11\n" +
 	"\x1fCreateEventSourceMappingRequest\x12\x80\x01\n" +
-	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12 \n" +
-	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05R\tbatchsize\x12G\n" +
-	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x00R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
+	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12%\n" +
+	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05H\x00R\tbatchsize\x88\x01\x01\x12G\n" +
+	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x01R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12h\n" +
 	"\x1bdocumentdbeventsourceconfig\x18\x8e\xe4\xc2R \x01(\v2#.lambda.DocumentDBEventSourceConfigR\x1bdocumentdbeventsourceconfig\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x01R\aenabled\x88\x01\x01\x12*\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x02R\aenabled\x88\x01\x01\x12*\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tR\x0eeventsourcearn\x12B\n" +
 	"\x0efiltercriteria\x18\xfb\xe8\xb7\xd1\x01 \x01(\v2\x16.lambda.FilterCriteriaR\x0efiltercriteria\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12V\n" +
 	"\x15functionresponsetypes\x18\xa4\xa2\xa5\xb6\x01 \x03(\x0e2\x1c.lambda.FunctionResponseTypeR\x15functionresponsetypes\x12\x1f\n" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarn\x12Q\n" +
-	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12J\n" +
-	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05R\x1emaximumbatchingwindowinseconds\x12?\n" +
-	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05R\x19maximumrecordageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\x12Q\n" +
-	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x128\n" +
-	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05R\x15parallelizationfactor\x12]\n" +
+	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12O\n" +
+	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05H\x03R\x1emaximumbatchingwindowinseconds\x88\x01\x01\x12D\n" +
+	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05H\x04R\x19maximumrecordageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x05R\x14maximumretryattempts\x88\x01\x01\x12Q\n" +
+	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x12=\n" +
+	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05H\x06R\x15parallelizationfactor\x88\x01\x01\x12]\n" +
 	"\x17provisionedpollerconfig\x18\xba\xfb\xb9\x83\x01 \x01(\v2\x1f.lambda.ProvisionedPollerConfigR\x17provisionedpollerconfig\x12\x19\n" +
 	"\x06queues\x18\xb2Íj \x03(\tR\x06queues\x12?\n" +
 	"\rscalingconfig\x18\xed\xfd\xaa\xbb\x01 \x01(\v2\x15.lambda.ScalingConfigR\rscalingconfig\x12Z\n" +
@@ -22478,14 +22493,21 @@ const file_lambda_proto_rawDesc = "" +
 	"\x10startingposition\x18ϔ\xba\xcc\x01 \x01(\x0e2\x1b.lambda.EventSourcePositionR\x10startingposition\x12?\n" +
 	"\x19startingpositiontimestamp\x18\x97\xe8\xe8D \x01(\tR\x19startingpositiontimestamp\x12I\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v21.lambda.CreateEventSourceMappingRequest.TagsEntryR\x04tags\x12\x19\n" +
-	"\x06topics\x18\xb6\xca\xeah \x03(\tR\x06topics\x12<\n" +
-	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05R\x17tumblingwindowinseconds\x1a7\n" +
+	"\x06topics\x18\xb6\xca\xeah \x03(\tR\x06topics\x12A\n" +
+	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05H\aR\x17tumblingwindowinseconds\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1d\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\f\n" +
+	"\n" +
+	"_batchsizeB\x1d\n" +
 	"\x1b_bisectbatchonfunctionerrorB\n" +
 	"\n" +
-	"\b_enabled\"\xb1\f\n" +
+	"\b_enabledB!\n" +
+	"\x1f_maximumbatchingwindowinsecondsB\x1c\n" +
+	"\x1a_maximumrecordageinsecondsB\x17\n" +
+	"\x15_maximumretryattemptsB\x18\n" +
+	"\x16_parallelizationfactorB\x1a\n" +
+	"\x18_tumblingwindowinseconds\"\xd6\f\n" +
 	"\x15CreateFunctionRequest\x12>\n" +
 	"\rarchitectures\x18\xc4\xcc\xfa\xfc\x01 \x03(\x0e2\x14.lambda.ArchitectureR\rarchitectures\x12Y\n" +
 	"\x16capacityproviderconfig\x18\x9f\xd9\xe7\x18 \x01(\v2\x1e.lambda.CapacityProviderConfigR\x16capacityproviderconfig\x12,\n" +
@@ -22502,26 +22524,29 @@ const file_lambda_proto_rawDesc = "" +
 	"\vimageconfig\x18\xb5\x8e\xba\x86\x01 \x01(\v2\x13.lambda.ImageConfigR\vimageconfig\x12\x1f\n" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarn\x12\x1a\n" +
 	"\x06layers\x18\x80\xd3\xff\xe3\x01 \x03(\tR\x06layers\x12?\n" +
-	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2\x15.lambda.LoggingConfigR\rloggingconfig\x12!\n" +
+	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2\x15.lambda.LoggingConfigR\rloggingconfig\x12&\n" +
 	"\n" +
-	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05R\n" +
-	"memorysize\x129\n" +
+	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05H\x00R\n" +
+	"memorysize\x88\x01\x01\x129\n" +
 	"\vpackagetype\x18\xa4\x95\xe3\xf6\x01 \x01(\x0e2\x13.lambda.PackageTypeR\vpackagetype\x12 \n" +
-	"\apublish\x18\xa9ӈc \x01(\bH\x00R\apublish\x88\x01\x01\x12H\n" +
+	"\apublish\x18\xa9ӈc \x01(\bH\x01R\apublish\x88\x01\x01\x12H\n" +
 	"\tpublishto\x18\u009b\xf6\xf9\x01 \x01(\x0e2&.lambda.FunctionVersionLatestPublishedR\tpublishto\x12\x16\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\x12-\n" +
 	"\aruntime\x18\xccϪ\xab\x01 \x01(\x0e2\x0f.lambda.RuntimeR\aruntime\x123\n" +
 	"\tsnapstart\x18\xc8Ή\x87\x01 \x01(\v2\x11.lambda.SnapStartR\tsnapstart\x12?\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2'.lambda.CreateFunctionRequest.TagsEntryR\x04tags\x12>\n" +
-	"\rtenancyconfig\x18\xfa\xab\xedf \x01(\v2\x15.lambda.TenancyConfigR\rtenancyconfig\x12\x1b\n" +
-	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05R\atimeout\x12>\n" +
+	"\rtenancyconfig\x18\xfa\xab\xedf \x01(\v2\x15.lambda.TenancyConfigR\rtenancyconfig\x12 \n" +
+	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05H\x02R\atimeout\x88\x01\x01\x12>\n" +
 	"\rtracingconfig\x18\xacĩ\t \x01(\v2\x15.lambda.TracingConfigR\rtracingconfig\x122\n" +
 	"\tvpcconfig\x18\x87\xd7\xfc\\ \x01(\v2\x11.lambda.VpcConfigR\tvpcconfig\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_memorysizeB\n" +
 	"\n" +
-	"\b_publish\"\x84\x02\n" +
+	"\b_publishB\n" +
+	"\n" +
+	"\b_timeout\"\x84\x02\n" +
 	"\x1eCreateFunctionUrlConfigRequest\x12;\n" +
 	"\bauthtype\x18\xb8\xe0\xe4\xe3\x01 \x01(\x0e2\x1b.lambda.FunctionUrlAuthTypeR\bauthtype\x12#\n" +
 	"\x04cors\x18\xf5\x91\xab| \x01(\v2\f.lambda.CorsR\x04cors\x12&\n" +
@@ -22562,11 +22587,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"a\n" +
 	"\x15DeleteFunctionRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
-	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"<\n" +
-	"\x16DeleteFunctionResponse\x12\"\n" +
+	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"P\n" +
+	"\x16DeleteFunctionResponse\x12'\n" +
 	"\n" +
-	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05R\n" +
-	"statuscode\"j\n" +
+	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\x00R\n" +
+	"statuscode\x88\x01\x01B\r\n" +
+	"\v_statuscode\"j\n" +
 	"\x1eDeleteFunctionUrlConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"f\n" +
@@ -22582,10 +22608,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\x1bDocumentDBEventSourceConfig\x12*\n" +
 	"\x0ecollectionname\x18\xcb\xfc\xa6\xa7\x01 \x01(\tR\x0ecollectionname\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12<\n" +
-	"\ffulldocument\x18\x8e\xed\x81\xd7\x01 \x01(\x0e2\x14.lambda.FullDocumentR\ffulldocument\"y\n" +
-	"\rDurableConfig\x12.\n" +
-	"\x10executiontimeout\x18\x99\xf5\xba\xef\x01 \x01(\x05R\x10executiontimeout\x128\n" +
-	"\x15retentionperiodindays\x18щ\xfb\x9a\x01 \x01(\x05R\x15retentionperiodindays\"^\n" +
+	"\ffulldocument\x18\x8e\xed\x81\xd7\x01 \x01(\x0e2\x14.lambda.FullDocumentR\ffulldocument\"\xb2\x01\n" +
+	"\rDurableConfig\x123\n" +
+	"\x10executiontimeout\x18\x99\xf5\xba\xef\x01 \x01(\x05H\x00R\x10executiontimeout\x88\x01\x01\x12=\n" +
+	"\x15retentionperiodindays\x18щ\xfb\x9a\x01 \x01(\x05H\x01R\x15retentionperiodindays\x88\x01\x01B\x13\n" +
+	"\x11_executiontimeoutB\x18\n" +
+	"\x16_retentionperiodindays\"^\n" +
 	"'DurableExecutionAlreadyStartedException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"O\n" +
@@ -22639,7 +22667,7 @@ const file_lambda_proto_rawDesc = "" +
 	"\terrortype\x18\xba痾\x01 \x01(\tR\terrortype\x12\"\n" +
 	"\n" +
 	"stacktrace\x18\x9d\xab\x96\x92\x01 \x03(\tR\n" +
-	"stacktrace\"\xba\x13\n" +
+	"stacktrace\"\xcb\x13\n" +
 	"\x05Event\x12W\n" +
 	"\x15callbackfaileddetails\x18\xb0ˌ\xcc\x01 \x01(\v2\x1d.lambda.CallbackFailedDetailsR\x15callbackfaileddetails\x12Y\n" +
 	"\x16callbackstarteddetails\x18\xb0\xb5\xd3/ \x01(\v2\x1e.lambda.CallbackStartedDetailsR\x16callbackstarteddetails\x12`\n" +
@@ -22652,8 +22680,8 @@ const file_lambda_proto_rawDesc = "" +
 	"\x1cchainedinvoketimedoutdetails\x18\x89\x88\xa0u \x01(\v2$.lambda.ChainedInvokeTimedOutDetailsR\x1cchainedinvoketimedoutdetails\x12T\n" +
 	"\x14contextfaileddetails\x18\xaa\x84\xa1\xd6\x01 \x01(\v2\x1c.lambda.ContextFailedDetailsR\x14contextfaileddetails\x12W\n" +
 	"\x15contextstarteddetails\x18\xaa잢\x01 \x01(\v2\x1d.lambda.ContextStartedDetailsR\x15contextstarteddetails\x12]\n" +
-	"\x17contextsucceededdetails\x18ʛ\xf6\x84\x01 \x01(\v2\x1f.lambda.ContextSucceededDetailsR\x17contextsucceededdetails\x12\x1c\n" +
-	"\aeventid\x18Ӗݳ\x01 \x01(\x05R\aeventid\x12)\n" +
+	"\x17contextsucceededdetails\x18ʛ\xf6\x84\x01 \x01(\v2\x1f.lambda.ContextSucceededDetailsR\x17contextsucceededdetails\x12!\n" +
+	"\aeventid\x18Ӗݳ\x01 \x01(\x05H\x00R\aeventid\x88\x01\x01\x12)\n" +
 	"\x0eeventtimestamp\x18\x8e\xb9\x88X \x01(\tR\x0eeventtimestamp\x123\n" +
 	"\teventtype\x18\xe8\xa0\xcb\xdf\x01 \x01(\x0e2\x11.lambda.EventTypeR\teventtype\x12Y\n" +
 	"\x16executionfaileddetails\x18\xb3\xe7\xdbT \x01(\v2\x1e.lambda.ExecutionFailedDetailsR\x16executionfaileddetails\x12]\n" +
@@ -22671,7 +22699,9 @@ const file_lambda_proto_rawDesc = "" +
 	"\asubtype\x18\xbe\xd5\xf9H \x01(\tR\asubtype\x12S\n" +
 	"\x14waitcancelleddetails\x18Ă\x8fa \x01(\v2\x1c.lambda.WaitCancelledDetailsR\x14waitcancelleddetails\x12N\n" +
 	"\x12waitstarteddetails\x18\xbe\xb6\x90\x82\x01 \x01(\v2\x1a.lambda.WaitStartedDetailsR\x12waitstarteddetails\x12T\n" +
-	"\x14waitsucceededdetails\x18\xee\xfd\xa9\x82\x01 \x01(\v2\x1c.lambda.WaitSucceededDetailsR\x14waitsucceededdetails\"r\n" +
+	"\x14waitsucceededdetails\x18\xee\xfd\xa9\x82\x01 \x01(\v2\x1c.lambda.WaitSucceededDetailsR\x14waitsucceededdetailsB\n" +
+	"\n" +
+	"\b_eventid\"r\n" +
 	"\n" +
 	"EventError\x120\n" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\v2\x13.lambda.ErrorObjectR\apayload\x12$\n" +
@@ -22688,11 +22718,11 @@ const file_lambda_proto_rawDesc = "" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\tR\apayload\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xcf\x11\n" +
+	"_truncated\"\x8b\x13\n" +
 	"\x1fEventSourceMappingConfiguration\x12\x80\x01\n" +
-	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12 \n" +
-	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05R\tbatchsize\x12G\n" +
-	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x00R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
+	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12%\n" +
+	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05H\x00R\tbatchsize\x88\x01\x01\x12G\n" +
+	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x01R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12h\n" +
 	"\x1bdocumentdbeventsourceconfig\x18\x8e\xe4\xc2R \x01(\v2#.lambda.DocumentDBEventSourceConfigR\x1bdocumentdbeventsourceconfig\x12*\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tR\x0eeventsourcearn\x127\n" +
@@ -22704,12 +22734,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarn\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x126\n" +
 	"\x14lastprocessingresult\x18\xb4\xdb\xe8\x84\x01 \x01(\tR\x14lastprocessingresult\x12Q\n" +
-	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12J\n" +
-	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05R\x1emaximumbatchingwindowinseconds\x12?\n" +
-	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05R\x19maximumrecordageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\x12Q\n" +
-	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x128\n" +
-	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05R\x15parallelizationfactor\x12]\n" +
+	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12O\n" +
+	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05H\x02R\x1emaximumbatchingwindowinseconds\x88\x01\x01\x12D\n" +
+	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05H\x03R\x19maximumrecordageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x04R\x14maximumretryattempts\x88\x01\x01\x12Q\n" +
+	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x12=\n" +
+	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05H\x05R\x15parallelizationfactor\x88\x01\x01\x12]\n" +
 	"\x17provisionedpollerconfig\x18\xba\xfb\xb9\x83\x01 \x01(\v2\x1f.lambda.ProvisionedPollerConfigR\x17provisionedpollerconfig\x12\x19\n" +
 	"\x06queues\x18\xb2Íj \x03(\tR\x06queues\x12?\n" +
 	"\rscalingconfig\x18\xed\xfd\xaa\xbb\x01 \x01(\v2\x15.lambda.ScalingConfigR\rscalingconfig\x12Z\n" +
@@ -22720,10 +22750,17 @@ const file_lambda_proto_rawDesc = "" +
 	"\x19startingpositiontimestamp\x18\x97\xe8\xe8D \x01(\tR\x19startingpositiontimestamp\x12\x18\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x127\n" +
 	"\x15statetransitionreason\x18\xc2\xee\xdb% \x01(\tR\x15statetransitionreason\x12\x19\n" +
-	"\x06topics\x18\xb6\xca\xeah \x03(\tR\x06topics\x12<\n" +
-	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05R\x17tumblingwindowinseconds\x12\x15\n" +
-	"\x04uuid\x18\xb3\x90\xee+ \x01(\tR\x04uuidB\x1d\n" +
-	"\x1b_bisectbatchonfunctionerror\"w\n" +
+	"\x06topics\x18\xb6\xca\xeah \x03(\tR\x06topics\x12A\n" +
+	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05H\x06R\x17tumblingwindowinseconds\x88\x01\x01\x12\x15\n" +
+	"\x04uuid\x18\xb3\x90\xee+ \x01(\tR\x04uuidB\f\n" +
+	"\n" +
+	"_batchsizeB\x1d\n" +
+	"\x1b_bisectbatchonfunctionerrorB!\n" +
+	"\x1f_maximumbatchingwindowinsecondsB\x1c\n" +
+	"\x1a_maximumrecordageinsecondsB\x17\n" +
+	"\x15_maximumretryattemptsB\x18\n" +
+	"\x16_parallelizationfactorB\x1a\n" +
+	"\x18_tumblingwindowinseconds\"w\n" +
 	"\x1fEventSourceMappingLoggingConfig\x12T\n" +
 	"\x0esystemloglevel\x18\xbd\xeb\xf9\xfc\x01 \x01(\x0e2(.lambda.EventSourceMappingSystemLogLevelR\x0esystemloglevel\"a\n" +
 	"\x1fEventSourceMappingMetricsConfig\x12>\n" +
@@ -22770,14 +22807,14 @@ const file_lambda_proto_rawDesc = "" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12)\n" +
 	"\x0erepositorytype\x18\xbeŃk \x01(\tR\x0erepositorytype\x12.\n" +
 	"\x10resolvedimageuri\x18\xdd\xc2\xc3\xd9\x01 \x01(\tR\x10resolvedimageuri\x12+\n" +
-	"\x0fsourcekmskeyarn\x18\xdc\xf0\x8da \x01(\tR\x0fsourcekmskeyarn\"\xfd\x10\n" +
+	"\x0fsourcekmskeyarn\x18\xdc\xf0\x8da \x01(\tR\x0fsourcekmskeyarn\"\xb4\x11\n" +
 	"\x15FunctionConfiguration\x12>\n" +
 	"\rarchitectures\x18\xc4\xcc\xfa\xfc\x01 \x03(\x0e2\x14.lambda.ArchitectureR\rarchitectures\x12Y\n" +
 	"\x16capacityproviderconfig\x18\x9f\xd9\xe7\x18 \x01(\v2\x1e.lambda.CapacityProviderConfigR\x16capacityproviderconfig\x12!\n" +
 	"\n" +
 	"codesha256\x18\xac\x91\x93\x16 \x01(\tR\n" +
-	"codesha256\x12\x1d\n" +
-	"\bcodesize\x18\xee\x89\xc0# \x01(\x03R\bcodesize\x12%\n" +
+	"codesha256\x12\"\n" +
+	"\bcodesize\x18\xee\x89\xc0# \x01(\x03H\x00R\bcodesize\x88\x01\x01\x12%\n" +
 	"\fconfigsha256\x18\xc9\u05fdE \x01(\tR\fconfigsha256\x12G\n" +
 	"\x10deadletterconfig\x18\x92\xe5\x85& \x01(\v2\x18.lambda.DeadLetterConfigR\x10deadletterconfig\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12>\n" +
@@ -22796,10 +22833,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\x1alastupdatestatusreasoncode\x18\xb4Ϻ\x83\x01 \x01(\x0e2\".lambda.LastUpdateStatusReasonCodeR\x1alastupdatestatusreasoncode\x12)\n" +
 	"\x06layers\x18\x80\xd3\xff\xe3\x01 \x03(\v2\r.lambda.LayerR\x06layers\x12?\n" +
 	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2\x15.lambda.LoggingConfigR\rloggingconfig\x12\x1f\n" +
-	"\tmasterarn\x18\xe7\xca\xc9# \x01(\tR\tmasterarn\x12!\n" +
+	"\tmasterarn\x18\xe7\xca\xc9# \x01(\tR\tmasterarn\x12&\n" +
 	"\n" +
-	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05R\n" +
-	"memorysize\x129\n" +
+	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05H\x01R\n" +
+	"memorysize\x88\x01\x01\x129\n" +
 	"\vpackagetype\x18\xa4\x95\xe3\xf6\x01 \x01(\x0e2\x13.lambda.PackageTypeR\vpackagetype\x12\"\n" +
 	"\n" +
 	"revisionid\x18\x86\xa3\x9e\xee\x01 \x01(\tR\n" +
@@ -22813,20 +22850,28 @@ const file_lambda_proto_rawDesc = "" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\r.lambda.StateR\x05state\x12$\n" +
 	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12E\n" +
 	"\x0fstatereasoncode\x18\xc0\xa9\x9e\x98\x01 \x01(\x0e2\x17.lambda.StateReasonCodeR\x0fstatereasoncode\x12>\n" +
-	"\rtenancyconfig\x18\xfa\xab\xedf \x01(\v2\x15.lambda.TenancyConfigR\rtenancyconfig\x12\x1b\n" +
-	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05R\atimeout\x12F\n" +
+	"\rtenancyconfig\x18\xfa\xab\xedf \x01(\v2\x15.lambda.TenancyConfigR\rtenancyconfig\x12 \n" +
+	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05H\x02R\atimeout\x88\x01\x01\x12F\n" +
 	"\rtracingconfig\x18\xacĩ\t \x01(\v2\x1d.lambda.TracingConfigResponseR\rtracingconfig\x12\x1c\n" +
 	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\x12:\n" +
-	"\tvpcconfig\x18\x87\xd7\xfc\\ \x01(\v2\x19.lambda.VpcConfigResponseR\tvpcconfig\"\xac\x02\n" +
+	"\tvpcconfig\x18\x87\xd7\xfc\\ \x01(\v2\x19.lambda.VpcConfigResponseR\tvpcconfigB\v\n" +
+	"\t_codesizeB\r\n" +
+	"\v_memorysizeB\n" +
+	"\n" +
+	"\b_timeout\"\xec\x02\n" +
 	"\x19FunctionEventInvokeConfig\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12$\n" +
 	"\vfunctionarn\x18\xf1Ɏ\xb6\x01 \x01(\tR\vfunctionarn\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12>\n" +
-	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05R\x18maximumeventageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\"\x96\x01\n" +
-	"\x15FunctionScalingConfig\x12>\n" +
-	"\x18maxexecutionenvironments\x18\xa0\xaf\xfd\xa0\x01 \x01(\x05R\x18maxexecutionenvironments\x12=\n" +
-	"\x18minexecutionenvironments\x18\u0089\x89; \x01(\x05R\x18minexecutionenvironments\"\xcf\x02\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12C\n" +
+	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05H\x00R\x18maximumeventageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x01R\x14maximumretryattempts\x88\x01\x01B\x1b\n" +
+	"\x19_maximumeventageinsecondsB\x17\n" +
+	"\x15_maximumretryattempts\"\xda\x01\n" +
+	"\x15FunctionScalingConfig\x12C\n" +
+	"\x18maxexecutionenvironments\x18\xa0\xaf\xfd\xa0\x01 \x01(\x05H\x00R\x18maxexecutionenvironments\x88\x01\x01\x12B\n" +
+	"\x18minexecutionenvironments\x18\u0089\x89; \x01(\x05H\x01R\x18minexecutionenvironments\x88\x01\x01B\x1b\n" +
+	"\x19_maxexecutionenvironmentsB\x1b\n" +
+	"\x19_minexecutionenvironments\"\xcf\x02\n" +
 	"\x11FunctionUrlConfig\x12;\n" +
 	"\bauthtype\x18\xb8\xe0\xe4\xe3\x01 \x01(\x0e2\x1b.lambda.FunctionUrlAuthTypeR\bauthtype\x12#\n" +
 	"\x04cors\x18\xf5\x91\xab| \x01(\v2\f.lambda.CorsR\x04cors\x12%\n" +
@@ -22857,14 +22902,15 @@ const file_lambda_proto_rawDesc = "" +
 	"\x1bGetCodeSigningConfigRequest\x126\n" +
 	"\x14codesigningconfigarn\x18\xc1\xfc\xf7\xf0\x01 \x01(\tR\x14codesigningconfigarn\"j\n" +
 	"\x1cGetCodeSigningConfigResponse\x12J\n" +
-	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xa7\x02\n" +
+	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xb9\x02\n" +
 	"!GetDurableExecutionHistoryRequest\x124\n" +
 	"\x13durableexecutionarn\x18\x8aͷ\x80\x01 \x01(\tR\x13durableexecutionarn\x12:\n" +
 	"\x14includeexecutiondata\x18\xf8\xe4\xd6\\ \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12+\n" +
-	"\freverseorder\x18ؘ\xe9\xcb\x01 \x01(\bH\x01R\freverseorder\x88\x01\x01B\x17\n" +
-	"\x15_includeexecutiondataB\x0f\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12+\n" +
+	"\freverseorder\x18ؘ\xe9\xcb\x01 \x01(\bH\x02R\freverseorder\x88\x01\x01B\x17\n" +
+	"\x15_includeexecutiondataB\v\n" +
+	"\t_maxitemsB\x0f\n" +
 	"\r_reverseorder\"r\n" +
 	"\"GetDurableExecutionHistoryResponse\x12(\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\r.lambda.EventR\x06events\x12\"\n" +
@@ -22884,12 +22930,13 @@ const file_lambda_proto_rawDesc = "" +
 	"\x0estarttimestamp\x18\u0383\xb0\xbb\x01 \x01(\tR\x0estarttimestamp\x122\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.lambda.ExecutionStatusR\x06status\x129\n" +
 	"\vtraceheader\x18\x80\x84\xe4\x90\x01 \x01(\v2\x13.lambda.TraceHeaderR\vtraceheader\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\"\xbf\x01\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\"\xd1\x01\n" +
 	"\x1fGetDurableExecutionStateRequest\x12+\n" +
 	"\x0fcheckpointtoken\x18\xd5\xd4\xf1\f \x01(\tR\x0fcheckpointtoken\x124\n" +
 	"\x13durableexecutionarn\x18\x8aͷ\x80\x01 \x01(\tR\x13durableexecutionarn\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"|\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"|\n" +
 	" GetDurableExecutionStateResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -22905,9 +22952,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\x14codesigningconfigarn\x18\xc1\xfc\xf7\xf0\x01 \x01(\tR\x14codesigningconfigarn\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\"G\n" +
 	"\x1dGetFunctionConcurrencyRequest\x12&\n" +
-	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\"g\n" +
-	"\x1eGetFunctionConcurrencyResponse\x12E\n" +
-	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05R\x1creservedconcurrentexecutions\"k\n" +
+	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\"\x8d\x01\n" +
+	"\x1eGetFunctionConcurrencyResponse\x12J\n" +
+	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05H\x00R\x1creservedconcurrentexecutions\x88\x01\x01B\x1f\n" +
+	"\x1d_reservedconcurrentexecutions\"k\n" +
 	"\x1fGetFunctionConfigurationRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"o\n" +
@@ -22962,7 +23010,7 @@ const file_lambda_proto_rawDesc = "" +
 	"revisionid\"c\n" +
 	"\x16GetLayerVersionRequest\x12 \n" +
 	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\x12'\n" +
-	"\rversionnumber\x18\xd7\xc1\xe9c \x01(\x03R\rversionnumber\"\xcc\x03\n" +
+	"\rversionnumber\x18\xd7\xc1\xe9c \x01(\x03R\rversionnumber\"\xdd\x03\n" +
 	"\x17GetLayerVersionResponse\x12Q\n" +
 	"\x17compatiblearchitectures\x18\xaa\x90\xdd\t \x03(\x0e2\x14.lambda.ArchitectureR\x17compatiblearchitectures\x12C\n" +
 	"\x12compatibleruntimes\x18ӎ\xc0\x8f\x01 \x03(\x0e2\x0f.lambda.RuntimeR\x12compatibleruntimes\x12>\n" +
@@ -22971,8 +23019,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1e\n" +
 	"\blayerarn\x18\U00088d98\x01 \x01(\tR\blayerarn\x12+\n" +
 	"\x0flayerversionarn\x18\x86\xa8\x99S \x01(\tR\x0flayerversionarn\x12#\n" +
-	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"\\\n" +
+	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"\\\n" +
 	"\x10GetPolicyRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"S\n" +
@@ -22983,14 +23033,17 @@ const file_lambda_proto_rawDesc = "" +
 	"revisionid\"r\n" +
 	"&GetProvisionedConcurrencyConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
-	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\xdb\x03\n" +
-	"'GetProvisionedConcurrencyConfigResponse\x12^\n" +
-	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05R(allocatedprovisionedconcurrentexecutions\x12]\n" +
-	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05R(availableprovisionedconcurrentexecutions\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12]\n" +
-	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05R(requestedprovisionedconcurrentexecutions\x12C\n" +
+	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\xf1\x04\n" +
+	"'GetProvisionedConcurrencyConfigResponse\x12c\n" +
+	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05H\x00R(allocatedprovisionedconcurrentexecutions\x88\x01\x01\x12b\n" +
+	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05H\x01R(availableprovisionedconcurrentexecutions\x88\x01\x01\x12&\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12b\n" +
+	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05H\x02R(requestedprovisionedconcurrentexecutions\x88\x01\x01\x12C\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2(.lambda.ProvisionedConcurrencyStatusEnumR\x06status\x12%\n" +
-	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreason\"m\n" +
+	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreasonB+\n" +
+	")_allocatedprovisionedconcurrentexecutionsB+\n" +
+	")_availableprovisionedconcurrentexecutionsB+\n" +
+	")_requestedprovisionedconcurrentexecutions\"m\n" +
 	"!GetRuntimeManagementConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\xc3\x01\n" +
@@ -23048,23 +23101,25 @@ const file_lambda_proto_rawDesc = "" +
 	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0f.lambda.LogTypeR\alogtype\x12!\n" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\fB\x04\x88\xb5\x18\x01R\apayload\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\x12\x1d\n" +
-	"\btenantid\x18\x81\xf8\xefd \x01(\tR\btenantid\"\x8a\x02\n" +
+	"\btenantid\x18\x81\xf8\xefd \x01(\tR\btenantid\"\x9e\x02\n" +
 	"\x12InvocationResponse\x124\n" +
 	"\x13durableexecutionarn\x18\x8aͷ\x80\x01 \x01(\tR\x13durableexecutionarn\x12,\n" +
 	"\x0fexecutedversion\x18鐞\xda\x01 \x01(\tR\x0fexecutedversion\x12'\n" +
 	"\rfunctionerror\x18\x8eѱu \x01(\tR\rfunctionerror\x12 \n" +
 	"\tlogresult\x18\xc1\ueeef\x01 \x01(\tR\tlogresult\x12!\n" +
-	"\apayload\x18Ʈ\x8e\x03 \x01(\fB\x04\x88\xb5\x18\x01R\apayload\x12\"\n" +
+	"\apayload\x18Ʈ\x8e\x03 \x01(\fB\x04\x88\xb5\x18\x01R\apayload\x12'\n" +
 	"\n" +
-	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05R\n" +
-	"statuscode\"e\n" +
+	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\x00R\n" +
+	"statuscode\x88\x01\x01B\r\n" +
+	"\v_statuscode\"e\n" +
 	"\x12InvokeAsyncRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12'\n" +
 	"\n" +
 	"invokeargs\x18\xa5\xa8\x83* \x01(\fB\x04\x88\xb5\x18\x01R\n" +
-	"invokeargs\"0\n" +
-	"\x13InvokeAsyncResponse\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x05R\x06status\"9\n" +
+	"invokeargs\"@\n" +
+	"\x13InvokeAsyncResponse\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x05H\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"9\n" +
 	"\x1aInvokeResponseStreamUpdate\x12\x1b\n" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\fR\apayload\"\x92\x01\n" +
 	"%InvokeWithResponseStreamCompleteEvent\x12\x1f\n" +
@@ -23078,14 +23133,15 @@ const file_lambda_proto_rawDesc = "" +
 	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0f.lambda.LogTypeR\alogtype\x12!\n" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\fB\x04\x88\xb5\x18\x01R\apayload\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\x12\x1d\n" +
-	"\btenantid\x18\x81\xf8\xefd \x01(\tR\btenantid\"\x8f\x02\n" +
+	"\btenantid\x18\x81\xf8\xefd \x01(\tR\btenantid\"\xa3\x02\n" +
 	" InvokeWithResponseStreamResponse\x12X\n" +
 	"\veventstream\x18\xa0\xa3\xe7\f \x01(\v2-.lambda.InvokeWithResponseStreamResponseEventB\x04\x88\xb5\x18\x01R\veventstream\x12,\n" +
 	"\x0fexecutedversion\x18鐞\xda\x01 \x01(\tR\x0fexecutedversion\x12?\n" +
-	"\x19responsestreamcontenttype\x18\x88\xbb\x8f\x1f \x01(\tR\x19responsestreamcontenttype\x12\"\n" +
+	"\x19responsestreamcontenttype\x18\x88\xbb\x8f\x1f \x01(\tR\x19responsestreamcontenttype\x12'\n" +
 	"\n" +
-	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05R\n" +
-	"statuscode\"\xcd\x01\n" +
+	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\x00R\n" +
+	"statuscode\x88\x01\x01B\r\n" +
+	"\v_statuscode\"\xcd\x01\n" +
 	"%InvokeWithResponseStreamResponseEvent\x12Y\n" +
 	"\x0einvokecomplete\x18\xbb\xa8\xff\x81\x01 \x01(\v2-.lambda.InvokeWithResponseStreamCompleteEventR\x0einvokecomplete\x12I\n" +
 	"\fpayloadchunk\x18\xe3\xc9\xdem \x01(\v2\".lambda.InvokeResponseStreamUpdateR\fpayloadchunk\"O\n" +
@@ -23110,166 +23166,184 @@ const file_lambda_proto_rawDesc = "" +
 	"\x11schemaregistryuri\x18\xceȰl \x01(\tR\x11schemaregistryuri\x12a\n" +
 	"\x17schemavalidationconfigs\x18\x9d\xe6˩\x01 \x03(\v2#.lambda.KafkaSchemaValidationConfigR\x17schemavalidationconfigs\"f\n" +
 	"\x1bKafkaSchemaValidationConfig\x12G\n" +
-	"\tattribute\x18\x90\xb1\xea\x17 \x01(\x0e2&.lambda.KafkaSchemaValidationAttributeR\tattribute\"\x93\x02\n" +
+	"\tattribute\x18\x90\xb1\xea\x17 \x01(\x0e2&.lambda.KafkaSchemaValidationAttributeR\tattribute\"\xc2\x02\n" +
 	",LambdaManagedInstancesCapacityProviderConfig\x123\n" +
 	"\x13capacityproviderarn\x18\xb8\xa0\xa04 \x01(\tR\x13capacityproviderarn\x12U\n" +
-	"$executionenvironmentmemorygibpervcpu\x18\xf1\x82\xc3l \x01(\x01R$executionenvironmentmemorygibpervcpu\x12W\n" +
-	"%perexecutionenvironmentmaxconcurrency\x18\x97\xa1\xd79 \x01(\x05R%perexecutionenvironmentmaxconcurrency\"\xa6\x01\n" +
+	"$executionenvironmentmemorygibpervcpu\x18\xf1\x82\xc3l \x01(\x01R$executionenvironmentmemorygibpervcpu\x12\\\n" +
+	"%perexecutionenvironmentmaxconcurrency\x18\x97\xa1\xd79 \x01(\x05H\x00R%perexecutionenvironmentmaxconcurrency\x88\x01\x01B(\n" +
+	"&_perexecutionenvironmentmaxconcurrency\"\xb8\x01\n" +
 	"\x05Layer\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x1d\n" +
-	"\bcodesize\x18\xee\x89\xc0# \x01(\x03R\bcodesize\x12(\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\"\n" +
+	"\bcodesize\x18\xee\x89\xc0# \x01(\x03H\x00R\bcodesize\x88\x01\x01\x12(\n" +
 	"\rsigningjobarn\x18\xbb\xaaߣ\x01 \x01(\tR\rsigningjobarn\x12>\n" +
-	"\x18signingprofileversionarn\x18\xbf\x9e\xb5\xce\x01 \x01(\tR\x18signingprofileversionarn\"\x9d\x01\n" +
+	"\x18signingprofileversionarn\x18\xbf\x9e\xb5\xce\x01 \x01(\tR\x18signingprofileversionarnB\v\n" +
+	"\t_codesize\"\x9d\x01\n" +
 	"\x18LayerVersionContentInput\x12\x1d\n" +
 	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tR\bs3bucket\x12\x18\n" +
 	"\x05s3key\x18\x9b\xbc\xe5\xe9\x01 \x01(\tR\x05s3key\x12+\n" +
 	"\x0fs3objectversion\x18Ş\xf2\\ \x01(\tR\x0fs3objectversion\x12\x1b\n" +
-	"\azipfile\x18\x83\xe2\x99\x01 \x01(\fR\azipfile\"\xe7\x01\n" +
+	"\azipfile\x18\x83\xe2\x99\x01 \x01(\fR\azipfile\"\xf9\x01\n" +
 	"\x19LayerVersionContentOutput\x12!\n" +
 	"\n" +
 	"codesha256\x18\xac\x91\x93\x16 \x01(\tR\n" +
-	"codesha256\x12\x1d\n" +
-	"\bcodesize\x18\xee\x89\xc0# \x01(\x03R\bcodesize\x12\x1e\n" +
+	"codesha256\x12\"\n" +
+	"\bcodesize\x18\xee\x89\xc0# \x01(\x03H\x00R\bcodesize\x88\x01\x01\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12(\n" +
 	"\rsigningjobarn\x18\xbb\xaaߣ\x01 \x01(\tR\rsigningjobarn\x12>\n" +
-	"\x18signingprofileversionarn\x18\xbf\x9e\xb5\xce\x01 \x01(\tR\x18signingprofileversionarn\"\xea\x02\n" +
+	"\x18signingprofileversionarn\x18\xbf\x9e\xb5\xce\x01 \x01(\tR\x18signingprofileversionarnB\v\n" +
+	"\t_codesize\"\xfb\x02\n" +
 	"\x15LayerVersionsListItem\x12Q\n" +
 	"\x17compatiblearchitectures\x18\xaa\x90\xdd\t \x03(\x0e2\x14.lambda.ArchitectureR\x17compatiblearchitectures\x12C\n" +
 	"\x12compatibleruntimes\x18ӎ\xc0\x8f\x01 \x03(\x0e2\x0f.lambda.RuntimeR\x12compatibleruntimes\x12$\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12+\n" +
 	"\x0flayerversionarn\x18\x86\xa8\x99S \x01(\tR\x0flayerversionarn\x12#\n" +
-	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"\xab\x01\n" +
+	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"\xab\x01\n" +
 	"\x0eLayersListItem\x12W\n" +
 	"\x15latestmatchingversion\x18\xd4\xfcԹ\x01 \x01(\v2\x1d.lambda.LayerVersionsListItemR\x15latestmatchingversion\x12\x1e\n" +
 	"\blayerarn\x18\U00088d98\x01 \x01(\tR\blayerarn\x12 \n" +
-	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\"\xa5\x01\n" +
+	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\"\xb7\x01\n" +
 	"\x12ListAliasesRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12,\n" +
 	"\x0ffunctionversion\x18\x94\xba\xb5\xae\x01 \x01(\tR\x0ffunctionversion\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"s\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"s\n" +
 	"\x13ListAliasesResponse\x128\n" +
 	"\aaliases\x18\xc0\x89\xa7\xe3\x01 \x03(\v2\x1a.lambda.AliasConfigurationR\aaliases\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x92\x01\n" +
+	"nextmarker\"\xa4\x01\n" +
 	"\x1cListCapacityProvidersRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.lambda.CapacityProviderStateR\x05state\"\x8e\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x127\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.lambda.CapacityProviderStateR\x05stateB\v\n" +
+	"\t_maxitems\"\x8e\x01\n" +
 	"\x1dListCapacityProvidersResponse\x12I\n" +
 	"\x11capacityproviders\x18\x9a\xf9\xbdp \x03(\v2\x18.lambda.CapacityProviderR\x11capacityproviders\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"Z\n" +
+	"nextmarker\"l\n" +
 	"\x1dListCodeSigningConfigsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x92\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x92\x01\n" +
 	"\x1eListCodeSigningConfigsResponse\x12L\n" +
 	"\x12codesigningconfigs\x18\xbf\xd1\xca= \x03(\v2\x19.lambda.CodeSigningConfigR\x12codesigningconfigs\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xac\x03\n" +
+	"nextmarker\"\xbe\x03\n" +
 	"&ListDurableExecutionsByFunctionRequest\x125\n" +
 	"\x14durableexecutionname\x18\xae\xb2\x8ax \x01(\tR\x14durableexecutionname\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12 \n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\x12+\n" +
-	"\freverseorder\x18ؘ\xe9\xcb\x01 \x01(\bH\x00R\freverseorder\x88\x01\x01\x12&\n" +
+	"\freverseorder\x18ؘ\xe9\xcb\x01 \x01(\bH\x01R\freverseorder\x88\x01\x01\x12&\n" +
 	"\fstartedafter\x18շ\xe3\x87\x01 \x01(\tR\fstartedafter\x12'\n" +
 	"\rstartedbefore\x18\xba\xac\x94E \x01(\tR\rstartedbefore\x127\n" +
-	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x17.lambda.ExecutionStatusR\bstatusesB\x0f\n" +
+	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x17.lambda.ExecutionStatusR\bstatusesB\v\n" +
+	"\t_maxitemsB\x0f\n" +
 	"\r_reverseorder\"\x91\x01\n" +
 	"'ListDurableExecutionsByFunctionResponse\x12B\n" +
 	"\x11durableexecutions\x18\xa8\xbe\x88\x1f \x03(\v2\x11.lambda.ExecutionR\x11durableexecutions\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xaf\x01\n" +
+	"nextmarker\"\xc1\x01\n" +
 	"\x1eListEventSourceMappingsRequest\x12*\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tR\x0eeventsourcearn\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xa4\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xa4\x01\n" +
 	"\x1fListEventSourceMappingsResponse\x12]\n" +
 	"\x13eventsourcemappings\x18\xbe\xb2ڦ\x01 \x03(\v2'.lambda.EventSourceMappingConfigurationR\x13eventsourcemappings\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8a\x01\n" +
+	"nextmarker\"\x9c\x01\n" +
 	"%ListFunctionEventInvokeConfigsRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xb2\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xb2\x01\n" +
 	"&ListFunctionEventInvokeConfigsResponse\x12d\n" +
 	"\x1afunctioneventinvokeconfigs\x18\x87\xf9\xd6I \x03(\v2!.lambda.FunctionEventInvokeConfigR\x1afunctioneventinvokeconfigs\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x82\x01\n" +
+	"nextmarker\"\x94\x01\n" +
 	"\x1dListFunctionUrlConfigsRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x93\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x93\x01\n" +
 	"\x1eListFunctionUrlConfigsResponse\x12M\n" +
 	"\x12functionurlconfigs\x18\xa6\xb7\x8a\x8f\x01 \x03(\v2\x19.lambda.FunctionUrlConfigR\x12functionurlconfigs\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xa2\x01\n" +
+	"nextmarker\"\xb4\x01\n" +
 	"-ListFunctionVersionsByCapacityProviderRequest\x126\n" +
 	"\x14capacityprovidername\x18\xf4\xb6\xa8\xde\x01 \x01(\tR\x14capacityprovidername\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xed\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xed\x01\n" +
 	".ListFunctionVersionsByCapacityProviderResponse\x123\n" +
 	"\x13capacityproviderarn\x18\xb8\xa0\xa04 \x01(\tR\x13capacityproviderarn\x12b\n" +
 	"\x10functionversions\x18\xa1\xfc\xa7\x92\x01 \x03(\v22.lambda.FunctionVersionsByCapacityProviderListItemR\x10functionversions\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x9c\x01\n" +
+	"nextmarker\"\xae\x01\n" +
 	"'ListFunctionsByCodeSigningConfigRequest\x126\n" +
 	"\x14codesigningconfigarn\x18\xc1\xfc\xf7\xf0\x01 \x01(\tR\x14codesigningconfigarn\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"v\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"v\n" +
 	"(ListFunctionsByCodeSigningConfigResponse\x12&\n" +
 	"\ffunctionarns\x18\xba\xf4\xef\xc7\x01 \x03(\tR\ffunctionarns\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xbf\x01\n" +
+	"nextmarker\"\xd1\x01\n" +
 	"\x14ListFunctionsRequest\x12E\n" +
 	"\x0ffunctionversion\x18\x94\xba\xb5\xae\x01 \x01(\x0e2\x17.lambda.FunctionVersionR\x0ffunctionversion\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12%\n" +
-	"\fmasterregion\x18\xdc̮6 \x01(\tR\fmasterregion\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"{\n" +
+	"\fmasterregion\x18\xdc̮6 \x01(\tR\fmasterregion\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"{\n" +
 	"\x15ListFunctionsResponse\x12>\n" +
 	"\tfunctions\x18\xef\xad\xdeN \x03(\v2\x1d.lambda.FunctionConfigurationR\tfunctions\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8a\x02\n" +
+	"nextmarker\"\x9c\x02\n" +
 	"\x18ListLayerVersionsRequest\x12O\n" +
 	"\x16compatiblearchitecture\x18\xa1\xa9\xfe\f \x01(\x0e2\x14.lambda.ArchitectureR\x16compatiblearchitecture\x12@\n" +
 	"\x11compatibleruntime\x18\xd6\xed\xf8q \x01(\x0e2\x0f.lambda.RuntimeR\x11compatibleruntime\x12 \n" +
 	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x88\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x88\x01\n" +
 	"\x19ListLayerVersionsResponse\x12G\n" +
 	"\rlayerversions\x18\xac\xec\xa2\xc3\x01 \x03(\v2\x1d.lambda.LayerVersionsListItemR\rlayerversions\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xe1\x01\n" +
+	"nextmarker\"\xf3\x01\n" +
 	"\x11ListLayersRequest\x12O\n" +
 	"\x16compatiblearchitecture\x18\xa1\xa9\xfe\f \x01(\x0e2\x14.lambda.ArchitectureR\x16compatiblearchitecture\x12@\n" +
 	"\x11compatibleruntime\x18\xd6\xed\xf8q \x01(\x0e2\x0f.lambda.RuntimeR\x11compatibleruntime\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"l\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"l\n" +
 	"\x12ListLayersResponse\x122\n" +
 	"\x06layers\x18\x80\xd3\xff\xe3\x01 \x03(\v2\x16.lambda.LayersListItemR\x06layers\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8d\x01\n" +
+	"nextmarker\"\x9f\x01\n" +
 	"(ListProvisionedConcurrencyConfigsRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xc7\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xc7\x01\n" +
 	")ListProvisionedConcurrencyConfigsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -23281,11 +23355,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\".lambda.ListTagsResponse.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x94\x01\n" +
 	"\x1dListVersionsByFunctionRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x82\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x82\x01\n" +
 	"\x1eListVersionsByFunctionResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -23346,22 +23421,27 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x19.lambda.PropagateTagsModeR\x04mode\x1a?\n" +
 	"\x11ExplicittagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfe\x03\n" +
-	"$ProvisionedConcurrencyConfigListItem\x12^\n" +
-	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05R(allocatedprovisionedconcurrentexecutions\x12]\n" +
-	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05R(availableprovisionedconcurrentexecutions\x12$\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x94\x05\n" +
+	"$ProvisionedConcurrencyConfigListItem\x12c\n" +
+	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05H\x00R(allocatedprovisionedconcurrentexecutions\x88\x01\x01\x12b\n" +
+	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05H\x01R(availableprovisionedconcurrentexecutions\x88\x01\x01\x12$\n" +
 	"\vfunctionarn\x18\xf1Ɏ\xb6\x01 \x01(\tR\vfunctionarn\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12]\n" +
-	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05R(requestedprovisionedconcurrentexecutions\x12C\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12b\n" +
+	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05H\x02R(requestedprovisionedconcurrentexecutions\x88\x01\x01\x12C\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2(.lambda.ProvisionedConcurrencyStatusEnumR\x06status\x12%\n" +
-	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreason\"d\n" +
+	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreasonB+\n" +
+	")_allocatedprovisionedconcurrentexecutionsB+\n" +
+	")_availableprovisionedconcurrentexecutionsB+\n" +
+	")_requestedprovisionedconcurrentexecutions\"d\n" +
 	"-ProvisionedConcurrencyConfigNotFoundException\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9e\x01\n" +
-	"\x17ProvisionedPollerConfig\x12)\n" +
-	"\x0emaximumpollers\x18\x89\xeb\xbeQ \x01(\x05R\x0emaximumpollers\x12*\n" +
-	"\x0eminimumpollers\x18\xdf\xf4\xb9\x90\x01 \x01(\x05R\x0eminimumpollers\x12,\n" +
-	"\x0fpollergroupname\x18\xb6\x85\x8c\x97\x01 \x01(\tR\x0fpollergroupname\"L\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xce\x01\n" +
+	"\x17ProvisionedPollerConfig\x12.\n" +
+	"\x0emaximumpollers\x18\x89\xeb\xbeQ \x01(\x05H\x00R\x0emaximumpollers\x88\x01\x01\x12/\n" +
+	"\x0eminimumpollers\x18\xdf\xf4\xb9\x90\x01 \x01(\x05H\x01R\x0eminimumpollers\x88\x01\x01\x12,\n" +
+	"\x0fpollergroupname\x18\xb6\x85\x8c\x97\x01 \x01(\tR\x0fpollergroupnameB\x11\n" +
+	"\x0f_maximumpollersB\x11\n" +
+	"\x0f_minimumpollers\"L\n" +
 	"\x15PublicPolicyException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"\xdf\x02\n" +
@@ -23371,7 +23451,7 @@ const file_lambda_proto_rawDesc = "" +
 	"\acontent\x18㾞\v \x01(\v2 .lambda.LayerVersionContentInputR\acontent\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12 \n" +
 	"\tlayername\x18\x96\xaa\x98\xed\x01 \x01(\tR\tlayername\x12#\n" +
-	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\"\xd0\x03\n" +
+	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\"\xe1\x03\n" +
 	"\x1bPublishLayerVersionResponse\x12Q\n" +
 	"\x17compatiblearchitectures\x18\xaa\x90\xdd\t \x03(\x0e2\x14.lambda.ArchitectureR\x17compatiblearchitectures\x12C\n" +
 	"\x12compatibleruntimes\x18ӎ\xc0\x8f\x01 \x03(\x0e2\x0f.lambda.RuntimeR\x12compatibleruntimes\x12>\n" +
@@ -23380,8 +23460,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1e\n" +
 	"\blayerarn\x18\U00088d98\x01 \x01(\tR\blayerarn\x12+\n" +
 	"\x0flayerversionarn\x18\x86\xa8\x99S \x01(\tR\x0flayerversionarn\x12#\n" +
-	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"\xf5\x01\n" +
+	"\vlicenseinfo\x18\x99\xec\xec? \x01(\tR\vlicenseinfo\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"\xf5\x01\n" +
 	"\x15PublishVersionRequest\x12!\n" +
 	"\n" +
 	"codesha256\x18\xac\x91\x93\x16 \x01(\tR\n" +
@@ -23400,13 +23482,15 @@ const file_lambda_proto_rawDesc = "" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\"\x8e\x01\n" +
 	"\x1dPutFunctionConcurrencyRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12E\n" +
-	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05R\x1creservedconcurrentexecutions\"\xb2\x02\n" +
+	"\x1creservedconcurrentexecutions\x18\xdc\xc1\x92\x13 \x01(\x05R\x1creservedconcurrentexecutions\"\xf2\x02\n" +
 	"#PutFunctionEventInvokeConfigRequest\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12&\n" +
-	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12>\n" +
-	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05R\x18maximumeventageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\x12 \n" +
-	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\x8b\x01\n" +
+	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12C\n" +
+	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05H\x00R\x18maximumeventageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x01R\x14maximumretryattempts\x88\x01\x01\x12 \n" +
+	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifierB\x1b\n" +
+	"\x19_maximumeventageinsecondsB\x17\n" +
+	"\x15_maximumretryattempts\"\x8b\x01\n" +
 	"!PutFunctionRecursionConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12>\n" +
 	"\rrecursiveloop\x18\xfe\x9c\xac\x01 \x01(\x0e2\x15.lambda.RecursiveLoopR\rrecursiveloop\"d\n" +
@@ -23421,14 +23505,17 @@ const file_lambda_proto_rawDesc = "" +
 	"&PutProvisionedConcurrencyConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12K\n" +
 	"\x1fprovisionedconcurrentexecutions\x18\xf0\xad\xedW \x01(\x05R\x1fprovisionedconcurrentexecutions\x12 \n" +
-	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\xdb\x03\n" +
-	"'PutProvisionedConcurrencyConfigResponse\x12^\n" +
-	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05R(allocatedprovisionedconcurrentexecutions\x12]\n" +
-	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05R(availableprovisionedconcurrentexecutions\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12]\n" +
-	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05R(requestedprovisionedconcurrentexecutions\x12C\n" +
+	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\xf1\x04\n" +
+	"'PutProvisionedConcurrencyConfigResponse\x12c\n" +
+	"(allocatedprovisionedconcurrentexecutions\x18끭\xdf\x01 \x01(\x05H\x00R(allocatedprovisionedconcurrentexecutions\x88\x01\x01\x12b\n" +
+	"(availableprovisionedconcurrentexecutions\x18鶫\x0f \x01(\x05H\x01R(availableprovisionedconcurrentexecutions\x88\x01\x01\x12&\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12b\n" +
+	"(requestedprovisionedconcurrentexecutions\x18\xb6\xad\xee\x1b \x01(\x05H\x02R(requestedprovisionedconcurrentexecutions\x88\x01\x01\x12C\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2(.lambda.ProvisionedConcurrencyStatusEnumR\x06status\x12%\n" +
-	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreason\"\xe6\x01\n" +
+	"\fstatusreason\x18\xfc\x96\xb2B \x01(\tR\fstatusreasonB+\n" +
+	")_allocatedprovisionedconcurrentexecutionsB+\n" +
+	")_availableprovisionedconcurrentexecutionsB+\n" +
+	")_requestedprovisionedconcurrentexecutions\"\xe6\x01\n" +
 	"!PutRuntimeManagementConfigRequest\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12 \n" +
 	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\x120\n" +
@@ -23469,10 +23556,12 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"P\n" +
 	"\x19ResourceNotReadyException\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"x\n" +
-	"\fRetryDetails\x12*\n" +
-	"\x0ecurrentattempt\x18\xf8ե\xa2\x01 \x01(\x05R\x0ecurrentattempt\x12<\n" +
-	"\x17nextattemptdelayseconds\x18\x9a\xa2\xdf\xef\x01 \x01(\x05R\x17nextattemptdelayseconds\"\x7f\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb1\x01\n" +
+	"\fRetryDetails\x12/\n" +
+	"\x0ecurrentattempt\x18\xf8ե\xa2\x01 \x01(\x05H\x00R\x0ecurrentattempt\x88\x01\x01\x12A\n" +
+	"\x17nextattemptdelayseconds\x18\x9a\xa2\xdf\xef\x01 \x01(\x05H\x01R\x17nextattemptdelayseconds\x88\x01\x01B\x11\n" +
+	"\x0f_currentattemptB\x1a\n" +
+	"\x18_nextattemptdelayseconds\"\x7f\n" +
 	"\x14RuntimeVersionConfig\x125\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x1b.lambda.RuntimeVersionErrorR\x05error\x120\n" +
 	"\x11runtimeversionarn\x18\xbd\xa1\xf5\xfd\x01 \x01(\tR\x11runtimeversionarn\"S\n" +
@@ -23487,9 +23576,10 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"S\n" +
 	"\x1cS3FilesMountTimeoutException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"B\n" +
-	"\rScalingConfig\x121\n" +
-	"\x12maximumconcurrency\x18\xf5\xeb\xf5z \x01(\x05R\x12maximumconcurrency\"\xa6\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"^\n" +
+	"\rScalingConfig\x126\n" +
+	"\x12maximumconcurrency\x18\xf5\xeb\xf5z \x01(\x05H\x00R\x12maximumconcurrency\x88\x01\x01B\x15\n" +
+	"\x13_maximumconcurrency\"\xa6\x01\n" +
 	"\x16SelfManagedEventSource\x12N\n" +
 	"\tendpoints\x18\xbe\xb4\xdd\a \x03(\v2-.lambda.SelfManagedEventSource.EndpointsEntryR\tendpoints\x1a<\n" +
 	"\x0eEndpointsEntry\x12\x10\n" +
@@ -23543,17 +23633,20 @@ const file_lambda_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"c\n" +
 	"\x19SourceAccessConfiguration\x120\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x18.lambda.SourceAccessTypeR\x04type\x12\x14\n" +
-	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tR\x03uri\"\xac\x01\n" +
-	"\vStepDetails\x12\x1b\n" +
-	"\aattempt\x18ϙ\xb32 \x01(\x05R\aattempt\x12-\n" +
+	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tR\x03uri\"\xbd\x01\n" +
+	"\vStepDetails\x12 \n" +
+	"\aattempt\x18ϙ\xb32 \x01(\x05H\x00R\aattempt\x88\x01\x01\x12-\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x13.lambda.ErrorObjectR\x05error\x125\n" +
 	"\x14nextattempttimestamp\x18\x90\xff\xdag \x01(\tR\x14nextattempttimestamp\x12\x1a\n" +
-	"\x06result\x18\xc5ૂ\x01 \x01(\tR\x06result\"\x7f\n" +
+	"\x06result\x18\xc5ૂ\x01 \x01(\tR\x06resultB\n" +
+	"\n" +
+	"\b_attempt\"\x7f\n" +
 	"\x11StepFailedDetails\x12,\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x12.lambda.EventErrorR\x05error\x12<\n" +
-	"\fretrydetails\x18\xa2ɬ\xc1\x01 \x01(\v2\x14.lambda.RetryDetailsR\fretrydetails\"K\n" +
-	"\vStepOptions\x12<\n" +
-	"\x17nextattemptdelayseconds\x18\x9a\xa2\xdf\xef\x01 \x01(\x05R\x17nextattemptdelayseconds\"\x14\n" +
+	"\fretrydetails\x18\xa2ɬ\xc1\x01 \x01(\v2\x14.lambda.RetryDetailsR\fretrydetails\"l\n" +
+	"\vStepOptions\x12A\n" +
+	"\x17nextattemptdelayseconds\x18\x9a\xa2\xdf\xef\x01 \x01(\x05H\x00R\x17nextattemptdelayseconds\x88\x01\x01B\x1a\n" +
+	"\x18_nextattemptdelayseconds\"\x14\n" +
 	"\x12StepStartedDetails\"\x85\x01\n" +
 	"\x14StepSucceededDetails\x12/\n" +
 	"\x06result\x18\xc5ૂ\x01 \x01(\v2\x13.lambda.EventResultR\x06result\x12<\n" +
@@ -23618,33 +23711,40 @@ const file_lambda_proto_rawDesc = "" +
 	"\x13codesigningpolicies\x18\xc2\xfa\xaay \x01(\v2\x1b.lambda.CodeSigningPoliciesR\x13codesigningpolicies\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\"m\n" +
 	"\x1fUpdateCodeSigningConfigResponse\x12J\n" +
-	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xf5\f\n" +
+	"\x11codesigningconfig\x18\xfaƚ> \x01(\v2\x19.lambda.CodeSigningConfigR\x11codesigningconfig\"\xb1\x0e\n" +
 	"\x1fUpdateEventSourceMappingRequest\x12\x80\x01\n" +
-	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12 \n" +
-	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05R\tbatchsize\x12G\n" +
-	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x00R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
+	"#amazonmanagedkafkaeventsourceconfig\x18\xbc\xb7\xd6\x1c \x01(\v2+.lambda.AmazonManagedKafkaEventSourceConfigR#amazonmanagedkafkaeventsourceconfig\x12%\n" +
+	"\tbatchsize\x18\xdb\xc9ӗ\x01 \x01(\x05H\x00R\tbatchsize\x88\x01\x01\x12G\n" +
+	"\x1abisectbatchonfunctionerror\x18ۼփ\x01 \x01(\bH\x01R\x1abisectbatchonfunctionerror\x88\x01\x01\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12h\n" +
 	"\x1bdocumentdbeventsourceconfig\x18\x8e\xe4\xc2R \x01(\v2#.lambda.DocumentDBEventSourceConfigR\x1bdocumentdbeventsourceconfig\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x01R\aenabled\x88\x01\x01\x12B\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x02R\aenabled\x88\x01\x01\x12B\n" +
 	"\x0efiltercriteria\x18\xfb\xe8\xb7\xd1\x01 \x01(\v2\x16.lambda.FilterCriteriaR\x0efiltercriteria\x12&\n" +
 	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12V\n" +
 	"\x15functionresponsetypes\x18\xa4\xa2\xa5\xb6\x01 \x03(\x0e2\x1c.lambda.FunctionResponseTypeR\x15functionresponsetypes\x12\x1f\n" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarn\x12Q\n" +
-	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12J\n" +
-	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05R\x1emaximumbatchingwindowinseconds\x12?\n" +
-	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05R\x19maximumrecordageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\x12Q\n" +
-	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x128\n" +
-	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05R\x15parallelizationfactor\x12]\n" +
+	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2'.lambda.EventSourceMappingLoggingConfigR\rloggingconfig\x12O\n" +
+	"\x1emaximumbatchingwindowinseconds\x18\x98Ӧ\xa5\x01 \x01(\x05H\x03R\x1emaximumbatchingwindowinseconds\x88\x01\x01\x12D\n" +
+	"\x19maximumrecordageinseconds\x18\x96\xd2\xe60 \x01(\x05H\x04R\x19maximumrecordageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x05R\x14maximumretryattempts\x88\x01\x01\x12Q\n" +
+	"\rmetricsconfig\x18\xd1\xe6\xf5\xc4\x01 \x01(\v2'.lambda.EventSourceMappingMetricsConfigR\rmetricsconfig\x12=\n" +
+	"\x15parallelizationfactor\x18\x9e\xd6\xf2\xbe\x01 \x01(\x05H\x06R\x15parallelizationfactor\x88\x01\x01\x12]\n" +
 	"\x17provisionedpollerconfig\x18\xba\xfb\xb9\x83\x01 \x01(\v2\x1f.lambda.ProvisionedPollerConfigR\x17provisionedpollerconfig\x12?\n" +
 	"\rscalingconfig\x18\xed\xfd\xaa\xbb\x01 \x01(\v2\x15.lambda.ScalingConfigR\rscalingconfig\x12{\n" +
 	"!selfmanagedkafkaeventsourceconfig\x18\xf2\xf3ҙ\x01 \x01(\v2).lambda.SelfManagedKafkaEventSourceConfigR!selfmanagedkafkaeventsourceconfig\x12e\n" +
-	"\x1asourceaccessconfigurations\x18Ң\x98\xb1\x01 \x03(\v2!.lambda.SourceAccessConfigurationR\x1asourceaccessconfigurations\x12<\n" +
-	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05R\x17tumblingwindowinseconds\x12\x15\n" +
-	"\x04uuid\x18\xb3\x90\xee+ \x01(\tR\x04uuidB\x1d\n" +
+	"\x1asourceaccessconfigurations\x18Ң\x98\xb1\x01 \x03(\v2!.lambda.SourceAccessConfigurationR\x1asourceaccessconfigurations\x12A\n" +
+	"\x17tumblingwindowinseconds\x18Ėϱ\x01 \x01(\x05H\aR\x17tumblingwindowinseconds\x88\x01\x01\x12\x15\n" +
+	"\x04uuid\x18\xb3\x90\xee+ \x01(\tR\x04uuidB\f\n" +
+	"\n" +
+	"_batchsizeB\x1d\n" +
 	"\x1b_bisectbatchonfunctionerrorB\n" +
 	"\n" +
-	"\b_enabled\"\x9a\x04\n" +
+	"\b_enabledB!\n" +
+	"\x1f_maximumbatchingwindowinsecondsB\x1c\n" +
+	"\x1a_maximumrecordageinsecondsB\x17\n" +
+	"\x15_maximumretryattemptsB\x18\n" +
+	"\x16_parallelizationfactorB\x1a\n" +
+	"\x18_tumblingwindowinseconds\"\x9a\x04\n" +
 	"\x19UpdateFunctionCodeRequest\x12>\n" +
 	"\rarchitectures\x18\xc4\xcc\xfa\xfc\x01 \x03(\x0e2\x14.lambda.ArchitectureR\rarchitectures\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12&\n" +
@@ -23662,7 +23762,7 @@ const file_lambda_proto_rawDesc = "" +
 	"\azipfile\x18\x83\xe2\x99\x01 \x01(\fR\azipfileB\t\n" +
 	"\a_dryrunB\n" +
 	"\n" +
-	"\b_publish\"\xcf\b\n" +
+	"\b_publish\"\xf4\b\n" +
 	"\"UpdateFunctionConfigurationRequest\x12Y\n" +
 	"\x16capacityproviderconfig\x18\x9f\xd9\xe7\x18 \x01(\v2\x1e.lambda.CapacityProviderConfigR\x16capacityproviderconfig\x12G\n" +
 	"\x10deadletterconfig\x18\x92\xe5\x85& \x01(\v2\x18.lambda.DeadLetterConfigR\x10deadletterconfig\x12#\n" +
@@ -23676,25 +23776,30 @@ const file_lambda_proto_rawDesc = "" +
 	"\vimageconfig\x18\xb5\x8e\xba\x86\x01 \x01(\v2\x13.lambda.ImageConfigR\vimageconfig\x12\x1f\n" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarn\x12\x1a\n" +
 	"\x06layers\x18\x80\xd3\xff\xe3\x01 \x03(\tR\x06layers\x12?\n" +
-	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2\x15.lambda.LoggingConfigR\rloggingconfig\x12!\n" +
+	"\rloggingconfig\x18\xc9\xed\xac\xca\x01 \x01(\v2\x15.lambda.LoggingConfigR\rloggingconfig\x12&\n" +
 	"\n" +
-	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05R\n" +
-	"memorysize\x12\"\n" +
+	"memorysize\x18\xb0\xee\xbc\x1a \x01(\x05H\x00R\n" +
+	"memorysize\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"revisionid\x18\x86\xa3\x9e\xee\x01 \x01(\tR\n" +
 	"revisionid\x12\x16\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\x12-\n" +
 	"\aruntime\x18\xccϪ\xab\x01 \x01(\x0e2\x0f.lambda.RuntimeR\aruntime\x123\n" +
-	"\tsnapstart\x18\xc8Ή\x87\x01 \x01(\v2\x11.lambda.SnapStartR\tsnapstart\x12\x1b\n" +
-	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05R\atimeout\x12>\n" +
+	"\tsnapstart\x18\xc8Ή\x87\x01 \x01(\v2\x11.lambda.SnapStartR\tsnapstart\x12 \n" +
+	"\atimeout\x18\xa9\xfc\xe5\x16 \x01(\x05H\x01R\atimeout\x88\x01\x01\x12>\n" +
 	"\rtracingconfig\x18\xacĩ\t \x01(\v2\x15.lambda.TracingConfigR\rtracingconfig\x122\n" +
-	"\tvpcconfig\x18\x87\xd7\xfc\\ \x01(\v2\x11.lambda.VpcConfigR\tvpcconfig\"\xb5\x02\n" +
+	"\tvpcconfig\x18\x87\xd7\xfc\\ \x01(\v2\x11.lambda.VpcConfigR\tvpcconfigB\r\n" +
+	"\v_memorysizeB\n" +
+	"\n" +
+	"\b_timeout\"\xf5\x02\n" +
 	"&UpdateFunctionEventInvokeConfigRequest\x12J\n" +
 	"\x11destinationconfig\x18\uec11X \x01(\v2\x19.lambda.DestinationConfigR\x11destinationconfig\x12&\n" +
-	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12>\n" +
-	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05R\x18maximumeventageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\x12 \n" +
-	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifier\"\x84\x02\n" +
+	"\ffunctionname\x18\xa3\x88\xbf\xdf\x01 \x01(\tR\ffunctionname\x12C\n" +
+	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05H\x00R\x18maximumeventageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x01R\x14maximumretryattempts\x88\x01\x01\x12 \n" +
+	"\tqualifier\x18\u0d51\xfb\x01 \x01(\tR\tqualifierB\x1b\n" +
+	"\x19_maximumeventageinsecondsB\x17\n" +
+	"\x15_maximumretryattempts\"\x84\x02\n" +
 	"\x1eUpdateFunctionUrlConfigRequest\x12;\n" +
 	"\bauthtype\x18\xb8\xe0\xe4\xe3\x01 \x01(\x0e2\x1b.lambda.FunctionUrlAuthTypeR\bauthtype\x12#\n" +
 	"\x04cors\x18\xf5\x91\xab| \x01(\v2\f.lambda.CorsR\x04cors\x12&\n" +
@@ -23727,14 +23832,16 @@ const file_lambda_proto_rawDesc = "" +
 	"\x14WaitCancelledDetails\x12,\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x12.lambda.EventErrorR\x05error\"G\n" +
 	"\vWaitDetails\x128\n" +
-	"\x15scheduledendtimestamp\x18\xdc\xd2\xfc\x9a\x01 \x01(\tR\x15scheduledendtimestamp\"3\n" +
-	"\vWaitOptions\x12$\n" +
-	"\vwaitseconds\x18\xbe\xebđ\x01 \x01(\x05R\vwaitseconds\"n\n" +
+	"\x15scheduledendtimestamp\x18\xdc\xd2\xfc\x9a\x01 \x01(\tR\x15scheduledendtimestamp\"H\n" +
+	"\vWaitOptions\x12)\n" +
+	"\vwaitseconds\x18\xbe\xebđ\x01 \x01(\x05H\x00R\vwaitseconds\x88\x01\x01B\x0e\n" +
+	"\f_waitseconds\"n\n" +
 	"\x12WaitStartedDetails\x12\x1e\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05R\bduration\x128\n" +
-	"\x15scheduledendtimestamp\x18\xdc\xd2\xfc\x9a\x01 \x01(\tR\x15scheduledendtimestamp\"6\n" +
-	"\x14WaitSucceededDetails\x12\x1e\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05R\bduration*\xd9\x01\n" +
+	"\x15scheduledendtimestamp\x18\xdc\xd2\xfc\x9a\x01 \x01(\tR\x15scheduledendtimestamp\"H\n" +
+	"\x14WaitSucceededDetails\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01B\v\n" +
+	"\t_duration*\xd9\x01\n" +
 	"\x13ApplicationLogLevel\x12\x1e\n" +
 	"\x1aAPPLICATION_LOG_LEVEL_WARN\x10\x00\x12\x1f\n" +
 	"\x1bAPPLICATION_LOG_LEVEL_FATAL\x10\x01\x12\x1f\n" +
@@ -24939,22 +25046,71 @@ func file_lambda_proto_init() {
 	if File_lambda_proto != nil {
 		return
 	}
+	file_lambda_proto_msgTypes[0].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[1].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[4].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[13].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[14].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[22].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[42].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[43].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[45].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[48].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[54].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[55].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[69].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[75].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[91].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[92].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[93].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[94].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[95].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[111].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[112].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[113].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[124].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[128].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[134].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[149].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[153].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[169].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[171].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[175].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[184].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[185].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[187].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[188].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[190].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[192].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[194].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[196].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[198].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[200].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[202].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[204].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[206].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[208].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[210].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[212].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[214].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[218].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[230].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[232].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[235].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[240].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[246].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[257].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[263].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[282].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[284].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[305].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[306].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[307].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[308].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[311].OneofWrappers = []any{}
 	file_lambda_proto_msgTypes[312].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[315].OneofWrappers = []any{}
+	file_lambda_proto_msgTypes[317].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

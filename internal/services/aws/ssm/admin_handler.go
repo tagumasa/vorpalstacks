@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/ssm"
@@ -77,7 +78,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 		return nil, mapAdminError(err)
 	}
 
-	maxResults := req.Msg.Maxresults
+	maxResults := req.Msg.GetMaxresults()
 	if maxResults <= 0 {
 		maxResults = 50
 	}
@@ -107,7 +108,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 	for _, p := range params {
 		meta := &pb.ParameterMetadata{
 			Name:             p.Name,
-			Version:          p.Version,
+			Version:          proto.Int64(p.Version),
 			Lastmodifieddate: p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
 			Datatype:         p.DataType,
 			Arn:              p.ARN,
@@ -205,7 +206,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 	}
 
 	return connect.NewResponse(&pb.PutParameterResult{
-		Version: version,
+		Version: proto.Int64(version),
 	}), nil
 }
 

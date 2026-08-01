@@ -422,9 +422,9 @@ message AutoScalingSettingsDescription {
 
   string autoscalingrolearn = 348085703;
 
-  int64 maximumunits = 501867481;
+  optional int64 maximumunits = 501867481;
 
-  int64 minimumunits = 190148659;
+  optional int64 minimumunits = 190148659;
 
   repeated AutoScalingPolicyDescription scalingpolicies = 289494257;
 
@@ -440,9 +440,9 @@ message AutoScalingSettingsUpdate {
 
   string autoscalingrolearn = 348085703;
 
-  int64 maximumunits = 501867481;
+  optional int64 maximumunits = 501867481;
 
-  int64 minimumunits = 190148659;
+  optional int64 minimumunits = 190148659;
 
   AutoScalingPolicyUpdate scalingpolicyupdate = 189139846;
 
@@ -456,9 +456,9 @@ message AutoScalingTargetTrackingScalingPolicyConfigurationDescription {
 
   optional bool disablescalein = 464986377;
 
-  int32 scaleincooldown = 45925876;
+  optional int32 scaleincooldown = 45925876;
 
-  int32 scaleoutcooldown = 316995887;
+  optional int32 scaleoutcooldown = 316995887;
 
   double targetvalue = 118247738;
 
@@ -472,9 +472,9 @@ message AutoScalingTargetTrackingScalingPolicyConfigurationUpdate {
 
   optional bool disablescalein = 464986377;
 
-  int32 scaleincooldown = 45925876;
+  optional int32 scaleincooldown = 45925876;
 
-  int32 scaleoutcooldown = 316995887;
+  optional int32 scaleoutcooldown = 316995887;
 
   double targetvalue = 118247738;
 
@@ -508,7 +508,7 @@ message BackupDetails {
 
   string backupname = 467693789;
 
-  int64 backupsizebytes = 147336318;
+  optional int64 backupsizebytes = 147336318;
 
   BackupStatus backupstatus = 382505546;
 
@@ -562,7 +562,7 @@ message BackupSummary {
 
   string backupname = 467693789;
 
-  int64 backupsizebytes = 147336318;
+  optional int64 backupsizebytes = 147336318;
 
   BackupStatus backupstatus = 382505546;
 
@@ -1492,13 +1492,13 @@ message DescribeLimitsInput {
 
 message DescribeLimitsOutput {
 
-  int64 accountmaxreadcapacityunits = 318006242;
+  optional int64 accountmaxreadcapacityunits = 318006242;
 
-  int64 accountmaxwritecapacityunits = 526094897;
+  optional int64 accountmaxwritecapacityunits = 526094897;
 
-  int64 tablemaxreadcapacityunits = 165993307;
+  optional int64 tablemaxreadcapacityunits = 165993307;
 
-  int64 tablemaxwritecapacityunits = 444127818;
+  optional int64 tablemaxwritecapacityunits = 444127818;
 
 }
 
@@ -1610,7 +1610,7 @@ message ExecuteStatementInput {
 
   optional bool consistentread = 531556994;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -1692,7 +1692,7 @@ message ExportConflictException {
 
 message ExportDescription {
 
-  int64 billedsizebytes = 443315368;
+  optional int64 billedsizebytes = 443315368;
 
   string clienttoken = 137297356;
 
@@ -1716,7 +1716,7 @@ message ExportDescription {
 
   IncrementalExportSpecification incrementalexportspecification = 20792295;
 
-  int64 itemcount = 26280022;
+  optional int64 itemcount = 26280022;
 
   string s3bucket = 114031434;
 
@@ -1962,11 +1962,11 @@ message GlobalSecondaryIndexDescription {
 
   string indexname = 102427281;
 
-  int64 indexsizebytes = 395738346;
+  optional int64 indexsizebytes = 395738346;
 
   IndexStatus indexstatus = 364436830;
 
-  int64 itemcount = 26280022;
+  optional int64 itemcount = 26280022;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -2018,11 +2018,11 @@ message GlobalSecondaryIndexUpdate {
 
 message GlobalSecondaryIndexWarmThroughputDescription {
 
-  int64 readunitspersecond = 11400732;
+  optional int64 readunitspersecond = 11400732;
 
   IndexStatus status = 6222352;
 
-  int64 writeunitspersecond = 339770127;
+  optional int64 writeunitspersecond = 339770127;
 
 }
 
@@ -2076,7 +2076,7 @@ message GlobalTableGlobalSecondaryIndexSettingsUpdate {
 
   AutoScalingSettingsUpdate provisionedwritecapacityautoscalingsettingsupdate = 302140761;
 
-  int64 provisionedwritecapacityunits = 225881684;
+  optional int64 provisionedwritecapacityunits = 225881684;
 
 }
 
@@ -2222,7 +2222,7 @@ message ImportTableDescription {
 
   string endtime = 63911884;
 
-  int64 errorcount = 311137001;
+  optional int64 errorcount = 311137001;
 
   string failurecode = 84707897;
 
@@ -2232,7 +2232,7 @@ message ImportTableDescription {
 
   ImportStatus importstatus = 129077631;
 
-  int64 importeditemcount = 202622198;
+  optional int64 importeditemcount = 202622198;
 
   InputCompressionType inputcompressiontype = 392699396;
 
@@ -2240,9 +2240,9 @@ message ImportTableDescription {
 
   InputFormatOptions inputformatoptions = 249201403;
 
-  int64 processeditemcount = 340163668;
+  optional int64 processeditemcount = 340163668;
 
-  int64 processedsizebytes = 72287562;
+  optional int64 processedsizebytes = 72287562;
 
   S3BucketSource s3bucketsource = 202310037;
 
@@ -2524,7 +2524,7 @@ message ListBackupsInput {
 
   string exclusivestartbackuparn = 381696959;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string tablename = 272020061;
 
@@ -2548,7 +2548,7 @@ message ListBackupsOutput {
 
 message ListContributorInsightsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2570,7 +2570,7 @@ message ListContributorInsightsOutput {
 
 message ListExportsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2594,7 +2594,7 @@ message ListGlobalTablesInput {
 
   string exclusivestartglobaltablename = 89274086;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string regionname = 112086463;
 
@@ -2616,7 +2616,7 @@ message ListImportsInput {
 
   string nexttoken = 216957566;
 
-  int32 pagesize = 438340024;
+  optional int32 pagesize = 438340024;
 
   string tablearn = 431669347;
 
@@ -2640,7 +2640,7 @@ message ListTablesInput {
 
   string exclusivestarttablename = 4554457;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
 }
 
@@ -2700,9 +2700,9 @@ message LocalSecondaryIndexDescription {
 
   string indexname = 102427281;
 
-  int64 indexsizebytes = 395738346;
+  optional int64 indexsizebytes = 395738346;
 
-  int64 itemcount = 26280022;
+  optional int64 itemcount = 26280022;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -2740,9 +2740,9 @@ enum MultiRegionConsistency {
 
 message OnDemandThroughput {
 
-  int64 maxreadrequestunits = 361996322;
+  optional int64 maxreadrequestunits = 361996322;
 
-  int64 maxwriterequestunits = 99152185;
+  optional int64 maxwriterequestunits = 99152185;
 
 }
 
@@ -2752,7 +2752,7 @@ message OnDemandThroughput {
 
 message OnDemandThroughputOverride {
 
-  int64 maxreadrequestunits = 361996322;
+  optional int64 maxreadrequestunits = 361996322;
 
 }
 
@@ -2782,7 +2782,7 @@ message PointInTimeRecoveryDescription {
 
   PointInTimeRecoveryStatus pointintimerecoverystatus = 510838075;
 
-  int32 recoveryperiodindays = 67453592;
+  optional int32 recoveryperiodindays = 67453592;
 
 }
 
@@ -2794,7 +2794,7 @@ message PointInTimeRecoverySpecification {
 
   optional bool pointintimerecoveryenabled = 294176170;
 
-  int32 recoveryperiodindays = 67453592;
+  optional int32 recoveryperiodindays = 67453592;
 
 }
 
@@ -2874,11 +2874,11 @@ message ProvisionedThroughputDescription {
 
   string lastincreasedatetime = 490688181;
 
-  int64 numberofdecreasestoday = 34313772;
+  optional int64 numberofdecreasestoday = 34313772;
 
-  int64 readcapacityunits = 43945489;
+  optional int64 readcapacityunits = 43945489;
 
-  int64 writecapacityunits = 26938032;
+  optional int64 writecapacityunits = 26938032;
 
 }
 
@@ -2900,7 +2900,7 @@ message ProvisionedThroughputExceededException {
 
 message ProvisionedThroughputOverride {
 
-  int64 readcapacityunits = 43945489;
+  optional int64 readcapacityunits = 43945489;
 
 }
 
@@ -3026,7 +3026,7 @@ message QueryInput {
 
   map<string, Condition> keyconditions = 307034879;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string projectionexpression = 150730243;
 
@@ -3050,13 +3050,13 @@ message QueryOutput {
 
   ConsumedCapacity consumedcapacity = 449336620;
 
-  int32 count = 31963285;
+  optional int32 count = 31963285;
 
   repeated ItemListEntry items = 3553328;
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
-  int32 scannedcount = 531161315;
+  optional int32 scannedcount = 531161315;
 
 }
 
@@ -3216,11 +3216,11 @@ message ReplicaGlobalSecondaryIndexSettingsDescription {
 
   AutoScalingSettingsDescription provisionedreadcapacityautoscalingsettings = 85617667;
 
-  int64 provisionedreadcapacityunits = 350750021;
+  optional int64 provisionedreadcapacityunits = 350750021;
 
   AutoScalingSettingsDescription provisionedwritecapacityautoscalingsettings = 168409114;
 
-  int64 provisionedwritecapacityunits = 225881684;
+  optional int64 provisionedwritecapacityunits = 225881684;
 
 }
 
@@ -3234,7 +3234,7 @@ message ReplicaGlobalSecondaryIndexSettingsUpdate {
 
   AutoScalingSettingsUpdate provisionedreadcapacityautoscalingsettingsupdate = 57419900;
 
-  int64 provisionedreadcapacityunits = 350750021;
+  optional int64 provisionedreadcapacityunits = 350750021;
 
 }
 
@@ -3262,11 +3262,11 @@ message ReplicaSettingsDescription {
 
   AutoScalingSettingsDescription replicaprovisionedreadcapacityautoscalingsettings = 125131885;
 
-  int64 replicaprovisionedreadcapacityunits = 82081083;
+  optional int64 replicaprovisionedreadcapacityunits = 82081083;
 
   AutoScalingSettingsDescription replicaprovisionedwritecapacityautoscalingsettings = 293841796;
 
-  int64 replicaprovisionedwritecapacityunits = 356738858;
+  optional int64 replicaprovisionedwritecapacityunits = 356738858;
 
   ReplicaStatus replicastatus = 466739730;
 
@@ -3286,7 +3286,7 @@ message ReplicaSettingsUpdate {
 
   AutoScalingSettingsUpdate replicaprovisionedreadcapacityautoscalingsettingsupdate = 245262702;
 
-  int64 replicaprovisionedreadcapacityunits = 82081083;
+  optional int64 replicaprovisionedreadcapacityunits = 82081083;
 
   TableClass replicatableclass = 248679204;
 
@@ -3630,7 +3630,7 @@ message ScanInput {
 
   string indexname = 102427281;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string projectionexpression = 150730243;
 
@@ -3638,13 +3638,13 @@ message ScanInput {
 
   map<string, Condition> scanfilter = 272885755;
 
-  int32 segment = 279654279;
+  optional int32 segment = 279654279;
 
   Select select = 512305998;
 
   string tablename = 272020061;
 
-  int32 totalsegments = 149136904;
+  optional int32 totalsegments = 149136904;
 
 }
 
@@ -3656,13 +3656,13 @@ message ScanOutput {
 
   ConsumedCapacity consumedcapacity = 449336620;
 
-  int32 count = 31963285;
+  optional int32 count = 31963285;
 
   repeated ItemListEntry items = 3553328;
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
-  int32 scannedcount = 531161315;
+  optional int32 scannedcount = 531161315;
 
 }
 
@@ -3688,7 +3688,7 @@ message SourceTableDetails {
 
   BillingMode billingmode = 184162880;
 
-  int64 itemcount = 26280022;
+  optional int64 itemcount = 26280022;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -3704,7 +3704,7 @@ message SourceTableDetails {
 
   string tablename = 272020061;
 
-  int64 tablesizebytes = 220631294;
+  optional int64 tablesizebytes = 220631294;
 
 }
 
@@ -3846,7 +3846,7 @@ message TableDescription {
 
   repeated GlobalTableWitnessDescription globaltablewitnesses = 4521286;
 
-  int64 itemcount = 26280022;
+  optional int64 itemcount = 26280022;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -3878,7 +3878,7 @@ message TableDescription {
 
   string tablename = 272020061;
 
-  int64 tablesizebytes = 220631294;
+  optional int64 tablesizebytes = 220631294;
 
   TableStatus tablestatus = 207908810;
 
@@ -3934,11 +3934,11 @@ enum TableStatus {
 
 message TableWarmThroughputDescription {
 
-  int64 readunitspersecond = 11400732;
+  optional int64 readunitspersecond = 11400732;
 
   TableStatus status = 6222352;
 
-  int64 writeunitspersecond = 339770127;
+  optional int64 writeunitspersecond = 339770127;
 
 }
 
@@ -4252,7 +4252,7 @@ message UpdateGlobalTableSettingsInput {
 
   AutoScalingSettingsUpdate globaltableprovisionedwritecapacityautoscalingsettingsupdate = 435219182;
 
-  int64 globaltableprovisionedwritecapacityunits = 127172283;
+  optional int64 globaltableprovisionedwritecapacityunits = 127172283;
 
   repeated ReplicaSettingsUpdate replicasettingsupdate = 463498612;
 
@@ -4468,9 +4468,9 @@ message UpdateTimeToLiveOutput {
 
 message WarmThroughput {
 
-  int64 readunitspersecond = 11400732;
+  optional int64 readunitspersecond = 11400732;
 
-  int64 writeunitspersecond = 339770127;
+  optional int64 writeunitspersecond = 339770127;
 
 }
 

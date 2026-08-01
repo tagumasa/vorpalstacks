@@ -296,7 +296,7 @@ message ApiDestination {
 
   string invocationendpoint = 411800759;
 
-  int32 invocationratelimitpersecond = 295327816;
+  optional int32 invocationratelimitpersecond = 295327816;
 
   string lastmodifiedtime = 236912992;
 
@@ -344,13 +344,13 @@ message Archive {
 
   string creationtime = 103458790;
 
-  int64 eventcount = 128612839;
+  optional int64 eventcount = 128612839;
 
   string eventsourcearn = 306357574;
 
-  int32 retentiondays = 267894223;
+  optional int32 retentiondays = 267894223;
 
-  int64 sizebytes = 486677664;
+  optional int64 sizebytes = 486677664;
 
   ArchiveState state = 502047895;
 
@@ -406,7 +406,7 @@ message AwsVpcConfiguration {
 
 message BatchArrayProperties {
 
-  int32 size = 105352829;
+  optional int32 size = 105352829;
 
 }
 
@@ -432,7 +432,7 @@ message BatchParameters {
 
 message BatchRetryStrategy {
 
-  int32 attempts = 132533640;
+  optional int32 attempts = 132533640;
 
 }
 
@@ -462,11 +462,11 @@ message CancelReplayResponse {
 
 message CapacityProviderStrategyItem {
 
-  int32 base = 500995289;
+  optional int32 base = 500995289;
 
   string capacityprovider = 109086449;
 
-  int32 weight = 278961850;
+  optional int32 weight = 278961850;
 
 }
 
@@ -692,7 +692,7 @@ message CreateApiDestinationRequest {
 
   string invocationendpoint = 411800759;
 
-  int32 invocationratelimitpersecond = 295327816;
+  optional int32 invocationratelimitpersecond = 295327816;
 
   string name = 266367751;
 
@@ -724,7 +724,7 @@ message CreateArchiveRequest {
 
   string eventsourcearn = 306357574;
 
-  int32 retentiondays = 267894223;
+  optional int32 retentiondays = 267894223;
 
 }
 
@@ -1026,7 +1026,7 @@ message DescribeApiDestinationResponse {
 
   string invocationendpoint = 411800759;
 
-  int32 invocationratelimitpersecond = 295327816;
+  optional int32 invocationratelimitpersecond = 295327816;
 
   string lastmodifiedtime = 236912992;
 
@@ -1054,15 +1054,15 @@ message DescribeArchiveResponse {
 
   string description = 115243530;
 
-  int64 eventcount = 128612839;
+  optional int64 eventcount = 128612839;
 
   string eventpattern = 233487232;
 
   string eventsourcearn = 306357574;
 
-  int32 retentiondays = 267894223;
+  optional int32 retentiondays = 267894223;
 
-  int64 sizebytes = 486677664;
+  optional int64 sizebytes = 486677664;
 
   ArchiveState state = 502047895;
 
@@ -1284,7 +1284,7 @@ message EcsParameters {
 
   repeated Tag tags = 381526209;
 
-  int32 taskcount = 398407508;
+  optional int32 taskcount = 398407508;
 
   string taskdefinitionarn = 82234477;
 
@@ -1450,7 +1450,7 @@ message ListApiDestinationsRequest {
 
   string connectionarn = 187631553;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1474,7 +1474,7 @@ message ListArchivesRequest {
 
   string eventsourcearn = 306357574;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1500,7 +1500,7 @@ message ListConnectionsRequest {
 
   ConnectionState connectionstate = 404323675;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1522,7 +1522,7 @@ message ListConnectionsResponse {
 
 message ListEventBusesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1544,7 +1544,7 @@ message ListEventBusesResponse {
 
 message ListEventSourcesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1568,7 +1568,7 @@ message ListPartnerEventSourceAccountsRequest {
 
   string eventsourcename = 427669794;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -1588,7 +1588,7 @@ message ListPartnerEventSourceAccountsResponse {
 
 message ListPartnerEventSourcesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1612,7 +1612,7 @@ message ListReplaysRequest {
 
   string eventsourcearn = 306357574;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1638,7 +1638,7 @@ message ListRuleNamesByTargetRequest {
 
   string eventbusname = 448449725;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -1662,7 +1662,7 @@ message ListRulesRequest {
 
   string eventbusname = 448449725;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nameprefix = 361707931;
 
@@ -1702,7 +1702,7 @@ message ListTargetsByRuleRequest {
 
   string eventbusname = 448449725;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -1878,7 +1878,7 @@ message PutEventsResponse {
 
   repeated PutEventsResultEntry entries = 481075860;
 
-  int32 failedentrycount = 458519576;
+  optional int32 failedentrycount = 458519576;
 
 }
 
@@ -1928,7 +1928,7 @@ message PutPartnerEventsResponse {
 
   repeated PutPartnerEventsResultEntry entries = 481075860;
 
-  int32 failedentrycount = 458519576;
+  optional int32 failedentrycount = 458519576;
 
 }
 
@@ -2012,7 +2012,7 @@ message PutTargetsResponse {
 
   repeated PutTargetsResultEntry failedentries = 86416685;
 
-  int32 failedentrycount = 458519576;
+  optional int32 failedentrycount = 458519576;
 
 }
 
@@ -2082,7 +2082,7 @@ message RemoveTargetsResponse {
 
   repeated RemoveTargetsResultEntry failedentries = 86416685;
 
-  int32 failedentrycount = 458519576;
+  optional int32 failedentrycount = 458519576;
 
 }
 
@@ -2182,9 +2182,9 @@ message ResourceNotFoundException {
 
 message RetryPolicy {
 
-  int32 maximumeventageinseconds = 393041563;
+  optional int32 maximumeventageinseconds = 393041563;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
 }
 
@@ -2424,7 +2424,7 @@ message UpdateApiDestinationRequest {
 
   string invocationendpoint = 411800759;
 
-  int32 invocationratelimitpersecond = 295327816;
+  optional int32 invocationratelimitpersecond = 295327816;
 
   string name = 266367751;
 
@@ -2454,7 +2454,7 @@ message UpdateArchiveRequest {
 
   string eventpattern = 233487232;
 
-  int32 retentiondays = 267894223;
+  optional int32 retentiondays = 267894223;
 
 }
 

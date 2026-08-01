@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
 	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
@@ -120,8 +121,8 @@ func toPbMetricAlarm(alarm *cloudwatchstore.Alarm) *pb.MetricAlarm {
 		Dimensions:                         pbDims,
 		Comparisonoperator:                 toPbComparisonOperator(alarm.ComparisonOperator),
 		Threshold:                          alarm.Threshold,
-		Evaluationperiods:                  alarm.EvaluationPeriods,
-		Period:                             alarm.Period,
+		Evaluationperiods:                  proto.Int32(alarm.EvaluationPeriods),
+		Period:                             proto.Int32(alarm.Period),
 		Statistic:                          toPbStatistic(alarm.Statistic),
 		Treatmissingdata:                   alarm.TreatMissingData,
 		Statevalue:                         toPbStateValue(alarm.State),
@@ -201,11 +202,11 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 	alarm.Dimensions = dims
 	alarm.ComparisonOperator = fromPbComparisonOperator(req.Msg.Comparisonoperator)
 	alarm.Threshold = req.Msg.Threshold
-	alarm.EvaluationPeriods = req.Msg.Evaluationperiods
+	alarm.EvaluationPeriods = req.Msg.GetEvaluationperiods()
 	if alarm.EvaluationPeriods == 0 {
 		alarm.EvaluationPeriods = 1
 	}
-	alarm.Period = req.Msg.Period
+	alarm.Period = req.Msg.GetPeriod()
 	if alarm.Period == 0 {
 		alarm.Period = 60
 	}
@@ -220,7 +221,7 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 	} else {
 		alarm.ActionsEnabled = true
 	}
-	alarm.DatapointsToAlarm = req.Msg.Datapointstoalarm
+	alarm.DatapointsToAlarm = req.Msg.GetDatapointstoalarm()
 	if alarm.DatapointsToAlarm == 0 {
 		alarm.DatapointsToAlarm = alarm.EvaluationPeriods
 	}

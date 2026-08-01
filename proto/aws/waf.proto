@@ -1868,7 +1868,7 @@ message GetSampledRequestsRequest {
 
 message GetSampledRequestsResponse {
 
-  int64 populationsize = 140605436;
+  optional int64 populationsize = 140605436;
 
   repeated SampledHTTPRequest sampledrequests = 3233688;
 
@@ -2044,7 +2044,7 @@ message IPSetUpdate {
 
 message ListActivatedRulesInRuleGroupRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2066,7 +2066,7 @@ message ListActivatedRulesInRuleGroupResponse {
 
 message ListByteMatchSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2086,7 +2086,7 @@ message ListByteMatchSetsResponse {
 
 message ListGeoMatchSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2106,7 +2106,7 @@ message ListGeoMatchSetsResponse {
 
 message ListIPSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2126,7 +2126,7 @@ message ListIPSetsResponse {
 
 message ListLoggingConfigurationsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2146,7 +2146,7 @@ message ListLoggingConfigurationsResponse {
 
 message ListRateBasedRulesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2166,7 +2166,7 @@ message ListRateBasedRulesResponse {
 
 message ListRegexMatchSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2186,7 +2186,7 @@ message ListRegexMatchSetsResponse {
 
 message ListRegexPatternSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2206,7 +2206,7 @@ message ListRegexPatternSetsResponse {
 
 message ListRuleGroupsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2226,7 +2226,7 @@ message ListRuleGroupsResponse {
 
 message ListRulesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2246,7 +2246,7 @@ message ListRulesResponse {
 
 message ListSizeConstraintSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2268,7 +2268,7 @@ message ListSizeConstraintSetsResponse {
 
 message ListSqlInjectionMatchSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2290,7 +2290,7 @@ message ListSqlInjectionMatchSetsResponse {
 
 message ListSubscribedRuleGroupsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2310,7 +2310,7 @@ message ListSubscribedRuleGroupsResponse {
 
 message ListTagsForResourceRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2332,7 +2332,7 @@ message ListTagsForResourceResponse {
 
 message ListWebACLsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2354,7 +2354,7 @@ message ListWebACLsResponse {
 
 message ListXssMatchSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
@@ -367,8 +368,8 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		Name:               graphName,
 		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "CREATING",
-		ProvisionedMemory:  int32Ptr(int32(mem)),
-		ReplicaCount:       int32Ptr(int32(replicaCount)),
+		ProvisionedMemory:  proto.Int32(int32(mem)),
+		ReplicaCount:       proto.Int32(int32(replicaCount)),
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
 		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
@@ -508,7 +509,7 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
 			return nil, newValidationException("CONSTRAINT_VIOLATION", "provisionedMemory")
 		}
-		graph.ProvisionedMemory = int32Ptr(int32(mem))
+		graph.ProvisionedMemory = proto.Int32(int32(mem))
 	}
 	if request.HasParam(req.Parameters, "deletionProtection") {
 		graph.DeletionProtection = request.GetBoolParam(req.Parameters, "deletionProtection")
@@ -843,8 +844,8 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		Name:               graphName,
 		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "CREATING",
-		ProvisionedMemory:  int32Ptr(128),
-		ReplicaCount:       int32Ptr(1),
+		ProvisionedMemory:  proto.Int32(128),
+		ReplicaCount:       proto.Int32(1),
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
 		BuildNumber:        "1.0.20250313",
@@ -857,14 +858,14 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
 		if mem >= minProvisionedMemory && mem <= maxProvisionedMemory {
-			graph.ProvisionedMemory = int32Ptr(int32(mem))
+			graph.ProvisionedMemory = proto.Int32(int32(mem))
 		}
 	}
 
 	if request.HasParam(req.Parameters, "replicaCount") {
 		rc := request.GetIntParam(req.Parameters, "replicaCount")
 		if rc >= 0 && rc <= maxReplicaCount {
-			graph.ReplicaCount = int32Ptr(int32(rc))
+			graph.ReplicaCount = proto.Int32(int32(rc))
 		}
 	}
 
@@ -955,6 +956,4 @@ func clampMaxResults(v int) int {
 	return v
 }
 
-func int32Ptr(v int32) *int32    { return &v }
-func int64Ptr(v int64) *int64    { return &v }
 func stringPtr(v string) *string { return &v }

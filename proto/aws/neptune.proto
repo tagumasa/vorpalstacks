@@ -495,9 +495,9 @@ message CloudwatchLogsExportConfiguration {
 
 message ClusterPendingModifiedValues {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string dbclusteridentifier = 340406993;
 
@@ -505,7 +505,7 @@ message ClusterPendingModifiedValues {
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string networktype = 349272270;
 
@@ -637,7 +637,7 @@ message CreateDBClusterMessage {
 
   repeated string availabilityzones = 109527122;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string charactersetname = 488468644;
 
@@ -673,7 +673,7 @@ message CreateDBClusterMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string presignedurl = 334334652;
 
@@ -749,13 +749,13 @@ message CreateDBClusterSnapshotResult {
 
 message CreateDBInstanceMessage {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string charactersetname = 488468644;
 
@@ -791,7 +791,7 @@ message CreateDBInstanceMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -801,7 +801,7 @@ message CreateDBInstanceMessage {
 
   string masterusername = 110287892;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -811,13 +811,13 @@ message CreateDBInstanceMessage {
 
   string performanceinsightskmskeyid = 395732922;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
   string preferredmaintenancewindow = 99987842;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -953,7 +953,7 @@ message CreateGlobalClusterResult {
 
 message DBCluster {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated DBClusterRole associatedroles = 428985325;
 
@@ -961,7 +961,7 @@ message DBCluster {
 
   repeated string availabilityzones = 109527122;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string charactersetname = 488468644;
 
@@ -1023,7 +1023,7 @@ message DBCluster {
 
   string percentprogress = 66105414;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -1137,7 +1137,7 @@ message DBClusterMember {
 
   optional bool isclusterwriter = 506087795;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
 }
 
@@ -1287,7 +1287,7 @@ message DBClusterRoleQuotaExceededFault {
 
 message DBClusterSnapshot {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   repeated string availabilityzones = 109527122;
 
@@ -1311,9 +1311,9 @@ message DBClusterSnapshot {
 
   string masterusername = 110287892;
 
-  int32 percentprogress = 66105414;
+  optional int32 percentprogress = 66105414;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string snapshotcreatetime = 168899877;
 
@@ -1435,13 +1435,13 @@ message DBEngineVersionMessage {
 
 message DBInstance {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool autominorversionupgrade = 32758492;
 
   string availabilityzone = 391476601;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -1467,7 +1467,7 @@ message DBInstance {
 
   DBSubnetGroup dbsubnetgroup = 390486926;
 
-  int32 dbinstanceport = 122890396;
+  optional int32 dbinstanceport = 122890396;
 
   string dbiresourceid = 483153532;
 
@@ -1489,7 +1489,7 @@ message DBInstance {
 
   string instancecreatetime = 479568832;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string kmskeyid = 46523533;
 
@@ -1499,7 +1499,7 @@ message DBInstance {
 
   string masterusername = 110287892;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -1519,7 +1519,7 @@ message DBInstance {
 
   string preferredmaintenancewindow = 99987842;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -1971,7 +1971,7 @@ message DescribeDBClusterEndpointsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -1985,7 +1985,7 @@ message DescribeDBClusterParameterGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -1999,7 +1999,7 @@ message DescribeDBClusterParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string source = 31630329;
 
@@ -2037,7 +2037,7 @@ message DescribeDBClusterSnapshotsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string snapshottype = 399375494;
 
@@ -2053,7 +2053,7 @@ message DescribeDBClustersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2077,7 +2077,7 @@ message DescribeDBEngineVersionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2091,7 +2091,7 @@ message DescribeDBInstancesMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2105,7 +2105,7 @@ message DescribeDBParameterGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2119,7 +2119,7 @@ message DescribeDBParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string source = 31630329;
 
@@ -2135,7 +2135,7 @@ message DescribeDBSubnetGroupsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2149,7 +2149,7 @@ message DescribeEngineDefaultClusterParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2171,7 +2171,7 @@ message DescribeEngineDefaultParametersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2201,7 +2201,7 @@ message DescribeEventSubscriptionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string subscriptionname = 181900944;
 
@@ -2211,7 +2211,7 @@ message DescribeEventSubscriptionsMessage {
 
 message DescribeEventsMessage {
 
-  int32 duration = 348604718;
+  optional int32 duration = 348604718;
 
   string endtime = 63911884;
 
@@ -2221,7 +2221,7 @@ message DescribeEventsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string sourceidentifier = 190015756;
 
@@ -2239,7 +2239,7 @@ message DescribeGlobalClustersMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
 }
 
@@ -2259,7 +2259,7 @@ message DescribeOrderableDBInstanceOptionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   optional bool vpc = 500923177;
 
@@ -2273,7 +2273,7 @@ message DescribePendingMaintenanceActionsMessage {
 
   string marker = 89353912;
 
-  int32 maxrecords = 220314370;
+  optional int32 maxrecords = 220314370;
 
   string resourceidentifier = 279224111;
 
@@ -2343,7 +2343,7 @@ message Endpoint {
 
   string hostedzoneid = 346531710;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
 }
 
@@ -2875,7 +2875,7 @@ message ModifyDBClusterMessage {
 
   optional bool applyimmediately = 145941916;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   CloudwatchLogsExportConfiguration cloudwatchlogsexportconfiguration = 311727375;
 
@@ -2901,7 +2901,7 @@ message ModifyDBClusterMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string preferredbackupwindow = 39404485;
 
@@ -2959,7 +2959,7 @@ message ModifyDBClusterSnapshotAttributeResult {
 
 message ModifyDBInstanceMessage {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
   optional bool allowmajorversionupgrade = 40687812;
 
@@ -2967,7 +2967,7 @@ message ModifyDBInstanceMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -2981,7 +2981,7 @@ message ModifyDBInstanceMessage {
 
   string dbparametergroupname = 174683359;
 
-  int32 dbportnumber = 107009294;
+  optional int32 dbportnumber = 107009294;
 
   repeated string dbsecuritygroups = 420763246;
 
@@ -2999,13 +2999,13 @@ message ModifyDBInstanceMessage {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
   string masteruserpassword = 326176122;
 
-  int32 monitoringinterval = 320121591;
+  optional int32 monitoringinterval = 320121591;
 
   string monitoringrolearn = 181188871;
 
@@ -3021,7 +3021,7 @@ message ModifyDBInstanceMessage {
 
   string preferredmaintenancewindow = 99987842;
 
-  int32 promotiontier = 170834723;
+  optional int32 promotiontier = 170834723;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -3169,17 +3169,17 @@ message OrderableDBInstanceOption {
 
   string licensemodel = 59641010;
 
-  int32 maxiopsperdbinstance = 408072995;
+  optional int32 maxiopsperdbinstance = 408072995;
 
   double maxiopspergib = 246799832;
 
-  int32 maxstoragesize = 492016524;
+  optional int32 maxstoragesize = 492016524;
 
-  int32 miniopsperdbinstance = 497359021;
+  optional int32 miniopsperdbinstance = 497359021;
 
   double miniopspergib = 511052642;
 
-  int32 minstoragesize = 208793958;
+  optional int32 minstoragesize = 208793958;
 
   optional bool multiazcapable = 505918340;
 
@@ -3291,9 +3291,9 @@ message PendingMaintenanceActionsMessage {
 
 message PendingModifiedValues {
 
-  int32 allocatedstorage = 463241784;
+  optional int32 allocatedstorage = 463241784;
 
-  int32 backupretentionperiod = 411111671;
+  optional int32 backupretentionperiod = 411111671;
 
   string cacertificateidentifier = 471589144;
 
@@ -3305,7 +3305,7 @@ message PendingModifiedValues {
 
   string engineversion = 44953462;
 
-  int32 iops = 1043585;
+  optional int32 iops = 1043585;
 
   string licensemodel = 59641010;
 
@@ -3315,7 +3315,7 @@ message PendingModifiedValues {
 
   PendingCloudwatchLogsExports pendingcloudwatchlogsexports = 188240935;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string storagetype = 154478743;
 
@@ -3353,11 +3353,11 @@ message ProvisionedIopsNotAvailableInAZFault {
 
 message Range {
 
-  int32 from = 410269078;
+  optional int32 from = 410269078;
 
-  int32 step = 124909872;
+  optional int32 step = 124909872;
 
-  int32 to = 32872005;
+  optional int32 to = 32872005;
 
 }
 
@@ -3515,7 +3515,7 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   ServerlessV2ScalingConfiguration serverlessv2scalingconfiguration = 357537595;
 
@@ -3559,7 +3559,7 @@ message RestoreDBClusterToPointInTimeMessage {
 
   string optiongroupname = 303464901;
 
-  int32 port = 46480583;
+  optional int32 port = 46480583;
 
   string restoretotime = 116850538;
 

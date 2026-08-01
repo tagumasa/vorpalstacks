@@ -1903,8 +1903,8 @@ func (x *AccountAttributesMessage) GetAccountquotas() []*AccountQuota {
 type AccountQuota struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Accountquotaname string                 `protobuf:"bytes,370733632,opt,name=accountquotaname,proto3" json:"accountquotaname,omitempty"`
-	Max              int64                  `protobuf:"varint,480764858,opt,name=max,proto3" json:"max,omitempty"`
-	Used             int64                  `protobuf:"varint,178671057,opt,name=used,proto3" json:"used,omitempty"`
+	Max              *int64                 `protobuf:"varint,480764858,opt,name=max,proto3,oneof" json:"max,omitempty"`
+	Used             *int64                 `protobuf:"varint,178671057,opt,name=used,proto3,oneof" json:"used,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1947,15 +1947,15 @@ func (x *AccountQuota) GetAccountquotaname() string {
 }
 
 func (x *AccountQuota) GetMax() int64 {
-	if x != nil {
-		return x.Max
+	if x != nil && x.Max != nil {
+		return *x.Max
 	}
 	return 0
 }
 
 func (x *AccountQuota) GetUsed() int64 {
-	if x != nil {
-		return x.Used
+	if x != nil && x.Used != nil {
+		return *x.Used
 	}
 	return 0
 }
@@ -2230,10 +2230,10 @@ func (x *AddTagsToResourceMessage) GetTags() []*Tag {
 
 type AdditionalStorageVolume struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Allocatedstorage    int32                  `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
-	Iops                int32                  `protobuf:"varint,500513057,opt,name=iops,proto3" json:"iops,omitempty"`
-	Maxallocatedstorage int32                  `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Storagethroughput   int32                  `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Allocatedstorage    *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
+	Iops                *int32                 `protobuf:"varint,500513057,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
+	Maxallocatedstorage *int32                 `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Storagethroughput   *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype         string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Volumename          string                 `protobuf:"bytes,186940557,opt,name=volumename,proto3" json:"volumename,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -2271,29 +2271,29 @@ func (*AdditionalStorageVolume) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdditionalStorageVolume) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolume) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolume) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolume) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -2314,10 +2314,10 @@ func (x *AdditionalStorageVolume) GetVolumename() string {
 
 type AdditionalStorageVolumeOutput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Allocatedstorage    int32                  `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
-	Iops                int32                  `protobuf:"varint,500513057,opt,name=iops,proto3" json:"iops,omitempty"`
-	Maxallocatedstorage int32                  `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Storagethroughput   int32                  `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Allocatedstorage    *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
+	Iops                *int32                 `protobuf:"varint,500513057,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
+	Maxallocatedstorage *int32                 `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Storagethroughput   *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype         string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Storagevolumestatus string                 `protobuf:"bytes,151502747,opt,name=storagevolumestatus,proto3" json:"storagevolumestatus,omitempty"`
 	Volumename          string                 `protobuf:"bytes,186940557,opt,name=volumename,proto3" json:"volumename,omitempty"`
@@ -2356,29 +2356,29 @@ func (*AdditionalStorageVolumeOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdditionalStorageVolumeOutput) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolumeOutput) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolumeOutput) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *AdditionalStorageVolumeOutput) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -2806,14 +2806,14 @@ func (x *AvailabilityZone) GetName() string {
 
 type AvailableAdditionalStorageVolumesOption struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Maxiops                    int32                  `protobuf:"varint,94551037,opt,name=maxiops,proto3" json:"maxiops,omitempty"`
+	Maxiops                    *int32                 `protobuf:"varint,94551037,opt,name=maxiops,proto3,oneof" json:"maxiops,omitempty"`
 	Maxiopspergib              float64                `protobuf:"fixed64,246799832,opt,name=maxiopspergib,proto3" json:"maxiopspergib,omitempty"`
-	Maxstoragesize             int32                  `protobuf:"varint,492016524,opt,name=maxstoragesize,proto3" json:"maxstoragesize,omitempty"`
-	Maxstoragethroughput       int32                  `protobuf:"varint,231880041,opt,name=maxstoragethroughput,proto3" json:"maxstoragethroughput,omitempty"`
-	Miniops                    int32                  `protobuf:"varint,522437851,opt,name=miniops,proto3" json:"miniops,omitempty"`
+	Maxstoragesize             *int32                 `protobuf:"varint,492016524,opt,name=maxstoragesize,proto3,oneof" json:"maxstoragesize,omitempty"`
+	Maxstoragethroughput       *int32                 `protobuf:"varint,231880041,opt,name=maxstoragethroughput,proto3,oneof" json:"maxstoragethroughput,omitempty"`
+	Miniops                    *int32                 `protobuf:"varint,522437851,opt,name=miniops,proto3,oneof" json:"miniops,omitempty"`
 	Miniopspergib              float64                `protobuf:"fixed64,511052642,opt,name=miniopspergib,proto3" json:"miniopspergib,omitempty"`
-	Minstoragesize             int32                  `protobuf:"varint,208793958,opt,name=minstoragesize,proto3" json:"minstoragesize,omitempty"`
-	Minstoragethroughput       int32                  `protobuf:"varint,205668327,opt,name=minstoragethroughput,proto3" json:"minstoragethroughput,omitempty"`
+	Minstoragesize             *int32                 `protobuf:"varint,208793958,opt,name=minstoragesize,proto3,oneof" json:"minstoragesize,omitempty"`
+	Minstoragethroughput       *int32                 `protobuf:"varint,205668327,opt,name=minstoragethroughput,proto3,oneof" json:"minstoragethroughput,omitempty"`
 	Storagetype                string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Supportsiops               *bool                  `protobuf:"varint,381324741,opt,name=supportsiops,proto3,oneof" json:"supportsiops,omitempty"`
 	Supportsstorageautoscaling *bool                  `protobuf:"varint,530694083,opt,name=supportsstorageautoscaling,proto3,oneof" json:"supportsstorageautoscaling,omitempty"`
@@ -2853,8 +2853,8 @@ func (*AvailableAdditionalStorageVolumesOption) Descriptor() ([]byte, []int) {
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMaxiops() int32 {
-	if x != nil {
-		return x.Maxiops
+	if x != nil && x.Maxiops != nil {
+		return *x.Maxiops
 	}
 	return 0
 }
@@ -2867,22 +2867,22 @@ func (x *AvailableAdditionalStorageVolumesOption) GetMaxiopspergib() float64 {
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMaxstoragesize() int32 {
-	if x != nil {
-		return x.Maxstoragesize
+	if x != nil && x.Maxstoragesize != nil {
+		return *x.Maxstoragesize
 	}
 	return 0
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMaxstoragethroughput() int32 {
-	if x != nil {
-		return x.Maxstoragethroughput
+	if x != nil && x.Maxstoragethroughput != nil {
+		return *x.Maxstoragethroughput
 	}
 	return 0
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMiniops() int32 {
-	if x != nil {
-		return x.Miniops
+	if x != nil && x.Miniops != nil {
+		return *x.Miniops
 	}
 	return 0
 }
@@ -2895,15 +2895,15 @@ func (x *AvailableAdditionalStorageVolumesOption) GetMiniopspergib() float64 {
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMinstoragesize() int32 {
-	if x != nil {
-		return x.Minstoragesize
+	if x != nil && x.Minstoragesize != nil {
+		return *x.Minstoragesize
 	}
 	return 0
 }
 
 func (x *AvailableAdditionalStorageVolumesOption) GetMinstoragethroughput() int32 {
-	if x != nil {
-		return x.Minstoragethroughput
+	if x != nil && x.Minstoragethroughput != nil {
+		return *x.Minstoragethroughput
 	}
 	return 0
 }
@@ -3778,13 +3778,13 @@ func (x *CloudwatchLogsExportConfiguration) GetEnablelogtypes() []string {
 
 type ClusterPendingModifiedValues struct {
 	state                            protoimpl.MessageState         `protogen:"open.v1"`
-	Allocatedstorage                 int32                          `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
-	Backupretentionperiod            int32                          `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Allocatedstorage                 *int32                         `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
+	Backupretentionperiod            *int32                         `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Certificatedetails               *CertificateDetails            `protobuf:"bytes,450099239,opt,name=certificatedetails,proto3" json:"certificatedetails,omitempty"`
 	Dbclusteridentifier              string                         `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Engineversion                    string                         `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                          `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Iops                             int32                          `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                             *int32                         `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Masteruserpassword               string                         `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Pendingcloudwatchlogsexports     *PendingCloudwatchLogsExports  `protobuf:"bytes,188240935,opt,name=pendingcloudwatchlogsexports,proto3" json:"pendingcloudwatchlogsexports,omitempty"`
 	Rdscustomclusterconfiguration    *RdsCustomClusterConfiguration `protobuf:"bytes,171768636,opt,name=rdscustomclusterconfiguration,proto3" json:"rdscustomclusterconfiguration,omitempty"`
@@ -3824,15 +3824,15 @@ func (*ClusterPendingModifiedValues) Descriptor() ([]byte, []int) {
 }
 
 func (x *ClusterPendingModifiedValues) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
 
 func (x *ClusterPendingModifiedValues) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -3866,8 +3866,8 @@ func (x *ClusterPendingModifiedValues) GetIamdatabaseauthenticationenabled() boo
 }
 
 func (x *ClusterPendingModifiedValues) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -3902,10 +3902,10 @@ func (x *ClusterPendingModifiedValues) GetStoragetype() string {
 
 type ConnectionPoolConfiguration struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Connectionborrowtimeout   int32                  `protobuf:"varint,374352488,opt,name=connectionborrowtimeout,proto3" json:"connectionborrowtimeout,omitempty"`
+	Connectionborrowtimeout   *int32                 `protobuf:"varint,374352488,opt,name=connectionborrowtimeout,proto3,oneof" json:"connectionborrowtimeout,omitempty"`
 	Initquery                 string                 `protobuf:"bytes,363231170,opt,name=initquery,proto3" json:"initquery,omitempty"`
-	Maxconnectionspercent     int32                  `protobuf:"varint,325223332,opt,name=maxconnectionspercent,proto3" json:"maxconnectionspercent,omitempty"`
-	Maxidleconnectionspercent int32                  `protobuf:"varint,55486246,opt,name=maxidleconnectionspercent,proto3" json:"maxidleconnectionspercent,omitempty"`
+	Maxconnectionspercent     *int32                 `protobuf:"varint,325223332,opt,name=maxconnectionspercent,proto3,oneof" json:"maxconnectionspercent,omitempty"`
+	Maxidleconnectionspercent *int32                 `protobuf:"varint,55486246,opt,name=maxidleconnectionspercent,proto3,oneof" json:"maxidleconnectionspercent,omitempty"`
 	Sessionpinningfilters     []string               `protobuf:"bytes,192759388,rep,name=sessionpinningfilters,proto3" json:"sessionpinningfilters,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -3942,8 +3942,8 @@ func (*ConnectionPoolConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConnectionPoolConfiguration) GetConnectionborrowtimeout() int32 {
-	if x != nil {
-		return x.Connectionborrowtimeout
+	if x != nil && x.Connectionborrowtimeout != nil {
+		return *x.Connectionborrowtimeout
 	}
 	return 0
 }
@@ -3956,15 +3956,15 @@ func (x *ConnectionPoolConfiguration) GetInitquery() string {
 }
 
 func (x *ConnectionPoolConfiguration) GetMaxconnectionspercent() int32 {
-	if x != nil {
-		return x.Maxconnectionspercent
+	if x != nil && x.Maxconnectionspercent != nil {
+		return *x.Maxconnectionspercent
 	}
 	return 0
 }
 
 func (x *ConnectionPoolConfiguration) GetMaxidleconnectionspercent() int32 {
-	if x != nil {
-		return x.Maxidleconnectionspercent
+	if x != nil && x.Maxidleconnectionspercent != nil {
+		return *x.Maxidleconnectionspercent
 	}
 	return 0
 }
@@ -3978,10 +3978,10 @@ func (x *ConnectionPoolConfiguration) GetSessionpinningfilters() []string {
 
 type ConnectionPoolConfigurationInfo struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Connectionborrowtimeout   int32                  `protobuf:"varint,374352488,opt,name=connectionborrowtimeout,proto3" json:"connectionborrowtimeout,omitempty"`
+	Connectionborrowtimeout   *int32                 `protobuf:"varint,374352488,opt,name=connectionborrowtimeout,proto3,oneof" json:"connectionborrowtimeout,omitempty"`
 	Initquery                 string                 `protobuf:"bytes,363231170,opt,name=initquery,proto3" json:"initquery,omitempty"`
-	Maxconnectionspercent     int32                  `protobuf:"varint,325223332,opt,name=maxconnectionspercent,proto3" json:"maxconnectionspercent,omitempty"`
-	Maxidleconnectionspercent int32                  `protobuf:"varint,55486246,opt,name=maxidleconnectionspercent,proto3" json:"maxidleconnectionspercent,omitempty"`
+	Maxconnectionspercent     *int32                 `protobuf:"varint,325223332,opt,name=maxconnectionspercent,proto3,oneof" json:"maxconnectionspercent,omitempty"`
+	Maxidleconnectionspercent *int32                 `protobuf:"varint,55486246,opt,name=maxidleconnectionspercent,proto3,oneof" json:"maxidleconnectionspercent,omitempty"`
 	Sessionpinningfilters     []string               `protobuf:"bytes,192759388,rep,name=sessionpinningfilters,proto3" json:"sessionpinningfilters,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -4018,8 +4018,8 @@ func (*ConnectionPoolConfigurationInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConnectionPoolConfigurationInfo) GetConnectionborrowtimeout() int32 {
-	if x != nil {
-		return x.Connectionborrowtimeout
+	if x != nil && x.Connectionborrowtimeout != nil {
+		return *x.Connectionborrowtimeout
 	}
 	return 0
 }
@@ -4032,15 +4032,15 @@ func (x *ConnectionPoolConfigurationInfo) GetInitquery() string {
 }
 
 func (x *ConnectionPoolConfigurationInfo) GetMaxconnectionspercent() int32 {
-	if x != nil {
-		return x.Maxconnectionspercent
+	if x != nil && x.Maxconnectionspercent != nil {
+		return *x.Maxconnectionspercent
 	}
 	return 0
 }
 
 func (x *ConnectionPoolConfigurationInfo) GetMaxidleconnectionspercent() int32 {
-	if x != nil {
-		return x.Maxidleconnectionspercent
+	if x != nil && x.Maxidleconnectionspercent != nil {
+		return *x.Maxidleconnectionspercent
 	}
 	return 0
 }
@@ -4741,13 +4741,13 @@ type CreateBlueGreenDeploymentRequest struct {
 	Bluegreendeploymentname           string                 `protobuf:"bytes,7203345,opt,name=bluegreendeploymentname,proto3" json:"bluegreendeploymentname,omitempty"`
 	Source                            string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
 	Tags                              []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Targetallocatedstorage            int32                  `protobuf:"varint,89579947,opt,name=targetallocatedstorage,proto3" json:"targetallocatedstorage,omitempty"`
+	Targetallocatedstorage            *int32                 `protobuf:"varint,89579947,opt,name=targetallocatedstorage,proto3,oneof" json:"targetallocatedstorage,omitempty"`
 	Targetdbclusterparametergroupname string                 `protobuf:"bytes,491206010,opt,name=targetdbclusterparametergroupname,proto3" json:"targetdbclusterparametergroupname,omitempty"`
 	Targetdbinstanceclass             string                 `protobuf:"bytes,63035848,opt,name=targetdbinstanceclass,proto3" json:"targetdbinstanceclass,omitempty"`
 	Targetdbparametergroupname        string                 `protobuf:"bytes,125977128,opt,name=targetdbparametergroupname,proto3" json:"targetdbparametergroupname,omitempty"`
 	Targetengineversion               string                 `protobuf:"bytes,121840823,opt,name=targetengineversion,proto3" json:"targetengineversion,omitempty"`
-	Targetiops                        int32                  `protobuf:"varint,189332302,opt,name=targetiops,proto3" json:"targetiops,omitempty"`
-	Targetstoragethroughput           int32                  `protobuf:"varint,270198852,opt,name=targetstoragethroughput,proto3" json:"targetstoragethroughput,omitempty"`
+	Targetiops                        *int32                 `protobuf:"varint,189332302,opt,name=targetiops,proto3,oneof" json:"targetiops,omitempty"`
+	Targetstoragethroughput           *int32                 `protobuf:"varint,270198852,opt,name=targetstoragethroughput,proto3,oneof" json:"targetstoragethroughput,omitempty"`
 	Targetstoragetype                 string                 `protobuf:"bytes,462201058,opt,name=targetstoragetype,proto3" json:"targetstoragetype,omitempty"`
 	Upgradetargetstorageconfig        *bool                  `protobuf:"varint,292642894,opt,name=upgradetargetstorageconfig,proto3,oneof" json:"upgradetargetstorageconfig,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
@@ -4806,8 +4806,8 @@ func (x *CreateBlueGreenDeploymentRequest) GetTags() []*Tag {
 }
 
 func (x *CreateBlueGreenDeploymentRequest) GetTargetallocatedstorage() int32 {
-	if x != nil {
-		return x.Targetallocatedstorage
+	if x != nil && x.Targetallocatedstorage != nil {
+		return *x.Targetallocatedstorage
 	}
 	return 0
 }
@@ -4841,15 +4841,15 @@ func (x *CreateBlueGreenDeploymentRequest) GetTargetengineversion() string {
 }
 
 func (x *CreateBlueGreenDeploymentRequest) GetTargetiops() int32 {
-	if x != nil {
-		return x.Targetiops
+	if x != nil && x.Targetiops != nil {
+		return *x.Targetiops
 	}
 	return 0
 }
 
 func (x *CreateBlueGreenDeploymentRequest) GetTargetstoragethroughput() int32 {
-	if x != nil {
-		return x.Targetstoragethroughput
+	if x != nil && x.Targetstoragethroughput != nil {
+		return *x.Targetstoragethroughput
 	}
 	return 0
 }
@@ -5174,11 +5174,11 @@ func (x *CreateDBClusterEndpointMessage) GetTags() []*Tag {
 
 type CreateDBClusterMessage struct {
 	state                              protoimpl.MessageState            `protogen:"open.v1"`
-	Allocatedstorage                   int32                             `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                            `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade            *bool                             `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzones                  []string                          `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Backtrackwindow                    int64                             `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod              int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backtrackwindow                    *int64                            `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod              *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            string                            `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Charactersetname                   string                            `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
 	Clusterscalabilitytype             ClusterScalabilityType            `protobuf:"varint,266209549,opt,name=clusterscalabilitytype,proto3,enum=rds.ClusterScalabilityType" json:"clusterscalabilitytype,omitempty"`
@@ -5205,20 +5205,20 @@ type CreateDBClusterMessage struct {
 	Enginemode                         string                            `protobuf:"bytes,292587685,opt,name=enginemode,proto3" json:"enginemode,omitempty"`
 	Engineversion                      string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Globalclusteridentifier            string                            `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Iops                               int32                             `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                            `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Managemasteruserpassword           *bool                             `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masteruserauthenticationtype       MasterUserAuthenticationType      `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           string                            `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
 	Masterusername                     string                            `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Monitoringinterval                 int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Monitoringinterval                 *int32                            `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                            `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Networktype                        string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                            `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                             `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                             `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                            `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Presignedurl                       string                            `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
 	Preferredbackupwindow              string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow         string                            `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
@@ -5268,8 +5268,8 @@ func (*CreateDBClusterMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDBClusterMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -5289,15 +5289,15 @@ func (x *CreateDBClusterMessage) GetAvailabilityzones() []string {
 }
 
 func (x *CreateDBClusterMessage) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *CreateDBClusterMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -5485,8 +5485,8 @@ func (x *CreateDBClusterMessage) GetGlobalclusteridentifier() string {
 }
 
 func (x *CreateDBClusterMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -5534,8 +5534,8 @@ func (x *CreateDBClusterMessage) GetMasterusername() string {
 }
 
 func (x *CreateDBClusterMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -5569,15 +5569,15 @@ func (x *CreateDBClusterMessage) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *CreateDBClusterMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *CreateDBClusterMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -5943,10 +5943,10 @@ func (x *CreateDBClusterSnapshotResult) GetDbclustersnapshot() *DBClusterSnapsho
 type CreateDBInstanceMessage struct {
 	state                              protoimpl.MessageState       `protogen:"open.v1"`
 	Additionalstoragevolumes           []*AdditionalStorageVolume   `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                   int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                       `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade            *bool                        `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzone                   string                       `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
-	Backupretentionperiod              int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod              *int32                       `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Backuptarget                       string                       `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
 	Cacertificateidentifier            string                       `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Charactersetname                   string                       `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
@@ -5976,7 +5976,7 @@ type CreateDBInstanceMessage struct {
 	Engine                             string                       `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Enginelifecyclesupport             string                       `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
 	Engineversion                      string                       `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Iops                               int32                        `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                       `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                       `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                       string                       `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Managemasteruserpassword           *bool                        `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
@@ -5984,8 +5984,8 @@ type CreateDBInstanceMessage struct {
 	Masteruserpassword                 string                       `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           string                       `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
 	Masterusername                     string                       `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Maxallocatedstorage                int32                        `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                 int32                        `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Maxallocatedstorage                *int32                       `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                 *int32                       `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                       `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                            *bool                        `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Multitenant                        *bool                        `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
@@ -5993,15 +5993,15 @@ type CreateDBInstanceMessage struct {
 	Networktype                        string                       `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                       `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                       `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                        `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                        `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                       `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow              string                       `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow         string                       `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Processorfeatures                  []*ProcessorFeature          `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
-	Promotiontier                      int32                        `protobuf:"varint,170834723,opt,name=promotiontier,proto3" json:"promotiontier,omitempty"`
+	Promotiontier                      *int32                       `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                 *bool                        `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Storageencrypted                   *bool                        `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagethroughput                  int32                        `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                  *int32                       `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                        string                       `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications                  []*TagSpecification          `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tags                               []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -6051,8 +6051,8 @@ func (x *CreateDBInstanceMessage) GetAdditionalstoragevolumes() []*AdditionalSto
 }
 
 func (x *CreateDBInstanceMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -6072,8 +6072,8 @@ func (x *CreateDBInstanceMessage) GetAvailabilityzone() string {
 }
 
 func (x *CreateDBInstanceMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -6282,8 +6282,8 @@ func (x *CreateDBInstanceMessage) GetEngineversion() string {
 }
 
 func (x *CreateDBInstanceMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -6338,15 +6338,15 @@ func (x *CreateDBInstanceMessage) GetMasterusername() string {
 }
 
 func (x *CreateDBInstanceMessage) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *CreateDBInstanceMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -6401,15 +6401,15 @@ func (x *CreateDBInstanceMessage) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *CreateDBInstanceMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *CreateDBInstanceMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -6436,8 +6436,8 @@ func (x *CreateDBInstanceMessage) GetProcessorfeatures() []*ProcessorFeature {
 }
 
 func (x *CreateDBInstanceMessage) GetPromotiontier() int32 {
-	if x != nil {
-		return x.Promotiontier
+	if x != nil && x.Promotiontier != nil {
+		return *x.Promotiontier
 	}
 	return 0
 }
@@ -6457,8 +6457,8 @@ func (x *CreateDBInstanceMessage) GetStorageencrypted() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -6515,7 +6515,7 @@ func (x *CreateDBInstanceMessage) GetVpcsecuritygroupids() []string {
 type CreateDBInstanceReadReplicaMessage struct {
 	state                              protoimpl.MessageState     `protogen:"open.v1"`
 	Additionalstoragevolumes           []*AdditionalStorageVolume `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                   int32                      `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                     `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade            *bool                      `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzone                   string                     `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
 	Backuptarget                       string                     `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
@@ -6539,24 +6539,24 @@ type CreateDBInstanceReadReplicaMessage struct {
 	Enablecustomerownedip              *bool                      `protobuf:"varint,491377047,opt,name=enablecustomerownedip,proto3,oneof" json:"enablecustomerownedip,omitempty"`
 	Enableiamdatabaseauthentication    *bool                      `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Enableperformanceinsights          *bool                      `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
-	Iops                               int32                      `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                     `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Maxallocatedstorage                int32                      `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                 int32                      `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Maxallocatedstorage                *int32                     `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                 *int32                     `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                     `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                            *bool                      `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Networktype                        string                     `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                     `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                     `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                      `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                      `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                     `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                     `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Presignedurl                       string                     `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
 	Processorfeatures                  []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Publiclyaccessible                 *bool                      `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Replicamode                        ReplicaMode                `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
 	Sourcedbclusteridentifier          string                     `protobuf:"bytes,319462008,opt,name=sourcedbclusteridentifier,proto3" json:"sourcedbclusteridentifier,omitempty"`
 	Sourcedbinstanceidentifier         string                     `protobuf:"bytes,330655991,opt,name=sourcedbinstanceidentifier,proto3" json:"sourcedbinstanceidentifier,omitempty"`
-	Storagethroughput                  int32                      `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                  *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                        string                     `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications                  []*TagSpecification        `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tags                               []*Tag                     `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -6605,8 +6605,8 @@ func (x *CreateDBInstanceReadReplicaMessage) GetAdditionalstoragevolumes() []*Ad
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -6773,8 +6773,8 @@ func (x *CreateDBInstanceReadReplicaMessage) GetEnableperformanceinsights() bool
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -6787,15 +6787,15 @@ func (x *CreateDBInstanceReadReplicaMessage) GetKmskeyid() string {
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -6836,15 +6836,15 @@ func (x *CreateDBInstanceReadReplicaMessage) GetPerformanceinsightskmskeyid() st
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -6892,8 +6892,8 @@ func (x *CreateDBInstanceReadReplicaMessage) GetSourcedbinstanceidentifier() str
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -7284,7 +7284,7 @@ type CreateDBProxyRequest struct {
 	Defaultauthscheme           DefaultAuthScheme           `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme" json:"defaultauthscheme,omitempty"`
 	Endpointnetworktype         EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
 	Enginefamily                EngineFamily                `protobuf:"varint,298996604,opt,name=enginefamily,proto3,enum=rds.EngineFamily" json:"enginefamily,omitempty"`
-	Idleclienttimeout           int32                       `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3" json:"idleclienttimeout,omitempty"`
+	Idleclienttimeout           *int32                      `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
 	Requiretls                  *bool                       `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
 	Rolearn                     string                      `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tags                        []*Tag                      `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -7368,8 +7368,8 @@ func (x *CreateDBProxyRequest) GetEnginefamily() EngineFamily {
 }
 
 func (x *CreateDBProxyRequest) GetIdleclienttimeout() int32 {
-	if x != nil {
-		return x.Idleclienttimeout
+	if x != nil && x.Idleclienttimeout != nil {
+		return *x.Idleclienttimeout
 	}
 	return 0
 }
@@ -7566,7 +7566,7 @@ func (x *CreateDBSecurityGroupResult) GetDbsecuritygroup() *DBSecurityGroup {
 
 type CreateDBShardGroupMessage struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Computeredundancy      int32                  `protobuf:"varint,518573958,opt,name=computeredundancy,proto3" json:"computeredundancy,omitempty"`
+	Computeredundancy      *int32                 `protobuf:"varint,518573958,opt,name=computeredundancy,proto3,oneof" json:"computeredundancy,omitempty"`
 	Dbclusteridentifier    string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbshardgroupidentifier string                 `protobuf:"bytes,111693640,opt,name=dbshardgroupidentifier,proto3" json:"dbshardgroupidentifier,omitempty"`
 	Maxacu                 float64                `protobuf:"fixed64,248469229,opt,name=maxacu,proto3" json:"maxacu,omitempty"`
@@ -7608,8 +7608,8 @@ func (*CreateDBShardGroupMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDBShardGroupMessage) GetComputeredundancy() int32 {
-	if x != nil {
-		return x.Computeredundancy
+	if x != nil && x.Computeredundancy != nil {
+		return *x.Computeredundancy
 	}
 	return 0
 }
@@ -8766,16 +8766,16 @@ type DBCluster struct {
 	Activitystreamkmskeyid                 string                                `protobuf:"bytes,394779710,opt,name=activitystreamkmskeyid,proto3" json:"activitystreamkmskeyid,omitempty"`
 	Activitystreammode                     ActivityStreamMode                    `protobuf:"varint,19126712,opt,name=activitystreammode,proto3,enum=rds.ActivityStreamMode" json:"activitystreammode,omitempty"`
 	Activitystreamstatus                   ActivityStreamStatus                  `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus" json:"activitystreamstatus,omitempty"`
-	Allocatedstorage                       int32                                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                       *int32                                `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Associatedroles                        []*DBClusterRole                      `protobuf:"bytes,428985325,rep,name=associatedroles,proto3" json:"associatedroles,omitempty"`
 	Autominorversionupgrade                *bool                                 `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Automaticrestarttime                   string                                `protobuf:"bytes,497974735,opt,name=automaticrestarttime,proto3" json:"automaticrestarttime,omitempty"`
 	Availabilityzones                      []string                              `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
 	Awsbackuprecoverypointarn              string                                `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backtrackconsumedchangerecords         int64                                 `protobuf:"varint,90708912,opt,name=backtrackconsumedchangerecords,proto3" json:"backtrackconsumedchangerecords,omitempty"`
-	Backtrackwindow                        int64                                 `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod                  int32                                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
-	Capacity                               int32                                 `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Backtrackconsumedchangerecords         *int64                                `protobuf:"varint,90708912,opt,name=backtrackconsumedchangerecords,proto3,oneof" json:"backtrackconsumedchangerecords,omitempty"`
+	Backtrackwindow                        *int64                                `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod                  *int32                                `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
+	Capacity                               *int32                                `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Certificatedetails                     *CertificateDetails                   `protobuf:"bytes,450099239,opt,name=certificatedetails,proto3" json:"certificatedetails,omitempty"`
 	Charactersetname                       string                                `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
 	Clonegroupid                           string                                `protobuf:"bytes,66234961,opt,name=clonegroupid,proto3" json:"clonegroupid,omitempty"`
@@ -8813,14 +8813,14 @@ type DBCluster struct {
 	Iamdatabaseauthenticationenabled       *bool                                 `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
 	Iooptimizednextallowedmodificationtime string                                `protobuf:"bytes,206659625,opt,name=iooptimizednextallowedmodificationtime,proto3" json:"iooptimizednextallowedmodificationtime,omitempty"`
 	Internetaccessgatewayenabled           *bool                                 `protobuf:"varint,452956890,opt,name=internetaccessgatewayenabled,proto3,oneof" json:"internetaccessgatewayenabled,omitempty"`
-	Iops                                   int32                                 `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                                   *int32                                `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                               string                                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Latestrestorabletime                   string                                `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3" json:"latestrestorabletime,omitempty"`
 	Limitlessdatabase                      *LimitlessDatabase                    `protobuf:"bytes,444817377,opt,name=limitlessdatabase,proto3" json:"limitlessdatabase,omitempty"`
 	Localwriteforwardingstatus             LocalWriteForwardingStatus            `protobuf:"varint,242353919,opt,name=localwriteforwardingstatus,proto3,enum=rds.LocalWriteForwardingStatus" json:"localwriteforwardingstatus,omitempty"`
 	Masterusersecret                       *MasterUserSecret                     `protobuf:"bytes,260483101,opt,name=masterusersecret,proto3" json:"masterusersecret,omitempty"`
 	Masterusername                         string                                `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Monitoringinterval                     int32                                 `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Monitoringinterval                     *int32                                `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                      string                                `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                                *bool                                 `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Networktype                            string                                `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
@@ -8828,8 +8828,8 @@ type DBCluster struct {
 	Percentprogress                        string                                `protobuf:"bytes,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
 	Performanceinsightsenabled             *bool                                 `protobuf:"varint,390617050,opt,name=performanceinsightsenabled,proto3,oneof" json:"performanceinsightsenabled,omitempty"`
 	Performanceinsightskmskeyid            string                                `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod     int32                                 `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                                   int32                                 `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod     *int32                                `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                                   *int32                                `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow                  string                                `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow             string                                `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Publiclyaccessible                     *bool                                 `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
@@ -8844,7 +8844,7 @@ type DBCluster struct {
 	Statusinfos                            []*DBClusterStatusInfo                `protobuf:"bytes,421770169,rep,name=statusinfos,proto3" json:"statusinfos,omitempty"`
 	Storageencrypted                       *bool                                 `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Storageencryptiontype                  StorageEncryptionType                 `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                      int32                                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                      *int32                                `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                            string                                `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Taglist                                []*Tag                                `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Upgraderolloutorder                    UpgradeRolloutOrder                   `protobuf:"varint,522027557,opt,name=upgraderolloutorder,proto3,enum=rds.UpgradeRolloutOrder" json:"upgraderolloutorder,omitempty"`
@@ -8913,8 +8913,8 @@ func (x *DBCluster) GetActivitystreamstatus() ActivityStreamStatus {
 }
 
 func (x *DBCluster) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -8955,29 +8955,29 @@ func (x *DBCluster) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *DBCluster) GetBacktrackconsumedchangerecords() int64 {
-	if x != nil {
-		return x.Backtrackconsumedchangerecords
+	if x != nil && x.Backtrackconsumedchangerecords != nil {
+		return *x.Backtrackconsumedchangerecords
 	}
 	return 0
 }
 
 func (x *DBCluster) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *DBCluster) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
 
 func (x *DBCluster) GetCapacity() int32 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -9242,8 +9242,8 @@ func (x *DBCluster) GetInternetaccessgatewayenabled() bool {
 }
 
 func (x *DBCluster) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -9291,8 +9291,8 @@ func (x *DBCluster) GetMasterusername() string {
 }
 
 func (x *DBCluster) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -9347,15 +9347,15 @@ func (x *DBCluster) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *DBCluster) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *DBCluster) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -9459,8 +9459,8 @@ func (x *DBCluster) GetStorageencryptiontype() StorageEncryptionType {
 }
 
 func (x *DBCluster) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -9546,10 +9546,10 @@ func (x *DBClusterAlreadyExistsFault) GetMessage() string {
 
 type DBClusterAutomatedBackup struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	Allocatedstorage                 int32                  `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                 *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Availabilityzones                []string               `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
 	Awsbackuprecoverypointarn        string                 `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backupretentionperiod            int32                  `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod            *int32                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Clustercreatetime                string                 `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3" json:"clustercreatetime,omitempty"`
 	Dbclusterarn                     string                 `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3" json:"dbclusterarn,omitempty"`
 	Dbclusterautomatedbackupsarn     string                 `protobuf:"bytes,438490226,opt,name=dbclusterautomatedbackupsarn,proto3" json:"dbclusterautomatedbackupsarn,omitempty"`
@@ -9559,18 +9559,18 @@ type DBClusterAutomatedBackup struct {
 	Enginemode                       string                 `protobuf:"bytes,292587685,opt,name=enginemode,proto3" json:"enginemode,omitempty"`
 	Engineversion                    string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                  `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Iops                             int32                  `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                             *int32                 `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                         string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                     string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Masterusername                   string                 `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Port                             int32                  `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                             *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow            string                 `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Region                           string                 `protobuf:"bytes,154040478,opt,name=region,proto3" json:"region,omitempty"`
 	Restorewindow                    *RestoreWindow         `protobuf:"bytes,45362386,opt,name=restorewindow,proto3" json:"restorewindow,omitempty"`
 	Status                           string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Storageencrypted                 *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Storageencryptiontype            StorageEncryptionType  `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                int32                  `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Vpcid                            string                 `protobuf:"bytes,412355958,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
@@ -9609,8 +9609,8 @@ func (*DBClusterAutomatedBackup) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterAutomatedBackup) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -9630,8 +9630,8 @@ func (x *DBClusterAutomatedBackup) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *DBClusterAutomatedBackup) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -9700,8 +9700,8 @@ func (x *DBClusterAutomatedBackup) GetIamdatabaseauthenticationenabled() bool {
 }
 
 func (x *DBClusterAutomatedBackup) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -9728,8 +9728,8 @@ func (x *DBClusterAutomatedBackup) GetMasterusername() string {
 }
 
 func (x *DBClusterAutomatedBackup) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -9777,8 +9777,8 @@ func (x *DBClusterAutomatedBackup) GetStorageencryptiontype() StorageEncryptionT
 }
 
 func (x *DBClusterAutomatedBackup) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -10126,10 +10126,10 @@ func (x *DBClusterBacktrackNotFoundFault) GetMessage() string {
 
 type DBClusterCapacityInfo struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Currentcapacity      int32                  `protobuf:"varint,171966615,opt,name=currentcapacity,proto3" json:"currentcapacity,omitempty"`
+	Currentcapacity      *int32                 `protobuf:"varint,171966615,opt,name=currentcapacity,proto3,oneof" json:"currentcapacity,omitempty"`
 	Dbclusteridentifier  string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Pendingcapacity      int32                  `protobuf:"varint,405898457,opt,name=pendingcapacity,proto3" json:"pendingcapacity,omitempty"`
-	Secondsbeforetimeout int32                  `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3" json:"secondsbeforetimeout,omitempty"`
+	Pendingcapacity      *int32                 `protobuf:"varint,405898457,opt,name=pendingcapacity,proto3,oneof" json:"pendingcapacity,omitempty"`
+	Secondsbeforetimeout *int32                 `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3,oneof" json:"secondsbeforetimeout,omitempty"`
 	Timeoutaction        string                 `protobuf:"bytes,444876627,opt,name=timeoutaction,proto3" json:"timeoutaction,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -10166,8 +10166,8 @@ func (*DBClusterCapacityInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterCapacityInfo) GetCurrentcapacity() int32 {
-	if x != nil {
-		return x.Currentcapacity
+	if x != nil && x.Currentcapacity != nil {
+		return *x.Currentcapacity
 	}
 	return 0
 }
@@ -10180,15 +10180,15 @@ func (x *DBClusterCapacityInfo) GetDbclusteridentifier() string {
 }
 
 func (x *DBClusterCapacityInfo) GetPendingcapacity() int32 {
-	if x != nil {
-		return x.Pendingcapacity
+	if x != nil && x.Pendingcapacity != nil {
+		return *x.Pendingcapacity
 	}
 	return 0
 }
 
 func (x *DBClusterCapacityInfo) GetSecondsbeforetimeout() int32 {
-	if x != nil {
-		return x.Secondsbeforetimeout
+	if x != nil && x.Secondsbeforetimeout != nil {
+		return *x.Secondsbeforetimeout
 	}
 	return 0
 }
@@ -10505,7 +10505,7 @@ type DBClusterMember struct {
 	Dbclusterparametergroupstatus string                 `protobuf:"bytes,237254592,opt,name=dbclusterparametergroupstatus,proto3" json:"dbclusterparametergroupstatus,omitempty"`
 	Dbinstanceidentifier          string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Isclusterwriter               *bool                  `protobuf:"varint,506087795,opt,name=isclusterwriter,proto3,oneof" json:"isclusterwriter,omitempty"`
-	Promotiontier                 int32                  `protobuf:"varint,170834723,opt,name=promotiontier,proto3" json:"promotiontier,omitempty"`
+	Promotiontier                 *int32                 `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -10562,8 +10562,8 @@ func (x *DBClusterMember) GetIsclusterwriter() bool {
 }
 
 func (x *DBClusterMember) GetPromotiontier() int32 {
-	if x != nil {
-		return x.Promotiontier
+	if x != nil && x.Promotiontier != nil {
+		return *x.Promotiontier
 	}
 	return 0
 }
@@ -11214,9 +11214,9 @@ func (x *DBClusterRoleQuotaExceededFault) GetMessage() string {
 
 type DBClusterSnapshot struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	Allocatedstorage                 int32                  `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                 *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Availabilityzones                []string               `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Backupretentionperiod            int32                  `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod            *int32                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Clustercreatetime                string                 `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3" json:"clustercreatetime,omitempty"`
 	Dbclusteridentifier              string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbclustersnapshotarn             string                 `protobuf:"bytes,468809279,opt,name=dbclustersnapshotarn,proto3" json:"dbclustersnapshotarn,omitempty"`
@@ -11230,8 +11230,8 @@ type DBClusterSnapshot struct {
 	Kmskeyid                         string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                     string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Masterusername                   string                 `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Percentprogress                  int32                  `protobuf:"varint,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
-	Port                             int32                  `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Percentprogress                  *int32                 `protobuf:"varint,66105414,opt,name=percentprogress,proto3,oneof" json:"percentprogress,omitempty"`
+	Port                             *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow            string                 `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Snapshotcreatetime               string                 `protobuf:"bytes,168899877,opt,name=snapshotcreatetime,proto3" json:"snapshotcreatetime,omitempty"`
 	Snapshottype                     string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
@@ -11239,7 +11239,7 @@ type DBClusterSnapshot struct {
 	Status                           string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Storageencrypted                 *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Storageencryptiontype            StorageEncryptionType  `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                int32                  `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Vpcid                            string                 `protobuf:"bytes,412355958,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
@@ -11278,8 +11278,8 @@ func (*DBClusterSnapshot) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterSnapshot) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -11292,8 +11292,8 @@ func (x *DBClusterSnapshot) GetAvailabilityzones() []string {
 }
 
 func (x *DBClusterSnapshot) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -11390,15 +11390,15 @@ func (x *DBClusterSnapshot) GetMasterusername() string {
 }
 
 func (x *DBClusterSnapshot) GetPercentprogress() int32 {
-	if x != nil {
-		return x.Percentprogress
+	if x != nil && x.Percentprogress != nil {
+		return *x.Percentprogress
 	}
 	return 0
 }
 
 func (x *DBClusterSnapshot) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -11453,8 +11453,8 @@ func (x *DBClusterSnapshot) GetStorageencryptiontype() StorageEncryptionType {
 }
 
 func (x *DBClusterSnapshot) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -12185,14 +12185,14 @@ type DBInstance struct {
 	Activitystreampolicystatus                    ActivityStreamPolicyStatus               `protobuf:"varint,131587121,opt,name=activitystreampolicystatus,proto3,enum=rds.ActivityStreamPolicyStatus" json:"activitystreampolicystatus,omitempty"`
 	Activitystreamstatus                          ActivityStreamStatus                     `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus" json:"activitystreamstatus,omitempty"`
 	Additionalstoragevolumes                      []*AdditionalStorageVolumeOutput         `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                              int32                                    `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                              *int32                                   `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Associatedroles                               []*DBInstanceRole                        `protobuf:"bytes,428985325,rep,name=associatedroles,proto3" json:"associatedroles,omitempty"`
 	Autominorversionupgrade                       *bool                                    `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Automaticrestarttime                          string                                   `protobuf:"bytes,497974735,opt,name=automaticrestarttime,proto3" json:"automaticrestarttime,omitempty"`
 	Automationmode                                AutomationMode                           `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
 	Availabilityzone                              string                                   `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
 	Awsbackuprecoverypointarn                     string                                   `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backupretentionperiod                         int32                                    `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod                         *int32                                   `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Backuptarget                                  string                                   `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
 	Cacertificateidentifier                       string                                   `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Certificatedetails                            *CertificateDetails                      `protobuf:"bytes,450099239,opt,name=certificatedetails,proto3" json:"certificatedetails,omitempty"`
@@ -12212,7 +12212,7 @@ type DBInstance struct {
 	Dbsubnetgroup                                 *DBSubnetGroup                           `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3" json:"dbsubnetgroup,omitempty"`
 	Dbsystemid                                    string                                   `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3" json:"dbsystemid,omitempty"`
 	Databaseinsightsmode                          DatabaseInsightsMode                     `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
-	Dbinstanceport                                int32                                    `protobuf:"varint,122890396,opt,name=dbinstanceport,proto3" json:"dbinstanceport,omitempty"`
+	Dbinstanceport                                *int32                                   `protobuf:"varint,122890396,opt,name=dbinstanceport,proto3,oneof" json:"dbinstanceport,omitempty"`
 	Dbiresourceid                                 string                                   `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3" json:"dbiresourceid,omitempty"`
 	Dedicatedlogvolume                            *bool                                    `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
 	Deletionprotection                            *bool                                    `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
@@ -12225,7 +12225,7 @@ type DBInstance struct {
 	Enhancedmonitoringresourcearn                 string                                   `protobuf:"bytes,233441497,opt,name=enhancedmonitoringresourcearn,proto3" json:"enhancedmonitoringresourcearn,omitempty"`
 	Iamdatabaseauthenticationenabled              *bool                                    `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
 	Instancecreatetime                            string                                   `protobuf:"bytes,479568832,opt,name=instancecreatetime,proto3" json:"instancecreatetime,omitempty"`
-	Iops                                          int32                                    `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                                          *int32                                   `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Isstorageconfigupgradeavailable               *bool                                    `protobuf:"varint,401311200,opt,name=isstorageconfigupgradeavailable,proto3,oneof" json:"isstorageconfigupgradeavailable,omitempty"`
 	Kmskeyid                                      string                                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Latestrestorabletime                          string                                   `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3" json:"latestrestorabletime,omitempty"`
@@ -12233,8 +12233,8 @@ type DBInstance struct {
 	Listenerendpoint                              *Endpoint                                `protobuf:"bytes,52162985,opt,name=listenerendpoint,proto3" json:"listenerendpoint,omitempty"`
 	Masterusersecret                              *MasterUserSecret                        `protobuf:"bytes,260483101,opt,name=masterusersecret,proto3" json:"masterusersecret,omitempty"`
 	Masterusername                                string                                   `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Maxallocatedstorage                           int32                                    `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                            int32                                    `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Maxallocatedstorage                           *int32                                   `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                            *int32                                   `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                             string                                   `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                                       *bool                                    `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Multitenant                                   *bool                                    `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
@@ -12245,11 +12245,11 @@ type DBInstance struct {
 	Percentprogress                               string                                   `protobuf:"bytes,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
 	Performanceinsightsenabled                    *bool                                    `protobuf:"varint,390617050,opt,name=performanceinsightsenabled,proto3,oneof" json:"performanceinsightsenabled,omitempty"`
 	Performanceinsightskmskeyid                   string                                   `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod            int32                                    `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
+	Performanceinsightsretentionperiod            *int32                                   `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
 	Preferredbackupwindow                         string                                   `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow                    string                                   `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Processorfeatures                             []*ProcessorFeature                      `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
-	Promotiontier                                 int32                                    `protobuf:"varint,170834723,opt,name=promotiontier,proto3" json:"promotiontier,omitempty"`
+	Promotiontier                                 *int32                                   `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                            *bool                                    `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Readreplicadbclusteridentifiers               []string                                 `protobuf:"bytes,174932412,rep,name=readreplicadbclusteridentifiers,proto3" json:"readreplicadbclusteridentifiers,omitempty"`
 	Readreplicadbinstanceidentifiers              []string                                 `protobuf:"bytes,261713211,rep,name=readreplicadbinstanceidentifiers,proto3" json:"readreplicadbinstanceidentifiers,omitempty"`
@@ -12261,7 +12261,7 @@ type DBInstance struct {
 	Statusinfos                                   []*DBInstanceStatusInfo                  `protobuf:"bytes,421770169,rep,name=statusinfos,proto3" json:"statusinfos,omitempty"`
 	Storageencrypted                              *bool                                    `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Storageencryptiontype                         StorageEncryptionType                    `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                             int32                                    `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                             *int32                                   `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                                   string                                   `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Storagevolumestatus                           string                                   `protobuf:"bytes,151502747,opt,name=storagevolumestatus,proto3" json:"storagevolumestatus,omitempty"`
 	Taglist                                       []*Tag                                   `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
@@ -12353,8 +12353,8 @@ func (x *DBInstance) GetAdditionalstoragevolumes() []*AdditionalStorageVolumeOut
 }
 
 func (x *DBInstance) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -12402,8 +12402,8 @@ func (x *DBInstance) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *DBInstance) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -12542,8 +12542,8 @@ func (x *DBInstance) GetDatabaseinsightsmode() DatabaseInsightsMode {
 }
 
 func (x *DBInstance) GetDbinstanceport() int32 {
-	if x != nil {
-		return x.Dbinstanceport
+	if x != nil && x.Dbinstanceport != nil {
+		return *x.Dbinstanceport
 	}
 	return 0
 }
@@ -12633,8 +12633,8 @@ func (x *DBInstance) GetInstancecreatetime() string {
 }
 
 func (x *DBInstance) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -12689,15 +12689,15 @@ func (x *DBInstance) GetMasterusername() string {
 }
 
 func (x *DBInstance) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *DBInstance) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -12773,8 +12773,8 @@ func (x *DBInstance) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *DBInstance) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
@@ -12801,8 +12801,8 @@ func (x *DBInstance) GetProcessorfeatures() []*ProcessorFeature {
 }
 
 func (x *DBInstance) GetPromotiontier() int32 {
-	if x != nil {
-		return x.Promotiontier
+	if x != nil && x.Promotiontier != nil {
+		return *x.Promotiontier
 	}
 	return 0
 }
@@ -12885,8 +12885,8 @@ func (x *DBInstance) GetStorageencryptiontype() StorageEncryptionType {
 }
 
 func (x *DBInstance) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -12987,10 +12987,10 @@ func (x *DBInstanceAlreadyExistsFault) GetMessage() string {
 type DBInstanceAutomatedBackup struct {
 	state                                  protoimpl.MessageState                   `protogen:"open.v1"`
 	Additionalstoragevolumes               []*AdditionalStorageVolume               `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                       int32                                    `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                       *int32                                   `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Availabilityzone                       string                                   `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
 	Awsbackuprecoverypointarn              string                                   `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backupretentionperiod                  int32                                    `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod                  *int32                                   `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Backuptarget                           string                                   `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
 	Dbinstancearn                          string                                   `protobuf:"bytes,520508360,opt,name=dbinstancearn,proto3" json:"dbinstancearn,omitempty"`
 	Dbinstanceautomatedbackupsarn          string                                   `protobuf:"bytes,463983301,opt,name=dbinstanceautomatedbackupsarn,proto3" json:"dbinstanceautomatedbackupsarn,omitempty"`
@@ -13003,19 +13003,19 @@ type DBInstanceAutomatedBackup struct {
 	Engineversion                          string                                   `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled       *bool                                    `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
 	Instancecreatetime                     string                                   `protobuf:"bytes,479568832,opt,name=instancecreatetime,proto3" json:"instancecreatetime,omitempty"`
-	Iops                                   int32                                    `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                                   *int32                                   `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                               string                                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                           string                                   `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Masterusername                         string                                   `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
 	Multitenant                            *bool                                    `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
 	Optiongroupname                        string                                   `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Port                                   int32                                    `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                                   *int32                                   `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow                  string                                   `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Region                                 string                                   `protobuf:"bytes,154040478,opt,name=region,proto3" json:"region,omitempty"`
 	Restorewindow                          *RestoreWindow                           `protobuf:"bytes,45362386,opt,name=restorewindow,proto3" json:"restorewindow,omitempty"`
 	Status                                 string                                   `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Storageencryptiontype                  StorageEncryptionType                    `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                      int32                                    `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                      *int32                                   `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                            string                                   `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Taglist                                []*Tag                                   `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Tdecredentialarn                       string                                   `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
@@ -13063,8 +13063,8 @@ func (x *DBInstanceAutomatedBackup) GetAdditionalstoragevolumes() []*AdditionalS
 }
 
 func (x *DBInstanceAutomatedBackup) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -13084,8 +13084,8 @@ func (x *DBInstanceAutomatedBackup) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *DBInstanceAutomatedBackup) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -13175,8 +13175,8 @@ func (x *DBInstanceAutomatedBackup) GetInstancecreatetime() string {
 }
 
 func (x *DBInstanceAutomatedBackup) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -13217,8 +13217,8 @@ func (x *DBInstanceAutomatedBackup) GetOptiongroupname() string {
 }
 
 func (x *DBInstanceAutomatedBackup) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -13259,8 +13259,8 @@ func (x *DBInstanceAutomatedBackup) GetStorageencryptiontype() StorageEncryption
 }
 
 func (x *DBInstanceAutomatedBackup) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -14399,7 +14399,7 @@ type DBProxy struct {
 	Endpoint                    string                      `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	Endpointnetworktype         EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
 	Enginefamily                string                      `protobuf:"bytes,298996604,opt,name=enginefamily,proto3" json:"enginefamily,omitempty"`
-	Idleclienttimeout           int32                       `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3" json:"idleclienttimeout,omitempty"`
+	Idleclienttimeout           *int32                      `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
 	Requiretls                  *bool                       `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
 	Rolearn                     string                      `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Status                      DBProxyStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.DBProxyStatus" json:"status,omitempty"`
@@ -14506,8 +14506,8 @@ func (x *DBProxy) GetEnginefamily() string {
 }
 
 func (x *DBProxy) GetIdleclienttimeout() int32 {
-	if x != nil {
-		return x.Idleclienttimeout
+	if x != nil && x.Idleclienttimeout != nil {
+		return *x.Idleclienttimeout
 	}
 	return 0
 }
@@ -14967,7 +14967,7 @@ func (x *DBProxyQuotaExceededFault) GetMessage() string {
 type DBProxyTarget struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Endpoint         string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Port             int32                  `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port             *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Rdsresourceid    string                 `protobuf:"bytes,200404394,opt,name=rdsresourceid,proto3" json:"rdsresourceid,omitempty"`
 	Role             TargetRole             `protobuf:"varint,271285818,opt,name=role,proto3,enum=rds.TargetRole" json:"role,omitempty"`
 	Targetarn        string                 `protobuf:"bytes,217664144,opt,name=targetarn,proto3" json:"targetarn,omitempty"`
@@ -15016,8 +15016,8 @@ func (x *DBProxyTarget) GetEndpoint() string {
 }
 
 func (x *DBProxyTarget) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -15962,7 +15962,7 @@ func (x *DBSecurityGroupQuotaExceededFault) GetMessage() string {
 
 type DBShardGroup struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Computeredundancy      int32                  `protobuf:"varint,518573958,opt,name=computeredundancy,proto3" json:"computeredundancy,omitempty"`
+	Computeredundancy      *int32                 `protobuf:"varint,518573958,opt,name=computeredundancy,proto3,oneof" json:"computeredundancy,omitempty"`
 	Dbclusteridentifier    string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbshardgrouparn        string                 `protobuf:"bytes,323840332,opt,name=dbshardgrouparn,proto3" json:"dbshardgrouparn,omitempty"`
 	Dbshardgroupidentifier string                 `protobuf:"bytes,111693640,opt,name=dbshardgroupidentifier,proto3" json:"dbshardgroupidentifier,omitempty"`
@@ -16008,8 +16008,8 @@ func (*DBShardGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBShardGroup) GetComputeredundancy() int32 {
-	if x != nil {
-		return x.Computeredundancy
+	if x != nil && x.Computeredundancy != nil {
+		return *x.Computeredundancy
 	}
 	return 0
 }
@@ -16175,9 +16175,9 @@ func (x *DBShardGroupNotFoundFault) GetMessage() string {
 type DBSnapshot struct {
 	state                            protoimpl.MessageState     `protogen:"open.v1"`
 	Additionalstoragevolumes         []*AdditionalStorageVolume `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                 int32                      `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                 *int32                     `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Availabilityzone                 string                     `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
-	Backupretentionperiod            int32                      `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod            *int32                     `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Dbinstanceidentifier             string                     `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Dbsnapshotarn                    string                     `protobuf:"bytes,232729495,opt,name=dbsnapshotarn,proto3" json:"dbsnapshotarn,omitempty"`
 	Dbsnapshotidentifier             string                     `protobuf:"bytes,479186745,opt,name=dbsnapshotidentifier,proto3" json:"dbsnapshotidentifier,omitempty"`
@@ -16189,15 +16189,15 @@ type DBSnapshot struct {
 	Engineversion                    string                     `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                      `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
 	Instancecreatetime               string                     `protobuf:"bytes,479568832,opt,name=instancecreatetime,proto3" json:"instancecreatetime,omitempty"`
-	Iops                             int32                      `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                             *int32                     `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                         string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                     string                     `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Masterusername                   string                     `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
 	Multitenant                      *bool                      `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
 	Optiongroupname                  string                     `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Originalsnapshotcreatetime       string                     `protobuf:"bytes,134270140,opt,name=originalsnapshotcreatetime,proto3" json:"originalsnapshotcreatetime,omitempty"`
-	Percentprogress                  int32                      `protobuf:"varint,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
-	Port                             int32                      `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Percentprogress                  *int32                     `protobuf:"varint,66105414,opt,name=percentprogress,proto3,oneof" json:"percentprogress,omitempty"`
+	Port                             *int32                     `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow            string                     `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Processorfeatures                []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Snapshotavailabilityzone         string                     `protobuf:"bytes,225920145,opt,name=snapshotavailabilityzone,proto3" json:"snapshotavailabilityzone,omitempty"`
@@ -16209,7 +16209,7 @@ type DBSnapshot struct {
 	Sourceregion                     string                     `protobuf:"bytes,213476941,opt,name=sourceregion,proto3" json:"sourceregion,omitempty"`
 	Status                           string                     `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Storageencryptiontype            StorageEncryptionType      `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
-	Storagethroughput                int32                      `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      string                     `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                     `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Tdecredentialarn                 string                     `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
@@ -16257,8 +16257,8 @@ func (x *DBSnapshot) GetAdditionalstoragevolumes() []*AdditionalStorageVolume {
 }
 
 func (x *DBSnapshot) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -16271,8 +16271,8 @@ func (x *DBSnapshot) GetAvailabilityzone() string {
 }
 
 func (x *DBSnapshot) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -16355,8 +16355,8 @@ func (x *DBSnapshot) GetInstancecreatetime() string {
 }
 
 func (x *DBSnapshot) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -16404,15 +16404,15 @@ func (x *DBSnapshot) GetOriginalsnapshotcreatetime() string {
 }
 
 func (x *DBSnapshot) GetPercentprogress() int32 {
-	if x != nil {
-		return x.Percentprogress
+	if x != nil && x.Percentprogress != nil {
+		return *x.Percentprogress
 	}
 	return 0
 }
 
 func (x *DBSnapshot) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -16495,8 +16495,8 @@ func (x *DBSnapshot) GetStorageencryptiontype() StorageEncryptionType {
 }
 
 func (x *DBSnapshot) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -19161,7 +19161,7 @@ type DescribeBlueGreenDeploymentsRequest struct {
 	Bluegreendeploymentidentifier string                 `protobuf:"bytes,142726945,opt,name=bluegreendeploymentidentifier,proto3" json:"bluegreendeploymentidentifier,omitempty"`
 	Filters                       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -19218,8 +19218,8 @@ func (x *DescribeBlueGreenDeploymentsRequest) GetMarker() string {
 }
 
 func (x *DescribeBlueGreenDeploymentsRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19281,7 +19281,7 @@ type DescribeCertificatesMessage struct {
 	Certificateidentifier string                 `protobuf:"bytes,295615364,opt,name=certificateidentifier,proto3" json:"certificateidentifier,omitempty"`
 	Filters               []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords            int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords            *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -19338,8 +19338,8 @@ func (x *DescribeCertificatesMessage) GetMarker() string {
 }
 
 func (x *DescribeCertificatesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19350,7 +19350,7 @@ type DescribeDBClusterAutomatedBackupsMessage struct {
 	Dbclusterresourceid string                 `protobuf:"bytes,203287771,opt,name=dbclusterresourceid,proto3" json:"dbclusterresourceid,omitempty"`
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -19414,8 +19414,8 @@ func (x *DescribeDBClusterAutomatedBackupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterAutomatedBackupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19426,7 +19426,7 @@ type DescribeDBClusterBacktracksMessage struct {
 	Dbclusteridentifier string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -19490,8 +19490,8 @@ func (x *DescribeDBClusterBacktracksMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterBacktracksMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19502,7 +19502,7 @@ type DescribeDBClusterEndpointsMessage struct {
 	Dbclusteridentifier         string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                  int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -19566,8 +19566,8 @@ func (x *DescribeDBClusterEndpointsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterEndpointsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19577,7 +19577,7 @@ type DescribeDBClusterParameterGroupsMessage struct {
 	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                  int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -19634,8 +19634,8 @@ func (x *DescribeDBClusterParameterGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterParameterGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19645,7 +19645,7 @@ type DescribeDBClusterParametersMessage struct {
 	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                  int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Source                      string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -19703,8 +19703,8 @@ func (x *DescribeDBClusterParametersMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterParametersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19813,7 +19813,7 @@ type DescribeDBClusterSnapshotsMessage struct {
 	Includepublic               *bool                  `protobuf:"varint,93586819,opt,name=includepublic,proto3,oneof" json:"includepublic,omitempty"`
 	Includeshared               *bool                  `protobuf:"varint,30653391,opt,name=includeshared,proto3,oneof" json:"includeshared,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                  int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Snapshottype                string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -19899,8 +19899,8 @@ func (x *DescribeDBClusterSnapshotsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClusterSnapshotsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19918,7 +19918,7 @@ type DescribeDBClustersMessage struct {
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Includeshared       *bool                  `protobuf:"varint,30653391,opt,name=includeshared,proto3,oneof" json:"includeshared,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -19982,8 +19982,8 @@ func (x *DescribeDBClustersMessage) GetMarker() string {
 }
 
 func (x *DescribeDBClustersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -19999,7 +19999,7 @@ type DescribeDBEngineVersionsMessage struct {
 	Listsupportedcharactersets *bool                  `protobuf:"varint,489164522,opt,name=listsupportedcharactersets,proto3,oneof" json:"listsupportedcharactersets,omitempty"`
 	Listsupportedtimezones     *bool                  `protobuf:"varint,149832388,opt,name=listsupportedtimezones,proto3,oneof" json:"listsupportedtimezones,omitempty"`
 	Marker                     string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                 int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                 *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -20098,8 +20098,8 @@ func (x *DescribeDBEngineVersionsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBEngineVersionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20111,7 +20111,7 @@ type DescribeDBInstanceAutomatedBackupsMessage struct {
 	Dbiresourceid                 string                 `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3" json:"dbiresourceid,omitempty"`
 	Filters                       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -20182,8 +20182,8 @@ func (x *DescribeDBInstanceAutomatedBackupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBInstanceAutomatedBackupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20193,7 +20193,7 @@ type DescribeDBInstancesMessage struct {
 	Dbinstanceidentifier string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -20250,17 +20250,17 @@ func (x *DescribeDBInstancesMessage) GetMarker() string {
 }
 
 func (x *DescribeDBInstancesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
 
 type DescribeDBLogFilesDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Lastwritten   int64                  `protobuf:"varint,484158293,opt,name=lastwritten,proto3" json:"lastwritten,omitempty"`
+	Lastwritten   *int64                 `protobuf:"varint,484158293,opt,name=lastwritten,proto3,oneof" json:"lastwritten,omitempty"`
 	Logfilename   string                 `protobuf:"bytes,420656629,opt,name=logfilename,proto3" json:"logfilename,omitempty"`
-	Size          int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size          *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20296,8 +20296,8 @@ func (*DescribeDBLogFilesDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBLogFilesDetails) GetLastwritten() int64 {
-	if x != nil {
-		return x.Lastwritten
+	if x != nil && x.Lastwritten != nil {
+		return *x.Lastwritten
 	}
 	return 0
 }
@@ -20310,8 +20310,8 @@ func (x *DescribeDBLogFilesDetails) GetLogfilename() string {
 }
 
 func (x *DescribeDBLogFilesDetails) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -20319,12 +20319,12 @@ func (x *DescribeDBLogFilesDetails) GetSize() int64 {
 type DescribeDBLogFilesMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Dbinstanceidentifier string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Filelastwritten      int64                  `protobuf:"varint,380474223,opt,name=filelastwritten,proto3" json:"filelastwritten,omitempty"`
-	Filesize             int64                  `protobuf:"varint,346241219,opt,name=filesize,proto3" json:"filesize,omitempty"`
+	Filelastwritten      *int64                 `protobuf:"varint,380474223,opt,name=filelastwritten,proto3,oneof" json:"filelastwritten,omitempty"`
+	Filesize             *int64                 `protobuf:"varint,346241219,opt,name=filesize,proto3,oneof" json:"filesize,omitempty"`
 	Filenamecontains     string                 `protobuf:"bytes,258161154,opt,name=filenamecontains,proto3" json:"filenamecontains,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -20367,15 +20367,15 @@ func (x *DescribeDBLogFilesMessage) GetDbinstanceidentifier() string {
 }
 
 func (x *DescribeDBLogFilesMessage) GetFilelastwritten() int64 {
-	if x != nil {
-		return x.Filelastwritten
+	if x != nil && x.Filelastwritten != nil {
+		return *x.Filelastwritten
 	}
 	return 0
 }
 
 func (x *DescribeDBLogFilesMessage) GetFilesize() int64 {
-	if x != nil {
-		return x.Filesize
+	if x != nil && x.Filesize != nil {
+		return *x.Filesize
 	}
 	return 0
 }
@@ -20402,8 +20402,8 @@ func (x *DescribeDBLogFilesMessage) GetMarker() string {
 }
 
 func (x *DescribeDBLogFilesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20465,7 +20465,7 @@ type DescribeDBMajorEngineVersionsRequest struct {
 	Engine             string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Majorengineversion string                 `protobuf:"bytes,390856805,opt,name=majorengineversion,proto3" json:"majorengineversion,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords         int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -20522,8 +20522,8 @@ func (x *DescribeDBMajorEngineVersionsRequest) GetMarker() string {
 }
 
 func (x *DescribeDBMajorEngineVersionsRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20585,7 +20585,7 @@ type DescribeDBParameterGroupsMessage struct {
 	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -20642,8 +20642,8 @@ func (x *DescribeDBParameterGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBParameterGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20653,7 +20653,7 @@ type DescribeDBParametersMessage struct {
 	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Source               string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -20711,8 +20711,8 @@ func (x *DescribeDBParametersMessage) GetMarker() string {
 }
 
 func (x *DescribeDBParametersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20729,7 +20729,7 @@ type DescribeDBProxiesRequest struct {
 	Dbproxyname   string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Filters       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20786,8 +20786,8 @@ func (x *DescribeDBProxiesRequest) GetMarker() string {
 }
 
 func (x *DescribeDBProxiesRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20850,7 +20850,7 @@ type DescribeDBProxyEndpointsRequest struct {
 	Dbproxyname         string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -20914,8 +20914,8 @@ func (x *DescribeDBProxyEndpointsRequest) GetMarker() string {
 }
 
 func (x *DescribeDBProxyEndpointsRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -20977,7 +20977,7 @@ type DescribeDBProxyTargetGroupsRequest struct {
 	Dbproxyname     string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Filters         []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords      int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords      *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Targetgroupname string                 `protobuf:"bytes,385716593,opt,name=targetgroupname,proto3" json:"targetgroupname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -21035,8 +21035,8 @@ func (x *DescribeDBProxyTargetGroupsRequest) GetMarker() string {
 }
 
 func (x *DescribeDBProxyTargetGroupsRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21105,7 +21105,7 @@ type DescribeDBProxyTargetsRequest struct {
 	Dbproxyname     string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Filters         []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords      int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords      *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Targetgroupname string                 `protobuf:"bytes,385716593,opt,name=targetgroupname,proto3" json:"targetgroupname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -21163,8 +21163,8 @@ func (x *DescribeDBProxyTargetsRequest) GetMarker() string {
 }
 
 func (x *DescribeDBProxyTargetsRequest) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21235,7 +21235,7 @@ type DescribeDBRecommendationsMessage struct {
 	Lastupdatedbefore string                 `protobuf:"bytes,400596144,opt,name=lastupdatedbefore,proto3" json:"lastupdatedbefore,omitempty"`
 	Locale            string                 `protobuf:"bytes,493771704,opt,name=locale,proto3" json:"locale,omitempty"`
 	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords        int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords        *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21306,8 +21306,8 @@ func (x *DescribeDBRecommendationsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBRecommendationsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21317,7 +21317,7 @@ type DescribeDBSecurityGroupsMessage struct {
 	Dbsecuritygroupname string                 `protobuf:"bytes,52398568,opt,name=dbsecuritygroupname,proto3" json:"dbsecuritygroupname,omitempty"`
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords          int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -21374,8 +21374,8 @@ func (x *DescribeDBSecurityGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBSecurityGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21385,7 +21385,7 @@ type DescribeDBShardGroupsMessage struct {
 	Dbshardgroupidentifier string                 `protobuf:"bytes,111693640,opt,name=dbshardgroupidentifier,proto3" json:"dbshardgroupidentifier,omitempty"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords             int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords             *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -21442,8 +21442,8 @@ func (x *DescribeDBShardGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBShardGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21595,7 +21595,7 @@ type DescribeDBSnapshotTenantDatabasesMessage struct {
 	Dbiresourceid        string                 `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3" json:"dbiresourceid,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Snapshottype         string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -21667,8 +21667,8 @@ func (x *DescribeDBSnapshotTenantDatabasesMessage) GetMarker() string {
 }
 
 func (x *DescribeDBSnapshotTenantDatabasesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21689,7 +21689,7 @@ type DescribeDBSnapshotsMessage struct {
 	Includepublic        *bool                  `protobuf:"varint,93586819,opt,name=includepublic,proto3,oneof" json:"includepublic,omitempty"`
 	Includeshared        *bool                  `protobuf:"varint,30653391,opt,name=includeshared,proto3,oneof" json:"includeshared,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Snapshottype         string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -21775,8 +21775,8 @@ func (x *DescribeDBSnapshotsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBSnapshotsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21793,7 +21793,7 @@ type DescribeDBSubnetGroupsMessage struct {
 	Dbsubnetgroupname string                 `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
 	Filters           []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords        int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords        *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21850,8 +21850,8 @@ func (x *DescribeDBSubnetGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeDBSubnetGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21861,7 +21861,7 @@ type DescribeEngineDefaultClusterParametersMessage struct {
 	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords             int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords             *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -21918,8 +21918,8 @@ func (x *DescribeEngineDefaultClusterParametersMessage) GetMarker() string {
 }
 
 func (x *DescribeEngineDefaultClusterParametersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -21973,7 +21973,7 @@ type DescribeEngineDefaultParametersMessage struct {
 	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords             int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords             *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -22030,8 +22030,8 @@ func (x *DescribeEngineDefaultParametersMessage) GetMarker() string {
 }
 
 func (x *DescribeEngineDefaultParametersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22136,7 +22136,7 @@ type DescribeEventSubscriptionsMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Filters          []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords       int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Subscriptionname string                 `protobuf:"bytes,181900944,opt,name=subscriptionname,proto3" json:"subscriptionname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -22187,8 +22187,8 @@ func (x *DescribeEventSubscriptionsMessage) GetMarker() string {
 }
 
 func (x *DescribeEventSubscriptionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22202,12 +22202,12 @@ func (x *DescribeEventSubscriptionsMessage) GetSubscriptionname() string {
 
 type DescribeEventsMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Duration         int32                  `protobuf:"varint,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration         *int32                 `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Endtime          string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Eventcategories  []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
 	Filters          []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords       int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Sourceidentifier string                 `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3" json:"sourceidentifier,omitempty"`
 	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.SourceType" json:"sourcetype,omitempty"`
 	Starttime        string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
@@ -22246,8 +22246,8 @@ func (*DescribeEventsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeEventsMessage) GetDuration() int32 {
-	if x != nil {
-		return x.Duration
+	if x != nil && x.Duration != nil {
+		return *x.Duration
 	}
 	return 0
 }
@@ -22281,8 +22281,8 @@ func (x *DescribeEventsMessage) GetMarker() string {
 }
 
 func (x *DescribeEventsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22313,7 +22313,7 @@ type DescribeExportTasksMessage struct {
 	Exporttaskidentifier string                 `protobuf:"bytes,120967762,opt,name=exporttaskidentifier,proto3" json:"exporttaskidentifier,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Sourcearn            string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
 	Sourcetype           ExportSourceType       `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.ExportSourceType" json:"sourcetype,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -22372,8 +22372,8 @@ func (x *DescribeExportTasksMessage) GetMarker() string {
 }
 
 func (x *DescribeExportTasksMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22397,7 +22397,7 @@ type DescribeGlobalClustersMessage struct {
 	Filters                 []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Globalclusteridentifier string                 `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
 	Marker                  string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords              int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords              *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -22454,8 +22454,8 @@ func (x *DescribeGlobalClustersMessage) GetMarker() string {
 }
 
 func (x *DescribeGlobalClustersMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22465,7 +22465,7 @@ type DescribeIntegrationsMessage struct {
 	Filters               []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Integrationidentifier string                 `protobuf:"bytes,11597767,opt,name=integrationidentifier,proto3" json:"integrationidentifier,omitempty"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords            int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords            *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -22522,8 +22522,8 @@ func (x *DescribeIntegrationsMessage) GetMarker() string {
 }
 
 func (x *DescribeIntegrationsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22586,7 +22586,7 @@ type DescribeOptionGroupOptionsMessage struct {
 	Filters            []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Majorengineversion string                 `protobuf:"bytes,390856805,opt,name=majorengineversion,proto3" json:"majorengineversion,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords         int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -22650,8 +22650,8 @@ func (x *DescribeOptionGroupOptionsMessage) GetMarker() string {
 }
 
 func (x *DescribeOptionGroupOptionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22662,7 +22662,7 @@ type DescribeOptionGroupsMessage struct {
 	Filters            []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Majorengineversion string                 `protobuf:"bytes,390856805,opt,name=majorengineversion,proto3" json:"majorengineversion,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords         int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Optiongroupname    string                 `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -22727,8 +22727,8 @@ func (x *DescribeOptionGroupsMessage) GetMarker() string {
 }
 
 func (x *DescribeOptionGroupsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22749,7 +22749,7 @@ type DescribeOrderableDBInstanceOptionsMessage struct {
 	Filters               []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Licensemodel          string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords            int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords            *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Vpc                   *bool                  `protobuf:"varint,500923177,opt,name=vpc,proto3,oneof" json:"vpc,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -22835,8 +22835,8 @@ func (x *DescribeOrderableDBInstanceOptionsMessage) GetMarker() string {
 }
 
 func (x *DescribeOrderableDBInstanceOptionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22852,7 +22852,7 @@ type DescribePendingMaintenanceActionsMessage struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Filters            []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords         int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Resourceidentifier string                 `protobuf:"bytes,279224111,opt,name=resourceidentifier,proto3" json:"resourceidentifier,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -22903,8 +22903,8 @@ func (x *DescribePendingMaintenanceActionsMessage) GetMarker() string {
 }
 
 func (x *DescribePendingMaintenanceActionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -22923,7 +22923,7 @@ type DescribeReservedDBInstancesMessage struct {
 	Filters                       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Leaseid                       string                 `protobuf:"bytes,32039517,opt,name=leaseid,proto3" json:"leaseid,omitempty"`
 	Marker                        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Multiaz                       *bool                  `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Offeringtype                  string                 `protobuf:"bytes,210941500,opt,name=offeringtype,proto3" json:"offeringtype,omitempty"`
 	Productdescription            string                 `protobuf:"bytes,78087559,opt,name=productdescription,proto3" json:"productdescription,omitempty"`
@@ -22999,8 +22999,8 @@ func (x *DescribeReservedDBInstancesMessage) GetMarker() string {
 }
 
 func (x *DescribeReservedDBInstancesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -23046,7 +23046,7 @@ type DescribeReservedDBInstancesOfferingsMessage struct {
 	Duration                      string                 `protobuf:"bytes,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
 	Filters                       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker                        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Multiaz                       *bool                  `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Offeringtype                  string                 `protobuf:"bytes,210941500,opt,name=offeringtype,proto3" json:"offeringtype,omitempty"`
 	Productdescription            string                 `protobuf:"bytes,78087559,opt,name=productdescription,proto3" json:"productdescription,omitempty"`
@@ -23114,8 +23114,8 @@ func (x *DescribeReservedDBInstancesOfferingsMessage) GetMarker() string {
 }
 
 func (x *DescribeReservedDBInstancesOfferingsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -23155,7 +23155,7 @@ type DescribeServerlessV2PlatformVersionsMessage struct {
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Includeall                  *bool                  `protobuf:"varint,5416227,opt,name=includeall,proto3,oneof" json:"includeall,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords                  int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Serverlessv2Platformversion string                 `protobuf:"bytes,348862429,opt,name=serverlessv2platformversion,proto3" json:"serverlessv2platformversion,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -23227,8 +23227,8 @@ func (x *DescribeServerlessV2PlatformVersionsMessage) GetMarker() string {
 }
 
 func (x *DescribeServerlessV2PlatformVersionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -23244,7 +23244,7 @@ type DescribeSourceRegionsMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filters       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords    int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Regionname    string                 `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -23295,8 +23295,8 @@ func (x *DescribeSourceRegionsMessage) GetMarker() string {
 }
 
 func (x *DescribeSourceRegionsMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -23313,7 +23313,7 @@ type DescribeTenantDatabasesMessage struct {
 	Dbinstanceidentifier string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxrecords           int32                  `protobuf:"varint,220314370,opt,name=maxrecords,proto3" json:"maxrecords,omitempty"`
+	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Tenantdbname         string                 `protobuf:"bytes,443960809,opt,name=tenantdbname,proto3" json:"tenantdbname,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -23371,8 +23371,8 @@ func (x *DescribeTenantDatabasesMessage) GetMarker() string {
 }
 
 func (x *DescribeTenantDatabasesMessage) GetMaxrecords() int32 {
-	if x != nil {
-		return x.Maxrecords
+	if x != nil && x.Maxrecords != nil {
+		return *x.Maxrecords
 	}
 	return 0
 }
@@ -23873,7 +23873,7 @@ type DownloadDBLogFilePortionMessage struct {
 	Dbinstanceidentifier string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Logfilename          string                 `protobuf:"bytes,420656629,opt,name=logfilename,proto3" json:"logfilename,omitempty"`
 	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Numberoflines        int32                  `protobuf:"varint,93443161,opt,name=numberoflines,proto3" json:"numberoflines,omitempty"`
+	Numberoflines        *int32                 `protobuf:"varint,93443161,opt,name=numberoflines,proto3,oneof" json:"numberoflines,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -23930,8 +23930,8 @@ func (x *DownloadDBLogFilePortionMessage) GetMarker() string {
 }
 
 func (x *DownloadDBLogFilePortionMessage) GetNumberoflines() int32 {
-	if x != nil {
-		return x.Numberoflines
+	if x != nil && x.Numberoflines != nil {
+		return *x.Numberoflines
 	}
 	return 0
 }
@@ -24148,7 +24148,7 @@ type Endpoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,268787956,opt,name=address,proto3" json:"address,omitempty"`
 	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Port          int32                  `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port          *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24198,8 +24198,8 @@ func (x *Endpoint) GetHostedzoneid() string {
 }
 
 func (x *Endpoint) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -24715,7 +24715,7 @@ type ExportTask struct {
 	Failurecause           string                 `protobuf:"bytes,304578341,opt,name=failurecause,proto3" json:"failurecause,omitempty"`
 	Iamrolearn             string                 `protobuf:"bytes,228393658,opt,name=iamrolearn,proto3" json:"iamrolearn,omitempty"`
 	Kmskeyid               string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Percentprogress        int32                  `protobuf:"varint,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
+	Percentprogress        *int32                 `protobuf:"varint,66105414,opt,name=percentprogress,proto3,oneof" json:"percentprogress,omitempty"`
 	S3Bucket               string                 `protobuf:"bytes,114031434,opt,name=s3bucket,proto3" json:"s3bucket,omitempty"`
 	S3Prefix               string                 `protobuf:"bytes,21529336,opt,name=s3prefix,proto3" json:"s3prefix,omitempty"`
 	Snapshottime           string                 `protobuf:"bytes,25121101,opt,name=snapshottime,proto3" json:"snapshottime,omitempty"`
@@ -24724,7 +24724,7 @@ type ExportTask struct {
 	Status                 string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Taskendtime            string                 `protobuf:"bytes,145989753,opt,name=taskendtime,proto3" json:"taskendtime,omitempty"`
 	Taskstarttime          string                 `protobuf:"bytes,200950330,opt,name=taskstarttime,proto3" json:"taskstarttime,omitempty"`
-	Totalextracteddataingb int32                  `protobuf:"varint,71329474,opt,name=totalextracteddataingb,proto3" json:"totalextracteddataingb,omitempty"`
+	Totalextracteddataingb *int32                 `protobuf:"varint,71329474,opt,name=totalextracteddataingb,proto3,oneof" json:"totalextracteddataingb,omitempty"`
 	Warningmessage         string                 `protobuf:"bytes,497413775,opt,name=warningmessage,proto3" json:"warningmessage,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -24796,8 +24796,8 @@ func (x *ExportTask) GetKmskeyid() string {
 }
 
 func (x *ExportTask) GetPercentprogress() int32 {
-	if x != nil {
-		return x.Percentprogress
+	if x != nil && x.Percentprogress != nil {
+		return *x.Percentprogress
 	}
 	return 0
 }
@@ -24859,8 +24859,8 @@ func (x *ExportTask) GetTaskstarttime() string {
 }
 
 func (x *ExportTask) GetTotalextracteddataingb() int32 {
-	if x != nil {
-		return x.Totalextracteddataingb
+	if x != nil && x.Totalextracteddataingb != nil {
+		return *x.Totalextracteddataingb
 	}
 	return 0
 }
@@ -28446,11 +28446,11 @@ func (x *ModifyActivityStreamResponse) GetStatus() ActivityStreamStatus {
 
 type ModifyAdditionalStorageVolume struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Allocatedstorage    int32                  `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
-	Iops                int32                  `protobuf:"varint,500513057,opt,name=iops,proto3" json:"iops,omitempty"`
-	Maxallocatedstorage int32                  `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
+	Allocatedstorage    *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
+	Iops                *int32                 `protobuf:"varint,500513057,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
+	Maxallocatedstorage *int32                 `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
 	Setfordelete        *bool                  `protobuf:"varint,264542082,opt,name=setfordelete,proto3,oneof" json:"setfordelete,omitempty"`
-	Storagethroughput   int32                  `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput   *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype         string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Volumename          string                 `protobuf:"bytes,186940557,opt,name=volumename,proto3" json:"volumename,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -28488,22 +28488,22 @@ func (*ModifyAdditionalStorageVolume) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyAdditionalStorageVolume) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
 
 func (x *ModifyAdditionalStorageVolume) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
 
 func (x *ModifyAdditionalStorageVolume) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
@@ -28516,8 +28516,8 @@ func (x *ModifyAdditionalStorageVolume) GetSetfordelete() bool {
 }
 
 func (x *ModifyAdditionalStorageVolume) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -28634,9 +28634,9 @@ func (x *ModifyCertificatesResult) GetCertificate() *Certificate {
 
 type ModifyCurrentDBClusterCapacityMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Capacity             int32                  `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Capacity             *int32                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Dbclusteridentifier  string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Secondsbeforetimeout int32                  `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3" json:"secondsbeforetimeout,omitempty"`
+	Secondsbeforetimeout *int32                 `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3,oneof" json:"secondsbeforetimeout,omitempty"`
 	Timeoutaction        string                 `protobuf:"bytes,444876627,opt,name=timeoutaction,proto3" json:"timeoutaction,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -28673,8 +28673,8 @@ func (*ModifyCurrentDBClusterCapacityMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyCurrentDBClusterCapacityMessage) GetCapacity() int32 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -28687,8 +28687,8 @@ func (x *ModifyCurrentDBClusterCapacityMessage) GetDbclusteridentifier() string 
 }
 
 func (x *ModifyCurrentDBClusterCapacityMessage) GetSecondsbeforetimeout() int32 {
-	if x != nil {
-		return x.Secondsbeforetimeout
+	if x != nil && x.Secondsbeforetimeout != nil {
+		return *x.Secondsbeforetimeout
 	}
 	return 0
 }
@@ -28838,14 +28838,14 @@ func (x *ModifyDBClusterEndpointMessage) GetStaticmembers() []string {
 
 type ModifyDBClusterMessage struct {
 	state                              protoimpl.MessageState             `protogen:"open.v1"`
-	Allocatedstorage                   int32                              `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                             `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Allowenginemodechange              *bool                              `protobuf:"varint,486170464,opt,name=allowenginemodechange,proto3,oneof" json:"allowenginemodechange,omitempty"`
 	Allowmajorversionupgrade           *bool                              `protobuf:"varint,40687812,opt,name=allowmajorversionupgrade,proto3,oneof" json:"allowmajorversionupgrade,omitempty"`
 	Applyimmediately                   *bool                              `protobuf:"varint,145941916,opt,name=applyimmediately,proto3,oneof" json:"applyimmediately,omitempty"`
 	Autominorversionupgrade            *bool                              `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Awsbackuprecoverypointarn          string                             `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backtrackwindow                    int64                              `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod              int32                              `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backtrackwindow                    *int64                             `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod              *int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            string                             `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Cloudwatchlogsexportconfiguration  *CloudwatchLogsExportConfiguration `protobuf:"bytes,311727375,opt,name=cloudwatchlogsexportconfiguration,proto3" json:"cloudwatchlogsexportconfiguration,omitempty"`
 	Copytagstosnapshot                 *bool                              `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
@@ -28865,19 +28865,19 @@ type ModifyDBClusterMessage struct {
 	Enableperformanceinsights          *bool                              `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
 	Enginemode                         string                             `protobuf:"bytes,292587685,opt,name=enginemode,proto3" json:"enginemode,omitempty"`
 	Engineversion                      string                             `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Iops                               int32                              `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                             `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Managemasteruserpassword           *bool                              `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masteruserauthenticationtype       MasterUserAuthenticationType       `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 string                             `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           string                             `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
-	Monitoringinterval                 int32                              `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Monitoringinterval                 *int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                             `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Networktype                        string                             `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Newdbclusteridentifier             string                             `protobuf:"bytes,86287437,opt,name=newdbclusteridentifier,proto3" json:"newdbclusteridentifier,omitempty"`
 	Optiongroupname                    string                             `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                             `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                              `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                              `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                             `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                             `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow              string                             `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow         string                             `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Rotatemasteruserpassword           *bool                              `protobuf:"varint,30523131,opt,name=rotatemasteruserpassword,proto3,oneof" json:"rotatemasteruserpassword,omitempty"`
@@ -28920,8 +28920,8 @@ func (*ModifyDBClusterMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyDBClusterMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -28962,15 +28962,15 @@ func (x *ModifyDBClusterMessage) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *ModifyDBClusterMessage) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *ModifyDBClusterMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -29109,8 +29109,8 @@ func (x *ModifyDBClusterMessage) GetEngineversion() string {
 }
 
 func (x *ModifyDBClusterMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -29144,8 +29144,8 @@ func (x *ModifyDBClusterMessage) GetMasterusersecretkmskeyid() string {
 }
 
 func (x *ModifyDBClusterMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -29186,15 +29186,15 @@ func (x *ModifyDBClusterMessage) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *ModifyDBClusterMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *ModifyDBClusterMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -29459,13 +29459,13 @@ func (x *ModifyDBClusterSnapshotAttributeResult) GetDbclustersnapshotattributesr
 type ModifyDBInstanceMessage struct {
 	state                              protoimpl.MessageState             `protogen:"open.v1"`
 	Additionalstoragevolumes           []*ModifyAdditionalStorageVolume   `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                   int32                              `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                             `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Allowmajorversionupgrade           *bool                              `protobuf:"varint,40687812,opt,name=allowmajorversionupgrade,proto3,oneof" json:"allowmajorversionupgrade,omitempty"`
 	Applyimmediately                   *bool                              `protobuf:"varint,145941916,opt,name=applyimmediately,proto3,oneof" json:"applyimmediately,omitempty"`
 	Autominorversionupgrade            *bool                              `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Automationmode                     AutomationMode                     `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
 	Awsbackuprecoverypointarn          string                             `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3" json:"awsbackuprecoverypointarn,omitempty"`
-	Backupretentionperiod              int32                              `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod              *int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            string                             `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Certificaterotationrestart         *bool                              `protobuf:"varint,202488618,opt,name=certificaterotationrestart,proto3,oneof" json:"certificaterotationrestart,omitempty"`
 	Cloudwatchlogsexportconfiguration  *CloudwatchLogsExportConfiguration `protobuf:"bytes,311727375,opt,name=cloudwatchlogsexportconfiguration,proto3" json:"cloudwatchlogsexportconfiguration,omitempty"`
@@ -29473,7 +29473,7 @@ type ModifyDBInstanceMessage struct {
 	Dbinstanceclass                    string                             `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
 	Dbinstanceidentifier               string                             `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Dbparametergroupname               string                             `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
-	Dbportnumber                       int32                              `protobuf:"varint,107009294,opt,name=dbportnumber,proto3" json:"dbportnumber,omitempty"`
+	Dbportnumber                       *int32                             `protobuf:"varint,107009294,opt,name=dbportnumber,proto3,oneof" json:"dbportnumber,omitempty"`
 	Dbsecuritygroups                   []string                           `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
 	Dbsubnetgroupname                  string                             `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
 	Databaseinsightsmode               DatabaseInsightsMode               `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
@@ -29491,14 +29491,14 @@ type ModifyDBInstanceMessage struct {
 	Enableperformanceinsights          *bool                              `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
 	Engine                             string                             `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Engineversion                      string                             `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Iops                               int32                              `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                             `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Licensemodel                       string                             `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Managemasteruserpassword           *bool                              `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masteruserauthenticationtype       MasterUserAuthenticationType       `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 string                             `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           string                             `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
-	Maxallocatedstorage                int32                              `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                 int32                              `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Maxallocatedstorage                *int32                             `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                 *int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                             `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                            *bool                              `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Multitenant                        *bool                              `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
@@ -29506,16 +29506,16 @@ type ModifyDBInstanceMessage struct {
 	Newdbinstanceidentifier            string                             `protobuf:"bytes,331758776,opt,name=newdbinstanceidentifier,proto3" json:"newdbinstanceidentifier,omitempty"`
 	Optiongroupname                    string                             `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                             `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                              `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
+	Performanceinsightsretentionperiod *int32                             `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
 	Preferredbackupwindow              string                             `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow         string                             `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Processorfeatures                  []*ProcessorFeature                `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
-	Promotiontier                      int32                              `protobuf:"varint,170834723,opt,name=promotiontier,proto3" json:"promotiontier,omitempty"`
+	Promotiontier                      *int32                             `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                 *bool                              `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Replicamode                        ReplicaMode                        `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
-	Resumefullautomationmodeminutes    int32                              `protobuf:"varint,286496333,opt,name=resumefullautomationmodeminutes,proto3" json:"resumefullautomationmodeminutes,omitempty"`
+	Resumefullautomationmodeminutes    *int32                             `protobuf:"varint,286496333,opt,name=resumefullautomationmodeminutes,proto3,oneof" json:"resumefullautomationmodeminutes,omitempty"`
 	Rotatemasteruserpassword           *bool                              `protobuf:"varint,30523131,opt,name=rotatemasteruserpassword,proto3,oneof" json:"rotatemasteruserpassword,omitempty"`
-	Storagethroughput                  int32                              `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                  *int32                             `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                        string                             `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications                  []*TagSpecification                `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tdecredentialarn                   string                             `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
@@ -29564,8 +29564,8 @@ func (x *ModifyDBInstanceMessage) GetAdditionalstoragevolumes() []*ModifyAdditio
 }
 
 func (x *ModifyDBInstanceMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -29606,8 +29606,8 @@ func (x *ModifyDBInstanceMessage) GetAwsbackuprecoverypointarn() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -29662,8 +29662,8 @@ func (x *ModifyDBInstanceMessage) GetDbparametergroupname() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetDbportnumber() int32 {
-	if x != nil {
-		return x.Dbportnumber
+	if x != nil && x.Dbportnumber != nil {
+		return *x.Dbportnumber
 	}
 	return 0
 }
@@ -29788,8 +29788,8 @@ func (x *ModifyDBInstanceMessage) GetEngineversion() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -29830,15 +29830,15 @@ func (x *ModifyDBInstanceMessage) GetMasterusersecretkmskeyid() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *ModifyDBInstanceMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -29893,8 +29893,8 @@ func (x *ModifyDBInstanceMessage) GetPerformanceinsightskmskeyid() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
@@ -29921,8 +29921,8 @@ func (x *ModifyDBInstanceMessage) GetProcessorfeatures() []*ProcessorFeature {
 }
 
 func (x *ModifyDBInstanceMessage) GetPromotiontier() int32 {
-	if x != nil {
-		return x.Promotiontier
+	if x != nil && x.Promotiontier != nil {
+		return *x.Promotiontier
 	}
 	return 0
 }
@@ -29942,8 +29942,8 @@ func (x *ModifyDBInstanceMessage) GetReplicamode() ReplicaMode {
 }
 
 func (x *ModifyDBInstanceMessage) GetResumefullautomationmodeminutes() int32 {
-	if x != nil {
-		return x.Resumefullautomationmodeminutes
+	if x != nil && x.Resumefullautomationmodeminutes != nil {
+		return *x.Resumefullautomationmodeminutes
 	}
 	return 0
 }
@@ -29956,8 +29956,8 @@ func (x *ModifyDBInstanceMessage) GetRotatemasteruserpassword() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -30210,7 +30210,7 @@ type ModifyDBProxyRequest struct {
 	Dbproxyname       string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Debuglogging      *bool                  `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
 	Defaultauthscheme DefaultAuthScheme      `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme" json:"defaultauthscheme,omitempty"`
-	Idleclienttimeout int32                  `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3" json:"idleclienttimeout,omitempty"`
+	Idleclienttimeout *int32                 `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
 	Newdbproxyname    string                 `protobuf:"bytes,134374587,opt,name=newdbproxyname,proto3" json:"newdbproxyname,omitempty"`
 	Requiretls        *bool                  `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
 	Rolearn           string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
@@ -30278,8 +30278,8 @@ func (x *ModifyDBProxyRequest) GetDefaultauthscheme() DefaultAuthScheme {
 }
 
 func (x *ModifyDBProxyRequest) GetIdleclienttimeout() int32 {
-	if x != nil {
-		return x.Idleclienttimeout
+	if x != nil && x.Idleclienttimeout != nil {
+		return *x.Idleclienttimeout
 	}
 	return 0
 }
@@ -30538,7 +30538,7 @@ func (x *ModifyDBRecommendationMessage) GetStatus() string {
 
 type ModifyDBShardGroupMessage struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Computeredundancy      int32                  `protobuf:"varint,518573958,opt,name=computeredundancy,proto3" json:"computeredundancy,omitempty"`
+	Computeredundancy      *int32                 `protobuf:"varint,518573958,opt,name=computeredundancy,proto3,oneof" json:"computeredundancy,omitempty"`
 	Dbshardgroupidentifier string                 `protobuf:"bytes,111693640,opt,name=dbshardgroupidentifier,proto3" json:"dbshardgroupidentifier,omitempty"`
 	Maxacu                 float64                `protobuf:"fixed64,248469229,opt,name=maxacu,proto3" json:"maxacu,omitempty"`
 	Minacu                 float64                `protobuf:"fixed64,357455091,opt,name=minacu,proto3" json:"minacu,omitempty"`
@@ -30577,8 +30577,8 @@ func (*ModifyDBShardGroupMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyDBShardGroupMessage) GetComputeredundancy() int32 {
-	if x != nil {
-		return x.Computeredundancy
+	if x != nil && x.Computeredundancy != nil {
+		return *x.Computeredundancy
 	}
 	return 0
 }
@@ -31533,7 +31533,7 @@ type Option struct {
 	Optionversion               string                        `protobuf:"bytes,306144137,opt,name=optionversion,proto3" json:"optionversion,omitempty"`
 	Permanent                   *bool                         `protobuf:"varint,141702118,opt,name=permanent,proto3,oneof" json:"permanent,omitempty"`
 	Persistent                  *bool                         `protobuf:"varint,433628641,opt,name=persistent,proto3,oneof" json:"persistent,omitempty"`
-	Port                        int32                         `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                        *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Vpcsecuritygroupmemberships []*VpcSecurityGroupMembership `protobuf:"bytes,288528211,rep,name=vpcsecuritygroupmemberships,proto3" json:"vpcsecuritygroupmemberships,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -31619,8 +31619,8 @@ func (x *Option) GetPersistent() bool {
 }
 
 func (x *Option) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -31638,7 +31638,7 @@ type OptionConfiguration struct {
 	Optionname                  string                 `protobuf:"bytes,64759952,opt,name=optionname,proto3" json:"optionname,omitempty"`
 	Optionsettings              []*OptionSetting       `protobuf:"bytes,246309466,rep,name=optionsettings,proto3" json:"optionsettings,omitempty"`
 	Optionversion               string                 `protobuf:"bytes,306144137,opt,name=optionversion,proto3" json:"optionversion,omitempty"`
-	Port                        int32                  `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                        *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Vpcsecuritygroupmemberships []string               `protobuf:"bytes,288528211,rep,name=vpcsecuritygroupmemberships,proto3" json:"vpcsecuritygroupmemberships,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -31703,8 +31703,8 @@ func (x *OptionConfiguration) GetOptionversion() string {
 }
 
 func (x *OptionConfiguration) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -31983,7 +31983,7 @@ func (x *OptionGroupNotFoundFault) GetMessage() string {
 type OptionGroupOption struct {
 	state                                 protoimpl.MessageState      `protogen:"open.v1"`
 	Copyablecrossaccount                  *bool                       `protobuf:"varint,252766940,opt,name=copyablecrossaccount,proto3,oneof" json:"copyablecrossaccount,omitempty"`
-	Defaultport                           int32                       `protobuf:"varint,501321242,opt,name=defaultport,proto3" json:"defaultport,omitempty"`
+	Defaultport                           *int32                      `protobuf:"varint,501321242,opt,name=defaultport,proto3,oneof" json:"defaultport,omitempty"`
 	Description                           string                      `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Enginename                            string                      `protobuf:"bytes,102940129,opt,name=enginename,proto3" json:"enginename,omitempty"`
 	Majorengineversion                    string                      `protobuf:"bytes,390856805,opt,name=majorengineversion,proto3" json:"majorengineversion,omitempty"`
@@ -32041,8 +32041,8 @@ func (x *OptionGroupOption) GetCopyablecrossaccount() bool {
 }
 
 func (x *OptionGroupOption) GetDefaultport() int32 {
-	if x != nil {
-		return x.Defaultport
+	if x != nil && x.Defaultport != nil {
+		return *x.Defaultport
 	}
 	return 0
 }
@@ -32570,15 +32570,15 @@ type OrderableDBInstanceOption struct {
 	Engine                                   string                                     `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Engineversion                            string                                     `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Licensemodel                             string                                     `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Maxiopsperdbinstance                     int32                                      `protobuf:"varint,408072995,opt,name=maxiopsperdbinstance,proto3" json:"maxiopsperdbinstance,omitempty"`
+	Maxiopsperdbinstance                     *int32                                     `protobuf:"varint,408072995,opt,name=maxiopsperdbinstance,proto3,oneof" json:"maxiopsperdbinstance,omitempty"`
 	Maxiopspergib                            float64                                    `protobuf:"fixed64,246799832,opt,name=maxiopspergib,proto3" json:"maxiopspergib,omitempty"`
-	Maxstoragesize                           int32                                      `protobuf:"varint,492016524,opt,name=maxstoragesize,proto3" json:"maxstoragesize,omitempty"`
-	Maxstoragethroughputperdbinstance        int32                                      `protobuf:"varint,29414919,opt,name=maxstoragethroughputperdbinstance,proto3" json:"maxstoragethroughputperdbinstance,omitempty"`
+	Maxstoragesize                           *int32                                     `protobuf:"varint,492016524,opt,name=maxstoragesize,proto3,oneof" json:"maxstoragesize,omitempty"`
+	Maxstoragethroughputperdbinstance        *int32                                     `protobuf:"varint,29414919,opt,name=maxstoragethroughputperdbinstance,proto3,oneof" json:"maxstoragethroughputperdbinstance,omitempty"`
 	Maxstoragethroughputperiops              float64                                    `protobuf:"fixed64,3684931,opt,name=maxstoragethroughputperiops,proto3" json:"maxstoragethroughputperiops,omitempty"`
-	Miniopsperdbinstance                     int32                                      `protobuf:"varint,497359021,opt,name=miniopsperdbinstance,proto3" json:"miniopsperdbinstance,omitempty"`
+	Miniopsperdbinstance                     *int32                                     `protobuf:"varint,497359021,opt,name=miniopsperdbinstance,proto3,oneof" json:"miniopsperdbinstance,omitempty"`
 	Miniopspergib                            float64                                    `protobuf:"fixed64,511052642,opt,name=miniopspergib,proto3" json:"miniopspergib,omitempty"`
-	Minstoragesize                           int32                                      `protobuf:"varint,208793958,opt,name=minstoragesize,proto3" json:"minstoragesize,omitempty"`
-	Minstoragethroughputperdbinstance        int32                                      `protobuf:"varint,258587249,opt,name=minstoragethroughputperdbinstance,proto3" json:"minstoragethroughputperdbinstance,omitempty"`
+	Minstoragesize                           *int32                                     `protobuf:"varint,208793958,opt,name=minstoragesize,proto3,oneof" json:"minstoragesize,omitempty"`
+	Minstoragethroughputperdbinstance        *int32                                     `protobuf:"varint,258587249,opt,name=minstoragethroughputperdbinstance,proto3,oneof" json:"minstoragethroughputperdbinstance,omitempty"`
 	Minstoragethroughputperiops              float64                                    `protobuf:"fixed64,65365041,opt,name=minstoragethroughputperiops,proto3" json:"minstoragethroughputperiops,omitempty"`
 	Multiazcapable                           *bool                                      `protobuf:"varint,505918340,opt,name=multiazcapable,proto3,oneof" json:"multiazcapable,omitempty"`
 	Outpostcapable                           *bool                                      `protobuf:"varint,315524044,opt,name=outpostcapable,proto3,oneof" json:"outpostcapable,omitempty"`
@@ -32692,8 +32692,8 @@ func (x *OrderableDBInstanceOption) GetLicensemodel() string {
 }
 
 func (x *OrderableDBInstanceOption) GetMaxiopsperdbinstance() int32 {
-	if x != nil {
-		return x.Maxiopsperdbinstance
+	if x != nil && x.Maxiopsperdbinstance != nil {
+		return *x.Maxiopsperdbinstance
 	}
 	return 0
 }
@@ -32706,15 +32706,15 @@ func (x *OrderableDBInstanceOption) GetMaxiopspergib() float64 {
 }
 
 func (x *OrderableDBInstanceOption) GetMaxstoragesize() int32 {
-	if x != nil {
-		return x.Maxstoragesize
+	if x != nil && x.Maxstoragesize != nil {
+		return *x.Maxstoragesize
 	}
 	return 0
 }
 
 func (x *OrderableDBInstanceOption) GetMaxstoragethroughputperdbinstance() int32 {
-	if x != nil {
-		return x.Maxstoragethroughputperdbinstance
+	if x != nil && x.Maxstoragethroughputperdbinstance != nil {
+		return *x.Maxstoragethroughputperdbinstance
 	}
 	return 0
 }
@@ -32727,8 +32727,8 @@ func (x *OrderableDBInstanceOption) GetMaxstoragethroughputperiops() float64 {
 }
 
 func (x *OrderableDBInstanceOption) GetMiniopsperdbinstance() int32 {
-	if x != nil {
-		return x.Miniopsperdbinstance
+	if x != nil && x.Miniopsperdbinstance != nil {
+		return *x.Miniopsperdbinstance
 	}
 	return 0
 }
@@ -32741,15 +32741,15 @@ func (x *OrderableDBInstanceOption) GetMiniopspergib() float64 {
 }
 
 func (x *OrderableDBInstanceOption) GetMinstoragesize() int32 {
-	if x != nil {
-		return x.Minstoragesize
+	if x != nil && x.Minstoragesize != nil {
+		return *x.Minstoragesize
 	}
 	return 0
 }
 
 func (x *OrderableDBInstanceOption) GetMinstoragethroughputperdbinstance() int32 {
-	if x != nil {
-		return x.Minstoragethroughputperdbinstance
+	if x != nil && x.Minstoragethroughputperdbinstance != nil {
+		return *x.Minstoragethroughputperdbinstance
 	}
 	return 0
 }
@@ -33319,9 +33319,9 @@ func (x *PendingMaintenanceActionsMessage) GetPendingmaintenanceactions() []*Res
 type PendingModifiedValues struct {
 	state                            protoimpl.MessageState        `protogen:"open.v1"`
 	Additionalstoragevolumes         []*AdditionalStorageVolume    `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                 int32                         `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                 *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Automationmode                   AutomationMode                `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
-	Backupretentionperiod            int32                         `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod            *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier          string                        `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Dbinstanceclass                  string                        `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
 	Dbinstanceidentifier             string                        `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
@@ -33330,16 +33330,16 @@ type PendingModifiedValues struct {
 	Engine                           string                        `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Engineversion                    string                        `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                         `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Iops                             int32                         `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                             *int32                        `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Licensemodel                     string                        `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Masteruserpassword               string                        `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Multiaz                          *bool                         `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Multitenant                      *bool                         `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
 	Pendingcloudwatchlogsexports     *PendingCloudwatchLogsExports `protobuf:"bytes,188240935,opt,name=pendingcloudwatchlogsexports,proto3" json:"pendingcloudwatchlogsexports,omitempty"`
-	Port                             int32                         `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                             *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Processorfeatures                []*ProcessorFeature           `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Resumefullautomationmodetime     string                        `protobuf:"bytes,491133479,opt,name=resumefullautomationmodetime,proto3" json:"resumefullautomationmodetime,omitempty"`
-	Storagethroughput                int32                         `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                *int32                        `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      string                        `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
@@ -33383,8 +33383,8 @@ func (x *PendingModifiedValues) GetAdditionalstoragevolumes() []*AdditionalStora
 }
 
 func (x *PendingModifiedValues) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -33397,8 +33397,8 @@ func (x *PendingModifiedValues) GetAutomationmode() AutomationMode {
 }
 
 func (x *PendingModifiedValues) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -33460,8 +33460,8 @@ func (x *PendingModifiedValues) GetIamdatabaseauthenticationenabled() bool {
 }
 
 func (x *PendingModifiedValues) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -33502,8 +33502,8 @@ func (x *PendingModifiedValues) GetPendingcloudwatchlogsexports() *PendingCloudw
 }
 
 func (x *PendingModifiedValues) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -33523,8 +33523,8 @@ func (x *PendingModifiedValues) GetResumefullautomationmodetime() string {
 }
 
 func (x *PendingModifiedValues) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -33540,7 +33540,7 @@ type PerformanceInsightsMetricDimensionGroup struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dimensions    []string               `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Group         string                 `protobuf:"bytes,91525165,opt,name=group,proto3" json:"group,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -33590,8 +33590,8 @@ func (x *PerformanceInsightsMetricDimensionGroup) GetGroup() string {
 }
 
 func (x *PerformanceInsightsMetricDimensionGroup) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -33902,7 +33902,7 @@ func (x *PromoteReadReplicaDBClusterResult) GetDbcluster() *DBCluster {
 
 type PromoteReadReplicaMessage struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Backupretentionperiod int32                  `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod *int32                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Dbinstanceidentifier  string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Preferredbackupwindow string                 `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Tagspecifications     []*TagSpecification    `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
@@ -33941,8 +33941,8 @@ func (*PromoteReadReplicaMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *PromoteReadReplicaMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -34058,7 +34058,7 @@ func (x *ProvisionedIopsNotAvailableInAZFault) GetMessage() string {
 
 type PurchaseReservedDBInstancesOfferingMessage struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
-	Dbinstancecount               int32                  `protobuf:"varint,162916176,opt,name=dbinstancecount,proto3" json:"dbinstancecount,omitempty"`
+	Dbinstancecount               *int32                 `protobuf:"varint,162916176,opt,name=dbinstancecount,proto3,oneof" json:"dbinstancecount,omitempty"`
 	Reserveddbinstanceid          string                 `protobuf:"bytes,68820086,opt,name=reserveddbinstanceid,proto3" json:"reserveddbinstanceid,omitempty"`
 	Reserveddbinstancesofferingid string                 `protobuf:"bytes,475669635,opt,name=reserveddbinstancesofferingid,proto3" json:"reserveddbinstancesofferingid,omitempty"`
 	Tags                          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -34097,8 +34097,8 @@ func (*PurchaseReservedDBInstancesOfferingMessage) Descriptor() ([]byte, []int) 
 }
 
 func (x *PurchaseReservedDBInstancesOfferingMessage) GetDbinstancecount() int32 {
-	if x != nil {
-		return x.Dbinstancecount
+	if x != nil && x.Dbinstancecount != nil {
+		return *x.Dbinstancecount
 	}
 	return 0
 }
@@ -34170,9 +34170,9 @@ func (x *PurchaseReservedDBInstancesOfferingResult) GetReserveddbinstance() *Res
 
 type Range struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          int32                  `protobuf:"varint,410269078,opt,name=from,proto3" json:"from,omitempty"`
-	Step          int32                  `protobuf:"varint,124909872,opt,name=step,proto3" json:"step,omitempty"`
-	To            int32                  `protobuf:"varint,32872005,opt,name=to,proto3" json:"to,omitempty"`
+	From          *int32                 `protobuf:"varint,410269078,opt,name=from,proto3,oneof" json:"from,omitempty"`
+	Step          *int32                 `protobuf:"varint,124909872,opt,name=step,proto3,oneof" json:"step,omitempty"`
+	To            *int32                 `protobuf:"varint,32872005,opt,name=to,proto3,oneof" json:"to,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -34208,22 +34208,22 @@ func (*Range) Descriptor() ([]byte, []int) {
 }
 
 func (x *Range) GetFrom() int32 {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return 0
 }
 
 func (x *Range) GetStep() int32 {
-	if x != nil {
-		return x.Step
+	if x != nil && x.Step != nil {
+		return *x.Step
 	}
 	return 0
 }
 
 func (x *Range) GetTo() int32 {
-	if x != nil {
-		return x.To
+	if x != nil && x.To != nil {
+		return *x.To
 	}
 	return 0
 }
@@ -35304,8 +35304,8 @@ type ReservedDBInstance struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Currencycode                  string                 `protobuf:"bytes,481882700,opt,name=currencycode,proto3" json:"currencycode,omitempty"`
 	Dbinstanceclass               string                 `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Dbinstancecount               int32                  `protobuf:"varint,162916176,opt,name=dbinstancecount,proto3" json:"dbinstancecount,omitempty"`
-	Duration                      int32                  `protobuf:"varint,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
+	Dbinstancecount               *int32                 `protobuf:"varint,162916176,opt,name=dbinstancecount,proto3,oneof" json:"dbinstancecount,omitempty"`
+	Duration                      *int32                 `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Fixedprice                    float64                `protobuf:"fixed64,409544735,opt,name=fixedprice,proto3" json:"fixedprice,omitempty"`
 	Leaseid                       string                 `protobuf:"bytes,32039517,opt,name=leaseid,proto3" json:"leaseid,omitempty"`
 	Multiaz                       *bool                  `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
@@ -35367,15 +35367,15 @@ func (x *ReservedDBInstance) GetDbinstanceclass() string {
 }
 
 func (x *ReservedDBInstance) GetDbinstancecount() int32 {
-	if x != nil {
-		return x.Dbinstancecount
+	if x != nil && x.Dbinstancecount != nil {
+		return *x.Dbinstancecount
 	}
 	return 0
 }
 
 func (x *ReservedDBInstance) GetDuration() int32 {
-	if x != nil {
-		return x.Duration
+	if x != nil && x.Duration != nil {
+		return *x.Duration
 	}
 	return 0
 }
@@ -35652,7 +35652,7 @@ type ReservedDBInstancesOffering struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Currencycode                  string                 `protobuf:"bytes,481882700,opt,name=currencycode,proto3" json:"currencycode,omitempty"`
 	Dbinstanceclass               string                 `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Duration                      int32                  `protobuf:"varint,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration                      *int32                 `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Fixedprice                    float64                `protobuf:"fixed64,409544735,opt,name=fixedprice,proto3" json:"fixedprice,omitempty"`
 	Multiaz                       *bool                  `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Offeringtype                  string                 `protobuf:"bytes,210941500,opt,name=offeringtype,proto3" json:"offeringtype,omitempty"`
@@ -35709,8 +35709,8 @@ func (x *ReservedDBInstancesOffering) GetDbinstanceclass() string {
 }
 
 func (x *ReservedDBInstancesOffering) GetDuration() int32 {
-	if x != nil {
-		return x.Duration
+	if x != nil && x.Duration != nil {
+		return *x.Duration
 	}
 	return 0
 }
@@ -36079,8 +36079,8 @@ func (x *ResourcePendingMaintenanceActions) GetResourceidentifier() string {
 type RestoreDBClusterFromS3Message struct {
 	state                            protoimpl.MessageState            `protogen:"open.v1"`
 	Availabilityzones                []string                          `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Backtrackwindow                  int64                             `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod            int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backtrackwindow                  *int64                            `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod            *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Charactersetname                 string                            `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
 	Copytagstosnapshot               *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier              string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
@@ -36102,7 +36102,7 @@ type RestoreDBClusterFromS3Message struct {
 	Masterusername                   string                            `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
 	Networktype                      string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                  string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Port                             int32                             `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                             *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow            string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow       string                            `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	S3Bucketname                     string                            `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
@@ -36158,15 +36158,15 @@ func (x *RestoreDBClusterFromS3Message) GetAvailabilityzones() []string {
 }
 
 func (x *RestoreDBClusterFromS3Message) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *RestoreDBClusterFromS3Message) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -36319,8 +36319,8 @@ func (x *RestoreDBClusterFromS3Message) GetOptiongroupname() string {
 }
 
 func (x *RestoreDBClusterFromS3Message) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -36463,8 +36463,8 @@ func (x *RestoreDBClusterFromS3Result) GetDbcluster() *DBCluster {
 type RestoreDBClusterFromSnapshotMessage struct {
 	state                              protoimpl.MessageState            `protogen:"open.v1"`
 	Availabilityzones                  []string                          `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Backtrackwindow                    int64                             `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod              int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backtrackwindow                    *int64                            `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod              *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Copytagstosnapshot                 *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier                string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbclusterinstanceclass             string                            `protobuf:"bytes,187882689,opt,name=dbclusterinstanceclass,proto3" json:"dbclusterinstanceclass,omitempty"`
@@ -36483,15 +36483,15 @@ type RestoreDBClusterFromSnapshotMessage struct {
 	Enginelifecyclesupport             string                            `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
 	Enginemode                         string                            `protobuf:"bytes,292587685,opt,name=enginemode,proto3" json:"enginemode,omitempty"`
 	Engineversion                      string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Iops                               int32                             `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                            `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Monitoringinterval                 int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Monitoringinterval                 *int32                            `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                            `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Networktype                        string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                            `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                             `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                             `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                            `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow              string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Publiclyaccessible                 *bool                             `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Rdscustomclusterconfiguration      *RdsCustomClusterConfiguration    `protobuf:"bytes,171768636,opt,name=rdscustomclusterconfiguration,proto3" json:"rdscustomclusterconfiguration,omitempty"`
@@ -36544,15 +36544,15 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetAvailabilityzones() []string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -36684,8 +36684,8 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetEngineversion() string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -36698,8 +36698,8 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetKmskeyid() string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -36733,15 +36733,15 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetPerformanceinsightskmskeyid() s
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -36862,8 +36862,8 @@ func (x *RestoreDBClusterFromSnapshotResult) GetDbcluster() *DBCluster {
 
 type RestoreDBClusterToPointInTimeMessage struct {
 	state                              protoimpl.MessageState            `protogen:"open.v1"`
-	Backtrackwindow                    int64                             `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3" json:"backtrackwindow,omitempty"`
-	Backupretentionperiod              int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backtrackwindow                    *int64                            `protobuf:"varint,265584658,opt,name=backtrackwindow,proto3,oneof" json:"backtrackwindow,omitempty"`
+	Backupretentionperiod              *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Copytagstosnapshot                 *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier                string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbclusterinstanceclass             string                            `protobuf:"bytes,187882689,opt,name=dbclusterinstanceclass,proto3" json:"dbclusterinstanceclass,omitempty"`
@@ -36879,15 +36879,15 @@ type RestoreDBClusterToPointInTimeMessage struct {
 	Enablevpcnetworking                *bool                             `protobuf:"varint,169949840,opt,name=enablevpcnetworking,proto3,oneof" json:"enablevpcnetworking,omitempty"`
 	Enginelifecyclesupport             string                            `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
 	Enginemode                         string                            `protobuf:"bytes,292587685,opt,name=enginemode,proto3" json:"enginemode,omitempty"`
-	Iops                               int32                             `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                            `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Monitoringinterval                 int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Monitoringinterval                 *int32                            `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                            `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Networktype                        string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                            `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                             `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                             `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                            `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow              string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Publiclyaccessible                 *bool                             `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Rdscustomclusterconfiguration      *RdsCustomClusterConfiguration    `protobuf:"bytes,171768636,opt,name=rdscustomclusterconfiguration,proto3" json:"rdscustomclusterconfiguration,omitempty"`
@@ -36937,15 +36937,15 @@ func (*RestoreDBClusterToPointInTimeMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetBacktrackwindow() int64 {
-	if x != nil {
-		return x.Backtrackwindow
+	if x != nil && x.Backtrackwindow != nil {
+		return *x.Backtrackwindow
 	}
 	return 0
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -37056,8 +37056,8 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetEnginemode() string {
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -37070,8 +37070,8 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetKmskeyid() string {
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -37105,15 +37105,15 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetPerformanceinsightskmskeyid() 
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -37263,10 +37263,10 @@ func (x *RestoreDBClusterToPointInTimeResult) GetDbcluster() *DBCluster {
 type RestoreDBInstanceFromDBSnapshotMessage struct {
 	state                           protoimpl.MessageState     `protogen:"open.v1"`
 	Additionalstoragevolumes        []*AdditionalStorageVolume `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                int32                      `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                *int32                     `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade         *bool                      `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzone                string                     `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
-	Backupretentionperiod           int32                      `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod           *int32                     `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Backuptarget                    string                     `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
 	Cacertificateidentifier         string                     `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Copytagstosnapshot              *bool                      `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
@@ -37291,18 +37291,18 @@ type RestoreDBInstanceFromDBSnapshotMessage struct {
 	Enableiamdatabaseauthentication *bool                      `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Engine                          string                     `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Enginelifecyclesupport          string                     `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
-	Iops                            int32                      `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                            *int32                     `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Licensemodel                    string                     `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Managemasteruserpassword        *bool                      `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masterusersecretkmskeyid        string                     `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
 	Multiaz                         *bool                      `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Networktype                     string                     `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                 string                     `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Port                            int32                      `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                            *int32                     `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow           string                     `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Processorfeatures               []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Publiclyaccessible              *bool                      `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
-	Storagethroughput               int32                      `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput               *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                     string                     `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications               []*TagSpecification        `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tags                            []*Tag                     `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -37352,8 +37352,8 @@ func (x *RestoreDBInstanceFromDBSnapshotMessage) GetAdditionalstoragevolumes() [
 }
 
 func (x *RestoreDBInstanceFromDBSnapshotMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -37373,8 +37373,8 @@ func (x *RestoreDBInstanceFromDBSnapshotMessage) GetAvailabilityzone() string {
 }
 
 func (x *RestoreDBInstanceFromDBSnapshotMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -37548,8 +37548,8 @@ func (x *RestoreDBInstanceFromDBSnapshotMessage) GetEnginelifecyclesupport() str
 }
 
 func (x *RestoreDBInstanceFromDBSnapshotMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -37597,8 +37597,8 @@ func (x *RestoreDBInstanceFromDBSnapshotMessage) GetOptiongroupname() string {
 }
 
 func (x *RestoreDBInstanceFromDBSnapshotMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -37625,8 +37625,8 @@ func (x *RestoreDBInstanceFromDBSnapshotMessage) GetPubliclyaccessible() bool {
 }
 
 func (x *RestoreDBInstanceFromDBSnapshotMessage) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -37727,10 +37727,10 @@ func (x *RestoreDBInstanceFromDBSnapshotResult) GetDbinstance() *DBInstance {
 type RestoreDBInstanceFromS3Message struct {
 	state                              protoimpl.MessageState     `protogen:"open.v1"`
 	Additionalstoragevolumes           []*AdditionalStorageVolume `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                   int32                      `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                   *int32                     `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade            *bool                      `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzone                   string                     `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
-	Backupretentionperiod              int32                      `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod              *int32                     `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            string                     `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Copytagstosnapshot                 *bool                      `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbinstanceclass                    string                     `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
@@ -37748,22 +37748,22 @@ type RestoreDBInstanceFromS3Message struct {
 	Engine                             string                     `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Enginelifecyclesupport             string                     `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
 	Engineversion                      string                     `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Iops                               int32                      `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                               *int32                     `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Licensemodel                       string                     `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Managemasteruserpassword           *bool                      `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masteruserpassword                 string                     `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           string                     `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
 	Masterusername                     string                     `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Maxallocatedstorage                int32                      `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                 int32                      `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3" json:"monitoringinterval,omitempty"`
+	Maxallocatedstorage                *int32                     `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                 *int32                     `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
 	Monitoringrolearn                  string                     `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
 	Multiaz                            *bool                      `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Networktype                        string                     `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                    string                     `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
 	Performanceinsightskmskeyid        string                     `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod int32                      `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               int32                      `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Performanceinsightsretentionperiod *int32                     `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                     `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow              string                     `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Preferredmaintenancewindow         string                     `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
 	Processorfeatures                  []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
@@ -37774,7 +37774,7 @@ type RestoreDBInstanceFromS3Message struct {
 	Sourceengine                       string                     `protobuf:"bytes,165099131,opt,name=sourceengine,proto3" json:"sourceengine,omitempty"`
 	Sourceengineversion                string                     `protobuf:"bytes,253312519,opt,name=sourceengineversion,proto3" json:"sourceengineversion,omitempty"`
 	Storageencrypted                   *bool                      `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagethroughput                  int32                      `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                  *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                        string                     `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications                  []*TagSpecification        `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tags                               []*Tag                     `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -37822,8 +37822,8 @@ func (x *RestoreDBInstanceFromS3Message) GetAdditionalstoragevolumes() []*Additi
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -37843,8 +37843,8 @@ func (x *RestoreDBInstanceFromS3Message) GetAvailabilityzone() string {
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -37969,8 +37969,8 @@ func (x *RestoreDBInstanceFromS3Message) GetEngineversion() string {
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -38018,15 +38018,15 @@ func (x *RestoreDBInstanceFromS3Message) GetMasterusername() string {
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetMonitoringinterval() int32 {
-	if x != nil {
-		return x.Monitoringinterval
+	if x != nil && x.Monitoringinterval != nil {
+		return *x.Monitoringinterval
 	}
 	return 0
 }
@@ -38067,15 +38067,15 @@ func (x *RestoreDBInstanceFromS3Message) GetPerformanceinsightskmskeyid() string
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetPerformanceinsightsretentionperiod() int32 {
-	if x != nil {
-		return x.Performanceinsightsretentionperiod
+	if x != nil && x.Performanceinsightsretentionperiod != nil {
+		return *x.Performanceinsightsretentionperiod
 	}
 	return 0
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -38151,8 +38151,8 @@ func (x *RestoreDBInstanceFromS3Message) GetStorageencrypted() bool {
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -38239,10 +38239,10 @@ func (x *RestoreDBInstanceFromS3Result) GetDbinstance() *DBInstance {
 type RestoreDBInstanceToPointInTimeMessage struct {
 	state                               protoimpl.MessageState     `protogen:"open.v1"`
 	Additionalstoragevolumes            []*AdditionalStorageVolume `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                    int32                      `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3" json:"allocatedstorage,omitempty"`
+	Allocatedstorage                    *int32                     `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade             *bool                      `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Availabilityzone                    string                     `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
-	Backupretentionperiod               int32                      `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod               *int32                     `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Backuptarget                        string                     `protobuf:"bytes,426947907,opt,name=backuptarget,proto3" json:"backuptarget,omitempty"`
 	Cacertificateidentifier             string                     `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
 	Copytagstosnapshot                  *bool                      `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
@@ -38264,15 +38264,15 @@ type RestoreDBInstanceToPointInTimeMessage struct {
 	Enableiamdatabaseauthentication     *bool                      `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Engine                              string                     `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
 	Enginelifecyclesupport              string                     `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3" json:"enginelifecyclesupport,omitempty"`
-	Iops                                int32                      `protobuf:"varint,1043585,opt,name=iops,proto3" json:"iops,omitempty"`
+	Iops                                *int32                     `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Licensemodel                        string                     `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
 	Managemasteruserpassword            *bool                      `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
 	Masterusersecretkmskeyid            string                     `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3" json:"masterusersecretkmskeyid,omitempty"`
-	Maxallocatedstorage                 int32                      `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3" json:"maxallocatedstorage,omitempty"`
+	Maxallocatedstorage                 *int32                     `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
 	Multiaz                             *bool                      `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Networktype                         string                     `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
 	Optiongroupname                     string                     `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Port                                int32                      `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                                *int32                     `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Preferredbackupwindow               string                     `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
 	Processorfeatures                   []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Publiclyaccessible                  *bool                      `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
@@ -38280,7 +38280,7 @@ type RestoreDBInstanceToPointInTimeMessage struct {
 	Sourcedbinstanceautomatedbackupsarn string                     `protobuf:"bytes,56967340,opt,name=sourcedbinstanceautomatedbackupsarn,proto3" json:"sourcedbinstanceautomatedbackupsarn,omitempty"`
 	Sourcedbinstanceidentifier          string                     `protobuf:"bytes,330655991,opt,name=sourcedbinstanceidentifier,proto3" json:"sourcedbinstanceidentifier,omitempty"`
 	Sourcedbiresourceid                 string                     `protobuf:"bytes,422726821,opt,name=sourcedbiresourceid,proto3" json:"sourcedbiresourceid,omitempty"`
-	Storagethroughput                   int32                      `protobuf:"varint,465264045,opt,name=storagethroughput,proto3" json:"storagethroughput,omitempty"`
+	Storagethroughput                   *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                         string                     `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
 	Tagspecifications                   []*TagSpecification        `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
 	Tags                                []*Tag                     `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -38332,8 +38332,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetAdditionalstoragevolumes() []
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetAllocatedstorage() int32 {
-	if x != nil {
-		return x.Allocatedstorage
+	if x != nil && x.Allocatedstorage != nil {
+		return *x.Allocatedstorage
 	}
 	return 0
 }
@@ -38353,8 +38353,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetAvailabilityzone() string {
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -38507,8 +38507,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetEnginelifecyclesupport() stri
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetIops() int32 {
-	if x != nil {
-		return x.Iops
+	if x != nil && x.Iops != nil {
+		return *x.Iops
 	}
 	return 0
 }
@@ -38535,8 +38535,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetMasterusersecretkmskeyid() st
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetMaxallocatedstorage() int32 {
-	if x != nil {
-		return x.Maxallocatedstorage
+	if x != nil && x.Maxallocatedstorage != nil {
+		return *x.Maxallocatedstorage
 	}
 	return 0
 }
@@ -38563,8 +38563,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetOptiongroupname() string {
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -38619,8 +38619,8 @@ func (x *RestoreDBInstanceToPointInTimeMessage) GetSourcedbiresourceid() string 
 }
 
 func (x *RestoreDBInstanceToPointInTimeMessage) GetStoragethroughput() int32 {
-	if x != nil {
-		return x.Storagethroughput
+	if x != nil && x.Storagethroughput != nil {
+		return *x.Storagethroughput
 	}
 	return 0
 }
@@ -39083,10 +39083,10 @@ func (x *ScalarReferenceDetails) GetValue() float64 {
 type ScalingConfiguration struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Autopause             *bool                  `protobuf:"varint,174051809,opt,name=autopause,proto3,oneof" json:"autopause,omitempty"`
-	Maxcapacity           int32                  `protobuf:"varint,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
-	Mincapacity           int32                  `protobuf:"varint,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
-	Secondsbeforetimeout  int32                  `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3" json:"secondsbeforetimeout,omitempty"`
-	Secondsuntilautopause int32                  `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3" json:"secondsuntilautopause,omitempty"`
+	Maxcapacity           *int32                 `protobuf:"varint,453778390,opt,name=maxcapacity,proto3,oneof" json:"maxcapacity,omitempty"`
+	Mincapacity           *int32                 `protobuf:"varint,195482820,opt,name=mincapacity,proto3,oneof" json:"mincapacity,omitempty"`
+	Secondsbeforetimeout  *int32                 `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3,oneof" json:"secondsbeforetimeout,omitempty"`
+	Secondsuntilautopause *int32                 `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3,oneof" json:"secondsuntilautopause,omitempty"`
 	Timeoutaction         string                 `protobuf:"bytes,444876627,opt,name=timeoutaction,proto3" json:"timeoutaction,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -39130,29 +39130,29 @@ func (x *ScalingConfiguration) GetAutopause() bool {
 }
 
 func (x *ScalingConfiguration) GetMaxcapacity() int32 {
-	if x != nil {
-		return x.Maxcapacity
+	if x != nil && x.Maxcapacity != nil {
+		return *x.Maxcapacity
 	}
 	return 0
 }
 
 func (x *ScalingConfiguration) GetMincapacity() int32 {
-	if x != nil {
-		return x.Mincapacity
+	if x != nil && x.Mincapacity != nil {
+		return *x.Mincapacity
 	}
 	return 0
 }
 
 func (x *ScalingConfiguration) GetSecondsbeforetimeout() int32 {
-	if x != nil {
-		return x.Secondsbeforetimeout
+	if x != nil && x.Secondsbeforetimeout != nil {
+		return *x.Secondsbeforetimeout
 	}
 	return 0
 }
 
 func (x *ScalingConfiguration) GetSecondsuntilautopause() int32 {
-	if x != nil {
-		return x.Secondsuntilautopause
+	if x != nil && x.Secondsuntilautopause != nil {
+		return *x.Secondsuntilautopause
 	}
 	return 0
 }
@@ -39167,10 +39167,10 @@ func (x *ScalingConfiguration) GetTimeoutaction() string {
 type ScalingConfigurationInfo struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Autopause             *bool                  `protobuf:"varint,174051809,opt,name=autopause,proto3,oneof" json:"autopause,omitempty"`
-	Maxcapacity           int32                  `protobuf:"varint,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
-	Mincapacity           int32                  `protobuf:"varint,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
-	Secondsbeforetimeout  int32                  `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3" json:"secondsbeforetimeout,omitempty"`
-	Secondsuntilautopause int32                  `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3" json:"secondsuntilautopause,omitempty"`
+	Maxcapacity           *int32                 `protobuf:"varint,453778390,opt,name=maxcapacity,proto3,oneof" json:"maxcapacity,omitempty"`
+	Mincapacity           *int32                 `protobuf:"varint,195482820,opt,name=mincapacity,proto3,oneof" json:"mincapacity,omitempty"`
+	Secondsbeforetimeout  *int32                 `protobuf:"varint,141553913,opt,name=secondsbeforetimeout,proto3,oneof" json:"secondsbeforetimeout,omitempty"`
+	Secondsuntilautopause *int32                 `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3,oneof" json:"secondsuntilautopause,omitempty"`
 	Timeoutaction         string                 `protobuf:"bytes,444876627,opt,name=timeoutaction,proto3" json:"timeoutaction,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -39214,29 +39214,29 @@ func (x *ScalingConfigurationInfo) GetAutopause() bool {
 }
 
 func (x *ScalingConfigurationInfo) GetMaxcapacity() int32 {
-	if x != nil {
-		return x.Maxcapacity
+	if x != nil && x.Maxcapacity != nil {
+		return *x.Maxcapacity
 	}
 	return 0
 }
 
 func (x *ScalingConfigurationInfo) GetMincapacity() int32 {
-	if x != nil {
-		return x.Mincapacity
+	if x != nil && x.Mincapacity != nil {
+		return *x.Mincapacity
 	}
 	return 0
 }
 
 func (x *ScalingConfigurationInfo) GetSecondsbeforetimeout() int32 {
-	if x != nil {
-		return x.Secondsbeforetimeout
+	if x != nil && x.Secondsbeforetimeout != nil {
+		return *x.Secondsbeforetimeout
 	}
 	return 0
 }
 
 func (x *ScalingConfigurationInfo) GetSecondsuntilautopause() int32 {
-	if x != nil {
-		return x.Secondsuntilautopause
+	if x != nil && x.Secondsuntilautopause != nil {
+		return *x.Secondsuntilautopause
 	}
 	return 0
 }
@@ -39440,7 +39440,7 @@ type ServerlessV2ScalingConfiguration struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Maxcapacity           float64                `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
 	Mincapacity           float64                `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
-	Secondsuntilautopause int32                  `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3" json:"secondsuntilautopause,omitempty"`
+	Secondsuntilautopause *int32                 `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3,oneof" json:"secondsuntilautopause,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -39490,8 +39490,8 @@ func (x *ServerlessV2ScalingConfiguration) GetMincapacity() float64 {
 }
 
 func (x *ServerlessV2ScalingConfiguration) GetSecondsuntilautopause() int32 {
-	if x != nil {
-		return x.Secondsuntilautopause
+	if x != nil && x.Secondsuntilautopause != nil {
+		return *x.Secondsuntilautopause
 	}
 	return 0
 }
@@ -39500,7 +39500,7 @@ type ServerlessV2ScalingConfigurationInfo struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Maxcapacity           float64                `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
 	Mincapacity           float64                `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
-	Secondsuntilautopause int32                  `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3" json:"secondsuntilautopause,omitempty"`
+	Secondsuntilautopause *int32                 `protobuf:"varint,181181478,opt,name=secondsuntilautopause,proto3,oneof" json:"secondsuntilautopause,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -39550,8 +39550,8 @@ func (x *ServerlessV2ScalingConfigurationInfo) GetMincapacity() float64 {
 }
 
 func (x *ServerlessV2ScalingConfigurationInfo) GetSecondsuntilautopause() int32 {
-	if x != nil {
-		return x.Secondsuntilautopause
+	if x != nil && x.Secondsuntilautopause != nil {
+		return *x.Secondsuntilautopause
 	}
 	return 0
 }
@@ -40146,7 +40146,7 @@ func (x *StartDBClusterResult) GetDbcluster() *DBCluster {
 
 type StartDBInstanceAutomatedBackupsReplicationMessage struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Backupretentionperiod int32                  `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3" json:"backupretentionperiod,omitempty"`
+	Backupretentionperiod *int32                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Kmskeyid              string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Presignedurl          string                 `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
 	Sourcedbinstancearn   string                 `protobuf:"bytes,119545909,opt,name=sourcedbinstancearn,proto3" json:"sourcedbinstancearn,omitempty"`
@@ -40186,8 +40186,8 @@ func (*StartDBInstanceAutomatedBackupsReplicationMessage) Descriptor() ([]byte, 
 }
 
 func (x *StartDBInstanceAutomatedBackupsReplicationMessage) GetBackupretentionperiod() int32 {
-	if x != nil {
-		return x.Backupretentionperiod
+	if x != nil && x.Backupretentionperiod != nil {
+		return *x.Backupretentionperiod
 	}
 	return 0
 }
@@ -41267,7 +41267,7 @@ func (x *SupportedEngineLifecycle) GetLifecyclesupportstartdate() string {
 type SwitchoverBlueGreenDeploymentRequest struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Bluegreendeploymentidentifier string                 `protobuf:"bytes,142726945,opt,name=bluegreendeploymentidentifier,proto3" json:"bluegreendeploymentidentifier,omitempty"`
-	Switchovertimeout             int32                  `protobuf:"varint,159363487,opt,name=switchovertimeout,proto3" json:"switchovertimeout,omitempty"`
+	Switchovertimeout             *int32                 `protobuf:"varint,159363487,opt,name=switchovertimeout,proto3,oneof" json:"switchovertimeout,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -41310,8 +41310,8 @@ func (x *SwitchoverBlueGreenDeploymentRequest) GetBluegreendeploymentidentifier(
 }
 
 func (x *SwitchoverBlueGreenDeploymentRequest) GetSwitchovertimeout() int32 {
-	if x != nil {
-		return x.Switchovertimeout
+	if x != nil && x.Switchovertimeout != nil {
+		return *x.Switchovertimeout
 	}
 	return 0
 }
@@ -42950,11 +42950,13 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"\trds.proto\x12\x03rds\x1a\fcommon.proto\x1a\taws.proto\"W\n" +
 	"\x18AccountAttributesMessage\x12;\n" +
-	"\raccountquotas\x18\xf6\xd1͑\x01 \x03(\v2\x11.rds.AccountQuotaR\raccountquotas\"k\n" +
+	"\raccountquotas\x18\xf6\xd1͑\x01 \x03(\v2\x11.rds.AccountQuotaR\raccountquotas\"\x86\x01\n" +
 	"\fAccountQuota\x12.\n" +
-	"\x10accountquotaname\x18\xc0\xe4\xe3\xb0\x01 \x01(\tR\x10accountquotaname\x12\x14\n" +
-	"\x03max\x18\xbaǟ\xe5\x01 \x01(\x03R\x03max\x12\x15\n" +
-	"\x04used\x18ћ\x99U \x01(\x03R\x04used\"\x94\x01\n" +
+	"\x10accountquotaname\x18\xc0\xe4\xe3\xb0\x01 \x01(\tR\x10accountquotaname\x12\x19\n" +
+	"\x03max\x18\xbaǟ\xe5\x01 \x01(\x03H\x00R\x03max\x88\x01\x01\x12\x1a\n" +
+	"\x04used\x18ћ\x99U \x01(\x03H\x01R\x04used\x88\x01\x01B\x06\n" +
+	"\x04_maxB\a\n" +
+	"\x05_used\"\x94\x01\n" +
 	"\x19AddRoleToDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12#\n" +
 	"\vfeaturename\x18\xff\x97\x90h \x01(\tR\vfeaturename\x12\x1c\n" +
@@ -42970,26 +42972,34 @@ const file_rds_proto_rawDesc = "" +
 	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x16.rds.EventSubscriptionR\x11eventsubscription\"d\n" +
 	"\x18AddTagsToResourceMessage\x12&\n" +
 	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\x90\x02\n" +
-	"\x17AdditionalStorageVolume\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12\x16\n" +
-	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05R\x04iops\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\xf0\x02\n" +
+	"\x17AdditionalStorageVolume\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12\x1b\n" +
+	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05H\x01R\x04iops\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x02R\x13maxallocatedstorage\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x03R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12!\n" +
 	"\n" +
 	"volumename\x18\x8d\xf9\x91Y \x01(\tR\n" +
-	"volumename\"\xcb\x02\n" +
-	"\x1dAdditionalStorageVolumeOutput\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12\x16\n" +
-	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05R\x04iops\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"volumenameB\x13\n" +
+	"\x11_allocatedstorageB\a\n" +
+	"\x05_iopsB\x16\n" +
+	"\x14_maxallocatedstorageB\x14\n" +
+	"\x12_storagethroughput\"\xab\x03\n" +
+	"\x1dAdditionalStorageVolumeOutput\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12\x1b\n" +
+	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05H\x01R\x04iops\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x02R\x13maxallocatedstorage\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x03R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x123\n" +
 	"\x13storagevolumestatus\x18\x9b\xff\x9eH \x01(\tR\x13storagevolumestatus\x12!\n" +
 	"\n" +
 	"volumename\x18\x8d\xf9\x91Y \x01(\tR\n" +
-	"volumename\"\xa2\x01\n" +
+	"volumenameB\x13\n" +
+	"\x11_allocatedstorageB\a\n" +
+	"\x05_iopsB\x16\n" +
+	"\x14_maxallocatedstorageB\x14\n" +
+	"\x12_storagethroughput\"\xa2\x01\n" +
 	"$ApplyPendingMaintenanceActionMessage\x12$\n" +
 	"\vapplyaction\x18\x9a\xd1\xed\x98\x01 \x01(\tR\vapplyaction\x12 \n" +
 	"\toptintype\x18\xee\xb5\xd4\xdd\x01 \x01(\tR\toptintype\x122\n" +
@@ -43011,20 +43021,28 @@ const file_rds_proto_rawDesc = "" +
 	"%AuthorizeDBSecurityGroupIngressResult\x12B\n" +
 	"\x0fdbsecuritygroup\x18\x8d\x8fō\x01 \x01(\v2\x14.rds.DBSecurityGroupR\x0fdbsecuritygroup\")\n" +
 	"\x10AvailabilityZone\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xab\x05\n" +
-	"'AvailableAdditionalStorageVolumesOption\x12\x1b\n" +
-	"\amaxiops\x18\xfd\xf7\x8a- \x01(\x05R\amaxiops\x12'\n" +
-	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01R\rmaxiopspergib\x12*\n" +
-	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05R\x0emaxstoragesize\x125\n" +
-	"\x14maxstoragethroughput\x18\xe9\xea\xc8n \x01(\x05R\x14maxstoragethroughput\x12\x1c\n" +
-	"\aminiops\x18ۉ\x8f\xf9\x01 \x01(\x05R\aminiops\x12(\n" +
-	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01R\rminiopspergib\x12)\n" +
-	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05R\x0eminstoragesize\x125\n" +
-	"\x14minstoragethroughput\x18\xe7\xff\x88b \x01(\x05R\x14minstoragethroughput\x12#\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb9\x06\n" +
+	"'AvailableAdditionalStorageVolumesOption\x12 \n" +
+	"\amaxiops\x18\xfd\xf7\x8a- \x01(\x05H\x00R\amaxiops\x88\x01\x01\x12'\n" +
+	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01R\rmaxiopspergib\x12/\n" +
+	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05H\x01R\x0emaxstoragesize\x88\x01\x01\x12:\n" +
+	"\x14maxstoragethroughput\x18\xe9\xea\xc8n \x01(\x05H\x02R\x14maxstoragethroughput\x88\x01\x01\x12!\n" +
+	"\aminiops\x18ۉ\x8f\xf9\x01 \x01(\x05H\x03R\aminiops\x88\x01\x01\x12(\n" +
+	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01R\rminiopspergib\x12.\n" +
+	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05H\x04R\x0eminstoragesize\x88\x01\x01\x12:\n" +
+	"\x14minstoragethroughput\x18\xe7\xff\x88b \x01(\x05H\x05R\x14minstoragethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12+\n" +
-	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\x00R\fsupportsiops\x88\x01\x01\x12G\n" +
-	"\x1asupportsstorageautoscaling\x18\xc3\xff\x86\xfd\x01 \x01(\bH\x01R\x1asupportsstorageautoscaling\x88\x01\x01\x12D\n" +
-	"\x19supportsstoragethroughput\x18\xa1\xcc\xca\x05 \x01(\bH\x02R\x19supportsstoragethroughput\x88\x01\x01B\x0f\n" +
+	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\x06R\fsupportsiops\x88\x01\x01\x12G\n" +
+	"\x1asupportsstorageautoscaling\x18\xc3\xff\x86\xfd\x01 \x01(\bH\aR\x1asupportsstorageautoscaling\x88\x01\x01\x12D\n" +
+	"\x19supportsstoragethroughput\x18\xa1\xcc\xca\x05 \x01(\bH\bR\x19supportsstoragethroughput\x88\x01\x01B\n" +
+	"\n" +
+	"\b_maxiopsB\x11\n" +
+	"\x0f_maxstoragesizeB\x17\n" +
+	"\x15_maxstoragethroughputB\n" +
+	"\n" +
+	"\b_miniopsB\x11\n" +
+	"\x0f_minstoragesizeB\x17\n" +
+	"\x15_minstoragethroughputB\x0f\n" +
 	"\r_supportsiopsB\x1d\n" +
 	"\x1b_supportsstorageautoscalingB\x1c\n" +
 	"\x1a_supportsstoragethroughput\"\x83\x01\n" +
@@ -43092,32 +43110,41 @@ const file_rds_proto_rawDesc = "" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\"}\n" +
 	"!CloudwatchLogsExportConfiguration\x12,\n" +
 	"\x0fdisablelogtypes\x18\xf9\xa1\xb0\xe1\x01 \x03(\tR\x0fdisablelogtypes\x12*\n" +
-	"\x0eenablelogtypes\x18Ω\xb5\xd6\x01 \x03(\tR\x0eenablelogtypes\"\xf3\x05\n" +
-	"\x1cClusterPendingModifiedValues\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12K\n" +
+	"\x0eenablelogtypes\x18Ω\xb5\xd6\x01 \x03(\tR\x0eenablelogtypes\"\xba\x06\n" +
+	"\x1cClusterPendingModifiedValues\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12K\n" +
 	"\x12certificatedetails\x18\xa7\xf0\xcf\xd6\x01 \x01(\v2\x17.rds.CertificateDetailsR\x12certificatedetails\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x00R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x122\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x03R\x04iops\x88\x01\x01\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12h\n" +
 	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2!.rds.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB#\n" +
-	"!_iamdatabaseauthenticationenabled\"\xb1\x02\n" +
-	"\x1bConnectionPoolConfiguration\x12<\n" +
-	"\x17connectionborrowtimeout\x18\xe8\xd4\xc0\xb2\x01 \x01(\x05R\x17connectionborrowtimeout\x12 \n" +
-	"\tinitquery\x18\xc2\uf66d\x01 \x01(\tR\tinitquery\x128\n" +
-	"\x15maxconnectionspercent\x18\xa4\x87\x8a\x9b\x01 \x01(\x05R\x15maxconnectionspercent\x12?\n" +
-	"\x19maxidleconnectionspercent\x18\xa6κ\x1a \x01(\x05R\x19maxidleconnectionspercent\x127\n" +
-	"\x15sessionpinningfilters\x18܌\xf5[ \x03(\tR\x15sessionpinningfilters\"\xb5\x02\n" +
-	"\x1fConnectionPoolConfigurationInfo\x12<\n" +
-	"\x17connectionborrowtimeout\x18\xe8\xd4\xc0\xb2\x01 \x01(\x05R\x17connectionborrowtimeout\x12 \n" +
-	"\tinitquery\x18\xc2\uf66d\x01 \x01(\tR\tinitquery\x128\n" +
-	"\x15maxconnectionspercent\x18\xa4\x87\x8a\x9b\x01 \x01(\x05R\x15maxconnectionspercent\x12?\n" +
-	"\x19maxidleconnectionspercent\x18\xa6κ\x1a \x01(\x05R\x19maxidleconnectionspercent\x127\n" +
-	"\x15sessionpinningfilters\x18܌\xf5[ \x03(\tR\x15sessionpinningfilters\"A\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB#\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iops\"\x94\x03\n" +
+	"\x1bConnectionPoolConfiguration\x12A\n" +
+	"\x17connectionborrowtimeout\x18\xe8\xd4\xc0\xb2\x01 \x01(\x05H\x00R\x17connectionborrowtimeout\x88\x01\x01\x12 \n" +
+	"\tinitquery\x18\xc2\uf66d\x01 \x01(\tR\tinitquery\x12=\n" +
+	"\x15maxconnectionspercent\x18\xa4\x87\x8a\x9b\x01 \x01(\x05H\x01R\x15maxconnectionspercent\x88\x01\x01\x12D\n" +
+	"\x19maxidleconnectionspercent\x18\xa6κ\x1a \x01(\x05H\x02R\x19maxidleconnectionspercent\x88\x01\x01\x127\n" +
+	"\x15sessionpinningfilters\x18܌\xf5[ \x03(\tR\x15sessionpinningfiltersB\x1a\n" +
+	"\x18_connectionborrowtimeoutB\x18\n" +
+	"\x16_maxconnectionspercentB\x1c\n" +
+	"\x1a_maxidleconnectionspercent\"\x98\x03\n" +
+	"\x1fConnectionPoolConfigurationInfo\x12A\n" +
+	"\x17connectionborrowtimeout\x18\xe8\xd4\xc0\xb2\x01 \x01(\x05H\x00R\x17connectionborrowtimeout\x88\x01\x01\x12 \n" +
+	"\tinitquery\x18\xc2\uf66d\x01 \x01(\tR\tinitquery\x12=\n" +
+	"\x15maxconnectionspercent\x18\xa4\x87\x8a\x9b\x01 \x01(\x05H\x01R\x15maxconnectionspercent\x88\x01\x01\x12D\n" +
+	"\x19maxidleconnectionspercent\x18\xa6κ\x1a \x01(\x05H\x02R\x19maxidleconnectionspercent\x88\x01\x01\x127\n" +
+	"\x15sessionpinningfilters\x18܌\xf5[ \x03(\tR\x15sessionpinningfiltersB\x1a\n" +
+	"\x18_connectionborrowtimeoutB\x18\n" +
+	"\x16_maxconnectionspercentB\x1c\n" +
+	"\x1a_maxidleconnectionspercent\"A\n" +
 	"\x10ContextAttribute\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xe2\x02\n" +
@@ -43169,22 +43196,25 @@ const file_rds_proto_rawDesc = "" +
 	"\x1ctargetoptiongroupdescription\x18\xb3\xee\xcf} \x01(\tR\x1ctargetoptiongroupdescription\x12C\n" +
 	"\x1btargetoptiongroupidentifier\x18\xec\xe4\x887 \x01(\tR\x1btargetoptiongroupidentifier\"O\n" +
 	"\x15CopyOptionGroupResult\x126\n" +
-	"\voptiongroup\x18詗\xd9\x01 \x01(\v2\x10.rds.OptionGroupR\voptiongroup\"\xd5\x05\n" +
+	"\voptiongroup\x18詗\xd9\x01 \x01(\v2\x10.rds.OptionGroupR\voptiongroup\"\xaa\x06\n" +
 	" CreateBlueGreenDeploymentRequest\x12;\n" +
 	"\x17bluegreendeploymentname\x18\x91Է\x03 \x01(\tR\x17bluegreendeploymentname\x12\x19\n" +
 	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x129\n" +
-	"\x16targetallocatedstorage\x18\xab\xc3\xdb* \x01(\x05R\x16targetallocatedstorage\x12P\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12>\n" +
+	"\x16targetallocatedstorage\x18\xab\xc3\xdb* \x01(\x05H\x00R\x16targetallocatedstorage\x88\x01\x01\x12P\n" +
 	"!targetdbclusterparametergroupname\x18\xfa\xea\x9c\xea\x01 \x01(\tR!targetdbclusterparametergroupname\x127\n" +
 	"\x15targetdbinstanceclass\x18ȳ\x87\x1e \x01(\tR\x15targetdbinstanceclass\x12A\n" +
 	"\x1atargetdbparametergroupname\x18\xa8\x84\x89< \x01(\tR\x1atargetdbparametergroupname\x123\n" +
-	"\x13targetengineversion\x18\xb7Ɍ: \x01(\tR\x13targetengineversion\x12!\n" +
+	"\x13targetengineversion\x18\xb7Ɍ: \x01(\tR\x13targetengineversion\x12&\n" +
 	"\n" +
-	"targetiops\x18\xce\xf6\xa3Z \x01(\x05R\n" +
-	"targetiops\x12<\n" +
-	"\x17targetstoragethroughput\x18\xc4\xd0\xeb\x80\x01 \x01(\x05R\x17targetstoragethroughput\x120\n" +
+	"targetiops\x18\xce\xf6\xa3Z \x01(\x05H\x01R\n" +
+	"targetiops\x88\x01\x01\x12A\n" +
+	"\x17targetstoragethroughput\x18\xc4\xd0\xeb\x80\x01 \x01(\x05H\x02R\x17targetstoragethroughput\x88\x01\x01\x120\n" +
 	"\x11targetstoragetype\x18\xe2\xc1\xb2\xdc\x01 \x01(\tR\x11targetstoragetype\x12G\n" +
-	"\x1aupgradetargetstorageconfig\x18\xce\xc0ŋ\x01 \x01(\bH\x00R\x1aupgradetargetstorageconfig\x88\x01\x01B\x1d\n" +
+	"\x1aupgradetargetstorageconfig\x18\xce\xc0ŋ\x01 \x01(\bH\x03R\x1aupgradetargetstorageconfig\x88\x01\x01B\x19\n" +
+	"\x17_targetallocatedstorageB\r\n" +
+	"\v_targetiopsB\x1a\n" +
+	"\x18_targetstoragethroughputB\x1d\n" +
 	"\x1b_upgradetargetstorageconfig\"r\n" +
 	"!CreateBlueGreenDeploymentResponse\x12M\n" +
 	"\x13bluegreendeployment\x18\xcc\xeb\x86M \x01(\v2\x18.rds.BlueGreenDeploymentR\x13bluegreendeployment\"?\n" +
@@ -43210,17 +43240,17 @@ const file_rds_proto_rawDesc = "" +
 	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
 	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\xdf\x1d\n" +
-	"\x16CreateDBClusterMessage\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12/\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12<\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\x95\x1f\n" +
+	"\x16CreateDBClusterMessage\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12/\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x02R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x03R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12.\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x12V\n" +
 	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeR\x16clusterscalabilitytype\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x04R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
 	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tR\x16dbclusterinstanceclass\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
@@ -43230,53 +43260,56 @@ const file_rds_proto_rawDesc = "" +
 	"dbsystemid\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x02R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12H\n" +
-	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x03R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
-	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\x04R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
-	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\x06R\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
-	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\aR\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\bR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x06R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
+	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\aR\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\bR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
+	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\tR\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
+	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\n" +
+	"R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\vR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\"\n" +
 	"\n" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
 	"enginemode\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\fR\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\tR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\rR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
 	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
 	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x0eR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12&\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x0fR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x10R\x04port\x88\x01\x01\x12&\n" +
 	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\n" +
-	"R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x11R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12D\n" +
 	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tR\x1breplicationsourceidentifier\x12P\n" +
 	"\x14scalingconfiguration\x18\xe1\xc5\xc9\x19 \x01(\v2\x19.rds.ScalingConfigurationR\x14scalingconfiguration\x12u\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\vR\x10storageencrypted\x88\x01\x01\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x12R\x10storageencrypted\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12B\n" +
-	"\x18withexpressconfiguration\x18\xd4\xeb\x94+ \x01(\bH\fR\x18withexpressconfiguration\x88\x01\x01B\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x18withexpressconfiguration\x18\xd4\xeb\x94+ \x01(\bH\x13R\x18withexpressconfiguration\x88\x01\x01B\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_deletionprotectionB\x1e\n" +
 	"\x1c_enableglobalwriteforwardingB\x15\n" +
@@ -43284,8 +43317,12 @@ const file_rds_proto_rawDesc = "" +
 	" _enableiamdatabaseauthenticationB\x1a\n" +
 	"\x18_enablelimitlessdatabaseB\x1d\n" +
 	"\x1b_enablelocalwriteforwardingB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\x1b\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x1b\n" +
 	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x13_monitoringintervalB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
 	"\x11_storageencryptedB\x1b\n" +
 	"\x19_withexpressconfiguration\"\xef\x01\n" +
@@ -43303,17 +43340,17 @@ const file_rds_proto_rawDesc = "" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"h\n" +
 	"\x1dCreateDBClusterSnapshotResult\x12G\n" +
-	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x16.rds.DBClusterSnapshotR\x11dbclustersnapshot\"\xea\x1d\n" +
+	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x16.rds.DBClusterSnapshotR\x11dbclustersnapshot\"\xd6\x1f\n" +
 	"\x17CreateDBInstanceMessage\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12&\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12.\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
 	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tR\x18customiaminstanceprofile\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
@@ -43326,8 +43363,8 @@ const file_rds_proto_rawDesc = "" +
 	"dbsystemid\x18\x88\xf9\xcce \x01(\tR\n" +
 	"dbsystemid\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x04R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
 	" \x01(\tR\x13domainauthsecretarn\x12%\n" +
@@ -43338,75 +43375,84 @@ const file_rds_proto_rawDesc = "" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12\x1d\n" +
 	"\bdomainou\x18\x9e\xf6\x99w \x01(\tR\bdomainou\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x04R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x06R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x06R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\aR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\bR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\tR\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\aR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\n" +
+	"R\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
 	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
 	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\vR\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\fR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\bR\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\tR\vmultitenant\x88\x01\x01\x127\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\rR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x0eR\vmultitenant\x88\x01\x01\x127\n" +
 	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tR\x15ncharcharactersetname\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x0fR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x10R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12F\n" +
-	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12'\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05R\rpromotiontier\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\n" +
-	"R\x12publiclyaccessible\x88\x01\x01\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\vR\x10storageencrypted\x88\x01\x01\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x11R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x12R\x12publiclyaccessible\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x13R\x10storageencrypted\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x14R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
 	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x12\x1d\n" +
 	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x18\n" +
 	"\x16_enablecustomerownedipB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\x1b\n" +
-	"\x19_managemasteruserpasswordB\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x1b\n" +
+	"\x19_managemasteruserpasswordB\x16\n" +
+	"\x14_maxallocatedstorageB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
 	"\b_multiazB\x0e\n" +
-	"\f_multitenantB\x15\n" +
+	"\f_multitenantB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x10\n" +
+	"\x0e_promotiontierB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencrypted\"\x92\x17\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughput\"\xc8\x18\n" +
 	"\"CreateDBInstanceReadReplicaMessage\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
 	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
 	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tR\x18customiaminstanceprofile\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x125\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x03R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x04R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
 	" \x01(\tR\x13domainauthsecretarn\x12%\n" +
@@ -43417,44 +43463,51 @@ const file_rds_proto_rawDesc = "" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12\x1d\n" +
 	"\bdomainou\x18\x9e\xf6\x99w \x01(\tR\bdomainou\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x04R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x06R\x19enableperformanceinsights\x88\x01\x01\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x05R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x06R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\aR\x19enableperformanceinsights\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12\x1d\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\tR\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\n" +
+	"R\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\aR\amultiaz\x88\x01\x01\x12$\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\vR\amultiaz\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12&\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\fR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\rR\x04port\x88\x01\x01\x12&\n" +
 	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\bR\x12publiclyaccessible\x88\x01\x01\x125\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x0eR\x12publiclyaccessible\x88\x01\x01\x125\n" +
 	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12@\n" +
 	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tR\x19sourcedbclusteridentifier\x12B\n" +
-	"\x1asourcedbinstanceidentifier\x18\xf7\xd1՝\x01 \x01(\tR\x1asourcedbinstanceidentifier\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x1asourcedbinstanceidentifier\x18\xf7\xd1՝\x01 \x01(\tR\x1asourcedbinstanceidentifier\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x0fR\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12;\n" +
-	"\x14upgradestorageconfig\x18\xfb\xb3\xbb\x96\x01 \x01(\bH\tR\x14upgradestorageconfig\x88\x01\x01\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\n" +
-	"R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1a\n" +
+	"\x14upgradestorageconfig\x18\xfb\xb3\xbb\x96\x01 \x01(\bH\x10R\x14upgradestorageconfig\x88\x01\x01\x12I\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x11R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x18\n" +
 	"\x16_enablecustomerownedipB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x16\n" +
+	"\x14_maxallocatedstorageB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
-	"\b_multiazB\x15\n" +
-	"\x13_publiclyaccessibleB\x17\n" +
+	"\b_multiazB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
+	"\x13_publiclyaccessibleB\x14\n" +
+	"\x12_storagethroughputB\x17\n" +
 	"\x15_upgradestorageconfigB\x1e\n" +
 	"\x1c_usedefaultprocessorfeatures\"X\n" +
 	"!CreateDBInstanceReadReplicaResult\x123\n" +
@@ -43483,24 +43536,25 @@ const file_rds_proto_rawDesc = "" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetids\"b\n" +
 	"\x1dCreateDBProxyEndpointResponse\x12A\n" +
-	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\xe8\x05\n" +
+	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\x83\x06\n" +
 	"\x14CreateDBProxyRequest\x12+\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x13.rds.UserAuthConfigR\x04auth\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12*\n" +
 	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12H\n" +
 	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeR\x11defaultauthscheme\x12N\n" +
 	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x129\n" +
-	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\x0e2\x11.rds.EngineFamilyR\fenginefamily\x12/\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05R\x11idleclienttimeout\x12'\n" +
+	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\x0e2\x11.rds.EngineFamilyR\fenginefamily\x124\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x01R\x11idleclienttimeout\x88\x01\x01\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x01R\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x02R\n" +
 	"requiretls\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12f\n" +
 	"\x1btargetconnectionnetworktype\x18\x97\x83\xa7\xe2\x01 \x01(\x0e2 .rds.TargetConnectionNetworkTypeR\x1btargetconnectionnetworktype\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x0f\n" +
-	"\r_debugloggingB\r\n" +
+	"\r_debugloggingB\x14\n" +
+	"\x12_idleclienttimeoutB\r\n" +
 	"\v_requiretls\"C\n" +
 	"\x15CreateDBProxyResponse\x12*\n" +
 	"\adbproxy\x18\xfe냲\x01 \x01(\v2\f.rds.DBProxyR\adbproxy\"\xb9\x01\n" +
@@ -43509,15 +43563,16 @@ const file_rds_proto_rawDesc = "" +
 	"\x13dbsecuritygroupname\x18\xe8\x93\xfe\x18 \x01(\tR\x13dbsecuritygroupname\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"a\n" +
 	"\x1bCreateDBSecurityGroupResult\x12B\n" +
-	"\x0fdbsecuritygroup\x18\x8d\x8fō\x01 \x01(\v2\x14.rds.DBSecurityGroupR\x0fdbsecuritygroup\"\xe6\x02\n" +
-	"\x19CreateDBShardGroupMessage\x120\n" +
-	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05R\x11computeredundancy\x124\n" +
+	"\x0fdbsecuritygroup\x18\x8d\x8fō\x01 \x01(\v2\x14.rds.DBSecurityGroupR\x0fdbsecuritygroup\"\x81\x03\n" +
+	"\x19CreateDBShardGroupMessage\x125\n" +
+	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05H\x00R\x11computeredundancy\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
 	"\x16dbshardgroupidentifier\x18Ȟ\xa15 \x01(\tR\x16dbshardgroupidentifier\x12\x19\n" +
 	"\x06maxacu\x18\xed\xad\xbdv \x01(\x01R\x06maxacu\x12\x1a\n" +
 	"\x06minacu\x18\U000e9e6a\x01 \x01(\x01R\x06minacu\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x00R\x12publiclyaccessible\x88\x01\x01\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tagsB\x15\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x01R\x12publiclyaccessible\x88\x01\x01\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tagsB\x14\n" +
+	"\x12_computeredundancyB\x15\n" +
 	"\x13_publiclyaccessible\"\xab\x01\n" +
 	"\x17CreateDBSnapshotMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x126\n" +
@@ -43609,29 +43664,29 @@ const file_rds_proto_rawDesc = "" +
 	"\"CustomDBEngineVersionNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"F\n" +
 	"'CustomDBEngineVersionQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbd,\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc8.\n" +
 	"\tDBCluster\x12K\n" +
 	"\x1factivitystreamkinesisstreamname\x18\xb2\xa4\x84R \x01(\tR\x1factivitystreamkinesisstreamname\x12:\n" +
 	"\x16activitystreamkmskeyid\x18\xbe\xb8\x9f\xbc\x01 \x01(\tR\x16activitystreamkmskeyid\x12J\n" +
 	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeR\x12activitystreammode\x12Q\n" +
-	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x14activitystreamstatus\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
+	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x14activitystreamstatus\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
 	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x12.rds.DBClusterRoleR\x0fassociatedroles\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x126\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x126\n" +
 	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tR\x14automaticrestarttime\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12I\n" +
-	"\x1ebacktrackconsumedchangerecords\x18\xb0\xb7\xa0+ \x01(\x03R\x1ebacktrackconsumedchangerecords\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05R\bcapacity\x12K\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12N\n" +
+	"\x1ebacktrackconsumedchangerecords\x18\xb0\xb7\xa0+ \x01(\x03H\x02R\x1ebacktrackconsumedchangerecords\x88\x01\x01\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x03R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x04R\x15backupretentionperiod\x88\x01\x01\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05H\x05R\bcapacity\x88\x01\x01\x12K\n" +
 	"\x12certificatedetails\x18\xa7\xf0\xcf\xd6\x01 \x01(\v2\x17.rds.CertificateDetailsR\x12certificatedetails\x12.\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x12%\n" +
 	"\fclonegroupid\x18\xd1\xd4\xca\x1f \x01(\tR\fclonegroupid\x12/\n" +
 	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tR\x11clustercreatetime\x12V\n" +
 	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeR\x16clusterscalabilitytype\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\x02R\x11crossaccountclone\x88\x01\x01\x12+\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\aR\x11crossaccountclone\x88\x01\x01\x12+\n" +
 	"\x0fcustomendpoints\x18\xa1\xa7\xb4P \x03(\tR\x0fcustomendpoints\x12%\n" +
 	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tR\fdbclusterarn\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
@@ -43646,7 +43701,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x123\n" +
 	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tR\x13dbclusterresourceid\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12G\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\bR\x12deletionprotection\x88\x01\x01\x12G\n" +
 	"\x11domainmemberships\x18\x93\xf2\xb3\xa2\x01 \x03(\v2\x15.rds.DomainMembershipR\x11domainmemberships\x128\n" +
 	"\x15earliestbacktracktime\x18\x88܊\xa7\x01 \x01(\tR\x15earliestbacktracktime\x129\n" +
 	"\x16earliestrestorabletime\x18\x93\x80\x8eH \x01(\tR\x16earliestrestorabletime\x12F\n" +
@@ -43659,34 +43714,34 @@ const file_rds_proto_rawDesc = "" +
 	"enginemode\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12O\n" +
-	"\x1eglobalwriteforwardingrequested\x18\x97Ѻ\xbf\x01 \x01(\bH\x04R\x1eglobalwriteforwardingrequested\x88\x01\x01\x12_\n" +
+	"\x1eglobalwriteforwardingrequested\x18\x97Ѻ\xbf\x01 \x01(\bH\tR\x1eglobalwriteforwardingrequested\x88\x01\x01\x12_\n" +
 	"\x1bglobalwriteforwardingstatus\x18\xa5\x8b\x8fF \x01(\x0e2\x1a.rds.WriteForwardingStatusR\x1bglobalwriteforwardingstatus\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x128\n" +
-	"\x13httpendpointenabled\x18\xaeåA \x01(\bH\x05R\x13httpendpointenabled\x88\x01\x01\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x06R iamdatabaseauthenticationenabled\x88\x01\x01\x12Y\n" +
+	"\x13httpendpointenabled\x18\xaeåA \x01(\bH\n" +
+	"R\x13httpendpointenabled\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\vR iamdatabaseauthenticationenabled\x88\x01\x01\x12Y\n" +
 	"&iooptimizednextallowedmodificationtime\x18\xa9\xc0\xc5b \x01(\tR&iooptimizednextallowedmodificationtime\x12K\n" +
-	"\x1cinternetaccessgatewayenabled\x18ڥ\xfe\xd7\x01 \x01(\bH\aR\x1cinternetaccessgatewayenabled\x88\x01\x01\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	"\x1cinternetaccessgatewayenabled\x18ڥ\xfe\xd7\x01 \x01(\bH\fR\x1cinternetaccessgatewayenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\rR\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x125\n" +
 	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tR\x14latestrestorabletime\x12H\n" +
 	"\x11limitlessdatabase\x18῍\xd4\x01 \x01(\v2\x16.rds.LimitlessDatabaseR\x11limitlessdatabase\x12b\n" +
 	"\x1alocalwriteforwardingstatus\x18\xff\x8d\xc8s \x01(\x0e2\x1f.rds.LocalWriteForwardingStatusR\x1alocalwriteforwardingstatus\x12D\n" +
 	"\x10masterusersecret\x18\x9dК| \x01(\v2\x15.rds.MasterUserSecretR\x10masterusersecret\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x0eR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\bR\amultiaz\x88\x01\x01\x12$\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x0fR\amultiaz\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12Z\n" +
 	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2!.rds.ClusterPendingModifiedValuesR\x15pendingmodifiedvalues\x12+\n" +
 	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tR\x0fpercentprogress\x12G\n" +
-	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\tR\x1aperformanceinsightsenabled\x88\x01\x01\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\x10R\x1aperformanceinsightsenabled\x88\x01\x01\x12D\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x11R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x12R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\n" +
-	"R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x13R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12:\n" +
 	"\x16readreplicaidentifiers\x18\xee\xec\xfd\xf9\x01 \x03(\tR\x16readreplicaidentifiers\x12*\n" +
 	"\x0ereaderendpoint\x18\xbc\xfb\xc3\xe5\x01 \x01(\tR\x0ereaderendpoint\x12D\n" +
@@ -43696,36 +43751,45 @@ const file_rds_proto_rawDesc = "" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).rds.ServerlessV2ScalingConfigurationInfoR serverlessv2scalingconfiguration\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12>\n" +
 	"\vstatusinfos\x18\xb9\xe7\x8e\xc9\x01 \x03(\v2\x18.rds.DBClusterStatusInfoR\vstatusinfos\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\vR\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x14R\x10storageencrypted\x88\x01\x01\x12S\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x15R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12N\n" +
 	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderR\x13upgraderolloutorder\x12;\n" +
-	"\x14vpcnetworkingenabled\x18𮬗\x01 \x01(\bH\fR\x14vpcnetworkingenabled\x88\x01\x01\x12Q\n" +
-	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x14vpcnetworkingenabled\x18𮬗\x01 \x01(\bH\x16R\x14vpcnetworkingenabled\x88\x01\x01\x12Q\n" +
+	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB!\n" +
+	"\x1f_backtrackconsumedchangerecordsB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\v\n" +
+	"\t_capacityB\x15\n" +
 	"\x13_copytagstosnapshotB\x14\n" +
 	"\x12_crossaccountcloneB\x15\n" +
 	"\x13_deletionprotectionB!\n" +
 	"\x1f_globalwriteforwardingrequestedB\x16\n" +
 	"\x14_httpendpointenabledB#\n" +
 	"!_iamdatabaseauthenticationenabledB\x1f\n" +
-	"\x1d_internetaccessgatewayenabledB\n" +
+	"\x1d_internetaccessgatewayenabledB\a\n" +
+	"\x05_iopsB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
 	"\b_multiazB\x1d\n" +
-	"\x1b_performanceinsightsenabledB\x15\n" +
+	"\x1b_performanceinsightsenabledB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencryptedB\x17\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughputB\x17\n" +
 	"\x15_vpcnetworkingenabled\":\n" +
 	"\x1bDBClusterAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe6\n" +
-	"\n" +
-	"\x18DBClusterAutomatedBackup\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12/\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd6\v\n" +
+	"\x18DBClusterAutomatedBackup\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12/\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12/\n" +
 	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tR\x11clustercreatetime\x12%\n" +
 	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tR\fdbclusterarn\x12F\n" +
 	"\x1cdbclusterautomatedbackupsarn\x18\xf2\xa8\x8b\xd1\x01 \x01(\tR\x1cdbclusterautomatedbackupsarn\x124\n" +
@@ -43736,24 +43800,29 @@ const file_rds_proto_rawDesc = "" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
 	"enginemode\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x00R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x03R\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x04R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x12;\n" +
 	"\rrestorewindow\x18\xd2\xd9\xd0\x15 \x01(\v2\x12.rds.RestoreWindowR\rrestorewindow\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x01R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x05R\x10storageencrypted\x88\x01\x01\x12S\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x06R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB#\n" +
-	"!_iamdatabaseauthenticationenabledB\x13\n" +
-	"\x11_storageencrypted\"\x9c\x01\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB#\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iopsB\a\n" +
+	"\x05_portB\x13\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughput\"\x9c\x01\n" +
 	"\x1fDBClusterAutomatedBackupMessage\x12^\n" +
 	"\x19dbclusterautomatedbackups\x18\x97\x97\xe8s \x03(\v2\x1d.rds.DBClusterAutomatedBackupR\x19dbclusterautomatedbackups\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"D\n" +
@@ -43772,13 +43841,16 @@ const file_rds_proto_rawDesc = "" +
 	"\x13dbclusterbacktracks\x18郍\x1f \x03(\v2\x17.rds.DBClusterBacktrackR\x13dbclusterbacktracks\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\">\n" +
 	"\x1fDBClusterBacktrackNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x89\x02\n" +
-	"\x15DBClusterCapacityInfo\x12+\n" +
-	"\x0fcurrentcapacity\x18\x97\x81\x80R \x01(\x05R\x0fcurrentcapacity\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
-	"\x0fpendingcapacity\x18ى\xc6\xc1\x01 \x01(\x05R\x0fpendingcapacity\x125\n" +
-	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05R\x14secondsbeforetimeout\x12(\n" +
-	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutaction\"\x89\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd9\x02\n" +
+	"\x15DBClusterCapacityInfo\x120\n" +
+	"\x0fcurrentcapacity\x18\x97\x81\x80R \x01(\x05H\x00R\x0fcurrentcapacity\x88\x01\x01\x124\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x121\n" +
+	"\x0fpendingcapacity\x18ى\xc6\xc1\x01 \x01(\x05H\x01R\x0fpendingcapacity\x88\x01\x01\x12:\n" +
+	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05H\x02R\x14secondsbeforetimeout\x88\x01\x01\x12(\n" +
+	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutactionB\x12\n" +
+	"\x10_currentcapacityB\x12\n" +
+	"\x10_pendingcapacityB\x17\n" +
+	"\x15_secondsbeforetimeout\"\x89\x04\n" +
 	"\x11DBClusterEndpoint\x121\n" +
 	"\x12customendpointtype\x18\x8cɥN \x01(\tR\x12customendpointtype\x126\n" +
 	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tR\x14dbclusterendpointarn\x12D\n" +
@@ -43798,13 +43870,14 @@ const file_rds_proto_rawDesc = "" +
 	"\x1eDBClusterEndpointNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"B\n" +
 	"#DBClusterEndpointQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x82\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x99\x02\n" +
 	"\x0fDBClusterMember\x12G\n" +
 	"\x1ddbclusterparametergroupstatus\x18\xc0\xef\x90q \x01(\tR\x1ddbclusterparametergroupstatus\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x121\n" +
-	"\x0fisclusterwriter\x18\xf3\x92\xa9\xf1\x01 \x01(\bH\x00R\x0fisclusterwriter\x88\x01\x01\x12'\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05R\rpromotiontierB\x12\n" +
-	"\x10_isclusterwriter\"a\n" +
+	"\x0fisclusterwriter\x18\xf3\x92\xa9\xf1\x01 \x01(\bH\x00R\x0fisclusterwriter\x88\x01\x01\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x01R\rpromotiontier\x88\x01\x01B\x12\n" +
+	"\x10_isclusterwriterB\x10\n" +
+	"\x0e_promotiontier\"a\n" +
 	"\x10DBClusterMessage\x122\n" +
 	"\n" +
 	"dbclusters\x18\x99˔\xe2\x01 \x03(\v2\x0e.rds.DBClusterR\n" +
@@ -43843,11 +43916,11 @@ const file_rds_proto_rawDesc = "" +
 	"\x1aDBClusterRoleNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
 	"\x1fDBClusterRoleQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xab\v\n" +
-	"\x11DBClusterSnapshot\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12/\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12/\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa6\f\n" +
+	"\x11DBClusterSnapshot\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12/\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12/\n" +
 	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tR\x11clustercreatetime\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x126\n" +
 	"\x14dbclustersnapshotarn\x18\xbf\xec\xc5\xdf\x01 \x01(\tR\x14dbclustersnapshotarn\x12C\n" +
@@ -43861,25 +43934,30 @@ const file_rds_proto_rawDesc = "" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
 	"enginemode\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x00R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x1d\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12+\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05R\x0fpercentprogress\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x120\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05H\x03R\x0fpercentprogress\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x04R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x121\n" +
 	"\x12snapshotcreatetime\x18\xa5\xea\xc4P \x01(\tR\x12snapshotcreatetime\x12&\n" +
 	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottype\x12A\n" +
 	"\x1asourcedbclustersnapshotarn\x18\xb8\xf0\xf3# \x01(\tR\x1asourcedbclustersnapshotarn\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x01R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x05R\x10storageencrypted\x88\x01\x01\x12S\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x06R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB#\n" +
-	"!_iamdatabaseauthenticationenabledB\x13\n" +
-	"\x11_storageencrypted\"B\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB#\n" +
+	"!_iamdatabaseauthenticationenabledB\x12\n" +
+	"\x10_percentprogressB\a\n" +
+	"\x05_portB\x13\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughput\"B\n" +
 	"#DBClusterSnapshotAlreadyExistsFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"s\n" +
 	"\x1aDBClusterSnapshotAttribute\x12(\n" +
@@ -43952,7 +44030,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x14_supportsreadreplica\"y\n" +
 	"\x16DBEngineVersionMessage\x12D\n" +
 	"\x10dbengineversions\x18\xf5ۿ\xd4\x01 \x03(\v2\x14.rds.DBEngineVersionR\x10dbengineversions\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xb9.\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xaf0\n" +
 	"\n" +
 	"DBInstance\x12l\n" +
 	"-activitystreamenginenativeauditfieldsincluded\x18\xfe\xb9\xe0O \x01(\bH\x00R-activitystreamenginenativeauditfieldsincluded\x88\x01\x01\x12K\n" +
@@ -43961,22 +44039,22 @@ const file_rds_proto_rawDesc = "" +
 	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeR\x12activitystreammode\x12b\n" +
 	"\x1aactivitystreampolicystatus\x18\xb1\xb8\xdf> \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusR\x1aactivitystreampolicystatus\x12Q\n" +
 	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x14activitystreamstatus\x12b\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.AdditionalStorageVolumeOutputR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12A\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.AdditionalStorageVolumeOutputR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x01R\x10allocatedstorage\x88\x01\x01\x12A\n" +
 	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x13.rds.DBInstanceRoleR\x0fassociatedroles\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x126\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x02R\x17autominorversionupgrade\x88\x01\x01\x126\n" +
 	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tR\x14automaticrestarttime\x12>\n" +
 	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x12.\n" +
 	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12&\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x03R\x15backupretentionperiod\x88\x01\x01\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12K\n" +
 	"\x12certificatedetails\x18\xa7\xf0\xcf\xd6\x01 \x01(\v2\x17.rds.CertificateDetailsR\x12certificatedetails\x12.\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x04R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
 	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tR\x18customiaminstanceprofile\x12?\n" +
-	"\x16customerownedipenabled\x18\xb9\xbc\xa8\xc4\x01 \x01(\bH\x03R\x16customerownedipenabled\x88\x01\x01\x124\n" +
+	"\x16customerownedipenabled\x18\xb9\xbc\xa8\xc4\x01 \x01(\bH\x05R\x16customerownedipenabled\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
 	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tR\rdbinstancearn\x12\x85\x01\n" +
 	"&dbinstanceautomatedbackupsreplications\x18\xa7ǃ\x18 \x03(\v2*.rds.DBInstanceAutomatedBackupsReplicationR&dbinstanceautomatedbackupsreplications\x12,\n" +
@@ -43990,11 +44068,11 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"dbsystemid\x18\x88\xf9\xcce \x01(\tR\n" +
 	"dbsystemid\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12)\n" +
-	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05R\x0edbinstanceport\x12(\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12.\n" +
+	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05H\x06R\x0edbinstanceport\x88\x01\x01\x12(\n" +
 	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x04R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12G\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\aR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\bR\x12deletionprotection\x88\x01\x01\x12G\n" +
 	"\x11domainmemberships\x18\x93\xf2\xb3\xa2\x01 \x03(\v2\x15.rds.DomainMembershipR\x11domainmemberships\x12F\n" +
 	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x12,\n" +
 	"\bendpoint\x18\x9d\xad\x9f? \x01(\v2\r.rds.EndpointR\bendpoint\x12\x1a\n" +
@@ -44002,35 +44080,35 @@ const file_rds_proto_rawDesc = "" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12G\n" +
 	"\x1denhancedmonitoringresourcearn\x18ّ\xa8o \x01(\tR\x1denhancedmonitoringresourcearn\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x06R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
-	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12Q\n" +
-	"\x1fisstorageconfigupgradeavailable\x18\xe0\x8b\xae\xbf\x01 \x01(\bH\aR\x1fisstorageconfigupgradeavailable\x88\x01\x01\x12\x1d\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\tR iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
+	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\n" +
+	"R\x04iops\x88\x01\x01\x12Q\n" +
+	"\x1fisstorageconfigupgradeavailable\x18\xe0\x8b\xae\xbf\x01 \x01(\bH\vR\x1fisstorageconfigupgradeavailable\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x125\n" +
 	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tR\x14latestrestorabletime\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12<\n" +
 	"\x10listenerendpoint\x18\xa9\xe3\xef\x18 \x01(\v2\r.rds.EndpointR\x10listenerendpoint\x12D\n" +
 	"\x10masterusersecret\x18\x9dК| \x01(\v2\x15.rds.MasterUserSecretR\x10masterusersecret\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\fR\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\rR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\bR\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\tR\vmultitenant\x88\x01\x01\x127\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x0eR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x0fR\vmultitenant\x88\x01\x01\x127\n" +
 	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tR\x15ncharcharactersetname\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12V\n" +
 	"\x16optiongroupmemberships\x18\xa5\ue44d\x01 \x03(\v2\x1a.rds.OptionGroupMembershipR\x16optiongroupmemberships\x12S\n" +
 	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2\x1a.rds.PendingModifiedValuesR\x15pendingmodifiedvalues\x12+\n" +
 	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tR\x0fpercentprogress\x12G\n" +
-	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\n" +
-	"R\x1aperformanceinsightsenabled\x88\x01\x01\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x127\n" +
+	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\x10R\x1aperformanceinsightsenabled\x88\x01\x01\x12D\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x11R\"performanceinsightsretentionperiod\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12F\n" +
-	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12'\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05R\rpromotiontier\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\vR\x12publiclyaccessible\x88\x01\x01\x12K\n" +
+	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x12R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x13R\x12publiclyaccessible\x88\x01\x01\x12K\n" +
 	"\x1freadreplicadbclusteridentifiers\x18\xbc\x83\xb5S \x03(\tR\x1freadreplicadbclusteridentifiers\x12M\n" +
 	" readreplicadbinstanceidentifiers\x18\xbb\xda\xe5| \x03(\tR readreplicadbinstanceidentifiers\x12V\n" +
 	"$readreplicasourcedbclusteridentifier\x18\xa2\xac\xec\xb5\x01 \x01(\tR$readreplicasourcedbclusteridentifier\x12X\n" +
@@ -44039,9 +44117,9 @@ const file_rds_proto_rawDesc = "" +
 	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tR\x1cresumefullautomationmodetime\x12?\n" +
 	"\x19secondaryavailabilityzone\x18\xbd\x98\x82m \x01(\tR\x19secondaryavailabilityzone\x12?\n" +
 	"\vstatusinfos\x18\xb9\xe7\x8e\xc9\x01 \x03(\v2\x19.rds.DBInstanceStatusInfoR\vstatusinfos\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\fR\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x14R\x10storageencrypted\x88\x01\x01\x12S\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x15R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x123\n" +
 	"\x13storagevolumestatus\x18\x9b\xff\x9eH \x01(\tR\x13storagevolumestatus\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12-\n" +
@@ -44049,63 +44127,77 @@ const file_rds_proto_rawDesc = "" +
 	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x12N\n" +
 	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderR\x13upgraderolloutorder\x12Q\n" +
 	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB0\n" +
-	"._activitystreamenginenativeauditfieldsincludedB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"._activitystreamenginenativeauditfieldsincludedB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x19\n" +
-	"\x17_customerownedipenabledB\x15\n" +
+	"\x17_customerownedipenabledB\x11\n" +
+	"\x0f_dbinstanceportB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB#\n" +
-	"!_iamdatabaseauthenticationenabledB\"\n" +
-	" _isstorageconfigupgradeavailableB\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iopsB\"\n" +
+	" _isstorageconfigupgradeavailableB\x16\n" +
+	"\x14_maxallocatedstorageB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
 	"\b_multiazB\x0e\n" +
 	"\f_multitenantB\x1d\n" +
-	"\x1b_performanceinsightsenabledB\x15\n" +
+	"\x1b_performanceinsightsenabledB%\n" +
+	"#_performanceinsightsretentionperiodB\x10\n" +
+	"\x0e_promotiontierB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencrypted\";\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughput\";\n" +
 	"\x1cDBInstanceAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc1\x0e\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb1\x0f\n" +
 	"\x19DBInstanceAutomatedBackup\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12.\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12.\n" +
 	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12&\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12(\n" +
 	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tR\rdbinstancearn\x12H\n" +
 	"\x1ddbinstanceautomatedbackupsarn\x18ť\x9f\xdd\x01 \x01(\tR\x1ddbinstanceautomatedbackupsarn\x12\x85\x01\n" +
 	"&dbinstanceautomatedbackupsreplications\x18\xa7ǃ\x18 \x03(\v2*.rds.DBInstanceAutomatedBackupsReplicationR&dbinstanceautomatedbackupsreplications\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12(\n" +
 	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x00R\x12dedicatedlogvolume\x88\x01\x01\x12%\n" +
-	"\tencrypted\x18\xd4\xc4ϙ\x01 \x01(\bH\x01R\tencrypted\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x12%\n" +
+	"\tencrypted\x18\xd4\xc4ϙ\x01 \x01(\bH\x03R\tencrypted\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
-	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x04R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
+	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x05R\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
 	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x03R\vmultitenant\x88\x01\x01\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x06R\vmultitenant\x88\x01\x01\x12,\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\aR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x12;\n" +
 	"\rrestorewindow\x18\xd2\xd9\xd0\x15 \x01(\v2\x12.rds.RestoreWindowR\rrestorewindow\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\bR\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x12\x1d\n" +
 	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x15\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_dedicatedlogvolumeB\f\n" +
 	"\n" +
 	"_encryptedB#\n" +
-	"!_iamdatabaseauthenticationenabledB\x0e\n" +
-	"\f_multitenant\"\xa1\x01\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iopsB\x0e\n" +
+	"\f_multitenantB\a\n" +
+	"\x05_portB\x14\n" +
+	"\x12_storagethroughput\"\xa1\x01\n" +
 	" DBInstanceAutomatedBackupMessage\x12b\n" +
 	"\x1adbinstanceautomatedbackups\x18\xae\x9a\xf4\xcf\x01 \x03(\v2\x1e.rds.DBInstanceAutomatedBackupR\x1adbinstanceautomatedbackups\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"E\n" +
@@ -44169,7 +44261,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x14parameterapplystatus\x18\xaf҆v \x01(\tR\x14parameterapplystatus\"}\n" +
 	"\x18DBParameterGroupsMessage\x12F\n" +
 	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x15.rds.DBParameterGroupR\x11dbparametergroups\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xe9\x06\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x84\a\n" +
 	"\aDBProxy\x12/\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x17.rds.UserAuthConfigInfoR\x04auth\x12$\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12\"\n" +
@@ -44181,10 +44273,10 @@ const file_rds_proto_rawDesc = "" +
 	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\tR\x11defaultauthscheme\x12\x1d\n" +
 	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12N\n" +
 	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x12&\n" +
-	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\tR\fenginefamily\x12/\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05R\x11idleclienttimeout\x12'\n" +
+	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\tR\fenginefamily\x124\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x01R\x11idleclienttimeout\x88\x01\x01\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x01R\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x02R\n" +
 	"requiretls\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12-\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.rds.DBProxyStatusR\x06status\x12f\n" +
@@ -44193,7 +44285,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcid\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x0f\n" +
-	"\r_debugloggingB\r\n" +
+	"\r_debugloggingB\x14\n" +
+	"\x12_idleclienttimeoutB\r\n" +
 	"\v_requiretls\"8\n" +
 	"\x19DBProxyAlreadyExistsFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd9\x04\n" +
@@ -44223,16 +44316,17 @@ const file_rds_proto_rawDesc = "" +
 	"\x14DBProxyNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
 	"\x19DBProxyQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xcc\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xda\x02\n" +
 	"\rDBProxyTarget\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12'\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x00R\x04port\x88\x01\x01\x12'\n" +
 	"\rrdsresourceid\x18\xaa\xdb\xc7_ \x01(\tR\rrdsresourceid\x12'\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\x0e2\x0f.rds.TargetRoleR\x04role\x12\x1f\n" +
 	"\ttargetarn\x18\x90\x95\xe5g \x01(\tR\ttargetarn\x129\n" +
 	"\ftargethealth\x18ߴ\x80\xc8\x01 \x01(\v2\x11.rds.TargetHealthR\ftargethealth\x12.\n" +
 	"\x10trackedclusterid\x18Ѯ۔\x01 \x01(\tR\x10trackedclusterid\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.rds.TargetTypeR\x04type\"B\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.rds.TargetTypeR\x04typeB\a\n" +
+	"\x05_port\"B\n" +
 	"#DBProxyTargetAlreadyRegisteredFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8a\x03\n" +
 	"\x12DBProxyTargetGroup\x12[\n" +
@@ -44297,9 +44391,9 @@ const file_rds_proto_rawDesc = "" +
 	" DBSecurityGroupNotSupportedFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"@\n" +
 	"!DBSecurityGroupQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x82\x04\n" +
-	"\fDBShardGroup\x120\n" +
-	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05R\x11computeredundancy\x124\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9d\x04\n" +
+	"\fDBShardGroup\x125\n" +
+	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05H\x00R\x11computeredundancy\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
 	"\x0fdbshardgrouparn\x18\xccҵ\x9a\x01 \x01(\tR\x0fdbshardgrouparn\x129\n" +
 	"\x16dbshardgroupidentifier\x18Ȟ\xa15 \x01(\tR\x16dbshardgroupidentifier\x129\n" +
@@ -44307,20 +44401,21 @@ const file_rds_proto_rawDesc = "" +
 	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x19\n" +
 	"\x06maxacu\x18\xed\xad\xbdv \x01(\x01R\x06maxacu\x12\x1a\n" +
 	"\x06minacu\x18\U000e9e6a\x01 \x01(\x01R\x06minacu\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x00R\x12publiclyaccessible\x88\x01\x01\x12\x19\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x01R\x12publiclyaccessible\x88\x01\x01\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12&\n" +
-	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglistB\x15\n" +
+	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglistB\x14\n" +
+	"\x12_computeredundancyB\x15\n" +
 	"\x13_publiclyaccessible\"=\n" +
 	"\x1eDBShardGroupAlreadyExistsFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
 	"\x19DBShardGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x97\x10\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa0\x11\n" +
 	"\n" +
 	"DBSnapshot\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x126\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12.\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12'\n" +
 	"\rdbsnapshotarn\x18\x97\xd7\xfcn \x01(\tR\rdbsnapshotarn\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\x12!\n" +
@@ -44328,21 +44423,21 @@ const file_rds_proto_rawDesc = "" +
 	"dbsystemid\x18\x88\xf9\xcce \x01(\tR\n" +
 	"dbsystemid\x12(\n" +
 	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x00R\x12dedicatedlogvolume\x88\x01\x01\x12%\n" +
-	"\tencrypted\x18\xd4\xc4ϙ\x01 \x01(\bH\x01R\tencrypted\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x12%\n" +
+	"\tencrypted\x18\xd4\xc4ϙ\x01 \x01(\bH\x03R\tencrypted\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
-	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x04R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
+	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x05R\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
 	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x03R\vmultitenant\x88\x01\x01\x12,\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x06R\vmultitenant\x88\x01\x01\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12A\n" +
-	"\x1aoriginalsnapshotcreatetime\x18\xbc\x99\x83@ \x01(\tR\x1aoriginalsnapshotcreatetime\x12+\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05R\x0fpercentprogress\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1aoriginalsnapshotcreatetime\x18\xbc\x99\x83@ \x01(\tR\x1aoriginalsnapshotcreatetime\x120\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05H\aR\x0fpercentprogress\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\bR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12=\n" +
 	"\x18snapshotavailabilityzone\x18\x91\x89\xddk \x01(\tR\x18snapshotavailabilityzone\x121\n" +
@@ -44353,18 +44448,24 @@ const file_rds_proto_rawDesc = "" +
 	"\x1asourcedbsnapshotidentifier\x18\xbe\x9d\xc0\xad\x01 \x01(\tR\x1asourcedbsnapshotidentifier\x12%\n" +
 	"\fsourceregion\x18\xcd\xcc\xe5e \x01(\tR\fsourceregion\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\tR\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x12\x1d\n" +
 	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x15\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_dedicatedlogvolumeB\f\n" +
 	"\n" +
 	"_encryptedB#\n" +
-	"!_iamdatabaseauthenticationenabledB\x0e\n" +
-	"\f_multitenant\";\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iopsB\x0e\n" +
+	"\f_multitenantB\x12\n" +
+	"\x10_percentprogressB\a\n" +
+	"\x05_portB\x14\n" +
+	"\x12_storagethroughput\";\n" +
 	"\x1cDBSnapshotAlreadyExistsFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"l\n" +
 	"\x13DBSnapshotAttribute\x12(\n" +
@@ -44518,67 +44619,74 @@ const file_rds_proto_rawDesc = "" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12,\n" +
 	"\x0ftargetgroupname\x18\xf1\xa2\xf6\xb7\x01 \x01(\tR\x0ftargetgroupname\"\"\n" +
 	" DeregisterDBProxyTargetsResponse\"\"\n" +
-	" DescribeAccountAttributesMessage\"\xd6\x01\n" +
+	" DescribeAccountAttributesMessage\"\xea\x01\n" +
 	"#DescribeBlueGreenDeploymentsRequest\x12G\n" +
 	"\x1dbluegreendeploymentidentifier\x18\xa1\xae\x87D \x01(\tR\x1dbluegreendeploymentidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x92\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x92\x01\n" +
 	"$DescribeBlueGreenDeploymentsResponse\x12O\n" +
 	"\x14bluegreendeployments\x18\xa9\xa1\xc4\f \x03(\v2\x18.rds.BlueGreenDeploymentR\x14bluegreendeployments\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xbf\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xd3\x01\n" +
 	"\x1bDescribeCertificatesMessage\x128\n" +
 	"\x15certificateidentifier\x18\x84\xf7\xfa\x8c\x01 \x01(\tR\x15certificateidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xfd\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x91\x02\n" +
 	"(DescribeDBClusterAutomatedBackupsMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x123\n" +
 	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tR\x13dbclusterresourceid\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xf8\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x8c\x02\n" +
 	"\"DescribeDBClusterBacktracksMessage\x124\n" +
 	"\x13backtrackidentifier\x18\xbb\x88\xe7\x84\x01 \x01(\tR\x13backtrackidentifier\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x87\x02\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x9b\x02\n" +
 	"!DescribeDBClusterEndpointsMessage\x12D\n" +
 	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xd7\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xeb\x01\n" +
 	"'DescribeDBClusterParameterGroupsMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xed\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x81\x02\n" +
 	"\"DescribeDBClusterParametersMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\"q\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x19\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06sourceB\r\n" +
+	"\v_maxrecords\"q\n" +
 	"*DescribeDBClusterSnapshotAttributesMessage\x12C\n" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\"\xa4\x01\n" +
 	")DescribeDBClusterSnapshotAttributesResult\x12w\n" +
-	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xe3\x03\n" +
+	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xf7\x03\n" +
 	"!DescribeDBClusterSnapshotsMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12C\n" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x123\n" +
@@ -44586,22 +44694,24 @@ const file_rds_proto_rawDesc = "" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12,\n" +
 	"\rincludepublic\x18\x83\x8b\xd0, \x01(\bH\x00R\rincludepublic\x88\x01\x01\x12,\n" +
 	"\rincludeshared\x18\xcf\xf7\xce\x0e \x01(\bH\x01R\rincludeshared\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12&\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01\x12&\n" +
 	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottypeB\x10\n" +
 	"\x0e_includepublicB\x10\n" +
-	"\x0e_includeshared\"\xf9\x01\n" +
+	"\x0e_includesharedB\r\n" +
+	"\v_maxrecords\"\x8d\x02\n" +
 	"\x19DescribeDBClustersMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12,\n" +
 	"\rincludeshared\x18\xcf\xf7\xce\x0e \x01(\bH\x00R\rincludeshared\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecordsB\x10\n" +
-	"\x0e_includeshared\"\xbe\x04\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01B\x10\n" +
+	"\x0e_includesharedB\r\n" +
+	"\v_maxrecords\"\xd2\x04\n" +
 	"\x1fDescribeDBEngineVersionsMessage\x12:\n" +
 	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12(\n" +
 	"\vdefaultonly\x18\xa9\xaa\xe7\b \x01(\bH\x00R\vdefaultonly\x88\x01\x01\x12\x1a\n" +
@@ -44613,155 +44723,174 @@ const file_rds_proto_rawDesc = "" +
 	"includeall\x88\x01\x01\x12G\n" +
 	"\x1alistsupportedcharactersets\x18Ꝡ\xe9\x01 \x01(\bH\x02R\x1alistsupportedcharactersets\x88\x01\x01\x12>\n" +
 	"\x16listsupportedtimezones\x18ą\xb9G \x01(\bH\x03R\x16listsupportedtimezones\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecordsB\x0e\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x04R\n" +
+	"maxrecords\x88\x01\x01B\x0e\n" +
 	"\f_defaultonlyB\r\n" +
 	"\v_includeallB\x1d\n" +
 	"\x1b_listsupportedcharactersetsB\x19\n" +
-	"\x17_listsupportedtimezones\"\xbf\x02\n" +
+	"\x17_listsupportedtimezonesB\r\n" +
+	"\v_maxrecords\"\xd3\x02\n" +
 	")DescribeDBInstanceAutomatedBackupsMessage\x12H\n" +
 	"\x1ddbinstanceautomatedbackupsarn\x18ť\x9f\xdd\x01 \x01(\tR\x1ddbinstanceautomatedbackupsarn\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12(\n" +
 	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xbc\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xd0\x01\n" +
 	"\x1aDescribeDBInstancesMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"~\n" +
-	"\x19DescribeDBLogFilesDetails\x12$\n" +
-	"\vlastwritten\x18\xd5\xd6\xee\xe6\x01 \x01(\x03R\vlastwritten\x12$\n" +
-	"\vlogfilename\x18\xf5\xeb\xca\xc8\x01 \x01(\tR\vlogfilename\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\"\xb8\x02\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xa1\x01\n" +
+	"\x19DescribeDBLogFilesDetails\x12)\n" +
+	"\vlastwritten\x18\xd5\xd6\xee\xe6\x01 \x01(\x03H\x00R\vlastwritten\x88\x01\x01\x12$\n" +
+	"\vlogfilename\x18\xf5\xeb\xca\xc8\x01 \x01(\tR\vlogfilename\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01B\x0e\n" +
+	"\f_lastwrittenB\a\n" +
+	"\x05_size\"\xf7\x02\n" +
 	"\x19DescribeDBLogFilesMessage\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12,\n" +
-	"\x0ffilelastwritten\x18禮\xb5\x01 \x01(\x03R\x0ffilelastwritten\x12\x1e\n" +
-	"\bfilesize\x18\xc3\xf1\x8c\xa5\x01 \x01(\x03R\bfilesize\x12-\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x121\n" +
+	"\x0ffilelastwritten\x18禮\xb5\x01 \x01(\x03H\x00R\x0ffilelastwritten\x88\x01\x01\x12#\n" +
+	"\bfilesize\x18\xc3\xf1\x8c\xa5\x01 \x01(\x03H\x01R\bfilesize\x88\x01\x01\x12-\n" +
 	"\x10filenamecontains\x18\x82\xf4\x8c{ \x01(\tR\x10filenamecontains\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x8a\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x12\n" +
+	"\x10_filelastwrittenB\v\n" +
+	"\t_filesizeB\r\n" +
+	"\v_maxrecords\"\x8a\x01\n" +
 	"\x1aDescribeDBLogFilesResponse\x12Q\n" +
 	"\x12describedblogfiles\x18\xe8\xb3\xd3\x14 \x03(\v2\x1e.rds.DescribeDBLogFilesDetailsR\x12describedblogfiles\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xb4\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xc8\x01\n" +
 	"$DescribeDBMajorEngineVersionsRequest\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x122\n" +
 	"\x12majorengineversion\x18倰\xba\x01 \x01(\tR\x12majorengineversion\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x96\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x96\x01\n" +
 	"%DescribeDBMajorEngineVersionsResponse\x12R\n" +
 	"\x15dbmajorengineversions\x18\x80\xd3\xeaS \x03(\v2\x19.rds.DBMajorEngineVersionR\x15dbmajorengineversions\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xc1\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xd5\x01\n" +
 	" DescribeDBParameterGroupsMessage\x125\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xd7\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xeb\x01\n" +
 	"\x1bDescribeDBParametersMessage\x125\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\"\xa7\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x19\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06sourceB\r\n" +
+	"\v_maxrecords\"\xbb\x01\n" +
 	"\x18DescribeDBProxiesRequest\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"f\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"f\n" +
 	"\x19DescribeDBProxiesResponse\x12.\n" +
 	"\tdbproxies\x18\xb2\x9b\x9d\x9c\x01 \x03(\v2\f.rds.DBProxyR\tdbproxies\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xe3\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xf7\x01\n" +
 	"\x1fDescribeDBProxyEndpointsRequest\x123\n" +
 	"\x13dbproxyendpointname\x18\xb0\x85\xc4G \x01(\tR\x13dbproxyendpointname\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x82\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x82\x01\n" +
 	" DescribeDBProxyEndpointsResponse\x12C\n" +
 	"\x10dbproxyendpoints\x18\xa6\xa1\xed~ \x03(\v2\x14.rds.DBProxyEndpointR\x10dbproxyendpoints\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xdf\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xf3\x01\n" +
 	"\"DescribeDBProxyTargetGroupsRequest\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12,\n" +
-	"\x0ftargetgroupname\x18\xf1\xa2\xf6\xb7\x01 \x01(\tR\x0ftargetgroupname\"\x80\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12,\n" +
+	"\x0ftargetgroupname\x18\xf1\xa2\xf6\xb7\x01 \x01(\tR\x0ftargetgroupnameB\r\n" +
+	"\v_maxrecords\"\x80\x01\n" +
 	"#DescribeDBProxyTargetGroupsResponse\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12>\n" +
-	"\ftargetgroups\x18\xc9\xc7\xf6E \x03(\v2\x17.rds.DBProxyTargetGroupR\ftargetgroups\"\xda\x01\n" +
+	"\ftargetgroups\x18\xc9\xc7\xf6E \x03(\v2\x17.rds.DBProxyTargetGroupR\ftargetgroups\"\xee\x01\n" +
 	"\x1dDescribeDBProxyTargetsRequest\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12,\n" +
-	"\x0ftargetgroupname\x18\xf1\xa2\xf6\xb7\x01 \x01(\tR\x0ftargetgroupname\"l\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12,\n" +
+	"\x0ftargetgroupname\x18\xf1\xa2\xf6\xb7\x01 \x01(\tR\x0ftargetgroupnameB\r\n" +
+	"\v_maxrecords\"l\n" +
 	"\x1eDescribeDBProxyTargetsResponse\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12/\n" +
-	"\atargets\x18\x82\x9b\x82} \x03(\v2\x12.rds.DBProxyTargetR\atargets\"\x87\x02\n" +
+	"\atargets\x18\x82\x9b\x82} \x03(\v2\x12.rds.DBProxyTargetR\atargets\"\x9b\x02\n" +
 	" DescribeDBRecommendationsMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12-\n" +
 	"\x10lastupdatedafter\x18\x9f\x9b\xcb/ \x01(\tR\x10lastupdatedafter\x120\n" +
 	"\x11lastupdatedbefore\x18\xb0\xb9\x82\xbf\x01 \x01(\tR\x11lastupdatedbefore\x12\x1a\n" +
 	"\x06locale\x18\xb8\xb7\xb9\xeb\x01 \x01(\tR\x06locale\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xbe\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xd2\x01\n" +
 	"\x1fDescribeDBSecurityGroupsMessage\x123\n" +
 	"\x13dbsecuritygroupname\x18\xe8\x93\xfe\x18 \x01(\tR\x13dbsecuritygroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xc1\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xd5\x01\n" +
 	"\x1cDescribeDBShardGroupsMessage\x129\n" +
 	"\x16dbshardgroupidentifier\x18Ȟ\xa15 \x01(\tR\x16dbshardgroupidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"w\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"w\n" +
 	"\x1dDescribeDBShardGroupsResponse\x12;\n" +
 	"\rdbshardgroups\x18\xa6\xc1\xb0\x97\x01 \x03(\v2\x11.rds.DBShardGroupR\rdbshardgroups\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"]\n" +
 	"#DescribeDBSnapshotAttributesMessage\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\"\x89\x01\n" +
 	"\"DescribeDBSnapshotAttributesResult\x12c\n" +
-	"\x1adbsnapshotattributesresult\x18\x88\xb1\x85\x8a\x01 \x01(\v2\x1f.rds.DBSnapshotAttributesResultR\x1adbsnapshotattributesresult\"\xd4\x02\n" +
+	"\x1adbsnapshotattributesresult\x18\x88\xb1\x85\x8a\x01 \x01(\v2\x1f.rds.DBSnapshotAttributesResultR\x1adbsnapshotattributesresult\"\xe8\x02\n" +
 	"(DescribeDBSnapshotTenantDatabasesMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\x12(\n" +
 	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12&\n" +
-	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottype\"\xc6\x03\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12&\n" +
+	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottypeB\r\n" +
+	"\v_maxrecords\"\xda\x03\n" +
 	"\x1aDescribeDBSnapshotsMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\x12(\n" +
@@ -44769,113 +44898,125 @@ const file_rds_proto_rawDesc = "" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12,\n" +
 	"\rincludepublic\x18\x83\x8b\xd0, \x01(\bH\x00R\rincludepublic\x88\x01\x01\x12,\n" +
 	"\rincludeshared\x18\xcf\xf7\xce\x0e \x01(\bH\x01R\rincludeshared\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12&\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01\x12&\n" +
 	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottypeB\x10\n" +
 	"\x0e_includepublicB\x10\n" +
-	"\x0e_includeshared\"\xb8\x01\n" +
+	"\x0e_includesharedB\r\n" +
+	"\v_maxrecords\"\xcc\x01\n" +
 	"\x1dDescribeDBSubnetGroupsMessage\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xd3\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xe7\x01\n" +
 	"-DescribeEngineDefaultClusterParametersMessage\x12:\n" +
 	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"o\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"o\n" +
 	",DescribeEngineDefaultClusterParametersResult\x12?\n" +
-	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x13.rds.EngineDefaultsR\x0eenginedefaults\"\xcc\x01\n" +
+	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x13.rds.EngineDefaultsR\x0eenginedefaults\"\xe0\x01\n" +
 	"&DescribeEngineDefaultParametersMessage\x12:\n" +
 	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"h\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"h\n" +
 	"%DescribeEngineDefaultParametersResult\x12?\n" +
 	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x13.rds.EngineDefaultsR\x0eenginedefaults\"m\n" +
 	"\x1eDescribeEventCategoriesMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12!\n" +
 	"\n" +
 	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\"\xba\x01\n" +
+	"sourcetype\"\xce\x01\n" +
 	"!DescribeEventSubscriptionsMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12-\n" +
-	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionname\"\xee\x02\n" +
-	"\x15DescribeEventsMessage\x12\x1e\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05R\bduration\x12\x1b\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12-\n" +
+	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionnameB\r\n" +
+	"\v_maxrecords\"\x94\x03\n" +
+	"\x15DescribeEventsMessage\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12-\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01\x12-\n" +
 	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tR\x10sourceidentifier\x122\n" +
 	"\n" +
 	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.rds.SourceTypeR\n" +
 	"sourcetype\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"\x97\x02\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\v\n" +
+	"\t_durationB\r\n" +
+	"\v_maxrecords\"\xab\x02\n" +
 	"\x1aDescribeExportTasksMessage\x125\n" +
 	"\x14exporttaskidentifier\x18Ҥ\xd79 \x01(\tR\x14exporttaskidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12 \n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12 \n" +
 	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\x128\n" +
 	"\n" +
 	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x15.rds.ExportSourceTypeR\n" +
-	"sourcetype\"\xc4\x01\n" +
+	"sourcetypeB\r\n" +
+	"\v_maxrecords\"\xd8\x01\n" +
 	"\x1dDescribeGlobalClustersMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12;\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\xbe\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\xd2\x01\n" +
 	"\x1bDescribeIntegrationsMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x127\n" +
 	"\x15integrationidentifier\x18\xc7\xef\xc3\x05 \x01(\tR\x15integrationidentifier\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"r\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"r\n" +
 	"\x1cDescribeIntegrationsResponse\x127\n" +
 	"\fintegrations\x18\xfb\xdf\xee? \x03(\v2\x10.rds.IntegrationR\fintegrations\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xe2\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xf6\x01\n" +
 	"!DescribeOptionGroupOptionsMessage\x12!\n" +
 	"\n" +
 	"enginename\x18\xe1\xfb\x8a1 \x01(\tR\n" +
 	"enginename\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x122\n" +
 	"\x12majorengineversion\x18倰\xba\x01 \x01(\tR\x12majorengineversion\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\"\x8a\x02\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01B\r\n" +
+	"\v_maxrecords\"\x9e\x02\n" +
 	"\x1bDescribeOptionGroupsMessage\x12!\n" +
 	"\n" +
 	"enginename\x18\xe1\xfb\x8a1 \x01(\tR\n" +
 	"enginename\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x122\n" +
 	"\x12majorengineversion\x18倰\xba\x01 \x01(\tR\x12majorengineversion\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\"\x8a\x03\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12,\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupnameB\r\n" +
+	"\v_maxrecords\"\x9e\x03\n" +
 	")DescribeOrderableDBInstanceOptionsMessage\x128\n" +
 	"\x15availabilityzonegroup\x18\xbc\xe4\x91\xc6\x01 \x01(\tR\x15availabilityzonegroup\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1a\n" +
@@ -44883,49 +45024,53 @@ const file_rds_proto_rawDesc = "" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12\x19\n" +
-	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x00R\x03vpc\x88\x01\x01B\x06\n" +
-	"\x04_vpc\"\xc6\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12\x19\n" +
+	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x01R\x03vpc\x88\x01\x01B\r\n" +
+	"\v_maxrecordsB\x06\n" +
+	"\x04_vpc\"\xda\x01\n" +
 	"(DescribePendingMaintenanceActionsMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x122\n" +
-	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifier\"\x81\x04\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x122\n" +
+	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifierB\r\n" +
+	"\v_maxrecords\"\x95\x04\n" +
 	"\"DescribeReservedDBInstancesMessage\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1e\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tR\bduration\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x1b\n" +
 	"\aleaseid\x18\xddģ\x0f \x01(\tR\aleaseid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x00R\amultiaz\x88\x01\x01\x12%\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x01R\amultiaz\x88\x01\x01\x12%\n" +
 	"\fofferingtype\x18\xbc\xec\xcad \x01(\tR\fofferingtype\x121\n" +
 	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tR\x12productdescription\x125\n" +
 	"\x14reserveddbinstanceid\x18\xf6\xb8\xe8  \x01(\tR\x14reserveddbinstanceid\x12H\n" +
-	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingidB\n" +
+	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingidB\r\n" +
+	"\v_maxrecordsB\n" +
 	"\n" +
-	"\b_multiaz\"\xb6\x03\n" +
+	"\b_multiaz\"\xca\x03\n" +
 	"+DescribeReservedDBInstancesOfferingsMessage\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1e\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tR\bduration\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x00R\amultiaz\x88\x01\x01\x12%\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x01R\amultiaz\x88\x01\x01\x12%\n" +
 	"\fofferingtype\x18\xbc\xec\xcad \x01(\tR\fofferingtype\x121\n" +
 	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tR\x12productdescription\x12H\n" +
-	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingidB\n" +
+	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingidB\r\n" +
+	"\v_maxrecordsB\n" +
 	"\n" +
-	"\b_multiaz\"\xe8\x02\n" +
+	"\b_multiaz\"\xfc\x02\n" +
 	"+DescribeServerlessV2PlatformVersionsMessage\x12(\n" +
 	"\vdefaultonly\x18\xa9\xaa\xe7\b \x01(\bH\x00R\vdefaultonly\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12(\n" +
@@ -44933,30 +45078,33 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"includeall\x18\xa3\xca\xca\x02 \x01(\bH\x01R\n" +
 	"includeall\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12D\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01\x12D\n" +
 	"\x1bserverlessv2platformversion\x18\xddﬦ\x01 \x01(\tR\x1bserverlessv2platformversionB\x0e\n" +
 	"\f_defaultonlyB\r\n" +
-	"\v_includeall\"\xa9\x01\n" +
+	"\v_includeallB\r\n" +
+	"\v_maxrecords\"\xbd\x01\n" +
 	"\x1cDescribeSourceRegionsMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12!\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\"\xe8\x01\n" +
+	"regionnameB\r\n" +
+	"\v_maxrecords\"\xfc\x01\n" +
 	"\x1eDescribeTenantDatabasesMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12!\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05R\n" +
-	"maxrecords\x12&\n" +
-	"\ftenantdbname\x18\xe9\x9b\xd9\xd3\x01 \x01(\tR\ftenantdbname\"e\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"maxrecords\x88\x01\x01\x12&\n" +
+	"\ftenantdbname\x18\xe9\x9b\xd9\xd3\x01 \x01(\tR\ftenantdbnameB\r\n" +
+	"\v_maxrecords\"e\n" +
 	"+DescribeValidDBInstanceModificationsMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\"\xab\x01\n" +
 	"*DescribeValidDBInstanceModificationsResult\x12}\n" +
@@ -44987,12 +45135,13 @@ const file_rds_proto_rawDesc = "" +
 	"\x15additionaldatapending\x18\x90\xa8\xfe\xcb\x01 \x01(\bH\x00R\x15additionaldatapending\x88\x01\x01\x12$\n" +
 	"\vlogfiledata\x18\xc0\xed\xf2\xa8\x01 \x01(\tR\vlogfiledata\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x18\n" +
-	"\x16_additionaldatapending\"\xc3\x01\n" +
+	"\x16_additionaldatapending\"\xda\x01\n" +
 	"\x1fDownloadDBLogFilePortionMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12$\n" +
 	"\vlogfilename\x18\xf5\xeb\xca\xc8\x01 \x01(\tR\vlogfilename\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12'\n" +
-	"\rnumberoflines\x18٨\xc7, \x01(\x05R\rnumberoflines\"\xd6\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12,\n" +
+	"\rnumberoflines\x18٨\xc7, \x01(\x05H\x00R\rnumberoflines\x88\x01\x01B\x10\n" +
+	"\x0e_numberoflines\"\xd6\x01\n" +
 	"\x10EC2SecurityGroup\x122\n" +
 	"\x12ec2securitygroupid\x18\x9c\xb6\xbd\xf8\x01 \x01(\tR\x12ec2securitygroupid\x126\n" +
 	"\x14ec2securitygroupname\x18\xe6\xb7\xe9\xc0\x01 \x01(\tR\x14ec2securitygroupname\x12;\n" +
@@ -45005,11 +45154,12 @@ const file_rds_proto_rawDesc = "" +
 	"\x1aEnableHttpEndpointResponse\x128\n" +
 	"\x13httpendpointenabled\x18\xaeåA \x01(\bH\x00R\x13httpendpointenabled\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\x16\n" +
-	"\x14_httpendpointenabled\"g\n" +
+	"\x14_httpendpointenabled\"u\n" +
 	"\bEndpoint\x12\x1c\n" +
 	"\aaddress\x18\xf4\xc1\x95\x80\x01 \x01(\tR\aaddress\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\"\x9b\x01\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x00R\x04port\x88\x01\x01B\a\n" +
+	"\x05_port\"\x9b\x01\n" +
 	"\x0eEngineDefaults\x12:\n" +
 	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x122\n" +
@@ -45055,7 +45205,7 @@ const file_rds_proto_rawDesc = "" +
 	"\rEventsMessage\x12%\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\n" +
 	".rds.EventR\x06events\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x8e\x05\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xc7\x05\n" +
 	"\n" +
 	"ExportTask\x12!\n" +
 	"\n" +
@@ -45066,8 +45216,8 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"iamrolearn\x18\xba\x85\xf4l \x01(\tR\n" +
 	"iamrolearn\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12+\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05R\x0fpercentprogress\x12\x1d\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x120\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05H\x00R\x0fpercentprogress\x88\x01\x01\x12\x1d\n" +
 	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tR\bs3bucket\x12\x1d\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
 	" \x01(\tR\bs3prefix\x12%\n" +
@@ -45078,9 +45228,11 @@ const file_rds_proto_rawDesc = "" +
 	"sourcetype\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12#\n" +
 	"\vtaskendtime\x18\xf9\xc0\xceE \x01(\tR\vtaskendtime\x12'\n" +
-	"\rtaskstarttime\x18\xba\x84\xe9_ \x01(\tR\rtaskstarttime\x129\n" +
-	"\x16totalextracteddataingb\x18\xc2́\" \x01(\x05R\x16totalextracteddataingb\x12*\n" +
-	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tR\x0ewarningmessage\";\n" +
+	"\rtaskstarttime\x18\xba\x84\xe9_ \x01(\tR\rtaskstarttime\x12>\n" +
+	"\x16totalextracteddataingb\x18\xc2́\" \x01(\x05H\x01R\x16totalextracteddataingb\x88\x01\x01\x12*\n" +
+	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tR\x0ewarningmessageB\x12\n" +
+	"\x10_percentprogressB\x19\n" +
+	"\x17_totalextracteddataingb\";\n" +
 	"\x1cExportTaskAlreadyExistsFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x17ExportTaskNotFoundFault\x12\x1b\n" +
@@ -45296,29 +45448,35 @@ const file_rds_proto_rawDesc = "" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeR\x04mode\x12F\n" +
 	"\fpolicystatus\x18\xaa\x9a\x8bz \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusR\fpolicystatus\x124\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x06statusB\"\n" +
-	" _enginenativeauditfieldsincluded\"\xd3\x02\n" +
-	"\x1dModifyAdditionalStorageVolume\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12\x16\n" +
-	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05R\x04iops\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x12*\n" +
-	"\fsetfordelete\x18\x82\xaf\x92~ \x01(\bH\x00R\fsetfordelete\x88\x01\x01\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	" _enginenativeauditfieldsincluded\"\xb3\x03\n" +
+	"\x1dModifyAdditionalStorageVolume\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12\x1b\n" +
+	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05H\x01R\x04iops\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x02R\x13maxallocatedstorage\x88\x01\x01\x12*\n" +
+	"\fsetfordelete\x18\x82\xaf\x92~ \x01(\bH\x03R\fsetfordelete\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x04R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12!\n" +
 	"\n" +
 	"volumename\x18\x8d\xf9\x91Y \x01(\tR\n" +
-	"volumenameB\x0f\n" +
-	"\r_setfordelete\"\xb1\x01\n" +
+	"volumenameB\x13\n" +
+	"\x11_allocatedstorageB\a\n" +
+	"\x05_iopsB\x16\n" +
+	"\x14_maxallocatedstorageB\x0f\n" +
+	"\r_setfordeleteB\x14\n" +
+	"\x12_storagethroughput\"\xb1\x01\n" +
 	"\x19ModifyCertificatesMessage\x128\n" +
 	"\x15certificateidentifier\x18\x84\xf7\xfa\x8c\x01 \x01(\tR\x15certificateidentifier\x12?\n" +
 	"\x16removecustomeroverride\x18\u0092\xfa\x97\x01 \x01(\bH\x00R\x16removecustomeroverride\x88\x01\x01B\x19\n" +
 	"\x17_removecustomeroverride\"Q\n" +
 	"\x18ModifyCertificatesResult\x125\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\v2\x10.rds.CertificateR\vcertificate\"\xdd\x01\n" +
-	"%ModifyCurrentDBClusterCapacityMessage\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05R\bcapacity\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x125\n" +
-	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05R\x14secondsbeforetimeout\x12(\n" +
-	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutaction\"\xc9\x01\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\v2\x10.rds.CertificateR\vcertificate\"\x8d\x02\n" +
+	"%ModifyCurrentDBClusterCapacityMessage\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05H\x00R\bcapacity\x88\x01\x01\x124\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12:\n" +
+	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05H\x01R\x14secondsbeforetimeout\x88\x01\x01\x12(\n" +
+	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutactionB\v\n" +
+	"\t_capacityB\x17\n" +
+	"\x15_secondsbeforetimeout\"\xc9\x01\n" +
 	"\"ModifyCustomDBEngineVersionMessage\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
@@ -45328,62 +45486,65 @@ const file_rds_proto_rawDesc = "" +
 	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12&\n" +
 	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\"\xeb\x19\n" +
-	"\x16ModifyDBClusterMessage\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12=\n" +
-	"\x15allowenginemodechange\x18\xe0\xbe\xe9\xe7\x01 \x01(\bH\x00R\x15allowenginemodechange\x88\x01\x01\x12B\n" +
-	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x01R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
-	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x02R\x10applyimmediately\x88\x01\x01\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12<\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\"\xa1\x1b\n" +
+	"\x16ModifyDBClusterMessage\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12=\n" +
+	"\x15allowenginemodechange\x18\xe0\xbe\xe9\xe7\x01 \x01(\bH\x01R\x15allowenginemodechange\x88\x01\x01\x12B\n" +
+	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x02R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
+	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x03R\x10applyimmediately\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x04R\x17autominorversionupgrade\x88\x01\x01\x12@\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x05R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x06R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12x\n" +
 	"!cloudwatchlogsexportconfiguration\x18\x8f\xaaҔ\x01 \x01(\v2&.rds.CloudwatchLogsExportConfigurationR!cloudwatchlogsexportconfiguration\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x04R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\aR\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
 	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tR\x16dbclusterinstanceclass\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12F\n" +
 	"\x1cdbinstanceparametergroupname\x18\xf6\xab\x88\xf1\x01 \x01(\tR\x1cdbinstanceparametergroupname\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\bR\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12H\n" +
-	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x06R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
-	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\aR\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\bR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
-	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\tR\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
-	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\n" +
-	"R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\vR\x19enableperformanceinsights\x88\x01\x01\x12\"\n" +
+	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\tR\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
+	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\n" +
+	"R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\vR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
+	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\fR\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
+	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\rR\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x0eR\x19enableperformanceinsights\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
 	"enginemode\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\fR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x0fR\x04iops\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x10R\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
 	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x11R\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x129\n" +
 	"\x16newdbclusteridentifier\x18\xcdȒ) \x01(\tR\x16newdbclusteridentifier\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x12R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x13R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12B\n" +
-	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH\rR\x18rotatemasteruserpassword\x88\x01\x01\x12P\n" +
+	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH\x14R\x18rotatemasteruserpassword\x88\x01\x01\x12P\n" +
 	"\x14scalingconfiguration\x18\xe1\xc5\xc9\x19 \x01(\v2\x19.rds.ScalingConfigurationR\x14scalingconfiguration\x12u\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x18\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
 	"\x16_allowenginemodechangeB\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x13\n" +
 	"\x11_applyimmediatelyB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x18_autominorversionupgradeB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_deletionprotectionB\x1e\n" +
 	"\x1c_enableglobalwriteforwardingB\x15\n" +
@@ -45391,8 +45552,12 @@ const file_rds_proto_rawDesc = "" +
 	" _enableiamdatabaseauthenticationB\x1a\n" +
 	"\x18_enablelimitlessdatabaseB\x1d\n" +
 	"\x1b_enablelocalwriteforwardingB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x1b\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x1b\n" +
+	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x13_monitoringintervalB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x1b\n" +
 	"\x19_rotatemasteruserpassword\"\xa0\x01\n" +
 	"$ModifyDBClusterParameterGroupMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x122\n" +
@@ -45407,30 +45572,31 @@ const file_rds_proto_rawDesc = "" +
 	"\vvaluestoadd\x18\x86\xb1\xa9F \x03(\tR\vvaluestoadd\x12*\n" +
 	"\x0evaluestoremove\x18\x93\x9e\xff\xd2\x01 \x03(\tR\x0evaluestoremove\"\xa1\x01\n" +
 	"&ModifyDBClusterSnapshotAttributeResult\x12w\n" +
-	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\x91 \n" +
+	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xae\"\n" +
 	"\x17ModifyDBInstanceMessage\x12b\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.ModifyAdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12B\n" +
-	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x00R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
-	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x01R\x10applyimmediately\x88\x01\x01\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x02R\x17autominorversionupgrade\x88\x01\x01\x12>\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.ModifyAdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12B\n" +
+	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x01R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
+	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x02R\x10applyimmediately\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12>\n" +
 	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x12@\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12<\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tR\x19awsbackuprecoverypointarn\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x04R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12F\n" +
-	"\x1acertificaterotationrestart\x18\xaa\xf6\xc6` \x01(\bH\x03R\x1acertificaterotationrestart\x88\x01\x01\x12x\n" +
+	"\x1acertificaterotationrestart\x18\xaa\xf6\xc6` \x01(\bH\x05R\x1acertificaterotationrestart\x88\x01\x01\x12x\n" +
 	"!cloudwatchlogsexportconfiguration\x18\x8f\xaaҔ\x01 \x01(\v2&.rds.CloudwatchLogsExportConfigurationR!cloudwatchlogsexportconfiguration\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x04R\x12copytagstosnapshot\x88\x01\x01\x12,\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12%\n" +
-	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05R\fdbportnumber\x12.\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12*\n" +
+	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05H\aR\fdbportnumber\x88\x01\x01\x12.\n" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x05R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x06R\x12deletionprotection\x88\x01\x01\x12,\n" +
-	"\rdisabledomain\x18\x98܍! \x01(\bH\aR\rdisabledomain\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\bR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\tR\x12deletionprotection\x88\x01\x01\x12,\n" +
+	"\rdisabledomain\x18\x98܍! \x01(\bH\n" +
+	"R\rdisabledomain\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
 	" \x01(\tR\x13domainauthsecretarn\x12%\n" +
@@ -45440,60 +45606,69 @@ const file_rds_proto_rawDesc = "" +
 	"domainfqdn\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12\x1d\n" +
 	"\bdomainou\x18\x9e\xf6\x99w \x01(\tR\bdomainou\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\bR\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\tR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\n" +
-	"R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\vR\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\fR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\rR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12%\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x0eR\x04iops\x88\x01\x01\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\vR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x0fR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
 	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x10R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x11R\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\fR\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\rR\vmultitenant\x88\x01\x01\x12$\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x12R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x13R\vmultitenant\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12<\n" +
 	"\x17newdbinstanceidentifier\x18\xb8\xf9\x98\x9e\x01 \x01(\tR\x17newdbinstanceidentifier\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x14R\"performanceinsightsretentionperiod\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12F\n" +
-	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12'\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05R\rpromotiontier\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x0eR\x12publiclyaccessible\x88\x01\x01\x125\n" +
-	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12L\n" +
-	"\x1fresumefullautomationmodeminutes\x18ͬΈ\x01 \x01(\x05R\x1fresumefullautomationmodeminutes\x12B\n" +
-	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH\x0fR\x18rotatemasteruserpassword\x88\x01\x01\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x15R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x16R\x12publiclyaccessible\x88\x01\x01\x125\n" +
+	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12Q\n" +
+	"\x1fresumefullautomationmodeminutes\x18ͬΈ\x01 \x01(\x05H\x17R\x1fresumefullautomationmodeminutes\x88\x01\x01\x12B\n" +
+	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH\x18R\x18rotatemasteruserpassword\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x19R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
 	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x10R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1b\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x1aR\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x13\n" +
 	"\x11_applyimmediatelyB\x1a\n" +
-	"\x18_autominorversionupgradeB\x1d\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x1d\n" +
 	"\x1b_certificaterotationrestartB\x15\n" +
-	"\x13_copytagstosnapshotB\x15\n" +
+	"\x13_copytagstosnapshotB\x0f\n" +
+	"\r_dbportnumberB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x10\n" +
 	"\x0e_disabledomainB\x18\n" +
 	"\x16_enablecustomerownedipB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\x1b\n" +
-	"\x19_managemasteruserpasswordB\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x1b\n" +
+	"\x19_managemasteruserpasswordB\x16\n" +
+	"\x14_maxallocatedstorageB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
 	"\b_multiazB\x0e\n" +
-	"\f_multitenantB\x15\n" +
-	"\x13_publiclyaccessibleB\x1b\n" +
-	"\x19_rotatemasteruserpasswordB\x1e\n" +
+	"\f_multitenantB%\n" +
+	"#_performanceinsightsretentionperiodB\x10\n" +
+	"\x0e_promotiontierB\x15\n" +
+	"\x13_publiclyaccessibleB\"\n" +
+	" _resumefullautomationmodeminutesB\x1b\n" +
+	"\x19_rotatemasteruserpasswordB\x14\n" +
+	"\x12_storagethroughputB\x1e\n" +
 	"\x1c_usedefaultprocessorfeatures\"M\n" +
 	"\x16ModifyDBInstanceResult\x123\n" +
 	"\n" +
@@ -45509,20 +45684,21 @@ const file_rds_proto_rawDesc = "" +
 	"\x16newdbproxyendpointname\x18ܑ\xa7^ \x01(\tR\x16newdbproxyendpointname\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\"b\n" +
 	"\x1dModifyDBProxyEndpointResponse\x12A\n" +
-	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\xcd\x03\n" +
+	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\xe8\x03\n" +
 	"\x14ModifyDBProxyRequest\x12+\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x13.rds.UserAuthConfigR\x04auth\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12*\n" +
 	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12H\n" +
-	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeR\x11defaultauthscheme\x12/\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05R\x11idleclienttimeout\x12)\n" +
+	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeR\x11defaultauthscheme\x124\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x01R\x11idleclienttimeout\x88\x01\x01\x12)\n" +
 	"\x0enewdbproxyname\x18\xbbɉ@ \x01(\tR\x0enewdbproxyname\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x01R\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x02R\n" +
 	"requiretls\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12*\n" +
 	"\x0esecuritygroups\x18Ԭ\xda\xf5\x01 \x03(\tR\x0esecuritygroupsB\x0f\n" +
-	"\r_debugloggingB\r\n" +
+	"\r_debugloggingB\x14\n" +
+	"\x12_idleclienttimeoutB\r\n" +
 	"\v_requiretls\"C\n" +
 	"\x15ModifyDBProxyResponse\x12*\n" +
 	"\adbproxy\x18\xfe냲\x01 \x01(\v2\f.rds.DBProxyR\adbproxy\"\xea\x01\n" +
@@ -45537,12 +45713,13 @@ const file_rds_proto_rawDesc = "" +
 	"\x06locale\x18\xb8\xb7\xb9\xeb\x01 \x01(\tR\x06locale\x12.\n" +
 	"\x10recommendationid\x18\xb4\xf1\xa5\xa2\x01 \x01(\tR\x10recommendationid\x12\\\n" +
 	"\x18recommendedactionupdates\x18\xbd\xe0\xfe\xe0\x01 \x03(\v2\x1c.rds.RecommendedActionUpdateR\x18recommendedactionupdates\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xbf\x01\n" +
-	"\x19ModifyDBShardGroupMessage\x120\n" +
-	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05R\x11computeredundancy\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xda\x01\n" +
+	"\x19ModifyDBShardGroupMessage\x125\n" +
+	"\x11computeredundancy\x18\x86\x9f\xa3\xf7\x01 \x01(\x05H\x00R\x11computeredundancy\x88\x01\x01\x129\n" +
 	"\x16dbshardgroupidentifier\x18Ȟ\xa15 \x01(\tR\x16dbshardgroupidentifier\x12\x19\n" +
 	"\x06maxacu\x18\xed\xad\xbdv \x01(\x01R\x06maxacu\x12\x1a\n" +
-	"\x06minacu\x18\U000e9e6a\x01 \x01(\x01R\x06minacu\"\xd5\x01\n" +
+	"\x06minacu\x18\U000e9e6a\x01 \x01(\x01R\x06minacuB\x14\n" +
+	"\x12_computeredundancy\"\xd5\x01\n" +
 	" ModifyDBSnapshotAttributeMessage\x12(\n" +
 	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\x12#\n" +
@@ -45614,7 +45791,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x1aModifyTenantDatabaseResult\x12>\n" +
 	"\x0etenantdatabase\x18ٷ\xd5\x04 \x01(\v2\x13.rds.TenantDatabaseR\x0etenantdatabase\"6\n" +
 	"\x17NetworkTypeNotSupported\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x93\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa1\x04\n" +
 	"\x06Option\x12b\n" +
 	"\x1adbsecuritygroupmemberships\x18\xe6ի\xb0\x01 \x03(\v2\x1e.rds.DBSecurityGroupMembershipR\x1adbsecuritygroupmemberships\x12/\n" +
 	"\x11optiondescription\x18\xbf\xd2\xdd\n" +
@@ -45627,21 +45804,23 @@ const file_rds_proto_rawDesc = "" +
 	"\tpermanent\x18\xe6\xe7\xc8C \x01(\bH\x00R\tpermanent\x88\x01\x01\x12'\n" +
 	"\n" +
 	"persistent\x18\xe1\xcb\xe2\xce\x01 \x01(\bH\x01R\n" +
-	"persistent\x88\x01\x01\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12e\n" +
+	"persistent\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x02R\x04port\x88\x01\x01\x12e\n" +
 	"\x1bvpcsecuritygroupmemberships\x18Ӯʉ\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x1bvpcsecuritygroupmembershipsB\f\n" +
 	"\n" +
 	"_permanentB\r\n" +
-	"\v_persistent\"\xc2\x02\n" +
+	"\v_persistentB\a\n" +
+	"\x05_port\"\xd0\x02\n" +
 	"\x13OptionConfiguration\x12B\n" +
 	"\x1adbsecuritygroupmemberships\x18\xe6ի\xb0\x01 \x03(\tR\x1adbsecuritygroupmemberships\x12!\n" +
 	"\n" +
 	"optionname\x18\x90\xd1\xf0\x1e \x01(\tR\n" +
 	"optionname\x12=\n" +
 	"\x0eoptionsettings\x18\xdaĹu \x03(\v2\x12.rds.OptionSettingR\x0eoptionsettings\x12(\n" +
-	"\roptionversion\x18\x89\xc7\xfd\x91\x01 \x01(\tR\roptionversion\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12D\n" +
-	"\x1bvpcsecuritygroupmemberships\x18Ӯʉ\x01 \x03(\tR\x1bvpcsecuritygroupmemberships\"\xcd\x04\n" +
+	"\roptionversion\x18\x89\xc7\xfd\x91\x01 \x01(\tR\roptionversion\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x00R\x04port\x88\x01\x01\x12D\n" +
+	"\x1bvpcsecuritygroupmemberships\x18Ӯʉ\x01 \x03(\tR\x1bvpcsecuritygroupmembershipsB\a\n" +
+	"\x05_port\"\xcd\x04\n" +
 	"\vOptionGroup\x12]\n" +
 	"%allowsvpcandnonvpcinstancememberships\x18\xb8\xdfՄ\x01 \x01(\bH\x00R%allowsvpcandnonvpcinstancememberships\x88\x01\x01\x12'\n" +
 	"\rcopytimestamp\x18\x85\x8d\xd5\x0f \x01(\tR\rcopytimestamp\x12!\n" +
@@ -45663,10 +45842,10 @@ const file_rds_proto_rawDesc = "" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"7\n" +
 	"\x18OptionGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe4\b\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf9\b\n" +
 	"\x11OptionGroupOption\x12:\n" +
-	"\x14copyablecrossaccount\x18\xdc\xd5\xc3x \x01(\bH\x00R\x14copyablecrossaccount\x88\x01\x01\x12$\n" +
-	"\vdefaultport\x18\x9a\x9c\x86\xef\x01 \x01(\x05R\vdefaultport\x12#\n" +
+	"\x14copyablecrossaccount\x18\xdc\xd5\xc3x \x01(\bH\x00R\x14copyablecrossaccount\x88\x01\x01\x12)\n" +
+	"\vdefaultport\x18\x9a\x9c\x86\xef\x01 \x01(\x05H\x01R\vdefaultport\x88\x01\x01\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12!\n" +
 	"\n" +
 	"enginename\x18\xe1\xfb\x8a1 \x01(\tR\n" +
@@ -45678,15 +45857,16 @@ const file_rds_proto_rawDesc = "" +
 	"\x19optiongroupoptionversions\x18\x98\xbc\xd1f \x03(\v2\x12.rds.OptionVersionR\x19optiongroupoptionversions\x125\n" +
 	"\x14optionsconflictswith\x18\xed\xfc\xe4X \x03(\tR\x14optionsconflictswith\x120\n" +
 	"\x11optionsdependedon\x18\x8c\xb5\xff\xad\x01 \x03(\tR\x11optionsdependedon\x12$\n" +
-	"\tpermanent\x18\xe6\xe7\xc8C \x01(\bH\x01R\tpermanent\x88\x01\x01\x12'\n" +
+	"\tpermanent\x18\xe6\xe7\xc8C \x01(\bH\x02R\tpermanent\x88\x01\x01\x12'\n" +
 	"\n" +
-	"persistent\x18\xe1\xcb\xe2\xce\x01 \x01(\bH\x02R\n" +
+	"persistent\x18\xe1\xcb\xe2\xce\x01 \x01(\bH\x03R\n" +
 	"persistent\x88\x01\x01\x12+\n" +
-	"\fportrequired\x18\xd0\xcc\xfa\xeb\x01 \x01(\bH\x03R\fportrequired\x88\x01\x01\x12\\\n" +
-	"%requiresautominorengineversionupgrade\x18¸\xbe\v \x01(\bH\x04R%requiresautominorengineversionupgrade\x88\x01\x01\x12N\n" +
-	"\x1esupportsoptionversiondowngrade\x18\x90\xb1\xd9M \x01(\bH\x05R\x1esupportsoptionversiondowngrade\x88\x01\x01\x12!\n" +
-	"\avpconly\x18\x9b\xfc\xbe\xd7\x01 \x01(\bH\x06R\avpconly\x88\x01\x01B\x17\n" +
-	"\x15_copyablecrossaccountB\f\n" +
+	"\fportrequired\x18\xd0\xcc\xfa\xeb\x01 \x01(\bH\x04R\fportrequired\x88\x01\x01\x12\\\n" +
+	"%requiresautominorengineversionupgrade\x18¸\xbe\v \x01(\bH\x05R%requiresautominorengineversionupgrade\x88\x01\x01\x12N\n" +
+	"\x1esupportsoptionversiondowngrade\x18\x90\xb1\xd9M \x01(\bH\x06R\x1esupportsoptionversiondowngrade\x88\x01\x01\x12!\n" +
+	"\avpconly\x18\x9b\xfc\xbe\xd7\x01 \x01(\bH\aR\avpconly\x88\x01\x01B\x17\n" +
+	"\x15_copyablecrossaccountB\x0e\n" +
+	"\f_defaultportB\f\n" +
 	"\n" +
 	"_permanentB\r\n" +
 	"\v_persistentB\x0f\n" +
@@ -45732,7 +45912,7 @@ const file_rds_proto_rawDesc = "" +
 	"\tisdefault\x18\x8f\xf8\xc10 \x01(\bH\x00R\tisdefault\x88\x01\x01\x12\x1c\n" +
 	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversionB\f\n" +
 	"\n" +
-	"_isdefault\"\xd6\x16\n" +
+	"_isdefault\"\x98\x18\n" +
 	"\x19OrderableDBInstanceOption\x128\n" +
 	"\x15availabilityzonegroup\x18\xbc\xe4\x91\xc6\x01 \x01(\tR\x15availabilityzonegroup\x12F\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\v2\x15.rds.AvailabilityZoneR\x11availabilityzones\x12\x8b\x01\n" +
@@ -45741,39 +45921,45 @@ const file_rds_proto_rawDesc = "" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x126\n" +
-	"\x14maxiopsperdbinstance\x18\xa3\xe6\xca\xc2\x01 \x01(\x05R\x14maxiopsperdbinstance\x12'\n" +
-	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01R\rmaxiopspergib\x12*\n" +
-	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05R\x0emaxstoragesize\x12O\n" +
-	"!maxstoragethroughputperdbinstance\x18\x87\xac\x83\x0e \x01(\x05R!maxstoragethroughputperdbinstance\x12C\n" +
-	"\x1bmaxstoragethroughputperiops\x18\xc3\xf4\xe0\x01 \x01(\x01R\x1bmaxstoragethroughputperiops\x126\n" +
-	"\x14miniopsperdbinstance\x18\xad\xb1\x94\xed\x01 \x01(\x05R\x14miniopsperdbinstance\x12(\n" +
-	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01R\rminiopspergib\x12)\n" +
-	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05R\x0eminstoragesize\x12O\n" +
-	"!minstoragethroughputperdbinstance\x18\xf1\xf4\xa6{ \x01(\x05R!minstoragethroughputperdbinstance\x12C\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12;\n" +
+	"\x14maxiopsperdbinstance\x18\xa3\xe6\xca\xc2\x01 \x01(\x05H\x00R\x14maxiopsperdbinstance\x88\x01\x01\x12'\n" +
+	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01R\rmaxiopspergib\x12/\n" +
+	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05H\x01R\x0emaxstoragesize\x88\x01\x01\x12T\n" +
+	"!maxstoragethroughputperdbinstance\x18\x87\xac\x83\x0e \x01(\x05H\x02R!maxstoragethroughputperdbinstance\x88\x01\x01\x12C\n" +
+	"\x1bmaxstoragethroughputperiops\x18\xc3\xf4\xe0\x01 \x01(\x01R\x1bmaxstoragethroughputperiops\x12;\n" +
+	"\x14miniopsperdbinstance\x18\xad\xb1\x94\xed\x01 \x01(\x05H\x03R\x14miniopsperdbinstance\x88\x01\x01\x12(\n" +
+	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01R\rminiopspergib\x12.\n" +
+	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05H\x04R\x0eminstoragesize\x88\x01\x01\x12T\n" +
+	"!minstoragethroughputperdbinstance\x18\xf1\xf4\xa6{ \x01(\x05H\x05R!minstoragethroughputperdbinstance\x88\x01\x01\x12C\n" +
 	"\x1bminstoragethroughputperiops\x18\xb1ȕ\x1f \x01(\x01R\x1bminstoragethroughputperiops\x12/\n" +
-	"\x0emultiazcapable\x18\x84\xe7\x9e\xf1\x01 \x01(\bH\x00R\x0emultiazcapable\x88\x01\x01\x12/\n" +
-	"\x0eoutpostcapable\x18̇\xba\x96\x01 \x01(\bH\x01R\x0eoutpostcapable\x88\x01\x01\x126\n" +
-	"\x12readreplicacapable\x18\xd6\xc1\xa1n \x01(\bH\x02R\x12readreplicacapable\x88\x01\x01\x12#\n" +
+	"\x0emultiazcapable\x18\x84\xe7\x9e\xf1\x01 \x01(\bH\x06R\x0emultiazcapable\x88\x01\x01\x12/\n" +
+	"\x0eoutpostcapable\x18̇\xba\x96\x01 \x01(\bH\aR\x0eoutpostcapable\x88\x01\x01\x126\n" +
+	"\x12readreplicacapable\x18\xd6\xc1\xa1n \x01(\bH\bR\x12readreplicacapable\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12E\n" +
 	"\x1csupportedactivitystreammodes\x18\xb9\xb4\xa8\\ \x03(\tR\x1csupportedactivitystreammodes\x125\n" +
 	"\x14supportedenginemodes\x18\x9a\xb0\x96o \x03(\tR\x14supportedenginemodes\x128\n" +
 	"\x15supportednetworktypes\x18\xd7\xf6Ɋ\x01 \x03(\tR\x15supportednetworktypes\x12R\n" +
-	" supportsadditionalstoragevolumes\x18\xd1ζh \x01(\bH\x03R supportsadditionalstoragevolumes\x88\x01\x01\x122\n" +
-	"\x10supportsclusters\x18\x97\x8f\xa8& \x01(\bH\x04R\x10supportsclusters\x88\x01\x01\x12G\n" +
-	"\x1asupportsdedicatedlogvolume\x18߰\xc8\xd1\x01 \x01(\bH\x05R\x1asupportsdedicatedlogvolume\x88\x01\x01\x12G\n" +
-	"\x1asupportsenhancedmonitoring\x18\xde\xf0\x9d\xd9\x01 \x01(\bH\x06R\x1asupportsenhancedmonitoring\x88\x01\x01\x12@\n" +
-	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\aR\x17supportsglobaldatabases\x88\x01\x01\x12;\n" +
-	"\x14supportshttpendpoint\x18\xa9\x8e\x95\xf9\x01 \x01(\bH\bR\x14supportshttpendpoint\x88\x01\x01\x12U\n" +
-	"!supportsiamdatabaseauthentication\x18\xf4\xf2\xca\xe6\x01 \x01(\bH\tR!supportsiamdatabaseauthentication\x88\x01\x01\x12+\n" +
-	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\n" +
-	"R\fsupportsiops\x88\x01\x01\x12O\n" +
-	"\x1esupportskerberosauthentication\x18ɹ߇\x01 \x01(\bH\vR\x1esupportskerberosauthentication\x88\x01\x01\x12I\n" +
-	"\x1bsupportsperformanceinsights\x18\xc5ɲ\xee\x01 \x01(\bH\fR\x1bsupportsperformanceinsights\x88\x01\x01\x12G\n" +
-	"\x1asupportsstorageautoscaling\x18\xc3\xff\x86\xfd\x01 \x01(\bH\rR\x1asupportsstorageautoscaling\x88\x01\x01\x12D\n" +
-	"\x19supportsstorageencryption\x18\xe8\xff\xdf' \x01(\bH\x0eR\x19supportsstorageencryption\x88\x01\x01\x12D\n" +
-	"\x19supportsstoragethroughput\x18\xa1\xcc\xca\x05 \x01(\bH\x0fR\x19supportsstoragethroughput\x88\x01\x01\x12\x19\n" +
-	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x10R\x03vpc\x88\x01\x01B\x11\n" +
+	" supportsadditionalstoragevolumes\x18\xd1ζh \x01(\bH\tR supportsadditionalstoragevolumes\x88\x01\x01\x122\n" +
+	"\x10supportsclusters\x18\x97\x8f\xa8& \x01(\bH\n" +
+	"R\x10supportsclusters\x88\x01\x01\x12G\n" +
+	"\x1asupportsdedicatedlogvolume\x18߰\xc8\xd1\x01 \x01(\bH\vR\x1asupportsdedicatedlogvolume\x88\x01\x01\x12G\n" +
+	"\x1asupportsenhancedmonitoring\x18\xde\xf0\x9d\xd9\x01 \x01(\bH\fR\x1asupportsenhancedmonitoring\x88\x01\x01\x12@\n" +
+	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\rR\x17supportsglobaldatabases\x88\x01\x01\x12;\n" +
+	"\x14supportshttpendpoint\x18\xa9\x8e\x95\xf9\x01 \x01(\bH\x0eR\x14supportshttpendpoint\x88\x01\x01\x12U\n" +
+	"!supportsiamdatabaseauthentication\x18\xf4\xf2\xca\xe6\x01 \x01(\bH\x0fR!supportsiamdatabaseauthentication\x88\x01\x01\x12+\n" +
+	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\x10R\fsupportsiops\x88\x01\x01\x12O\n" +
+	"\x1esupportskerberosauthentication\x18ɹ߇\x01 \x01(\bH\x11R\x1esupportskerberosauthentication\x88\x01\x01\x12I\n" +
+	"\x1bsupportsperformanceinsights\x18\xc5ɲ\xee\x01 \x01(\bH\x12R\x1bsupportsperformanceinsights\x88\x01\x01\x12G\n" +
+	"\x1asupportsstorageautoscaling\x18\xc3\xff\x86\xfd\x01 \x01(\bH\x13R\x1asupportsstorageautoscaling\x88\x01\x01\x12D\n" +
+	"\x19supportsstorageencryption\x18\xe8\xff\xdf' \x01(\bH\x14R\x19supportsstorageencryption\x88\x01\x01\x12D\n" +
+	"\x19supportsstoragethroughput\x18\xa1\xcc\xca\x05 \x01(\bH\x15R\x19supportsstoragethroughput\x88\x01\x01\x12\x19\n" +
+	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x16R\x03vpc\x88\x01\x01B\x17\n" +
+	"\x15_maxiopsperdbinstanceB\x11\n" +
+	"\x0f_maxstoragesizeB$\n" +
+	"\"_maxstoragethroughputperdbinstanceB\x17\n" +
+	"\x15_miniopsperdbinstanceB\x11\n" +
+	"\x0f_minstoragesizeB$\n" +
+	"\"_minstoragethroughputperdbinstanceB\x11\n" +
 	"\x0f_multiazcapableB\x11\n" +
 	"\x0f_outpostcapableB\x15\n" +
 	"\x13_readreplicacapableB#\n" +
@@ -45821,43 +46007,48 @@ const file_rds_proto_rawDesc = "" +
 	"\voptinstatus\x18\x90\x81\xd6\xff\x01 \x01(\tR\voptinstatus\"\xa7\x01\n" +
 	" PendingMaintenanceActionsMessage\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12h\n" +
-	"\x19pendingmaintenanceactions\x18׳\x8a\x8f\x01 \x03(\v2&.rds.ResourcePendingMaintenanceActionsR\x19pendingmaintenanceactions\"\xc5\n" +
-	"\n" +
+	"\x19pendingmaintenanceactions\x18׳\x8a\x8f\x01 \x03(\v2&.rds.ResourcePendingMaintenanceActionsR\x19pendingmaintenanceactions\"\xb5\v\n" +
 	"\x15PendingModifiedValues\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12>\n" +
-	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12<\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12>\n" +
+	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x00R\x12dedicatedlogvolume\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x01R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12%\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x03R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x04R\x04iops\x88\x01\x01\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x02R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x03R\vmultitenant\x88\x01\x01\x12h\n" +
-	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2!.rds.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x12F\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x05R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x06R\vmultitenant\x88\x01\x01\x12h\n" +
+	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2!.rds.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\aR\x04port\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12F\n" +
-	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tR\x1cresumefullautomationmodetime\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB\x15\n" +
+	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tR\x1cresumefullautomationmodetime\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\bR\x11storagethroughput\x88\x01\x01\x12#\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB\x13\n" +
+	"\x11_allocatedstorageB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_dedicatedlogvolumeB#\n" +
-	"!_iamdatabaseauthenticationenabledB\n" +
+	"!_iamdatabaseauthenticationenabledB\a\n" +
+	"\x05_iopsB\n" +
 	"\n" +
 	"\b_multiazB\x0e\n" +
-	"\f_multitenant\"\x80\x01\n" +
+	"\f_multitenantB\a\n" +
+	"\x05_portB\x14\n" +
+	"\x12_storagethroughput\"\x8f\x01\n" +
 	"'PerformanceInsightsMetricDimensionGroup\x12\"\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\tR\n" +
 	"dimensions\x12\x17\n" +
-	"\x05group\x18\xad\xa0\xd2+ \x01(\tR\x05group\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\"\x87\x01\n" +
+	"\x05group\x18\xad\xa0\xd2+ \x01(\tR\x05group\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01B\b\n" +
+	"\x06_limit\"\x87\x01\n" +
 	"\x1ePerformanceInsightsMetricQuery\x12I\n" +
 	"\agroupby\x18\xaa\xd3\xff; \x01(\v2,.rds.PerformanceInsightsMetricDimensionGroupR\agroupby\x12\x1a\n" +
 	"\x06metric\x18\xa2\xa6\xb0\xb8\x01 \x01(\tR\x06metric\"\xa2\x01\n" +
@@ -45874,29 +46065,34 @@ const file_rds_proto_rawDesc = "" +
 	"\"PromoteReadReplicaDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"U\n" +
 	"!PromoteReadReplicaDBClusterResult\x120\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\x8e\x02\n" +
-	"\x19PromoteReadReplicaMessage\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x126\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xad\x02\n" +
+	"\x19PromoteReadReplicaMessage\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x00R\x15backupretentionperiod\x88\x01\x01\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12F\n" +
-	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\"O\n" +
+	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecificationsB\x18\n" +
+	"\x16_backupretentionperiod\"O\n" +
 	"\x18PromoteReadReplicaResult\x123\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x0f.rds.DBInstanceR\n" +
 	"dbinstance\"C\n" +
 	"$ProvisionedIopsNotAvailableInAZFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xfc\x01\n" +
-	"*PurchaseReservedDBInstancesOfferingMessage\x12+\n" +
-	"\x0fdbinstancecount\x18\xd0\xce\xd7M \x01(\x05R\x0fdbinstancecount\x125\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x95\x02\n" +
+	"*PurchaseReservedDBInstancesOfferingMessage\x120\n" +
+	"\x0fdbinstancecount\x18\xd0\xce\xd7M \x01(\x05H\x00R\x0fdbinstancecount\x88\x01\x01\x125\n" +
 	"\x14reserveddbinstanceid\x18\xf6\xb8\xe8  \x01(\tR\x14reserveddbinstanceid\x12H\n" +
 	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingid\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"w\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tagsB\x12\n" +
+	"\x10_dbinstancecount\"w\n" +
 	")PurchaseReservedDBInstancesOfferingResult\x12J\n" +
-	"\x12reserveddbinstance\x18\xa9\xe4\xe4\b \x01(\v2\x17.rds.ReservedDBInstanceR\x12reserveddbinstance\"I\n" +
-	"\x05Range\x12\x16\n" +
-	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x05R\x04from\x12\x15\n" +
-	"\x04step\x18\xb0\xf2\xc7; \x01(\x05R\x04step\x12\x11\n" +
-	"\x02to\x18Ŭ\xd6\x0f \x01(\x05R\x02to\"\xdc\x01\n" +
+	"\x12reserveddbinstance\x18\xa9\xe4\xe4\b \x01(\v2\x17.rds.ReservedDBInstanceR\x12reserveddbinstance\"q\n" +
+	"\x05Range\x12\x1b\n" +
+	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x05H\x00R\x04from\x88\x01\x01\x12\x1a\n" +
+	"\x04step\x18\xb0\xf2\xc7; \x01(\x05H\x01R\x04step\x88\x01\x01\x12\x16\n" +
+	"\x02to\x18Ŭ\xd6\x0f \x01(\x05H\x02R\x02to\x88\x01\x01B\a\n" +
+	"\x05_fromB\a\n" +
+	"\x05_stepB\x05\n" +
+	"\x03_to\"\xdc\x01\n" +
 	"\x1dRdsCustomClusterConfiguration\x126\n" +
 	"\x14interconnectsubnetid\x18\xae\x8c\x9f\xea\x01 \x01(\tR\x14interconnectsubnetid\x125\n" +
 	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12L\n" +
@@ -45967,17 +46163,17 @@ const file_rds_proto_rawDesc = "" +
 	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x16.rds.EventSubscriptionR\x11eventsubscription\"e\n" +
 	"\x1dRemoveTagsFromResourceMessage\x12&\n" +
 	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\x12\x1c\n" +
-	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\xe1\x05\n" +
+	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x8c\x06\n" +
 	"\x12ReservedDBInstance\x12&\n" +
 	"\fcurrencycode\x18\xcc\xe4\xe3\xe5\x01 \x01(\tR\fcurrencycode\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12+\n" +
-	"\x0fdbinstancecount\x18\xd0\xce\xd7M \x01(\x05R\x0fdbinstancecount\x12\x1e\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05R\bduration\x12\"\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x120\n" +
+	"\x0fdbinstancecount\x18\xd0\xce\xd7M \x01(\x05H\x00R\x0fdbinstancecount\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x01R\bduration\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"fixedprice\x18\x9fФ\xc3\x01 \x01(\x01R\n" +
 	"fixedprice\x12\x1b\n" +
 	"\aleaseid\x18\xddģ\x0f \x01(\tR\aleaseid\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x00R\amultiaz\x88\x01\x01\x12%\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x02R\amultiaz\x88\x01\x01\x12%\n" +
 	"\fofferingtype\x18\xbc\xec\xcad \x01(\tR\fofferingtype\x121\n" +
 	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tR\x12productdescription\x12D\n" +
 	"\x10recurringcharges\x18\xb6\x84\xac\x98\x01 \x03(\v2\x14.rds.RecurringChargeR\x10recurringcharges\x128\n" +
@@ -45988,7 +46184,9 @@ const file_rds_proto_rawDesc = "" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12!\n" +
 	"\n" +
 	"usageprice\x18\xb6\xb5\xdd\\ \x01(\x01R\n" +
-	"usagepriceB\n" +
+	"usagepriceB\x12\n" +
+	"\x10_dbinstancecountB\v\n" +
+	"\t_durationB\n" +
 	"\n" +
 	"\b_multiaz\"C\n" +
 	"$ReservedDBInstanceAlreadyExistsFault\x12\x1b\n" +
@@ -45999,22 +46197,23 @@ const file_rds_proto_rawDesc = "" +
 	"\x1fReservedDBInstanceNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
 	"$ReservedDBInstanceQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf3\x03\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x85\x04\n" +
 	"\x1bReservedDBInstancesOffering\x12&\n" +
 	"\fcurrencycode\x18\xcc\xe4\xe3\xe5\x01 \x01(\tR\fcurrencycode\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1e\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05R\bduration\x12\"\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"fixedprice\x18\x9fФ\xc3\x01 \x01(\x01R\n" +
 	"fixedprice\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x00R\amultiaz\x88\x01\x01\x12%\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x01R\amultiaz\x88\x01\x01\x12%\n" +
 	"\fofferingtype\x18\xbc\xec\xcad \x01(\tR\fofferingtype\x121\n" +
 	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tR\x12productdescription\x12D\n" +
 	"\x10recurringcharges\x18\xb6\x84\xac\x98\x01 \x03(\v2\x14.rds.RecurringChargeR\x10recurringcharges\x12H\n" +
 	"\x1dreserveddbinstancesofferingid\x18\x83\xc9\xe8\xe2\x01 \x01(\tR\x1dreserveddbinstancesofferingid\x12!\n" +
 	"\n" +
 	"usageprice\x18\xb6\xb5\xdd\\ \x01(\x01R\n" +
-	"usagepriceB\n" +
+	"usagepriceB\v\n" +
+	"\t_durationB\n" +
 	"\n" +
 	"\b_multiaz\"\xa9\x01\n" +
 	"\"ReservedDBInstancesOfferingMessage\x12\x19\n" +
@@ -46040,33 +46239,33 @@ const file_rds_proto_rawDesc = "" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc4\x01\n" +
 	"!ResourcePendingMaintenanceActions\x12k\n" +
 	"\x1fpendingmaintenanceactiondetails\x18\xda\xc2\xfd\xaa\x01 \x03(\v2\x1d.rds.PendingMaintenanceActionR\x1fpendingmaintenanceactiondetails\x122\n" +
-	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifier\"\xc7\x10\n" +
+	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifier\"\x8d\x11\n" +
 	"\x1dRestoreDBClusterFromS3Message\x12/\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12.\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x00R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12.\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x00R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x02R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x04R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12'\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x03R\x18managemasteruserpassword\x88\x01\x01\x122\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x05R\x18managemasteruserpassword\x88\x01\x01\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
 	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x12)\n" +
 	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12&\n" +
 	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x122\n" +
@@ -46076,53 +46275,57 @@ const file_rds_proto_rawDesc = "" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12%\n" +
 	"\fsourceengine\x18\xfb\xec\xdcN \x01(\tR\fsourceengine\x123\n" +
 	"\x13sourceengineversion\x18\x87\xfc\xe4x \x01(\tR\x13sourceengineversion\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x04R\x10storageencrypted\x88\x01\x01\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\aR\x10storageencrypted\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x15\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x13\n" +
+	"\x19_managemasteruserpasswordB\a\n" +
+	"\x05_portB\x13\n" +
 	"\x11_storageencrypted\"P\n" +
 	"\x1cRestoreDBClusterFromS3Result\x120\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\x90\x13\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xac\x14\n" +
 	"#RestoreDBClusterFromSnapshotMessage\x12/\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x00R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x00R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
 	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tR\x16dbclusterinstanceclass\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x02R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12I\n" +
-	"\x1benableinternetaccessgateway\x18➆\xa0\x01 \x01(\bH\x03R\x1benableinternetaccessgateway\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x04R\x19enableperformanceinsights\x88\x01\x01\x128\n" +
-	"\x13enablevpcnetworking\x18\x90\xf5\x84Q \x01(\bH\x05R\x13enablevpcnetworking\x88\x01\x01\x12\x1a\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x04R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12I\n" +
+	"\x1benableinternetaccessgateway\x18➆\xa0\x01 \x01(\bH\x05R\x1benableinternetaccessgateway\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x06R\x19enableperformanceinsights\x88\x01\x01\x128\n" +
+	"\x13enablevpcnetworking\x18\x90\xf5\x84Q \x01(\bH\aR\x13enablevpcnetworking\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\"\n" +
 	"\n" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
 	"enginemode\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12\x1d\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\tR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\n" +
+	"R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\vR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x06R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\fR\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12P\n" +
 	"\x14scalingconfiguration\x18\xe1\xc5\xc9\x19 \x01(\v2\x19.rds.ScalingConfigurationR\x14scalingconfiguration\x12u\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x122\n" +
@@ -46130,47 +46333,54 @@ const file_rds_proto_rawDesc = "" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x15\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1e\n" +
 	"\x1c_enableinternetaccessgatewayB\x1c\n" +
 	"\x1a_enableperformanceinsightsB\x16\n" +
-	"\x14_enablevpcnetworkingB\x15\n" +
+	"\x14_enablevpcnetworkingB\a\n" +
+	"\x05_iopsB\x15\n" +
+	"\x13_monitoringintervalB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
 	"\x13_publiclyaccessible\"V\n" +
 	"\"RestoreDBClusterFromSnapshotResult\x120\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xf2\x13\n" +
-	"$RestoreDBClusterToPointInTimeMessage\x12+\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03R\x0fbacktrackwindow\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x00R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\x8e\x15\n" +
+	"$RestoreDBClusterToPointInTimeMessage\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x00R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x129\n" +
 	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tR\x16dbclusterinstanceclass\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x02R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12I\n" +
-	"\x1benableinternetaccessgateway\x18➆\xa0\x01 \x01(\bH\x03R\x1benableinternetaccessgateway\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x04R\x19enableperformanceinsights\x88\x01\x01\x128\n" +
-	"\x13enablevpcnetworking\x18\x90\xf5\x84Q \x01(\bH\x05R\x13enablevpcnetworking\x88\x01\x01\x129\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x04R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12I\n" +
+	"\x1benableinternetaccessgateway\x18➆\xa0\x01 \x01(\bH\x05R\x1benableinternetaccessgateway\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x06R\x19enableperformanceinsights\x88\x01\x01\x128\n" +
+	"\x13enablevpcnetworking\x18\x90\xf5\x84Q \x01(\bH\aR\x13enablevpcnetworking\x88\x01\x01\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\"\n" +
 	"\n" +
 	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tR\n" +
-	"enginemode\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"enginemode\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12\x1d\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\tR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\n" +
+	"R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\vR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x06R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\fR\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12'\n" +
 	"\rrestoretotime\x18\xea\xfe\xdb7 \x01(\tR\rrestoretotime\x12$\n" +
 	"\vrestoretype\x18\xba\xfc\xf1\xb4\x01 \x01(\tR\vrestoretype\x12P\n" +
@@ -46181,27 +46391,33 @@ const file_rds_proto_rawDesc = "" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12A\n" +
-	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\aR\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x15\n" +
+	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\rR\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x12\n" +
+	"\x10_backtrackwindowB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1e\n" +
 	"\x1c_enableinternetaccessgatewayB\x1c\n" +
 	"\x1a_enableperformanceinsightsB\x16\n" +
-	"\x14_enablevpcnetworkingB\x15\n" +
+	"\x14_enablevpcnetworkingB\a\n" +
+	"\x05_iopsB\x15\n" +
+	"\x13_monitoringintervalB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
 	"\x13_publiclyaccessibleB\x1a\n" +
 	"\x18_uselatestrestorabletime\"W\n" +
 	"#RestoreDBClusterToPointInTimeResult\x120\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xe4\x15\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xd4\x16\n" +
 	"&RestoreDBInstanceFromDBSnapshotMessage\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12&\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
 	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tR\x18customiaminstanceprofile\x12C\n" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
@@ -46210,8 +46426,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x126\n" +
 	"\x14dbsnapshotidentifier\x18\xb9\x9e\xbf\xe4\x01 \x01(\tR\x14dbsnapshotidentifier\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x04R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
 	" \x01(\tR\x13domainauthsecretarn\x12%\n" +
@@ -46222,52 +46438,58 @@ const file_rds_proto_rawDesc = "" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12\x1d\n" +
 	"\bdomainou\x18\x9e\xf6\x99w \x01(\tR\bdomainou\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x04R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x06R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\aR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12%\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x06R\x18managemasteruserpassword\x88\x01\x01\x12>\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\tR\x18managemasteruserpassword\x88\x01\x01\x12>\n" +
 	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\aR\amultiaz\x88\x01\x01\x12$\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\n" +
+	"R\amultiaz\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\vR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\bR\x12publiclyaccessible\x88\x01\x01\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\fR\x12publiclyaccessible\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\rR\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
 	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\tR\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x0eR\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x18\n" +
 	"\x16_enablecustomerownedipB\"\n" +
-	" _enableiamdatabaseauthenticationB\x1b\n" +
+	" _enableiamdatabaseauthenticationB\a\n" +
+	"\x05_iopsB\x1b\n" +
 	"\x19_managemasteruserpasswordB\n" +
 	"\n" +
-	"\b_multiazB\x15\n" +
-	"\x13_publiclyaccessibleB\x1e\n" +
+	"\b_multiazB\a\n" +
+	"\x05_portB\x15\n" +
+	"\x13_publiclyaccessibleB\x14\n" +
+	"\x12_storagethroughputB\x1e\n" +
 	"\x1c_usedefaultprocessorfeatures\"\\\n" +
 	"%RestoreDBInstanceFromDBSnapshotResult\x123\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x0f.rds.DBInstanceR\n" +
-	"dbinstance\"\xef\x18\n" +
+	"dbinstance\"\xc4\x1a\n" +
 	"\x1eRestoreDBInstanceFromS3Message\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12<\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x12,\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12\x19\n" +
 	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tR\x06dbname\x125\n" +
@@ -46275,80 +46497,88 @@ const file_rds_proto_rawDesc = "" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12P\n" +
 	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12D\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x04R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x04R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x05R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x06R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\aR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
 	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12\x1d\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x06R\x18managemasteruserpassword\x88\x01\x01\x122\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\tR\x18managemasteruserpassword\x88\x01\x01\x122\n" +
 	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12>\n" +
 	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x122\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05R\x12monitoringinterval\x12/\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\n" +
+	"R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\vR\x12monitoringinterval\x88\x01\x01\x12/\n" +
 	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\aR\amultiaz\x88\x01\x01\x12$\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\fR\amultiaz\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
 	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12Q\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05R\"performanceinsightsretentionperiod\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\rR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x0eR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
 	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\bR\x12publiclyaccessible\x88\x01\x01\x12&\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x0fR\x12publiclyaccessible\x88\x01\x01\x12&\n" +
 	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x122\n" +
 	"\x12s3ingestionrolearn\x18ۗ\xea\xeb\x01 \x01(\tR\x12s3ingestionrolearn\x12\x1d\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
 	" \x01(\tR\bs3prefix\x12%\n" +
 	"\fsourceengine\x18\xfb\xec\xdcN \x01(\tR\fsourceengine\x123\n" +
 	"\x13sourceengineversion\x18\x87\xfc\xe4x \x01(\tR\x13sourceengineversion\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\tR\x10storageencrypted\x88\x01\x01\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x10R\x10storageencrypted\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x11R\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\n" +
-	"R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x12R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\x1b\n" +
-	"\x19_managemasteruserpasswordB\n" +
+	"\x1a_enableperformanceinsightsB\a\n" +
+	"\x05_iopsB\x1b\n" +
+	"\x19_managemasteruserpasswordB\x16\n" +
+	"\x14_maxallocatedstorageB\x15\n" +
+	"\x13_monitoringintervalB\n" +
 	"\n" +
-	"\b_multiazB\x15\n" +
+	"\b_multiazB%\n" +
+	"#_performanceinsightsretentionperiodB\a\n" +
+	"\x05_portB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencryptedB\x1e\n" +
+	"\x11_storageencryptedB\x14\n" +
+	"\x12_storagethroughputB\x1e\n" +
 	"\x1c_usedefaultprocessorfeatures\"T\n" +
 	"\x1dRestoreDBInstanceFromS3Result\x123\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x0f.rds.DBInstanceR\n" +
-	"dbinstance\"\xfa\x17\n" +
+	"dbinstance\"\x87\x19\n" +
 	"%RestoreDBInstanceToPointInTimeMessage\x12\\\n" +
-	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x12.\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05R\x10allocatedstorage\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x00R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12&\n" +
+	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12&\n" +
 	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tR\fbackuptarget\x12<\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x12>\n" +
 	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tR\x18customiaminstanceprofile\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x19\n" +
 	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tR\x06dbname\x125\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x02R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x03R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x04R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
 	" \x01(\tR\x13domainauthsecretarn\x12%\n" +
@@ -46359,47 +46589,53 @@ const file_rds_proto_rawDesc = "" +
 	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12\x1d\n" +
 	"\bdomainou\x18\x9e\xf6\x99w \x01(\tR\bdomainou\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x04R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x06R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\aR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x129\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\x14\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05R\x04iops\x12%\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tR\x16enginelifecyclesupport\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\bR\x04iops\x88\x01\x01\x12%\n" +
 	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x06R\x18managemasteruserpassword\x88\x01\x01\x12>\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x123\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05R\x13maxallocatedstorage\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\aR\amultiaz\x88\x01\x01\x12$\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\tR\x18managemasteruserpassword\x88\x01\x01\x12>\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tR\x18masterusersecretkmskeyid\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\n" +
+	"R\x13maxallocatedstorage\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\vR\amultiaz\x88\x01\x01\x12$\n" +
 	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\fR\x04port\x88\x01\x01\x127\n" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\bR\x12publiclyaccessible\x88\x01\x01\x12$\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\rR\x12publiclyaccessible\x88\x01\x01\x12$\n" +
 	"\vrestoretime\x18\xe9\x8e\u0380\x01 \x01(\tR\vrestoretime\x12S\n" +
 	"#sourcedbinstanceautomatedbackupsarn\x18\xac\x81\x95\x1b \x01(\tR#sourcedbinstanceautomatedbackupsarn\x12B\n" +
 	"\x1asourcedbinstanceidentifier\x18\xf7\xd1՝\x01 \x01(\tR\x1asourcedbinstanceidentifier\x124\n" +
-	"\x13sourcedbiresourceid\x18\xa5\x99\xc9\xc9\x01 \x01(\tR\x13sourcedbiresourceid\x120\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05R\x11storagethroughput\x12#\n" +
+	"\x13sourcedbiresourceid\x18\xa5\x99\xc9\xc9\x01 \x01(\tR\x13sourcedbiresourceid\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x0eR\x11storagethroughput\x88\x01\x01\x12#\n" +
 	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12A\n" +
 	"\x1atargetdbinstanceidentifier\x18\xa7\xed\x85s \x01(\tR\x1atargetdbinstanceidentifier\x12-\n" +
 	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
 	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\tR\x1busedefaultprocessorfeatures\x88\x01\x01\x12A\n" +
-	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\n" +
-	"R\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1a\n" +
-	"\x18_autominorversionupgradeB\x15\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH\x0fR\x1busedefaultprocessorfeatures\x88\x01\x01\x12A\n" +
+	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\x10R\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
+	"\x11_allocatedstorageB\x1a\n" +
+	"\x18_autominorversionupgradeB\x18\n" +
+	"\x16_backupretentionperiodB\x15\n" +
 	"\x13_copytagstosnapshotB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x18\n" +
 	"\x16_enablecustomerownedipB\"\n" +
-	" _enableiamdatabaseauthenticationB\x1b\n" +
-	"\x19_managemasteruserpasswordB\n" +
+	" _enableiamdatabaseauthenticationB\a\n" +
+	"\x05_iopsB\x1b\n" +
+	"\x19_managemasteruserpasswordB\x16\n" +
+	"\x14_maxallocatedstorageB\n" +
 	"\n" +
-	"\b_multiazB\x15\n" +
-	"\x13_publiclyaccessibleB\x1e\n" +
+	"\b_multiazB\a\n" +
+	"\x05_portB\x15\n" +
+	"\x13_publiclyaccessibleB\x14\n" +
+	"\x12_storagethroughputB\x1e\n" +
 	"\x1c_usedefaultprocessorfeaturesB\x1a\n" +
 	"\x18_uselatestrestorabletime\"[\n" +
 	"$RestoreDBInstanceToPointInTimeResult\x123\n" +
@@ -46426,25 +46662,33 @@ const file_rds_proto_rawDesc = "" +
 	"\x18SNSTopicArnNotFoundFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
 	"\x16ScalarReferenceDetails\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01R\x05value\"\xaf\x02\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01R\x05value\"\x96\x03\n" +
 	"\x14ScalingConfiguration\x12$\n" +
-	"\tautopause\x18\xe1\xa3\xffR \x01(\bH\x00R\tautopause\x88\x01\x01\x12$\n" +
-	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x05R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x05R\vmincapacity\x125\n" +
-	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05R\x14secondsbeforetimeout\x127\n" +
-	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05R\x15secondsuntilautopause\x12(\n" +
+	"\tautopause\x18\xe1\xa3\xffR \x01(\bH\x00R\tautopause\x88\x01\x01\x12)\n" +
+	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x05H\x01R\vmaxcapacity\x88\x01\x01\x12(\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x05H\x02R\vmincapacity\x88\x01\x01\x12:\n" +
+	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05H\x03R\x14secondsbeforetimeout\x88\x01\x01\x12<\n" +
+	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05H\x04R\x15secondsuntilautopause\x88\x01\x01\x12(\n" +
 	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutactionB\f\n" +
 	"\n" +
-	"_autopause\"\xb3\x02\n" +
+	"_autopauseB\x0e\n" +
+	"\f_maxcapacityB\x0e\n" +
+	"\f_mincapacityB\x17\n" +
+	"\x15_secondsbeforetimeoutB\x18\n" +
+	"\x16_secondsuntilautopause\"\x9a\x03\n" +
 	"\x18ScalingConfigurationInfo\x12$\n" +
-	"\tautopause\x18\xe1\xa3\xffR \x01(\bH\x00R\tautopause\x88\x01\x01\x12$\n" +
-	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x05R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x05R\vmincapacity\x125\n" +
-	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05R\x14secondsbeforetimeout\x127\n" +
-	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05R\x15secondsuntilautopause\x12(\n" +
+	"\tautopause\x18\xe1\xa3\xffR \x01(\bH\x00R\tautopause\x88\x01\x01\x12)\n" +
+	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x05H\x01R\vmaxcapacity\x88\x01\x01\x12(\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x05H\x02R\vmincapacity\x88\x01\x01\x12:\n" +
+	"\x14secondsbeforetimeout\x18\xf9\xe1\xbfC \x01(\x05H\x03R\x14secondsbeforetimeout\x88\x01\x01\x12<\n" +
+	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05H\x04R\x15secondsuntilautopause\x88\x01\x01\x12(\n" +
 	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tR\rtimeoutactionB\f\n" +
 	"\n" +
-	"_autopause\"h\n" +
+	"_autopauseB\x0e\n" +
+	"\f_maxcapacityB\x0e\n" +
+	"\f_mincapacityB\x17\n" +
+	"\x15_secondsbeforetimeoutB\x18\n" +
+	"\x16_secondsuntilautopause\"h\n" +
 	"\x1bServerlessV2FeaturesSupport\x12$\n" +
 	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01R\vmaxcapacity\x12#\n" +
 	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\"\x94\x03\n" +
@@ -46459,15 +46703,17 @@ const file_rds_proto_rawDesc = "" +
 	"_isdefault\"\xad\x01\n" +
 	"#ServerlessV2PlatformVersionsMessage\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12k\n" +
-	"\x1cserverlessv2platformversions\x18\xfeТW \x03(\v2$.rds.ServerlessV2PlatformVersionInfoR\x1cserverlessv2platformversions\"\xa6\x01\n" +
+	"\x1cserverlessv2platformversions\x18\xfeТW \x03(\v2$.rds.ServerlessV2PlatformVersionInfoR\x1cserverlessv2platformversions\"\xc5\x01\n" +
 	" ServerlessV2ScalingConfiguration\x12$\n" +
 	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\x127\n" +
-	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05R\x15secondsuntilautopause\"\xaa\x01\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\x12<\n" +
+	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05H\x00R\x15secondsuntilautopause\x88\x01\x01B\x18\n" +
+	"\x16_secondsuntilautopause\"\xc9\x01\n" +
 	"$ServerlessV2ScalingConfigurationInfo\x12$\n" +
 	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\x127\n" +
-	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05R\x15secondsuntilautopause\"?\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\x12<\n" +
+	"\x15secondsuntilautopause\x18\xa6\xb8\xb2V \x01(\x05H\x00R\x15secondsuntilautopause\x88\x01\x01B\x18\n" +
+	"\x16_secondsuntilautopause\"?\n" +
 	" SharedSnapshotQuotaExceededFault\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
 	"\x1aSnapshotQuotaExceededFault\x12\x1b\n" +
@@ -46509,13 +46755,14 @@ const file_rds_proto_rawDesc = "" +
 	"\x15StartDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"H\n" +
 	"\x14StartDBClusterResult\x120\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\x8b\x02\n" +
-	"1StartDBInstanceAutomatedBackupsReplicationMessage\x128\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05R\x15backupretentionperiod\x12\x1d\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x0e.rds.DBClusterR\tdbcluster\"\xaa\x02\n" +
+	"1StartDBInstanceAutomatedBackupsReplicationMessage\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x00R\x15backupretentionperiod\x88\x01\x01\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12&\n" +
 	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x123\n" +
 	"\x13sourcedbinstancearn\x18\xb5\xc0\x809 \x01(\tR\x13sourcedbinstancearn\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\x93\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tagsB\x18\n" +
+	"\x16_backupretentionperiod\"\x93\x01\n" +
 	"0StartDBInstanceAutomatedBackupsReplicationResult\x12_\n" +
 	"\x19dbinstanceautomatedbackup\x18\xcd܋a \x01(\v2\x1e.rds.DBInstanceAutomatedBackupR\x19dbinstanceautomatedbackup\"P\n" +
 	"\x16StartDBInstanceMessage\x126\n" +
@@ -46582,10 +46829,11 @@ const file_rds_proto_rawDesc = "" +
 	"\x18SupportedEngineLifecycle\x12<\n" +
 	"\x17lifecyclesupportenddate\x18\xf4\xab\xc9\xd9\x01 \x01(\tR\x17lifecyclesupportenddate\x12P\n" +
 	"\x14lifecyclesupportname\x18\xb2\xa5\xf1= \x01(\x0e2\x19.rds.LifecycleSupportNameR\x14lifecyclesupportname\x12@\n" +
-	"\x19lifecyclesupportstartdate\x18\x97\xe7ص\x01 \x01(\tR\x19lifecyclesupportstartdate\"\xa0\x01\n" +
+	"\x19lifecyclesupportstartdate\x18\x97\xe7ص\x01 \x01(\tR\x19lifecyclesupportstartdate\"\xbb\x01\n" +
 	"$SwitchoverBlueGreenDeploymentRequest\x12G\n" +
-	"\x1dbluegreendeploymentidentifier\x18\xa1\xae\x87D \x01(\tR\x1dbluegreendeploymentidentifier\x12/\n" +
-	"\x11switchovertimeout\x18\x9f\xe3\xfeK \x01(\x05R\x11switchovertimeout\"v\n" +
+	"\x1dbluegreendeploymentidentifier\x18\xa1\xae\x87D \x01(\tR\x1dbluegreendeploymentidentifier\x124\n" +
+	"\x11switchovertimeout\x18\x9f\xe3\xfeK \x01(\x05H\x00R\x11switchovertimeout\x88\x01\x01B\x14\n" +
+	"\x12_switchovertimeout\"v\n" +
 	"%SwitchoverBlueGreenDeploymentResponse\x12M\n" +
 	"\x13bluegreendeployment\x18\xcc\xeb\x86M \x01(\v2\x18.rds.BlueGreenDeploymentR\x13bluegreendeployment\"}\n" +
 	"\x10SwitchoverDetail\x12&\n" +
@@ -48478,10 +48726,15 @@ func file_rds_proto_init() {
 	if File_rds_proto != nil {
 		return
 	}
+	file_rds_proto_msgTypes[1].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[7].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[8].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[17].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[19].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[26].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[32].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[33].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[34].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[38].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[42].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[46].OneofWrappers = []any{}
@@ -48496,6 +48749,7 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[81].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[88].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[90].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[97].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[103].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[117].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[123].OneofWrappers = []any{}
@@ -48505,6 +48759,7 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[140].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[151].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[153].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[159].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[161].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[174].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[177].OneofWrappers = []any{}
@@ -48512,18 +48767,56 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[201].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[208].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[226].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[231].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[233].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[234].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[235].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[236].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[237].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[238].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[241].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[242].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[243].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[244].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[245].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[246].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[247].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[249].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[251].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[252].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[253].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[255].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[257].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[259].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[261].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[262].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[263].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[267].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[268].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[269].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[270].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[272].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[275].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[276].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[277].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[278].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[279].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[281].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[282].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[283].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[284].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[285].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[286].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[287].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[288].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[289].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[293].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[298].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[299].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[303].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[304].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[309].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[313].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[319].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[321].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[323].OneofWrappers = []any{}
@@ -48531,14 +48824,17 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[384].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[385].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[386].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[388].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[391].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[396].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[401].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[406].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[413].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[415].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[418].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[420].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[423].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[424].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[425].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[429].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[430].OneofWrappers = []any{}
@@ -48547,6 +48843,10 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[436].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[439].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[443].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[444].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[451].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[454].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[456].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[460].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[477].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[482].OneofWrappers = []any{}
@@ -48561,10 +48861,14 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[508].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[509].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[511].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[513].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[514].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[520].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[522].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[523].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[526].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[531].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[548].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[559].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[567].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[570].OneofWrappers = []any{}

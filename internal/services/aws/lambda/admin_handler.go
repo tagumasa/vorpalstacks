@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/lambda"
@@ -53,7 +54,7 @@ func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxItems := int(req.Msg.Maxitems)
+	maxItems := int(req.Msg.GetMaxitems())
 	if maxItems <= 0 {
 		maxItems = 50
 	}
@@ -98,11 +99,11 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	memorySize := req.Msg.Memorysize
+	memorySize := req.Msg.GetMemorysize()
 	if memorySize == 0 {
 		memorySize = 128
 	}
-	timeout := req.Msg.Timeout
+	timeout := req.Msg.GetTimeout()
 	if timeout == 0 {
 		timeout = 3
 	}
@@ -152,7 +153,7 @@ func (h *AdminHandler) DeleteFunction(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	return connect.NewResponse(&pb.DeleteFunctionResponse{Statuscode: 204}), nil
+	return connect.NewResponse(&pb.DeleteFunctionResponse{Statuscode: proto.Int32(204)}), nil
 }
 
 // safeRuntime converts a store Runtime to a proto Runtime, falling back to
@@ -199,11 +200,11 @@ func functionToProto(f *lambdastore.Function) *pb.FunctionConfiguration {
 		Runtime:         safeRuntime(f.Runtime),
 		Role:            f.Role,
 		Handler:         f.Handler,
-		Codesize:        f.CodeSize,
+		Codesize:        proto.Int64(f.CodeSize),
 		Codesha256:      f.CodeSha256,
 		Description:     f.Description,
-		Timeout:         f.Timeout,
-		Memorysize:      f.MemorySize,
+		Timeout:         proto.Int32(f.Timeout),
+		Memorysize:      proto.Int32(f.MemorySize),
 		Lastmodified:    f.LastModified.Format(timeutils.ISO8601UTCFormat),
 		Revisionid:      f.RevisionId,
 		State:           safeState(f.State),

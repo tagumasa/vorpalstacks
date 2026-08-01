@@ -805,7 +805,7 @@ message AdminCreateUserConfigType {
 
   MessageTemplateType invitemessagetemplate = 162590438;
 
-  int32 unusedaccountvaliditydays = 354236064;
+  optional int32 unusedaccountvaliditydays = 354236064;
 
 }
 
@@ -1077,7 +1077,7 @@ message AdminLinkProviderForUserResponse {
 
 message AdminListDevicesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string paginationtoken = 363857279;
 
@@ -1103,7 +1103,7 @@ message AdminListDevicesResponse {
 
 message AdminListGroupsForUserRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -1127,7 +1127,7 @@ message AdminListGroupsForUserResponse {
 
 message AdminListUserAuthEventsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1641,7 +1641,7 @@ message AuthenticationResultType {
 
   string accesstoken = 147070473;
 
-  int32 expiresin = 69497873;
+  optional int32 expiresin = 69497873;
 
   string idtoken = 228470;
 
@@ -1993,7 +1993,7 @@ message CreateGroupRequest {
 
   string groupname = 357049672;
 
-  int32 precedence = 206704142;
+  optional int32 precedence = 206704142;
 
   string rolearn = 322567169;
 
@@ -2137,7 +2137,7 @@ message CreateUserImportJobResponse {
 
 message CreateUserPoolClientRequest {
 
-  int32 accesstokenvalidity = 260874267;
+  optional int32 accesstokenvalidity = 260874267;
 
   repeated OAuthFlowType allowedoauthflows = 268290584;
 
@@ -2147,7 +2147,7 @@ message CreateUserPoolClientRequest {
 
   AnalyticsConfigurationType analyticsconfiguration = 229750388;
 
-  int32 authsessionvalidity = 223873468;
+  optional int32 authsessionvalidity = 223873468;
 
   repeated string callbackurls = 227703885;
 
@@ -2165,7 +2165,7 @@ message CreateUserPoolClientRequest {
 
   optional bool generatesecret = 233116579;
 
-  int32 idtokenvalidity = 312934952;
+  optional int32 idtokenvalidity = 312934952;
 
   repeated string logouturls = 468187518;
 
@@ -2175,7 +2175,7 @@ message CreateUserPoolClientRequest {
 
   RefreshTokenRotationType refreshtokenrotation = 199284564;
 
-  int32 refreshtokenvalidity = 303433364;
+  optional int32 refreshtokenvalidity = 303433364;
 
   repeated string supportedidentityproviders = 439564368;
 
@@ -2205,7 +2205,7 @@ message CreateUserPoolDomainRequest {
 
   string domain = 505186578;
 
-  int32 managedloginversion = 479901038;
+  optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
@@ -2219,7 +2219,7 @@ message CreateUserPoolDomainResponse {
 
   string cloudfrontdomain = 436051942;
 
-  int32 managedloginversion = 479901038;
+  optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
@@ -2839,7 +2839,7 @@ message DomainDescriptionType {
 
   string domain = 505186578;
 
-  int32 managedloginversion = 479901038;
+  optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
@@ -3483,7 +3483,7 @@ message GroupType {
 
   string lastmodifieddate = 24249427;
 
-  int32 precedence = 206704142;
+  optional int32 precedence = 206704142;
 
   string rolearn = 322567169;
 
@@ -3795,7 +3795,7 @@ message ListDevicesRequest {
 
   string accesstoken = 147070473;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string paginationtoken = 363857279;
 
@@ -3817,7 +3817,7 @@ message ListDevicesResponse {
 
 message ListGroupsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -3839,7 +3839,7 @@ message ListGroupsResponse {
 
 message ListIdentityProvidersRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -3861,7 +3861,7 @@ message ListIdentityProvidersResponse {
 
 message ListResourceServersRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -3899,7 +3899,7 @@ message ListTagsForResourceResponse {
 
 message ListTermsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -3975,7 +3975,7 @@ message ListUserPoolClientSecretsResponse {
 
 message ListUserPoolClientsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -4045,7 +4045,7 @@ message ListUsersInGroupRequest {
 
   string groupname = 357049672;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -4073,7 +4073,7 @@ message ListUsersRequest {
 
   string filter = 346669208;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string paginationtoken = 363857279;
 
@@ -4099,7 +4099,7 @@ message ListWebAuthnCredentialsRequest {
 
   string accesstoken = 147070473;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -4339,9 +4339,9 @@ message PasswordHistoryPolicyViolationException {
 
 message PasswordPolicyType {
 
-  int32 minimumlength = 417878840;
+  optional int32 minimumlength = 417878840;
 
-  int32 passwordhistorysize = 413355954;
+  optional int32 passwordhistorysize = 413355954;
 
   optional bool requirelowercase = 14334134;
 
@@ -4351,7 +4351,7 @@ message PasswordPolicyType {
 
   optional bool requireuppercase = 209568997;
 
-  int32 temporarypasswordvaliditydays = 379562265;
+  optional int32 temporarypasswordvaliditydays = 379562265;
 
 }
 
@@ -4481,7 +4481,7 @@ message RefreshTokenRotationType {
 
   FeatureType feature = 512819934;
 
-  int32 retrygraceperiodseconds = 498715956;
+  optional int32 retrygraceperiodseconds = 498715956;
 
 }
 
@@ -5391,7 +5391,7 @@ message UpdateGroupRequest {
 
   string groupname = 357049672;
 
-  int32 precedence = 206704142;
+  optional int32 precedence = 206704142;
 
   string rolearn = 322567169;
 
@@ -5543,7 +5543,7 @@ message UpdateUserAttributesResponse {
 
 message UpdateUserPoolClientRequest {
 
-  int32 accesstokenvalidity = 260874267;
+  optional int32 accesstokenvalidity = 260874267;
 
   repeated OAuthFlowType allowedoauthflows = 268290584;
 
@@ -5553,7 +5553,7 @@ message UpdateUserPoolClientRequest {
 
   AnalyticsConfigurationType analyticsconfiguration = 229750388;
 
-  int32 authsessionvalidity = 223873468;
+  optional int32 authsessionvalidity = 223873468;
 
   repeated string callbackurls = 227703885;
 
@@ -5569,7 +5569,7 @@ message UpdateUserPoolClientRequest {
 
   repeated ExplicitAuthFlowsType explicitauthflows = 277179621;
 
-  int32 idtokenvalidity = 312934952;
+  optional int32 idtokenvalidity = 312934952;
 
   repeated string logouturls = 468187518;
 
@@ -5579,7 +5579,7 @@ message UpdateUserPoolClientRequest {
 
   RefreshTokenRotationType refreshtokenrotation = 199284564;
 
-  int32 refreshtokenvalidity = 303433364;
+  optional int32 refreshtokenvalidity = 303433364;
 
   repeated string supportedidentityproviders = 439564368;
 
@@ -5611,7 +5611,7 @@ message UpdateUserPoolDomainRequest {
 
   string domain = 505186578;
 
-  int32 managedloginversion = 479901038;
+  optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
@@ -5627,7 +5627,7 @@ message UpdateUserPoolDomainResponse {
 
   string cloudfrontdomain = 436051942;
 
-  int32 managedloginversion = 479901038;
+  optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
@@ -5783,9 +5783,9 @@ message UserImportJobType {
 
   string creationdate = 288222305;
 
-  int64 failedusers = 109599085;
+  optional int64 failedusers = 109599085;
 
-  int64 importedusers = 165762452;
+  optional int64 importedusers = 165762452;
 
   string jobid = 108489298;
 
@@ -5793,7 +5793,7 @@ message UserImportJobType {
 
   string presignedurl = 334334652;
 
-  int64 skippedusers = 31320534;
+  optional int64 skippedusers = 31320534;
 
   string startdate = 445135996;
 
@@ -5875,7 +5875,7 @@ message UserPoolClientDescription {
 
 message UserPoolClientType {
 
-  int32 accesstokenvalidity = 260874267;
+  optional int32 accesstokenvalidity = 260874267;
 
   repeated OAuthFlowType allowedoauthflows = 268290584;
 
@@ -5885,7 +5885,7 @@ message UserPoolClientType {
 
   AnalyticsConfigurationType analyticsconfiguration = 229750388;
 
-  int32 authsessionvalidity = 223873468;
+  optional int32 authsessionvalidity = 223873468;
 
   repeated string callbackurls = 227703885;
 
@@ -5905,7 +5905,7 @@ message UserPoolClientType {
 
   repeated ExplicitAuthFlowsType explicitauthflows = 277179621;
 
-  int32 idtokenvalidity = 312934952;
+  optional int32 idtokenvalidity = 312934952;
 
   string lastmodifieddate = 24249427;
 
@@ -5917,7 +5917,7 @@ message UserPoolClientType {
 
   RefreshTokenRotationType refreshtokenrotation = 199284564;
 
-  int32 refreshtokenvalidity = 303433364;
+  optional int32 refreshtokenvalidity = 303433364;
 
   repeated string supportedidentityproviders = 439564368;
 
@@ -6047,7 +6047,7 @@ message UserPoolType {
 
   string emailverificationsubject = 224298169;
 
-  int32 estimatednumberofusers = 20814484;
+  optional int32 estimatednumberofusers = 20814484;
 
   string id = 384350465;
 

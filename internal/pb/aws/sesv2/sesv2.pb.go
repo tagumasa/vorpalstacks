@@ -7335,7 +7335,7 @@ func (x *DeliverabilityTestReport) GetSubject() string {
 
 type DeliveryOptions struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Maxdeliveryseconds int64                  `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3" json:"maxdeliveryseconds,omitempty"`
+	Maxdeliveryseconds *int64                 `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3,oneof" json:"maxdeliveryseconds,omitempty"`
 	Sendingpoolname    string                 `protobuf:"bytes,89398333,opt,name=sendingpoolname,proto3" json:"sendingpoolname,omitempty"`
 	Tlspolicy          TlsPolicy              `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy" json:"tlspolicy,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -7373,8 +7373,8 @@ func (*DeliveryOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeliveryOptions) GetMaxdeliveryseconds() int64 {
-	if x != nil {
-		return x.Maxdeliveryseconds
+	if x != nil && x.Maxdeliveryseconds != nil {
+		return *x.Maxdeliveryseconds
 	}
 	return 0
 }
@@ -7673,13 +7673,13 @@ type DomainDeliverabilityCampaign struct {
 	Firstseendatetime string                 `protobuf:"bytes,77536972,opt,name=firstseendatetime,proto3" json:"firstseendatetime,omitempty"`
 	Fromaddress       string                 `protobuf:"bytes,84397700,opt,name=fromaddress,proto3" json:"fromaddress,omitempty"`
 	Imageurl          string                 `protobuf:"bytes,361905604,opt,name=imageurl,proto3" json:"imageurl,omitempty"`
-	Inboxcount        int64                  `protobuf:"varint,96442763,opt,name=inboxcount,proto3" json:"inboxcount,omitempty"`
+	Inboxcount        *int64                 `protobuf:"varint,96442763,opt,name=inboxcount,proto3,oneof" json:"inboxcount,omitempty"`
 	Lastseendatetime  string                 `protobuf:"bytes,2010772,opt,name=lastseendatetime,proto3" json:"lastseendatetime,omitempty"`
-	Projectedvolume   int64                  `protobuf:"varint,71581402,opt,name=projectedvolume,proto3" json:"projectedvolume,omitempty"`
+	Projectedvolume   *int64                 `protobuf:"varint,71581402,opt,name=projectedvolume,proto3,oneof" json:"projectedvolume,omitempty"`
 	Readdeleterate    float64                `protobuf:"fixed64,249983513,opt,name=readdeleterate,proto3" json:"readdeleterate,omitempty"`
 	Readrate          float64                `protobuf:"fixed64,412487272,opt,name=readrate,proto3" json:"readrate,omitempty"`
 	Sendingips        []string               `protobuf:"bytes,344517626,rep,name=sendingips,proto3" json:"sendingips,omitempty"`
-	Spamcount         int64                  `protobuf:"varint,224064008,opt,name=spamcount,proto3" json:"spamcount,omitempty"`
+	Spamcount         *int64                 `protobuf:"varint,224064008,opt,name=spamcount,proto3,oneof" json:"spamcount,omitempty"`
 	Subject           string                 `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -7758,8 +7758,8 @@ func (x *DomainDeliverabilityCampaign) GetImageurl() string {
 }
 
 func (x *DomainDeliverabilityCampaign) GetInboxcount() int64 {
-	if x != nil {
-		return x.Inboxcount
+	if x != nil && x.Inboxcount != nil {
+		return *x.Inboxcount
 	}
 	return 0
 }
@@ -7772,8 +7772,8 @@ func (x *DomainDeliverabilityCampaign) GetLastseendatetime() string {
 }
 
 func (x *DomainDeliverabilityCampaign) GetProjectedvolume() int64 {
-	if x != nil {
-		return x.Projectedvolume
+	if x != nil && x.Projectedvolume != nil {
+		return *x.Projectedvolume
 	}
 	return 0
 }
@@ -7800,8 +7800,8 @@ func (x *DomainDeliverabilityCampaign) GetSendingips() []string {
 }
 
 func (x *DomainDeliverabilityCampaign) GetSpamcount() int64 {
-	if x != nil {
-		return x.Spamcount
+	if x != nil && x.Spamcount != nil {
+		return *x.Spamcount
 	}
 	return 0
 }
@@ -7876,10 +7876,10 @@ func (x *DomainDeliverabilityTrackingOption) GetSubscriptionstartdate() string {
 type DomainIspPlacement struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Inboxpercentage float64                `protobuf:"fixed64,81442932,opt,name=inboxpercentage,proto3" json:"inboxpercentage,omitempty"`
-	Inboxrawcount   int64                  `protobuf:"varint,215061115,opt,name=inboxrawcount,proto3" json:"inboxrawcount,omitempty"`
+	Inboxrawcount   *int64                 `protobuf:"varint,215061115,opt,name=inboxrawcount,proto3,oneof" json:"inboxrawcount,omitempty"`
 	Ispname         string                 `protobuf:"bytes,79681213,opt,name=ispname,proto3" json:"ispname,omitempty"`
 	Spampercentage  float64                `protobuf:"fixed64,364813289,opt,name=spampercentage,proto3" json:"spampercentage,omitempty"`
-	Spamrawcount    int64                  `protobuf:"varint,440722366,opt,name=spamrawcount,proto3" json:"spamrawcount,omitempty"`
+	Spamrawcount    *int64                 `protobuf:"varint,440722366,opt,name=spamrawcount,proto3,oneof" json:"spamrawcount,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -7922,8 +7922,8 @@ func (x *DomainIspPlacement) GetInboxpercentage() float64 {
 }
 
 func (x *DomainIspPlacement) GetInboxrawcount() int64 {
-	if x != nil {
-		return x.Inboxrawcount
+	if x != nil && x.Inboxrawcount != nil {
+		return *x.Inboxrawcount
 	}
 	return 0
 }
@@ -7943,8 +7943,8 @@ func (x *DomainIspPlacement) GetSpampercentage() float64 {
 }
 
 func (x *DomainIspPlacement) GetSpamrawcount() int64 {
-	if x != nil {
-		return x.Spamrawcount
+	if x != nil && x.Spamrawcount != nil {
+		return *x.Spamrawcount
 	}
 	return 0
 }
@@ -8831,8 +8831,8 @@ func (x *ExportMetric) GetName() Metric {
 
 type ExportStatistics struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Exportedrecordscount  int32                  `protobuf:"varint,401601812,opt,name=exportedrecordscount,proto3" json:"exportedrecordscount,omitempty"`
-	Processedrecordscount int32                  `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3" json:"processedrecordscount,omitempty"`
+	Exportedrecordscount  *int32                 `protobuf:"varint,401601812,opt,name=exportedrecordscount,proto3,oneof" json:"exportedrecordscount,omitempty"`
+	Processedrecordscount *int32                 `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3,oneof" json:"processedrecordscount,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -8868,15 +8868,15 @@ func (*ExportStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExportStatistics) GetExportedrecordscount() int32 {
-	if x != nil {
-		return x.Exportedrecordscount
+	if x != nil && x.Exportedrecordscount != nil {
+		return *x.Exportedrecordscount
 	}
 	return 0
 }
 
 func (x *ExportStatistics) GetProcessedrecordscount() int32 {
-	if x != nil {
-		return x.Processedrecordscount
+	if x != nil && x.Processedrecordscount != nil {
+		return *x.Processedrecordscount
 	}
 	return 0
 }
@@ -9992,7 +9992,7 @@ func (x *GetDedicatedIpResponse) GetDedicatedip() *DedicatedIp {
 type GetDedicatedIpsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Poolname      string                 `protobuf:"bytes,81872585,opt,name=poolname,proto3" json:"poolname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10036,8 +10036,8 @@ func (x *GetDedicatedIpsRequest) GetNexttoken() string {
 }
 
 func (x *GetDedicatedIpsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -11173,13 +11173,13 @@ type GetImportJobResponse struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Completedtimestamp    string                 `protobuf:"bytes,333312139,opt,name=completedtimestamp,proto3" json:"completedtimestamp,omitempty"`
 	Createdtimestamp      string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Failedrecordscount    int32                  `protobuf:"varint,528801670,opt,name=failedrecordscount,proto3" json:"failedrecordscount,omitempty"`
+	Failedrecordscount    *int32                 `protobuf:"varint,528801670,opt,name=failedrecordscount,proto3,oneof" json:"failedrecordscount,omitempty"`
 	Failureinfo           *FailureInfo           `protobuf:"bytes,451945802,opt,name=failureinfo,proto3" json:"failureinfo,omitempty"`
 	Importdatasource      *ImportDataSource      `protobuf:"bytes,486006026,opt,name=importdatasource,proto3" json:"importdatasource,omitempty"`
 	Importdestination     *ImportDestination     `protobuf:"bytes,146287461,opt,name=importdestination,proto3" json:"importdestination,omitempty"`
 	Jobid                 string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Jobstatus             JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
-	Processedrecordscount int32                  `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3" json:"processedrecordscount,omitempty"`
+	Processedrecordscount *int32                 `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3,oneof" json:"processedrecordscount,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -11229,8 +11229,8 @@ func (x *GetImportJobResponse) GetCreatedtimestamp() string {
 }
 
 func (x *GetImportJobResponse) GetFailedrecordscount() int32 {
-	if x != nil {
-		return x.Failedrecordscount
+	if x != nil && x.Failedrecordscount != nil {
+		return *x.Failedrecordscount
 	}
 	return 0
 }
@@ -11271,8 +11271,8 @@ func (x *GetImportJobResponse) GetJobstatus() JobStatus {
 }
 
 func (x *GetImportJobResponse) GetProcessedrecordscount() int32 {
-	if x != nil {
-		return x.Processedrecordscount
+	if x != nil && x.Processedrecordscount != nil {
+		return *x.Processedrecordscount
 	}
 	return 0
 }
@@ -12068,11 +12068,11 @@ func (x *ImportDestination) GetSuppressionlistdestination() *SuppressionListDest
 type ImportJobSummary struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Createdtimestamp      string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Failedrecordscount    int32                  `protobuf:"varint,528801670,opt,name=failedrecordscount,proto3" json:"failedrecordscount,omitempty"`
+	Failedrecordscount    *int32                 `protobuf:"varint,528801670,opt,name=failedrecordscount,proto3,oneof" json:"failedrecordscount,omitempty"`
 	Importdestination     *ImportDestination     `protobuf:"bytes,146287461,opt,name=importdestination,proto3" json:"importdestination,omitempty"`
 	Jobid                 string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Jobstatus             JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
-	Processedrecordscount int32                  `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3" json:"processedrecordscount,omitempty"`
+	Processedrecordscount *int32                 `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3,oneof" json:"processedrecordscount,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -12115,8 +12115,8 @@ func (x *ImportJobSummary) GetCreatedtimestamp() string {
 }
 
 func (x *ImportJobSummary) GetFailedrecordscount() int32 {
-	if x != nil {
-		return x.Failedrecordscount
+	if x != nil && x.Failedrecordscount != nil {
+		return *x.Failedrecordscount
 	}
 	return 0
 }
@@ -12143,8 +12143,8 @@ func (x *ImportJobSummary) GetJobstatus() JobStatus {
 }
 
 func (x *ImportJobSummary) GetProcessedrecordscount() int32 {
-	if x != nil {
-		return x.Processedrecordscount
+	if x != nil && x.Processedrecordscount != nil {
+		return *x.Processedrecordscount
 	}
 	return 0
 }
@@ -12500,7 +12500,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListConfigurationSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12543,8 +12543,8 @@ func (x *ListConfigurationSetsRequest) GetNexttoken() string {
 }
 
 func (x *ListConfigurationSetsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -12604,7 +12604,7 @@ func (x *ListConfigurationSetsResponse) GetNexttoken() string {
 type ListContactListsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12647,8 +12647,8 @@ func (x *ListContactListsRequest) GetNexttoken() string {
 }
 
 func (x *ListContactListsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -12762,7 +12762,7 @@ type ListContactsRequest struct {
 	Contactlistname string                 `protobuf:"bytes,338288369,opt,name=contactlistname,proto3" json:"contactlistname,omitempty"`
 	Filter          *ListContactsFilter    `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize        int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize        *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -12819,8 +12819,8 @@ func (x *ListContactsRequest) GetNexttoken() string {
 }
 
 func (x *ListContactsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -12880,7 +12880,7 @@ func (x *ListContactsResponse) GetNexttoken() string {
 type ListCustomVerificationEmailTemplatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12923,8 +12923,8 @@ func (x *ListCustomVerificationEmailTemplatesRequest) GetNexttoken() string {
 }
 
 func (x *ListCustomVerificationEmailTemplatesRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -12984,7 +12984,7 @@ func (x *ListCustomVerificationEmailTemplatesResponse) GetNexttoken() string {
 type ListDedicatedIpPoolsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13027,8 +13027,8 @@ func (x *ListDedicatedIpPoolsRequest) GetNexttoken() string {
 }
 
 func (x *ListDedicatedIpPoolsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13088,7 +13088,7 @@ func (x *ListDedicatedIpPoolsResponse) GetNexttoken() string {
 type ListDeliverabilityTestReportsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13131,8 +13131,8 @@ func (x *ListDeliverabilityTestReportsRequest) GetNexttoken() string {
 }
 
 func (x *ListDeliverabilityTestReportsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13193,7 +13193,7 @@ type ListDomainDeliverabilityCampaignsRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Enddate          string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize         int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize         *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Startdate        string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Subscribeddomain string                 `protobuf:"bytes,484104338,opt,name=subscribeddomain,proto3" json:"subscribeddomain,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -13245,8 +13245,8 @@ func (x *ListDomainDeliverabilityCampaignsRequest) GetNexttoken() string {
 }
 
 func (x *ListDomainDeliverabilityCampaignsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13320,7 +13320,7 @@ func (x *ListDomainDeliverabilityCampaignsResponse) GetNexttoken() string {
 type ListEmailIdentitiesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13363,8 +13363,8 @@ func (x *ListEmailIdentitiesRequest) GetNexttoken() string {
 }
 
 func (x *ListEmailIdentitiesRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13424,7 +13424,7 @@ func (x *ListEmailIdentitiesResponse) GetNexttoken() string {
 type ListEmailTemplatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13467,8 +13467,8 @@ func (x *ListEmailTemplatesRequest) GetNexttoken() string {
 }
 
 func (x *ListEmailTemplatesRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13530,7 +13530,7 @@ type ListExportJobsRequest struct {
 	Exportsourcetype ExportSourceType       `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType" json:"exportsourcetype,omitempty"`
 	Jobstatus        JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize         int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize         *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -13587,8 +13587,8 @@ func (x *ListExportJobsRequest) GetNexttoken() string {
 }
 
 func (x *ListExportJobsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13649,7 +13649,7 @@ type ListImportJobsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Importdestinationtype ImportDestinationType  `protobuf:"varint,338152013,opt,name=importdestinationtype,proto3,enum=sesv2.ImportDestinationType" json:"importdestinationtype,omitempty"`
 	Nexttoken             string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize              int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize              *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -13699,8 +13699,8 @@ func (x *ListImportJobsRequest) GetNexttoken() string {
 }
 
 func (x *ListImportJobsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13812,7 +13812,7 @@ func (x *ListManagementOptions) GetTopicname() string {
 type ListMultiRegionEndpointsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13855,8 +13855,8 @@ func (x *ListMultiRegionEndpointsRequest) GetNexttoken() string {
 }
 
 func (x *ListMultiRegionEndpointsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -13917,7 +13917,7 @@ type ListRecommendationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filter        map[string]string      `protobuf:"bytes,346669208,rep,name=filter,proto3" json:"filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13967,8 +13967,8 @@ func (x *ListRecommendationsRequest) GetNexttoken() string {
 }
 
 func (x *ListRecommendationsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14029,7 +14029,7 @@ type ListReputationEntitiesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filter        map[string]string      `protobuf:"bytes,346669208,rep,name=filter,proto3" json:"filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14079,8 +14079,8 @@ func (x *ListReputationEntitiesRequest) GetNexttoken() string {
 }
 
 func (x *ListReputationEntitiesRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14140,7 +14140,7 @@ func (x *ListReputationEntitiesResponse) GetReputationentities() []*ReputationEn
 type ListResourceTenantsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14184,8 +14184,8 @@ func (x *ListResourceTenantsRequest) GetNexttoken() string {
 }
 
 func (x *ListResourceTenantsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14253,7 +14253,7 @@ type ListSuppressedDestinationsRequest struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Enddate       string                  `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
 	Nexttoken     string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                   `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Reasons       []SuppressionListReason `protobuf:"varint,176801663,rep,packed,name=reasons,proto3,enum=sesv2.SuppressionListReason" json:"reasons,omitempty"`
 	Startdate     string                  `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Tenantname    string                  `protobuf:"bytes,173338119,opt,name=tenantname,proto3" json:"tenantname,omitempty"`
@@ -14306,8 +14306,8 @@ func (x *ListSuppressedDestinationsRequest) GetNexttoken() string {
 }
 
 func (x *ListSuppressedDestinationsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14477,7 +14477,7 @@ type ListTenantResourcesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filter        map[string]string      `protobuf:"bytes,346669208,rep,name=filter,proto3" json:"filter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	Tenantname    string                 `protobuf:"bytes,173338119,opt,name=tenantname,proto3" json:"tenantname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14528,8 +14528,8 @@ func (x *ListTenantResourcesRequest) GetNexttoken() string {
 }
 
 func (x *ListTenantResourcesRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14596,7 +14596,7 @@ func (x *ListTenantResourcesResponse) GetTenantresources() []*TenantResource {
 type ListTenantsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Pagesize      int32                  `protobuf:"varint,438340024,opt,name=pagesize,proto3" json:"pagesize,omitempty"`
+	Pagesize      *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14639,8 +14639,8 @@ func (x *ListTenantsRequest) GetNexttoken() string {
 }
 
 func (x *ListTenantsRequest) GetPagesize() int32 {
-	if x != nil {
-		return x.Pagesize
+	if x != nil && x.Pagesize != nil {
+		return *x.Pagesize
 	}
 	return 0
 }
@@ -14978,7 +14978,7 @@ type MessageInsightsDataSource struct {
 	Enddate       string                  `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
 	Exclude       *MessageInsightsFilters `protobuf:"bytes,330273354,opt,name=exclude,proto3" json:"exclude,omitempty"`
 	Include       *MessageInsightsFilters `protobuf:"bytes,100816392,opt,name=include,proto3" json:"include,omitempty"`
-	Maxresults    int32                   `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Startdate     string                  `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -15036,8 +15036,8 @@ func (x *MessageInsightsDataSource) GetInclude() *MessageInsightsFilters {
 }
 
 func (x *MessageInsightsDataSource) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -16272,7 +16272,7 @@ func (*PutConfigurationSetArchivingOptionsResponse) Descriptor() ([]byte, []int)
 type PutConfigurationSetDeliveryOptionsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Configurationsetname string                 `protobuf:"bytes,403457485,opt,name=configurationsetname,proto3" json:"configurationsetname,omitempty"`
-	Maxdeliveryseconds   int64                  `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3" json:"maxdeliveryseconds,omitempty"`
+	Maxdeliveryseconds   *int64                 `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3,oneof" json:"maxdeliveryseconds,omitempty"`
 	Sendingpoolname      string                 `protobuf:"bytes,89398333,opt,name=sendingpoolname,proto3" json:"sendingpoolname,omitempty"`
 	Tlspolicy            TlsPolicy              `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy" json:"tlspolicy,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -16317,8 +16317,8 @@ func (x *PutConfigurationSetDeliveryOptionsRequest) GetConfigurationsetname() st
 }
 
 func (x *PutConfigurationSetDeliveryOptionsRequest) GetMaxdeliveryseconds() int64 {
-	if x != nil {
-		return x.Maxdeliveryseconds
+	if x != nil && x.Maxdeliveryseconds != nil {
+		return *x.Maxdeliveryseconds
 	}
 	return 0
 }
@@ -18441,7 +18441,7 @@ type SOARecord struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Adminemail        string                 `protobuf:"bytes,289730349,opt,name=adminemail,proto3" json:"adminemail,omitempty"`
 	Primarynameserver string                 `protobuf:"bytes,522614982,opt,name=primarynameserver,proto3" json:"primarynameserver,omitempty"`
-	Serialnumber      int64                  `protobuf:"varint,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
+	Serialnumber      *int64                 `protobuf:"varint,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -18491,8 +18491,8 @@ func (x *SOARecord) GetPrimarynameserver() string {
 }
 
 func (x *SOARecord) GetSerialnumber() int64 {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return 0
 }
@@ -21647,10 +21647,10 @@ func (x *VerificationInfo) GetSoarecord() *SOARecord {
 
 type VolumeStatistics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Inboxrawcount  int64                  `protobuf:"varint,215061115,opt,name=inboxrawcount,proto3" json:"inboxrawcount,omitempty"`
-	Projectedinbox int64                  `protobuf:"varint,411471566,opt,name=projectedinbox,proto3" json:"projectedinbox,omitempty"`
-	Projectedspam  int64                  `protobuf:"varint,40322687,opt,name=projectedspam,proto3" json:"projectedspam,omitempty"`
-	Spamrawcount   int64                  `protobuf:"varint,440722366,opt,name=spamrawcount,proto3" json:"spamrawcount,omitempty"`
+	Inboxrawcount  *int64                 `protobuf:"varint,215061115,opt,name=inboxrawcount,proto3,oneof" json:"inboxrawcount,omitempty"`
+	Projectedinbox *int64                 `protobuf:"varint,411471566,opt,name=projectedinbox,proto3,oneof" json:"projectedinbox,omitempty"`
+	Projectedspam  *int64                 `protobuf:"varint,40322687,opt,name=projectedspam,proto3,oneof" json:"projectedspam,omitempty"`
+	Spamrawcount   *int64                 `protobuf:"varint,440722366,opt,name=spamrawcount,proto3,oneof" json:"spamrawcount,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -21686,29 +21686,29 @@ func (*VolumeStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *VolumeStatistics) GetInboxrawcount() int64 {
-	if x != nil {
-		return x.Inboxrawcount
+	if x != nil && x.Inboxrawcount != nil {
+		return *x.Inboxrawcount
 	}
 	return 0
 }
 
 func (x *VolumeStatistics) GetProjectedinbox() int64 {
-	if x != nil {
-		return x.Projectedinbox
+	if x != nil && x.Projectedinbox != nil {
+		return *x.Projectedinbox
 	}
 	return 0
 }
 
 func (x *VolumeStatistics) GetProjectedspam() int64 {
-	if x != nil {
-		return x.Projectedspam
+	if x != nil && x.Projectedspam != nil {
+		return *x.Projectedspam
 	}
 	return 0
 }
 
 func (x *VolumeStatistics) GetSpamrawcount() int64 {
-	if x != nil {
-		return x.Spamrawcount
+	if x != nil && x.Spamrawcount != nil {
+		return *x.Spamrawcount
 	}
 	return 0
 }
@@ -22035,11 +22035,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"reportname\x18\xd1\xea\xeb\xfa\x01 \x01(\tR\n" +
 	"reportname\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\"\xa3\x01\n" +
-	"\x0fDeliveryOptions\x121\n" +
-	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03R\x12maxdeliveryseconds\x12+\n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\"\xbf\x01\n" +
+	"\x0fDeliveryOptions\x126\n" +
+	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03H\x00R\x12maxdeliveryseconds\x88\x01\x01\x12+\n" +
 	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tR\x0fsendingpoolname\x120\n" +
-	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicy\"~\n" +
+	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicyB\x15\n" +
+	"\x13_maxdeliveryseconds\"~\n" +
 	"\vDestination\x12%\n" +
 	"\fbccaddresses\x18\x9eȋ/ \x03(\tR\fbccaddresses\x12#\n" +
 	"\vccaddresses\x18\xbe\xa8\xe0] \x03(\tR\vccaddresses\x12#\n" +
@@ -22060,7 +22061,7 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x1ddomainsigningattributesorigin\x18\xb4\xeb\xd3v \x01(\x0e2\".sesv2.DkimSigningAttributesOriginR\x1ddomainsigningattributesorigin\x12<\n" +
 	"\x17domainsigningprivatekey\x18\xeb\xe8\xb7\xef\x01 \x01(\tR\x17domainsigningprivatekey\x128\n" +
 	"\x15domainsigningselector\x18\x9e\x93\xe2\xd8\x01 \x01(\tR\x15domainsigningselector\x12S\n" +
-	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthR\x14nextsigningkeylength\"\x9e\x04\n" +
+	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthR\x14nextsigningkeylength\"\xde\x04\n" +
 	"\x1cDomainDeliverabilityCampaign\x12\"\n" +
 	"\n" +
 	"campaignid\x18\xbf\x99\xf5\x8e\x01 \x01(\tR\n" +
@@ -22071,29 +22072,35 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x04esps\x18\x99\xb2\x81\xfb\x01 \x03(\tR\x04esps\x12/\n" +
 	"\x11firstseendatetime\x18̽\xfc$ \x01(\tR\x11firstseendatetime\x12#\n" +
 	"\vfromaddress\x18\x84\x9d\x9f( \x01(\tR\vfromaddress\x12\x1e\n" +
-	"\bimageurl\x18\xc4\xfbȬ\x01 \x01(\tR\bimageurl\x12!\n" +
+	"\bimageurl\x18\xc4\xfbȬ\x01 \x01(\tR\bimageurl\x12&\n" +
 	"\n" +
-	"inboxcount\x18\x8b\xb3\xfe- \x01(\x03R\n" +
-	"inboxcount\x12,\n" +
-	"\x10lastseendatetime\x18\x94\xddz \x01(\tR\x10lastseendatetime\x12+\n" +
-	"\x0fprojectedvolume\x18\xda\xfd\x90\" \x01(\x03R\x0fprojectedvolume\x12)\n" +
+	"inboxcount\x18\x8b\xb3\xfe- \x01(\x03H\x00R\n" +
+	"inboxcount\x88\x01\x01\x12,\n" +
+	"\x10lastseendatetime\x18\x94\xddz \x01(\tR\x10lastseendatetime\x120\n" +
+	"\x0fprojectedvolume\x18\xda\xfd\x90\" \x01(\x03H\x01R\x0fprojectedvolume\x88\x01\x01\x12)\n" +
 	"\x0ereaddeleterate\x18\x99\xe4\x99w \x01(\x01R\x0ereaddeleterate\x12\x1e\n" +
 	"\breadrate\x18\xe8\x9c\xd8\xc4\x01 \x01(\x01R\breadrate\x12\"\n" +
 	"\n" +
 	"sendingips\x18\xfaף\xa4\x01 \x03(\tR\n" +
-	"sendingips\x12\x1f\n" +
-	"\tspamcount\x18\x88\xe4\xebj \x01(\x03R\tspamcount\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\"\xe6\x01\n" +
+	"sendingips\x12$\n" +
+	"\tspamcount\x18\x88\xe4\xebj \x01(\x03H\x02R\tspamcount\x88\x01\x01\x12\x1b\n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubjectB\r\n" +
+	"\v_inboxcountB\x12\n" +
+	"\x10_projectedvolumeB\f\n" +
+	"\n" +
+	"_spamcount\"\xe6\x01\n" +
 	"\"DomainDeliverabilityTrackingOption\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12j\n" +
 	"\x1cinboxplacementtrackingoption\x18\xbb\xf8\xa6J \x01(\v2#.sesv2.InboxPlacementTrackingOptionR\x1cinboxplacementtrackingoption\x128\n" +
-	"\x15subscriptionstartdate\x18\x8d\xb7\x92\xf5\x01 \x01(\tR\x15subscriptionstartdate\"\xdb\x01\n" +
+	"\x15subscriptionstartdate\x18\x8d\xb7\x92\xf5\x01 \x01(\tR\x15subscriptionstartdate\"\x88\x02\n" +
 	"\x12DomainIspPlacement\x12+\n" +
-	"\x0finboxpercentage\x18\xf4\xf0\xea& \x01(\x01R\x0finboxpercentage\x12'\n" +
-	"\rinboxrawcount\x18\xfb\xa4\xc6f \x01(\x03R\rinboxrawcount\x12\x1b\n" +
+	"\x0finboxpercentage\x18\xf4\xf0\xea& \x01(\x01R\x0finboxpercentage\x12,\n" +
+	"\rinboxrawcount\x18\xfb\xa4\xc6f \x01(\x03H\x00R\rinboxrawcount\x88\x01\x01\x12\x1b\n" +
 	"\aispname\x18\xbd\xad\xff% \x01(\tR\aispname\x12*\n" +
-	"\x0espampercentage\x18\xe9\xb7\xfa\xad\x01 \x01(\x01R\x0espampercentage\x12&\n" +
-	"\fspamrawcount\x18\xbeǓ\xd2\x01 \x01(\x03R\fspamrawcount\"\x82\x04\n" +
+	"\x0espampercentage\x18\xe9\xb7\xfa\xad\x01 \x01(\x01R\x0espampercentage\x12+\n" +
+	"\fspamrawcount\x18\xbeǓ\xd2\x01 \x01(\x03H\x01R\fspamrawcount\x88\x01\x01B\x10\n" +
+	"\x0e_inboxrawcountB\x0f\n" +
+	"\r_spamrawcount\"\x82\x04\n" +
 	"&EmailAddressInsightsMailboxEvaluations\x12V\n" +
 	"\x12hasvaliddnsrecords\x18巖\xb5\x01 \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\x12hasvaliddnsrecords\x12N\n" +
 	"\x0ehasvalidsyntax\x18\xd5\xf6̯\x01 \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\x0ehasvalidsyntax\x12I\n" +
@@ -22160,10 +22167,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\"s\n" +
 	"\fExportMetric\x12=\n" +
 	"\vaggregation\x18\x86ܔ? \x01(\x0e2\x18.sesv2.MetricAggregationR\vaggregation\x12$\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\r.sesv2.MetricR\x04name\"\x84\x01\n" +
-	"\x10ExportStatistics\x126\n" +
-	"\x14exportedrecordscount\x18\x94꿿\x01 \x01(\x05R\x14exportedrecordscount\x128\n" +
-	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05R\x15processedrecordscount\"i\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\r.sesv2.MetricR\x04name\"\xc1\x01\n" +
+	"\x10ExportStatistics\x12;\n" +
+	"\x14exportedrecordscount\x18\x94꿿\x01 \x01(\x05H\x00R\x14exportedrecordscount\x88\x01\x01\x12=\n" +
+	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x01R\x15processedrecordscount\x88\x01\x01B\x17\n" +
+	"\x15_exportedrecordscountB\x18\n" +
+	"\x16_processedrecordscount\"i\n" +
 	"\vFailureInfo\x12&\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x122\n" +
 	"\x12failedrecordss3url\x18\x9e\xdf̃\x01 \x01(\tR\x12failedrecordss3url\"\x13\n" +
@@ -22247,11 +22256,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x15GetDedicatedIpRequest\x12\x11\n" +
 	"\x02ip\x18\xfd\xb0\xa3W \x01(\tR\x02ip\"R\n" +
 	"\x16GetDedicatedIpResponse\x128\n" +
-	"\vdedicatedip\x18\xd4פ\xe1\x01 \x01(\v2\x12.sesv2.DedicatedIpR\vdedicatedip\"x\n" +
+	"\vdedicatedip\x18\xd4פ\xe1\x01 \x01(\v2\x12.sesv2.DedicatedIpR\vdedicatedip\"\x8a\x01\n" +
 	"\x16GetDedicatedIpsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x12\x1d\n" +
-	"\bpoolname\x18ɍ\x85' \x01(\tR\bpoolname\"v\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x12\x1d\n" +
+	"\bpoolname\x18ɍ\x85' \x01(\tR\bpoolnameB\v\n" +
+	"\t_pagesize\"v\n" +
 	"\x17GetDedicatedIpsResponse\x12:\n" +
 	"\fdedicatedips\x18\xe1پ\xa6\x01 \x03(\v2\x12.sesv2.DedicatedIpR\fdedicatedips\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"*\n" +
@@ -22337,17 +22347,19 @@ const file_sesv2_proto_rawDesc = "" +
 	"statistics\x18\xab\xe0\xbe\xf3\x01 \x01(\v2\x17.sesv2.ExportStatisticsR\n" +
 	"statistics\".\n" +
 	"\x13GetImportJobRequest\x12\x17\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\x82\x04\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\xbd\x04\n" +
 	"\x14GetImportJobResponse\x122\n" +
 	"\x12completedtimestamp\x18\x8b\xe1\xf7\x9e\x01 \x01(\tR\x12completedtimestamp\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x122\n" +
-	"\x12failedrecordscount\x18\x86\xbf\x93\xfc\x01 \x01(\x05R\x12failedrecordscount\x128\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x127\n" +
+	"\x12failedrecordscount\x18\x86\xbf\x93\xfc\x01 \x01(\x05H\x00R\x12failedrecordscount\x88\x01\x01\x128\n" +
 	"\vfailureinfo\x18\xca\xca\xc0\xd7\x01 \x01(\v2\x12.sesv2.FailureInfoR\vfailureinfo\x12G\n" +
 	"\x10importdatasource\x18\x8a\xba\xdf\xe7\x01 \x01(\v2\x17.sesv2.ImportDataSourceR\x10importdatasource\x12I\n" +
 	"\x11importdestination\x18\xe5\xd6\xe0E \x01(\v2\x18.sesv2.ImportDestinationR\x11importdestination\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x128\n" +
-	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05R\x15processedrecordscount\"=\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12=\n" +
+	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x01R\x15processedrecordscount\x88\x01\x01B\x15\n" +
+	"\x13_failedrecordscountB\x18\n" +
+	"\x16_processedrecordscount\"=\n" +
 	"\x19GetMessageInsightsRequest\x12 \n" +
 	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\"\xf3\x01\n" +
 	"\x1aGetMessageInsightsResponse\x122\n" +
@@ -22402,14 +22414,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x05s3url\x18\x95ӹ\xc2\x01 \x01(\tR\x05s3url\"\xd3\x01\n" +
 	"\x11ImportDestination\x12X\n" +
 	"\x16contactlistdestination\x18\xe2\xb5\xe0{ \x01(\v2\x1d.sesv2.ContactListDestinationR\x16contactlistdestination\x12d\n" +
-	"\x1asuppressionlistdestination\x18\xc1\x95\xe9C \x01(\v2!.sesv2.SuppressionListDestinationR\x1asuppressionlistdestination\"\xc7\x02\n" +
+	"\x1asuppressionlistdestination\x18\xc1\x95\xe9C \x01(\v2!.sesv2.SuppressionListDestinationR\x1asuppressionlistdestination\"\x82\x03\n" +
 	"\x10ImportJobSummary\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x122\n" +
-	"\x12failedrecordscount\x18\x86\xbf\x93\xfc\x01 \x01(\x05R\x12failedrecordscount\x12I\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x127\n" +
+	"\x12failedrecordscount\x18\x86\xbf\x93\xfc\x01 \x01(\x05H\x00R\x12failedrecordscount\x88\x01\x01\x12I\n" +
 	"\x11importdestination\x18\xe5\xd6\xe0E \x01(\v2\x18.sesv2.ImportDestinationR\x11importdestination\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x128\n" +
-	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05R\x15processedrecordscount\"n\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12=\n" +
+	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x01R\x15processedrecordscount\x88\x01\x01B\x15\n" +
+	"\x13_failedrecordscountB\x18\n" +
+	"\x16_processedrecordscount\"n\n" +
 	"\x1cInboxPlacementTrackingOption\x12\x1e\n" +
 	"\x06global\x18ρ\xca  \x01(\bH\x00R\x06global\x88\x01\x01\x12#\n" +
 	"\vtrackedisps\x18\xbd\xb9\xb9\n" +
@@ -22432,83 +22446,94 @@ const file_sesv2_proto_rawDesc = "" +
 	"iamrolearn\x18\xba\x85\xf4l \x01(\tR\n" +
 	"iamrolearn\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"_\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"q\n" +
 	"\x1cListConfigurationSetsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"r\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"r\n" +
 	"\x1dListConfigurationSetsResponse\x120\n" +
 	"\x11configurationsets\x18\x95՞\x89\x01 \x03(\tR\x11configurationsets\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"Z\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"l\n" +
 	"\x17ListContactListsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"w\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"w\n" +
 	"\x18ListContactListsResponse\x12:\n" +
 	"\fcontactlists\x18ɸ\x92\xaf\x01 \x03(\v2\x12.sesv2.ContactListR\fcontactlists\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
 	"\x12ListContactsFilter\x12E\n" +
 	"\x0efilteredstatus\x18ٟ\x81\x94\x01 \x01(\x0e2\x19.sesv2.SubscriptionStatusR\x0efilteredstatus\x127\n" +
-	"\vtopicfilter\x18Ǹ\x86e \x01(\v2\x12.sesv2.TopicFilterR\vtopicfilter\"\xbb\x01\n" +
+	"\vtopicfilter\x18Ǹ\x86e \x01(\v2\x12.sesv2.TopicFilterR\vtopicfilter\"\xcd\x01\n" +
 	"\x13ListContactsRequest\x12,\n" +
 	"\x0fcontactlistname\x18\U0007d9e1\x01 \x01(\tR\x0fcontactlistname\x125\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x19.sesv2.ListContactsFilterR\x06filter\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"f\n" +
 	"\x14ListContactsResponse\x12-\n" +
 	"\bcontacts\x18\x91\xa2\xb8E \x03(\v2\x0e.sesv2.ContactR\bcontacts\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"n\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x80\x01\n" +
 	"+ListCustomVerificationEmailTemplatesRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"\xcf\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"\xcf\x01\n" +
 	",ListCustomVerificationEmailTemplatesResponse\x12~\n" +
 	" customverificationemailtemplates\x18\x97ȶ\xd6\x01 \x03(\v2..sesv2.CustomVerificationEmailTemplateMetadataR customverificationemailtemplates\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"^\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"p\n" +
 	"\x1bListDedicatedIpPoolsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"n\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"n\n" +
 	"\x1cListDedicatedIpPoolsResponse\x12-\n" +
 	"\x10dedicatedippools\x18\xf7\x95\xa3k \x03(\tR\x10dedicatedippools\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"g\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"y\n" +
 	"$ListDeliverabilityTestReportsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"\xaa\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"\xaa\x01\n" +
 	"%ListDeliverabilityTestReportsResponse\x12`\n" +
 	"\x19deliverabilitytestreports\x18\xe4̗l \x03(\v2\x1f.sesv2.DeliverabilityTestReportR\x19deliverabilitytestreports\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xda\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xec\x01\n" +
 	"(ListDomainDeliverabilityCampaignsRequest\x12\x1b\n" +
 	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x12 \n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12.\n" +
-	"\x10subscribeddomain\x18\x92\xb1\xeb\xe6\x01 \x01(\tR\x10subscribeddomain\"\xba\x01\n" +
+	"\x10subscribeddomain\x18\x92\xb1\xeb\xe6\x01 \x01(\tR\x10subscribeddomainB\v\n" +
+	"\t_pagesize\"\xba\x01\n" +
 	")ListDomainDeliverabilityCampaignsResponse\x12l\n" +
 	"\x1ddomaindeliverabilitycampaigns\x18\xcc\xf5\xab/ \x03(\v2#.sesv2.DomainDeliverabilityCampaignR\x1ddomaindeliverabilitycampaigns\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"]\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"o\n" +
 	"\x1aListEmailIdentitiesRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"\x80\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"\x80\x01\n" +
 	"\x1bListEmailIdentitiesResponse\x12@\n" +
 	"\x0femailidentities\x18\x96\xa1\xe7V \x03(\v2\x13.sesv2.IdentityInfoR\x0femailidentities\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\\\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"n\n" +
 	"\x19ListEmailTemplatesRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"\x8c\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"\x8c\x01\n" +
 	"\x1aListEmailTemplatesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12M\n" +
-	"\x11templatesmetadata\x18\xbe\xac\xf0\r \x03(\v2\x1c.sesv2.EmailTemplateMetadataR\x11templatesmetadata\"\xd3\x01\n" +
+	"\x11templatesmetadata\x18\xbe\xac\xf0\r \x03(\v2\x1c.sesv2.EmailTemplateMetadataR\x11templatesmetadata\"\xe5\x01\n" +
 	"\x15ListExportJobsRequest\x12F\n" +
 	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeR\x10exportsourcetype\x121\n" +
 	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"v\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"v\n" +
 	"\x16ListExportJobsResponse\x12;\n" +
 	"\n" +
 	"exportjobs\x18̻\xc5\xcc\x01 \x03(\v2\x17.sesv2.ExportJobSummaryR\n" +
 	"exportjobs\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb0\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc2\x01\n" +
 	"\x15ListImportJobsRequest\x12V\n" +
 	"\x15importdestinationtype\x18͔\x9f\xa1\x01 \x01(\x0e2\x1c.sesv2.ImportDestinationTypeR\x15importdestinationtype\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"u\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"u\n" +
 	"\x16ListImportJobsResponse\x12:\n" +
 	"\n" +
 	"importjobs\x18\x8d\xc2\xde- \x03(\v2\x17.sesv2.ImportJobSummaryR\n" +
@@ -22516,49 +22541,54 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"g\n" +
 	"\x15ListManagementOptions\x12,\n" +
 	"\x0fcontactlistname\x18\U0007d9e1\x01 \x01(\tR\x0fcontactlistname\x12 \n" +
-	"\ttopicname\x18\x80\xa7\xd6\xd4\x01 \x01(\tR\ttopicname\"b\n" +
+	"\ttopicname\x18\x80\xa7\xd6\xd4\x01 \x01(\tR\ttopicname\"t\n" +
 	"\x1fListMultiRegionEndpointsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"\x96\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"\x96\x01\n" +
 	" ListMultiRegionEndpointsResponse\x12Q\n" +
 	"\x14multiregionendpoints\x18\xa1\x9f\x85[ \x03(\v2\x1a.sesv2.MultiRegionEndpointR\x14multiregionendpoints\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xe3\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xf5\x01\n" +
 	"\x1aListRecommendationsRequest\x12I\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x03(\v2-.sesv2.ListRecommendationsRequest.FilterEntryR\x06filter\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x1a9\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x1a9\n" +
 	"\vFilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_pagesize\"\x83\x01\n" +
 	"\x1bListRecommendationsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12C\n" +
-	"\x0frecommendations\x18\x88\xea\xff\xf4\x01 \x03(\v2\x15.sesv2.RecommendationR\x0frecommendations\"\xe9\x01\n" +
+	"\x0frecommendations\x18\x88\xea\xff\xf4\x01 \x03(\v2\x15.sesv2.RecommendationR\x0frecommendations\"\xfb\x01\n" +
 	"\x1dListReputationEntitiesRequest\x12L\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x03(\v20.sesv2.ListReputationEntitiesRequest.FilterEntryR\x06filter\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x1a9\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x1a9\n" +
 	"\vFilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_pagesize\"\x8d\x01\n" +
 	"\x1eListReputationEntitiesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12J\n" +
-	"\x12reputationentities\x18\xf6\xae\xc6\a \x03(\v2\x17.sesv2.ReputationEntityR\x12reputationentities\"\x83\x01\n" +
+	"\x12reputationentities\x18\xf6\xae\xc6\a \x03(\v2\x17.sesv2.ReputationEntityR\x12reputationentities\"\x95\x01\n" +
 	"\x1aListResourceTenantsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x8b\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\v\n" +
+	"\t_pagesize\"\x8b\x01\n" +
 	"\x1bListResourceTenantsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12K\n" +
-	"\x0fresourcetenants\x18\x93\xc2\xf2\xdd\x01 \x03(\v2\x1d.sesv2.ResourceTenantMetadataR\x0fresourcetenants\"\x81\x02\n" +
+	"\x0fresourcetenants\x18\x93\xc2\xf2\xdd\x01 \x03(\v2\x1d.sesv2.ResourceTenantMetadataR\x0fresourcetenants\"\x93\x02\n" +
 	"!ListSuppressedDestinationsRequest\x12\x1b\n" +
 	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x129\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x129\n" +
 	"\areasons\x18\xff\x8e\xa7T \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\areasons\x12 \n" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12!\n" +
 	"\n" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
-	"tenantname\"\xb6\x01\n" +
+	"tenantnameB\v\n" +
+	"\t_pagesize\"\xb6\x01\n" +
 	"\"ListSuppressedDestinationsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12o\n" +
 	"\x1esuppresseddestinationsummaries\x18\xbc֧\xbe\x01 \x03(\v2#.sesv2.SuppressedDestinationSummaryR\x1esuppresseddestinationsummaries\"B\n" +
@@ -22566,23 +22596,25 @@ const file_sesv2_proto_rawDesc = "" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"A\n" +
 	"\x1bListTagsForResourceResponse\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".sesv2.TagR\x04tags\"\x86\x02\n" +
+	".sesv2.TagR\x04tags\"\x98\x02\n" +
 	"\x1aListTenantResourcesRequest\x12I\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x03(\v2-.sesv2.ListTenantResourcesRequest.FilterEntryR\x06filter\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\x12!\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01\x12!\n" +
 	"\n" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
 	"tenantname\x1a9\n" +
 	"\vFilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_pagesize\"\x82\x01\n" +
 	"\x1bListTenantResourcesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12B\n" +
-	"\x0ftenantresources\x18\x93\xb3\xed9 \x03(\v2\x15.sesv2.TenantResourceR\x0ftenantresources\"U\n" +
+	"\x0ftenantresources\x18\x93\xb3\xed9 \x03(\v2\x15.sesv2.TenantResourceR\x0ftenantresources\"g\n" +
 	"\x12ListTenantsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05R\bpagesize\"f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x00R\bpagesize\x88\x01\x01B\v\n" +
+	"\t_pagesize\"f\n" +
 	"\x13ListTenantsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
 	"\atenants\x18\x83\xad\x87[ \x03(\v2\x11.sesv2.TenantInfoR\atenants\"\xe7\x01\n" +
@@ -22602,15 +22634,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\v2\x0e.sesv2.ContentR\asubject\"@\n" +
 	"\rMessageHeader\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xf7\x01\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x8b\x02\n" +
 	"\x19MessageInsightsDataSource\x12\x1b\n" +
 	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12;\n" +
 	"\aexclude\x18ʤ\xbe\x9d\x01 \x01(\v2\x1d.sesv2.MessageInsightsFiltersR\aexclude\x12:\n" +
-	"\ainclude\x18\x88\xac\x890 \x01(\v2\x1d.sesv2.MessageInsightsFiltersR\ainclude\x12\"\n" +
+	"\ainclude\x18\x88\xac\x890 \x01(\v2\x1d.sesv2.MessageInsightsFiltersR\ainclude\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\"\xbd\x02\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12 \n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdateB\r\n" +
+	"\v_maxresults\"\xbd\x02\n" +
 	"\x16MessageInsightsFilters\x12$\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x03(\tR\vdestination\x12-\n" +
 	"\x10fromemailaddress\x18\x86\x9a\xcb, \x03(\tR\x10fromemailaddress\x12\x13\n" +
@@ -22699,12 +22732,13 @@ const file_sesv2_proto_rawDesc = "" +
 	"archivearn\x18\xfd\xee\x8e\x1b \x01(\tR\n" +
 	"archivearn\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\"-\n" +
-	"+PutConfigurationSetArchivingOptionsResponse\"\xf5\x01\n" +
+	"+PutConfigurationSetArchivingOptionsResponse\"\x91\x02\n" +
 	")PutConfigurationSetDeliveryOptionsRequest\x126\n" +
-	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x121\n" +
-	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03R\x12maxdeliveryseconds\x12+\n" +
+	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x126\n" +
+	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03H\x00R\x12maxdeliveryseconds\x88\x01\x01\x12+\n" +
 	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tR\x0fsendingpoolname\x120\n" +
-	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicy\",\n" +
+	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicyB\x15\n" +
+	"\x13_maxdeliveryseconds\",\n" +
 	"*PutConfigurationSetDeliveryOptionsResponse\"\xc7\x01\n" +
 	"+PutConfigurationSetReputationOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12C\n" +
@@ -22836,13 +22870,14 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x05Route\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\")\n" +
 	"\fRouteDetails\x12\x19\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\"\x89\x01\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\"\x9f\x01\n" +
 	"\tSOARecord\x12\"\n" +
 	"\n" +
 	"adminemail\x18\xadޓ\x8a\x01 \x01(\tR\n" +
 	"adminemail\x120\n" +
-	"\x11primarynameserver\x18\xc6\xf1\x99\xf9\x01 \x01(\tR\x11primarynameserver\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\x03R\fserialnumber\"\xb2\x05\n" +
+	"\x11primarynameserver\x18\xc6\xf1\x99\xf9\x01 \x01(\tR\x11primarynameserver\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\x03H\x00R\fserialnumber\x88\x01\x01B\x0f\n" +
+	"\r_serialnumber\"\xb2\x05\n" +
 	"\x14SendBulkEmailRequest\x12E\n" +
 	"\x10bulkemailentries\x18\xf6\xcb\xe0\xf2\x01 \x03(\v2\x15.sesv2.BulkEmailEntryR\x10bulkemailentries\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12B\n" +
@@ -23065,12 +23100,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"\terrortype\x18\xba痾\x01 \x01(\x0e2\x18.sesv2.VerificationErrorR\terrortype\x126\n" +
 	"\x14lastcheckedtimestamp\x18\xa3\xc1\x8f\xa1\x01 \x01(\tR\x14lastcheckedtimestamp\x126\n" +
 	"\x14lastsuccesstimestamp\x18͕\xe1\xd4\x01 \x01(\tR\x14lastsuccesstimestamp\x122\n" +
-	"\tsoarecord\x18\x88\xec\xec\xd9\x01 \x01(\v2\x10.sesv2.SOARecordR\tsoarecord\"\xb8\x01\n" +
-	"\x10VolumeStatistics\x12'\n" +
-	"\rinboxrawcount\x18\xfb\xa4\xc6f \x01(\x03R\rinboxrawcount\x12*\n" +
-	"\x0eprojectedinbox\x18Ν\x9a\xc4\x01 \x01(\x03R\x0eprojectedinbox\x12'\n" +
-	"\rprojectedspam\x18\xff\x8c\x9d\x13 \x01(\x03R\rprojectedspam\x12&\n" +
-	"\fspamrawcount\x18\xbeǓ\xd2\x01 \x01(\x03R\fspamrawcount*x\n" +
+	"\tsoarecord\x18\x88\xec\xec\xd9\x01 \x01(\v2\x10.sesv2.SOARecordR\tsoarecord\"\x94\x02\n" +
+	"\x10VolumeStatistics\x12,\n" +
+	"\rinboxrawcount\x18\xfb\xa4\xc6f \x01(\x03H\x00R\rinboxrawcount\x88\x01\x01\x12/\n" +
+	"\x0eprojectedinbox\x18Ν\x9a\xc4\x01 \x01(\x03H\x01R\x0eprojectedinbox\x88\x01\x01\x12,\n" +
+	"\rprojectedspam\x18\xff\x8c\x9d\x13 \x01(\x03H\x02R\rprojectedspam\x88\x01\x01\x12+\n" +
+	"\fspamrawcount\x18\xbeǓ\xd2\x01 \x01(\x03H\x03R\fspamrawcount\x88\x01\x01B\x10\n" +
+	"\x0e_inboxrawcountB\x11\n" +
+	"\x0f_projectedinboxB\x10\n" +
+	"\x0e_projectedspamB\x0f\n" +
+	"\r_spamrawcount*x\n" +
 	"\x1cAttachmentContentDisposition\x12)\n" +
 	"%ATTACHMENT_CONTENT_DISPOSITION_INLINE\x10\x00\x12-\n" +
 	")ATTACHMENT_CONTENT_DISPOSITION_ATTACHMENT\x10\x01*\xc3\x01\n" +
@@ -24419,27 +24458,56 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[22].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[32].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[43].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[89].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[92].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[94].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[96].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[104].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[105].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[111].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[114].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[124].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[131].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[134].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[146].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[152].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[165].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[168].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[169].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[176].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[178].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[181].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[183].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[185].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[187].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[189].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[191].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[193].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[195].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[197].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[200].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[202].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[204].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[206].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[208].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[212].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[214].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[221].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[233].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[235].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[237].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[245].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[247].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[249].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[263].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[267].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[271].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[284].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[289].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[297].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[323].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[332].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[347].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

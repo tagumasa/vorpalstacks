@@ -568,12 +568,12 @@ func (x *AccessDeniedException) GetMessage() string {
 
 type BatchLoadProgressReport struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Bytesmetered            int64                  `protobuf:"varint,232712245,opt,name=bytesmetered,proto3" json:"bytesmetered,omitempty"`
-	Filefailures            int64                  `protobuf:"varint,44779969,opt,name=filefailures,proto3" json:"filefailures,omitempty"`
-	Parsefailures           int64                  `protobuf:"varint,330475280,opt,name=parsefailures,proto3" json:"parsefailures,omitempty"`
-	Recordingestionfailures int64                  `protobuf:"varint,262421066,opt,name=recordingestionfailures,proto3" json:"recordingestionfailures,omitempty"`
-	Recordsingested         int64                  `protobuf:"varint,159925469,opt,name=recordsingested,proto3" json:"recordsingested,omitempty"`
-	Recordsprocessed        int64                  `protobuf:"varint,27133172,opt,name=recordsprocessed,proto3" json:"recordsprocessed,omitempty"`
+	Bytesmetered            *int64                 `protobuf:"varint,232712245,opt,name=bytesmetered,proto3,oneof" json:"bytesmetered,omitempty"`
+	Filefailures            *int64                 `protobuf:"varint,44779969,opt,name=filefailures,proto3,oneof" json:"filefailures,omitempty"`
+	Parsefailures           *int64                 `protobuf:"varint,330475280,opt,name=parsefailures,proto3,oneof" json:"parsefailures,omitempty"`
+	Recordingestionfailures *int64                 `protobuf:"varint,262421066,opt,name=recordingestionfailures,proto3,oneof" json:"recordingestionfailures,omitempty"`
+	Recordsingested         *int64                 `protobuf:"varint,159925469,opt,name=recordsingested,proto3,oneof" json:"recordsingested,omitempty"`
+	Recordsprocessed        *int64                 `protobuf:"varint,27133172,opt,name=recordsprocessed,proto3,oneof" json:"recordsprocessed,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -609,43 +609,43 @@ func (*BatchLoadProgressReport) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchLoadProgressReport) GetBytesmetered() int64 {
-	if x != nil {
-		return x.Bytesmetered
+	if x != nil && x.Bytesmetered != nil {
+		return *x.Bytesmetered
 	}
 	return 0
 }
 
 func (x *BatchLoadProgressReport) GetFilefailures() int64 {
-	if x != nil {
-		return x.Filefailures
+	if x != nil && x.Filefailures != nil {
+		return *x.Filefailures
 	}
 	return 0
 }
 
 func (x *BatchLoadProgressReport) GetParsefailures() int64 {
-	if x != nil {
-		return x.Parsefailures
+	if x != nil && x.Parsefailures != nil {
+		return *x.Parsefailures
 	}
 	return 0
 }
 
 func (x *BatchLoadProgressReport) GetRecordingestionfailures() int64 {
-	if x != nil {
-		return x.Recordingestionfailures
+	if x != nil && x.Recordingestionfailures != nil {
+		return *x.Recordingestionfailures
 	}
 	return 0
 }
 
 func (x *BatchLoadProgressReport) GetRecordsingested() int64 {
-	if x != nil {
-		return x.Recordsingested
+	if x != nil && x.Recordsingested != nil {
+		return *x.Recordsingested
 	}
 	return 0
 }
 
 func (x *BatchLoadProgressReport) GetRecordsprocessed() int64 {
-	if x != nil {
-		return x.Recordsprocessed
+	if x != nil && x.Recordsprocessed != nil {
+		return *x.Recordsprocessed
 	}
 	return 0
 }
@@ -750,7 +750,7 @@ type BatchLoadTaskDescription struct {
 	Errormessage            string                   `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
 	Lastupdatedtime         string                   `protobuf:"bytes,177046166,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
 	Progressreport          *BatchLoadProgressReport `protobuf:"bytes,345169253,opt,name=progressreport,proto3" json:"progressreport,omitempty"`
-	Recordversion           int64                    `protobuf:"varint,282309505,opt,name=recordversion,proto3" json:"recordversion,omitempty"`
+	Recordversion           *int64                   `protobuf:"varint,282309505,opt,name=recordversion,proto3,oneof" json:"recordversion,omitempty"`
 	Reportconfiguration     *ReportConfiguration     `protobuf:"bytes,410368276,opt,name=reportconfiguration,proto3" json:"reportconfiguration,omitempty"`
 	Resumableuntil          string                   `protobuf:"bytes,340504066,opt,name=resumableuntil,proto3" json:"resumableuntil,omitempty"`
 	Targetdatabasename      string                   `protobuf:"bytes,454828599,opt,name=targetdatabasename,proto3" json:"targetdatabasename,omitempty"`
@@ -834,8 +834,8 @@ func (x *BatchLoadTaskDescription) GetProgressreport() *BatchLoadProgressReport 
 }
 
 func (x *BatchLoadTaskDescription) GetRecordversion() int64 {
-	if x != nil {
-		return x.Recordversion
+	if x != nil && x.Recordversion != nil {
+		return *x.Recordversion
 	}
 	return 0
 }
@@ -931,7 +931,7 @@ type CreateBatchLoadTaskRequest struct {
 	Clienttoken             string                   `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
 	Datamodelconfiguration  *DataModelConfiguration  `protobuf:"bytes,195075337,opt,name=datamodelconfiguration,proto3" json:"datamodelconfiguration,omitempty"`
 	Datasourceconfiguration *DataSourceConfiguration `protobuf:"bytes,256337787,opt,name=datasourceconfiguration,proto3" json:"datasourceconfiguration,omitempty"`
-	Recordversion           int64                    `protobuf:"varint,282309505,opt,name=recordversion,proto3" json:"recordversion,omitempty"`
+	Recordversion           *int64                   `protobuf:"varint,282309505,opt,name=recordversion,proto3,oneof" json:"recordversion,omitempty"`
 	Reportconfiguration     *ReportConfiguration     `protobuf:"bytes,410368276,opt,name=reportconfiguration,proto3" json:"reportconfiguration,omitempty"`
 	Targetdatabasename      string                   `protobuf:"bytes,454828599,opt,name=targetdatabasename,proto3" json:"targetdatabasename,omitempty"`
 	Targettablename         string                   `protobuf:"bytes,298767720,opt,name=targettablename,proto3" json:"targettablename,omitempty"`
@@ -991,8 +991,8 @@ func (x *CreateBatchLoadTaskRequest) GetDatasourceconfiguration() *DataSourceCon
 }
 
 func (x *CreateBatchLoadTaskRequest) GetRecordversion() int64 {
-	if x != nil {
-		return x.Recordversion
+	if x != nil && x.Recordversion != nil {
+		return *x.Recordversion
 	}
 	return 0
 }
@@ -1677,7 +1677,7 @@ type Database struct {
 	Databasename    string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
 	Kmskeyid        string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
 	Lastupdatedtime string                 `protobuf:"bytes,177046166,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
-	Tablecount      int64                  `protobuf:"varint,323868967,opt,name=tablecount,proto3" json:"tablecount,omitempty"`
+	Tablecount      *int64                 `protobuf:"varint,323868967,opt,name=tablecount,proto3,oneof" json:"tablecount,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1748,8 +1748,8 @@ func (x *Database) GetLastupdatedtime() string {
 }
 
 func (x *Database) GetTablecount() int64 {
-	if x != nil {
-		return x.Tablecount
+	if x != nil && x.Tablecount != nil {
+		return *x.Tablecount
 	}
 	return 0
 }
@@ -2456,7 +2456,7 @@ func (x *InvalidEndpointException) GetMessage() string {
 
 type ListBatchLoadTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Taskstatus    BatchLoadStatus        `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus" json:"taskstatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2494,8 +2494,8 @@ func (*ListBatchLoadTasksRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListBatchLoadTasksRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -2568,7 +2568,7 @@ func (x *ListBatchLoadTasksResponse) GetNexttoken() string {
 
 type ListDatabasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2605,8 +2605,8 @@ func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDatabasesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -2673,7 +2673,7 @@ func (x *ListDatabasesResponse) GetNexttoken() string {
 type ListTablesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Databasename  string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2717,8 +2717,8 @@ func (x *ListTablesRequest) GetDatabasename() string {
 }
 
 func (x *ListTablesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3283,7 +3283,7 @@ type Record struct {
 	Measurevalues    []*MeasureValue        `protobuf:"bytes,126050982,rep,name=measurevalues,proto3" json:"measurevalues,omitempty"`
 	Time             string                 `protobuf:"bytes,535094277,opt,name=time,proto3" json:"time,omitempty"`
 	Timeunit         TimeUnit               `protobuf:"varint,181686379,opt,name=timeunit,proto3,enum=timestreamwrite.TimeUnit" json:"timeunit,omitempty"`
-	Version          int64                  `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version          *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3368,17 +3368,17 @@ func (x *Record) GetTimeunit() TimeUnit {
 }
 
 func (x *Record) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
 
 type RecordsIngested struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Magneticstore int32                  `protobuf:"varint,200805165,opt,name=magneticstore,proto3" json:"magneticstore,omitempty"`
-	Memorystore   int32                  `protobuf:"varint,323607360,opt,name=memorystore,proto3" json:"memorystore,omitempty"`
-	Total         int32                  `protobuf:"varint,218525086,opt,name=total,proto3" json:"total,omitempty"`
+	Magneticstore *int32                 `protobuf:"varint,200805165,opt,name=magneticstore,proto3,oneof" json:"magneticstore,omitempty"`
+	Memorystore   *int32                 `protobuf:"varint,323607360,opt,name=memorystore,proto3,oneof" json:"memorystore,omitempty"`
+	Total         *int32                 `protobuf:"varint,218525086,opt,name=total,proto3,oneof" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3414,31 +3414,31 @@ func (*RecordsIngested) Descriptor() ([]byte, []int) {
 }
 
 func (x *RecordsIngested) GetMagneticstore() int32 {
-	if x != nil {
-		return x.Magneticstore
+	if x != nil && x.Magneticstore != nil {
+		return *x.Magneticstore
 	}
 	return 0
 }
 
 func (x *RecordsIngested) GetMemorystore() int32 {
-	if x != nil {
-		return x.Memorystore
+	if x != nil && x.Memorystore != nil {
+		return *x.Memorystore
 	}
 	return 0
 }
 
 func (x *RecordsIngested) GetTotal() int32 {
-	if x != nil {
-		return x.Total
+	if x != nil && x.Total != nil {
+		return *x.Total
 	}
 	return 0
 }
 
 type RejectedRecord struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Existingversion int64                  `protobuf:"varint,457856209,opt,name=existingversion,proto3" json:"existingversion,omitempty"`
+	Existingversion *int64                 `protobuf:"varint,457856209,opt,name=existingversion,proto3,oneof" json:"existingversion,omitempty"`
 	Reason          string                 `protobuf:"bytes,20005178,opt,name=reason,proto3" json:"reason,omitempty"`
-	Recordindex     int32                  `protobuf:"varint,221086889,opt,name=recordindex,proto3" json:"recordindex,omitempty"`
+	Recordindex     *int32                 `protobuf:"varint,221086889,opt,name=recordindex,proto3,oneof" json:"recordindex,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3474,8 +3474,8 @@ func (*RejectedRecord) Descriptor() ([]byte, []int) {
 }
 
 func (x *RejectedRecord) GetExistingversion() int64 {
-	if x != nil {
-		return x.Existingversion
+	if x != nil && x.Existingversion != nil {
+		return *x.Existingversion
 	}
 	return 0
 }
@@ -3488,8 +3488,8 @@ func (x *RejectedRecord) GetReason() string {
 }
 
 func (x *RejectedRecord) GetRecordindex() int32 {
-	if x != nil {
-		return x.Recordindex
+	if x != nil && x.Recordindex != nil {
+		return *x.Recordindex
 	}
 	return 0
 }
@@ -4748,14 +4748,20 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\n" +
 	"\x15timestreamwrite.proto\x12\x0ftimestreamwrite\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
 	"\x15AccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xaa\x02\n" +
-	"\x17BatchLoadProgressReport\x12%\n" +
-	"\fbytesmetered\x18\xb5\xd0\xfbn \x01(\x03R\fbytesmetered\x12%\n" +
-	"\ffilefailures\x18\xc1\x93\xad\x15 \x01(\x03R\ffilefailures\x12(\n" +
-	"\rparsefailures\x18\x90\xceʝ\x01 \x01(\x03R\rparsefailures\x12;\n" +
-	"\x17recordingestionfailures\x18\xca\xf4\x90} \x01(\x03R\x17recordingestionfailures\x12+\n" +
-	"\x0frecordsingested\x18݉\xa1L \x01(\x03R\x0frecordsingested\x12-\n" +
-	"\x10recordsprocessed\x18\xf4\x89\xf8\f \x01(\x03R\x10recordsprocessed\"\xb9\x02\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xc1\x03\n" +
+	"\x17BatchLoadProgressReport\x12*\n" +
+	"\fbytesmetered\x18\xb5\xd0\xfbn \x01(\x03H\x00R\fbytesmetered\x88\x01\x01\x12*\n" +
+	"\ffilefailures\x18\xc1\x93\xad\x15 \x01(\x03H\x01R\ffilefailures\x88\x01\x01\x12-\n" +
+	"\rparsefailures\x18\x90\xceʝ\x01 \x01(\x03H\x02R\rparsefailures\x88\x01\x01\x12@\n" +
+	"\x17recordingestionfailures\x18\xca\xf4\x90} \x01(\x03H\x03R\x17recordingestionfailures\x88\x01\x01\x120\n" +
+	"\x0frecordsingested\x18݉\xa1L \x01(\x03H\x04R\x0frecordsingested\x88\x01\x01\x122\n" +
+	"\x10recordsprocessed\x18\xf4\x89\xf8\f \x01(\x03H\x05R\x10recordsprocessed\x88\x01\x01B\x0f\n" +
+	"\r_bytesmeteredB\x0f\n" +
+	"\r_filefailuresB\x10\n" +
+	"\x0e_parsefailuresB\x1a\n" +
+	"\x18_recordingestionfailuresB\x12\n" +
+	"\x10_recordsingestedB\x13\n" +
+	"\x11_recordsprocessed\"\xb9\x02\n" +
 	"\rBatchLoadTask\x12%\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12+\n" +
@@ -4765,15 +4771,15 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\x12D\n" +
 	"\n" +
 	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatus\"\xac\x06\n" +
+	"taskstatus\"\xc3\x06\n" +
 	"\x18BatchLoadTaskDescription\x12%\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12b\n" +
 	"\x16datamodelconfiguration\x18\x89\xba\x82] \x01(\v2'.timestreamwrite.DataModelConfigurationR\x16datamodelconfiguration\x12e\n" +
 	"\x17datasourceconfiguration\x18\xfbΝz \x01(\v2(.timestreamwrite.DataSourceConfigurationR\x17datasourceconfiguration\x12&\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12+\n" +
 	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tR\x0flastupdatedtime\x12T\n" +
-	"\x0eprogressreport\x18\xe5\xbaˤ\x01 \x01(\v2(.timestreamwrite.BatchLoadProgressReportR\x0eprogressreport\x12(\n" +
-	"\rrecordversion\x18\x81\xe7Ά\x01 \x01(\x03R\rrecordversion\x12Z\n" +
+	"\x0eprogressreport\x18\xe5\xbaˤ\x01 \x01(\v2(.timestreamwrite.BatchLoadProgressReportR\x0eprogressreport\x12-\n" +
+	"\rrecordversion\x18\x81\xe7Ά\x01 \x01(\x03H\x00R\rrecordversion\x88\x01\x01\x12Z\n" +
 	"\x13reportconfiguration\x18\x94\xf2\xd6\xc3\x01 \x01(\v2$.timestreamwrite.ReportConfigurationR\x13reportconfiguration\x12*\n" +
 	"\x0eresumableuntil\x18\x82ܮ\xa2\x01 \x01(\tR\x0eresumableuntil\x122\n" +
 	"\x12targetdatabasename\x18\xb7\xc4\xf0\xd8\x01 \x01(\tR\x12targetdatabasename\x12,\n" +
@@ -4781,17 +4787,19 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\x12D\n" +
 	"\n" +
 	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatus\"0\n" +
+	"taskstatusB\x10\n" +
+	"\x0e_recordversion\"0\n" +
 	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xf4\x03\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x8b\x04\n" +
 	"\x1aCreateBatchLoadTaskRequest\x12#\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12b\n" +
 	"\x16datamodelconfiguration\x18\x89\xba\x82] \x01(\v2'.timestreamwrite.DataModelConfigurationR\x16datamodelconfiguration\x12e\n" +
-	"\x17datasourceconfiguration\x18\xfbΝz \x01(\v2(.timestreamwrite.DataSourceConfigurationR\x17datasourceconfiguration\x12(\n" +
-	"\rrecordversion\x18\x81\xe7Ά\x01 \x01(\x03R\rrecordversion\x12Z\n" +
+	"\x17datasourceconfiguration\x18\xfbΝz \x01(\v2(.timestreamwrite.DataSourceConfigurationR\x17datasourceconfiguration\x12-\n" +
+	"\rrecordversion\x18\x81\xe7Ά\x01 \x01(\x03H\x00R\rrecordversion\x88\x01\x01\x12Z\n" +
 	"\x13reportconfiguration\x18\x94\xf2\xd6\xc3\x01 \x01(\v2$.timestreamwrite.ReportConfigurationR\x13reportconfiguration\x122\n" +
 	"\x12targetdatabasename\x18\xb7\xc4\xf0\xd8\x01 \x01(\tR\x12targetdatabasename\x12,\n" +
-	"\x0ftargettablename\x18誻\x8e\x01 \x01(\tR\x0ftargettablename\"8\n" +
+	"\x0ftargettablename\x18誻\x8e\x01 \x01(\tR\x0ftargettablenameB\x10\n" +
+	"\x0e_recordversion\"8\n" +
 	"\x1bCreateBatchLoadTaskResponse\x12\x19\n" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\"\x8b\x01\n" +
 	"\x15CreateDatabaseRequest\x12%\n" +
@@ -4845,16 +4853,17 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\n" +
 	"bucketname\x18\xb5\xba\x9ec \x01(\tR\n" +
 	"bucketname\x12+\n" +
-	"\x0fobjectkeyprefix\x18檞? \x01(\tR\x0fobjectkeyprefix\"\xde\x01\n" +
+	"\x0fobjectkeyprefix\x18檞? \x01(\tR\x0fobjectkeyprefix\"\xf2\x01\n" +
 	"\bDatabase\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12%\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12+\n" +
-	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tR\x0flastupdatedtime\x12\"\n" +
+	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tR\x0flastupdatedtime\x12'\n" +
 	"\n" +
-	"tablecount\x18\xa7\xb2\xb7\x9a\x01 \x01(\x03R\n" +
-	"tablecount\">\n" +
+	"tablecount\x18\xa7\xb2\xb7\x9a\x01 \x01(\x03H\x00R\n" +
+	"tablecount\x88\x01\x01B\r\n" +
+	"\v_tablecount\">\n" +
 	"\x15DeleteDatabaseRequest\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\"]\n" +
 	"\x12DeleteTableRequest\x12%\n" +
@@ -4889,32 +4898,35 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x17InternalServerException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
 	"\x18InvalidEndpointException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xa6\x01\n" +
-	"\x19ListBatchLoadTasksRequest\x12\"\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xba\x01\n" +
+	"\x19ListBatchLoadTasksRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12D\n" +
 	"\n" +
 	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatus\"\x89\x01\n" +
+	"taskstatusB\r\n" +
+	"\v_maxresults\"\x89\x01\n" +
 	"\x1aListBatchLoadTasksResponse\x12J\n" +
 	"\x0ebatchloadtasks\x18\xbc\x97\xc1\x8b\x01 \x03(\v2\x1e.timestreamwrite.BatchLoadTaskR\x0ebatchloadtasks\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"[\n" +
-	"\x14ListDatabasesRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"o\n" +
+	"\x14ListDatabasesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"t\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"t\n" +
 	"\x15ListDatabasesResponse\x12:\n" +
 	"\tdatabases\x18\xb2\xba\xa2\" \x03(\v2\x19.timestreamwrite.DatabaseR\tdatabases\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x7f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x93\x01\n" +
 	"\x11ListTablesRequest\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12\"\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"i\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"i\n" +
 	"\x12ListTablesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x122\n" +
 	"\x06tables\x18\xe5\x87ت\x01 \x03(\v2\x16.timestreamwrite.TableR\x06tables\"B\n" +
@@ -4948,7 +4960,7 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\fPartitionKey\x12b\n" +
 	"\x13enforcementinrecord\x18\xf0\xe5\x82: \x01(\x0e2-.timestreamwrite.PartitionKeyEnforcementLevelR\x13enforcementinrecord\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2!.timestreamwrite.PartitionKeyTypeR\x04type\"\xa1\x03\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2!.timestreamwrite.PartitionKeyTypeR\x04type\"\xb2\x03\n" +
 	"\x06Record\x12>\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x1a.timestreamwrite.DimensionR\n" +
@@ -4958,16 +4970,23 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2!.timestreamwrite.MeasureValueTypeR\x10measurevaluetype\x12F\n" +
 	"\rmeasurevalues\x18\xa6ō< \x03(\v2\x1d.timestreamwrite.MeasureValueR\rmeasurevalues\x12\x16\n" +
 	"\x04time\x18\x85ȓ\xff\x01 \x01(\tR\x04time\x128\n" +
-	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitR\btimeunit\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"y\n" +
-	"\x0fRecordsIngested\x12'\n" +
-	"\rmagneticstore\x18\xad\x96\xe0_ \x01(\x05R\rmagneticstore\x12$\n" +
-	"\vmemorystore\x18\xc0\xb6\xa7\x9a\x01 \x01(\x05R\vmemorystore\x12\x17\n" +
-	"\x05total\x18\x9eۙh \x01(\x05R\x05total\"~\n" +
-	"\x0eRejectedRecord\x12,\n" +
-	"\x0fexistingversion\x18ѩ\xa9\xda\x01 \x01(\x03R\x0fexistingversion\x12\x19\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\tR\x06reason\x12#\n" +
-	"\vrecordindex\x18\xa9\x89\xb6i \x01(\x05R\vrecordindex\"\x86\x01\n" +
+	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitR\btimeunit\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"\xb4\x01\n" +
+	"\x0fRecordsIngested\x12,\n" +
+	"\rmagneticstore\x18\xad\x96\xe0_ \x01(\x05H\x00R\rmagneticstore\x88\x01\x01\x12)\n" +
+	"\vmemorystore\x18\xc0\xb6\xa7\x9a\x01 \x01(\x05H\x01R\vmemorystore\x88\x01\x01\x12\x1c\n" +
+	"\x05total\x18\x9eۙh \x01(\x05H\x02R\x05total\x88\x01\x01B\x10\n" +
+	"\x0e_magneticstoreB\x0e\n" +
+	"\f_memorystoreB\b\n" +
+	"\x06_total\"\xac\x01\n" +
+	"\x0eRejectedRecord\x121\n" +
+	"\x0fexistingversion\x18ѩ\xa9\xda\x01 \x01(\x03H\x00R\x0fexistingversion\x88\x01\x01\x12\x19\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\tR\x06reason\x12(\n" +
+	"\vrecordindex\x18\xa9\x89\xb6i \x01(\x05H\x01R\vrecordindex\x88\x01\x01B\x12\n" +
+	"\x10_existingversionB\x0e\n" +
+	"\f_recordindex\"\x86\x01\n" +
 	"\x18RejectedRecordsException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12M\n" +
 	"\x0frejectedrecords\x18\x88\xa1\xc0\xb2\x01 \x03(\v2\x1f.timestreamwrite.RejectedRecordR\x0frejectedrecords\"w\n" +
@@ -5327,8 +5346,18 @@ func file_timestreamwrite_proto_init() {
 	if File_timestreamwrite_proto != nil {
 		return
 	}
+	file_timestreamwrite_proto_msgTypes[1].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[3].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[5].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[11].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[17].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[33].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[35].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[37].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[42].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[48].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[49].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[50].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

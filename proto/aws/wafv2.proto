@@ -322,7 +322,7 @@ message APIKeySummary {
 
   repeated string tokendomains = 11638560;
 
-  int32 version = 500028728;
+  optional int32 version = 500028728;
 
 }
 
@@ -640,9 +640,9 @@ message CaptchaResponse {
 
   FailureReason failurereason = 232322142;
 
-  int32 responsecode = 447553700;
+  optional int32 responsecode = 447553700;
 
-  int64 solvetimestamp = 433307777;
+  optional int64 solvetimestamp = 433307777;
 
 }
 
@@ -674,9 +674,9 @@ message ChallengeResponse {
 
   FailureReason failurereason = 232322142;
 
-  int32 responsecode = 447553700;
+  optional int32 responsecode = 447553700;
 
-  int64 solvetimestamp = 433307777;
+  optional int64 solvetimestamp = 433307777;
 
 }
 
@@ -694,7 +694,7 @@ message CheckCapacityRequest {
 
 message CheckCapacityResponse {
 
-  int64 capacity = 107253930;
+  optional int64 capacity = 107253930;
 
 }
 
@@ -1540,9 +1540,9 @@ message DataPointEntry {
 
   string intent = 158359916;
 
-  int64 monetizeservedcount = 221393899;
+  optional int64 monetizeservedcount = 221393899;
 
-  int64 settledcount = 164622674;
+  optional int64 settledcount = 164622674;
 
   string totalamount = 45332786;
 
@@ -1796,7 +1796,7 @@ message DescribeManagedRuleGroupResponse {
 
   repeated LabelSummary availablelabels = 51059984;
 
-  int64 capacity = 107253930;
+  optional int64 capacity = 107253930;
 
   repeated LabelSummary consumedlabels = 43813949;
 
@@ -2252,7 +2252,7 @@ message GetRevenueStatisticsRequest {
 
   GroupByType groupby = 125823402;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2314,7 +2314,7 @@ message GetRevenueStatisticsTimeSeriesRequest {
 
   IntervalType interval = 463550873;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2380,7 +2380,7 @@ message GetSampledRequestsRequest {
 
 message GetSampledRequestsResponse {
 
-  int64 populationsize = 140605436;
+  optional int64 populationsize = 140605436;
 
   repeated SampledHTTPRequest sampledrequests = 3233688;
 
@@ -2780,7 +2780,7 @@ message LabelSummary {
 
 message ListAPIKeysRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2804,7 +2804,7 @@ message ListAPIKeysResponse {
 
 message ListAvailableManagedRuleGroupVersionsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string name = 266367751;
 
@@ -2832,7 +2832,7 @@ message ListAvailableManagedRuleGroupVersionsResponse {
 
 message ListAvailableManagedRuleGroupsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2854,7 +2854,7 @@ message ListAvailableManagedRuleGroupsResponse {
 
 message ListIPSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2876,7 +2876,7 @@ message ListIPSetsResponse {
 
 message ListLoggingConfigurationsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   LogScope logscope = 188235840;
 
@@ -2900,7 +2900,7 @@ message ListLoggingConfigurationsResponse {
 
 message ListManagedRuleSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2922,7 +2922,7 @@ message ListManagedRuleSetsResponse {
 
 message ListMobileSdkReleasesRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2944,7 +2944,7 @@ message ListMobileSdkReleasesResponse {
 
 message ListRegexPatternSetsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -2984,7 +2984,7 @@ message ListResourcesForWebACLResponse {
 
 message ListRuleGroupsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -3010,7 +3010,7 @@ message ListSettlementRecordsRequest {
 
   repeated MonetizationFilter filters = 188393197;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -3038,7 +3038,7 @@ message ListSettlementRecordsResponse {
 
 message ListTagsForResourceRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -3060,7 +3060,7 @@ message ListTagsForResourceResponse {
 
 message ListWebACLsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nextmarker = 531333283;
 
@@ -3292,11 +3292,11 @@ message ManagedRuleSetVersion {
 
   string associatedrulegrouparn = 416522796;
 
-  int64 capacity = 107253930;
+  optional int64 capacity = 107253930;
 
   string expirytimestamp = 460460551;
 
-  int32 forecastedlifetime = 149179979;
+  optional int32 forecastedlifetime = 149179979;
 
   string lastupdatetimestamp = 118818825;
 
@@ -3792,7 +3792,7 @@ message RateBasedStatement {
 
   repeated RateBasedStatementCustomKey customkeys = 429675987;
 
-  int64 evaluationwindowsec = 333939569;
+  optional int64 evaluationwindowsec = 333939569;
 
   ForwardedIPConfig forwardedipconfig = 259846797;
 
@@ -4218,9 +4218,9 @@ message RevenueBreakdown {
 
   string totalamount = 45332786;
 
-  int64 totalmonetizeserved = 410017796;
+  optional int64 totalmonetizeserved = 410017796;
 
-  int64 totalsettled = 72471795;
+  optional int64 totalsettled = 72471795;
 
   string unverifiedamount = 256171183;
 
@@ -4398,7 +4398,7 @@ message SampledHTTPRequest {
 
   repeated HTTPHeader requestheadersinserted = 367751765;
 
-  int32 responsecodesent = 108347942;
+  optional int32 responsecodesent = 108347942;
 
   string rulenamewithinrulegroup = 317544521;
 
@@ -5000,7 +5000,7 @@ message VersionToPublish {
 
   string associatedrulegrouparn = 416522796;
 
-  int32 forecastedlifetime = 149179979;
+  optional int32 forecastedlifetime = 149179979;
 
 }
 
@@ -5240,7 +5240,7 @@ message WebACL {
 
   AssociationConfig associationconfig = 419675691;
 
-  int64 capacity = 107253930;
+  optional int64 capacity = 107253930;
 
   CaptchaConfig captchaconfig = 60547064;
 

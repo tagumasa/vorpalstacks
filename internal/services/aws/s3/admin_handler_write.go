@@ -119,7 +119,7 @@ func (h *AdminHandler) PutObject(ctx context.Context, req *connect.Request[pb.Pu
 	output := &pb.PutObjectOutput{
 		Etag:      formatETag(obj.ETag),
 		Versionid: obj.VersionID,
-		Size:      obj.Size,
+		Size:      proto.Int64(obj.Size),
 	}
 	if obj.SSEMetadata != nil {
 		output.Ssekmskeyid = obj.SSEMetadata.KMSKeyID

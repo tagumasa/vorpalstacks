@@ -2796,7 +2796,7 @@ type CreateEventDataStoreRequest struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Startingestion               *bool                    `protobuf:"varint,168263832,opt,name=startingestion,proto3,oneof" json:"startingestion,omitempty"`
 	Tagslist                     []*Tag                   `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
@@ -2877,8 +2877,8 @@ func (x *CreateEventDataStoreRequest) GetOrganizationenabled() bool {
 }
 
 func (x *CreateEventDataStoreRequest) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -2914,7 +2914,7 @@ type CreateEventDataStoreResponse struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Tagslist                     []*Tag                   `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
@@ -3010,8 +3010,8 @@ func (x *CreateEventDataStoreResponse) GetOrganizationenabled() bool {
 }
 
 func (x *CreateEventDataStoreResponse) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -4600,7 +4600,7 @@ type EventDataStore struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
@@ -4681,8 +4681,8 @@ func (x *EventDataStore) GetOrganizationenabled() bool {
 }
 
 func (x *EventDataStore) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -5713,7 +5713,7 @@ type GetEventDataStoreResponse struct {
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Partitionkeys                []*PartitionKey          `protobuf:"bytes,200562986,rep,name=partitionkeys,proto3" json:"partitionkeys,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
@@ -5829,8 +5829,8 @@ func (x *GetEventDataStoreResponse) GetPartitionkeys() []*PartitionKey {
 }
 
 func (x *GetEventDataStoreResponse) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -6236,7 +6236,7 @@ type GetQueryResultsRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Eventdatastore               string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
 	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Maxqueryresults              int32                  `protobuf:"varint,120660448,opt,name=maxqueryresults,proto3" json:"maxqueryresults,omitempty"`
+	Maxqueryresults              *int32                 `protobuf:"varint,120660448,opt,name=maxqueryresults,proto3,oneof" json:"maxqueryresults,omitempty"`
 	Nexttoken                    string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -6288,8 +6288,8 @@ func (x *GetQueryResultsRequest) GetEventdatastoreowneraccountid() string {
 }
 
 func (x *GetQueryResultsRequest) GetMaxqueryresults() int32 {
-	if x != nil {
-		return x.Maxqueryresults
+	if x != nil && x.Maxqueryresults != nil {
+		return *x.Maxqueryresults
 	}
 	return 0
 }
@@ -6958,11 +6958,11 @@ func (x *ImportSource) GetS3() *S3ImportSource {
 
 type ImportStatistics struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Eventscompleted   int64                  `protobuf:"varint,159166494,opt,name=eventscompleted,proto3" json:"eventscompleted,omitempty"`
-	Failedentries     int64                  `protobuf:"varint,86416685,opt,name=failedentries,proto3" json:"failedentries,omitempty"`
-	Filescompleted    int64                  `protobuf:"varint,300203834,opt,name=filescompleted,proto3" json:"filescompleted,omitempty"`
-	Prefixescompleted int64                  `protobuf:"varint,433011203,opt,name=prefixescompleted,proto3" json:"prefixescompleted,omitempty"`
-	Prefixesfound     int64                  `protobuf:"varint,244228528,opt,name=prefixesfound,proto3" json:"prefixesfound,omitempty"`
+	Eventscompleted   *int64                 `protobuf:"varint,159166494,opt,name=eventscompleted,proto3,oneof" json:"eventscompleted,omitempty"`
+	Failedentries     *int64                 `protobuf:"varint,86416685,opt,name=failedentries,proto3,oneof" json:"failedentries,omitempty"`
+	Filescompleted    *int64                 `protobuf:"varint,300203834,opt,name=filescompleted,proto3,oneof" json:"filescompleted,omitempty"`
+	Prefixescompleted *int64                 `protobuf:"varint,433011203,opt,name=prefixescompleted,proto3,oneof" json:"prefixescompleted,omitempty"`
+	Prefixesfound     *int64                 `protobuf:"varint,244228528,opt,name=prefixesfound,proto3,oneof" json:"prefixesfound,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6998,36 +6998,36 @@ func (*ImportStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportStatistics) GetEventscompleted() int64 {
-	if x != nil {
-		return x.Eventscompleted
+	if x != nil && x.Eventscompleted != nil {
+		return *x.Eventscompleted
 	}
 	return 0
 }
 
 func (x *ImportStatistics) GetFailedentries() int64 {
-	if x != nil {
-		return x.Failedentries
+	if x != nil && x.Failedentries != nil {
+		return *x.Failedentries
 	}
 	return 0
 }
 
 func (x *ImportStatistics) GetFilescompleted() int64 {
-	if x != nil {
-		return x.Filescompleted
+	if x != nil && x.Filescompleted != nil {
+		return *x.Filescompleted
 	}
 	return 0
 }
 
 func (x *ImportStatistics) GetPrefixescompleted() int64 {
-	if x != nil {
-		return x.Prefixescompleted
+	if x != nil && x.Prefixescompleted != nil {
+		return *x.Prefixescompleted
 	}
 	return 0
 }
 
 func (x *ImportStatistics) GetPrefixesfound() int64 {
-	if x != nil {
-		return x.Prefixesfound
+	if x != nil && x.Prefixesfound != nil {
+		return *x.Prefixesfound
 	}
 	return 0
 }
@@ -8866,7 +8866,7 @@ func (x *KmsKeyNotFoundException) GetMessage() string {
 
 type ListChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8903,8 +8903,8 @@ func (*ListChannelsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListChannelsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8970,7 +8970,7 @@ func (x *ListChannelsResponse) GetNexttoken() string {
 
 type ListDashboardsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Type          DashboardType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudtrail.DashboardType" json:"type,omitempty"`
@@ -9009,8 +9009,8 @@ func (*ListDashboardsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDashboardsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9090,7 +9090,7 @@ func (x *ListDashboardsResponse) GetNexttoken() string {
 
 type ListEventDataStoresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9127,8 +9127,8 @@ func (*ListEventDataStoresRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListEventDataStoresRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9195,7 +9195,7 @@ func (x *ListEventDataStoresResponse) GetNexttoken() string {
 type ListImportFailuresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Importid      string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9239,8 +9239,8 @@ func (x *ListImportFailuresRequest) GetImportid() string {
 }
 
 func (x *ListImportFailuresRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9308,7 +9308,7 @@ type ListImportsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Destination   string                 `protobuf:"bytes,457443680,opt,name=destination,proto3" json:"destination,omitempty"`
 	Importstatus  ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9359,8 +9359,8 @@ func (x *ListImportsRequest) GetImportstatus() ImportStatus {
 }
 
 func (x *ListImportsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9430,7 +9430,7 @@ type ListInsightsDataRequest struct {
 	Dimensions    map[string]string      `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Endtime       string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Insightsource string                 `protobuf:"bytes,438381967,opt,name=insightsource,proto3" json:"insightsource,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Starttime     string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9496,8 +9496,8 @@ func (x *ListInsightsDataRequest) GetInsightsource() string {
 }
 
 func (x *ListInsightsDataRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9576,9 +9576,9 @@ type ListInsightsMetricDataRequest struct {
 	Eventname     string                 `protobuf:"bytes,264746781,opt,name=eventname,proto3" json:"eventname,omitempty"`
 	Eventsource   string                 `protobuf:"bytes,37841339,opt,name=eventsource,proto3" json:"eventsource,omitempty"`
 	Insighttype   InsightType            `protobuf:"varint,530375860,opt,name=insighttype,proto3,enum=cloudtrail.InsightType" json:"insighttype,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Period        int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
+	Period        *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Starttime     string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	Trailname     string                 `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9658,8 +9658,8 @@ func (x *ListInsightsMetricDataRequest) GetInsighttype() InsightType {
 }
 
 func (x *ListInsightsMetricDataRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -9672,8 +9672,8 @@ func (x *ListInsightsMetricDataRequest) GetNexttoken() string {
 }
 
 func (x *ListInsightsMetricDataRequest) GetPeriod() int32 {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return 0
 }
@@ -9908,7 +9908,7 @@ type ListQueriesRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Endtime        string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Eventdatastore string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Maxresults     int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults     *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Querystatus    QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
 	Starttime      string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
@@ -9961,8 +9961,8 @@ func (x *ListQueriesRequest) GetEventdatastore() string {
 }
 
 func (x *ListQueriesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -10297,7 +10297,7 @@ type LookupEventsRequest struct {
 	Endtime          string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Eventcategory    EventCategory          `protobuf:"varint,164668724,opt,name=eventcategory,proto3,enum=cloudtrail.EventCategory" json:"eventcategory,omitempty"`
 	Lookupattributes []*LookupAttribute     `protobuf:"bytes,162162567,rep,name=lookupattributes,proto3" json:"lookupattributes,omitempty"`
-	Maxresults       int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults       *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Starttime        string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -10356,8 +10356,8 @@ func (x *LookupEventsRequest) GetLookupattributes() []*LookupAttribute {
 }
 
 func (x *LookupEventsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11526,9 +11526,9 @@ func (x *QueryIdNotFoundException) GetMessage() string {
 
 type QueryStatistics struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Bytesscanned      int64                  `protobuf:"varint,186950329,opt,name=bytesscanned,proto3" json:"bytesscanned,omitempty"`
-	Resultscount      int32                  `protobuf:"varint,530057669,opt,name=resultscount,proto3" json:"resultscount,omitempty"`
-	Totalresultscount int32                  `protobuf:"varint,167126221,opt,name=totalresultscount,proto3" json:"totalresultscount,omitempty"`
+	Bytesscanned      *int64                 `protobuf:"varint,186950329,opt,name=bytesscanned,proto3,oneof" json:"bytesscanned,omitempty"`
+	Resultscount      *int32                 `protobuf:"varint,530057669,opt,name=resultscount,proto3,oneof" json:"resultscount,omitempty"`
+	Totalresultscount *int32                 `protobuf:"varint,167126221,opt,name=totalresultscount,proto3,oneof" json:"totalresultscount,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -11564,33 +11564,33 @@ func (*QueryStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryStatistics) GetBytesscanned() int64 {
-	if x != nil {
-		return x.Bytesscanned
+	if x != nil && x.Bytesscanned != nil {
+		return *x.Bytesscanned
 	}
 	return 0
 }
 
 func (x *QueryStatistics) GetResultscount() int32 {
-	if x != nil {
-		return x.Resultscount
+	if x != nil && x.Resultscount != nil {
+		return *x.Resultscount
 	}
 	return 0
 }
 
 func (x *QueryStatistics) GetTotalresultscount() int32 {
-	if x != nil {
-		return x.Totalresultscount
+	if x != nil && x.Totalresultscount != nil {
+		return *x.Totalresultscount
 	}
 	return 0
 }
 
 type QueryStatisticsForDescribeQuery struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Bytesscanned          int64                  `protobuf:"varint,186950329,opt,name=bytesscanned,proto3" json:"bytesscanned,omitempty"`
+	Bytesscanned          *int64                 `protobuf:"varint,186950329,opt,name=bytesscanned,proto3,oneof" json:"bytesscanned,omitempty"`
 	Creationtime          string                 `protobuf:"bytes,103458790,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
-	Eventsmatched         int64                  `protobuf:"varint,19501829,opt,name=eventsmatched,proto3" json:"eventsmatched,omitempty"`
-	Eventsscanned         int64                  `protobuf:"varint,475241657,opt,name=eventsscanned,proto3" json:"eventsscanned,omitempty"`
-	Executiontimeinmillis int32                  `protobuf:"varint,447596178,opt,name=executiontimeinmillis,proto3" json:"executiontimeinmillis,omitempty"`
+	Eventsmatched         *int64                 `protobuf:"varint,19501829,opt,name=eventsmatched,proto3,oneof" json:"eventsmatched,omitempty"`
+	Eventsscanned         *int64                 `protobuf:"varint,475241657,opt,name=eventsscanned,proto3,oneof" json:"eventsscanned,omitempty"`
+	Executiontimeinmillis *int32                 `protobuf:"varint,447596178,opt,name=executiontimeinmillis,proto3,oneof" json:"executiontimeinmillis,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -11626,8 +11626,8 @@ func (*QueryStatisticsForDescribeQuery) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryStatisticsForDescribeQuery) GetBytesscanned() int64 {
-	if x != nil {
-		return x.Bytesscanned
+	if x != nil && x.Bytesscanned != nil {
+		return *x.Bytesscanned
 	}
 	return 0
 }
@@ -11640,22 +11640,22 @@ func (x *QueryStatisticsForDescribeQuery) GetCreationtime() string {
 }
 
 func (x *QueryStatisticsForDescribeQuery) GetEventsmatched() int64 {
-	if x != nil {
-		return x.Eventsmatched
+	if x != nil && x.Eventsmatched != nil {
+		return *x.Eventsmatched
 	}
 	return 0
 }
 
 func (x *QueryStatisticsForDescribeQuery) GetEventsscanned() int64 {
-	if x != nil {
-		return x.Eventsscanned
+	if x != nil && x.Eventsscanned != nil {
+		return *x.Eventsscanned
 	}
 	return 0
 }
 
 func (x *QueryStatisticsForDescribeQuery) GetExecutiontimeinmillis() int32 {
-	if x != nil {
-		return x.Executiontimeinmillis
+	if x != nil && x.Executiontimeinmillis != nil {
+		return *x.Executiontimeinmillis
 	}
 	return 0
 }
@@ -11723,7 +11723,7 @@ func (x *RefreshSchedule) GetTimeofday() string {
 type RefreshScheduleFrequency struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Unit          RefreshScheduleFrequencyUnit `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudtrail.RefreshScheduleFrequencyUnit" json:"unit,omitempty"`
-	Value         int32                        `protobuf:"varint,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *int32                       `protobuf:"varint,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11766,8 +11766,8 @@ func (x *RefreshScheduleFrequency) GetUnit() RefreshScheduleFrequencyUnit {
 }
 
 func (x *RefreshScheduleFrequency) GetValue() int32 {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return 0
 }
@@ -12378,7 +12378,7 @@ type RestoreEventDataStoreResponse struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
@@ -12473,8 +12473,8 @@ func (x *RestoreEventDataStoreResponse) GetOrganizationenabled() bool {
 }
 
 func (x *RestoreEventDataStoreResponse) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -12606,7 +12606,7 @@ func (x *S3ImportSource) GetS3Locationuri() string {
 
 type SearchSampleQueriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Searchphrase  string                 `protobuf:"bytes,243779077,opt,name=searchphrase,proto3" json:"searchphrase,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12644,8 +12644,8 @@ func (*SearchSampleQueriesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *SearchSampleQueriesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -14597,7 +14597,7 @@ type UpdateEventDataStoreRequest struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -14683,8 +14683,8 @@ func (x *UpdateEventDataStoreRequest) GetOrganizationenabled() bool {
 }
 
 func (x *UpdateEventDataStoreRequest) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -14708,7 +14708,7 @@ type UpdateEventDataStoreResponse struct {
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
-	Retentionperiod              int32                    `protobuf:"varint,196383721,opt,name=retentionperiod,proto3" json:"retentionperiod,omitempty"`
+	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
@@ -14817,8 +14817,8 @@ func (x *UpdateEventDataStoreResponse) GetOrganizationenabled() bool {
 }
 
 func (x *UpdateEventDataStoreResponse) GetRetentionperiod() int32 {
-	if x != nil {
-		return x.Retentionperiod
+	if x != nil && x.Retentionperiod != nil {
+		return *x.Retentionperiod
 	}
 	return 0
 }
@@ -15326,22 +15326,23 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x120\n" +
 	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xa0\x05\n" +
+	"\x1d_terminationprotectionenabled\"\xb9\x05\n" +
 	"\x1bCreateEventDataStoreRequest\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12\x1d\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12.\n" +
-	"\x0estartingestion\x18\x98\x81\x9eP \x01(\bH\x02R\x0estartingestion\x88\x01\x01\x12/\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12.\n" +
+	"\x0estartingestion\x18\x98\x81\x9eP \x01(\bH\x03R\x0estartingestion\x88\x01\x01\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x04R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x11\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x11\n" +
 	"\x0f_startingestionB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xac\x06\n" +
+	"\x1d_terminationprotectionenabled\"\xc5\x06\n" +
 	"\x1cCreateEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
@@ -15350,14 +15351,15 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12;\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
 	"\x1d_terminationprotectionenabled\"\xd2\x05\n" +
 	"\x12CreateTrailRequest\x12@\n" +
 	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
@@ -15468,20 +15470,21 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\teventtime\x18\xaf\xf0\x83j \x01(\tR\teventtime\x12\x1d\n" +
 	"\breadonly\x18\xf8\xf7\xc3= \x01(\tR\breadonly\x126\n" +
 	"\tresources\x18\x93ђ\xab\x01 \x03(\v2\x14.cloudtrail.ResourceR\tresources\x12\x1e\n" +
-	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\x90\x05\n" +
+	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\xa9\x05\n" +
 	"\x0eEventDataStore\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12.\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
 	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12;\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
 	"\x1d_terminationprotectionenabled\"@\n" +
 	"!EventDataStoreARNInvalidException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"C\n" +
@@ -15549,7 +15552,7 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12\x1d\n" +
 	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"E\n" +
 	"\x18GetEventDataStoreRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xba\a\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xd3\a\n" +
 	"\x19GetEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
@@ -15561,13 +15564,14 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
 	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12A\n" +
-	"\rpartitionkeys\x18\xaa\xb2\xd1_ \x03(\v2\x18.cloudtrail.PartitionKeyR\rpartitionkeys\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12;\n" +
+	"\rpartitionkeys\x18\xaa\xb2\xd1_ \x03(\v2\x18.cloudtrail.PartitionKeyR\rpartitionkeys\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
 	"\x1d_terminationprotectionenabled\"<\n" +
 	"\x18GetEventSelectorsRequest\x12 \n" +
 	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xdf\x01\n" +
@@ -15594,13 +15598,14 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12J\n" +
 	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x124\n" +
 	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tR\x13insightsdestination\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"\xf6\x01\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"\x8f\x02\n" +
 	"\x16GetQueryResultsRequest\x12)\n" +
 	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12+\n" +
-	"\x0fmaxqueryresults\x18\xe0\xc3\xc49 \x01(\x05R\x0fmaxqueryresults\x12\x1f\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x120\n" +
+	"\x0fmaxqueryresults\x18\xe0\xc3\xc49 \x01(\x05H\x00R\x0fmaxqueryresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"\xb9\x02\n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryidB\x12\n" +
+	"\x10_maxqueryresults\"\xb9\x02\n" +
 	"\x17GetQueryResultsResponse\x12&\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12L\n" +
@@ -15648,13 +15653,18 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x17ImportNotFoundException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
 	"\fImportSource\x12-\n" +
-	"\x02s3\x18ć\x880 \x01(\v2\x1a.cloudtrail.S3ImportSourceR\x02s3\"\xef\x01\n" +
-	"\x10ImportStatistics\x12+\n" +
-	"\x0feventscompleted\x18\x9e\xe0\xf2K \x01(\x03R\x0feventscompleted\x12'\n" +
-	"\rfailedentries\x18\xad\xba\x9a) \x01(\x03R\rfailedentries\x12*\n" +
-	"\x0efilescompleted\x18\xba\xfe\x92\x8f\x01 \x01(\x03R\x0efilescompleted\x120\n" +
-	"\x11prefixescompleted\x18\x83\xf4\xbc\xce\x01 \x01(\x03R\x11prefixescompleted\x12'\n" +
-	"\rprefixesfound\x18\xb0út \x01(\x03R\rprefixesfound\"\xf9\x01\n" +
+	"\x02s3\x18ć\x880 \x01(\v2\x1a.cloudtrail.S3ImportSourceR\x02s3\"\xe9\x02\n" +
+	"\x10ImportStatistics\x120\n" +
+	"\x0feventscompleted\x18\x9e\xe0\xf2K \x01(\x03H\x00R\x0feventscompleted\x88\x01\x01\x12,\n" +
+	"\rfailedentries\x18\xad\xba\x9a) \x01(\x03H\x01R\rfailedentries\x88\x01\x01\x12/\n" +
+	"\x0efilescompleted\x18\xba\xfe\x92\x8f\x01 \x01(\x03H\x02R\x0efilescompleted\x88\x01\x01\x125\n" +
+	"\x11prefixescompleted\x18\x83\xf4\xbc\xce\x01 \x01(\x03H\x03R\x11prefixescompleted\x88\x01\x01\x12,\n" +
+	"\rprefixesfound\x18\xb0út \x01(\x03H\x04R\rprefixesfound\x88\x01\x01B\x12\n" +
+	"\x10_eventscompletedB\x10\n" +
+	"\x0e_failedentriesB\x11\n" +
+	"\x0f_filescompletedB\x14\n" +
+	"\x12_prefixescompletedB\x10\n" +
+	"\x0e_prefixesfound\"\xf9\x01\n" +
 	"\x0fImportsListItem\x12.\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12&\n" +
 	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12\x1e\n" +
@@ -15743,88 +15753,96 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x17KmsKeyDisabledException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
 	"\x17KmsKeyNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"Z\n" +
-	"\x13ListChannelsRequest\x12\"\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"n\n" +
+	"\x13ListChannelsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"k\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"k\n" +
 	"\x14ListChannelsResponse\x122\n" +
 	"\bchannels\x18\x96\xa9\x82J \x03(\v2\x13.cloudtrail.ChannelR\bchannels\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb3\x01\n" +
-	"\x15ListDashboardsRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc7\x01\n" +
+	"\x15ListDashboardsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
 	"nameprefix\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x121\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\"y\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04typeB\r\n" +
+	"\v_maxresults\"y\n" +
 	"\x16ListDashboardsResponse\x12>\n" +
 	"\n" +
 	"dashboards\x18\x99\xa9\xd8| \x03(\v2\x1b.cloudtrail.DashboardDetailR\n" +
 	"dashboards\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"a\n" +
-	"\x1aListEventDataStoresRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"u\n" +
+	"\x1aListEventDataStoresRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x87\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x87\x01\n" +
 	"\x1bListEventDataStoresResponse\x12G\n" +
 	"\x0feventdatastores\x18\xca\xe1\xc6H \x03(\v2\x1a.cloudtrail.EventDataStoreR\x0feventdatastores\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x80\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
 	"\x19ListImportFailuresRequest\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12\"\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x80\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x80\x01\n" +
 	"\x1aListImportFailuresResponse\x12A\n" +
 	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2!.cloudtrail.ImportFailureListItemR\bfailures\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc0\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd4\x01\n" +
 	"\x12ListImportsRequest\x12$\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\tR\vdestination\x12?\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12\"\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"q\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"q\n" +
 	"\x13ListImportsResponse\x129\n" +
 	"\aimports\x18\x86\xa5\xaa\xed\x01 \x03(\v2\x1b.cloudtrail.ImportsListItemR\aimports\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa0\x03\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb4\x03\n" +
 	"\x17ListInsightsDataRequest\x12?\n" +
 	"\bdatatype\x18\xeeص  \x01(\x0e2 .cloudtrail.ListInsightsDataTypeR\bdatatype\x12W\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v23.cloudtrail.ListInsightsDataRequest.DimensionsEntryR\n" +
 	"dimensions\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12(\n" +
-	"\rinsightsource\x18\x8fۄ\xd1\x01 \x01(\tR\rinsightsource\x12\"\n" +
+	"\rinsightsource\x18\x8fۄ\xd1\x01 \x01(\tR\rinsightsource\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x1a=\n" +
 	"\x0fDimensionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"i\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_maxresults\"i\n" +
 	"\x18ListInsightsDataResponse\x12,\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc9\x03\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xed\x03\n" +
 	"\x1dListInsightsMetricDataRequest\x12A\n" +
 	"\bdatatype\x18\xeeص  \x01(\x0e2\".cloudtrail.InsightsMetricDataTypeR\bdatatype\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12\x1f\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1f\n" +
 	"\teventname\x18\x9d\xee\x9e~ \x01(\tR\teventname\x12#\n" +
 	"\veventsource\x18\xbbӅ\x12 \x01(\tR\veventsource\x12=\n" +
-	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\x12\"\n" +
+	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x19\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12 \n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x01R\x06period\x88\x01\x01\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xc4\x02\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailnameB\r\n" +
+	"\v_maxresultsB\t\n" +
+	"\a_period\"\xc4\x02\n" +
 	"\x1eListInsightsMetricDataResponse\x12\x1f\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1f\n" +
 	"\teventname\x18\x9d\xee\x9e~ \x01(\tR\teventname\x12#\n" +
@@ -15842,16 +15860,17 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"y\n" +
 	"\x16ListPublicKeysResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12>\n" +
-	"\rpublickeylist\x18Ⱦ\xfa= \x03(\v2\x15.cloudtrail.PublicKeyR\rpublickeylist\"\x82\x02\n" +
+	"\rpublickeylist\x18Ⱦ\xfa= \x03(\v2\x15.cloudtrail.PublicKeyR\rpublickeylist\"\x96\x02\n" +
 	"\x12ListQueriesRequest\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12\"\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12=\n" +
 	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"g\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\r\n" +
+	"\v_maxresults\"g\n" +
 	"\x13ListQueriesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12/\n" +
 	"\aqueries\x18\xe4\xfdߑ\x01 \x03(\v2\x11.cloudtrail.QueryR\aqueries\"^\n" +
@@ -15868,16 +15887,17 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x06trails\x18\xb1\xf3\x89\b \x03(\v2\x15.cloudtrail.TrailInfoR\x06trails\"\x83\x01\n" +
 	"\x0fLookupAttribute\x12E\n" +
 	"\fattributekey\x18\xb7\xbc\xe81 \x01(\x0e2\x1e.cloudtrail.LookupAttributeKeyR\fattributekey\x12)\n" +
-	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\"\xa9\x02\n" +
+	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\"\xbd\x02\n" +
 	"\x13LookupEventsRequest\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12B\n" +
 	"\reventcategory\x18\xb4\xca\xc2N \x01(\x0e2\x19.cloudtrail.EventCategoryR\reventcategory\x12J\n" +
-	"\x10lookupattributes\x18\x87ϩM \x03(\v2\x1b.cloudtrail.LookupAttributeR\x10lookupattributes\x12\"\n" +
+	"\x10lookupattributes\x18\x87ϩM \x03(\v2\x1b.cloudtrail.LookupAttributeR\x10lookupattributes\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"e\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\r\n" +
+	"\v_maxresults\"e\n" +
 	"\x14LookupEventsResponse\x12,\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"<\n" +
@@ -15947,24 +15967,32 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12=\n" +
 	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\"7\n" +
 	"\x18QueryIdNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x91\x01\n" +
-	"\x0fQueryStatistics\x12%\n" +
-	"\fbytesscanned\x18\xb9ŒY \x01(\x03R\fbytesscanned\x12&\n" +
-	"\fresultscount\x18œ\xe0\xfc\x01 \x01(\x05R\fresultscount\x12/\n" +
-	"\x11totalresultscount\x18\xcd\xc9\xd8O \x01(\x05R\x11totalresultscount\"\xfc\x01\n" +
-	"\x1fQueryStatisticsForDescribeQuery\x12%\n" +
-	"\fbytesscanned\x18\xb9ŒY \x01(\x03R\fbytesscanned\x12%\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12'\n" +
-	"\reventsmatched\x18\x85\xa6\xa6\t \x01(\x03R\reventsmatched\x12(\n" +
-	"\reventsscanned\x18\xb9\xb9\xce\xe2\x01 \x01(\x03R\reventsscanned\x128\n" +
-	"\x15executiontimeinmillis\x18\x92\x8d\xb7\xd5\x01 \x01(\x05R\x15executiontimeinmillis\"\xb7\x01\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xd8\x01\n" +
+	"\x0fQueryStatistics\x12*\n" +
+	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x00R\fbytesscanned\x88\x01\x01\x12+\n" +
+	"\fresultscount\x18œ\xe0\xfc\x01 \x01(\x05H\x01R\fresultscount\x88\x01\x01\x124\n" +
+	"\x11totalresultscount\x18\xcd\xc9\xd8O \x01(\x05H\x02R\x11totalresultscount\x88\x01\x01B\x0f\n" +
+	"\r_bytesscannedB\x0f\n" +
+	"\r_resultscountB\x14\n" +
+	"\x12_totalresultscount\"\xdf\x02\n" +
+	"\x1fQueryStatisticsForDescribeQuery\x12*\n" +
+	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x00R\fbytesscanned\x88\x01\x01\x12%\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12,\n" +
+	"\reventsmatched\x18\x85\xa6\xa6\t \x01(\x03H\x01R\reventsmatched\x88\x01\x01\x12-\n" +
+	"\reventsscanned\x18\xb9\xb9\xce\xe2\x01 \x01(\x03H\x02R\reventsscanned\x88\x01\x01\x12=\n" +
+	"\x15executiontimeinmillis\x18\x92\x8d\xb7\xd5\x01 \x01(\x05H\x03R\x15executiontimeinmillis\x88\x01\x01B\x0f\n" +
+	"\r_bytesscannedB\x10\n" +
+	"\x0e_eventsmatchedB\x10\n" +
+	"\x0e_eventsscannedB\x18\n" +
+	"\x16_executiontimeinmillis\"\xb7\x01\n" +
 	"\x0fRefreshSchedule\x12E\n" +
 	"\tfrequency\x18\xa2\x8d\xc8l \x01(\v2$.cloudtrail.RefreshScheduleFrequencyR\tfrequency\x12<\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.cloudtrail.RefreshScheduleStatusR\x06status\x12\x1f\n" +
-	"\ttimeofday\x18\xeeӀ% \x01(\tR\ttimeofday\"u\n" +
+	"\ttimeofday\x18\xeeӀ% \x01(\tR\ttimeofday\"\x84\x01\n" +
 	"\x18RefreshScheduleFrequency\x12?\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2(.cloudtrail.RefreshScheduleFrequencyUnitR\x04unit\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x05R\x05value\"Y\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2(.cloudtrail.RefreshScheduleFrequencyUnitR\x04unit\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x05H\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"Y\n" +
 	")RegisterOrganizationDelegatedAdminRequest\x12,\n" +
 	"\x0fmemberaccountid\x18\xfc\xc1Ҳ\x01 \x01(\tR\x0fmemberaccountid\",\n" +
 	"*RegisterOrganizationDelegatedAdminResponse\"h\n" +
@@ -16000,7 +16028,7 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"!ResourceTypeNotSupportedException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"I\n" +
 	"\x1cRestoreEventDataStoreRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xfc\x05\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\x95\x06\n" +
 	"\x1dRestoreEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
@@ -16009,26 +16037,28 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12;\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
 	"\x1d_terminationprotectionenabled\"<\n" +
 	"\x1dS3BucketDoesNotExistException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9d\x01\n" +
 	"\x0eS3ImportSource\x127\n" +
 	"\x15s3bucketaccessrolearn\x18\xf7\x9c\xeeW \x01(\tR\x15s3bucketaccessrolearn\x12)\n" +
 	"\x0es3bucketregion\x18\xb2\x99\xddj \x01(\tR\x0es3bucketregion\x12'\n" +
-	"\rs3locationuri\x18\xef\xe2\xa27 \x01(\tR\rs3locationuri\"\x88\x01\n" +
-	"\x1aSearchSampleQueriesRequest\x12\"\n" +
+	"\rs3locationuri\x18\xef\xe2\xa27 \x01(\tR\rs3locationuri\"\x9c\x01\n" +
+	"\x1aSearchSampleQueriesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12%\n" +
-	"\fsearchphrase\x18\x85\x8c\x9ft \x01(\tR\fsearchphrase\"\x94\x01\n" +
+	"\fsearchphrase\x18\x85\x8c\x9ft \x01(\tR\fsearchphraseB\r\n" +
+	"\v_maxresults\"\x94\x01\n" +
 	"\x1bSearchSampleQueriesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12T\n" +
 	"\rsearchresults\x18\x82\x99\xf0\r \x03(\v2+.cloudtrail.SearchSampleQueriesSearchResultR\rsearchresults\"\x94\x01\n" +
@@ -16173,7 +16203,7 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\x120\n" +
 	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xd7\x04\n" +
+	"\x1d_terminationprotectionenabled\"\xf0\x04\n" +
 	"\x1bUpdateEventDataStoreRequest\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12)\n" +
@@ -16181,12 +16211,13 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12K\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xfa\x06\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
+	"\x1d_terminationprotectionenabled\"\x93\a\n" +
 	"\x1cUpdateEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
@@ -16197,13 +16228,14 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
 	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12+\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05R\x0fretentionperiod\x12;\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
 	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
-	"\x14_organizationenabledB\x1f\n" +
+	"\x14_organizationenabledB\x12\n" +
+	"\x10_retentionperiodB\x1f\n" +
 	"\x1d_terminationprotectionenabled\"\xa1\x05\n" +
 	"\x12UpdateTrailRequest\x12@\n" +
 	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
@@ -16991,8 +17023,23 @@ func file_cloudtrail_proto_init() {
 	file_cloudtrail_proto_msgTypes[67].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[74].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[78].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[85].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[92].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[96].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[137].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[139].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[141].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[143].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[145].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[147].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[149].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[153].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[160].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[182].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[183].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[185].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[199].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[202].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[206].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[226].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[234].OneofWrappers = []any{}

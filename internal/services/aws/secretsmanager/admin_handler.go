@@ -54,7 +54,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxResults := req.Msg.Maxresults
+	maxResults := req.Msg.GetMaxresults()
 	if maxResults <= 0 {
 		maxResults = 100
 	}
@@ -96,7 +96,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 		entry.Rotationlambdaarn = s.RotationLambdaARN
 		if s.RotationRules != nil {
 			entry.Rotationrules = &pb.RotationRulesType{
-				Automaticallyafterdays: int64(s.RotationRules.AutomaticallyAfterDays),
+				Automaticallyafterdays: proto.Int64(int64(s.RotationRules.AutomaticallyAfterDays)),
 			}
 		}
 		if s.DeletedDate != nil {
@@ -206,7 +206,8 @@ func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb
 	if req.Msg.Forcedeletewithoutrecovery != nil {
 		forceDelete = *req.Msg.Forcedeletewithoutrecovery
 	}
-	hasRecoveryWindow := req.Msg.Recoverywindowindays > 0
+	recoveryWindow := req.Msg.GetRecoverywindowindays()
+	hasRecoveryWindow := recoveryWindow > 0
 
 	// You can't use both ForceDeleteWithoutRecovery and RecoveryWindowInDays.
 	if forceDelete && hasRecoveryWindow {
@@ -215,7 +216,7 @@ func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb
 	}
 	// RecoveryWindowInDays must be between 7 and 30 (inclusive).
 	if hasRecoveryWindow && !forceDelete {
-		if req.Msg.Recoverywindowindays < 7 || req.Msg.Recoverywindowindays > 30 {
+		if recoveryWindow < 7 || recoveryWindow > 30 {
 			return nil, connect.NewError(connect.CodeInvalidArgument,
 				fmt.Errorf("RecoveryWindowInDays must be between 7 and 30 days"))
 		}
@@ -234,11 +235,11 @@ func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb
 		}
 		deletionDate = time.Now().UTC()
 	} else {
-		recoveryWindow := int(req.Msg.Recoverywindowindays)
-		if recoveryWindow == 0 {
-			recoveryWindow = 30
+		rw := int(recoveryWindow)
+		if rw == 0 {
+			rw = 30
 		}
-		deletionDate = time.Now().UTC().AddDate(0, 0, recoveryWindow)
+		deletionDate = time.Now().UTC().AddDate(0, 0, rw)
 		if err := store.ScheduleDeletion(req.Msg.Secretid, deletionDate); err != nil {
 			return nil, svcerrors.StoreErrorToGRPC(err)
 		}

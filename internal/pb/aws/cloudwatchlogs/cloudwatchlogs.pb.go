@@ -2227,7 +2227,7 @@ func (x *AccessDeniedException) GetMessage() string {
 type AccountPolicy struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Accountid         string                 `protobuf:"bytes,516110962,opt,name=accountid,proto3" json:"accountid,omitempty"`
-	Lastupdatedtime   int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime   *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Policydocument    string                 `protobuf:"bytes,178107627,opt,name=policydocument,proto3" json:"policydocument,omitempty"`
 	Policyname        string                 `protobuf:"bytes,115126621,opt,name=policyname,proto3" json:"policyname,omitempty"`
 	Policytype        PolicyType             `protobuf:"varint,319277736,opt,name=policytype,proto3,enum=cloudwatchlogs.PolicyType" json:"policytype,omitempty"`
@@ -2275,8 +2275,8 @@ func (x *AccountPolicy) GetAccountid() string {
 }
 
 func (x *AccountPolicy) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -2423,7 +2423,7 @@ func (x *AddKeys) GetEntries() []*AddKeyEntry {
 type AggregateLogGroupSummary struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Groupingidentifiers []*GroupingIdentifier  `protobuf:"bytes,363642629,rep,name=groupingidentifiers,proto3" json:"groupingidentifiers,omitempty"`
-	Loggroupcount       int32                  `protobuf:"varint,176522920,opt,name=loggroupcount,proto3" json:"loggroupcount,omitempty"`
+	Loggroupcount       *int32                 `protobuf:"varint,176522920,opt,name=loggroupcount,proto3,oneof" json:"loggroupcount,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -2466,8 +2466,8 @@ func (x *AggregateLogGroupSummary) GetGroupingidentifiers() []*GroupingIdentifie
 }
 
 func (x *AggregateLogGroupSummary) GetLoggroupcount() int32 {
-	if x != nil {
-		return x.Loggroupcount
+	if x != nil && x.Loggroupcount != nil {
+		return *x.Loggroupcount
 	}
 	return 0
 }
@@ -2491,8 +2491,8 @@ type Anomaly struct {
 	Priority                  string                 `protobuf:"bytes,350544650,opt,name=priority,proto3" json:"priority,omitempty"`
 	State                     State                  `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.State" json:"state,omitempty"`
 	Suppressed                *bool                  `protobuf:"varint,141710296,opt,name=suppressed,proto3,oneof" json:"suppressed,omitempty"`
-	Suppresseddate            int64                  `protobuf:"varint,533956404,opt,name=suppresseddate,proto3" json:"suppresseddate,omitempty"`
-	Suppresseduntil           int64                  `protobuf:"varint,437063138,opt,name=suppresseduntil,proto3" json:"suppresseduntil,omitempty"`
+	Suppresseddate            *int64                 `protobuf:"varint,533956404,opt,name=suppresseddate,proto3,oneof" json:"suppresseddate,omitempty"`
+	Suppresseduntil           *int64                 `protobuf:"varint,437063138,opt,name=suppresseduntil,proto3,oneof" json:"suppresseduntil,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -2647,15 +2647,15 @@ func (x *Anomaly) GetSuppressed() bool {
 }
 
 func (x *Anomaly) GetSuppresseddate() int64 {
-	if x != nil {
-		return x.Suppresseddate
+	if x != nil && x.Suppresseddate != nil {
+		return *x.Suppresseddate
 	}
 	return 0
 }
 
 func (x *Anomaly) GetSuppresseduntil() int64 {
-	if x != nil {
-		return x.Suppresseduntil
+	if x != nil && x.Suppresseduntil != nil {
+		return *x.Suppresseduntil
 	}
 	return 0
 }
@@ -2664,13 +2664,13 @@ type AnomalyDetector struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectorarn    string                 `protobuf:"bytes,446490540,opt,name=anomalydetectorarn,proto3" json:"anomalydetectorarn,omitempty"`
 	Anomalydetectorstatus AnomalyDetectorStatus  `protobuf:"varint,458778431,opt,name=anomalydetectorstatus,proto3,enum=cloudwatchlogs.AnomalyDetectorStatus" json:"anomalydetectorstatus,omitempty"`
-	Anomalyvisibilitytime int64                  `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3" json:"anomalyvisibilitytime,omitempty"`
-	Creationtimestamp     int64                  `protobuf:"varint,206588645,opt,name=creationtimestamp,proto3" json:"creationtimestamp,omitempty"`
+	Anomalyvisibilitytime *int64                 `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3,oneof" json:"anomalyvisibilitytime,omitempty"`
+	Creationtimestamp     *int64                 `protobuf:"varint,206588645,opt,name=creationtimestamp,proto3,oneof" json:"creationtimestamp,omitempty"`
 	Detectorname          string                 `protobuf:"bytes,114651981,opt,name=detectorname,proto3" json:"detectorname,omitempty"`
 	Evaluationfrequency   EvaluationFrequency    `protobuf:"varint,533700360,opt,name=evaluationfrequency,proto3,enum=cloudwatchlogs.EvaluationFrequency" json:"evaluationfrequency,omitempty"`
 	Filterpattern         string                 `protobuf:"bytes,144868248,opt,name=filterpattern,proto3" json:"filterpattern,omitempty"`
 	Kmskeyid              string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastmodifiedtimestamp int64                  `protobuf:"varint,40019279,opt,name=lastmodifiedtimestamp,proto3" json:"lastmodifiedtimestamp,omitempty"`
+	Lastmodifiedtimestamp *int64                 `protobuf:"varint,40019279,opt,name=lastmodifiedtimestamp,proto3,oneof" json:"lastmodifiedtimestamp,omitempty"`
 	Loggrouparnlist       []string               `protobuf:"bytes,374867736,rep,name=loggrouparnlist,proto3" json:"loggrouparnlist,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -2721,15 +2721,15 @@ func (x *AnomalyDetector) GetAnomalydetectorstatus() AnomalyDetectorStatus {
 }
 
 func (x *AnomalyDetector) GetAnomalyvisibilitytime() int64 {
-	if x != nil {
-		return x.Anomalyvisibilitytime
+	if x != nil && x.Anomalyvisibilitytime != nil {
+		return *x.Anomalyvisibilitytime
 	}
 	return 0
 }
 
 func (x *AnomalyDetector) GetCreationtimestamp() int64 {
-	if x != nil {
-		return x.Creationtimestamp
+	if x != nil && x.Creationtimestamp != nil {
+		return *x.Creationtimestamp
 	}
 	return 0
 }
@@ -2763,8 +2763,8 @@ func (x *AnomalyDetector) GetKmskeyid() string {
 }
 
 func (x *AnomalyDetector) GetLastmodifiedtimestamp() int64 {
-	if x != nil {
-		return x.Lastmodifiedtimestamp
+	if x != nil && x.Lastmodifiedtimestamp != nil {
+		return *x.Lastmodifiedtimestamp
 	}
 	return 0
 }
@@ -3098,11 +3098,11 @@ func (x *CancelImportTaskRequest) GetImportid() string {
 
 type CancelImportTaskResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Creationtime     int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime     *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Importid         string                 `protobuf:"bytes,513429114,opt,name=importid,proto3" json:"importid,omitempty"`
 	Importstatistics *ImportStatistics      `protobuf:"bytes,60366280,opt,name=importstatistics,proto3" json:"importstatistics,omitempty"`
 	Importstatus     ImportStatus           `protobuf:"varint,31427999,opt,name=importstatus,proto3,enum=cloudwatchlogs.ImportStatus" json:"importstatus,omitempty"`
-	Lastupdatedtime  int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime  *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3138,8 +3138,8 @@ func (*CancelImportTaskResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelImportTaskResponse) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -3166,8 +3166,8 @@ func (x *CancelImportTaskResponse) GetImportstatus() ImportStatus {
 }
 
 func (x *CancelImportTaskResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -3838,7 +3838,7 @@ func (x *CreateImportTaskRequest) GetImportsourcearn() string {
 
 type CreateImportTaskResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Creationtime         int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime         *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Importdestinationarn string                 `protobuf:"bytes,94477180,opt,name=importdestinationarn,proto3" json:"importdestinationarn,omitempty"`
 	Importid             string                 `protobuf:"bytes,513429114,opt,name=importid,proto3" json:"importid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -3876,8 +3876,8 @@ func (*CreateImportTaskResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateImportTaskResponse) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -3898,7 +3898,7 @@ func (x *CreateImportTaskResponse) GetImportid() string {
 
 type CreateLogAnomalyDetectorRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Anomalyvisibilitytime int64                  `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3" json:"anomalyvisibilitytime,omitempty"`
+	Anomalyvisibilitytime *int64                 `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3,oneof" json:"anomalyvisibilitytime,omitempty"`
 	Detectorname          string                 `protobuf:"bytes,114651981,opt,name=detectorname,proto3" json:"detectorname,omitempty"`
 	Evaluationfrequency   EvaluationFrequency    `protobuf:"varint,533700360,opt,name=evaluationfrequency,proto3,enum=cloudwatchlogs.EvaluationFrequency" json:"evaluationfrequency,omitempty"`
 	Filterpattern         string                 `protobuf:"bytes,144868248,opt,name=filterpattern,proto3" json:"filterpattern,omitempty"`
@@ -3940,8 +3940,8 @@ func (*CreateLogAnomalyDetectorRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateLogAnomalyDetectorRequest) GetAnomalyvisibilitytime() int64 {
-	if x != nil {
-		return x.Anomalyvisibilitytime
+	if x != nil && x.Anomalyvisibilitytime != nil {
+		return *x.Anomalyvisibilitytime
 	}
 	return 0
 }
@@ -4238,7 +4238,7 @@ func (x *CreateLookupTableRequest) GetTags() map[string]string {
 
 type CreateLookupTableResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Createdat      int64                  `protobuf:"varint,370722959,opt,name=createdat,proto3" json:"createdat,omitempty"`
+	Createdat      *int64                 `protobuf:"varint,370722959,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
 	Lookuptablearn string                 `protobuf:"bytes,150245445,opt,name=lookuptablearn,proto3" json:"lookuptablearn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -4275,8 +4275,8 @@ func (*CreateLookupTableResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateLookupTableResponse) GetCreatedat() int64 {
-	if x != nil {
-		return x.Createdat
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return 0
 }
@@ -4292,16 +4292,16 @@ type CreateScheduledQueryRequest struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Description              string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Destinationconfiguration *DestinationConfiguration `protobuf:"bytes,145518016,opt,name=destinationconfiguration,proto3" json:"destinationconfiguration,omitempty"`
-	Endtimeoffset            int64                     `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3" json:"endtimeoffset,omitempty"`
+	Endtimeoffset            *int64                    `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3,oneof" json:"endtimeoffset,omitempty"`
 	Executionrolearn         string                    `protobuf:"bytes,230613553,opt,name=executionrolearn,proto3" json:"executionrolearn,omitempty"`
 	Loggroupidentifiers      []string                  `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Name                     string                    `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Querylanguage            QueryLanguage             `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Querystring              string                    `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
-	Scheduleendtime          int64                     `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3" json:"scheduleendtime,omitempty"`
+	Scheduleendtime          *int64                    `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3,oneof" json:"scheduleendtime,omitempty"`
 	Scheduleexpression       string                    `protobuf:"bytes,287794975,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Schedulestarttime        int64                     `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3" json:"schedulestarttime,omitempty"`
-	Starttimeoffset          int64                     `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3" json:"starttimeoffset,omitempty"`
+	Schedulestarttime        *int64                    `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3,oneof" json:"schedulestarttime,omitempty"`
+	Starttimeoffset          *int64                    `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3,oneof" json:"starttimeoffset,omitempty"`
 	State                    ScheduledQueryState       `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.ScheduledQueryState" json:"state,omitempty"`
 	Tags                     map[string]string         `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Timezone                 string                    `protobuf:"bytes,190615331,opt,name=timezone,proto3" json:"timezone,omitempty"`
@@ -4354,8 +4354,8 @@ func (x *CreateScheduledQueryRequest) GetDestinationconfiguration() *Destination
 }
 
 func (x *CreateScheduledQueryRequest) GetEndtimeoffset() int64 {
-	if x != nil {
-		return x.Endtimeoffset
+	if x != nil && x.Endtimeoffset != nil {
+		return *x.Endtimeoffset
 	}
 	return 0
 }
@@ -4396,8 +4396,8 @@ func (x *CreateScheduledQueryRequest) GetQuerystring() string {
 }
 
 func (x *CreateScheduledQueryRequest) GetScheduleendtime() int64 {
-	if x != nil {
-		return x.Scheduleendtime
+	if x != nil && x.Scheduleendtime != nil {
+		return *x.Scheduleendtime
 	}
 	return 0
 }
@@ -4410,15 +4410,15 @@ func (x *CreateScheduledQueryRequest) GetScheduleexpression() string {
 }
 
 func (x *CreateScheduledQueryRequest) GetSchedulestarttime() int64 {
-	if x != nil {
-		return x.Schedulestarttime
+	if x != nil && x.Schedulestarttime != nil {
+		return *x.Schedulestarttime
 	}
 	return 0
 }
 
 func (x *CreateScheduledQueryRequest) GetStarttimeoffset() int64 {
-	if x != nil {
-		return x.Starttimeoffset
+	if x != nil && x.Starttimeoffset != nil {
+		return *x.Starttimeoffset
 	}
 	return 0
 }
@@ -6479,7 +6479,7 @@ func (x *DescribeAccountPoliciesResponse) GetNexttoken() string {
 type DescribeConfigurationTemplatesRequest struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Deliverydestinationtypes []DeliveryDestinationType `protobuf:"varint,46370829,rep,packed,name=deliverydestinationtypes,proto3,enum=cloudwatchlogs.DeliveryDestinationType" json:"deliverydestinationtypes,omitempty"`
-	Limit                    int32                     `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                    *int32                    `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Logtypes                 []string                  `protobuf:"bytes,460758815,rep,name=logtypes,proto3" json:"logtypes,omitempty"`
 	Nexttoken                string                    `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Resourcetypes            []string                  `protobuf:"bytes,78421387,rep,name=resourcetypes,proto3" json:"resourcetypes,omitempty"`
@@ -6526,8 +6526,8 @@ func (x *DescribeConfigurationTemplatesRequest) GetDeliverydestinationtypes() []
 }
 
 func (x *DescribeConfigurationTemplatesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -6614,7 +6614,7 @@ func (x *DescribeConfigurationTemplatesResponse) GetNexttoken() string {
 
 type DescribeDeliveriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6651,8 +6651,8 @@ func (*DescribeDeliveriesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDeliveriesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -6718,7 +6718,7 @@ func (x *DescribeDeliveriesResponse) GetNexttoken() string {
 
 type DescribeDeliveryDestinationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6755,8 +6755,8 @@ func (*DescribeDeliveryDestinationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDeliveryDestinationsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -6822,7 +6822,7 @@ func (x *DescribeDeliveryDestinationsResponse) GetNexttoken() string {
 
 type DescribeDeliverySourcesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6859,8 +6859,8 @@ func (*DescribeDeliverySourcesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDeliverySourcesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -6927,7 +6927,7 @@ func (x *DescribeDeliverySourcesResponse) GetNexttoken() string {
 type DescribeDestinationsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Destinationnameprefix string                 `protobuf:"bytes,160941145,opt,name=destinationnameprefix,proto3" json:"destinationnameprefix,omitempty"`
-	Limit                 int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                 *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken             string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -6971,8 +6971,8 @@ func (x *DescribeDestinationsRequest) GetDestinationnameprefix() string {
 }
 
 func (x *DescribeDestinationsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7038,7 +7038,7 @@ func (x *DescribeDestinationsResponse) GetNexttoken() string {
 
 type DescribeExportTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Statuscode    ExportTaskStatusCode   `protobuf:"varint,299352223,opt,name=statuscode,proto3,enum=cloudwatchlogs.ExportTaskStatusCode" json:"statuscode,omitempty"`
 	Taskid        string                 `protobuf:"bytes,216769858,opt,name=taskid,proto3" json:"taskid,omitempty"`
@@ -7077,8 +7077,8 @@ func (*DescribeExportTasksRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeExportTasksRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7264,7 +7264,7 @@ type DescribeImportTaskBatchesRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Batchimportstatus []ImportStatus         `protobuf:"varint,117307821,rep,packed,name=batchimportstatus,proto3,enum=cloudwatchlogs.ImportStatus" json:"batchimportstatus,omitempty"`
 	Importid          string                 `protobuf:"bytes,513429114,opt,name=importid,proto3" json:"importid,omitempty"`
-	Limit             int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit             *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken         string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -7315,8 +7315,8 @@ func (x *DescribeImportTaskBatchesRequest) GetImportid() string {
 }
 
 func (x *DescribeImportTaskBatchesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7401,7 +7401,7 @@ type DescribeImportTasksRequest struct {
 	Importid        string                 `protobuf:"bytes,513429114,opt,name=importid,proto3" json:"importid,omitempty"`
 	Importsourcearn string                 `protobuf:"bytes,161570329,opt,name=importsourcearn,proto3" json:"importsourcearn,omitempty"`
 	Importstatus    ImportStatus           `protobuf:"varint,31427999,opt,name=importstatus,proto3,enum=cloudwatchlogs.ImportStatus" json:"importstatus,omitempty"`
-	Limit           int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit           *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -7459,8 +7459,8 @@ func (x *DescribeImportTasksRequest) GetImportstatus() ImportStatus {
 }
 
 func (x *DescribeImportTasksRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7632,7 +7632,7 @@ type DescribeLogGroupsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Accountidentifiers    []string               `protobuf:"bytes,349304053,rep,name=accountidentifiers,proto3" json:"accountidentifiers,omitempty"`
 	Includelinkedaccounts *bool                  `protobuf:"varint,56034131,opt,name=includelinkedaccounts,proto3,oneof" json:"includelinkedaccounts,omitempty"`
-	Limit                 int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                 *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupclass         LogGroupClass          `protobuf:"varint,518605953,opt,name=loggroupclass,proto3,enum=cloudwatchlogs.LogGroupClass" json:"loggroupclass,omitempty"`
 	Loggroupidentifiers   []string               `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Loggroupnamepattern   string                 `protobuf:"bytes,253299540,opt,name=loggroupnamepattern,proto3" json:"loggroupnamepattern,omitempty"`
@@ -7687,8 +7687,8 @@ func (x *DescribeLogGroupsRequest) GetIncludelinkedaccounts() bool {
 }
 
 func (x *DescribeLogGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7783,7 +7783,7 @@ func (x *DescribeLogGroupsResponse) GetNexttoken() string {
 type DescribeLogStreamsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Descending          *bool                  `protobuf:"varint,378787644,opt,name=descending,proto3,oneof" json:"descending,omitempty"`
-	Limit               int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit               *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupidentifier  string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Loggroupname        string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Logstreamnameprefix string                 `protobuf:"bytes,24068871,opt,name=logstreamnameprefix,proto3" json:"logstreamnameprefix,omitempty"`
@@ -7831,8 +7831,8 @@ func (x *DescribeLogStreamsRequest) GetDescending() bool {
 }
 
 func (x *DescribeLogStreamsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7927,7 +7927,7 @@ func (x *DescribeLogStreamsResponse) GetNexttoken() string {
 type DescribeLookupTablesRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Lookuptablenameprefix string                 `protobuf:"bytes,505420195,opt,name=lookuptablenameprefix,proto3" json:"lookuptablenameprefix,omitempty"`
-	Maxresults            int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults            *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken             string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -7971,8 +7971,8 @@ func (x *DescribeLookupTablesRequest) GetLookuptablenameprefix() string {
 }
 
 func (x *DescribeLookupTablesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8039,7 +8039,7 @@ func (x *DescribeLookupTablesResponse) GetNexttoken() string {
 type DescribeMetricFiltersRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Filternameprefix string                 `protobuf:"bytes,46988721,opt,name=filternameprefix,proto3" json:"filternameprefix,omitempty"`
-	Limit            int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit            *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupname     string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Metricname       string                 `protobuf:"bytes,204020635,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Metricnamespace  string                 `protobuf:"bytes,315894261,opt,name=metricnamespace,proto3" json:"metricnamespace,omitempty"`
@@ -8086,8 +8086,8 @@ func (x *DescribeMetricFiltersRequest) GetFilternameprefix() string {
 }
 
 func (x *DescribeMetricFiltersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8175,7 +8175,7 @@ func (x *DescribeMetricFiltersResponse) GetNexttoken() string {
 type DescribeQueriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Loggroupname  string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Querylanguage QueryLanguage          `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Status        QueryStatus            `protobuf:"varint,441153520,opt,name=status,proto3,enum=cloudwatchlogs.QueryStatus" json:"status,omitempty"`
@@ -8221,8 +8221,8 @@ func (x *DescribeQueriesRequest) GetLoggroupname() string {
 }
 
 func (x *DescribeQueriesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8302,7 +8302,7 @@ func (x *DescribeQueriesResponse) GetQueries() []*QueryInfo {
 
 type DescribeQueryDefinitionsRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults                int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults                *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken                 string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Querydefinitionnameprefix string                 `protobuf:"bytes,28618146,opt,name=querydefinitionnameprefix,proto3" json:"querydefinitionnameprefix,omitempty"`
 	Querylanguage             QueryLanguage          `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
@@ -8341,8 +8341,8 @@ func (*DescribeQueryDefinitionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeQueryDefinitionsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -8422,7 +8422,7 @@ func (x *DescribeQueryDefinitionsResponse) GetQuerydefinitions() []*QueryDefinit
 
 type DescribeResourcePoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Policyscope   PolicyScope            `protobuf:"varint,288841470,opt,name=policyscope,proto3,enum=cloudwatchlogs.PolicyScope" json:"policyscope,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,67806797,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
@@ -8461,8 +8461,8 @@ func (*DescribeResourcePoliciesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeResourcePoliciesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8543,7 +8543,7 @@ func (x *DescribeResourcePoliciesResponse) GetResourcepolicies() []*ResourcePoli
 type DescribeSubscriptionFiltersRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Filternameprefix string                 `protobuf:"bytes,46988721,opt,name=filternameprefix,proto3" json:"filternameprefix,omitempty"`
-	Limit            int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit            *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupname     string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Nexttoken        string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -8588,8 +8588,8 @@ func (x *DescribeSubscriptionFiltersRequest) GetFilternameprefix() string {
 }
 
 func (x *DescribeSubscriptionFiltersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8664,7 +8664,7 @@ type Destination struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Accesspolicy    string                 `protobuf:"bytes,336061518,opt,name=accesspolicy,proto3" json:"accesspolicy,omitempty"`
 	Arn             string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtime    int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime    *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Destinationname string                 `protobuf:"bytes,284844189,opt,name=destinationname,proto3" json:"destinationname,omitempty"`
 	Rolearn         string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Targetarn       string                 `protobuf:"bytes,367964720,opt,name=targetarn,proto3" json:"targetarn,omitempty"`
@@ -8717,8 +8717,8 @@ func (x *Destination) GetArn() string {
 }
 
 func (x *Destination) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -8985,12 +8985,12 @@ type ExportTask struct {
 	Destination       string                   `protobuf:"bytes,316564672,opt,name=destination,proto3" json:"destination,omitempty"`
 	Destinationprefix string                   `protobuf:"bytes,172629044,opt,name=destinationprefix,proto3" json:"destinationprefix,omitempty"`
 	Executioninfo     *ExportTaskExecutionInfo `protobuf:"bytes,110255734,opt,name=executioninfo,proto3" json:"executioninfo,omitempty"`
-	From              int64                    `protobuf:"varint,365789302,opt,name=from,proto3" json:"from,omitempty"`
+	From              *int64                   `protobuf:"varint,365789302,opt,name=from,proto3,oneof" json:"from,omitempty"`
 	Loggroupname      string                   `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Status            *ExportTaskStatus        `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
 	Taskid            string                   `protobuf:"bytes,216769858,opt,name=taskid,proto3" json:"taskid,omitempty"`
 	Taskname          string                   `protobuf:"bytes,82438536,opt,name=taskname,proto3" json:"taskname,omitempty"`
-	To                int64                    `protobuf:"varint,38094885,opt,name=to,proto3" json:"to,omitempty"`
+	To                *int64                   `protobuf:"varint,38094885,opt,name=to,proto3,oneof" json:"to,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -9047,8 +9047,8 @@ func (x *ExportTask) GetExecutioninfo() *ExportTaskExecutionInfo {
 }
 
 func (x *ExportTask) GetFrom() int64 {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return 0
 }
@@ -9082,16 +9082,16 @@ func (x *ExportTask) GetTaskname() string {
 }
 
 func (x *ExportTask) GetTo() int64 {
-	if x != nil {
-		return x.To
+	if x != nil && x.To != nil {
+		return *x.To
 	}
 	return 0
 }
 
 type ExportTaskExecutionInfo struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Completiontime int64                  `protobuf:"varint,45320599,opt,name=completiontime,proto3" json:"completiontime,omitempty"`
-	Creationtime   int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Completiontime *int64                 `protobuf:"varint,45320599,opt,name=completiontime,proto3,oneof" json:"completiontime,omitempty"`
+	Creationtime   *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -9127,15 +9127,15 @@ func (*ExportTaskExecutionInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExportTaskExecutionInfo) GetCompletiontime() int64 {
-	if x != nil {
-		return x.Completiontime
+	if x != nil && x.Completiontime != nil {
+		return *x.Completiontime
 	}
 	return 0
 }
 
 func (x *ExportTaskExecutionInfo) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -9195,9 +9195,9 @@ func (x *ExportTaskStatus) GetMessage() string {
 type FieldIndex struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Fieldindexname     string                 `protobuf:"bytes,52826287,opt,name=fieldindexname,proto3" json:"fieldindexname,omitempty"`
-	Firsteventtime     int64                  `protobuf:"varint,236445651,opt,name=firsteventtime,proto3" json:"firsteventtime,omitempty"`
-	Lasteventtime      int64                  `protobuf:"varint,54472587,opt,name=lasteventtime,proto3" json:"lasteventtime,omitempty"`
-	Lastscantime       int64                  `protobuf:"varint,464250390,opt,name=lastscantime,proto3" json:"lastscantime,omitempty"`
+	Firsteventtime     *int64                 `protobuf:"varint,236445651,opt,name=firsteventtime,proto3,oneof" json:"firsteventtime,omitempty"`
+	Lasteventtime      *int64                 `protobuf:"varint,54472587,opt,name=lasteventtime,proto3,oneof" json:"lasteventtime,omitempty"`
+	Lastscantime       *int64                 `protobuf:"varint,464250390,opt,name=lastscantime,proto3,oneof" json:"lastscantime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Type               IndexType              `protobuf:"varint,287830350,opt,name=type,proto3,enum=cloudwatchlogs.IndexType" json:"type,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -9242,22 +9242,22 @@ func (x *FieldIndex) GetFieldindexname() string {
 }
 
 func (x *FieldIndex) GetFirsteventtime() int64 {
-	if x != nil {
-		return x.Firsteventtime
+	if x != nil && x.Firsteventtime != nil {
+		return *x.Firsteventtime
 	}
 	return 0
 }
 
 func (x *FieldIndex) GetLasteventtime() int64 {
-	if x != nil {
-		return x.Lasteventtime
+	if x != nil && x.Lasteventtime != nil {
+		return *x.Lasteventtime
 	}
 	return 0
 }
 
 func (x *FieldIndex) GetLastscantime() int64 {
-	if x != nil {
-		return x.Lastscantime
+	if x != nil && x.Lastscantime != nil {
+		return *x.Lastscantime
 	}
 	return 0
 }
@@ -9322,17 +9322,17 @@ func (x *FieldsData) GetData() []byte {
 
 type FilterLogEventsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Endtime             int64                  `protobuf:"varint,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Endtime             *int64                 `protobuf:"varint,329679852,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Filterpattern       string                 `protobuf:"bytes,144868248,opt,name=filterpattern,proto3" json:"filterpattern,omitempty"`
 	Interleaved         *bool                  `protobuf:"varint,405276841,opt,name=interleaved,proto3,oneof" json:"interleaved,omitempty"`
-	Limit               int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit               *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupidentifier  string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Loggroupname        string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Logstreamnameprefix string                 `protobuf:"bytes,24068871,opt,name=logstreamnameprefix,proto3" json:"logstreamnameprefix,omitempty"`
 	Logstreamnames      []string               `protobuf:"bytes,178825732,rep,name=logstreamnames,proto3" json:"logstreamnames,omitempty"`
 	Nexttoken           string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Startfromhead       *bool                  `protobuf:"varint,472305066,opt,name=startfromhead,proto3,oneof" json:"startfromhead,omitempty"`
-	Starttime           int64                  `protobuf:"varint,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Starttime           *int64                 `protobuf:"varint,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	Unmask              *bool                  `protobuf:"varint,363382499,opt,name=unmask,proto3,oneof" json:"unmask,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -9369,8 +9369,8 @@ func (*FilterLogEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *FilterLogEventsRequest) GetEndtime() int64 {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return 0
 }
@@ -9390,8 +9390,8 @@ func (x *FilterLogEventsRequest) GetInterleaved() bool {
 }
 
 func (x *FilterLogEventsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -9439,8 +9439,8 @@ func (x *FilterLogEventsRequest) GetStartfromhead() bool {
 }
 
 func (x *FilterLogEventsRequest) GetStarttime() int64 {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return 0
 }
@@ -9515,10 +9515,10 @@ func (x *FilterLogEventsResponse) GetSearchedlogstreams() []*SearchedLogStream {
 type FilteredLogEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Eventid       string                 `protobuf:"bytes,255267571,opt,name=eventid,proto3" json:"eventid,omitempty"`
-	Ingestiontime int64                  `protobuf:"varint,179367957,opt,name=ingestiontime,proto3" json:"ingestiontime,omitempty"`
+	Ingestiontime *int64                 `protobuf:"varint,179367957,opt,name=ingestiontime,proto3,oneof" json:"ingestiontime,omitempty"`
 	Logstreamname string                 `protobuf:"bytes,438025123,opt,name=logstreamname,proto3" json:"logstreamname,omitempty"`
 	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,310629668,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp     *int64                 `protobuf:"varint,310629668,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9561,8 +9561,8 @@ func (x *FilteredLogEvent) GetEventid() string {
 }
 
 func (x *FilteredLogEvent) GetIngestiontime() int64 {
-	if x != nil {
-		return x.Ingestiontime
+	if x != nil && x.Ingestiontime != nil {
+		return *x.Ingestiontime
 	}
 	return 0
 }
@@ -9582,8 +9582,8 @@ func (x *FilteredLogEvent) GetMessage() string {
 }
 
 func (x *FilteredLogEvent) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return 0
 }
@@ -9634,7 +9634,7 @@ func (x *GetDataProtectionPolicyRequest) GetLoggroupidentifier() string {
 
 type GetDataProtectionPolicyResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatedtime    int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime    *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Policydocument     string                 `protobuf:"bytes,178107627,opt,name=policydocument,proto3" json:"policydocument,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -9672,8 +9672,8 @@ func (*GetDataProtectionPolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDataProtectionPolicyResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -10203,13 +10203,13 @@ func (x *GetLogAnomalyDetectorRequest) GetAnomalydetectorarn() string {
 type GetLogAnomalyDetectorResponse struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectorstatus AnomalyDetectorStatus  `protobuf:"varint,458778431,opt,name=anomalydetectorstatus,proto3,enum=cloudwatchlogs.AnomalyDetectorStatus" json:"anomalydetectorstatus,omitempty"`
-	Anomalyvisibilitytime int64                  `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3" json:"anomalyvisibilitytime,omitempty"`
-	Creationtimestamp     int64                  `protobuf:"varint,206588645,opt,name=creationtimestamp,proto3" json:"creationtimestamp,omitempty"`
+	Anomalyvisibilitytime *int64                 `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3,oneof" json:"anomalyvisibilitytime,omitempty"`
+	Creationtimestamp     *int64                 `protobuf:"varint,206588645,opt,name=creationtimestamp,proto3,oneof" json:"creationtimestamp,omitempty"`
 	Detectorname          string                 `protobuf:"bytes,114651981,opt,name=detectorname,proto3" json:"detectorname,omitempty"`
 	Evaluationfrequency   EvaluationFrequency    `protobuf:"varint,533700360,opt,name=evaluationfrequency,proto3,enum=cloudwatchlogs.EvaluationFrequency" json:"evaluationfrequency,omitempty"`
 	Filterpattern         string                 `protobuf:"bytes,144868248,opt,name=filterpattern,proto3" json:"filterpattern,omitempty"`
 	Kmskeyid              string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastmodifiedtimestamp int64                  `protobuf:"varint,40019279,opt,name=lastmodifiedtimestamp,proto3" json:"lastmodifiedtimestamp,omitempty"`
+	Lastmodifiedtimestamp *int64                 `protobuf:"varint,40019279,opt,name=lastmodifiedtimestamp,proto3,oneof" json:"lastmodifiedtimestamp,omitempty"`
 	Loggrouparnlist       []string               `protobuf:"bytes,374867736,rep,name=loggrouparnlist,proto3" json:"loggrouparnlist,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -10253,15 +10253,15 @@ func (x *GetLogAnomalyDetectorResponse) GetAnomalydetectorstatus() AnomalyDetect
 }
 
 func (x *GetLogAnomalyDetectorResponse) GetAnomalyvisibilitytime() int64 {
-	if x != nil {
-		return x.Anomalyvisibilitytime
+	if x != nil && x.Anomalyvisibilitytime != nil {
+		return *x.Anomalyvisibilitytime
 	}
 	return 0
 }
 
 func (x *GetLogAnomalyDetectorResponse) GetCreationtimestamp() int64 {
-	if x != nil {
-		return x.Creationtimestamp
+	if x != nil && x.Creationtimestamp != nil {
+		return *x.Creationtimestamp
 	}
 	return 0
 }
@@ -10295,8 +10295,8 @@ func (x *GetLogAnomalyDetectorResponse) GetKmskeyid() string {
 }
 
 func (x *GetLogAnomalyDetectorResponse) GetLastmodifiedtimestamp() int64 {
-	if x != nil {
-		return x.Lastmodifiedtimestamp
+	if x != nil && x.Lastmodifiedtimestamp != nil {
+		return *x.Lastmodifiedtimestamp
 	}
 	return 0
 }
@@ -10310,14 +10310,14 @@ func (x *GetLogAnomalyDetectorResponse) GetLoggrouparnlist() []string {
 
 type GetLogEventsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Endtime            int64                  `protobuf:"varint,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Limit              int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Endtime            *int64                 `protobuf:"varint,329679852,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Limit              *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Loggroupname       string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Logstreamname      string                 `protobuf:"bytes,438025123,opt,name=logstreamname,proto3" json:"logstreamname,omitempty"`
 	Nexttoken          string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Startfromhead      *bool                  `protobuf:"varint,472305066,opt,name=startfromhead,proto3,oneof" json:"startfromhead,omitempty"`
-	Starttime          int64                  `protobuf:"varint,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Starttime          *int64                 `protobuf:"varint,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	Unmask             *bool                  `protobuf:"varint,363382499,opt,name=unmask,proto3,oneof" json:"unmask,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -10354,15 +10354,15 @@ func (*GetLogEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetLogEventsRequest) GetEndtime() int64 {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return 0
 }
 
 func (x *GetLogEventsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -10403,8 +10403,8 @@ func (x *GetLogEventsRequest) GetStartfromhead() bool {
 }
 
 func (x *GetLogEventsRequest) GetStarttime() int64 {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return 0
 }
@@ -10576,7 +10576,7 @@ type GetLogGroupFieldsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Loggroupname       string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
-	Time               int64                  `protobuf:"varint,490511333,opt,name=time,proto3" json:"time,omitempty"`
+	Time               *int64                 `protobuf:"varint,490511333,opt,name=time,proto3,oneof" json:"time,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -10626,8 +10626,8 @@ func (x *GetLogGroupFieldsRequest) GetLoggroupname() string {
 }
 
 func (x *GetLogGroupFieldsRequest) GetTime() int64 {
-	if x != nil {
-		return x.Time
+	if x != nil && x.Time != nil {
+		return *x.Time
 	}
 	return 0
 }
@@ -10968,10 +10968,10 @@ type GetLookupTableResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Description     string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Kmskeyid        string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastupdatedtime int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Lookuptablearn  string                 `protobuf:"bytes,150245445,opt,name=lookuptablearn,proto3" json:"lookuptablearn,omitempty"`
 	Lookuptablename string                 `protobuf:"bytes,443998607,opt,name=lookuptablename,proto3" json:"lookuptablename,omitempty"`
-	Sizebytes       int64                  `protobuf:"varint,244232000,opt,name=sizebytes,proto3" json:"sizebytes,omitempty"`
+	Sizebytes       *int64                 `protobuf:"varint,244232000,opt,name=sizebytes,proto3,oneof" json:"sizebytes,omitempty"`
 	Tablebody       string                 `protobuf:"bytes,438636408,opt,name=tablebody,proto3" json:"tablebody,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -11022,8 +11022,8 @@ func (x *GetLookupTableResponse) GetKmskeyid() string {
 }
 
 func (x *GetLookupTableResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -11043,8 +11043,8 @@ func (x *GetLookupTableResponse) GetLookuptablename() string {
 }
 
 func (x *GetLookupTableResponse) GetSizebytes() int64 {
-	if x != nil {
-		return x.Sizebytes
+	if x != nil && x.Sizebytes != nil {
+		return *x.Sizebytes
 	}
 	return 0
 }
@@ -11058,7 +11058,7 @@ func (x *GetLookupTableResponse) GetTablebody() string {
 
 type GetQueryResultsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems      int32                  `protobuf:"varint,486225716,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queryid       string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11096,8 +11096,8 @@ func (*GetQueryResultsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetQueryResultsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11205,7 +11205,7 @@ type GetScheduledQueryHistoryRequest struct {
 	Endtime           int64                  `protobuf:"varint,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Executionstatuses []ExecutionStatus      `protobuf:"varint,457739688,rep,packed,name=executionstatuses,proto3,enum=cloudwatchlogs.ExecutionStatus" json:"executionstatuses,omitempty"`
 	Identifier        string                 `protobuf:"bytes,145074239,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Maxresults        int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults        *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken         string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Starttime         int64                  `protobuf:"varint,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -11264,8 +11264,8 @@ func (x *GetScheduledQueryHistoryRequest) GetIdentifier() string {
 }
 
 func (x *GetScheduledQueryHistoryRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -11398,24 +11398,24 @@ func (x *GetScheduledQueryRequest) GetIdentifier() string {
 
 type GetScheduledQueryResponse struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
-	Creationtime             int64                     `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime             *int64                    `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Description              string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Destinationconfiguration *DestinationConfiguration `protobuf:"bytes,145518016,opt,name=destinationconfiguration,proto3" json:"destinationconfiguration,omitempty"`
-	Endtimeoffset            int64                     `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3" json:"endtimeoffset,omitempty"`
+	Endtimeoffset            *int64                    `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3,oneof" json:"endtimeoffset,omitempty"`
 	Executionrolearn         string                    `protobuf:"bytes,230613553,opt,name=executionrolearn,proto3" json:"executionrolearn,omitempty"`
 	Lastexecutionstatus      ExecutionStatus           `protobuf:"varint,7800596,opt,name=lastexecutionstatus,proto3,enum=cloudwatchlogs.ExecutionStatus" json:"lastexecutionstatus,omitempty"`
-	Lasttriggeredtime        int64                     `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3" json:"lasttriggeredtime,omitempty"`
-	Lastupdatedtime          int64                     `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lasttriggeredtime        *int64                    `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3,oneof" json:"lasttriggeredtime,omitempty"`
+	Lastupdatedtime          *int64                    `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Loggroupidentifiers      []string                  `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Name                     string                    `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Querylanguage            QueryLanguage             `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Querystring              string                    `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
-	Scheduleendtime          int64                     `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3" json:"scheduleendtime,omitempty"`
+	Scheduleendtime          *int64                    `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3,oneof" json:"scheduleendtime,omitempty"`
 	Scheduleexpression       string                    `protobuf:"bytes,287794975,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Schedulestarttime        int64                     `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3" json:"schedulestarttime,omitempty"`
+	Schedulestarttime        *int64                    `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3,oneof" json:"schedulestarttime,omitempty"`
 	Scheduletype             ScheduleType              `protobuf:"varint,75972645,opt,name=scheduletype,proto3,enum=cloudwatchlogs.ScheduleType" json:"scheduletype,omitempty"`
 	Scheduledqueryarn        string                    `protobuf:"bytes,240292916,opt,name=scheduledqueryarn,proto3" json:"scheduledqueryarn,omitempty"`
-	Starttimeoffset          int64                     `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3" json:"starttimeoffset,omitempty"`
+	Starttimeoffset          *int64                    `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3,oneof" json:"starttimeoffset,omitempty"`
 	State                    ScheduledQueryState       `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.ScheduledQueryState" json:"state,omitempty"`
 	Timezone                 string                    `protobuf:"bytes,190615331,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -11453,8 +11453,8 @@ func (*GetScheduledQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetScheduledQueryResponse) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -11474,8 +11474,8 @@ func (x *GetScheduledQueryResponse) GetDestinationconfiguration() *DestinationCo
 }
 
 func (x *GetScheduledQueryResponse) GetEndtimeoffset() int64 {
-	if x != nil {
-		return x.Endtimeoffset
+	if x != nil && x.Endtimeoffset != nil {
+		return *x.Endtimeoffset
 	}
 	return 0
 }
@@ -11495,15 +11495,15 @@ func (x *GetScheduledQueryResponse) GetLastexecutionstatus() ExecutionStatus {
 }
 
 func (x *GetScheduledQueryResponse) GetLasttriggeredtime() int64 {
-	if x != nil {
-		return x.Lasttriggeredtime
+	if x != nil && x.Lasttriggeredtime != nil {
+		return *x.Lasttriggeredtime
 	}
 	return 0
 }
 
 func (x *GetScheduledQueryResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -11537,8 +11537,8 @@ func (x *GetScheduledQueryResponse) GetQuerystring() string {
 }
 
 func (x *GetScheduledQueryResponse) GetScheduleendtime() int64 {
-	if x != nil {
-		return x.Scheduleendtime
+	if x != nil && x.Scheduleendtime != nil {
+		return *x.Scheduleendtime
 	}
 	return 0
 }
@@ -11551,8 +11551,8 @@ func (x *GetScheduledQueryResponse) GetScheduleexpression() string {
 }
 
 func (x *GetScheduledQueryResponse) GetSchedulestarttime() int64 {
-	if x != nil {
-		return x.Schedulestarttime
+	if x != nil && x.Schedulestarttime != nil {
+		return *x.Schedulestarttime
 	}
 	return 0
 }
@@ -11572,8 +11572,8 @@ func (x *GetScheduledQueryResponse) GetScheduledqueryarn() string {
 }
 
 func (x *GetScheduledQueryResponse) GetStarttimeoffset() int64 {
-	if x != nil {
-		return x.Starttimeoffset
+	if x != nil && x.Starttimeoffset != nil {
+		return *x.Starttimeoffset
 	}
 	return 0
 }
@@ -11638,8 +11638,8 @@ func (x *GetTransformerRequest) GetLoggroupidentifier() string {
 
 type GetTransformerResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Creationtime       int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
-	Lastmodifiedtime   int64                  `protobuf:"varint,374093504,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
+	Creationtime       *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Lastmodifiedtime   *int64                 `protobuf:"varint,374093504,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Transformerconfig  []*Processor           `protobuf:"bytes,384836439,rep,name=transformerconfig,proto3" json:"transformerconfig,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -11677,15 +11677,15 @@ func (*GetTransformerResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetTransformerResponse) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
 
 func (x *GetTransformerResponse) GetLastmodifiedtime() int64 {
-	if x != nil {
-		return x.Lastmodifiedtime
+	if x != nil && x.Lastmodifiedtime != nil {
+		return *x.Lastmodifiedtime
 	}
 	return 0
 }
@@ -11810,7 +11810,7 @@ func (x *GroupingIdentifier) GetValue() string {
 
 type Import struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Creationtime         int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime         *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Errormessage         string                 `protobuf:"bytes,136873289,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
 	Importdestinationarn string                 `protobuf:"bytes,94477180,opt,name=importdestinationarn,proto3" json:"importdestinationarn,omitempty"`
 	Importfilter         *ImportFilter          `protobuf:"bytes,170561015,opt,name=importfilter,proto3" json:"importfilter,omitempty"`
@@ -11818,7 +11818,7 @@ type Import struct {
 	Importsourcearn      string                 `protobuf:"bytes,161570329,opt,name=importsourcearn,proto3" json:"importsourcearn,omitempty"`
 	Importstatistics     *ImportStatistics      `protobuf:"bytes,60366280,opt,name=importstatistics,proto3" json:"importstatistics,omitempty"`
 	Importstatus         ImportStatus           `protobuf:"varint,31427999,opt,name=importstatus,proto3,enum=cloudwatchlogs.ImportStatus" json:"importstatus,omitempty"`
-	Lastupdatedtime      int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime      *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -11854,8 +11854,8 @@ func (*Import) Descriptor() ([]byte, []int) {
 }
 
 func (x *Import) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -11910,8 +11910,8 @@ func (x *Import) GetImportstatus() ImportStatus {
 }
 
 func (x *Import) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -11978,8 +11978,8 @@ func (x *ImportBatch) GetStatus() ImportStatus {
 
 type ImportFilter struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Endeventtime   int64                  `protobuf:"varint,345758432,opt,name=endeventtime,proto3" json:"endeventtime,omitempty"`
-	Starteventtime int64                  `protobuf:"varint,406085597,opt,name=starteventtime,proto3" json:"starteventtime,omitempty"`
+	Endeventtime   *int64                 `protobuf:"varint,345758432,opt,name=endeventtime,proto3,oneof" json:"endeventtime,omitempty"`
+	Starteventtime *int64                 `protobuf:"varint,406085597,opt,name=starteventtime,proto3,oneof" json:"starteventtime,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -12015,22 +12015,22 @@ func (*ImportFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportFilter) GetEndeventtime() int64 {
-	if x != nil {
-		return x.Endeventtime
+	if x != nil && x.Endeventtime != nil {
+		return *x.Endeventtime
 	}
 	return 0
 }
 
 func (x *ImportFilter) GetStarteventtime() int64 {
-	if x != nil {
-		return x.Starteventtime
+	if x != nil && x.Starteventtime != nil {
+		return *x.Starteventtime
 	}
 	return 0
 }
 
 type ImportStatistics struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Bytesimported int64                  `protobuf:"varint,216355553,opt,name=bytesimported,proto3" json:"bytesimported,omitempty"`
+	Bytesimported *int64                 `protobuf:"varint,216355553,opt,name=bytesimported,proto3,oneof" json:"bytesimported,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12066,15 +12066,15 @@ func (*ImportStatistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportStatistics) GetBytesimported() int64 {
-	if x != nil {
-		return x.Bytesimported
+	if x != nil && x.Bytesimported != nil {
+		return *x.Bytesimported
 	}
 	return 0
 }
 
 type IndexPolicy struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatetime     int64                  `protobuf:"varint,189280082,opt,name=lastupdatetime,proto3" json:"lastupdatetime,omitempty"`
+	Lastupdatetime     *int64                 `protobuf:"varint,189280082,opt,name=lastupdatetime,proto3,oneof" json:"lastupdatetime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Policydocument     string                 `protobuf:"bytes,178107627,opt,name=policydocument,proto3" json:"policydocument,omitempty"`
 	Policyname         string                 `protobuf:"bytes,115126621,opt,name=policyname,proto3" json:"policyname,omitempty"`
@@ -12114,8 +12114,8 @@ func (*IndexPolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *IndexPolicy) GetLastupdatetime() int64 {
-	if x != nil {
-		return x.Lastupdatetime
+	if x != nil && x.Lastupdatetime != nil {
+		return *x.Lastupdatetime
 	}
 	return 0
 }
@@ -12582,7 +12582,7 @@ type ListAggregateLogGroupSummariesRequest struct {
 	Datasources           []*DataSourceFilter                   `protobuf:"bytes,477389554,rep,name=datasources,proto3" json:"datasources,omitempty"`
 	Groupby               ListAggregateLogGroupSummariesGroupBy `protobuf:"varint,372746826,opt,name=groupby,proto3,enum=cloudwatchlogs.ListAggregateLogGroupSummariesGroupBy" json:"groupby,omitempty"`
 	Includelinkedaccounts *bool                                 `protobuf:"varint,56034131,opt,name=includelinkedaccounts,proto3,oneof" json:"includelinkedaccounts,omitempty"`
-	Limit                 int32                                 `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                 *int32                                `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupclass         LogGroupClass                         `protobuf:"varint,518605953,opt,name=loggroupclass,proto3,enum=cloudwatchlogs.LogGroupClass" json:"loggroupclass,omitempty"`
 	Loggroupnamepattern   string                                `protobuf:"bytes,253299540,opt,name=loggroupnamepattern,proto3" json:"loggroupnamepattern,omitempty"`
 	Nexttoken             string                                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
@@ -12649,8 +12649,8 @@ func (x *ListAggregateLogGroupSummariesRequest) GetIncludelinkedaccounts() bool 
 }
 
 func (x *ListAggregateLogGroupSummariesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12731,7 +12731,7 @@ func (x *ListAggregateLogGroupSummariesResponse) GetNexttoken() string {
 type ListAnomaliesRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectorarn string                 `protobuf:"bytes,446490540,opt,name=anomalydetectorarn,proto3" json:"anomalydetectorarn,omitempty"`
-	Limit              int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit              *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken          string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Suppressionstate   SuppressionState       `protobuf:"varint,124822782,opt,name=suppressionstate,proto3,enum=cloudwatchlogs.SuppressionState" json:"suppressionstate,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -12776,8 +12776,8 @@ func (x *ListAnomaliesRequest) GetAnomalydetectorarn() string {
 }
 
 func (x *ListAnomaliesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12955,7 +12955,7 @@ func (x *ListIntegrationsResponse) GetIntegrationsummaries() []*IntegrationSumma
 type ListLogAnomalyDetectorsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Filterloggrouparn string                 `protobuf:"bytes,72011610,opt,name=filterloggrouparn,proto3" json:"filterloggrouparn,omitempty"`
-	Limit             int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit             *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken         string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -12999,8 +12999,8 @@ func (x *ListLogAnomalyDetectorsRequest) GetFilterloggrouparn() string {
 }
 
 func (x *ListLogAnomalyDetectorsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -13066,7 +13066,7 @@ func (x *ListLogAnomalyDetectorsResponse) GetNexttoken() string {
 
 type ListLogGroupsForQueryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Queryid       string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -13104,8 +13104,8 @@ func (*ListLogGroupsForQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListLogGroupsForQueryRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -13182,7 +13182,7 @@ type ListLogGroupsRequest struct {
 	Datasources           []*DataSourceFilter    `protobuf:"bytes,477389554,rep,name=datasources,proto3" json:"datasources,omitempty"`
 	Fieldindexnames       []string               `protobuf:"bytes,300714984,rep,name=fieldindexnames,proto3" json:"fieldindexnames,omitempty"`
 	Includelinkedaccounts *bool                  `protobuf:"varint,56034131,opt,name=includelinkedaccounts,proto3,oneof" json:"includelinkedaccounts,omitempty"`
-	Limit                 int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                 *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupclass         LogGroupClass          `protobuf:"varint,518605953,opt,name=loggroupclass,proto3,enum=cloudwatchlogs.LogGroupClass" json:"loggroupclass,omitempty"`
 	Loggroupnamepattern   string                 `protobuf:"bytes,253299540,opt,name=loggroupnamepattern,proto3" json:"loggroupnamepattern,omitempty"`
 	Loggrouptags          []*TagFilter           `protobuf:"bytes,412319602,rep,name=loggrouptags,proto3" json:"loggrouptags,omitempty"`
@@ -13250,8 +13250,8 @@ func (x *ListLogGroupsRequest) GetIncludelinkedaccounts() bool {
 }
 
 func (x *ListLogGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -13338,7 +13338,7 @@ func (x *ListLogGroupsResponse) GetNexttoken() string {
 
 type ListScheduledQueriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Scheduletype  ScheduleType           `protobuf:"varint,75972645,opt,name=scheduletype,proto3,enum=cloudwatchlogs.ScheduleType" json:"scheduletype,omitempty"`
 	State         ScheduledQueryState    `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.ScheduledQueryState" json:"state,omitempty"`
@@ -13377,8 +13377,8 @@ func (*ListScheduledQueriesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListScheduledQueriesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -13459,7 +13459,7 @@ func (x *ListScheduledQueriesResponse) GetScheduledqueries() []*ScheduledQuerySu
 type ListSourcesForS3TableIntegrationRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Integrationarn string                 `protobuf:"bytes,432021733,opt,name=integrationarn,proto3" json:"integrationarn,omitempty"`
-	Maxresults     int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults     *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken      string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -13503,8 +13503,8 @@ func (x *ListSourcesForS3TableIntegrationRequest) GetIntegrationarn() string {
 }
 
 func (x *ListSourcesForS3TableIntegrationRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -13571,7 +13571,7 @@ func (x *ListSourcesForS3TableIntegrationResponse) GetSources() []*S3TableIntegr
 type ListSyslogConfigurationsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
-	Maxresults         int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults         *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken          string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Vpcendpointid      string                 `protobuf:"bytes,376719261,opt,name=vpcendpointid,proto3" json:"vpcendpointid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -13616,8 +13616,8 @@ func (x *ListSyslogConfigurationsRequest) GetLoggroupidentifier() string {
 }
 
 func (x *ListSyslogConfigurationsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -13950,11 +13950,11 @@ func (x *ListToMap) GetValuekey() string {
 
 type LiveTailSessionLogEvent struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Ingestiontime      int64                  `protobuf:"varint,179367957,opt,name=ingestiontime,proto3" json:"ingestiontime,omitempty"`
+	Ingestiontime      *int64                 `protobuf:"varint,179367957,opt,name=ingestiontime,proto3,oneof" json:"ingestiontime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Logstreamname      string                 `protobuf:"bytes,438025123,opt,name=logstreamname,proto3" json:"logstreamname,omitempty"`
 	Message            string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Timestamp          int64                  `protobuf:"varint,310629668,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp          *int64                 `protobuf:"varint,310629668,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -13990,8 +13990,8 @@ func (*LiveTailSessionLogEvent) Descriptor() ([]byte, []int) {
 }
 
 func (x *LiveTailSessionLogEvent) GetIngestiontime() int64 {
-	if x != nil {
-		return x.Ingestiontime
+	if x != nil && x.Ingestiontime != nil {
+		return *x.Ingestiontime
 	}
 	return 0
 }
@@ -14018,8 +14018,8 @@ func (x *LiveTailSessionLogEvent) GetMessage() string {
 }
 
 func (x *LiveTailSessionLogEvent) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return 0
 }
@@ -14207,7 +14207,7 @@ func (x *LiveTailSessionUpdate) GetSessionresults() []*LiveTailSessionLogEvent {
 type LogEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,310629668,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp     *int64                 `protobuf:"varint,310629668,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14250,8 +14250,8 @@ func (x *LogEvent) GetMessage() string {
 }
 
 func (x *LogEvent) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return 0
 }
@@ -14372,7 +14372,7 @@ type LogGroup struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Arn                              string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
 	Bearertokenauthenticationenabled *bool                  `protobuf:"varint,513390155,opt,name=bearertokenauthenticationenabled,proto3,oneof" json:"bearertokenauthenticationenabled,omitempty"`
-	Creationtime                     int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime                     *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Dataprotectionstatus             DataProtectionStatus   `protobuf:"varint,24294469,opt,name=dataprotectionstatus,proto3,enum=cloudwatchlogs.DataProtectionStatus" json:"dataprotectionstatus,omitempty"`
 	Deletionprotectionenabled        *bool                  `protobuf:"varint,475522738,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
 	Inheritedproperties              []InheritedProperty    `protobuf:"varint,178880393,rep,packed,name=inheritedproperties,proto3,enum=cloudwatchlogs.InheritedProperty" json:"inheritedproperties,omitempty"`
@@ -14380,9 +14380,9 @@ type LogGroup struct {
 	Loggrouparn                      string                 `protobuf:"bytes,6742512,opt,name=loggrouparn,proto3" json:"loggrouparn,omitempty"`
 	Loggroupclass                    LogGroupClass          `protobuf:"varint,518605953,opt,name=loggroupclass,proto3,enum=cloudwatchlogs.LogGroupClass" json:"loggroupclass,omitempty"`
 	Loggroupname                     string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
-	Metricfiltercount                int32                  `protobuf:"varint,347145747,opt,name=metricfiltercount,proto3" json:"metricfiltercount,omitempty"`
-	Retentionindays                  int32                  `protobuf:"varint,258337482,opt,name=retentionindays,proto3" json:"retentionindays,omitempty"`
-	Storedbytes                      int64                  `protobuf:"varint,260235622,opt,name=storedbytes,proto3" json:"storedbytes,omitempty"`
+	Metricfiltercount                *int32                 `protobuf:"varint,347145747,opt,name=metricfiltercount,proto3,oneof" json:"metricfiltercount,omitempty"`
+	Retentionindays                  *int32                 `protobuf:"varint,258337482,opt,name=retentionindays,proto3,oneof" json:"retentionindays,omitempty"`
+	Storedbytes                      *int64                 `protobuf:"varint,260235622,opt,name=storedbytes,proto3,oneof" json:"storedbytes,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -14432,8 +14432,8 @@ func (x *LogGroup) GetBearertokenauthenticationenabled() bool {
 }
 
 func (x *LogGroup) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -14488,22 +14488,22 @@ func (x *LogGroup) GetLoggroupname() string {
 }
 
 func (x *LogGroup) GetMetricfiltercount() int32 {
-	if x != nil {
-		return x.Metricfiltercount
+	if x != nil && x.Metricfiltercount != nil {
+		return *x.Metricfiltercount
 	}
 	return 0
 }
 
 func (x *LogGroup) GetRetentionindays() int32 {
-	if x != nil {
-		return x.Retentionindays
+	if x != nil && x.Retentionindays != nil {
+		return *x.Retentionindays
 	}
 	return 0
 }
 
 func (x *LogGroup) GetStoredbytes() int64 {
-	if x != nil {
-		return x.Storedbytes
+	if x != nil && x.Storedbytes != nil {
+		return *x.Storedbytes
 	}
 	return 0
 }
@@ -14511,7 +14511,7 @@ func (x *LogGroup) GetStoredbytes() int64 {
 type LogGroupField struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Percent       int32                  `protobuf:"varint,368704091,opt,name=percent,proto3" json:"percent,omitempty"`
+	Percent       *int32                 `protobuf:"varint,368704091,opt,name=percent,proto3,oneof" json:"percent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14554,8 +14554,8 @@ func (x *LogGroupField) GetName() string {
 }
 
 func (x *LogGroupField) GetPercent() int32 {
-	if x != nil {
-		return x.Percent
+	if x != nil && x.Percent != nil {
+		return *x.Percent
 	}
 	return 0
 }
@@ -14623,12 +14623,12 @@ func (x *LogGroupSummary) GetLoggroupname() string {
 type LogStream struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Arn                 string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtime        int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
-	Firsteventtimestamp int64                  `protobuf:"varint,354762842,opt,name=firsteventtimestamp,proto3" json:"firsteventtimestamp,omitempty"`
-	Lasteventtimestamp  int64                  `protobuf:"varint,338474610,opt,name=lasteventtimestamp,proto3" json:"lasteventtimestamp,omitempty"`
-	Lastingestiontime   int64                  `protobuf:"varint,56929529,opt,name=lastingestiontime,proto3" json:"lastingestiontime,omitempty"`
+	Creationtime        *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Firsteventtimestamp *int64                 `protobuf:"varint,354762842,opt,name=firsteventtimestamp,proto3,oneof" json:"firsteventtimestamp,omitempty"`
+	Lasteventtimestamp  *int64                 `protobuf:"varint,338474610,opt,name=lasteventtimestamp,proto3,oneof" json:"lasteventtimestamp,omitempty"`
+	Lastingestiontime   *int64                 `protobuf:"varint,56929529,opt,name=lastingestiontime,proto3,oneof" json:"lastingestiontime,omitempty"`
 	Logstreamname       string                 `protobuf:"bytes,438025123,opt,name=logstreamname,proto3" json:"logstreamname,omitempty"`
-	Storedbytes         int64                  `protobuf:"varint,260235622,opt,name=storedbytes,proto3" json:"storedbytes,omitempty"`
+	Storedbytes         *int64                 `protobuf:"varint,260235622,opt,name=storedbytes,proto3,oneof" json:"storedbytes,omitempty"`
 	Uploadsequencetoken string                 `protobuf:"bytes,139889111,opt,name=uploadsequencetoken,proto3" json:"uploadsequencetoken,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -14672,29 +14672,29 @@ func (x *LogStream) GetArn() string {
 }
 
 func (x *LogStream) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
 
 func (x *LogStream) GetFirsteventtimestamp() int64 {
-	if x != nil {
-		return x.Firsteventtimestamp
+	if x != nil && x.Firsteventtimestamp != nil {
+		return *x.Firsteventtimestamp
 	}
 	return 0
 }
 
 func (x *LogStream) GetLasteventtimestamp() int64 {
-	if x != nil {
-		return x.Lasteventtimestamp
+	if x != nil && x.Lasteventtimestamp != nil {
+		return *x.Lasteventtimestamp
 	}
 	return 0
 }
 
 func (x *LogStream) GetLastingestiontime() int64 {
-	if x != nil {
-		return x.Lastingestiontime
+	if x != nil && x.Lastingestiontime != nil {
+		return *x.Lastingestiontime
 	}
 	return 0
 }
@@ -14707,8 +14707,8 @@ func (x *LogStream) GetLogstreamname() string {
 }
 
 func (x *LogStream) GetStoredbytes() int64 {
-	if x != nil {
-		return x.Storedbytes
+	if x != nil && x.Storedbytes != nil {
+		return *x.Storedbytes
 	}
 	return 0
 }
@@ -14724,11 +14724,11 @@ type LookupTable struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Description     string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Kmskeyid        string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastupdatedtime int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Lookuptablearn  string                 `protobuf:"bytes,150245445,opt,name=lookuptablearn,proto3" json:"lookuptablearn,omitempty"`
 	Lookuptablename string                 `protobuf:"bytes,443998607,opt,name=lookuptablename,proto3" json:"lookuptablename,omitempty"`
-	Recordscount    int64                  `protobuf:"varint,324699757,opt,name=recordscount,proto3" json:"recordscount,omitempty"`
-	Sizebytes       int64                  `protobuf:"varint,244232000,opt,name=sizebytes,proto3" json:"sizebytes,omitempty"`
+	Recordscount    *int64                 `protobuf:"varint,324699757,opt,name=recordscount,proto3,oneof" json:"recordscount,omitempty"`
+	Sizebytes       *int64                 `protobuf:"varint,244232000,opt,name=sizebytes,proto3,oneof" json:"sizebytes,omitempty"`
 	Tablefields     []string               `protobuf:"bytes,295273623,rep,name=tablefields,proto3" json:"tablefields,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -14779,8 +14779,8 @@ func (x *LookupTable) GetKmskeyid() string {
 }
 
 func (x *LookupTable) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -14800,15 +14800,15 @@ func (x *LookupTable) GetLookuptablename() string {
 }
 
 func (x *LookupTable) GetRecordscount() int64 {
-	if x != nil {
-		return x.Recordscount
+	if x != nil && x.Recordscount != nil {
+		return *x.Recordscount
 	}
 	return 0
 }
 
 func (x *LookupTable) GetSizebytes() int64 {
-	if x != nil {
-		return x.Sizebytes
+	if x != nil && x.Sizebytes != nil {
+		return *x.Sizebytes
 	}
 	return 0
 }
@@ -14919,7 +14919,7 @@ func (x *MalformedQueryException) GetQuerycompileerror() *QueryCompileError {
 type MetricFilter struct {
 	state                     protoimpl.MessageState  `protogen:"open.v1"`
 	Applyontransformedlogs    *bool                   `protobuf:"varint,99775525,opt,name=applyontransformedlogs,proto3,oneof" json:"applyontransformedlogs,omitempty"`
-	Creationtime              int64                   `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime              *int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Emitsystemfielddimensions []string                `protobuf:"bytes,437431321,rep,name=emitsystemfielddimensions,proto3" json:"emitsystemfielddimensions,omitempty"`
 	Fieldselectioncriteria    string                  `protobuf:"bytes,303984807,opt,name=fieldselectioncriteria,proto3" json:"fieldselectioncriteria,omitempty"`
 	Filtername                string                  `protobuf:"bytes,395125013,opt,name=filtername,proto3" json:"filtername,omitempty"`
@@ -14968,8 +14968,8 @@ func (x *MetricFilter) GetApplyontransformedlogs() bool {
 }
 
 func (x *MetricFilter) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -15019,7 +15019,7 @@ func (x *MetricFilter) GetMetrictransformations() []*MetricTransformation {
 type MetricFilterMatchRecord struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Eventmessage    string                 `protobuf:"bytes,299743039,opt,name=eventmessage,proto3" json:"eventmessage,omitempty"`
-	Eventnumber     int64                  `protobuf:"varint,220470463,opt,name=eventnumber,proto3" json:"eventnumber,omitempty"`
+	Eventnumber     *int64                 `protobuf:"varint,220470463,opt,name=eventnumber,proto3,oneof" json:"eventnumber,omitempty"`
 	Extractedvalues map[string]string      `protobuf:"bytes,341078182,rep,name=extractedvalues,proto3" json:"extractedvalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -15063,8 +15063,8 @@ func (x *MetricFilterMatchRecord) GetEventmessage() string {
 }
 
 func (x *MetricFilterMatchRecord) GetEventnumber() int64 {
-	if x != nil {
-		return x.Eventnumber
+	if x != nil && x.Eventnumber != nil {
+		return *x.Eventnumber
 	}
 	return 0
 }
@@ -15978,9 +15978,9 @@ func (x *OperationAbortedException) GetMessage() string {
 
 type OutputLogEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ingestiontime int64                  `protobuf:"varint,179367957,opt,name=ingestiontime,proto3" json:"ingestiontime,omitempty"`
+	Ingestiontime *int64                 `protobuf:"varint,179367957,opt,name=ingestiontime,proto3,oneof" json:"ingestiontime,omitempty"`
 	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,310629668,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp     *int64                 `protobuf:"varint,310629668,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16016,8 +16016,8 @@ func (*OutputLogEvent) Descriptor() ([]byte, []int) {
 }
 
 func (x *OutputLogEvent) GetIngestiontime() int64 {
-	if x != nil {
-		return x.Ingestiontime
+	if x != nil && x.Ingestiontime != nil {
+		return *x.Ingestiontime
 	}
 	return 0
 }
@@ -16030,8 +16030,8 @@ func (x *OutputLogEvent) GetMessage() string {
 }
 
 func (x *OutputLogEvent) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return 0
 }
@@ -16470,7 +16470,7 @@ func (x *ParseWAF) GetSource() string {
 
 type PatternToken struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dynamictokenposition int32                  `protobuf:"varint,9081241,opt,name=dynamictokenposition,proto3" json:"dynamictokenposition,omitempty"`
+	Dynamictokenposition *int32                 `protobuf:"varint,9081241,opt,name=dynamictokenposition,proto3,oneof" json:"dynamictokenposition,omitempty"`
 	Enumerations         map[string]int64       `protobuf:"bytes,14171326,rep,name=enumerations,proto3" json:"enumerations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	Inferredtokenname    string                 `protobuf:"bytes,57553257,opt,name=inferredtokenname,proto3" json:"inferredtokenname,omitempty"`
 	Isdynamic            *bool                  `protobuf:"varint,17462495,opt,name=isdynamic,proto3,oneof" json:"isdynamic,omitempty"`
@@ -16510,8 +16510,8 @@ func (*PatternToken) Descriptor() ([]byte, []int) {
 }
 
 func (x *PatternToken) GetDynamictokenposition() int32 {
-	if x != nil {
-		return x.Dynamictokenposition
+	if x != nil && x.Dynamictokenposition != nil {
+		return *x.Dynamictokenposition
 	}
 	return 0
 }
@@ -17034,7 +17034,7 @@ func (x *PutDataProtectionPolicyRequest) GetPolicydocument() string {
 
 type PutDataProtectionPolicyResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatedtime    int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime    *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Loggroupidentifier string                 `protobuf:"bytes,468281308,opt,name=loggroupidentifier,proto3" json:"loggroupidentifier,omitempty"`
 	Policydocument     string                 `protobuf:"bytes,178107627,opt,name=policydocument,proto3" json:"policydocument,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -17072,8 +17072,8 @@ func (*PutDataProtectionPolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutDataProtectionPolicyResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -18662,8 +18662,8 @@ func (x *QueryCompileError) GetMessage() string {
 
 type QueryCompileErrorLocation struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Endcharoffset   int32                  `protobuf:"varint,14912634,opt,name=endcharoffset,proto3" json:"endcharoffset,omitempty"`
-	Startcharoffset int32                  `protobuf:"varint,391795325,opt,name=startcharoffset,proto3" json:"startcharoffset,omitempty"`
+	Endcharoffset   *int32                 `protobuf:"varint,14912634,opt,name=endcharoffset,proto3,oneof" json:"endcharoffset,omitempty"`
+	Startcharoffset *int32                 `protobuf:"varint,391795325,opt,name=startcharoffset,proto3,oneof" json:"startcharoffset,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -18699,22 +18699,22 @@ func (*QueryCompileErrorLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryCompileErrorLocation) GetEndcharoffset() int32 {
-	if x != nil {
-		return x.Endcharoffset
+	if x != nil && x.Endcharoffset != nil {
+		return *x.Endcharoffset
 	}
 	return 0
 }
 
 func (x *QueryCompileErrorLocation) GetStartcharoffset() int32 {
-	if x != nil {
-		return x.Startcharoffset
+	if x != nil && x.Startcharoffset != nil {
+		return *x.Startcharoffset
 	}
 	return 0
 }
 
 type QueryDefinition struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Lastmodified      int64                  `protobuf:"varint,410744903,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Lastmodified      *int64                 `protobuf:"varint,410744903,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Loggroupnames     []string               `protobuf:"bytes,337702569,rep,name=loggroupnames,proto3" json:"loggroupnames,omitempty"`
 	Name              string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Parameters        []*QueryParameter      `protobuf:"bytes,145043162,rep,name=parameters,proto3" json:"parameters,omitempty"`
@@ -18756,8 +18756,8 @@ func (*QueryDefinition) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryDefinition) GetLastmodified() int64 {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return 0
 }
@@ -18807,9 +18807,9 @@ func (x *QueryDefinition) GetQuerystring() string {
 type QueryInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Bytesscanned  float64                `protobuf:"fixed64,533301977,opt,name=bytesscanned,proto3" json:"bytesscanned,omitempty"`
-	Createtime    int64                  `protobuf:"varint,297700189,opt,name=createtime,proto3" json:"createtime,omitempty"`
+	Createtime    *int64                 `protobuf:"varint,297700189,opt,name=createtime,proto3,oneof" json:"createtime,omitempty"`
 	Loggroupname  string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
-	Queryduration int64                  `protobuf:"varint,97719576,opt,name=queryduration,proto3" json:"queryduration,omitempty"`
+	Queryduration *int64                 `protobuf:"varint,97719576,opt,name=queryduration,proto3,oneof" json:"queryduration,omitempty"`
 	Queryid       string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	Querylanguage QueryLanguage          `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Querystring   string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
@@ -18857,8 +18857,8 @@ func (x *QueryInfo) GetBytesscanned() float64 {
 }
 
 func (x *QueryInfo) GetCreatetime() int64 {
-	if x != nil {
-		return x.Createtime
+	if x != nil && x.Createtime != nil {
+		return *x.Createtime
 	}
 	return 0
 }
@@ -18871,8 +18871,8 @@ func (x *QueryInfo) GetLoggroupname() string {
 }
 
 func (x *QueryInfo) GetQueryduration() int64 {
-	if x != nil {
-		return x.Queryduration
+	if x != nil && x.Queryduration != nil {
+		return *x.Queryduration
 	}
 	return 0
 }
@@ -19154,9 +19154,9 @@ func (x *RejectedEntityInfo) GetErrortype() EntityRejectionErrorType {
 
 type RejectedLogEventsInfo struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Expiredlogeventendindex  int32                  `protobuf:"varint,299438860,opt,name=expiredlogeventendindex,proto3" json:"expiredlogeventendindex,omitempty"`
-	Toonewlogeventstartindex int32                  `protobuf:"varint,397251384,opt,name=toonewlogeventstartindex,proto3" json:"toonewlogeventstartindex,omitempty"`
-	Toooldlogeventendindex   int32                  `protobuf:"varint,96023564,opt,name=toooldlogeventendindex,proto3" json:"toooldlogeventendindex,omitempty"`
+	Expiredlogeventendindex  *int32                 `protobuf:"varint,299438860,opt,name=expiredlogeventendindex,proto3,oneof" json:"expiredlogeventendindex,omitempty"`
+	Toonewlogeventstartindex *int32                 `protobuf:"varint,397251384,opt,name=toonewlogeventstartindex,proto3,oneof" json:"toonewlogeventstartindex,omitempty"`
+	Toooldlogeventendindex   *int32                 `protobuf:"varint,96023564,opt,name=toooldlogeventendindex,proto3,oneof" json:"toooldlogeventendindex,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -19192,22 +19192,22 @@ func (*RejectedLogEventsInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *RejectedLogEventsInfo) GetExpiredlogeventendindex() int32 {
-	if x != nil {
-		return x.Expiredlogeventendindex
+	if x != nil && x.Expiredlogeventendindex != nil {
+		return *x.Expiredlogeventendindex
 	}
 	return 0
 }
 
 func (x *RejectedLogEventsInfo) GetToonewlogeventstartindex() int32 {
-	if x != nil {
-		return x.Toonewlogeventstartindex
+	if x != nil && x.Toonewlogeventstartindex != nil {
+		return *x.Toonewlogeventstartindex
 	}
 	return 0
 }
 
 func (x *RejectedLogEventsInfo) GetToooldlogeventendindex() int32 {
-	if x != nil {
-		return x.Toooldlogeventendindex
+	if x != nil && x.Toooldlogeventendindex != nil {
+		return *x.Toooldlogeventendindex
 	}
 	return 0
 }
@@ -19450,7 +19450,7 @@ func (x *ResourceNotFoundException) GetMessage() string {
 
 type ResourcePolicy struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatedtime int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Policydocument  string                 `protobuf:"bytes,178107627,opt,name=policydocument,proto3" json:"policydocument,omitempty"`
 	Policyname      string                 `protobuf:"bytes,115126621,opt,name=policyname,proto3" json:"policyname,omitempty"`
 	Policyscope     PolicyScope            `protobuf:"varint,288841470,opt,name=policyscope,proto3,enum=cloudwatchlogs.PolicyScope" json:"policyscope,omitempty"`
@@ -19491,8 +19491,8 @@ func (*ResourcePolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourcePolicy) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -19706,7 +19706,7 @@ func (x *S3DeliveryConfiguration) GetSuffixpath() string {
 
 type S3TableIntegrationSource struct {
 	state                  protoimpl.MessageState         `protogen:"open.v1"`
-	Createdtimestamp       int64                          `protobuf:"varint,462845754,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
+	Createdtimestamp       *int64                         `protobuf:"varint,462845754,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Datasource             *DataSource                    `protobuf:"bytes,345762713,opt,name=datasource,proto3" json:"datasource,omitempty"`
 	Identifier             string                         `protobuf:"bytes,145074239,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	Parentsourceidentifier string                         `protobuf:"bytes,514932276,opt,name=parentsourceidentifier,proto3" json:"parentsourceidentifier,omitempty"`
@@ -19747,8 +19747,8 @@ func (*S3TableIntegrationSource) Descriptor() ([]byte, []int) {
 }
 
 func (x *S3TableIntegrationSource) GetCreatedtimestamp() int64 {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return 0
 }
@@ -19918,11 +19918,11 @@ func (x *ScheduledQueryDestination) GetStatus() ActionStatus {
 
 type ScheduledQuerySummary struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
-	Creationtime             int64                     `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime             *int64                    `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Destinationconfiguration *DestinationConfiguration `protobuf:"bytes,145518016,opt,name=destinationconfiguration,proto3" json:"destinationconfiguration,omitempty"`
 	Lastexecutionstatus      ExecutionStatus           `protobuf:"varint,7800596,opt,name=lastexecutionstatus,proto3,enum=cloudwatchlogs.ExecutionStatus" json:"lastexecutionstatus,omitempty"`
-	Lasttriggeredtime        int64                     `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3" json:"lasttriggeredtime,omitempty"`
-	Lastupdatedtime          int64                     `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lasttriggeredtime        *int64                    `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3,oneof" json:"lasttriggeredtime,omitempty"`
+	Lastupdatedtime          *int64                    `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Name                     string                    `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Scheduleexpression       string                    `protobuf:"bytes,287794975,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
 	Scheduletype             ScheduleType              `protobuf:"varint,75972645,opt,name=scheduletype,proto3,enum=cloudwatchlogs.ScheduleType" json:"scheduletype,omitempty"`
@@ -19964,8 +19964,8 @@ func (*ScheduledQuerySummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ScheduledQuerySummary) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -19985,15 +19985,15 @@ func (x *ScheduledQuerySummary) GetLastexecutionstatus() ExecutionStatus {
 }
 
 func (x *ScheduledQuerySummary) GetLasttriggeredtime() int64 {
-	if x != nil {
-		return x.Lasttriggeredtime
+	if x != nil && x.Lasttriggeredtime != nil {
+		return *x.Lasttriggeredtime
 	}
 	return 0
 }
 
 func (x *ScheduledQuerySummary) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -20547,7 +20547,7 @@ func (x *StartLiveTailResponseStream) GetSessionupdate() *LiveTailSessionUpdate 
 type StartQueryRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Endtime             int64                  `protobuf:"varint,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Limit               int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit               *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Loggroupidentifiers []string               `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Loggroupname        string                 `protobuf:"bytes,95756236,opt,name=loggroupname,proto3" json:"loggroupname,omitempty"`
 	Loggroupnames       []string               `protobuf:"bytes,337702569,rep,name=loggroupnames,proto3" json:"loggroupnames,omitempty"`
@@ -20596,8 +20596,8 @@ func (x *StartQueryRequest) GetEndtime() int64 {
 }
 
 func (x *StartQueryRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -20779,7 +20779,7 @@ func (x *StopQueryResponse) GetSuccess() bool {
 type SubscriptionFilter struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Applyontransformedlogs *bool                  `protobuf:"varint,99775525,opt,name=applyontransformedlogs,proto3,oneof" json:"applyontransformedlogs,omitempty"`
-	Creationtime           int64                  `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime           *int64                 `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Destinationarn         string                 `protobuf:"bytes,427601315,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
 	Distribution           Distribution           `protobuf:"varint,345526572,opt,name=distribution,proto3,enum=cloudwatchlogs.Distribution" json:"distribution,omitempty"`
 	Emitsystemfields       []string               `protobuf:"bytes,392618203,rep,name=emitsystemfields,proto3" json:"emitsystemfields,omitempty"`
@@ -20830,8 +20830,8 @@ func (x *SubscriptionFilter) GetApplyontransformedlogs() bool {
 }
 
 func (x *SubscriptionFilter) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -20999,7 +20999,7 @@ func (x *SubstituteStringEntry) GetTo() string {
 type SuppressionPeriod struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Suppressionunit SuppressionUnit        `protobuf:"varint,423868455,opt,name=suppressionunit,proto3,enum=cloudwatchlogs.SuppressionUnit" json:"suppressionunit,omitempty"`
-	Value           int32                  `protobuf:"varint,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Value           *int32                 `protobuf:"varint,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -21042,15 +21042,15 @@ func (x *SuppressionPeriod) GetSuppressionunit() SuppressionUnit {
 }
 
 func (x *SuppressionPeriod) GetValue() int32 {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return 0
 }
 
 type SyslogConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Createdat     int64                  `protobuf:"varint,370722959,opt,name=createdat,proto3" json:"createdat,omitempty"`
+	Createdat     *int64                 `protobuf:"varint,370722959,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
 	Loggrouparn   string                 `protobuf:"bytes,6742512,opt,name=loggrouparn,proto3" json:"loggrouparn,omitempty"`
 	Sourcetype    SyslogSourceType       `protobuf:"varint,25547057,opt,name=sourcetype,proto3,enum=cloudwatchlogs.SyslogSourceType" json:"sourcetype,omitempty"`
 	Vpcendpointid string                 `protobuf:"bytes,376719261,opt,name=vpcendpointid,proto3" json:"vpcendpointid,omitempty"`
@@ -21089,8 +21089,8 @@ func (*SyslogConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *SyslogConfiguration) GetCreatedat() int64 {
-	if x != nil {
-		return x.Createdat
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return 0
 }
@@ -21563,7 +21563,7 @@ func (x *TooManyTagsException) GetResourcename() string {
 type TransformedLogRecord struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Eventmessage            string                 `protobuf:"bytes,299743039,opt,name=eventmessage,proto3" json:"eventmessage,omitempty"`
-	Eventnumber             int64                  `protobuf:"varint,220470463,opt,name=eventnumber,proto3" json:"eventnumber,omitempty"`
+	Eventnumber             *int64                 `protobuf:"varint,220470463,opt,name=eventnumber,proto3,oneof" json:"eventnumber,omitempty"`
 	Transformedeventmessage string                 `protobuf:"bytes,209045014,opt,name=transformedeventmessage,proto3" json:"transformedeventmessage,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -21607,8 +21607,8 @@ func (x *TransformedLogRecord) GetEventmessage() string {
 }
 
 func (x *TransformedLogRecord) GetEventnumber() int64 {
-	if x != nil {
-		return x.Eventnumber
+	if x != nil && x.Eventnumber != nil {
+		return *x.Eventnumber
 	}
 	return 0
 }
@@ -21626,7 +21626,7 @@ type TriggerHistoryRecord struct {
 	Errormessage       string                       `protobuf:"bytes,136873289,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
 	Executionstatus    ExecutionStatus              `protobuf:"varint,6216448,opt,name=executionstatus,proto3,enum=cloudwatchlogs.ExecutionStatus" json:"executionstatus,omitempty"`
 	Queryid            string                       `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Triggeredtimestamp int64                        `protobuf:"varint,257556475,opt,name=triggeredtimestamp,proto3" json:"triggeredtimestamp,omitempty"`
+	Triggeredtimestamp *int64                       `protobuf:"varint,257556475,opt,name=triggeredtimestamp,proto3,oneof" json:"triggeredtimestamp,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -21690,8 +21690,8 @@ func (x *TriggerHistoryRecord) GetQueryid() string {
 }
 
 func (x *TriggerHistoryRecord) GetTriggeredtimestamp() int64 {
-	if x != nil {
-		return x.Triggeredtimestamp
+	if x != nil && x.Triggeredtimestamp != nil {
+		return *x.Triggeredtimestamp
 	}
 	return 0
 }
@@ -22175,7 +22175,7 @@ func (*UpdateDeliveryConfigurationResponse) Descriptor() ([]byte, []int) {
 type UpdateLogAnomalyDetectorRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectorarn    string                 `protobuf:"bytes,446490540,opt,name=anomalydetectorarn,proto3" json:"anomalydetectorarn,omitempty"`
-	Anomalyvisibilitytime int64                  `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3" json:"anomalyvisibilitytime,omitempty"`
+	Anomalyvisibilitytime *int64                 `protobuf:"varint,287987260,opt,name=anomalyvisibilitytime,proto3,oneof" json:"anomalyvisibilitytime,omitempty"`
 	Enabled               *bool                  `protobuf:"varint,49525663,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Evaluationfrequency   EvaluationFrequency    `protobuf:"varint,533700360,opt,name=evaluationfrequency,proto3,enum=cloudwatchlogs.EvaluationFrequency" json:"evaluationfrequency,omitempty"`
 	Filterpattern         string                 `protobuf:"bytes,144868248,opt,name=filterpattern,proto3" json:"filterpattern,omitempty"`
@@ -22221,8 +22221,8 @@ func (x *UpdateLogAnomalyDetectorRequest) GetAnomalydetectorarn() string {
 }
 
 func (x *UpdateLogAnomalyDetectorRequest) GetAnomalyvisibilitytime() int64 {
-	if x != nil {
-		return x.Anomalyvisibilitytime
+	if x != nil && x.Anomalyvisibilitytime != nil {
+		return *x.Anomalyvisibilitytime
 	}
 	return 0
 }
@@ -22318,7 +22318,7 @@ func (x *UpdateLookupTableRequest) GetTablebody() string {
 
 type UpdateLookupTableResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatedtime int64                  `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lastupdatedtime *int64                 `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Lookuptablearn  string                 `protobuf:"bytes,150245445,opt,name=lookuptablearn,proto3" json:"lookuptablearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -22355,8 +22355,8 @@ func (*UpdateLookupTableResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateLookupTableResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -22372,16 +22372,16 @@ type UpdateScheduledQueryRequest struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Description              string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Destinationconfiguration *DestinationConfiguration `protobuf:"bytes,145518016,opt,name=destinationconfiguration,proto3" json:"destinationconfiguration,omitempty"`
-	Endtimeoffset            int64                     `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3" json:"endtimeoffset,omitempty"`
+	Endtimeoffset            *int64                    `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3,oneof" json:"endtimeoffset,omitempty"`
 	Executionrolearn         string                    `protobuf:"bytes,230613553,opt,name=executionrolearn,proto3" json:"executionrolearn,omitempty"`
 	Identifier               string                    `protobuf:"bytes,145074239,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	Loggroupidentifiers      []string                  `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Querylanguage            QueryLanguage             `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Querystring              string                    `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
-	Scheduleendtime          int64                     `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3" json:"scheduleendtime,omitempty"`
+	Scheduleendtime          *int64                    `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3,oneof" json:"scheduleendtime,omitempty"`
 	Scheduleexpression       string                    `protobuf:"bytes,287794975,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Schedulestarttime        int64                     `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3" json:"schedulestarttime,omitempty"`
-	Starttimeoffset          int64                     `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3" json:"starttimeoffset,omitempty"`
+	Schedulestarttime        *int64                    `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3,oneof" json:"schedulestarttime,omitempty"`
+	Starttimeoffset          *int64                    `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3,oneof" json:"starttimeoffset,omitempty"`
 	State                    ScheduledQueryState       `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.ScheduledQueryState" json:"state,omitempty"`
 	Timezone                 string                    `protobuf:"bytes,190615331,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -22433,8 +22433,8 @@ func (x *UpdateScheduledQueryRequest) GetDestinationconfiguration() *Destination
 }
 
 func (x *UpdateScheduledQueryRequest) GetEndtimeoffset() int64 {
-	if x != nil {
-		return x.Endtimeoffset
+	if x != nil && x.Endtimeoffset != nil {
+		return *x.Endtimeoffset
 	}
 	return 0
 }
@@ -22475,8 +22475,8 @@ func (x *UpdateScheduledQueryRequest) GetQuerystring() string {
 }
 
 func (x *UpdateScheduledQueryRequest) GetScheduleendtime() int64 {
-	if x != nil {
-		return x.Scheduleendtime
+	if x != nil && x.Scheduleendtime != nil {
+		return *x.Scheduleendtime
 	}
 	return 0
 }
@@ -22489,15 +22489,15 @@ func (x *UpdateScheduledQueryRequest) GetScheduleexpression() string {
 }
 
 func (x *UpdateScheduledQueryRequest) GetSchedulestarttime() int64 {
-	if x != nil {
-		return x.Schedulestarttime
+	if x != nil && x.Schedulestarttime != nil {
+		return *x.Schedulestarttime
 	}
 	return 0
 }
 
 func (x *UpdateScheduledQueryRequest) GetStarttimeoffset() int64 {
-	if x != nil {
-		return x.Starttimeoffset
+	if x != nil && x.Starttimeoffset != nil {
+		return *x.Starttimeoffset
 	}
 	return 0
 }
@@ -22518,24 +22518,24 @@ func (x *UpdateScheduledQueryRequest) GetTimezone() string {
 
 type UpdateScheduledQueryResponse struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
-	Creationtime             int64                     `protobuf:"varint,53551750,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime             *int64                    `protobuf:"varint,53551750,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Description              string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
 	Destinationconfiguration *DestinationConfiguration `protobuf:"bytes,145518016,opt,name=destinationconfiguration,proto3" json:"destinationconfiguration,omitempty"`
-	Endtimeoffset            int64                     `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3" json:"endtimeoffset,omitempty"`
+	Endtimeoffset            *int64                    `protobuf:"varint,214490153,opt,name=endtimeoffset,proto3,oneof" json:"endtimeoffset,omitempty"`
 	Executionrolearn         string                    `protobuf:"bytes,230613553,opt,name=executionrolearn,proto3" json:"executionrolearn,omitempty"`
 	Lastexecutionstatus      ExecutionStatus           `protobuf:"varint,7800596,opt,name=lastexecutionstatus,proto3,enum=cloudwatchlogs.ExecutionStatus" json:"lastexecutionstatus,omitempty"`
-	Lasttriggeredtime        int64                     `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3" json:"lasttriggeredtime,omitempty"`
-	Lastupdatedtime          int64                     `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
+	Lasttriggeredtime        *int64                    `protobuf:"varint,397057656,opt,name=lasttriggeredtime,proto3,oneof" json:"lasttriggeredtime,omitempty"`
+	Lastupdatedtime          *int64                    `protobuf:"varint,388324342,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
 	Loggroupidentifiers      []string                  `protobuf:"bytes,409873785,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
 	Name                     string                    `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Querylanguage            QueryLanguage             `protobuf:"varint,343791606,opt,name=querylanguage,proto3,enum=cloudwatchlogs.QueryLanguage" json:"querylanguage,omitempty"`
 	Querystring              string                    `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
-	Scheduleendtime          int64                     `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3" json:"scheduleendtime,omitempty"`
+	Scheduleendtime          *int64                    `protobuf:"varint,111645113,opt,name=scheduleendtime,proto3,oneof" json:"scheduleendtime,omitempty"`
 	Scheduleexpression       string                    `protobuf:"bytes,287794975,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Schedulestarttime        int64                     `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3" json:"schedulestarttime,omitempty"`
+	Schedulestarttime        *int64                    `protobuf:"varint,464194170,opt,name=schedulestarttime,proto3,oneof" json:"schedulestarttime,omitempty"`
 	Scheduletype             ScheduleType              `protobuf:"varint,75972645,opt,name=scheduletype,proto3,enum=cloudwatchlogs.ScheduleType" json:"scheduletype,omitempty"`
 	Scheduledqueryarn        string                    `protobuf:"bytes,240292916,opt,name=scheduledqueryarn,proto3" json:"scheduledqueryarn,omitempty"`
-	Starttimeoffset          int64                     `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3" json:"starttimeoffset,omitempty"`
+	Starttimeoffset          *int64                    `protobuf:"varint,308525274,opt,name=starttimeoffset,proto3,oneof" json:"starttimeoffset,omitempty"`
 	State                    ScheduledQueryState       `protobuf:"varint,405877495,opt,name=state,proto3,enum=cloudwatchlogs.ScheduledQueryState" json:"state,omitempty"`
 	Timezone                 string                    `protobuf:"bytes,190615331,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -22573,8 +22573,8 @@ func (*UpdateScheduledQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateScheduledQueryResponse) GetCreationtime() int64 {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return 0
 }
@@ -22594,8 +22594,8 @@ func (x *UpdateScheduledQueryResponse) GetDestinationconfiguration() *Destinatio
 }
 
 func (x *UpdateScheduledQueryResponse) GetEndtimeoffset() int64 {
-	if x != nil {
-		return x.Endtimeoffset
+	if x != nil && x.Endtimeoffset != nil {
+		return *x.Endtimeoffset
 	}
 	return 0
 }
@@ -22615,15 +22615,15 @@ func (x *UpdateScheduledQueryResponse) GetLastexecutionstatus() ExecutionStatus 
 }
 
 func (x *UpdateScheduledQueryResponse) GetLasttriggeredtime() int64 {
-	if x != nil {
-		return x.Lasttriggeredtime
+	if x != nil && x.Lasttriggeredtime != nil {
+		return *x.Lasttriggeredtime
 	}
 	return 0
 }
 
 func (x *UpdateScheduledQueryResponse) GetLastupdatedtime() int64 {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return 0
 }
@@ -22657,8 +22657,8 @@ func (x *UpdateScheduledQueryResponse) GetQuerystring() string {
 }
 
 func (x *UpdateScheduledQueryResponse) GetScheduleendtime() int64 {
-	if x != nil {
-		return x.Scheduleendtime
+	if x != nil && x.Scheduleendtime != nil {
+		return *x.Scheduleendtime
 	}
 	return 0
 }
@@ -22671,8 +22671,8 @@ func (x *UpdateScheduledQueryResponse) GetScheduleexpression() string {
 }
 
 func (x *UpdateScheduledQueryResponse) GetSchedulestarttime() int64 {
-	if x != nil {
-		return x.Schedulestarttime
+	if x != nil && x.Schedulestarttime != nil {
+		return *x.Schedulestarttime
 	}
 	return 0
 }
@@ -22692,8 +22692,8 @@ func (x *UpdateScheduledQueryResponse) GetScheduledqueryarn() string {
 }
 
 func (x *UpdateScheduledQueryResponse) GetStarttimeoffset() int64 {
-	if x != nil {
-		return x.Starttimeoffset
+	if x != nil && x.Starttimeoffset != nil {
+		return *x.Starttimeoffset
 	}
 	return 0
 }
@@ -22806,10 +22806,10 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
 	"\x14cloudwatchlogs.proto\x12\x0ecloudwatchlogs\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
 	"\x15AccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xcf\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe8\x02\n" +
 	"\rAccountPolicy\x12 \n" +
-	"\taccountid\x18\xf2\xf4\x8c\xf6\x01 \x01(\tR\taccountid\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12)\n" +
+	"\taccountid\x18\xf2\xf4\x8c\xf6\x01 \x01(\tR\taccountid\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x12)\n" +
 	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\x12!\n" +
 	"\n" +
 	"policyname\x18\xdd\xe2\xf26 \x01(\tR\n" +
@@ -22818,17 +22818,19 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"policytype\x18\xa8\x95\x9f\x98\x01 \x01(\x0e2\x1a.cloudwatchlogs.PolicyTypeR\n" +
 	"policytype\x12/\n" +
 	"\x05scope\x18\xec\xe7\xab\xf1\x01 \x01(\x0e2\x15.cloudwatchlogs.ScopeR\x05scope\x12/\n" +
-	"\x11selectioncriteria\x18\x8d\xa6\x95E \x01(\tR\x11selectioncriteria\"\x87\x01\n" +
+	"\x11selectioncriteria\x18\x8d\xa6\x95E \x01(\tR\x11selectioncriteriaB\x12\n" +
+	"\x10_lastupdatedtime\"\x87\x01\n" +
 	"\vAddKeyEntry\x12\x13\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x124\n" +
 	"\x11overwriteifexists\x18\x9e\xe6\x8bn \x01(\bH\x00R\x11overwriteifexists\x88\x01\x01\x12\x17\n" +
 	"\x05value\x18˧\xfb\x12 \x01(\tR\x05valueB\x14\n" +
 	"\x12_overwriteifexists\"C\n" +
 	"\aAddKeys\x128\n" +
-	"\aentries\x18\xf4\x85\xe2z \x03(\v2\x1b.cloudwatchlogs.AddKeyEntryR\aentries\"\x9d\x01\n" +
+	"\aentries\x18\xf4\x85\xe2z \x03(\v2\x1b.cloudwatchlogs.AddKeyEntryR\aentries\"\xb4\x01\n" +
 	"\x18AggregateLogGroupSummary\x12X\n" +
-	"\x13groupingidentifiers\x18\x85\xfe\xb2\xad\x01 \x03(\v2\".cloudwatchlogs.GroupingIdentifierR\x13groupingidentifiers\x12'\n" +
-	"\rloggroupcount\x18\xa8\x8d\x96T \x01(\x05R\rloggroupcount\"\xe5\a\n" +
+	"\x13groupingidentifiers\x18\x85\xfe\xb2\xad\x01 \x03(\v2\".cloudwatchlogs.GroupingIdentifierR\x13groupingidentifiers\x12,\n" +
+	"\rloggroupcount\x18\xa8\x8d\x96T \x01(\x05H\x00R\rloggroupcount\x88\x01\x01B\x10\n" +
+	"\x0e_loggroupcount\"\x96\b\n" +
 	"\aAnomaly\x12\x1f\n" +
 	"\x06active\x18\xb0\xb2\xd6\xcb\x01 \x01(\bH\x00R\x06active\x88\x01\x01\x122\n" +
 	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x12\x1f\n" +
@@ -22850,26 +22852,31 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x15.cloudwatchlogs.StateR\x05state\x12&\n" +
 	"\n" +
 	"suppressed\x18ا\xc9C \x01(\bH\x02R\n" +
-	"suppressed\x88\x01\x01\x12*\n" +
-	"\x0esuppresseddate\x18\xb4\x8e\xce\xfe\x01 \x01(\x03R\x0esuppresseddate\x12,\n" +
-	"\x0fsuppresseduntil\x18⛴\xd0\x01 \x01(\x03R\x0fsuppresseduntil\x1a<\n" +
+	"suppressed\x88\x01\x01\x12/\n" +
+	"\x0esuppresseddate\x18\xb4\x8e\xce\xfe\x01 \x01(\x03H\x03R\x0esuppresseddate\x88\x01\x01\x121\n" +
+	"\x0fsuppresseduntil\x18⛴\xd0\x01 \x01(\x03H\x04R\x0fsuppresseduntil\x88\x01\x01\x1a<\n" +
 	"\x0eHistogramEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01B\t\n" +
 	"\a_activeB\x1c\n" +
 	"\x1a_ispatternlevelsuppressionB\r\n" +
-	"\v_suppressed\"\xc3\x04\n" +
+	"\v_suppressedB\x11\n" +
+	"\x0f_suppresseddateB\x12\n" +
+	"\x10_suppresseduntil\"\x9c\x05\n" +
 	"\x0fAnomalyDetector\x122\n" +
 	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x12_\n" +
-	"\x15anomalydetectorstatus\x18\xbf\xce\xe1\xda\x01 \x01(\x0e2%.cloudwatchlogs.AnomalyDetectorStatusR\x15anomalydetectorstatus\x128\n" +
-	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03R\x15anomalyvisibilitytime\x12/\n" +
-	"\x11creationtimestamp\x18\xe5\x95\xc1b \x01(\x03R\x11creationtimestamp\x12%\n" +
+	"\x15anomalydetectorstatus\x18\xbf\xce\xe1\xda\x01 \x01(\x0e2%.cloudwatchlogs.AnomalyDetectorStatusR\x15anomalydetectorstatus\x12=\n" +
+	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03H\x00R\x15anomalyvisibilitytime\x88\x01\x01\x124\n" +
+	"\x11creationtimestamp\x18\xe5\x95\xc1b \x01(\x03H\x01R\x11creationtimestamp\x88\x01\x01\x12%\n" +
 	"\fdetectorname\x18\xcd\xe6\xd56 \x01(\tR\fdetectorname\x12Y\n" +
 	"\x13evaluationfrequency\x18\x88\xbe\xbe\xfe\x01 \x01(\x0e2#.cloudwatchlogs.EvaluationFrequencyR\x13evaluationfrequency\x12'\n" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12\x1e\n" +
-	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x127\n" +
-	"\x15lastmodifiedtimestamp\x18\xcfʊ\x13 \x01(\x03R\x15lastmodifiedtimestamp\x12,\n" +
-	"\x0floggrouparnlist\x18\x98\x8e\xe0\xb2\x01 \x03(\tR\x0floggrouparnlist\"\x93\x01\n" +
+	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12<\n" +
+	"\x15lastmodifiedtimestamp\x18\xcfʊ\x13 \x01(\x03H\x02R\x15lastmodifiedtimestamp\x88\x01\x01\x12,\n" +
+	"\x0floggrouparnlist\x18\x98\x8e\xe0\xb2\x01 \x03(\tR\x0floggrouparnlistB\x18\n" +
+	"\x16_anomalyvisibilitytimeB\x14\n" +
+	"\x12_creationtimestampB\x18\n" +
+	"\x16_lastmodifiedtimestamp\"\x93\x01\n" +
 	"\x16AssociateKmsKeyRequest\x12\x1e\n" +
 	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x122\n" +
@@ -22892,13 +22899,15 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x17CancelExportTaskRequest\x12\x19\n" +
 	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"9\n" +
 	"\x17CancelImportTaskRequest\x12\x1e\n" +
-	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\"\xa5\x02\n" +
-	"\x18CancelImportTaskResponse\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12\x1e\n" +
+	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\"\xd4\x02\n" +
+	"\x18CancelImportTaskResponse\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12\x1e\n" +
 	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12O\n" +
 	"\x10importstatistics\x18Ȼ\xe4\x1c \x01(\v2 .cloudwatchlogs.ImportStatisticsR\x10importstatistics\x12C\n" +
-	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\"\xbb\a\n" +
+	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x01R\x0flastupdatedtime\x88\x01\x01B\x0f\n" +
+	"\r_creationtimeB\x12\n" +
+	"\x10_lastupdatedtime\"\xbb\a\n" +
 	"\x15ConfigurationTemplate\x12q\n" +
 	"2allowedactionforallowvendedlogsdeliveryforresource\x18\xe8\xe5\xd3U \x01(\tR2allowedactionforallowvendedlogsdeliveryforresource\x129\n" +
 	"\x16allowedfielddelimiters\x18\xe4݁\x7f \x03(\tR\x16allowedfielddelimiters\x12E\n" +
@@ -22950,13 +22959,14 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x17CreateImportTaskRequest\x12C\n" +
 	"\fimportfilter\x18\xf7\x9b\xaaQ \x01(\v2\x1c.cloudwatchlogs.ImportFilterR\fimportfilter\x12(\n" +
 	"\rimportrolearn\x18\xb4\xa4\xa7\xd8\x01 \x01(\tR\rimportrolearn\x12+\n" +
-	"\x0fimportsourcearn\x18\x99\xbc\x85M \x01(\tR\x0fimportsourcearn\"\x98\x01\n" +
-	"\x18CreateImportTaskResponse\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x125\n" +
+	"\x0fimportsourcearn\x18\x99\xbc\x85M \x01(\tR\x0fimportsourcearn\"\xae\x01\n" +
+	"\x18CreateImportTaskResponse\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x125\n" +
 	"\x14importdestinationarn\x18\xfc\xb6\x86- \x01(\tR\x14importdestinationarn\x12\x1e\n" +
-	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\"\xe0\x03\n" +
-	"\x1fCreateLogAnomalyDetectorRequest\x128\n" +
-	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03R\x15anomalyvisibilitytime\x12%\n" +
+	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportidB\x0f\n" +
+	"\r_creationtime\"\xff\x03\n" +
+	"\x1fCreateLogAnomalyDetectorRequest\x12=\n" +
+	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03H\x00R\x15anomalyvisibilitytime\x88\x01\x01\x12%\n" +
 	"\fdetectorname\x18\xcd\xe6\xd56 \x01(\tR\fdetectorname\x12Y\n" +
 	"\x13evaluationfrequency\x18\x88\xbe\xbe\xfe\x01 \x01(\x0e2#.cloudwatchlogs.EvaluationFrequencyR\x13evaluationfrequency\x12'\n" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12\x1e\n" +
@@ -22965,7 +22975,8 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v29.cloudwatchlogs.CreateLogAnomalyDetectorRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"V\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
+	"\x16_anomalyvisibilitytime\"V\n" +
 	" CreateLogAnomalyDetectorResponse\x122\n" +
 	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\"\x8e\x03\n" +
 	"\x15CreateLogGroupRequest\x12E\n" +
@@ -22989,29 +23000,35 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v22.cloudwatchlogs.CreateLookupTableRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
-	"\x19CreateLookupTableResponse\x12 \n" +
-	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\x03R\tcreatedat\x12)\n" +
-	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\"\xe7\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"{\n" +
+	"\x19CreateLookupTableResponse\x12%\n" +
+	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\x03H\x00R\tcreatedat\x88\x01\x01\x12)\n" +
+	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearnB\f\n" +
+	"\n" +
+	"_createdat\"\xcb\a\n" +
 	"\x1bCreateScheduledQueryRequest\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12g\n" +
-	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12'\n" +
-	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03R\rendtimeoffset\x12-\n" +
+	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12,\n" +
+	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03H\x00R\rendtimeoffset\x88\x01\x01\x12-\n" +
 	"\x10executionrolearn\x18\xb1\xc4\xfbm \x01(\tR\x10executionrolearn\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12+\n" +
-	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03R\x0fscheduleendtime\x122\n" +
-	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x120\n" +
-	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03R\x11schedulestarttime\x12,\n" +
-	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03R\x0fstarttimeoffset\x12=\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x120\n" +
+	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03H\x01R\x0fscheduleendtime\x88\x01\x01\x122\n" +
+	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x125\n" +
+	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03H\x02R\x11schedulestarttime\x88\x01\x01\x121\n" +
+	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03H\x03R\x0fstarttimeoffset\x88\x01\x01\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\x12M\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v25.cloudwatchlogs.CreateScheduledQueryRequest.TagsEntryR\x04tags\x12\x1d\n" +
 	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezone\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8e\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_endtimeoffsetB\x12\n" +
+	"\x10_scheduleendtimeB\x14\n" +
+	"\x12_schedulestarttimeB\x12\n" +
+	"\x10_starttimeoffset\"\x8e\x01\n" +
 	"\x1cCreateScheduledQueryResponse\x12/\n" +
 	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\"u\n" +
@@ -23165,51 +23182,57 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"policytype\"\x8e\x01\n" +
 	"\x1fDescribeAccountPoliciesResponse\x12J\n" +
 	"\x0faccountpolicies\x18\xbf\xa3\xfa\x14 \x03(\v2\x1d.cloudwatchlogs.AccountPolicyR\x0faccountpolicies\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xb1\x02\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc0\x02\n" +
 	"%DescribeConfigurationTemplatesRequest\x12f\n" +
-	"\x18deliverydestinationtypes\x18\x8d\xa0\x8e\x16 \x03(\x0e2'.cloudwatchlogs.DeliveryDestinationTypeR\x18deliverydestinationtypes\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1e\n" +
+	"\x18deliverydestinationtypes\x18\x8d\xa0\x8e\x16 \x03(\x0e2'.cloudwatchlogs.DeliveryDestinationTypeR\x18deliverydestinationtypes\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
 	"\blogtypes\x18\x9f\xbe\xda\xdb\x01 \x03(\tR\blogtypes\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12'\n" +
 	"\rresourcetypes\x18\x8b\xbb\xb2% \x03(\tR\rresourcetypes\x12\x1c\n" +
-	"\aservice\x18\xe5\xbc\xff\xb6\x01 \x01(\tR\aservice\"\xab\x01\n" +
+	"\aservice\x18\xe5\xbc\xff\xb6\x01 \x01(\tR\aserviceB\b\n" +
+	"\x06_limit\"\xab\x01\n" +
 	"&DescribeConfigurationTemplatesResponse\x12`\n" +
 	"\x16configurationtemplates\x18\xa5\xc9\xd9+ \x03(\v2%.cloudwatchlogs.ConfigurationTemplateR\x16configurationtemplates\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"V\n" +
-	"\x19DescribeDeliveriesRequest\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"z\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"e\n" +
+	"\x19DescribeDeliveriesRequest\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"z\n" +
 	"\x1aDescribeDeliveriesResponse\x12;\n" +
 	"\n" +
 	"deliveries\x18ʝ\xccI \x03(\v2\x18.cloudwatchlogs.DeliveryR\n" +
 	"deliveries\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"`\n" +
-	"#DescribeDeliveryDestinationsRequest\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa3\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"o\n" +
+	"#DescribeDeliveryDestinationsRequest\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\xa3\x01\n" +
 	"$DescribeDeliveryDestinationsResponse\x12Z\n" +
 	"\x14deliverydestinations\x18\x95\x9a\xfap \x03(\v2#.cloudwatchlogs.DeliveryDestinationR\x14deliverydestinations\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"[\n" +
-	"\x1eDescribeDeliverySourcesRequest\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x8f\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"j\n" +
+	"\x1eDescribeDeliverySourcesRequest\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\x8f\x01\n" +
 	"\x1fDescribeDeliverySourcesResponse\x12K\n" +
 	"\x0fdeliverysources\x18\x82\xc6\xcb\x02 \x03(\v2\x1e.cloudwatchlogs.DeliverySourceR\x0fdeliverysources\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x91\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa0\x01\n" +
 	"\x1bDescribeDestinationsRequest\x127\n" +
-	"\x15destinationnameprefix\x18و\xdfL \x01(\tR\x15destinationnameprefix\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x82\x01\n" +
+	"\x15destinationnameprefix\x18و\xdfL \x01(\tR\x15destinationnameprefix\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\x82\x01\n" +
 	"\x1cDescribeDestinationsResponse\x12A\n" +
 	"\fdestinations\x18\xa5\xdab \x03(\v2\x1b.cloudwatchlogs.DestinationR\fdestinations\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xbc\x01\n" +
-	"\x1aDescribeExportTasksRequest\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xcb\x01\n" +
+	"\x1aDescribeExportTasksRequest\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12H\n" +
 	"\n" +
 	"statuscode\x18\x9f\x81ߎ\x01 \x01(\x0e2$.cloudwatchlogs.ExportTaskStatusCodeR\n" +
 	"statuscode\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\x7f\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\b\n" +
+	"\x06_limit\"\x7f\n" +
 	"\x1bDescribeExportTasksResponse\x12?\n" +
 	"\vexporttasks\x18\x94\xc1\x94\x13 \x03(\v2\x1a.cloudwatchlogs.ExportTaskR\vexporttasks\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"t\n" +
@@ -23218,23 +23241,25 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x82\x01\n" +
 	"\x1cDescribeFieldIndexesResponse\x12A\n" +
 	"\ffieldindexes\x18\x92\xaa\xf1A \x03(\v2\x1a.cloudwatchlogs.FieldIndexR\ffieldindexes\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xcc\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xdb\x01\n" +
 	" DescribeImportTaskBatchesRequest\x12M\n" +
 	"\x11batchimportstatus\x18\xad\xf3\xf77 \x03(\x0e2\x1c.cloudwatchlogs.ImportStatusR\x11batchimportstatus\x12\x1e\n" +
-	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xd8\x01\n" +
+	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\xd8\x01\n" +
 	"!DescribeImportTaskBatchesResponse\x12E\n" +
 	"\rimportbatches\x18\xf9\xf5\xdd\xf1\x01 \x03(\v2\x1b.cloudwatchlogs.ImportBatchR\rimportbatches\x12\x1e\n" +
 	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12+\n" +
 	"\x0fimportsourcearn\x18\x99\xbc\x85M \x01(\tR\x0fimportsourcearn\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xe9\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xf8\x01\n" +
 	"\x1aDescribeImportTasksRequest\x12\x1e\n" +
 	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12+\n" +
 	"\x0fimportsourcearn\x18\x99\xbc\x85M \x01(\tR\x0fimportsourcearn\x12C\n" +
-	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"s\n" +
+	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"s\n" +
 	"\x1bDescribeImportTasksResponse\x123\n" +
 	"\aimports\x18\xe6\xed\x86h \x03(\v2\x16.cloudwatchlogs.ImportR\aimports\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"u\n" +
@@ -23243,101 +23268,110 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x87\x01\n" +
 	"\x1dDescribeIndexPoliciesResponse\x12E\n" +
 	"\rindexpolicies\x18\u0087\xf8\xdc\x01 \x03(\v2\x1b.cloudwatchlogs.IndexPolicyR\rindexpolicies\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc8\x03\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xd7\x03\n" +
 	"\x18DescribeLogGroupsRequest\x122\n" +
 	"\x12accountidentifiers\x18\xf5\xe9Ǧ\x01 \x03(\tR\x12accountidentifiers\x12<\n" +
-	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12G\n" +
+	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12G\n" +
 	"\rloggroupclass\x18\x81\x99\xa5\xf7\x01 \x01(\x0e2\x1d.cloudwatchlogs.LogGroupClassR\rloggroupclass\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x123\n" +
 	"\x13loggroupnamepattern\x18Ԗ\xe4x \x01(\tR\x13loggroupnamepattern\x121\n" +
 	"\x12loggroupnameprefix\x18\xe0\xf8\xdey \x01(\tR\x12loggroupnameprefix\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\x18\n" +
-	"\x16_includelinkedaccounts\"x\n" +
+	"\x16_includelinkedaccountsB\b\n" +
+	"\x06_limit\"x\n" +
 	"\x19DescribeLogGroupsResponse\x12:\n" +
 	"\tloggroups\x18\xa2\xf9\xef\xf1\x01 \x03(\v2\x18.cloudwatchlogs.LogGroupR\tloggroups\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xd4\x02\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xe3\x02\n" +
 	"\x19DescribeLogStreamsRequest\x12'\n" +
 	"\n" +
 	"descending\x18\xbc\xaeϴ\x01 \x01(\bH\x00R\n" +
-	"descending\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x122\n" +
+	"descending\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x123\n" +
 	"\x13logstreamnameprefix\x18\x87\x86\xbd\v \x01(\tR\x13logstreamnameprefix\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x124\n" +
 	"\aorderby\x18\x83\x84\x89\x1e \x01(\x0e2\x17.cloudwatchlogs.OrderByR\aorderbyB\r\n" +
-	"\v_descending\"{\n" +
+	"\v_descendingB\b\n" +
+	"\x06_limit\"{\n" +
 	"\x1aDescribeLogStreamsResponse\x12<\n" +
 	"\n" +
 	"logstreams\x18\uf6a5` \x03(\v2\x19.cloudwatchlogs.LogStreamR\n" +
 	"logstreams\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x9c\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xb0\x01\n" +
 	"\x1bDescribeLookupTablesRequest\x128\n" +
-	"\x15lookuptablenameprefix\x18\xa3\xb3\x80\xf1\x01 \x01(\tR\x15lookuptablenameprefix\x12\"\n" +
+	"\x15lookuptablenameprefix\x18\xa3\xb3\x80\xf1\x01 \x01(\tR\x15lookuptablenameprefix\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x84\x01\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x84\x01\n" +
 	"\x1cDescribeLookupTablesResponse\x12C\n" +
 	"\flookuptables\x18\xfbؐ\xb3\x01 \x03(\v2\x1b.cloudwatchlogs.LookupTableR\flookuptables\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x80\x02\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x8f\x02\n" +
 	"\x1cDescribeMetricFiltersRequest\x12-\n" +
-	"\x10filternameprefix\x18\xb1\xfb\xb3\x16 \x01(\tR\x10filternameprefix\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12%\n" +
+	"\x10filternameprefix\x18\xb1\xfb\xb3\x16 \x01(\tR\x10filternameprefix\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12!\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tR\n" +
 	"metricname\x12,\n" +
 	"\x0fmetricnamespace\x18\xf5\xd3Ж\x01 \x01(\tR\x0fmetricnamespace\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x88\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\x88\x01\n" +
 	"\x1dDescribeMetricFiltersResponse\x12F\n" +
 	"\rmetricfilters\x18\xc1\xb2\x97\xd6\x01 \x03(\v2\x1c.cloudwatchlogs.MetricFilterR\rmetricfilters\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x86\x02\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x9a\x02\n" +
 	"\x16DescribeQueriesRequest\x12%\n" +
-	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12\"\n" +
+	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x127\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.cloudwatchlogs.QueryStatusR\x06status\"r\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.cloudwatchlogs.QueryStatusR\x06statusB\r\n" +
+	"\v_maxresults\"r\n" +
 	"\x17DescribeQueriesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x126\n" +
-	"\aqueries\x18Ġ\xb6\f \x03(\v2\x19.cloudwatchlogs.QueryInfoR\aqueries\"\xf0\x01\n" +
-	"\x1fDescribeQueryDefinitionsRequest\x12\"\n" +
+	"\aqueries\x18Ġ\xb6\f \x03(\v2\x19.cloudwatchlogs.QueryInfoR\aqueries\"\x84\x02\n" +
+	"\x1fDescribeQueryDefinitionsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12?\n" +
 	"\x19querydefinitionnameprefix\x18\xa2\xdb\xd2\r \x01(\tR\x19querydefinitionnameprefix\x12G\n" +
-	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\"\x93\x01\n" +
+	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguageB\r\n" +
+	"\v_maxresults\"\x93\x01\n" +
 	" DescribeQueryDefinitionsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12N\n" +
-	"\x10querydefinitions\x18\x98\x87\xa6] \x03(\v2\x1f.cloudwatchlogs.QueryDefinitionR\x10querydefinitions\"\xc4\x01\n" +
-	"\x1fDescribeResourcePoliciesRequest\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\x10querydefinitions\x18\x98\x87\xa6] \x03(\v2\x1f.cloudwatchlogs.QueryDefinitionR\x10querydefinitions\"\xd3\x01\n" +
+	"\x1fDescribeResourcePoliciesRequest\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12A\n" +
 	"\vpolicyscope\x18\xfe\xbd݉\x01 \x01(\x0e2\x1b.cloudwatchlogs.PolicyScopeR\vpolicyscope\x12#\n" +
-	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\"\x92\x01\n" +
+	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearnB\b\n" +
+	"\x06_limit\"\x92\x01\n" +
 	" DescribeResourcePoliciesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12M\n" +
-	"\x10resourcepolicies\x18Ȅ\x88i \x03(\v2\x1e.cloudwatchlogs.ResourcePolicyR\x10resourcepolicies\"\xb5\x01\n" +
+	"\x10resourcepolicies\x18Ȅ\x88i \x03(\v2\x1e.cloudwatchlogs.ResourcePolicyR\x10resourcepolicies\"\xc4\x01\n" +
 	"\"DescribeSubscriptionFiltersRequest\x12-\n" +
-	"\x10filternameprefix\x18\xb1\xfb\xb3\x16 \x01(\tR\x10filternameprefix\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12%\n" +
+	"\x10filternameprefix\x18\xb1\xfb\xb3\x16 \x01(\tR\x10filternameprefix\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa0\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\xa0\x01\n" +
 	"#DescribeSubscriptionFiltersResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12X\n" +
-	"\x13subscriptionfilters\x18\xa0¸\xd8\x01 \x03(\v2\".cloudwatchlogs.SubscriptionFilterR\x13subscriptionfilters\"\xdf\x01\n" +
+	"\x13subscriptionfilters\x18\xa0¸\xd8\x01 \x03(\v2\".cloudwatchlogs.SubscriptionFilterR\x13subscriptionfilters\"\xf5\x01\n" +
 	"\vDestination\x12&\n" +
 	"\faccesspolicy\x18\xceȟ\xa0\x01 \x01(\tR\faccesspolicy\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12,\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12,\n" +
 	"\x0fdestinationname\x18\x9d\xc1\xe9\x87\x01 \x01(\tR\x0fdestinationname\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
-	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarn\"i\n" +
+	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarnB\x0f\n" +
+	"\r_creationtime\"i\n" +
 	"\x18DestinationConfiguration\x12M\n" +
 	"\x0fs3configuration\x18\x9c\x8e\xd0\xf1\x01 \x01(\v2\x1f.cloudwatchlogs.S3ConfigurationR\x0fs3configuration\"v\n" +
 	"\x19DisassociateKmsKeyRequest\x12%\n" +
@@ -23361,67 +23395,83 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a@\n" +
 	"\x12KeyattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xff\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x99\x03\n" +
 	"\n" +
 	"ExportTask\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x12/\n" +
 	"\x11destinationprefix\x18\xb4\xb8\xa8R \x01(\tR\x11destinationprefix\x12P\n" +
-	"\rexecutioninfo\x18\xf6\xbc\xc94 \x01(\v2'.cloudwatchlogs.ExportTaskExecutionInfoR\rexecutioninfo\x12\x16\n" +
-	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\x03R\x04from\x12%\n" +
+	"\rexecutioninfo\x18\xf6\xbc\xc94 \x01(\v2'.cloudwatchlogs.ExportTaskExecutionInfoR\rexecutioninfo\x12\x1b\n" +
+	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\x03H\x00R\x04from\x88\x01\x01\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12<\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\v2 .cloudwatchlogs.ExportTaskStatusR\x06status\x12\x19\n" +
 	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\x12\x1d\n" +
-	"\btaskname\x18\x88ӧ' \x01(\tR\btaskname\x12\x11\n" +
-	"\x02to\x18\xa5\x90\x95\x12 \x01(\x03R\x02to\"k\n" +
-	"\x17ExportTaskExecutionInfo\x12)\n" +
-	"\x0ecompletiontime\x18\x97\x93\xce\x15 \x01(\x03R\x0ecompletiontime\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\"m\n" +
+	"\btaskname\x18\x88ӧ' \x01(\tR\btaskname\x12\x16\n" +
+	"\x02to\x18\xa5\x90\x95\x12 \x01(\x03H\x01R\x02to\x88\x01\x01B\a\n" +
+	"\x05_fromB\x05\n" +
+	"\x03_to\"\x99\x01\n" +
+	"\x17ExportTaskExecutionInfo\x12.\n" +
+	"\x0ecompletiontime\x18\x97\x93\xce\x15 \x01(\x03H\x00R\x0ecompletiontime\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x01R\fcreationtime\x88\x01\x01B\x11\n" +
+	"\x0f_completiontimeB\x0f\n" +
+	"\r_creationtime\"m\n" +
 	"\x10ExportTaskStatus\x12<\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\x0e2$.cloudwatchlogs.ExportTaskStatusCodeR\x04code\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9a\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xdf\x02\n" +
 	"\n" +
 	"FieldIndex\x12)\n" +
-	"\x0efieldindexname\x18\xaf\xa1\x98\x19 \x01(\tR\x0efieldindexname\x12)\n" +
-	"\x0efirsteventtime\x18ӿ\xdfp \x01(\x03R\x0efirsteventtime\x12'\n" +
-	"\rlasteventtime\x18\x8b\xdf\xfc\x19 \x01(\x03R\rlasteventtime\x12&\n" +
-	"\flastscantime\x18\x96̯\xdd\x01 \x01(\x03R\flastscantime\x122\n" +
+	"\x0efieldindexname\x18\xaf\xa1\x98\x19 \x01(\tR\x0efieldindexname\x12.\n" +
+	"\x0efirsteventtime\x18ӿ\xdfp \x01(\x03H\x00R\x0efirsteventtime\x88\x01\x01\x12,\n" +
+	"\rlasteventtime\x18\x8b\xdf\xfc\x19 \x01(\x03H\x01R\rlasteventtime\x88\x01\x01\x12+\n" +
+	"\flastscantime\x18\x96̯\xdd\x01 \x01(\x03H\x02R\flastscantime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x121\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x19.cloudwatchlogs.IndexTypeR\x04type\"$\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x19.cloudwatchlogs.IndexTypeR\x04typeB\x11\n" +
+	"\x0f_firsteventtimeB\x10\n" +
+	"\x0e_lasteventtimeB\x0f\n" +
+	"\r_lastscantime\"$\n" +
 	"\n" +
 	"FieldsData\x12\x16\n" +
-	"\x04data\x18\xa6\xc5\xcb\xc3\x01 \x01(\fR\x04data\"\x9e\x04\n" +
-	"\x16FilterLogEventsRequest\x12\x1c\n" +
-	"\aendtime\x18쇚\x9d\x01 \x01(\x03R\aendtime\x12'\n" +
+	"\x04data\x18\xa6\xc5\xcb\xc3\x01 \x01(\fR\x04data\"\xd1\x04\n" +
+	"\x16FilterLogEventsRequest\x12!\n" +
+	"\aendtime\x18쇚\x9d\x01 \x01(\x03H\x00R\aendtime\x88\x01\x01\x12'\n" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12)\n" +
-	"\vinterleaved\x18\xa9\x91\xa0\xc1\x01 \x01(\bH\x00R\vinterleaved\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x122\n" +
+	"\vinterleaved\x18\xa9\x91\xa0\xc1\x01 \x01(\bH\x01R\vinterleaved\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x02R\x05limit\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x123\n" +
 	"\x13logstreamnameprefix\x18\x87\x86\xbd\v \x01(\tR\x13logstreamnameprefix\x12)\n" +
 	"\x0elogstreamnames\x18\x84ԢU \x03(\tR\x0elogstreamnames\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12-\n" +
-	"\rstartfromhead\x18\xaa\x9b\x9b\xe1\x01 \x01(\bH\x01R\rstartfromhead\x88\x01\x01\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttime\x12\x1f\n" +
-	"\x06unmask\x18㍣\xad\x01 \x01(\bH\x02R\x06unmask\x88\x01\x01B\x0e\n" +
-	"\f_interleavedB\x10\n" +
-	"\x0e_startfromheadB\t\n" +
+	"\rstartfromhead\x18\xaa\x9b\x9b\xe1\x01 \x01(\bH\x03R\rstartfromhead\x88\x01\x01\x12$\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03H\x04R\tstarttime\x88\x01\x01\x12\x1f\n" +
+	"\x06unmask\x18㍣\xad\x01 \x01(\bH\x05R\x06unmask\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\x0e\n" +
+	"\f_interleavedB\b\n" +
+	"\x06_limitB\x10\n" +
+	"\x0e_startfromheadB\f\n" +
+	"\n" +
+	"_starttimeB\t\n" +
 	"\a_unmask\"\xce\x01\n" +
 	"\x17FilterLogEventsResponse\x12<\n" +
 	"\x06events\x18\x85\xc7\xe3\x96\x01 \x03(\v2 .cloudwatchlogs.FilteredLogEventR\x06events\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12T\n" +
-	"\x12searchedlogstreams\x18\xac\x83\x9f  \x03(\v2!.cloudwatchlogs.SearchedLogStreamR\x12searchedlogstreams\"\xc1\x01\n" +
+	"\x12searchedlogstreams\x18\xac\x83\x9f  \x03(\v2!.cloudwatchlogs.SearchedLogStreamR\x12searchedlogstreams\"\xeb\x01\n" +
 	"\x10FilteredLogEvent\x12\x1b\n" +
-	"\aeventid\x18\xf3\xa5\xdcy \x01(\tR\aeventid\x12'\n" +
-	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03R\ringestiontime\x12(\n" +
+	"\aeventid\x18\xf3\xa5\xdcy \x01(\tR\aeventid\x12,\n" +
+	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03H\x00R\ringestiontime\x88\x01\x01\x12(\n" +
 	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12 \n" +
-	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03R\ttimestamp\"T\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
+	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03H\x01R\ttimestamp\x88\x01\x01B\x10\n" +
+	"\x0e_ingestiontimeB\f\n" +
+	"\n" +
+	"_timestamp\"T\n" +
 	"\x1eGetDataProtectionPolicyRequest\x122\n" +
-	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\"\xae\x01\n" +
-	"\x1fGetDataProtectionPolicyResponse\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x122\n" +
+	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\"\xc7\x01\n" +
+	"\x1fGetDataProtectionPolicyResponse\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12)\n" +
-	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\"c\n" +
+	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocumentB\x12\n" +
+	"\x10_lastupdatedtime\"c\n" +
 	"#GetDeliveryDestinationPolicyRequest\x12<\n" +
 	"\x17deliverydestinationname\x18\xcd\u0080\x9e\x01 \x01(\tR\x17deliverydestinationname\"Y\n" +
 	"$GetDeliveryDestinationPolicyResponse\x121\n" +
@@ -23446,28 +23496,36 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x11integrationstatus\x18\x98\x94\xe3\x05 \x01(\x0e2!.cloudwatchlogs.IntegrationStatusR\x11integrationstatus\x12M\n" +
 	"\x0fintegrationtype\x18\xa6\x8f\xb7\x92\x01 \x01(\x0e2\x1f.cloudwatchlogs.IntegrationTypeR\x0fintegrationtype\"R\n" +
 	"\x1cGetLogAnomalyDetectorRequest\x122\n" +
-	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\"\x9d\x04\n" +
+	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\"\xf6\x04\n" +
 	"\x1dGetLogAnomalyDetectorResponse\x12_\n" +
-	"\x15anomalydetectorstatus\x18\xbf\xce\xe1\xda\x01 \x01(\x0e2%.cloudwatchlogs.AnomalyDetectorStatusR\x15anomalydetectorstatus\x128\n" +
-	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03R\x15anomalyvisibilitytime\x12/\n" +
-	"\x11creationtimestamp\x18\xe5\x95\xc1b \x01(\x03R\x11creationtimestamp\x12%\n" +
+	"\x15anomalydetectorstatus\x18\xbf\xce\xe1\xda\x01 \x01(\x0e2%.cloudwatchlogs.AnomalyDetectorStatusR\x15anomalydetectorstatus\x12=\n" +
+	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03H\x00R\x15anomalyvisibilitytime\x88\x01\x01\x124\n" +
+	"\x11creationtimestamp\x18\xe5\x95\xc1b \x01(\x03H\x01R\x11creationtimestamp\x88\x01\x01\x12%\n" +
 	"\fdetectorname\x18\xcd\xe6\xd56 \x01(\tR\fdetectorname\x12Y\n" +
 	"\x13evaluationfrequency\x18\x88\xbe\xbe\xfe\x01 \x01(\x0e2#.cloudwatchlogs.EvaluationFrequencyR\x13evaluationfrequency\x12'\n" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12\x1e\n" +
-	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x127\n" +
-	"\x15lastmodifiedtimestamp\x18\xcfʊ\x13 \x01(\x03R\x15lastmodifiedtimestamp\x12,\n" +
-	"\x0floggrouparnlist\x18\x98\x8e\xe0\xb2\x01 \x03(\tR\x0floggrouparnlist\"\x81\x03\n" +
-	"\x13GetLogEventsRequest\x12\x1c\n" +
-	"\aendtime\x18쇚\x9d\x01 \x01(\x03R\aendtime\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x122\n" +
+	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12<\n" +
+	"\x15lastmodifiedtimestamp\x18\xcfʊ\x13 \x01(\x03H\x02R\x15lastmodifiedtimestamp\x88\x01\x01\x12,\n" +
+	"\x0floggrouparnlist\x18\x98\x8e\xe0\xb2\x01 \x03(\tR\x0floggrouparnlistB\x18\n" +
+	"\x16_anomalyvisibilitytimeB\x14\n" +
+	"\x12_creationtimestampB\x18\n" +
+	"\x16_lastmodifiedtimestamp\"\xb4\x03\n" +
+	"\x13GetLogEventsRequest\x12!\n" +
+	"\aendtime\x18쇚\x9d\x01 \x01(\x03H\x00R\aendtime\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12(\n" +
 	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12-\n" +
-	"\rstartfromhead\x18\xaa\x9b\x9b\xe1\x01 \x01(\bH\x00R\rstartfromhead\x88\x01\x01\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttime\x12\x1f\n" +
-	"\x06unmask\x18㍣\xad\x01 \x01(\bH\x01R\x06unmask\x88\x01\x01B\x10\n" +
-	"\x0e_startfromheadB\t\n" +
+	"\rstartfromhead\x18\xaa\x9b\x9b\xe1\x01 \x01(\bH\x02R\rstartfromhead\x88\x01\x01\x12$\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03H\x03R\tstarttime\x88\x01\x01\x12\x1f\n" +
+	"\x06unmask\x18㍣\xad\x01 \x01(\bH\x04R\x06unmask\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\b\n" +
+	"\x06_limitB\x10\n" +
+	"\x0e_startfromheadB\f\n" +
+	"\n" +
+	"_starttimeB\t\n" +
 	"\a_unmask\"\xb2\x01\n" +
 	"\x14GetLogEventsResponse\x12:\n" +
 	"\x06events\x18\x85\xc7\xe3\x96\x01 \x03(\v2\x1e.cloudwatchlogs.OutputLogEventR\x06events\x12/\n" +
@@ -23477,11 +23535,12 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tR\x0edatasourcename\x12(\n" +
 	"\x0edatasourcetype\x18\xf1\xe3& \x01(\tR\x0edatasourcetype\"Z\n" +
 	"\x14GetLogFieldsResponse\x12B\n" +
-	"\tlogfields\x18ٜ\xd4m \x03(\v2!.cloudwatchlogs.LogFieldsListItemR\tlogfields\"\x8d\x01\n" +
+	"\tlogfields\x18ٜ\xd4m \x03(\v2!.cloudwatchlogs.LogFieldsListItemR\tlogfields\"\x9b\x01\n" +
 	"\x18GetLogGroupFieldsRequest\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12%\n" +
-	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12\x16\n" +
-	"\x04time\x18\xe5\xb7\xf2\xe9\x01 \x01(\x03R\x04time\"e\n" +
+	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12\x1b\n" +
+	"\x04time\x18\xe5\xb7\xf2\xe9\x01 \x01(\x03H\x00R\x04time\x88\x01\x01B\a\n" +
+	"\x05_time\"e\n" +
 	"\x19GetLogGroupFieldsResponse\x12H\n" +
 	"\x0eloggroupfields\x18\xd6\xe0\xda% \x03(\v2\x1d.cloudwatchlogs.LogGroupFieldR\x0eloggroupfields\"q\n" +
 	"\x13GetLogObjectRequest\x12.\n" +
@@ -23503,19 +23562,23 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\x15GetLookupTableRequest\x12)\n" +
-	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\"\xa8\x02\n" +
+	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\"\xd4\x02\n" +
 	"\x16GetLookupTableResponse\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1e\n" +
-	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12)\n" +
+	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x12)\n" +
 	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\x12,\n" +
-	"\x0flookuptablename\x18\x8f\xc3\xdb\xd3\x01 \x01(\tR\x0flookuptablename\x12\x1f\n" +
-	"\tsizebytes\x18\xc0\u07bat \x01(\x03R\tsizebytes\x12 \n" +
-	"\ttablebody\x18\xf8\x9e\x94\xd1\x01 \x01(\tR\ttablebody\"w\n" +
-	"\x16GetQueryResultsRequest\x12\x1e\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05R\bmaxitems\x12\x1f\n" +
+	"\x0flookuptablename\x18\x8f\xc3\xdb\xd3\x01 \x01(\tR\x0flookuptablename\x12$\n" +
+	"\tsizebytes\x18\xc0\u07bat \x01(\x03H\x01R\tsizebytes\x88\x01\x01\x12 \n" +
+	"\ttablebody\x18\xf8\x9e\x94\xd1\x01 \x01(\tR\ttablebodyB\x12\n" +
+	"\x10_lastupdatedtimeB\f\n" +
+	"\n" +
+	"_sizebytes\"\x89\x01\n" +
+	"\x16GetQueryResultsRequest\x12#\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xe3\x02\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryidB\v\n" +
+	"\t_maxitems\"\xe3\x02\n" +
 	"\x17GetQueryResultsResponse\x12'\n" +
 	"\rencryptionkey\x18\xec\xec\xecA \x01(\tR\rencryptionkey\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12G\n" +
@@ -23524,18 +23587,19 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
 	"statistics\x18\x8b\xd8\xf5i \x01(\v2\x1f.cloudwatchlogs.QueryStatisticsR\n" +
 	"statistics\x127\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.cloudwatchlogs.QueryStatusR\x06status\"\x9b\x02\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.cloudwatchlogs.QueryStatusR\x06status\"\xaf\x02\n" +
 	"\x1fGetScheduledQueryHistoryRequest\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\x03R\aendtime\x12Q\n" +
 	"\x11executionstatuses\x18\xa8\x9b\xa2\xda\x01 \x03(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x11executionstatuses\x12!\n" +
 	"\n" +
 	"identifier\x18\xbfЖE \x01(\tR\n" +
-	"identifier\x12\"\n" +
+	"identifier\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttime\"\xdc\x01\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttimeB\r\n" +
+	"\v_maxresults\"\xdc\x01\n" +
 	" GetScheduledQueryHistoryResponse\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12/\n" +
@@ -23544,68 +23608,83 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x18GetScheduledQueryRequest\x12!\n" +
 	"\n" +
 	"identifier\x18\xbfЖE \x01(\tR\n" +
-	"identifier\"\xb0\b\n" +
-	"\x19GetScheduledQueryResponse\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12$\n" +
+	"identifier\"\xde\t\n" +
+	"\x19GetScheduledQueryResponse\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12g\n" +
-	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12'\n" +
-	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03R\rendtimeoffset\x12-\n" +
+	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12,\n" +
+	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03H\x01R\rendtimeoffset\x88\x01\x01\x12-\n" +
 	"\x10executionrolearn\x18\xb1\xc4\xfbm \x01(\tR\x10executionrolearn\x12T\n" +
-	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x120\n" +
-	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03R\x11lasttriggeredtime\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x124\n" +
+	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x125\n" +
+	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03H\x02R\x11lasttriggeredtime\x88\x01\x01\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x03R\x0flastupdatedtime\x88\x01\x01\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12+\n" +
-	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03R\x0fscheduleendtime\x122\n" +
-	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x120\n" +
-	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03R\x11schedulestarttime\x12C\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x120\n" +
+	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03H\x04R\x0fscheduleendtime\x88\x01\x01\x122\n" +
+	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x125\n" +
+	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03H\x05R\x11schedulestarttime\x88\x01\x01\x12C\n" +
 	"\fscheduletype\x18\xa5\x80\x9d$ \x01(\x0e2\x1c.cloudwatchlogs.ScheduleTypeR\fscheduletype\x12/\n" +
-	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x12,\n" +
-	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03R\x0fstarttimeoffset\x12=\n" +
+	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x121\n" +
+	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03H\x06R\x0fstarttimeoffset\x88\x01\x01\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\x12\x1d\n" +
-	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezone\"K\n" +
+	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezoneB\x0f\n" +
+	"\r_creationtimeB\x10\n" +
+	"\x0e_endtimeoffsetB\x14\n" +
+	"\x12_lasttriggeredtimeB\x12\n" +
+	"\x10_lastupdatedtimeB\x12\n" +
+	"\x10_scheduleendtimeB\x14\n" +
+	"\x12_schedulestarttimeB\x12\n" +
+	"\x10_starttimeoffset\"K\n" +
 	"\x15GetTransformerRequest\x122\n" +
-	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\"\xf0\x01\n" +
-	"\x16GetTransformerResponse\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12.\n" +
-	"\x10lastmodifiedtime\x18\xc0\xed\xb0\xb2\x01 \x01(\x03R\x10lastmodifiedtime\x122\n" +
+	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\"\xa0\x02\n" +
+	"\x16GetTransformerResponse\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x123\n" +
+	"\x10lastmodifiedtime\x18\xc0\xed\xb0\xb2\x01 \x01(\x03H\x01R\x10lastmodifiedtime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12K\n" +
-	"\x11transformerconfig\x18\xd7\xc6\xc0\xb7\x01 \x03(\v2\x19.cloudwatchlogs.ProcessorR\x11transformerconfig\"<\n" +
+	"\x11transformerconfig\x18\xd7\xc6\xc0\xb7\x01 \x03(\v2\x19.cloudwatchlogs.ProcessorR\x11transformerconfigB\x0f\n" +
+	"\r_creationtimeB\x13\n" +
+	"\x11_lastmodifiedtime\"<\n" +
 	"\x04Grok\x12\x18\n" +
 	"\x05match\x18\x97߀\xf1\x01 \x01(\tR\x05match\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\"B\n" +
 	"\x12GroupingIdentifier\x12\x13\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xe3\x03\n" +
-	"\x06Import\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12%\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\x92\x04\n" +
+	"\x06Import\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12%\n" +
 	"\ferrormessage\x18Ɋ\xa2A \x01(\tR\ferrormessage\x125\n" +
 	"\x14importdestinationarn\x18\xfc\xb6\x86- \x01(\tR\x14importdestinationarn\x12C\n" +
 	"\fimportfilter\x18\xf7\x9b\xaaQ \x01(\v2\x1c.cloudwatchlogs.ImportFilterR\fimportfilter\x12\x1e\n" +
 	"\bimportid\x18\xfa\x9c\xe9\xf4\x01 \x01(\tR\bimportid\x12+\n" +
 	"\x0fimportsourcearn\x18\x99\xbc\x85M \x01(\tR\x0fimportsourcearn\x12O\n" +
 	"\x10importstatistics\x18Ȼ\xe4\x1c \x01(\v2 .cloudwatchlogs.ImportStatisticsR\x10importstatistics\x12C\n" +
-	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\"\x8b\x01\n" +
+	"\fimportstatus\x18\x9f\x9b\xfe\x0e \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\fimportstatus\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x01R\x0flastupdatedtime\x88\x01\x01B\x0f\n" +
+	"\r_creationtimeB\x12\n" +
+	"\x10_lastupdatedtime\"\x8b\x01\n" +
 	"\vImportBatch\x12\x1b\n" +
 	"\abatchid\x18\x97\x80\xd7\\ \x01(\tR\abatchid\x12%\n" +
 	"\ferrormessage\x18Ɋ\xa2A \x01(\tR\ferrormessage\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\x06status\"b\n" +
-	"\fImportFilter\x12&\n" +
-	"\fendeventtime\x18\xe0\xb5\xef\xa4\x01 \x01(\x03R\fendeventtime\x12*\n" +
-	"\x0estarteventtime\x18ݿ\xd1\xc1\x01 \x01(\x03R\x0estarteventtime\";\n" +
-	"\x10ImportStatistics\x12'\n" +
-	"\rbytesimported\x18ᥕg \x01(\x03R\rbytesimported\"\xf3\x01\n" +
-	"\vIndexPolicy\x12)\n" +
-	"\x0elastupdatetime\x18\xd2ޠZ \x01(\x03R\x0elastupdatetime\x122\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.cloudwatchlogs.ImportStatusR\x06status\"\x90\x01\n" +
+	"\fImportFilter\x12+\n" +
+	"\fendeventtime\x18\xe0\xb5\xef\xa4\x01 \x01(\x03H\x00R\fendeventtime\x88\x01\x01\x12/\n" +
+	"\x0estarteventtime\x18ݿ\xd1\xc1\x01 \x01(\x03H\x01R\x0estarteventtime\x88\x01\x01B\x0f\n" +
+	"\r_endeventtimeB\x11\n" +
+	"\x0f_starteventtime\"R\n" +
+	"\x10ImportStatistics\x12,\n" +
+	"\rbytesimported\x18ᥕg \x01(\x03H\x00R\rbytesimported\x88\x01\x01B\x10\n" +
+	"\x0e_bytesimported\"\x8b\x02\n" +
+	"\vIndexPolicy\x12.\n" +
+	"\x0elastupdatetime\x18\xd2ޠZ \x01(\x03H\x00R\x0elastupdatetime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12)\n" +
 	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\x12!\n" +
 	"\n" +
 	"policyname\x18\xdd\xe2\xf26 \x01(\tR\n" +
 	"policyname\x127\n" +
-	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\x0e2\x1b.cloudwatchlogs.IndexSourceR\x06source\"N\n" +
+	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\x0e2\x1b.cloudwatchlogs.IndexSourceR\x06sourceB\x11\n" +
+	"\x0f_lastupdatetime\"N\n" +
 	"\rInputLogEvent\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12 \n" +
 	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03R\ttimestamp\"\x8a\x01\n" +
@@ -23627,25 +23706,27 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x15expectedsequencetoken\x18\xd2\xee\xf1\xc7\x01 \x01(\tR\x15expectedsequencetoken\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x89\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x98\x04\n" +
 	"%ListAggregateLogGroupSummariesRequest\x122\n" +
 	"\x12accountidentifiers\x18\xf5\xe9Ǧ\x01 \x03(\tR\x12accountidentifiers\x12F\n" +
 	"\vdatasources\x18\xf2\xc5\xd1\xe3\x01 \x03(\v2 .cloudwatchlogs.DataSourceFilterR\vdatasources\x12S\n" +
 	"\agroupby\x18\xca\xd4ޱ\x01 \x01(\x0e25.cloudwatchlogs.ListAggregateLogGroupSummariesGroupByR\agroupby\x12<\n" +
-	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12G\n" +
+	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12G\n" +
 	"\rloggroupclass\x18\x81\x99\xa5\xf7\x01 \x01(\x0e2\x1d.cloudwatchlogs.LogGroupClassR\rloggroupclass\x123\n" +
 	"\x13loggroupnamepattern\x18Ԗ\xe4x \x01(\tR\x13loggroupnamepattern\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\x18\n" +
-	"\x16_includelinkedaccounts\"\xb6\x01\n" +
+	"\x16_includelinkedaccountsB\b\n" +
+	"\x06_limit\"\xb6\x01\n" +
 	"&ListAggregateLogGroupSummariesResponse\x12k\n" +
 	"\x1aaggregateloggroupsummaries\x18\xbc\xd6\xeby \x03(\v2(.cloudwatchlogs.AggregateLogGroupSummaryR\x1aaggregateloggroupsummaries\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xd6\x01\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xe5\x01\n" +
 	"\x14ListAnomaliesRequest\x122\n" +
-	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12O\n" +
-	"\x10suppressionstate\x18\xfe\xc9\xc2; \x01(\x0e2 .cloudwatchlogs.SuppressionStateR\x10suppressionstate\"r\n" +
+	"\x10suppressionstate\x18\xfe\xc9\xc2; \x01(\x0e2 .cloudwatchlogs.SuppressionStateR\x10suppressionstateB\b\n" +
+	"\x06_limit\"r\n" +
 	"\x15ListAnomaliesResponse\x128\n" +
 	"\tanomalies\x18\xa3\xbd\xefs \x03(\v2\x17.cloudwatchlogs.AnomalyR\tanomalies\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xf6\x01\n" +
@@ -23654,63 +23735,69 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x11integrationstatus\x18\x98\x94\xe3\x05 \x01(\x0e2!.cloudwatchlogs.IntegrationStatusR\x11integrationstatus\x12M\n" +
 	"\x0fintegrationtype\x18\xa6\x8f\xb7\x92\x01 \x01(\x0e2\x1f.cloudwatchlogs.IntegrationTypeR\x0fintegrationtype\"u\n" +
 	"\x18ListIntegrationsResponse\x12Y\n" +
-	"\x14integrationsummaries\x18\xfc\xe7\xab\" \x03(\v2\".cloudwatchlogs.IntegrationSummaryR\x14integrationsummaries\"\x8c\x01\n" +
+	"\x14integrationsummaries\x18\xfc\xe7\xab\" \x03(\v2\".cloudwatchlogs.IntegrationSummaryR\x14integrationsummaries\"\x9b\x01\n" +
 	"\x1eListLogAnomalyDetectorsRequest\x12/\n" +
-	"\x11filterloggrouparn\x18ڞ\xab\" \x01(\tR\x11filterloggrouparn\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x93\x01\n" +
+	"\x11filterloggrouparn\x18ڞ\xab\" \x01(\tR\x11filterloggrouparn\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\x93\x01\n" +
 	"\x1fListLogAnomalyDetectorsResponse\x12O\n" +
 	"\x10anomalydetectors\x18\xc6\xde\xec\xb4\x01 \x03(\v2\x1f.cloudwatchlogs.AnomalyDetectorR\x10anomalydetectors\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x81\x01\n" +
-	"\x1cListLogGroupsForQueryRequest\x12\"\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x95\x01\n" +
+	"\x1cListLogGroupsForQueryRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"v\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryidB\r\n" +
+	"\v_maxresults\"v\n" +
 	"\x1dListLogGroupsForQueryResponse\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x94\x04\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa3\x04\n" +
 	"\x14ListLogGroupsRequest\x122\n" +
 	"\x12accountidentifiers\x18\xf5\xe9Ǧ\x01 \x03(\tR\x12accountidentifiers\x12F\n" +
 	"\vdatasources\x18\xf2\xc5\xd1\xe3\x01 \x03(\v2 .cloudwatchlogs.DataSourceFilterR\vdatasources\x12,\n" +
 	"\x0ffieldindexnames\x18藲\x8f\x01 \x03(\tR\x0ffieldindexnames\x12<\n" +
-	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x12G\n" +
+	"\x15includelinkedaccounts\x18ӆ\xdc\x1a \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12G\n" +
 	"\rloggroupclass\x18\x81\x99\xa5\xf7\x01 \x01(\x0e2\x1d.cloudwatchlogs.LogGroupClassR\rloggroupclass\x123\n" +
 	"\x13loggroupnamepattern\x18Ԗ\xe4x \x01(\tR\x13loggroupnamepattern\x12A\n" +
 	"\floggrouptags\x18\xf2\xfe\xcd\xc4\x01 \x03(\v2\x19.cloudwatchlogs.TagFilterR\floggrouptags\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\x18\n" +
-	"\x16_includelinkedaccounts\"{\n" +
+	"\x16_includelinkedaccountsB\b\n" +
+	"\x06_limit\"{\n" +
 	"\x15ListLogGroupsResponse\x12A\n" +
 	"\tloggroups\x18\xa2\xf9\xef\xf1\x01 \x03(\v2\x1f.cloudwatchlogs.LogGroupSummaryR\tloggroups\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xe6\x01\n" +
-	"\x1bListScheduledQueriesRequest\x12\"\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xfa\x01\n" +
+	"\x1bListScheduledQueriesRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12C\n" +
 	"\fscheduletype\x18\xa5\x80\x9d$ \x01(\x0e2\x1c.cloudwatchlogs.ScheduleTypeR\fscheduletype\x12=\n" +
-	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\"\x96\x01\n" +
+	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05stateB\r\n" +
+	"\v_maxresults\"\x96\x01\n" +
 	"\x1cListScheduledQueriesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12U\n" +
-	"\x10scheduledqueries\x18\x89\xdd\xc1\x83\x01 \x03(\v2%.cloudwatchlogs.ScheduledQuerySummaryR\x10scheduledqueries\"\x9a\x01\n" +
+	"\x10scheduledqueries\x18\x89\xdd\xc1\x83\x01 \x03(\v2%.cloudwatchlogs.ScheduledQuerySummaryR\x10scheduledqueries\"\xae\x01\n" +
 	"'ListSourcesForS3TableIntegrationRequest\x12*\n" +
-	"\x0eintegrationarn\x18\xe5\xc1\x80\xce\x01 \x01(\tR\x0eintegrationarn\x12\"\n" +
+	"\x0eintegrationarn\x18\xe5\xc1\x80\xce\x01 \x01(\tR\x0eintegrationarn\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x93\x01\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x93\x01\n" +
 	"(ListSourcesForS3TableIntegrationResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12F\n" +
-	"\asources\x18\xb2\xb0\xfa\x90\x01 \x03(\v2(.cloudwatchlogs.S3TableIntegrationSourceR\asources\"\xc4\x01\n" +
+	"\asources\x18\xb2\xb0\xfa\x90\x01 \x03(\v2(.cloudwatchlogs.S3TableIntegrationSourceR\asources\"\xd8\x01\n" +
 	"\x1fListSyslogConfigurationsRequest\x122\n" +
-	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12\"\n" +
+	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12(\n" +
-	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tR\rvpcendpointid\"\x9f\x01\n" +
+	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tR\rvpcendpointidB\r\n" +
+	"\v_maxresults\"\x9f\x01\n" +
 	" ListSyslogConfigurationsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12Z\n" +
 	"\x14syslogconfigurations\x18ਨ\x06 \x03(\v2#.cloudwatchlogs.SyslogConfigurationR\x14syslogconfigurations\"A\n" +
@@ -23736,13 +23823,16 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x06target\x18ɐ\x82\x93\x01 \x01(\tR\x06target\x12\x1d\n" +
 	"\bvaluekey\x18\xe2\xea\x99| \x01(\tR\bvaluekeyB\n" +
 	"\n" +
-	"\b_flatten\"\xdf\x01\n" +
-	"\x17LiveTailSessionLogEvent\x12'\n" +
-	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03R\ringestiontime\x122\n" +
+	"\b_flatten\"\x89\x02\n" +
+	"\x17LiveTailSessionLogEvent\x12,\n" +
+	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03H\x00R\ringestiontime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12(\n" +
 	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12 \n" +
-	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03R\ttimestamp\"G\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
+	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03H\x01R\ttimestamp\x88\x01\x01B\x10\n" +
+	"\x0e_ingestiontimeB\f\n" +
+	"\n" +
+	"_timestamp\"G\n" +
 	"\x17LiveTailSessionMetadata\x12 \n" +
 	"\asampled\x18\xfa\xb1\x9bY \x01(\bH\x00R\asampled\x88\x01\x01B\n" +
 	"\n" +
@@ -23756,66 +23846,83 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\tsessionid\x18\xdbƖ\xf1\x01 \x01(\tR\tsessionid\"\xc2\x01\n" +
 	"\x15LiveTailSessionUpdate\x12T\n" +
 	"\x0fsessionmetadata\x18\xebλ\x03 \x01(\v2'.cloudwatchlogs.LiveTailSessionMetadataR\x0fsessionmetadata\x12S\n" +
-	"\x0esessionresults\x18\x88\x9c\xb6\x8b\x01 \x03(\v2'.cloudwatchlogs.LiveTailSessionLogEventR\x0esessionresults\"I\n" +
+	"\x0esessionresults\x18\x88\x9c\xb6\x8b\x01 \x03(\v2'.cloudwatchlogs.LiveTailSessionLogEventR\x0esessionresults\"\\\n" +
 	"\bLogEvent\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12 \n" +
-	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03R\ttimestamp\"\x9f\x01\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
+	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03H\x00R\ttimestamp\x88\x01\x01B\f\n" +
+	"\n" +
+	"_timestamp\"\x9f\x01\n" +
 	"\fLogFieldType\x129\n" +
 	"\aelement\x18\xf8\xf7\xb4z \x01(\v2\x1c.cloudwatchlogs.LogFieldTypeR\aelement\x12<\n" +
 	"\x06fields\x18\xfdʁ2 \x03(\v2!.cloudwatchlogs.LogFieldsListItemR\x06fields\x12\x16\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\"\x80\x01\n" +
 	"\x11LogFieldsListItem\x12%\n" +
 	"\flogfieldname\x18\x81وt \x01(\tR\flogfieldname\x12D\n" +
-	"\flogfieldtype\x18\x84\xf4\x93\xea\x01 \x01(\v2\x1c.cloudwatchlogs.LogFieldTypeR\flogfieldtype\"\x94\x06\n" +
+	"\flogfieldtype\x18\x84\xf4\x93\xea\x01 \x01(\v2\x1c.cloudwatchlogs.LogFieldTypeR\flogfieldtype\"\xf3\x06\n" +
 	"\bLogGroup\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12S\n" +
-	" bearertokenauthenticationenabled\x18\xcb\xec\xe6\xf4\x01 \x01(\bH\x00R bearertokenauthenticationenabled\x88\x01\x01\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12[\n" +
+	" bearertokenauthenticationenabled\x18\xcb\xec\xe6\xf4\x01 \x01(\bH\x00R bearertokenauthenticationenabled\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x01R\fcreationtime\x88\x01\x01\x12[\n" +
 	"\x14dataprotectionstatus\x18\xc5\xe8\xca\v \x01(\x0e2$.cloudwatchlogs.DataProtectionStatusR\x14dataprotectionstatus\x12E\n" +
-	"\x19deletionprotectionenabled\x18\xb2\xcd\xdf\xe2\x01 \x01(\bH\x01R\x19deletionprotectionenabled\x88\x01\x01\x12V\n" +
+	"\x19deletionprotectionenabled\x18\xb2\xcd\xdf\xe2\x01 \x01(\bH\x02R\x19deletionprotectionenabled\x88\x01\x01\x12V\n" +
 	"\x13inheritedproperties\x18\x89\xff\xa5U \x03(\x0e2!.cloudwatchlogs.InheritedPropertyR\x13inheritedproperties\x12\x1e\n" +
 	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12#\n" +
 	"\vloggrouparn\x18\xf0Û\x03 \x01(\tR\vloggrouparn\x12G\n" +
 	"\rloggroupclass\x18\x81\x99\xa5\xf7\x01 \x01(\x0e2\x1d.cloudwatchlogs.LogGroupClassR\rloggroupclass\x12%\n" +
-	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x120\n" +
-	"\x11metricfiltercount\x18\x93\x8cĥ\x01 \x01(\x05R\x11metricfiltercount\x12+\n" +
-	"\x0fretentionindays\x18\xca\u0557{ \x01(\x05R\x0fretentionindays\x12#\n" +
-	"\vstoredbytes\x18\xe6\u008b| \x01(\x03R\vstoredbytesB#\n" +
-	"!_bearertokenauthenticationenabledB\x1c\n" +
-	"\x1a_deletionprotectionenabled\"D\n" +
+	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x125\n" +
+	"\x11metricfiltercount\x18\x93\x8cĥ\x01 \x01(\x05H\x03R\x11metricfiltercount\x88\x01\x01\x120\n" +
+	"\x0fretentionindays\x18\xca\u0557{ \x01(\x05H\x04R\x0fretentionindays\x88\x01\x01\x12(\n" +
+	"\vstoredbytes\x18\xe6\u008b| \x01(\x03H\x05R\vstoredbytes\x88\x01\x01B#\n" +
+	"!_bearertokenauthenticationenabledB\x0f\n" +
+	"\r_creationtimeB\x1c\n" +
+	"\x1a_deletionprotectionenabledB\x14\n" +
+	"\x12_metricfiltercountB\x12\n" +
+	"\x10_retentionindaysB\x0e\n" +
+	"\f_storedbytes\"U\n" +
 	"\rLogGroupField\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1c\n" +
-	"\apercent\x18\xdb\xf4\xe7\xaf\x01 \x01(\x05R\apercent\"\xa6\x01\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12!\n" +
+	"\apercent\x18\xdb\xf4\xe7\xaf\x01 \x01(\x05H\x00R\apercent\x88\x01\x01B\n" +
+	"\n" +
+	"\b_percent\"\xa6\x01\n" +
 	"\x0fLogGroupSummary\x12#\n" +
 	"\vloggrouparn\x18\xf0Û\x03 \x01(\tR\vloggrouparn\x12G\n" +
 	"\rloggroupclass\x18\x81\x99\xa5\xf7\x01 \x01(\x0e2\x1d.cloudwatchlogs.LogGroupClassR\rloggroupclass\x12%\n" +
-	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\"\xe7\x02\n" +
+	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\"\xe6\x03\n" +
 	"\tLogStream\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x124\n" +
-	"\x13firsteventtimestamp\x18ڀ\x95\xa9\x01 \x01(\x03R\x13firsteventtimestamp\x122\n" +
-	"\x12lasteventtimestamp\x18\xf2첡\x01 \x01(\x03R\x12lasteventtimestamp\x12/\n" +
-	"\x11lastingestiontime\x18\xf9ْ\x1b \x01(\x03R\x11lastingestiontime\x12(\n" +
-	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x12#\n" +
-	"\vstoredbytes\x18\xe6\u008b| \x01(\x03R\vstoredbytes\x123\n" +
-	"\x13uploadsequencetoken\x18ד\xdaB \x01(\tR\x13uploadsequencetoken\"\xc9\x02\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x129\n" +
+	"\x13firsteventtimestamp\x18ڀ\x95\xa9\x01 \x01(\x03H\x01R\x13firsteventtimestamp\x88\x01\x01\x127\n" +
+	"\x12lasteventtimestamp\x18\xf2첡\x01 \x01(\x03H\x02R\x12lasteventtimestamp\x88\x01\x01\x124\n" +
+	"\x11lastingestiontime\x18\xf9ْ\x1b \x01(\x03H\x03R\x11lastingestiontime\x88\x01\x01\x12(\n" +
+	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x12(\n" +
+	"\vstoredbytes\x18\xe6\u008b| \x01(\x03H\x04R\vstoredbytes\x88\x01\x01\x123\n" +
+	"\x13uploadsequencetoken\x18ד\xdaB \x01(\tR\x13uploadsequencetokenB\x0f\n" +
+	"\r_creationtimeB\x16\n" +
+	"\x14_firsteventtimestampB\x15\n" +
+	"\x13_lasteventtimestampB\x14\n" +
+	"\x12_lastingestiontimeB\x0e\n" +
+	"\f_storedbytes\"\x8b\x03\n" +
 	"\vLookupTable\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1e\n" +
-	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12)\n" +
+	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x12)\n" +
 	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\x12,\n" +
-	"\x0flookuptablename\x18\x8f\xc3\xdb\xd3\x01 \x01(\tR\x0flookuptablename\x12&\n" +
-	"\frecordscount\x18\xed\x8c\xea\x9a\x01 \x01(\x03R\frecordscount\x12\x1f\n" +
-	"\tsizebytes\x18\xc0\u07bat \x01(\x03R\tsizebytes\x12$\n" +
-	"\vtablefields\x18\x97\x89\xe6\x8c\x01 \x03(\tR\vtablefields\"0\n" +
+	"\x0flookuptablename\x18\x8f\xc3\xdb\xd3\x01 \x01(\tR\x0flookuptablename\x12+\n" +
+	"\frecordscount\x18\xed\x8c\xea\x9a\x01 \x01(\x03H\x01R\frecordscount\x88\x01\x01\x12$\n" +
+	"\tsizebytes\x18\xc0\u07bat \x01(\x03H\x02R\tsizebytes\x88\x01\x01\x12$\n" +
+	"\vtablefields\x18\x97\x89\xe6\x8c\x01 \x03(\tR\vtablefieldsB\x12\n" +
+	"\x10_lastupdatedtimeB\x0f\n" +
+	"\r_recordscountB\f\n" +
+	"\n" +
+	"_sizebytes\"0\n" +
 	"\x0fLowerCaseString\x12\x1d\n" +
 	"\bwithkeys\x18\xea\xcb\xfaL \x03(\tR\bwithkeys\"\x8a\x01\n" +
 	"\x17MalformedQueryException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12R\n" +
-	"\x11querycompileerror\x18\x87\x9f\xcb7 \x01(\v2!.cloudwatchlogs.QueryCompileErrorR\x11querycompileerror\"\xe1\x03\n" +
+	"\x11querycompileerror\x18\x87\x9f\xcb7 \x01(\v2!.cloudwatchlogs.QueryCompileErrorR\x11querycompileerror\"\xf7\x03\n" +
 	"\fMetricFilter\x12>\n" +
-	"\x16applyontransformedlogs\x18\xa5\xe8\xc9/ \x01(\bH\x00R\x16applyontransformedlogs\x88\x01\x01\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12@\n" +
+	"\x16applyontransformedlogs\x18\xa5\xe8\xc9/ \x01(\bH\x00R\x16applyontransformedlogs\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x01R\fcreationtime\x88\x01\x01\x12@\n" +
 	"\x19emitsystemfielddimensions\x18\x99\xd8\xca\xd0\x01 \x03(\tR\x19emitsystemfielddimensions\x12:\n" +
 	"\x16fieldselectioncriteria\x18\xa7\xe1\xf9\x90\x01 \x01(\tR\x16fieldselectioncriteria\x12\"\n" +
 	"\n" +
@@ -23824,14 +23931,16 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12]\n" +
 	"\x15metrictransformations\x18\xce\xc4\xe0P \x03(\v2$.cloudwatchlogs.MetricTransformationR\x15metrictransformationsB\x19\n" +
-	"\x17_applyontransformedlogs\"\x96\x02\n" +
+	"\x17_applyontransformedlogsB\x0f\n" +
+	"\r_creationtime\"\xab\x02\n" +
 	"\x17MetricFilterMatchRecord\x12&\n" +
-	"\feventmessage\x18\xbf\xee\xf6\x8e\x01 \x01(\tR\feventmessage\x12#\n" +
-	"\veventnumber\x18\xbf\xb9\x90i \x01(\x03R\veventnumber\x12j\n" +
+	"\feventmessage\x18\xbf\xee\xf6\x8e\x01 \x01(\tR\feventmessage\x12(\n" +
+	"\veventnumber\x18\xbf\xb9\x90i \x01(\x03H\x00R\veventnumber\x88\x01\x01\x12j\n" +
 	"\x0fextractedvalues\x18\xa6\xe1Ѣ\x01 \x03(\v2<.cloudwatchlogs.MetricFilterMatchRecord.ExtractedvaluesEntryR\x0fextractedvalues\x1aB\n" +
 	"\x14ExtractedvaluesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x81\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_eventnumber\"\x81\x03\n" +
 	"\x14MetricTransformation\x12&\n" +
 	"\fdefaultvalue\x18\xc0\xc9\xc9\xc0\x01 \x01(\x01R\fdefaultvalue\x12W\n" +
 	"\n" +
@@ -23911,11 +24020,14 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\v2(.cloudwatchlogs.OpenSearchResourceStatusR\x06status\x12#\n" +
 	"\vworkspaceid\x18\xac\x9c\xf9. \x01(\tR\vworkspaceid\"8\n" +
 	"\x19OperationAbortedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"x\n" +
-	"\x0eOutputLogEvent\x12'\n" +
-	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03R\ringestiontime\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12 \n" +
-	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03R\ttimestamp\"-\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa2\x01\n" +
+	"\x0eOutputLogEvent\x12,\n" +
+	"\ringestiontime\x18\x95\xe0\xc3U \x01(\x03H\x00R\ringestiontime\x88\x01\x01\x12\x1b\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
+	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\x03H\x01R\ttimestamp\x88\x01\x01B\x10\n" +
+	"\x0e_ingestiontimeB\f\n" +
+	"\n" +
+	"_timestamp\"-\n" +
 	"\x0fParseCloudfront\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\"M\n" +
 	"\tParseJSON\x12$\n" +
@@ -23942,16 +24054,17 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\bParseVPC\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\"&\n" +
 	"\bParseWAF\x12\x1a\n" +
-	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\"\xe7\x02\n" +
-	"\fPatternToken\x125\n" +
-	"\x14dynamictokenposition\x18\x99\xa3\xaa\x04 \x01(\x05R\x14dynamictokenposition\x12U\n" +
+	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\"\x85\x03\n" +
+	"\fPatternToken\x12:\n" +
+	"\x14dynamictokenposition\x18\x99\xa3\xaa\x04 \x01(\x05H\x00R\x14dynamictokenposition\x88\x01\x01\x12U\n" +
 	"\fenumerations\x18\xbe\xf9\xe0\x06 \x03(\v2..cloudwatchlogs.PatternToken.EnumerationsEntryR\fenumerations\x12/\n" +
 	"\x11inferredtokenname\x18\xe9\xe2\xb8\x1b \x01(\tR\x11inferredtokenname\x12$\n" +
-	"\tisdynamic\x18\xdf\xe9\xa9\b \x01(\bH\x00R\tisdynamic\x88\x01\x01\x12#\n" +
+	"\tisdynamic\x18\xdf\xe9\xa9\b \x01(\bH\x01R\tisdynamic\x88\x01\x01\x12#\n" +
 	"\vtokenstring\x18\xec\xe1\x90V \x01(\tR\vtokenstring\x1a?\n" +
 	"\x11EnumerationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01B\f\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01B\x17\n" +
+	"\x15_dynamictokenpositionB\f\n" +
 	"\n" +
 	"_isdynamic\"J\n" +
 	"\x06Policy\x12@\n" +
@@ -24004,11 +24117,12 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"!_bearertokenauthenticationenabled\"\x7f\n" +
 	"\x1ePutDataProtectionPolicyRequest\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12)\n" +
-	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\"\xae\x01\n" +
-	"\x1fPutDataProtectionPolicyResponse\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x122\n" +
+	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\"\xc7\x01\n" +
+	"\x1fPutDataProtectionPolicyResponse\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x122\n" +
 	"\x12loggroupidentifier\x18\xdcϥ\xdf\x01 \x01(\tR\x12loggroupidentifier\x12)\n" +
-	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\"\xa5\x01\n" +
+	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocumentB\x12\n" +
+	"\x10_lastupdatedtime\"\xa5\x01\n" +
 	"#PutDeliveryDestinationPolicyRequest\x12<\n" +
 	"\x17deliverydestinationname\x18\xcd\u0080\x9e\x01 \x01(\tR\x17deliverydestinationname\x12@\n" +
 	"\x19deliverydestinationpolicy\x18¢\x86\xc5\x01 \x01(\tR\x19deliverydestinationpolicy\"Y\n" +
@@ -24140,12 +24254,14 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x11transformerconfig\x18\xd7\xc6\xc0\xb7\x01 \x03(\v2\x19.cloudwatchlogs.ProcessorR\x11transformerconfig\"z\n" +
 	"\x11QueryCompileError\x12H\n" +
 	"\blocation\x18\xa7\xd3\xd6_ \x01(\v2).cloudwatchlogs.QueryCompileErrorLocationR\blocation\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"r\n" +
-	"\x19QueryCompileErrorLocation\x12'\n" +
-	"\rendcharoffset\x18\xfa\x98\x8e\a \x01(\x05R\rendcharoffset\x12,\n" +
-	"\x0fstartcharoffset\x18\xfd\xa4\xe9\xba\x01 \x01(\x05R\x0fstartcharoffset\"\xdd\x02\n" +
-	"\x0fQueryDefinition\x12&\n" +
-	"\flastmodified\x18\xc7\xf0\xed\xc3\x01 \x01(\x03R\flastmodified\x12(\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa2\x01\n" +
+	"\x19QueryCompileErrorLocation\x12,\n" +
+	"\rendcharoffset\x18\xfa\x98\x8e\a \x01(\x05H\x00R\rendcharoffset\x88\x01\x01\x121\n" +
+	"\x0fstartcharoffset\x18\xfd\xa4\xe9\xba\x01 \x01(\x05H\x01R\x0fstartcharoffset\x88\x01\x01B\x10\n" +
+	"\x0e_endcharoffsetB\x12\n" +
+	"\x10_startcharoffset\"\xf3\x02\n" +
+	"\x0fQueryDefinition\x12+\n" +
+	"\flastmodified\x18\xc7\xf0\xed\xc3\x01 \x01(\x03H\x00R\flastmodified\x88\x01\x01\x12(\n" +
 	"\rloggroupnames\x18\xa9݃\xa1\x01 \x03(\tR\rloggroupnames\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12A\n" +
 	"\n" +
@@ -24153,19 +24269,22 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"parameters\x12/\n" +
 	"\x11querydefinitionid\x18Ĉ\x8cU \x01(\tR\x11querydefinitionid\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"\x95\x03\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystringB\x0f\n" +
+	"\r_lastmodified\"\xc0\x03\n" +
 	"\tQueryInfo\x12&\n" +
-	"\fbytesscanned\x18ٕ\xa6\xfe\x01 \x01(\x01R\fbytesscanned\x12\"\n" +
+	"\fbytesscanned\x18ٕ\xa6\xfe\x01 \x01(\x01R\fbytesscanned\x12'\n" +
 	"\n" +
-	"createtime\x18ݖ\xfa\x8d\x01 \x01(\x03R\n" +
-	"createtime\x12%\n" +
-	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12'\n" +
-	"\rqueryduration\x18\x98\xaa\xcc. \x01(\x03R\rqueryduration\x12\x1c\n" +
+	"createtime\x18ݖ\xfa\x8d\x01 \x01(\x03H\x00R\n" +
+	"createtime\x88\x01\x01\x12%\n" +
+	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12,\n" +
+	"\rqueryduration\x18\x98\xaa\xcc. \x01(\x03H\x01R\rqueryduration\x88\x01\x01\x12\x1c\n" +
 	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x127\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.cloudwatchlogs.QueryStatusR\x06status\x12&\n" +
-	"\fuseridentity\x18\x89\xa7\xd2\xcb\x01 \x01(\tR\fuseridentity\"u\n" +
+	"\fuseridentity\x18\x89\xa7\xd2\xcb\x01 \x01(\tR\fuseridentityB\r\n" +
+	"\v_createtimeB\x10\n" +
+	"\x0e_queryduration\"u\n" +
 	"\x0eQueryParameter\x12&\n" +
 	"\fdefaultvalue\x18\xc0\xc9\xc9\xc0\x01 \x01(\tR\fdefaultvalue\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
@@ -24183,11 +24302,14 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
 	"_mandatory\"_\n" +
 	"\x12RejectedEntityInfo\x12I\n" +
-	"\terrortype\x18\xdaʯW \x01(\x0e2(.cloudwatchlogs.EntityRejectionErrorTypeR\terrortype\"\xd0\x01\n" +
-	"\x15RejectedLogEventsInfo\x12<\n" +
-	"\x17expiredlogeventendindex\x18\x8c\xa6\xe4\x8e\x01 \x01(\x05R\x17expiredlogeventendindex\x12>\n" +
-	"\x18toonewlogeventstartindex\x18\xb8\xa6\xb6\xbd\x01 \x01(\x05R\x18toonewlogeventstartindex\x129\n" +
-	"\x16toooldlogeventendindex\x18\x8c\xe8\xe4- \x01(\x05R\x16toooldlogeventendindex\"\x91\x01\n" +
+	"\terrortype\x18\xdaʯW \x01(\x0e2(.cloudwatchlogs.EntityRejectionErrorTypeR\terrortype\"\xb3\x02\n" +
+	"\x15RejectedLogEventsInfo\x12A\n" +
+	"\x17expiredlogeventendindex\x18\x8c\xa6\xe4\x8e\x01 \x01(\x05H\x00R\x17expiredlogeventendindex\x88\x01\x01\x12C\n" +
+	"\x18toonewlogeventstartindex\x18\xb8\xa6\xb6\xbd\x01 \x01(\x05H\x01R\x18toonewlogeventstartindex\x88\x01\x01\x12>\n" +
+	"\x16toooldlogeventendindex\x18\x8c\xe8\xe4- \x01(\x05H\x02R\x16toooldlogeventendindex\x88\x01\x01B\x1a\n" +
+	"\x18_expiredlogeventendindexB\x1b\n" +
+	"\x19_toonewlogeventstartindexB\x19\n" +
+	"\x17_toooldlogeventendindex\"\x91\x01\n" +
 	"\x0eRenameKeyEntry\x12\x13\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x124\n" +
 	"\x11overwriteifexists\x18\x9e\xe6\x8bn \x01(\bH\x00R\x11overwriteifexists\x88\x01\x01\x12\x1e\n" +
@@ -24201,9 +24323,9 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x0eResourceConfig\x12h\n" +
 	"\x18opensearchresourceconfig\x18\xe8\u008c\xae\x01 \x01(\v2(.cloudwatchlogs.OpenSearchResourceConfigR\x18opensearchresourceconfig\"8\n" +
 	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x98\x02\n" +
-	"\x0eResourcePolicy\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12)\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb1\x02\n" +
+	"\x0eResourcePolicy\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x12)\n" +
 	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\x12!\n" +
 	"\n" +
 	"policyname\x18\xdd\xe2\xf26 \x01(\tR\n" +
@@ -24212,7 +24334,8 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12\"\n" +
 	"\n" +
 	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tR\n" +
-	"revisionid\"?\n" +
+	"revisionidB\x12\n" +
+	"\x10_lastupdatedtime\"?\n" +
 	"\vResultField\x12\x17\n" +
 	"\x05field\x18\xe8ĉ< \x01(\tR\x05field\x12\x17\n" +
 	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xb3\x01\n" +
@@ -24226,9 +24349,9 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
 	"suffixpath\x18\x8c\xfb\xf0v \x01(\tR\n" +
 	"suffixpathB\x1b\n" +
-	"\x19_enablehivecompatiblepath\"\xdd\x02\n" +
-	"\x18S3TableIntegrationSource\x12.\n" +
-	"\x10createdtimestamp\x18\xba\xee\xd9\xdc\x01 \x01(\x03R\x10createdtimestamp\x12>\n" +
+	"\x19_enablehivecompatiblepath\"\xf7\x02\n" +
+	"\x18S3TableIntegrationSource\x123\n" +
+	"\x10createdtimestamp\x18\xba\xee\xd9\xdc\x01 \x01(\x03H\x00R\x10createdtimestamp\x88\x01\x01\x12>\n" +
 	"\n" +
 	"datasource\x18\x99\xd7\xef\xa4\x01 \x01(\v2\x1a.cloudwatchlogs.DataSourceR\n" +
 	"datasource\x12!\n" +
@@ -24237,7 +24360,8 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"identifier\x12:\n" +
 	"\x16parentsourceidentifier\x18\xb4\xfc\xc4\xf5\x01 \x01(\tR\x16parentsourceidentifier\x12J\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2..cloudwatchlogs.S3TableIntegrationSourceStatusR\x06status\x12&\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tR\fstatusreason\"m\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tR\fstatusreasonB\x13\n" +
+	"\x11_createdtimestamp\"m\n" +
 	"\x13S3TablesIntegration\x12*\n" +
 	"\x0edatasourcename\x18\xfc\xe3\xfd\xf9\x01 \x01(\tR\x0edatasourcename\x12*\n" +
 	"\x0edatasourcetype\x18хً\x01 \x01(\tR\x0edatasourcetype\"\xc8\x02\n" +
@@ -24246,19 +24370,22 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x0fdestinationtype\x18\xe8\xf3\x95\xe9\x01 \x01(\x0e2-.cloudwatchlogs.ScheduledQueryDestinationTypeR\x0fdestinationtype\x12%\n" +
 	"\ferrormessage\x18Ɋ\xa2A \x01(\tR\ferrormessage\x123\n" +
 	"\x13processedidentifier\x18\xe1\x8e\xd8\\ \x01(\tR\x13processedidentifier\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.cloudwatchlogs.ActionStatusR\x06status\"\xfc\x04\n" +
-	"\x15ScheduledQuerySummary\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12g\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.cloudwatchlogs.ActionStatusR\x06status\"\xc6\x05\n" +
+	"\x15ScheduledQuerySummary\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12g\n" +
 	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12T\n" +
-	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x120\n" +
-	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03R\x11lasttriggeredtime\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12\x15\n" +
+	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x125\n" +
+	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03H\x01R\x11lasttriggeredtime\x88\x01\x01\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x02R\x0flastupdatedtime\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x122\n" +
 	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x12C\n" +
 	"\fscheduletype\x18\xa5\x80\x9d$ \x01(\x0e2\x1c.cloudwatchlogs.ScheduleTypeR\fscheduletype\x12/\n" +
 	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\x12\x1d\n" +
-	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezone\"\x8d\x01\n" +
+	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezoneB\x0f\n" +
+	"\r_creationtimeB\x14\n" +
+	"\x12_lasttriggeredtimeB\x12\n" +
+	"\x10_lastupdatedtime\"\x8d\x01\n" +
 	"\x11SearchedLogStream\x12(\n" +
 	"\rlogstreamname\x18\xa3\xf7\xee\xd0\x01 \x01(\tR\rlogstreamname\x127\n" +
 	"\x12searchedcompletely\x18\xe9\xe6\xa1\xd6\x01 \x01(\bH\x00R\x12searchedcompletely\x88\x01\x01B\x15\n" +
@@ -24287,16 +24414,17 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x19sessionstreamingexception\x18\x83\xf7\xf2\xce\x01 \x01(\v2).cloudwatchlogs.SessionStreamingExceptionR\x19sessionstreamingexception\x12e\n" +
 	"\x17sessiontimeoutexception\x18\x84ҝ\xda\x01 \x01(\v2'.cloudwatchlogs.SessionTimeoutExceptionR\x17sessiontimeoutexception\x12L\n" +
 	"\fsessionstart\x18\xdeδ\xdd\x01 \x01(\v2$.cloudwatchlogs.LiveTailSessionStartR\fsessionstart\x12O\n" +
-	"\rsessionupdate\x18\xc7\xe6\xdd\xed\x01 \x01(\v2%.cloudwatchlogs.LiveTailSessionUpdateR\rsessionupdate\"\xe2\x02\n" +
+	"\rsessionupdate\x18\xc7\xe6\xdd\xed\x01 \x01(\v2%.cloudwatchlogs.LiveTailSessionUpdateR\rsessionupdate\"\xf1\x02\n" +
 	"\x11StartQueryRequest\x12\x1c\n" +
-	"\aendtime\x18쇚\x9d\x01 \x01(\x03R\aendtime\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\x124\n" +
+	"\aendtime\x18쇚\x9d\x01 \x01(\x03R\aendtime\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12(\n" +
 	"\rloggroupnames\x18\xa9݃\xa1\x01 \x03(\tR\rloggroupnames\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttime\"2\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\x03R\tstarttimeB\b\n" +
+	"\x06_limit\"2\n" +
 	"\x12StartQueryResponse\x12\x1c\n" +
 	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"0\n" +
 	"\x10StopQueryRequest\x12\x1c\n" +
@@ -24304,10 +24432,10 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x11StopQueryResponse\x12!\n" +
 	"\asuccess\x18\x91\xfe\xfe\xd2\x01 \x01(\bH\x00R\asuccess\x88\x01\x01B\n" +
 	"\n" +
-	"\b_success\"\x85\x04\n" +
+	"\b_success\"\x9b\x04\n" +
 	"\x12SubscriptionFilter\x12>\n" +
-	"\x16applyontransformedlogs\x18\xa5\xe8\xc9/ \x01(\bH\x00R\x16applyontransformedlogs\x88\x01\x01\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12*\n" +
+	"\x16applyontransformedlogs\x18\xa5\xe8\xc9/ \x01(\bH\x00R\x16applyontransformedlogs\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x01R\fcreationtime\x88\x01\x01\x12*\n" +
 	"\x0edestinationarn\x18\xa3\xdb\xf2\xcb\x01 \x01(\tR\x0edestinationarn\x12D\n" +
 	"\fdistribution\x18\xac\xa2\xe1\xa4\x01 \x01(\x0e2\x1c.cloudwatchlogs.DistributionR\fdistribution\x12.\n" +
 	"\x10emitsystemfields\x18\xdb\xc1\x9b\xbb\x01 \x03(\tR\x10emitsystemfields\x12:\n" +
@@ -24318,23 +24446,27 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpattern\x12%\n" +
 	"\floggroupname\x18̿\xd4- \x01(\tR\floggroupname\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearnB\x19\n" +
-	"\x17_applyontransformedlogs\"V\n" +
+	"\x17_applyontransformedlogsB\x0f\n" +
+	"\r_creationtime\"V\n" +
 	"\x10SubstituteString\x12B\n" +
 	"\aentries\x18\xf4\x85\xe2z \x03(\v2%.cloudwatchlogs.SubstituteStringEntryR\aentries\"^\n" +
 	"\x15SubstituteStringEntry\x12\x16\n" +
 	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tR\x04from\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12\x11\n" +
-	"\x02to\x18\xa5\x90\x95\x12 \x01(\tR\x02to\"{\n" +
+	"\x02to\x18\xa5\x90\x95\x12 \x01(\tR\x02to\"\x8a\x01\n" +
 	"\x11SuppressionPeriod\x12M\n" +
-	"\x0fsuppressionunit\x18\xa7\xf0\x8e\xca\x01 \x01(\x0e2\x1f.cloudwatchlogs.SuppressionUnitR\x0fsuppressionunit\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\x05R\x05value\"\xcb\x01\n" +
-	"\x13SyslogConfiguration\x12 \n" +
-	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\x03R\tcreatedat\x12#\n" +
+	"\x0fsuppressionunit\x18\xa7\xf0\x8e\xca\x01 \x01(\x0e2\x1f.cloudwatchlogs.SuppressionUnitR\x0fsuppressionunit\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\x05H\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"\xde\x01\n" +
+	"\x13SyslogConfiguration\x12%\n" +
+	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\x03H\x00R\tcreatedat\x88\x01\x01\x12#\n" +
 	"\vloggrouparn\x18\xf0Û\x03 \x01(\tR\vloggrouparn\x12C\n" +
 	"\n" +
 	"sourcetype\x18\xb1\xa2\x97\f \x01(\x0e2 .cloudwatchlogs.SyslogSourceTypeR\n" +
 	"sourcetype\x12(\n" +
-	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tR\rvpcendpointid\"<\n" +
+	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tR\rvpcendpointidB\f\n" +
+	"\n" +
+	"_createdat\"<\n" +
 	"\tTagFilter\x12\x13\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x1a\n" +
 	"\x06values\x18\xbc\x98\x9d\xa2\x01 \x03(\tR\x06values\"\xba\x01\n" +
@@ -24364,17 +24496,19 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"Z\n" +
 	"\x14TooManyTagsException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
-	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tR\fresourcename\"\xa0\x01\n" +
+	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tR\fresourcename\"\xb5\x01\n" +
 	"\x14TransformedLogRecord\x12&\n" +
-	"\feventmessage\x18\xbf\xee\xf6\x8e\x01 \x01(\tR\feventmessage\x12#\n" +
-	"\veventnumber\x18\xbf\xb9\x90i \x01(\x03R\veventnumber\x12;\n" +
-	"\x17transformedeventmessage\x18\x96\x8c\xd7c \x01(\tR\x17transformedeventmessage\"\xad\x02\n" +
+	"\feventmessage\x18\xbf\xee\xf6\x8e\x01 \x01(\tR\feventmessage\x12(\n" +
+	"\veventnumber\x18\xbf\xb9\x90i \x01(\x03H\x00R\veventnumber\x88\x01\x01\x12;\n" +
+	"\x17transformedeventmessage\x18\x96\x8c\xd7c \x01(\tR\x17transformedeventmessageB\x0e\n" +
+	"\f_eventnumber\"\xc9\x02\n" +
 	"\x14TriggerHistoryRecord\x12O\n" +
 	"\fdestinations\x18\xa5\xdab \x03(\v2).cloudwatchlogs.ScheduledQueryDestinationR\fdestinations\x12%\n" +
 	"\ferrormessage\x18Ɋ\xa2A \x01(\tR\ferrormessage\x12L\n" +
 	"\x0fexecutionstatus\x18\x80\xb6\xfb\x02 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x0fexecutionstatus\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x121\n" +
-	"\x12triggeredtimestamp\x18\xfb\xff\xe7z \x01(\x03R\x12triggeredtimestamp\"+\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x126\n" +
+	"\x12triggeredtimestamp\x18\xfb\xff\xe7z \x01(\x03H\x00R\x12triggeredtimestamp\x88\x01\x01B\x15\n" +
+	"\x13_triggeredtimestamp\"+\n" +
 	"\n" +
 	"TrimString\x12\x1d\n" +
 	"\bwithkeys\x18\xea\xcb\xfaL \x03(\tR\bwithkeys\"P\n" +
@@ -24404,61 +24538,74 @@ const file_cloudwatchlogs_proto_rawDesc = "" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12&\n" +
 	"\frecordfields\x18ڂғ\x01 \x03(\tR\frecordfields\x12d\n" +
 	"\x17s3deliveryconfiguration\x18\xf4\xea\xb3- \x01(\v2'.cloudwatchlogs.S3DeliveryConfigurationR\x17s3deliveryconfiguration\"%\n" +
-	"#UpdateDeliveryConfigurationResponse\"\xc1\x02\n" +
+	"#UpdateDeliveryConfigurationResponse\"\xe0\x02\n" +
 	"\x1fUpdateLogAnomalyDetectorRequest\x122\n" +
-	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x128\n" +
-	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03R\x15anomalyvisibilitytime\x12 \n" +
-	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x00R\aenabled\x88\x01\x01\x12Y\n" +
+	"\x12anomalydetectorarn\x18\xac\xcf\xf3\xd4\x01 \x01(\tR\x12anomalydetectorarn\x12=\n" +
+	"\x15anomalyvisibilitytime\x18\xbc\xac\xa9\x89\x01 \x01(\x03H\x00R\x15anomalyvisibilitytime\x88\x01\x01\x12 \n" +
+	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x01R\aenabled\x88\x01\x01\x12Y\n" +
 	"\x13evaluationfrequency\x18\x88\xbe\xbe\xfe\x01 \x01(\x0e2#.cloudwatchlogs.EvaluationFrequencyR\x13evaluationfrequency\x12'\n" +
-	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpatternB\n" +
+	"\rfilterpattern\x18\x98\x87\x8aE \x01(\tR\rfilterpatternB\x18\n" +
+	"\x16_anomalyvisibilitytimeB\n" +
 	"\n" +
 	"\b_enabled\"\xad\x01\n" +
 	"\x18UpdateLookupTableRequest\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1e\n" +
 	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12)\n" +
 	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\x12 \n" +
-	"\ttablebody\x18\xf8\x9e\x94\xd1\x01 \x01(\tR\ttablebody\"t\n" +
-	"\x19UpdateLookupTableResponse\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x12)\n" +
-	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearn\"\xeb\x05\n" +
+	"\ttablebody\x18\xf8\x9e\x94\xd1\x01 \x01(\tR\ttablebody\"\x8d\x01\n" +
+	"\x19UpdateLookupTableResponse\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x00R\x0flastupdatedtime\x88\x01\x01\x12)\n" +
+	"\x0elookuptablearn\x18Š\xd2G \x01(\tR\x0elookuptablearnB\x12\n" +
+	"\x10_lastupdatedtime\"\xcf\x06\n" +
 	"\x1bUpdateScheduledQueryRequest\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12g\n" +
-	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12'\n" +
-	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03R\rendtimeoffset\x12-\n" +
+	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12,\n" +
+	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03H\x00R\rendtimeoffset\x88\x01\x01\x12-\n" +
 	"\x10executionrolearn\x18\xb1\xc4\xfbm \x01(\tR\x10executionrolearn\x12!\n" +
 	"\n" +
 	"identifier\x18\xbfЖE \x01(\tR\n" +
 	"identifier\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12+\n" +
-	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03R\x0fscheduleendtime\x122\n" +
-	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x120\n" +
-	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03R\x11schedulestarttime\x12,\n" +
-	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03R\x0fstarttimeoffset\x12=\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x120\n" +
+	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03H\x01R\x0fscheduleendtime\x88\x01\x01\x122\n" +
+	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x125\n" +
+	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03H\x02R\x11schedulestarttime\x88\x01\x01\x121\n" +
+	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03H\x03R\x0fstarttimeoffset\x88\x01\x01\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\x12\x1d\n" +
-	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezone\"\xb3\b\n" +
-	"\x1cUpdateScheduledQueryResponse\x12%\n" +
-	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03R\fcreationtime\x12$\n" +
+	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezoneB\x10\n" +
+	"\x0e_endtimeoffsetB\x12\n" +
+	"\x10_scheduleendtimeB\x14\n" +
+	"\x12_schedulestarttimeB\x12\n" +
+	"\x10_starttimeoffset\"\xe1\t\n" +
+	"\x1cUpdateScheduledQueryResponse\x12*\n" +
+	"\fcreationtime\x18\x86\xc5\xc4\x19 \x01(\x03H\x00R\fcreationtime\x88\x01\x01\x12$\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12g\n" +
-	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12'\n" +
-	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03R\rendtimeoffset\x12-\n" +
+	"\x18destinationconfiguration\x18\xc0۱E \x01(\v2(.cloudwatchlogs.DestinationConfigurationR\x18destinationconfiguration\x12,\n" +
+	"\rendtimeoffset\x18\xa9\xb8\xa3f \x01(\x03H\x01R\rendtimeoffset\x88\x01\x01\x12-\n" +
 	"\x10executionrolearn\x18\xb1\xc4\xfbm \x01(\tR\x10executionrolearn\x12T\n" +
-	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x120\n" +
-	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03R\x11lasttriggeredtime\x12,\n" +
-	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03R\x0flastupdatedtime\x124\n" +
+	"\x13lastexecutionstatus\x18\x94\x8e\xdc\x03 \x01(\x0e2\x1f.cloudwatchlogs.ExecutionStatusR\x13lastexecutionstatus\x125\n" +
+	"\x11lasttriggeredtime\x18\xf8\xbc\xaa\xbd\x01 \x01(\x03H\x02R\x11lasttriggeredtime\x88\x01\x01\x121\n" +
+	"\x0flastupdatedtime\x18\xf6\xb7\x95\xb9\x01 \x01(\x03H\x03R\x0flastupdatedtime\x88\x01\x01\x124\n" +
 	"\x13loggroupidentifiers\x18\xf9ڸ\xc3\x01 \x03(\tR\x13loggroupidentifiers\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12G\n" +
 	"\rquerylanguage\x18\xf6\xaf\xf7\xa3\x01 \x01(\x0e2\x1d.cloudwatchlogs.QueryLanguageR\rquerylanguage\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12+\n" +
-	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03R\x0fscheduleendtime\x122\n" +
-	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x120\n" +
-	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03R\x11schedulestarttime\x12C\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x120\n" +
+	"\x0fscheduleendtime\x18\xb9\xa3\x9e5 \x01(\x03H\x04R\x0fscheduleendtime\x88\x01\x01\x122\n" +
+	"\x12scheduleexpression\x18\x9fΝ\x89\x01 \x01(\tR\x12scheduleexpression\x125\n" +
+	"\x11schedulestarttime\x18\xfa\x94\xac\xdd\x01 \x01(\x03H\x05R\x11schedulestarttime\x88\x01\x01\x12C\n" +
 	"\fscheduletype\x18\xa5\x80\x9d$ \x01(\x0e2\x1c.cloudwatchlogs.ScheduleTypeR\fscheduletype\x12/\n" +
-	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x12,\n" +
-	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03R\x0fstarttimeoffset\x12=\n" +
+	"\x11scheduledqueryarn\x18\xb4\xa8\xcar \x01(\tR\x11scheduledqueryarn\x121\n" +
+	"\x0fstarttimeoffset\x18\xda\xf1\x8e\x93\x01 \x01(\x03H\x06R\x0fstarttimeoffset\x88\x01\x01\x12=\n" +
 	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2#.cloudwatchlogs.ScheduledQueryStateR\x05state\x12\x1d\n" +
-	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezone\"0\n" +
+	"\btimezone\x18\xa3\x9e\xf2Z \x01(\tR\btimezoneB\x0f\n" +
+	"\r_creationtimeB\x10\n" +
+	"\x0e_endtimeoffsetB\x14\n" +
+	"\x12_lasttriggeredtimeB\x12\n" +
+	"\x10_lastupdatedtimeB\x12\n" +
+	"\x10_scheduleendtimeB\x14\n" +
+	"\x12_schedulestarttimeB\x12\n" +
+	"\x10_starttimeoffset\"0\n" +
 	"\x0fUpperCaseString\x12\x1d\n" +
 	"\bwithkeys\x18\xea\xcb\xfaL \x03(\tR\bwithkeys\"2\n" +
 	"\x13ValidationException\x12\x1b\n" +
@@ -25727,40 +25874,108 @@ func file_cloudwatchlogs_proto_init() {
 	if File_cloudwatchlogs_proto != nil {
 		return
 	}
+	file_cloudwatchlogs_proto_msgTypes[1].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[2].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[4].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[5].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[6].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[13].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[18].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[24].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[25].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[27].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[30].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[31].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[46].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[55].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[70].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[72].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[74].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[76].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[78].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[80].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[84].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[86].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[90].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[92].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[94].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[96].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[98].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[100].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[102].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[104].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[106].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[112].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[113].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[115].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[117].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[119].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[121].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[133].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[134].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[138].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[140].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[143].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[146].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[147].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[149].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[152].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[154].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[157].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[159].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[160].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[161].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[171].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[173].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[177].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[179].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[181].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[183].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[185].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[187].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[193].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[194].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[195].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[198].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[201].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[202].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[204].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[205].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[208].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[209].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[211].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[225].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[228].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[234].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[239].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[241].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[248].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[257].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[258].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[264].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[268].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[269].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[270].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[273].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[275].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[276].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[281].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[284].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[285].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[288].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[289].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[299].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[302].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[303].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[306].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[307].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[317].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[318].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[325].OneofWrappers = []any{}
 	file_cloudwatchlogs_proto_msgTypes[328].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[330].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[331].OneofWrappers = []any{}
+	file_cloudwatchlogs_proto_msgTypes[332].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

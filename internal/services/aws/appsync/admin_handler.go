@@ -44,7 +44,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Maxresults)
+	limit := int(req.Msg.GetMaxresults())
 	if limit <= 0 {
 		limit = 25
 	}
@@ -85,7 +85,7 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Maxresults)
+	limit := int(req.Msg.GetMaxresults())
 	if limit <= 0 {
 		limit = 25
 	}

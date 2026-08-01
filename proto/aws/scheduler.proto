@@ -95,11 +95,11 @@ message AwsVpcConfiguration {
 
 message CapacityProviderStrategyItem {
 
-  int32 base = 500995289;
+  optional int32 base = 500995289;
 
   string capacityprovider = 109086449;
 
-  int32 weight = 278961850;
+  optional int32 weight = 278961850;
 
 }
 
@@ -247,7 +247,7 @@ message EcsParameters {
 
   repeated TagsEntry tags = 381526209;
 
-  int32 taskcount = 398407508;
+  optional int32 taskcount = 398407508;
 
   string taskdefinitionarn = 82234477;
 
@@ -271,7 +271,7 @@ message EventBridgeParameters {
 
 message FlexibleTimeWindow {
 
-  int32 maximumwindowinminutes = 482931584;
+  optional int32 maximumwindowinminutes = 482931584;
 
   string mode = 323909427;
 
@@ -371,7 +371,7 @@ message KinesisParameters {
 
 message ListScheduleGroupsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nameprefix = 361707931;
 
@@ -395,7 +395,7 @@ message ListSchedulesInput {
 
   string groupname = 357049672;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nameprefix = 361707931;
 
@@ -481,9 +481,9 @@ message ResourceNotFoundException {
 
 message RetryPolicy {
 
-  int32 maximumeventageinseconds = 393041563;
+  optional int32 maximumeventageinseconds = 393041563;
 
-  int32 maximumretryattempts = 112088128;
+  optional int32 maximumretryattempts = 112088128;
 
 }
 

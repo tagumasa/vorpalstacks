@@ -3894,7 +3894,7 @@ func (x *AbacStatus) GetStatus() BucketAbacStatus {
 
 type AbortIncompleteMultipartUpload struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Daysafterinitiation int32                  `protobuf:"varint,522354315,opt,name=daysafterinitiation,proto3" json:"daysafterinitiation,omitempty"`
+	Daysafterinitiation *int32                 `protobuf:"varint,522354315,opt,name=daysafterinitiation,proto3,oneof" json:"daysafterinitiation,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -3930,8 +3930,8 @@ func (*AbortIncompleteMultipartUpload) Descriptor() ([]byte, []int) {
 }
 
 func (x *AbortIncompleteMultipartUpload) GetDaysafterinitiation() int32 {
-	if x != nil {
-		return x.Daysafterinitiation
+	if x != nil && x.Daysafterinitiation != nil {
+		return *x.Daysafterinitiation
 	}
 	return 0
 }
@@ -5259,7 +5259,7 @@ type CORSRule struct {
 	Allowedorigins []string               `protobuf:"bytes,19474107,rep,name=allowedorigins,proto3" json:"allowedorigins,omitempty"`
 	Exposeheaders  []string               `protobuf:"bytes,290364554,rep,name=exposeheaders,proto3" json:"exposeheaders,omitempty"`
 	Id             string                 `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
-	Maxageseconds  int32                  `protobuf:"varint,315057526,opt,name=maxageseconds,proto3" json:"maxageseconds,omitempty"`
+	Maxageseconds  *int32                 `protobuf:"varint,315057526,opt,name=maxageseconds,proto3,oneof" json:"maxageseconds,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5330,8 +5330,8 @@ func (x *CORSRule) GetId() string {
 }
 
 func (x *CORSRule) GetMaxageseconds() int32 {
-	if x != nil {
-		return x.Maxageseconds
+	if x != nil && x.Maxageseconds != nil {
+		return *x.Maxageseconds
 	}
 	return 0
 }
@@ -5894,7 +5894,7 @@ type CompleteMultipartUploadRequest struct {
 	Ifmatch              string                    `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
 	Ifnonematch          string                    `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
 	Key                  string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Mpuobjectsize        int64                     `protobuf:"varint,522430190,opt,name=mpuobjectsize,proto3" json:"mpuobjectsize,omitempty"`
+	Mpuobjectsize        *int64                    `protobuf:"varint,522430190,opt,name=mpuobjectsize,proto3,oneof" json:"mpuobjectsize,omitempty"`
 	Multipartupload      *CompletedMultipartUpload `protobuf:"bytes,362466695,opt,name=multipartupload,proto3" json:"multipartupload,omitempty"`
 	Requestpayer         RequestPayer              `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Ssecustomeralgorithm string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
@@ -6048,8 +6048,8 @@ func (x *CompleteMultipartUploadRequest) GetKey() string {
 }
 
 func (x *CompleteMultipartUploadRequest) GetMpuobjectsize() int64 {
-	if x != nil {
-		return x.Mpuobjectsize
+	if x != nil && x.Mpuobjectsize != nil {
+		return *x.Mpuobjectsize
 	}
 	return 0
 }
@@ -6153,7 +6153,7 @@ type CompletedPart struct {
 	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
 	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
 	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Partnumber        int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
+	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6266,8 +6266,8 @@ func (x *CompletedPart) GetEtag() string {
 }
 
 func (x *CompletedPart) GetPartnumber() int32 {
-	if x != nil {
-		return x.Partnumber
+	if x != nil && x.Partnumber != nil {
+		return *x.Partnumber
 	}
 	return 0
 }
@@ -8134,9 +8134,9 @@ func (x *CreateSessionRequest) GetSessionmode() SessionMode {
 
 type DefaultRetention struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Days          int32                   `protobuf:"varint,494075051,opt,name=days,proto3" json:"days,omitempty"`
+	Days          *int32                  `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Mode          ObjectLockRetentionMode `protobuf:"varint,323909427,opt,name=mode,proto3,enum=s3.ObjectLockRetentionMode" json:"mode,omitempty"`
-	Years         int32                   `protobuf:"varint,325150814,opt,name=years,proto3" json:"years,omitempty"`
+	Years         *int32                  `protobuf:"varint,325150814,opt,name=years,proto3,oneof" json:"years,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8172,8 +8172,8 @@ func (*DefaultRetention) Descriptor() ([]byte, []int) {
 }
 
 func (x *DefaultRetention) GetDays() int32 {
-	if x != nil {
-		return x.Days
+	if x != nil && x.Days != nil {
+		return *x.Days
 	}
 	return 0
 }
@@ -8186,8 +8186,8 @@ func (x *DefaultRetention) GetMode() ObjectLockRetentionMode {
 }
 
 func (x *DefaultRetention) GetYears() int32 {
-	if x != nil {
-		return x.Years
+	if x != nil && x.Years != nil {
+		return *x.Years
 	}
 	return 0
 }
@@ -9387,7 +9387,7 @@ type DeleteObjectRequest struct {
 	Expectedbucketowner       string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Ifmatch                   string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
 	Ifmatchlastmodifiedtime   string                 `protobuf:"bytes,94688686,opt,name=ifmatchlastmodifiedtime,proto3" json:"ifmatchlastmodifiedtime,omitempty"`
-	Ifmatchsize               int64                  `protobuf:"varint,398307783,opt,name=ifmatchsize,proto3" json:"ifmatchsize,omitempty"`
+	Ifmatchsize               *int64                 `protobuf:"varint,398307783,opt,name=ifmatchsize,proto3,oneof" json:"ifmatchsize,omitempty"`
 	Key                       string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Mfa                       string                 `protobuf:"bytes,325407842,opt,name=mfa,proto3" json:"mfa,omitempty"`
 	Requestpayer              RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
@@ -9462,8 +9462,8 @@ func (x *DeleteObjectRequest) GetIfmatchlastmodifiedtime() string {
 }
 
 func (x *DeleteObjectRequest) GetIfmatchsize() int64 {
-	if x != nil {
-		return x.Ifmatchsize
+	if x != nil && x.Ifmatchsize != nil {
+		return *x.Ifmatchsize
 	}
 	return 0
 }
@@ -13018,7 +13018,7 @@ type GetObjectAnnotationOutput struct {
 	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
 	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
 	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentlength        int64                  `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength        *int64                 `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Etag                 string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
 	Lastmodified         string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Objectversionid      string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
@@ -13144,8 +13144,8 @@ func (x *GetObjectAnnotationOutput) GetChecksumxxhash64() string {
 }
 
 func (x *GetObjectAnnotationOutput) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -13291,7 +13291,7 @@ type GetObjectAttributesOutput struct {
 	Etag           string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
 	Lastmodified   string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Objectparts    *GetObjectAttributesParts `protobuf:"bytes,402544889,opt,name=objectparts,proto3" json:"objectparts,omitempty"`
-	Objectsize     int64                     `protobuf:"varint,130133988,opt,name=objectsize,proto3" json:"objectsize,omitempty"`
+	Objectsize     *int64                    `protobuf:"varint,130133988,opt,name=objectsize,proto3,oneof" json:"objectsize,omitempty"`
 	Requestcharged RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Storageclass   StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
 	Versionid      string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
@@ -13365,8 +13365,8 @@ func (x *GetObjectAttributesOutput) GetObjectparts() *GetObjectAttributesParts {
 }
 
 func (x *GetObjectAttributesOutput) GetObjectsize() int64 {
-	if x != nil {
-		return x.Objectsize
+	if x != nil && x.Objectsize != nil {
+		return *x.Objectsize
 	}
 	return 0
 }
@@ -13395,11 +13395,11 @@ func (x *GetObjectAttributesOutput) GetVersionid() string {
 type GetObjectAttributesParts struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Istruncated          *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Maxparts             int32                  `protobuf:"varint,398005914,opt,name=maxparts,proto3" json:"maxparts,omitempty"`
+	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
 	Nextpartnumbermarker string                 `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3" json:"nextpartnumbermarker,omitempty"`
 	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
 	Parts                []*ObjectPart          `protobuf:"bytes,213028806,rep,name=parts,proto3" json:"parts,omitempty"`
-	Totalpartscount      int32                  `protobuf:"varint,56278317,opt,name=totalpartscount,proto3" json:"totalpartscount,omitempty"`
+	Totalpartscount      *int32                 `protobuf:"varint,56278317,opt,name=totalpartscount,proto3,oneof" json:"totalpartscount,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -13442,8 +13442,8 @@ func (x *GetObjectAttributesParts) GetIstruncated() bool {
 }
 
 func (x *GetObjectAttributesParts) GetMaxparts() int32 {
-	if x != nil {
-		return x.Maxparts
+	if x != nil && x.Maxparts != nil {
+		return *x.Maxparts
 	}
 	return 0
 }
@@ -13470,8 +13470,8 @@ func (x *GetObjectAttributesParts) GetParts() []*ObjectPart {
 }
 
 func (x *GetObjectAttributesParts) GetTotalpartscount() int32 {
-	if x != nil {
-		return x.Totalpartscount
+	if x != nil && x.Totalpartscount != nil {
+		return *x.Totalpartscount
 	}
 	return 0
 }
@@ -13481,7 +13481,7 @@ type GetObjectAttributesRequest struct {
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Maxparts             int32                  `protobuf:"varint,398005914,opt,name=maxparts,proto3" json:"maxparts,omitempty"`
+	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
 	Objectattributes     []ObjectAttributes     `protobuf:"varint,370999888,rep,packed,name=objectattributes,proto3,enum=s3.ObjectAttributes" json:"objectattributes,omitempty"`
 	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
@@ -13545,8 +13545,8 @@ func (x *GetObjectAttributesRequest) GetKey() string {
 }
 
 func (x *GetObjectAttributesRequest) GetMaxparts() int32 {
-	if x != nil {
-		return x.Maxparts
+	if x != nil && x.Maxparts != nil {
+		return *x.Maxparts
 	}
 	return 0
 }
@@ -13836,7 +13836,7 @@ type GetObjectOutput struct {
 	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
 	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
 	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contentlength             int64                     `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
 	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
@@ -13845,11 +13845,11 @@ type GetObjectOutput struct {
 	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
 	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Missingmeta               int32                     `protobuf:"varint,79140523,opt,name=missingmeta,proto3" json:"missingmeta,omitempty"`
+	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
 	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
-	Partscount                int32                     `protobuf:"varint,154996373,opt,name=partscount,proto3" json:"partscount,omitempty"`
+	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Restore                   string                    `protobuf:"bytes,267943794,opt,name=restore,proto3" json:"restore,omitempty"`
@@ -13858,7 +13858,7 @@ type GetObjectOutput struct {
 	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagcount                  int32                     `protobuf:"varint,339592595,opt,name=tagcount,proto3" json:"tagcount,omitempty"`
+	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
 	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -14022,8 +14022,8 @@ func (x *GetObjectOutput) GetContentlanguage() string {
 }
 
 func (x *GetObjectOutput) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -14085,8 +14085,8 @@ func (x *GetObjectOutput) GetMetadata() map[string]string {
 }
 
 func (x *GetObjectOutput) GetMissingmeta() int32 {
-	if x != nil {
-		return x.Missingmeta
+	if x != nil && x.Missingmeta != nil {
+		return *x.Missingmeta
 	}
 	return 0
 }
@@ -14113,8 +14113,8 @@ func (x *GetObjectOutput) GetObjectlockretainuntildate() string {
 }
 
 func (x *GetObjectOutput) GetPartscount() int32 {
-	if x != nil {
-		return x.Partscount
+	if x != nil && x.Partscount != nil {
+		return *x.Partscount
 	}
 	return 0
 }
@@ -14176,8 +14176,8 @@ func (x *GetObjectOutput) GetStorageclass() StorageClass {
 }
 
 func (x *GetObjectOutput) GetTagcount() int32 {
-	if x != nil {
-		return x.Tagcount
+	if x != nil && x.Tagcount != nil {
+		return *x.Tagcount
 	}
 	return 0
 }
@@ -14206,7 +14206,7 @@ type GetObjectRequest struct {
 	Ifnonematch                string                 `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
 	Ifunmodifiedsince          string                 `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3" json:"ifunmodifiedsince,omitempty"`
 	Key                        string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Partnumber                 int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
+	Partnumber                 *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	Range                      string                 `protobuf:"bytes,51505011,opt,name=range,proto3" json:"range,omitempty"`
 	Requestpayer               RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Responsecachecontrol       string                 `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3" json:"responsecachecontrol,omitempty"`
@@ -14310,8 +14310,8 @@ func (x *GetObjectRequest) GetKey() string {
 }
 
 func (x *GetObjectRequest) GetPartnumber() int32 {
-	if x != nil {
-		return x.Partnumber
+	if x != nil && x.Partnumber != nil {
+		return *x.Partnumber
 	}
 	return 0
 }
@@ -15184,7 +15184,7 @@ type HeadObjectOutput struct {
 	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
 	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
 	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contentlength             int64                     `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
 	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
@@ -15193,11 +15193,11 @@ type HeadObjectOutput struct {
 	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
 	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Missingmeta               int32                     `protobuf:"varint,79140523,opt,name=missingmeta,proto3" json:"missingmeta,omitempty"`
+	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
 	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
-	Partscount                int32                     `protobuf:"varint,154996373,opt,name=partscount,proto3" json:"partscount,omitempty"`
+	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Restore                   string                    `protobuf:"bytes,267943794,opt,name=restore,proto3" json:"restore,omitempty"`
@@ -15206,7 +15206,7 @@ type HeadObjectOutput struct {
 	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagcount                  int32                     `protobuf:"varint,339592595,opt,name=tagcount,proto3" json:"tagcount,omitempty"`
+	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
 	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -15370,8 +15370,8 @@ func (x *HeadObjectOutput) GetContentlanguage() string {
 }
 
 func (x *HeadObjectOutput) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -15433,8 +15433,8 @@ func (x *HeadObjectOutput) GetMetadata() map[string]string {
 }
 
 func (x *HeadObjectOutput) GetMissingmeta() int32 {
-	if x != nil {
-		return x.Missingmeta
+	if x != nil && x.Missingmeta != nil {
+		return *x.Missingmeta
 	}
 	return 0
 }
@@ -15461,8 +15461,8 @@ func (x *HeadObjectOutput) GetObjectlockretainuntildate() string {
 }
 
 func (x *HeadObjectOutput) GetPartscount() int32 {
-	if x != nil {
-		return x.Partscount
+	if x != nil && x.Partscount != nil {
+		return *x.Partscount
 	}
 	return 0
 }
@@ -15524,8 +15524,8 @@ func (x *HeadObjectOutput) GetStorageclass() StorageClass {
 }
 
 func (x *HeadObjectOutput) GetTagcount() int32 {
-	if x != nil {
-		return x.Tagcount
+	if x != nil && x.Tagcount != nil {
+		return *x.Tagcount
 	}
 	return 0
 }
@@ -15554,7 +15554,7 @@ type HeadObjectRequest struct {
 	Ifnonematch                string                 `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
 	Ifunmodifiedsince          string                 `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3" json:"ifunmodifiedsince,omitempty"`
 	Key                        string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Partnumber                 int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
+	Partnumber                 *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	Range                      string                 `protobuf:"bytes,51505011,opt,name=range,proto3" json:"range,omitempty"`
 	Requestpayer               RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Responsecachecontrol       string                 `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3" json:"responsecachecontrol,omitempty"`
@@ -15658,8 +15658,8 @@ func (x *HeadObjectRequest) GetKey() string {
 }
 
 func (x *HeadObjectRequest) GetPartnumber() int32 {
-	if x != nil {
-		return x.Partnumber
+	if x != nil && x.Partnumber != nil {
+		return *x.Partnumber
 	}
 	return 0
 }
@@ -17187,7 +17187,7 @@ func (x *LambdaFunctionConfiguration) GetLambdafunctionarn() string {
 type LifecycleExpiration struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Date                      string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
-	Days                      int32                  `protobuf:"varint,494075051,opt,name=days,proto3" json:"days,omitempty"`
+	Days                      *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Expiredobjectdeletemarker *bool                  `protobuf:"varint,232733109,opt,name=expiredobjectdeletemarker,proto3,oneof" json:"expiredobjectdeletemarker,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -17231,8 +17231,8 @@ func (x *LifecycleExpiration) GetDate() string {
 }
 
 func (x *LifecycleExpiration) GetDays() int32 {
-	if x != nil {
-		return x.Days
+	if x != nil && x.Days != nil {
+		return *x.Days
 	}
 	return 0
 }
@@ -17354,8 +17354,8 @@ func (x *LifecycleRule) GetTransitions() []*Transition {
 
 type LifecycleRuleAndOperator struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Objectsizegreaterthan int64                  `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3" json:"objectsizegreaterthan,omitempty"`
-	Objectsizelessthan    int64                  `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3" json:"objectsizelessthan,omitempty"`
+	Objectsizegreaterthan *int64                 `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3,oneof" json:"objectsizegreaterthan,omitempty"`
+	Objectsizelessthan    *int64                 `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3,oneof" json:"objectsizelessthan,omitempty"`
 	Prefix                string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Tags                  []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -17393,15 +17393,15 @@ func (*LifecycleRuleAndOperator) Descriptor() ([]byte, []int) {
 }
 
 func (x *LifecycleRuleAndOperator) GetObjectsizegreaterthan() int64 {
-	if x != nil {
-		return x.Objectsizegreaterthan
+	if x != nil && x.Objectsizegreaterthan != nil {
+		return *x.Objectsizegreaterthan
 	}
 	return 0
 }
 
 func (x *LifecycleRuleAndOperator) GetObjectsizelessthan() int64 {
-	if x != nil {
-		return x.Objectsizelessthan
+	if x != nil && x.Objectsizelessthan != nil {
+		return *x.Objectsizelessthan
 	}
 	return 0
 }
@@ -17423,8 +17423,8 @@ func (x *LifecycleRuleAndOperator) GetTags() []*Tag {
 type LifecycleRuleFilter struct {
 	state                 protoimpl.MessageState    `protogen:"open.v1"`
 	And                   *LifecycleRuleAndOperator `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
-	Objectsizegreaterthan int64                     `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3" json:"objectsizegreaterthan,omitempty"`
-	Objectsizelessthan    int64                     `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3" json:"objectsizelessthan,omitempty"`
+	Objectsizegreaterthan *int64                    `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3,oneof" json:"objectsizegreaterthan,omitempty"`
+	Objectsizelessthan    *int64                    `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3,oneof" json:"objectsizelessthan,omitempty"`
 	Prefix                string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Tag                   *Tag                      `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -17469,15 +17469,15 @@ func (x *LifecycleRuleFilter) GetAnd() *LifecycleRuleAndOperator {
 }
 
 func (x *LifecycleRuleFilter) GetObjectsizegreaterthan() int64 {
-	if x != nil {
-		return x.Objectsizegreaterthan
+	if x != nil && x.Objectsizegreaterthan != nil {
+		return *x.Objectsizegreaterthan
 	}
 	return 0
 }
 
 func (x *LifecycleRuleFilter) GetObjectsizelessthan() int64 {
-	if x != nil {
-		return x.Objectsizelessthan
+	if x != nil && x.Objectsizelessthan != nil {
+		return *x.Objectsizelessthan
 	}
 	return 0
 }
@@ -18080,7 +18080,7 @@ type ListBucketsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Bucketregion      string                 `protobuf:"bytes,309298816,opt,name=bucketregion,proto3" json:"bucketregion,omitempty"`
 	Continuationtoken string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Maxbuckets        int32                  `protobuf:"varint,264636545,opt,name=maxbuckets,proto3" json:"maxbuckets,omitempty"`
+	Maxbuckets        *int32                 `protobuf:"varint,264636545,opt,name=maxbuckets,proto3,oneof" json:"maxbuckets,omitempty"`
 	Prefix            string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -18131,8 +18131,8 @@ func (x *ListBucketsRequest) GetContinuationtoken() string {
 }
 
 func (x *ListBucketsRequest) GetMaxbuckets() int32 {
-	if x != nil {
-		return x.Maxbuckets
+	if x != nil && x.Maxbuckets != nil {
+		return *x.Maxbuckets
 	}
 	return 0
 }
@@ -18199,7 +18199,7 @@ func (x *ListDirectoryBucketsOutput) GetContinuationtoken() string {
 type ListDirectoryBucketsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Maxdirectorybuckets int32                  `protobuf:"varint,424013420,opt,name=maxdirectorybuckets,proto3" json:"maxdirectorybuckets,omitempty"`
+	Maxdirectorybuckets *int32                 `protobuf:"varint,424013420,opt,name=maxdirectorybuckets,proto3,oneof" json:"maxdirectorybuckets,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -18242,8 +18242,8 @@ func (x *ListDirectoryBucketsRequest) GetContinuationtoken() string {
 }
 
 func (x *ListDirectoryBucketsRequest) GetMaxdirectorybuckets() int32 {
-	if x != nil {
-		return x.Maxdirectorybuckets
+	if x != nil && x.Maxdirectorybuckets != nil {
+		return *x.Maxdirectorybuckets
 	}
 	return 0
 }
@@ -18256,7 +18256,7 @@ type ListMultipartUploadsOutput struct {
 	Encodingtype       EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated        *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Keymarker          string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
-	Maxuploads         int32                  `protobuf:"varint,111552074,opt,name=maxuploads,proto3" json:"maxuploads,omitempty"`
+	Maxuploads         *int32                 `protobuf:"varint,111552074,opt,name=maxuploads,proto3,oneof" json:"maxuploads,omitempty"`
 	Nextkeymarker      string                 `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3" json:"nextkeymarker,omitempty"`
 	Nextuploadidmarker string                 `protobuf:"bytes,528782759,opt,name=nextuploadidmarker,proto3" json:"nextuploadidmarker,omitempty"`
 	Prefix             string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
@@ -18340,8 +18340,8 @@ func (x *ListMultipartUploadsOutput) GetKeymarker() string {
 }
 
 func (x *ListMultipartUploadsOutput) GetMaxuploads() int32 {
-	if x != nil {
-		return x.Maxuploads
+	if x != nil && x.Maxuploads != nil {
+		return *x.Maxuploads
 	}
 	return 0
 }
@@ -18395,7 +18395,7 @@ type ListMultipartUploadsRequest struct {
 	Encodingtype        EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Keymarker           string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
-	Maxuploads          int32                  `protobuf:"varint,111552074,opt,name=maxuploads,proto3" json:"maxuploads,omitempty"`
+	Maxuploads          *int32                 `protobuf:"varint,111552074,opt,name=maxuploads,proto3,oneof" json:"maxuploads,omitempty"`
 	Prefix              string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Uploadidmarker      string                 `protobuf:"bytes,31676084,opt,name=uploadidmarker,proto3" json:"uploadidmarker,omitempty"`
@@ -18469,8 +18469,8 @@ func (x *ListMultipartUploadsRequest) GetKeymarker() string {
 }
 
 func (x *ListMultipartUploadsRequest) GetMaxuploads() int32 {
-	if x != nil {
-		return x.Maxuploads
+	if x != nil && x.Maxuploads != nil {
+		return *x.Maxuploads
 	}
 	return 0
 }
@@ -18498,13 +18498,13 @@ func (x *ListMultipartUploadsRequest) GetUploadidmarker() string {
 
 type ListObjectAnnotationsOutput struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Annotationcount       int32                  `protobuf:"varint,170196776,opt,name=annotationcount,proto3" json:"annotationcount,omitempty"`
+	Annotationcount       *int32                 `protobuf:"varint,170196776,opt,name=annotationcount,proto3,oneof" json:"annotationcount,omitempty"`
 	Annotationprefix      string                 `protobuf:"bytes,32054469,opt,name=annotationprefix,proto3" json:"annotationprefix,omitempty"`
 	Annotations           []*AnnotationEntry     `protobuf:"bytes,110947618,rep,name=annotations,proto3" json:"annotations,omitempty"`
 	Bucket                string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Continuationtoken     string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
 	Key                   string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Maxannotationresults  int32                  `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3" json:"maxannotationresults,omitempty"`
+	Maxannotationresults  *int32                 `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3,oneof" json:"maxannotationresults,omitempty"`
 	Nextcontinuationtoken string                 `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
 	Objectversionid       string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
 	Requestcharged        RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
@@ -18543,8 +18543,8 @@ func (*ListObjectAnnotationsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListObjectAnnotationsOutput) GetAnnotationcount() int32 {
-	if x != nil {
-		return x.Annotationcount
+	if x != nil && x.Annotationcount != nil {
+		return *x.Annotationcount
 	}
 	return 0
 }
@@ -18585,8 +18585,8 @@ func (x *ListObjectAnnotationsOutput) GetKey() string {
 }
 
 func (x *ListObjectAnnotationsOutput) GetMaxannotationresults() int32 {
-	if x != nil {
-		return x.Maxannotationresults
+	if x != nil && x.Maxannotationresults != nil {
+		return *x.Maxannotationresults
 	}
 	return 0
 }
@@ -18619,7 +18619,7 @@ type ListObjectAnnotationsRequest struct {
 	Continuationtoken    string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
 	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Maxannotationresults int32                  `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3" json:"maxannotationresults,omitempty"`
+	Maxannotationresults *int32                 `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3,oneof" json:"maxannotationresults,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Versionid            string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -18692,8 +18692,8 @@ func (x *ListObjectAnnotationsRequest) GetKey() string {
 }
 
 func (x *ListObjectAnnotationsRequest) GetMaxannotationresults() int32 {
-	if x != nil {
-		return x.Maxannotationresults
+	if x != nil && x.Maxannotationresults != nil {
+		return *x.Maxannotationresults
 	}
 	return 0
 }
@@ -18720,7 +18720,7 @@ type ListObjectVersionsOutput struct {
 	Encodingtype        EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated         *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Keymarker           string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
-	Maxkeys             int32                  `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Maxkeys             *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nextkeymarker       string                 `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3" json:"nextkeymarker,omitempty"`
 	Nextversionidmarker string                 `protobuf:"bytes,449586812,opt,name=nextversionidmarker,proto3" json:"nextversionidmarker,omitempty"`
@@ -18805,8 +18805,8 @@ func (x *ListObjectVersionsOutput) GetKeymarker() string {
 }
 
 func (x *ListObjectVersionsOutput) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -18867,7 +18867,7 @@ type ListObjectVersionsRequest struct {
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Keymarker                string                     `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
-	Maxkeys                  int32                      `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
 	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
@@ -18942,8 +18942,8 @@ func (x *ListObjectVersionsRequest) GetKeymarker() string {
 }
 
 func (x *ListObjectVersionsRequest) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -18984,7 +18984,7 @@ type ListObjectsOutput struct {
 	Encodingtype   EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated    *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxkeys        int32                  `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Maxkeys        *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nextmarker     string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Prefix         string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
@@ -19066,8 +19066,8 @@ func (x *ListObjectsOutput) GetMarker() string {
 }
 
 func (x *ListObjectsOutput) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -19107,7 +19107,7 @@ type ListObjectsRequest struct {
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Marker                   string                     `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxkeys                  int32                      `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
 	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
@@ -19181,8 +19181,8 @@ func (x *ListObjectsRequest) GetMarker() string {
 }
 
 func (x *ListObjectsRequest) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -19216,8 +19216,8 @@ type ListObjectsV2Output struct {
 	Delimiter             string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
 	Encodingtype          EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated           *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Keycount              int32                  `protobuf:"varint,253426132,opt,name=keycount,proto3" json:"keycount,omitempty"`
-	Maxkeys               int32                  `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Keycount              *int32                 `protobuf:"varint,253426132,opt,name=keycount,proto3,oneof" json:"keycount,omitempty"`
+	Maxkeys               *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Name                  string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nextcontinuationtoken string                 `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
 	Prefix                string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
@@ -19300,15 +19300,15 @@ func (x *ListObjectsV2Output) GetIstruncated() bool {
 }
 
 func (x *ListObjectsV2Output) GetKeycount() int32 {
-	if x != nil {
-		return x.Keycount
+	if x != nil && x.Keycount != nil {
+		return *x.Keycount
 	}
 	return 0
 }
 
 func (x *ListObjectsV2Output) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -19356,7 +19356,7 @@ type ListObjectsV2Request struct {
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Fetchowner               *bool                      `protobuf:"varint,402910551,opt,name=fetchowner,proto3,oneof" json:"fetchowner,omitempty"`
-	Maxkeys                  int32                      `protobuf:"varint,247655034,opt,name=maxkeys,proto3" json:"maxkeys,omitempty"`
+	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
 	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
@@ -19438,8 +19438,8 @@ func (x *ListObjectsV2Request) GetFetchowner() bool {
 }
 
 func (x *ListObjectsV2Request) GetMaxkeys() int32 {
-	if x != nil {
-		return x.Maxkeys
+	if x != nil && x.Maxkeys != nil {
+		return *x.Maxkeys
 	}
 	return 0
 }
@@ -19482,7 +19482,7 @@ type ListPartsOutput struct {
 	Initiator            *Initiator             `protobuf:"bytes,414951451,opt,name=initiator,proto3" json:"initiator,omitempty"`
 	Istruncated          *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Maxparts             int32                  `protobuf:"varint,398005914,opt,name=maxparts,proto3" json:"maxparts,omitempty"`
+	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
 	Nextpartnumbermarker string                 `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3" json:"nextpartnumbermarker,omitempty"`
 	Owner                *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
@@ -19581,8 +19581,8 @@ func (x *ListPartsOutput) GetKey() string {
 }
 
 func (x *ListPartsOutput) GetMaxparts() int32 {
-	if x != nil {
-		return x.Maxparts
+	if x != nil && x.Maxparts != nil {
+		return *x.Maxparts
 	}
 	return 0
 }
@@ -19641,7 +19641,7 @@ type ListPartsRequest struct {
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Maxparts             int32                  `protobuf:"varint,398005914,opt,name=maxparts,proto3" json:"maxparts,omitempty"`
+	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
 	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
@@ -19704,8 +19704,8 @@ func (x *ListPartsRequest) GetKey() string {
 }
 
 func (x *ListPartsRequest) GetMaxparts() int32 {
-	if x != nil {
-		return x.Maxparts
+	if x != nil && x.Maxparts != nil {
+		return *x.Maxparts
 	}
 	return 0
 }
@@ -20670,8 +20670,8 @@ func (*NoSuchUpload) Descriptor() ([]byte, []int) {
 
 type NoncurrentVersionExpiration struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Newernoncurrentversions int32                  `protobuf:"varint,488220096,opt,name=newernoncurrentversions,proto3" json:"newernoncurrentversions,omitempty"`
-	Noncurrentdays          int32                  `protobuf:"varint,409704199,opt,name=noncurrentdays,proto3" json:"noncurrentdays,omitempty"`
+	Newernoncurrentversions *int32                 `protobuf:"varint,488220096,opt,name=newernoncurrentversions,proto3,oneof" json:"newernoncurrentversions,omitempty"`
+	Noncurrentdays          *int32                 `protobuf:"varint,409704199,opt,name=noncurrentdays,proto3,oneof" json:"noncurrentdays,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -20707,23 +20707,23 @@ func (*NoncurrentVersionExpiration) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoncurrentVersionExpiration) GetNewernoncurrentversions() int32 {
-	if x != nil {
-		return x.Newernoncurrentversions
+	if x != nil && x.Newernoncurrentversions != nil {
+		return *x.Newernoncurrentversions
 	}
 	return 0
 }
 
 func (x *NoncurrentVersionExpiration) GetNoncurrentdays() int32 {
-	if x != nil {
-		return x.Noncurrentdays
+	if x != nil && x.Noncurrentdays != nil {
+		return *x.Noncurrentdays
 	}
 	return 0
 }
 
 type NoncurrentVersionTransition struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Newernoncurrentversions int32                  `protobuf:"varint,488220096,opt,name=newernoncurrentversions,proto3" json:"newernoncurrentversions,omitempty"`
-	Noncurrentdays          int32                  `protobuf:"varint,409704199,opt,name=noncurrentdays,proto3" json:"noncurrentdays,omitempty"`
+	Newernoncurrentversions *int32                 `protobuf:"varint,488220096,opt,name=newernoncurrentversions,proto3,oneof" json:"newernoncurrentversions,omitempty"`
+	Noncurrentdays          *int32                 `protobuf:"varint,409704199,opt,name=noncurrentdays,proto3,oneof" json:"noncurrentdays,omitempty"`
 	Storageclass            TransitionStorageClass `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.TransitionStorageClass" json:"storageclass,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -20760,15 +20760,15 @@ func (*NoncurrentVersionTransition) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoncurrentVersionTransition) GetNewernoncurrentversions() int32 {
-	if x != nil {
-		return x.Newernoncurrentversions
+	if x != nil && x.Newernoncurrentversions != nil {
+		return *x.Newernoncurrentversions
 	}
 	return 0
 }
 
 func (x *NoncurrentVersionTransition) GetNoncurrentdays() int32 {
-	if x != nil {
-		return x.Noncurrentdays
+	if x != nil && x.Noncurrentdays != nil {
+		return *x.Noncurrentdays
 	}
 	return 0
 }
@@ -20937,7 +20937,7 @@ type Object struct {
 	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Owner             *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Restorestatus     *RestoreStatus         `protobuf:"bytes,456059636,opt,name=restorestatus,proto3" json:"restorestatus,omitempty"`
-	Size              int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Storageclass      ObjectStorageClass     `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.ObjectStorageClass" json:"storageclass,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -21023,8 +21023,8 @@ func (x *Object) GetRestorestatus() *RestoreStatus {
 }
 
 func (x *Object) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -21121,7 +21121,7 @@ type ObjectIdentifier struct {
 	Etag             string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
 	Key              string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Lastmodifiedtime string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
-	Size             int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size             *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Versionid        string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -21179,8 +21179,8 @@ func (x *ObjectIdentifier) GetLastmodifiedtime() string {
 }
 
 func (x *ObjectIdentifier) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -21432,8 +21432,8 @@ type ObjectPart struct {
 	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
 	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
 	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Partnumber        int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
-	Size              int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
+	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21539,15 +21539,15 @@ func (x *ObjectPart) GetChecksumxxhash64() string {
 }
 
 func (x *ObjectPart) GetPartnumber() int32 {
-	if x != nil {
-		return x.Partnumber
+	if x != nil && x.Partnumber != nil {
+		return *x.Partnumber
 	}
 	return 0
 }
 
 func (x *ObjectPart) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -21562,7 +21562,7 @@ type ObjectVersion struct {
 	Lastmodified      string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Owner             *Owner                    `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Restorestatus     *RestoreStatus            `protobuf:"bytes,456059636,opt,name=restorestatus,proto3" json:"restorestatus,omitempty"`
-	Size              int64                     `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size              *int64                    `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Storageclass      ObjectVersionStorageClass `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.ObjectVersionStorageClass" json:"storageclass,omitempty"`
 	Versionid         string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -21656,8 +21656,8 @@ func (x *ObjectVersion) GetRestorestatus() *RestoreStatus {
 }
 
 func (x *ObjectVersion) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -21962,8 +21962,8 @@ type Part struct {
 	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
 	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
 	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Partnumber        int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
-	Size              int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
+	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -22083,15 +22083,15 @@ func (x *Part) GetLastmodified() string {
 }
 
 func (x *Part) GetPartnumber() int32 {
-	if x != nil {
-		return x.Partnumber
+	if x != nil && x.Partnumber != nil {
+		return *x.Partnumber
 	}
 	return 0
 }
 
 func (x *Part) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -22186,9 +22186,9 @@ func (x *PolicyStatus) GetIspublic() bool {
 
 type Progress struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Bytesprocessed int64                  `protobuf:"varint,487068657,opt,name=bytesprocessed,proto3" json:"bytesprocessed,omitempty"`
-	Bytesreturned  int64                  `protobuf:"varint,121984684,opt,name=bytesreturned,proto3" json:"bytesreturned,omitempty"`
-	Bytesscanned   int64                  `protobuf:"varint,186950329,opt,name=bytesscanned,proto3" json:"bytesscanned,omitempty"`
+	Bytesprocessed *int64                 `protobuf:"varint,487068657,opt,name=bytesprocessed,proto3,oneof" json:"bytesprocessed,omitempty"`
+	Bytesreturned  *int64                 `protobuf:"varint,121984684,opt,name=bytesreturned,proto3,oneof" json:"bytesreturned,omitempty"`
+	Bytesscanned   *int64                 `protobuf:"varint,186950329,opt,name=bytesscanned,proto3,oneof" json:"bytesscanned,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -22224,22 +22224,22 @@ func (*Progress) Descriptor() ([]byte, []int) {
 }
 
 func (x *Progress) GetBytesprocessed() int64 {
-	if x != nil {
-		return x.Bytesprocessed
+	if x != nil && x.Bytesprocessed != nil {
+		return *x.Bytesprocessed
 	}
 	return 0
 }
 
 func (x *Progress) GetBytesreturned() int64 {
-	if x != nil {
-		return x.Bytesreturned
+	if x != nil && x.Bytesreturned != nil {
+		return *x.Bytesreturned
 	}
 	return 0
 }
 
 func (x *Progress) GetBytesscanned() int64 {
-	if x != nil {
-		return x.Bytesscanned
+	if x != nil && x.Bytesscanned != nil {
+		return *x.Bytesscanned
 	}
 	return 0
 }
@@ -24730,7 +24730,7 @@ type PutObjectOutput struct {
 	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
 	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
-	Size                    int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Size                    *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Versionid               string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -24907,8 +24907,8 @@ func (x *PutObjectOutput) GetServersideencryption() ServerSideEncryption {
 }
 
 func (x *PutObjectOutput) GetSize() int64 {
-	if x != nil {
-		return x.Size
+	if x != nil && x.Size != nil {
+		return *x.Size
 	}
 	return 0
 }
@@ -24941,7 +24941,7 @@ type PutObjectRequest struct {
 	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
 	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
 	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contentlength             int64                     `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Contentmd5                string                    `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
 	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
 	Expectedbucketowner       string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
@@ -24967,7 +24967,7 @@ type PutObjectRequest struct {
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
 	Tagging                   string                    `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
 	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
-	Writeoffsetbytes          int64                     `protobuf:"varint,496666419,opt,name=writeoffsetbytes,proto3" json:"writeoffsetbytes,omitempty"`
+	Writeoffsetbytes          *int64                    `protobuf:"varint,496666419,opt,name=writeoffsetbytes,proto3,oneof" json:"writeoffsetbytes,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -25136,8 +25136,8 @@ func (x *PutObjectRequest) GetContentlanguage() string {
 }
 
 func (x *PutObjectRequest) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -25318,8 +25318,8 @@ func (x *PutObjectRequest) GetWebsiteredirectlocation() string {
 }
 
 func (x *PutObjectRequest) GetWriteoffsetbytes() int64 {
-	if x != nil {
-		return x.Writeoffsetbytes
+	if x != nil && x.Writeoffsetbytes != nil {
+		return *x.Writeoffsetbytes
 	}
 	return 0
 }
@@ -25766,7 +25766,7 @@ func (x *QueueConfiguration) GetQueuearn() string {
 
 type RecordExpiration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Days          int32                  `protobuf:"varint,494075051,opt,name=days,proto3" json:"days,omitempty"`
+	Days          *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Expiration    ExpirationState        `protobuf:"varint,245879945,opt,name=expiration,proto3,enum=s3.ExpirationState" json:"expiration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -25803,8 +25803,8 @@ func (*RecordExpiration) Descriptor() ([]byte, []int) {
 }
 
 func (x *RecordExpiration) GetDays() int32 {
-	if x != nil {
-		return x.Days
+	if x != nil && x.Days != nil {
+		return *x.Days
 	}
 	return 0
 }
@@ -26260,7 +26260,7 @@ type ReplicationRule struct {
 	Filter                    *ReplicationRuleFilter     `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
 	Id                        string                     `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
 	Prefix                    string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
-	Priority                  int32                      `protobuf:"varint,109944618,opt,name=priority,proto3" json:"priority,omitempty"`
+	Priority                  *int32                     `protobuf:"varint,109944618,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Sourceselectioncriteria   *SourceSelectionCriteria   `protobuf:"bytes,201951000,opt,name=sourceselectioncriteria,proto3" json:"sourceselectioncriteria,omitempty"`
 	Status                    ReplicationRuleStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=s3.ReplicationRuleStatus" json:"status,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -26340,8 +26340,8 @@ func (x *ReplicationRule) GetPrefix() string {
 }
 
 func (x *ReplicationRule) GetPriority() int32 {
-	if x != nil {
-		return x.Priority
+	if x != nil && x.Priority != nil {
+		return *x.Priority
 	}
 	return 0
 }
@@ -26526,7 +26526,7 @@ func (x *ReplicationTime) GetTime() *ReplicationTimeValue {
 
 type ReplicationTimeValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Minutes       int32                  `protobuf:"varint,383358607,opt,name=minutes,proto3" json:"minutes,omitempty"`
+	Minutes       *int32                 `protobuf:"varint,383358607,opt,name=minutes,proto3,oneof" json:"minutes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -26562,8 +26562,8 @@ func (*ReplicationTimeValue) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplicationTimeValue) GetMinutes() int32 {
-	if x != nil {
-		return x.Minutes
+	if x != nil && x.Minutes != nil {
+		return *x.Minutes
 	}
 	return 0
 }
@@ -26802,7 +26802,7 @@ func (x *RestoreObjectRequest) GetVersionid() string {
 
 type RestoreRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Days                 int32                  `protobuf:"varint,494075051,opt,name=days,proto3" json:"days,omitempty"`
+	Days                 *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Description          string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Glacierjobparameters *GlacierJobParameters  `protobuf:"bytes,456012858,opt,name=glacierjobparameters,proto3" json:"glacierjobparameters,omitempty"`
 	Outputlocation       *OutputLocation        `protobuf:"bytes,67991028,opt,name=outputlocation,proto3" json:"outputlocation,omitempty"`
@@ -26844,8 +26844,8 @@ func (*RestoreRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *RestoreRequest) GetDays() int32 {
-	if x != nil {
-		return x.Days
+	if x != nil && x.Days != nil {
+		return *x.Days
 	}
 	return 0
 }
@@ -27394,8 +27394,8 @@ func (*SSES3) Descriptor() ([]byte, []int) {
 
 type ScanRange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	End           int64                  `protobuf:"varint,261322315,opt,name=end,proto3" json:"end,omitempty"`
-	Start         int64                  `protobuf:"varint,182978944,opt,name=start,proto3" json:"start,omitempty"`
+	End           *int64                 `protobuf:"varint,261322315,opt,name=end,proto3,oneof" json:"end,omitempty"`
+	Start         *int64                 `protobuf:"varint,182978944,opt,name=start,proto3,oneof" json:"start,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -27431,15 +27431,15 @@ func (*ScanRange) Descriptor() ([]byte, []int) {
 }
 
 func (x *ScanRange) GetEnd() int64 {
-	if x != nil {
-		return x.End
+	if x != nil && x.End != nil {
+		return *x.End
 	}
 	return 0
 }
 
 func (x *ScanRange) GetStart() int64 {
-	if x != nil {
-		return x.Start
+	if x != nil && x.Start != nil {
+		return *x.Start
 	}
 	return 0
 }
@@ -28122,9 +28122,9 @@ func (x *SseKmsEncryptedObjects) GetStatus() SseKmsEncryptedObjectsStatus {
 
 type Stats struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Bytesprocessed int64                  `protobuf:"varint,487068657,opt,name=bytesprocessed,proto3" json:"bytesprocessed,omitempty"`
-	Bytesreturned  int64                  `protobuf:"varint,121984684,opt,name=bytesreturned,proto3" json:"bytesreturned,omitempty"`
-	Bytesscanned   int64                  `protobuf:"varint,186950329,opt,name=bytesscanned,proto3" json:"bytesscanned,omitempty"`
+	Bytesprocessed *int64                 `protobuf:"varint,487068657,opt,name=bytesprocessed,proto3,oneof" json:"bytesprocessed,omitempty"`
+	Bytesreturned  *int64                 `protobuf:"varint,121984684,opt,name=bytesreturned,proto3,oneof" json:"bytesreturned,omitempty"`
+	Bytesscanned   *int64                 `protobuf:"varint,186950329,opt,name=bytesscanned,proto3,oneof" json:"bytesscanned,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -28160,22 +28160,22 @@ func (*Stats) Descriptor() ([]byte, []int) {
 }
 
 func (x *Stats) GetBytesprocessed() int64 {
-	if x != nil {
-		return x.Bytesprocessed
+	if x != nil && x.Bytesprocessed != nil {
+		return *x.Bytesprocessed
 	}
 	return 0
 }
 
 func (x *Stats) GetBytesreturned() int64 {
-	if x != nil {
-		return x.Bytesreturned
+	if x != nil && x.Bytesreturned != nil {
+		return *x.Bytesreturned
 	}
 	return 0
 }
 
 func (x *Stats) GetBytesscanned() int64 {
-	if x != nil {
-		return x.Bytesscanned
+	if x != nil && x.Bytesscanned != nil {
+		return *x.Bytesscanned
 	}
 	return 0
 }
@@ -28679,7 +28679,7 @@ func (x *TopicConfiguration) GetTopicarn() string {
 type Transition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Date          string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
-	Days          int32                  `protobuf:"varint,494075051,opt,name=days,proto3" json:"days,omitempty"`
+	Days          *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Storageclass  TransitionStorageClass `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.TransitionStorageClass" json:"storageclass,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -28723,8 +28723,8 @@ func (x *Transition) GetDate() string {
 }
 
 func (x *Transition) GetDays() int32 {
-	if x != nil {
-		return x.Days
+	if x != nil && x.Days != nil {
+		return *x.Days
 	}
 	return 0
 }
@@ -29619,7 +29619,7 @@ type UploadPartRequest struct {
 	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
 	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
 	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentlength        int64                  `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength        *int64                 `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Contentmd5           string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
 	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
@@ -29755,8 +29755,8 @@ func (x *UploadPartRequest) GetChecksumxxhash64() string {
 }
 
 func (x *UploadPartRequest) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -29963,7 +29963,7 @@ type WriteGetObjectResponseRequest struct {
 	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
 	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
 	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contentlength             int64                     `protobuf:"varint,227596631,opt,name=contentlength,proto3" json:"contentlength,omitempty"`
+	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
 	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
 	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
@@ -29974,11 +29974,11 @@ type WriteGetObjectResponseRequest struct {
 	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
 	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Missingmeta               int32                     `protobuf:"varint,79140523,opt,name=missingmeta,proto3" json:"missingmeta,omitempty"`
+	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
 	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
-	Partscount                int32                     `protobuf:"varint,154996373,opt,name=partscount,proto3" json:"partscount,omitempty"`
+	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Requestroute              string                    `protobuf:"bytes,41111156,opt,name=requestroute,proto3" json:"requestroute,omitempty"`
@@ -29988,9 +29988,9 @@ type WriteGetObjectResponseRequest struct {
 	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
 	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
-	Statuscode                int32                     `protobuf:"varint,303830783,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode                *int32                    `protobuf:"varint,303830783,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagcount                  int32                     `protobuf:"varint,339592595,opt,name=tagcount,proto3" json:"tagcount,omitempty"`
+	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
 	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -30146,8 +30146,8 @@ func (x *WriteGetObjectResponseRequest) GetContentlanguage() string {
 }
 
 func (x *WriteGetObjectResponseRequest) GetContentlength() int64 {
-	if x != nil {
-		return x.Contentlength
+	if x != nil && x.Contentlength != nil {
+		return *x.Contentlength
 	}
 	return 0
 }
@@ -30223,8 +30223,8 @@ func (x *WriteGetObjectResponseRequest) GetMetadata() map[string]string {
 }
 
 func (x *WriteGetObjectResponseRequest) GetMissingmeta() int32 {
-	if x != nil {
-		return x.Missingmeta
+	if x != nil && x.Missingmeta != nil {
+		return *x.Missingmeta
 	}
 	return 0
 }
@@ -30251,8 +30251,8 @@ func (x *WriteGetObjectResponseRequest) GetObjectlockretainuntildate() string {
 }
 
 func (x *WriteGetObjectResponseRequest) GetPartscount() int32 {
-	if x != nil {
-		return x.Partscount
+	if x != nil && x.Partscount != nil {
+		return *x.Partscount
 	}
 	return 0
 }
@@ -30321,8 +30321,8 @@ func (x *WriteGetObjectResponseRequest) GetServersideencryption() ServerSideEncr
 }
 
 func (x *WriteGetObjectResponseRequest) GetStatuscode() int32 {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return 0
 }
@@ -30335,8 +30335,8 @@ func (x *WriteGetObjectResponseRequest) GetStorageclass() StorageClass {
 }
 
 func (x *WriteGetObjectResponseRequest) GetTagcount() int32 {
-	if x != nil {
-		return x.Tagcount
+	if x != nil && x.Tagcount != nil {
+		return *x.Tagcount
 	}
 	return 0
 }
@@ -30355,9 +30355,10 @@ const file_s3_proto_rawDesc = "" +
 	"\bs3.proto\x12\x02s3\x1a\fcommon.proto\x1a\taws.proto\"=\n" +
 	"\n" +
 	"AbacStatus\x12/\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.s3.BucketAbacStatusR\x06status\"V\n" +
-	"\x1eAbortIncompleteMultipartUpload\x124\n" +
-	"\x13daysafterinitiation\x18\x8b\xfd\x89\xf9\x01 \x01(\x05R\x13daysafterinitiation\"\\\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.s3.BucketAbacStatusR\x06status\"s\n" +
+	"\x1eAbortIncompleteMultipartUpload\x129\n" +
+	"\x13daysafterinitiation\x18\x8b\xfd\x89\xf9\x01 \x01(\x05H\x00R\x13daysafterinitiation\x88\x01\x01B\x16\n" +
+	"\x14_daysafterinitiation\"\\\n" +
 	"\x1aAbortMultipartUploadOutput\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x94\x02\n" +
 	"\x1bAbortMultipartUploadRequest\x12\x19\n" +
@@ -30435,14 +30436,15 @@ const file_s3_proto_rawDesc = "" +
 	"\x13BucketLoggingStatus\x12=\n" +
 	"\x0eloggingenabled\x18\xdc\xfc\xff8 \x01(\v2\x12.s3.LoggingEnabledR\x0eloggingenabled\"C\n" +
 	"\x11CORSConfiguration\x12.\n" +
-	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"\xf3\x01\n" +
+	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"\x8a\x02\n" +
 	"\bCORSRule\x12)\n" +
 	"\x0eallowedheaders\x18\xf4\xfa\x8c\x1e \x03(\tR\x0eallowedheaders\x12)\n" +
 	"\x0eallowedmethods\x18\xf4\xaf\xf1\x1a \x03(\tR\x0eallowedmethods\x12)\n" +
 	"\x0eallowedorigins\x18\xbbͤ\t \x03(\tR\x0eallowedorigins\x12(\n" +
 	"\rexposeheaders\x18\x8a\xb9\xba\x8a\x01 \x03(\tR\rexposeheaders\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12(\n" +
-	"\rmaxageseconds\x18\xf6ʝ\x96\x01 \x01(\x05R\rmaxageseconds\"\x8d\x03\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12-\n" +
+	"\rmaxageseconds\x18\xf6ʝ\x96\x01 \x01(\x05H\x00R\rmaxageseconds\x88\x01\x01B\x10\n" +
+	"\x0e_maxageseconds\"\x8d\x03\n" +
 	"\bCSVInput\x12G\n" +
 	"\x1aallowquotedrecorddelimiter\x18\x99\xbc\xa0\x80\x01 \x01(\bH\x00R\x1aallowquotedrecorddelimiter\x88\x01\x01\x12\x1e\n" +
 	"\bcomments\x18\xf8\xd5\xe0\x92\x01 \x01(\tR\bcomments\x12)\n" +
@@ -30496,7 +30498,7 @@ const file_s3_proto_rawDesc = "" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_bucketkeyenabled\"\x9f\b\n" +
+	"\x11_bucketkeyenabled\"\xb6\b\n" +
 	"\x1eCompleteMultipartUploadRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
@@ -30513,16 +30515,17 @@ const file_s3_proto_rawDesc = "" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
 	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12#\n" +
 	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12(\n" +
-	"\rmpuobjectsize\x18\xee͎\xf9\x01 \x01(\x03R\rmpuobjectsize\x12P\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
+	"\rmpuobjectsize\x18\xee͎\xf9\x01 \x01(\x03H\x00R\rmpuobjectsize\x88\x01\x01\x12P\n" +
 	"\x0fmultipartupload\x18\x87\x9b\xeb\xac\x01 \x01(\v2\x1c.s3.CompletedMultipartUploadB\x04\x88\xb5\x18\x01R\x0fmultipartupload\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"F\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x10\n" +
+	"\x0e_mpuobjectsize\"F\n" +
 	"\x18CompletedMultipartUpload\x12*\n" +
-	"\x05parts\x18Ɵ\xcae \x03(\v2\x11.s3.CompletedPartR\x05parts\"\x82\x04\n" +
+	"\x05parts\x18Ɵ\xcae \x03(\v2\x11.s3.CompletedPartR\x05parts\"\x96\x04\n" +
 	"\rCompletedPart\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
 	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
@@ -30534,10 +30537,11 @@ const file_s3_proto_rawDesc = "" +
 	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
 	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\"\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
-	"partnumber\"~\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x88\x01\x01B\r\n" +
+	"\v_partnumber\"~\n" +
 	"\tCondition\x12C\n" +
 	"\x1bhttperrorcodereturnedequals\x18\x93\xa3\xb2R \x01(\tR\x1bhttperrorcodereturnedequals\x12,\n" +
 	"\x0fkeyprefixequals\x18ʿ՟\x01 \x01(\tR\x0fkeyprefixequals\"\x13\n" +
@@ -30740,11 +30744,13 @@ const file_s3_proto_rawDesc = "" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x124\n" +
 	"\vsessionmode\x18\xd1\xf5\xc6\x14 \x01(\x0e2\x0f.s3.SessionModeR\vsessionmodeB\x13\n" +
-	"\x11_bucketkeyenabled\"y\n" +
-	"\x10DefaultRetention\x12\x16\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\x123\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1b.s3.ObjectLockRetentionModeR\x04mode\x12\x18\n" +
-	"\x05years\x18\xdeЅ\x9b\x01 \x01(\x05R\x05years\"c\n" +
+	"\x11_bucketkeyenabled\"\x96\x01\n" +
+	"\x10DefaultRetention\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x123\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1b.s3.ObjectLockRetentionModeR\x04mode\x12\x1d\n" +
+	"\x05years\x18\xdeЅ\x9b\x01 \x01(\x05H\x01R\x05years\x88\x01\x01B\a\n" +
+	"\x05_daysB\b\n" +
+	"\x06_years\"c\n" +
 	"\x06Delete\x121\n" +
 	"\aobjects\x18\x8c\xec\xa1A \x03(\v2\x14.s3.ObjectIdentifierR\aobjects\x12\x1c\n" +
 	"\x05quiet\x18\xb8\xc7\xc2\x7f \x01(\bH\x00R\x05quiet\x88\x01\x01B\b\n" +
@@ -30822,19 +30828,20 @@ const file_s3_proto_rawDesc = "" +
 	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x0f\n" +
-	"\r_deletemarker\"\xd0\x03\n" +
+	"\r_deletemarker\"\xe5\x03\n" +
 	"\x13DeleteObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12D\n" +
 	"\x19bypassgovernanceretention\x18\xfe\xeb\xfa= \x01(\bH\x00R\x19bypassgovernanceretention\x88\x01\x01\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
 	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12;\n" +
-	"\x17ifmatchlastmodifiedtime\x18\xae\xab\x93- \x01(\tR\x17ifmatchlastmodifiedtime\x12$\n" +
-	"\vifmatchsize\x18\xc7\xe3\xf6\xbd\x01 \x01(\x03R\vifmatchsize\x12\x13\n" +
+	"\x17ifmatchlastmodifiedtime\x18\xae\xab\x93- \x01(\tR\x17ifmatchlastmodifiedtime\x12)\n" +
+	"\vifmatchsize\x18\xc7\xe3\xf6\xbd\x01 \x01(\x03H\x01R\vifmatchsize\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x14\n" +
 	"\x03mfa\x18⨕\x9b\x01 \x01(\tR\x03mfa\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x1c\n" +
-	"\x1a_bypassgovernanceretention\"=\n" +
+	"\x1a_bypassgovernanceretentionB\x0e\n" +
+	"\f_ifmatchsize\"=\n" +
 	"\x19DeleteObjectTaggingOutput\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xa3\x01\n" +
 	"\x1aDeleteObjectTaggingRequest\x12\x19\n" +
@@ -31048,7 +31055,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xb3\a\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xca\a\n" +
 	"\x19GetObjectAnnotationOutput\x125\n" +
 	"\x11annotationpayload\x18\x97\x95\xe9' \x01(\fB\x04\x88\xb5\x18\x01R\x11annotationpayload\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
@@ -31061,14 +31068,15 @@ const file_s3_proto_rawDesc = "" +
 	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
 	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
 	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12\x16\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x00R\rcontentlength\x88\x01\x01\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12,\n" +
 	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\"\xc3\x02\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x10\n" +
+	"\x0e_contentlength\"\xc3\x02\n" +
 	"\x1aGetObjectAnnotationRequest\x12*\n" +
 	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
@@ -31076,40 +31084,44 @@ const file_s3_proto_rawDesc = "" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xc9\x03\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xdd\x03\n" +
 	"\x19GetObjectAttributesOutput\x12,\n" +
 	"\bchecksum\x18\xb3ǜ\xcf\x01 \x01(\v2\f.s3.ChecksumR\bchecksum\x12*\n" +
 	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12B\n" +
-	"\vobjectparts\x18\xf9\xb1\xf9\xbf\x01 \x01(\v2\x1c.s3.GetObjectAttributesPartsR\vobjectparts\x12!\n" +
+	"\vobjectparts\x18\xf9\xb1\xf9\xbf\x01 \x01(\v2\x1c.s3.GetObjectAttributesPartsR\vobjectparts\x12&\n" +
 	"\n" +
-	"objectsize\x18\xe4߆> \x01(\x03R\n" +
-	"objectsize\x12>\n" +
+	"objectsize\x18\xe4߆> \x01(\x03H\x01R\n" +
+	"objectsize\x88\x01\x01\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x0f\n" +
-	"\r_deletemarker\"\xb1\x02\n" +
+	"\r_deletemarkerB\r\n" +
+	"\v_objectsize\"\xdc\x02\n" +
 	"\x18GetObjectAttributesParts\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05R\bmaxparts\x125\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12#\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x125\n" +
 	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tR\x14nextpartnumbermarker\x12.\n" +
 	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x12'\n" +
-	"\x05parts\x18Ɵ\xcae \x03(\v2\x0e.s3.ObjectPartR\x05parts\x12+\n" +
-	"\x0ftotalpartscount\x18\xad\xfa\xea\x1a \x01(\x05R\x0ftotalpartscountB\x0e\n" +
-	"\f_istruncated\"\x85\x04\n" +
+	"\x05parts\x18Ɵ\xcae \x03(\v2\x0e.s3.ObjectPartR\x05parts\x120\n" +
+	"\x0ftotalpartscount\x18\xad\xfa\xea\x1a \x01(\x05H\x02R\x0ftotalpartscount\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\v\n" +
+	"\t_maxpartsB\x12\n" +
+	"\x10_totalpartscount\"\x97\x04\n" +
 	"\x1aGetObjectAttributesRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1e\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05R\bmaxparts\x12D\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x00R\bmaxparts\x88\x01\x01\x12D\n" +
 	"\x10objectattributes\x18Є\xf4\xb0\x01 \x03(\x0e2\x14.s3.ObjectAttributesR\x10objectattributes\x12.\n" +
 	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"Z\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\v\n" +
+	"\t_maxparts\"Z\n" +
 	"\x18GetObjectLegalHoldOutput\x12>\n" +
 	"\tlegalhold\x18\xd4\xee\xa6C \x01(\v2\x17.s3.ObjectLockLegalHoldB\x04\x88\xb5\x18\x01R\tlegalhold\"\xdc\x01\n" +
 	"\x19GetObjectLegalHoldRequest\x12\x19\n" +
@@ -31122,7 +31134,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\"s\n" +
 	"!GetObjectLockConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xdf\x10\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xb1\x11\n" +
 	"\x0fGetObjectOutput\x12&\n" +
 	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12\x1b\n" +
 	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x123\n" +
@@ -31141,25 +31153,25 @@ const file_s3_proto_rawDesc = "" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
 	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
 	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12%\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
 	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
 	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x01R\fdeletemarker\x88\x01\x01\x12\x16\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
 	"expiration\x12\x1b\n" +
 	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12A\n" +
-	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2!.s3.GetObjectOutput.MetadataEntryR\bmetadata\x12#\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05R\vmissingmeta\x12_\n" +
+	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2!.s3.GetObjectOutput.MetadataEntryR\bmetadata\x12(\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
 	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12!\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05R\n" +
-	"partscount\x12G\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12\x1b\n" +
 	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tR\arestore\x125\n" +
@@ -31167,15 +31179,19 @@ const file_s3_proto_rawDesc = "" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05R\btagcount\x12 \n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x05R\btagcount\x88\x01\x01\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12;\n" +
 	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x0f\n" +
-	"\r_deletemarker\"\xd7\a\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_contentlengthB\x0f\n" +
+	"\r_deletemarkerB\x0e\n" +
+	"\f_missingmetaB\r\n" +
+	"\v_partscountB\v\n" +
+	"\t_tagcount\"\xeb\a\n" +
 	"\x10GetObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
 	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x123\n" +
@@ -31184,10 +31200,10 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tR\x0fifmodifiedsince\x12#\n" +
 	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x120\n" +
 	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tR\x11ifunmodifiedsince\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\"\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
-	"partnumber\x12\x17\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x88\x01\x01\x12\x17\n" +
 	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tR\x05range\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
 	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tR\x14responsecachecontrol\x12B\n" +
@@ -31199,7 +31215,8 @@ const file_s3_proto_rawDesc = "" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"[\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\r\n" +
+	"\v_partnumber\"[\n" +
 	"\x18GetObjectRetentionOutput\x12?\n" +
 	"\tretention\x18\xb2\x98\xee\x8e\x01 \x01(\v2\x17.s3.ObjectLockRetentionB\x04\x88\xb5\x18\x01R\tretention\"\xdc\x01\n" +
 	"\x19GetObjectRetentionRequest\x12\x19\n" +
@@ -31252,7 +31269,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x11_accesspointalias\"c\n" +
 	"\x11HeadBucketRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x81\x11\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xd3\x11\n" +
 	"\x10HeadObjectOutput\x12&\n" +
 	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12;\n" +
 	"\rarchivestatus\x18\xf0\xf2\xa1\xfe\x01 \x01(\x0e2\x11.s3.ArchiveStatusR\rarchivestatus\x123\n" +
@@ -31271,25 +31288,25 @@ const file_s3_proto_rawDesc = "" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
 	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
 	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12%\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
 	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
 	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x01R\fdeletemarker\x88\x01\x01\x12\x16\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
 	"expiration\x12\x1b\n" +
 	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12B\n" +
-	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2\".s3.HeadObjectOutput.MetadataEntryR\bmetadata\x12#\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05R\vmissingmeta\x12_\n" +
+	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2\".s3.HeadObjectOutput.MetadataEntryR\bmetadata\x12(\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
 	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12!\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05R\n" +
-	"partscount\x12G\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12\x1b\n" +
 	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tR\arestore\x125\n" +
@@ -31297,15 +31314,19 @@ const file_s3_proto_rawDesc = "" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05R\btagcount\x12 \n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x05R\btagcount\x88\x01\x01\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12;\n" +
 	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x0f\n" +
-	"\r_deletemarker\"\xd8\a\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_contentlengthB\x0f\n" +
+	"\r_deletemarkerB\x0e\n" +
+	"\f_missingmetaB\r\n" +
+	"\v_partscountB\v\n" +
+	"\t_tagcount\"\xec\a\n" +
 	"\x11HeadObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
 	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x123\n" +
@@ -31314,10 +31335,10 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tR\x0fifmodifiedsince\x12#\n" +
 	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x120\n" +
 	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tR\x11ifunmodifiedsince\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\"\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
-	"partnumber\x12\x17\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x88\x01\x01\x12\x17\n" +
 	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tR\x05range\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
 	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tR\x14responsecachecontrol\x12B\n" +
@@ -31329,7 +31350,8 @@ const file_s3_proto_rawDesc = "" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\x1e\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\r\n" +
+	"\v_partnumber\"\x1e\n" +
 	"\x1cIdempotencyParameterMismatch\"+\n" +
 	"\rIndexDocument\x12\x1a\n" +
 	"\x06suffix\x18\xed\xf4\xf6\x88\x01 \x01(\tR\x06suffix\"E\n" +
@@ -31422,11 +31444,12 @@ const file_s3_proto_rawDesc = "" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x120\n" +
-	"\x11lambdafunctionarn\x18\xfa\x8e\x9c\xfe\x01 \x01(\tR\x11lambdafunctionarn\"\xa9\x01\n" +
+	"\x11lambdafunctionarn\x18\xfa\x8e\x9c\xfe\x01 \x01(\tR\x11lambdafunctionarn\"\xb7\x01\n" +
 	"\x13LifecycleExpiration\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x16\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\x12D\n" +
-	"\x19expiredobjectdeletemarker\x18\xb5\xf3\xfcn \x01(\bH\x00R\x19expiredobjectdeletemarker\x88\x01\x01B\x1c\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12D\n" +
+	"\x19expiredobjectdeletemarker\x18\xb5\xf3\xfcn \x01(\bH\x01R\x19expiredobjectdeletemarker\x88\x01\x01B\a\n" +
+	"\x05_daysB\x1c\n" +
 	"\x1a_expiredobjectdeletemarker\"\xd4\x04\n" +
 	"\rLifecycleRule\x12m\n" +
 	"\x1eabortincompletemultipartupload\x18Ӷ\x95E \x01(\v2\".s3.AbortIncompleteMultipartUploadR\x1eabortincompletemultipartupload\x12:\n" +
@@ -31439,18 +31462,22 @@ const file_s3_proto_rawDesc = "" +
 	"\x1cnoncurrentversiontransitions\x18\x8e\xb1\x9dy \x03(\v2\x1f.s3.NoncurrentVersionTransitionR\x1cnoncurrentversiontransitions\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12/\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.s3.ExpirationStatusR\x06status\x124\n" +
-	"\vtransitions\x18\xe4\xef\xe1\xcf\x01 \x03(\v2\x0e.s3.TransitionR\vtransitions\"\xc5\x01\n" +
-	"\x18LifecycleRuleAndOperator\x128\n" +
-	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03R\x15objectsizegreaterthan\x122\n" +
-	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03R\x12objectsizelessthan\x12\x1a\n" +
+	"\vtransitions\x18\xe4\xef\xe1\xcf\x01 \x03(\v2\x0e.s3.TransitionR\vtransitions\"\x80\x02\n" +
+	"\x18LifecycleRuleAndOperator\x12=\n" +
+	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03H\x00R\x15objectsizegreaterthan\x88\x01\x01\x127\n" +
+	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\xf2\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\x18\n" +
+	"\x16_objectsizegreaterthanB\x15\n" +
+	"\x13_objectsizelessthan\"\xad\x02\n" +
 	"\x13LifecycleRuleFilter\x122\n" +
-	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x1c.s3.LifecycleRuleAndOperatorR\x03and\x128\n" +
-	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03R\x15objectsizegreaterthan\x122\n" +
-	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03R\x12objectsizelessthan\x12\x1a\n" +
+	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x1c.s3.LifecycleRuleAndOperatorR\x03and\x12=\n" +
+	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03H\x00R\x15objectsizegreaterthan\x88\x01\x01\x127\n" +
+	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"\xad\x02\n" +
+	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\x18\n" +
+	"\x16_objectsizegreaterthanB\x15\n" +
+	"\x13_objectsizelessthan\"\xad\x02\n" +
 	"'ListBucketAnalyticsConfigurationsOutput\x12]\n" +
 	"\x1aanalyticsconfigurationlist\x18\xdc\xdf\xc4j \x03(\v2\x1a.s3.AnalyticsConfigurationR\x1aanalyticsconfigurationlist\x120\n" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12(\n" +
@@ -31496,78 +31523,85 @@ const file_s3_proto_rawDesc = "" +
 	".s3.BucketR\abuckets\x120\n" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xad\x01\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xc1\x01\n" +
 	"\x12ListBucketsRequest\x12&\n" +
 	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tR\fbucketregion\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12!\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12&\n" +
 	"\n" +
-	"maxbuckets\x18\x81\x91\x98~ \x01(\x05R\n" +
-	"maxbuckets\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"x\n" +
+	"maxbuckets\x18\x81\x91\x98~ \x01(\x05H\x00R\n" +
+	"maxbuckets\x88\x01\x01\x12\x1a\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefixB\r\n" +
+	"\v_maxbuckets\"x\n" +
 	"\x1aListDirectoryBucketsOutput\x12(\n" +
 	"\abuckets\x18\xad\xcf\xf6\xc0\x01 \x03(\v2\n" +
 	".s3.BucketR\abuckets\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\"\x85\x01\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\"\xa2\x01\n" +
 	"\x1bListDirectoryBucketsRequest\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x124\n" +
-	"\x13maxdirectorybuckets\x18\xecܗ\xca\x01 \x01(\x05R\x13maxdirectorybuckets\"\xe6\x04\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x129\n" +
+	"\x13maxdirectorybuckets\x18\xecܗ\xca\x01 \x01(\x05H\x00R\x13maxdirectorybuckets\x88\x01\x01B\x16\n" +
+	"\x14_maxdirectorybuckets\"\xfa\x04\n" +
 	"\x1aListMultipartUploadsOutput\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12!\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12&\n" +
 	"\n" +
-	"maxuploads\x18\xca̘5 \x01(\x05R\n" +
-	"maxuploads\x12(\n" +
+	"maxuploads\x18\xca̘5 \x01(\x05H\x01R\n" +
+	"maxuploads\x88\x01\x01\x12(\n" +
 	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tR\rnextkeymarker\x122\n" +
 	"\x12nextuploadidmarker\x18\xa7\xab\x92\xfc\x01 \x01(\tR\x12nextuploadidmarker\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12)\n" +
 	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tR\x0euploadidmarker\x120\n" +
 	"\auploads\x18\x9e\x89\x94$ \x03(\v2\x13.s3.MultipartUploadR\auploadsB\x0e\n" +
-	"\f_istruncated\"\x8f\x03\n" +
+	"\f_istruncatedB\r\n" +
+	"\v_maxuploads\"\xa3\x03\n" +
 	"\x1bListMultipartUploadsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12!\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12&\n" +
 	"\n" +
-	"maxuploads\x18\xca̘5 \x01(\x05R\n" +
-	"maxuploads\x12\x1a\n" +
+	"maxuploads\x18\xca̘5 \x01(\x05H\x00R\n" +
+	"maxuploads\x88\x01\x01\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12)\n" +
-	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tR\x0euploadidmarker\"\xf4\x03\n" +
-	"\x1bListObjectAnnotationsOutput\x12+\n" +
-	"\x0fannotationcount\x18\xa8\xfe\x93Q \x01(\x05R\x0fannotationcount\x12-\n" +
+	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tR\x0euploadidmarkerB\r\n" +
+	"\v_maxuploads\"\xab\x04\n" +
+	"\x1bListObjectAnnotationsOutput\x120\n" +
+	"\x0fannotationcount\x18\xa8\xfe\x93Q \x01(\x05H\x00R\x0fannotationcount\x88\x01\x01\x12-\n" +
 	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tR\x10annotationprefix\x128\n" +
 	"\vannotations\x18\xa2\xda\xf34 \x03(\v2\x13.s3.AnnotationEntryR\vannotations\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x126\n" +
-	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05R\x14maxannotationresults\x127\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12;\n" +
+	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x01R\x14maxannotationresults\x88\x01\x01\x127\n" +
 	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtoken\x12,\n" +
 	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xf8\x02\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\x12\n" +
+	"\x10_annotationcountB\x17\n" +
+	"\x15_maxannotationresults\"\x96\x03\n" +
 	"\x1cListObjectAnnotationsRequest\x12-\n" +
 	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tR\x10annotationprefix\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x126\n" +
-	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05R\x14maxannotationresults\x128\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12;\n" +
+	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x00R\x14maxannotationresults\x88\x01\x01\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xa0\x05\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x17\n" +
+	"\x15_maxannotationresults\"\xb1\x05\n" +
 	"\x18ListObjectVersionsOutput\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12?\n" +
 	"\rdeletemarkers\x18\x8a\xea̳\x01 \x03(\v2\x15.s3.DeleteMarkerEntryR\rdeletemarkers\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12\x15\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
 	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tR\rnextkeymarker\x124\n" +
 	"\x13nextversionidmarker\x18\xfc̰\xd6\x01 \x01(\tR\x13nextversionidmarker\x12\x1a\n" +
@@ -31575,18 +31609,22 @@ const file_s3_proto_rawDesc = "" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12,\n" +
 	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tR\x0fversionidmarker\x120\n" +
 	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x11.s3.ObjectVersionR\bversionsB\x0e\n" +
-	"\f_istruncated\"\xe7\x03\n" +
+	"\f_istruncatedB\n" +
+	"\n" +
+	"\b_maxkeys\"\xf8\x03\n" +
 	"\x19ListObjectVersionsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12[\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x00R\amaxkeys\x88\x01\x01\x12[\n" +
 	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12,\n" +
-	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tR\x0fversionidmarker\"\xe0\x03\n" +
+	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tR\x0fversionidmarkerB\n" +
+	"\n" +
+	"\b_maxkeys\"\xf1\x03\n" +
 	"\x11ListObjectsOutput\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12)\n" +
 	"\bcontents\x18\xc4\xcf\xfd8 \x03(\v2\n" +
@@ -31594,25 +31632,29 @@ const file_s3_proto_rawDesc = "" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12\x15\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\x0e\n" +
-	"\f_istruncated\"\xab\x03\n" +
+	"\f_istruncatedB\n" +
+	"\n" +
+	"\b_maxkeys\"\xbc\x03\n" +
 	"\x12ListObjectsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12[\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x00R\amaxkeys\x88\x01\x01\x12[\n" +
 	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\"\xd1\x04\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\n" +
+	"\n" +
+	"\b_maxkeys\"\xf4\x04\n" +
 	"\x13ListObjectsV2Output\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12)\n" +
 	"\bcontents\x18\xc4\xcf\xfd8 \x03(\v2\n" +
@@ -31620,9 +31662,9 @@ const file_s3_proto_rawDesc = "" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12 \n" +
 	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1d\n" +
-	"\bkeycount\x18\xd4\xf3\xebx \x01(\x05R\bkeycount\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12\x15\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\"\n" +
+	"\bkeycount\x18\xd4\xf3\xebx \x01(\x05H\x01R\bkeycount\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x02R\amaxkeys\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
 	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtoken\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
@@ -31630,7 +31672,10 @@ const file_s3_proto_rawDesc = "" +
 	"\n" +
 	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tR\n" +
 	"startafterB\x0e\n" +
-	"\f_istruncated\"\xa0\x04\n" +
+	"\f_istruncatedB\v\n" +
+	"\t_keycountB\n" +
+	"\n" +
+	"\b_maxkeys\"\xb1\x04\n" +
 	"\x14ListObjectsV2Request\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
 	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12 \n" +
@@ -31639,15 +31684,17 @@ const file_s3_proto_rawDesc = "" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12'\n" +
 	"\n" +
 	"fetchowner\x18\xd7ڏ\xc0\x01 \x01(\bH\x00R\n" +
-	"fetchowner\x88\x01\x01\x12\x1b\n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05R\amaxkeys\x12[\n" +
+	"fetchowner\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12[\n" +
 	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\"\n" +
 	"\n" +
 	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tR\n" +
 	"startafterB\r\n" +
-	"\v_fetchowner\"\xdc\x05\n" +
+	"\v_fetchownerB\n" +
+	"\n" +
+	"\b_maxkeys\"\xee\x05\n" +
 	"\x0fListPartsOutput\x12\x1f\n" +
 	"\tabortdate\x18\xb6\x95\xedn \x01(\tR\tabortdate\x12#\n" +
 	"\vabortruleid\x18\x93\xb3\xecn \x01(\tR\vabortruleid\x12\x19\n" +
@@ -31656,8 +31703,8 @@ const file_s3_proto_rawDesc = "" +
 	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12/\n" +
 	"\tinitiator\x18\x9b\xd0\xee\xc5\x01 \x01(\v2\r.s3.InitiatorR\tinitiator\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1e\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05R\bmaxparts\x125\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x125\n" +
 	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tR\x14nextpartnumbermarker\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12.\n" +
 	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x12!\n" +
@@ -31665,18 +31712,20 @@ const file_s3_proto_rawDesc = "" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
 	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x0e\n" +
-	"\f_istruncated\"\xb3\x03\n" +
+	"\f_istruncatedB\v\n" +
+	"\t_maxparts\"\xc5\x03\n" +
 	"\x10ListPartsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1e\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05R\bmaxparts\x12.\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x00R\bmaxparts\x88\x01\x01\x12.\n" +
 	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"O\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\v\n" +
+	"\t_maxparts\"O\n" +
 	"\fLocationInfo\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.s3.LocationTypeR\x04type\"\xec\x01\n" +
@@ -31731,14 +31780,18 @@ const file_s3_proto_rawDesc = "" +
 	"\x10NoSuchAnnotation\"\x0e\n" +
 	"\fNoSuchBucket\"\v\n" +
 	"\tNoSuchKey\"\x0e\n" +
-	"\fNoSuchUpload\"\x87\x01\n" +
-	"\x1bNoncurrentVersionExpiration\x12<\n" +
-	"\x17newernoncurrentversions\x18\xc0\xcb\xe6\xe8\x01 \x01(\x05R\x17newernoncurrentversions\x12*\n" +
-	"\x0enoncurrentdays\x18\x87\xae\xae\xc3\x01 \x01(\x05R\x0enoncurrentdays\"\xcb\x01\n" +
-	"\x1bNoncurrentVersionTransition\x12<\n" +
-	"\x17newernoncurrentversions\x18\xc0\xcb\xe6\xe8\x01 \x01(\x05R\x17newernoncurrentversions\x12*\n" +
-	"\x0enoncurrentdays\x18\x87\xae\xae\xc3\x01 \x01(\x05R\x0enoncurrentdays\x12B\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1a.s3.TransitionStorageClassR\fstorageclass\"\n" +
+	"\fNoSuchUpload\"\xc0\x01\n" +
+	"\x1bNoncurrentVersionExpiration\x12A\n" +
+	"\x17newernoncurrentversions\x18\xc0\xcb\xe6\xe8\x01 \x01(\x05H\x00R\x17newernoncurrentversions\x88\x01\x01\x12/\n" +
+	"\x0enoncurrentdays\x18\x87\xae\xae\xc3\x01 \x01(\x05H\x01R\x0enoncurrentdays\x88\x01\x01B\x1a\n" +
+	"\x18_newernoncurrentversionsB\x11\n" +
+	"\x0f_noncurrentdays\"\x84\x02\n" +
+	"\x1bNoncurrentVersionTransition\x12A\n" +
+	"\x17newernoncurrentversions\x18\xc0\xcb\xe6\xe8\x01 \x01(\x05H\x00R\x17newernoncurrentversions\x88\x01\x01\x12/\n" +
+	"\x0enoncurrentdays\x18\x87\xae\xae\xc3\x01 \x01(\x05H\x01R\x0enoncurrentdays\x88\x01\x01\x12B\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1a.s3.TransitionStorageClassR\fstorageclassB\x1a\n" +
+	"\x18_newernoncurrentversionsB\x11\n" +
+	"\x0f_noncurrentdays\"\n" +
 	"\n" +
 	"\bNotFound\"\xfd\x02\n" +
 	"\x19NotificationConfiguration\x12[\n" +
@@ -31747,7 +31800,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x13queueconfigurations\x18\xccǽ\xe8\x01 \x03(\v2\x16.s3.QueueConfigurationR\x13queueconfigurations\x12L\n" +
 	"\x13topicconfigurations\x18蚵\x83\x01 \x03(\v2\x16.s3.TopicConfigurationR\x13topicconfigurations\"G\n" +
 	"\x1fNotificationConfigurationFilter\x12$\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\v2\x0f.s3.S3KeyFilterR\x03key\"\x97\x03\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\v2\x0f.s3.S3KeyFilterR\x03key\"\xa5\x03\n" +
 	"\x06Object\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
 	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x16\n" +
@@ -31755,18 +31808,20 @@ const file_s3_proto_rawDesc = "" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12;\n" +
-	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12>\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x16.s3.ObjectStorageClassR\fstorageclass\" \n" +
+	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01\x12>\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x16.s3.ObjectStorageClassR\fstorageclassB\a\n" +
+	"\x05_size\" \n" +
 	"\x1eObjectAlreadyInActiveTierError\"C\n" +
 	"\x10ObjectEncryption\x12/\n" +
-	"\x06ssekms\x18\xe4\xe2\xeam \x01(\v2\x14.s3.SSEKMSEncryptionR\x06ssekms\"\xa7\x01\n" +
+	"\x06ssekms\x18\xe4\xe2\xeam \x01(\v2\x14.s3.SSEKMSEncryptionR\x06ssekms\"\xb5\x01\n" +
 	"\x10ObjectIdentifier\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\x8e\x01\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01\x12 \n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\a\n" +
+	"\x05_size\"\x8e\x01\n" +
 	"\x17ObjectLockConfiguration\x12G\n" +
 	"\x11objectlockenabled\x18\x8fױ\xec\x01 \x01(\x0e2\x15.s3.ObjectLockEnabledR\x11objectlockenabled\x12*\n" +
 	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x12.s3.ObjectLockRuleR\x04rule\"O\n" +
@@ -31777,7 +31832,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fretainuntildate\x18\xc9\xd2\xcax \x01(\tR\x0fretainuntildate\"U\n" +
 	"\x0eObjectLockRule\x12C\n" +
 	"\x10defaultretention\x18\xb5\x90\xd8N \x01(\v2\x14.s3.DefaultRetentionR\x10defaultretention\"\x1c\n" +
-	"\x1aObjectNotInActiveTierError\"\xfe\x03\n" +
+	"\x1aObjectNotInActiveTierError\"\xa0\x04\n" +
 	"\n" +
 	"ObjectPart\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
@@ -31789,11 +31844,13 @@ const file_s3_proto_rawDesc = "" +
 	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
 	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
 	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\"\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
-	"partnumber\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\"\xf8\x03\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x88\x01\x01\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01B\r\n" +
+	"\v_partnumberB\a\n" +
+	"\x05_size\"\x86\x04\n" +
 	"\rObjectVersion\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
 	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x16\n" +
@@ -31802,11 +31859,12 @@ const file_s3_proto_rawDesc = "" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12;\n" +
-	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12E\n" +
+	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01\x12E\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1d.s3.ObjectVersionStorageClassR\fstorageclass\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\v\n" +
-	"\t_islatest\"3\n" +
+	"\t_islatestB\a\n" +
+	"\x05_size\"3\n" +
 	"\x0eOutputLocation\x12!\n" +
 	"\x02s3\x18ć\x880 \x01(\v2\x0e.s3.S3LocationR\x02s3\"b\n" +
 	"\x13OutputSerialization\x12#\n" +
@@ -31819,7 +31877,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x19.s3.OwnershipControlsRuleR\x05rules\"Z\n" +
 	"\x15OwnershipControlsRule\x12A\n" +
 	"\x0fobjectownership\x18\x80\x91\xe2\xd5\x01 \x01(\x0e2\x13.s3.ObjectOwnershipR\x0fobjectownership\"\x0e\n" +
-	"\fParquetInput\"\xb8\x04\n" +
+	"\fParquetInput\"\xda\x04\n" +
 	"\x04Part\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
 	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
@@ -31832,20 +31890,25 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12\"\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
-	"partnumber\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\"a\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x88\x01\x01\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01B\r\n" +
+	"\v_partnumberB\a\n" +
+	"\x05_size\"a\n" +
 	"\x11PartitionedPrefix\x12L\n" +
 	"\x13partitiondatesource\x18\x99\x95\xdc< \x01(\x0e2\x17.s3.PartitionDateSourceR\x13partitiondatesource\"@\n" +
 	"\fPolicyStatus\x12#\n" +
 	"\bispublic\x18\x91\x86\x8a\x83\x01 \x01(\bH\x00R\bispublic\x88\x01\x01B\v\n" +
-	"\t_ispublic\"\x86\x01\n" +
-	"\bProgress\x12*\n" +
-	"\x0ebytesprocessed\x18\xf1\xa7\xa0\xe8\x01 \x01(\x03R\x0ebytesprocessed\x12'\n" +
-	"\rbytesreturned\x18\xac\xad\x95: \x01(\x03R\rbytesreturned\x12%\n" +
-	"\fbytesscanned\x18\xb9ŒY \x01(\x03R\fbytesscanned\":\n" +
+	"\t_ispublic\"\xcb\x01\n" +
+	"\bProgress\x12/\n" +
+	"\x0ebytesprocessed\x18\xf1\xa7\xa0\xe8\x01 \x01(\x03H\x00R\x0ebytesprocessed\x88\x01\x01\x12,\n" +
+	"\rbytesreturned\x18\xac\xad\x95: \x01(\x03H\x01R\rbytesreturned\x88\x01\x01\x12*\n" +
+	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x02R\fbytesscanned\x88\x01\x01B\x11\n" +
+	"\x0f_bytesprocessedB\x10\n" +
+	"\x0e_bytesreturnedB\x0f\n" +
+	"\r_bytesscanned\":\n" +
 	"\rProgressEvent\x12)\n" +
 	"\adetails\x18Ƅ\x89v \x01(\v2\f.s3.ProgressR\adetails\"\xd5\x02\n" +
 	"\x1ePublicAccessBlockConfiguration\x120\n" +
@@ -32092,7 +32155,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12^\n" +
 	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\x18\n" +
-	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\x9a\b\n" +
+	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\xa8\b\n" +
 	"\x0fPutObjectOutput\x123\n" +
 	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12'\n" +
 	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
@@ -32115,10 +32178,11 @@ const file_s3_proto_rawDesc = "" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
 	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12 \n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_bucketkeyenabled\"\xd6\x11\n" +
+	"\x11_bucketkeyenabledB\a\n" +
+	"\x05_size\"\x87\x12\n" +
 	"\x10PutObjectRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12\x1b\n" +
 	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12\x19\n" +
@@ -32138,8 +32202,8 @@ const file_s3_proto_rawDesc = "" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
 	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
 	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12\"\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
 	"contentmd5\x12$\n" +
@@ -32166,12 +32230,14 @@ const file_s3_proto_rawDesc = "" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1b\n" +
 	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tR\atagging\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x12.\n" +
-	"\x10writeoffsetbytes\x18\xb3\x8e\xea\xec\x01 \x01(\x03R\x10writeoffsetbytes\x1a;\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x123\n" +
+	"\x10writeoffsetbytes\x18\xb3\x8e\xea\xec\x01 \x01(\x03H\x02R\x10writeoffsetbytes\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabled\"Z\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_contentlengthB\x13\n" +
+	"\x11_writeoffsetbytes\"Z\n" +
 	"\x18PutObjectRetentionOutput\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xed\x03\n" +
 	"\x19PutObjectRetentionRequest\x12\x19\n" +
@@ -32212,12 +32278,13 @@ const file_s3_proto_rawDesc = "" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1e\n" +
-	"\bqueuearn\x18\x80\xeb\xfd\xbe\x01 \x01(\tR\bqueuearn\"b\n" +
-	"\x10RecordExpiration\x12\x16\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\x126\n" +
+	"\bqueuearn\x18\x80\xeb\xfd\xbe\x01 \x01(\tR\bqueuearn\"p\n" +
+	"\x10RecordExpiration\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x126\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\x0e2\x13.s3.ExpirationStateR\n" +
-	"expiration\"+\n" +
+	"expirationB\a\n" +
+	"\x05_days\"+\n" +
 	"\fRecordsEvent\x12\x1b\n" +
 	"\apayload\x18Ʈ\x8e\x03 \x01(\fR\apayload\"\xea\x01\n" +
 	"\bRedirect\x12\x1d\n" +
@@ -32247,17 +32314,18 @@ const file_s3_proto_rawDesc = "" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1e.s3.ReplicaModificationsStatusR\x06status\"`\n" +
 	"\x18ReplicationConfiguration\x12\x16\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\x12,\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x13.s3.ReplicationRuleR\x05rules\"\x99\x04\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x13.s3.ReplicationRuleR\x05rules\"\xab\x04\n" +
 	"\x0fReplicationRule\x12X\n" +
 	"\x17deletemarkerreplication\x18\xdf\xce\xd8\b \x01(\v2\x1b.s3.DeleteMarkerReplicationR\x17deletemarkerreplication\x125\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\v2\x0f.s3.DestinationR\vdestination\x12_\n" +
 	"\x19existingobjectreplication\x18ܡ\xbb\xee\x01 \x01(\v2\x1d.s3.ExistingObjectReplicationR\x19existingobjectreplication\x125\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x19.s3.ReplicationRuleFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05R\bpriority\x12X\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x00R\bpriority\x88\x01\x01\x12X\n" +
 	"\x17sourceselectioncriteria\x18\x98\x8e\xa6` \x01(\v2\x1b.s3.SourceSelectionCriteriaR\x17sourceselectioncriteria\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationRuleStatusR\x06status\"Y\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationRuleStatusR\x06statusB\v\n" +
+	"\t_priority\"Y\n" +
 	"\x1aReplicationRuleAndOperator\x12\x1a\n" +
 	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\x88\x01\n" +
@@ -32267,9 +32335,11 @@ const file_s3_proto_rawDesc = "" +
 	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"y\n" +
 	"\x0fReplicationTime\x124\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationTimeStatusR\x06status\x120\n" +
-	"\x04time\x18\x85ȓ\xff\x01 \x01(\v2\x18.s3.ReplicationTimeValueR\x04time\"4\n" +
-	"\x14ReplicationTimeValue\x12\x1c\n" +
-	"\aminutes\x18\x8f\xad\xe6\xb6\x01 \x01(\x05R\aminutes\"A\n" +
+	"\x04time\x18\x85ȓ\xff\x01 \x01(\v2\x18.s3.ReplicationTimeValueR\x04time\"E\n" +
+	"\x14ReplicationTimeValue\x12!\n" +
+	"\aminutes\x18\x8f\xad\xe6\xb6\x01 \x01(\x05H\x00R\aminutes\x88\x01\x01B\n" +
+	"\n" +
+	"\b_minutes\"A\n" +
 	"\x1bRequestPaymentConfiguration\x12\"\n" +
 	"\x05payer\x18㉢S \x01(\x0e2\t.s3.PayerR\x05payer\"@\n" +
 	"\x0fRequestProgress\x12!\n" +
@@ -32286,15 +32356,16 @@ const file_s3_proto_rawDesc = "" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12C\n" +
 	"\x0erestorerequest\x18\x87\x86\xdb\x1f \x01(\v2\x12.s3.RestoreRequestB\x04\x88\xb5\x18\x01R\x0erestorerequest\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xf6\x02\n" +
-	"\x0eRestoreRequest\x12\x16\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\x12#\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\x84\x03\n" +
+	"\x0eRestoreRequest\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12P\n" +
 	"\x14glacierjobparameters\x18\xba\xe8\xb8\xd9\x01 \x01(\v2\x18.s3.GlacierJobParametersR\x14glacierjobparameters\x12=\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2\x12.s3.OutputLocationR\x0eoutputlocation\x12D\n" +
 	"\x10selectparameters\x18\xb2\xa9\xfb\xa0\x01 \x01(\v2\x14.s3.SelectParametersR\x10selectparameters\x12 \n" +
 	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\b.s3.TierR\x04tier\x12.\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x16.s3.RestoreRequestTypeR\x04type\"\x94\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x16.s3.RestoreRequestTypeR\x04typeB\a\n" +
+	"\x05_days\"\x94\x01\n" +
 	"\rRestoreStatus\x129\n" +
 	"\x13isrestoreinprogress\x18\xfe\xe3\x81\xec\x01 \x01(\bH\x00R\x13isrestoreinprogress\x88\x01\x01\x120\n" +
 	"\x11restoreexpirydate\x18ǂ\xf7\x83\x01 \x01(\tR\x11restoreexpirydateB\x16\n" +
@@ -32332,10 +32403,12 @@ const file_s3_proto_rawDesc = "" +
 	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12\x1f\n" +
 	"\tkmskeyarn\x18\xf1\xb3\x8b8 \x01(\tR\tkmskeyarnB\x13\n" +
 	"\x11_bucketkeyenabled\"\a\n" +
-	"\x05SSES3\"9\n" +
-	"\tScanRange\x12\x13\n" +
-	"\x03end\x18\xcb\xec\xcd| \x01(\x03R\x03end\x12\x17\n" +
-	"\x05start\x18\x80\x93\xa0W \x01(\x03R\x05start\"\xfd\x01\n" +
+	"\x05SSES3\"U\n" +
+	"\tScanRange\x12\x18\n" +
+	"\x03end\x18\xcb\xec\xcd| \x01(\x03H\x00R\x03end\x88\x01\x01\x12\x1c\n" +
+	"\x05start\x18\x80\x93\xa0W \x01(\x03H\x01R\x05start\x88\x01\x01B\x06\n" +
+	"\x04_endB\b\n" +
+	"\x06_start\"\xfd\x01\n" +
 	"\x1eSelectObjectContentEventStream\x12,\n" +
 	"\x04cont\x18\xce\xe4\xb2s \x01(\v2\x15.s3.ContinuationEventR\x04cont\x12!\n" +
 	"\x03end\x18\xcb\xec\xcd| \x01(\v2\f.s3.EndEventR\x03end\x121\n" +
@@ -32388,11 +32461,14 @@ const file_s3_proto_rawDesc = "" +
 	"\x14replicamodifications\x18顥\xa2\x01 \x01(\v2\x18.s3.ReplicaModificationsR\x14replicamodifications\x12U\n" +
 	"\x16ssekmsencryptedobjects\x18\xb0\xd2\xc0\x1a \x01(\v2\x1a.s3.SseKmsEncryptedObjectsR\x16ssekmsencryptedobjects\"U\n" +
 	"\x16SseKmsEncryptedObjects\x12;\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .s3.SseKmsEncryptedObjectsStatusR\x06status\"\x83\x01\n" +
-	"\x05Stats\x12*\n" +
-	"\x0ebytesprocessed\x18\xf1\xa7\xa0\xe8\x01 \x01(\x03R\x0ebytesprocessed\x12'\n" +
-	"\rbytesreturned\x18\xac\xad\x95: \x01(\x03R\rbytesreturned\x12%\n" +
-	"\fbytesscanned\x18\xb9ŒY \x01(\x03R\fbytesscanned\"4\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .s3.SseKmsEncryptedObjectsStatusR\x06status\"\xc8\x01\n" +
+	"\x05Stats\x12/\n" +
+	"\x0ebytesprocessed\x18\xf1\xa7\xa0\xe8\x01 \x01(\x03H\x00R\x0ebytesprocessed\x88\x01\x01\x12,\n" +
+	"\rbytesreturned\x18\xac\xad\x95: \x01(\x03H\x01R\rbytesreturned\x88\x01\x01\x12*\n" +
+	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x02R\fbytesscanned\x88\x01\x01B\x11\n" +
+	"\x0f_bytesprocessedB\x10\n" +
+	"\x0e_bytesreturnedB\x0f\n" +
+	"\r_bytesscanned\"4\n" +
 	"\n" +
 	"StatsEvent\x12&\n" +
 	"\adetails\x18Ƅ\x89v \x01(\v2\t.s3.StatsR\adetails\"]\n" +
@@ -32426,12 +32502,13 @@ const file_s3_proto_rawDesc = "" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\x80\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\x8e\x01\n" +
 	"\n" +
 	"Transition\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x16\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\x12B\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1a.s3.TransitionStorageClassR\fstorageclass\"\x16\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12B\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1a.s3.TransitionStorageClassR\fstorageclassB\a\n" +
+	"\x05_days\"\x16\n" +
 	"\x14UnsupportedMediaType\"\xec\x02\n" +
 	"7UpdateBucketMetadataAnnotationTableConfigurationRequest\x12u\n" +
 	"\x1cannotationtableconfiguration\x18\xa7\x8b\xac\x9e\x01 \x01(\v2'.s3.AnnotationTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x1cannotationtableconfiguration\x12\x19\n" +
@@ -32522,7 +32599,7 @@ const file_s3_proto_rawDesc = "" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x13\n" +
-	"\x11_bucketkeyenabled\"\xf1\a\n" +
+	"\x11_bucketkeyenabled\"\x88\b\n" +
 	"\x11UploadPartRequest\x12\x1b\n" +
 	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
@@ -32536,8 +32613,8 @@ const file_s3_proto_rawDesc = "" +
 	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
 	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
 	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12\"\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x00R\rcontentlength\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
 	"contentmd5\x123\n" +
@@ -32550,7 +32627,8 @@ const file_s3_proto_rawDesc = "" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
 	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"\x81\x01\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x10\n" +
+	"\x0e_contentlength\"\x81\x01\n" +
 	"\x17VersioningConfiguration\x12/\n" +
 	"\tmfadelete\x18\x97\xdd\xed\xa8\x01 \x01(\x0e2\r.s3.MFADeleteR\tmfadelete\x125\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketVersioningStatusR\x06status\"\x9c\x02\n" +
@@ -32558,7 +32636,7 @@ const file_s3_proto_rawDesc = "" +
 	"\rerrordocument\x18\xe9\xba\xfc\x9c\x01 \x01(\v2\x11.s3.ErrorDocumentR\rerrordocument\x12:\n" +
 	"\rindexdocument\x18\xef\xfa\x8b\v \x01(\v2\x11.s3.IndexDocumentR\rindexdocument\x12S\n" +
 	"\x15redirectallrequeststo\x18\xe4ꜗ\x01 \x01(\v2\x19.s3.RedirectAllRequestsToR\x15redirectallrequeststo\x126\n" +
-	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"\xc0\x11\n" +
+	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"\xa6\x12\n" +
 	"\x1dWriteGetObjectResponseRequest\x12&\n" +
 	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12\x1b\n" +
 	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x123\n" +
@@ -32576,11 +32654,11 @@ const file_s3_proto_rawDesc = "" +
 	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
 	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
 	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12'\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03R\rcontentlength\x12%\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
 	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
 	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x01R\fdeletemarker\x88\x01\x01\x12\x16\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x1f\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12&\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12!\n" +
@@ -32589,14 +32667,14 @@ const file_s3_proto_rawDesc = "" +
 	"expiration\x12\x1b\n" +
 	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12O\n" +
-	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2/.s3.WriteGetObjectResponseRequest.MetadataEntryR\bmetadata\x12#\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05R\vmissingmeta\x12_\n" +
+	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2/.s3.WriteGetObjectResponseRequest.MetadataEntryR\bmetadata\x12(\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
 	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12!\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05R\n" +
-	"partscount\x12G\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12%\n" +
 	"\frequestroute\x18\xf4\x9c\xcd\x13 \x01(\tR\frequestroute\x12%\n" +
@@ -32605,18 +32683,23 @@ const file_s3_proto_rawDesc = "" +
 	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
 	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
 	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\"\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12'\n" +
 	"\n" +
-	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05R\n" +
-	"statuscode\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05R\btagcount\x12 \n" +
+	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\x05R\n" +
+	"statuscode\x88\x01\x01\x128\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x06R\btagcount\x88\x01\x01\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x0f\n" +
-	"\r_deletemarker*F\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_contentlengthB\x0f\n" +
+	"\r_deletemarkerB\x0e\n" +
+	"\f_missingmetaB\r\n" +
+	"\v_partscountB\r\n" +
+	"\v_statuscodeB\v\n" +
+	"\t_tagcount*F\n" +
 	"\x1bAnalyticsS3ExportFileFormat\x12'\n" +
 	"#ANALYTICS_S3_EXPORT_FILE_FORMAT_CSV\x10\x00*w\n" +
 	"\x1cAnnotationConfigurationState\x12+\n" +
@@ -34305,8 +34388,12 @@ func file_s3_proto_init() {
 	if File_s3_proto != nil {
 		return
 	}
+	file_s3_proto_msgTypes[1].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[27].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[28].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[32].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[33].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[35].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[38].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[39].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[46].OneofWrappers = []any{}
@@ -34314,43 +34401,73 @@ func file_s3_proto_init() {
 	file_s3_proto_msgTypes[48].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[49].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[50].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[51].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[52].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[68].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[72].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[73].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[77].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[79].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[141].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[143].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[144].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[145].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[150].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[151].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[163].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[165].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[166].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[179].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[194].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[196].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[197].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[198].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[200].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[202].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[204].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[207].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[209].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[210].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[211].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[212].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[213].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[214].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[215].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[216].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[217].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[218].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[219].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[220].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[221].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[239].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[240].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[244].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[247].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[253].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[254].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[261].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[263].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[264].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[266].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[279].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[281].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[295].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[296].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[298].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[303].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[311].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[315].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[317].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[320].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[321].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[328].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[330].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[337].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[342].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[353].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[360].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[362].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[363].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[366].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

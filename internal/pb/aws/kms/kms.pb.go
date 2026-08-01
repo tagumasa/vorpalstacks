@@ -3734,7 +3734,7 @@ type DescribeCustomKeyStoresRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Customkeystoreid   string                 `protobuf:"bytes,88348228,opt,name=customkeystoreid,proto3" json:"customkeystoreid,omitempty"`
 	Customkeystorename string                 `protobuf:"bytes,170278046,opt,name=customkeystorename,proto3" json:"customkeystorename,omitempty"`
-	Limit              int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit              *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -3785,8 +3785,8 @@ func (x *DescribeCustomKeyStoresRequest) GetCustomkeystorename() string {
 }
 
 func (x *DescribeCustomKeyStoresRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -4257,7 +4257,7 @@ func (x *EnableKeyRequest) GetKeyid() string {
 type EnableKeyRotationRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Keyid                string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Rotationperiodindays int32                  `protobuf:"varint,118357231,opt,name=rotationperiodindays,proto3" json:"rotationperiodindays,omitempty"`
+	Rotationperiodindays *int32                 `protobuf:"varint,118357231,opt,name=rotationperiodindays,proto3,oneof" json:"rotationperiodindays,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -4300,8 +4300,8 @@ func (x *EnableKeyRotationRequest) GetKeyid() string {
 }
 
 func (x *EnableKeyRotationRequest) GetRotationperiodindays() int32 {
-	if x != nil {
-		return x.Rotationperiodindays
+	if x != nil && x.Rotationperiodindays != nil {
+		return *x.Rotationperiodindays
 	}
 	return 0
 }
@@ -4829,7 +4829,7 @@ type GenerateDataKeyRequest struct {
 	Granttokens       []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid             string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Keyspec           DataKeySpec            `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec" json:"keyspec,omitempty"`
-	Numberofbytes     int32                  `protobuf:"varint,277086201,opt,name=numberofbytes,proto3" json:"numberofbytes,omitempty"`
+	Numberofbytes     *int32                 `protobuf:"varint,277086201,opt,name=numberofbytes,proto3,oneof" json:"numberofbytes,omitempty"`
 	Recipient         *RecipientInfo         `protobuf:"bytes,445981721,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -4901,8 +4901,8 @@ func (x *GenerateDataKeyRequest) GetKeyspec() DataKeySpec {
 }
 
 func (x *GenerateDataKeyRequest) GetNumberofbytes() int32 {
-	if x != nil {
-		return x.Numberofbytes
+	if x != nil && x.Numberofbytes != nil {
+		return *x.Numberofbytes
 	}
 	return 0
 }
@@ -4997,7 +4997,7 @@ type GenerateDataKeyWithoutPlaintextRequest struct {
 	Granttokens       []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid             string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Keyspec           DataKeySpec            `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec" json:"keyspec,omitempty"`
-	Numberofbytes     int32                  `protobuf:"varint,277086201,opt,name=numberofbytes,proto3" json:"numberofbytes,omitempty"`
+	Numberofbytes     *int32                 `protobuf:"varint,277086201,opt,name=numberofbytes,proto3,oneof" json:"numberofbytes,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5068,8 +5068,8 @@ func (x *GenerateDataKeyWithoutPlaintextRequest) GetKeyspec() DataKeySpec {
 }
 
 func (x *GenerateDataKeyWithoutPlaintextRequest) GetNumberofbytes() int32 {
-	if x != nil {
-		return x.Numberofbytes
+	if x != nil && x.Numberofbytes != nil {
+		return *x.Numberofbytes
 	}
 	return 0
 }
@@ -5273,7 +5273,7 @@ func (x *GenerateMacResponse) GetMacalgorithm() MacAlgorithmSpec {
 type GenerateRandomRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Customkeystoreid string                 `protobuf:"bytes,88348228,opt,name=customkeystoreid,proto3" json:"customkeystoreid,omitempty"`
-	Numberofbytes    int32                  `protobuf:"varint,277086201,opt,name=numberofbytes,proto3" json:"numberofbytes,omitempty"`
+	Numberofbytes    *int32                 `protobuf:"varint,277086201,opt,name=numberofbytes,proto3,oneof" json:"numberofbytes,omitempty"`
 	Recipient        *RecipientInfo         `protobuf:"bytes,445981721,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -5317,8 +5317,8 @@ func (x *GenerateRandomRequest) GetCustomkeystoreid() string {
 }
 
 func (x *GenerateRandomRequest) GetNumberofbytes() int32 {
-	if x != nil {
-		return x.Numberofbytes
+	if x != nil && x.Numberofbytes != nil {
+		return *x.Numberofbytes
 	}
 	return 0
 }
@@ -5648,7 +5648,7 @@ type GetKeyRotationStatusResponse struct {
 	Keyrotationenabled        *bool                  `protobuf:"varint,525956616,opt,name=keyrotationenabled,proto3,oneof" json:"keyrotationenabled,omitempty"`
 	Nextrotationdate          string                 `protobuf:"bytes,192035355,opt,name=nextrotationdate,proto3" json:"nextrotationdate,omitempty"`
 	Ondemandrotationstartdate string                 `protobuf:"bytes,360279652,opt,name=ondemandrotationstartdate,proto3" json:"ondemandrotationstartdate,omitempty"`
-	Rotationperiodindays      int32                  `protobuf:"varint,118357231,opt,name=rotationperiodindays,proto3" json:"rotationperiodindays,omitempty"`
+	Rotationperiodindays      *int32                 `protobuf:"varint,118357231,opt,name=rotationperiodindays,proto3,oneof" json:"rotationperiodindays,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -5712,8 +5712,8 @@ func (x *GetKeyRotationStatusResponse) GetOndemandrotationstartdate() string {
 }
 
 func (x *GetKeyRotationStatusResponse) GetRotationperiodindays() int32 {
-	if x != nil {
-		return x.Rotationperiodindays
+	if x != nil && x.Rotationperiodindays != nil {
+		return *x.Rotationperiodindays
 	}
 	return 0
 }
@@ -7138,7 +7138,7 @@ type KeyMetadata struct {
 	Multiregion                 *bool                       `protobuf:"varint,405769103,opt,name=multiregion,proto3,oneof" json:"multiregion,omitempty"`
 	Multiregionconfiguration    *MultiRegionConfiguration   `protobuf:"bytes,460103813,opt,name=multiregionconfiguration,proto3" json:"multiregionconfiguration,omitempty"`
 	Origin                      OriginType                  `protobuf:"varint,529732720,opt,name=origin,proto3,enum=kms.OriginType" json:"origin,omitempty"`
-	Pendingdeletionwindowindays int32                       `protobuf:"varint,480447795,opt,name=pendingdeletionwindowindays,proto3" json:"pendingdeletionwindowindays,omitempty"`
+	Pendingdeletionwindowindays *int32                      `protobuf:"varint,480447795,opt,name=pendingdeletionwindowindays,proto3,oneof" json:"pendingdeletionwindowindays,omitempty"`
 	Signingalgorithms           []SigningAlgorithmSpec      `protobuf:"varint,508241975,rep,packed,name=signingalgorithms,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithms,omitempty"`
 	Validto                     string                      `protobuf:"bytes,522718673,opt,name=validto,proto3" json:"validto,omitempty"`
 	Xkskeyconfiguration         *XksKeyConfigurationType    `protobuf:"bytes,359766455,opt,name=xkskeyconfiguration,proto3" json:"xkskeyconfiguration,omitempty"`
@@ -7331,8 +7331,8 @@ func (x *KeyMetadata) GetOrigin() OriginType {
 }
 
 func (x *KeyMetadata) GetPendingdeletionwindowindays() int32 {
-	if x != nil {
-		return x.Pendingdeletionwindowindays
+	if x != nil && x.Pendingdeletionwindowindays != nil {
+		return *x.Pendingdeletionwindowindays
 	}
 	return 0
 }
@@ -7449,7 +7449,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListAliasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keyid         string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7493,8 +7493,8 @@ func (x *ListAliasesRequest) GetKeyid() string {
 }
 
 func (x *ListAliasesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7572,7 +7572,7 @@ type ListGrantsRequest struct {
 	Granteeprincipal        string                 `protobuf:"bytes,234727364,opt,name=granteeprincipal,proto3" json:"granteeprincipal,omitempty"`
 	Granteeserviceprincipal string                 `protobuf:"bytes,57008093,opt,name=granteeserviceprincipal,proto3" json:"granteeserviceprincipal,omitempty"`
 	Keyid                   string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Limit                   int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                   *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker                  string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -7637,8 +7637,8 @@ func (x *ListGrantsRequest) GetKeyid() string {
 }
 
 func (x *ListGrantsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7713,7 +7713,7 @@ func (x *ListGrantsResponse) GetTruncated() bool {
 type ListKeyPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keyid         string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7757,8 +7757,8 @@ func (x *ListKeyPoliciesRequest) GetKeyid() string {
 }
 
 func (x *ListKeyPoliciesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7834,7 +7834,7 @@ type ListKeyRotationsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Includekeymaterial IncludeKeyMaterial     `protobuf:"varint,531559428,opt,name=includekeymaterial,proto3,enum=kms.IncludeKeyMaterial" json:"includekeymaterial,omitempty"`
 	Keyid              string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Limit              int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit              *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -7885,8 +7885,8 @@ func (x *ListKeyRotationsRequest) GetKeyid() string {
 }
 
 func (x *ListKeyRotationsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -7960,7 +7960,7 @@ func (x *ListKeyRotationsResponse) GetTruncated() bool {
 
 type ListKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7997,8 +7997,8 @@ func (*ListKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListKeysRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8073,7 +8073,7 @@ func (x *ListKeysResponse) GetTruncated() bool {
 type ListResourceTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keyid         string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8117,8 +8117,8 @@ func (x *ListResourceTagsRequest) GetKeyid() string {
 }
 
 func (x *ListResourceTagsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -8192,7 +8192,7 @@ func (x *ListResourceTagsResponse) GetTruncated() bool {
 
 type ListRetirableGrantsRequest struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Limit                    int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                    *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker                   string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	Retiringprincipal        string                 `protobuf:"bytes,49541086,opt,name=retiringprincipal,proto3" json:"retiringprincipal,omitempty"`
 	Retiringserviceprincipal string                 `protobuf:"bytes,402948019,opt,name=retiringserviceprincipal,proto3" json:"retiringserviceprincipal,omitempty"`
@@ -8231,8 +8231,8 @@ func (*ListRetirableGrantsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRetirableGrantsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -9257,7 +9257,7 @@ func (x *RotationsListEntry) GetValidto() string {
 type ScheduleKeyDeletionRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Keyid               string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Pendingwindowindays int32                  `protobuf:"varint,532945081,opt,name=pendingwindowindays,proto3" json:"pendingwindowindays,omitempty"`
+	Pendingwindowindays *int32                 `protobuf:"varint,532945081,opt,name=pendingwindowindays,proto3,oneof" json:"pendingwindowindays,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9300,8 +9300,8 @@ func (x *ScheduleKeyDeletionRequest) GetKeyid() string {
 }
 
 func (x *ScheduleKeyDeletionRequest) GetPendingwindowindays() int32 {
-	if x != nil {
-		return x.Pendingwindowindays
+	if x != nil && x.Pendingwindowindays != nil {
+		return *x.Pendingwindowindays
 	}
 	return 0
 }
@@ -9311,7 +9311,7 @@ type ScheduleKeyDeletionResponse struct {
 	Deletiondate        string                 `protobuf:"bytes,347845564,opt,name=deletiondate,proto3" json:"deletiondate,omitempty"`
 	Keyid               string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Keystate            KeyState               `protobuf:"varint,27894226,opt,name=keystate,proto3,enum=kms.KeyState" json:"keystate,omitempty"`
-	Pendingwindowindays int32                  `protobuf:"varint,532945081,opt,name=pendingwindowindays,proto3" json:"pendingwindowindays,omitempty"`
+	Pendingwindowindays *int32                 `protobuf:"varint,532945081,opt,name=pendingwindowindays,proto3,oneof" json:"pendingwindowindays,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9368,8 +9368,8 @@ func (x *ScheduleKeyDeletionResponse) GetKeystate() KeyState {
 }
 
 func (x *ScheduleKeyDeletionResponse) GetPendingwindowindays() int32 {
-	if x != nil {
-		return x.Pendingwindowindays
+	if x != nil && x.Pendingwindowindays != nil {
+		return *x.Pendingwindowindays
 	}
 	return 0
 }
@@ -11221,12 +11221,13 @@ const file_kms_proto_rawDesc = "" +
 	"\x15keyagreementalgorithm\x18\xb6\xbf\xa3/ \x01(\x0e2\x1e.kms.KeyAgreementAlgorithmSpecR\x15keyagreementalgorithm\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x120\n" +
 	"\tkeyorigin\x18\xb7\xb8\xa3\x18 \x01(\x0e2\x0f.kms.OriginTypeR\tkeyorigin\x12&\n" +
-	"\fsharedsecret\x18\xd9\xf9ȶ\x01 \x01(\fR\fsharedsecret\"\xb7\x01\n" +
+	"\fsharedsecret\x18\xd9\xf9ȶ\x01 \x01(\fR\fsharedsecret\"\xc6\x01\n" +
 	"\x1eDescribeCustomKeyStoresRequest\x12-\n" +
 	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tR\x10customkeystoreid\x121\n" +
-	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tR\x12customkeystorename\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xc5\x01\n" +
+	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tR\x12customkeystorename\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\xc5\x01\n" +
 	"\x1fDescribeCustomKeyStoresResponse\x12J\n" +
 	"\x0fcustomkeystores\x18\x98\xd3\xdd_ \x03(\v2\x1d.kms.CustomKeyStoresListEntryR\x0fcustomkeystores\x12\"\n" +
 	"\n" +
@@ -11252,10 +11253,11 @@ const file_kms_proto_rawDesc = "" +
 	"\x18DryRunOperationException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\",\n" +
 	"\x10EnableKeyRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"k\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\x89\x01\n" +
 	"\x18EnableKeyRotationRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x125\n" +
-	"\x14rotationperiodindays\x18\xef\xf9\xb78 \x01(\x05R\x14rotationperiodindays\"\x93\x03\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12:\n" +
+	"\x14rotationperiodindays\x18\xef\xf9\xb78 \x01(\x05H\x00R\x14rotationperiodindays\x88\x01\x01B\x17\n" +
+	"\x15_rotationperiodindays\"\x93\x03\n" +
 	"\x0eEncryptRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12Q\n" +
 	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x13encryptionalgorithm\x12\\\n" +
@@ -11307,36 +11309,38 @@ const file_kms_proto_rawDesc = "" +
 	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tR\rkeymaterialid\x129\n" +
 	"\vkeypairspec\x18\xbc\xbf\x85D \x01(\x0e2\x14.kms.DataKeyPairSpecR\vkeypairspec\x12>\n" +
 	"\x18privatekeyciphertextblob\x18\x81\xf6\xe3\x8c\x01 \x01(\fR\x18privatekeyciphertextblob\x12\x1f\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\fR\tpublickey\"\xbe\x03\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\fR\tpublickey\"\xd5\x03\n" +
 	"\x16GenerateDataKeyRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12d\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v22.kms.GenerateDataKeyRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12-\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12(\n" +
-	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05R\rnumberofbytes\x124\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12-\n" +
+	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x01R\rnumberofbytes\x88\x01\x01\x124\n" +
 	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipient\x1aD\n" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrun\"\xe4\x01\n" +
+	"\a_dryrunB\x10\n" +
+	"\x0e_numberofbytes\"\xe4\x01\n" +
 	"\x17GenerateDataKeyResponse\x12*\n" +
 	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fR\x0eciphertextblob\x129\n" +
 	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fR\x16ciphertextforrecipient\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12'\n" +
 	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tR\rkeymaterialid\x12\x1f\n" +
-	"\tplaintext\x18\xc1\x81\x90* \x01(\fR\tplaintext\"\xa8\x03\n" +
+	"\tplaintext\x18\xc1\x81\x90* \x01(\fR\tplaintext\"\xbf\x03\n" +
 	"&GenerateDataKeyWithoutPlaintextRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12t\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v2B.kms.GenerateDataKeyWithoutPlaintextRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12-\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12(\n" +
-	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05R\rnumberofbytes\x1aD\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12-\n" +
+	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x01R\rnumberofbytes\x88\x01\x01\x1aD\n" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrun\"\x98\x01\n" +
+	"\a_dryrunB\x10\n" +
+	"\x0e_numberofbytes\"\x98\x01\n" +
 	"'GenerateDataKeyWithoutPlaintextResponse\x12*\n" +
 	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fR\x0eciphertextblob\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12'\n" +
@@ -11351,11 +11355,12 @@ const file_kms_proto_rawDesc = "" +
 	"\x13GenerateMacResponse\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x14\n" +
 	"\x03mac\x18ɉ\xa0\x8d\x01 \x01(\fR\x03mac\x12<\n" +
-	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithm\"\xa6\x01\n" +
+	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithm\"\xbd\x01\n" +
 	"\x15GenerateRandomRequest\x12-\n" +
-	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tR\x10customkeystoreid\x12(\n" +
-	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05R\rnumberofbytes\x124\n" +
-	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipient\"t\n" +
+	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tR\x10customkeystoreid\x12-\n" +
+	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x00R\rnumberofbytes\x88\x01\x01\x124\n" +
+	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipientB\x10\n" +
+	"\x0e_numberofbytes\"t\n" +
 	"\x16GenerateRandomResponse\x129\n" +
 	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fR\x16ciphertextforrecipient\x12\x1f\n" +
 	"\tplaintext\x18\xc1\x81\x90* \x01(\fR\tplaintext\"2\n" +
@@ -11377,14 +11382,15 @@ const file_kms_proto_rawDesc = "" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
 	"policyname\"7\n" +
 	"\x1bGetKeyRotationStatusRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xb0\x02\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xce\x02\n" +
 	"\x1cGetKeyRotationStatusResponse\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x127\n" +
 	"\x12keyrotationenabled\x18\x88\xec\xe5\xfa\x01 \x01(\bH\x00R\x12keyrotationenabled\x88\x01\x01\x12-\n" +
 	"\x10nextrotationdate\x18\x9b\xf4\xc8[ \x01(\tR\x10nextrotationdate\x12@\n" +
-	"\x19ondemandrotationstartdate\x18\xe4\xdc\xe5\xab\x01 \x01(\tR\x19ondemandrotationstartdate\x125\n" +
-	"\x14rotationperiodindays\x18\xef\xf9\xb78 \x01(\x05R\x14rotationperiodindaysB\x15\n" +
-	"\x13_keyrotationenabled\"\xc2\x01\n" +
+	"\x19ondemandrotationstartdate\x18\xe4\xdc\xe5\xab\x01 \x01(\tR\x19ondemandrotationstartdate\x12:\n" +
+	"\x14rotationperiodindays\x18\xef\xf9\xb78 \x01(\x05H\x01R\x14rotationperiodindays\x88\x01\x01B\x15\n" +
+	"\x13_keyrotationenabledB\x17\n" +
+	"\x15_rotationperiodindays\"\xc2\x01\n" +
 	"\x1dGetParametersForImportRequest\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12C\n" +
 	"\x11wrappingalgorithm\x18\xaf\xec\x9eN \x01(\x0e2\x12.kms.AlgorithmSpecR\x11wrappingalgorithm\x12B\n" +
@@ -11481,7 +11487,7 @@ const file_kms_proto_rawDesc = "" +
 	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\"D\n" +
 	"\fKeyListEntry\x12\x1a\n" +
 	"\x06keyarn\x18䆬\xc7\x01 \x01(\tR\x06keyarn\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xc0\v\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xe5\v\n" +
 	"\vKeyMetadata\x12&\n" +
 	"\fawsaccountid\x18\xedڼ\xb0\x01 \x01(\tR\fawsaccountid\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12/\n" +
@@ -11506,22 +11512,24 @@ const file_kms_proto_rawDesc = "" +
 	"\rmacalgorithms\x18\xc3\xe3\xe1\xfd\x01 \x03(\x0e2\x15.kms.MacAlgorithmSpecR\rmacalgorithms\x12)\n" +
 	"\vmultiregion\x18\x8f\x97\xbe\xc1\x01 \x01(\bH\x01R\vmultiregion\x88\x01\x01\x12]\n" +
 	"\x18multiregionconfiguration\x18\x85\xc1\xb2\xdb\x01 \x01(\v2\x1d.kms.MultiRegionConfigurationR\x18multiregionconfiguration\x12+\n" +
-	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeR\x06origin\x12D\n" +
-	"\x1bpendingdeletionwindowindays\x18\xb3\x9a\x8c\xe5\x01 \x01(\x05R\x1bpendingdeletionwindowindays\x12K\n" +
+	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeR\x06origin\x12I\n" +
+	"\x1bpendingdeletionwindowindays\x18\xb3\x9a\x8c\xe5\x01 \x01(\x05H\x02R\x1bpendingdeletionwindowindays\x88\x01\x01\x12K\n" +
 	"\x11signingalgorithms\x18\xb7Ь\xf2\x01 \x03(\x0e2\x19.kms.SigningAlgorithmSpecR\x11signingalgorithms\x12\x1c\n" +
 	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tR\avalidto\x12R\n" +
 	"\x13xkskeyconfiguration\x18\xb7\xb3ƫ\x01 \x01(\v2\x1c.kms.XksKeyConfigurationTypeR\x13xkskeyconfigurationB\n" +
 	"\n" +
 	"\b_enabledB\x0e\n" +
-	"\f_multiregion\"6\n" +
+	"\f_multiregionB\x1e\n" +
+	"\x1c_pendingdeletionwindowindays\"6\n" +
 	"\x17KeyUnavailableException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"c\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"r\n" +
 	"\x12ListAliasesRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xa0\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\xa0\x01\n" +
 	"\x13ListAliasesResponse\x121\n" +
 	"\aaliases\x18\xc0\x89\xa7\xe3\x01 \x03(\v2\x13.kms.AliasListEntryR\aaliases\x12\"\n" +
 	"\n" +
@@ -11529,14 +11537,15 @@ const file_kms_proto_rawDesc = "" +
 	"nextmarker\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xeb\x01\n" +
+	"_truncated\"\xfa\x01\n" +
 	"\x11ListGrantsRequest\x12\x1b\n" +
 	"\agrantid\x18\xb9\xab\xf0\x1f \x01(\tR\agrantid\x12-\n" +
 	"\x10granteeprincipal\x18\xc4\xcf\xf6o \x01(\tR\x10granteeprincipal\x12;\n" +
 	"\x17granteeserviceprincipal\x18ݿ\x97\x1b \x01(\tR\x17granteeserviceprincipal\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x9c\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\x9c\x01\n" +
 	"\x12ListGrantsResponse\x12.\n" +
 	"\x06grants\x18\xdb\u0099l \x03(\v2\x13.kms.GrantListEntryR\x06grants\x12\"\n" +
 	"\n" +
@@ -11544,11 +11553,12 @@ const file_kms_proto_rawDesc = "" +
 	"nextmarker\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"g\n" +
+	"_truncated\"v\n" +
 	"\x16ListKeyPoliciesRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x96\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\x96\x01\n" +
 	"\x17ListKeyPoliciesResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -11556,12 +11566,13 @@ const file_kms_proto_rawDesc = "" +
 	"\vpolicynames\x18ާ\xf7} \x03(\tR\vpolicynames\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xb5\x01\n" +
+	"_truncated\"\xc4\x01\n" +
 	"\x17ListKeyRotationsRequest\x12K\n" +
 	"\x12includekeymaterial\x18\x84\xe8\xbb\xfd\x01 \x01(\x0e2\x17.kms.IncludeKeyMaterialR\x12includekeymaterial\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xac\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\xac\x01\n" +
 	"\x18ListKeyRotationsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -11569,10 +11580,11 @@ const file_kms_proto_rawDesc = "" +
 	"\trotations\x18\xe5\xcf\xc5\v \x03(\v2\x17.kms.RotationsListEntryR\trotations\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"F\n" +
-	"\x0fListKeysRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x94\x01\n" +
+	"_truncated\"U\n" +
+	"\x0fListKeysRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\x94\x01\n" +
 	"\x10ListKeysResponse\x12(\n" +
 	"\x04keys\x18\xee\xe5\xac\x01 \x03(\v2\x11.kms.KeyListEntryR\x04keys\x12\"\n" +
 	"\n" +
@@ -11580,11 +11592,12 @@ const file_kms_proto_rawDesc = "" +
 	"nextmarker\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"h\n" +
+	"_truncated\"w\n" +
 	"\x17ListResourceTagsRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x94\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\b\n" +
+	"\x06_limit\"\x94\x01\n" +
 	"\x18ListResourceTagsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -11592,12 +11605,13 @@ const file_kms_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.kms.TagR\x04tags\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xc2\x01\n" +
-	"\x1aListRetirableGrantsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x19\n" +
+	"_truncated\"\xd1\x01\n" +
+	"\x1aListRetirableGrantsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12/\n" +
 	"\x11retiringprincipal\x18\xde\xdf\xcf\x17 \x01(\tR\x11retiringprincipal\x12>\n" +
-	"\x18retiringserviceprincipal\x18\xb3\xff\x91\xc0\x01 \x01(\tR\x18retiringserviceprincipal\"?\n" +
+	"\x18retiringserviceprincipal\x18\xb3\xff\x91\xc0\x01 \x01(\tR\x18retiringserviceprincipalB\b\n" +
+	"\x06_limit\"?\n" +
 	" MalformedPolicyDocumentException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd9\x01\n" +
 	"\x18MultiRegionConfiguration\x12K\n" +
@@ -11686,15 +11700,17 @@ const file_kms_proto_rawDesc = "" +
 	"\x10keymaterialstate\x18\x97\xb3\xf3\xcd\x01 \x01(\x0e2\x15.kms.KeyMaterialStateR\x10keymaterialstate\x12&\n" +
 	"\frotationdate\x18\xfc\x94\xae\xfc\x01 \x01(\tR\frotationdate\x128\n" +
 	"\frotationtype\x18\xa8\xaf\xd0: \x01(\x0e2\x11.kms.RotationTypeR\frotationtype\x12\x1c\n" +
-	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tR\avalidto\"l\n" +
+	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tR\avalidto\"\x89\x01\n" +
 	"\x1aScheduleKeyDeletionRequest\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x124\n" +
-	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05R\x13pendingwindowindays\"\xc3\x01\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x129\n" +
+	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05H\x00R\x13pendingwindowindays\x88\x01\x01B\x16\n" +
+	"\x14_pendingwindowindays\"\xe0\x01\n" +
 	"\x1bScheduleKeyDeletionResponse\x12&\n" +
 	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tR\fdeletiondate\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12,\n" +
-	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateR\bkeystate\x124\n" +
-	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05R\x13pendingwindowindays\"\x98\x02\n" +
+	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateR\bkeystate\x129\n" +
+	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05H\x00R\x13pendingwindowindays\x88\x01\x01B\x16\n" +
+	"\x14_pendingwindowindays\"\x98\x02\n" +
 	"\vSignRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
@@ -12517,26 +12533,38 @@ func file_kms_proto_init() {
 	file_kms_proto_msgTypes[17].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[24].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[32].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[34].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[35].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[45].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[46].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[49].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[51].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[53].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[55].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[57].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[59].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[66].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[92].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[95].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[96].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[97].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[98].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[99].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[100].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[101].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[102].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[103].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[104].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[105].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[106].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[107].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[112].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[113].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[116].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[118].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[119].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[123].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[124].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[125].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[137].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[138].OneofWrappers = []any{}

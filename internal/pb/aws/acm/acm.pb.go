@@ -2869,7 +2869,7 @@ func (x *DomainValidationOption) GetValidationdomain() string {
 
 type ExpiryEventsConfiguration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Daysbeforeexpiry int32                  `protobuf:"varint,292642703,opt,name=daysbeforeexpiry,proto3" json:"daysbeforeexpiry,omitempty"`
+	Daysbeforeexpiry *int32                 `protobuf:"varint,292642703,opt,name=daysbeforeexpiry,proto3,oneof" json:"daysbeforeexpiry,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2905,8 +2905,8 @@ func (*ExpiryEventsConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExpiryEventsConfiguration) GetDaysbeforeexpiry() int32 {
-	if x != nil {
-		return x.Daysbeforeexpiry
+	if x != nil && x.Daysbeforeexpiry != nil {
+		return *x.Daysbeforeexpiry
 	}
 	return 0
 }
@@ -3911,7 +3911,7 @@ type ListCertificatesRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Certificatestatuses []CertificateStatus    `protobuf:"varint,203375987,rep,packed,name=certificatestatuses,proto3,enum=acm.CertificateStatus" json:"certificatestatuses,omitempty"`
 	Includes            *Filters               `protobuf:"bytes,162404509,opt,name=includes,proto3" json:"includes,omitempty"`
-	Maxitems            int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems            *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Sortby              SortBy                 `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SortBy" json:"sortby,omitempty"`
 	Sortorder           SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SortOrder" json:"sortorder,omitempty"`
@@ -3964,8 +3964,8 @@ func (x *ListCertificatesRequest) GetIncludes() *Filters {
 }
 
 func (x *ListCertificatesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -4910,7 +4910,7 @@ func (x *RevokeCertificateResponse) GetCertificatearn() string {
 type SearchCertificatesRequest struct {
 	state           protoimpl.MessageState      `protogen:"open.v1"`
 	Filterstatement *CertificateFilterStatement `protobuf:"bytes,530491181,opt,name=filterstatement,proto3" json:"filterstatement,omitempty"`
-	Maxresults      int32                       `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults      *int32                      `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       string                      `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Sortby          SearchCertificatesSortBy    `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SearchCertificatesSortBy" json:"sortby,omitempty"`
 	Sortorder       SearchCertificatesSortOrder `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SearchCertificatesSortOrder" json:"sortorder,omitempty"`
@@ -4956,8 +4956,8 @@ func (x *SearchCertificatesRequest) GetFilterstatement() *CertificateFilterState
 }
 
 func (x *SearchCertificatesRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -5891,9 +5891,10 @@ const file_acm_proto_rawDesc = "" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x12-\n" +
-	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"K\n" +
-	"\x19ExpiryEventsConfiguration\x12.\n" +
-	"\x10daysbeforeexpiry\x18\x8f\xbfŋ\x01 \x01(\x05R\x10daysbeforeexpiry\"i\n" +
+	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"e\n" +
+	"\x19ExpiryEventsConfiguration\x123\n" +
+	"\x10daysbeforeexpiry\x18\x8f\xbfŋ\x01 \x01(\x05H\x00R\x10daysbeforeexpiry\x88\x01\x01B\x13\n" +
+	"\x11_daysbeforeexpiry\"i\n" +
 	"\x18ExportCertificateRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12\"\n" +
 	"\n" +
@@ -5961,14 +5962,15 @@ const file_acm_proto_rawDesc = "" +
 	"\bKeyUsage\x12(\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x11.acm.KeyUsageNameR\x04name\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xae\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc0\x02\n" +
 	"\x17ListCertificatesRequest\x12K\n" +
 	"\x13certificatestatuses\x18\xf3\x8a\xfd` \x03(\x0e2\x16.acm.CertificateStatusR\x13certificatestatuses\x12+\n" +
-	"\bincludes\x18\x9d\xb1\xb8M \x01(\v2\f.acm.FiltersR\bincludes\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1f\n" +
+	"\bincludes\x18\x9d\xb1\xb8M \x01(\v2\f.acm.FiltersR\bincludes\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12&\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\v.acm.SortByR\x06sortby\x120\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x0e.acm.SortOrderR\tsortorder\"\x90\x01\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x0e.acm.SortOrderR\tsortorderB\v\n" +
+	"\t_maxitems\"\x90\x01\n" +
 	"\x18ListCertificatesResponse\x12S\n" +
 	"\x16certificatesummarylist\x18\x91\xa4\xd5\xe8\x01 \x03(\v2\x17.acm.CertificateSummaryR\x16certificatesummarylist\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"J\n" +
@@ -6025,15 +6027,16 @@ const file_acm_proto_rawDesc = "" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12E\n" +
 	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\"F\n" +
 	"\x19RevokeCertificateResponse\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\xad\x02\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\xc1\x02\n" +
 	"\x19SearchCertificatesRequest\x12M\n" +
-	"\x0ffilterstatement\x18\xad\xce\xfa\xfc\x01 \x01(\v2\x1f.acm.CertificateFilterStatementR\x0ffilterstatement\x12\"\n" +
+	"\x0ffilterstatement\x18\xad\xce\xfa\xfc\x01 \x01(\v2\x1f.acm.CertificateFilterStatementR\x0ffilterstatement\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x128\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1d.acm.SearchCertificatesSortByR\x06sortby\x12B\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2 .acm.SearchCertificatesSortOrderR\tsortorder\"y\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2 .acm.SearchCertificatesSortOrderR\tsortorderB\r\n" +
+	"\v_maxresults\"y\n" +
 	"\x1aSearchCertificatesResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12:\n" +
 	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2\x1c.acm.CertificateSearchResultR\aresults\"O\n" +
@@ -6505,6 +6508,9 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[1].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[2].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[10].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[21].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[41].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[59].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

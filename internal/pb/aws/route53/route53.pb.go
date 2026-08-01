@@ -1921,7 +1921,7 @@ func (x *ChangeBatch) GetComment() string {
 type ChangeCidrCollectionRequest struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	Changes           []*CidrCollectionChange `protobuf:"bytes,516230891,rep,name=changes,proto3" json:"changes,omitempty"`
-	Collectionversion int64                   `protobuf:"varint,95829948,opt,name=collectionversion,proto3" json:"collectionversion,omitempty"`
+	Collectionversion *int64                  `protobuf:"varint,95829948,opt,name=collectionversion,proto3,oneof" json:"collectionversion,omitempty"`
 	Id                string                  `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -1965,8 +1965,8 @@ func (x *ChangeCidrCollectionRequest) GetChanges() []*CidrCollectionChange {
 }
 
 func (x *ChangeCidrCollectionRequest) GetCollectionversion() int64 {
-	if x != nil {
-		return x.Collectionversion
+	if x != nil && x.Collectionversion != nil {
+		return *x.Collectionversion
 	}
 	return 0
 }
@@ -2391,7 +2391,7 @@ type CidrCollection struct {
 	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Version       int64                  `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version       *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2448,8 +2448,8 @@ func (x *CidrCollection) GetName() string {
 }
 
 func (x *CidrCollection) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -2803,7 +2803,7 @@ type CollectionSummary struct {
 	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Version       int64                  `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version       *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2860,8 +2860,8 @@ func (x *CollectionSummary) GetName() string {
 }
 
 func (x *CollectionSummary) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -5921,7 +5921,7 @@ func (x *GeoLocationDetails) GetSubdivisionname() string {
 type GeoProximityLocation struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Awsregion      string                 `protobuf:"bytes,245430451,opt,name=awsregion,proto3" json:"awsregion,omitempty"`
-	Bias           int32                  `protobuf:"varint,60849893,opt,name=bias,proto3" json:"bias,omitempty"`
+	Bias           *int32                 `protobuf:"varint,60849893,opt,name=bias,proto3,oneof" json:"bias,omitempty"`
 	Coordinates    *Coordinates           `protobuf:"bytes,231283401,opt,name=coordinates,proto3" json:"coordinates,omitempty"`
 	Localzonegroup string                 `protobuf:"bytes,60150354,opt,name=localzonegroup,proto3" json:"localzonegroup,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -5966,8 +5966,8 @@ func (x *GeoProximityLocation) GetAwsregion() string {
 }
 
 func (x *GeoProximityLocation) GetBias() int32 {
-	if x != nil {
-		return x.Bias
+	if x != nil && x.Bias != nil {
+		return *x.Bias
 	}
 	return 0
 }
@@ -7760,16 +7760,16 @@ type HealthCheckConfig struct {
 	Childhealthchecks            []string                     `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
 	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
 	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
-	Failurethreshold             int32                        `protobuf:"varint,176846565,opt,name=failurethreshold,proto3" json:"failurethreshold,omitempty"`
+	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
 	Fullyqualifieddomainname     string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3" json:"fullyqualifieddomainname,omitempty"`
-	Healththreshold              int32                        `protobuf:"varint,215873163,opt,name=healththreshold,proto3" json:"healththreshold,omitempty"`
+	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
 	Ipaddress                    string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
 	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
 	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
 	Measurelatency               *bool                        `protobuf:"varint,87136848,opt,name=measurelatency,proto3,oneof" json:"measurelatency,omitempty"`
-	Port                         int32                        `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
-	Requestinterval              int32                        `protobuf:"varint,350673112,opt,name=requestinterval,proto3" json:"requestinterval,omitempty"`
+	Requestinterval              *int32                       `protobuf:"varint,350673112,opt,name=requestinterval,proto3,oneof" json:"requestinterval,omitempty"`
 	Resourcepath                 string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3" json:"resourcepath,omitempty"`
 	Routingcontrolarn            string                       `protobuf:"bytes,206883790,opt,name=routingcontrolarn,proto3" json:"routingcontrolarn,omitempty"`
 	Searchstring                 string                       `protobuf:"bytes,318687365,opt,name=searchstring,proto3" json:"searchstring,omitempty"`
@@ -7837,8 +7837,8 @@ func (x *HealthCheckConfig) GetEnablesni() bool {
 }
 
 func (x *HealthCheckConfig) GetFailurethreshold() int32 {
-	if x != nil {
-		return x.Failurethreshold
+	if x != nil && x.Failurethreshold != nil {
+		return *x.Failurethreshold
 	}
 	return 0
 }
@@ -7851,8 +7851,8 @@ func (x *HealthCheckConfig) GetFullyqualifieddomainname() string {
 }
 
 func (x *HealthCheckConfig) GetHealththreshold() int32 {
-	if x != nil {
-		return x.Healththreshold
+	if x != nil && x.Healththreshold != nil {
+		return *x.Healththreshold
 	}
 	return 0
 }
@@ -7886,8 +7886,8 @@ func (x *HealthCheckConfig) GetMeasurelatency() bool {
 }
 
 func (x *HealthCheckConfig) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -7900,8 +7900,8 @@ func (x *HealthCheckConfig) GetRegions() []HealthCheckRegion {
 }
 
 func (x *HealthCheckConfig) GetRequestinterval() int32 {
-	if x != nil {
-		return x.Requestinterval
+	if x != nil && x.Requestinterval != nil {
+		return *x.Requestinterval
 	}
 	return 0
 }
@@ -8090,7 +8090,7 @@ type HostedZone struct {
 	Id                     string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Linkedservice          *LinkedService         `protobuf:"bytes,438614164,opt,name=linkedservice,proto3" json:"linkedservice,omitempty"`
 	Name                   string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Resourcerecordsetcount int64                  `protobuf:"varint,334391116,opt,name=resourcerecordsetcount,proto3" json:"resourcerecordsetcount,omitempty"`
+	Resourcerecordsetcount *int64                 `protobuf:"varint,334391116,opt,name=resourcerecordsetcount,proto3,oneof" json:"resourcerecordsetcount,omitempty"`
 	Vpcs                   []*VPC                 `protobuf:"bytes,424064898,rep,name=vpcs,proto3" json:"vpcs,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -8169,8 +8169,8 @@ func (x *HostedZone) GetName() string {
 }
 
 func (x *HostedZone) GetResourcerecordsetcount() int64 {
-	if x != nil {
-		return x.Resourcerecordsetcount
+	if x != nil && x.Resourcerecordsetcount != nil {
+		return *x.Resourcerecordsetcount
 	}
 	return 0
 }
@@ -9300,16 +9300,16 @@ type KeySigningKey struct {
 	Dnskeyrecord             string                 `protobuf:"bytes,33128395,opt,name=dnskeyrecord,proto3" json:"dnskeyrecord,omitempty"`
 	Dsrecord                 string                 `protobuf:"bytes,123290342,opt,name=dsrecord,proto3" json:"dsrecord,omitempty"`
 	Digestalgorithmmnemonic  string                 `protobuf:"bytes,209907099,opt,name=digestalgorithmmnemonic,proto3" json:"digestalgorithmmnemonic,omitempty"`
-	Digestalgorithmtype      int32                  `protobuf:"varint,255175667,opt,name=digestalgorithmtype,proto3" json:"digestalgorithmtype,omitempty"`
+	Digestalgorithmtype      *int32                 `protobuf:"varint,255175667,opt,name=digestalgorithmtype,proto3,oneof" json:"digestalgorithmtype,omitempty"`
 	Digestvalue              string                 `protobuf:"bytes,277868387,opt,name=digestvalue,proto3" json:"digestvalue,omitempty"`
-	Flag                     int32                  `protobuf:"varint,504820984,opt,name=flag,proto3" json:"flag,omitempty"`
-	Keytag                   int32                  `protobuf:"varint,245478853,opt,name=keytag,proto3" json:"keytag,omitempty"`
+	Flag                     *int32                 `protobuf:"varint,504820984,opt,name=flag,proto3,oneof" json:"flag,omitempty"`
+	Keytag                   *int32                 `protobuf:"varint,245478853,opt,name=keytag,proto3,oneof" json:"keytag,omitempty"`
 	Kmsarn                   string                 `protobuf:"bytes,205584974,opt,name=kmsarn,proto3" json:"kmsarn,omitempty"`
 	Lastmodifieddate         string                 `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3" json:"lastmodifieddate,omitempty"`
 	Name                     string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Publickey                string                 `protobuf:"bytes,167335776,opt,name=publickey,proto3" json:"publickey,omitempty"`
 	Signingalgorithmmnemonic string                 `protobuf:"bytes,379080734,opt,name=signingalgorithmmnemonic,proto3" json:"signingalgorithmmnemonic,omitempty"`
-	Signingalgorithmtype     int32                  `protobuf:"varint,407768874,opt,name=signingalgorithmtype,proto3" json:"signingalgorithmtype,omitempty"`
+	Signingalgorithmtype     *int32                 `protobuf:"varint,407768874,opt,name=signingalgorithmtype,proto3,oneof" json:"signingalgorithmtype,omitempty"`
 	Status                   string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Statusmessage            string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -9375,8 +9375,8 @@ func (x *KeySigningKey) GetDigestalgorithmmnemonic() string {
 }
 
 func (x *KeySigningKey) GetDigestalgorithmtype() int32 {
-	if x != nil {
-		return x.Digestalgorithmtype
+	if x != nil && x.Digestalgorithmtype != nil {
+		return *x.Digestalgorithmtype
 	}
 	return 0
 }
@@ -9389,15 +9389,15 @@ func (x *KeySigningKey) GetDigestvalue() string {
 }
 
 func (x *KeySigningKey) GetFlag() int32 {
-	if x != nil {
-		return x.Flag
+	if x != nil && x.Flag != nil {
+		return *x.Flag
 	}
 	return 0
 }
 
 func (x *KeySigningKey) GetKeytag() int32 {
-	if x != nil {
-		return x.Keytag
+	if x != nil && x.Keytag != nil {
+		return *x.Keytag
 	}
 	return 0
 }
@@ -9438,8 +9438,8 @@ func (x *KeySigningKey) GetSigningalgorithmmnemonic() string {
 }
 
 func (x *KeySigningKey) GetSigningalgorithmtype() int32 {
-	if x != nil {
-		return x.Signingalgorithmtype
+	if x != nil && x.Signingalgorithmtype != nil {
+		return *x.Signingalgorithmtype
 	}
 	return 0
 }
@@ -13103,10 +13103,10 @@ type ResourceRecordSet struct {
 	Region                  ResourceRecordSetRegion   `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.ResourceRecordSetRegion" json:"region,omitempty"`
 	Resourcerecords         []*ResourceRecord         `protobuf:"bytes,519418974,rep,name=resourcerecords,proto3" json:"resourcerecords,omitempty"`
 	Setidentifier           string                    `protobuf:"bytes,201408985,opt,name=setidentifier,proto3" json:"setidentifier,omitempty"`
-	Ttl                     int64                     `protobuf:"varint,526904700,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl                     *int64                    `protobuf:"varint,526904700,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
 	Trafficpolicyinstanceid string                    `protobuf:"bytes,251421439,opt,name=trafficpolicyinstanceid,proto3" json:"trafficpolicyinstanceid,omitempty"`
 	Type                    RRType                    `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.RRType" json:"type,omitempty"`
-	Weight                  int64                     `protobuf:"varint,422581466,opt,name=weight,proto3" json:"weight,omitempty"`
+	Weight                  *int64                    `protobuf:"varint,422581466,opt,name=weight,proto3,oneof" json:"weight,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -13219,8 +13219,8 @@ func (x *ResourceRecordSet) GetSetidentifier() string {
 }
 
 func (x *ResourceRecordSet) GetTtl() int64 {
-	if x != nil {
-		return x.Ttl
+	if x != nil && x.Ttl != nil {
+		return *x.Ttl
 	}
 	return 0
 }
@@ -13240,8 +13240,8 @@ func (x *ResourceRecordSet) GetType() RRType {
 }
 
 func (x *ResourceRecordSet) GetWeight() int64 {
-	if x != nil {
-		return x.Weight
+	if x != nil && x.Weight != nil {
+		return *x.Weight
 	}
 	return 0
 }
@@ -14388,15 +14388,15 @@ type UpdateHealthCheckRequest struct {
 	Childhealthchecks            []string                     `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
 	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
 	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
-	Failurethreshold             int32                        `protobuf:"varint,176846565,opt,name=failurethreshold,proto3" json:"failurethreshold,omitempty"`
+	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
 	Fullyqualifieddomainname     string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3" json:"fullyqualifieddomainname,omitempty"`
 	Healthcheckid                string                       `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3" json:"healthcheckid,omitempty"`
-	Healthcheckversion           int64                        `protobuf:"varint,89568396,opt,name=healthcheckversion,proto3" json:"healthcheckversion,omitempty"`
-	Healththreshold              int32                        `protobuf:"varint,215873163,opt,name=healththreshold,proto3" json:"healththreshold,omitempty"`
+	Healthcheckversion           *int64                       `protobuf:"varint,89568396,opt,name=healthcheckversion,proto3,oneof" json:"healthcheckversion,omitempty"`
+	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
 	Ipaddress                    string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
 	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
 	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
-	Port                         int32                        `protobuf:"varint,46480583,opt,name=port,proto3" json:"port,omitempty"`
+	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
 	Resetelements                []ResettableElementName      `protobuf:"varint,16543458,rep,packed,name=resetelements,proto3,enum=route53.ResettableElementName" json:"resetelements,omitempty"`
 	Resourcepath                 string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3" json:"resourcepath,omitempty"`
@@ -14464,8 +14464,8 @@ func (x *UpdateHealthCheckRequest) GetEnablesni() bool {
 }
 
 func (x *UpdateHealthCheckRequest) GetFailurethreshold() int32 {
-	if x != nil {
-		return x.Failurethreshold
+	if x != nil && x.Failurethreshold != nil {
+		return *x.Failurethreshold
 	}
 	return 0
 }
@@ -14485,15 +14485,15 @@ func (x *UpdateHealthCheckRequest) GetHealthcheckid() string {
 }
 
 func (x *UpdateHealthCheckRequest) GetHealthcheckversion() int64 {
-	if x != nil {
-		return x.Healthcheckversion
+	if x != nil && x.Healthcheckversion != nil {
+		return *x.Healthcheckversion
 	}
 	return 0
 }
 
 func (x *UpdateHealthCheckRequest) GetHealththreshold() int32 {
-	if x != nil {
-		return x.Healththreshold
+	if x != nil && x.Healththreshold != nil {
+		return *x.Healththreshold
 	}
 	return 0
 }
@@ -14520,8 +14520,8 @@ func (x *UpdateHealthCheckRequest) GetInverted() bool {
 }
 
 func (x *UpdateHealthCheckRequest) GetPort() int32 {
-	if x != nil {
-		return x.Port
+	if x != nil && x.Port != nil {
+		return *x.Port
 	}
 	return 0
 }
@@ -15174,11 +15174,12 @@ const file_route53_proto_rawDesc = "" +
 	"\x11resourcerecordset\x18\xb5\xaa\xbd\xa4\x01 \x01(\v2\x1a.route53.ResourceRecordSetR\x11resourcerecordset\"Z\n" +
 	"\vChangeBatch\x12-\n" +
 	"\achanges\x18띔\xf6\x01 \x03(\v2\x0f.route53.ChangeR\achanges\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\"\x9f\x01\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\"\xba\x01\n" +
 	"\x1bChangeCidrCollectionRequest\x12;\n" +
-	"\achanges\x18띔\xf6\x01 \x03(\v2\x1d.route53.CidrCollectionChangeR\achanges\x12/\n" +
-	"\x11collectionversion\x18\xbc\xff\xd8- \x01(\x03R\x11collectionversion\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"2\n" +
+	"\achanges\x18띔\xf6\x01 \x03(\v2\x1d.route53.CidrCollectionChangeR\achanges\x124\n" +
+	"\x11collectionversion\x18\xbc\xff\xd8- \x01(\x03H\x00R\x11collectionversion\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x14\n" +
+	"\x12_collectionversion\"2\n" +
 	"\x1cChangeCidrCollectionResponse\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x96\x01\n" +
 	"\n" +
@@ -15206,12 +15207,14 @@ const file_route53_proto_rawDesc = "" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"Z\n" +
 	"\x10CidrBlockSummary\x12\x1f\n" +
 	"\tcidrblock\x18\xe9\x90\xf8\x1a \x01(\tR\tcidrblock\x12%\n" +
-	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"o\n" +
+	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"\x80\x01\n" +
 	"\x0eCidrCollection\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"C\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"C\n" +
 	"$CidrCollectionAlreadyExistsException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9d\x01\n" +
 	"\x14CidrCollectionChange\x12>\n" +
@@ -15237,12 +15240,14 @@ const file_route53_proto_rawDesc = "" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x19\n" +
 	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x123\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x12.route53.StatisticR\tstatistic\x12 \n" +
-	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\"r\n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\"\x83\x01\n" +
 	"\x11CollectionSummary\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03R\aversion\"5\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"5\n" +
 	"\x16ConcurrentModification\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x17ConflictingDomainExists\x12\x1b\n" +
@@ -15430,12 +15435,13 @@ const file_route53_proto_rawDesc = "" +
 	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tR\vcountrycode\x12#\n" +
 	"\vcountryname\x18\x8b\xf0\xd4\a \x01(\tR\vcountryname\x12,\n" +
 	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tR\x0fsubdivisioncode\x12,\n" +
-	"\x0fsubdivisionname\x18֝\xea\xc4\x01 \x01(\tR\x0fsubdivisionname\"\xb4\x01\n" +
+	"\x0fsubdivisionname\x18֝\xea\xc4\x01 \x01(\tR\x0fsubdivisionname\"\xc2\x01\n" +
 	"\x14GeoProximityLocation\x12\x1f\n" +
-	"\tawsregion\x18\xb3\xf1\x83u \x01(\tR\tawsregion\x12\x15\n" +
-	"\x04bias\x18\xe5\xfd\x81\x1d \x01(\x05R\x04bias\x129\n" +
+	"\tawsregion\x18\xb3\xf1\x83u \x01(\tR\tawsregion\x12\x1a\n" +
+	"\x04bias\x18\xe5\xfd\x81\x1d \x01(\x05H\x00R\x04bias\x88\x01\x01\x129\n" +
 	"\vcoordinates\x18ɵ\xa4n \x01(\v2\x14.route53.CoordinatesR\vcoordinates\x12)\n" +
-	"\x0elocalzonegroup\x18Ҥ\xd7\x1c \x01(\tR\x0elocalzonegroup\"K\n" +
+	"\x0elocalzonegroup\x18Ҥ\xd7\x1c \x01(\tR\x0elocalzonegroupB\a\n" +
+	"\x05_bias\"K\n" +
 	"\x16GetAccountLimitRequest\x121\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.route53.AccountLimitTypeR\x04type\"c\n" +
 	"\x17GetAccountLimitResponse\x12\x17\n" +
@@ -15527,31 +15533,35 @@ const file_route53_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12@\n" +
 	"\rlinkedservice\x18\x94\xf1\x92\xd1\x01 \x01(\v2\x16.route53.LinkedServiceR\rlinkedservice\"7\n" +
 	"\x18HealthCheckAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc3\a\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9d\b\n" +
 	"\x11HealthCheckConfig\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
 	"\bdisabled\x18\xa6\xb2\xba\xfe\x01 \x01(\bH\x00R\bdisabled\x88\x01\x01\x12$\n" +
-	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x12-\n" +
-	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05R\x10failurethreshold\x12>\n" +
-	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tR\x18fullyqualifieddomainname\x12+\n" +
-	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05R\x0fhealththreshold\x12\x1f\n" +
+	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x122\n" +
+	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12>\n" +
+	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tR\x18fullyqualifieddomainname\x120\n" +
+	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x03R\x0fhealththreshold\x88\x01\x01\x12\x1f\n" +
 	"\tipaddress\x18\xed\xa7\xdfP \x01(\tR\tipaddress\x12m\n" +
 	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x02R\binverted\x88\x01\x01\x12.\n" +
-	"\x0emeasurelatency\x18д\xc6) \x01(\bH\x03R\x0emeasurelatency\x88\x01\x01\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
-	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x12,\n" +
-	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05R\x0frequestinterval\x12%\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x04R\binverted\x88\x01\x01\x12.\n" +
+	"\x0emeasurelatency\x18д\xc6) \x01(\bH\x05R\x0emeasurelatency\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
+	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x121\n" +
+	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05H\aR\x0frequestinterval\x88\x01\x01\x12%\n" +
 	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tR\fresourcepath\x12/\n" +
 	"\x11routingcontrolarn\x18Η\xd3b \x01(\tR\x11routingcontrolarn\x12&\n" +
 	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tR\fsearchstring\x120\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x18.route53.HealthCheckTypeR\x04typeB\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
-	"_enablesniB\v\n" +
+	"_enablesniB\x13\n" +
+	"\x11_failurethresholdB\x12\n" +
+	"\x10_healththresholdB\v\n" +
 	"\t_invertedB\x11\n" +
-	"\x0f_measurelatency\"/\n" +
+	"\x0f_measurelatencyB\a\n" +
+	"\x05_portB\x12\n" +
+	"\x10_requestinterval\"/\n" +
 	"\x10HealthCheckInUse\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xae\x01\n" +
 	"\x16HealthCheckObservation\x12\x1f\n" +
@@ -15559,7 +15569,7 @@ const file_route53_proto_rawDesc = "" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2\x1a.route53.HealthCheckRegionR\x06region\x12<\n" +
 	"\fstatusreport\x18\xb2\xbc\xaa\r \x01(\v2\x15.route53.StatusReportR\fstatusreport\"9\n" +
 	"\x1aHealthCheckVersionMismatch\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xfa\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9a\x03\n" +
 	"\n" +
 	"HostedZone\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x124\n" +
@@ -15567,9 +15577,10 @@ const file_route53_proto_rawDesc = "" +
 	"\bfeatures\x18\xeb\xef\x9cb \x01(\v2\x1b.route53.HostedZoneFeaturesR\bfeatures\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12@\n" +
 	"\rlinkedservice\x18\x94\xf1\x92\xd1\x01 \x01(\v2\x16.route53.LinkedServiceR\rlinkedservice\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12:\n" +
-	"\x16resourcerecordsetcount\x18\xccι\x9f\x01 \x01(\x03R\x16resourcerecordsetcount\x12$\n" +
-	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcs\"6\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12?\n" +
+	"\x16resourcerecordsetcount\x18\xccι\x9f\x01 \x01(\x03H\x00R\x16resourcerecordsetcount\x88\x01\x01\x12$\n" +
+	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcsB\x19\n" +
+	"\x17_resourcerecordsetcount\"6\n" +
 	"\x17HostedZoneAlreadyExists\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"k\n" +
 	"\x10HostedZoneConfig\x12\x1c\n" +
@@ -15625,24 +15636,28 @@ const file_route53_proto_rawDesc = "" +
 	"\x1cInvalidTrafficPolicyDocument\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
 	"\fInvalidVPCId\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x84\x05\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xdd\x05\n" +
 	"\rKeySigningKey\x12$\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12%\n" +
 	"\fdnskeyrecord\x18\xcb\xff\xe5\x0f \x01(\tR\fdnskeyrecord\x12\x1d\n" +
 	"\bdsrecord\x18\xe6\x85\xe5: \x01(\tR\bdsrecord\x12;\n" +
-	"\x17digestalgorithmmnemonic\x18\x9bۋd \x01(\tR\x17digestalgorithmmnemonic\x123\n" +
-	"\x13digestalgorithmtype\x18\xf3\xd7\xd6y \x01(\x05R\x13digestalgorithmtype\x12$\n" +
-	"\vdigestvalue\x18\xe3\u07bf\x84\x01 \x01(\tR\vdigestvalue\x12\x16\n" +
-	"\x04flag\x18\xf8\xe9\xdb\xf0\x01 \x01(\x05R\x04flag\x12\x19\n" +
-	"\x06keytag\x18\xc5\xeb\x86u \x01(\x05R\x06keytag\x12\x19\n" +
+	"\x17digestalgorithmmnemonic\x18\x9bۋd \x01(\tR\x17digestalgorithmmnemonic\x128\n" +
+	"\x13digestalgorithmtype\x18\xf3\xd7\xd6y \x01(\x05H\x00R\x13digestalgorithmtype\x88\x01\x01\x12$\n" +
+	"\vdigestvalue\x18\xe3\u07bf\x84\x01 \x01(\tR\vdigestvalue\x12\x1b\n" +
+	"\x04flag\x18\xf8\xe9\xdb\xf0\x01 \x01(\x05H\x01R\x04flag\x88\x01\x01\x12\x1e\n" +
+	"\x06keytag\x18\xc5\xeb\x86u \x01(\x05H\x02R\x06keytag\x88\x01\x01\x12\x19\n" +
 	"\x06kmsarn\x18\xce\xf4\x83b \x01(\tR\x06kmsarn\x12-\n" +
 	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1f\n" +
 	"\tpublickey\x18\xe0\xae\xe5O \x01(\tR\tpublickey\x12>\n" +
-	"\x18signingalgorithmmnemonic\x18\x9e\xa0\xe1\xb4\x01 \x01(\tR\x18signingalgorithmmnemonic\x126\n" +
-	"\x14signingalgorithmtype\x18\xaa\x9e\xb8\xc2\x01 \x01(\x05R\x14signingalgorithmtype\x12\x19\n" +
+	"\x18signingalgorithmmnemonic\x18\x9e\xa0\xe1\xb4\x01 \x01(\tR\x18signingalgorithmmnemonic\x12;\n" +
+	"\x14signingalgorithmtype\x18\xaa\x9e\xb8\xc2\x01 \x01(\x05H\x03R\x14signingalgorithmtype\x88\x01\x01\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12'\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessage\"9\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessageB\x16\n" +
+	"\x14_digestalgorithmtypeB\a\n" +
+	"\x05_flagB\t\n" +
+	"\a_keytagB\x17\n" +
+	"\x15_signingalgorithmtype\"9\n" +
 	"\x1aKeySigningKeyAlreadyExists\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
 	"\x1dKeySigningKeyInParentDSRecord\x12\x1b\n" +
@@ -15903,7 +15918,7 @@ const file_route53_proto_rawDesc = "" +
 	"\x1fQueryLoggingConfigAlreadyExists\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"*\n" +
 	"\x0eResourceRecord\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xc1\x06\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xde\x06\n" +
 	"\x11ResourceRecordSet\x12:\n" +
 	"\valiastarget\x18\x9b\xb9\xa6\x97\x01 \x01(\v2\x14.route53.AliasTargetR\valiastarget\x12L\n" +
 	"\x11cidrroutingconfig\x18\xbe¬\xaa\x01 \x01(\v2\x1a.route53.CidrRoutingConfigR\x11cidrroutingconfig\x12A\n" +
@@ -15915,12 +15930,14 @@ const file_route53_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12;\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2 .route53.ResourceRecordSetRegionR\x06region\x12E\n" +
 	"\x0fresourcerecords\x18\xde\xe8\xd6\xf7\x01 \x03(\v2\x17.route53.ResourceRecordR\x0fresourcerecords\x12'\n" +
-	"\rsetidentifier\x18ك\x85` \x01(\tR\rsetidentifier\x12\x14\n" +
-	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03R\x03ttl\x12;\n" +
+	"\rsetidentifier\x18ك\x85` \x01(\tR\rsetidentifier\x12\x19\n" +
+	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03H\x01R\x03ttl\x88\x01\x01\x12;\n" +
 	"\x17trafficpolicyinstanceid\x18\xff\xc5\xf1w \x01(\tR\x17trafficpolicyinstanceid\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\x12\x1a\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weightB\x13\n" +
-	"\x11_multivalueanswer\"\x9c\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\x12\x1f\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03H\x02R\x06weight\x88\x01\x01B\x13\n" +
+	"\x11_multivalueanswerB\x06\n" +
+	"\x04_ttlB\t\n" +
+	"\a_weight\"\x9c\x01\n" +
 	"\x0eResourceTagSet\x12\"\n" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
@@ -16008,29 +16025,33 @@ const file_route53_proto_rawDesc = "" +
 	"\rlatestversion\x18\xcb\xd6\xcb\xca\x01 \x01(\x05R\rlatestversion\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x121\n" +
 	"\x12trafficpolicycount\x18象K \x01(\x05R\x12trafficpolicycount\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\x9c\a\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\xf9\a\n" +
 	"\x18UpdateHealthCheckRequest\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
 	"\bdisabled\x18\xa6\xb2\xba\xfe\x01 \x01(\bH\x00R\bdisabled\x88\x01\x01\x12$\n" +
-	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x12-\n" +
-	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05R\x10failurethreshold\x12>\n" +
+	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x122\n" +
+	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12>\n" +
 	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tR\x18fullyqualifieddomainname\x12(\n" +
-	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tR\rhealthcheckid\x121\n" +
-	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03R\x12healthcheckversion\x12+\n" +
-	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05R\x0fhealththreshold\x12\x1f\n" +
+	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tR\rhealthcheckid\x126\n" +
+	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03H\x03R\x12healthcheckversion\x88\x01\x01\x120\n" +
+	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x04R\x0fhealththreshold\x88\x01\x01\x12\x1f\n" +
 	"\tipaddress\x18\xed\xa7\xdfP \x01(\tR\tipaddress\x12m\n" +
 	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x02R\binverted\x88\x01\x01\x12\x15\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05R\x04port\x127\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x05R\binverted\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
 	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x12G\n" +
 	"\rresetelements\x18\xe2\xdd\xf1\a \x03(\x0e2\x1e.route53.ResettableElementNameR\rresetelements\x12%\n" +
 	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tR\fresourcepath\x12&\n" +
 	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tR\fsearchstringB\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
-	"_enablesniB\v\n" +
-	"\t_inverted\"W\n" +
+	"_enablesniB\x13\n" +
+	"\x11_failurethresholdB\x15\n" +
+	"\x13_healthcheckversionB\x12\n" +
+	"\x10_healththresholdB\v\n" +
+	"\t_invertedB\a\n" +
+	"\x05_port\"W\n" +
 	"\x19UpdateHealthCheckResponse\x12:\n" +
 	"\vhealthcheck\x18\x82\xa0\x83\xb4\x01 \x01(\v2\x14.route53.HealthCheckR\vhealthcheck\"R\n" +
 	"\x1eUpdateHostedZoneCommentRequest\x12\x1c\n" +
@@ -16955,8 +16976,14 @@ func file_route53_proto_init() {
 		return
 	}
 	file_route53_proto_msgTypes[4].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[9].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[18].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[25].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[87].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[126].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[130].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[132].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[155].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[170].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[172].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[174].OneofWrappers = []any{}

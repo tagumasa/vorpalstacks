@@ -194,7 +194,7 @@ message CancelMessageMoveTaskRequest {
 
 message CancelMessageMoveTaskResult {
 
-  int64 approximatenumberofmessagesmoved = 510181657;
+  optional int64 approximatenumberofmessagesmoved = 510181657;
 
 }
 
@@ -220,7 +220,7 @@ message ChangeMessageVisibilityBatchRequestEntry {
 
   string receipthandle = 134471750;
 
-  int32 visibilitytimeout = 460820073;
+  optional int32 visibilitytimeout = 460820073;
 
 }
 
@@ -548,7 +548,7 @@ message KmsThrottled {
 
 message ListDeadLetterSourceQueuesRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -572,7 +572,7 @@ message ListDeadLetterSourceQueuesResult {
 
 message ListMessageMoveTasksRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string sourcearn = 439903072;
 
@@ -592,19 +592,19 @@ message ListMessageMoveTasksResult {
 
 message ListMessageMoveTasksResultEntry {
 
-  int64 approximatenumberofmessagesmoved = 510181657;
+  optional int64 approximatenumberofmessagesmoved = 510181657;
 
-  int64 approximatenumberofmessagestomove = 108945690;
+  optional int64 approximatenumberofmessagestomove = 108945690;
 
   string destinationarn = 375726595;
 
   string failurereason = 232322142;
 
-  int32 maxnumberofmessagespersecond = 335779921;
+  optional int32 maxnumberofmessagespersecond = 335779921;
 
   string sourcearn = 439903072;
 
-  int64 startedtimestamp = 397447975;
+  optional int64 startedtimestamp = 397447975;
 
   string status = 6222352;
 
@@ -634,7 +634,7 @@ message ListQueueTagsResult {
 
 message ListQueuesRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -882,7 +882,7 @@ message ReceiveMessageRequest {
 
   repeated QueueAttributeName attributenames = 394468622;
 
-  int32 maxnumberofmessages = 139866822;
+  optional int32 maxnumberofmessages = 139866822;
 
   repeated string messageattributenames = 332558373;
 
@@ -892,9 +892,9 @@ message ReceiveMessageRequest {
 
   string receiverequestattemptid = 455135954;
 
-  int32 visibilitytimeout = 460820073;
+  optional int32 visibilitytimeout = 460820073;
 
-  int32 waittimeseconds = 398991863;
+  optional int32 waittimeseconds = 398991863;
 
 }
 
@@ -958,7 +958,7 @@ message SendMessageBatchRequest {
 
 message SendMessageBatchRequestEntry {
 
-  int32 delayseconds = 48268198;
+  optional int32 delayseconds = 48268198;
 
   string id = 384350465;
 
@@ -1012,7 +1012,7 @@ message SendMessageBatchResultEntry {
 
 message SendMessageRequest {
 
-  int32 delayseconds = 48268198;
+  optional int32 delayseconds = 48268198;
 
   map<string, MessageAttributeValue> messageattributes = 56443766;
 
@@ -1064,7 +1064,7 @@ message StartMessageMoveTaskRequest {
 
   string destinationarn = 375726595;
 
-  int32 maxnumberofmessagespersecond = 335779921;
+  optional int32 maxnumberofmessagespersecond = 335779921;
 
   string sourcearn = 439903072;
 

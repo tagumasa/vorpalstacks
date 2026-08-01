@@ -194,7 +194,7 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 		Id:                     z.ID,
 		Name:                   z.Name,
 		Callerreference:        z.CallerReference,
-		Resourcerecordsetcount: int64(z.ResourceRecordSetCount),
+		Resourcerecordsetcount: proto.Int64(int64(z.ResourceRecordSetCount)),
 	}
 	if z.Config != nil {
 		pbZone.Config = &pb.HostedZoneConfig{

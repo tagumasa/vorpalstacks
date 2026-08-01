@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
 	svccommon "vorpalstacks/internal/common"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -57,7 +58,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Maxresults)
+	limit := int(req.Msg.GetMaxresults())
 	if limit <= 0 {
 		limit = 100
 	}
@@ -77,7 +78,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 		databases = append(databases, &pb.Database{
 			Arn:             db.ARN,
 			Databasename:    db.DatabaseName,
-			Tablecount:      db.TableCount,
+			Tablecount:      proto.Int64(db.TableCount),
 			Kmskeyid:        db.KmsKeyId,
 			Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
 			Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
@@ -98,7 +99,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Maxresults)
+	limit := int(req.Msg.GetMaxresults())
 	if limit <= 0 {
 		limit = 100
 	}

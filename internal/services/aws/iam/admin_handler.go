@@ -123,7 +123,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	maxItems := defaultMaxItems(req.Msg.Maxitems)
+	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
 	result, err := stores.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
@@ -225,7 +225,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	maxItems := defaultMaxItems(req.Msg.Maxitems)
+	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
 	result, err := stores.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
@@ -265,7 +265,7 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
 
-	maxSessionDuration := int(req.Msg.Maxsessionduration)
+	maxSessionDuration := int(req.Msg.GetMaxsessionduration())
 	if maxSessionDuration == 0 {
 		maxSessionDuration = 3600
 	}
@@ -298,7 +298,7 @@ func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.U
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
 
-	if err := stores.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.Maxsessionduration)); err != nil {
+	if err := stores.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.GetMaxsessionduration())); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -346,7 +346,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	maxItems := defaultMaxItems(req.Msg.Maxitems)
+	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
 	scope := "Local"
 	if req.Msg.Scope == pb.PolicyScopeType_POLICY_SCOPE_TYPE_AWS {
@@ -442,7 +442,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	maxItems := defaultMaxItems(req.Msg.Maxitems)
+	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
 	result, err := stores.Groups().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
@@ -557,7 +557,7 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 		Createdate:               role.CreateDate.Format(timeutils.ISO8601UTCFormat),
 		Assumerolepolicydocument: role.AssumeRolePolicyDocument,
 		Description:              role.Description,
-		Maxsessionduration:       int32(role.MaxSessionDuration),
+		Maxsessionduration:       proto.Int32(int32(role.MaxSessionDuration)),
 	}
 
 	if role.PermissionsBoundary != nil {
@@ -595,7 +595,7 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 		Createdate:       policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
 		Updatedate:       policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
 		Defaultversionid: policy.DefaultVersionId,
-		Attachmentcount:  int32(policy.AttachmentCount),
+		Attachmentcount:  proto.Int32(int32(policy.AttachmentCount)),
 		Isattachable:     proto.Bool(policy.IsAttachable),
 		Description:      policy.Description,
 	}

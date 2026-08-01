@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
@@ -43,7 +44,7 @@ func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit <= 0 {
 		limit = 50
 	}
@@ -84,7 +85,7 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit <= 0 {
 		limit = 50
 	}
@@ -99,10 +100,10 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 		pbStreams[i] = &pb.LogStream{
 			Logstreamname:       s.Name,
 			Arn:                 s.ARN,
-			Creationtime:        s.CreatedAt.UnixMilli(),
-			Firsteventtimestamp: s.FirstEventTs,
-			Lasteventtimestamp:  s.LastEventTs,
-			Lastingestiontime:   s.LastIngestionTs,
+			Creationtime:        proto.Int64(s.CreatedAt.UnixMilli()),
+			Firsteventtimestamp: proto.Int64(s.FirstEventTs),
+			Lasteventtimestamp:  proto.Int64(s.LastEventTs),
+			Lastingestiontime:   proto.Int64(s.LastIngestionTs),
 			Uploadsequencetoken: s.UploadSequenceToken,
 		}
 	}

@@ -48,7 +48,7 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit <= 0 {
 		limit = 100
 	}
@@ -244,7 +244,7 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 
 	resp := &pb.ScheduleKeyDeletionResponse{
 		Keyid:               key.KeyID,
-		Pendingwindowindays: int32(pendingDays),
+		Pendingwindowindays: proto.Int32(int32(pendingDays)),
 	}
 	switch key.KeyState {
 	case kmsstore.KeyStateEnabled:
@@ -290,7 +290,7 @@ func (h *AdminHandler) buildProtoKeyMetadata(key *kmsstore.Key, keyUsage pb.KeyU
 		md.Deletiondate = key.DeletionDate.Format(timeutils.ISO8601UTCFormat)
 	}
 	if key.KeyState == kmsstore.KeyStatePendingDeletion && key.PendingWindowInDays > 0 {
-		md.Pendingdeletionwindowindays = int32(key.PendingWindowInDays)
+		md.Pendingdeletionwindowindays = proto.Int32(int32(key.PendingWindowInDays))
 	}
 	if key.ValidTo != nil {
 		md.Validto = key.ValidTo.Format(timeutils.ISO8601UTCFormat)

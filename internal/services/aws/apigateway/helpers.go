@@ -113,8 +113,6 @@ func parseFloat64(s string) (float64, error) {
 	return v, err
 }
 
-func int32Ptr(v int32) *int32 { return &v }
-
 // sliceContains checks whether slice contains the target string.
 func sliceContains(slice []string, target string) bool {
 	for _, s := range slice {

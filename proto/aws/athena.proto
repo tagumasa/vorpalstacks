@@ -393,11 +393,11 @@ message ApplicationDPUSizes {
 
 message AthenaError {
 
-  int32 errorcategory = 315958414;
+  optional int32 errorcategory = 315958414;
 
   string errormessage = 518702377;
 
-  int32 errortype = 398848954;
+  optional int32 errortype = 398848954;
 
   optional bool retryable = 83386186;
 
@@ -525,7 +525,7 @@ message CalculationResult {
 
 message CalculationStatistics {
 
-  int64 dpuexecutioninmillis = 174857936;
+  optional int64 dpuexecutioninmillis = 174857936;
 
   string progress = 439787879;
 
@@ -723,9 +723,9 @@ message ColumnInfo {
 
   ColumnNullable nullable = 373261405;
 
-  int32 precision = 110022584;
+  optional int32 precision = 110022584;
 
-  int32 scale = 139628050;
+  optional int32 scale = 139628050;
 
   string schemaname = 443785942;
 
@@ -1179,11 +1179,11 @@ message EngineConfiguration {
 
   repeated Classification classifications = 129400407;
 
-  int32 coordinatordpusize = 158247866;
+  optional int32 coordinatordpusize = 158247866;
 
-  int32 defaultexecutordpusize = 42210020;
+  optional int32 defaultexecutordpusize = 42210020;
 
-  int32 maxconcurrentdpus = 349976345;
+  optional int32 maxconcurrentdpus = 349976345;
 
   map<string, string> sparkproperties = 157244376;
 
@@ -1239,15 +1239,15 @@ message ExecutorsSummary {
 
   string executorid = 307566450;
 
-  int64 executorsize = 220298710;
+  optional int64 executorsize = 220298710;
 
   ExecutorState executorstate = 187122914;
 
   ExecutorType executortype = 213715221;
 
-  int64 startdatetime = 88518355;
+  optional int64 startdatetime = 88518355;
 
-  int64 terminationdatetime = 253850405;
+  optional int64 terminationdatetime = 253850405;
 
 }
 
@@ -1481,7 +1481,7 @@ message GetQueryExecutionOutput {
 
 message GetQueryResultsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1499,7 +1499,7 @@ message GetQueryResultsOutput {
 
   ResultSet resultset = 146844365;
 
-  int64 updatecount = 312282732;
+  optional int64 updatecount = 312282732;
 
 }
 
@@ -1709,7 +1709,7 @@ message InvalidRequestException {
 
 message ListApplicationDPUSizesInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1729,7 +1729,7 @@ message ListApplicationDPUSizesOutput {
 
 message ListCalculationExecutionsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1753,7 +1753,7 @@ message ListCalculationExecutionsResponse {
 
 message ListCapacityReservationsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1773,7 +1773,7 @@ message ListCapacityReservationsOutput {
 
 message ListDataCatalogsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1797,7 +1797,7 @@ message ListDatabasesInput {
 
   string catalogname = 518825212;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1819,7 +1819,7 @@ message ListDatabasesOutput {
 
 message ListEngineVersionsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1841,7 +1841,7 @@ message ListExecutorsRequest {
 
   ExecutorState executorstatefilter = 208448852;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1865,7 +1865,7 @@ message ListExecutorsResponse {
 
 message ListNamedQueriesInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1889,7 +1889,7 @@ message ListNotebookMetadataInput {
 
   FilterDefinition filters = 188393197;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1911,7 +1911,7 @@ message ListNotebookMetadataOutput {
 
 message ListNotebookSessionsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1933,7 +1933,7 @@ message ListNotebookSessionsResponse {
 
 message ListPreparedStatementsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1955,7 +1955,7 @@ message ListPreparedStatementsOutput {
 
 message ListQueryExecutionsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -1977,7 +1977,7 @@ message ListQueryExecutionsOutput {
 
 message ListSessionsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2007,7 +2007,7 @@ message ListTableMetadataInput {
 
   string expression = 193051916;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2029,7 +2029,7 @@ message ListTableMetadataOutput {
 
 message ListTagsForResourceInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2051,7 +2051,7 @@ message ListTagsForResourceOutput {
 
 message ListWorkGroupsInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2317,23 +2317,23 @@ message QueryExecutionStatistics {
 
   string datamanifestlocation = 329970068;
 
-  int64 datascannedinbytes = 125540604;
+  optional int64 datascannedinbytes = 125540604;
 
   double dpucount = 296377724;
 
-  int64 engineexecutiontimeinmillis = 228680528;
+  optional int64 engineexecutiontimeinmillis = 228680528;
 
-  int64 queryplanningtimeinmillis = 482562295;
+  optional int64 queryplanningtimeinmillis = 482562295;
 
-  int64 queryqueuetimeinmillis = 221814191;
+  optional int64 queryqueuetimeinmillis = 221814191;
 
   ResultReuseInformation resultreuseinformation = 261773827;
 
-  int64 servicepreprocessingtimeinmillis = 185806899;
+  optional int64 servicepreprocessingtimeinmillis = 185806899;
 
-  int64 serviceprocessingtimeinmillis = 81556436;
+  optional int64 serviceprocessingtimeinmillis = 81556436;
 
-  int64 totalexecutiontimeinmillis = 251249322;
+  optional int64 totalexecutiontimeinmillis = 251249322;
 
 }
 
@@ -2399,13 +2399,13 @@ message QueryRuntimeStatistics {
 
 message QueryRuntimeStatisticsRows {
 
-  int64 inputbytes = 431684783;
+  optional int64 inputbytes = 431684783;
 
-  int64 inputrows = 30551127;
+  optional int64 inputrows = 30551127;
 
-  int64 outputbytes = 318971400;
+  optional int64 outputbytes = 318971400;
 
-  int64 outputrows = 138873322;
+  optional int64 outputrows = 138873322;
 
 }
 
@@ -2415,17 +2415,17 @@ message QueryRuntimeStatisticsRows {
 
 message QueryRuntimeStatisticsTimeline {
 
-  int64 engineexecutiontimeinmillis = 228680528;
+  optional int64 engineexecutiontimeinmillis = 228680528;
 
-  int64 queryplanningtimeinmillis = 482562295;
+  optional int64 queryplanningtimeinmillis = 482562295;
 
-  int64 queryqueuetimeinmillis = 221814191;
+  optional int64 queryqueuetimeinmillis = 221814191;
 
-  int64 servicepreprocessingtimeinmillis = 185806899;
+  optional int64 servicepreprocessingtimeinmillis = 185806899;
 
-  int64 serviceprocessingtimeinmillis = 81556436;
+  optional int64 serviceprocessingtimeinmillis = 81556436;
 
-  int64 totalexecutiontimeinmillis = 251249322;
+  optional int64 totalexecutiontimeinmillis = 251249322;
 
 }
 
@@ -2435,19 +2435,19 @@ message QueryRuntimeStatisticsTimeline {
 
 message QueryStage {
 
-  int64 executiontime = 379716053;
+  optional int64 executiontime = 379716053;
 
-  int64 inputbytes = 431684783;
+  optional int64 inputbytes = 431684783;
 
-  int64 inputrows = 30551127;
+  optional int64 inputrows = 30551127;
 
-  int64 outputbytes = 318971400;
+  optional int64 outputbytes = 318971400;
 
-  int64 outputrows = 138873322;
+  optional int64 outputrows = 138873322;
 
   QueryStagePlanNode querystageplan = 36313545;
 
-  int64 stageid = 328165497;
+  optional int64 stageid = 328165497;
 
   string state = 502047895;
 
@@ -2531,7 +2531,7 @@ message ResultReuseByAgeConfiguration {
 
   optional bool enabled = 478602303;
 
-  int32 maxageinminutes = 211566877;
+  optional int32 maxageinminutes = 211566877;
 
 }
 
@@ -2629,9 +2629,9 @@ message SessionConfiguration {
 
   string executionrole = 253307658;
 
-  int64 idletimeoutseconds = 61279260;
+  optional int64 idletimeoutseconds = 61279260;
 
-  int32 sessionidletimeoutinminutes = 515304989;
+  optional int32 sessionidletimeoutinminutes = 515304989;
 
   string workingdirectory = 478970252;
 
@@ -2665,7 +2665,7 @@ enum SessionState {
 
 message SessionStatistics {
 
-  int64 dpuexecutioninmillis = 174857936;
+  optional int64 dpuexecutioninmillis = 174857936;
 
 }
 
@@ -2781,7 +2781,7 @@ message StartSessionRequest {
 
   string notebookversion = 528689837;
 
-  int32 sessionidletimeoutinminutes = 515304989;
+  optional int32 sessionidletimeoutinminutes = 515304989;
 
   repeated Tag tags = 381526209;
 
@@ -3149,7 +3149,7 @@ message WorkGroupConfiguration {
 
   string additionalconfiguration = 389584375;
 
-  int64 bytesscannedcutoffperquery = 265761289;
+  optional int64 bytesscannedcutoffperquery = 265761289;
 
   CustomerContentEncryptionConfiguration customercontentencryptionconfiguration = 165213900;
 
@@ -3187,7 +3187,7 @@ message WorkGroupConfigurationUpdates {
 
   string additionalconfiguration = 389584375;
 
-  int64 bytesscannedcutoffperquery = 265761289;
+  optional int64 bytesscannedcutoffperquery = 265761289;
 
   CustomerContentEncryptionConfiguration customercontentencryptionconfiguration = 165213900;
 

@@ -28,7 +28,7 @@ const (
 
 type AssumeRoleRequest struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
-	Durationseconds   int32                   `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds   *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Externalid        string                  `protobuf:"bytes,271401992,opt,name=externalid,proto3" json:"externalid,omitempty"`
 	Policy            string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
 	Policyarns        []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
@@ -75,8 +75,8 @@ func (*AssumeRoleRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AssumeRoleRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -162,7 +162,7 @@ type AssumeRoleResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Assumedroleuser  *AssumedRoleUser       `protobuf:"bytes,314673579,opt,name=assumedroleuser,proto3" json:"assumedroleuser,omitempty"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Packedpolicysize int32                  `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3" json:"packedpolicysize,omitempty"`
+	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	Sourceidentity   string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -213,8 +213,8 @@ func (x *AssumeRoleResponse) GetCredentials() *Credentials {
 }
 
 func (x *AssumeRoleResponse) GetPackedpolicysize() int32 {
-	if x != nil {
-		return x.Packedpolicysize
+	if x != nil && x.Packedpolicysize != nil {
+		return *x.Packedpolicysize
 	}
 	return 0
 }
@@ -228,7 +228,7 @@ func (x *AssumeRoleResponse) GetSourceidentity() string {
 
 type AssumeRoleWithSAMLRequest struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Durationseconds int32                   `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Policy          string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
 	Policyarns      []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
 	Principalarn    string                  `protobuf:"bytes,93469969,opt,name=principalarn,proto3" json:"principalarn,omitempty"`
@@ -269,8 +269,8 @@ func (*AssumeRoleWithSAMLRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AssumeRoleWithSAMLRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -317,7 +317,7 @@ type AssumeRoleWithSAMLResponse struct {
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Issuer           string                 `protobuf:"bytes,528708823,opt,name=issuer,proto3" json:"issuer,omitempty"`
 	Namequalifier    string                 `protobuf:"bytes,521907559,opt,name=namequalifier,proto3" json:"namequalifier,omitempty"`
-	Packedpolicysize int32                  `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3" json:"packedpolicysize,omitempty"`
+	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	Sourceidentity   string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
 	Subject          string                 `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
 	Subjecttype      string                 `protobuf:"bytes,222881976,opt,name=subjecttype,proto3" json:"subjecttype,omitempty"`
@@ -391,8 +391,8 @@ func (x *AssumeRoleWithSAMLResponse) GetNamequalifier() string {
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetPackedpolicysize() int32 {
-	if x != nil {
-		return x.Packedpolicysize
+	if x != nil && x.Packedpolicysize != nil {
+		return *x.Packedpolicysize
 	}
 	return 0
 }
@@ -420,7 +420,7 @@ func (x *AssumeRoleWithSAMLResponse) GetSubjecttype() string {
 
 type AssumeRoleWithWebIdentityRequest struct {
 	state            protoimpl.MessageState  `protogen:"open.v1"`
-	Durationseconds  int32                   `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds  *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Policy           string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
 	Policyarns       []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
 	Providerid       string                  `protobuf:"bytes,509712370,opt,name=providerid,proto3" json:"providerid,omitempty"`
@@ -462,8 +462,8 @@ func (*AssumeRoleWithWebIdentityRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AssumeRoleWithWebIdentityRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -515,7 +515,7 @@ type AssumeRoleWithWebIdentityResponse struct {
 	Assumedroleuser             *AssumedRoleUser       `protobuf:"bytes,314673579,opt,name=assumedroleuser,proto3" json:"assumedroleuser,omitempty"`
 	Audience                    string                 `protobuf:"bytes,284892548,opt,name=audience,proto3" json:"audience,omitempty"`
 	Credentials                 *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Packedpolicysize            int32                  `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3" json:"packedpolicysize,omitempty"`
+	Packedpolicysize            *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	Provider                    string                 `protobuf:"bytes,363366621,opt,name=provider,proto3" json:"provider,omitempty"`
 	Sourceidentity              string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
 	Subjectfromwebidentitytoken string                 `protobuf:"bytes,96354739,opt,name=subjectfromwebidentitytoken,proto3" json:"subjectfromwebidentitytoken,omitempty"`
@@ -575,8 +575,8 @@ func (x *AssumeRoleWithWebIdentityResponse) GetCredentials() *Credentials {
 }
 
 func (x *AssumeRoleWithWebIdentityResponse) GetPackedpolicysize() int32 {
-	if x != nil {
-		return x.Packedpolicysize
+	if x != nil && x.Packedpolicysize != nil {
+		return *x.Packedpolicysize
 	}
 	return 0
 }
@@ -604,7 +604,7 @@ func (x *AssumeRoleWithWebIdentityResponse) GetSubjectfromwebidentitytoken() str
 
 type AssumeRootRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Durationseconds int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds *int32                 `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Targetprincipal string                 `protobuf:"bytes,215916667,opt,name=targetprincipal,proto3" json:"targetprincipal,omitempty"`
 	Taskpolicyarn   *PolicyDescriptorType  `protobuf:"bytes,332406370,opt,name=taskpolicyarn,proto3" json:"taskpolicyarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -642,8 +642,8 @@ func (*AssumeRootRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AssumeRootRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -1294,7 +1294,7 @@ type GetDelegatedAccessTokenResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Assumedprincipal string                 `protobuf:"bytes,359093742,opt,name=assumedprincipal,proto3" json:"assumedprincipal,omitempty"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Packedpolicysize int32                  `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3" json:"packedpolicysize,omitempty"`
+	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1344,15 +1344,15 @@ func (x *GetDelegatedAccessTokenResponse) GetCredentials() *Credentials {
 }
 
 func (x *GetDelegatedAccessTokenResponse) GetPackedpolicysize() int32 {
-	if x != nil {
-		return x.Packedpolicysize
+	if x != nil && x.Packedpolicysize != nil {
+		return *x.Packedpolicysize
 	}
 	return 0
 }
 
 type GetFederationTokenRequest struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Durationseconds int32                   `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Name            string                  `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Policy          string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
 	Policyarns      []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
@@ -1392,8 +1392,8 @@ func (*GetFederationTokenRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetFederationTokenRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -1430,7 +1430,7 @@ type GetFederationTokenResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Federateduser    *FederatedUser         `protobuf:"bytes,328666081,opt,name=federateduser,proto3" json:"federateduser,omitempty"`
-	Packedpolicysize int32                  `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3" json:"packedpolicysize,omitempty"`
+	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1480,15 +1480,15 @@ func (x *GetFederationTokenResponse) GetFederateduser() *FederatedUser {
 }
 
 func (x *GetFederationTokenResponse) GetPackedpolicysize() int32 {
-	if x != nil {
-		return x.Packedpolicysize
+	if x != nil && x.Packedpolicysize != nil {
+		return *x.Packedpolicysize
 	}
 	return 0
 }
 
 type GetSessionTokenRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Durationseconds int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds *int32                 `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Serialnumber    string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
 	Tokencode       string                 `protobuf:"bytes,300671456,opt,name=tokencode,proto3" json:"tokencode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -1526,8 +1526,8 @@ func (*GetSessionTokenRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSessionTokenRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -1593,7 +1593,7 @@ func (x *GetSessionTokenResponse) GetCredentials() *Credentials {
 type GetWebIdentityTokenRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Audience         []string               `protobuf:"bytes,284892548,rep,name=audience,proto3" json:"audience,omitempty"`
-	Durationseconds  int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3" json:"durationseconds,omitempty"`
+	Durationseconds  *int32                 `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Signingalgorithm string                 `protobuf:"bytes,488091842,opt,name=signingalgorithm,proto3" json:"signingalgorithm,omitempty"`
 	Tags             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -1638,8 +1638,8 @@ func (x *GetWebIdentityTokenRequest) GetAudience() []string {
 }
 
 func (x *GetWebIdentityTokenRequest) GetDurationseconds() int32 {
-	if x != nil {
-		return x.Durationseconds
+	if x != nil && x.Durationseconds != nil {
+		return *x.Durationseconds
 	}
 	return 0
 }
@@ -2302,9 +2302,9 @@ var File_sts_proto protoreflect.FileDescriptor
 
 const file_sts_proto_rawDesc = "" +
 	"\n" +
-	"\tsts.proto\x12\x03sts\x1a\fcommon.proto\x1a\taws.proto\"\x9a\x04\n" +
-	"\x11AssumeRoleRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12\"\n" +
+	"\tsts.proto\x12\x03sts\x1a\fcommon.proto\x1a\taws.proto\"\xb3\x04\n" +
+	"\x11AssumeRoleRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"externalid\x18\x88\x88\xb5\x81\x01 \x01(\tR\n" +
 	"externalid\x12\x1a\n" +
@@ -2319,33 +2319,37 @@ const file_sts_proto_rawDesc = "" +
 	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tags\x12 \n" +
 	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tR\ttokencode\x120\n" +
-	"\x11transitivetagkeys\x18ׅ\xe9\xd7\x01 \x03(\tR\x11transitivetagkeys\"\xec\x01\n" +
+	"\x11transitivetagkeys\x18ׅ\xe9\xd7\x01 \x03(\tR\x11transitivetagkeysB\x12\n" +
+	"\x10_durationseconds\"\x86\x02\n" +
 	"\x12AssumeRoleResponse\x12B\n" +
 	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12.\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05R\x10packedpolicysize\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\"\x91\x02\n" +
-	"\x19AssumeRoleWithSAMLRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12\x1a\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12*\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentityB\x13\n" +
+	"\x11_packedpolicysize\"\xaa\x02\n" +
+	"\x19AssumeRoleWithSAMLRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1a\n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
 	"policyarns\x12%\n" +
 	"\fprincipalarn\x18\x91\xfa\xc8, \x01(\tR\fprincipalarn\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12'\n" +
-	"\rsamlassertion\x18ͯ\xe1` \x01(\tR\rsamlassertion\"\x9c\x03\n" +
+	"\rsamlassertion\x18ͯ\xe1` \x01(\tR\rsamlassertionB\x12\n" +
+	"\x10_durationseconds\"\xb6\x03\n" +
 	"\x1aAssumeRoleWithSAMLResponse\x12B\n" +
 	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12\x1e\n" +
 	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tR\baudience\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12\x1a\n" +
 	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tR\x06issuer\x12(\n" +
-	"\rnamequalifier\x18\xe7\xda\xee\xf8\x01 \x01(\tR\rnamequalifier\x12.\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05R\x10packedpolicysize\x12*\n" +
+	"\rnamequalifier\x18\xe7\xda\xee\xf8\x01 \x01(\tR\rnamequalifier\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12*\n" +
 	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12\x1b\n" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\x12#\n" +
-	"\vsubjecttype\x18\xb8ѣj \x01(\tR\vsubjecttype\"\xc9\x02\n" +
-	" AssumeRoleWithWebIdentityRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12\x1a\n" +
+	"\vsubjecttype\x18\xb8ѣj \x01(\tR\vsubjecttypeB\x13\n" +
+	"\x11_packedpolicysize\"\xe2\x02\n" +
+	" AssumeRoleWithWebIdentityRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1a\n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
@@ -2355,19 +2359,22 @@ const file_sts_proto_rawDesc = "" +
 	"providerid\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12,\n" +
 	"\x0frolesessionname\x18፠\x96\x01 \x01(\tR\x0frolesessionname\x12-\n" +
-	"\x10webidentitytoken\x18\x95\x91\xcbo \x01(\tR\x10webidentitytoken\"\x80\x03\n" +
+	"\x10webidentitytoken\x18\x95\x91\xcbo \x01(\tR\x10webidentitytokenB\x12\n" +
+	"\x10_durationseconds\"\x9a\x03\n" +
 	"!AssumeRoleWithWebIdentityResponse\x12B\n" +
 	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12\x1e\n" +
 	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tR\baudience\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12.\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05R\x10packedpolicysize\x12\x1e\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12\x1e\n" +
 	"\bprovider\x18ݑ\xa2\xad\x01 \x01(\tR\bprovider\x12*\n" +
 	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12C\n" +
-	"\x1bsubjectfromwebidentitytoken\x18\xb3\x83\xf9- \x01(\tR\x1bsubjectfromwebidentitytoken\"\xb3\x01\n" +
-	"\x11AssumeRootRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12+\n" +
+	"\x1bsubjectfromwebidentitytoken\x18\xb3\x83\xf9- \x01(\tR\x1bsubjectfromwebidentitytokenB\x13\n" +
+	"\x11_packedpolicysize\"\xcc\x01\n" +
+	"\x11AssumeRootRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12+\n" +
 	"\x0ftargetprincipal\x18\xfb\xc0\xfaf \x01(\tR\x0ftargetprincipal\x12C\n" +
-	"\rtaskpolicyarn\x18\xe2\xbc\xc0\x9e\x01 \x01(\v2\x19.sts.PolicyDescriptorTypeR\rtaskpolicyarn\"x\n" +
+	"\rtaskpolicyarn\x18\xe2\xbc\xc0\x9e\x01 \x01(\v2\x19.sts.PolicyDescriptorTypeR\rtaskpolicyarnB\x12\n" +
+	"\x10_durationseconds\"x\n" +
 	"\x12AssumeRootResponse\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12*\n" +
 	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\"P\n" +
@@ -2402,34 +2409,39 @@ const file_sts_proto_rawDesc = "" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x19\n" +
 	"\x06userid\x18\xc0\x8a\xf3\x04 \x01(\tR\x06userid\"G\n" +
 	"\x1eGetDelegatedAccessTokenRequest\x12%\n" +
-	"\ftradeintoken\x18\xf0\xf1\xe2\x04 \x01(\tR\ftradeintoken\"\xb9\x01\n" +
+	"\ftradeintoken\x18\xf0\xf1\xe2\x04 \x01(\tR\ftradeintoken\"\xd3\x01\n" +
 	"\x1fGetDelegatedAccessTokenResponse\x12.\n" +
 	"\x10assumedprincipal\x18\ueadd\xab\x01 \x01(\tR\x10assumedprincipal\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12.\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05R\x10packedpolicysize\"\xdc\x01\n" +
-	"\x19GetFederationTokenRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12\x15\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01B\x13\n" +
+	"\x11_packedpolicysize\"\xf5\x01\n" +
+	"\x19GetFederationTokenRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1a\n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
 	"policyarns\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tags\"\xc2\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tagsB\x12\n" +
+	"\x10_durationseconds\"\xdc\x01\n" +
 	"\x1aGetFederationTokenResponse\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12<\n" +
-	"\rfederateduser\x18\xe1\x97ܜ\x01 \x01(\v2\x12.sts.FederatedUserR\rfederateduser\x12.\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05R\x10packedpolicysize\"\x90\x01\n" +
-	"\x16GetSessionTokenRequest\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12&\n" +
+	"\rfederateduser\x18\xe1\x97ܜ\x01 \x01(\v2\x12.sts.FederatedUserR\rfederateduser\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01B\x13\n" +
+	"\x11_packedpolicysize\"\xa9\x01\n" +
+	"\x16GetSessionTokenRequest\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12&\n" +
 	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12 \n" +
-	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tR\ttokencode\"Q\n" +
+	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tR\ttokencodeB\x12\n" +
+	"\x10_durationseconds\"Q\n" +
 	"\x17GetSessionTokenResponse\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\"\xbc\x01\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\"\xd5\x01\n" +
 	"\x1aGetWebIdentityTokenRequest\x12\x1e\n" +
-	"\baudience\x18\x84\xbb\xec\x87\x01 \x03(\tR\baudience\x12,\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05R\x0fdurationseconds\x12.\n" +
+	"\baudience\x18\x84\xbb\xec\x87\x01 \x03(\tR\baudience\x121\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12.\n" +
 	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\tR\x10signingalgorithm\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tags\"o\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tagsB\x12\n" +
+	"\x10_durationseconds\"o\n" +
 	"\x1bGetWebIdentityTokenResponse\x12!\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
@@ -2589,6 +2601,18 @@ func file_sts_proto_init() {
 	if File_sts_proto != nil {
 		return
 	}
+	file_sts_proto_msgTypes[0].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[2].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[3].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[4].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[5].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[6].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[20].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[21].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[22].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[23].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[25].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

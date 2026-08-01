@@ -1130,7 +1130,7 @@ type GetOpenIdTokenForDeveloperIdentityInput struct {
 	Identitypoolid string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Logins         map[string]string      `protobuf:"bytes,109702772,rep,name=logins,proto3" json:"logins,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Principaltags  map[string]string      `protobuf:"bytes,346698229,rep,name=principaltags,proto3" json:"principaltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tokenduration  int64                  `protobuf:"varint,402772367,opt,name=tokenduration,proto3" json:"tokenduration,omitempty"`
+	Tokenduration  *int64                 `protobuf:"varint,402772367,opt,name=tokenduration,proto3,oneof" json:"tokenduration,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1194,8 +1194,8 @@ func (x *GetOpenIdTokenForDeveloperIdentityInput) GetPrincipaltags() map[string]
 }
 
 func (x *GetOpenIdTokenForDeveloperIdentityInput) GetTokenduration() int64 {
-	if x != nil {
-		return x.Tokenduration
+	if x != nil && x.Tokenduration != nil {
+		return *x.Tokenduration
 	}
 	return 0
 }
@@ -2213,7 +2213,7 @@ type LookupDeveloperIdentityInput struct {
 	Developeruseridentifier string                 `protobuf:"bytes,349826618,opt,name=developeruseridentifier,proto3" json:"developeruseridentifier,omitempty"`
 	Identityid              string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
 	Identitypoolid          string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
-	Maxresults              int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults              *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken               string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -2271,8 +2271,8 @@ func (x *LookupDeveloperIdentityInput) GetIdentitypoolid() string {
 }
 
 func (x *LookupDeveloperIdentityInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3447,21 +3447,22 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\n" +
 	"RolesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf6\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x04\n" +
 	"'GetOpenIdTokenForDeveloperIdentityInput\x12!\n" +
 	"\n" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
 	"identityid\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12_\n" +
 	"\x06logins\x18\xf4ܧ4 \x03(\v2D.cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput.LoginsEntryR\x06logins\x12u\n" +
-	"\rprincipaltags\x18\xf5㨥\x01 \x03(\v2K.cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput.PrincipaltagsEntryR\rprincipaltags\x12(\n" +
-	"\rtokenduration\x18\x8f\xa3\x87\xc0\x01 \x01(\x03R\rtokenduration\x1a9\n" +
+	"\rprincipaltags\x18\xf5㨥\x01 \x03(\v2K.cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput.PrincipaltagsEntryR\rprincipaltags\x12-\n" +
+	"\rtokenduration\x18\x8f\xa3\x87\xc0\x01 \x01(\x03H\x00R\rtokenduration\x88\x01\x01\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a@\n" +
 	"\x12PrincipaltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"i\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_tokenduration\"i\n" +
 	"*GetOpenIdTokenForDeveloperIdentityResponse\x12!\n" +
 	"\n" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
@@ -3557,17 +3558,18 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v26.cognitoidentity.ListTagsForResourceResponse.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xef\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x02\n" +
 	"\x1cLookupDeveloperIdentityInput\x12<\n" +
 	"\x17developeruseridentifier\x18\xba\xdc\xe7\xa6\x01 \x01(\tR\x17developeruseridentifier\x12!\n" +
 	"\n" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
 	"identityid\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12\"\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xaa\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\xaa\x01\n" +
 	"\x1fLookupDeveloperIdentityResponse\x12C\n" +
 	"\x1bdeveloperuseridentifierlist\x18\xe6Ɗ) \x03(\tR\x1bdeveloperuseridentifierlist\x12!\n" +
 	"\n" +
@@ -3893,9 +3895,11 @@ func file_cognitoidentity_proto_init() {
 	}
 	file_cognitoidentity_proto_msgTypes[0].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[2].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[17].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[22].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[24].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[30].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[36].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[47].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[48].OneofWrappers = []any{}
 	type x struct{}

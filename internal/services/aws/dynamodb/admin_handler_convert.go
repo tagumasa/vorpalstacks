@@ -150,8 +150,8 @@ func storeTableToProtoDescription(table *dbstore.Table) *pb.TableDescription {
 		Tablearn:                  table.ARN,
 		Tablestatus:               tableStatusToProto(table.Status),
 		Creationdatetime:          table.CreationDateTime.Format(time.RFC3339),
-		Itemcount:                 table.ItemCount,
-		Tablesizebytes:            table.TableSizeBytes,
+		Itemcount:                 proto.Int64(table.ItemCount),
+		Tablesizebytes:            proto.Int64(table.TableSizeBytes),
 		Deletionprotectionenabled: proto.Bool(table.DeletionProtectionEnabled),
 	}
 

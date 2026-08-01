@@ -3547,7 +3547,7 @@ type AdminCreateUserConfigType struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Allowadmincreateuseronly  *bool                  `protobuf:"varint,399154521,opt,name=allowadmincreateuseronly,proto3,oneof" json:"allowadmincreateuseronly,omitempty"`
 	Invitemessagetemplate     *MessageTemplateType   `protobuf:"bytes,162590438,opt,name=invitemessagetemplate,proto3" json:"invitemessagetemplate,omitempty"`
-	Unusedaccountvaliditydays int32                  `protobuf:"varint,354236064,opt,name=unusedaccountvaliditydays,proto3" json:"unusedaccountvaliditydays,omitempty"`
+	Unusedaccountvaliditydays *int32                 `protobuf:"varint,354236064,opt,name=unusedaccountvaliditydays,proto3,oneof" json:"unusedaccountvaliditydays,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -3597,8 +3597,8 @@ func (x *AdminCreateUserConfigType) GetInvitemessagetemplate() *MessageTemplateT
 }
 
 func (x *AdminCreateUserConfigType) GetUnusedaccountvaliditydays() int32 {
-	if x != nil {
-		return x.Unusedaccountvaliditydays
+	if x != nil && x.Unusedaccountvaliditydays != nil {
+		return *x.Unusedaccountvaliditydays
 	}
 	return 0
 }
@@ -4765,7 +4765,7 @@ func (*AdminLinkProviderForUserResponse) Descriptor() ([]byte, []int) {
 
 type AdminListDevicesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Limit           int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit           *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Paginationtoken string                 `protobuf:"bytes,363857279,opt,name=paginationtoken,proto3" json:"paginationtoken,omitempty"`
 	Userpoolid      string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	Username        string                 `protobuf:"bytes,470340826,opt,name=username,proto3" json:"username,omitempty"`
@@ -4804,8 +4804,8 @@ func (*AdminListDevicesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdminListDevicesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -4885,7 +4885,7 @@ func (x *AdminListDevicesResponse) GetPaginationtoken() string {
 
 type AdminListGroupsForUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	Username      string                 `protobuf:"bytes,470340826,opt,name=username,proto3" json:"username,omitempty"`
@@ -4924,8 +4924,8 @@ func (*AdminListGroupsForUserRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdminListGroupsForUserRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -5005,7 +5005,7 @@ func (x *AdminListGroupsForUserResponse) GetNexttoken() string {
 
 type AdminListUserAuthEventsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	Username      string                 `protobuf:"bytes,470340826,opt,name=username,proto3" json:"username,omitempty"`
@@ -5044,8 +5044,8 @@ func (*AdminListUserAuthEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdminListUserAuthEventsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -6710,7 +6710,7 @@ func (x *AuthEventType) GetEventtype() EventType {
 type AuthenticationResultType struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Accesstoken       string                 `protobuf:"bytes,147070473,opt,name=accesstoken,proto3" json:"accesstoken,omitempty"`
-	Expiresin         int32                  `protobuf:"varint,69497873,opt,name=expiresin,proto3" json:"expiresin,omitempty"`
+	Expiresin         *int32                 `protobuf:"varint,69497873,opt,name=expiresin,proto3,oneof" json:"expiresin,omitempty"`
 	Idtoken           string                 `protobuf:"bytes,228470,opt,name=idtoken,proto3" json:"idtoken,omitempty"`
 	Newdevicemetadata *NewDeviceMetadataType `protobuf:"bytes,383914787,opt,name=newdevicemetadata,proto3" json:"newdevicemetadata,omitempty"`
 	Refreshtoken      string                 `protobuf:"bytes,253777778,opt,name=refreshtoken,proto3" json:"refreshtoken,omitempty"`
@@ -6757,8 +6757,8 @@ func (x *AuthenticationResultType) GetAccesstoken() string {
 }
 
 func (x *AuthenticationResultType) GetExpiresin() int32 {
-	if x != nil {
-		return x.Expiresin
+	if x != nil && x.Expiresin != nil {
+		return *x.Expiresin
 	}
 	return 0
 }
@@ -7899,7 +7899,7 @@ type CreateGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Precedence    int32                  `protobuf:"varint,206704142,opt,name=precedence,proto3" json:"precedence,omitempty"`
+	Precedence    *int32                 `protobuf:"varint,206704142,opt,name=precedence,proto3,oneof" json:"precedence,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7951,8 +7951,8 @@ func (x *CreateGroupRequest) GetGroupname() string {
 }
 
 func (x *CreateGroupRequest) GetPrecedence() int32 {
-	if x != nil {
-		return x.Precedence
+	if x != nil && x.Precedence != nil {
+		return *x.Precedence
 	}
 	return 0
 }
@@ -8609,12 +8609,12 @@ func (x *CreateUserImportJobResponse) GetUserimportjob() *UserImportJobType {
 
 type CreateUserPoolClientRequest struct {
 	state                                    protoimpl.MessageState         `protogen:"open.v1"`
-	Accesstokenvalidity                      int32                          `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3" json:"accesstokenvalidity,omitempty"`
+	Accesstokenvalidity                      *int32                         `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3,oneof" json:"accesstokenvalidity,omitempty"`
 	Allowedoauthflows                        []OAuthFlowType                `protobuf:"varint,268290584,rep,packed,name=allowedoauthflows,proto3,enum=cognitoidentityprovider.OAuthFlowType" json:"allowedoauthflows,omitempty"`
 	Allowedoauthflowsuserpoolclient          *bool                          `protobuf:"varint,520095610,opt,name=allowedoauthflowsuserpoolclient,proto3,oneof" json:"allowedoauthflowsuserpoolclient,omitempty"`
 	Allowedoauthscopes                       []string                       `protobuf:"bytes,39385504,rep,name=allowedoauthscopes,proto3" json:"allowedoauthscopes,omitempty"`
 	Analyticsconfiguration                   *AnalyticsConfigurationType    `protobuf:"bytes,229750388,opt,name=analyticsconfiguration,proto3" json:"analyticsconfiguration,omitempty"`
-	Authsessionvalidity                      int32                          `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3" json:"authsessionvalidity,omitempty"`
+	Authsessionvalidity                      *int32                         `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3,oneof" json:"authsessionvalidity,omitempty"`
 	Callbackurls                             []string                       `protobuf:"bytes,227703885,rep,name=callbackurls,proto3" json:"callbackurls,omitempty"`
 	Clientname                               string                         `protobuf:"bytes,340245630,opt,name=clientname,proto3" json:"clientname,omitempty"`
 	Clientsecret                             string                         `protobuf:"bytes,500734711,opt,name=clientsecret,proto3" json:"clientsecret,omitempty"`
@@ -8623,12 +8623,12 @@ type CreateUserPoolClientRequest struct {
 	Enabletokenrevocation                    *bool                          `protobuf:"varint,178186392,opt,name=enabletokenrevocation,proto3,oneof" json:"enabletokenrevocation,omitempty"`
 	Explicitauthflows                        []ExplicitAuthFlowsType        `protobuf:"varint,277179621,rep,packed,name=explicitauthflows,proto3,enum=cognitoidentityprovider.ExplicitAuthFlowsType" json:"explicitauthflows,omitempty"`
 	Generatesecret                           *bool                          `protobuf:"varint,233116579,opt,name=generatesecret,proto3,oneof" json:"generatesecret,omitempty"`
-	Idtokenvalidity                          int32                          `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3" json:"idtokenvalidity,omitempty"`
+	Idtokenvalidity                          *int32                         `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3,oneof" json:"idtokenvalidity,omitempty"`
 	Logouturls                               []string                       `protobuf:"bytes,468187518,rep,name=logouturls,proto3" json:"logouturls,omitempty"`
 	Preventuserexistenceerrors               PreventUserExistenceErrorTypes `protobuf:"varint,188235606,opt,name=preventuserexistenceerrors,proto3,enum=cognitoidentityprovider.PreventUserExistenceErrorTypes" json:"preventuserexistenceerrors,omitempty"`
 	Readattributes                           []string                       `protobuf:"bytes,334413205,rep,name=readattributes,proto3" json:"readattributes,omitempty"`
 	Refreshtokenrotation                     *RefreshTokenRotationType      `protobuf:"bytes,199284564,opt,name=refreshtokenrotation,proto3" json:"refreshtokenrotation,omitempty"`
-	Refreshtokenvalidity                     int32                          `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3" json:"refreshtokenvalidity,omitempty"`
+	Refreshtokenvalidity                     *int32                         `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3,oneof" json:"refreshtokenvalidity,omitempty"`
 	Supportedidentityproviders               []string                       `protobuf:"bytes,439564368,rep,name=supportedidentityproviders,proto3" json:"supportedidentityproviders,omitempty"`
 	Tokenvalidityunits                       *TokenValidityUnitsType        `protobuf:"bytes,2056664,opt,name=tokenvalidityunits,proto3" json:"tokenvalidityunits,omitempty"`
 	Userpoolid                               string                         `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
@@ -8668,8 +8668,8 @@ func (*CreateUserPoolClientRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateUserPoolClientRequest) GetAccesstokenvalidity() int32 {
-	if x != nil {
-		return x.Accesstokenvalidity
+	if x != nil && x.Accesstokenvalidity != nil {
+		return *x.Accesstokenvalidity
 	}
 	return 0
 }
@@ -8703,8 +8703,8 @@ func (x *CreateUserPoolClientRequest) GetAnalyticsconfiguration() *AnalyticsConf
 }
 
 func (x *CreateUserPoolClientRequest) GetAuthsessionvalidity() int32 {
-	if x != nil {
-		return x.Authsessionvalidity
+	if x != nil && x.Authsessionvalidity != nil {
+		return *x.Authsessionvalidity
 	}
 	return 0
 }
@@ -8766,8 +8766,8 @@ func (x *CreateUserPoolClientRequest) GetGeneratesecret() bool {
 }
 
 func (x *CreateUserPoolClientRequest) GetIdtokenvalidity() int32 {
-	if x != nil {
-		return x.Idtokenvalidity
+	if x != nil && x.Idtokenvalidity != nil {
+		return *x.Idtokenvalidity
 	}
 	return 0
 }
@@ -8801,8 +8801,8 @@ func (x *CreateUserPoolClientRequest) GetRefreshtokenrotation() *RefreshTokenRot
 }
 
 func (x *CreateUserPoolClientRequest) GetRefreshtokenvalidity() int32 {
-	if x != nil {
-		return x.Refreshtokenvalidity
+	if x != nil && x.Refreshtokenvalidity != nil {
+		return *x.Refreshtokenvalidity
 	}
 	return 0
 }
@@ -8883,7 +8883,7 @@ type CreateUserPoolDomainRequest struct {
 	state               protoimpl.MessageState  `protogen:"open.v1"`
 	Customdomainconfig  *CustomDomainConfigType `protobuf:"bytes,472479421,opt,name=customdomainconfig,proto3" json:"customdomainconfig,omitempty"`
 	Domain              string                  `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Managedloginversion int32                   `protobuf:"varint,479901038,opt,name=managedloginversion,proto3" json:"managedloginversion,omitempty"`
+	Managedloginversion *int32                  `protobuf:"varint,479901038,opt,name=managedloginversion,proto3,oneof" json:"managedloginversion,omitempty"`
 	Routing             *RoutingType            `protobuf:"bytes,237056778,opt,name=routing,proto3" json:"routing,omitempty"`
 	Userpoolid          string                  `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -8935,8 +8935,8 @@ func (x *CreateUserPoolDomainRequest) GetDomain() string {
 }
 
 func (x *CreateUserPoolDomainRequest) GetManagedloginversion() int32 {
-	if x != nil {
-		return x.Managedloginversion
+	if x != nil && x.Managedloginversion != nil {
+		return *x.Managedloginversion
 	}
 	return 0
 }
@@ -8958,7 +8958,7 @@ func (x *CreateUserPoolDomainRequest) GetUserpoolid() string {
 type CreateUserPoolDomainResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Cloudfrontdomain    string                 `protobuf:"bytes,436051942,opt,name=cloudfrontdomain,proto3" json:"cloudfrontdomain,omitempty"`
-	Managedloginversion int32                  `protobuf:"varint,479901038,opt,name=managedloginversion,proto3" json:"managedloginversion,omitempty"`
+	Managedloginversion *int32                 `protobuf:"varint,479901038,opt,name=managedloginversion,proto3,oneof" json:"managedloginversion,omitempty"`
 	Routing             *RoutingType           `protobuf:"bytes,237056778,opt,name=routing,proto3" json:"routing,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -9002,8 +9002,8 @@ func (x *CreateUserPoolDomainResponse) GetCloudfrontdomain() string {
 }
 
 func (x *CreateUserPoolDomainResponse) GetManagedloginversion() int32 {
-	if x != nil {
-		return x.Managedloginversion
+	if x != nil && x.Managedloginversion != nil {
+		return *x.Managedloginversion
 	}
 	return 0
 }
@@ -11609,7 +11609,7 @@ type DomainDescriptionType struct {
 	Cloudfrontdistribution string                  `protobuf:"bytes,171268400,opt,name=cloudfrontdistribution,proto3" json:"cloudfrontdistribution,omitempty"`
 	Customdomainconfig     *CustomDomainConfigType `protobuf:"bytes,472479421,opt,name=customdomainconfig,proto3" json:"customdomainconfig,omitempty"`
 	Domain                 string                  `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Managedloginversion    int32                   `protobuf:"varint,479901038,opt,name=managedloginversion,proto3" json:"managedloginversion,omitempty"`
+	Managedloginversion    *int32                  `protobuf:"varint,479901038,opt,name=managedloginversion,proto3,oneof" json:"managedloginversion,omitempty"`
 	Routing                *RoutingType            `protobuf:"bytes,237056778,opt,name=routing,proto3" json:"routing,omitempty"`
 	S3Bucket               string                  `protobuf:"bytes,114031434,opt,name=s3bucket,proto3" json:"s3bucket,omitempty"`
 	Status                 DomainStatusType        `protobuf:"varint,6222352,opt,name=status,proto3,enum=cognitoidentityprovider.DomainStatusType" json:"status,omitempty"`
@@ -11678,8 +11678,8 @@ func (x *DomainDescriptionType) GetDomain() string {
 }
 
 func (x *DomainDescriptionType) GetManagedloginversion() int32 {
-	if x != nil {
-		return x.Managedloginversion
+	if x != nil && x.Managedloginversion != nil {
+		return *x.Managedloginversion
 	}
 	return 0
 }
@@ -13953,7 +13953,7 @@ type GroupType struct {
 	Description      string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Groupname        string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
 	Lastmodifieddate string                 `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3" json:"lastmodifieddate,omitempty"`
-	Precedence       int32                  `protobuf:"varint,206704142,opt,name=precedence,proto3" json:"precedence,omitempty"`
+	Precedence       *int32                 `protobuf:"varint,206704142,opt,name=precedence,proto3,oneof" json:"precedence,omitempty"`
 	Rolearn          string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Userpoolid       string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -14019,8 +14019,8 @@ func (x *GroupType) GetLastmodifieddate() string {
 }
 
 func (x *GroupType) GetPrecedence() int32 {
-	if x != nil {
-		return x.Precedence
+	if x != nil && x.Precedence != nil {
+		return *x.Precedence
 	}
 	return 0
 }
@@ -15158,7 +15158,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListDevicesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Accesstoken     string                 `protobuf:"bytes,147070473,opt,name=accesstoken,proto3" json:"accesstoken,omitempty"`
-	Limit           int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit           *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Paginationtoken string                 `protobuf:"bytes,363857279,opt,name=paginationtoken,proto3" json:"paginationtoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -15202,8 +15202,8 @@ func (x *ListDevicesRequest) GetAccesstoken() string {
 }
 
 func (x *ListDevicesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -15269,7 +15269,7 @@ func (x *ListDevicesResponse) GetPaginationtoken() string {
 
 type ListGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -15307,8 +15307,8 @@ func (*ListGroupsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -15381,7 +15381,7 @@ func (x *ListGroupsResponse) GetNexttoken() string {
 
 type ListIdentityProvidersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -15419,8 +15419,8 @@ func (*ListIdentityProvidersRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListIdentityProvidersRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -15493,7 +15493,7 @@ func (x *ListIdentityProvidersResponse) GetProviders() []*ProviderDescription {
 
 type ListResourceServersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -15531,8 +15531,8 @@ func (*ListResourceServersRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListResourceServersRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -15693,7 +15693,7 @@ func (x *ListTagsForResourceResponse) GetTags() map[string]string {
 
 type ListTermsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -15731,8 +15731,8 @@ func (*ListTermsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTermsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -16029,7 +16029,7 @@ func (x *ListUserPoolClientSecretsResponse) GetNexttoken() string {
 
 type ListUserPoolClientsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -16067,8 +16067,8 @@ func (*ListUserPoolClientsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListUserPoolClientsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -16350,7 +16350,7 @@ func (x *ListUserPoolsResponse) GetUserpools() []*UserPoolDescriptionType {
 type ListUsersInGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -16395,8 +16395,8 @@ func (x *ListUsersInGroupRequest) GetGroupname() string {
 }
 
 func (x *ListUsersInGroupRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -16471,7 +16471,7 @@ type ListUsersRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Attributestoget []string               `protobuf:"bytes,311382592,rep,name=attributestoget,proto3" json:"attributestoget,omitempty"`
 	Filter          string                 `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Limit           int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit           *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Paginationtoken string                 `protobuf:"bytes,363857279,opt,name=paginationtoken,proto3" json:"paginationtoken,omitempty"`
 	Userpoolid      string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -16523,8 +16523,8 @@ func (x *ListUsersRequest) GetFilter() string {
 }
 
 func (x *ListUsersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -16598,7 +16598,7 @@ func (x *ListUsersResponse) GetUsers() []*UserType {
 type ListWebAuthnCredentialsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Accesstoken   string                 `protobuf:"bytes,147070473,opt,name=accesstoken,proto3" json:"accesstoken,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -16642,8 +16642,8 @@ func (x *ListWebAuthnCredentialsRequest) GetAccesstoken() string {
 }
 
 func (x *ListWebAuthnCredentialsRequest) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -17509,13 +17509,13 @@ func (x *PasswordHistoryPolicyViolationException) GetMessage() string {
 
 type PasswordPolicyType struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
-	Minimumlength                 int32                  `protobuf:"varint,417878840,opt,name=minimumlength,proto3" json:"minimumlength,omitempty"`
-	Passwordhistorysize           int32                  `protobuf:"varint,413355954,opt,name=passwordhistorysize,proto3" json:"passwordhistorysize,omitempty"`
+	Minimumlength                 *int32                 `protobuf:"varint,417878840,opt,name=minimumlength,proto3,oneof" json:"minimumlength,omitempty"`
+	Passwordhistorysize           *int32                 `protobuf:"varint,413355954,opt,name=passwordhistorysize,proto3,oneof" json:"passwordhistorysize,omitempty"`
 	Requirelowercase              *bool                  `protobuf:"varint,14334134,opt,name=requirelowercase,proto3,oneof" json:"requirelowercase,omitempty"`
 	Requirenumbers                *bool                  `protobuf:"varint,385325811,opt,name=requirenumbers,proto3,oneof" json:"requirenumbers,omitempty"`
 	Requiresymbols                *bool                  `protobuf:"varint,98968906,opt,name=requiresymbols,proto3,oneof" json:"requiresymbols,omitempty"`
 	Requireuppercase              *bool                  `protobuf:"varint,209568997,opt,name=requireuppercase,proto3,oneof" json:"requireuppercase,omitempty"`
-	Temporarypasswordvaliditydays int32                  `protobuf:"varint,379562265,opt,name=temporarypasswordvaliditydays,proto3" json:"temporarypasswordvaliditydays,omitempty"`
+	Temporarypasswordvaliditydays *int32                 `protobuf:"varint,379562265,opt,name=temporarypasswordvaliditydays,proto3,oneof" json:"temporarypasswordvaliditydays,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -17551,15 +17551,15 @@ func (*PasswordPolicyType) Descriptor() ([]byte, []int) {
 }
 
 func (x *PasswordPolicyType) GetMinimumlength() int32 {
-	if x != nil {
-		return x.Minimumlength
+	if x != nil && x.Minimumlength != nil {
+		return *x.Minimumlength
 	}
 	return 0
 }
 
 func (x *PasswordPolicyType) GetPasswordhistorysize() int32 {
-	if x != nil {
-		return x.Passwordhistorysize
+	if x != nil && x.Passwordhistorysize != nil {
+		return *x.Passwordhistorysize
 	}
 	return 0
 }
@@ -17593,8 +17593,8 @@ func (x *PasswordPolicyType) GetRequireuppercase() bool {
 }
 
 func (x *PasswordPolicyType) GetTemporarypasswordvaliditydays() int32 {
-	if x != nil {
-		return x.Temporarypasswordvaliditydays
+	if x != nil && x.Temporarypasswordvaliditydays != nil {
+		return *x.Temporarypasswordvaliditydays
 	}
 	return 0
 }
@@ -17966,7 +17966,7 @@ func (x *RefreshTokenReuseException) GetMessage() string {
 type RefreshTokenRotationType struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Feature                 FeatureType            `protobuf:"varint,512819934,opt,name=feature,proto3,enum=cognitoidentityprovider.FeatureType" json:"feature,omitempty"`
-	Retrygraceperiodseconds int32                  `protobuf:"varint,498715956,opt,name=retrygraceperiodseconds,proto3" json:"retrygraceperiodseconds,omitempty"`
+	Retrygraceperiodseconds *int32                 `protobuf:"varint,498715956,opt,name=retrygraceperiodseconds,proto3,oneof" json:"retrygraceperiodseconds,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -18009,8 +18009,8 @@ func (x *RefreshTokenRotationType) GetFeature() FeatureType {
 }
 
 func (x *RefreshTokenRotationType) GetRetrygraceperiodseconds() int32 {
-	if x != nil {
-		return x.Retrygraceperiodseconds
+	if x != nil && x.Retrygraceperiodseconds != nil {
+		return *x.Retrygraceperiodseconds
 	}
 	return 0
 }
@@ -21631,7 +21631,7 @@ type UpdateGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Precedence    int32                  `protobuf:"varint,206704142,opt,name=precedence,proto3" json:"precedence,omitempty"`
+	Precedence    *int32                 `protobuf:"varint,206704142,opt,name=precedence,proto3,oneof" json:"precedence,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Userpoolid    string                 `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -21683,8 +21683,8 @@ func (x *UpdateGroupRequest) GetGroupname() string {
 }
 
 func (x *UpdateGroupRequest) GetPrecedence() int32 {
-	if x != nil {
-		return x.Precedence
+	if x != nil && x.Precedence != nil {
+		return *x.Precedence
 	}
 	return 0
 }
@@ -22333,12 +22333,12 @@ func (x *UpdateUserAttributesResponse) GetCodedeliverydetailslist() []*CodeDeliv
 
 type UpdateUserPoolClientRequest struct {
 	state                                    protoimpl.MessageState         `protogen:"open.v1"`
-	Accesstokenvalidity                      int32                          `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3" json:"accesstokenvalidity,omitempty"`
+	Accesstokenvalidity                      *int32                         `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3,oneof" json:"accesstokenvalidity,omitempty"`
 	Allowedoauthflows                        []OAuthFlowType                `protobuf:"varint,268290584,rep,packed,name=allowedoauthflows,proto3,enum=cognitoidentityprovider.OAuthFlowType" json:"allowedoauthflows,omitempty"`
 	Allowedoauthflowsuserpoolclient          *bool                          `protobuf:"varint,520095610,opt,name=allowedoauthflowsuserpoolclient,proto3,oneof" json:"allowedoauthflowsuserpoolclient,omitempty"`
 	Allowedoauthscopes                       []string                       `protobuf:"bytes,39385504,rep,name=allowedoauthscopes,proto3" json:"allowedoauthscopes,omitempty"`
 	Analyticsconfiguration                   *AnalyticsConfigurationType    `protobuf:"bytes,229750388,opt,name=analyticsconfiguration,proto3" json:"analyticsconfiguration,omitempty"`
-	Authsessionvalidity                      int32                          `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3" json:"authsessionvalidity,omitempty"`
+	Authsessionvalidity                      *int32                         `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3,oneof" json:"authsessionvalidity,omitempty"`
 	Callbackurls                             []string                       `protobuf:"bytes,227703885,rep,name=callbackurls,proto3" json:"callbackurls,omitempty"`
 	Clientid                                 string                         `protobuf:"bytes,448902180,opt,name=clientid,proto3" json:"clientid,omitempty"`
 	Clientname                               string                         `protobuf:"bytes,340245630,opt,name=clientname,proto3" json:"clientname,omitempty"`
@@ -22346,12 +22346,12 @@ type UpdateUserPoolClientRequest struct {
 	Enablepropagateadditionalusercontextdata *bool                          `protobuf:"varint,201651031,opt,name=enablepropagateadditionalusercontextdata,proto3,oneof" json:"enablepropagateadditionalusercontextdata,omitempty"`
 	Enabletokenrevocation                    *bool                          `protobuf:"varint,178186392,opt,name=enabletokenrevocation,proto3,oneof" json:"enabletokenrevocation,omitempty"`
 	Explicitauthflows                        []ExplicitAuthFlowsType        `protobuf:"varint,277179621,rep,packed,name=explicitauthflows,proto3,enum=cognitoidentityprovider.ExplicitAuthFlowsType" json:"explicitauthflows,omitempty"`
-	Idtokenvalidity                          int32                          `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3" json:"idtokenvalidity,omitempty"`
+	Idtokenvalidity                          *int32                         `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3,oneof" json:"idtokenvalidity,omitempty"`
 	Logouturls                               []string                       `protobuf:"bytes,468187518,rep,name=logouturls,proto3" json:"logouturls,omitempty"`
 	Preventuserexistenceerrors               PreventUserExistenceErrorTypes `protobuf:"varint,188235606,opt,name=preventuserexistenceerrors,proto3,enum=cognitoidentityprovider.PreventUserExistenceErrorTypes" json:"preventuserexistenceerrors,omitempty"`
 	Readattributes                           []string                       `protobuf:"bytes,334413205,rep,name=readattributes,proto3" json:"readattributes,omitempty"`
 	Refreshtokenrotation                     *RefreshTokenRotationType      `protobuf:"bytes,199284564,opt,name=refreshtokenrotation,proto3" json:"refreshtokenrotation,omitempty"`
-	Refreshtokenvalidity                     int32                          `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3" json:"refreshtokenvalidity,omitempty"`
+	Refreshtokenvalidity                     *int32                         `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3,oneof" json:"refreshtokenvalidity,omitempty"`
 	Supportedidentityproviders               []string                       `protobuf:"bytes,439564368,rep,name=supportedidentityproviders,proto3" json:"supportedidentityproviders,omitempty"`
 	Tokenvalidityunits                       *TokenValidityUnitsType        `protobuf:"bytes,2056664,opt,name=tokenvalidityunits,proto3" json:"tokenvalidityunits,omitempty"`
 	Userpoolid                               string                         `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
@@ -22391,8 +22391,8 @@ func (*UpdateUserPoolClientRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateUserPoolClientRequest) GetAccesstokenvalidity() int32 {
-	if x != nil {
-		return x.Accesstokenvalidity
+	if x != nil && x.Accesstokenvalidity != nil {
+		return *x.Accesstokenvalidity
 	}
 	return 0
 }
@@ -22426,8 +22426,8 @@ func (x *UpdateUserPoolClientRequest) GetAnalyticsconfiguration() *AnalyticsConf
 }
 
 func (x *UpdateUserPoolClientRequest) GetAuthsessionvalidity() int32 {
-	if x != nil {
-		return x.Authsessionvalidity
+	if x != nil && x.Authsessionvalidity != nil {
+		return *x.Authsessionvalidity
 	}
 	return 0
 }
@@ -22482,8 +22482,8 @@ func (x *UpdateUserPoolClientRequest) GetExplicitauthflows() []ExplicitAuthFlows
 }
 
 func (x *UpdateUserPoolClientRequest) GetIdtokenvalidity() int32 {
-	if x != nil {
-		return x.Idtokenvalidity
+	if x != nil && x.Idtokenvalidity != nil {
+		return *x.Idtokenvalidity
 	}
 	return 0
 }
@@ -22517,8 +22517,8 @@ func (x *UpdateUserPoolClientRequest) GetRefreshtokenrotation() *RefreshTokenRot
 }
 
 func (x *UpdateUserPoolClientRequest) GetRefreshtokenvalidity() int32 {
-	if x != nil {
-		return x.Refreshtokenvalidity
+	if x != nil && x.Refreshtokenvalidity != nil {
+		return *x.Refreshtokenvalidity
 	}
 	return 0
 }
@@ -22599,7 +22599,7 @@ type UpdateUserPoolDomainRequest struct {
 	state               protoimpl.MessageState  `protogen:"open.v1"`
 	Customdomainconfig  *CustomDomainConfigType `protobuf:"bytes,472479421,opt,name=customdomainconfig,proto3" json:"customdomainconfig,omitempty"`
 	Domain              string                  `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Managedloginversion int32                   `protobuf:"varint,479901038,opt,name=managedloginversion,proto3" json:"managedloginversion,omitempty"`
+	Managedloginversion *int32                  `protobuf:"varint,479901038,opt,name=managedloginversion,proto3,oneof" json:"managedloginversion,omitempty"`
 	Routing             *RoutingType            `protobuf:"bytes,237056778,opt,name=routing,proto3" json:"routing,omitempty"`
 	Userpoolid          string                  `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -22651,8 +22651,8 @@ func (x *UpdateUserPoolDomainRequest) GetDomain() string {
 }
 
 func (x *UpdateUserPoolDomainRequest) GetManagedloginversion() int32 {
-	if x != nil {
-		return x.Managedloginversion
+	if x != nil && x.Managedloginversion != nil {
+		return *x.Managedloginversion
 	}
 	return 0
 }
@@ -22674,7 +22674,7 @@ func (x *UpdateUserPoolDomainRequest) GetUserpoolid() string {
 type UpdateUserPoolDomainResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Cloudfrontdomain    string                 `protobuf:"bytes,436051942,opt,name=cloudfrontdomain,proto3" json:"cloudfrontdomain,omitempty"`
-	Managedloginversion int32                  `protobuf:"varint,479901038,opt,name=managedloginversion,proto3" json:"managedloginversion,omitempty"`
+	Managedloginversion *int32                 `protobuf:"varint,479901038,opt,name=managedloginversion,proto3,oneof" json:"managedloginversion,omitempty"`
 	Routing             *RoutingType           `protobuf:"bytes,237056778,opt,name=routing,proto3" json:"routing,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -22718,8 +22718,8 @@ func (x *UpdateUserPoolDomainResponse) GetCloudfrontdomain() string {
 }
 
 func (x *UpdateUserPoolDomainResponse) GetManagedloginversion() int32 {
-	if x != nil {
-		return x.Managedloginversion
+	if x != nil && x.Managedloginversion != nil {
+		return *x.Managedloginversion
 	}
 	return 0
 }
@@ -23237,12 +23237,12 @@ type UserImportJobType struct {
 	Completiondate        string                  `protobuf:"bytes,130397444,opt,name=completiondate,proto3" json:"completiondate,omitempty"`
 	Completionmessage     string                  `protobuf:"bytes,254331463,opt,name=completionmessage,proto3" json:"completionmessage,omitempty"`
 	Creationdate          string                  `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Failedusers           int64                   `protobuf:"varint,109599085,opt,name=failedusers,proto3" json:"failedusers,omitempty"`
-	Importedusers         int64                   `protobuf:"varint,165762452,opt,name=importedusers,proto3" json:"importedusers,omitempty"`
+	Failedusers           *int64                  `protobuf:"varint,109599085,opt,name=failedusers,proto3,oneof" json:"failedusers,omitempty"`
+	Importedusers         *int64                  `protobuf:"varint,165762452,opt,name=importedusers,proto3,oneof" json:"importedusers,omitempty"`
 	Jobid                 string                  `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Jobname               string                  `protobuf:"bytes,498531160,opt,name=jobname,proto3" json:"jobname,omitempty"`
 	Presignedurl          string                  `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
-	Skippedusers          int64                   `protobuf:"varint,31320534,opt,name=skippedusers,proto3" json:"skippedusers,omitempty"`
+	Skippedusers          *int64                  `protobuf:"varint,31320534,opt,name=skippedusers,proto3,oneof" json:"skippedusers,omitempty"`
 	Startdate             string                  `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Status                UserImportJobStatusType `protobuf:"varint,6222352,opt,name=status,proto3,enum=cognitoidentityprovider.UserImportJobStatusType" json:"status,omitempty"`
 	Userpoolid            string                  `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
@@ -23309,15 +23309,15 @@ func (x *UserImportJobType) GetCreationdate() string {
 }
 
 func (x *UserImportJobType) GetFailedusers() int64 {
-	if x != nil {
-		return x.Failedusers
+	if x != nil && x.Failedusers != nil {
+		return *x.Failedusers
 	}
 	return 0
 }
 
 func (x *UserImportJobType) GetImportedusers() int64 {
-	if x != nil {
-		return x.Importedusers
+	if x != nil && x.Importedusers != nil {
+		return *x.Importedusers
 	}
 	return 0
 }
@@ -23344,8 +23344,8 @@ func (x *UserImportJobType) GetPresignedurl() string {
 }
 
 func (x *UserImportJobType) GetSkippedusers() int64 {
-	if x != nil {
-		return x.Skippedusers
+	if x != nil && x.Skippedusers != nil {
+		return *x.Skippedusers
 	}
 	return 0
 }
@@ -23661,12 +23661,12 @@ func (x *UserPoolClientDescription) GetUserpoolid() string {
 
 type UserPoolClientType struct {
 	state                                    protoimpl.MessageState         `protogen:"open.v1"`
-	Accesstokenvalidity                      int32                          `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3" json:"accesstokenvalidity,omitempty"`
+	Accesstokenvalidity                      *int32                         `protobuf:"varint,260874267,opt,name=accesstokenvalidity,proto3,oneof" json:"accesstokenvalidity,omitempty"`
 	Allowedoauthflows                        []OAuthFlowType                `protobuf:"varint,268290584,rep,packed,name=allowedoauthflows,proto3,enum=cognitoidentityprovider.OAuthFlowType" json:"allowedoauthflows,omitempty"`
 	Allowedoauthflowsuserpoolclient          *bool                          `protobuf:"varint,520095610,opt,name=allowedoauthflowsuserpoolclient,proto3,oneof" json:"allowedoauthflowsuserpoolclient,omitempty"`
 	Allowedoauthscopes                       []string                       `protobuf:"bytes,39385504,rep,name=allowedoauthscopes,proto3" json:"allowedoauthscopes,omitempty"`
 	Analyticsconfiguration                   *AnalyticsConfigurationType    `protobuf:"bytes,229750388,opt,name=analyticsconfiguration,proto3" json:"analyticsconfiguration,omitempty"`
-	Authsessionvalidity                      int32                          `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3" json:"authsessionvalidity,omitempty"`
+	Authsessionvalidity                      *int32                         `protobuf:"varint,223873468,opt,name=authsessionvalidity,proto3,oneof" json:"authsessionvalidity,omitempty"`
 	Callbackurls                             []string                       `protobuf:"bytes,227703885,rep,name=callbackurls,proto3" json:"callbackurls,omitempty"`
 	Clientid                                 string                         `protobuf:"bytes,448902180,opt,name=clientid,proto3" json:"clientid,omitempty"`
 	Clientname                               string                         `protobuf:"bytes,340245630,opt,name=clientname,proto3" json:"clientname,omitempty"`
@@ -23676,13 +23676,13 @@ type UserPoolClientType struct {
 	Enablepropagateadditionalusercontextdata *bool                          `protobuf:"varint,201651031,opt,name=enablepropagateadditionalusercontextdata,proto3,oneof" json:"enablepropagateadditionalusercontextdata,omitempty"`
 	Enabletokenrevocation                    *bool                          `protobuf:"varint,178186392,opt,name=enabletokenrevocation,proto3,oneof" json:"enabletokenrevocation,omitempty"`
 	Explicitauthflows                        []ExplicitAuthFlowsType        `protobuf:"varint,277179621,rep,packed,name=explicitauthflows,proto3,enum=cognitoidentityprovider.ExplicitAuthFlowsType" json:"explicitauthflows,omitempty"`
-	Idtokenvalidity                          int32                          `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3" json:"idtokenvalidity,omitempty"`
+	Idtokenvalidity                          *int32                         `protobuf:"varint,312934952,opt,name=idtokenvalidity,proto3,oneof" json:"idtokenvalidity,omitempty"`
 	Lastmodifieddate                         string                         `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3" json:"lastmodifieddate,omitempty"`
 	Logouturls                               []string                       `protobuf:"bytes,468187518,rep,name=logouturls,proto3" json:"logouturls,omitempty"`
 	Preventuserexistenceerrors               PreventUserExistenceErrorTypes `protobuf:"varint,188235606,opt,name=preventuserexistenceerrors,proto3,enum=cognitoidentityprovider.PreventUserExistenceErrorTypes" json:"preventuserexistenceerrors,omitempty"`
 	Readattributes                           []string                       `protobuf:"bytes,334413205,rep,name=readattributes,proto3" json:"readattributes,omitempty"`
 	Refreshtokenrotation                     *RefreshTokenRotationType      `protobuf:"bytes,199284564,opt,name=refreshtokenrotation,proto3" json:"refreshtokenrotation,omitempty"`
-	Refreshtokenvalidity                     int32                          `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3" json:"refreshtokenvalidity,omitempty"`
+	Refreshtokenvalidity                     *int32                         `protobuf:"varint,303433364,opt,name=refreshtokenvalidity,proto3,oneof" json:"refreshtokenvalidity,omitempty"`
 	Supportedidentityproviders               []string                       `protobuf:"bytes,439564368,rep,name=supportedidentityproviders,proto3" json:"supportedidentityproviders,omitempty"`
 	Tokenvalidityunits                       *TokenValidityUnitsType        `protobuf:"bytes,2056664,opt,name=tokenvalidityunits,proto3" json:"tokenvalidityunits,omitempty"`
 	Userpoolid                               string                         `protobuf:"bytes,329442174,opt,name=userpoolid,proto3" json:"userpoolid,omitempty"`
@@ -23722,8 +23722,8 @@ func (*UserPoolClientType) Descriptor() ([]byte, []int) {
 }
 
 func (x *UserPoolClientType) GetAccesstokenvalidity() int32 {
-	if x != nil {
-		return x.Accesstokenvalidity
+	if x != nil && x.Accesstokenvalidity != nil {
+		return *x.Accesstokenvalidity
 	}
 	return 0
 }
@@ -23757,8 +23757,8 @@ func (x *UserPoolClientType) GetAnalyticsconfiguration() *AnalyticsConfiguration
 }
 
 func (x *UserPoolClientType) GetAuthsessionvalidity() int32 {
-	if x != nil {
-		return x.Authsessionvalidity
+	if x != nil && x.Authsessionvalidity != nil {
+		return *x.Authsessionvalidity
 	}
 	return 0
 }
@@ -23827,8 +23827,8 @@ func (x *UserPoolClientType) GetExplicitauthflows() []ExplicitAuthFlowsType {
 }
 
 func (x *UserPoolClientType) GetIdtokenvalidity() int32 {
-	if x != nil {
-		return x.Idtokenvalidity
+	if x != nil && x.Idtokenvalidity != nil {
+		return *x.Idtokenvalidity
 	}
 	return 0
 }
@@ -23869,8 +23869,8 @@ func (x *UserPoolClientType) GetRefreshtokenrotation() *RefreshTokenRotationType
 }
 
 func (x *UserPoolClientType) GetRefreshtokenvalidity() int32 {
-	if x != nil {
-		return x.Refreshtokenvalidity
+	if x != nil && x.Refreshtokenvalidity != nil {
+		return *x.Refreshtokenvalidity
 	}
 	return 0
 }
@@ -24175,7 +24175,7 @@ type UserPoolType struct {
 	Emailconfigurationfailure   string                           `protobuf:"bytes,518209776,opt,name=emailconfigurationfailure,proto3" json:"emailconfigurationfailure,omitempty"`
 	Emailverificationmessage    string                           `protobuf:"bytes,172634664,opt,name=emailverificationmessage,proto3" json:"emailverificationmessage,omitempty"`
 	Emailverificationsubject    string                           `protobuf:"bytes,224298169,opt,name=emailverificationsubject,proto3" json:"emailverificationsubject,omitempty"`
-	Estimatednumberofusers      int32                            `protobuf:"varint,20814484,opt,name=estimatednumberofusers,proto3" json:"estimatednumberofusers,omitempty"`
+	Estimatednumberofusers      *int32                           `protobuf:"varint,20814484,opt,name=estimatednumberofusers,proto3,oneof" json:"estimatednumberofusers,omitempty"`
 	Id                          string                           `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Issuerconfiguration         *IssuerConfigurationType         `protobuf:"bytes,86290461,opt,name=issuerconfiguration,proto3" json:"issuerconfiguration,omitempty"`
 	Keyconfiguration            *KeyConfigurationType            `protobuf:"bytes,336198023,opt,name=keyconfiguration,proto3" json:"keyconfiguration,omitempty"`
@@ -24330,8 +24330,8 @@ func (x *UserPoolType) GetEmailverificationsubject() string {
 }
 
 func (x *UserPoolType) GetEstimatednumberofusers() int32 {
-	if x != nil {
-		return x.Estimatednumberofusers
+	if x != nil && x.Estimatednumberofusers != nil {
+		return *x.Estimatednumberofusers
 	}
 	return 0
 }
@@ -25510,12 +25510,13 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x13ClientmetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1c\n" +
-	"\x1aAdminConfirmSignUpResponse\"\xa6\x02\n" +
+	"\x1aAdminConfirmSignUpResponse\"\xc9\x02\n" +
 	"\x19AdminCreateUserConfigType\x12C\n" +
 	"\x18allowadmincreateuseronly\x18ٺ\xaa\xbe\x01 \x01(\bH\x00R\x18allowadmincreateuseronly\x88\x01\x01\x12e\n" +
-	"\x15invitemessagetemplate\x18\xe6\xdd\xc3M \x01(\v2,.cognitoidentityprovider.MessageTemplateTypeR\x15invitemessagetemplate\x12@\n" +
-	"\x19unusedaccountvaliditydays\x18\xa0\xed\xf4\xa8\x01 \x01(\x05R\x19unusedaccountvaliditydaysB\x1b\n" +
-	"\x19_allowadmincreateuseronly\"\xf4\x05\n" +
+	"\x15invitemessagetemplate\x18\xe6\xdd\xc3M \x01(\v2,.cognitoidentityprovider.MessageTemplateTypeR\x15invitemessagetemplate\x12E\n" +
+	"\x19unusedaccountvaliditydays\x18\xa0\xed\xf4\xa8\x01 \x01(\x05H\x01R\x19unusedaccountvaliditydays\x88\x01\x01B\x1b\n" +
+	"\x19_allowadmincreateuseronlyB\x1c\n" +
+	"\x1a_unusedaccountvaliditydays\"\xf4\x05\n" +
 	"\x16AdminCreateUserRequest\x12n\n" +
 	"\x0eclientmetadata\x18̯\xffa \x03(\v2C.cognitoidentityprovider.AdminCreateUserRequest.ClientmetadataEntryR\x0eclientmetadata\x12f\n" +
 	"\x16desireddeliverymediums\x18\xe0\x89\xb4' \x03(\x0e2+.cognitoidentityprovider.DeliveryMediumTypeR\x16desireddeliverymediums\x127\n" +
@@ -25633,36 +25634,39 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\"\"\n" +
-	" AdminLinkProviderForUserResponse\"\xa5\x01\n" +
-	"\x17AdminListDevicesRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12,\n" +
+	" AdminLinkProviderForUserResponse\"\xb4\x01\n" +
+	"\x17AdminListDevicesRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12,\n" +
 	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12\x1e\n" +
-	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\x8a\x01\n" +
+	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busernameB\b\n" +
+	"\x06_limit\"\x8a\x01\n" +
 	"\x18AdminListDevicesResponse\x12@\n" +
 	"\adevices\x18\xa1\xe6\xb3= \x03(\v2#.cognitoidentityprovider.DeviceTypeR\adevices\x12,\n" +
-	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\"\x9e\x01\n" +
-	"\x1dAdminListGroupsForUserRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\"\xad\x01\n" +
+	"\x1dAdminListGroupsForUserRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12\x1e\n" +
-	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\x81\x01\n" +
+	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busernameB\b\n" +
+	"\x06_limit\"\x81\x01\n" +
 	"\x1eAdminListGroupsForUserResponse\x12>\n" +
 	"\x06groups\x18\x8e\x8b\xfd\xab\x01 \x03(\v2\".cognitoidentityprovider.GroupTypeR\x06groups\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa9\x01\n" +
-	"\x1eAdminListUserAuthEventsRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xbd\x01\n" +
+	"\x1eAdminListUserAuthEventsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12\x1e\n" +
-	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\x8e\x01\n" +
+	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busernameB\r\n" +
+	"\v_maxresults\"\x8e\x01\n" +
 	"\x1fAdminListUserAuthEventsResponse\x12J\n" +
 	"\n" +
 	"authevents\x18۰\xca\xe0\x01 \x03(\v2&.cognitoidentityprovider.AuthEventTypeR\n" +
@@ -25814,14 +25818,16 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\aeventid\x18Ӗݳ\x01 \x01(\tR\aeventid\x12S\n" +
 	"\reventresponse\x18\xad\xdc\xdc^ \x01(\x0e2*.cognitoidentityprovider.EventResponseTypeR\reventresponse\x12G\n" +
 	"\teventrisk\x18\xa1\xb0\xf6\x03 \x01(\v2&.cognitoidentityprovider.EventRiskTypeR\teventrisk\x12D\n" +
-	"\teventtype\x18\xe8\xa0\xcb\xdf\x01 \x01(\x0e2\".cognitoidentityprovider.EventTypeR\teventtype\"\xa6\x02\n" +
+	"\teventtype\x18\xe8\xa0\xcb\xdf\x01 \x01(\x0e2\".cognitoidentityprovider.EventTypeR\teventtype\"\xb9\x02\n" +
 	"\x18AuthenticationResultType\x12#\n" +
-	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12\x1f\n" +
-	"\texpiresin\x18\x91\xe8\x91! \x01(\x05R\texpiresin\x12\x1a\n" +
+	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12$\n" +
+	"\texpiresin\x18\x91\xe8\x91! \x01(\x05H\x00R\texpiresin\x88\x01\x01\x12\x1a\n" +
 	"\aidtoken\x18\xf6\xf8\r \x01(\tR\aidtoken\x12`\n" +
 	"\x11newdevicemetadata\x18\xa3\xa6\x88\xb7\x01 \x01(\v2..cognitoidentityprovider.NewDeviceMetadataTypeR\x11newdevicemetadata\x12%\n" +
 	"\frefreshtoken\x18\xf2\xae\x81y \x01(\tR\frefreshtoken\x12\x1f\n" +
-	"\ttokentype\x18\xa3ɽn \x01(\tR\ttokentype\"\xc6\x01\n" +
+	"\ttokentype\x18\xa3ɽn \x01(\tR\ttokentypeB\f\n" +
+	"\n" +
+	"_expiresin\"\xc6\x01\n" +
 	"\x15ChallengeResponseType\x12O\n" +
 	"\rchallengename\x18\u07b8\xb6Q \x01(\x0e2&.cognitoidentityprovider.ChallengeNameR\rchallengename\x12\\\n" +
 	"\x11challengeresponse\x18⅄\x80\x01 \x01(\x0e2*.cognitoidentityprovider.ChallengeResponseR\x11challengeresponse\"\x9b\x01\n" +
@@ -25909,17 +25915,18 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"servername\x12!\n" +
 	"\n" +
 	"serverpath\x18\xf2\xcf\xe2_ \x01(\tR\n" +
-	"serverpath\"\xc0\x01\n" +
+	"serverpath\"\xd4\x01\n" +
 	"\x12CreateGroupRequest\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12!\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12&\n" +
 	"\n" +
-	"precedence\x18\x8e\x9c\xc8b \x01(\x05R\n" +
-	"precedence\x12\x1c\n" +
+	"precedence\x18\x8e\x9c\xc8b \x01(\x05H\x00R\n" +
+	"precedence\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"R\n" +
+	"userpoolidB\r\n" +
+	"\v_precedence\"R\n" +
 	"\x13CreateGroupResponse\x12;\n" +
 	"\x05group\x18\xad\xa0\xd2+ \x01(\v2\".cognitoidentityprovider.GroupTypeR\x05group\"\xf2\x04\n" +
 	"\x1dCreateIdentityProviderRequest\x12{\n" +
@@ -25983,56 +25990,62 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\"s\n" +
 	"\x1bCreateUserImportJobResponse\x12T\n" +
-	"\ruserimportjob\x18\xb7\xa8\xef\xe1\x01 \x01(\v2*.cognitoidentityprovider.UserImportJobTypeR\ruserimportjob\"\xc4\r\n" +
-	"\x1bCreateUserPoolClientRequest\x123\n" +
-	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05R\x13accesstokenvalidity\x12W\n" +
+	"\ruserimportjob\x18\xb7\xa8\xef\xe1\x01 \x01(\v2*.cognitoidentityprovider.UserImportJobTypeR\ruserimportjob\"\xb5\x0e\n" +
+	"\x1bCreateUserPoolClientRequest\x128\n" +
+	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05H\x00R\x13accesstokenvalidity\x88\x01\x01\x12W\n" +
 	"\x11allowedoauthflows\x18\x98\x94\xf7\x7f \x03(\x0e2&.cognitoidentityprovider.OAuthFlowTypeR\x11allowedoauthflows\x12Q\n" +
-	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x00R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
+	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x01R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
 	"\x12allowedoauthscopes\x18\xa0\xf3\xe3\x12 \x03(\tR\x12allowedoauthscopes\x12n\n" +
-	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x123\n" +
-	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05R\x13authsessionvalidity\x12%\n" +
+	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x128\n" +
+	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05H\x02R\x13authsessionvalidity\x88\x01\x01\x12%\n" +
 	"\fcallbackurls\x18\xcd\xf8\xc9l \x03(\tR\fcallbackurls\x12\"\n" +
 	"\n" +
 	"clientname\x18\xfe\xf8\x9e\xa2\x01 \x01(\tR\n" +
 	"clientname\x12&\n" +
 	"\fclientsecret\x18\xf7\xb5\xe2\xee\x01 \x01(\tR\fclientsecret\x122\n" +
 	"\x12defaultredirecturi\x18\xc5귔\x01 \x01(\tR\x12defaultredirecturi\x12b\n" +
-	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x01R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
-	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x02R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
+	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x03R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
+	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x04R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
 	"\x11explicitauthflows\x18\xe5ٕ\x84\x01 \x03(\x0e2..cognitoidentityprovider.ExplicitAuthFlowsTypeR\x11explicitauthflows\x12.\n" +
-	"\x0egeneratesecret\x18\xa3\xa7\x94o \x01(\bH\x03R\x0egeneratesecret\x88\x01\x01\x12,\n" +
-	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05R\x0fidtokenvalidity\x12\"\n" +
+	"\x0egeneratesecret\x18\xa3\xa7\x94o \x01(\bH\x05R\x0egeneratesecret\x88\x01\x01\x121\n" +
+	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05H\x06R\x0fidtokenvalidity\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"logouturls\x18\xfe\xf2\x9f\xdf\x01 \x03(\tR\n" +
 	"logouturls\x12z\n" +
 	"\x1apreventuserexistenceerrors\x18\xd6\xfe\xe0Y \x01(\x0e27.cognitoidentityprovider.PreventUserExistenceErrorTypesR\x1apreventuserexistenceerrors\x12*\n" +
 	"\x0ereadattributes\x18\x95\xfb\xba\x9f\x01 \x03(\tR\x0ereadattributes\x12h\n" +
-	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x126\n" +
-	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05R\x14refreshtokenvalidity\x12B\n" +
+	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x12;\n" +
+	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05H\aR\x14refreshtokenvalidity\x88\x01\x01\x12B\n" +
 	"\x1asupportedidentityproviders\x18\xd0\xf0\xcc\xd1\x01 \x03(\tR\x1asupportedidentityproviders\x12a\n" +
 	"\x12tokenvalidityunits\x18\xd8\xc3} \x01(\v2/.cognitoidentityprovider.TokenValidityUnitsTypeR\x12tokenvalidityunits\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12,\n" +
-	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\"\n" +
-	" _allowedoauthflowsuserpoolclientB+\n" +
+	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\x16\n" +
+	"\x14_accesstokenvalidityB\"\n" +
+	" _allowedoauthflowsuserpoolclientB\x16\n" +
+	"\x14_authsessionvalidityB+\n" +
 	")_enablepropagateadditionalusercontextdataB\x18\n" +
 	"\x16_enabletokenrevocationB\x11\n" +
-	"\x0f_generatesecret\"v\n" +
+	"\x0f_generatesecretB\x12\n" +
+	"\x10_idtokenvalidityB\x17\n" +
+	"\x15_refreshtokenvalidity\"v\n" +
 	"\x1cCreateUserPoolClientResponse\x12V\n" +
-	"\x0euserpoolclient\x18\xf0\x9e\x85B \x01(\v2+.cognitoidentityprovider.UserPoolClientTypeR\x0euserpoolclient\"\xbb\x02\n" +
+	"\x0euserpoolclient\x18\xf0\x9e\x85B \x01(\v2+.cognitoidentityprovider.UserPoolClientTypeR\x0euserpoolclient\"\xd8\x02\n" +
 	"\x1bCreateUserPoolDomainRequest\x12c\n" +
 	"\x12customdomainconfig\x18\xbd\xed\xa5\xe1\x01 \x01(\v2/.cognitoidentityprovider.CustomDomainConfigTypeR\x12customdomainconfig\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x124\n" +
-	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05R\x13managedloginversion\x12A\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x129\n" +
+	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05H\x00R\x13managedloginversion\x88\x01\x01\x12A\n" +
 	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\arouting\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\xc7\x01\n" +
+	"userpoolidB\x16\n" +
+	"\x14_managedloginversion\"\xe4\x01\n" +
 	"\x1cCreateUserPoolDomainResponse\x12.\n" +
-	"\x10cloudfrontdomain\x18\xe6\xbf\xf6\xcf\x01 \x01(\tR\x10cloudfrontdomain\x124\n" +
-	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05R\x13managedloginversion\x12A\n" +
-	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\arouting\"\x97\x02\n" +
+	"\x10cloudfrontdomain\x18\xe6\xbf\xf6\xcf\x01 \x01(\tR\x10cloudfrontdomain\x129\n" +
+	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05H\x00R\x13managedloginversion\x88\x01\x01\x12A\n" +
+	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\aroutingB\x16\n" +
+	"\x14_managedloginversion\"\x97\x02\n" +
 	"\x1cCreateUserPoolReplicaRequest\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
@@ -26243,20 +26256,21 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x10devicecreatedate\x18؛\xa2\xe9\x01 \x01(\tR\x10devicecreatedate\x12 \n" +
 	"\tdevicekey\x18\xab\xe4ȶ\x01 \x01(\tR\tdevicekey\x12C\n" +
 	"\x1bdevicelastauthenticateddate\x18\u05cc\xbe\x1e \x01(\tR\x1bdevicelastauthenticateddate\x12:\n" +
-	"\x16devicelastmodifieddate\x18ſ\xbe\xf2\x01 \x01(\tR\x16devicelastmodifieddate\"\x9b\x04\n" +
+	"\x16devicelastmodifieddate\x18ſ\xbe\xf2\x01 \x01(\tR\x16devicelastmodifieddate\"\xb8\x04\n" +
 	"\x15DomainDescriptionType\x12&\n" +
 	"\fawsaccountid\x18\xedڼ\xb0\x01 \x01(\tR\fawsaccountid\x129\n" +
 	"\x16cloudfrontdistribution\x18\xb0\xb2\xd5Q \x01(\tR\x16cloudfrontdistribution\x12c\n" +
 	"\x12customdomainconfig\x18\xbd\xed\xa5\xe1\x01 \x01(\v2/.cognitoidentityprovider.CustomDomainConfigTypeR\x12customdomainconfig\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x124\n" +
-	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05R\x13managedloginversion\x12A\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x129\n" +
+	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05H\x00R\x13managedloginversion\x88\x01\x01\x12A\n" +
 	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\arouting\x12\x1d\n" +
 	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tR\bs3bucket\x12D\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2).cognitoidentityprovider.DomainStatusTypeR\x06status\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\"9\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversionB\x16\n" +
+	"\x14_managedloginversion\"9\n" +
 	"\x1aDuplicateProviderException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9e\x02\n" +
 	"\x16EmailConfigurationType\x12-\n" +
@@ -26419,19 +26433,20 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\"\x17\n" +
 	"\x15GlobalSignOutResponse\"3\n" +
 	"\x14GroupExistsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8e\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa2\x02\n" +
 	"\tGroupType\x12&\n" +
 	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12-\n" +
-	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12!\n" +
+	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12&\n" +
 	"\n" +
-	"precedence\x18\x8e\x9c\xc8b \x01(\x05R\n" +
-	"precedence\x12\x1c\n" +
+	"precedence\x18\x8e\x9c\xc8b \x01(\x05H\x00R\n" +
+	"precedence\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"U\n" +
+	"userpoolidB\r\n" +
+	"\v_precedence\"U\n" +
 	"\n" +
 	"HttpHeader\x12\"\n" +
 	"\n" +
@@ -26526,42 +26541,46 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\rusermigration\x18\xa3\x87\xf0\x0e \x01(\tR\rusermigration\x12C\n" +
 	"\x1bverifyauthchallengeresponse\x18\x81\xf3\xd5H \x01(\tR\x1bverifyauthchallengeresponse\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x81\x01\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x90\x01\n" +
 	"\x12ListDevicesRequest\x12#\n" +
-	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12,\n" +
-	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\"\x85\x01\n" +
+	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12,\n" +
+	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtokenB\b\n" +
+	"\x06_limit\"\x85\x01\n" +
 	"\x13ListDevicesResponse\x12@\n" +
 	"\adevices\x18\xa1\xe6\xb3= \x03(\v2#.cognitoidentityprovider.DeviceTypeR\adevices\x12,\n" +
-	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\"r\n" +
-	"\x11ListGroupsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\"\x81\x01\n" +
+	"\x11ListGroupsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"u\n" +
+	"userpoolidB\b\n" +
+	"\x06_limit\"u\n" +
 	"\x12ListGroupsResponse\x12>\n" +
 	"\x06groups\x18\x8e\x8b\xfd\xab\x01 \x03(\v2\".cognitoidentityprovider.GroupTypeR\x06groups\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x87\x01\n" +
-	"\x1cListIdentityProvidersRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x9b\x01\n" +
+	"\x1cListIdentityProvidersRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\x8f\x01\n" +
+	"userpoolidB\r\n" +
+	"\v_maxresults\"\x8f\x01\n" +
 	"\x1dListIdentityProvidersResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12M\n" +
-	"\tproviders\x18\xfeּ: \x03(\v2,.cognitoidentityprovider.ProviderDescriptionR\tproviders\"\x85\x01\n" +
-	"\x1aListResourceServersRequest\x12\"\n" +
+	"\tproviders\x18\xfeּ: \x03(\v2,.cognitoidentityprovider.ProviderDescriptionR\tproviders\"\x99\x01\n" +
+	"\x1aListResourceServersRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\x99\x01\n" +
+	"userpoolidB\r\n" +
+	"\v_maxresults\"\x99\x01\n" +
 	"\x1bListResourceServersResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12Y\n" +
 	"\x0fresourceservers\x18\xa4\x9a\xf0\x91\x01 \x03(\v2+.cognitoidentityprovider.ResourceServerTypeR\x0fresourceservers\"B\n" +
@@ -26571,15 +26590,16 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2>.cognitoidentityprovider.ListTagsForResourceResponse.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"{\n" +
-	"\x10ListTermsRequest\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8f\x01\n" +
+	"\x10ListTermsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"}\n" +
+	"userpoolidB\r\n" +
+	"\v_maxresults\"}\n" +
 	"\x11ListTermsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12G\n" +
 	"\x05terms\x18\xcd\xdb֡\x01 \x03(\v2-.cognitoidentityprovider.TermsDescriptionTypeR\x05terms\"\x91\x01\n" +
@@ -26602,15 +26622,16 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"userpoolid\"\xa2\x01\n" +
 	"!ListUserPoolClientSecretsResponse\x12\\\n" +
 	"\rclientsecrets\x18\xe0\xfe\xec\a \x03(\v23.cognitoidentityprovider.ClientSecretDescriptorTypeR\rclientsecrets\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x85\x01\n" +
-	"\x1aListUserPoolClientsRequest\x12\"\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x99\x01\n" +
+	"\x1aListUserPoolClientsRequest\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\xa0\x01\n" +
+	"userpoolidB\r\n" +
+	"\v_maxresults\"\xa0\x01\n" +
 	"\x1bListUserPoolClientsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12`\n" +
 	"\x0fuserpoolclients\x18\x95\x92\xbe\xd6\x01 \x03(\v22.cognitoidentityprovider.UserPoolClientDescriptionR\x0fuserpoolclients\"b\n" +
@@ -26629,34 +26650,37 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x8c\x01\n" +
 	"\x15ListUserPoolsResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12R\n" +
-	"\tuserpools\x18\xaa\x9c\xe3\x99\x01 \x03(\v20.cognitoidentityprovider.UserPoolDescriptionTypeR\tuserpools\"\x9a\x01\n" +
+	"\tuserpools\x18\xaa\x9c\xe3\x99\x01 \x03(\v20.cognitoidentityprovider.UserPoolDescriptionTypeR\tuserpools\"\xa9\x01\n" +
 	"\x17ListUsersInGroupRequest\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x1f\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"w\n" +
+	"userpoolidB\b\n" +
+	"\x06_limit\"w\n" +
 	"\x18ListUsersInGroupResponse\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12:\n" +
-	"\x05users\x18\xb4\xe5\xd05 \x03(\v2!.cognitoidentityprovider.UserTypeR\x05users\"\xc8\x01\n" +
+	"\x05users\x18\xb4\xe5\xd05 \x03(\v2!.cognitoidentityprovider.UserTypeR\x05users\"\xd7\x01\n" +
 	"\x10ListUsersRequest\x12,\n" +
 	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12\x1a\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\tR\x06filter\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12,\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\tR\x06filter\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12,\n" +
 	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"}\n" +
+	"userpoolidB\b\n" +
+	"\x06_limit\"}\n" +
 	"\x11ListUsersResponse\x12,\n" +
 	"\x0fpaginationtoken\x18\xff\x8a\xc0\xad\x01 \x01(\tR\x0fpaginationtoken\x12:\n" +
-	"\x05users\x18\xb4\xe5\xd05 \x03(\v2!.cognitoidentityprovider.UserTypeR\x05users\"\x8a\x01\n" +
+	"\x05users\x18\xb4\xe5\xd05 \x03(\v2!.cognitoidentityprovider.UserTypeR\x05users\"\x9e\x01\n" +
 	"\x1eListWebAuthnCredentialsRequest\x12#\n" +
-	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12\"\n" +
+	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa0\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\xa0\x01\n" +
 	"\x1fListWebAuthnCredentialsResponse\x12\\\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x03(\v26.cognitoidentityprovider.WebAuthnCredentialDescriptionR\vcredentials\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xef\x03\n" +
@@ -26719,19 +26743,22 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x1cOperationNotEnabledException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"F\n" +
 	"'PasswordHistoryPolicyViolationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd7\x03\n" +
-	"\x12PasswordPolicyType\x12(\n" +
-	"\rminimumlength\x18\xb8\xa6\xa1\xc7\x01 \x01(\x05R\rminimumlength\x124\n" +
-	"\x13passwordhistorysize\x18\xb2\x9f\x8d\xc5\x01 \x01(\x05R\x13passwordhistorysize\x122\n" +
-	"\x10requirelowercase\x18\xb6\xf1\xea\x06 \x01(\bH\x00R\x10requirelowercase\x88\x01\x01\x12/\n" +
-	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\x01R\x0erequirenumbers\x88\x01\x01\x12.\n" +
-	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\x02R\x0erequiresymbols\x88\x01\x01\x122\n" +
-	"\x10requireuppercase\x18\xe5\x89\xf7c \x01(\bH\x03R\x10requireuppercase\x88\x01\x01\x12H\n" +
-	"\x1dtemporarypasswordvaliditydays\x18\x99\xd2\xfe\xb4\x01 \x01(\x05R\x1dtemporarypasswordvaliditydaysB\x13\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb2\x04\n" +
+	"\x12PasswordPolicyType\x12-\n" +
+	"\rminimumlength\x18\xb8\xa6\xa1\xc7\x01 \x01(\x05H\x00R\rminimumlength\x88\x01\x01\x129\n" +
+	"\x13passwordhistorysize\x18\xb2\x9f\x8d\xc5\x01 \x01(\x05H\x01R\x13passwordhistorysize\x88\x01\x01\x122\n" +
+	"\x10requirelowercase\x18\xb6\xf1\xea\x06 \x01(\bH\x02R\x10requirelowercase\x88\x01\x01\x12/\n" +
+	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\x03R\x0erequirenumbers\x88\x01\x01\x12.\n" +
+	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\x04R\x0erequiresymbols\x88\x01\x01\x122\n" +
+	"\x10requireuppercase\x18\xe5\x89\xf7c \x01(\bH\x05R\x10requireuppercase\x88\x01\x01\x12M\n" +
+	"\x1dtemporarypasswordvaliditydays\x18\x99\xd2\xfe\xb4\x01 \x01(\x05H\x06R\x1dtemporarypasswordvaliditydays\x88\x01\x01B\x10\n" +
+	"\x0e_minimumlengthB\x16\n" +
+	"\x14_passwordhistorysizeB\x13\n" +
 	"\x11_requirelowercaseB\x11\n" +
 	"\x0f_requirenumbersB\x11\n" +
 	"\x0f_requiresymbolsB\x13\n" +
-	"\x11_requireuppercase\"=\n" +
+	"\x11_requireuppercaseB \n" +
+	"\x1e_temporarypasswordvaliditydays\"=\n" +
 	"\x1ePasswordResetRequiredException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xae\x01\n" +
 	"#PreTokenGenerationVersionConfigType\x12\x1f\n" +
@@ -26752,10 +26779,11 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2/.cognitoidentityprovider.RecoveryOptionNameTypeR\x04name\x12\x1d\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05R\bpriority\"9\n" +
 	"\x1aRefreshTokenReuseException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9c\x01\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbd\x01\n" +
 	"\x18RefreshTokenRotationType\x12B\n" +
-	"\afeature\x18ޅ\xc4\xf4\x01 \x01(\x0e2$.cognitoidentityprovider.FeatureTypeR\afeature\x12<\n" +
-	"\x17retrygraceperiodseconds\x18\xb4\x9a\xe7\xed\x01 \x01(\x05R\x17retrygraceperiodseconds\"\xf9\x03\n" +
+	"\afeature\x18ޅ\xc4\xf4\x01 \x01(\x0e2$.cognitoidentityprovider.FeatureTypeR\afeature\x12A\n" +
+	"\x17retrygraceperiodseconds\x18\xb4\x9a\xe7\xed\x01 \x01(\x05H\x00R\x17retrygraceperiodseconds\x88\x01\x01B\x1a\n" +
+	"\x18_retrygraceperiodseconds\"\xf9\x03\n" +
 	"\x1dResendConfirmationCodeRequest\x12_\n" +
 	"\x11analyticsmetadata\x18\xf7\x85\xc1< \x01(\v2..cognitoidentityprovider.AnalyticsMetadataTypeR\x11analyticsmetadata\x12\x1e\n" +
 	"\bclientid\x18\xa4\xe8\x86\xd6\x01 \x01(\tR\bclientid\x12u\n" +
@@ -27049,17 +27077,18 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\vaccesstoken\x18\x89\xbc\x90F \x01(\tR\vaccesstoken\x12 \n" +
 	"\tdevicekey\x18\xab\xe4ȶ\x01 \x01(\tR\tdevicekey\x12n\n" +
 	"\x16devicerememberedstatus\x18\xf8ݒ5 \x01(\x0e23.cognitoidentityprovider.DeviceRememberedStatusTypeR\x16devicerememberedstatus\"\x1c\n" +
-	"\x1aUpdateDeviceStatusResponse\"\xc0\x01\n" +
+	"\x1aUpdateDeviceStatusResponse\"\xd4\x01\n" +
 	"\x12UpdateGroupRequest\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12!\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12&\n" +
 	"\n" +
-	"precedence\x18\x8e\x9c\xc8b \x01(\x05R\n" +
-	"precedence\x12\x1c\n" +
+	"precedence\x18\x8e\x9c\xc8b \x01(\x05H\x00R\n" +
+	"precedence\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"R\n" +
+	"userpoolidB\r\n" +
+	"\v_precedence\"R\n" +
 	"\x13UpdateGroupResponse\x12;\n" +
 	"\x05group\x18\xad\xa0\xd2+ \x01(\v2\".cognitoidentityprovider.GroupTypeR\x05group\"\x97\x04\n" +
 	"\x1dUpdateIdentityProviderRequest\x12{\n" +
@@ -27123,54 +27152,60 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8e\x01\n" +
 	"\x1cUpdateUserAttributesResponse\x12n\n" +
-	"\x17codedeliverydetailslist\x18\xbf\x9a\xb9\x8e\x01 \x03(\v20.cognitoidentityprovider.CodeDeliveryDetailsTypeR\x17codedeliverydetailslist\"\xf9\f\n" +
-	"\x1bUpdateUserPoolClientRequest\x123\n" +
-	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05R\x13accesstokenvalidity\x12W\n" +
+	"\x17codedeliverydetailslist\x18\xbf\x9a\xb9\x8e\x01 \x03(\v20.cognitoidentityprovider.CodeDeliveryDetailsTypeR\x17codedeliverydetailslist\"\xea\r\n" +
+	"\x1bUpdateUserPoolClientRequest\x128\n" +
+	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05H\x00R\x13accesstokenvalidity\x88\x01\x01\x12W\n" +
 	"\x11allowedoauthflows\x18\x98\x94\xf7\x7f \x03(\x0e2&.cognitoidentityprovider.OAuthFlowTypeR\x11allowedoauthflows\x12Q\n" +
-	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x00R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
+	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x01R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
 	"\x12allowedoauthscopes\x18\xa0\xf3\xe3\x12 \x03(\tR\x12allowedoauthscopes\x12n\n" +
-	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x123\n" +
-	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05R\x13authsessionvalidity\x12%\n" +
+	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x128\n" +
+	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05H\x02R\x13authsessionvalidity\x88\x01\x01\x12%\n" +
 	"\fcallbackurls\x18\xcd\xf8\xc9l \x03(\tR\fcallbackurls\x12\x1e\n" +
 	"\bclientid\x18\xa4\xe8\x86\xd6\x01 \x01(\tR\bclientid\x12\"\n" +
 	"\n" +
 	"clientname\x18\xfe\xf8\x9e\xa2\x01 \x01(\tR\n" +
 	"clientname\x122\n" +
 	"\x12defaultredirecturi\x18\xc5귔\x01 \x01(\tR\x12defaultredirecturi\x12b\n" +
-	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x01R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
-	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x02R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
-	"\x11explicitauthflows\x18\xe5ٕ\x84\x01 \x03(\x0e2..cognitoidentityprovider.ExplicitAuthFlowsTypeR\x11explicitauthflows\x12,\n" +
-	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05R\x0fidtokenvalidity\x12\"\n" +
+	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x03R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
+	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x04R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
+	"\x11explicitauthflows\x18\xe5ٕ\x84\x01 \x03(\x0e2..cognitoidentityprovider.ExplicitAuthFlowsTypeR\x11explicitauthflows\x121\n" +
+	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05H\x05R\x0fidtokenvalidity\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"logouturls\x18\xfe\xf2\x9f\xdf\x01 \x03(\tR\n" +
 	"logouturls\x12z\n" +
 	"\x1apreventuserexistenceerrors\x18\xd6\xfe\xe0Y \x01(\x0e27.cognitoidentityprovider.PreventUserExistenceErrorTypesR\x1apreventuserexistenceerrors\x12*\n" +
 	"\x0ereadattributes\x18\x95\xfb\xba\x9f\x01 \x03(\tR\x0ereadattributes\x12h\n" +
-	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x126\n" +
-	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05R\x14refreshtokenvalidity\x12B\n" +
+	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x12;\n" +
+	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05H\x06R\x14refreshtokenvalidity\x88\x01\x01\x12B\n" +
 	"\x1asupportedidentityproviders\x18\xd0\xf0\xcc\xd1\x01 \x03(\tR\x1asupportedidentityproviders\x12a\n" +
 	"\x12tokenvalidityunits\x18\xd8\xc3} \x01(\v2/.cognitoidentityprovider.TokenValidityUnitsTypeR\x12tokenvalidityunits\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12,\n" +
-	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\"\n" +
-	" _allowedoauthflowsuserpoolclientB+\n" +
+	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\x16\n" +
+	"\x14_accesstokenvalidityB\"\n" +
+	" _allowedoauthflowsuserpoolclientB\x16\n" +
+	"\x14_authsessionvalidityB+\n" +
 	")_enablepropagateadditionalusercontextdataB\x18\n" +
-	"\x16_enabletokenrevocation\"v\n" +
+	"\x16_enabletokenrevocationB\x12\n" +
+	"\x10_idtokenvalidityB\x17\n" +
+	"\x15_refreshtokenvalidity\"v\n" +
 	"\x1cUpdateUserPoolClientResponse\x12V\n" +
-	"\x0euserpoolclient\x18\xf0\x9e\x85B \x01(\v2+.cognitoidentityprovider.UserPoolClientTypeR\x0euserpoolclient\"\xbb\x02\n" +
+	"\x0euserpoolclient\x18\xf0\x9e\x85B \x01(\v2+.cognitoidentityprovider.UserPoolClientTypeR\x0euserpoolclient\"\xd8\x02\n" +
 	"\x1bUpdateUserPoolDomainRequest\x12c\n" +
 	"\x12customdomainconfig\x18\xbd\xed\xa5\xe1\x01 \x01(\v2/.cognitoidentityprovider.CustomDomainConfigTypeR\x12customdomainconfig\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x124\n" +
-	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05R\x13managedloginversion\x12A\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x129\n" +
+	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05H\x00R\x13managedloginversion\x88\x01\x01\x12A\n" +
 	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\arouting\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\xc7\x01\n" +
+	"userpoolidB\x16\n" +
+	"\x14_managedloginversion\"\xe4\x01\n" +
 	"\x1cUpdateUserPoolDomainResponse\x12.\n" +
-	"\x10cloudfrontdomain\x18\xe6\xbf\xf6\xcf\x01 \x01(\tR\x10cloudfrontdomain\x124\n" +
-	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05R\x13managedloginversion\x12A\n" +
-	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\arouting\"\xb2\x01\n" +
+	"\x10cloudfrontdomain\x18\xe6\xbf\xf6\xcf\x01 \x01(\tR\x10cloudfrontdomain\x129\n" +
+	"\x13managedloginversion\x18\xee\xea\xea\xe4\x01 \x01(\x05H\x00R\x13managedloginversion\x88\x01\x01\x12A\n" +
+	"\arouting\x18\x8a\xe6\x84q \x01(\v2$.cognitoidentityprovider.RoutingTypeR\aroutingB\x16\n" +
+	"\x14_managedloginversion\"\xb2\x01\n" +
 	"\x1cUpdateUserPoolReplicaRequest\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
@@ -27217,23 +27252,26 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\vencodeddata\x18\x8a\x9e\x8bI \x01(\tR\vencodeddata\x12\x1e\n" +
 	"\tipaddress\x18\xcd\xf1m \x01(\tR\tipaddress\"<\n" +
 	"\x1dUserImportInProgressException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb7\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf9\x04\n" +
 	"\x11UserImportJobType\x127\n" +
 	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12)\n" +
 	"\x0ecompletiondate\x18\x84\xea\x96> \x01(\tR\x0ecompletiondate\x12/\n" +
 	"\x11completionmessage\x18ǔ\xa3y \x01(\tR\x11completionmessage\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12#\n" +
-	"\vfailedusers\x18\xed\xb2\xa14 \x01(\x03R\vfailedusers\x12'\n" +
-	"\rimportedusers\x18\x94\xab\x85O \x01(\x03R\rimportedusers\x12\x17\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12(\n" +
+	"\vfailedusers\x18\xed\xb2\xa14 \x01(\x03H\x00R\vfailedusers\x88\x01\x01\x12,\n" +
+	"\rimportedusers\x18\x94\xab\x85O \x01(\x03H\x01R\rimportedusers\x88\x01\x01\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x1c\n" +
 	"\ajobname\x18\xd8\xf6\xdb\xed\x01 \x01(\tR\ajobname\x12&\n" +
-	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x12%\n" +
-	"\fskippedusers\x18\xd6\xd3\xf7\x0e \x01(\x03R\fskippedusers\x12 \n" +
+	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x12*\n" +
+	"\fskippedusers\x18\xd6\xd3\xf7\x0e \x01(\x03H\x02R\fskippedusers\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12K\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e20.cognitoidentityprovider.UserImportJobStatusTypeR\x06status\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"<\n" +
+	"userpoolidB\x0e\n" +
+	"\f_failedusersB\x10\n" +
+	"\x0e_importedusersB\x0f\n" +
+	"\r_skippedusers\"<\n" +
 	"\x1dUserLambdaValidationException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
 	"\x19UserNotConfirmedException\x12\x1b\n" +
@@ -27252,14 +27290,14 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"clientname\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
-	"userpoolid\"\xef\r\n" +
-	"\x12UserPoolClientType\x123\n" +
-	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05R\x13accesstokenvalidity\x12W\n" +
+	"userpoolid\"\xe0\x0e\n" +
+	"\x12UserPoolClientType\x128\n" +
+	"\x13accesstokenvalidity\x18\x9b\xc0\xb2| \x01(\x05H\x00R\x13accesstokenvalidity\x88\x01\x01\x12W\n" +
 	"\x11allowedoauthflows\x18\x98\x94\xf7\x7f \x03(\x0e2&.cognitoidentityprovider.OAuthFlowTypeR\x11allowedoauthflows\x12Q\n" +
-	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x00R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
+	"\x1fallowedoauthflowsuserpoolclient\x18\xfa\x8e\x80\xf8\x01 \x01(\bH\x01R\x1fallowedoauthflowsuserpoolclient\x88\x01\x01\x121\n" +
 	"\x12allowedoauthscopes\x18\xa0\xf3\xe3\x12 \x03(\tR\x12allowedoauthscopes\x12n\n" +
-	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x123\n" +
-	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05R\x13authsessionvalidity\x12%\n" +
+	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v23.cognitoidentityprovider.AnalyticsConfigurationTypeR\x16analyticsconfiguration\x128\n" +
+	"\x13authsessionvalidity\x18\xbc\x93\xe0j \x01(\x05H\x02R\x13authsessionvalidity\x88\x01\x01\x12%\n" +
 	"\fcallbackurls\x18\xcd\xf8\xc9l \x03(\tR\fcallbackurls\x12\x1e\n" +
 	"\bclientid\x18\xa4\xe8\x86\xd6\x01 \x01(\tR\bclientid\x12\"\n" +
 	"\n" +
@@ -27268,27 +27306,31 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\fclientsecret\x18\xf7\xb5\xe2\xee\x01 \x01(\tR\fclientsecret\x12&\n" +
 	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x122\n" +
 	"\x12defaultredirecturi\x18\xc5귔\x01 \x01(\tR\x12defaultredirecturi\x12b\n" +
-	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x01R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
-	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x02R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
-	"\x11explicitauthflows\x18\xe5ٕ\x84\x01 \x03(\x0e2..cognitoidentityprovider.ExplicitAuthFlowsTypeR\x11explicitauthflows\x12,\n" +
-	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05R\x0fidtokenvalidity\x12-\n" +
+	"(enablepropagateadditionalusercontextdata\x18\xd7\xe6\x93` \x01(\bH\x03R(enablepropagateadditionalusercontextdata\x88\x01\x01\x12<\n" +
+	"\x15enabletokenrevocation\x18\x98\xd1\xfbT \x01(\bH\x04R\x15enabletokenrevocation\x88\x01\x01\x12`\n" +
+	"\x11explicitauthflows\x18\xe5ٕ\x84\x01 \x03(\x0e2..cognitoidentityprovider.ExplicitAuthFlowsTypeR\x11explicitauthflows\x121\n" +
+	"\x0fidtokenvalidity\x18\xa8\x84\x9c\x95\x01 \x01(\x05H\x05R\x0fidtokenvalidity\x88\x01\x01\x12-\n" +
 	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12\"\n" +
 	"\n" +
 	"logouturls\x18\xfe\xf2\x9f\xdf\x01 \x03(\tR\n" +
 	"logouturls\x12z\n" +
 	"\x1apreventuserexistenceerrors\x18\xd6\xfe\xe0Y \x01(\x0e27.cognitoidentityprovider.PreventUserExistenceErrorTypesR\x1apreventuserexistenceerrors\x12*\n" +
 	"\x0ereadattributes\x18\x95\xfb\xba\x9f\x01 \x03(\tR\x0ereadattributes\x12h\n" +
-	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x126\n" +
-	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05R\x14refreshtokenvalidity\x12B\n" +
+	"\x14refreshtokenrotation\x18Ԯ\x83_ \x01(\v21.cognitoidentityprovider.RefreshTokenRotationTypeR\x14refreshtokenrotation\x12;\n" +
+	"\x14refreshtokenvalidity\x18\x94\x8dؐ\x01 \x01(\x05H\x06R\x14refreshtokenvalidity\x88\x01\x01\x12B\n" +
 	"\x1asupportedidentityproviders\x18\xd0\xf0\xcc\xd1\x01 \x03(\tR\x1asupportedidentityproviders\x12a\n" +
 	"\x12tokenvalidityunits\x18\xd8\xc3} \x01(\v2/.cognitoidentityprovider.TokenValidityUnitsTypeR\x12tokenvalidityunits\x12\"\n" +
 	"\n" +
 	"userpoolid\x18\xfeƋ\x9d\x01 \x01(\tR\n" +
 	"userpoolid\x12,\n" +
-	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\"\n" +
-	" _allowedoauthflowsuserpoolclientB+\n" +
+	"\x0fwriteattributes\x18\x9e\xf2\xf5\xd1\x01 \x03(\tR\x0fwriteattributesB\x16\n" +
+	"\x14_accesstokenvalidityB\"\n" +
+	" _allowedoauthflowsuserpoolclientB\x16\n" +
+	"\x14_authsessionvalidityB+\n" +
 	")_enablepropagateadditionalusercontextdataB\x18\n" +
-	"\x16_enabletokenrevocation\"\xd9\x02\n" +
+	"\x16_enabletokenrevocationB\x12\n" +
+	"\x10_idtokenvalidityB\x17\n" +
+	"\x15_refreshtokenvalidity\"\xd9\x02\n" +
 	"\x17UserPoolDescriptionType\x12&\n" +
 	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12Q\n" +
@@ -27308,7 +27350,7 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2*.cognitoidentityprovider.ReplicaStatusTypeR\x06status\x12$\n" +
 	"\vuserpoolarn\x18\x88\xec\xf9\xac\x01 \x01(\tR\vuserpoolarn\"7\n" +
 	"\x18UserPoolTaggingException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xcc\x16\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xec\x16\n" +
 	"\fUserPoolType\x12n\n" +
 	"\x16accountrecoverysetting\x18\xba\xef\xc4h \x01(\v23.cognitoidentityprovider.AccountRecoverySettingTypeR\x16accountrecoverysetting\x12l\n" +
 	"\x15admincreateuserconfig\x18\xe2\xf3\x83\xae\x01 \x01(\v22.cognitoidentityprovider.AdminCreateUserConfigTypeR\x15admincreateuserconfig\x12X\n" +
@@ -27323,8 +27365,8 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x12emailconfiguration\x18\x98\xfc\xf5\xfb\x01 \x01(\v2/.cognitoidentityprovider.EmailConfigurationTypeR\x12emailconfiguration\x12@\n" +
 	"\x19emailconfigurationfailure\x18\xf0\x81\x8d\xf7\x01 \x01(\tR\x19emailconfigurationfailure\x12=\n" +
 	"\x18emailverificationmessage\x18\xa8\xe4\xa8R \x01(\tR\x18emailverificationmessage\x12=\n" +
-	"\x18emailverificationsubject\x18\xb9\x89\xfaj \x01(\tR\x18emailverificationsubject\x129\n" +
-	"\x16estimatednumberofusers\x18\x94\xb5\xf6\t \x01(\x05R\x16estimatednumberofusers\x12\x12\n" +
+	"\x18emailverificationsubject\x18\xb9\x89\xfaj \x01(\tR\x18emailverificationsubject\x12>\n" +
+	"\x16estimatednumberofusers\x18\x94\xb5\xf6\t \x01(\x05H\x00R\x16estimatednumberofusers\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12e\n" +
 	"\x13issuerconfiguration\x18\x9d\xe0\x92) \x01(\v20.cognitoidentityprovider.IssuerConfigurationTypeR\x13issuerconfiguration\x12]\n" +
 	"\x10keyconfiguration\x18\x87\xf3\xa7\xa0\x01 \x01(\v2-.cognitoidentityprovider.KeyConfigurationTypeR\x10keyconfiguration\x12Q\n" +
@@ -27348,7 +27390,8 @@ const file_cognitoidentityprovider_proto_rawDesc = "" +
 	"\x1bverificationmessagetemplate\x18\xa4\xd6\xe2\xef\x01 \x01(\v28.cognitoidentityprovider.VerificationMessageTemplateTypeR\x1bverificationmessagetemplate\x1a?\n" +
 	"\x11UserpooltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9e\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x19\n" +
+	"\x17_estimatednumberofusers\"\x9e\x03\n" +
 	"\bUserType\x12I\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2&.cognitoidentityprovider.AttributeTypeR\n" +
@@ -28951,27 +28994,51 @@ func file_cognitoidentityprovider_proto_init() {
 	file_cognitoidentityprovider_proto_msgTypes[12].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[13].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[28].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[33].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[35].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[37].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[46].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[60].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[67].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[82].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[85].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[88].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[92].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[100].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[102].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[103].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[131].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[133].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[149].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[153].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[157].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[161].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[197].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[217].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[219].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[221].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[223].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[227].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[233].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[239].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[241].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[243].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[250].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[259].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[267].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[281].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[282].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[298].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[302].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[303].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[333].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[337].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[345].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[347].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[348].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[356].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[363].OneofWrappers = []any{}
+	file_cognitoidentityprovider_proto_msgTypes[368].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[369].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[370].OneofWrappers = []any{}
 	file_cognitoidentityprovider_proto_msgTypes[383].OneofWrappers = []any{}

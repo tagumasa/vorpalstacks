@@ -929,7 +929,7 @@ message AccessDetail {
 
   string servicenamespace = 432654764;
 
-  int32 totalauthenticatedentities = 289355788;
+  optional int32 totalauthenticatedentities = 289355788;
 
 }
 
@@ -1363,7 +1363,7 @@ message CreateRoleRequest {
 
   string description = 115243530;
 
-  int32 maxsessionduration = 391414912;
+  optional int32 maxsessionduration = 391414912;
 
   string path = 191292503;
 
@@ -1437,7 +1437,7 @@ message CreateServiceLinkedRoleResponse {
 
 message CreateServiceSpecificCredentialRequest {
 
-  int32 credentialagedays = 119555957;
+  optional int32 credentialagedays = 119555957;
 
   string servicename = 137811296;
 
@@ -1591,7 +1591,7 @@ message DelegationRequest {
 
   repeated string rolepermissionrestrictionarns = 47253157;
 
-  int32 sessionduration = 413635428;
+  optional int32 sessionduration = 413635428;
 
   stateType state = 502047895;
 
@@ -2181,7 +2181,7 @@ message GetAccountAuthorizationDetailsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -2321,7 +2321,7 @@ message GetGroupRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -2457,7 +2457,7 @@ message GetOrganizationsAccessReportRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   sortKeyType sortkey = 407935321;
 
@@ -2481,9 +2481,9 @@ message GetOrganizationsAccessReportResponse {
 
   string marker = 89353912;
 
-  int32 numberofservicesaccessible = 27175708;
+  optional int32 numberofservicesaccessible = 27175708;
 
-  int32 numberofservicesnotaccessed = 127942410;
+  optional int32 numberofservicesnotaccessed = 127942410;
 
 }
 
@@ -2655,7 +2655,7 @@ message GetServiceLastAccessedDetailsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -2689,7 +2689,7 @@ message GetServiceLastAccessedDetailsWithEntitiesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string servicenamespace = 432654764;
 
@@ -2913,7 +2913,7 @@ message ListAccessKeysRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -2939,7 +2939,7 @@ message ListAccountAliasesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -2965,7 +2965,7 @@ message ListAttachedGroupPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -2991,7 +2991,7 @@ message ListAttachedRolePoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3019,7 +3019,7 @@ message ListAttachedUserPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3047,7 +3047,7 @@ message ListDelegationRequestsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string ownerid = 375630298;
 
@@ -3073,7 +3073,7 @@ message ListEntitiesForPolicyRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3109,7 +3109,7 @@ message ListGroupPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3133,7 +3133,7 @@ message ListGroupsForUserRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3159,7 +3159,7 @@ message ListGroupsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3187,7 +3187,7 @@ message ListInstanceProfileTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3209,7 +3209,7 @@ message ListInstanceProfilesForRoleRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string rolename = 407845299;
 
@@ -3235,7 +3235,7 @@ message ListInstanceProfilesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3261,7 +3261,7 @@ message ListMFADeviceTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string serialnumber = 418274661;
 
@@ -3285,7 +3285,7 @@ message ListMFADevicesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3311,7 +3311,7 @@ message ListOpenIDConnectProviderTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string openidconnectproviderarn = 488896995;
 
@@ -3403,7 +3403,7 @@ message ListPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   optional bool onlyattached = 264348868;
 
@@ -3435,7 +3435,7 @@ message ListPolicyTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string policyarn = 497985859;
 
@@ -3459,7 +3459,7 @@ message ListPolicyVersionsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string policyarn = 497985859;
 
@@ -3485,7 +3485,7 @@ message ListRolePoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string rolename = 407845299;
 
@@ -3511,7 +3511,7 @@ message ListRoleTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string rolename = 407845299;
 
@@ -3535,7 +3535,7 @@ message ListRolesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3561,7 +3561,7 @@ message ListSAMLProviderTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string samlproviderarn = 294266533;
 
@@ -3601,7 +3601,7 @@ message ListSSHPublicKeysRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3627,7 +3627,7 @@ message ListServerCertificateTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string servercertificatename = 63357055;
 
@@ -3651,7 +3651,7 @@ message ListServerCertificatesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3679,7 +3679,7 @@ message ListServiceSpecificCredentialsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string servicename = 137811296;
 
@@ -3705,7 +3705,7 @@ message ListSigningCertificatesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3731,7 +3731,7 @@ message ListUserPoliciesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3757,7 +3757,7 @@ message ListUserTagsRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string username = 473243898;
 
@@ -3781,7 +3781,7 @@ message ListUsersRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   string pathprefix = 398040011;
 
@@ -3809,7 +3809,7 @@ message ListVirtualMFADevicesRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
 }
 
@@ -3883,7 +3883,7 @@ message ManagedPolicyDetail {
 
   string arn = 402345373;
 
-  int32 attachmentcount = 468165416;
+  optional int32 attachmentcount = 468165416;
 
   string createdate = 37690514;
 
@@ -3895,7 +3895,7 @@ message ManagedPolicyDetail {
 
   string path = 191292503;
 
-  int32 permissionsboundaryusagecount = 271917656;
+  optional int32 permissionsboundaryusagecount = 271917656;
 
   string policyid = 299520499;
 
@@ -3979,11 +3979,11 @@ message PasswordPolicy {
 
   optional bool hardexpiry = 422015840;
 
-  int32 maxpasswordage = 58745976;
+  optional int32 maxpasswordage = 58745976;
 
-  int32 minimumpasswordlength = 202098235;
+  optional int32 minimumpasswordlength = 202098235;
 
-  int32 passwordreuseprevention = 469673813;
+  optional int32 passwordreuseprevention = 469673813;
 
   optional bool requirelowercasecharacters = 83014890;
 
@@ -4031,7 +4031,7 @@ message Policy {
 
   string arn = 402345373;
 
-  int32 attachmentcount = 468165416;
+  optional int32 attachmentcount = 468165416;
 
   string createdate = 37690514;
 
@@ -4043,7 +4043,7 @@ message Policy {
 
   string path = 191292503;
 
-  int32 permissionsboundaryusagecount = 271917656;
+  optional int32 permissionsboundaryusagecount = 271917656;
 
   string policyid = 299520499;
 
@@ -4229,9 +4229,9 @@ message PolicyVersion {
 
 message Position {
 
-  int32 column = 46213704;
+  optional int32 column = 46213704;
 
-  int32 line = 403240264;
+  optional int32 line = 403240264;
 
 }
 
@@ -4427,7 +4427,7 @@ message Role {
 
   string description = 115243530;
 
-  int32 maxsessionduration = 391414912;
+  optional int32 maxsessionduration = 391414912;
 
   string path = 191292503;
 
@@ -4641,7 +4641,7 @@ message ServiceLastAccessed {
 
   string servicenamespace = 432654764;
 
-  int32 totalauthenticatedentities = 289355788;
+  optional int32 totalauthenticatedentities = 289355788;
 
   repeated TrackedActionLastAccessed trackedactionslastaccessed = 217251704;
 
@@ -4757,7 +4757,7 @@ message SimulateCustomPolicyRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   repeated string permissionsboundarypolicyinputlist = 424163706;
 
@@ -4799,7 +4799,7 @@ message SimulatePrincipalPolicyRequest {
 
   string marker = 89353912;
 
-  int32 maxitems = 506899220;
+  optional int32 maxitems = 506899220;
 
   repeated string permissionsboundarypolicyinputlist = 424163706;
 
@@ -5061,11 +5061,11 @@ message UpdateAccountPasswordPolicyRequest {
 
   optional bool hardexpiry = 422015840;
 
-  int32 maxpasswordage = 58745976;
+  optional int32 maxpasswordage = 58745976;
 
-  int32 minimumpasswordlength = 202098235;
+  optional int32 minimumpasswordlength = 202098235;
 
-  int32 passwordreuseprevention = 469673813;
+  optional int32 passwordreuseprevention = 469673813;
 
   optional bool requirelowercasecharacters = 83014890;
 
@@ -5155,7 +5155,7 @@ message UpdateRoleRequest {
 
   string description = 115243530;
 
-  int32 maxsessionduration = 391414912;
+  optional int32 maxsessionduration = 391414912;
 
   string rolename = 407845299;
 

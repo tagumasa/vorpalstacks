@@ -1523,7 +1523,7 @@ type AccessDetail struct {
 	Region                     string                 `protobuf:"bytes,154040478,opt,name=region,proto3" json:"region,omitempty"`
 	Servicename                string                 `protobuf:"bytes,137811296,opt,name=servicename,proto3" json:"servicename,omitempty"`
 	Servicenamespace           string                 `protobuf:"bytes,432654764,opt,name=servicenamespace,proto3" json:"servicenamespace,omitempty"`
-	Totalauthenticatedentities int32                  `protobuf:"varint,289355788,opt,name=totalauthenticatedentities,proto3" json:"totalauthenticatedentities,omitempty"`
+	Totalauthenticatedentities *int32                 `protobuf:"varint,289355788,opt,name=totalauthenticatedentities,proto3,oneof" json:"totalauthenticatedentities,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1594,8 +1594,8 @@ func (x *AccessDetail) GetServicenamespace() string {
 }
 
 func (x *AccessDetail) GetTotalauthenticatedentities() int32 {
-	if x != nil {
-		return x.Totalauthenticatedentities
+	if x != nil && x.Totalauthenticatedentities != nil {
+		return *x.Totalauthenticatedentities
 	}
 	return 0
 }
@@ -3452,7 +3452,7 @@ type CreateRoleRequest struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Assumerolepolicydocument string                 `protobuf:"bytes,500384765,opt,name=assumerolepolicydocument,proto3" json:"assumerolepolicydocument,omitempty"`
 	Description              string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Maxsessionduration       int32                  `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3" json:"maxsessionduration,omitempty"`
+	Maxsessionduration       *int32                 `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3,oneof" json:"maxsessionduration,omitempty"`
 	Path                     string                 `protobuf:"bytes,191292503,opt,name=path,proto3" json:"path,omitempty"`
 	Permissionsboundary      string                 `protobuf:"bytes,17310134,opt,name=permissionsboundary,proto3" json:"permissionsboundary,omitempty"`
 	Rolename                 string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
@@ -3506,8 +3506,8 @@ func (x *CreateRoleRequest) GetDescription() string {
 }
 
 func (x *CreateRoleRequest) GetMaxsessionduration() int32 {
-	if x != nil {
-		return x.Maxsessionduration
+	if x != nil && x.Maxsessionduration != nil {
+		return *x.Maxsessionduration
 	}
 	return 0
 }
@@ -3818,7 +3818,7 @@ func (x *CreateServiceLinkedRoleResponse) GetRole() *Role {
 
 type CreateServiceSpecificCredentialRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Credentialagedays int32                  `protobuf:"varint,119555957,opt,name=credentialagedays,proto3" json:"credentialagedays,omitempty"`
+	Credentialagedays *int32                 `protobuf:"varint,119555957,opt,name=credentialagedays,proto3,oneof" json:"credentialagedays,omitempty"`
 	Servicename       string                 `protobuf:"bytes,137811296,opt,name=servicename,proto3" json:"servicename,omitempty"`
 	Username          string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -3856,8 +3856,8 @@ func (*CreateServiceSpecificCredentialRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateServiceSpecificCredentialRequest) GetCredentialagedays() int32 {
-	if x != nil {
-		return x.Credentialagedays
+	if x != nil && x.Credentialagedays != nil {
+		return *x.Credentialagedays
 	}
 	return 0
 }
@@ -4391,7 +4391,7 @@ type DelegationRequest struct {
 	Requestorid                   string                 `protobuf:"bytes,231558211,opt,name=requestorid,proto3" json:"requestorid,omitempty"`
 	Requestorname                 string                 `protobuf:"bytes,16690957,opt,name=requestorname,proto3" json:"requestorname,omitempty"`
 	Rolepermissionrestrictionarns []string               `protobuf:"bytes,47253157,rep,name=rolepermissionrestrictionarns,proto3" json:"rolepermissionrestrictionarns,omitempty"`
-	Sessionduration               int32                  `protobuf:"varint,413635428,opt,name=sessionduration,proto3" json:"sessionduration,omitempty"`
+	Sessionduration               *int32                 `protobuf:"varint,413635428,opt,name=sessionduration,proto3,oneof" json:"sessionduration,omitempty"`
 	State                         StateType              `protobuf:"varint,502047895,opt,name=state,proto3,enum=iam.StateType" json:"state,omitempty"`
 	Updatedtime                   string                 `protobuf:"bytes,156274570,opt,name=updatedtime,proto3" json:"updatedtime,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
@@ -4548,8 +4548,8 @@ func (x *DelegationRequest) GetRolepermissionrestrictionarns() []string {
 }
 
 func (x *DelegationRequest) GetSessionduration() int32 {
-	if x != nil {
-		return x.Sessionduration
+	if x != nil && x.Sessionduration != nil {
+		return *x.Sessionduration
 	}
 	return 0
 }
@@ -7256,7 +7256,7 @@ type GetAccountAuthorizationDetailsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filter        []EntityType           `protobuf:"varint,346669208,rep,packed,name=filter,proto3,enum=iam.EntityType" json:"filter,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7306,8 +7306,8 @@ func (x *GetAccountAuthorizationDetailsRequest) GetMarker() string {
 }
 
 func (x *GetAccountAuthorizationDetailsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -7912,7 +7912,7 @@ type GetGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7962,8 +7962,8 @@ func (x *GetGroupRequest) GetMarker() string {
 }
 
 func (x *GetGroupRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -8568,7 +8568,7 @@ type GetOrganizationsAccessReportRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Jobid         string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Sortkey       SortKeyType            `protobuf:"varint,407935321,opt,name=sortkey,proto3,enum=iam.SortKeyType" json:"sortkey,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8619,8 +8619,8 @@ func (x *GetOrganizationsAccessReportRequest) GetMarker() string {
 }
 
 func (x *GetOrganizationsAccessReportRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -8641,8 +8641,8 @@ type GetOrganizationsAccessReportResponse struct {
 	Jobcreationdate             string                 `protobuf:"bytes,201415034,opt,name=jobcreationdate,proto3" json:"jobcreationdate,omitempty"`
 	Jobstatus                   JobStatusType          `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=iam.JobStatusType" json:"jobstatus,omitempty"`
 	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Numberofservicesaccessible  int32                  `protobuf:"varint,27175708,opt,name=numberofservicesaccessible,proto3" json:"numberofservicesaccessible,omitempty"`
-	Numberofservicesnotaccessed int32                  `protobuf:"varint,127942410,opt,name=numberofservicesnotaccessed,proto3" json:"numberofservicesnotaccessed,omitempty"`
+	Numberofservicesaccessible  *int32                 `protobuf:"varint,27175708,opt,name=numberofservicesaccessible,proto3,oneof" json:"numberofservicesaccessible,omitempty"`
+	Numberofservicesnotaccessed *int32                 `protobuf:"varint,127942410,opt,name=numberofservicesnotaccessed,proto3,oneof" json:"numberofservicesnotaccessed,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -8727,15 +8727,15 @@ func (x *GetOrganizationsAccessReportResponse) GetMarker() string {
 }
 
 func (x *GetOrganizationsAccessReportResponse) GetNumberofservicesaccessible() int32 {
-	if x != nil {
-		return x.Numberofservicesaccessible
+	if x != nil && x.Numberofservicesaccessible != nil {
+		return *x.Numberofservicesaccessible
 	}
 	return 0
 }
 
 func (x *GetOrganizationsAccessReportResponse) GetNumberofservicesnotaccessed() int32 {
-	if x != nil {
-		return x.Numberofservicesnotaccessed
+	if x != nil && x.Numberofservicesnotaccessed != nil {
+		return *x.Numberofservicesnotaccessed
 	}
 	return 0
 }
@@ -9508,7 +9508,7 @@ type GetServiceLastAccessedDetailsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Jobid         string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9558,8 +9558,8 @@ func (x *GetServiceLastAccessedDetailsRequest) GetMarker() string {
 }
 
 func (x *GetServiceLastAccessedDetailsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -9668,7 +9668,7 @@ type GetServiceLastAccessedDetailsWithEntitiesRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Jobid            string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems         int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems         *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Servicenamespace string                 `protobuf:"bytes,432654764,opt,name=servicenamespace,proto3" json:"servicenamespace,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -9719,8 +9719,8 @@ func (x *GetServiceLastAccessedDetailsWithEntitiesRequest) GetMarker() string {
 }
 
 func (x *GetServiceLastAccessedDetailsWithEntitiesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -10691,7 +10691,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListAccessKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10735,8 +10735,8 @@ func (x *ListAccessKeysRequest) GetMarker() string {
 }
 
 func (x *ListAccessKeysRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -10811,7 +10811,7 @@ func (x *ListAccessKeysResponse) GetMarker() string {
 type ListAccountAliasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10854,8 +10854,8 @@ func (x *ListAccountAliasesRequest) GetMarker() string {
 }
 
 func (x *ListAccountAliasesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -10924,7 +10924,7 @@ type ListAttachedGroupPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10975,8 +10975,8 @@ func (x *ListAttachedGroupPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListAttachedGroupPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11051,7 +11051,7 @@ func (x *ListAttachedGroupPoliciesResponse) GetMarker() string {
 type ListAttachedRolePoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	Rolename      string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11096,8 +11096,8 @@ func (x *ListAttachedRolePoliciesRequest) GetMarker() string {
 }
 
 func (x *ListAttachedRolePoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11179,7 +11179,7 @@ func (x *ListAttachedRolePoliciesResponse) GetMarker() string {
 type ListAttachedUserPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11224,8 +11224,8 @@ func (x *ListAttachedUserPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListAttachedUserPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11307,7 +11307,7 @@ func (x *ListAttachedUserPoliciesResponse) GetMarker() string {
 type ListDelegationRequestsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Ownerid       string                 `protobuf:"bytes,375630298,opt,name=ownerid,proto3" json:"ownerid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11351,8 +11351,8 @@ func (x *ListDelegationRequestsRequest) GetMarker() string {
 }
 
 func (x *ListDelegationRequestsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11428,7 +11428,7 @@ type ListEntitiesForPolicyRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Entityfilter      EntityType             `protobuf:"varint,325795861,opt,name=entityfilter,proto3,enum=iam.EntityType" json:"entityfilter,omitempty"`
 	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems          int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix        string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	Policyarn         string                 `protobuf:"bytes,497985859,opt,name=policyarn,proto3" json:"policyarn,omitempty"`
 	Policyusagefilter PolicyUsageType        `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType" json:"policyusagefilter,omitempty"`
@@ -11481,8 +11481,8 @@ func (x *ListEntitiesForPolicyRequest) GetMarker() string {
 }
 
 func (x *ListEntitiesForPolicyRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11588,7 +11588,7 @@ type ListGroupPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11638,8 +11638,8 @@ func (x *ListGroupPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListGroupPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11707,7 +11707,7 @@ func (x *ListGroupPoliciesResponse) GetPolicynames() []string {
 type ListGroupsForUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11751,8 +11751,8 @@ func (x *ListGroupsForUserRequest) GetMarker() string {
 }
 
 func (x *ListGroupsForUserRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11827,7 +11827,7 @@ func (x *ListGroupsForUserResponse) GetMarker() string {
 type ListGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11871,8 +11871,8 @@ func (x *ListGroupsRequest) GetMarker() string {
 }
 
 func (x *ListGroupsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -11948,7 +11948,7 @@ type ListInstanceProfileTagsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Instanceprofilename string                 `protobuf:"bytes,458172269,opt,name=instanceprofilename,proto3" json:"instanceprofilename,omitempty"`
 	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems            int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems            *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11998,8 +11998,8 @@ func (x *ListInstanceProfileTagsRequest) GetMarker() string {
 }
 
 func (x *ListInstanceProfileTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -12067,7 +12067,7 @@ func (x *ListInstanceProfileTagsResponse) GetTags() []*Tag {
 type ListInstanceProfilesForRoleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Rolename      string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12111,8 +12111,8 @@ func (x *ListInstanceProfilesForRoleRequest) GetMarker() string {
 }
 
 func (x *ListInstanceProfilesForRoleRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -12187,7 +12187,7 @@ func (x *ListInstanceProfilesForRoleResponse) GetMarker() string {
 type ListInstanceProfilesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12231,8 +12231,8 @@ func (x *ListInstanceProfilesRequest) GetMarker() string {
 }
 
 func (x *ListInstanceProfilesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -12307,7 +12307,7 @@ func (x *ListInstanceProfilesResponse) GetMarker() string {
 type ListMFADeviceTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Serialnumber  string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12351,8 +12351,8 @@ func (x *ListMFADeviceTagsRequest) GetMarker() string {
 }
 
 func (x *ListMFADeviceTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -12427,7 +12427,7 @@ func (x *ListMFADeviceTagsResponse) GetTags() []*Tag {
 type ListMFADevicesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12471,8 +12471,8 @@ func (x *ListMFADevicesRequest) GetMarker() string {
 }
 
 func (x *ListMFADevicesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -12547,7 +12547,7 @@ func (x *ListMFADevicesResponse) GetMarker() string {
 type ListOpenIDConnectProviderTagsRequest struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Marker                   string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                 int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                 *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Openidconnectproviderarn string                 `protobuf:"bytes,488896995,opt,name=openidconnectproviderarn,proto3" json:"openidconnectproviderarn,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -12591,8 +12591,8 @@ func (x *ListOpenIDConnectProviderTagsRequest) GetMarker() string {
 }
 
 func (x *ListOpenIDConnectProviderTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13007,7 +13007,7 @@ func (x *ListPoliciesGrantingServiceAccessResponse) GetPoliciesgrantingserviceac
 type ListPoliciesRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems          int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Onlyattached      *bool                  `protobuf:"varint,264348868,opt,name=onlyattached,proto3,oneof" json:"onlyattached,omitempty"`
 	Pathprefix        string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	Policyusagefilter PolicyUsageType        `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType" json:"policyusagefilter,omitempty"`
@@ -13054,8 +13054,8 @@ func (x *ListPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13151,7 +13151,7 @@ func (x *ListPoliciesResponse) GetPolicies() []*Policy {
 type ListPolicyTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Policyarn     string                 `protobuf:"bytes,497985859,opt,name=policyarn,proto3" json:"policyarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13195,8 +13195,8 @@ func (x *ListPolicyTagsRequest) GetMarker() string {
 }
 
 func (x *ListPolicyTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13271,7 +13271,7 @@ func (x *ListPolicyTagsResponse) GetTags() []*Tag {
 type ListPolicyVersionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Policyarn     string                 `protobuf:"bytes,497985859,opt,name=policyarn,proto3" json:"policyarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13315,8 +13315,8 @@ func (x *ListPolicyVersionsRequest) GetMarker() string {
 }
 
 func (x *ListPolicyVersionsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13391,7 +13391,7 @@ func (x *ListPolicyVersionsResponse) GetVersions() []*PolicyVersion {
 type ListRolePoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Rolename      string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13435,8 +13435,8 @@ func (x *ListRolePoliciesRequest) GetMarker() string {
 }
 
 func (x *ListRolePoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13511,7 +13511,7 @@ func (x *ListRolePoliciesResponse) GetPolicynames() []string {
 type ListRoleTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Rolename      string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13555,8 +13555,8 @@ func (x *ListRoleTagsRequest) GetMarker() string {
 }
 
 func (x *ListRoleTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13631,7 +13631,7 @@ func (x *ListRoleTagsResponse) GetTags() []*Tag {
 type ListRolesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13675,8 +13675,8 @@ func (x *ListRolesRequest) GetMarker() string {
 }
 
 func (x *ListRolesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13751,7 +13751,7 @@ func (x *ListRolesResponse) GetRoles() []*Role {
 type ListSAMLProviderTagsRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems        int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems        *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Samlproviderarn string                 `protobuf:"bytes,294266533,opt,name=samlproviderarn,proto3" json:"samlproviderarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -13795,8 +13795,8 @@ func (x *ListSAMLProviderTagsRequest) GetMarker() string {
 }
 
 func (x *ListSAMLProviderTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -13951,7 +13951,7 @@ func (x *ListSAMLProvidersResponse) GetSamlproviderlist() []*SAMLProviderListEnt
 type ListSSHPublicKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13995,8 +13995,8 @@ func (x *ListSSHPublicKeysRequest) GetMarker() string {
 }
 
 func (x *ListSSHPublicKeysRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14071,7 +14071,7 @@ func (x *ListSSHPublicKeysResponse) GetSshpublickeys() []*SSHPublicKeyMetadata {
 type ListServerCertificateTagsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Marker                string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems              int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems              *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Servercertificatename string                 `protobuf:"bytes,63357055,opt,name=servercertificatename,proto3" json:"servercertificatename,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -14115,8 +14115,8 @@ func (x *ListServerCertificateTagsRequest) GetMarker() string {
 }
 
 func (x *ListServerCertificateTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14191,7 +14191,7 @@ func (x *ListServerCertificateTagsResponse) GetTags() []*Tag {
 type ListServerCertificatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14235,8 +14235,8 @@ func (x *ListServerCertificatesRequest) GetMarker() string {
 }
 
 func (x *ListServerCertificatesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14312,7 +14312,7 @@ type ListServiceSpecificCredentialsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Allusers      *bool                  `protobuf:"varint,97090269,opt,name=allusers,proto3,oneof" json:"allusers,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Servicename   string                 `protobuf:"bytes,137811296,opt,name=servicename,proto3" json:"servicename,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -14364,8 +14364,8 @@ func (x *ListServiceSpecificCredentialsRequest) GetMarker() string {
 }
 
 func (x *ListServiceSpecificCredentialsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14447,7 +14447,7 @@ func (x *ListServiceSpecificCredentialsResponse) GetServicespecificcredentials()
 type ListSigningCertificatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14491,8 +14491,8 @@ func (x *ListSigningCertificatesRequest) GetMarker() string {
 }
 
 func (x *ListSigningCertificatesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14567,7 +14567,7 @@ func (x *ListSigningCertificatesResponse) GetMarker() string {
 type ListUserPoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14611,8 +14611,8 @@ func (x *ListUserPoliciesRequest) GetMarker() string {
 }
 
 func (x *ListUserPoliciesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14687,7 +14687,7 @@ func (x *ListUserPoliciesResponse) GetPolicynames() []string {
 type ListUserTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Username      string                 `protobuf:"bytes,473243898,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14731,8 +14731,8 @@ func (x *ListUserTagsRequest) GetMarker() string {
 }
 
 func (x *ListUserTagsRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14807,7 +14807,7 @@ func (x *ListUserTagsResponse) GetTags() []*Tag {
 type ListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix    string                 `protobuf:"bytes,398040011,opt,name=pathprefix,proto3" json:"pathprefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14851,8 +14851,8 @@ func (x *ListUsersRequest) GetMarker() string {
 }
 
 func (x *ListUsersRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -14928,7 +14928,7 @@ type ListVirtualMFADevicesRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Assignmentstatus AssignmentStatusType   `protobuf:"varint,277782963,opt,name=assignmentstatus,proto3,enum=iam.AssignmentStatusType" json:"assignmentstatus,omitempty"`
 	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems         int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems         *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -14978,8 +14978,8 @@ func (x *ListVirtualMFADevicesRequest) GetMarker() string {
 }
 
 func (x *ListVirtualMFADevicesRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -15255,13 +15255,13 @@ func (x *MalformedPolicyDocumentException) GetMessage() string {
 type ManagedPolicyDetail struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Arn                           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Attachmentcount               int32                  `protobuf:"varint,468165416,opt,name=attachmentcount,proto3" json:"attachmentcount,omitempty"`
+	Attachmentcount               *int32                 `protobuf:"varint,468165416,opt,name=attachmentcount,proto3,oneof" json:"attachmentcount,omitempty"`
 	Createdate                    string                 `protobuf:"bytes,37690514,opt,name=createdate,proto3" json:"createdate,omitempty"`
 	Defaultversionid              string                 `protobuf:"bytes,296003120,opt,name=defaultversionid,proto3" json:"defaultversionid,omitempty"`
 	Description                   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Isattachable                  *bool                  `protobuf:"varint,2814573,opt,name=isattachable,proto3,oneof" json:"isattachable,omitempty"`
 	Path                          string                 `protobuf:"bytes,191292503,opt,name=path,proto3" json:"path,omitempty"`
-	Permissionsboundaryusagecount int32                  `protobuf:"varint,271917656,opt,name=permissionsboundaryusagecount,proto3" json:"permissionsboundaryusagecount,omitempty"`
+	Permissionsboundaryusagecount *int32                 `protobuf:"varint,271917656,opt,name=permissionsboundaryusagecount,proto3,oneof" json:"permissionsboundaryusagecount,omitempty"`
 	Policyid                      string                 `protobuf:"bytes,299520499,opt,name=policyid,proto3" json:"policyid,omitempty"`
 	Policyname                    string                 `protobuf:"bytes,266468029,opt,name=policyname,proto3" json:"policyname,omitempty"`
 	Policyversionlist             []*PolicyVersion       `protobuf:"bytes,173611150,rep,name=policyversionlist,proto3" json:"policyversionlist,omitempty"`
@@ -15308,8 +15308,8 @@ func (x *ManagedPolicyDetail) GetArn() string {
 }
 
 func (x *ManagedPolicyDetail) GetAttachmentcount() int32 {
-	if x != nil {
-		return x.Attachmentcount
+	if x != nil && x.Attachmentcount != nil {
+		return *x.Attachmentcount
 	}
 	return 0
 }
@@ -15350,8 +15350,8 @@ func (x *ManagedPolicyDetail) GetPath() string {
 }
 
 func (x *ManagedPolicyDetail) GetPermissionsboundaryusagecount() int32 {
-	if x != nil {
-		return x.Permissionsboundaryusagecount
+	if x != nil && x.Permissionsboundaryusagecount != nil {
+		return *x.Permissionsboundaryusagecount
 	}
 	return 0
 }
@@ -15653,9 +15653,9 @@ type PasswordPolicy struct {
 	Allowuserstochangepassword *bool                  `protobuf:"varint,286109075,opt,name=allowuserstochangepassword,proto3,oneof" json:"allowuserstochangepassword,omitempty"`
 	Expirepasswords            *bool                  `protobuf:"varint,487573877,opt,name=expirepasswords,proto3,oneof" json:"expirepasswords,omitempty"`
 	Hardexpiry                 *bool                  `protobuf:"varint,422015840,opt,name=hardexpiry,proto3,oneof" json:"hardexpiry,omitempty"`
-	Maxpasswordage             int32                  `protobuf:"varint,58745976,opt,name=maxpasswordage,proto3" json:"maxpasswordage,omitempty"`
-	Minimumpasswordlength      int32                  `protobuf:"varint,202098235,opt,name=minimumpasswordlength,proto3" json:"minimumpasswordlength,omitempty"`
-	Passwordreuseprevention    int32                  `protobuf:"varint,469673813,opt,name=passwordreuseprevention,proto3" json:"passwordreuseprevention,omitempty"`
+	Maxpasswordage             *int32                 `protobuf:"varint,58745976,opt,name=maxpasswordage,proto3,oneof" json:"maxpasswordage,omitempty"`
+	Minimumpasswordlength      *int32                 `protobuf:"varint,202098235,opt,name=minimumpasswordlength,proto3,oneof" json:"minimumpasswordlength,omitempty"`
+	Passwordreuseprevention    *int32                 `protobuf:"varint,469673813,opt,name=passwordreuseprevention,proto3,oneof" json:"passwordreuseprevention,omitempty"`
 	Requirelowercasecharacters *bool                  `protobuf:"varint,83014890,opt,name=requirelowercasecharacters,proto3,oneof" json:"requirelowercasecharacters,omitempty"`
 	Requirenumbers             *bool                  `protobuf:"varint,385325811,opt,name=requirenumbers,proto3,oneof" json:"requirenumbers,omitempty"`
 	Requiresymbols             *bool                  `protobuf:"varint,98968906,opt,name=requiresymbols,proto3,oneof" json:"requiresymbols,omitempty"`
@@ -15716,22 +15716,22 @@ func (x *PasswordPolicy) GetHardexpiry() bool {
 }
 
 func (x *PasswordPolicy) GetMaxpasswordage() int32 {
-	if x != nil {
-		return x.Maxpasswordage
+	if x != nil && x.Maxpasswordage != nil {
+		return *x.Maxpasswordage
 	}
 	return 0
 }
 
 func (x *PasswordPolicy) GetMinimumpasswordlength() int32 {
-	if x != nil {
-		return x.Minimumpasswordlength
+	if x != nil && x.Minimumpasswordlength != nil {
+		return *x.Minimumpasswordlength
 	}
 	return 0
 }
 
 func (x *PasswordPolicy) GetPasswordreuseprevention() int32 {
-	if x != nil {
-		return x.Passwordreuseprevention
+	if x != nil && x.Passwordreuseprevention != nil {
+		return *x.Passwordreuseprevention
 	}
 	return 0
 }
@@ -15855,13 +15855,13 @@ func (x *PermissionsBoundaryDecisionDetail) GetAllowedbypermissionsboundary() bo
 type Policy struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Arn                           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Attachmentcount               int32                  `protobuf:"varint,468165416,opt,name=attachmentcount,proto3" json:"attachmentcount,omitempty"`
+	Attachmentcount               *int32                 `protobuf:"varint,468165416,opt,name=attachmentcount,proto3,oneof" json:"attachmentcount,omitempty"`
 	Createdate                    string                 `protobuf:"bytes,37690514,opt,name=createdate,proto3" json:"createdate,omitempty"`
 	Defaultversionid              string                 `protobuf:"bytes,296003120,opt,name=defaultversionid,proto3" json:"defaultversionid,omitempty"`
 	Description                   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
 	Isattachable                  *bool                  `protobuf:"varint,2814573,opt,name=isattachable,proto3,oneof" json:"isattachable,omitempty"`
 	Path                          string                 `protobuf:"bytes,191292503,opt,name=path,proto3" json:"path,omitempty"`
-	Permissionsboundaryusagecount int32                  `protobuf:"varint,271917656,opt,name=permissionsboundaryusagecount,proto3" json:"permissionsboundaryusagecount,omitempty"`
+	Permissionsboundaryusagecount *int32                 `protobuf:"varint,271917656,opt,name=permissionsboundaryusagecount,proto3,oneof" json:"permissionsboundaryusagecount,omitempty"`
 	Policyid                      string                 `protobuf:"bytes,299520499,opt,name=policyid,proto3" json:"policyid,omitempty"`
 	Policyname                    string                 `protobuf:"bytes,266468029,opt,name=policyname,proto3" json:"policyname,omitempty"`
 	Tags                          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -15908,8 +15908,8 @@ func (x *Policy) GetArn() string {
 }
 
 func (x *Policy) GetAttachmentcount() int32 {
-	if x != nil {
-		return x.Attachmentcount
+	if x != nil && x.Attachmentcount != nil {
+		return *x.Attachmentcount
 	}
 	return 0
 }
@@ -15950,8 +15950,8 @@ func (x *Policy) GetPath() string {
 }
 
 func (x *Policy) GetPermissionsboundaryusagecount() int32 {
-	if x != nil {
-		return x.Permissionsboundaryusagecount
+	if x != nil && x.Permissionsboundaryusagecount != nil {
+		return *x.Permissionsboundaryusagecount
 	}
 	return 0
 }
@@ -16486,8 +16486,8 @@ func (x *PolicyVersion) GetVersionid() string {
 
 type Position struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Column        int32                  `protobuf:"varint,46213704,opt,name=column,proto3" json:"column,omitempty"`
-	Line          int32                  `protobuf:"varint,403240264,opt,name=line,proto3" json:"line,omitempty"`
+	Column        *int32                 `protobuf:"varint,46213704,opt,name=column,proto3,oneof" json:"column,omitempty"`
+	Line          *int32                 `protobuf:"varint,403240264,opt,name=line,proto3,oneof" json:"line,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16523,15 +16523,15 @@ func (*Position) Descriptor() ([]byte, []int) {
 }
 
 func (x *Position) GetColumn() int32 {
-	if x != nil {
-		return x.Column
+	if x != nil && x.Column != nil {
+		return *x.Column
 	}
 	return 0
 }
 
 func (x *Position) GetLine() int32 {
-	if x != nil {
-		return x.Line
+	if x != nil && x.Line != nil {
+		return *x.Line
 	}
 	return 0
 }
@@ -17326,7 +17326,7 @@ type Role struct {
 	Assumerolepolicydocument string                       `protobuf:"bytes,500384765,opt,name=assumerolepolicydocument,proto3" json:"assumerolepolicydocument,omitempty"`
 	Createdate               string                       `protobuf:"bytes,37690514,opt,name=createdate,proto3" json:"createdate,omitempty"`
 	Description              string                       `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Maxsessionduration       int32                        `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3" json:"maxsessionduration,omitempty"`
+	Maxsessionduration       *int32                       `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3,oneof" json:"maxsessionduration,omitempty"`
 	Path                     string                       `protobuf:"bytes,191292503,opt,name=path,proto3" json:"path,omitempty"`
 	Permissionsboundary      *AttachedPermissionsBoundary `protobuf:"bytes,17310134,opt,name=permissionsboundary,proto3" json:"permissionsboundary,omitempty"`
 	Roleid                   string                       `protobuf:"bytes,486019037,opt,name=roleid,proto3" json:"roleid,omitempty"`
@@ -17396,8 +17396,8 @@ func (x *Role) GetDescription() string {
 }
 
 func (x *Role) GetMaxsessionduration() int32 {
-	if x != nil {
-		return x.Maxsessionduration
+	if x != nil && x.Maxsessionduration != nil {
+		return *x.Maxsessionduration
 	}
 	return 0
 }
@@ -18235,7 +18235,7 @@ type ServiceLastAccessed struct {
 	Lastauthenticatedregion    string                       `protobuf:"bytes,91136313,opt,name=lastauthenticatedregion,proto3" json:"lastauthenticatedregion,omitempty"`
 	Servicename                string                       `protobuf:"bytes,137811296,opt,name=servicename,proto3" json:"servicename,omitempty"`
 	Servicenamespace           string                       `protobuf:"bytes,432654764,opt,name=servicenamespace,proto3" json:"servicenamespace,omitempty"`
-	Totalauthenticatedentities int32                        `protobuf:"varint,289355788,opt,name=totalauthenticatedentities,proto3" json:"totalauthenticatedentities,omitempty"`
+	Totalauthenticatedentities *int32                       `protobuf:"varint,289355788,opt,name=totalauthenticatedentities,proto3,oneof" json:"totalauthenticatedentities,omitempty"`
 	Trackedactionslastaccessed []*TrackedActionLastAccessed `protobuf:"bytes,217251704,rep,name=trackedactionslastaccessed,proto3" json:"trackedactionslastaccessed,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -18307,8 +18307,8 @@ func (x *ServiceLastAccessed) GetServicenamespace() string {
 }
 
 func (x *ServiceLastAccessed) GetTotalauthenticatedentities() int32 {
-	if x != nil {
-		return x.Totalauthenticatedentities
+	if x != nil && x.Totalauthenticatedentities != nil {
+		return *x.Totalauthenticatedentities
 	}
 	return 0
 }
@@ -18758,7 +18758,7 @@ type SimulateCustomPolicyRequest struct {
 	Callerarn                          string                 `protobuf:"bytes,249627822,opt,name=callerarn,proto3" json:"callerarn,omitempty"`
 	Contextentries                     []*ContextEntry        `protobuf:"bytes,361913797,rep,name=contextentries,proto3" json:"contextentries,omitempty"`
 	Marker                             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                           int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                           *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Permissionsboundarypolicyinputlist []string               `protobuf:"bytes,424163706,rep,name=permissionsboundarypolicyinputlist,proto3" json:"permissionsboundarypolicyinputlist,omitempty"`
 	Policyinputlist                    []string               `protobuf:"bytes,320766346,rep,name=policyinputlist,proto3" json:"policyinputlist,omitempty"`
 	Resourcearns                       []string               `protobuf:"bytes,222677390,rep,name=resourcearns,proto3" json:"resourcearns,omitempty"`
@@ -18828,8 +18828,8 @@ func (x *SimulateCustomPolicyRequest) GetMarker() string {
 }
 
 func (x *SimulateCustomPolicyRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -18942,7 +18942,7 @@ type SimulatePrincipalPolicyRequest struct {
 	Callerarn                          string                 `protobuf:"bytes,249627822,opt,name=callerarn,proto3" json:"callerarn,omitempty"`
 	Contextentries                     []*ContextEntry        `protobuf:"bytes,361913797,rep,name=contextentries,proto3" json:"contextentries,omitempty"`
 	Marker                             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems                           int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems                           *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Permissionsboundarypolicyinputlist []string               `protobuf:"bytes,424163706,rep,name=permissionsboundarypolicyinputlist,proto3" json:"permissionsboundarypolicyinputlist,omitempty"`
 	Policyinputlist                    []string               `protobuf:"bytes,320766346,rep,name=policyinputlist,proto3" json:"policyinputlist,omitempty"`
 	Policysourcearn                    string                 `protobuf:"bytes,84285350,opt,name=policysourcearn,proto3" json:"policysourcearn,omitempty"`
@@ -19013,8 +19013,8 @@ func (x *SimulatePrincipalPolicyRequest) GetMarker() string {
 }
 
 func (x *SimulatePrincipalPolicyRequest) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -20240,9 +20240,9 @@ type UpdateAccountPasswordPolicyRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Allowuserstochangepassword *bool                  `protobuf:"varint,286109075,opt,name=allowuserstochangepassword,proto3,oneof" json:"allowuserstochangepassword,omitempty"`
 	Hardexpiry                 *bool                  `protobuf:"varint,422015840,opt,name=hardexpiry,proto3,oneof" json:"hardexpiry,omitempty"`
-	Maxpasswordage             int32                  `protobuf:"varint,58745976,opt,name=maxpasswordage,proto3" json:"maxpasswordage,omitempty"`
-	Minimumpasswordlength      int32                  `protobuf:"varint,202098235,opt,name=minimumpasswordlength,proto3" json:"minimumpasswordlength,omitempty"`
-	Passwordreuseprevention    int32                  `protobuf:"varint,469673813,opt,name=passwordreuseprevention,proto3" json:"passwordreuseprevention,omitempty"`
+	Maxpasswordage             *int32                 `protobuf:"varint,58745976,opt,name=maxpasswordage,proto3,oneof" json:"maxpasswordage,omitempty"`
+	Minimumpasswordlength      *int32                 `protobuf:"varint,202098235,opt,name=minimumpasswordlength,proto3,oneof" json:"minimumpasswordlength,omitempty"`
+	Passwordreuseprevention    *int32                 `protobuf:"varint,469673813,opt,name=passwordreuseprevention,proto3,oneof" json:"passwordreuseprevention,omitempty"`
 	Requirelowercasecharacters *bool                  `protobuf:"varint,83014890,opt,name=requirelowercasecharacters,proto3,oneof" json:"requirelowercasecharacters,omitempty"`
 	Requirenumbers             *bool                  `protobuf:"varint,385325811,opt,name=requirenumbers,proto3,oneof" json:"requirenumbers,omitempty"`
 	Requiresymbols             *bool                  `protobuf:"varint,98968906,opt,name=requiresymbols,proto3,oneof" json:"requiresymbols,omitempty"`
@@ -20296,22 +20296,22 @@ func (x *UpdateAccountPasswordPolicyRequest) GetHardexpiry() bool {
 }
 
 func (x *UpdateAccountPasswordPolicyRequest) GetMaxpasswordage() int32 {
-	if x != nil {
-		return x.Maxpasswordage
+	if x != nil && x.Maxpasswordage != nil {
+		return *x.Maxpasswordage
 	}
 	return 0
 }
 
 func (x *UpdateAccountPasswordPolicyRequest) GetMinimumpasswordlength() int32 {
-	if x != nil {
-		return x.Minimumpasswordlength
+	if x != nil && x.Minimumpasswordlength != nil {
+		return *x.Minimumpasswordlength
 	}
 	return 0
 }
 
 func (x *UpdateAccountPasswordPolicyRequest) GetPasswordreuseprevention() int32 {
-	if x != nil {
-		return x.Passwordreuseprevention
+	if x != nil && x.Passwordreuseprevention != nil {
+		return *x.Passwordreuseprevention
 	}
 	return 0
 }
@@ -20719,7 +20719,7 @@ func (x *UpdateRoleDescriptionResponse) GetRole() *Role {
 type UpdateRoleRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Description        string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Maxsessionduration int32                  `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3" json:"maxsessionduration,omitempty"`
+	Maxsessionduration *int32                 `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3,oneof" json:"maxsessionduration,omitempty"`
 	Rolename           string                 `protobuf:"bytes,407845299,opt,name=rolename,proto3" json:"rolename,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -20763,8 +20763,8 @@ func (x *UpdateRoleRequest) GetDescription() string {
 }
 
 func (x *UpdateRoleRequest) GetMaxsessionduration() int32 {
-	if x != nil {
-		return x.Maxsessionduration
+	if x != nil && x.Maxsessionduration != nil {
+		return *x.Maxsessionduration
 	}
 	return 0
 }
@@ -21866,7 +21866,7 @@ const file_iam_proto_rawDesc = "" +
 	"\n" +
 	"\tiam.proto\x12\x03iam\x1a\fcommon.proto\x1a\taws.proto\"V\n" +
 	"\x1eAcceptDelegationRequestRequest\x124\n" +
-	"\x13delegationrequestid\x18\x9e\xb7\x80\x85\x01 \x01(\tR\x13delegationrequestid\"\x9e\x02\n" +
+	"\x13delegationrequestid\x18\x9e\xb7\x80\x85\x01 \x01(\tR\x13delegationrequestid\"\xc2\x02\n" +
 	"\fAccessDetail\x12!\n" +
 	"\n" +
 	"entitypath\x18\xca\xf2\xde, \x01(\tR\n" +
@@ -21874,8 +21874,9 @@ const file_iam_proto_rawDesc = "" +
 	"\x15lastauthenticatedtime\x18\xf6\xe2\x8a{ \x01(\tR\x15lastauthenticatedtime\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x12#\n" +
 	"\vservicename\x18\xe0\xaa\xdbA \x01(\tR\vservicename\x12.\n" +
-	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespace\x12B\n" +
-	"\x1atotalauthenticatedentities\x18\x8c\xf0\xfc\x89\x01 \x01(\x05R\x1atotalauthenticatedentities\"\xcd\x01\n" +
+	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespace\x12G\n" +
+	"\x1atotalauthenticatedentities\x18\x8c\xf0\xfc\x89\x01 \x01(\x05H\x00R\x1atotalauthenticatedentities\x88\x01\x01B\x1d\n" +
+	"\x1b_totalauthenticatedentities\"\xcd\x01\n" +
 	"\tAccessKey\x12$\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12!\n" +
 	"\n" +
@@ -21999,15 +22000,16 @@ const file_iam_proto_rawDesc = "" +
 	"\fsetasdefault\x18\x99\xaf\x8c\xcc\x01 \x01(\bH\x00R\fsetasdefault\x88\x01\x01B\x0f\n" +
 	"\r_setasdefault\"Z\n" +
 	"\x1bCreatePolicyVersionResponse\x12;\n" +
-	"\rpolicyversion\x18\x82\xbd\xa4\x7f \x01(\v2\x12.iam.PolicyVersionR\rpolicyversion\"\xba\x02\n" +
+	"\rpolicyversion\x18\x82\xbd\xa4\x7f \x01(\v2\x12.iam.PolicyVersionR\rpolicyversion\"\xd6\x02\n" +
 	"\x11CreateRoleRequest\x12>\n" +
 	"\x18assumerolepolicydocument\x18\xfd\x87\xcd\xee\x01 \x01(\tR\x18assumerolepolicydocument\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x122\n" +
-	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05R\x12maxsessionduration\x12\x15\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x127\n" +
+	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05H\x00R\x12maxsessionduration\x88\x01\x01\x12\x15\n" +
 	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x123\n" +
 	"\x13permissionsboundary\x18\xb6à\b \x01(\tR\x13permissionsboundary\x12\x1e\n" +
 	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tags\"7\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x15\n" +
+	"\x13_maxsessionduration\"7\n" +
 	"\x12CreateRoleResponse\x12!\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\x95\x02\n" +
 	"\x19CreateSAMLProviderRequest\x12'\n" +
@@ -22024,11 +22026,12 @@ const file_iam_proto_rawDesc = "" +
 	"\fcustomsuffix\x18\xec\xed\xb5\x80\x01 \x01(\tR\fcustomsuffix\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\"D\n" +
 	"\x1fCreateServiceLinkedRoleResponse\x12!\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\x9e\x01\n" +
-	"&CreateServiceSpecificCredentialRequest\x12/\n" +
-	"\x11credentialagedays\x18\xf5\x8e\x819 \x01(\x05R\x11credentialagedays\x12#\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\xb9\x01\n" +
+	"&CreateServiceSpecificCredentialRequest\x124\n" +
+	"\x11credentialagedays\x18\xf5\x8e\x819 \x01(\x05H\x00R\x11credentialagedays\x88\x01\x01\x12#\n" +
 	"\vservicename\x18\xe0\xaa\xdbA \x01(\tR\vservicename\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x8a\x01\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\x14\n" +
+	"\x12_credentialagedays\"\x8a\x01\n" +
 	"'CreateServiceSpecificCredentialResponse\x12_\n" +
 	"\x19servicespecificcredential\x18\x8e\x81\x89Y \x01(\v2\x1e.iam.ServiceSpecificCredentialR\x19servicespecificcredential\"\xa1\x01\n" +
 	"\x11CreateUserRequest\x12\x15\n" +
@@ -22057,7 +22060,7 @@ const file_iam_proto_rawDesc = "" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x14.iam.PolicyParameterR\n" +
 	"parameters\x120\n" +
-	"\x11policytemplatearn\x18\xb5\xb7\xf0\xd9\x01 \x01(\tR\x11policytemplatearn\"\x8a\a\n" +
+	"\x11policytemplatearn\x18\xb5\xb7\xf0\xd9\x01 \x01(\tR\x11policytemplatearn\"\xa3\a\n" +
 	"\x11DelegationRequest\x12\"\n" +
 	"\n" +
 	"approverid\x18Ơ\x88\xab\x01 \x01(\tR\n" +
@@ -22079,11 +22082,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x0erequestmessage\x18\xba\xeb\x90\x1c \x01(\tR\x0erequestmessage\x12#\n" +
 	"\vrequestorid\x18Ø\xb5n \x01(\tR\vrequestorid\x12'\n" +
 	"\rrequestorname\x18\x8d\xde\xfa\a \x01(\tR\rrequestorname\x12G\n" +
-	"\x1drolepermissionrestrictionarns\x18\xa5\x8d\xc4\x16 \x03(\tR\x1drolepermissionrestrictionarns\x12,\n" +
-	"\x0fsessionduration\x18䦞\xc5\x01 \x01(\x05R\x0fsessionduration\x12(\n" +
+	"\x1drolepermissionrestrictionarns\x18\xa5\x8d\xc4\x16 \x03(\tR\x1drolepermissionrestrictionarns\x121\n" +
+	"\x0fsessionduration\x18䦞\xc5\x01 \x01(\x05H\x01R\x0fsessionduration\x88\x01\x01\x12(\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x0e.iam.stateTypeR\x05state\x12#\n" +
 	"\vupdatedtime\x18\x8a\x9f\xc2J \x01(\tR\vupdatedtimeB\x12\n" +
-	"\x10_onlysendbyowner\"^\n" +
+	"\x10_onlysendbyownerB\x12\n" +
+	"\x10_sessionduration\"^\n" +
 	"\x16DeleteAccessKeyRequest\x12$\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12\x1e\n" +
 	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"C\n" +
@@ -22240,11 +22244,12 @@ const file_iam_proto_rawDesc = "" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\"\x87\x01\n" +
 	"\x1cGetAccessKeyLastUsedResponse\x12G\n" +
 	"\x11accesskeylastused\x18\xb0\xf3\xd91 \x01(\v2\x16.iam.AccessKeyLastUsedR\x11accesskeylastused\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x8f\x01\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xa1\x01\n" +
 	"%GetAccountAuthorizationDetailsRequest\x12+\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x03(\x0e2\x0f.iam.EntityTypeR\x06filter\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xf0\x02\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xf0\x02\n" +
 	"&GetAccountAuthorizationDetailsResponse\x12>\n" +
 	"\x0fgroupdetaillist\x18\x9a\x8aϧ\x01 \x03(\v2\x10.iam.GroupDetailR\x0fgroupdetaillist\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
@@ -22291,11 +22296,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x0epolicydocument\x18ˮ\xc1q \x01(\tR\x0epolicydocument\x12!\n" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
-	"policyname\"n\n" +
+	"policyname\"\x80\x01\n" +
 	"\x0fGetGroupRequest\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xb0\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xb0\x01\n" +
 	"\x10GetGroupResponse\x12#\n" +
 	"\x05group\x18\xad\xa0\xd2+ \x01(\v2\n" +
 	".iam.GroupR\x05group\x12(\n" +
@@ -22340,12 +22346,13 @@ const file_iam_proto_rawDesc = "" +
 	"createdate\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tags\x12)\n" +
 	"\x0ethumbprintlist\x18߫\x9b* \x03(\tR\x0ethumbprintlist\x12\x14\n" +
-	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tR\x03url\"\xa9\x01\n" +
+	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tR\x03url\"\xbb\x01\n" +
 	"#GetOrganizationsAccessReportRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12.\n" +
-	"\asortkey\x18ٲ\xc2\xc2\x01 \x01(\x0e2\x10.iam.sortKeyTypeR\asortkey\"\x8e\x04\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12.\n" +
+	"\asortkey\x18ٲ\xc2\xc2\x01 \x01(\x0e2\x10.iam.sortKeyTypeR\asortkeyB\v\n" +
+	"\t_maxitems\"\xd7\x04\n" +
 	"$GetOrganizationsAccessReportResponse\x12:\n" +
 	"\raccessdetails\x18쐣& \x03(\v2\x11.iam.AccessDetailR\raccessdetails\x129\n" +
 	"\ferrordetails\x18ʭ\x8a\xb0\x01 \x01(\v2\x11.iam.ErrorDetailsR\ferrordetails\x12(\n" +
@@ -22353,10 +22360,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x11jobcompletiondate\x18\xd7\xd6\xff\xf6\x01 \x01(\tR\x11jobcompletiondate\x12+\n" +
 	"\x0fjobcreationdate\x18\xfa\xb2\x85` \x01(\tR\x0fjobcreationdate\x123\n" +
 	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x12.iam.jobStatusTypeR\tjobstatus\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12A\n" +
-	"\x1anumberofservicesaccessible\x18\x9c\xd6\xfa\f \x01(\x05R\x1anumberofservicesaccessible\x12C\n" +
-	"\x1bnumberofservicesnotaccessed\x18\x8a\xfe\x80= \x01(\x05R\x1bnumberofservicesnotaccessedB\x0e\n" +
-	"\f_istruncated\"\xa9\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12F\n" +
+	"\x1anumberofservicesaccessible\x18\x9c\xd6\xfa\f \x01(\x05H\x01R\x1anumberofservicesaccessible\x88\x01\x01\x12H\n" +
+	"\x1bnumberofservicesnotaccessed\x18\x8a\xfe\x80= \x01(\x05H\x02R\x1bnumberofservicesnotaccessed\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\x1d\n" +
+	"\x1b_numberofservicesaccessibleB\x1e\n" +
+	"\x1c_numberofservicesnotaccessed\"\xa9\x01\n" +
 	",GetOutboundWebIdentityFederationInfoResponse\x12-\n" +
 	"\x10issueridentifier\x18\x86\x8c\xd2\x1e \x01(\tR\x10issueridentifier\x124\n" +
 	"\x11jwtvendingenabled\x18\xf9\xb9\xf9F \x01(\bH\x00R\x11jwtvendingenabled\x88\x01\x01B\x14\n" +
@@ -22408,11 +22417,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x1bGetServerCertificateRequest\x127\n" +
 	"\x15servercertificatename\x18\xff\x80\x9b\x1e \x01(\tR\x15servercertificatename\"g\n" +
 	"\x1cGetServerCertificateResponse\x12G\n" +
-	"\x11servercertificate\x18\xde\xde\xe5  \x01(\v2\x16.iam.ServerCertificateR\x11servercertificate\"z\n" +
+	"\x11servercertificate\x18\xde\xde\xe5  \x01(\v2\x16.iam.ServerCertificateR\x11servercertificate\"\x8c\x01\n" +
 	"$GetServiceLastAccessedDetailsRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xd4\x03\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xd4\x03\n" +
 	"%GetServiceLastAccessedDetailsResponse\x12+\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x11.iam.ErrorDetailsR\x05error\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x120\n" +
@@ -22422,12 +22432,13 @@ const file_iam_proto_rawDesc = "" +
 	"\ajobtype\x18\xf5\x8b\xbb\x85\x01 \x01(\x0e2&.iam.AccessAdvisorUsageGranularityTypeR\ajobtype\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12O\n" +
 	"\x14serviceslastaccessed\x18\xf7ؠ~ \x03(\v2\x18.iam.ServiceLastAccessedR\x14serviceslastaccessedB\x0e\n" +
-	"\f_istruncated\"\xb6\x01\n" +
+	"\f_istruncated\"\xc8\x01\n" +
 	"0GetServiceLastAccessedDetailsWithEntitiesRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12.\n" +
-	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespace\"\x8f\x03\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12.\n" +
+	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespaceB\v\n" +
+	"\t_maxitems\"\x8f\x03\n" +
 	"1GetServiceLastAccessedDetailsWithEntitiesResponse\x12D\n" +
 	"\x11entitydetailslist\x18\xb1\x9a\xa1\xb1\x01 \x03(\v2\x12.iam.EntityDetailsR\x11entitydetailslist\x12+\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x11.iam.ErrorDetailsR\x05error\x12(\n" +
@@ -22498,169 +22509,185 @@ const file_iam_proto_rawDesc = "" +
 	"\x18KeyPairMismatchException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"r\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x84\x01\n" +
 	"\x15ListAccessKeysRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xb6\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\xb6\x01\n" +
 	"\x16ListAccessKeysResponse\x12G\n" +
 	"\x11accesskeymetadata\x18荽# \x03(\v2\x16.iam.AccessKeyMetadataR\x11accesskeymetadata\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"V\n" +
+	"\f_istruncated\"h\n" +
 	"\x19ListAccountAliasesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x9d\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x9d\x01\n" +
 	"\x1aListAccountAliasesResponse\x12*\n" +
 	"\x0eaccountaliases\x18\xcd·\xe3\x01 \x03(\tR\x0eaccountaliases\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\xa3\x01\n" +
+	"\f_istruncated\"\xb5\x01\n" +
 	" ListAttachedGroupPoliciesRequest\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\xbc\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\xbc\x01\n" +
 	"!ListAttachedGroupPoliciesResponse\x12B\n" +
 	"\x10attachedpolicies\x18\xe8\x92\xde\x1c \x03(\v2\x13.iam.AttachedPolicyR\x10attachedpolicies\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\xa0\x01\n" +
+	"\f_istruncated\"\xb2\x01\n" +
 	"\x1fListAttachedRolePoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
 	"pathprefix\x12\x1e\n" +
-	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"\xbb\x01\n" +
+	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\v\n" +
+	"\t_maxitems\"\xbb\x01\n" +
 	" ListAttachedRolePoliciesResponse\x12B\n" +
 	"\x10attachedpolicies\x18\xe8\x92\xde\x1c \x03(\v2\x13.iam.AttachedPolicyR\x10attachedpolicies\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\xa0\x01\n" +
+	"\f_istruncated\"\xb2\x01\n" +
 	"\x1fListAttachedUserPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
 	"pathprefix\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xbb\x01\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\xbb\x01\n" +
 	" ListAttachedUserPoliciesResponse\x12B\n" +
 	"\x10attachedpolicies\x18\xe8\x92\xde\x1c \x03(\v2\x13.iam.AttachedPolicyR\x10attachedpolicies\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"x\n" +
+	"\f_istruncated\"\x8a\x01\n" +
 	"\x1dListDelegationRequestsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1c\n" +
-	"\aownerid\x18\xdaӎ\xb3\x01 \x01(\tR\aownerid\"\xc2\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1c\n" +
+	"\aownerid\x18\xdaӎ\xb3\x01 \x01(\tR\aowneridB\v\n" +
+	"\t_maxitems\"\xc2\x01\n" +
 	"\x1eListDelegationRequestsResponse\x12J\n" +
 	"\x12delegationrequests\x18\x8a\xddʷ\x01 \x03(\v2\x16.iam.DelegationRequestR\x12delegationrequests\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12)\n" +
 	"\vistruncated\x18\xfa\xbc\xa4\xdb\x01 \x01(\bH\x00R\vistruncated\x88\x01\x01B\x0e\n" +
-	"\f_istruncated\"\x9f\x02\n" +
+	"\f_istruncated\"\xb1\x02\n" +
 	"\x1cListEntitiesForPolicyRequest\x127\n" +
 	"\fentityfilter\x18\x95\x80\xad\x9b\x01 \x01(\x0e2\x0f.iam.EntityTypeR\fentityfilter\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
 	"pathprefix\x12 \n" +
 	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\x12E\n" +
-	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeR\x11policyusagefilter\"\x9a\x02\n" +
+	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeR\x11policyusagefilterB\v\n" +
+	"\t_maxitems\"\x9a\x02\n" +
 	"\x1dListEntitiesForPolicyResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x127\n" +
 	"\fpolicygroups\x18\x90\xac\xa2Y \x03(\v2\x10.iam.PolicyGroupR\fpolicygroups\x125\n" +
 	"\vpolicyroles\x18\x89\xb9\xeb\xe2\x01 \x03(\v2\x0f.iam.PolicyRoleR\vpolicyroles\x124\n" +
 	"\vpolicyusers\x18\x8e\xb3\xd5} \x03(\v2\x0f.iam.PolicyUserR\vpolicyusersB\x0e\n" +
-	"\f_istruncated\"w\n" +
+	"\f_istruncated\"\x89\x01\n" +
 	"\x18ListGroupPoliciesRequest\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x95\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x95\x01\n" +
 	"\x19ListGroupPoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
 	"\vpolicynames\x18ާ\xf7} \x03(\tR\vpolicynamesB\x0e\n" +
-	"\f_istruncated\"u\n" +
+	"\f_istruncated\"\x87\x01\n" +
 	"\x18ListGroupsForUserRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x98\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\x98\x01\n" +
 	"\x19ListGroupsForUserResponse\x12&\n" +
 	"\x06groups\x18\x8e\x8b\xfd\xab\x01 \x03(\v2\n" +
 	".iam.GroupR\x06groups\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"r\n" +
+	"\f_istruncated\"\x84\x01\n" +
 	"\x11ListGroupsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\x91\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\x91\x01\n" +
 	"\x12ListGroupsResponse\x12&\n" +
 	"\x06groups\x18\x8e\x8b\xfd\xab\x01 \x03(\v2\n" +
 	".iam.GroupR\x06groups\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\x91\x01\n" +
+	"\f_istruncated\"\xa3\x01\n" +
 	"\x1eListInstanceProfileTagsRequest\x124\n" +
 	"\x13instanceprofilename\x18\xedμ\xda\x01 \x01(\tR\x13instanceprofilename\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\x98\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\x98\x01\n" +
 	"\x1fListInstanceProfileTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"\x7f\n" +
+	"\f_istruncated\"\x91\x01\n" +
 	"\"ListInstanceProfilesForRoleRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"\xbf\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\v\n" +
+	"\t_maxitems\"\xbf\x01\n" +
 	"#ListInstanceProfilesForRoleResponse\x12C\n" +
 	"\x10instanceprofiles\x18\xf5\xa6\x8b5 \x03(\v2\x14.iam.InstanceProfileR\x10instanceprofiles\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"|\n" +
+	"\f_istruncated\"\x8e\x01\n" +
 	"\x1bListInstanceProfilesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\xb8\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\xb8\x01\n" +
 	"\x1cListInstanceProfilesResponse\x12C\n" +
 	"\x10instanceprofiles\x18\xf5\xa6\x8b5 \x03(\v2\x14.iam.InstanceProfileR\x10instanceprofiles\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"}\n" +
+	"\f_istruncated\"\x8f\x01\n" +
 	"\x18ListMFADeviceTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\"\x92\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12&\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumberB\v\n" +
+	"\t_maxitems\"\x92\x01\n" +
 	"\x19ListMFADeviceTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"r\n" +
+	"\f_istruncated\"\x84\x01\n" +
 	"\x15ListMFADevicesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xa0\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\xa0\x01\n" +
 	"\x16ListMFADevicesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x121\n" +
 	"\n" +
 	"mfadevices\x18\xb5\xbc\x98\b \x03(\v2\x0e.iam.MFADeviceR\n" +
 	"mfadevices\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\xa1\x01\n" +
+	"\f_istruncated\"\xb3\x01\n" +
 	"$ListOpenIDConnectProviderTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12>\n" +
-	"\x18openidconnectproviderarn\x18\xe3\xf3\x8f\xe9\x01 \x01(\tR\x18openidconnectproviderarn\"\x9e\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12>\n" +
+	"\x18openidconnectproviderarn\x18\xe3\xf3\x8f\xe9\x01 \x01(\tR\x18openidconnectproviderarnB\v\n" +
+	"\t_maxitems\"\x9e\x01\n" +
 	"%ListOpenIDConnectProviderTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
@@ -22684,73 +22711,80 @@ const file_iam_proto_rawDesc = "" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12t\n" +
 	"\x1dpoliciesgrantingserviceaccess\x18\xfb\xbf\xae+ \x03(\v2+.iam.ListPoliciesGrantingServiceAccessEntryR\x1dpoliciesgrantingserviceaccessB\x0e\n" +
-	"\f_istruncated\"\xa7\x02\n" +
+	"\f_istruncated\"\xb9\x02\n" +
 	"\x13ListPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12*\n" +
-	"\fonlyattached\x18\xc4Ɇ~ \x01(\bH\x00R\fonlyattached\x88\x01\x01\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12*\n" +
+	"\fonlyattached\x18\xc4Ɇ~ \x01(\bH\x01R\fonlyattached\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
 	"pathprefix\x12E\n" +
 	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeR\x11policyusagefilter\x12-\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\x14.iam.policyScopeTypeR\x05scopeB\x0f\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\x14.iam.policyScopeTypeR\x05scopeB\v\n" +
+	"\t_maxitemsB\x0f\n" +
 	"\r_onlyattached\"\x97\x01\n" +
 	"\x14ListPoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12*\n" +
 	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2\v.iam.PolicyR\bpoliciesB\x0e\n" +
-	"\f_istruncated\"t\n" +
+	"\f_istruncated\"\x86\x01\n" +
 	"\x15ListPolicyTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12 \n" +
-	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\"\x8f\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12 \n" +
+	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarnB\v\n" +
+	"\t_maxitems\"\x8f\x01\n" +
 	"\x16ListPolicyTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"x\n" +
+	"\f_istruncated\"\x8a\x01\n" +
 	"\x19ListPolicyVersionsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12 \n" +
-	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\"\xa4\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12 \n" +
+	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarnB\v\n" +
+	"\t_maxitems\"\xa4\x01\n" +
 	"\x1aListPolicyVersionsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x121\n" +
 	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x12.iam.PolicyVersionR\bversionsB\x0e\n" +
-	"\f_istruncated\"t\n" +
+	"\f_istruncated\"\x86\x01\n" +
 	"\x17ListRolePoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"\x94\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\v\n" +
+	"\t_maxitems\"\x94\x01\n" +
 	"\x18ListRolePoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
 	"\vpolicynames\x18ާ\xf7} \x03(\tR\vpolicynamesB\x0e\n" +
-	"\f_istruncated\"p\n" +
+	"\f_istruncated\"\x82\x01\n" +
 	"\x13ListRoleTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"\x8d\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\v\n" +
+	"\t_maxitems\"\x8d\x01\n" +
 	"\x14ListRoleTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"q\n" +
+	"\f_istruncated\"\x83\x01\n" +
 	"\x10ListRolesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\x8d\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\x8d\x01\n" +
 	"\x11ListRolesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
 	"\x05roles\x18\xff\x9c\xdf\xf3\x01 \x03(\v2\t.iam.RoleR\x05rolesB\x0e\n" +
-	"\f_istruncated\"\x86\x01\n" +
+	"\f_istruncated\"\x98\x01\n" +
 	"\x1bListSAMLProviderTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12,\n" +
-	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tR\x0fsamlproviderarn\"\x95\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12,\n" +
+	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tR\x0fsamlproviderarnB\v\n" +
+	"\t_maxitems\"\x95\x01\n" +
 	"\x1cListSAMLProviderTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
@@ -22758,90 +22792,99 @@ const file_iam_proto_rawDesc = "" +
 	"\f_istruncated\"\x1a\n" +
 	"\x18ListSAMLProvidersRequest\"g\n" +
 	"\x19ListSAMLProvidersResponse\x12J\n" +
-	"\x10samlproviderlist\x18ʂ\xef\x92\x01 \x03(\v2\x1a.iam.SAMLProviderListEntryR\x10samlproviderlist\"u\n" +
+	"\x10samlproviderlist\x18ʂ\xef\x92\x01 \x03(\v2\x1a.iam.SAMLProviderListEntryR\x10samlproviderlist\"\x87\x01\n" +
 	"\x18ListSSHPublicKeysRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xb5\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\xb5\x01\n" +
 	"\x19ListSSHPublicKeysResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12C\n" +
 	"\rsshpublickeys\x18ٚ\x8c\xe0\x01 \x03(\v2\x19.iam.SSHPublicKeyMetadataR\rsshpublickeysB\x0e\n" +
-	"\f_istruncated\"\x96\x01\n" +
+	"\f_istruncated\"\xa8\x01\n" +
 	" ListServerCertificateTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x127\n" +
-	"\x15servercertificatename\x18\xff\x80\x9b\x1e \x01(\tR\x15servercertificatename\"\x9a\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x127\n" +
+	"\x15servercertificatename\x18\xff\x80\x9b\x1e \x01(\tR\x15servercertificatenameB\v\n" +
+	"\t_maxitems\"\x9a\x01\n" +
 	"!ListServerCertificateTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"~\n" +
+	"\f_istruncated\"\x90\x01\n" +
 	"\x1dListServerCertificatesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\xde\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\xde\x01\n" +
 	"\x1eListServerCertificatesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12g\n" +
 	"\x1dservercertificatemetadatalist\x18\xb1\x90\xebm \x03(\v2\x1e.iam.ServerCertificateMetadataR\x1dservercertificatemetadatalistB\x0e\n" +
-	"\f_istruncated\"\xd8\x01\n" +
+	"\f_istruncated\"\xea\x01\n" +
 	"%ListServiceSpecificCredentialsRequest\x12\"\n" +
 	"\ballusers\x18\xdd\xf5\xa5. \x01(\bH\x00R\ballusers\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12#\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12#\n" +
 	"\vservicename\x18\xe0\xaa\xdbA \x01(\tR\vservicename\x12\x1e\n" +
 	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
-	"\t_allusers\"\xe8\x01\n" +
+	"\t_allusersB\v\n" +
+	"\t_maxitems\"\xe8\x01\n" +
 	"&ListServiceSpecificCredentialsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12i\n" +
 	"\x1aservicespecificcredentials\x18۟\xb1' \x03(\v2&.iam.ServiceSpecificCredentialMetadataR\x1aservicespecificcredentialsB\x0e\n" +
-	"\f_istruncated\"{\n" +
+	"\f_istruncated\"\x8d\x01\n" +
 	"\x1eListSigningCertificatesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xb7\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\xb7\x01\n" +
 	"\x1fListSigningCertificatesResponse\x12?\n" +
 	"\fcertificates\x18ڙ\xb9\xc4\x01 \x03(\v2\x17.iam.SigningCertificateR\fcertificates\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"t\n" +
+	"\f_istruncated\"\x86\x01\n" +
 	"\x17ListUserPoliciesRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x94\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\x94\x01\n" +
 	"\x18ListUserPoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
 	"\vpolicynames\x18ާ\xf7} \x03(\tR\vpolicynamesB\x0e\n" +
-	"\f_istruncated\"p\n" +
+	"\f_istruncated\"\x82\x01\n" +
 	"\x13ListUserTagsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x8d\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1e\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busernameB\v\n" +
+	"\t_maxitems\"\x8d\x01\n" +
 	"\x14ListUserTagsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x0e\n" +
-	"\f_istruncated\"q\n" +
+	"\f_istruncated\"\x83\x01\n" +
 	"\x10ListUsersRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12\"\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tR\n" +
-	"pathprefix\"\x8c\x01\n" +
+	"pathprefixB\v\n" +
+	"\t_maxitems\"\x8c\x01\n" +
 	"\x11ListUsersResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\"\n" +
 	"\x05users\x18\xb4\xe5\xd05 \x03(\v2\t.iam.UserR\x05usersB\x0e\n" +
-	"\f_istruncated\"\xa4\x01\n" +
+	"\f_istruncated\"\xb6\x01\n" +
 	"\x1cListVirtualMFADevicesRequest\x12I\n" +
 	"\x10assignmentstatus\x18\xb3ú\x84\x01 \x01(\x0e2\x19.iam.assignmentStatusTypeR\x10assignmentstatus\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\"\xbc\x01\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01B\v\n" +
+	"\t_maxitems\"\xbc\x01\n" +
 	"\x1dListVirtualMFADevicesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12F\n" +
@@ -22863,18 +22906,18 @@ const file_iam_proto_rawDesc = "" +
 	"\x1dMalformedCertificateException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
 	" MalformedPolicyDocumentException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9b\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xdb\x04\n" +
 	"\x13ManagedPolicyDetail\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12,\n" +
-	"\x0fattachmentcount\x18\xa8ƞ\xdf\x01 \x01(\x05R\x0fattachmentcount\x12!\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x121\n" +
+	"\x0fattachmentcount\x18\xa8ƞ\xdf\x01 \x01(\x05H\x00R\x0fattachmentcount\x88\x01\x01\x12!\n" +
 	"\n" +
 	"createdate\x18\x92\xb9\xfc\x11 \x01(\tR\n" +
 	"createdate\x12.\n" +
 	"\x10defaultversionid\x18\xb0̒\x8d\x01 \x01(\tR\x10defaultversionid\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12*\n" +
-	"\fisattachable\x18\xed\xe4\xab\x01 \x01(\bH\x00R\fisattachable\x88\x01\x01\x12\x15\n" +
-	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12H\n" +
-	"\x1dpermissionsboundaryusagecount\x18\xd8\xc4ԁ\x01 \x01(\x05R\x1dpermissionsboundaryusagecount\x12\x1e\n" +
+	"\fisattachable\x18\xed\xe4\xab\x01 \x01(\bH\x01R\fisattachable\x88\x01\x01\x12\x15\n" +
+	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12M\n" +
+	"\x1dpermissionsboundaryusagecount\x18\xd8\xc4ԁ\x01 \x01(\x05H\x02R\x1dpermissionsboundaryusagecount\x88\x01\x01\x12\x1e\n" +
 	"\bpolicyid\x18\xf3\xa3\xe9\x8e\x01 \x01(\tR\bpolicyid\x12!\n" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
@@ -22882,8 +22925,10 @@ const file_iam_proto_rawDesc = "" +
 	"\x11policyversionlist\x18\x8e\xb1\xe4R \x03(\v2\x12.iam.PolicyVersionR\x11policyversionlist\x12\"\n" +
 	"\n" +
 	"updatedate\x18\xd1\xea\xfd\xbf\x01 \x01(\tR\n" +
-	"updatedateB\x0f\n" +
-	"\r_isattachable\"4\n" +
+	"updatedateB\x12\n" +
+	"\x10_attachmentcountB\x0f\n" +
+	"\r_isattachableB \n" +
+	"\x1e_permissionsboundaryusagecount\"4\n" +
 	"\x15NoSuchEntityException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x1eOpenIDConnectProviderListEntry\x12\x14\n" +
@@ -22896,23 +22941,26 @@ const file_iam_proto_rawDesc = "" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"y\n" +
 	"\x1bOrganizationsDecisionDetail\x12?\n" +
 	"\x16allowedbyorganizations\x18Ǻ\u05f8\x01 \x01(\bH\x00R\x16allowedbyorganizations\x88\x01\x01B\x19\n" +
-	"\x17_allowedbyorganizations\"\xee\x05\n" +
+	"\x17_allowedbyorganizations\"\xc6\x06\n" +
 	"\x0ePasswordPolicy\x12G\n" +
 	"\x1aallowuserstochangepassword\x18\x93۶\x88\x01 \x01(\bH\x00R\x1aallowuserstochangepassword\x88\x01\x01\x121\n" +
 	"\x0fexpirepasswords\x18\xf5\x92\xbf\xe8\x01 \x01(\bH\x01R\x0fexpirepasswords\x88\x01\x01\x12'\n" +
 	"\n" +
 	"hardexpiry\x18\xe0\xe6\x9d\xc9\x01 \x01(\bH\x02R\n" +
-	"hardexpiry\x88\x01\x01\x12)\n" +
-	"\x0emaxpasswordage\x18\xf8ȁ\x1c \x01(\x05R\x0emaxpasswordage\x127\n" +
-	"\x15minimumpasswordlength\x18\xbb\x8c\xaf` \x01(\x05R\x15minimumpasswordlength\x12<\n" +
-	"\x17passwordreuseprevention\x18\xd5\xce\xfa\xdf\x01 \x01(\x05R\x17passwordreuseprevention\x12F\n" +
-	"\x1arequirelowercasecharacters\x18\xea\xe9\xca' \x01(\bH\x03R\x1arequirelowercasecharacters\x88\x01\x01\x12/\n" +
-	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\x04R\x0erequirenumbers\x88\x01\x01\x12.\n" +
-	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\x05R\x0erequiresymbols\x88\x01\x01\x12F\n" +
-	"\x1arequireuppercasecharacters\x18\xe9ȝY \x01(\bH\x06R\x1arequireuppercasecharacters\x88\x01\x01B\x1d\n" +
+	"hardexpiry\x88\x01\x01\x12.\n" +
+	"\x0emaxpasswordage\x18\xf8ȁ\x1c \x01(\x05H\x03R\x0emaxpasswordage\x88\x01\x01\x12<\n" +
+	"\x15minimumpasswordlength\x18\xbb\x8c\xaf` \x01(\x05H\x04R\x15minimumpasswordlength\x88\x01\x01\x12A\n" +
+	"\x17passwordreuseprevention\x18\xd5\xce\xfa\xdf\x01 \x01(\x05H\x05R\x17passwordreuseprevention\x88\x01\x01\x12F\n" +
+	"\x1arequirelowercasecharacters\x18\xea\xe9\xca' \x01(\bH\x06R\x1arequirelowercasecharacters\x88\x01\x01\x12/\n" +
+	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\aR\x0erequirenumbers\x88\x01\x01\x12.\n" +
+	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\bR\x0erequiresymbols\x88\x01\x01\x12F\n" +
+	"\x1arequireuppercasecharacters\x18\xe9ȝY \x01(\bH\tR\x1arequireuppercasecharacters\x88\x01\x01B\x1d\n" +
 	"\x1b_allowuserstochangepasswordB\x12\n" +
 	"\x10_expirepasswordsB\r\n" +
-	"\v_hardexpiryB\x1d\n" +
+	"\v_hardexpiryB\x11\n" +
+	"\x0f_maxpasswordageB\x18\n" +
+	"\x16_minimumpasswordlengthB\x1a\n" +
+	"\x18_passwordreusepreventionB\x1d\n" +
 	"\x1b_requirelowercasecharactersB\x11\n" +
 	"\x0f_requirenumbersB\x11\n" +
 	"\x0f_requiresymbolsB\x1d\n" +
@@ -22921,18 +22969,18 @@ const file_iam_proto_rawDesc = "" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x90\x01\n" +
 	"!PermissionsBoundaryDecisionDetail\x12J\n" +
 	"\x1callowedbypermissionsboundary\x18\x8d\xa1\xc0% \x01(\bH\x00R\x1callowedbypermissionsboundary\x88\x01\x01B\x1f\n" +
-	"\x1d_allowedbypermissionsboundary\"\xeb\x03\n" +
+	"\x1d_allowedbypermissionsboundary\"\xab\x04\n" +
 	"\x06Policy\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12,\n" +
-	"\x0fattachmentcount\x18\xa8ƞ\xdf\x01 \x01(\x05R\x0fattachmentcount\x12!\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x121\n" +
+	"\x0fattachmentcount\x18\xa8ƞ\xdf\x01 \x01(\x05H\x00R\x0fattachmentcount\x88\x01\x01\x12!\n" +
 	"\n" +
 	"createdate\x18\x92\xb9\xfc\x11 \x01(\tR\n" +
 	"createdate\x12.\n" +
 	"\x10defaultversionid\x18\xb0̒\x8d\x01 \x01(\tR\x10defaultversionid\x12#\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12*\n" +
-	"\fisattachable\x18\xed\xe4\xab\x01 \x01(\bH\x00R\fisattachable\x88\x01\x01\x12\x15\n" +
-	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12H\n" +
-	"\x1dpermissionsboundaryusagecount\x18\xd8\xc4ԁ\x01 \x01(\x05R\x1dpermissionsboundaryusagecount\x12\x1e\n" +
+	"\fisattachable\x18\xed\xe4\xab\x01 \x01(\bH\x01R\fisattachable\x88\x01\x01\x12\x15\n" +
+	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12M\n" +
+	"\x1dpermissionsboundaryusagecount\x18\xd8\xc4ԁ\x01 \x01(\x05H\x02R\x1dpermissionsboundaryusagecount\x88\x01\x01\x12\x1e\n" +
 	"\bpolicyid\x18\xf3\xa3\xe9\x8e\x01 \x01(\tR\bpolicyid\x12!\n" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
@@ -22940,8 +22988,10 @@ const file_iam_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tags\x12\"\n" +
 	"\n" +
 	"updatedate\x18\xd1\xea\xfd\xbf\x01 \x01(\tR\n" +
-	"updatedateB\x0f\n" +
-	"\r_isattachable\"\\\n" +
+	"updatedateB\x12\n" +
+	"\x10_attachmentcountB\x0f\n" +
+	"\r_isattachableB \n" +
+	"\x1e_permissionsboundaryusagecount\"\\\n" +
 	"\fPolicyDetail\x12)\n" +
 	"\x0epolicydocument\x18ˮ\xc1q \x01(\tR\x0epolicydocument\x12!\n" +
 	"\n" +
@@ -22987,10 +23037,12 @@ const file_iam_proto_rawDesc = "" +
 	"\bdocument\x18\xf5\xf5\x8f\xc2\x01 \x01(\tR\bdocument\x123\n" +
 	"\x10isdefaultversion\x18Ӯ\x85\xde\x01 \x01(\bH\x00R\x10isdefaultversion\x88\x01\x01\x12 \n" +
 	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_isdefaultversion\"=\n" +
-	"\bPosition\x12\x19\n" +
-	"\x06column\x18\xc8Ԅ\x16 \x01(\x05R\x06column\x12\x16\n" +
-	"\x04line\x18\xc8\xea\xa3\xc0\x01 \x01(\x05R\x04line\"\x87\x01\n" +
+	"\x11_isdefaultversion\"[\n" +
+	"\bPosition\x12\x1e\n" +
+	"\x06column\x18\xc8Ԅ\x16 \x01(\x05H\x00R\x06column\x88\x01\x01\x12\x1b\n" +
+	"\x04line\x18\xc8\xea\xa3\xc0\x01 \x01(\x05H\x01R\x04line\x88\x01\x01B\t\n" +
+	"\a_columnB\a\n" +
+	"\x05_line\"\x87\x01\n" +
 	"\x15PutGroupPolicyRequest\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12)\n" +
 	"\x0epolicydocument\x18ˮ\xc1q \x01(\tR\x0epolicydocument\x12!\n" +
@@ -23048,21 +23100,22 @@ const file_iam_proto_rawDesc = "" +
 	"\x13authenticationcode1\x18ܶ\xf9\xd3\x01 \x01(\tR\x13authenticationcode1\x124\n" +
 	"\x13authenticationcode2\x18\xef\xb9\xf9\xdb\x01 \x01(\tR\x13authenticationcode2\x12&\n" +
 	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xdf\x03\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xfb\x03\n" +
 	"\x04Role\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12>\n" +
 	"\x18assumerolepolicydocument\x18\xfd\x87\xcd\xee\x01 \x01(\tR\x18assumerolepolicydocument\x12!\n" +
 	"\n" +
 	"createdate\x18\x92\xb9\xfc\x11 \x01(\tR\n" +
 	"createdate\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x122\n" +
-	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05R\x12maxsessionduration\x12\x15\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x127\n" +
+	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05H\x00R\x12maxsessionduration\x88\x01\x01\x12\x15\n" +
 	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12U\n" +
 	"\x13permissionsboundary\x18\xb6à\b \x01(\v2 .iam.AttachedPermissionsBoundaryR\x13permissionsboundary\x12\x1a\n" +
 	"\x06roleid\x18ݟ\xe0\xe7\x01 \x01(\tR\x06roleid\x129\n" +
 	"\frolelastused\x18\xc9\xf2\x90\x8e\x01 \x01(\v2\x11.iam.RoleLastUsedR\frolelastused\x12\x1e\n" +
 	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tags\"\xe8\x04\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x15\n" +
+	"\x13_maxsessionduration\"\xe8\x04\n" +
 	"\n" +
 	"RoleDetail\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12>\n" +
@@ -23133,15 +23186,16 @@ const file_iam_proto_rawDesc = "" +
 	" ServiceAccessNotEnabledException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
 	"\x17ServiceFailureException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbe\x03\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe2\x03\n" +
 	"\x13ServiceLastAccessed\x120\n" +
 	"\x11lastauthenticated\x18\xf5\xe5ǹ\x01 \x01(\tR\x11lastauthenticated\x12<\n" +
 	"\x17lastauthenticatedentity\x18\xb0\xf7\xe8\xfc\x01 \x01(\tR\x17lastauthenticatedentity\x12;\n" +
 	"\x17lastauthenticatedregion\x18\xb9º+ \x01(\tR\x17lastauthenticatedregion\x12#\n" +
 	"\vservicename\x18\xe0\xaa\xdbA \x01(\tR\vservicename\x12.\n" +
-	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespace\x12B\n" +
-	"\x1atotalauthenticatedentities\x18\x8c\xf0\xfc\x89\x01 \x01(\x05R\x1atotalauthenticatedentities\x12a\n" +
-	"\x1atrackedactionslastaccessed\x18\xf8\xfe\xcbg \x03(\v2\x1e.iam.TrackedActionLastAccessedR\x1atrackedactionslastaccessed\";\n" +
+	"\x10servicenamespace\x18\xac\x93\xa7\xce\x01 \x01(\tR\x10servicenamespace\x12G\n" +
+	"\x1atotalauthenticatedentities\x18\x8c\xf0\xfc\x89\x01 \x01(\x05H\x00R\x1atotalauthenticatedentities\x88\x01\x01\x12a\n" +
+	"\x1atrackedactionslastaccessed\x18\xf8\xfe\xcbg \x03(\v2\x1e.iam.TrackedActionLastAccessedR\x1atrackedactionslastaccessedB\x1d\n" +
+	"\x1b_totalauthenticatedentities\";\n" +
 	"\x1cServiceNotSupportedException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf4\x03\n" +
 	"\x19ServiceSpecificCredential\x12!\n" +
@@ -23180,37 +23234,39 @@ const file_iam_proto_rawDesc = "" +
 	"\n" +
 	"uploaddate\x18\xf9\x8b\xdb* \x01(\tR\n" +
 	"uploaddate\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x97\x04\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xa9\x04\n" +
 	"\x1bSimulateCustomPolicyRequest\x12#\n" +
 	"\vactionnames\x18ސ\xff2 \x03(\tR\vactionnames\x12\x1f\n" +
 	"\tcallerarn\x18\xae\x89\x84w \x01(\tR\tcallerarn\x12=\n" +
 	"\x0econtextentries\x18Żɬ\x01 \x03(\v2\x11.iam.ContextEntryR\x0econtextentries\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12R\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12R\n" +
 	"\"permissionsboundarypolicyinputlist\x18\xfa\xf2\xa0\xca\x01 \x03(\tR\"permissionsboundarypolicyinputlist\x12,\n" +
 	"\x0fpolicyinputlist\x18\x8a\x83\xfa\x98\x01 \x03(\tR\x0fpolicyinputlist\x12%\n" +
 	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\x12:\n" +
 	"\x16resourcehandlingoption\x18\xae\x81\xa4\xd5\x01 \x01(\tR\x16resourcehandlingoption\x12(\n" +
 	"\rresourceowner\x18\xe5\xb0\xde\xf9\x01 \x01(\tR\rresourceowner\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\xb6\x01\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicyB\v\n" +
+	"\t_maxitems\"\xb6\x01\n" +
 	"\x16SimulatePolicyResponse\x12G\n" +
 	"\x11evaluationresults\x18\x90\xf0\xe9\xd3\x01 \x03(\v2\x15.iam.EvaluationResultR\x11evaluationresults\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06markerB\x0e\n" +
-	"\f_istruncated\"\xc7\x04\n" +
+	"\f_istruncated\"\xd9\x04\n" +
 	"\x1eSimulatePrincipalPolicyRequest\x12#\n" +
 	"\vactionnames\x18ސ\xff2 \x03(\tR\vactionnames\x12\x1f\n" +
 	"\tcallerarn\x18\xae\x89\x84w \x01(\tR\tcallerarn\x12=\n" +
 	"\x0econtextentries\x18Żɬ\x01 \x03(\v2\x11.iam.ContextEntryR\x0econtextentries\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05R\bmaxitems\x12R\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12R\n" +
 	"\"permissionsboundarypolicyinputlist\x18\xfa\xf2\xa0\xca\x01 \x03(\tR\"permissionsboundarypolicyinputlist\x12,\n" +
 	"\x0fpolicyinputlist\x18\x8a\x83\xfa\x98\x01 \x03(\tR\x0fpolicyinputlist\x12+\n" +
 	"\x0fpolicysourcearn\x18\xa6\xaf\x98( \x01(\tR\x0fpolicysourcearn\x12%\n" +
 	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\x12:\n" +
 	"\x16resourcehandlingoption\x18\xae\x81\xa4\xd5\x01 \x01(\tR\x16resourcehandlingoption\x12(\n" +
 	"\rresourceowner\x18\xe5\xb0\xde\xf9\x01 \x01(\tR\rresourceowner\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\xe9\x01\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicyB\v\n" +
+	"\t_maxitems\"\xe9\x01\n" +
 	"\tStatement\x122\n" +
 	"\vendposition\x18\xb6\xa3\x81\x19 \x01(\v2\r.iam.PositionR\vendposition\x12*\n" +
 	"\x0esourcepolicyid\x18\xf0\xf9\xe0\xad\x01 \x01(\tR\x0esourcepolicyid\x12D\n" +
@@ -23281,21 +23337,24 @@ const file_iam_proto_rawDesc = "" +
 	"\x16UpdateAccessKeyRequest\x12$\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12*\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x0f.iam.statusTypeR\x06status\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xbb\x05\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x93\x06\n" +
 	"\"UpdateAccountPasswordPolicyRequest\x12G\n" +
 	"\x1aallowuserstochangepassword\x18\x93۶\x88\x01 \x01(\bH\x00R\x1aallowuserstochangepassword\x88\x01\x01\x12'\n" +
 	"\n" +
 	"hardexpiry\x18\xe0\xe6\x9d\xc9\x01 \x01(\bH\x01R\n" +
-	"hardexpiry\x88\x01\x01\x12)\n" +
-	"\x0emaxpasswordage\x18\xf8ȁ\x1c \x01(\x05R\x0emaxpasswordage\x127\n" +
-	"\x15minimumpasswordlength\x18\xbb\x8c\xaf` \x01(\x05R\x15minimumpasswordlength\x12<\n" +
-	"\x17passwordreuseprevention\x18\xd5\xce\xfa\xdf\x01 \x01(\x05R\x17passwordreuseprevention\x12F\n" +
-	"\x1arequirelowercasecharacters\x18\xea\xe9\xca' \x01(\bH\x02R\x1arequirelowercasecharacters\x88\x01\x01\x12/\n" +
-	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\x03R\x0erequirenumbers\x88\x01\x01\x12.\n" +
-	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\x04R\x0erequiresymbols\x88\x01\x01\x12F\n" +
-	"\x1arequireuppercasecharacters\x18\xe9ȝY \x01(\bH\x05R\x1arequireuppercasecharacters\x88\x01\x01B\x1d\n" +
+	"hardexpiry\x88\x01\x01\x12.\n" +
+	"\x0emaxpasswordage\x18\xf8ȁ\x1c \x01(\x05H\x02R\x0emaxpasswordage\x88\x01\x01\x12<\n" +
+	"\x15minimumpasswordlength\x18\xbb\x8c\xaf` \x01(\x05H\x03R\x15minimumpasswordlength\x88\x01\x01\x12A\n" +
+	"\x17passwordreuseprevention\x18\xd5\xce\xfa\xdf\x01 \x01(\x05H\x04R\x17passwordreuseprevention\x88\x01\x01\x12F\n" +
+	"\x1arequirelowercasecharacters\x18\xea\xe9\xca' \x01(\bH\x05R\x1arequirelowercasecharacters\x88\x01\x01\x12/\n" +
+	"\x0erequirenumbers\x18\xf3\xb5\u07b7\x01 \x01(\bH\x06R\x0erequirenumbers\x88\x01\x01\x12.\n" +
+	"\x0erequiresymbols\x18\xcaʘ/ \x01(\bH\aR\x0erequiresymbols\x88\x01\x01\x12F\n" +
+	"\x1arequireuppercasecharacters\x18\xe9ȝY \x01(\bH\bR\x1arequireuppercasecharacters\x88\x01\x01B\x1d\n" +
 	"\x1b_allowuserstochangepasswordB\r\n" +
-	"\v_hardexpiryB\x1d\n" +
+	"\v_hardexpiryB\x11\n" +
+	"\x0f_maxpasswordageB\x18\n" +
+	"\x16_minimumpasswordlengthB\x1a\n" +
+	"\x18_passwordreusepreventionB\x1d\n" +
 	"\x1b_requirelowercasecharactersB\x11\n" +
 	"\x0f_requirenumbersB\x11\n" +
 	"\x0f_requiresymbolsB\x1d\n" +
@@ -23322,11 +23381,12 @@ const file_iam_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1e\n" +
 	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"B\n" +
 	"\x1dUpdateRoleDescriptionResponse\x12!\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\x8c\x01\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\xa8\x01\n" +
 	"\x11UpdateRoleRequest\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x122\n" +
-	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05R\x12maxsessionduration\x12\x1e\n" +
-	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"\x14\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x127\n" +
+	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05H\x00R\x12maxsessionduration\x88\x01\x01\x12\x1e\n" +
+	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\x15\n" +
+	"\x13_maxsessionduration\"\x14\n" +
 	"\x12UpdateRoleResponse\"\xba\x02\n" +
 	"\x19UpdateSAMLProviderRequest\x12'\n" +
 	"\raddprivatekey\x18\xb7\x87\x8fb \x01(\tR\raddprivatekey\x12^\n" +
@@ -24711,51 +24771,89 @@ func file_iam_proto_init() {
 	if File_iam_proto != nil {
 		return
 	}
+	file_iam_proto_msgTypes[1].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[22].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[28].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[34].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[36].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[42].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[53].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[109].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[110].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[117].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[121].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[122].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[133].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[134].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[135].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[150].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[151].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[152].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[153].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[170].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[171].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[172].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[173].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[174].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[175].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[176].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[177].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[178].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[179].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[180].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[181].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[182].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[183].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[184].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[185].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[186].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[187].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[188].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[189].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[190].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[191].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[192].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[193].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[194].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[195].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[196].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[197].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[198].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[199].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[200].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[201].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[208].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[209].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[210].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[211].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[212].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[213].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[214].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[215].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[216].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[217].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[218].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[219].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[220].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[221].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[222].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[225].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[226].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[227].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[228].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[229].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[230].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[231].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[232].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[233].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[234].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[235].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[236].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[237].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[238].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[239].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[240].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[241].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[242].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[243].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[247].OneofWrappers = []any{}
@@ -24764,9 +24862,15 @@ func file_iam_proto_init() {
 	file_iam_proto_msgTypes[256].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[257].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[266].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[267].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[282].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[295].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[302].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[303].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[304].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[327].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[331].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[335].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -471,7 +471,7 @@ message ApiCache {
 
   optional bool transitencryptionenabled = 166976639;
 
-  int64 ttl = 489374300;
+  optional int64 ttl = 489374300;
 
   ApiCacheType type = 287830350;
 
@@ -547,11 +547,11 @@ enum ApiCachingBehavior {
 
 message ApiKey {
 
-  int64 deletes = 265381308;
+  optional int64 deletes = 265381308;
 
   string description = 342834026;
 
-  int64 expires = 512673668;
+  optional int64 expires = 512673668;
 
   string id = 389573345;
 
@@ -849,11 +849,11 @@ message CodeError {
 
 message CodeErrorLocation {
 
-  int32 column = 368628264;
+  optional int32 column = 368628264;
 
-  int32 line = 400234024;
+  optional int32 line = 400234024;
 
-  int32 span = 151093954;
+  optional int32 span = 151093954;
 
 }
 
@@ -969,7 +969,7 @@ message CreateApiKeyRequest {
 
   string description = 342834026;
 
-  int64 expires = 512673668;
+  optional int64 expires = 512673668;
 
 }
 
@@ -1107,7 +1107,7 @@ message CreateFunctionRequest {
 
   string functionversion = 43418548;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   string name = 221887975;
 
@@ -1155,9 +1155,9 @@ message CreateGraphqlApiRequest {
 
   string ownercontact = 17074121;
 
-  int32 querydepthlimit = 70244048;
+  optional int32 querydepthlimit = 70244048;
 
-  int32 resolvercountlimit = 83880706;
+  optional int32 resolvercountlimit = 83880706;
 
   map<string, string> tags = 337046433;
 
@@ -1193,7 +1193,7 @@ message CreateResolverRequest {
 
   ResolverKind kind = 420733508;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   ResolverLevelMetricsConfig metricsconfig = 278835313;
 
@@ -1297,7 +1297,7 @@ message DataSourceIntrospectionModel {
 
 message DataSourceIntrospectionModelField {
 
-  int64 length = 63976982;
+  optional int64 length = 63976982;
 
   string name = 221887975;
 
@@ -1575,11 +1575,11 @@ message DeleteTypeResponse {
 
 message DeltaSyncConfig {
 
-  int64 basetablettl = 458768025;
+  optional int64 basetablettl = 458768025;
 
   string deltasynctablename = 459106938;
 
-  int64 deltasynctablettl = 344917499;
+  optional int64 deltasynctablettl = 344917499;
 
 }
 
@@ -1885,7 +1885,7 @@ message FunctionConfiguration {
 
   string functionversion = 43418548;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   string name = 221887975;
 
@@ -1977,7 +1977,7 @@ message GetDataSourceIntrospectionRequest {
 
   string introspectionid = 284517058;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2253,9 +2253,9 @@ message GraphqlApi {
 
   string ownercontact = 17074121;
 
-  int32 querydepthlimit = 70244048;
+  optional int32 querydepthlimit = 70244048;
 
-  int32 resolvercountlimit = 83880706;
+  optional int32 resolvercountlimit = 83880706;
 
   map<string, string> tags = 337046433;
 
@@ -2355,7 +2355,7 @@ enum InvokeType {
 
 message LambdaAuthorizerConfig {
 
-  int32 authorizerresultttlinseconds = 135440208;
+  optional int32 authorizerresultttlinseconds = 135440208;
 
   string authorizeruri = 525146137;
 
@@ -2409,7 +2409,7 @@ message ListApiKeysRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2429,7 +2429,7 @@ message ListApiKeysResponse {
 
 message ListApisRequest {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2451,7 +2451,7 @@ message ListChannelNamespacesRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2473,7 +2473,7 @@ message ListDataSourcesRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2493,7 +2493,7 @@ message ListDataSourcesResponse {
 
 message ListDomainNamesRequest {
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2515,7 +2515,7 @@ message ListFunctionsRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2537,7 +2537,7 @@ message ListGraphqlApisRequest {
 
   GraphQLApiType apitype = 74688128;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2563,7 +2563,7 @@ message ListResolversByFunctionRequest {
 
   string functionid = 156610413;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2585,7 +2585,7 @@ message ListResolversRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2609,7 +2609,7 @@ message ListSourceApiAssociationsRequest {
 
   string apiid = 113380971;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2649,7 +2649,7 @@ message ListTypesByAssociationRequest {
 
   TypeDefinitionFormat format = 429753683;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string mergedapiidentifier = 445201257;
 
@@ -2675,7 +2675,7 @@ message ListTypesRequest {
 
   TypeDefinitionFormat format = 429753683;
 
-  int32 maxresults = 465170002;
+  optional int32 maxresults = 465170002;
 
   string nexttoken = 115833246;
 
@@ -2731,11 +2731,11 @@ message NotFoundException {
 
 message OpenIDConnectConfig {
 
-  int64 authttl = 457364410;
+  optional int64 authttl = 457364410;
 
   string clientid = 5306436;
 
-  int64 iatttl = 170754408;
+  optional int64 iatttl = 170754408;
 
   string issuer = 426769079;
 
@@ -2879,7 +2879,7 @@ message Resolver {
 
   ResolverKind kind = 420733508;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   ResolverLevelMetricsConfig metricsconfig = 278835313;
 
@@ -3225,7 +3225,7 @@ message UpdateApiKeyRequest {
 
   string description = 342834026;
 
-  int64 expires = 512673668;
+  optional int64 expires = 512673668;
 
   string id = 389573345;
 
@@ -3361,7 +3361,7 @@ message UpdateFunctionRequest {
 
   string functionversion = 43418548;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   string name = 221887975;
 
@@ -3409,9 +3409,9 @@ message UpdateGraphqlApiRequest {
 
   string ownercontact = 17074121;
 
-  int32 querydepthlimit = 70244048;
+  optional int32 querydepthlimit = 70244048;
 
-  int32 resolvercountlimit = 83880706;
+  optional int32 resolvercountlimit = 83880706;
 
   UserPoolConfig userpoolconfig = 448520271;
 
@@ -3443,7 +3443,7 @@ message UpdateResolverRequest {
 
   ResolverKind kind = 420733508;
 
-  int32 maxbatchsize = 45298679;
+  optional int32 maxbatchsize = 45298679;
 
   ResolverLevelMetricsConfig metricsconfig = 278835313;
 

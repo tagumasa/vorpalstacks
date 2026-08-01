@@ -74,7 +74,7 @@ service STSService {
 
 message AssumeRoleRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string externalid = 271401992;
 
@@ -110,7 +110,7 @@ message AssumeRoleResponse {
 
   Credentials credentials = 381914482;
 
-  int32 packedpolicysize = 511234267;
+  optional int32 packedpolicysize = 511234267;
 
   string sourceidentity = 466635355;
 
@@ -120,7 +120,7 @@ message AssumeRoleResponse {
 
 message AssumeRoleWithSAMLRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string policy = 471611296;
 
@@ -150,7 +150,7 @@ message AssumeRoleWithSAMLResponse {
 
   string namequalifier = 521907559;
 
-  int32 packedpolicysize = 511234267;
+  optional int32 packedpolicysize = 511234267;
 
   string sourceidentity = 466635355;
 
@@ -164,7 +164,7 @@ message AssumeRoleWithSAMLResponse {
 
 message AssumeRoleWithWebIdentityRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string policy = 471611296;
 
@@ -192,7 +192,7 @@ message AssumeRoleWithWebIdentityResponse {
 
   Credentials credentials = 381914482;
 
-  int32 packedpolicysize = 511234267;
+  optional int32 packedpolicysize = 511234267;
 
   string provider = 363366621;
 
@@ -206,7 +206,7 @@ message AssumeRoleWithWebIdentityResponse {
 
 message AssumeRootRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string targetprincipal = 215916667;
 
@@ -354,7 +354,7 @@ message GetDelegatedAccessTokenResponse {
 
   Credentials credentials = 381914482;
 
-  int32 packedpolicysize = 511234267;
+  optional int32 packedpolicysize = 511234267;
 
 }
 
@@ -362,7 +362,7 @@ message GetDelegatedAccessTokenResponse {
 
 message GetFederationTokenRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string name = 266367751;
 
@@ -384,7 +384,7 @@ message GetFederationTokenResponse {
 
   FederatedUser federateduser = 328666081;
 
-  int32 packedpolicysize = 511234267;
+  optional int32 packedpolicysize = 511234267;
 
 }
 
@@ -392,7 +392,7 @@ message GetFederationTokenResponse {
 
 message GetSessionTokenRequest {
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string serialnumber = 418274661;
 
@@ -416,7 +416,7 @@ message GetWebIdentityTokenRequest {
 
   repeated string audience = 284892548;
 
-  int32 durationseconds = 451873635;
+  optional int32 durationseconds = 451873635;
 
   string signingalgorithm = 488091842;
 

@@ -852,12 +852,12 @@ func (x *ConsumerDescription) GetStreamarn() string {
 
 type CreateStreamInput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Maxrecordsizeinkib  int32                  `protobuf:"varint,197267253,opt,name=maxrecordsizeinkib,proto3" json:"maxrecordsizeinkib,omitempty"`
-	Shardcount          int32                  `protobuf:"varint,92831547,opt,name=shardcount,proto3" json:"shardcount,omitempty"`
+	Maxrecordsizeinkib  *int32                 `protobuf:"varint,197267253,opt,name=maxrecordsizeinkib,proto3,oneof" json:"maxrecordsizeinkib,omitempty"`
+	Shardcount          *int32                 `protobuf:"varint,92831547,opt,name=shardcount,proto3,oneof" json:"shardcount,omitempty"`
 	Streammodedetails   *StreamModeDetails     `protobuf:"bytes,12139665,opt,name=streammodedetails,proto3" json:"streammodedetails,omitempty"`
 	Streamname          string                 `protobuf:"bytes,470703047,opt,name=streamname,proto3" json:"streamname,omitempty"`
 	Tags                map[string]string      `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Warmthroughputmibps int32                  `protobuf:"varint,259219704,opt,name=warmthroughputmibps,proto3" json:"warmthroughputmibps,omitempty"`
+	Warmthroughputmibps *int32                 `protobuf:"varint,259219704,opt,name=warmthroughputmibps,proto3,oneof" json:"warmthroughputmibps,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -893,15 +893,15 @@ func (*CreateStreamInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateStreamInput) GetMaxrecordsizeinkib() int32 {
-	if x != nil {
-		return x.Maxrecordsizeinkib
+	if x != nil && x.Maxrecordsizeinkib != nil {
+		return *x.Maxrecordsizeinkib
 	}
 	return 0
 }
 
 func (x *CreateStreamInput) GetShardcount() int32 {
-	if x != nil {
-		return x.Shardcount
+	if x != nil && x.Shardcount != nil {
+		return *x.Shardcount
 	}
 	return 0
 }
@@ -928,8 +928,8 @@ func (x *CreateStreamInput) GetTags() map[string]string {
 }
 
 func (x *CreateStreamInput) GetWarmthroughputmibps() int32 {
-	if x != nil {
-		return x.Warmthroughputmibps
+	if x != nil && x.Warmthroughputmibps != nil {
+		return *x.Warmthroughputmibps
 	}
 	return 0
 }
@@ -1489,7 +1489,7 @@ func (x *DescribeStreamConsumerOutput) GetConsumerdescription() *ConsumerDescrip
 type DescribeStreamInput struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestartshardid string                 `protobuf:"bytes,44771587,opt,name=exclusivestartshardid,proto3" json:"exclusivestartshardid,omitempty"`
-	Limit                 int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                 *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Streamarn             string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamid              string                 `protobuf:"bytes,415266497,opt,name=streamid,proto3" json:"streamid,omitempty"`
 	Streamname            string                 `protobuf:"bytes,470703047,opt,name=streamname,proto3" json:"streamname,omitempty"`
@@ -1535,8 +1535,8 @@ func (x *DescribeStreamInput) GetExclusivestartshardid() string {
 }
 
 func (x *DescribeStreamInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -2048,7 +2048,7 @@ func (x *ExpiredNextTokenException) GetMessage() string {
 
 type GetRecordsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Sharditerator string                 `protobuf:"bytes,379619650,opt,name=sharditerator,proto3" json:"sharditerator,omitempty"`
 	Streamarn     string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamid      string                 `protobuf:"bytes,415266497,opt,name=streamid,proto3" json:"streamid,omitempty"`
@@ -2087,8 +2087,8 @@ func (*GetRecordsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRecordsInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -2117,7 +2117,7 @@ func (x *GetRecordsInput) GetStreamid() string {
 type GetRecordsOutput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Childshards        []*ChildShard          `protobuf:"bytes,348740657,rep,name=childshards,proto3" json:"childshards,omitempty"`
-	Millisbehindlatest int64                  `protobuf:"varint,456422057,opt,name=millisbehindlatest,proto3" json:"millisbehindlatest,omitempty"`
+	Millisbehindlatest *int64                 `protobuf:"varint,456422057,opt,name=millisbehindlatest,proto3,oneof" json:"millisbehindlatest,omitempty"`
 	Nextsharditerator  string                 `protobuf:"bytes,442470571,opt,name=nextsharditerator,proto3" json:"nextsharditerator,omitempty"`
 	Records            []*Record              `protobuf:"bytes,423557454,rep,name=records,proto3" json:"records,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -2162,8 +2162,8 @@ func (x *GetRecordsOutput) GetChildshards() []*ChildShard {
 }
 
 func (x *GetRecordsOutput) GetMillisbehindlatest() int64 {
-	if x != nil {
-		return x.Millisbehindlatest
+	if x != nil && x.Millisbehindlatest != nil {
+		return *x.Millisbehindlatest
 	}
 	return 0
 }
@@ -2933,7 +2933,7 @@ func (x *LimitExceededException) GetMessage() string {
 type ListShardsInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestartshardid   string                 `protobuf:"bytes,44771587,opt,name=exclusivestartshardid,proto3" json:"exclusivestartshardid,omitempty"`
-	Maxresults              int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults              *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken               string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Shardfilter             *ShardFilter           `protobuf:"bytes,230254710,opt,name=shardfilter,proto3" json:"shardfilter,omitempty"`
 	Streamarn               string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
@@ -2982,8 +2982,8 @@ func (x *ListShardsInput) GetExclusivestartshardid() string {
 }
 
 func (x *ListShardsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3084,7 +3084,7 @@ func (x *ListShardsOutput) GetShards() []*Shard {
 
 type ListStreamConsumersInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults              int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults              *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken               string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	Streamarn               string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamcreationtimestamp string                 `protobuf:"bytes,224951013,opt,name=streamcreationtimestamp,proto3" json:"streamcreationtimestamp,omitempty"`
@@ -3124,8 +3124,8 @@ func (*ListStreamConsumersInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStreamConsumersInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -3213,7 +3213,7 @@ func (x *ListStreamConsumersOutput) GetNexttoken() string {
 type ListStreamsInput struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestartstreamname string                 `protobuf:"bytes,431108955,opt,name=exclusivestartstreamname,proto3" json:"exclusivestartstreamname,omitempty"`
-	Limit                    int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                    *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nexttoken                string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -3257,8 +3257,8 @@ func (x *ListStreamsInput) GetExclusivestartstreamname() string {
 }
 
 func (x *ListStreamsInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -3437,7 +3437,7 @@ func (x *ListTagsForResourceOutput) GetTags() []*Tag {
 type ListTagsForStreamInput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Exclusivestarttagkey string                 `protobuf:"bytes,470465287,opt,name=exclusivestarttagkey,proto3" json:"exclusivestarttagkey,omitempty"`
-	Limit                int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit                *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Streamarn            string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamid             string                 `protobuf:"bytes,415266497,opt,name=streamid,proto3" json:"streamid,omitempty"`
 	Streamname           string                 `protobuf:"bytes,470703047,opt,name=streamname,proto3" json:"streamname,omitempty"`
@@ -3483,8 +3483,8 @@ func (x *ListTagsForStreamInput) GetExclusivestarttagkey() string {
 }
 
 func (x *ListTagsForStreamInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -4017,7 +4017,7 @@ func (x *PutRecordsInput) GetStreamname() string {
 type PutRecordsOutput struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
 	Encryptiontype    EncryptionType           `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
-	Failedrecordcount int32                    `protobuf:"varint,89270457,opt,name=failedrecordcount,proto3" json:"failedrecordcount,omitempty"`
+	Failedrecordcount *int32                   `protobuf:"varint,89270457,opt,name=failedrecordcount,proto3,oneof" json:"failedrecordcount,omitempty"`
 	Records           []*PutRecordsResultEntry `protobuf:"bytes,423557454,rep,name=records,proto3" json:"records,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -4061,8 +4061,8 @@ func (x *PutRecordsOutput) GetEncryptiontype() EncryptionType {
 }
 
 func (x *PutRecordsOutput) GetFailedrecordcount() int32 {
-	if x != nil {
-		return x.Failedrecordcount
+	if x != nil && x.Failedrecordcount != nil {
+		return *x.Failedrecordcount
 	}
 	return 0
 }
@@ -5208,11 +5208,11 @@ func (x *StreamDescription) GetStreamstatus() StreamStatus {
 
 type StreamDescriptionSummary struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Consumercount           int32                  `protobuf:"varint,448084721,opt,name=consumercount,proto3" json:"consumercount,omitempty"`
+	Consumercount           *int32                 `protobuf:"varint,448084721,opt,name=consumercount,proto3,oneof" json:"consumercount,omitempty"`
 	Encryptiontype          EncryptionType         `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
 	Enhancedmonitoring      []*EnhancedMetrics     `protobuf:"bytes,452259826,rep,name=enhancedmonitoring,proto3" json:"enhancedmonitoring,omitempty"`
 	Keyid                   string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Maxrecordsizeinkib      int32                  `protobuf:"varint,197267253,opt,name=maxrecordsizeinkib,proto3" json:"maxrecordsizeinkib,omitempty"`
+	Maxrecordsizeinkib      *int32                 `protobuf:"varint,197267253,opt,name=maxrecordsizeinkib,proto3,oneof" json:"maxrecordsizeinkib,omitempty"`
 	Openshardcount          int32                  `protobuf:"varint,476409287,opt,name=openshardcount,proto3" json:"openshardcount,omitempty"`
 	Retentionperiodhours    int32                  `protobuf:"varint,396381944,opt,name=retentionperiodhours,proto3" json:"retentionperiodhours,omitempty"`
 	Streamarn               string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
@@ -5257,8 +5257,8 @@ func (*StreamDescriptionSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *StreamDescriptionSummary) GetConsumercount() int32 {
-	if x != nil {
-		return x.Consumercount
+	if x != nil && x.Consumercount != nil {
+		return *x.Consumercount
 	}
 	return 0
 }
@@ -5285,8 +5285,8 @@ func (x *StreamDescriptionSummary) GetKeyid() string {
 }
 
 func (x *StreamDescriptionSummary) GetMaxrecordsizeinkib() int32 {
-	if x != nil {
-		return x.Maxrecordsizeinkib
+	if x != nil && x.Maxrecordsizeinkib != nil {
+		return *x.Maxrecordsizeinkib
 	}
 	return 0
 }
@@ -6168,10 +6168,10 @@ func (x *UpdateShardCountInput) GetTargetshardcount() int32 {
 
 type UpdateShardCountOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Currentshardcount int32                  `protobuf:"varint,21258174,opt,name=currentshardcount,proto3" json:"currentshardcount,omitempty"`
+	Currentshardcount *int32                 `protobuf:"varint,21258174,opt,name=currentshardcount,proto3,oneof" json:"currentshardcount,omitempty"`
 	Streamarn         string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamname        string                 `protobuf:"bytes,470703047,opt,name=streamname,proto3" json:"streamname,omitempty"`
-	Targetshardcount  int32                  `protobuf:"varint,361168816,opt,name=targetshardcount,proto3" json:"targetshardcount,omitempty"`
+	Targetshardcount  *int32                 `protobuf:"varint,361168816,opt,name=targetshardcount,proto3,oneof" json:"targetshardcount,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6207,8 +6207,8 @@ func (*UpdateShardCountOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateShardCountOutput) GetCurrentshardcount() int32 {
-	if x != nil {
-		return x.Currentshardcount
+	if x != nil && x.Currentshardcount != nil {
+		return *x.Currentshardcount
 	}
 	return 0
 }
@@ -6228,8 +6228,8 @@ func (x *UpdateShardCountOutput) GetStreamname() string {
 }
 
 func (x *UpdateShardCountOutput) GetTargetshardcount() int32 {
-	if x != nil {
-		return x.Targetshardcount
+	if x != nil && x.Targetshardcount != nil {
+		return *x.Targetshardcount
 	}
 	return 0
 }
@@ -6239,7 +6239,7 @@ type UpdateStreamModeInput struct {
 	Streamarn           string                 `protobuf:"bytes,508213725,opt,name=streamarn,proto3" json:"streamarn,omitempty"`
 	Streamid            string                 `protobuf:"bytes,415266497,opt,name=streamid,proto3" json:"streamid,omitempty"`
 	Streammodedetails   *StreamModeDetails     `protobuf:"bytes,12139665,opt,name=streammodedetails,proto3" json:"streammodedetails,omitempty"`
-	Warmthroughputmibps int32                  `protobuf:"varint,259219704,opt,name=warmthroughputmibps,proto3" json:"warmthroughputmibps,omitempty"`
+	Warmthroughputmibps *int32                 `protobuf:"varint,259219704,opt,name=warmthroughputmibps,proto3,oneof" json:"warmthroughputmibps,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6296,8 +6296,8 @@ func (x *UpdateStreamModeInput) GetStreammodedetails() *StreamModeDetails {
 }
 
 func (x *UpdateStreamModeInput) GetWarmthroughputmibps() int32 {
-	if x != nil {
-		return x.Warmthroughputmibps
+	if x != nil && x.Warmthroughputmibps != nil {
+		return *x.Warmthroughputmibps
 	}
 	return 0
 }
@@ -6476,8 +6476,8 @@ func (x *ValidationException) GetMessage() string {
 
 type WarmThroughputObject struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Currentmibps  int32                  `protobuf:"varint,153746976,opt,name=currentmibps,proto3" json:"currentmibps,omitempty"`
-	Targetmibps   int32                  `protobuf:"varint,535445626,opt,name=targetmibps,proto3" json:"targetmibps,omitempty"`
+	Currentmibps  *int32                 `protobuf:"varint,153746976,opt,name=currentmibps,proto3,oneof" json:"currentmibps,omitempty"`
+	Targetmibps   *int32                 `protobuf:"varint,535445626,opt,name=targetmibps,proto3,oneof" json:"targetmibps,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6513,15 +6513,15 @@ func (*WarmThroughputObject) Descriptor() ([]byte, []int) {
 }
 
 func (x *WarmThroughputObject) GetCurrentmibps() int32 {
-	if x != nil {
-		return x.Currentmibps
+	if x != nil && x.Currentmibps != nil {
+		return *x.Currentmibps
 	}
 	return 0
 }
 
 func (x *WarmThroughputObject) GetTargetmibps() int32 {
-	if x != nil {
-		return x.Targetmibps
+	if x != nil && x.Targetmibps != nil {
+		return *x.Targetmibps
 	}
 	return 0
 }
@@ -6558,21 +6558,24 @@ const file_kinesis_proto_rawDesc = "" +
 	"\x19consumercreationtimestamp\x18٩\xee\xa9\x01 \x01(\tR\x19consumercreationtimestamp\x12%\n" +
 	"\fconsumername\x18\xa3\x9d\xec! \x01(\tR\fconsumername\x12B\n" +
 	"\x0econsumerstatus\x18\xac\xf7\xfa\x0f \x01(\x0e2\x17.kinesis.ConsumerStatusR\x0econsumerstatus\x12 \n" +
-	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\"\x86\x03\n" +
-	"\x11CreateStreamInput\x121\n" +
-	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05R\x12maxrecordsizeinkib\x12!\n" +
+	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\"\xd3\x03\n" +
+	"\x11CreateStreamInput\x126\n" +
+	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05H\x00R\x12maxrecordsizeinkib\x88\x01\x01\x12&\n" +
 	"\n" +
-	"shardcount\x18\xbb\xfe\xa1, \x01(\x05R\n" +
-	"shardcount\x12K\n" +
+	"shardcount\x18\xbb\xfe\xa1, \x01(\x05H\x01R\n" +
+	"shardcount\x88\x01\x01\x12K\n" +
 	"\x11streammodedetails\x18\x91\xf9\xe4\x05 \x01(\v2\x1a.kinesis.StreamModeDetailsR\x11streammodedetails\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
 	"streamname\x12<\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2$.kinesis.CreateStreamInput.TagsEntryR\x04tags\x123\n" +
-	"\x13warmthroughputmibps\x18\xf8\xc1\xcd{ \x01(\x05R\x13warmthroughputmibps\x1a7\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2$.kinesis.CreateStreamInput.TagsEntryR\x04tags\x128\n" +
+	"\x13warmthroughputmibps\x18\xf8\xc1\xcd{ \x01(\x05H\x02R\x13warmthroughputmibps\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc2\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x15\n" +
+	"\x13_maxrecordsizeinkibB\r\n" +
+	"\v_shardcountB\x16\n" +
+	"\x14_warmthroughputmibps\"\xc2\x01\n" +
 	"\"DecreaseStreamRetentionPeriodInput\x126\n" +
 	"\x14retentionperiodhours\x18\xf8\x9d\x81\xbd\x01 \x01(\x05R\x14retentionperiodhours\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
@@ -6613,15 +6616,16 @@ const file_kinesis_proto_rawDesc = "" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\"r\n" +
 	"\x1cDescribeStreamConsumerOutput\x12R\n" +
-	"\x13consumerdescription\x18\xde\xfe\xf5\xf9\x01 \x01(\v2\x1c.kinesis.ConsumerDescriptionR\x13consumerdescription\"\xce\x01\n" +
+	"\x13consumerdescription\x18\xde\xfe\xf5\xf9\x01 \x01(\v2\x1c.kinesis.ConsumerDescriptionR\x13consumerdescription\"\xdd\x01\n" +
 	"\x13DescribeStreamInput\x127\n" +
-	"\x15exclusivestartshardid\x18\x83Ҭ\x15 \x01(\tR\x15exclusivestartshardid\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12 \n" +
+	"\x15exclusivestartshardid\x18\x83Ҭ\x15 \x01(\tR\x15exclusivestartshardid\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
-	"streamname\"d\n" +
+	"streamnameB\b\n" +
+	"\x06_limit\"d\n" +
 	"\x14DescribeStreamOutput\x12L\n" +
 	"\x11streamdescription\x18\xca߸\xad\x01 \x01(\v2\x1a.kinesis.StreamDescriptionR\x11streamdescription\"\x82\x01\n" +
 	"\x1aDescribeStreamSummaryInput\x12 \n" +
@@ -6658,17 +6662,19 @@ const file_kinesis_proto_rawDesc = "" +
 	"\x18ExpiredIteratorException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
 	"\x19ExpiredNextTokenException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x97\x01\n" +
-	"\x0fGetRecordsInput\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12(\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa6\x01\n" +
+	"\x0fGetRecordsInput\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12(\n" +
 	"\rsharditerator\x18\u0092\x82\xb5\x01 \x01(\tR\rsharditerator\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
-	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\"\xe2\x01\n" +
+	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamidB\b\n" +
+	"\x06_limit\"\xfe\x01\n" +
 	"\x10GetRecordsOutput\x129\n" +
-	"\vchildshards\x18\xb1\xb8\xa5\xa6\x01 \x03(\v2\x13.kinesis.ChildShardR\vchildshards\x122\n" +
-	"\x12millisbehindlatest\x18\xa9\xe5\xd1\xd9\x01 \x01(\x03R\x12millisbehindlatest\x120\n" +
+	"\vchildshards\x18\xb1\xb8\xa5\xa6\x01 \x03(\v2\x13.kinesis.ChildShardR\vchildshards\x127\n" +
+	"\x12millisbehindlatest\x18\xa9\xe5\xd1\xd9\x01 \x01(\x03H\x00R\x12millisbehindlatest\x88\x01\x01\x120\n" +
 	"\x11nextsharditerator\x18\xab\xa1\xfe\xd2\x01 \x01(\tR\x11nextsharditerator\x12-\n" +
-	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x0f.kinesis.RecordR\arecords\"^\n" +
+	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x0f.kinesis.RecordR\arecordsB\x15\n" +
+	"\x13_millisbehindlatest\"^\n" +
 	"\x16GetResourcePolicyInput\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\"5\n" +
@@ -6713,12 +6719,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"\x16KMSThrottlingException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
 	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xed\x02\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x81\x03\n" +
 	"\x0fListShardsInput\x127\n" +
-	"\x15exclusivestartshardid\x18\x83Ҭ\x15 \x01(\tR\x15exclusivestartshardid\x12\"\n" +
+	"\x15exclusivestartshardid\x18\x83Ҭ\x15 \x01(\tR\x15exclusivestartshardid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x129\n" +
 	"\vshardfilter\x18\xf6\xd0\xe5m \x01(\v2\x14.kinesis.ShardFilterR\vshardfilter\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12;\n" +
@@ -6726,25 +6732,28 @@ const file_kinesis_proto_rawDesc = "" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
-	"streamname\"_\n" +
+	"streamnameB\r\n" +
+	"\v_maxresults\"_\n" +
 	"\x10ListShardsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12*\n" +
-	"\x06shards\x18\xc9ŷ\xd0\x01 \x03(\v2\x0e.kinesis.ShardR\x06shards\"\xde\x01\n" +
-	"\x18ListStreamConsumersInput\x12\"\n" +
+	"\x06shards\x18\xc9ŷ\xd0\x01 \x03(\v2\x0e.kinesis.ShardR\x06shards\"\xf2\x01\n" +
+	"\x18ListStreamConsumersInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12;\n" +
 	"\x17streamcreationtimestamp\x18\xe5\xf5\xa1k \x01(\tR\x17streamcreationtimestamp\x12\x1e\n" +
-	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\"q\n" +
+	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamidB\r\n" +
+	"\v_maxresults\"q\n" +
 	"\x19ListStreamConsumersOutput\x123\n" +
 	"\tconsumers\x18\xef́\xa6\x01 \x03(\v2\x11.kinesis.ConsumerR\tconsumers\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x8d\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x9c\x01\n" +
 	"\x10ListStreamsInput\x12>\n" +
-	"\x18exclusivestartstreamname\x18\xdb\xe6\xc8\xcd\x01 \x01(\tR\x18exclusivestartstreamname\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xe3\x01\n" +
+	"\x18exclusivestartstreamname\x18\xdb\xe6\xc8\xcd\x01 \x01(\tR\x18exclusivestartstreamname\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\b\n" +
+	"\x06_limit\"\xe3\x01\n" +
 	"\x11ListStreamsOutput\x12.\n" +
 	"\x0ehasmorestreams\x18\xd0\xfe\xb3V \x01(\bH\x00R\x0ehasmorestreams\x88\x01\x01\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
@@ -6755,15 +6764,16 @@ const file_kinesis_proto_rawDesc = "" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\"A\n" +
 	"\x19ListTagsForResourceOutput\x12$\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.kinesis.TagR\x04tags\"\xd0\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.kinesis.TagR\x04tags\"\xdf\x01\n" +
 	"\x16ListTagsForStreamInput\x126\n" +
-	"\x14exclusivestarttagkey\x18\x87\xf6\xaa\xe0\x01 \x01(\tR\x14exclusivestarttagkey\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12 \n" +
+	"\x14exclusivestarttagkey\x18\x87\xf6\xaa\xe0\x01 \x01(\tR\x14exclusivestarttagkey\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
-	"streamname\"z\n" +
+	"streamnameB\b\n" +
+	"\x06_limit\"z\n" +
 	"\x17ListTagsForStreamOutput\x12)\n" +
 	"\vhasmoretags\x18\xf0\xdf\xe1\xbd\x01 \x01(\bH\x00R\vhasmoretags\x88\x01\x01\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.kinesis.TagR\x04tagsB\x0e\n" +
@@ -6805,11 +6815,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
-	"streamname\"\xc5\x01\n" +
+	"streamname\"\xe0\x01\n" +
 	"\x10PutRecordsOutput\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12/\n" +
-	"\x11failedrecordcount\x18\xb9\xd1\xc8* \x01(\x05R\x11failedrecordcount\x12<\n" +
-	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x1e.kinesis.PutRecordsResultEntryR\arecords\"\x86\x01\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x124\n" +
+	"\x11failedrecordcount\x18\xb9\xd1\xc8* \x01(\x05H\x00R\x11failedrecordcount\x88\x01\x01\x12<\n" +
+	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x1e.kinesis.PutRecordsResultEntryR\arecordsB\x14\n" +
+	"\x12_failedrecordcount\"\x86\x01\n" +
 	"\x16PutRecordsRequestEntry\x12\x16\n" +
 	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\x12,\n" +
 	"\x0fexplicithashkey\x18\xfd\x86\xf6\xd0\x01 \x01(\tR\x0fexplicithashkey\x12&\n" +
@@ -6905,13 +6916,13 @@ const file_kinesis_proto_rawDesc = "" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
 	"streamname\x12<\n" +
 	"\fstreamstatus\x18Ё\x9au \x01(\x0e2\x15.kinesis.StreamStatusR\fstreamstatusB\x10\n" +
-	"\x0e_hasmoreshards\"\x80\x06\n" +
-	"\x18StreamDescriptionSummary\x12(\n" +
-	"\rconsumercount\x18\xf1\xf5\xd4\xd5\x01 \x01(\x05R\rconsumercount\x12B\n" +
+	"\x0e_hasmoreshards\"\xb3\x06\n" +
+	"\x18StreamDescriptionSummary\x12-\n" +
+	"\rconsumercount\x18\xf1\xf5\xd4\xd5\x01 \x01(\x05H\x00R\rconsumercount\x88\x01\x01\x12B\n" +
 	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12L\n" +
 	"\x12enhancedmonitoring\x18\xf2\xdf\xd3\xd7\x01 \x03(\v2\x18.kinesis.EnhancedMetricsR\x12enhancedmonitoring\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x121\n" +
-	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05R\x12maxrecordsizeinkib\x12*\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x126\n" +
+	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05H\x01R\x12maxrecordsizeinkib\x88\x01\x01\x12*\n" +
 	"\x0eopenshardcount\x18\xc7ە\xe3\x01 \x01(\x05R\x0eopenshardcount\x126\n" +
 	"\x14retentionperiodhours\x18\xf8\x9d\x81\xbd\x01 \x01(\x05R\x14retentionperiodhours\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12;\n" +
@@ -6922,7 +6933,9 @@ const file_kinesis_proto_rawDesc = "" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
 	"streamname\x12<\n" +
 	"\fstreamstatus\x18Ё\x9au \x01(\x0e2\x15.kinesis.StreamStatusR\fstreamstatus\x12I\n" +
-	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x1d.kinesis.WarmThroughputObjectR\x0ewarmthroughput\"L\n" +
+	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x1d.kinesis.WarmThroughputObjectR\x0ewarmthroughputB\x10\n" +
+	"\x0e_consumercountB\x15\n" +
+	"\x13_maxrecordsizeinkib\"L\n" +
 	"\x11StreamModeDetails\x127\n" +
 	"\n" +
 	"streammode\x18\xf3Շ\xda\x01 \x01(\x0e2\x13.kinesis.StreamModeR\n" +
@@ -6987,20 +7000,23 @@ const file_kinesis_proto_rawDesc = "" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
 	"streamname\x12.\n" +
-	"\x10targetshardcount\x18\xb0\xff\x9b\xac\x01 \x01(\x05R\x10targetshardcount\"\xbf\x01\n" +
-	"\x16UpdateShardCountOutput\x12/\n" +
+	"\x10targetshardcount\x18\xb0\xff\x9b\xac\x01 \x01(\x05R\x10targetshardcount\"\xf4\x01\n" +
+	"\x16UpdateShardCountOutput\x124\n" +
 	"\x11currentshardcount\x18\xbe\xbf\x91\n" +
-	" \x01(\x05R\x11currentshardcount\x12 \n" +
+	" \x01(\x05H\x00R\x11currentshardcount\x88\x01\x01\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
-	"streamname\x12.\n" +
-	"\x10targetshardcount\x18\xb0\xff\x9b\xac\x01 \x01(\x05R\x10targetshardcount\"\xdb\x01\n" +
+	"streamname\x123\n" +
+	"\x10targetshardcount\x18\xb0\xff\x9b\xac\x01 \x01(\x05H\x01R\x10targetshardcount\x88\x01\x01B\x14\n" +
+	"\x12_currentshardcountB\x13\n" +
+	"\x11_targetshardcount\"\xf8\x01\n" +
 	"\x15UpdateStreamModeInput\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12K\n" +
-	"\x11streammodedetails\x18\x91\xf9\xe4\x05 \x01(\v2\x1a.kinesis.StreamModeDetailsR\x11streammodedetails\x123\n" +
-	"\x13warmthroughputmibps\x18\xf8\xc1\xcd{ \x01(\x05R\x13warmthroughputmibps\"\xbc\x01\n" +
+	"\x11streammodedetails\x18\x91\xf9\xe4\x05 \x01(\v2\x1a.kinesis.StreamModeDetailsR\x11streammodedetails\x128\n" +
+	"\x13warmthroughputmibps\x18\xf8\xc1\xcd{ \x01(\x05H\x00R\x13warmthroughputmibps\x88\x01\x01B\x16\n" +
+	"\x14_warmthroughputmibps\"\xbc\x01\n" +
 	"\x1fUpdateStreamWarmThroughputInput\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12\x1e\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tR\bstreamid\x12\"\n" +
@@ -7015,10 +7031,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"streamname\x12I\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x1d.kinesis.WarmThroughputObjectR\x0ewarmthroughput\"2\n" +
 	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"c\n" +
-	"\x14WarmThroughputObject\x12%\n" +
-	"\fcurrentmibps\x18\xa0\xfc\xa7I \x01(\x05R\fcurrentmibps\x12$\n" +
-	"\vtargetmibps\x18\xfa\x80\xa9\xff\x01 \x01(\x05R\vtargetmibps*h\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8e\x01\n" +
+	"\x14WarmThroughputObject\x12*\n" +
+	"\fcurrentmibps\x18\xa0\xfc\xa7I \x01(\x05H\x00R\fcurrentmibps\x88\x01\x01\x12)\n" +
+	"\vtargetmibps\x18\xfa\x80\xa9\xff\x01 \x01(\x05H\x01R\vtargetmibps\x88\x01\x01B\x0f\n" +
+	"\r_currentmibpsB\x0e\n" +
+	"\f_targetmibps*h\n" +
 	"\x0eConsumerStatus\x12\x1a\n" +
 	"\x16CONSUMER_STATUS_ACTIVE\x10\x00\x12\x1c\n" +
 	"\x18CONSUMER_STATUS_DELETING\x10\x01\x12\x1c\n" +
@@ -7403,10 +7421,23 @@ func file_kinesis_proto_init() {
 	if File_kinesis_proto != nil {
 		return
 	}
+	file_kinesis_proto_msgTypes[5].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[8].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[16].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[26].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[27].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[43].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[45].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[47].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[48].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[51].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[52].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[60].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[77].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[78].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[92].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[93].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[97].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

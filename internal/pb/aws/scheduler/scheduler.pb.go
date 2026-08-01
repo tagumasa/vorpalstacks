@@ -88,9 +88,9 @@ func (x *AwsVpcConfiguration) GetSubnets() []string {
 
 type CapacityProviderStrategyItem struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Base             int32                  `protobuf:"varint,500995289,opt,name=base,proto3" json:"base,omitempty"`
+	Base             *int32                 `protobuf:"varint,500995289,opt,name=base,proto3,oneof" json:"base,omitempty"`
 	Capacityprovider string                 `protobuf:"bytes,109086449,opt,name=capacityprovider,proto3" json:"capacityprovider,omitempty"`
-	Weight           int32                  `protobuf:"varint,278961850,opt,name=weight,proto3" json:"weight,omitempty"`
+	Weight           *int32                 `protobuf:"varint,278961850,opt,name=weight,proto3,oneof" json:"weight,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -126,8 +126,8 @@ func (*CapacityProviderStrategyItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *CapacityProviderStrategyItem) GetBase() int32 {
-	if x != nil {
-		return x.Base
+	if x != nil && x.Base != nil {
+		return *x.Base
 	}
 	return 0
 }
@@ -140,8 +140,8 @@ func (x *CapacityProviderStrategyItem) GetCapacityprovider() string {
 }
 
 func (x *CapacityProviderStrategyItem) GetWeight() int32 {
-	if x != nil {
-		return x.Weight
+	if x != nil && x.Weight != nil {
+		return *x.Weight
 	}
 	return 0
 }
@@ -720,7 +720,7 @@ type EcsParameters struct {
 	Propagatetags            string                          `protobuf:"bytes,405557622,opt,name=propagatetags,proto3" json:"propagatetags,omitempty"`
 	Referenceid              string                          `protobuf:"bytes,291739032,opt,name=referenceid,proto3" json:"referenceid,omitempty"`
 	Tags                     []*TagsEntry                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Taskcount                int32                           `protobuf:"varint,398407508,opt,name=taskcount,proto3" json:"taskcount,omitempty"`
+	Taskcount                *int32                          `protobuf:"varint,398407508,opt,name=taskcount,proto3,oneof" json:"taskcount,omitempty"`
 	Taskdefinitionarn        string                          `protobuf:"bytes,82234477,opt,name=taskdefinitionarn,proto3" json:"taskdefinitionarn,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -841,8 +841,8 @@ func (x *EcsParameters) GetTags() []*TagsEntry {
 }
 
 func (x *EcsParameters) GetTaskcount() int32 {
-	if x != nil {
-		return x.Taskcount
+	if x != nil && x.Taskcount != nil {
+		return *x.Taskcount
 	}
 	return 0
 }
@@ -908,7 +908,7 @@ func (x *EventBridgeParameters) GetSource() string {
 
 type FlexibleTimeWindow struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Maximumwindowinminutes int32                  `protobuf:"varint,482931584,opt,name=maximumwindowinminutes,proto3" json:"maximumwindowinminutes,omitempty"`
+	Maximumwindowinminutes *int32                 `protobuf:"varint,482931584,opt,name=maximumwindowinminutes,proto3,oneof" json:"maximumwindowinminutes,omitempty"`
 	Mode                   string                 `protobuf:"bytes,323909427,opt,name=mode,proto3" json:"mode,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -945,8 +945,8 @@ func (*FlexibleTimeWindow) Descriptor() ([]byte, []int) {
 }
 
 func (x *FlexibleTimeWindow) GetMaximumwindowinminutes() int32 {
-	if x != nil {
-		return x.Maximumwindowinminutes
+	if x != nil && x.Maximumwindowinminutes != nil {
+		return *x.Maximumwindowinminutes
 	}
 	return 0
 }
@@ -1376,7 +1376,7 @@ func (x *KinesisParameters) GetPartitionkey() string {
 
 type ListScheduleGroupsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1414,8 +1414,8 @@ func (*ListScheduleGroupsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListScheduleGroupsInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -1489,7 +1489,7 @@ func (x *ListScheduleGroupsOutput) GetSchedulegroups() []*ScheduleGroupSummary {
 type ListSchedulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
+	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
 	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	State         string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
@@ -1535,8 +1535,8 @@ func (x *ListSchedulesInput) GetGroupname() string {
 }
 
 func (x *ListSchedulesInput) GetMaxresults() int32 {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return 0
 }
@@ -1896,8 +1896,8 @@ func (x *ResourceNotFoundException) GetMessage() string {
 
 type RetryPolicy struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Maximumeventageinseconds int32                  `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3" json:"maximumeventageinseconds,omitempty"`
-	Maximumretryattempts     int32                  `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3" json:"maximumretryattempts,omitempty"`
+	Maximumeventageinseconds *int32                 `protobuf:"varint,393041563,opt,name=maximumeventageinseconds,proto3,oneof" json:"maximumeventageinseconds,omitempty"`
+	Maximumretryattempts     *int32                 `protobuf:"varint,112088128,opt,name=maximumretryattempts,proto3,oneof" json:"maximumretryattempts,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -1933,15 +1933,15 @@ func (*RetryPolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *RetryPolicy) GetMaximumeventageinseconds() int32 {
-	if x != nil {
-		return x.Maximumeventageinseconds
+	if x != nil && x.Maximumeventageinseconds != nil {
+		return *x.Maximumeventageinseconds
 	}
 	return 0
 }
 
 func (x *RetryPolicy) GetMaximumretryattempts() int32 {
-	if x != nil {
-		return x.Maximumretryattempts
+	if x != nil && x.Maximumretryattempts != nil {
+		return *x.Maximumretryattempts
 	}
 	return 0
 }
@@ -3010,11 +3010,13 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x13AwsVpcConfiguration\x12*\n" +
 	"\x0eassignpublicip\x18Ռ\x91\xdc\x01 \x01(\tR\x0eassignpublicip\x12*\n" +
 	"\x0esecuritygroups\x18Ԭ\xda\xf5\x01 \x03(\tR\x0esecuritygroups\x12\x1c\n" +
-	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnets\"\x81\x01\n" +
-	"\x1cCapacityProviderStrategyItem\x12\x16\n" +
-	"\x04base\x18٩\xf2\xee\x01 \x01(\x05R\x04base\x12-\n" +
-	"\x10capacityprovider\x18\xf1\x8d\x824 \x01(\tR\x10capacityprovider\x12\x1a\n" +
-	"\x06weight\x18\xba\xbd\x82\x85\x01 \x01(\x05R\x06weight\"0\n" +
+	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnets\"\x9f\x01\n" +
+	"\x1cCapacityProviderStrategyItem\x12\x1b\n" +
+	"\x04base\x18٩\xf2\xee\x01 \x01(\x05H\x00R\x04base\x88\x01\x01\x12-\n" +
+	"\x10capacityprovider\x18\xf1\x8d\x824 \x01(\tR\x10capacityprovider\x12\x1f\n" +
+	"\x06weight\x18\xba\xbd\x82\x85\x01 \x01(\x05H\x01R\x06weight\x88\x01\x01B\a\n" +
+	"\x05_baseB\t\n" +
+	"\a_weight\"0\n" +
 	"\x11ConflictException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"~\n" +
 	"\x18CreateScheduleGroupInput\x12#\n" +
@@ -3049,7 +3051,7 @@ const file_scheduler_proto_rawDesc = "" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x16\n" +
-	"\x14DeleteScheduleOutput\"\xdb\x06\n" +
+	"\x14DeleteScheduleOutput\"\xee\x06\n" +
 	"\rEcsParameters\x12g\n" +
 	"\x18capacityproviderstrategy\x18ւт\x01 \x03(\v2'.scheduler.CapacityProviderStrategyItemR\x18capacityproviderstrategy\x12:\n" +
 	"\x14enableecsmanagedtags\x18\x96\xfc\xd8E \x01(\bH\x00R\x14enableecsmanagedtags\x88\x01\x01\x12;\n" +
@@ -3064,19 +3066,22 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tR\x0fplatformversion\x12(\n" +
 	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\tR\rpropagatetags\x12$\n" +
 	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tR\vreferenceid\x12,\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.scheduler.TagsEntryR\x04tags\x12 \n" +
-	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05R\ttaskcount\x12/\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.scheduler.TagsEntryR\x04tags\x12%\n" +
+	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05H\x02R\ttaskcount\x88\x01\x01\x12/\n" +
 	"\x11taskdefinitionarn\x18혛' \x01(\tR\x11taskdefinitionarnB\x17\n" +
 	"\x15_enableecsmanagedtagsB\x17\n" +
-	"\x15_enableexecutecommand\"U\n" +
+	"\x15_enableexecutecommandB\f\n" +
+	"\n" +
+	"_taskcount\"U\n" +
 	"\x15EventBridgeParameters\x12!\n" +
 	"\n" +
 	"detailtype\x18\xfd\xd7\xcd\x05 \x01(\tR\n" +
 	"detailtype\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\"h\n" +
-	"\x12FlexibleTimeWindow\x12:\n" +
-	"\x16maximumwindowinminutes\x18\x80\xe7\xa3\xe6\x01 \x01(\x05R\x16maximumwindowinminutes\x12\x16\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\tR\x04mode\".\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\"\x88\x01\n" +
+	"\x12FlexibleTimeWindow\x12?\n" +
+	"\x16maximumwindowinminutes\x18\x80\xe7\xa3\xe6\x01 \x01(\x05H\x00R\x16maximumwindowinminutes\x88\x01\x01\x12\x16\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\tR\x04modeB\x19\n" +
+	"\x17_maximumwindowinminutes\".\n" +
 	"\x15GetScheduleGroupInput\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xbe\x01\n" +
 	"\x16GetScheduleGroupOutput\x12\x14\n" +
@@ -3107,28 +3112,30 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x17InternalServerException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
 	"\x11KinesisParameters\x12&\n" +
-	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x01(\tR\fpartitionkey\"\x82\x01\n" +
-	"\x17ListScheduleGroupsInput\x12\"\n" +
+	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x01(\tR\fpartitionkey\"\x96\x01\n" +
+	"\x17ListScheduleGroupsInput\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
 	"nameprefix\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x87\x01\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
+	"\v_maxresults\"\x87\x01\n" +
 	"\x18ListScheduleGroupsOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12J\n" +
-	"\x0eschedulegroups\x18\xc5\xeb\xf1@ \x03(\v2\x1f.scheduler.ScheduleGroupSummaryR\x0eschedulegroups\"\xb9\x01\n" +
+	"\x0eschedulegroups\x18\xc5\xeb\xf1@ \x03(\v2\x1f.scheduler.ScheduleGroupSummaryR\x0eschedulegroups\"\xcd\x01\n" +
 	"\x12ListSchedulesInput\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\"\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
 	"nameprefix\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"s\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05stateB\r\n" +
+	"\v_maxresults\"s\n" +
 	"\x13ListSchedulesOutput\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12;\n" +
 	"\tschedules\x18ΐ\x83\t \x03(\v2\x1a.scheduler.ScheduleSummaryR\tschedules\"@\n" +
@@ -3147,10 +3154,12 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x05field\x18\xe8ĉ< \x01(\tR\x05field\x12\x16\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\"8\n" +
 	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x84\x01\n" +
-	"\vRetryPolicy\x12>\n" +
-	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05R\x18maximumeventageinseconds\x125\n" +
-	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05R\x14maximumretryattempts\"M\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xc4\x01\n" +
+	"\vRetryPolicy\x12C\n" +
+	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05H\x00R\x18maximumeventageinseconds\x88\x01\x01\x12:\n" +
+	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x01R\x14maximumretryattempts\x88\x01\x01B\x1b\n" +
+	"\x19_maximumeventageinsecondsB\x17\n" +
+	"\x15_maximumretryattempts\"M\n" +
 	"\x1aSageMakerPipelineParameter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"}\n" +
@@ -3368,7 +3377,12 @@ func file_scheduler_proto_init() {
 	if File_scheduler_proto != nil {
 		return
 	}
+	file_scheduler_proto_msgTypes[1].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[12].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[14].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[21].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[23].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[31].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

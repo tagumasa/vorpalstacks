@@ -49,8 +49,8 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	marker := req.Msg.Exclusivestarttablename
 	limit := 100
-	if req.Msg.Limit > 0 {
-		limit = int(req.Msg.Limit)
+	if req.Msg.GetLimit() > 0 {
+		limit = int(req.Msg.GetLimit())
 	}
 
 	tables, nextMarker, err := store.Tables().List(marker, limit)

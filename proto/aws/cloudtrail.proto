@@ -691,7 +691,7 @@ message CreateEventDataStoreRequest {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   optional bool startingestion = 168263832;
 
@@ -721,7 +721,7 @@ message CreateEventDataStoreResponse {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   EventDataStoreStatus status = 6222352;
 
@@ -1159,7 +1159,7 @@ message EventDataStore {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   EventDataStoreStatus status = 6222352;
 
@@ -1439,7 +1439,7 @@ message GetEventDataStoreResponse {
 
   repeated PartitionKey partitionkeys = 200562986;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   EventDataStoreStatus status = 6222352;
 
@@ -1533,7 +1533,7 @@ message GetQueryResultsRequest {
 
   string eventdatastoreowneraccountid = 471609008;
 
-  int32 maxqueryresults = 120660448;
+  optional int32 maxqueryresults = 120660448;
 
   string nexttoken = 216957566;
 
@@ -1701,15 +1701,15 @@ message ImportSource {
 
 message ImportStatistics {
 
-  int64 eventscompleted = 159166494;
+  optional int64 eventscompleted = 159166494;
 
-  int64 failedentries = 86416685;
+  optional int64 failedentries = 86416685;
 
-  int64 filescompleted = 300203834;
+  optional int64 filescompleted = 300203834;
 
-  int64 prefixescompleted = 433011203;
+  optional int64 prefixescompleted = 433011203;
 
-  int64 prefixesfound = 244228528;
+  optional int64 prefixesfound = 244228528;
 
 }
 
@@ -2171,7 +2171,7 @@ message KmsKeyNotFoundException {
 
 message ListChannelsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2191,7 +2191,7 @@ message ListChannelsResponse {
 
 message ListDashboardsRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nameprefix = 361707931;
 
@@ -2215,7 +2215,7 @@ message ListDashboardsResponse {
 
 message ListEventDataStoresRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2237,7 +2237,7 @@ message ListImportFailuresRequest {
 
   string importid = 420153946;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2261,7 +2261,7 @@ message ListImportsRequest {
 
   ImportStatus importstatus = 129077631;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2301,7 +2301,7 @@ message ListInsightsDataRequest {
 
   string insightsource = 438381967;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2343,11 +2343,11 @@ message ListInsightsMetricDataRequest {
 
   InsightType insighttype = 530375860;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
-  int32 period = 119833637;
+  optional int32 period = 119833637;
 
   string starttime = 370760303;
 
@@ -2411,7 +2411,7 @@ message ListQueriesRequest {
 
   string eventdatastore = 136801729;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2519,7 +2519,7 @@ message LookupEventsRequest {
 
   repeated LookupAttribute lookupattributes = 162162567;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -2793,11 +2793,11 @@ message QueryIdNotFoundException {
 
 message QueryStatistics {
 
-  int64 bytesscanned = 186950329;
+  optional int64 bytesscanned = 186950329;
 
-  int32 resultscount = 530057669;
+  optional int32 resultscount = 530057669;
 
-  int32 totalresultscount = 167126221;
+  optional int32 totalresultscount = 167126221;
 
 }
 
@@ -2807,15 +2807,15 @@ message QueryStatistics {
 
 message QueryStatisticsForDescribeQuery {
 
-  int64 bytesscanned = 186950329;
+  optional int64 bytesscanned = 186950329;
 
   string creationtime = 103458790;
 
-  int64 eventsmatched = 19501829;
+  optional int64 eventsmatched = 19501829;
 
-  int64 eventsscanned = 475241657;
+  optional int64 eventsscanned = 475241657;
 
-  int32 executiontimeinmillis = 447596178;
+  optional int32 executiontimeinmillis = 447596178;
 
 }
 
@@ -2871,7 +2871,7 @@ message RefreshScheduleFrequency {
 
   RefreshScheduleFrequencyUnit unit = 148989480;
 
-  int32 value = 289929579;
+  optional int32 value = 289929579;
 
 }
 
@@ -3049,7 +3049,7 @@ message RestoreEventDataStoreResponse {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   EventDataStoreStatus status = 6222352;
 
@@ -3087,7 +3087,7 @@ message S3ImportSource {
 
 message SearchSampleQueriesRequest {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -3559,7 +3559,7 @@ message UpdateEventDataStoreRequest {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   optional bool terminationprotectionenabled = 376863196;
 
@@ -3589,7 +3589,7 @@ message UpdateEventDataStoreResponse {
 
   optional bool organizationenabled = 480171176;
 
-  int32 retentionperiod = 196383721;
+  optional int32 retentionperiod = 196383721;
 
   EventDataStoreStatus status = 6222352;
 

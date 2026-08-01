@@ -3314,7 +3314,7 @@ type APIKeySummary struct {
 	Apikey            string                 `protobuf:"bytes,274818239,opt,name=apikey,proto3" json:"apikey,omitempty"`
 	Creationtimestamp string                 `protobuf:"bytes,24480293,opt,name=creationtimestamp,proto3" json:"creationtimestamp,omitempty"`
 	Tokendomains      []string               `protobuf:"bytes,11638560,rep,name=tokendomains,proto3" json:"tokendomains,omitempty"`
-	Version           int32                  `protobuf:"varint,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version           *int32                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3371,8 +3371,8 @@ func (x *APIKeySummary) GetTokendomains() []string {
 }
 
 func (x *APIKeySummary) GetVersion() int32 {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return 0
 }
@@ -4460,8 +4460,8 @@ func (x *CaptchaConfig) GetImmunitytimeproperty() *ImmunityTimeProperty {
 type CaptchaResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Failurereason  FailureReason          `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason" json:"failurereason,omitempty"`
-	Responsecode   int32                  `protobuf:"varint,447553700,opt,name=responsecode,proto3" json:"responsecode,omitempty"`
-	Solvetimestamp int64                  `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3" json:"solvetimestamp,omitempty"`
+	Responsecode   *int32                 `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
+	Solvetimestamp *int64                 `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3,oneof" json:"solvetimestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4504,15 +4504,15 @@ func (x *CaptchaResponse) GetFailurereason() FailureReason {
 }
 
 func (x *CaptchaResponse) GetResponsecode() int32 {
-	if x != nil {
-		return x.Responsecode
+	if x != nil && x.Responsecode != nil {
+		return *x.Responsecode
 	}
 	return 0
 }
 
 func (x *CaptchaResponse) GetSolvetimestamp() int64 {
-	if x != nil {
-		return x.Solvetimestamp
+	if x != nil && x.Solvetimestamp != nil {
+		return *x.Solvetimestamp
 	}
 	return 0
 }
@@ -4608,8 +4608,8 @@ func (x *ChallengeConfig) GetImmunitytimeproperty() *ImmunityTimeProperty {
 type ChallengeResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Failurereason  FailureReason          `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason" json:"failurereason,omitempty"`
-	Responsecode   int32                  `protobuf:"varint,447553700,opt,name=responsecode,proto3" json:"responsecode,omitempty"`
-	Solvetimestamp int64                  `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3" json:"solvetimestamp,omitempty"`
+	Responsecode   *int32                 `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
+	Solvetimestamp *int64                 `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3,oneof" json:"solvetimestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4652,15 +4652,15 @@ func (x *ChallengeResponse) GetFailurereason() FailureReason {
 }
 
 func (x *ChallengeResponse) GetResponsecode() int32 {
-	if x != nil {
-		return x.Responsecode
+	if x != nil && x.Responsecode != nil {
+		return *x.Responsecode
 	}
 	return 0
 }
 
 func (x *ChallengeResponse) GetSolvetimestamp() int64 {
-	if x != nil {
-		return x.Solvetimestamp
+	if x != nil && x.Solvetimestamp != nil {
+		return *x.Solvetimestamp
 	}
 	return 0
 }
@@ -4719,7 +4719,7 @@ func (x *CheckCapacityRequest) GetScope() Scope {
 
 type CheckCapacityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Capacity      int64                  `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Capacity      *int64                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4755,8 +4755,8 @@ func (*CheckCapacityResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CheckCapacityResponse) GetCapacity() int64 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -6043,8 +6043,8 @@ type DataPointEntry struct {
 	Date                string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
 	Groupbyvalue        string                 `protobuf:"bytes,232052215,opt,name=groupbyvalue,proto3" json:"groupbyvalue,omitempty"`
 	Intent              string                 `protobuf:"bytes,158359916,opt,name=intent,proto3" json:"intent,omitempty"`
-	Monetizeservedcount int64                  `protobuf:"varint,221393899,opt,name=monetizeservedcount,proto3" json:"monetizeservedcount,omitempty"`
-	Settledcount        int64                  `protobuf:"varint,164622674,opt,name=settledcount,proto3" json:"settledcount,omitempty"`
+	Monetizeservedcount *int64                 `protobuf:"varint,221393899,opt,name=monetizeservedcount,proto3,oneof" json:"monetizeservedcount,omitempty"`
+	Settledcount        *int64                 `protobuf:"varint,164622674,opt,name=settledcount,proto3,oneof" json:"settledcount,omitempty"`
 	Totalamount         string                 `protobuf:"bytes,45332786,opt,name=totalamount,proto3" json:"totalamount,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -6109,15 +6109,15 @@ func (x *DataPointEntry) GetIntent() string {
 }
 
 func (x *DataPointEntry) GetMonetizeservedcount() int64 {
-	if x != nil {
-		return x.Monetizeservedcount
+	if x != nil && x.Monetizeservedcount != nil {
+		return *x.Monetizeservedcount
 	}
 	return 0
 }
 
 func (x *DataPointEntry) GetSettledcount() int64 {
-	if x != nil {
-		return x.Settledcount
+	if x != nil && x.Settledcount != nil {
+		return *x.Settledcount
 	}
 	return 0
 }
@@ -7324,7 +7324,7 @@ func (x *DescribeManagedRuleGroupRequest) GetVersionname() string {
 type DescribeManagedRuleGroupResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Availablelabels []*LabelSummary        `protobuf:"bytes,51059984,rep,name=availablelabels,proto3" json:"availablelabels,omitempty"`
-	Capacity        int64                  `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Capacity        *int64                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Consumedlabels  []*LabelSummary        `protobuf:"bytes,43813949,rep,name=consumedlabels,proto3" json:"consumedlabels,omitempty"`
 	Labelnamespace  string                 `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
 	Rules           []*RuleSummary         `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
@@ -7372,8 +7372,8 @@ func (x *DescribeManagedRuleGroupResponse) GetAvailablelabels() []*LabelSummary 
 }
 
 func (x *DescribeManagedRuleGroupResponse) GetCapacity() int64 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -9142,7 +9142,7 @@ type GetRevenueStatisticsRequest struct {
 	Currency      Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Filters       []*MonetizationFilter  `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Groupby       GroupByType            `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Sortby        RankingSortBy          `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.RankingSortBy" json:"sortby,omitempty"`
@@ -9205,8 +9205,8 @@ func (x *GetRevenueStatisticsRequest) GetGroupby() GroupByType {
 }
 
 func (x *GetRevenueStatisticsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -9431,7 +9431,7 @@ type GetRevenueStatisticsTimeSeriesRequest struct {
 	Filters       []*MonetizationFilter   `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Groupby       GroupByType             `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
 	Interval      IntervalType            `protobuf:"varint,463550873,opt,name=interval,proto3,enum=wafv2.IntervalType" json:"interval,omitempty"`
-	Limit         int32                   `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                  `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                   `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Statistictype TimeSeriesStatisticType `protobuf:"varint,76638614,opt,name=statistictype,proto3,enum=wafv2.TimeSeriesStatisticType" json:"statistictype,omitempty"`
@@ -9499,8 +9499,8 @@ func (x *GetRevenueStatisticsTimeSeriesRequest) GetInterval() IntervalType {
 }
 
 func (x *GetRevenueStatisticsTimeSeriesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -9783,7 +9783,7 @@ func (x *GetSampledRequestsRequest) GetWebaclarn() string {
 
 type GetSampledRequestsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Populationsize  int64                  `protobuf:"varint,140605436,opt,name=populationsize,proto3" json:"populationsize,omitempty"`
+	Populationsize  *int64                 `protobuf:"varint,140605436,opt,name=populationsize,proto3,oneof" json:"populationsize,omitempty"`
 	Sampledrequests []*SampledHTTPRequest  `protobuf:"bytes,3233688,rep,name=sampledrequests,proto3" json:"sampledrequests,omitempty"`
 	Timewindow      *TimeWindow            `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -9821,8 +9821,8 @@ func (*GetSampledRequestsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSampledRequestsResponse) GetPopulationsize() int64 {
-	if x != nil {
-		return x.Populationsize
+	if x != nil && x.Populationsize != nil {
+		return *x.Populationsize
 	}
 	return 0
 }
@@ -11251,7 +11251,7 @@ func (x *LabelSummary) GetName() string {
 
 type ListAPIKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11289,8 +11289,8 @@ func (*ListAPIKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListAPIKeysRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11371,7 +11371,7 @@ func (x *ListAPIKeysResponse) GetNextmarker() string {
 
 type ListAvailableManagedRuleGroupVersionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
@@ -11411,8 +11411,8 @@ func (*ListAvailableManagedRuleGroupVersionsRequest) Descriptor() ([]byte, []int
 }
 
 func (x *ListAvailableManagedRuleGroupVersionsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11507,7 +11507,7 @@ func (x *ListAvailableManagedRuleGroupVersionsResponse) GetVersions() []*Managed
 
 type ListAvailableManagedRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11545,8 +11545,8 @@ func (*ListAvailableManagedRuleGroupsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListAvailableManagedRuleGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11619,7 +11619,7 @@ func (x *ListAvailableManagedRuleGroupsResponse) GetNextmarker() string {
 
 type ListIPSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11657,8 +11657,8 @@ func (*ListIPSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListIPSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11731,7 +11731,7 @@ func (x *ListIPSetsResponse) GetNextmarker() string {
 
 type ListLoggingConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Logscope      LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
@@ -11770,8 +11770,8 @@ func (*ListLoggingConfigurationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListLoggingConfigurationsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11851,7 +11851,7 @@ func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
 
 type ListManagedRuleSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11889,8 +11889,8 @@ func (*ListManagedRuleSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListManagedRuleSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -11963,7 +11963,7 @@ func (x *ListManagedRuleSetsResponse) GetNextmarker() string {
 
 type ListMobileSdkReleasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Platform      Platform               `protobuf:"varint,468905683,opt,name=platform,proto3,enum=wafv2.Platform" json:"platform,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12001,8 +12001,8 @@ func (*ListMobileSdkReleasesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMobileSdkReleasesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12075,7 +12075,7 @@ func (x *ListMobileSdkReleasesResponse) GetReleasesummaries() []*ReleaseSummary 
 
 type ListRegexPatternSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12113,8 +12113,8 @@ func (*ListRegexPatternSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexPatternSetsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12283,7 +12283,7 @@ func (x *ListResourcesForWebACLResponse) GetResourcearns() []string {
 
 type ListRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12321,8 +12321,8 @@ func (*ListRuleGroupsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRuleGroupsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12397,7 +12397,7 @@ type ListSettlementRecordsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Currency      Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Filters       []*MonetizationFilter  `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Sortby        SettlementSortBy       `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.SettlementSortBy" json:"sortby,omitempty"`
@@ -12452,8 +12452,8 @@ func (x *ListSettlementRecordsRequest) GetFilters() []*MonetizationFilter {
 }
 
 func (x *ListSettlementRecordsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12547,7 +12547,7 @@ func (x *ListSettlementRecordsResponse) GetSettlements() []*SettlementRecord {
 
 type ListTagsForResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12585,8 +12585,8 @@ func (*ListTagsForResourceRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -12659,7 +12659,7 @@ func (x *ListTagsForResourceResponse) GetTaginfoforresource() *TagInfoForResourc
 
 type ListWebACLsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -12697,8 +12697,8 @@ func (*ListWebACLsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListWebACLsRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -13512,9 +13512,9 @@ func (x *ManagedRuleSetSummary) GetName() string {
 type ManagedRuleSetVersion struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Associatedrulegrouparn string                 `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3" json:"associatedrulegrouparn,omitempty"`
-	Capacity               int64                  `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Capacity               *int64                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Expirytimestamp        string                 `protobuf:"bytes,460460551,opt,name=expirytimestamp,proto3" json:"expirytimestamp,omitempty"`
-	Forecastedlifetime     int32                  `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3" json:"forecastedlifetime,omitempty"`
+	Forecastedlifetime     *int32                 `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3,oneof" json:"forecastedlifetime,omitempty"`
 	Lastupdatetimestamp    string                 `protobuf:"bytes,118818825,opt,name=lastupdatetimestamp,proto3" json:"lastupdatetimestamp,omitempty"`
 	Publishtimestamp       string                 `protobuf:"bytes,477892057,opt,name=publishtimestamp,proto3" json:"publishtimestamp,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -13559,8 +13559,8 @@ func (x *ManagedRuleSetVersion) GetAssociatedrulegrouparn() string {
 }
 
 func (x *ManagedRuleSetVersion) GetCapacity() int64 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -13573,8 +13573,8 @@ func (x *ManagedRuleSetVersion) GetExpirytimestamp() string {
 }
 
 func (x *ManagedRuleSetVersion) GetForecastedlifetime() int32 {
-	if x != nil {
-		return x.Forecastedlifetime
+	if x != nil && x.Forecastedlifetime != nil {
+		return *x.Forecastedlifetime
 	}
 	return 0
 }
@@ -14685,7 +14685,7 @@ type RateBasedStatement struct {
 	state               protoimpl.MessageState             `protogen:"open.v1"`
 	Aggregatekeytype    RateBasedStatementAggregateKeyType `protobuf:"varint,200283184,opt,name=aggregatekeytype,proto3,enum=wafv2.RateBasedStatementAggregateKeyType" json:"aggregatekeytype,omitempty"`
 	Customkeys          []*RateBasedStatementCustomKey     `protobuf:"bytes,429675987,rep,name=customkeys,proto3" json:"customkeys,omitempty"`
-	Evaluationwindowsec int64                              `protobuf:"varint,333939569,opt,name=evaluationwindowsec,proto3" json:"evaluationwindowsec,omitempty"`
+	Evaluationwindowsec *int64                             `protobuf:"varint,333939569,opt,name=evaluationwindowsec,proto3,oneof" json:"evaluationwindowsec,omitempty"`
 	Forwardedipconfig   *ForwardedIPConfig                 `protobuf:"bytes,259846797,opt,name=forwardedipconfig,proto3" json:"forwardedipconfig,omitempty"`
 	Limit               int64                              `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
 	Scopedownstatement  *Statement                         `protobuf:"bytes,116108605,opt,name=scopedownstatement,proto3" json:"scopedownstatement,omitempty"`
@@ -14738,8 +14738,8 @@ func (x *RateBasedStatement) GetCustomkeys() []*RateBasedStatementCustomKey {
 }
 
 func (x *RateBasedStatement) GetEvaluationwindowsec() int64 {
-	if x != nil {
-		return x.Evaluationwindowsec
+	if x != nil && x.Evaluationwindowsec != nil {
+		return *x.Evaluationwindowsec
 	}
 	return 0
 }
@@ -16321,8 +16321,8 @@ type RevenueBreakdown struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Currency            Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Totalamount         string                 `protobuf:"bytes,45332786,opt,name=totalamount,proto3" json:"totalamount,omitempty"`
-	Totalmonetizeserved int64                  `protobuf:"varint,410017796,opt,name=totalmonetizeserved,proto3" json:"totalmonetizeserved,omitempty"`
-	Totalsettled        int64                  `protobuf:"varint,72471795,opt,name=totalsettled,proto3" json:"totalsettled,omitempty"`
+	Totalmonetizeserved *int64                 `protobuf:"varint,410017796,opt,name=totalmonetizeserved,proto3,oneof" json:"totalmonetizeserved,omitempty"`
+	Totalsettled        *int64                 `protobuf:"varint,72471795,opt,name=totalsettled,proto3,oneof" json:"totalsettled,omitempty"`
 	Unverifiedamount    string                 `protobuf:"bytes,256171183,opt,name=unverifiedamount,proto3" json:"unverifiedamount,omitempty"`
 	Verifiedamount      string                 `protobuf:"bytes,118239818,opt,name=verifiedamount,proto3" json:"verifiedamount,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -16374,15 +16374,15 @@ func (x *RevenueBreakdown) GetTotalamount() string {
 }
 
 func (x *RevenueBreakdown) GetTotalmonetizeserved() int64 {
-	if x != nil {
-		return x.Totalmonetizeserved
+	if x != nil && x.Totalmonetizeserved != nil {
+		return *x.Totalmonetizeserved
 	}
 	return 0
 }
 
 func (x *RevenueBreakdown) GetTotalsettled() int64 {
-	if x != nil {
-		return x.Totalsettled
+	if x != nil && x.Totalsettled != nil {
+		return *x.Totalsettled
 	}
 	return 0
 }
@@ -17042,7 +17042,7 @@ type SampledHTTPRequest struct {
 	Overriddenaction        string                 `protobuf:"bytes,35244204,opt,name=overriddenaction,proto3" json:"overriddenaction,omitempty"`
 	Request                 *HTTPRequest           `protobuf:"bytes,38093139,opt,name=request,proto3" json:"request,omitempty"`
 	Requestheadersinserted  []*HTTPHeader          `protobuf:"bytes,367751765,rep,name=requestheadersinserted,proto3" json:"requestheadersinserted,omitempty"`
-	Responsecodesent        int32                  `protobuf:"varint,108347942,opt,name=responsecodesent,proto3" json:"responsecodesent,omitempty"`
+	Responsecodesent        *int32                 `protobuf:"varint,108347942,opt,name=responsecodesent,proto3,oneof" json:"responsecodesent,omitempty"`
 	Rulenamewithinrulegroup string                 `protobuf:"bytes,317544521,opt,name=rulenamewithinrulegroup,proto3" json:"rulenamewithinrulegroup,omitempty"`
 	Timestamp               string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Weight                  int64                  `protobuf:"varint,422581466,opt,name=weight,proto3" json:"weight,omitempty"`
@@ -17130,8 +17130,8 @@ func (x *SampledHTTPRequest) GetRequestheadersinserted() []*HTTPHeader {
 }
 
 func (x *SampledHTTPRequest) GetResponsecodesent() int32 {
-	if x != nil {
-		return x.Responsecodesent
+	if x != nil && x.Responsecodesent != nil {
+		return *x.Responsecodesent
 	}
 	return 0
 }
@@ -19096,7 +19096,7 @@ func (x *UsernameField) GetIdentifier() string {
 type VersionToPublish struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Associatedrulegrouparn string                 `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3" json:"associatedrulegrouparn,omitempty"`
-	Forecastedlifetime     int32                  `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3" json:"forecastedlifetime,omitempty"`
+	Forecastedlifetime     *int32                 `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3,oneof" json:"forecastedlifetime,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -19139,8 +19139,8 @@ func (x *VersionToPublish) GetAssociatedrulegrouparn() string {
 }
 
 func (x *VersionToPublish) GetForecastedlifetime() int32 {
-	if x != nil {
-		return x.Forecastedlifetime
+	if x != nil && x.Forecastedlifetime != nil {
+		return *x.Forecastedlifetime
 	}
 	return 0
 }
@@ -20130,7 +20130,7 @@ type WebACL struct {
 	Arn                                  string                         `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
 	Applicationconfig                    *ApplicationConfig             `protobuf:"bytes,501131976,opt,name=applicationconfig,proto3" json:"applicationconfig,omitempty"`
 	Associationconfig                    *AssociationConfig             `protobuf:"bytes,419675691,opt,name=associationconfig,proto3" json:"associationconfig,omitempty"`
-	Capacity                             int64                          `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	Capacity                             *int64                         `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Captchaconfig                        *CaptchaConfig                 `protobuf:"bytes,60547064,opt,name=captchaconfig,proto3" json:"captchaconfig,omitempty"`
 	Challengeconfig                      *ChallengeConfig               `protobuf:"bytes,48990889,opt,name=challengeconfig,proto3" json:"challengeconfig,omitempty"`
 	Customresponsebodies                 map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -20205,8 +20205,8 @@ func (x *WebACL) GetAssociationconfig() *AssociationConfig {
 }
 
 func (x *WebACL) GetCapacity() int64 {
-	if x != nil {
-		return x.Capacity
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
 	}
 	return 0
 }
@@ -20469,12 +20469,14 @@ var File_wafv2_proto protoreflect.FileDescriptor
 
 const file_wafv2_proto_rawDesc = "" +
 	"\n" +
-	"\vwafv2.proto\x12\x05wafv2\x1a\fcommon.proto\x1a\taws.proto\"\xa1\x01\n" +
+	"\vwafv2.proto\x12\x05wafv2\x1a\fcommon.proto\x1a\taws.proto\"\xb2\x01\n" +
 	"\rAPIKeySummary\x12\x1a\n" +
 	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tR\x06apikey\x12/\n" +
 	"\x11creationtimestamp\x18\xa5\x94\xd6\v \x01(\tR\x11creationtimestamp\x12%\n" +
-	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05R\aversion\"\xe5\x02\n" +
+	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05H\x00R\aversion\x88\x01\x01B\n" +
+	"\n" +
+	"\b_version\"\xe5\x02\n" +
 	"\x1aAWSManagedRulesACFPRuleSet\x12&\n" +
 	"\fcreationpath\x18\xd4\xf6\xe0\xa6\x01 \x01(\tR\fcreationpath\x124\n" +
 	"\x11enableregexinpath\x18\xda\xda\xc3\x11 \x01(\bH\x00R\x11enableregexinpath\x88\x01\x01\x125\n" +
@@ -20546,24 +20548,29 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rCaptchaAction\x12U\n" +
 	"\x15customrequesthandling\x18\xbf\x8c\x8a\a \x01(\v2\x1c.wafv2.CustomRequestHandlingR\x15customrequesthandling\"c\n" +
 	"\rCaptchaConfig\x12R\n" +
-	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xa4\x01\n" +
+	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xd2\x01\n" +
 	"\x0fCaptchaResponse\x12=\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12&\n" +
-	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05R\fresponsecode\x12*\n" +
-	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03R\x0esolvetimestamp\"h\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12+\n" +
+	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x00R\fresponsecode\x88\x01\x01\x12/\n" +
+	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x01R\x0esolvetimestamp\x88\x01\x01B\x0f\n" +
+	"\r_responsecodeB\x11\n" +
+	"\x0f_solvetimestamp\"h\n" +
 	"\x0fChallengeAction\x12U\n" +
 	"\x15customrequesthandling\x18\xbf\x8c\x8a\a \x01(\v2\x1c.wafv2.CustomRequestHandlingR\x15customrequesthandling\"e\n" +
 	"\x0fChallengeConfig\x12R\n" +
-	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xa6\x01\n" +
+	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xd4\x01\n" +
 	"\x11ChallengeResponse\x12=\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12&\n" +
-	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05R\fresponsecode\x12*\n" +
-	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03R\x0esolvetimestamp\"c\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12+\n" +
+	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x00R\fresponsecode\x88\x01\x01\x12/\n" +
+	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x01R\x0esolvetimestamp\x88\x01\x01B\x0f\n" +
+	"\r_responsecodeB\x11\n" +
+	"\x0f_solvetimestamp\"c\n" +
 	"\x14CheckCapacityRequest\x12$\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\v.wafv2.RuleR\x05rules\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"6\n" +
-	"\x15CheckCapacityResponse\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\"\xe2\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"H\n" +
+	"\x15CheckCapacityResponse\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01B\v\n" +
+	"\t_capacity\"\xe2\x01\n" +
 	"\x10ClientSideAction\x12Q\n" +
 	"\x1bexempturiregularexpressions\x18ċ\xf6F \x03(\v2\f.wafv2.RegexR\x1bexempturiregularexpressions\x12<\n" +
 	"\vsensitivity\x18\xad\xf3\xad\x0e \x01(\x0e2\x17.wafv2.SensitivityToActR\vsensitivity\x12=\n" +
@@ -20666,15 +20673,17 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0fresponseheaders\x18\xb5\xc0\xecQ \x03(\v2\x17.wafv2.CustomHTTPHeaderR\x0fresponseheaders\"s\n" +
 	"\x12CustomResponseBody\x12\x1b\n" +
 	"\acontent\x18㾞\v \x01(\tR\acontent\x12@\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\x0e2\x1a.wafv2.ResponseContentTypeR\vcontenttype\"\x8a\x02\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\x0e2\x1a.wafv2.ResponseContentTypeR\vcontenttype\"\xbd\x02\n" +
 	"\x0eDataPointEntry\x12\x1d\n" +
 	"\bcategory\x18\x92\xcb\xcf} \x01(\tR\bcategory\x12\x16\n" +
 	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12%\n" +
 	"\fgroupbyvalue\x18\xf7\xab\xd3n \x01(\tR\fgroupbyvalue\x12\x19\n" +
-	"\x06intent\x18\xec\xc2\xc1K \x01(\tR\x06intent\x123\n" +
-	"\x13monetizeservedcount\x18\xeb\xe7\xc8i \x01(\x03R\x13monetizeservedcount\x12%\n" +
-	"\fsettledcount\x18\xd2\xe2\xbfN \x01(\x03R\fsettledcount\x12#\n" +
-	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamount\"\xb5\x02\n" +
+	"\x06intent\x18\xec\xc2\xc1K \x01(\tR\x06intent\x128\n" +
+	"\x13monetizeservedcount\x18\xeb\xe7\xc8i \x01(\x03H\x00R\x13monetizeservedcount\x88\x01\x01\x12*\n" +
+	"\fsettledcount\x18\xd2\xe2\xbfN \x01(\x03H\x01R\fsettledcount\x88\x01\x01\x12#\n" +
+	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamountB\x16\n" +
+	"\x14_monetizeservedcountB\x0f\n" +
+	"\r_settledcount\"\xb5\x02\n" +
 	"\x0eDataProtection\x126\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x1b.wafv2.DataProtectionActionR\x06action\x12@\n" +
 	"\x17excluderatebaseddetails\x18ݨ\xb9y \x01(\bH\x00R\x17excluderatebaseddetails\x88\x01\x01\x12A\n" +
@@ -20745,15 +20754,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
 	"vendorname\x12#\n" +
-	"\vversionname\x18գ\xb4l \x01(\tR\vversionname\"\xe6\x02\n" +
+	"\vversionname\x18գ\xb4l \x01(\tR\vversionname\"\xf8\x02\n" +
 	" DescribeManagedRuleGroupResponse\x12@\n" +
-	"\x0favailablelabels\x18\x90\xba\xac\x18 \x03(\v2\x13.wafv2.LabelSummaryR\x0favailablelabels\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\x12>\n" +
+	"\x0favailablelabels\x18\x90\xba\xac\x18 \x03(\v2\x13.wafv2.LabelSummaryR\x0favailablelabels\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01\x12>\n" +
 	"\x0econsumedlabels\x18\xbd\x98\xf2\x14 \x03(\v2\x13.wafv2.LabelSummaryR\x0econsumedlabels\x12)\n" +
 	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12+\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x12.wafv2.RuleSummaryR\x05rules\x12$\n" +
 	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12#\n" +
-	"\vversionname\x18գ\xb4l \x01(\tR\vversionname\"g\n" +
+	"\vversionname\x18գ\xb4l \x01(\tR\vversionnameB\v\n" +
+	"\t_capacity\"g\n" +
 	"\x11DisallowedFeature\x12\x1c\n" +
 	"\afeature\x18ޅ\xc4\xf4\x01 \x01(\tR\afeature\x124\n" +
 	"\x13requiredpricingplan\x18\xae߀\xef\x01 \x01(\tR\x13requiredpricingplan\"A\n" +
@@ -20869,12 +20879,12 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x82\x01\n" +
 	"\x1aGetRegexPatternSetResponse\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12C\n" +
-	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x16.wafv2.RegexPatternSetR\x0fregexpatternset\"\xfd\x03\n" +
+	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x16.wafv2.RegexPatternSetR\x0fregexpatternset\"\x8c\x04\n" +
 	"\x1bGetRevenueStatisticsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
-	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
@@ -20884,7 +20894,8 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rstatistictype\x18\x96\xd3\xc5$ \x01(\x0e2\x1b.wafv2.RankingStatisticTypeR\rstatistictype\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindow\"\xe1\x01\n" +
+	"timewindowB\b\n" +
+	"\x06_limit\"\xe1\x01\n" +
 	"\x1cGetRevenueStatisticsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -20899,13 +20910,13 @@ const file_wafv2_proto_rawDesc = "" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindow\"m\n" +
 	"#GetRevenueStatisticsSummaryResponse\x12F\n" +
-	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\xda\x03\n" +
+	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\xe9\x03\n" +
 	"%GetRevenueStatisticsTimeSeriesRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
 	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x123\n" +
-	"\binterval\x18\x99\xf3\x84\xdd\x01 \x01(\x0e2\x13.wafv2.IntervalTypeR\binterval\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\binterval\x18\x99\xf3\x84\xdd\x01 \x01(\x0e2\x13.wafv2.IntervalTypeR\binterval\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
@@ -20913,7 +20924,8 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rstatistictype\x18\x96\xd3\xc5$ \x01(\x0e2\x1e.wafv2.TimeSeriesStatisticTypeR\rstatistictype\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindow\"\x86\x01\n" +
+	"timewindowB\b\n" +
+	"\x06_limit\"\x86\x01\n" +
 	"&GetRevenueStatisticsTimeSeriesResponse\x128\n" +
 	"\n" +
 	"datapoints\x18\xe7\xc1\xde| \x03(\v2\x15.wafv2.DataPointEntryR\n" +
@@ -20936,13 +20948,14 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindow\x12 \n" +
-	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tR\twebaclarn\"\xc5\x01\n" +
-	"\x1aGetSampledRequestsResponse\x12)\n" +
-	"\x0epopulationsize\x18\xfc\xef\x85C \x01(\x03R\x0epopulationsize\x12F\n" +
+	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tR\twebaclarn\"\xdd\x01\n" +
+	"\x1aGetSampledRequestsResponse\x12.\n" +
+	"\x0epopulationsize\x18\xfc\xef\x85C \x01(\x03H\x00R\x0epopulationsize\x88\x01\x01\x12F\n" +
 	"\x0fsampledrequests\x18\x98\xaf\xc5\x01 \x03(\v2\x19.wafv2.SampledHTTPRequestR\x0fsampledrequests\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindow\"\xc6\x03\n" +
+	"timewindowB\x11\n" +
+	"\x0f_populationsize\"\xc6\x03\n" +
 	"$GetTopPathStatisticsByTrafficRequest\x12#\n" +
 	"\vbotcategory\x18\x97\x9e\x8e8 \x01(\tR\vbotcategory\x12\x1b\n" +
 	"\abotname\x18\x9eυ* \x01(\tR\abotname\x12,\n" +
@@ -21049,21 +21062,22 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x12LabelNameCondition\x12\x1f\n" +
 	"\tlabelname\x18\xbf\xcf\xe9q \x01(\tR\tlabelname\"%\n" +
 	"\fLabelSummary\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"y\n" +
-	"\x12ListAPIKeysRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x88\x01\n" +
+	"\x12ListAPIKeysRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\xbd\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"\xbd\x01\n" +
 	"\x13ListAPIKeysResponse\x12A\n" +
 	"\x0fapikeysummaries\x18\x8b\xb1\xdcA \x03(\v2\x14.wafv2.APIKeySummaryR\x0fapikeysummaries\x12?\n" +
 	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tR\x19applicationintegrationurl\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xcd\x01\n" +
-	",ListAvailableManagedRuleGroupVersionsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\x15\n" +
+	"nextmarker\"\xdc\x01\n" +
+	",ListAvailableManagedRuleGroupVersionsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -21071,75 +21085,82 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12!\n" +
 	"\n" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
-	"vendorname\"\xcc\x01\n" +
+	"vendornameB\b\n" +
+	"\x06_limit\"\xcc\x01\n" +
 	"-ListAvailableManagedRuleGroupVersionsResponse\x128\n" +
 	"\x15currentdefaultversion\x18\xcaӖ\x9d\x01 \x01(\tR\x15currentdefaultversion\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12=\n" +
-	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x1e.wafv2.ManagedRuleGroupVersionR\bversions\"\x8c\x01\n" +
-	"%ListAvailableManagedRuleGroupsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x1e.wafv2.ManagedRuleGroupVersionR\bversions\"\x9b\x01\n" +
+	"%ListAvailableManagedRuleGroupsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x9d\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"\x9d\x01\n" +
 	"&ListAvailableManagedRuleGroupsResponse\x12O\n" +
 	"\x11managedrulegroups\x18\xe1ך\x16 \x03(\v2\x1e.wafv2.ManagedRuleGroupSummaryR\x11managedrulegroups\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"x\n" +
-	"\x11ListIPSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"\x87\x01\n" +
+	"\x11ListIPSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"i\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"i\n" +
 	"\x12ListIPSetsResponse\x12/\n" +
 	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x13.wafv2.IPSetSummaryR\x06ipsets\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xb7\x01\n" +
-	" ListLoggingConfigurationsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12.\n" +
+	"nextmarker\"\xc6\x01\n" +
+	" ListLoggingConfigurationsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12.\n" +
 	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x9e\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"\x9e\x01\n" +
 	"!ListLoggingConfigurationsResponse\x12U\n" +
 	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x1b.wafv2.LoggingConfigurationR\x15loggingconfigurations\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x81\x01\n" +
-	"\x1aListManagedRuleSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"\x90\x01\n" +
+	"\x1aListManagedRuleSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x8c\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"\x8c\x01\n" +
 	"\x1bListManagedRuleSetsResponse\x12I\n" +
 	"\x0fmanagedrulesets\x18\xaaŹC \x03(\v2\x1c.wafv2.ManagedRuleSetSummaryR\x0fmanagedrulesets\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x8d\x01\n" +
-	"\x1cListMobileSdkReleasesRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"nextmarker\"\x9c\x01\n" +
+	"\x1cListMobileSdkReleasesRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12/\n" +
-	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\x0e2\x0f.wafv2.PlatformR\bplatform\"\x8a\x01\n" +
+	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\x0e2\x0f.wafv2.PlatformR\bplatformB\b\n" +
+	"\x06_limit\"\x8a\x01\n" +
 	"\x1dListMobileSdkReleasesResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12E\n" +
-	"\x10releasesummaries\x18\xab\x9b\xff\xeb\x01 \x03(\v2\x15.wafv2.ReleaseSummaryR\x10releasesummaries\"\x82\x01\n" +
-	"\x1bListRegexPatternSetsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x10releasesummaries\x18\xab\x9b\xff\xeb\x01 \x03(\v2\x15.wafv2.ReleaseSummaryR\x10releasesummaries\"\x91\x01\n" +
+	"\x1bListRegexPatternSetsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x91\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"\x91\x01\n" +
 	"\x1cListRegexPatternSetsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -21149,24 +21170,25 @@ const file_wafv2_proto_rawDesc = "" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.wafv2.ResourceTypeR\fresourcetype\x12\x1f\n" +
 	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\"G\n" +
 	"\x1eListResourcesForWebACLResponse\x12%\n" +
-	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\"|\n" +
-	"\x15ListRuleGroupsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\"\x8b\x01\n" +
+	"\x15ListRuleGroupsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"y\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"y\n" +
 	"\x16ListRuleGroupsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12;\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x17.wafv2.RuleGroupSummaryR\n" +
-	"rulegroups\"\x8a\x03\n" +
+	"rulegroups\"\x99\x03\n" +
 	"\x1cListSettlementRecordsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
@@ -21175,29 +21197,32 @@ const file_wafv2_proto_rawDesc = "" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderR\tsortorder\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindow\"\x82\x01\n" +
+	"timewindowB\b\n" +
+	"\x06_limit\"\x82\x01\n" +
 	"\x1dListSettlementRecordsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12=\n" +
-	"\vsettlements\x18\xdc\xec܇\x01 \x03(\v2\x17.wafv2.SettlementRecordR\vsettlements\"\x80\x01\n" +
-	"\x1aListTagsForResourceRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\vsettlements\x18\xdc\xec܇\x01 \x03(\v2\x17.wafv2.SettlementRecordR\vsettlements\"\x8f\x01\n" +
+	"\x1aListTagsForResourceRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\"\x8f\x01\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\b\n" +
+	"\x06_limit\"\x8f\x01\n" +
 	"\x1bListTagsForResourceResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12L\n" +
-	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x19.wafv2.TagInfoForResourceR\x12taginfoforresource\"y\n" +
-	"\x12ListWebACLsRequest\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x19.wafv2.TagInfoForResourceR\x12taginfoforresource\"\x88\x01\n" +
+	"\x12ListWebACLsRequest\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
 	"nextmarker\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"l\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
+	"\x06_limit\"l\n" +
 	"\x13ListWebACLsResponse\x12\"\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
@@ -21277,14 +21302,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
 	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb8\x02\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xe6\x02\n" +
 	"\x15ManagedRuleSetVersion\x12:\n" +
-	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\x12,\n" +
-	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tR\x0fexpirytimestamp\x121\n" +
-	"\x12forecastedlifetime\x18˜\x91G \x01(\x05R\x12forecastedlifetime\x123\n" +
+	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01\x12,\n" +
+	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tR\x0fexpirytimestamp\x126\n" +
+	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x01R\x12forecastedlifetime\x88\x01\x01\x123\n" +
 	"\x13lastupdatetimestamp\x18\x89\x90\xd48 \x01(\tR\x13lastupdatetimestamp\x12.\n" +
-	"\x10publishtimestamp\x18ٛ\xf0\xe3\x01 \x01(\tR\x10publishtimestamp\"\b\n" +
+	"\x10publishtimestamp\x18ٛ\xf0\xe3\x01 \x01(\tR\x10publishtimestampB\v\n" +
+	"\t_capacityB\x15\n" +
+	"\x13_forecastedlifetime\"\b\n" +
 	"\x06Method\"\xa9\x01\n" +
 	"\x10MobileSdkRelease\x12%\n" +
 	"\freleasenotes\x18\xac\xa4\x8e/ \x01(\tR\freleasenotes\x12)\n" +
@@ -21356,16 +21383,17 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x1d\n" +
 	"\x1bPutPermissionPolicyResponse\"\r\n" +
-	"\vQueryString\"\x96\x03\n" +
+	"\vQueryString\"\xb3\x03\n" +
 	"\x12RateBasedStatement\x12X\n" +
 	"\x10aggregatekeytype\x18\xb0\xa8\xc0_ \x01(\x0e2).wafv2.RateBasedStatementAggregateKeyTypeR\x10aggregatekeytype\x12F\n" +
 	"\n" +
 	"customkeys\x18ӫ\xf1\xcc\x01 \x03(\v2\".wafv2.RateBasedStatementCustomKeyR\n" +
-	"customkeys\x124\n" +
-	"\x13evaluationwindowsec\x18\U0004679f\x01 \x01(\x03R\x13evaluationwindowsec\x12I\n" +
+	"customkeys\x129\n" +
+	"\x13evaluationwindowsec\x18\U0004679f\x01 \x01(\x03H\x00R\x13evaluationwindowsec\x88\x01\x01\x12I\n" +
 	"\x11forwardedipconfig\x18\x8d\xe5\xf3{ \x01(\v2\x18.wafv2.ForwardedIPConfigR\x11forwardedipconfig\x12\x18\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x03R\x05limit\x12C\n" +
-	"\x12scopedownstatement\x18\xbdڮ7 \x01(\v2\x10.wafv2.StatementR\x12scopedownstatement\"\x80\x06\n" +
+	"\x12scopedownstatement\x18\xbdڮ7 \x01(\v2\x10.wafv2.StatementR\x12scopedownstatementB\x16\n" +
+	"\x14_evaluationwindowsec\"\x80\x06\n" +
 	"\x1bRateBasedStatementCustomKey\x12)\n" +
 	"\x03asn\x18\xba\xf1\xb5\xcd\x01 \x01(\v2\x13.wafv2.RateLimitAsnR\x03asn\x122\n" +
 	"\x06cookie\x18\xe0\xf5\xea\xed\x01 \x01(\v2\x16.wafv2.RateLimitCookieR\x06cookie\x12A\n" +
@@ -21469,14 +21497,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rsuccessvalues\x18\xb7\xc9\xc1\xad\x01 \x03(\tR\rsuccessvalues\"m\n" +
 	"\x1cResponseInspectionStatusCode\x12&\n" +
 	"\ffailurecodes\x18\x92\xe8\xf6\xed\x01 \x03(\x05R\ffailurecodes\x12%\n" +
-	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\x9f\x02\n" +
+	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\xd2\x02\n" +
 	"\x10RevenueBreakdown\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12#\n" +
-	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamount\x124\n" +
-	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03R\x13totalmonetizeserved\x12%\n" +
-	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03R\ftotalsettled\x12-\n" +
+	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamount\x129\n" +
+	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03H\x00R\x13totalmonetizeserved\x88\x01\x01\x12*\n" +
+	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03H\x01R\ftotalsettled\x88\x01\x01\x12-\n" +
 	"\x10unverifiedamount\x18\xaf\xb9\x93z \x01(\tR\x10unverifiedamount\x12)\n" +
-	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tR\x0everifiedamount\"\x95\x01\n" +
+	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tR\x0everifiedamountB\x16\n" +
+	"\x14_totalmonetizeservedB\x0f\n" +
+	"\r_totalsettled\"\x95\x01\n" +
 	"\x15RevenuePathStatistics\x12\x19\n" +
 	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12\x15\n" +
 	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12\"\n" +
@@ -21535,7 +21565,7 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"R\n" +
 	"\vRuleSummary\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\v2\x11.wafv2.RuleActionR\x06action\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xc3\x04\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xdd\x04\n" +
 	"\x12SampledHTTPRequest\x12\x19\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\tR\x06action\x12D\n" +
 	"\x0fcaptcharesponse\x18Ϥ\xe8\xe6\x01 \x01(\v2\x16.wafv2.CaptchaResponseR\x0fcaptcharesponse\x12J\n" +
@@ -21543,11 +21573,12 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x06labels\x18\xabىU \x03(\v2\f.wafv2.LabelR\x06labels\x12-\n" +
 	"\x10overriddenaction\x18\xac\x91\xe7\x10 \x01(\tR\x10overriddenaction\x12/\n" +
 	"\arequest\x18ӂ\x95\x12 \x01(\v2\x12.wafv2.HTTPRequestR\arequest\x12M\n" +
-	"\x16requestheadersinserted\x18\xd5䭯\x01 \x03(\v2\x11.wafv2.HTTPHeaderR\x16requestheadersinserted\x12-\n" +
-	"\x10responsecodesent\x18\xa6\x84\xd53 \x01(\x05R\x10responsecodesent\x12<\n" +
+	"\x16requestheadersinserted\x18\xd5䭯\x01 \x03(\v2\x11.wafv2.HTTPHeaderR\x16requestheadersinserted\x122\n" +
+	"\x10responsecodesent\x18\xa6\x84\xd53 \x01(\x05H\x00R\x10responsecodesent\x88\x01\x01\x12<\n" +
 	"\x17rulenamewithinrulegroup\x18ɰ\xb5\x97\x01 \x01(\tR\x17rulenamewithinrulegroup\x12\x1f\n" +
 	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12\x1a\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weight\"\xa7\x05\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weightB\x13\n" +
+	"\x11_responsecodesent\"\xa7\x05\n" +
 	"\x10SettlementRecord\x12\x19\n" +
 	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12$\n" +
 	"\vcontentpath\x18\xa2Ҕ\xfa\x01 \x01(\tR\vcontentpath\x12/\n" +
@@ -21711,10 +21742,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rUsernameField\x12!\n" +
 	"\n" +
 	"identifier\x18ߠ\xfb\x13 \x01(\tR\n" +
-	"identifier\"\x81\x01\n" +
+	"identifier\"\x9d\x01\n" +
 	"\x10VersionToPublish\x12:\n" +
-	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x121\n" +
-	"\x12forecastedlifetime\x18˜\x91G \x01(\x05R\x12forecastedlifetime\"\xf3\x01\n" +
+	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x126\n" +
+	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x00R\x12forecastedlifetime\x88\x01\x01B\x15\n" +
+	"\x13_forecastedlifetime\"\xf3\x01\n" +
 	"\x10VisibilityConfig\x12C\n" +
 	"\x18cloudwatchmetricsenabled\x18\xfc\xd8Ǹ\x01 \x01(\bH\x00R\x18cloudwatchmetricsenabled\x88\x01\x01\x12!\n" +
 	"\n" +
@@ -21769,12 +21801,12 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x1dWAFUnavailableEntityException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"F\n" +
 	"'WAFUnsupportedAggregateKeyTypeException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xbe\f\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xd0\f\n" +
 	"\x06WebACL\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12J\n" +
 	"\x11applicationconfig\x18\xc8\xd5\xfa\xee\x01 \x01(\v2\x18.wafv2.ApplicationConfigR\x11applicationconfig\x12J\n" +
-	"\x11associationconfig\x18\xab\xfc\x8e\xc8\x01 \x01(\v2\x18.wafv2.AssociationConfigR\x11associationconfig\x12\x1d\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\x12=\n" +
+	"\x11associationconfig\x18\xab\xfc\x8e\xc8\x01 \x01(\v2\x18.wafv2.AssociationConfigR\x11associationconfig\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01\x12=\n" +
 	"\rcaptchaconfig\x18\xf8\xbf\xef\x1c \x01(\v2\x14.wafv2.CaptchaConfigR\rcaptchaconfig\x12C\n" +
 	"\x0fchallengeconfig\x18\xa9\x95\xae\x17 \x01(\v2\x16.wafv2.ChallengeConfigR\x0fchallengeconfig\x12^\n" +
 	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v2'.wafv2.WebACL.CustomresponsebodiesEntryR\x14customresponsebodies\x12S\n" +
@@ -21783,19 +21815,20 @@ const file_wafv2_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
 	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12C\n" +
-	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x00R\x18managedbyfirewallmanager\x88\x01\x01\x12M\n" +
+	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x01R\x18managedbyfirewallmanager\x88\x01\x01\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12j\n" +
 	"\x1consourceddosprotectionconfig\x18\x87֖2 \x01(\v2#.wafv2.OnSourceDDoSProtectionConfigR\x1consourceddosprotectionconfig\x12w\n" +
 	"$postprocessfirewallmanagerrulegroups\x18ƽ\xfa\xeb\x01 \x03(\v2\x1f.wafv2.FirewallManagerRuleGroupR$postprocessfirewallmanagerrulegroups\x12u\n" +
 	"#preprocessfirewallmanagerrulegroups\x18\xed\xf6\x89\x9e\x01 \x03(\v2\x1f.wafv2.FirewallManagerRuleGroupR#preprocessfirewallmanagerrulegroups\x12K\n" +
-	"\x1cretrofittedbyfirewallmanager\x18ց\x88\x85\x01 \x01(\bH\x01R\x1cretrofittedbyfirewallmanager\x88\x01\x01\x12$\n" +
+	"\x1cretrofittedbyfirewallmanager\x18ց\x88\x85\x01 \x01(\bH\x02R\x1cretrofittedbyfirewallmanager\x88\x01\x01\x12$\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\v.wafv2.RuleR\x05rules\x12%\n" +
 	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\x12G\n" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x1b\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\v\n" +
+	"\t_capacityB\x1b\n" +
 	"\x19_managedbyfirewallmanagerB\x1f\n" +
 	"\x1d_retrofittedbyfirewallmanager\"\x96\x01\n" +
 	"\rWebACLSummary\x12\x14\n" +
@@ -23291,15 +23324,41 @@ func file_wafv2_proto_init() {
 	if File_wafv2_proto != nil {
 		return
 	}
+	file_wafv2_proto_msgTypes[0].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[1].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[2].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[4].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[23].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[26].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[28].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[50].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[51].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[75].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[107].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[111].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[116].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[141].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[143].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[145].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[147].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[149].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[151].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[153].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[155].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[159].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[161].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[163].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[165].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[167].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[169].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[172].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[176].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[199].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[228].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[237].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[238].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[242].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[266].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[267].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[288].OneofWrappers = []any{}
 	type x struct{}

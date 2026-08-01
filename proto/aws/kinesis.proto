@@ -302,9 +302,9 @@ enum ConsumerStatus {
 
 message CreateStreamInput {
 
-  int32 maxrecordsizeinkib = 197267253;
+  optional int32 maxrecordsizeinkib = 197267253;
 
-  int32 shardcount = 92831547;
+  optional int32 shardcount = 92831547;
 
   StreamModeDetails streammodedetails = 12139665;
 
@@ -312,7 +312,7 @@ message CreateStreamInput {
 
   map<string, string> tags = 381526209;
 
-  int32 warmthroughputmibps = 259219704;
+  optional int32 warmthroughputmibps = 259219704;
 
 }
 
@@ -436,7 +436,7 @@ message DescribeStreamInput {
 
   string exclusivestartshardid = 44771587;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string streamarn = 508213725;
 
@@ -570,7 +570,7 @@ message ExpiredNextTokenException {
 
 message GetRecordsInput {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string sharditerator = 379619650;
 
@@ -588,7 +588,7 @@ message GetRecordsOutput {
 
   repeated ChildShard childshards = 348740657;
 
-  int64 millisbehindlatest = 456422057;
+  optional int64 millisbehindlatest = 456422057;
 
   string nextsharditerator = 442470571;
 
@@ -770,7 +770,7 @@ message ListShardsInput {
 
   string exclusivestartshardid = 44771587;
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -800,7 +800,7 @@ message ListShardsOutput {
 
 message ListStreamConsumersInput {
 
-  int32 maxresults = 275174450;
+  optional int32 maxresults = 275174450;
 
   string nexttoken = 216957566;
 
@@ -830,7 +830,7 @@ message ListStreamsInput {
 
   string exclusivestartstreamname = 431108955;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string nexttoken = 216957566;
 
@@ -878,7 +878,7 @@ message ListTagsForStreamInput {
 
   string exclusivestarttagkey = 470465287;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string streamarn = 508213725;
 
@@ -1058,7 +1058,7 @@ message PutRecordsOutput {
 
   EncryptionType encryptiontype = 264007605;
 
-  int32 failedrecordcount = 89270457;
+  optional int32 failedrecordcount = 89270457;
 
   repeated PutRecordsResultEntry records = 423557454;
 
@@ -1368,7 +1368,7 @@ message StreamDescription {
 
 message StreamDescriptionSummary {
 
-  int32 consumercount = 448084721;
+  optional int32 consumercount = 448084721;
 
   EncryptionType encryptiontype = 264007605;
 
@@ -1376,7 +1376,7 @@ message StreamDescriptionSummary {
 
   string keyid = 275906594;
 
-  int32 maxrecordsizeinkib = 197267253;
+  optional int32 maxrecordsizeinkib = 197267253;
 
   int32 openshardcount = 476409287;
 
@@ -1600,13 +1600,13 @@ message UpdateShardCountInput {
 
 message UpdateShardCountOutput {
 
-  int32 currentshardcount = 21258174;
+  optional int32 currentshardcount = 21258174;
 
   string streamarn = 508213725;
 
   string streamname = 470703047;
 
-  int32 targetshardcount = 361168816;
+  optional int32 targetshardcount = 361168816;
 
 }
 
@@ -1620,7 +1620,7 @@ message UpdateStreamModeInput {
 
   StreamModeDetails streammodedetails = 12139665;
 
-  int32 warmthroughputmibps = 259219704;
+  optional int32 warmthroughputmibps = 259219704;
 
 }
 
@@ -1666,9 +1666,9 @@ message ValidationException {
 
 message WarmThroughputObject {
 
-  int32 currentmibps = 153746976;
+  optional int32 currentmibps = 153746976;
 
-  int32 targetmibps = 535445626;
+  optional int32 targetmibps = 535445626;
 
 }
 

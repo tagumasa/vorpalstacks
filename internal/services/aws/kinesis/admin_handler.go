@@ -52,7 +52,7 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit <= 0 {
 		limit = 100
 	}

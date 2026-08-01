@@ -3282,9 +3282,9 @@ type GetLoaderJobStatusInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Details       string                 `protobuf:"bytes,426242982,opt,name=details,proto3" json:"details,omitempty"`
 	Errors        string                 `protobuf:"bytes,437762695,opt,name=errors,proto3" json:"errors,omitempty"`
-	Errorsperpage int32                  `protobuf:"varint,97137031,opt,name=errorsperpage,proto3" json:"errorsperpage,omitempty"`
+	Errorsperpage *int32                 `protobuf:"varint,97137031,opt,name=errorsperpage,proto3,oneof" json:"errorsperpage,omitempty"`
 	Loadid        string                 `protobuf:"bytes,284783053,opt,name=loadid,proto3" json:"loadid,omitempty"`
-	Page          int32                  `protobuf:"varint,22936183,opt,name=page,proto3" json:"page,omitempty"`
+	Page          *int32                 `protobuf:"varint,22936183,opt,name=page,proto3,oneof" json:"page,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3334,8 +3334,8 @@ func (x *GetLoaderJobStatusInput) GetErrors() string {
 }
 
 func (x *GetLoaderJobStatusInput) GetErrorsperpage() int32 {
-	if x != nil {
-		return x.Errorsperpage
+	if x != nil && x.Errorsperpage != nil {
+		return *x.Errorsperpage
 	}
 	return 0
 }
@@ -3348,8 +3348,8 @@ func (x *GetLoaderJobStatusInput) GetLoadid() string {
 }
 
 func (x *GetLoaderJobStatusInput) GetPage() int32 {
-	if x != nil {
-		return x.Page
+	if x != nil && x.Page != nil {
+		return *x.Page
 	}
 	return 0
 }
@@ -5133,7 +5133,7 @@ func (x *ListGremlinQueriesOutput) GetRunningquerycount() string {
 type ListLoaderJobsInput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Includequeuedloads string                 `protobuf:"bytes,224102040,opt,name=includequeuedloads,proto3" json:"includequeuedloads,omitempty"`
-	Limit              int32                  `protobuf:"varint,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit              *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -5176,8 +5176,8 @@ func (x *ListLoaderJobsInput) GetIncludequeuedloads() string {
 }
 
 func (x *ListLoaderJobsInput) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return 0
 }
@@ -5236,7 +5236,7 @@ func (x *ListLoaderJobsOutput) GetStatus() string {
 
 type ListMLDataProcessingJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems          int32                  `protobuf:"varint,486225716,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5273,8 +5273,8 @@ func (*ListMLDataProcessingJobsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMLDataProcessingJobsInput) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -5332,7 +5332,7 @@ func (x *ListMLDataProcessingJobsOutput) GetIds() []string {
 
 type ListMLEndpointsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems          int32                  `protobuf:"varint,486225716,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5369,8 +5369,8 @@ func (*ListMLEndpointsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMLEndpointsInput) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -5428,7 +5428,7 @@ func (x *ListMLEndpointsOutput) GetIds() []string {
 
 type ListMLModelTrainingJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems          int32                  `protobuf:"varint,486225716,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5465,8 +5465,8 @@ func (*ListMLModelTrainingJobsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMLModelTrainingJobsInput) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -5524,7 +5524,7 @@ func (x *ListMLModelTrainingJobsOutput) GetIds() []string {
 
 type ListMLModelTransformJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems          int32                  `protobuf:"varint,486225716,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5561,8 +5561,8 @@ func (*ListMLModelTransformJobsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMLModelTransformJobsInput) GetMaxitems() int32 {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return 0
 }
@@ -9441,14 +9441,16 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x1bGetGremlinQueryStatusOutput\x12G\n" +
 	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12\x1c\n" +
 	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"\xaf\x01\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"\xd4\x01\n" +
 	"\x17GetLoaderJobStatusInput\x12\x1c\n" +
 	"\adetails\x18\xa6\xe7\x9f\xcb\x01 \x01(\tR\adetails\x12\x1a\n" +
-	"\x06errors\x18\x87\xf5\xde\xd0\x01 \x01(\tR\x06errors\x12'\n" +
-	"\rerrorsperpage\x18\x87\xe3\xa8. \x01(\x05R\rerrorsperpage\x12\x1a\n" +
-	"\x06loadid\x18\xcd\xe3\xe5\x87\x01 \x01(\tR\x06loadid\x12\x15\n" +
+	"\x06errors\x18\x87\xf5\xde\xd0\x01 \x01(\tR\x06errors\x12,\n" +
+	"\rerrorsperpage\x18\x87\xe3\xa8. \x01(\x05H\x00R\rerrorsperpage\x88\x01\x01\x12\x1a\n" +
+	"\x06loadid\x18\xcd\xe3\xe5\x87\x01 \x01(\tR\x06loadid\x12\x1a\n" +
 	"\x04page\x18\xf7\xf4\xf7\n" +
-	" \x01(\x05R\x04page\"T\n" +
+	" \x01(\x05H\x01R\x04page\x88\x01\x01B\x10\n" +
+	"\x0e_errorsperpageB\a\n" +
+	"\x05_page\"T\n" +
 	"\x18GetLoaderJobStatusOutput\x12\x1c\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\tR\apayload\x12\x1a\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"c\n" +
@@ -9577,31 +9579,36 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x18ListGremlinQueriesOutput\x122\n" +
 	"\x12acceptedquerycount\x18\xdc\xf5\xba\x9c\x01 \x01(\tR\x12acceptedquerycount\x12<\n" +
 	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1f.neptunedata.GremlinQueryStatusR\aqueries\x120\n" +
-	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tR\x11runningquerycount\"b\n" +
+	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tR\x11runningquerycount\"q\n" +
 	"\x13ListLoaderJobsInput\x121\n" +
-	"\x12includequeuedloads\x18\x98\x8d\xeej \x01(\tR\x12includequeuedloads\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05R\x05limit\"m\n" +
+	"\x12includequeuedloads\x18\x98\x8d\xeej \x01(\tR\x12includequeuedloads\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01B\b\n" +
+	"\x06_limit\"m\n" +
 	"\x14ListLoaderJobsOutput\x129\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x1b.neptunedata.LoaderIdResultR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"q\n" +
-	"\x1dListMLDataProcessingJobsInput\x12\x1e\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05R\bmaxitems\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"5\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x83\x01\n" +
+	"\x1dListMLDataProcessingJobsInput\x12#\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
+	"\t_maxitems\"5\n" +
 	"\x1eListMLDataProcessingJobsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"h\n" +
-	"\x14ListMLEndpointsInput\x12\x1e\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05R\bmaxitems\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\",\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"z\n" +
+	"\x14ListMLEndpointsInput\x12#\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
+	"\t_maxitems\",\n" +
 	"\x15ListMLEndpointsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"p\n" +
-	"\x1cListMLModelTrainingJobsInput\x12\x1e\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05R\bmaxitems\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"4\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x82\x01\n" +
+	"\x1cListMLModelTrainingJobsInput\x12#\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
+	"\t_maxitems\"4\n" +
 	"\x1dListMLModelTrainingJobsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"q\n" +
-	"\x1dListMLModelTransformJobsInput\x12\x1e\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05R\bmaxitems\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"5\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x83\x01\n" +
+	"\x1dListMLModelTransformJobsInput\x12#\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
+	"\t_maxitems\"5\n" +
 	"\x1eListMLModelTransformJobsOutput\x12\x13\n" +
 	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"H\n" +
 	"\x1aListOpenCypherQueriesInput\x12*\n" +
@@ -10370,6 +10377,12 @@ func file_neptunedata_proto_init() {
 	if File_neptunedata_proto != nil {
 		return
 	}
+	file_neptunedata_proto_msgTypes[47].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[78].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[80].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[82].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[84].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[86].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

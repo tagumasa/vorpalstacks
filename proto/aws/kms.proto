@@ -871,7 +871,7 @@ message DescribeCustomKeyStoresRequest {
 
   string customkeystorename = 170278046;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -979,7 +979,7 @@ message EnableKeyRotationRequest {
 
   string keyid = 275906594;
 
-  int32 rotationperiodindays = 118357231;
+  optional int32 rotationperiodindays = 118357231;
 
 }
 
@@ -1131,7 +1131,7 @@ message GenerateDataKeyRequest {
 
   DataKeySpec keyspec = 138220928;
 
-  int32 numberofbytes = 277086201;
+  optional int32 numberofbytes = 277086201;
 
   RecipientInfo recipient = 445981721;
 
@@ -1167,7 +1167,7 @@ message GenerateDataKeyWithoutPlaintextRequest {
 
   DataKeySpec keyspec = 138220928;
 
-  int32 numberofbytes = 277086201;
+  optional int32 numberofbytes = 277086201;
 
 }
 
@@ -1217,7 +1217,7 @@ message GenerateRandomRequest {
 
   string customkeystoreid = 88348228;
 
-  int32 numberofbytes = 277086201;
+  optional int32 numberofbytes = 277086201;
 
   RecipientInfo recipient = 445981721;
 
@@ -1295,7 +1295,7 @@ message GetKeyRotationStatusResponse {
 
   string ondemandrotationstartdate = 360279652;
 
-  int32 rotationperiodindays = 118357231;
+  optional int32 rotationperiodindays = 118357231;
 
 }
 
@@ -1801,7 +1801,7 @@ message KeyMetadata {
 
   OriginType origin = 529732720;
 
-  int32 pendingdeletionwindowindays = 480447795;
+  optional int32 pendingdeletionwindowindays = 480447795;
 
   repeated SigningAlgorithmSpec signingalgorithms = 508241975;
 
@@ -1913,7 +1913,7 @@ message ListAliasesRequest {
 
   string keyid = 275906594;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -1943,7 +1943,7 @@ message ListGrantsRequest {
 
   string keyid = 275906594;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -1967,7 +1967,7 @@ message ListKeyPoliciesRequest {
 
   string keyid = 275906594;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -1993,7 +1993,7 @@ message ListKeyRotationsRequest {
 
   string keyid = 275906594;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -2015,7 +2015,7 @@ message ListKeyRotationsResponse {
 
 message ListKeysRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -2039,7 +2039,7 @@ message ListResourceTagsRequest {
 
   string keyid = 275906594;
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -2061,7 +2061,7 @@ message ListResourceTagsResponse {
 
 message ListRetirableGrantsRequest {
 
-  int32 limit = 412502741;
+  optional int32 limit = 412502741;
 
   string marker = 89353912;
 
@@ -2353,7 +2353,7 @@ message ScheduleKeyDeletionRequest {
 
   string keyid = 275906594;
 
-  int32 pendingwindowindays = 532945081;
+  optional int32 pendingwindowindays = 532945081;
 
 }
 
@@ -2367,7 +2367,7 @@ message ScheduleKeyDeletionResponse {
 
   KeyState keystate = 27894226;
 
-  int32 pendingwindowindays = 532945081;
+  optional int32 pendingwindowindays = 532945081;
 
 }
 
