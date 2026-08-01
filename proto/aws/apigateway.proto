@@ -781,7 +781,7 @@ message Authorizer {
 
   string authorizercredentials = 233575233;
 
-  int32 authorizerresultttlinseconds = 135440208;
+  optional int32 authorizerresultttlinseconds = 135440208;
 
   string authorizeruri = 525146137;
 
@@ -1009,7 +1009,7 @@ message CreateAuthorizerRequest {
 
   string authorizercredentials = 233575233;
 
-  int32 authorizerresultttlinseconds = 135440208;
+  optional int32 authorizerresultttlinseconds = 135440208;
 
   string authorizeruri = 525146137;
 
@@ -1223,7 +1223,7 @@ message CreateRestApiRequest {
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
-  int32 minimumcompressionsize = 254902719;
+  optional int32 minimumcompressionsize = 254902719;
 
   string name = 221887975;
 
@@ -2041,7 +2041,7 @@ message GetApiKeysRequest {
 
   optional bool includevalues = 490347326;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string namequery = 51018795;
 
@@ -2067,7 +2067,7 @@ message GetAuthorizerRequest {
 
 message GetAuthorizersRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2099,7 +2099,7 @@ message GetBasePathMappingsRequest {
 
   string domainnameid = 298270248;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2121,7 +2121,7 @@ message GetClientCertificateRequest {
 
 message GetClientCertificatesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2147,7 +2147,7 @@ message GetDeploymentRequest {
 
 message GetDeploymentsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2173,7 +2173,7 @@ message GetDocumentationPartRequest {
 
 message GetDocumentationPartsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   LocationStatusType locationstatus = 532215305;
 
@@ -2207,7 +2207,7 @@ message GetDocumentationVersionRequest {
 
 message GetDocumentationVersionsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2219,7 +2219,7 @@ message GetDocumentationVersionsRequest {
 
 message GetDomainNameAccessAssociationsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2245,7 +2245,7 @@ message GetDomainNameRequest {
 
 message GetDomainNamesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2289,7 +2289,7 @@ message GetGatewayResponseRequest {
 
 message GetGatewayResponsesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2389,7 +2389,7 @@ message GetModelTemplateRequest {
 
 message GetModelsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2415,7 +2415,7 @@ message GetRequestValidatorRequest {
 
 message GetRequestValidatorsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2445,7 +2445,7 @@ message GetResourcesRequest {
 
   repeated string embed = 136029775;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2469,7 +2469,7 @@ message GetRestApiRequest {
 
 message GetRestApisRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2507,7 +2507,7 @@ message GetSdkTypeRequest {
 
 message GetSdkTypesRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2543,7 +2543,7 @@ message GetStagesRequest {
 
 message GetTagsRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2569,7 +2569,7 @@ message GetUsagePlanKeyRequest {
 
 message GetUsagePlanKeysRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string namequery = 51018795;
 
@@ -2597,7 +2597,7 @@ message GetUsagePlansRequest {
 
   string keyid = 479913282;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2613,7 +2613,7 @@ message GetUsageRequest {
 
   string keyid = 479913282;
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2639,7 +2639,7 @@ message GetVpcLinkRequest {
 
 message GetVpcLinksRequest {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
   string position = 323964427;
 
@@ -2721,7 +2721,7 @@ message Integration {
 
   ResponseTransferMode responsetransfermode = 458910787;
 
-  int32 timeoutinmillis = 378229126;
+  optional int32 timeoutinmillis = 378229126;
 
   TlsConfig tlsconfig = 108946693;
 
@@ -2849,7 +2849,7 @@ message MethodSetting {
 
   optional bool cachedataencrypted = 481075060;
 
-  int32 cachettlinseconds = 79996982;
+  optional int32 cachettlinseconds = 79996982;
 
   optional bool cachingenabled = 489524028;
 
@@ -2861,7 +2861,7 @@ message MethodSetting {
 
   optional bool requireauthorizationforcachecontrol = 529394912;
 
-  int32 throttlingburstlimit = 402901688;
+  optional int32 throttlingburstlimit = 402901688;
 
   double throttlingratelimit = 371718088;
 
@@ -3035,7 +3035,7 @@ message PutIntegrationRequest {
 
   string restapiid = 383799833;
 
-  int32 timeoutinmillis = 378229126;
+  optional int32 timeoutinmillis = 378229126;
 
   TlsConfig tlsconfig = 108946693;
 
@@ -3165,9 +3165,9 @@ enum QuotaPeriodType {
 
 message QuotaSettings {
 
-  int32 limit = 316332341;
+  optional int32 limit = 316332341;
 
-  int32 offset = 348705739;
+  optional int32 offset = 348705739;
 
   QuotaPeriodType period = 432621317;
 
@@ -3287,7 +3287,7 @@ message RestApi {
 
   string id = 389573345;
 
-  int32 minimumcompressionsize = 254902719;
+  optional int32 minimumcompressionsize = 254902719;
 
   string name = 221887975;
 
@@ -3559,9 +3559,9 @@ message TestInvokeAuthorizerResponse {
 
   map<string, string> claims = 479124501;
 
-  int32 clientstatus = 35642913;
+  optional int32 clientstatus = 35642913;
 
-  int64 latency = 318473050;
+  optional int64 latency = 318473050;
 
   string log = 525422930;
 
@@ -3607,13 +3607,13 @@ message TestInvokeMethodResponse {
 
   map<string, string> headers = 375773674;
 
-  int64 latency = 318473050;
+  optional int64 latency = 318473050;
 
   string log = 525422930;
 
   map<string, string> multivalueheaders = 142421420;
 
-  int32 status = 441153520;
+  optional int32 status = 441153520;
 
 }
 
@@ -3623,7 +3623,7 @@ message TestInvokeMethodResponse {
 
 message ThrottleSettings {
 
-  int32 burstlimit = 37855041;
+  optional int32 burstlimit = 37855041;
 
   double ratelimit = 505789539;
 

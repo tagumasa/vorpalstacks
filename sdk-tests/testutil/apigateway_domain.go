@@ -7,19 +7,54 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
+	"vorpalstacks-sdk-tests/config"
 )
+
+// createTestCertArn imports a self-signed certificate into ACM and returns
+// its ARN.  API Gateway custom domains require a valid ACM certificate ARN;
+// CertificateName alone is not sufficient.
+func (r *TestRunner) createTestCertArn(ctx context.Context) (string, error) {
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to load ACM config: %w", err)
+	}
+	acmClient := acm.NewFromConfig(cfg)
+	resp, err := acmClient.ImportCertificate(ctx, &acm.ImportCertificateInput{
+		Certificate: testCertPEM,
+		PrivateKey:  testKeyPEM,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to import test certificate: %w", err)
+	}
+	return *resp.CertificateArn, nil
+}
 
 func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
 	var results []TestResult
+
+	// Provision an ACM certificate for all domain tests.
+	certArn, err := r.createTestCertArn(ctx)
+	if err != nil {
+		return []TestResult{{
+			Service:  "apigateway",
+			TestName: "DomainSetup",
+			Status:   "FAIL",
+			Error:    err.Error(),
+		}}
+	}
 
 	var domainName string
 	results = append(results, r.RunTest("apigateway", "CreateDomainName", func() error {
 		domain := fmt.Sprintf("test-%d.example.com", time.Now().UnixNano())
 		resp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
-			DomainName:      aws.String(domain),
-			CertificateName: aws.String("test-cert"),
+			DomainName:     aws.String(domain),
+			CertificateArn: aws.String(certArn),
 			Tags: map[string]string{
 				"domain": "test",
 			},
@@ -237,8 +272,8 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 
 		domain := fmt.Sprintf("lc-%d.example.com", time.Now().UnixNano())
 		dnResp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
-			DomainName:      aws.String(domain),
-			CertificateName: aws.String("lc-cert"),
+			DomainName:     aws.String(domain),
+			CertificateArn: aws.String(certArn),
 		})
 		if err != nil {
 			return fmt.Errorf("create domain: %v", err)
@@ -288,8 +323,8 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 
 		domain := fmt.Sprintf("none-%d.example.com", time.Now().UnixNano())
 		_, err = client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
-			DomainName:      aws.String(domain),
-			CertificateName: aws.String("none-cert"),
+			DomainName:     aws.String(domain),
+			CertificateArn: aws.String(certArn),
 		})
 		if err != nil {
 			return fmt.Errorf("create domain: %v", err)

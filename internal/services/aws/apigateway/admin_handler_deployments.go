@@ -87,7 +87,7 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	start, end, nextPos, ok := paginateAdminList(len(deployments), req.Msg.Position, limit)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))

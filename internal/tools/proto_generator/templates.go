@@ -45,7 +45,7 @@ enum {{.Name}} {
 {{else}}
 message {{.Name}} {
 {{range .Fields}}
-  {{if eq .Type "bool"}}optional {{end}}{{.Type}} {{.NameLower}} = {{.Number}}{{if .HTTPPayload}} [(aws.http_payload) = true]{{end}};
+  {{if or (eq .Type "bool") (and (not .IsRequired) (or (eq .Type "int32") (eq .Type "int64")))}}optional {{end}}{{.Type}} {{.NameLower}} = {{.Number}}{{if .HTTPPayload}} [(aws.http_payload) = true]{{end}};
 {{end}}
 }
 {{end}}

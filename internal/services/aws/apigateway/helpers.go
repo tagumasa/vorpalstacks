@@ -113,12 +113,7 @@ func parseFloat64(s string) (float64, error) {
 	return v, err
 }
 
-func derefInt32(p *int32) int32 {
-	if p == nil {
-		return 0
-	}
-	return *p
-}
+func int32Ptr(v int32) *int32 { return &v }
 
 // sliceContains checks whether slice contains the target string.
 func sliceContains(slice []string, target string) bool {

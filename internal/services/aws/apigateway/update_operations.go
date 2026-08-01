@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"vorpalstacks/internal/common/request"
+	store "vorpalstacks/internal/store/aws/apigateway"
 )
 
 // UpdateResource updates an existing resource in API Gateway.
@@ -265,6 +266,11 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 			} else {
 				integration.CacheKeyParameters = append(integration.CacheKeyParameters, po.Value)
 			}
+		case po.Path == "/tlsConfig/insecureSkipVerification":
+			if integration.TlsConfig == nil {
+				integration.TlsConfig = &store.TlsConfig{}
+			}
+			integration.TlsConfig.InsecureSkipVerification = po.Value == "true"
 		}
 	}
 

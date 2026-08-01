@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -105,12 +106,22 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 		domain.Tags = tagutil.MapInterfaceToTags(tags)
 	}
 
-	// Pre-validate certificate ARN before saving.
+	// Require an ACM certificate ARN — vorpalstacks only supports the ACM
+	// certificate ARN model and does not accept the certificateBody /
+	// certificatePrivateKey / certificateChain upload path.  Rejecting
+	// explicitly instead of silently dropping prevents a fail-OPEN gap where
+	// a caller could create a domain with no certificate at all.
 	certArn := effectiveCertificateArn(domain)
-	if certArn != "" && s.acmInvoker != nil {
-		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
-			return nil, NewBadRequestException("The specified certificate ARN does not exist: " + certArn)
+	if certArn == "" {
+		if request.GetStringParam(req.Parameters, "certificateBody") != "" ||
+			request.GetStringParam(req.Parameters, "certificatePrivateKey") != "" ||
+			request.GetStringParam(req.Parameters, "certificateChain") != "" {
+			return nil, NewBadRequestException("certificateBody, certificatePrivateKey, and certificateChain are not supported; use certificateArn or regionalCertificateArn")
 		}
+		return nil, NewBadRequestException("certificateArn or regionalCertificateArn is required")
+	}
+	if s.acmInvoker != nil && !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
+		return nil, NewBadRequestException("The specified certificate ARN does not exist: " + certArn)
 	}
 
 	if !validateRoutingMode(domain.RoutingMode) {
@@ -225,30 +236,74 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 	oldCertificateName := domain.CertificateName
 
 	for _, po := range parsePatchOperations(req.Parameters) {
-		switch po.Path {
-		case "/certificateArn":
+		switch {
+		case po.Path == "/certificateArn":
+			if po.Value == "" {
+				return nil, NewBadRequestException("certificateArn cannot be cleared; provide a new certificate ARN")
+			}
 			domain.CertificateArn = po.Value
-		case "/regionalCertificateArn":
+		case po.Path == "/regionalCertificateArn":
+			if po.Value == "" {
+				return nil, NewBadRequestException("regionalCertificateArn cannot be cleared; provide a new certificate ARN")
+			}
 			domain.RegionalCertificateArn = po.Value
-		case "/certificateName":
+		case po.Path == "/certificateName":
 			domain.CertificateName = po.Value
-		case "/securityPolicy":
+		case po.Path == "/securityPolicy":
 			if !validateSecurityPolicy(po.Value) {
 				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
 			}
 			domain.SecurityPolicy = po.Value
-		case "/ownershipVerificationCertificateArn":
+		case po.Path == "/ownershipVerificationCertificateArn":
 			domain.OwnershipVerificationCertificateArn = po.Value
-		case "/routingMode":
+		case po.Path == "/routingMode":
 			if !validateRoutingMode(po.Value) {
 				return nil, NewBadRequestException("Invalid routingMode: " + po.Value)
 			}
 			domain.RoutingMode = po.Value
-		case "/policy":
+		case po.Path == "/policy":
 			if !validatePolicyJSON(po.Value) {
 				return nil, NewBadRequestException("Invalid policy: must be valid JSON")
 			}
 			domain.Policy = po.Value
+		case po.Path == "/managementPolicy":
+			if !validatePolicyJSON(po.Value) {
+				return nil, NewBadRequestException("Invalid managementPolicy: must be valid JSON")
+			}
+			domain.ManagementPolicy = po.Value
+		case strings.HasPrefix(po.Path, "/endpointConfiguration/types"):
+			if domain.EndpointConfiguration == nil {
+				domain.EndpointConfiguration = &store.EndpointConfiguration{}
+			}
+			typeName := strings.TrimPrefix(po.Path, "/endpointConfiguration/types/")
+			if typeName == "" || typeName == "/endpointConfiguration/types" {
+				typeName = po.Value
+			}
+			if po.Op == "remove" {
+				domain.EndpointConfiguration.Types = removeString(domain.EndpointConfiguration.Types, typeName)
+			} else {
+				if !sliceContains(domain.EndpointConfiguration.Types, typeName) {
+					domain.EndpointConfiguration.Types = append(domain.EndpointConfiguration.Types, typeName)
+				}
+			}
+		case po.Path == "/mutualTlsAuthentication/truststoreUri":
+			if domain.MutualTlsAuthentication == nil {
+				domain.MutualTlsAuthentication = &store.MutualTlsAuthentication{}
+			}
+			if po.Op == "remove" {
+				domain.MutualTlsAuthentication.TruststoreUri = ""
+			} else {
+				domain.MutualTlsAuthentication.TruststoreUri = po.Value
+			}
+		case po.Path == "/mutualTlsAuthentication/truststoreVersion":
+			if domain.MutualTlsAuthentication == nil {
+				domain.MutualTlsAuthentication = &store.MutualTlsAuthentication{}
+			}
+			if po.Op == "remove" {
+				domain.MutualTlsAuthentication.TruststoreVersion = ""
+			} else {
+				domain.MutualTlsAuthentication.TruststoreVersion = po.Value
+			}
 		}
 	}
 
@@ -409,6 +464,9 @@ func (s *APIGatewayService) toDomainNameResponse(d *store.DomainName) map[string
 	}
 	if d.RoutingMode != "" {
 		response["routingMode"] = d.RoutingMode
+	}
+	if d.ManagementPolicy != "" {
+		response["managementPolicy"] = d.ManagementPolicy
 	}
 	if d.EndpointConfiguration != nil {
 		response["endpointConfiguration"] = map[string]interface{}{

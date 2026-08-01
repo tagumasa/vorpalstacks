@@ -21,7 +21,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
@@ -85,8 +85,11 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	if req.Msg.Disableexecuteapiendpoint != nil {
 		api.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
 	}
-	if req.Msg.Minimumcompressionsize > 0 {
-		v := req.Msg.Minimumcompressionsize
+	if req.Msg.Minimumcompressionsize != nil {
+		v := *req.Msg.Minimumcompressionsize
+		if v < 0 || v > 10485760 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("minimumCompressionSize must be between 0 and 10485760"))
+		}
 		api.MinimumCompressionSize = &v
 	}
 	if req.Msg.Endpointconfiguration != nil {
@@ -145,14 +148,23 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 		case "/version":
 			api.Version = po.Value
 		case "/apiKeySource":
+			if !validateApiKeySource(po.Value) {
+				return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
+			}
 			api.ApiKeySource = po.Value
 		case "/policy":
 			api.Policy = po.Value
 		case "/disableExecuteApiEndpoint":
 			api.DisableExecuteApiEndpoint = po.Value == "true"
 		case "/securityPolicy":
+			if !validateSecurityPolicy(po.Value) {
+				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
+			}
 			api.SecurityPolicy = po.Value
 		case "/endpointAccessMode":
+			if !validateEndpointAccessMode(po.Value) {
+				return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
+			}
 			api.EndpointAccessMode = po.Value
 		case "/minimumCompressionSize":
 			v, err := parseInt32(po.Value)

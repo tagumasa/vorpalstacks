@@ -113,7 +113,7 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and default timeoutInMillis, matching the HTTP path.
-	timeoutInMillis := req.Msg.Timeoutinmillis
+	timeoutInMillis := req.Msg.GetTimeoutinmillis()
 	if timeoutInMillis > 0 && (timeoutInMillis < 50 || timeoutInMillis > 30000) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("timeoutInMillis must be between 50 and 30000"))
 	}

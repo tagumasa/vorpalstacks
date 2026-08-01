@@ -74,7 +74,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
@@ -158,13 +158,13 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid quota period: must be DAY, WEEK, or MONTH"))
 		}
 		usagePlan.Quota = &apigatewaystore.Quota{
-			Limit:  int64(req.Msg.Quota.Limit),
-			Offset: int64(req.Msg.Quota.Offset),
+			Limit:  int64(req.Msg.Quota.GetLimit()),
+			Offset: int64(req.Msg.Quota.GetOffset()),
 			Period: periodStr,
 		}
 	}
 	if req.Msg.Throttle != nil {
-		burstLimit := int64(req.Msg.Throttle.Burstlimit)
+		burstLimit := int64(req.Msg.Throttle.GetBurstlimit())
 		if !validateThrottleBurstLimit(burstLimit) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("throttle burstLimit must be between 0 and 10000"))
 		}
@@ -192,7 +192,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
@@ -289,7 +289,7 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	if limit < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}

@@ -88,6 +88,16 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		EndpointAccessMode:        request.GetStringParam(req.Parameters, "endpointAccessMode"),
 	}
 
+	if !validateApiKeySource(api.ApiKeySource) {
+		return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
+	}
+	if !validateSecurityPolicy(api.SecurityPolicy) {
+		return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
+	}
+	if !validateEndpointAccessMode(api.EndpointAccessMode) {
+		return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
+	}
+
 	if _, ok := req.Parameters["minimumCompressionSize"]; ok {
 		v := int32(request.GetIntParam(req.Parameters, "minimumCompressionSize"))
 		if v < 0 || v > 10485760 {
@@ -223,14 +233,23 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 		case po.Path == "/version":
 			api.Version = po.Value
 		case po.Path == "/apiKeySource":
+			if !validateApiKeySource(po.Value) {
+				return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
+			}
 			api.ApiKeySource = po.Value
 		case po.Path == "/policy":
 			api.Policy = po.Value
 		case po.Path == "/disableExecuteApiEndpoint":
 			api.DisableExecuteApiEndpoint = po.Value == "true"
 		case po.Path == "/securityPolicy":
+			if !validateSecurityPolicy(po.Value) {
+				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
+			}
 			api.SecurityPolicy = po.Value
 		case po.Path == "/endpointAccessMode":
+			if !validateEndpointAccessMode(po.Value) {
+				return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
+			}
 			api.EndpointAccessMode = po.Value
 		case po.Path == "/minimumCompressionSize":
 			v, err := parseInt32(po.Value)
@@ -344,6 +363,15 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	}
 	if api.EndpointAccessMode != "" {
 		response["endpointAccessMode"] = api.EndpointAccessMode
+	}
+	if len(api.Warnings) > 0 {
+		response["warnings"] = api.Warnings
+	}
+	if api.ApiStatus != "" {
+		response["apiStatus"] = api.ApiStatus
+	}
+	if api.ApiStatusMessage != "" {
+		response["apiStatusMessage"] = api.ApiStatusMessage
 	}
 	if len(api.BinaryMediaTypes) > 0 {
 		response["binaryMediaTypes"] = api.BinaryMediaTypes

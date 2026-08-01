@@ -110,6 +110,18 @@ func validateEndpointAccessMode(mode string) bool {
 	return mode == "" || validEndpointAccessModes[mode]
 }
 
+// validApiKeySources is the set of accepted API key source values.
+var validApiKeySources = map[string]bool{
+	"HEADER":     true,
+	"AUTHORIZER": true,
+}
+
+// validateApiKeySource returns true if the value is empty (optional) or
+// a recognised API key source.
+func validateApiKeySource(source string) bool {
+	return source == "" || validApiKeySources[source]
+}
+
 // validateSecurityPolicy returns true if the value is empty (optional) or
 // starts with a recognised security policy prefix.
 func validateSecurityPolicy(policy string) bool {

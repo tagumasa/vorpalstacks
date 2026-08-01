@@ -21,6 +21,14 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 		return nil, storeErr(err)
 	}
 
+	ttl := int32(300) // AWS default
+	if req.Msg.Authorizerresultttlinseconds != nil {
+		ttl = *req.Msg.Authorizerresultttlinseconds
+		if ttl < 0 || ttl > 3600 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("authorizerResultTtlInSeconds must be between 0 and 3600"))
+		}
+	}
+
 	authorizer := &apigatewaystore.Authorizer{
 		Name:                         req.Msg.Name,
 		Type:                         fromPbAuthorizerType(req.Msg.Type),
@@ -29,7 +37,7 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 		AuthorizerCredentials:        req.Msg.Authorizercredentials,
 		IdentitySource:               req.Msg.Identitysource,
 		IdentityValidationExpression: req.Msg.Identityvalidationexpression,
-		AuthorizerResultTtlInSeconds: req.Msg.Authorizerresultttlinseconds,
+		AuthorizerResultTtlInSeconds: ttl,
 		ProviderArns:                 req.Msg.Providerarns,
 	}
 	if !validateAuthorizerType(authorizer.Type) {
@@ -37,9 +45,6 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 	}
 	if authorizer.Type == "" {
 		authorizer.Type = "TOKEN"
-	}
-	if authorizer.AuthorizerResultTtlInSeconds < 0 {
-		authorizer.AuthorizerResultTtlInSeconds = 300
 	}
 
 	created, err := stores.restApis.CreateAuthorizer(req.Msg.Restapiid, authorizer)
@@ -63,7 +68,7 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.Limit)
+	limit := int(req.Msg.GetLimit())
 	start, end, nextPos, ok := paginateAdminList(len(authorizers), req.Msg.Position, limit)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))

@@ -216,7 +216,7 @@ func (s *APIGatewayService) CreateModel(ctx context.Context, reqCtx *request.Req
 		return nil, NewBadRequestException("schema must not exceed 400 KB")
 	}
 	if model.ContentType == "" {
-		model.ContentType = "application/json"
+		return nil, NewBadRequestException("contentType is required")
 	}
 
 	stores, err := s.store(reqCtx)

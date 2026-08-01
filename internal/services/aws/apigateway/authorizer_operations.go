@@ -70,9 +70,9 @@ func (s *APIGatewayService) CreateAuthorizer(ctx context.Context, reqCtx *reques
 		authorizer.IdentityValidationExpression = v
 	}
 
-	ttl := request.GetIntParam(req.Parameters, "authorizerResultTtlInSeconds")
-	if ttl > 0 {
-		if ttl > 3600 {
+	if _, ok := req.Parameters["authorizerResultTtlInSeconds"]; ok {
+		ttl := request.GetIntParam(req.Parameters, "authorizerResultTtlInSeconds")
+		if ttl < 0 || ttl > 3600 {
 			return nil, NewBadRequestException("authorizerResultTtlInSeconds must be between 0 and 3600")
 		}
 		authorizer.AuthorizerResultTtlInSeconds = int32(ttl)

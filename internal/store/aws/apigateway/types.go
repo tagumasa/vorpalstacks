@@ -25,6 +25,8 @@ type RestApi struct {
 	DisableExecuteApiEndpoint bool                         `json:"disable_execute_api_endpoint"`
 	SecurityPolicy            string                       `json:"security_policy,omitempty"`
 	EndpointAccessMode        string                       `json:"endpoint_access_mode,omitempty"`
+	ApiStatus                 string                       `json:"api_status,omitempty"`
+	ApiStatusMessage          string                       `json:"api_status_message,omitempty"`
 	Tags                      []types.Tag                  `json:"tags,omitempty"`
 	Resources                 map[string]*Resource         `json:"resources,omitempty"`
 	Deployments               map[string]*Deployment       `json:"deployments,omitempty"`
@@ -357,6 +359,7 @@ type DomainName struct {
 	OwnershipVerificationCertificateArn string                   `json:"ownership_verification_certificate_arn,omitempty"`
 	Policy                              string                   `json:"policy,omitempty"`
 	RoutingMode                         string                   `json:"routing_mode,omitempty"`
+	ManagementPolicy                    string                   `json:"management_policy,omitempty"`
 	Tags                                []types.Tag              `json:"tags,omitempty"`
 }
 

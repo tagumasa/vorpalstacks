@@ -17,12 +17,14 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 		Warnings:               api.Warnings,
 		Createddate:            api.CreatedDate.Format(timeutils.ISO8601UTCFormat),
 		Binarymediatypes:       api.BinaryMediaTypes,
-		Minimumcompressionsize: derefInt32(api.MinimumCompressionSize),
+		Minimumcompressionsize: api.MinimumCompressionSize,
 		Apikeysource:           toPbApiKeySourceType(api.ApiKeySource),
 		Policy:                 api.Policy,
 		Tags:                   tagsToPbMap(api.Tags),
 		Securitypolicy:         toPbSecurityPolicy(api.SecurityPolicy),
 		Endpointaccessmode:     toPbEndpointAccessMode(api.EndpointAccessMode),
+		Apistatus:              toPbApiStatus(api.ApiStatus),
+		Apistatusmessage:       api.ApiStatusMessage,
 	}
 	if api.DisableExecuteApiEndpoint {
 		pbApi.Disableexecuteapiendpoint = proto.Bool(api.DisableExecuteApiEndpoint)
@@ -101,7 +103,7 @@ func toPbIntegration(i *apigatewaystore.Integration) *pb.Integration {
 		pbI.Contenthandling = toPbContentHandling(i.ContentHandling)
 	}
 	if i.TimeoutInMillis > 0 {
-		pbI.Timeoutinmillis = i.TimeoutInMillis
+		pbI.Timeoutinmillis = int32Ptr(i.TimeoutInMillis)
 	}
 	if len(i.IntegrationResponses) > 0 {
 		pbI.Integrationresponses = make(map[string]*pb.IntegrationResponse)
@@ -314,7 +316,7 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 			pbStage.Throttle = make(map[string]*pb.ThrottleSettings)
 			for k, v := range as.Throttle {
 				pbStage.Throttle[k] = &pb.ThrottleSettings{
-					Burstlimit: int32(v.BurstLimit),
+					Burstlimit: int32Ptr(int32(v.BurstLimit)),
 					Ratelimit:  v.RateLimit,
 				}
 			}
@@ -323,14 +325,14 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 	}
 	if p.Quota != nil {
 		pbP.Quota = &pb.QuotaSettings{
-			Limit:  int32(p.Quota.Limit),
-			Offset: int32(p.Quota.Offset),
+			Limit:  int32Ptr(int32(p.Quota.Limit)),
+			Offset: int32Ptr(int32(p.Quota.Offset)),
 			Period: toPbQuotaPeriodType(p.Quota.Period),
 		}
 	}
 	if p.Throttle != nil {
 		pbP.Throttle = &pb.ThrottleSettings{
-			Burstlimit: int32(p.Throttle.BurstLimit),
+			Burstlimit: int32Ptr(int32(p.Throttle.BurstLimit)),
 			Ratelimit:  p.Throttle.RateLimit,
 		}
 	}
@@ -356,7 +358,7 @@ func toPbAuthorizer(a *apigatewaystore.Authorizer) *pb.Authorizer {
 		Authorizercredentials:        a.AuthorizerCredentials,
 		Identitysource:               a.IdentitySource,
 		Identityvalidationexpression: a.IdentityValidationExpression,
-		Authorizerresultttlinseconds: a.AuthorizerResultTtlInSeconds,
+		Authorizerresultttlinseconds: int32Ptr(a.AuthorizerResultTtlInSeconds),
 		Providerarns:                 a.ProviderArns,
 	}
 }
@@ -393,6 +395,21 @@ func toPbApiKeySourceType(s string) pb.ApiKeySourceType {
 		return pb.ApiKeySourceType_API_KEY_SOURCE_TYPE_AUTHORIZER
 	default:
 		return pb.ApiKeySourceType(0)
+	}
+}
+
+func toPbApiStatus(s string) pb.ApiStatus {
+	switch s {
+	case "UPDATING":
+		return pb.ApiStatus_API_STATUS_UPDATING
+	case "PENDING":
+		return pb.ApiStatus_API_STATUS_PENDING
+	case "AVAILABLE":
+		return pb.ApiStatus_API_STATUS_AVAILABLE
+	case "FAILED":
+		return pb.ApiStatus_API_STATUS_FAILED
+	default:
+		return pb.ApiStatus_API_STATUS_AVAILABLE
 	}
 }
 
@@ -457,10 +474,10 @@ func toPbMethodSetting(ms *apigatewaystore.MethodSetting) *pb.MethodSetting {
 		Metricsenabled:                      proto.Bool(ms.MetricsEnabled),
 		Logginglevel:                        ms.LoggingLevel,
 		Datatraceenabled:                    proto.Bool(ms.DataTraceEnabled),
-		Throttlingburstlimit:                ms.ThrottlingBurstLimit,
+		Throttlingburstlimit:                int32Ptr(ms.ThrottlingBurstLimit),
 		Throttlingratelimit:                 ms.ThrottlingRateLimit,
 		Cachingenabled:                      proto.Bool(ms.CachingEnabled),
-		Cachettlinseconds:                   ms.CacheTtlInSeconds,
+		Cachettlinseconds:                   int32Ptr(ms.CacheTtlInSeconds),
 		Cachedataencrypted:                  proto.Bool(ms.CacheDataEncrypted),
 		Requireauthorizationforcachecontrol: proto.Bool(ms.RequireAuthorizationForCacheControl),
 	}
