@@ -21,10 +21,6 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
-	deployment := &store.Deployment{
-		Description: request.GetStringParam(req.Parameters, "description"),
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -33,12 +29,28 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 	stores.keyLocker.Lock(apiId)
 	defer stores.keyLocker.Unlock(apiId)
 
+	// Pre-validate stage parameters before persisting the deployment so
+	// that validation failures do not leave an orphaned deployment.
+	stageName := request.GetStringParam(req.Parameters, "stageName")
+	cacheClusterSize := request.GetStringParam(req.Parameters, "cacheClusterSize")
+	if stageName != "" {
+		if !validateStageName(stageName) {
+			return nil, NewBadRequestException("Invalid stage name: must be alphanumeric, underscore, or hyphen, max 128 characters")
+		}
+		if !validateCacheClusterSize(cacheClusterSize) {
+			return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+		}
+	}
+
+	deployment := &store.Deployment{
+		Description: request.GetStringParam(req.Parameters, "description"),
+	}
+
 	created, err := stores.restApis.CreateDeployment(apiId, deployment)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
 
-	stageName := request.GetStringParam(req.Parameters, "stageName")
 	if stageName != "" {
 		stage := &store.Stage{
 			StageName:    stageName,
@@ -53,7 +65,7 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 		}
 
 		stage.CacheClusterEnabled = request.GetBoolParam(req.Parameters, "cacheClusterEnabled")
-		stage.CacheClusterSize = request.GetStringParam(req.Parameters, "cacheClusterSize")
+		stage.CacheClusterSize = cacheClusterSize
 		stage.TracingEnabled = request.GetBoolParam(req.Parameters, "tracingEnabled")
 
 		if variables, ok := req.Parameters["variables"].(map[string]interface{}); ok {
@@ -85,6 +97,9 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 		}
 
 		if _, err := stores.restApis.CreateStage(apiId, stage); err != nil {
+			// Compensating delete: roll back the deployment so that a
+			// failed stage creation does not leave an orphaned resource.
+			_ = stores.restApis.DeleteDeployment(apiId, created.Id)
 			return nil, toApiGatewayError(err)
 		}
 	}
@@ -155,9 +170,9 @@ func (s *APIGatewayService) GetDeployments(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
-	limit := request.GetIntParam(req.Parameters, "limit")
-	if limit <= 0 {
-		limit = 25
+	limit, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	position := request.GetStringParam(req.Parameters, "position")
 
@@ -175,7 +190,10 @@ func (s *APIGatewayService) GetDeployments(ctx context.Context, reqCtx *request.
 		items = append(items, s.toDeploymentResponse(d))
 	}
 
-	page, nextPos := paginateItems(items, position, limit)
+	page, nextPos, found := paginateItems(items, position, limit)
+	if !found {
+		return nil, NewBadRequestException("Invalid position: " + position)
+	}
 	result := map[string]interface{}{
 		"item": page,
 	}
@@ -209,13 +227,21 @@ func (s *APIGatewayService) CreateStage(ctx context.Context, reqCtx *request.Req
 	if stageName == "" {
 		return nil, NewBadRequestException("stageName is required")
 	}
+	if !validateStageName(stageName) {
+		return nil, NewBadRequestException("Invalid stage name: must be alphanumeric, underscore, or hyphen, max 128 characters")
+	}
+
+	cacheClusterSize := request.GetStringParam(req.Parameters, "cacheClusterSize")
+	if !validateCacheClusterSize(cacheClusterSize) {
+		return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+	}
 
 	stage := &store.Stage{
 		StageName:            stageName,
 		DeploymentId:         request.GetStringParam(req.Parameters, "deploymentId"),
 		Description:          request.GetStringParam(req.Parameters, "description"),
 		CacheClusterEnabled:  request.GetBoolParam(req.Parameters, "cacheClusterEnabled"),
-		CacheClusterSize:     request.GetStringParam(req.Parameters, "cacheClusterSize"),
+		CacheClusterSize:     cacheClusterSize,
 		TracingEnabled:       request.GetBoolParam(req.Parameters, "tracingEnabled"),
 		DocumentationVersion: request.GetStringParam(req.Parameters, "documentationVersion"),
 	}
@@ -321,6 +347,10 @@ func (s *APIGatewayService) DeleteStage(ctx context.Context, reqCtx *request.Req
 		return nil, ErrNotFoundException
 	}
 
+	if s.runtimeServer != nil {
+		s.runtimeServer.CleanupStageThrottlers(stageName)
+	}
+
 	return response.EmptyResponse(), nil
 }
 
@@ -366,6 +396,9 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 		case po.Path == "/cacheClusterEnabled":
 			stage.CacheClusterEnabled = po.Value == "true"
 		case po.Path == "/cacheClusterSize":
+			if !validateCacheClusterSize(po.Value) {
+				return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+			}
 			stage.CacheClusterSize = po.Value
 		case po.Path == "/tracingEnabled":
 			stage.TracingEnabled = po.Value == "true"
@@ -394,9 +427,13 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 				stage.AccessLogSettings.Format = po.Value
 			}
 		case strings.HasPrefix(po.Path, "/methodSettings/"):
-			applyMethodSettingsPatch(stage, po)
+			if err := applyMethodSettingsPatch(stage, po); err != nil {
+				return nil, err
+			}
 		case strings.HasPrefix(po.Path, "/canarySettings/"):
-			applyCanarySettingsPatch(stage, po)
+			if err := applyCanarySettingsPatch(stage, po); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -415,29 +452,41 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 //
 // where resourcePath uses ~1 for / (e.g. ~1 for root, ~1users for /users).
 // The wildcard * is supported for both resourcePath and httpMethod.
-func applyMethodSettingsPatch(stage *store.Stage, po PatchOperation) {
+func applyMethodSettingsPatch(stage *store.Stage, po PatchOperation) error {
 	if stage.MethodSettings == nil {
 		stage.MethodSettings = make(map[string]*store.MethodSetting)
 	}
 
 	rest := strings.TrimPrefix(po.Path, "/methodSettings/")
 	parts := strings.SplitN(rest, "/", 3)
-	if len(parts) < 3 {
-		return
-	}
 
 	resourcePath := parts[0]
-	httpMethod := parts[1]
-	settingName := parts[2]
+	httpMethod := ""
+	settingName := ""
+	if len(parts) >= 2 {
+		httpMethod = parts[1]
+	}
+	if len(parts) >= 3 {
+		settingName = parts[2]
+	}
 
 	key := resourcePath + "/" + httpMethod
+
+	// "remove" on the entire entry (no settingName) deletes the entry.
+	if po.Op == "remove" && settingName == "" {
+		delete(stage.MethodSettings, key)
+		return nil
+	}
+
 	ms, ok := stage.MethodSettings[key]
 	if !ok {
 		ms = &store.MethodSetting{}
 		stage.MethodSettings[key] = ms
 	}
 
-	// For remove operations, reset the field to its zero value.
+	// For remove operations on individual settings, reset the field to its
+	// zero value. If all fields end up at zero, remove the entry entirely
+	// to avoid cluttering the settings map with empty entries.
 	if po.Op == "remove" {
 		switch settingName {
 		case "metricsEnabled":
@@ -459,35 +508,73 @@ func applyMethodSettingsPatch(stage *store.Stage, po PatchOperation) {
 		case "requireAuthorizationForCacheControl":
 			ms.RequireAuthorizationForCacheControl = false
 		}
-		return
+		if isMethodSettingEmpty(ms) {
+			delete(stage.MethodSettings, key)
+		}
+		return nil
 	}
 
 	switch settingName {
 	case "metricsEnabled":
 		ms.MetricsEnabled = po.Value == "true"
 	case "loggingLevel":
+		if !validateLoggingLevel(po.Value) {
+			return NewBadRequestException("Invalid loggingLevel: must be OFF, ERROR, or INFO")
+		}
 		ms.LoggingLevel = po.Value
 	case "dataTraceEnabled":
 		ms.DataTraceEnabled = po.Value == "true"
 	case "throttlingBurstLimit":
-		if v, err := strconv.ParseInt(po.Value, 10, 32); err == nil {
-			ms.ThrottlingBurstLimit = int32(v)
+		v, err := strconv.ParseInt(po.Value, 10, 32)
+		if err != nil {
+			return NewBadRequestException("Invalid throttlingBurstLimit: not a number")
 		}
+		if v < 0 || v > 100000 {
+			return NewBadRequestException("throttlingBurstLimit must be between 0 and 100000")
+		}
+		ms.ThrottlingBurstLimit = int32(v)
 	case "throttlingRateLimit":
-		if v, err := strconv.ParseFloat(po.Value, 64); err == nil {
-			ms.ThrottlingRateLimit = v
+		v, err := strconv.ParseFloat(po.Value, 64)
+		if err != nil {
+			return NewBadRequestException("Invalid throttlingRateLimit: not a number")
 		}
+		if v < 0 || v > 100000 {
+			return NewBadRequestException("throttlingRateLimit must be between 0 and 100000")
+		}
+		ms.ThrottlingRateLimit = v
 	case "cachingEnabled":
 		ms.CachingEnabled = po.Value == "true"
 	case "cacheTtlInSeconds":
-		if v, err := strconv.ParseInt(po.Value, 10, 32); err == nil {
-			ms.CacheTtlInSeconds = int32(v)
+		v, err := strconv.ParseInt(po.Value, 10, 32)
+		if err != nil {
+			return NewBadRequestException("Invalid cacheTtlInSeconds: not a number")
 		}
+		if v < 0 || v > 86400 {
+			return NewBadRequestException("cacheTtlInSeconds must be between 0 and 86400")
+		}
+		ms.CacheTtlInSeconds = int32(v)
 	case "cacheDataEncrypted":
 		ms.CacheDataEncrypted = po.Value == "true"
 	case "requireAuthorizationForCacheControl":
 		ms.RequireAuthorizationForCacheControl = po.Value == "true"
 	}
+	return nil
+}
+
+// isMethodSettingEmpty returns true if all fields of the MethodSetting are
+// at their zero values, indicating the entry carries no meaningful
+// configuration and can be removed from the map.
+func isMethodSettingEmpty(ms *store.MethodSetting) bool {
+	return !ms.MetricsEnabled &&
+		ms.LoggingLevel == "" &&
+		!ms.DataTraceEnabled &&
+		ms.ThrottlingBurstLimit == 0 &&
+		ms.ThrottlingRateLimit == 0 &&
+		!ms.CachingEnabled &&
+		ms.CacheTtlInSeconds == 0 &&
+		!ms.CacheDataEncrypted &&
+		!ms.RequireAuthorizationForCacheControl &&
+		len(ms.UnreservedCacheParameters) == 0
 }
 
 // applyCanarySettingsPatch applies a canarySettings patch operation to the
@@ -498,7 +585,7 @@ func applyMethodSettingsPatch(stage *store.Stage, po PatchOperation) {
 // or
 //
 //	/canarySettings/stageVariableOverrides/{varName}
-func applyCanarySettingsPatch(stage *store.Stage, po PatchOperation) {
+func applyCanarySettingsPatch(stage *store.Stage, po PatchOperation) error {
 	if stage.CanarySettings == nil {
 		stage.CanarySettings = &store.CanarySettings{}
 	}
@@ -510,7 +597,14 @@ func applyCanarySettingsPatch(stage *store.Stage, po PatchOperation) {
 	case "percentTraffic":
 		if po.Op == "remove" {
 			stage.CanarySettings.PercentTraffic = 0
-		} else if v, err := strconv.ParseFloat(po.Value, 64); err == nil {
+		} else {
+			v, err := strconv.ParseFloat(po.Value, 64)
+			if err != nil {
+				return NewBadRequestException("Invalid percentTraffic: not a number")
+			}
+			if v < 0 || v > 100 {
+				return NewBadRequestException("percentTraffic must be between 0 and 100")
+			}
 			stage.CanarySettings.PercentTraffic = v
 		}
 	case "deploymentId":
@@ -527,7 +621,7 @@ func applyCanarySettingsPatch(stage *store.Stage, po PatchOperation) {
 		}
 	case "stageVariableOverrides":
 		if len(parts) < 2 {
-			return
+			return nil
 		}
 		if stage.CanarySettings.StageVariableOverrides == nil {
 			stage.CanarySettings.StageVariableOverrides = make(map[string]string)
@@ -539,6 +633,7 @@ func applyCanarySettingsPatch(stage *store.Stage, po PatchOperation) {
 			stage.CanarySettings.StageVariableOverrides[varName] = po.Value
 		}
 	}
+	return nil
 }
 
 func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -547,9 +642,9 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
-	limit := request.GetIntParam(req.Parameters, "limit")
-	if limit <= 0 {
-		limit = 25
+	limit, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	position := request.GetStringParam(req.Parameters, "position")
 
@@ -567,7 +662,10 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 		items = append(items, s.toStageResponse(st))
 	}
 
-	page, nextPos := paginateItemsWithKey(items, position, limit, "stageName")
+	page, nextPos, found := paginateItemsWithKey(items, position, limit, "stageName")
+	if !found {
+		return nil, NewBadRequestException("Invalid position: " + position)
+	}
 	result := map[string]interface{}{
 		"item": page,
 	}

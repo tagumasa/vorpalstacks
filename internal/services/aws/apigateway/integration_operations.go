@@ -25,12 +25,7 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("type is required")
 	}
 
-	validIntegrationTypes := map[string]bool{
-		"HTTP": true, "HTTP_PROXY": true,
-		"AWS": true, "AWS_PROXY": true,
-		"MOCK": true,
-	}
-	if !validIntegrationTypes[integrationType] {
+	if !validateIntegrationType(integrationType) {
 		return nil, NewBadRequestException("Invalid integration type: " + integrationType)
 	}
 
@@ -55,6 +50,28 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 		TimeoutInMillis:       int32(request.GetIntParam(req.Parameters, "timeoutInMillis")),
 		ConnectionType:        request.GetStringParam(req.Parameters, "connectionType"),
 		ConnectionId:          request.GetStringParam(req.Parameters, "connectionId"),
+	}
+
+	if integration.ConnectionType != "" {
+		if !validateConnectionType(integration.ConnectionType) {
+			return nil, NewBadRequestException("Invalid connectionType: " + integration.ConnectionType)
+		}
+	}
+
+	if integration.PassthroughBehavior != "" {
+		if !validatePassthroughBehavior(integration.PassthroughBehavior) {
+			return nil, NewBadRequestException("Invalid passthroughBehavior: " + integration.PassthroughBehavior)
+		}
+	}
+
+	if integration.ContentHandling != "" {
+		if !validateContentHandling(integration.ContentHandling) {
+			return nil, NewBadRequestException("Invalid contentHandling: " + integration.ContentHandling)
+		}
+	}
+
+	if integration.TimeoutInMillis > 0 && (integration.TimeoutInMillis < 50 || integration.TimeoutInMillis > 30000) {
+		return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
 	}
 
 	if integration.TimeoutInMillis <= 0 {
@@ -95,6 +112,9 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 	}
 
 	integration.ResponseTransferMode = request.GetStringParam(req.Parameters, "responseTransferMode")
+	if !validateResponseTransferMode(integration.ResponseTransferMode) {
+		return nil, NewBadRequestException("Invalid responseTransferMode: must be BUFFERED or STREAM")
+	}
 	integration.IntegrationTarget = request.GetStringParam(req.Parameters, "integrationTarget")
 
 	stores, err := s.store(reqCtx)

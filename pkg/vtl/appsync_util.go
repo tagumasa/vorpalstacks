@@ -358,8 +358,7 @@ func (e *Engine) processUtilDynamoDBToMapValues(templateStr string) string {
 		for k, v := range m {
 			result[k] = toDynamoDBAttribute(v)
 		}
-		b, _ := json.Marshal(result)
-		return string(b)
+		return e.marshalJSON(result)
 	})
 }
 

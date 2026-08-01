@@ -25,11 +25,21 @@ func (h *AdminHandler) GetResources(ctx context.Context, req *connect.Request[pb
 		return nil, storeErr(err)
 	}
 
-	items := make([]*pb.Resource, 0, len(resources))
-	for _, r := range resources {
+	limit := int(req.Msg.Limit)
+	start, end, nextPos, ok := paginateAdminList(len(resources), req.Msg.Position, limit)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+	}
+
+	items := make([]*pb.Resource, 0, end-start)
+	for _, r := range resources[start:end] {
 		items = append(items, toPbResource(r))
 	}
-	return connect.NewResponse(&pb.Resources{Items: items}), nil
+	resp := &pb.Resources{Items: items}
+	if nextPos != "" {
+		resp.Position = nextPos
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // GetResource returns a single resource by ID.
@@ -53,6 +63,9 @@ func (h *AdminHandler) CreateResource(ctx context.Context, req *connect.Request[
 	if req.Msg.Restapiid == "" || req.Msg.Parentid == "" || req.Msg.Pathpart == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, parent_id, and path_part are required"))
 	}
+	if !validatePathPart(req.Msg.Pathpart) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid path_part: malformed path parameter"))
+	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
@@ -61,6 +74,17 @@ func (h *AdminHandler) CreateResource(ctx context.Context, req *connect.Request[
 	parent, err := stores.restApis.GetResource(req.Msg.Restapiid, req.Msg.Parentid)
 	if err != nil {
 		return nil, storeErr(err)
+	}
+
+	// Check for path collision with siblings under the same parent.
+	siblings, err := stores.restApis.ListResources(req.Msg.Restapiid)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+	for _, sib := range siblings {
+		if sib.ParentId == req.Msg.Parentid && sib.PathPart == req.Msg.Pathpart {
+			return nil, connect.NewError(connect.CodeAlreadyExists, fmt.Errorf("pathPart already exists under this parent"))
+		}
 	}
 
 	path := parent.Path

@@ -26,7 +26,10 @@ func (s *CognitoService) GetJWKS(reqCtx *request.RequestContext, userPoolID stri
 	}
 
 	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(reqCtx.GetRegion()), userPoolID)
-	jwtManager := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
+	jwtManager, err := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
+	if err != nil {
+		return nil, ErrInternalError
+	}
 	return jwtManager.GetJWKS(), nil
 }
 

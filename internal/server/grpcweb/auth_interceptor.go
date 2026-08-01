@@ -17,6 +17,7 @@ const claimsContextKey contextKey = "cognito_claims"
 var (
 	errMissingAuth = errors.New("missing or malformed authorization header")
 	errInvalidTok  = errors.New("invalid or expired token")
+	errWrongType   = errors.New("token is not an access token")
 )
 
 // noAuthPathPrefixes lists RPC path prefixes that bypass authentication.
@@ -56,6 +57,10 @@ func NewAuthInterceptor(jwtMgr *vsjwt.Manager) connect.UnaryInterceptorFunc {
 				return nil, connect.NewError(connect.CodeUnauthenticated, errInvalidTok)
 			}
 
+			if claims.TokenUse != "access" {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errWrongType)
+			}
+
 			ctx = context.WithValue(ctx, claimsContextKey, claims)
 			return next(ctx, req)
 		}
@@ -83,6 +88,11 @@ func newAuthHTTPMiddleware(jwtMgr *vsjwt.Manager, wrapped http.Handler) http.Han
 
 		claims, err := jwtMgr.ValidateToken(token)
 		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if claims.TokenUse != "access" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

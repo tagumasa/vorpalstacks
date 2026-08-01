@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/fqdnrouter"
@@ -65,6 +67,19 @@ func (s *RuntimeServer) RemoveApiKey(apiKeyId string) {
 	if s.authenticator != nil {
 		s.authenticator.RemoveApiKey(apiKeyId)
 	}
+}
+
+// CleanupStageThrottlers removes cached rate limiters for the given stage,
+// preventing unbounded growth of the stageThrottlers map when stages are
+// deleted or recreated.
+func (s *RuntimeServer) CleanupStageThrottlers(stageName string) {
+	prefix := stageName + ":"
+	s.stageThrottlers.Range(func(key, _ interface{}) bool {
+		if k, ok := key.(string); ok && strings.HasPrefix(k, prefix) {
+			s.stageThrottlers.Delete(k)
+		}
+		return true
+	})
 }
 
 // Close stops background goroutines in authentication components.
@@ -199,9 +214,18 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, 10*1024*1024))
+	// AWS default payload limit is 10 MiB; allow operator override.
+	maxBodyBytes := int64(10 * 1024 * 1024)
+	if v := config.GetInt("apigateway.max_body_size_bytes"); v > 0 {
+		maxBodyBytes = int64(v)
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxBodyBytes+1))
 	if err != nil {
 		s.sendError(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
+		return
+	}
+	if int64(len(body)) > maxBodyBytes {
+		s.sendError(w, http.StatusRequestEntityTooLarge, "Request body exceeds the maximum allowed payload size")
 		return
 	}
 
@@ -334,6 +358,11 @@ func (s *RuntimeServer) sendResponse(w http.ResponseWriter, resp *integration.In
 	for key, value := range resp.Headers {
 		w.Header().Set(key, value)
 	}
+	for key, values := range resp.MultiValueHeaders {
+		for _, v := range values {
+			w.Header().Add(key, v)
+		}
+	}
 
 	if w.Header().Get("Content-Type") == "" {
 		w.Header().Set("Content-Type", "application/json")
@@ -441,9 +470,14 @@ func newStageRateLimiter(rateLimit, burstLimit float64) *stageRateLimiter {
 func (r *stageRateLimiter) update(rateLimit, burstLimit float64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	oldMax := r.maxTokens
 	r.refillRate = rateLimit
 	r.maxTokens = burstLimit
-	if r.tokens > r.maxTokens {
+	if burstLimit > oldMax {
+		// Burst capacity increased — replenish immediately so the new
+		// capacity is available without waiting for natural refill.
+		r.tokens = burstLimit
+	} else if r.tokens > r.maxTokens {
 		r.tokens = r.maxTokens
 	}
 }
@@ -484,12 +518,26 @@ func (s *RuntimeServer) sendError(w http.ResponseWriter, statusCode int, message
 		errorResp["__type"] = "ForbiddenException"
 	case http.StatusNotFound:
 		errorResp["__type"] = "NotFoundException"
+	case http.StatusMethodNotAllowed:
+		errorResp["__type"] = "MethodNotAllowedException"
+	case http.StatusConflict:
+		errorResp["__type"] = "ConflictException"
+	case http.StatusRequestEntityTooLarge:
+		errorResp["__type"] = "RequestTooLargeException"
+	case http.StatusUnsupportedMediaType:
+		errorResp["__type"] = "UnsupportedMediaTypeException"
+	case http.StatusUnprocessableEntity:
+		errorResp["__type"] = "UnprocessableEntityException"
 	case http.StatusTooManyRequests:
 		errorResp["__type"] = "TooManyRequestsException"
 	case http.StatusInternalServerError:
 		errorResp["__type"] = "InternalServerError"
 	case http.StatusBadGateway:
 		errorResp["__type"] = "BadGatewayException"
+	case http.StatusServiceUnavailable:
+		errorResp["__type"] = "ServiceUnavailableException"
+	case http.StatusGatewayTimeout:
+		errorResp["__type"] = "GatewayTimeoutException"
 	}
 
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
@@ -497,18 +545,41 @@ func (s *RuntimeServer) sendError(w http.ResponseWriter, statusCode int, message
 	}
 }
 
+// clientIP extracts the client IP address from the request. The
+// X-Forwarded-For header is trusted only when the direct connection
+// originates from a loopback address (i.e. a local reverse proxy such
+// as nginx). This prevents spoofing by remote clients.
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if idx := strings.Index(xff, ","); idx >= 0 {
-			return strings.TrimSpace(xff[:idx])
-		}
-		return strings.TrimSpace(xff)
-	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		// RemoteAddr may be a bare IP without a port.
+		if ip := net.ParseIP(r.RemoteAddr); ip != nil {
+			host = ip.String()
+		} else {
+			host = r.RemoteAddr
+		}
 	}
+
+	// Trust X-Forwarded-For only from loopback (local reverse proxy).
+	if isLoopback(host) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			if idx := strings.Index(xff, ","); idx >= 0 {
+				return strings.TrimSpace(xff[:idx])
+			}
+			return strings.TrimSpace(xff)
+		}
+	}
+
 	return host
+}
+
+// isLoopback returns true if the given IP string is a loopback address.
+func isLoopback(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback()
 }
 
 func (s *RuntimeServer) writeAccessLog(r *http.Request, stage *apigatewaystore.Stage, restApiID, resourcePath string, statusCode int, latency time.Duration) {
@@ -548,7 +619,9 @@ func (s *RuntimeServer) writeAccessLog(r *http.Request, stage *apigatewaystore.S
 
 func (s *RuntimeServer) formatAccessLog(format string, r *http.Request, restApiID, stageName, resourcePath string, statusCode int, latency time.Duration) string {
 	if format == "" {
-		return fmt.Sprintf("%s %s %s %d %dms", r.Method, r.URL.Path, r.Proto, statusCode, latency.Milliseconds())
+		return fmt.Sprintf("%s %s %s %d %dms",
+			sanitizeLogValue(r.Method), sanitizeLogValue(r.URL.Path),
+			sanitizeLogValue(r.Proto), statusCode, latency.Milliseconds())
 	}
 
 	requestID := r.Header.Get("X-Amzn-RequestId")
@@ -559,32 +632,65 @@ func (s *RuntimeServer) formatAccessLog(format string, r *http.Request, restApiI
 		requestID = r.Header.Get("X-Amzn-Trace-Id")
 	}
 	if requestID == "" {
-		requestID = "req-unknown"
+		requestID = generateRequestID()
 	}
 
+	sourceIP := clientIP(r)
+
 	result := format
-	result = strings.ReplaceAll(result, "$context.requestId", requestID)
+	result = strings.ReplaceAll(result, "$context.requestId", sanitizeLogValue(requestID))
 	result = strings.ReplaceAll(result, "$context.requestTime", time.Now().UTC().Format("02/Jan/2006:15:04:05 +0000"))
-	result = strings.ReplaceAll(result, "$context.httpMethod", r.Method)
-	result = strings.ReplaceAll(result, "$context.resourcePath", resourcePath)
-	result = strings.ReplaceAll(result, "$context.path", r.URL.Path)
-	result = strings.ReplaceAll(result, "$context.protocol", r.Proto)
+	result = strings.ReplaceAll(result, "$context.httpMethod", sanitizeLogValue(r.Method))
+	result = strings.ReplaceAll(result, "$context.resourcePath", sanitizeLogValue(resourcePath))
+	result = strings.ReplaceAll(result, "$context.path", sanitizeLogValue(r.URL.Path))
+	result = strings.ReplaceAll(result, "$context.protocol", sanitizeLogValue(r.Proto))
 	result = strings.ReplaceAll(result, "$context.status", fmt.Sprintf("%d", statusCode))
 	result = strings.ReplaceAll(result, "$context.responseLatency", fmt.Sprintf("%d", latency.Milliseconds()))
 	result = strings.ReplaceAll(result, "$context.integrationLatency", fmt.Sprintf("%d", latency.Milliseconds()))
-	result = strings.ReplaceAll(result, "$context.sourceIp", clientIP(r))
+	result = strings.ReplaceAll(result, "$context.sourceIp", sanitizeLogValue(sourceIP))
 	result = strings.ReplaceAll(result, "$context.accountId", s.accountID)
-	result = strings.ReplaceAll(result, "$context.apiId", restApiID)
-	result = strings.ReplaceAll(result, "$context.stage", stageName)
+	result = strings.ReplaceAll(result, "$context.apiId", sanitizeLogValue(restApiID))
+	result = strings.ReplaceAll(result, "$context.stage", sanitizeLogValue(stageName))
 	result = strings.ReplaceAll(result, "$context.error.message", "")
 	result = strings.ReplaceAll(result, "$context.error.messageString", "")
 
 	if strings.Contains(result, "$context.request.header.") {
 		for key, values := range r.Header {
 			varName := "$context.request.header." + strings.ToLower(strings.ReplaceAll(key, "-", ""))
-			result = strings.ReplaceAll(result, varName, strings.Join(values, ","))
+			result = strings.ReplaceAll(result, varName, sanitizeLogValue(strings.Join(values, ",")))
 		}
 	}
 
 	return result
+}
+
+// sanitizeLogValue strips control characters (CR, LF, TAB, NUL) from
+// user-supplied values before they are interpolated into access log
+// lines, preventing log injection attacks.
+func sanitizeLogValue(s string) string {
+	if !strings.ContainsAny(s, "\r\n\t\x00") {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch r {
+		case '\r', '\n', '\t', '\x00':
+			continue
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// generateRequestID produces a random hex string for log correlation when
+// no request ID header is present, avoiding the log collisions caused by
+// a static "req-unknown" placeholder.
+func generateRequestID() string {
+	var buf [16]byte
+	if _, err := cryptorand.Read(buf[:]); err != nil {
+		return fmt.Sprintf("req-%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("%x", buf[:])
 }

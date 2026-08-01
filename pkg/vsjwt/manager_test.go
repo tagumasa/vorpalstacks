@@ -17,8 +17,12 @@
 package vsjwt
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type testUser struct {
@@ -42,7 +46,7 @@ func TestGenerateAndValidateAccessToken(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := NewManager(privateKey, "test-key-id", issuer)
+	manager := MustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{
 		id:       "user-123",
@@ -79,7 +83,7 @@ func TestGenerateAndValidateIDToken(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := NewManager(privateKey, "test-key-id", issuer)
+	manager := MustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{
 		id:       "user-123",
@@ -116,7 +120,7 @@ func TestValidateWithWrongAudience(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := NewManager(privateKey, "test-key-id", issuer)
+	manager := MustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 
@@ -134,12 +138,12 @@ func TestValidateWithWrongIssuer(t *testing.T) {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 
-	manager := NewManager(privateKey, "test-key-id", "https://correct-issuer.com")
+	manager := MustNewManager(privateKey, "test-key-id", "https://correct-issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	token, _ := manager.GenerateAccessToken(user, "client", 3600)
 
-	wrongManager := NewManagerWithPublicKey(&privateKey.PublicKey, "test-key-id", "https://wrong-issuer.com")
+	wrongManager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "test-key-id", "https://wrong-issuer.com")
 
 	_, err = wrongManager.ValidateToken(token)
 	if err != ErrInvalidIssuer {
@@ -149,7 +153,7 @@ func TestValidateWithWrongIssuer(t *testing.T) {
 
 func TestCustomClaims(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "key-id", "https://issuer.com")
+	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	custom := map[string]interface{}{
@@ -177,7 +181,7 @@ func TestCustomClaims(t *testing.T) {
 
 func TestClockSkew(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "key-id", "https://issuer.com", WithClockSkew(5*time.Minute))
+	manager := MustNewManager(privateKey, "key-id", "https://issuer.com", WithClockSkew(5*time.Minute))
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	token, _ := manager.GenerateAccessToken(user, "client", 3600)
@@ -190,7 +194,7 @@ func TestClockSkew(t *testing.T) {
 
 func TestRefreshToken(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "key-id", "https://issuer.com")
+	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
 
 	token := manager.GenerateRefreshToken()
 	if len(token) < 30 {
@@ -200,7 +204,7 @@ func TestRefreshToken(t *testing.T) {
 
 func TestJWKS(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "my-key-id", "https://issuer.com")
+	manager := MustNewManager(privateKey, "my-key-id", "https://issuer.com")
 
 	jwks := manager.GetJWKS()
 	if len(jwks.Keys) != 1 {
@@ -254,12 +258,19 @@ func TestPEMEncoding(t *testing.T) {
 
 func TestNoPrivateKey(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManagerWithPublicKey(&privateKey.PublicKey, "key-id", "https://issuer.com")
+	manager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", "https://issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	_, err := manager.GenerateAccessToken(user, "client", 3600)
 	if err != ErrNoPrivateKey {
 		t.Errorf("expected ErrNoPrivateKey, got %v", err)
+	}
+}
+
+func TestNewManagerWithPublicKeyNilKey(t *testing.T) {
+	_, err := NewManagerWithPublicKey(nil, "key-id", "https://issuer.com")
+	if err != ErrNilPublicKey {
+		t.Errorf("expected ErrNilPublicKey, got %v", err)
 	}
 }
 
@@ -269,7 +280,7 @@ func TestManagerGetters(t *testing.T) {
 	expectedKeyID := "my-key-id"
 	expectedClockSkew := 5 * time.Second
 
-	manager := NewManager(privateKey, expectedKeyID, expectedIssuer, WithClockSkew(expectedClockSkew))
+	manager := MustNewManager(privateKey, expectedKeyID, expectedIssuer, WithClockSkew(expectedClockSkew))
 
 	if kid := manager.GetKeyID(); kid != expectedKeyID {
 		t.Errorf("expected keyID %s, got %s", expectedKeyID, kid)
@@ -284,7 +295,7 @@ func TestManagerGetters(t *testing.T) {
 
 func TestGetTokenUse(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "key-id", "https://issuer.com")
+	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 
@@ -303,7 +314,7 @@ func TestGetTokenUse(t *testing.T) {
 
 func TestGetJWKSMap(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := NewManager(privateKey, "my-key-id", "https://issuer.com")
+	manager := MustNewManager(privateKey, "my-key-id", "https://issuer.com")
 
 	jwksMap := manager.GetJWKSMap()
 	keys, ok := jwksMap["keys"].([]map[string]interface{})
@@ -320,5 +331,105 @@ func TestGetJWKSMap(t *testing.T) {
 	}
 	if key["use"] != "sig" {
 		t.Errorf("expected use=sig, got %v", key["use"])
+	}
+}
+
+// --- H3 regression: token without exp must be rejected ---
+
+func TestValidateRejectsMissingExp(t *testing.T) {
+	privateKey, _ := GenerateRSAKeyPair()
+	issuer := "https://issuer.com"
+	manager := MustNewManager(privateKey, "key-id", issuer)
+
+	now := time.Now().UTC()
+	claims := &CognitoClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:  "user-1",
+			Issuer:   issuer,
+			IssuedAt: jwt.NewNumericDate(now),
+		},
+		Username: "test",
+		TokenUse: "access",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = "key-id"
+	tokenString, err := token.SignedString(privateKey)
+	if err != nil {
+		t.Fatalf("failed to sign token: %v", err)
+	}
+
+	_, err = manager.ValidateToken(tokenString)
+	if err == nil {
+		t.Error("expected error for token without exp, got nil")
+	}
+}
+
+// --- L1 regression: token signed with RS384 must be rejected ---
+
+func TestValidateRejectsNonRS256(t *testing.T) {
+	privateKey, _ := GenerateRSAKeyPair()
+	issuer := "https://issuer.com"
+	manager := MustNewManager(privateKey, "key-id", issuer)
+
+	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
+	token, err := manager.GenerateAccessToken(user, "client", 3600)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	pubManager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", issuer)
+
+	claims := &CognitoClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   "user-1",
+			Issuer:    issuer,
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
+		},
+		Username: "test",
+		TokenUse: "access",
+	}
+	rs384Token := jwt.NewWithClaims(jwt.SigningMethodRS384, claims)
+	rs384Token.Header["kid"] = "key-id"
+	rs384TokenString, _ := rs384Token.SignedString(privateKey)
+
+	_, err = pubManager.ValidateToken(rs384TokenString)
+	if err == nil {
+		t.Error("expected error for RS384 token, got nil")
+	}
+
+	_ = token
+}
+
+// --- M1 regression: PKCS8 format PEM must be decodable ---
+
+func TestDecodePKCS8PrivateKey(t *testing.T) {
+	privateKey, _ := GenerateRSAKeyPair()
+
+	der, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("failed to marshal PKCS8: %v", err)
+	}
+
+	pemStr := string(pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: der,
+	}))
+
+	decoded, err := DecodePrivateKeyFromPEM(pemStr)
+	if err != nil {
+		t.Fatalf("failed to decode PKCS8 PEM: %v", err)
+	}
+
+	if decoded.N.Cmp(privateKey.N) != 0 {
+		t.Error("decoded key does not match original")
+	}
+}
+
+func TestDecodeInvalidPEM(t *testing.T) {
+	_, err := DecodePrivateKeyFromPEM("not a PEM string")
+	if err != ErrInvalidPEMBlock {
+		t.Errorf("expected ErrInvalidPEMBlock, got %v", err)
 	}
 }

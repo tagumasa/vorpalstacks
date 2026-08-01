@@ -187,10 +187,7 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 		oldLoop, hadLoop := e.context.Context["foreach"]
 		e.context.Context["foreach"] = loopVars
 
-		rendered := e.processControlFlow(body)
-		rendered = e.processAppSyncUtil(rendered)
-		rendered = e.processAppSyncContext(rendered)
-		rendered = e.processSimpleVariables(rendered)
+		rendered := e.processAllPhases(body)
 		result.WriteString(rendered)
 
 		if hadLoop {
@@ -240,9 +237,7 @@ func (e *Engine) processIfBlock(template string) (string, bool) {
 
 	for _, branch := range branches {
 		if e.evaluateCondition(branch.condition) {
-			rendered := e.processControlFlow(branch.body)
-			rendered = e.processAppSyncUtil(rendered)
-			rendered = e.processAppSyncContext(rendered)
+			rendered := e.processAllPhases(branch.body)
 			return template[:blockStart] + rendered + template[blockEnd:], true
 		}
 	}

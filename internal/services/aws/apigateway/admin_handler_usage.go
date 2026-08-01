@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -22,16 +23,40 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 		return nil, storeErr(err)
 	}
 
+	// When generateDistinctId is false, a customer-supplied Value is required
+	// to serve as the API key identifier (AWS spec: 20-128 characters).
+	generateDistinctId := true
+	if req.Msg.Generatedistinctid != nil {
+		generateDistinctId = *req.Msg.Generatedistinctid
+	}
+	apiKeyValue := req.Msg.Value
+	if !generateDistinctId {
+		if apiKeyValue == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value is required when generateDistinctId is false"))
+		}
+		if len(apiKeyValue) < 20 || len(apiKeyValue) > 128 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value must be between 20 and 128 characters"))
+		}
+	}
+
 	apiKey := &apigatewaystore.ApiKey{
 		Name:        req.Msg.Name,
 		Description: req.Msg.Description,
 		Enabled:     true,
 		CustomerId:  req.Msg.Customerid,
-		Value:       req.Msg.Value,
+		Value:       apiKeyValue,
+	}
+	if !generateDistinctId && apiKeyValue != "" {
+		apiKey.Id = apiKeyValue
 	}
 	for _, sk := range req.Msg.Stagekeys {
 		if sk != nil {
-			apiKey.StageKeys = append(apiKey.StageKeys, sk.Restapiid+"/"+sk.Stagename)
+			stageKey := sk.Restapiid + "/" + sk.Stagename
+			if !validateStageKey(stageKey) {
+				return nil, connect.NewError(connect.CodeInvalidArgument,
+					fmt.Errorf("invalid stageKey format, expected restApiId/stageName: %s", stageKey))
+			}
+			apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
 		}
 	}
 
@@ -50,9 +75,10 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	}
 
 	limit := int(req.Msg.Limit)
-	if limit <= 0 {
-		limit = 100
+	if limit < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
+
 	result, err := stores.usage.ListApiKeys(common.ListOptions{
 		Marker:   req.Msg.Position,
 		MaxItems: limit,
@@ -127,16 +153,28 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 		}
 	}
 	if req.Msg.Quota != nil {
+		periodStr := strings.TrimPrefix(req.Msg.Quota.Period.String(), "QUOTA_PERIOD_TYPE_")
+		if !validateQuotaPeriod(periodStr) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid quota period: must be DAY, WEEK, or MONTH"))
+		}
 		usagePlan.Quota = &apigatewaystore.Quota{
 			Limit:  int64(req.Msg.Quota.Limit),
 			Offset: int64(req.Msg.Quota.Offset),
-			Period: req.Msg.Quota.Period.String(),
+			Period: periodStr,
 		}
 	}
 	if req.Msg.Throttle != nil {
+		burstLimit := int64(req.Msg.Throttle.Burstlimit)
+		if !validateThrottleBurstLimit(burstLimit) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("throttle burstLimit must be between 0 and 10000"))
+		}
+		rateLimit := req.Msg.Throttle.Ratelimit
+		if !validateThrottleRateLimit(rateLimit) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("throttle rateLimit must be between 0 and 10000"))
+		}
 		usagePlan.Throttle = &apigatewaystore.Throttle{
-			BurstLimit: int64(req.Msg.Throttle.Burstlimit),
-			RateLimit:  req.Msg.Throttle.Ratelimit,
+			BurstLimit: burstLimit,
+			RateLimit:  rateLimit,
 		}
 	}
 
@@ -155,9 +193,10 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	}
 
 	limit := int(req.Msg.Limit)
-	if limit <= 0 {
-		limit = 100
+	if limit < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
+
 	result, err := stores.usage.ListUsagePlans(common.ListOptions{
 		Marker:   req.Msg.Position,
 		MaxItems: limit,
@@ -213,6 +252,9 @@ func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Requ
 	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" || req.Msg.Keytype == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id, key_id, and key_type are required"))
 	}
+	if req.Msg.Keytype != "API_KEY" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key_type must be API_KEY"))
+	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
@@ -248,9 +290,10 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 	}
 
 	limit := int(req.Msg.Limit)
-	if limit <= 0 {
-		limit = 100
+	if limit < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
+
 	result, err := stores.usage.ListUsagePlanKeys(req.Msg.Usageplanid, common.ListOptions{
 		Marker:   req.Msg.Position,
 		MaxItems: limit,

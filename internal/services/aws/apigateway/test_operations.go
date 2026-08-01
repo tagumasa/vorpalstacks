@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	integration "vorpalstacks/internal/services/aws/apigateway/runtime/integration"
@@ -13,6 +14,8 @@ import (
 
 // TestInvokeMethod simulates an API method invocation for testing purposes.
 func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	startTime := time.Now()
+
 	apiId, resourceId := getApiIdAndResourceId(req)
 	if apiId == "" || resourceId == "" {
 		return nil, NewBadRequestException("restApiId and resourceId are required")
@@ -41,6 +44,19 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 		for k, v := range h {
 			if vs, ok := v.(string); ok {
 				headers[k] = vs
+			}
+		}
+	}
+
+	multiValueHeaders := make(map[string][]string)
+	if mvh, ok := req.Parameters["multiValueHeaders"].(map[string]interface{}); ok {
+		for k, v := range mvh {
+			if arr, ok := v.([]interface{}); ok {
+				for _, item := range arr {
+					if vs, ok := item.(string); ok {
+						multiValueHeaders[k] = append(multiValueHeaders[k], vs)
+					}
+				}
 			}
 		}
 	}
@@ -133,12 +149,16 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 	}
 
 	result := map[string]interface{}{
-		"status": responseStatus,
-		"body":   responseBody,
-		"log":    logStr,
+		"status":  responseStatus,
+		"body":    responseBody,
+		"log":     logStr,
+		"latency": time.Since(startTime).Milliseconds(),
 	}
 	if len(headers) > 0 {
 		result["headers"] = headers
+	}
+	if len(multiValueHeaders) > 0 {
+		result["multiValueHeaders"] = multiValueHeaders
 	}
 	if pathWithQueryString != "" {
 		result["pathWithQueryString"] = pathWithQueryString
@@ -212,6 +232,11 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 		}
 	}
 
+	// body and pathWithQueryString are accepted per Smithy model but not used
+	// in this stub authorizer test implementation.
+	_ = request.GetStringParam(req.Parameters, "body")
+	_ = request.GetStringParam(req.Parameters, "pathWithQueryString")
+
 	result := map[string]interface{}{
 		"clientStatus": 200,
 		"log":          "TestInvokeAuthorizer completed successfully",
@@ -249,6 +274,24 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 			}
 		}
 	case "REQUEST":
+		result["principalId"] = "test-user"
+		result["authorization"] = map[string]interface{}{
+			"principalId": []string{"test-user"},
+		}
+		result["policy"] = buildTestPolicy(authorizer, apiId)
+	case "COGNITO_USER_POOLS":
+		// Verify that an Authorization header is present. Full JWT
+		// validation against the Cognito user pool is not performed in
+		// this test invocation path.
+		authHeader := headers["Authorization"]
+		if authHeader == "" {
+			authHeader = headers["authorization"]
+		}
+		if authHeader == "" {
+			result["clientStatus"] = 403
+			result["log"] = "Unauthorized: missing Authorization header for COGNITO_USER_POOLS authorizer"
+			break
+		}
 		result["principalId"] = "test-user"
 		result["authorization"] = map[string]interface{}{
 			"principalId": []string{"test-user"},

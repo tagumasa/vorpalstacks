@@ -22,9 +22,10 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	}
 
 	limit := int(req.Msg.Limit)
-	if limit <= 0 {
-		limit = 100
+	if limit < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
 	}
+
 	result, err := stores.restApis.List(storecommon.ListOptions{
 		Marker:   req.Msg.Position,
 		MaxItems: limit,
@@ -91,7 +92,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	if req.Msg.Endpointconfiguration != nil {
 		types := make([]string, len(req.Msg.Endpointconfiguration.Types))
 		for i, t := range req.Msg.Endpointconfiguration.Types {
-			types[i] = t.String()
+			types[i] = fromPbEndpointType(t)
 		}
 		api.EndpointConfiguration = &apigatewaystore.EndpointConfiguration{Types: types}
 	}
@@ -158,6 +159,9 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 			if err != nil {
 				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
 			}
+			if v < 0 || v > 10485760 {
+				return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
+			}
 			api.MinimumCompressionSize = &v
 		}
 
@@ -171,8 +175,22 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 					break MediaTypeLoop
 				}
 			}
-			if (po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE) && !containsAny(api.BinaryMediaTypes, po.Value) {
+			if (po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE) && !sliceContains(api.BinaryMediaTypes, po.Value) {
 				api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
+			}
+		}
+
+		if strings.HasPrefix(po.Path, "/endpointConfiguration/types") {
+			if api.EndpointConfiguration == nil {
+				api.EndpointConfiguration = &apigatewaystore.EndpointConfiguration{}
+			}
+			typeName := strings.TrimPrefix(po.Path, "/endpointConfiguration/types/")
+			if po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE {
+				if !sliceContains(api.EndpointConfiguration.Types, typeName) {
+					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, typeName)
+				}
+			} else if po.Op == pb.Op_OP_REMOVE {
+				api.EndpointConfiguration.Types = removeString(api.EndpointConfiguration.Types, typeName)
 			}
 		}
 	}

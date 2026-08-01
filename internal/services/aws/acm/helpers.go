@@ -2,7 +2,6 @@ package acm
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -12,91 +11,6 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
-
-// domainNamePattern validates domain names per the Smithy DomainNameString
-// constraints: optional wildcard prefix, dot-separated labels where each label
-// starts and ends with an alphanumeric character (hyphens allowed in the middle).
-// RE2-compatible rewrite of the Smithy Perl-syntax pattern.
-var domainNamePattern = regexp.MustCompile(`^(\*\.)?([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$`)
-
-// idempotencyTokenPattern validates IdempotencyToken per the Smithy
-// @pattern(^\w+$) constraint.
-var idempotencyTokenPattern = regexp.MustCompile(`^\w+$`)
-
-// validRevocationReasons contains the Smithy RevocationReason enum values.
-var validRevocationReasons = map[string]bool{
-	"UNSPECIFIED":            true,
-	"KEY_COMPROMISE":         true,
-	"CA_COMPROMISE":          true,
-	"AFFILIATION_CHANGED":    true,
-	"SUPERCEDED":             true,
-	"SUPERSEDED":             true,
-	"CESSATION_OF_OPERATION": true,
-	"CERTIFICATE_HOLD":       true,
-	"REMOVE_FROM_CRL":        true,
-	"PRIVILEGE_WITHDRAWN":    true,
-	"A_A_COMPROMISE":         true,
-}
-
-// validKeyAlgorithmsMap contains the Smithy KeyAlgorithm enum values.
-var validKeyAlgorithmsMap = map[string]bool{
-	"RSA_1024":      true,
-	"RSA_2048":      true,
-	"RSA_3072":      true,
-	"RSA_4096":      true,
-	"EC_prime256v1": true,
-	"EC_secp384r1":  true,
-	"EC_secp521r1":  true,
-}
-
-// validCertificateStatuses contains the Smithy CertificateStatus enum values.
-var validCertificateStatuses = map[string]bool{
-	"PENDING_VALIDATION":   true,
-	"ISSUED":               true,
-	"INACTIVE":             true,
-	"EXPIRED":              true,
-	"VALIDATION_TIMED_OUT": true,
-	"REVOKED":              true,
-	"FAILED":               true,
-}
-
-// validKeyPairOrigins contains the Smithy CertificateKeyPairOrigin enum values.
-var validKeyPairOrigins = map[string]bool{
-	"AWS_MANAGED":       true,
-	"ACME":              true,
-	"CUSTOMER_PROVIDED": true,
-}
-
-// validKeyUsageNames contains the Smithy KeyUsageName enum values.
-var validKeyUsageNames = map[string]bool{
-	"DIGITAL_SIGNATURE":   true,
-	"NON_REPUDIATION":     true,
-	"KEY_ENCIPHERMENT":    true,
-	"DATA_ENCIPHERMENT":   true,
-	"KEY_AGREEMENT":       true,
-	"CERTIFICATE_SIGNING": true,
-	"CRL_SIGNING":         true,
-	"ENCIPHER_ONLY":       true,
-	"DECIPHER_ONLY":       true,
-	"ANY":                 true,
-	"CUSTOM":              true,
-}
-
-// validExtendedKeyUsageNames contains the Smithy ExtendedKeyUsageName enum values.
-var validExtendedKeyUsageNames = map[string]bool{
-	"TLS_WEB_SERVER_AUTHENTICATION": true,
-	"TLS_WEB_CLIENT_AUTHENTICATION": true,
-	"CODE_SIGNING":                  true,
-	"EMAIL_PROTECTION":              true,
-	"TIME_STAMPING":                 true,
-	"OCSP_SIGNING":                  true,
-	"IPSEC_END_SYSTEM":              true,
-	"IPSEC_TUNNEL":                  true,
-	"IPSEC_USER":                    true,
-	"ANY":                           true,
-	"NONE":                          true,
-	"CUSTOM":                        true,
-}
 
 // validateEnumList validates that every value in the list is a member of the
 // given enum set. Returns nil if the list is empty.
@@ -121,10 +35,6 @@ func validateSingleEnum(value, paramName string, validSet map[string]bool) error
 	return nil
 }
 
-func isValidRevocationReason(reason string) bool {
-	return validRevocationReasons[reason]
-}
-
 func getMaxItems(params map[string]interface{}) int {
 	return pagination.GetMaxItems(params, pagination.DefaultMaxItems)
 }
@@ -134,8 +44,8 @@ func parseCertificateArn(params map[string]interface{}, paramName string) (strin
 	if arn == "" {
 		return "", awserrors.NewValidationException(paramName + " is required")
 	}
-	if err := validateCertificateArn(arn); err != nil {
-		return "", err
+	if !isValidCertificateArn(arn) {
+		return "", NewInvalidArnError(arn)
 	}
 	return arn, nil
 }
@@ -144,12 +54,7 @@ func parseCertificateArn(params map[string]interface{}, paramName string) (strin
 // ACM ARN structure: arn:partition:acm:region:account-id:certificate/<id>.
 // Shared by the HTTP API (via parseCertificateArn) and the gRPC admin handler.
 func validateCertificateArn(arn string) error {
-	// ARN structure: arn:partition:service:region:account-id:resource
-	parts := strings.Split(arn, ":")
-	if len(parts) != 6 || parts[0] != "arn" || parts[2] != "acm" {
-		return NewInvalidArnError(arn)
-	}
-	if !strings.HasPrefix(parts[5], "certificate/") || len(parts[5]) <= len("certificate/") {
+	if !isValidCertificateArn(arn) {
 		return NewInvalidArnError(arn)
 	}
 	return nil
@@ -164,20 +69,19 @@ func validateDomainName(domain string) (string, error) {
 	if domain == "" {
 		return "", awserrors.NewValidationException("DomainName is required")
 	}
-	domain = strings.ToLower(domain)
-	if len(domain) > 253 || !domainNamePattern.MatchString(domain) {
-		return "", awserrors.NewValidationException("Invalid domain name: " + domain)
-	}
-	// Validate per-label 63 char limit per Smithy pattern.
-	for _, label := range strings.Split(domain, ".") {
-		if label == "*" {
-			continue
+	normalised := strings.ToLower(domain)
+	if !isValidDomainName(normalised) {
+		for _, label := range strings.Split(normalised, ".") {
+			if label == "*" {
+				continue
+			}
+			if len(label) > 63 {
+				return "", awserrors.NewValidationException("Invalid domain name: label exceeds 63 characters: " + label)
+			}
 		}
-		if len(label) > 63 {
-			return "", awserrors.NewValidationException("Invalid domain name: label exceeds 63 characters: " + label)
-		}
+		return "", awserrors.NewValidationException("Invalid domain name: " + normalised)
 	}
-	return domain, nil
+	return normalised, nil
 }
 
 // validateDomainValidationFields validates the DomainName and ValidationDomain
@@ -209,12 +113,10 @@ func parseValidationMethod(params map[string]interface{}) (string, error) {
 	if method == "" {
 		return "DNS", nil
 	}
-	switch method {
-	case "DNS", "EMAIL", "HTTP":
-		return method, nil
-	default:
+	if !isValidValidationMethod(method) {
 		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ValidationMethod: %s. Valid values are DNS, EMAIL, HTTP.", method))
 	}
+	return method, nil
 }
 
 func parseKeyAlgorithm(params map[string]interface{}) (string, error) {
@@ -222,13 +124,10 @@ func parseKeyAlgorithm(params map[string]interface{}) (string, error) {
 	if algo == "" {
 		return "RSA_2048", nil
 	}
-	switch algo {
-	case "RSA_1024", "RSA_2048", "RSA_3072", "RSA_4096",
-		"EC_prime256v1", "EC_secp384r1", "EC_secp521r1":
-		return algo, nil
-	default:
+	if !isValidKeyAlgorithm(algo) {
 		return "", NewInvalidParameterError(fmt.Sprintf("Invalid KeyAlgorithm: %s. Valid values are RSA_1024, RSA_2048, RSA_3072, RSA_4096, EC_prime256v1, EC_secp384r1, EC_secp521r1.", algo))
 	}
+	return algo, nil
 }
 
 func parseCertificateTransparencyLoggingPreference(params map[string]interface{}) (string, error) {
@@ -236,12 +135,10 @@ func parseCertificateTransparencyLoggingPreference(params map[string]interface{}
 	if pref == "" {
 		return "ENABLED", nil
 	}
-	switch pref {
-	case "ENABLED", "DISABLED":
-		return pref, nil
-	default:
+	if !isValidCertificateTransparencyLoggingPreference(pref) {
 		return "", NewInvalidParameterError(fmt.Sprintf("Invalid CertificateTransparencyLoggingPreference: %s. Valid values are ENABLED, DISABLED.", pref))
 	}
+	return pref, nil
 }
 
 func parseExportOption(params map[string]interface{}) (string, error) {
@@ -249,23 +146,10 @@ func parseExportOption(params map[string]interface{}) (string, error) {
 	if export == "" {
 		return "DISABLED", nil
 	}
-	switch export {
-	case "ENABLED", "DISABLED":
-		return export, nil
-	default:
+	if !isValidExportOption(export) {
 		return "", NewInvalidParameterError(fmt.Sprintf("Invalid Export: %s. Valid values are ENABLED, DISABLED.", export))
 	}
-}
-
-var validManagedByValues = map[string]bool{
-	"CLOUDFRONT": true,
-}
-
-// validExportOptionValues contains the Smithy CertificateExport enum values
-// used as a filter in ListCertificates.Includes.exportOption.
-var validExportOptionValues = map[string]bool{
-	"ENABLED":  true,
-	"DISABLED": true,
+	return export, nil
 }
 
 // validateIdempotencyToken validates an IdempotencyToken string against the
@@ -287,8 +171,6 @@ func validateIdempotencyToken(token string) error {
 // validateACMTags validates tag keys and values against the Smithy
 // constraints: TagKey @length(1-128) + pattern, TagValue @length(max 256)
 // + pattern. Returns InvalidTagException on violation.
-var tagKeyPattern = regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
-
 func validateACMTags(tags []types.Tag) error {
 	for _, t := range tags {
 		if len(t.Key) < 1 || len(t.Key) > 128 {
@@ -312,14 +194,11 @@ func parseManagedBy(params map[string]interface{}) (string, error) {
 	if mb == "" {
 		return "", nil
 	}
-	if !validManagedByValues[mb] {
+	if !isValidManagedBy(mb) {
 		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ManagedBy value: %s", mb))
 	}
 	return mb, nil
 }
-
-// pcaArnPattern validates PCA ARNs per the Smithy PcaArn pattern.
-var pcaArnPattern = regexp.MustCompile(`^arn:[\w+=/,.@-]+:acm-pca:[\w+=/,.@-]*:[0-9]+:[\w+=,.@-]+(/[\w+=,.@-]+)*$`)
 
 // validateCertificateAuthorityArn validates a PCA ARN string against the
 // Smithy PcaArn constraints. Shared by the HTTP API (via
@@ -328,7 +207,6 @@ func validateCertificateAuthorityArn(arn string) (string, error) {
 	if arn == "" {
 		return "", nil
 	}
-	// Smithy PcaArn: @length(20-2048) + pattern.
 	if len(arn) < 20 || len(arn) > 2048 {
 		return "", awserrors.NewInvalidParameterException("CertificateAuthorityArn length must be 20-2048")
 	}

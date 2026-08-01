@@ -94,9 +94,10 @@ type AppSyncContext struct {
 // When AppSyncCtx is set, additional $ctx.* and AppSync-specific $util.*
 // processing is applied.
 type Engine struct {
-	context    *Context
-	variables  map[string]interface{}
-	AppSyncCtx *AppSyncContext
+	context      *Context
+	variables    map[string]interface{}
+	AppSyncCtx   *AppSyncContext
+	transformErr error
 }
 
 // NewEngine creates a new VTL engine instance with default context

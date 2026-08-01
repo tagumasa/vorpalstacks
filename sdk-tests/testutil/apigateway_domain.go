@@ -14,6 +14,7 @@ import (
 func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
 	var results []TestResult
 
+	var domainName string
 	results = append(results, r.RunTest("apigateway", "CreateDomainName", func() error {
 		domain := fmt.Sprintf("test-%d.example.com", time.Now().UnixNano())
 		resp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
@@ -32,10 +33,9 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		if resp.DomainNameId == nil {
 			return fmt.Errorf("domain name ID is nil")
 		}
+		domainName = domain
 		return nil
 	}))
-
-	var domainName string
 	results = append(results, r.RunTest("apigateway", "GetDomainNames", func() error {
 		resp, err := client.GetDomainNames(ctx, &apigateway.GetDomainNamesInput{
 			Limit: aws.Int32(100),
@@ -46,7 +46,17 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 domain name")
 		}
-		domainName = *resp.Items[0].DomainName
+		// Verify the created domain appears in the list.
+		found := false
+		for _, item := range resp.Items {
+			if item.DomainName != nil && *item.DomainName == domainName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("created domain %q not found in list", domainName)
+		}
 		return nil
 	}))
 

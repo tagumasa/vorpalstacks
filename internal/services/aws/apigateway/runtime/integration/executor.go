@@ -4,6 +4,7 @@ package integration
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/eventbus"
@@ -45,10 +46,11 @@ type IntegrationResponseConfig struct {
 
 // IntegrationResponse represents an API Gateway integration response.
 type IntegrationResponse struct {
-	StatusCode      int
-	Headers         map[string]string
-	Body            []byte
-	IsBase64Encoded bool
+	StatusCode        int
+	Headers           map[string]string
+	MultiValueHeaders map[string][]string
+	Body              []byte
+	IsBase64Encoded   bool
 }
 
 // Executor executes API Gateway integrations.
@@ -111,17 +113,22 @@ func (e *IntegrationError) Error() string {
 	return e.Message
 }
 
+var stageVarPattern = regexp.MustCompile(`\$\{stageVariables\.([^}]+)\}`)
+
 // substituteStageVariables replaces ${stageVariables.varName} patterns in the
 // given string with values from the stage variables map. This is used for
 // integration URIs and other template strings that support stage variable
-// references in AWS API Gateway.
+// references in AWS API Gateway. Uses a single-pass regex to prevent
+// recursive substitution when a variable value itself contains a reference.
 func substituteStageVariables(input string, stageVars map[string]string) string {
 	if stageVars == nil || !strings.Contains(input, "${stageVariables.") {
 		return input
 	}
-	result := input
-	for k, v := range stageVars {
-		result = strings.ReplaceAll(result, "${stageVariables."+k+"}", v)
-	}
-	return result
+	return stageVarPattern.ReplaceAllStringFunc(input, func(match string) string {
+		varName := match[len("${stageVariables.") : len(match)-1]
+		if val, ok := stageVars[varName]; ok {
+			return val
+		}
+		return match
+	})
 }

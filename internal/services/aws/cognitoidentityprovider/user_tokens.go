@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -39,7 +40,10 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 	}
 
 	issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", reqCtx.GetRegion(), userPoolID)
-	jwtManager := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
+	jwtManager, err := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
+	if err != nil {
+		return "", "", "", 0, fmt.Errorf("failed to create JWT manager: %w", err)
+	}
 
 	user, _ := store.GetUserByID(userID)
 	if user == nil {
@@ -146,7 +150,10 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 		}
 
 		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", reqCtx.GetRegion(), pool.ID)
-		jwtManager := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
+		jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
+		if err != nil {
+			continue
+		}
 		claims, err := jwtManager.ValidateToken(tokenString)
 		if err == nil && claims.TokenUse == "access" {
 			return claims.Subject, nil
@@ -154,4 +161,38 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 	}
 
 	return "", ErrNotAuthorized
+}
+
+// ValidateTokenForPool validates a Cognito access token for a specific
+// user pool, designed for cross-service consumers (e.g. API Gateway
+// COGNITO_USER_POOLS authorizer) via the eventbus CognitoTokenValidator
+// interface.
+func (s *CognitoService) ValidateTokenForPool(ctx context.Context, region, userPoolID, accessToken string) (string, error) {
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return "", err
+	}
+
+	pool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return "", ErrResourceNotFound
+	}
+
+	publicKey, err := vsjwt.DecodePublicKeyFromPEM(pool.JwtPublicKey)
+	if err != nil {
+		return "", ErrNotAuthorized
+	}
+
+	issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, pool.ID)
+	jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
+	if err != nil {
+		return "", ErrNotAuthorized
+	}
+
+	claims, err := jwtManager.ValidateToken(accessToken)
+	if err != nil || claims.TokenUse != "access" {
+		return "", ErrNotAuthorized
+	}
+
+	return claims.Subject, nil
 }

@@ -107,8 +107,7 @@ func (e *Engine) processUtilParseJson(templateStr string) string {
 		if err := json.Unmarshal([]byte(value), &parsed); err != nil {
 			return value
 		}
-		jsonBytes, _ := json.Marshal(parsed)
-		return string(jsonBytes)
+		return e.marshalJSON(parsed)
 	})
 }
 

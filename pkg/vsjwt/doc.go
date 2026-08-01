@@ -32,7 +32,7 @@
 // Generating tokens:
 //
 //	privateKey, _ := vsjwt.GenerateRSAKeyPair()
-//	manager := vsjwt.NewManager(privateKey, "key-id-123", "https://my-issuer.com")
+//	manager, _ := vsjwt.NewManager(privateKey, "key-id-123", "https://my-issuer.com")
 //
 //	user := &MyUser{id: "user-123", username: "alice"}
 //	accessToken, _ := manager.GenerateAccessToken(user, "client-id", 3600)
@@ -46,7 +46,7 @@
 // Validating tokens:
 //
 //	publicKey := &privateKey.PublicKey
-//	validator := vsjwt.NewManagerWithPublicKey(publicKey, "key-id-123", "https://my-issuer.com")
+//	validator, _ := vsjwt.NewManagerWithPublicKey(publicKey, "key-id-123", "https://my-issuer.com")
 //	claims, _ := validator.ValidateToken(tokenString)
 //
 // With audience check:
@@ -55,7 +55,7 @@
 //
 // With clock skew tolerance:
 //
-//	manager := vsjwt.NewManager(privateKey, "key-id", issuer, vsjwt.WithClockSkew(time.Minute))
+//	manager, _ := vsjwt.NewManager(privateKey, "key-id", issuer, vsjwt.WithClockSkew(time.Minute))
 //
 // JWKS for OpenID Connect:
 //

@@ -1,7 +1,6 @@
 package apigateway
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -64,42 +63,52 @@ func NewConflictException(message string) *ApiGatewayError {
 	return NewApiGatewayError("ConflictException", message, http.StatusConflict)
 }
 
+// storeErrorMappings maps store-level sentinel errors to API Gateway API
+// errors. This follows the data-driven pattern used by CloudTrail, Kinesis,
+// SecretsManager and other services.
+var storeErrorMappings = []awserrors.StoreErrorMapping{
+	// NotFound errors
+	{Store: storeerrors.ErrRestApiNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrResourceNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrMethodNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrIntegrationNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrDeploymentNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrStageNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrRequestValidatorNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrModelNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrApiKeyNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrUsagePlanNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrUsagePlanKeyNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrDomainNameNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrBasePathMappingNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrAuthorizerNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrMethodResponseNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrIntegrationResponseNotFound, AWS: ErrNotFoundException},
+	// AlreadyExists errors
+	{Store: storeerrors.ErrRestApiAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrResourceAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrDeploymentAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrStageAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrRequestValidatorAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrModelAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrApiKeyAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrUsagePlanAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrUsagePlanKeyAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrDomainNameAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrBasePathMappingAlreadyExists, AWS: ErrConflictException},
+	{Store: storeerrors.ErrAuthorizerAlreadyExists, AWS: ErrConflictException},
+}
+
 // GetApiGatewayError converts a generic error to an ApiGatewayError.
 func GetApiGatewayError(err error) *ApiGatewayError {
 	if apiErr, ok := err.(*ApiGatewayError); ok {
 		return apiErr
 	}
-	if isNotFoundError(err) {
-		return ErrNotFoundException
+	mapped := awserrors.MapStoreError(err, storeErrorMappings)
+	if _, ok := mapped.(*ApiGatewayError); ok {
+		return mapped.(*ApiGatewayError)
 	}
 	return ErrServiceException
-}
-
-func isNotFoundError(err error) bool {
-	notFoundErrors := []error{
-		storeerrors.ErrRestApiNotFound,
-		storeerrors.ErrResourceNotFound,
-		storeerrors.ErrMethodNotFound,
-		storeerrors.ErrIntegrationNotFound,
-		storeerrors.ErrDeploymentNotFound,
-		storeerrors.ErrStageNotFound,
-		storeerrors.ErrRequestValidatorNotFound,
-		storeerrors.ErrModelNotFound,
-		storeerrors.ErrApiKeyNotFound,
-		storeerrors.ErrUsagePlanNotFound,
-		storeerrors.ErrUsagePlanKeyNotFound,
-		storeerrors.ErrDomainNameNotFound,
-		storeerrors.ErrBasePathMappingNotFound,
-		storeerrors.ErrAuthorizerNotFound,
-		storeerrors.ErrMethodResponseNotFound,
-		storeerrors.ErrIntegrationResponseNotFound,
-	}
-	for _, notFound := range notFoundErrors {
-		if errors.Is(err, notFound) {
-			return true
-		}
-	}
-	return false
 }
 
 // toApiGatewayError converts a generic error to an ApiGatewayError,

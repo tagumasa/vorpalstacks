@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -83,6 +84,7 @@ type LambdaAuthEvent struct {
 type LambdaAuthResponse struct {
 	PrincipalID        string                 `json:"principalId"`
 	PolicyDocument     PolicyDocument         `json:"policyDocument"`
+	IsAuthorized       *bool                  `json:"isAuthorized,omitempty"`
 	Context            map[string]interface{} `json:"context,omitempty"`
 	UsageIdentifierKey string                 `json:"usageIdentifierKey,omitempty"`
 }
@@ -133,6 +135,8 @@ func (la *LambdaAuthorizer) Authorize(ctx context.Context, method *apigatewaysto
 		return la.authorizeToken(ctx, authorizer, method, req)
 	case "REQUEST":
 		return la.authorizeRequest(ctx, authorizer, method, req)
+	case "COGNITO_USER_POOLS":
+		return la.authorizeCognito(ctx, authorizer, method, req)
 	default:
 		return nil, &AuthError{
 			Message:  fmt.Sprintf("Unsupported authorizer type: %s", authorizer.Type),
@@ -186,6 +190,13 @@ func (la *LambdaAuthorizer) buildHTTPRequest(ctx context.Context, req *AuthReque
 
 	httpReq.Header = http.Header{}
 	for k, v := range req.Headers {
+		// Go's net/http sends the Host field from Request.Host, not from
+		// Header["Host"]. Explicitly sync Request.Host so that SigV4
+		// verification sees the same Host the client signed.
+		if strings.EqualFold(k, "Host") {
+			httpReq.Host = v
+			continue
+		}
 		httpReq.Header.Set(k, v)
 	}
 
@@ -206,9 +217,15 @@ func (la *LambdaAuthorizer) buildMethodArn(req *AuthRequest) string {
 
 func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apigatewaystore.Authorizer, method *apigatewaystore.Method, req *AuthRequest) (*AuthResult, error) {
 	authToken := la.extractToken(authorizer.IdentitySource, req.Headers)
-	cacheKey := fmt.Sprintf("%s:%s:%s", authorizer.Id, authToken, req.Resource)
-	if cached, ok := la.getCachedResult(cacheKey); ok {
-		return cached, nil
+
+	// Only cache when the token is non-empty to prevent cache sharing across
+	// different callers that all supply an empty token (fail-OPEN risk).
+	var cacheKey string
+	if authToken != "" {
+		cacheKey = fmt.Sprintf("%s:%s:%s", authorizer.Id, authToken, req.Resource)
+		if cached, ok := la.getCachedResult(cacheKey); ok {
+			return cached, nil
+		}
 	}
 
 	functionName, err := extractFunctionNameFromURI(authorizer.AuthorizerUri)
@@ -248,7 +265,7 @@ func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apig
 	}
 
 	ttl := authorizer.AuthorizerResultTtlInSeconds
-	if ttl > 0 {
+	if ttl > 0 && cacheKey != "" {
 		la.setCachedResult(cacheKey, result, time.Duration(ttl)*time.Second)
 	}
 
@@ -257,9 +274,15 @@ func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apig
 
 func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *apigatewaystore.Authorizer, method *apigatewaystore.Method, req *AuthRequest) (*AuthResult, error) {
 	identityValues := la.extractIdentityValues(authorizer.IdentitySource, req)
-	cacheKey := fmt.Sprintf("%s:%s:%s:%s", authorizer.Id, req.Method, req.Resource, identityValues)
-	if cached, ok := la.getCachedResult(cacheKey); ok {
-		return cached, nil
+
+	// Only cache when identity values are non-empty to prevent cache sharing
+	// across different callers that all supply empty identity values.
+	var cacheKey string
+	if identityValues != "" {
+		cacheKey = fmt.Sprintf("%s:%s:%s:%s", authorizer.Id, req.Method, req.Resource, identityValues)
+		if cached, ok := la.getCachedResult(cacheKey); ok {
+			return cached, nil
+		}
 	}
 
 	functionName, err := extractFunctionNameFromURI(authorizer.AuthorizerUri)
@@ -298,7 +321,7 @@ func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *ap
 	}
 
 	ttl := authorizer.AuthorizerResultTtlInSeconds
-	if ttl > 0 {
+	if ttl > 0 && cacheKey != "" {
 		la.setCachedResult(cacheKey, result, time.Duration(ttl)*time.Second)
 	}
 
@@ -341,7 +364,14 @@ func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionName s
 		}
 	}
 
-	allowed := la.evaluatePolicy(&authResp.PolicyDocument, event.MethodArn)
+	// Evaluate authorization: policy document takes precedence; fall back to
+	// the simple isAuthorized field when no policy statements are provided.
+	var allowed bool
+	if len(authResp.PolicyDocument.Statement) > 0 {
+		allowed = la.evaluatePolicy(&authResp.PolicyDocument, event.MethodArn)
+	} else if authResp.IsAuthorized != nil {
+		allowed = *authResp.IsAuthorized
+	}
 
 	return &AuthResult{
 		Allowed:     allowed,
@@ -355,6 +385,16 @@ func (la *LambdaAuthorizer) evaluatePolicy(policy *PolicyDocument, methodArn str
 		return false
 	}
 
+	// First pass: explicit Deny takes precedence over any Allow (IAM deny precedence).
+	for _, stmt := range policy.Statement {
+		if stmt.Effect == "Deny" {
+			if la.resourceMatches(stmt.Resource, methodArn) {
+				return false
+			}
+		}
+	}
+
+	// Second pass: check for Allow.
 	for _, stmt := range policy.Statement {
 		if stmt.Effect == "Allow" {
 			if la.resourceMatches(stmt.Resource, methodArn) {
@@ -369,7 +409,21 @@ func (la *LambdaAuthorizer) resourceMatches(policyResource, methodArn string) bo
 	if policyResource == "*" {
 		return true
 	}
-	return strings.HasPrefix(methodArn, policyResource) || methodArn == policyResource
+
+	// Without wildcard characters, use exact or prefix match.
+	if !strings.ContainsAny(policyResource, "*?") {
+		return methodArn == policyResource || strings.HasPrefix(methodArn, policyResource)
+	}
+
+	// Convert IAM glob pattern (* and ?) to a regex for wildcard matching.
+	quoted := regexp.QuoteMeta(policyResource)
+	quoted = strings.ReplaceAll(quoted, `\*`, `.*`)
+	quoted = strings.ReplaceAll(quoted, `\?`, `.`)
+	matched, err := regexp.MatchString("^"+quoted+"$", methodArn)
+	if err != nil {
+		return false
+	}
+	return matched
 }
 
 func (la *LambdaAuthorizer) extractToken(identitySource string, headers map[string]string) string {
@@ -377,23 +431,28 @@ func (la *LambdaAuthorizer) extractToken(identitySource string, headers map[stri
 		return ""
 	}
 
-	parts := strings.Split(identitySource, " ")
-	if len(parts) < 2 {
-		if token, ok := headers[identitySource]; ok {
-			return token
-		}
-		if token, ok := headers[strings.ToLower(identitySource)]; ok {
-			return token
-		}
-		return ""
+	// Parse formats:
+	//   "method.request.header.Authorization"
+	//   "Authorization"
+	//   "Bearer method.request.header.Authorization"
+	//   "Bearer Authorization"
+	var prefix, headerRef string
+	parts := strings.SplitN(identitySource, " ", 2)
+	if len(parts) >= 2 {
+		prefix = parts[0] + " "
+		headerRef = parts[1]
+	} else {
+		headerRef = parts[0]
 	}
 
-	headerName := parts[1]
+	// Strip the AWS mapping expression prefix.
+	headerName := strings.TrimPrefix(headerRef, "method.request.header.")
+
 	if token, ok := headers[headerName]; ok {
-		return parts[0] + " " + token
+		return prefix + token
 	}
 	if token, ok := headers[strings.ToLower(headerName)]; ok {
-		return parts[0] + " " + token
+		return prefix + token
 	}
 	return ""
 }
@@ -525,6 +584,71 @@ type AuthResult struct {
 	Allowed     bool
 	PrincipalID string
 	Context     map[string]interface{}
+}
+
+// authorizeCognito validates a Cognito User Pool JWT access token using the
+// eventbus CognitoTokenValidator interface. The user pool ID is extracted from
+// the authorizer's ProviderARNs.
+func (la *LambdaAuthorizer) authorizeCognito(ctx context.Context, authorizer *apigatewaystore.Authorizer, method *apigatewaystore.Method, req *AuthRequest) (*AuthResult, error) {
+	if la.bus == nil || la.bus.CognitoTokenValidator() == nil {
+		return nil, &AuthError{
+			Message:  "Cognito token validator not configured",
+			Type:     "InternalServerError",
+			HTTPCode: http.StatusInternalServerError,
+		}
+	}
+
+	// Extract the JWT from the identity source (typically Authorization header).
+	token := la.extractToken(authorizer.IdentitySource, req.Headers)
+	if token == "" {
+		return nil, &AuthError{
+			Message:  "Missing authorization token",
+			Type:     "UnauthorizedException",
+			HTTPCode: http.StatusUnauthorized,
+		}
+	}
+
+	// Resolve the user pool ID from the first provider ARN.
+	// ARN format: arn:aws:cognito-idp:{region}:{accountId}:userpool/{poolId}
+	var userPoolID string
+	region := la.region
+	if len(authorizer.ProviderArns) > 0 {
+		userPoolID = extractUserPoolIDFromARN(authorizer.ProviderArns[0])
+	}
+	if userPoolID == "" {
+		return nil, &AuthError{
+			Message:  "No Cognito User Pool configured for authorizer",
+			Type:     "InternalServerError",
+			HTTPCode: http.StatusInternalServerError,
+		}
+	}
+	if region == "" {
+		region = config.AWSRegion()
+	}
+
+	subject, err := la.bus.CognitoTokenValidator().ValidateTokenForPool(ctx, region, userPoolID, token)
+	if err != nil {
+		return nil, &AuthError{
+			Message:  "Invalid Cognito access token",
+			Type:     "UnauthorizedException",
+			HTTPCode: http.StatusUnauthorized,
+		}
+	}
+
+	return &AuthResult{
+		Allowed:     true,
+		PrincipalID: subject,
+	}, nil
+}
+
+// extractUserPoolIDFromARN extracts the user pool ID from a Cognito User Pool ARN.
+// ARN format: arn:aws:cognito-idp:{region}:{accountId}:userpool/{poolId}
+func extractUserPoolIDFromARN(arn string) string {
+	idx := strings.Index(arn, ":userpool/")
+	if idx < 0 {
+		return ""
+	}
+	return arn[idx+len(":userpool/"):]
 }
 
 // extractFunctionNameFromURI extracts the Lambda function name from an authorizer URI.

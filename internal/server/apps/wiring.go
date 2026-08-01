@@ -55,7 +55,7 @@ func (a *App) wireCrossServiceDeps() {
 		if st.snsService != nil {
 			pub = st.snsService
 		}
-		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, publisher: pub})
+		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, kvStore: st.snsStoreInstance.BaseStore, publisher: pub})
 	}
 	if st.kinesisStoreInstance != nil {
 		eb.SetKinesisInvoker(&kinesisInvokerAdapter{store: st.kinesisStoreInstance})
@@ -124,6 +124,7 @@ func (a *App) wireCrossServiceDeps() {
 
 	if st.cognitoService != nil {
 		st.cognitoService.SetEventBus(eb)
+		eb.SetCognitoTokenValidator(st.cognitoService)
 	}
 
 	if st.eventBridgeService != nil {

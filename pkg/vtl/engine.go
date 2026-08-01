@@ -17,6 +17,7 @@
 package vtl
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -32,7 +33,36 @@ func (e *Engine) Transform(templateStr string) (string, error) {
 		return "", nil
 	}
 
-	result := templateStr
+	e.transformErr = nil
+	result := e.processAllPhases(templateStr)
+	if e.transformErr != nil {
+		return result, e.transformErr
+	}
+	return result, nil
+}
+
+// marshalJSON is a DRY helper that serialises a value to JSON.  When
+// serialisation fails the first error is captured in e.transformErr so that
+// Transform() can return it to the caller.  Using this helper everywhere
+// eliminates the pervasive "jsonBytes, _ := json.Marshal(...)" silent-error
+// anti-pattern across all VTL phases.
+func (e *Engine) marshalJSON(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		if e.transformErr == nil {
+			e.transformErr = fmt.Errorf("vtl: json marshal failed: %w", err)
+		}
+		return ""
+	}
+	return string(b)
+}
+
+// processAllPhases runs the full 8-phase VTL pipeline on the given template
+// string. This is the single source of truth for the phase ordering and is
+// used by both Transform and nested block processing (#foreach, #if) to
+// ensure that variable substitution works consistently at every nesting
+// level.
+func (e *Engine) processAllPhases(result string) string {
 	result = e.processControlFlow(result)
 	result = e.processAppSyncUtil(result)
 	result = e.processInput(result)
@@ -41,8 +71,7 @@ func (e *Engine) Transform(templateStr string) (string, error) {
 	result = e.processUtilToJsonFinal(result)
 	result = e.processContext(result)
 	result = e.processStageVariables(result)
-
-	return result, nil
+	return result
 }
 
 // TransformRequest processes a request template using the provided body and

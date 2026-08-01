@@ -4,6 +4,8 @@ package apigateway
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -44,6 +46,12 @@ func (s *APIGatewayService) CreateResource(ctx context.Context, reqCtx *request.
 	}
 	if pathPart == "" {
 		return nil, NewBadRequestException("pathPart is required")
+	}
+	if strings.Contains(pathPart, "/") {
+		return nil, NewBadRequestException("pathPart must not contain '/'")
+	}
+	if !validatePathPart(pathPart) {
+		return nil, NewBadRequestException("pathPart has unbalanced braces or invalid path parameter syntax")
 	}
 
 	stores, err := s.store(reqCtx)
@@ -120,7 +128,10 @@ func (s *APIGatewayService) DeleteResource(ctx context.Context, reqCtx *request.
 				return nil, NewBadRequestException("Cannot delete the root resource")
 			}
 		}
-		return nil, ErrNotFoundException
+		if common.IsNotFound(err) {
+			return nil, ErrNotFoundException
+		}
+		return nil, NewApiGatewayError("InternalServerError", fmt.Sprintf("Failed to delete resource: %v", err), http.StatusInternalServerError)
 	}
 
 	return response.EmptyResponse(), nil
@@ -133,9 +144,9 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
-	limit := request.GetIntParam(req.Parameters, "limit")
-	if limit <= 0 {
-		limit = 25
+	limit, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	position := request.GetStringParam(req.Parameters, "position")
 
@@ -153,7 +164,10 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 		items = append(items, s.toResourceResponse(r))
 	}
 
-	page, nextPos := paginateItems(items, position, limit)
+	page, nextPos, found := paginateItems(items, position, limit)
+	if !found {
+		return nil, NewBadRequestException("Invalid position: " + position)
+	}
 	result := map[string]interface{}{
 		"item": page,
 	}

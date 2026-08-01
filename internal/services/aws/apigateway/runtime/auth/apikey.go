@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
+	storagecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AuthError represents an authentication error with HTTP details.
@@ -47,14 +48,18 @@ func (a *APIKeyAuthenticator) RemoveApiKey(apiKeyId string) {
 // Authenticate validates an API key for the given method and stage.
 func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue string, method *apigatewaystore.Method, restAPIID, stageName string) error {
 	if method == nil || !method.ApiKeyRequired {
+		if apiKeyValue != "" {
+			logs.Debug("API key supplied for a method that does not require one; ignoring",
+				logs.String("restApiId", restAPIID), logs.String("stageName", stageName))
+		}
 		return nil
 	}
 
 	if apiKeyValue == "" {
 		return &AuthError{
 			Message:  "Missing API Key",
-			Type:     "UnauthorizedException",
-			HTTPCode: http.StatusUnauthorized,
+			Type:     "ForbiddenException",
+			HTTPCode: http.StatusForbidden,
 		}
 	}
 
@@ -112,7 +117,16 @@ func (a *APIKeyAuthenticator) checkUsageQuota(ctx context.Context, apiKey *apiga
 	for _, plan := range usagePlans {
 		if plan.Quota != nil {
 			totalCount, err := a.getQuotaUsageCount(plan.Id, apiKey.Id, plan.Quota.Period)
-			if err == nil && totalCount >= plan.Quota.Limit {
+			if err != nil {
+				logs.Warn("failed to get quota usage count, denying request (fail-closed)",
+					logs.Err(err), logs.String("apiKeyId", apiKey.Id), logs.String("planId", plan.Id))
+				return &AuthError{
+					Message:  "API Key quota check failed",
+					Type:     "TooManyRequestsException",
+					HTTPCode: http.StatusTooManyRequests,
+				}
+			}
+			if totalCount >= plan.Quota.Limit {
 				return &AuthError{
 					Message:  "API Key quota exceeded",
 					Type:     "TooManyRequestsException",
@@ -141,11 +155,14 @@ func (a *APIKeyAuthenticator) getQuotaUsageCount(planId, apiKeyId, period string
 	var totalCount int64
 
 	switch period {
-	case "DAY", "":
+	case "DAY":
 		today := now.Format("2006-01-02")
 		usage, err := a.usageStore.GetUsage(planId, apiKeyId, today)
 		if err != nil {
-			return 0, nil
+			if storagecommon.IsNotFound(err) {
+				return 0, nil
+			}
+			return 0, err
 		}
 		return usage.RequestCount, nil
 
@@ -153,9 +170,13 @@ func (a *APIKeyAuthenticator) getQuotaUsageCount(planId, apiKeyId, period string
 		for i := 0; i < 7; i++ {
 			date := now.AddDate(0, 0, -i).Format("2006-01-02")
 			usage, err := a.usageStore.GetUsage(planId, apiKeyId, date)
-			if err == nil {
-				totalCount += usage.RequestCount
+			if err != nil {
+				if !storagecommon.IsNotFound(err) {
+					return 0, err
+				}
+				continue
 			}
+			totalCount += usage.RequestCount
 		}
 		return totalCount, nil
 
@@ -165,19 +186,18 @@ func (a *APIKeyAuthenticator) getQuotaUsageCount(planId, apiKeyId, period string
 		for day := 1; day <= daysInMonth; day++ {
 			date := time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 			usage, err := a.usageStore.GetUsage(planId, apiKeyId, date)
-			if err == nil {
-				totalCount += usage.RequestCount
+			if err != nil {
+				if !storagecommon.IsNotFound(err) {
+					return 0, err
+				}
+				continue
 			}
+			totalCount += usage.RequestCount
 		}
 		return totalCount, nil
 
 	default:
-		today := now.Format("2006-01-02")
-		usage, err := a.usageStore.GetUsage(planId, apiKeyId, today)
-		if err != nil {
-			return 0, nil
-		}
-		return usage.RequestCount, nil
+		return 0, fmt.Errorf("unsupported quota period: %s", period)
 	}
 }
 

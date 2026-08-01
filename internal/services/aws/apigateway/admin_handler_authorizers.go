@@ -30,11 +30,15 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 		IdentitySource:               req.Msg.Identitysource,
 		IdentityValidationExpression: req.Msg.Identityvalidationexpression,
 		AuthorizerResultTtlInSeconds: req.Msg.Authorizerresultttlinseconds,
+		ProviderArns:                 req.Msg.Providerarns,
+	}
+	if !validateAuthorizerType(authorizer.Type) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid authorizer type: %s", authorizer.Type))
 	}
 	if authorizer.Type == "" {
 		authorizer.Type = "TOKEN"
 	}
-	if authorizer.AuthorizerResultTtlInSeconds == 0 {
+	if authorizer.AuthorizerResultTtlInSeconds < 0 {
 		authorizer.AuthorizerResultTtlInSeconds = 300
 	}
 
@@ -59,11 +63,21 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 		return nil, storeErr(err)
 	}
 
-	items := make([]*pb.Authorizer, 0, len(authorizers))
-	for _, a := range authorizers {
+	limit := int(req.Msg.Limit)
+	start, end, nextPos, ok := paginateAdminList(len(authorizers), req.Msg.Position, limit)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+	}
+
+	items := make([]*pb.Authorizer, 0, end-start)
+	for _, a := range authorizers[start:end] {
 		items = append(items, toPbAuthorizer(a))
 	}
-	return connect.NewResponse(&pb.Authorizers{Items: items}), nil
+	resp := &pb.Authorizers{Items: items}
+	if nextPos != "" {
+		resp.Position = nextPos
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // GetAuthorizer returns a single authorizer by ID.

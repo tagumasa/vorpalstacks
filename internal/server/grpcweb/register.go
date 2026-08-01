@@ -50,7 +50,16 @@ func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region
 		return
 	}
 
-	jwtManager := vsjwt.NewManager(adminAuthKey, "admin-auth-key", "vorpalstacks/admin-auth")
+	jwtManager, err := vsjwt.NewManager(adminAuthKey, "admin-auth-key", "vorpalstacks/admin-auth")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialise JWT manager: %v\n", err)
+		path, handler := adminconfigconnect.NewAdminConfigServiceHandler(adminConfigService)
+		s.Handle(path, handler)
+		for _, h := range handlers {
+			s.Handle(h.Path, h.Handler)
+		}
+		return
+	}
 	authInterceptor := NewAuthInterceptor(jwtManager)
 
 	// Admin config service — protected by the ConnectRPC auth interceptor.

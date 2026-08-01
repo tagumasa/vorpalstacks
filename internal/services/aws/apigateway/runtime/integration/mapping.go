@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -119,6 +120,12 @@ func applyRequestParameterMapping(req *IntegrationRequest) *IntegrationRequest {
 		}
 
 		switch {
+		case strings.HasPrefix(targetName, "integration.request.header."):
+			mappedHeaders[strings.TrimPrefix(targetName, "integration.request.header.")] = sourceValue
+		case strings.HasPrefix(targetName, "integration.request.querystring."):
+			mappedQueryParams[strings.TrimPrefix(targetName, "integration.request.querystring.")] = sourceValue
+		case strings.HasPrefix(targetName, "integration.request.path."):
+			mappedPathParams[strings.TrimPrefix(targetName, "integration.request.path.")] = sourceValue
 		case strings.HasPrefix(targetName, "integration.header."):
 			mappedHeaders[strings.TrimPrefix(targetName, "integration.header.")] = sourceValue
 		case strings.HasPrefix(targetName, "integration.querystring."):
@@ -126,7 +133,7 @@ func applyRequestParameterMapping(req *IntegrationRequest) *IntegrationRequest {
 		case strings.HasPrefix(targetName, "integration.path."):
 			mappedPathParams[strings.TrimPrefix(targetName, "integration.path.")] = sourceValue
 		default:
-			mappedHeaders[targetName] = sourceValue
+			continue
 		}
 	}
 
@@ -235,7 +242,8 @@ func extractResponseHeaderName(key string) string {
 }
 
 // extractValueFromJSON extracts a simple dotted-path value from a JSON string.
-// This handles flat JSON paths like "foo.bar.baz" without full JSONPath support.
+// Supports flat JSON paths like "foo.bar.baz" and array indices like
+// "items[0].name" or "data[2]" without full JSONPath support.
 func extractValueFromJSON(body string, path string) string {
 	var obj interface{}
 	if err := json.Unmarshal([]byte(body), &obj); err != nil {
@@ -245,15 +253,24 @@ func extractValueFromJSON(body string, path string) string {
 	parts := strings.Split(path, ".")
 	current := obj
 	for _, part := range parts {
-		switch v := current.(type) {
-		case map[string]interface{}:
-			var ok bool
-			current, ok = v[part]
+		// Split array index suffix: "items[0]" → key="items", idx=0
+		key, idx, hasIdx := splitArrayIndex(part)
+		if key != "" {
+			m, ok := current.(map[string]interface{})
 			if !ok {
 				return ""
 			}
-		default:
-			return ""
+			current, ok = m[key]
+			if !ok {
+				return ""
+			}
+		}
+		if hasIdx {
+			arr, ok := current.([]interface{})
+			if !ok || idx < 0 || idx >= len(arr) {
+				return ""
+			}
+			current = arr[idx]
 		}
 	}
 
@@ -261,7 +278,7 @@ func extractValueFromJSON(body string, path string) string {
 	case string:
 		return v
 	case float64:
-		return fmt.Sprintf("%g", v)
+		return strconv.FormatFloat(v, 'f', -1, 64)
 	case bool:
 		return fmt.Sprintf("%t", v)
 	case nil:
@@ -273,6 +290,27 @@ func extractValueFromJSON(body string, path string) string {
 		}
 		return string(data)
 	}
+}
+
+// splitArrayIndex parses a path segment that may contain an array index suffix.
+// Examples: "items" → ("items", 0, false); "items[0]" → ("items", 0, true);
+// "[2]" → ("", 2, true).
+func splitArrayIndex(part string) (key string, idx int, hasIdx bool) {
+	bracketStart := strings.IndexByte(part, '[')
+	if bracketStart < 0 {
+		return part, 0, false
+	}
+	key = part[:bracketStart]
+	rest := part[bracketStart+1:]
+	bracketEnd := strings.IndexByte(rest, ']')
+	if bracketEnd < 0 {
+		return part, 0, false
+	}
+	n, err := strconv.Atoi(rest[:bracketEnd])
+	if err != nil || n < 0 {
+		return part, 0, false
+	}
+	return key, n, true
 }
 
 // isBinaryContentType checks whether the given Content-Type matches any of the

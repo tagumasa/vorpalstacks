@@ -1,6 +1,8 @@
 package apigateway
 
 import (
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,6 +13,14 @@ import (
 
 	"github.com/google/uuid"
 )
+
+// maxRestApiBlobSize is the upper bound on the serialised size of a single
+// RestApi JSON blob. The RestApi struct embeds all sub-collections
+// (resources, deployments, stages, models, authorizers, validators) and is
+// loaded in its entirety by Get and every sub-resource List operation.
+// This guard prevents unbounded growth from causing excessive memory
+// consumption during (de)serialisation.
+const maxRestApiBlobSize = 5 * 1024 * 1024 // 5 MiB
 
 // RestApiStore provides storage operations for REST APIs.
 type RestApiStore struct {
@@ -66,7 +76,20 @@ func (s *RestApiStore) updateLocked(api *RestApi) error {
 		return ErrRestApiNotFound
 	}
 	ensureRestApiMaps(api)
-	return s.Put(api.Id, api)
+
+	// Reject blobs that exceed the size guard. The entire RestApi — including
+	// all sub-collections — is serialised as one JSON value and loaded in full
+	// by Get and List operations. An oversized blob risks excessive memory
+	// consumption and slow (de)serialisation on every access.
+	data, err := json.Marshal(api)
+	if err != nil {
+		return common.NewStoreErrorWithKey("apigateway", "marshal", api.Id, err)
+	}
+	if len(data) > maxRestApiBlobSize {
+		return common.NewStoreErrorWithKey("apigateway", "update", api.Id,
+			fmt.Errorf("rest API %s exceeds maximum storage size (%d bytes); consider splitting resources across multiple APIs", api.Id, maxRestApiBlobSize))
+	}
+	return s.BaseStore.PutRaw(api.Id, data)
 }
 
 // Create creates a new REST API.

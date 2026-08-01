@@ -44,7 +44,6 @@ type CognitoClaims struct {
 	Scope         string   `json:"scope,omitempty"`
 	TokenUse      string   `json:"token_use,omitempty"`
 	AuthTime      int64    `json:"auth_time,omitempty"`
-	Jti           string   `json:"jti,omitempty"`
 	custom        map[string]interface{}
 }
 

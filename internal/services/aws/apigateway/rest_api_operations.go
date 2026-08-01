@@ -90,6 +90,9 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 
 	if _, ok := req.Parameters["minimumCompressionSize"]; ok {
 		v := int32(request.GetIntParam(req.Parameters, "minimumCompressionSize"))
+		if v < 0 || v > 10485760 {
+			return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
+		}
 		api.MinimumCompressionSize = &v
 	}
 
@@ -167,7 +170,10 @@ func (s *APIGatewayService) GetRestApi(ctx context.Context, reqCtx *request.Requ
 	return s.toRestApiResponse(api), nil
 }
 
-// DeleteRestApi deletes a REST API from API Gateway.
+// DeleteRestApi deletes a REST API from API Gateway. This is a cascading
+// operation that deletes all associated resources (stages, deployments,
+// models, authorizers, etc.) embedded in the RestApi document. It also
+// removes any base path mappings that reference the deleted API.
 func (s *APIGatewayService) DeleteRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
 	if apiId == "" {
@@ -181,6 +187,9 @@ func (s *APIGatewayService) DeleteRestApi(ctx context.Context, reqCtx *request.R
 	if err := stores.restApis.Delete(apiId); err != nil {
 		return nil, toApiGatewayError(err)
 	}
+
+	// Clean up dangling base path mappings that referenced the deleted API.
+	_ = stores.domains.RemoveBasePathMappingsForApi(apiId)
 
 	return response.EmptyResponse(), nil
 }
@@ -228,15 +237,30 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 			if err != nil {
 				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
 			}
+			if v < 0 || v > 10485760 {
+				return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
+			}
 			api.MinimumCompressionSize = &v
 		case strings.HasPrefix(po.Path, "/binaryMediaTypes"):
 			if po.Op == "add" {
-				if !containsAny(api.BinaryMediaTypes, po.Value) {
+				if !sliceContains(api.BinaryMediaTypes, po.Value) {
 					api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
 				}
 			} else if po.Op == "remove" {
 				target := resolveBinaryMediaTypeToRemove(po.Path, po.Value, api.BinaryMediaTypes)
 				api.BinaryMediaTypes = removeString(api.BinaryMediaTypes, target)
+			}
+		case strings.HasPrefix(po.Path, "/endpointConfiguration/types"):
+			if api.EndpointConfiguration == nil {
+				api.EndpointConfiguration = &store.EndpointConfiguration{}
+			}
+			typeName := strings.TrimPrefix(po.Path, "/endpointConfiguration/types/")
+			if po.Op == "add" || po.Op == "replace" {
+				if !sliceContains(api.EndpointConfiguration.Types, typeName) {
+					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, typeName)
+				}
+			} else if po.Op == "remove" {
+				api.EndpointConfiguration.Types = removeString(api.EndpointConfiguration.Types, typeName)
 			}
 		}
 	}
@@ -250,9 +274,9 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 
 // GetRestApis lists all REST APIs in API Gateway.
 func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := request.GetIntParam(req.Parameters, "limit")
-	if maxItems <= 0 {
-		maxItems = 25
+	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	marker := request.GetStringParam(req.Parameters, "position")
 

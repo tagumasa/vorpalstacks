@@ -27,10 +27,7 @@ func (s *APIGatewayService) CreateAuthorizer(ctx context.Context, reqCtx *reques
 		authType = "TOKEN"
 	}
 
-	validAuthorizerTypes := map[string]bool{
-		"TOKEN": true, "REQUEST": true, "COGNITO_USER_POOLS": true,
-	}
-	if !validAuthorizerTypes[authType] {
+	if !validateAuthorizerType(authType) {
 		return nil, NewBadRequestException("Invalid authorizer type: " + authType)
 	}
 
@@ -75,6 +72,9 @@ func (s *APIGatewayService) CreateAuthorizer(ctx context.Context, reqCtx *reques
 
 	ttl := request.GetIntParam(req.Parameters, "authorizerResultTtlInSeconds")
 	if ttl > 0 {
+		if ttl > 3600 {
+			return nil, NewBadRequestException("authorizerResultTtlInSeconds must be between 0 and 3600")
+		}
 		authorizer.AuthorizerResultTtlInSeconds = int32(ttl)
 	} else {
 		authorizer.AuthorizerResultTtlInSeconds = 300
@@ -152,10 +152,16 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 		case po.Path == "/name":
 			existing.Name = po.Value
 		case po.Path == "/type":
+			if !validateAuthorizerType(po.Value) {
+				return nil, NewBadRequestException("Invalid authorizer type: " + po.Value)
+			}
 			existing.Type = po.Value
 		case po.Path == "/authType":
 			existing.AuthType = po.Value
 		case po.Path == "/authorizerUri":
+			if po.Value != "" && !strings.HasPrefix(po.Value, "arn:") {
+				return nil, NewBadRequestException("authorizerUri must be a valid ARN")
+			}
 			existing.AuthorizerUri = po.Value
 		case po.Path == "/authorizerCredentials":
 			existing.AuthorizerCredentials = po.Value
@@ -168,6 +174,9 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 			if err != nil {
 				return nil, NewBadRequestException("invalid authorizerResultTtlInSeconds: not a number")
 			}
+			if v < 0 || v > 3600 {
+				return nil, NewBadRequestException("authorizerResultTtlInSeconds must be between 0 and 3600")
+			}
 			existing.AuthorizerResultTtlInSeconds = int32(v)
 		case strings.HasPrefix(po.Path, "/providerARNs"):
 			if po.Op == "remove" {
@@ -175,7 +184,9 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 					existing.ProviderArns = append(existing.ProviderArns[:idx], existing.ProviderArns[idx+1:]...)
 				}
 			} else {
-				existing.ProviderArns = append(existing.ProviderArns, po.Value)
+				if !sliceContains(existing.ProviderArns, po.Value) {
+					existing.ProviderArns = append(existing.ProviderArns, po.Value)
+				}
 			}
 		}
 	}
@@ -220,9 +231,9 @@ func (s *APIGatewayService) GetAuthorizers(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
-	limit := request.GetIntParam(req.Parameters, "limit")
-	if limit <= 0 {
-		limit = 25
+	limit, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	position := request.GetStringParam(req.Parameters, "position")
 
@@ -240,7 +251,10 @@ func (s *APIGatewayService) GetAuthorizers(ctx context.Context, reqCtx *request.
 		items = append(items, s.toAuthorizerResponse(a))
 	}
 
-	page, nextPos := paginateItems(items, position, limit)
+	page, nextPos, found := paginateItems(items, position, limit)
+	if !found {
+		return nil, NewBadRequestException("Invalid position: " + position)
+	}
 	result := map[string]interface{}{
 		"item": page,
 	}

@@ -70,6 +70,7 @@ type SNSInvoker interface {
 	ListSubscriptionsByTopic(ctx context.Context, topicARN string) ([]SubscriptionInfo, error)
 	PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]string) (messageID string, err error)
 	StoreMessage(ctx context.Context, key string, data any) error
+	DeleteStoredMessage(ctx context.Context, key string) error
 }
 
 // SubscriptionInfo carries the fields of an SNS subscription that
@@ -298,4 +299,12 @@ type ACMInvoker interface {
 	RegisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error
 	UnregisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error
 	CertificateExists(ctx context.Context, region, certArn string) bool
+}
+
+// CognitoTokenValidator validates Cognito JWT access tokens for cross-service
+// consumers (e.g. API Gateway COGNITO_USER_POOLS authorizer). The validator
+// resolves the user pool by ID, fetches its JWKS public key, and verifies the
+// token signature, expiration, issuer, and token_use claim.
+type CognitoTokenValidator interface {
+	ValidateTokenForPool(ctx context.Context, region, userPoolID, accessToken string) (subject string, err error)
 }

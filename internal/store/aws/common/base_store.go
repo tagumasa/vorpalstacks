@@ -69,6 +69,16 @@ func (s *BaseStore) Put(key string, data interface{}) error {
 	return nil
 }
 
+// PutRaw stores pre-serialised bytes directly without JSON encoding,
+// allowing the caller to perform size validation or other checks on
+// the marshalled payload before persistence.
+func (s *BaseStore) PutRaw(key string, data []byte) error {
+	if err := s.bucket.Put([]byte(key), data); err != nil {
+		return NewStoreErrorWithKey(s.service, "put", key, err)
+	}
+	return nil
+}
+
 // Delete removes an item from the store by key.
 func (s *BaseStore) Delete(key string) error {
 	if err := s.bucket.Delete([]byte(key)); err != nil {

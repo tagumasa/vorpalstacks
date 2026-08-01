@@ -23,11 +23,48 @@ func effectiveCertificateArn(d *store.DomainName) string {
 	return d.CertificateArn
 }
 
+// resolveDomainName resolves a domain name from either the domainName or
+// domainNameId request parameter. At least one must be provided per the Smithy
+// model. When only domainNameId is given, the store is queried to obtain the
+// canonical domain name.
+func resolveDomainName(req *request.ParsedRequest, stores *apiGatewayStores) (string, error) {
+	domainName := request.GetStringParam(req.Parameters, "domainName")
+	if domainName == "" {
+		domainName = getPathParam(req, "domainName")
+	}
+	if domainName != "" {
+		return domainName, nil
+	}
+
+	domainNameId := request.GetStringParam(req.Parameters, "domainNameId")
+	if domainNameId == "" {
+		return "", NewBadRequestException("Either domainName or domainNameId must be specified")
+	}
+
+	domain, err := stores.domains.GetDomainNameById(domainNameId)
+	if err != nil {
+		return "", ErrNotFoundException
+	}
+	return domain.DomainName, nil
+}
+
 // CreateDomainName creates a new domain name for API Gateway.
 func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	domainName := request.GetStringParam(req.Parameters, "domainName")
 	if domainName == "" {
 		return nil, NewBadRequestException("domainName is required")
+	}
+	if !validateFQDN(domainName) {
+		return nil, NewBadRequestException("Invalid domain name: must be a valid FQDN")
+	}
+
+	securityPolicy := request.GetStringParam(req.Parameters, "securityPolicy")
+	if !validateSecurityPolicy(securityPolicy) {
+		return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
+	}
+	endpointAccessMode := request.GetStringParam(req.Parameters, "endpointAccessMode")
+	if !validateEndpointAccessMode(endpointAccessMode) {
+		return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
 	}
 
 	domain := &store.DomainName{
@@ -76,6 +113,14 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 		}
 	}
 
+	if !validateRoutingMode(domain.RoutingMode) {
+		return nil, NewBadRequestException("Invalid routingMode: " + domain.RoutingMode)
+	}
+
+	if !validatePolicyJSON(domain.Policy) {
+		return nil, NewBadRequestException("Invalid policy: must be valid JSON")
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -97,18 +142,15 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 
 // GetDomainName retrieves a domain name by its name.
 func (s *APIGatewayService) GetDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
-	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
+	}
+
 	domain, err := stores.domains.GetDomainName(domainName)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -119,21 +161,25 @@ func (s *APIGatewayService) GetDomainName(ctx context.Context, reqCtx *request.R
 
 // DeleteDomainName deletes a domain name.
 func (s *APIGatewayService) DeleteDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
-	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
+	}
+
 	domain, err := stores.domains.GetDomainName(domainName)
 	if err != nil {
 		return nil, ErrNotFoundException
+	}
+
+	// AWS requires all BasePathMappings to be deleted before a domain name
+	// can be removed; otherwise it returns ConflictException.
+	mappings, err := stores.domains.ListBasePathMappings(domainName, common.ListOptions{MaxItems: 1})
+	if err == nil && len(mappings.Items) > 0 {
+		return nil, NewConflictException("Domain name has active base path mappings; remove them first")
 	}
 
 	// Capture cert ARN before deletion for best-effort unregister after.
@@ -158,18 +204,15 @@ func (s *APIGatewayService) DeleteDomainName(ctx context.Context, reqCtx *reques
 
 // UpdateDomainName updates an existing domain name.
 func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
-	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
+	}
+
 	domain, err := stores.domains.GetDomainName(domainName)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -189,6 +232,23 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 			domain.RegionalCertificateArn = po.Value
 		case "/certificateName":
 			domain.CertificateName = po.Value
+		case "/securityPolicy":
+			if !validateSecurityPolicy(po.Value) {
+				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
+			}
+			domain.SecurityPolicy = po.Value
+		case "/ownershipVerificationCertificateArn":
+			domain.OwnershipVerificationCertificateArn = po.Value
+		case "/routingMode":
+			if !validateRoutingMode(po.Value) {
+				return nil, NewBadRequestException("Invalid routingMode: " + po.Value)
+			}
+			domain.RoutingMode = po.Value
+		case "/policy":
+			if !validatePolicyJSON(po.Value) {
+				return nil, NewBadRequestException("Invalid policy: must be valid JSON")
+			}
+			domain.Policy = po.Value
 		}
 	}
 
@@ -213,7 +273,9 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 				domain.CertificateArn = oldCertArnValue
 				domain.RegionalCertificateArn = oldRegionalCertArnValue
 				domain.CertificateName = oldCertificateName
-				_ = stores.domains.UpdateDomainName(domain)
+				if revertErr := stores.domains.UpdateDomainName(domain); revertErr != nil {
+					log.Printf("error: failed to revert domain name after unregister failure: %v", revertErr)
+				}
 				return nil, fmt.Errorf("failed to unregister old certificate usage: %w", err)
 			}
 		}
@@ -222,13 +284,17 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 			if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), newCertArn, domain.DomainNameArn); err != nil {
 				// Compensate: re-register old cert (was unregistered in step 1).
 				if oldCertArn != "" {
-					_ = s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, domain.DomainNameArn)
+					if revertErr := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, domain.DomainNameArn); revertErr != nil {
+						log.Printf("error: failed to re-register old certificate during compensation: %v", revertErr)
+					}
 				}
 				// Revert to old cert values.
 				domain.CertificateArn = oldCertArnValue
 				domain.RegionalCertificateArn = oldRegionalCertArnValue
 				domain.CertificateName = oldCertificateName
-				_ = stores.domains.UpdateDomainName(domain)
+				if revertErr := stores.domains.UpdateDomainName(domain); revertErr != nil {
+					log.Printf("error: failed to revert domain name after register failure: %v", revertErr)
+				}
 				return nil, fmt.Errorf("failed to register new certificate usage: %w", err)
 			}
 		}
@@ -239,9 +305,9 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 
 // GetDomainNames lists all domain names.
 func (s *APIGatewayService) GetDomainNames(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := request.GetIntParam(req.Parameters, "limit")
-	if maxItems <= 0 {
-		maxItems = 25
+	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 	marker := request.GetStringParam(req.Parameters, "position")
 
@@ -358,12 +424,13 @@ func (s *APIGatewayService) toDomainNameResponse(d *store.DomainName) map[string
 
 // CreateBasePathMapping creates a new base path mapping.
 func (s *APIGatewayService) CreateBasePathMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
 	}
 
 	restApiId := request.GetStringParam(req.Parameters, "restApiId")
@@ -380,11 +447,10 @@ func (s *APIGatewayService) CreateBasePathMapping(ctx context.Context, reqCtx *r
 	if mapping.BasePath == "" {
 		mapping.BasePath = "(none)"
 	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+	if !validateBasePath(mapping.BasePath) {
+		return nil, NewBadRequestException("basePath must contain only alphanumeric characters, hyphens, underscores, periods, and forward slashes")
 	}
+
 	created, err := stores.domains.CreateBasePathMapping(domainName, mapping)
 	if err != nil {
 		return nil, err
@@ -395,12 +461,13 @@ func (s *APIGatewayService) CreateBasePathMapping(ctx context.Context, reqCtx *r
 
 // GetBasePathMapping retrieves a base path mapping.
 func (s *APIGatewayService) GetBasePathMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
 	}
 
 	basePath := request.GetStringParam(req.Parameters, "basePath")
@@ -411,10 +478,6 @@ func (s *APIGatewayService) GetBasePathMapping(ctx context.Context, reqCtx *requ
 		return nil, NewBadRequestException("basePath is required")
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	mapping, err := stores.domains.GetBasePathMapping(domainName, basePath)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -425,12 +488,13 @@ func (s *APIGatewayService) GetBasePathMapping(ctx context.Context, reqCtx *requ
 
 // DeleteBasePathMapping deletes a base path mapping.
 func (s *APIGatewayService) DeleteBasePathMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
 	}
 
 	basePath := request.GetStringParam(req.Parameters, "basePath")
@@ -441,10 +505,6 @@ func (s *APIGatewayService) DeleteBasePathMapping(ctx context.Context, reqCtx *r
 		return nil, NewBadRequestException("basePath is required")
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	if err := stores.domains.DeleteBasePathMapping(domainName, basePath); err != nil {
 		return nil, ErrNotFoundException
 	}
@@ -454,12 +514,13 @@ func (s *APIGatewayService) DeleteBasePathMapping(ctx context.Context, reqCtx *r
 
 // UpdateBasePathMapping updates an existing base path mapping.
 func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
 	}
 
 	basePath := request.GetStringParam(req.Parameters, "basePath")
@@ -468,11 +529,6 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	}
 	if basePath == "" {
 		return nil, NewBadRequestException("basePath is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
 	}
 
 	stores.keyLocker.Lock(domainName + ":" + basePath)
@@ -484,6 +540,9 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	}
 
 	renamed := false
+	oldBasePath := ""
+	oldRestApiId := mapping.RestApiId
+	oldStage := mapping.Stage
 	for _, po := range parsePatchOperations(req.Parameters) {
 		switch po.Path {
 		case "/restApiId":
@@ -491,18 +550,33 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 		case "/stage":
 			mapping.Stage = po.Value
 		case "/basePath":
-			oldPath := basePath
+			if !validateBasePath(po.Value) {
+				return nil, NewBadRequestException("basePath must contain only alphanumeric characters, hyphens, underscores, periods, and forward slashes")
+			}
+			oldBasePath = basePath
 			basePath = po.Value
 			mapping.BasePath = po.Value
 			renamed = true
-			if err := stores.domains.DeleteBasePathMapping(domainName, oldPath); err != nil {
-				return nil, err
-			}
 		}
 	}
 
 	if renamed {
+		// Pre-check: reject if the target basePath already exists, avoiding
+		// a destructive delete-then-fail-then-restore cycle.
+		if _, err := stores.domains.GetBasePathMapping(domainName, basePath); err == nil {
+			return nil, NewConflictException(fmt.Sprintf("basePath '%s' already exists for this domain", basePath))
+		}
+		if err := stores.domains.DeleteBasePathMapping(domainName, oldBasePath); err != nil {
+			return nil, err
+		}
 		if _, err := stores.domains.CreateBasePathMapping(domainName, mapping); err != nil {
+			// Compensating restore: re-create the original mapping so the
+			// rename failure does not result in data loss. Restore all
+			// fields that may have been modified by earlier patch ops.
+			mapping.BasePath = oldBasePath
+			mapping.RestApiId = oldRestApiId
+			mapping.Stage = oldStage
+			_, _ = stores.domains.CreateBasePathMapping(domainName, mapping)
 			return nil, err
 		}
 	} else {
@@ -516,24 +590,21 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 
 // GetBasePathMappings lists all base path mappings for a domain name.
 func (s *APIGatewayService) GetBasePathMappings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domainName := request.GetStringParam(req.Parameters, "domainName")
-	if domainName == "" {
-		domainName = getPathParam(req, "domainName")
-	}
-	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
-	}
-
-	maxItems := request.GetIntParam(req.Parameters, "limit")
-	if maxItems <= 0 {
-		maxItems = 25
-	}
-	marker := request.GetStringParam(req.Parameters, "position")
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	domainName, err := resolveDomainName(req, stores)
+	if err != nil {
+		return nil, err
+	}
+
+	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	marker := request.GetStringParam(req.Parameters, "position")
+
 	result, err := stores.domains.ListBasePathMappings(domainName, common.ListOptions{
 		Marker:   marker,
 		MaxItems: maxItems,

@@ -3,6 +3,7 @@ package apigateway
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +49,8 @@ func (s *UsageStore) deleteUsagePlanKeyLocked(usagePlanId, keyId string) error {
 	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#" + keyId + "#"); err != nil {
 		logs.Warn("failed to delete usage records for usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
 	}
+	// Delete reverse index entry (apikeyplan#apiKeyId#planId).
+	_ = s.BaseStore.Delete("apikeyplan#" + keyId + "#" + usagePlanId)
 	return s.BaseStore.Delete(keyKey)
 }
 
@@ -110,9 +113,25 @@ func (s *UsageStore) DeleteApiKey(apiKeyId string) error {
 	if !s.Exists("apikey#" + apiKeyId) {
 		return ErrApiKeyNotFound
 	}
-	if err := s.BaseStore.DeleteByPrefix("usage##" + apiKeyId + "#"); err != nil {
-		logs.Warn("failed to delete usage records for API key", logs.String("apiKeyId", apiKeyId), logs.Err(err))
+
+	// Delete usage records across all plans that include this API key.
+	// Usage record keys have the format: usage#planId#apiKeyId#date
+	plans, err := common.ListMatching[UsagePlan](s.BaseStore, "usageplan#", nil)
+	if err != nil {
+		logs.Warn("failed to list usage plans for API key cleanup", logs.String("apiKeyId", apiKeyId), logs.Err(err))
+	} else {
+		for _, plan := range plans {
+			if err := s.BaseStore.DeleteByPrefix("usage#" + plan.Id + "#" + apiKeyId + "#"); err != nil {
+				logs.Warn("failed to delete usage records", logs.String("apiKeyId", apiKeyId), logs.String("planId", plan.Id), logs.Err(err))
+			}
+		}
 	}
+
+	// Delete reverse index entries (apikeyplan#apiKeyId#planId).
+	if err := s.BaseStore.DeleteByPrefix("apikeyplan#" + apiKeyId + "#"); err != nil {
+		logs.Warn("failed to delete reverse index for API key", logs.String("apiKeyId", apiKeyId), logs.Err(err))
+	}
+
 	return s.BaseStore.Delete("apikey#" + apiKeyId)
 }
 
@@ -226,6 +245,12 @@ func (s *UsageStore) CreateUsagePlanKey(usagePlanId string, key *UsagePlanKey) (
 		return nil, err
 	}
 
+	// Maintain reverse index: apiKeyId → usagePlanId for O(1) lookup in
+	// ListUsagePlansForAPIKey (called on every authenticated request).
+	if err := s.Put("apikeyplan#"+key.Id+"#"+usagePlanId, true); err != nil {
+		logs.Warn("failed to write reverse index for usage plan key", logs.String("apiKeyId", key.Id), logs.String("usagePlanId", usagePlanId), logs.Err(err))
+	}
+
 	return key, nil
 }
 
@@ -276,29 +301,29 @@ type UsageRecord struct {
 	RequestCount int64  `json:"requestCount"`
 }
 
-// ListUsagePlansForAPIKey returns all usage plans for an API key.
+// ListUsagePlansForAPIKey returns all usage plans associated with an API key.
+// Uses the reverse index (apikeyplan#apiKeyId#planId) for O(keys) lookup
+// instead of the previous O(plans × keys/plan) nested scan.
 func (s *UsageStore) ListUsagePlansForAPIKey(apiKeyId string) ([]*UsagePlan, error) {
-	var plans []*UsagePlan
+	prefix := "apikeyplan#" + apiKeyId + "#"
 
-	allPlans, err := common.ListMatching[UsagePlan](s.BaseStore, "usageplan#", nil)
+	var plans []*UsagePlan
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		planId := strings.TrimPrefix(key, prefix)
+		if planId == "" {
+			return nil
+		}
+		plan, err := s.GetUsagePlan(planId)
+		if err != nil {
+			logs.Warn("failed to get usage plan from reverse index", logs.String("planId", planId), logs.Err(err))
+			return nil
+		}
+		plans = append(plans, plan)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	for _, plan := range allPlans {
-		keys, err := common.ListMatching[UsagePlanKey](s.BaseStore, "usageplankey#"+plan.Id+"#", nil)
-		if err != nil {
-			logs.Error("Failed to list usage plan keys", logs.String("planId", plan.Id), logs.Err(err))
-			continue
-		}
-		for _, key := range keys {
-			if key.Id == apiKeyId {
-				plans = append(plans, plan)
-				break
-			}
-		}
-	}
-
 	return plans, nil
 }
 

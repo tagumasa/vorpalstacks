@@ -19,7 +19,6 @@ package vtl
 import (
 	"encoding/json"
 	"regexp"
-	"strings"
 )
 
 // Regular expressions for matching $input variable references in templates.
@@ -60,7 +59,14 @@ func (e *Engine) processInputPath(templateStr string) string {
 		if e.context.JSONBody == nil {
 			return ""
 		}
-		return ExtractJSONPath(e.context.JSONBody, path)
+		result, err := ExtractJSONPath(e.context.JSONBody, path)
+		if err != nil {
+			if e.transformErr == nil {
+				e.transformErr = err
+			}
+			return ""
+		}
+		return result
 	})
 }
 
@@ -73,15 +79,13 @@ func (e *Engine) processInputJson(templateStr string) string {
 			return ""
 		}
 		if path == "" || path == "$" {
-			jsonBytes, _ := json.Marshal(e.context.JSONBody)
-			return string(jsonBytes)
+			return e.marshalJSON(e.context.JSONBody)
 		}
 		value := ExtractJSONPathRaw(e.context.JSONBody, path)
 		if value == nil {
 			return ""
 		}
-		jsonBytes, _ := json.Marshal(value)
-		return string(jsonBytes)
+		return e.marshalJSON(value)
 	})
 }
 
@@ -104,8 +108,7 @@ func (e *Engine) processInputParamsAll(templateStr string) string {
 		if len(e.context.Params) == 0 {
 			return "{}"
 		}
-		jsonBytes, _ := json.Marshal(e.context.Params)
-		return string(jsonBytes)
+		return e.marshalJSON(e.context.Params)
 	})
 }
 
@@ -120,25 +123,4 @@ func (e *Engine) buildInputContext(body []byte) {
 			e.context.JSONBody = bodyObj
 		}
 	}
-}
-
-// GetParamValue retrieves a parameter value by name from a map of parameters.
-// The search is case-insensitive.
-func GetParamValue(params map[string]string, name string) string {
-	for key, val := range params {
-		if strings.EqualFold(key, name) {
-			return val
-		}
-	}
-	return ""
-}
-
-// GetAllParams converts a map of string parameters to a map of interface{}
-// values, which is the format expected by the VTL engine.
-func GetAllParams(params map[string]string) map[string]interface{} {
-	result := make(map[string]interface{})
-	for k, v := range params {
-		result[k] = v
-	}
-	return result
 }

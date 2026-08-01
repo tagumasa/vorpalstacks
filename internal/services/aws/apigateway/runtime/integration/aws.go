@@ -79,10 +79,12 @@ func isLambdaURI(uri string) bool {
 
 // LambdaProxyResponse represents the response from a Lambda proxy integration.
 type LambdaProxyResponse struct {
-	StatusCode      int               `json:"statusCode"`
-	Headers         map[string]string `json:"headers"`
-	Body            string            `json:"body"`
-	IsBase64Encoded bool              `json:"isBase64Encoded"`
+	StatusCode        int                 `json:"statusCode"`
+	Headers           map[string]string   `json:"headers"`
+	MultiValueHeaders map[string][]string `json:"multiValueHeaders,omitempty"`
+	Cookies           []string            `json:"cookies,omitempty"`
+	Body              string              `json:"body"`
+	IsBase64Encoded   bool                `json:"isBase64Encoded"`
 }
 
 // LambdaProxyEvent represents the event structure passed to a Lambda function
@@ -194,7 +196,9 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 			}
 
 			if respConfig.StatusCode != "" {
-				_, _ = fmt.Sscanf(respConfig.StatusCode, "%d", &resp.StatusCode)
+				if parsed, ok := parseStatusCode(respConfig.StatusCode); ok {
+					resp.StatusCode = parsed
+				}
 			}
 
 			resp.Headers = applyResponseParameterMapping(respConfig.ResponseHeaders, resp.Headers, string(payload))
@@ -312,7 +316,14 @@ func matchIntegrationResponse(responses map[string]*IntegrationResponseConfig, s
 		}
 
 		matched, err := regexp.MatchString(resp.SelectionPattern, selectionValue)
-		if err == nil && matched {
+		if err != nil {
+			// Log invalid regex patterns rather than silently skipping.
+			// The response configuration stays as a non-match, falling through
+			// to the default or status-code-keyed response.
+			fmt.Printf("warn: invalid selectionPattern regex %q: %v\n", resp.SelectionPattern, err)
+			continue
+		}
+		if matched {
 			return resp
 		}
 	}
@@ -380,10 +391,20 @@ func parseLambdaResponse(body []byte) (*IntegrationResponse, error) {
 		return nil, fmt.Errorf("failed to parse Lambda response: %w", err)
 	}
 
+	// Merge cookies into multi-value headers as Set-Cookie entries.
+	mvh := lambdaResp.MultiValueHeaders
+	if len(lambdaResp.Cookies) > 0 {
+		if mvh == nil {
+			mvh = make(map[string][]string)
+		}
+		mvh["Set-Cookie"] = append(mvh["Set-Cookie"], lambdaResp.Cookies...)
+	}
+
 	return &IntegrationResponse{
-		StatusCode:      lambdaResp.StatusCode,
-		Headers:         lambdaResp.Headers,
-		Body:            []byte(lambdaResp.Body),
-		IsBase64Encoded: lambdaResp.IsBase64Encoded,
+		StatusCode:        lambdaResp.StatusCode,
+		Headers:           lambdaResp.Headers,
+		MultiValueHeaders: mvh,
+		Body:              []byte(lambdaResp.Body),
+		IsBase64Encoded:   lambdaResp.IsBase64Encoded,
 	}, nil
 }

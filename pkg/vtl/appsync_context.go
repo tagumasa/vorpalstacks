@@ -1,7 +1,6 @@
 package vtl
 
 import (
-	"encoding/json"
 	"reflect"
 	"regexp"
 	"strings"
@@ -106,22 +105,19 @@ func (e *Engine) processCtxInfoNested(templateStr string) string {
 			if info.Variables == nil {
 				return "{}"
 			}
-			b, _ := json.Marshal(info.Variables)
-			return string(b)
+			return e.marshalJSON(info.Variables)
 		case "selectionSetGraphQL":
 			return info.SelectionSetGraphQL
 		case "selectionSetList":
 			if info.SelectionSetList == nil {
 				return "[]"
 			}
-			b, _ := json.Marshal(info.SelectionSetList)
-			return string(b)
+			return e.marshalJSON(info.SelectionSetList)
 		case "parentTypeFields":
 			if info.ParentTypeFields == nil {
 				return "[]"
 			}
-			b, _ := json.Marshal(info.ParentTypeFields)
-			return string(b)
+			return e.marshalJSON(info.ParentTypeFields)
 		case "rootTypeName":
 			return info.RootTypeName
 		default:
@@ -185,71 +181,61 @@ func (e *Engine) processCtxTopLevelRefs(templateStr string) string {
 		if e.AppSyncCtx.Args == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Args)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Args)
 	})
 	result = ctxSourceAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Source == nil {
 			return "null"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Source)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Source)
 	})
 	result = ctxStashAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Stash == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Stash)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Stash)
 	})
 	result = ctxIdentityAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Identity == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Identity)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Identity)
 	})
 	result = ctxInfoAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Info == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Info)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Info)
 	})
 	result = ctxResultAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Result == nil {
 			return "null"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Result)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Result)
 	})
 	result = ctxErrorAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Error == nil {
 			return "null"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Error)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Error)
 	})
 	result = ctxRequestAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Request == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Request)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Request)
 	})
 	result = ctxPrevAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Prev == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Prev)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Prev)
 	})
 	result = ctxTriggerAllRegex.ReplaceAllStringFunc(result, func(match string) string {
 		if e.AppSyncCtx.Trigger == nil {
 			return "{}"
 		}
-		b, _ := json.Marshal(e.AppSyncCtx.Trigger)
-		return string(b)
+		return e.marshalJSON(e.AppSyncCtx.Trigger)
 	})
 	return result
 }
@@ -299,11 +285,13 @@ func (e *Engine) formatAppSyncValue(val interface{}) string {
 	rv := reflect.ValueOf(val)
 	switch rv.Kind() {
 	case reflect.String:
-		b, _ := json.Marshal(val)
-		return string(b[1 : len(b)-1])
+		s := e.marshalJSON(val)
+		if len(s) >= 2 {
+			return s[1 : len(s)-1]
+		}
+		return s
 	case reflect.Map, reflect.Slice, reflect.Array:
-		b, _ := json.Marshal(val)
-		return string(b)
+		return e.marshalJSON(val)
 	default:
 		return e.formatValue(val)
 	}

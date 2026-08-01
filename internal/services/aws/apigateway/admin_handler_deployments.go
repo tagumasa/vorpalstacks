@@ -22,6 +22,15 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 		return nil, storeErr(err)
 	}
 
+	// Pre-validate stage parameters before persisting the deployment so
+	// that validation failures do not leave an orphaned deployment.
+	cacheClusterSize := cacheClusterSizeFromPb(req.Msg.Cacheclustersize)
+	if req.Msg.Stagename != "" {
+		if !validateCacheClusterSize(cacheClusterSize) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237"))
+		}
+	}
+
 	deployment := &apigatewaystore.Deployment{
 		Description: req.Msg.Description,
 	}
@@ -36,7 +45,7 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 			StageName:           req.Msg.Stagename,
 			DeploymentId:        created.Id,
 			CacheClusterEnabled: req.Msg.GetCacheclusterenabled(),
-			CacheClusterSize:    cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
+			CacheClusterSize:    cacheClusterSize,
 			TracingEnabled:      req.Msg.GetTracingenabled(),
 			Variables:           req.Msg.Variables,
 		}
@@ -54,6 +63,9 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 			}
 		}
 		if _, err := stores.restApis.CreateStage(req.Msg.Restapiid, stage); err != nil {
+			// Compensating delete: roll back the deployment so that a
+			// failed stage creation does not leave an orphaned resource.
+			_ = stores.restApis.DeleteDeployment(req.Msg.Restapiid, created.Id)
 			return nil, storeErr(err)
 		}
 	}
@@ -75,11 +87,21 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 		return nil, storeErr(err)
 	}
 
-	items := make([]*pb.Deployment, 0, len(deployments))
-	for _, d := range deployments {
+	limit := int(req.Msg.Limit)
+	start, end, nextPos, ok := paginateAdminList(len(deployments), req.Msg.Position, limit)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+	}
+
+	items := make([]*pb.Deployment, 0, end-start)
+	for _, d := range deployments[start:end] {
 		items = append(items, toPbDeployment(d))
 	}
-	return connect.NewResponse(&pb.Deployments{Items: items}), nil
+	resp := &pb.Deployments{Items: items}
+	if nextPos != "" {
+		resp.Position = nextPos
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // GetDeployment returns a single deployment by ID.
@@ -118,9 +140,17 @@ func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.
 	if req.Msg.Restapiid == "" || req.Msg.Deploymentid == "" || req.Msg.Stagename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, deployment_id, and stage_name are required"))
 	}
+	if !validateStageName(req.Msg.Stagename) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid stage name: must be alphanumeric, underscore, or hyphen, max 128 characters"))
+	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
+	}
+
+	cacheClusterSize := cacheClusterSizeFromPb(req.Msg.Cacheclustersize)
+	if !validateCacheClusterSize(cacheClusterSize) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237"))
 	}
 
 	stage := &apigatewaystore.Stage{
@@ -128,7 +158,7 @@ func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.
 		DeploymentId:         req.Msg.Deploymentid,
 		Description:          req.Msg.Description,
 		CacheClusterEnabled:  req.Msg.GetCacheclusterenabled(),
-		CacheClusterSize:     cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
+		CacheClusterSize:     cacheClusterSize,
 		DocumentationVersion: req.Msg.Documentationversion,
 		TracingEnabled:       req.Msg.GetTracingenabled(),
 		Variables:            req.Msg.Variables,

@@ -19,17 +19,16 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 	if httpMethod == "" {
 		return nil, NewBadRequestException("httpMethod is required")
 	}
+	if !validateHTTPMethod(httpMethod) {
+		return nil, NewBadRequestException("Invalid HTTP method: " + httpMethod)
+	}
 
 	authorizationType := request.GetStringParam(req.Parameters, "authorizationType")
 	if authorizationType == "" {
 		authorizationType = "NONE"
 	}
 
-	validAuthTypes := map[string]bool{
-		"NONE": true, "AWS_IAM": true, "CUSTOM": true,
-		"COGNITO_USER_POOLS": true,
-	}
-	if !validAuthTypes[authorizationType] {
+	if !validateAuthorizationType(authorizationType) {
 		return nil, NewBadRequestException("Invalid authorization type: " + authorizationType)
 	}
 
@@ -50,8 +49,11 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 	if reqParams, ok := req.Parameters["requestParameters"].(map[string]interface{}); ok {
 		method.RequestParameters = make(map[string]bool)
 		for k, v := range reqParams {
-			if vb, ok := v.(bool); ok {
-				method.RequestParameters[k] = vb
+			switch tv := v.(type) {
+			case bool:
+				method.RequestParameters[k] = tv
+			case string:
+				method.RequestParameters[k] = tv == "true"
 			}
 		}
 	}

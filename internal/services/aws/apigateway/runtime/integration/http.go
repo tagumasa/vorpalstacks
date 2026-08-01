@@ -4,6 +4,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,13 +76,24 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*I
 	for key, value := range req.Headers {
 		httpReq.Header.Set(key, value)
 	}
+	for key, values := range req.MultiValueHeaders {
+		for _, v := range values {
+			httpReq.Header.Add(key, v)
+		}
+	}
 
 	resp, err := e.client.Do(httpReq)
 	if err != nil {
+		httpCode := http.StatusBadGateway
+		errType := "BadGatewayException"
+		if errors.Is(err, context.DeadlineExceeded) {
+			httpCode = http.StatusGatewayTimeout
+			errType = "GatewayTimeoutException"
+		}
 		return nil, &IntegrationError{
 			Message:  "HTTP request failed: " + err.Error(),
-			Type:     "BadGatewayException",
-			HTTPCode: http.StatusBadGateway,
+			Type:     errType,
+			HTTPCode: httpCode,
 		}
 	}
 	defer resp.Body.Close()
@@ -96,9 +108,13 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*I
 	}
 
 	headers := make(map[string]string)
+	multiValueHeaders := make(map[string][]string)
 	for key, values := range resp.Header {
-		if len(values) > 0 {
+		if len(values) == 1 {
 			headers[key] = values[0]
+		}
+		if len(values) > 1 {
+			multiValueHeaders[key] = values
 		}
 	}
 
@@ -136,9 +152,10 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*I
 	}
 
 	return &IntegrationResponse{
-		StatusCode:      resp.StatusCode,
-		Headers:         headers,
-		Body:            body,
-		IsBase64Encoded: false,
+		StatusCode:        resp.StatusCode,
+		Headers:           headers,
+		MultiValueHeaders: multiValueHeaders,
+		Body:              body,
+		IsBase64Encoded:   false,
 	}, nil
 }

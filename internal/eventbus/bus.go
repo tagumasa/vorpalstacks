@@ -165,6 +165,7 @@ type Bus interface {
 	CloudTrailInvoker() CloudTrailInvoker
 	LogsInvoker() LogsInvoker
 	RDSDataInvoker() RDSDataInvoker
+	CognitoTokenValidator() CognitoTokenValidator
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
 	SetSNSInvoker(invoker SNSInvoker)
@@ -183,6 +184,7 @@ type Bus interface {
 	SetCloudTrailInvoker(invoker CloudTrailInvoker)
 	SetLogsInvoker(invoker LogsInvoker)
 	SetRDSDataInvoker(invoker RDSDataInvoker)
+	SetCognitoTokenValidator(validator CognitoTokenValidator)
 	RegisterSubnetUsageChecker(checker SubnetUsageChecker)
 	RegisterSecurityGroupUsageChecker(checker SecurityGroupUsageChecker)
 	SubnetUsageCheckers() []SubnetUsageChecker
@@ -228,6 +230,7 @@ type EventBus struct {
 	cloudTrailInvoker       CloudTrailInvoker
 	logsInvoker             LogsInvoker
 	rdsDataInvoker          RDSDataInvoker
+	cognitoTokenValidator   CognitoTokenValidator
 	subnetUsageCheckers     []SubnetUsageChecker
 	securityGroupCheckers   []SecurityGroupUsageChecker
 	nextSubID               atomic.Int64
@@ -880,6 +883,21 @@ func (b *EventBus) RDSDataInvoker() RDSDataInvoker {
 	b.invokersMu.RLock()
 	defer b.invokersMu.RUnlock()
 	return b.rdsDataInvoker
+}
+
+// SetCognitoTokenValidator sets the Cognito token validator for cross-service
+// JWT validation (e.g. API Gateway COGNITO_USER_POOLS authorizer).
+func (b *EventBus) SetCognitoTokenValidator(validator CognitoTokenValidator) {
+	b.invokersMu.Lock()
+	defer b.invokersMu.Unlock()
+	b.cognitoTokenValidator = validator
+}
+
+// CognitoTokenValidator returns the configured Cognito token validator.
+func (b *EventBus) CognitoTokenValidator() CognitoTokenValidator {
+	b.invokersMu.RLock()
+	defer b.invokersMu.RUnlock()
+	return b.cognitoTokenValidator
 }
 
 // RegisterSubnetUsageChecker registers a service that can report whether a

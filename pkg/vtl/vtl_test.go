@@ -724,3 +724,191 @@ func TestCommentBlock(t *testing.T) {
 		t.Errorf("Transform = %q, want %q", result, "helloworld")
 	}
 }
+
+// --- H1/H2 regression tests: full phase pipeline inside #foreach and #if ---
+
+func TestForeachWithInputBody(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Body = `{"key":"value"}`
+	engine.context.Context["items"] = []interface{}{"a", "b"}
+
+	result, err := engine.Transform(`#foreach($item in $items)$item:$input.body|#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	expected := `a:{"key":"value"}|b:{"key":"value"}|`
+	if result != expected {
+		t.Errorf("Transform = %q, want %q", result, expected)
+	}
+}
+
+func TestForeachWithInputPath(t *testing.T) {
+	engine := NewEngine()
+	engine.context.JSONBody = map[string]interface{}{
+		"name": "test",
+	}
+	engine.context.Context["items"] = []interface{}{1, 2}
+
+	result, err := engine.Transform(`#foreach($item in $items)$input.path('$.name')#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "testtest" {
+		t.Errorf("Transform = %q, want %q", result, "testtest")
+	}
+}
+
+func TestForeachWithInputParams(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Params = map[string]string{"hdr": "X"}
+	engine.context.Context["items"] = []interface{}{1}
+
+	result, err := engine.Transform(`#foreach($item in $items)$input.params('hdr')#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "X" {
+		t.Errorf("Transform = %q, want %q", result, "X")
+	}
+}
+
+func TestForeachWithUtilBase64(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Context["items"] = []interface{}{1, 2}
+
+	result, err := engine.Transform(`#foreach($item in $items)$util.base64Encode('hi')#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	expected := base64.StdEncoding.EncodeToString([]byte("hi"))
+	expected = expected + expected
+	if result != expected {
+		t.Errorf("Transform = %q, want %q", result, expected)
+	}
+}
+
+func TestForeachWithStageVariables(t *testing.T) {
+	engine := NewEngine()
+	engine.context.StageVars = map[string]string{"env": "prod"}
+	engine.context.Context["items"] = []interface{}{1}
+
+	result, err := engine.Transform(`#foreach($item in $items)$stageVariables.env#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "prod" {
+		t.Errorf("Transform = %q, want %q", result, "prod")
+	}
+}
+
+func TestForeachWithContextAuthorizer(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Authorizer = map[string]interface{}{"principalId": "user-1"}
+	engine.context.Context["items"] = []interface{}{1}
+
+	result, err := engine.Transform(`#foreach($item in $items)$context.authorizer.principalId#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "user-1" {
+		t.Errorf("Transform = %q, want %q", result, "user-1")
+	}
+}
+
+func TestForeachWithContextIdentity(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Identity = map[string]interface{}{"sourceIp": "10.0.0.1"}
+	engine.context.Context["items"] = []interface{}{1}
+
+	result, err := engine.Transform(`#foreach($item in $items)$context.identity.sourceIp#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "10.0.0.1" {
+		t.Errorf("Transform = %q, want %q", result, "10.0.0.1")
+	}
+}
+
+func TestIfWithSimpleVariable(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Context["enabled"] = true
+	engine.context.Context["name"] = "alice"
+
+	result, err := engine.Transform(`#if($enabled)$name#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "alice" {
+		t.Errorf("Transform = %q, want %q", result, "alice")
+	}
+}
+
+func TestIfWithInputPath(t *testing.T) {
+	engine := NewEngine()
+	engine.context.JSONBody = map[string]interface{}{"status": "ok"}
+	engine.context.Context["enabled"] = true
+
+	result, err := engine.Transform(`#if($enabled)$input.path('$.status')#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "ok" {
+		t.Errorf("Transform = %q, want %q", result, "ok")
+	}
+}
+
+func TestIfWithUtilUrlEncode(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Context["enabled"] = true
+
+	result, err := engine.Transform(`#if($enabled)$util.urlEncode('a b')#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	expected := url.QueryEscape("a b")
+	if result != expected {
+		t.Errorf("Transform = %q, want %q", result, expected)
+	}
+}
+
+func TestIfWithStageVariables(t *testing.T) {
+	engine := NewEngine()
+	engine.context.StageVars = map[string]string{"region": "us-east-1"}
+	engine.context.Context["enabled"] = true
+
+	result, err := engine.Transform(`#if($enabled)$stageVariables.region#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "us-east-1" {
+		t.Errorf("Transform = %q, want %q", result, "us-east-1")
+	}
+}
+
+func TestIfWithContextAuthorizer(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Authorizer = map[string]interface{}{"claims": "admin"}
+	engine.context.Context["enabled"] = true
+
+	result, err := engine.Transform(`#if($enabled)$context.authorizer.claims#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "admin" {
+		t.Errorf("Transform = %q, want %q", result, "admin")
+	}
+}
+
+func TestIfWithInputBody(t *testing.T) {
+	engine := NewEngine()
+	engine.context.Body = `hello`
+	engine.context.Context["enabled"] = true
+
+	result, err := engine.Transform(`#if($enabled)$input.body#end`)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if result != "hello" {
+		t.Errorf("Transform = %q, want %q", result, "hello")
+	}
+}

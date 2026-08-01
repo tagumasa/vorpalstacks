@@ -2,6 +2,7 @@
 package apigateway
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -12,6 +13,8 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/types"
 )
+
+var errDomainStopIteration = errors.New("stop domain iteration")
 
 // DomainStore provides storage operations for API Gateway domain names.
 type DomainStore struct {
@@ -87,6 +90,26 @@ func (s *DomainStore) GetDomainName(domainName string) (*DomainName, error) {
 		return nil, ErrDomainNameNotFound
 	}
 	return &domain, nil
+}
+
+// GetDomainNameById retrieves a domain name by its domainNameId.
+// This scans all domain entries to find the one with matching DomainNameId.
+func (s *DomainStore) GetDomainNameById(domainNameId string) (*DomainName, error) {
+	var found *DomainName
+	err := common.ForEachAll[DomainName](s.BaseStore, "domain#", nil, func(d *DomainName) error {
+		if d.DomainNameId == domainNameId {
+			found = d
+			return errDomainStopIteration
+		}
+		return nil
+	})
+	if err != nil && err != errDomainStopIteration {
+		return nil, err
+	}
+	if found == nil {
+		return nil, ErrDomainNameNotFound
+	}
+	return found, nil
 }
 
 // UpdateDomainName updates an existing domain name.
@@ -231,4 +254,26 @@ func (s *DomainStore) GetDomainNameTags(domainName string) ([]types.Tag, error) 
 		return nil, err
 	}
 	return domain.Tags, nil
+}
+
+// RemoveBasePathMappingsForApi deletes all base path mappings that reference
+// the given restApiId across all domain names. This is called when an API is
+// deleted to prevent dangling references.
+func (s *DomainStore) RemoveBasePathMappingsForApi(restApiId string) error {
+	domains, err := s.ListDomainNames(common.ListOptions{MaxItems: 500})
+	if err != nil {
+		return err
+	}
+	for _, domain := range domains.Items {
+		mappings, err := s.ListBasePathMappings(domain.DomainName, common.ListOptions{MaxItems: 500})
+		if err != nil {
+			continue
+		}
+		for _, mapping := range mappings.Items {
+			if mapping.RestApiId == restApiId {
+				_ = s.DeleteBasePathMapping(domain.DomainName, mapping.BasePath)
+			}
+		}
+	}
+	return nil
 }

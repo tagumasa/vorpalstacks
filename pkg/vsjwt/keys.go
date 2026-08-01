@@ -42,12 +42,27 @@ func EncodePrivateKeyToPEM(key *rsa.PrivateKey) string {
 }
 
 // DecodePrivateKeyFromPEM decodes an RSA private key from PEM format.
+// Supports both PKCS1 ("RSA PRIVATE KEY") and PKCS8 ("PRIVATE KEY") encodings.
 func DecodePrivateKeyFromPEM(pemStr string) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(pemStr))
 	if block == nil {
 		return nil, ErrInvalidPEMBlock
 	}
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		return key, nil
+	}
+
+	parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, ErrInvalidPEMBlock
+	}
+
+	rsaKey, ok := parsed.(*rsa.PrivateKey)
+	if !ok {
+		return nil, ErrInvalidPEMBlock
+	}
+	return rsaKey, nil
 }
 
 // EncodePublicKeyToPEM encodes an RSA public key to PEM format (PKIX).
@@ -73,5 +88,9 @@ func DecodePublicKeyFromPEM(pemStr string) (*rsa.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pub.(*rsa.PublicKey), nil
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, ErrNotRSAPublicKey
+	}
+	return rsaPub, nil
 }

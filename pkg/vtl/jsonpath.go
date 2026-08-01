@@ -31,11 +31,14 @@ var arrayIndexRegex = regexp.MustCompile(`^(\w+)\[(\d+)\]$`)
 // ExtractJSONPath extracts a value from a JSON object using a dot-separated
 // path. The path can include array indices using bracket notation.
 // Returns the value as a string, or an empty string if the path is not found.
-func ExtractJSONPath(obj interface{}, path string) string {
+func ExtractJSONPath(obj interface{}, path string) (string, error) {
 	path = strings.TrimPrefix(path, "$.")
 	if path == "" {
-		result, _ := json.Marshal(obj)
-		return string(result)
+		result, err := json.Marshal(obj)
+		if err != nil {
+			return "", fmt.Errorf("json marshal failed: %w", err)
+		}
+		return string(result), nil
 	}
 
 	parts := strings.Split(path, ".")
@@ -43,29 +46,32 @@ func ExtractJSONPath(obj interface{}, path string) string {
 	for _, part := range parts {
 		current = navigatePath(current, part)
 		if current == nil {
-			return ""
+			return "", nil
 		}
 	}
 
 	switch v := current.(type) {
 	case string:
-		return v
+		return v, nil
 	case float64:
 		if v == float64(int64(v)) {
-			return fmt.Sprintf("%d", int64(v))
+			return fmt.Sprintf("%d", int64(v)), nil
 		}
-		return fmt.Sprintf("%g", v)
+		return fmt.Sprintf("%g", v), nil
 	case int:
-		return fmt.Sprintf("%d", v)
+		return fmt.Sprintf("%d", v), nil
 	case int64:
-		return fmt.Sprintf("%d", v)
+		return fmt.Sprintf("%d", v), nil
 	case bool:
-		return fmt.Sprintf("%t", v)
+		return fmt.Sprintf("%t", v), nil
 	case nil:
-		return "null"
+		return "null", nil
 	default:
-		result, _ := json.Marshal(v)
-		return string(result)
+		result, err := json.Marshal(v)
+		if err != nil {
+			return "", fmt.Errorf("json marshal failed: %w", err)
+		}
+		return string(result), nil
 	}
 }
 

@@ -21,6 +21,11 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 		Apikeysource:           toPbApiKeySourceType(api.ApiKeySource),
 		Policy:                 api.Policy,
 		Tags:                   tagsToPbMap(api.Tags),
+		Securitypolicy:         toPbSecurityPolicy(api.SecurityPolicy),
+		Endpointaccessmode:     toPbEndpointAccessMode(api.EndpointAccessMode),
+	}
+	if api.DisableExecuteApiEndpoint {
+		pbApi.Disableexecuteapiendpoint = proto.Bool(api.DisableExecuteApiEndpoint)
 	}
 	if api.EndpointConfiguration != nil {
 		types := make([]pb.EndpointType, len(api.EndpointConfiguration.Types))
@@ -141,7 +146,7 @@ func fromPbAuthorizerType(t pb.AuthorizerType) string {
 	case pb.AuthorizerType_AUTHORIZER_TYPE_COGNITO_USER_POOLS:
 		return "COGNITO_USER_POOLS"
 	default:
-		return "TOKEN"
+		return ""
 	}
 }
 
@@ -534,6 +539,64 @@ func endpointAccessModeFromPb(v pb.EndpointAccessMode) string {
 		return "BASIC"
 	case pb.EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT:
 		return "STRICT"
+	default:
+		return ""
+	}
+}
+
+func toPbSecurityPolicy(s string) pb.SecurityPolicy {
+	switch s {
+	case "TLS_1_0":
+		return pb.SecurityPolicy_SECURITY_POLICY_TLS_1_0
+	case "TLS_1_2":
+		return pb.SecurityPolicy_SECURITY_POLICY_TLS_1_2
+	case "SecurityPolicy_TLS13_1_2_PQ_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09
+	case "SecurityPolicy_TLS13_2025_EDGE":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_2025_EDGE
+	case "SecurityPolicy_TLS13_1_2_FIPS_PQ_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_FIPS_PQ_2025_09
+	case "SecurityPolicy_TLS12_2018_EDGE":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS12_2018_EDGE
+	case "SecurityPolicy_TLS12_PFS_2025_EDGE":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS12_PFS_2025_EDGE
+	case "SecurityPolicy_TLS13_1_2_2021_06":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_2021_06
+	case "SecurityPolicy_TLS13_1_3_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_3_2025_09
+	case "SecurityPolicy_TLS13_1_2_PFS_PQ_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PFS_PQ_2025_09
+	case "SecurityPolicy_TLS13_1_3_FIPS_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_3_FIPS_2025_09
+	case "SecurityPolicy_TLS13_1_2_FIPS_PFS_PQ_2025_09":
+		return pb.SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_FIPS_PFS_PQ_2025_09
+	default:
+		return pb.SecurityPolicy(0)
+	}
+}
+
+func toPbEndpointAccessMode(s string) pb.EndpointAccessMode {
+	switch s {
+	case "BASIC":
+		return pb.EndpointAccessMode_ENDPOINT_ACCESS_MODE_BASIC
+	case "STRICT":
+		return pb.EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT
+	default:
+		return pb.EndpointAccessMode(0)
+	}
+}
+
+// fromPbEndpointType converts a proto EndpointType enum to the short
+// string form used in storage ("PRIVATE", "REGIONAL", "EDGE").
+// Returns "" for unspecified or unknown values.
+func fromPbEndpointType(t pb.EndpointType) string {
+	switch t {
+	case pb.EndpointType_ENDPOINT_TYPE_PRIVATE:
+		return "PRIVATE"
+	case pb.EndpointType_ENDPOINT_TYPE_REGIONAL:
+		return "REGIONAL"
+	case pb.EndpointType_ENDPOINT_TYPE_EDGE:
+		return "EDGE"
 	default:
 		return ""
 	}

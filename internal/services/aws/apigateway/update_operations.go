@@ -36,6 +36,9 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 			if po.Value == "" {
 				return nil, NewBadRequestException("pathPart cannot be empty")
 			}
+			if !validatePathPart(po.Value) {
+				return nil, NewBadRequestException("Invalid pathPart: malformed path parameter")
+			}
 			// Check for path collision with siblings under the same parent.
 			siblings, err := stores.restApis.ListResources(apiId)
 			if err != nil {
@@ -95,6 +98,9 @@ func (s *APIGatewayService) UpdateMethod(ctx context.Context, reqCtx *request.Re
 	for _, po := range parsePatchOperations(req.Parameters) {
 		switch {
 		case po.Path == "/authorizationType":
+			if !validateAuthorizationType(po.Value) {
+				return nil, NewBadRequestException("Invalid authorization type: " + po.Value)
+			}
 			method.AuthorizationType = po.Value
 		case po.Path == "/authorizerId":
 			method.AuthorizerId = po.Value
@@ -187,18 +193,33 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 		case po.Path == "/uri":
 			integration.Uri = po.Value
 		case po.Path == "/type":
+			if !validateIntegrationType(po.Value) {
+				return nil, NewBadRequestException("Invalid integration type: " + po.Value)
+			}
 			integration.Type = po.Value
 		case po.Path == "/httpMethod":
+			if po.Value != "" && !validateHTTPMethod(po.Value) {
+				return nil, NewBadRequestException("Invalid integration HTTP method: " + po.Value)
+			}
 			integration.IntegrationHttpMethod = po.Value
 		case po.Path == "/credentials":
 			integration.Credentials = po.Value
 		case po.Path == "/passthroughBehavior":
+			if !validatePassthroughBehavior(po.Value) {
+				return nil, NewBadRequestException("Invalid passthroughBehavior: " + po.Value)
+			}
 			integration.PassthroughBehavior = po.Value
 		case po.Path == "/contentHandling":
+			if !validateContentHandling(po.Value) {
+				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
+			}
 			integration.ContentHandling = po.Value
 		case po.Path == "/cacheNamespace":
 			integration.CacheNamespace = po.Value
 		case po.Path == "/connectionType":
+			if !validateConnectionType(po.Value) {
+				return nil, NewBadRequestException("Invalid connectionType: " + po.Value)
+			}
 			integration.ConnectionType = po.Value
 		case po.Path == "/connectionId":
 			integration.ConnectionId = po.Value
@@ -206,6 +227,12 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 			v, err := parseInt32(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid timeoutInMillis: not a number")
+			}
+			if v <= 0 {
+				v = 29000
+			}
+			if v < 50 || v > 30000 {
+				return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
 			}
 			integration.TimeoutInMillis = v
 		case strings.HasPrefix(po.Path, "/requestParameters/"):
@@ -283,6 +310,9 @@ func (s *APIGatewayService) UpdateIntegrationResponse(ctx context.Context, reqCt
 		case po.Path == "/selectionPattern":
 			response.SelectionPattern = po.Value
 		case po.Path == "/contentHandling":
+			if !validateContentHandling(po.Value) {
+				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
+			}
 			response.ContentHandling = po.Value
 		case strings.HasPrefix(po.Path, "/responseParameters/"):
 			if response.ResponseParameters == nil {
@@ -385,6 +415,9 @@ func (s *APIGatewayService) UpdateModel(ctx context.Context, reqCtx *request.Req
 		case "/description":
 			model.Description = po.Value
 		case "/schema":
+			if !validateModelSchemaSize(po.Value) {
+				return nil, NewBadRequestException("schema must not exceed 400 KB")
+			}
 			model.Schema = po.Value
 		}
 	}

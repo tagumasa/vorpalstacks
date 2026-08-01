@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/endpoint"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -116,15 +115,33 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 	if val := req.Headers["MaxNumberOfMessages"]; val != "" {
 		_, _ = fmt.Sscanf(val, "%d", &maxMessages)
 	}
+	if maxMessages < 1 {
+		maxMessages = 1
+	}
+	if maxMessages > 10 {
+		maxMessages = 10
+	}
 
 	waitTime := int32(0)
 	if val := req.Headers["WaitTimeSeconds"]; val != "" {
 		_, _ = fmt.Sscanf(val, "%d", &waitTime)
 	}
+	if waitTime < 0 {
+		waitTime = 0
+	}
+	if waitTime > 20 {
+		waitTime = 20
+	}
 
 	visibilityTimeout := int32(30)
 	if val := req.Headers["VisibilityTimeout"]; val != "" {
 		_, _ = fmt.Sscanf(val, "%d", &visibilityTimeout)
+	}
+	if visibilityTimeout < 0 {
+		visibilityTimeout = 0
+	}
+	if visibilityTimeout > 43200 {
+		visibilityTimeout = 43200
 	}
 
 	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, maxMessages, &visibilityTimeout, waitTime)
@@ -256,7 +273,15 @@ func parseFormData(data string) map[string]string {
 		}
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) == 2 {
-			result[parts[0]] = parts[1]
+			key, err := url.QueryUnescape(parts[0])
+			if err != nil {
+				key = parts[0]
+			}
+			val, err := url.QueryUnescape(parts[1])
+			if err != nil {
+				val = parts[1]
+			}
+			result[key] = val
 		}
 	}
 	return result
@@ -374,10 +399,15 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 		}
 		snsEvt.Region = snsRegion
 		if err := e.bus.Publish(ctx, snsEvt); err != nil {
-			logs.Warn("Failed to publish SNS delivery event to event bus; message is stored but subscribers may not be notified",
-				logs.String("topicArn", topicArn),
-				logs.String("messageId", messageID),
-				logs.Err(err))
+			// Clean up the stored message to prevent state divergence:
+			// the message was persisted but delivery failed, and there
+			// is no retry mechanism to recover it.
+			_ = e.bus.SNSInvoker().DeleteStoredMessage(ctx, topicArn+":messages:"+messageID)
+			return nil, &IntegrationError{
+				Message:  fmt.Sprintf("Failed to publish SNS delivery event: %v", err),
+				Type:     "InternalServerError",
+				HTTPCode: 500,
+			}
 		}
 	}
 

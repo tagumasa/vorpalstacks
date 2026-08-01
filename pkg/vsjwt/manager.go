@@ -18,6 +18,7 @@ package vsjwt
 
 import (
 	"crypto/rsa"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -25,6 +26,11 @@ import (
 )
 
 const defaultClockSkew = 30 * time.Second
+
+// minRSAKeyBits is the minimum RSA key size accepted by NewManager and
+// NewManagerWithPublicKey.  AWS Cognito requires 2048-bit RSA keys for
+// RS256 signing.
+const minRSAKeyBits = 2048
 
 // Manager handles JWT token generation and validation.
 type Manager struct {
@@ -47,7 +53,13 @@ func WithClockSkew(d time.Duration) ManagerOption {
 
 // NewManager creates a new JWT Manager with a private key for token generation and validation.
 // The issuer is typically in the format: https://cognito-idp.{region}.amazonaws.com/{userPoolID}
-func NewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+func NewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...ManagerOption) (*Manager, error) {
+	if privateKey == nil {
+		return nil, ErrNoPrivateKey
+	}
+	if privateKey.N.BitLen() < minRSAKeyBits {
+		return nil, ErrInvalidKeySize
+	}
 	m := &Manager{
 		privateKey: privateKey,
 		publicKey:  &privateKey.PublicKey,
@@ -58,12 +70,39 @@ func NewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...Manage
 	for _, opt := range opts {
 		opt(m)
 	}
+	return m, nil
+}
+
+// MustNewManager is a convenience wrapper around NewManager that panics on
+// error.  It is intended for use in tests and initialisation code where a
+// failure indicates a programming error.
+func MustNewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+	m, err := NewManager(privateKey, keyID, issuer, opts...)
+	if err != nil {
+		panic(fmt.Sprintf("vsjwt: MustNewManager: %v", err))
+	}
+	return m
+}
+
+// MustNewManagerWithPublicKey is a convenience wrapper around
+// NewManagerWithPublicKey that panics on error.
+func MustNewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+	m, err := NewManagerWithPublicKey(publicKey, keyID, issuer, opts...)
+	if err != nil {
+		panic(fmt.Sprintf("vsjwt: MustNewManagerWithPublicKey: %v", err))
+	}
 	return m
 }
 
 // NewManagerWithPublicKey creates a new JWT Manager with only a public key for token validation.
 // This manager cannot generate tokens, only validate them.
-func NewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+func NewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opts ...ManagerOption) (*Manager, error) {
+	if publicKey == nil {
+		return nil, ErrNilPublicKey
+	}
+	if publicKey.N.BitLen() < minRSAKeyBits {
+		return nil, ErrInvalidKeySize
+	}
 	m := &Manager{
 		publicKey: publicKey,
 		keyID:     keyID,
@@ -73,7 +112,7 @@ func NewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opt
 	for _, opt := range opts {
 		opt(m)
 	}
-	return m
+	return m, nil
 }
 
 // GenerateAccessToken generates an access token for the given user.
@@ -197,7 +236,7 @@ func (m *Manager) ValidateTokenWithAudience(tokenString, expectedAudience string
 			return nil, ErrUnexpectedMethod
 		}
 		return m.publicKey, nil
-	}, jwt.WithLeeway(m.clockSkew))
+	}, jwt.WithLeeway(m.clockSkew), jwt.WithExpirationRequired(), jwt.WithValidMethods([]string{"RS256"}))
 
 	if err != nil {
 		return nil, err

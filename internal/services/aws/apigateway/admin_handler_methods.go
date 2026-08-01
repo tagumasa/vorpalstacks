@@ -21,9 +21,20 @@ func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.Pu
 		return nil, storeErr(err)
 	}
 
+	httpMethod := req.Msg.Httpmethod
+	if !validateHTTPMethod(httpMethod) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid HTTP method: %s", httpMethod))
+	}
+
 	authType := req.Msg.Authorizationtype
 	if authType == "" {
 		authType = "NONE"
+	}
+	if !validateAuthorizationType(authType) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid authorization type: %s", authType))
+	}
+	if authType == "COGNITO_USER_POOLS" && req.Msg.Authorizerid == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("authorizerId is required when authorizationType is COGNITO_USER_POOLS"))
 	}
 
 	method := &apigatewaystore.Method{
@@ -84,6 +95,32 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 	if integrationType == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("type is required and must be a valid integration type"))
 	}
+
+	// URI is required for all types except MOCK, matching the HTTP path.
+	if integrationType != "MOCK" && req.Msg.Uri == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("uri is required for %s integration", integrationType))
+	}
+
+	// integrationHttpMethod is required for AWS (non-proxy) integrations.
+	if integrationType == "AWS" && req.Msg.Integrationhttpmethod == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("integrationHttpMethod is required for AWS integration"))
+	}
+
+	// Validate passthroughBehaviour if provided.
+	passthroughBehavior := req.Msg.Passthroughbehavior
+	if passthroughBehavior != "" && !validatePassthroughBehavior(passthroughBehavior) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid passthroughBehavior: %s", passthroughBehavior))
+	}
+
+	// Validate and default timeoutInMillis, matching the HTTP path.
+	timeoutInMillis := req.Msg.Timeoutinmillis
+	if timeoutInMillis > 0 && (timeoutInMillis < 50 || timeoutInMillis > 30000) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("timeoutInMillis must be between 50 and 30000"))
+	}
+	if timeoutInMillis <= 0 {
+		timeoutInMillis = 29000
+	}
+
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
@@ -94,10 +131,11 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 		IntegrationHttpMethod: req.Msg.Integrationhttpmethod,
 		Uri:                   req.Msg.Uri,
 		Credentials:           req.Msg.Credentials,
-		PassthroughBehavior:   req.Msg.Passthroughbehavior,
+		PassthroughBehavior:   passthroughBehavior,
 		CacheNamespace:        req.Msg.Cachenamespace,
 		ConnectionType:        fromPbConnectionType(req.Msg.Connectiontype),
 		ConnectionId:          req.Msg.Connectionid,
+		TimeoutInMillis:       timeoutInMillis,
 		RequestParameters:     req.Msg.Requestparameters,
 		RequestTemplates:      req.Msg.Requesttemplates,
 		CacheKeyParameters:    req.Msg.Cachekeyparameters,

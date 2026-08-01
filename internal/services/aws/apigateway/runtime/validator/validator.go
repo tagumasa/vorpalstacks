@@ -61,7 +61,11 @@ func (v *Validator) validateRequestParameters(requestParams map[string]bool, hea
 
 		parts := strings.Split(param, ".")
 		if len(parts) < 4 {
-			continue
+			return &ValidationError{
+				Message:  fmt.Sprintf("Malformed request parameter expression: %s", param),
+				Type:     "BadRequestException",
+				HTTPCode: http.StatusBadRequest,
+			}
 		}
 
 		location := parts[2]
@@ -97,10 +101,6 @@ func (v *Validator) validateRequestParameters(requestParams map[string]bool, hea
 }
 
 func (v *Validator) validateRequestBody(requestModels map[string]string, models map[string]*apigatewaystore.Model, headers map[string]string, body []byte) *ValidationError {
-	if len(body) == 0 {
-		return nil
-	}
-
 	contentType := headers["Content-Type"]
 	if contentType == "" {
 		contentType = "application/json"
@@ -111,12 +111,26 @@ func (v *Validator) validateRequestBody(requestModels map[string]string, models 
 		modelName, ok = requestModels["application/json"]
 	}
 	if !ok {
+		// No model configured for this content type — nothing to validate.
 		return nil
+	}
+
+	if len(body) == 0 {
+		// A model is configured but the body is empty — validation fails.
+		return &ValidationError{
+			Message:  "Request body is required but empty",
+			Type:     "BadRequestException",
+			HTTPCode: http.StatusBadRequest,
+		}
 	}
 
 	model, ok := models[modelName]
 	if !ok {
-		return nil
+		return &ValidationError{
+			Message:  fmt.Sprintf("Model '%s' not found", modelName),
+			Type:     "BadRequestException",
+			HTTPCode: http.StatusBadRequest,
+		}
 	}
 
 	if model.Schema == "" {
@@ -134,7 +148,11 @@ func (v *Validator) validateRequestBody(requestModels map[string]string, models 
 	schemaLoader := gojsonschema.NewStringLoader(model.Schema)
 	schema, err := gojsonschema.NewSchema(schemaLoader)
 	if err != nil {
-		return nil
+		return &ValidationError{
+			Message:  fmt.Sprintf("Invalid model schema for '%s': %v", modelName, err),
+			Type:     "BadRequestException",
+			HTTPCode: http.StatusBadRequest,
+		}
 	}
 
 	bodyLoader := gojsonschema.NewBytesLoader(body)

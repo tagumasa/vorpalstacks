@@ -131,7 +131,13 @@ type snsStoreForInvoker interface {
 // eventbus.SNSInvoker interface.
 type snsInvokerAdapter struct {
 	store     snsStoreForInvoker
+	kvStore   kvDeleter
 	publisher snsPublisher
+}
+
+// kvDeleter provides raw key-value deletion for message cleanup.
+type kvDeleter interface {
+	Delete(key string) error
 }
 
 // snsPublisher publishes a message to an SNS topic by ARN and returns the
@@ -189,6 +195,12 @@ func (a *snsInvokerAdapter) PublishToTopic(ctx context.Context, topicARN string,
 // StoreMessage persists arbitrary data keyed by the given key.
 func (a *snsInvokerAdapter) StoreMessage(_ context.Context, key string, data any) error {
 	return a.store.Put(key, data)
+}
+
+// DeleteStoredMessage removes a previously stored message by key, used for
+// cleanup when delivery fails after persistence.
+func (a *snsInvokerAdapter) DeleteStoredMessage(_ context.Context, key string) error {
+	return a.kvStore.Delete(key)
 }
 
 // kinesisInvokerAdapter adapts the Kinesis concrete store to the
