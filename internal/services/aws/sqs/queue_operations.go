@@ -604,7 +604,7 @@ func (s *SQSService) ListMessageMoveTasks(ctx context.Context, reqCtx *request.R
 			"ApproximateNumberOfMessagesMoved": t.MovedMessages,
 			"StartedTimestamp":                 t.StartTime.UnixMilli(),
 		}
-		if t.TaskId != "" && t.Status == "RUNNING" {
+		if t.TaskId != "" {
 			entry["TaskHandle"] = t.TaskId
 		}
 		if t.DestinationQueueARN != "" {

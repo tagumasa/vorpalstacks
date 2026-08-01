@@ -67,6 +67,7 @@ type SQSStore struct {
 	msgMutex            sync.RWMutex
 	purgeMutex          sync.Mutex
 	queueMutex          sync.RWMutex
+	taskMu              sync.Mutex
 	purgeInProgress     map[string]time.Time
 	storage             storage.TransactionalStorage
 	deduplicationCache  map[string]*deduplicationEntry

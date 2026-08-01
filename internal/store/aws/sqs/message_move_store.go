@@ -65,6 +65,10 @@ func (s *SQSStore) StartMessageMoveTask(sourceARN, destARN string, maxMessages i
 		return nil, err
 	}
 
+	// Clean up old terminal tasks for this source ARN to prevent unbounded
+	// accumulation in PebbleDB.
+	s.cleanupTerminalTasks(sourceARN)
+
 	s.wg.Add(1)
 	go s.runMessageMoveTask(task.TaskId, sourceURL, destURL, maxMessages)
 
@@ -75,6 +79,17 @@ func (s *SQSStore) StartMessageMoveTask(sourceARN, destARN string, maxMessages i
 // messages, copies them to the destination, and deletes from source.
 func (s *SQSStore) runMessageMoveTask(taskID, sourceURL, destURL string, maxRate int32) {
 	defer s.wg.Done()
+
+	// Yield before the first batch so callers have a window to cancel or
+	// list the task while it is still RUNNING. Without this, an empty source
+	// queue causes the goroutine to finalise instantly, producing a race with
+	// CancelMessageMoveTask and ListMessageMoveTasks.
+	select {
+	case <-s.ctx.Done():
+		s.finalizeMoveTask(taskID, "FAILED", 0, 0, "server shutting down")
+		return
+	case <-time.After(100 * time.Millisecond):
+	}
 
 	var moved, failed int32
 
@@ -243,8 +258,14 @@ func (s *SQSStore) moveMessageBatch(sourceURL, destURL string) (moved, failed in
 }
 
 func (s *SQSStore) updateMoveTaskProgress(taskID string, moved, failed int32) {
+	s.taskMu.Lock()
+	defer s.taskMu.Unlock()
 	var taskPb pb.MessageMoveTask
 	if err := s.tasksStore.GetProto(taskID, &taskPb); err != nil {
+		return
+	}
+	// Don't stomp a terminal or cancelling status with stale progress.
+	if taskPb.Status != "RUNNING" {
 		return
 	}
 	taskPb.MovedMessages = moved
@@ -253,10 +274,22 @@ func (s *SQSStore) updateMoveTaskProgress(taskID string, moved, failed int32) {
 }
 
 func (s *SQSStore) finalizeMoveTask(taskID, status string, moved, failed int32, failureReason string) {
+	s.taskMu.Lock()
+	defer s.taskMu.Unlock()
 	var taskPb pb.MessageMoveTask
 	if err := s.tasksStore.GetProto(taskID, &taskPb); err != nil {
 		logs.Warn("SQS: failed to load move task for finalisation", logs.String("taskId", taskID), logs.Err(err))
 		return
+	}
+	// Idempotent: already terminal, don't overwrite.
+	currentStatus := taskPb.GetStatus()
+	if currentStatus == "COMPLETED" || currentStatus == "FAILED" || currentStatus == "CANCELLED" {
+		return
+	}
+	// If the task was marked CANCELLING while the goroutine was processing
+	// its final batch, honour the cancel signal rather than COMPLETED/FAILED.
+	if currentStatus == "CANCELLING" {
+		status = "CANCELLED"
 	}
 	taskPb.Status = status
 	taskPb.MovedMessages = moved
@@ -293,6 +326,8 @@ func (s *SQSStore) findSourceQueueForDLQ(dlqURL string) string {
 // worker detects this and transitions to CANCELLED. Returns an error if the
 // task has already reached a terminal state (COMPLETED, FAILED, CANCELLED).
 func (s *SQSStore) CancelMessageMoveTask(taskId string) (*MessageMoveTask, error) {
+	s.taskMu.Lock()
+	defer s.taskMu.Unlock()
 	var taskPb pb.MessageMoveTask
 	if err := s.tasksStore.GetProto(taskId, &taskPb); err != nil {
 		return nil, ErrTaskNotFound
@@ -348,4 +383,23 @@ func (s *SQSStore) GetMessageMoveTask(taskId string) (*MessageMoveTask, error) {
 		return nil, ErrTaskNotFound
 	}
 	return ProtoToMessageMoveTask(&taskPb), nil
+}
+
+// cleanupTerminalTasks removes old terminal tasks for the given source ARN.
+// Called from StartMessageMoveTask to prevent unbounded accumulation.
+func (s *SQSStore) cleanupTerminalTasks(sourceARN string) {
+	items, err := common.ListMatchingProto[*pb.MessageMoveTask](s.tasksStore, "",
+		func() *pb.MessageMoveTask { return &pb.MessageMoveTask{} },
+		func(t *pb.MessageMoveTask) bool {
+			if t.SourceQueueArn != sourceARN {
+				return false
+			}
+			return t.Status == "COMPLETED" || t.Status == "FAILED" || t.Status == "CANCELLED"
+		})
+	if err != nil {
+		return
+	}
+	for _, t := range items {
+		_ = s.tasksStore.Delete(t.TaskId)
+	}
 }
