@@ -729,8 +729,10 @@ func (s *IoTService) DescribeAccountAuditConfiguration(ctx context.Context, reqC
 		return nil, err
 	}
 	if !exists {
-		// AWS returns an empty response when no configuration has been set.
-		return map[string]interface{}{}, nil
+		return map[string]interface{}{
+			"auditCheckConfigurations":              map[string]interface{}{},
+			"auditNotificationTargetConfigurations": map[string]interface{}{},
+		}, nil
 	}
 	return rec, nil
 }
@@ -1556,7 +1558,13 @@ func (s *IoTService) GetV2LoggingOptions(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	if !exists {
-		return map[string]interface{}{}, nil
+		return map[string]interface{}{
+			"defaultLogLevel": "DISABLED",
+			"disableAllLogs":  true,
+		}, nil
+	}
+	if rec["defaultLogLevel"] == nil || rec["defaultLogLevel"] == "" {
+		rec["defaultLogLevel"] = "INFO"
 	}
 	// GetV2LoggingOptions output shape is flat (roleArn, defaultLogLevel,
 	// disableAllLogs at the top level). Wrapping in "loggingOptions" causes
@@ -1568,9 +1576,13 @@ func (s *IoTService) SetV2LoggingOptions(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
+	defaultLogLevel := request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel")
+	if defaultLogLevel == "" {
+		defaultLogLevel = "INFO"
+	}
 	rec := map[string]interface{}{
 		"roleArn":         request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
-		"defaultLogLevel": request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel"),
+		"defaultLogLevel": defaultLogLevel,
 		"disableAllLogs":  request.GetBoolParam(req.Parameters, "disableAllLogs"),
 	}
 	if err := store.PutGeneric("config/v2Logging", rec); err != nil {
@@ -1725,7 +1737,9 @@ func (s *IoTService) DescribeEncryptionConfiguration(ctx context.Context, reqCtx
 		return nil, err
 	}
 	if !exists {
-		return map[string]interface{}{}, nil
+		return map[string]interface{}{
+			"encryptionType": "TLS",
+		}, nil
 	}
 	// DescribeEncryptionConfiguration output shape is flat (encryptionType,
 	// kmsKeyArn at the top level). Wrapping in "encryptionConfiguration"

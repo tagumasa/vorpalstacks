@@ -17,7 +17,7 @@ func (r *TestRunner) runNeptunedataLoaderTests(tc *neptunedataContext) []TestRes
 		resp, err := tc.client.StartLoaderJob(tc.ctx, &neptunedata.StartLoaderJobInput{
 			Source:         aws.String("s3://test-bucket/data"),
 			Format:         types.FormatCsv,
-			IamRoleArn:     aws.String("arn:aws:iam::000000000000:role/NeptuneLoadRole"),
+			IamRoleArn:     aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NeptuneLoadRole", tc.accountID)),
 			S3BucketRegion: types.S3BucketRegionUsEast1,
 		})
 		if err != nil {

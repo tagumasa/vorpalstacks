@@ -46,8 +46,8 @@ func (r *TestRunner) runCloudTrailImportTests(tc *cloudTrailTestContext) []TestR
 			ImportSource: &types.ImportSource{
 				S3: &types.S3ImportSource{
 					S3LocationUri:         aws.String("s3://test-bucket/CloudTrail/"),
-					S3BucketRegion:        aws.String("us-east-1"),
-					S3BucketAccessRoleArn: aws.String("arn:aws:iam::123456789012:role/CloudTrailImport"),
+					S3BucketRegion:        aws.String(tc.region),
+					S3BucketAccessRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/CloudTrailImport", tc.accountID)),
 				},
 			},
 		})
@@ -127,8 +127,8 @@ func (r *TestRunner) runCloudTrailImportTests(tc *cloudTrailTestContext) []TestR
 			ImportSource: &types.ImportSource{
 				S3: &types.S3ImportSource{
 					S3LocationUri:         aws.String("s3://test-bucket/CloudTrail/"),
-					S3BucketRegion:        aws.String("us-east-1"),
-					S3BucketAccessRoleArn: aws.String("arn:aws:iam::123456789012:role/CloudTrailImport"),
+					S3BucketRegion:        aws.String(tc.region),
+					S3BucketAccessRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/CloudTrailImport", tc.accountID)),
 				},
 			},
 		})

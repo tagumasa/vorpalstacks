@@ -9,6 +9,8 @@ import (
 
 func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	var results []TestResult
+	reg := tc.region
+	acct := tc.accountID
 
 	results = append(results, r.RunTest("sns", "Subscribe", func() error {
 		topicName := tc.uniqueName("SubTopic")
@@ -50,7 +52,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(*tResp.TopicArn),
 			Protocol: aws.String("sqs"),
-			Endpoint: aws.String("arn:aws:sqs:us-east-1:000000000000:auto-confirm-queue"),
+			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:auto-confirm-queue", reg, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -134,7 +136,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(*tResp.TopicArn),
 			Protocol: aws.String("sqs"),
-			Endpoint: aws.String("arn:aws:sqs:us-east-1:000000000000:list-all-sub-queue"),
+			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:list-all-sub-queue", reg, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -170,7 +172,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		_, err = tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(*tResp.TopicArn),
 			Protocol: aws.String("sqs"),
-			Endpoint: aws.String("arn:aws:sqs:us-east-1:000000000000:list-sub-queue"),
+			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:list-sub-queue", reg, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -234,7 +236,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(*tResp.TopicArn),
 			Protocol: aws.String("sqs"),
-			Endpoint: aws.String("arn:aws:sqs:us-east-1:000000000000:fake-queue"),
+			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:fake-queue", reg, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -359,7 +361,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(*tResp.TopicArn),
 			Protocol: aws.String("application"),
-			Endpoint: aws.String("arn:aws:sns:us-east-1:000000000000:app/FAKE/fake-endpoint"),
+			Endpoint: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:app/FAKE/fake-endpoint", reg, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -403,7 +405,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		subResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn:              aws.String(topicArn),
 			Protocol:              aws.String("sqs"),
-			Endpoint:              aws.String("arn:aws:sqs:us-east-1:000000000000:dummy-queue"),
+			Endpoint:              aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:dummy-queue", reg, acct)),
 			ReturnSubscriptionArn: true,
 		})
 		if err != nil {
@@ -447,7 +449,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		subResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn:              aws.String(topicArn),
 			Protocol:              aws.String("sqs"),
-			Endpoint:              aws.String("arn:aws:sqs:us-east-1:000000000000:dummy-queue"),
+			Endpoint:              aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:dummy-queue", reg, acct)),
 			ReturnSubscriptionArn: true,
 		})
 		if err != nil {

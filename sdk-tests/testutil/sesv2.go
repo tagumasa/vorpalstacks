@@ -13,12 +13,14 @@ import (
 )
 
 type sesv2TestContext struct {
-	client *sesv2.Client
-	ctx    context.Context
-	uid    int64
+	client    *sesv2.Client
+	ctx       context.Context
+	uid       int64
+	region    string
+	accountID string
 }
 
-func newSESTestContext(endpoint, region string) (*sesv2TestContext, error) {
+func newSESTestContext(endpoint, region, accountID string) (*sesv2TestContext, error) {
 	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
 		Endpoint: endpoint,
 		Region:   region,
@@ -27,22 +29,24 @@ func newSESTestContext(endpoint, region string) (*sesv2TestContext, error) {
 		return nil, fmt.Errorf("load config: %v", err)
 	}
 	return &sesv2TestContext{
-		client: sesv2.NewFromConfig(cfg),
-		ctx:    context.Background(),
-		uid:    time.Now().UnixNano(),
+		client:    sesv2.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		uid:       time.Now().UnixNano(),
+		region:    region,
+		accountID: accountID,
 	}, nil
 }
 
 func (tc *sesv2TestContext) configSetARN(name string) string {
-	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:configuration-set/%s", name)
+	return fmt.Sprintf("arn:aws:ses:%s:%s:configuration-set/%s", tc.region, tc.accountID, name)
 }
 
 func (tc *sesv2TestContext) contactListARN(name string) string {
-	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:contact-list/%s", name)
+	return fmt.Sprintf("arn:aws:ses:%s:%s:contact-list/%s", tc.region, tc.accountID, name)
 }
 
 func (tc *sesv2TestContext) identityARN(name string) string {
-	return fmt.Sprintf("arn:aws:ses:us-east-1:000000000000:identity/%s", name)
+	return fmt.Sprintf("arn:aws:ses:%s:%s:identity/%s", tc.region, tc.accountID, name)
 }
 
 func (tc *sesv2TestContext) deleteConfigSet(name string) {

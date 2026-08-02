@@ -498,7 +498,7 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 		_, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
 			GlobalTableName: aws.String(pagGT1),
 			ReplicationGroup: []types.Replica{
-				{RegionName: aws.String("us-east-1")},
+				{RegionName: aws.String(r.region)},
 			},
 		})
 		if err != nil {
@@ -507,7 +507,7 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 		_, err = client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
 			GlobalTableName: aws.String(pagGT2),
 			ReplicationGroup: []types.Replica{
-				{RegionName: aws.String("us-east-1")},
+				{RegionName: aws.String(r.region)},
 			},
 		})
 		if err != nil {

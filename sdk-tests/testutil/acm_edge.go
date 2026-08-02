@@ -11,23 +11,25 @@ import (
 func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 	var results []TestResult
 
+	fakeCertARN := fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)
+
 	results = append(results, r.RunTest("acm", "DescribeCertificate_NonExistent", func() error {
 		_, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fakeCertARN),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "GetCertificate_NonExistent", func() error {
 		_, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fakeCertARN),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_NonExistent", func() error {
 		_, err := tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fakeCertARN),
 			Tags:           []types.Tag{{Key: aws.String("X"), Value: aws.String("Y")}},
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
@@ -35,7 +37,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RemoveTagsFromCertificate_NonExistent", func() error {
 		_, err := tc.client.RemoveTagsFromCertificate(tc.ctx, &acm.RemoveTagsFromCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fakeCertARN),
 			Tags:           []types.Tag{{Key: aws.String("X")}},
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
@@ -43,7 +45,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "ListTagsForCertificate_NonExistent", func() error {
 		_, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fakeCertARN),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))

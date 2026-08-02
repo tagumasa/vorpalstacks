@@ -10,7 +10,7 @@ import (
 
 func (r *TestRunner) runNeptuneTagTests(tc *neptuneContext) []TestResult {
 	var results []TestResult
-	clusterARN := fmt.Sprintf("arn:aws:rds:us-east-1:000000000000:cluster:%s", tc.clusterID)
+	clusterARN := fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", tc.region, tc.accountID, tc.clusterID)
 
 	results = append(results, r.RunTest("neptune", "AddTagsToResource", func() error {
 		_, err := tc.client.AddTagsToResource(tc.ctx, &neptune.AddTagsToResourceInput{

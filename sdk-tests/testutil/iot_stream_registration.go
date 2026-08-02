@@ -20,7 +20,7 @@ func (r *TestRunner) runIoTStreamRegistrationTests(tc *iotTestContext) []TestRes
 		_, err := tc.client.CreateStream(tc.ctx, &iot.CreateStreamInput{
 			StreamId:    aws.String(streamID),
 			Description: aws.String("test stream"),
-			RoleArn:     aws.String("arn:aws:iam::000000000000:role/iot-stream-role"),
+			RoleArn:     aws.String(fmt.Sprintf("arn:aws:iam::%s:role/iot-stream-role", tc.accountID)),
 			Files: []iottypes.StreamFile{{
 				FileId:     aws.Int32(1),
 				S3Location: &iottypes.S3Location{Bucket: aws.String("test-bucket"), Key: aws.String("test-key")},

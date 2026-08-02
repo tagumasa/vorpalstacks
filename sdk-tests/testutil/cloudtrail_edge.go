@@ -133,7 +133,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "AddTags_NonExistent", func() error {
 		_, err := tc.client.AddTags(tc.ctx, &cloudtrail.AddTagsInput{
-			ResourceId: aws.String("arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-tag-xyz"),
+			ResourceId: aws.String(fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-tag-xyz", tc.region, tc.accountID)),
 			TagsList:   []types.Tag{{Key: aws.String("K"), Value: aws.String("V")}},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
@@ -144,7 +144,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "RemoveTags_NonExistent", func() error {
 		_, err := tc.client.RemoveTags(tc.ctx, &cloudtrail.RemoveTagsInput{
-			ResourceId: aws.String("arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-rm-xyz"),
+			ResourceId: aws.String(fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-rm-xyz", tc.region, tc.accountID)),
 			TagsList:   []types.Tag{{Key: aws.String("K")}},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
@@ -155,7 +155,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "ListTags_NonExistent", func() error {
 		_, err := tc.client.ListTags(tc.ctx, &cloudtrail.ListTagsInput{
-			ResourceIdList: []string{"arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-lt-xyz"},
+			ResourceIdList: []string{fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-lt-xyz", tc.region, tc.accountID)},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
 			return err
@@ -164,7 +164,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetResourcePolicy_NonExistentTrail", func() error {
-		fakeARN := "arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-grp-xyz"
+		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-grp-xyz", tc.region, tc.accountID)
 		_, err := tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})

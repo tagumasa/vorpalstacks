@@ -288,7 +288,7 @@ func (r *TestRunner) runWAFv2WebACLTests(tc *wafv2TestContext) []TestResult {
 		return nil
 	}))
 
-	fakeResourceARN := fmt.Sprintf("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/%d", time.Now().UnixNano())
+	fakeResourceARN := fmt.Sprintf("arn:aws:elasticloadbalancing:%s:%s:loadbalancer/app/test-lb/%d", tc.region, tc.accountID, time.Now().UnixNano())
 
 	results = append(results, r.RunTest("wafv2", "AssociateWebACL", func() error {
 		_, err := tc.client.AssociateWebACL(tc.ctx, &wafv2.AssociateWebACLInput{

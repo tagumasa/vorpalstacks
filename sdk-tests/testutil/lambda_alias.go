@@ -23,7 +23,7 @@ func runLambdaAliasTests(
 
 	funcName := fmt.Sprintf("AliasFunc-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("AliasRole-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
 
 	if err := createIAMRole(roleName); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
@@ -31,12 +31,18 @@ func runLambdaAliasTests(
 	}
 	defer deleteIAMRole(roleName)
 
-	_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+	zipCode, err := zipLambdaCode(lambdaFunctionCode)
+	if err != nil {
+		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
+			Error: fmt.Sprintf("Failed to zip lambda code: %v", err)}}
+	}
+
+	_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 		FunctionName: aws.String(funcName),
 		Runtime:      types.RuntimeNodejs22x,
 		Role:         aws.String(roleARN),
 		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
+		Code:         &types.FunctionCode{ZipFile: zipCode},
 	})
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
@@ -190,13 +196,16 @@ func runLambdaAliasTests(
 	results = append(results, r.RunTest("lambda", "PublishVersion_VerifyVersion", func() error {
 		pvFunc := fmt.Sprintf("PvFunc-%d", time.Now().UnixNano())
 		pvRoleName := fmt.Sprintf("PvRole-%d", time.Now().UnixNano())
-		pvRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", pvRoleName)
-		pvCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		pvRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, pvRoleName)
+		pvCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %v", err)
+		}
 		if err := createIAMRole(pvRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(pvRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(pvFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(pvRole),
@@ -227,13 +236,16 @@ func runLambdaAliasTests(
 	results = append(results, r.RunTest("lambda", "CreateAlias_DuplicateName", func() error {
 		caFunc := fmt.Sprintf("CaFunc-%d", time.Now().UnixNano())
 		caRoleName := fmt.Sprintf("CaRole-%d", time.Now().UnixNano())
-		caRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", caRoleName)
-		caCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		caRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, caRoleName)
+		caCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %v", err)
+		}
 		if err := createIAMRole(caRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(caRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(caFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(caRole),

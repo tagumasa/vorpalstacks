@@ -427,7 +427,7 @@ func (r *TestRunner) runCloudTrailConfigTests(tc *cloudTrailTestContext) []TestR
 	// RegisterOrganizationDelegatedAdmin.
 	results = append(results, r.RunTest("cloudtrail", "RegisterDelegatedAdmin", func() error {
 		_, err := tc.client.RegisterOrganizationDelegatedAdmin(tc.ctx, &cloudtrail.RegisterOrganizationDelegatedAdminInput{
-			MemberAccountId: aws.String("123456789012"),
+			MemberAccountId: aws.String(tc.accountID),
 		})
 		if err != nil {
 			return fmt.Errorf("RegisterOrganizationDelegatedAdmin failed: %w", err)
@@ -438,7 +438,7 @@ func (r *TestRunner) runCloudTrailConfigTests(tc *cloudTrailTestContext) []TestR
 	// DeregisterOrganizationDelegatedAdmin.
 	results = append(results, r.RunTest("cloudtrail", "DeregisterDelegatedAdmin", func() error {
 		_, err := tc.client.DeregisterOrganizationDelegatedAdmin(tc.ctx, &cloudtrail.DeregisterOrganizationDelegatedAdminInput{
-			DelegatedAdminAccountId: aws.String("123456789012"),
+			DelegatedAdminAccountId: aws.String(tc.accountID),
 		})
 		if err != nil {
 			return fmt.Errorf("DeregisterOrganizationDelegatedAdmin failed: %w", err)

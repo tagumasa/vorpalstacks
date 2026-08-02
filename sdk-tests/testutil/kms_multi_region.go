@@ -54,7 +54,7 @@ func (r *TestRunner) runKMSMultiRegionTests(tc *kmsTestContext) []TestResult {
 		}
 		_, err := tc.client.UpdatePrimaryRegion(tc.ctx, &kms.UpdatePrimaryRegionInput{
 			KeyId:         aws.String(multiKeyID),
-			PrimaryRegion: aws.String("us-east-1"),
+			PrimaryRegion: aws.String(tc.region),
 		})
 		if err != nil {
 			return fmt.Errorf("update primary region: %v", err)

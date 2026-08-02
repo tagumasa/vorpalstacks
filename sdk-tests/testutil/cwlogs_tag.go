@@ -124,7 +124,7 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 		}
 		defer tc.deleteLogGroup(tlgName)
 
-		resourceARN := fmt.Sprintf("arn:aws:logs:%s:000000000000:log-group:%s", tc.region, tlgName)
+		resourceARN := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", tc.region, tc.runner.AccountID(), tlgName)
 		_, err := tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
 			ResourceArn: &resourceARN,
 			Tags: map[string]string{
@@ -165,7 +165,7 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 		}
 		defer tc.deleteLogGroup(cwtName)
 
-		resourceARN := fmt.Sprintf("arn:aws:logs:%s:000000000000:log-group:%s", tc.region, cwtName)
+		resourceARN := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", tc.region, tc.runner.AccountID(), cwtName)
 		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &cloudwatchlogs.ListTagsForResourceInput{
 			ResourceArn: &resourceARN,
 		})

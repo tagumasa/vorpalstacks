@@ -27,7 +27,7 @@ func (r *TestRunner) runSNSToSQS(ic *integClients, ts string) TestResult {
 	_, err = ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 	if err != nil {
 		return r.RunTest(integSvc, "SNS_SQS", func() error { return fmt.Errorf("subscribe: %w", err) })
@@ -66,7 +66,7 @@ func (r *TestRunner) runSNSToLambda(ic *integClients, ts string) TestResult {
 	}
 	defer ic.deleteTopic(topicARN)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	_, err = ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),

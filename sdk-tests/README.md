@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 34 AWS services with 2,777 test cases (2,713 SDK + 47 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 34 AWS services with 2,766 test cases (2,702 SDK + 47 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -50,7 +50,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Timestream | 49 | 100% | ✅ Perfect |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2,777/2,777 tests passing (100%) — 2,713 SDK + 47 integration + 17 WebSocket**
+**Overall: 2,766/2,766 tests passing (100%) — 2,702 SDK + 47 integration + 17 WebSocket**
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 
@@ -281,6 +281,55 @@ ALL_SERVICES_ENABLED=true ./sdk-tests/sdk-tests-all -service cloudtrail-audit -v
 ```
 
 ## Adding New Tests
+
+### Dynamic Account ID and Region
+
+**Never hardcode account IDs (`000000000000`, `123456789012`) or region (`us-east-1`) in test files.** The `TestRunner` obtains these dynamically via STS `GetCallerIdentity` at startup:
+
+```go
+r.AccountID()  // e.g. "test" in TEST_MODE, real account ID in production
+r.Region       // "us-east-1" by default, configurable via -region flag
+```
+
+Test contexts store these in `region` and `accountID` fields:
+
+```go
+type myServiceTestCtx struct {
+    client    *myservice.Client
+    ctx       context.Context
+    runner    *TestRunner
+    region    string
+    accountID string
+}
+
+func newMyServiceTestContext(r *TestRunner) *myServiceTestCtx {
+    return &myServiceTestCtx{
+        region:    r.Region,
+        accountID: r.AccountID(),
+        // ...
+    }
+}
+```
+
+When constructing ARNs, always use the dynamic values:
+
+```go
+// Correct
+arn := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, roleName)
+
+// Wrong — hardcoded account ID
+arn := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+```
+
+For IAM role ARNs used across integration tests, use the `intRoleARN` helper:
+
+```go
+func intRoleARN(roleName, accountID string) string {
+    return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
+}
+```
+
+**Note**: When using `fmt.Sprintf` inside backtick raw strings (e.g. JSON trust policies), wrap the entire raw string in `fmt.Sprintf` — placing `fmt.Sprintf(...)` inside a raw string literal does not evaluate it.
 
 1. Create a new test file in `testutil/`:
    ```bash

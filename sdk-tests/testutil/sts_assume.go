@@ -97,7 +97,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRole_NonExistentRole", func() error {
 		_, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/NonExistentRole"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NonExistentRole", tc.accountID)),
 			RoleSessionName: aws.String("TestSession"),
 		})
 		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
@@ -142,7 +142,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_Basic", func() error {
 		resp, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
-			TargetPrincipal: aws.String("000000000000"),
+			TargetPrincipal: aws.String(tc.accountID),
 			TaskPolicyArn: &types.PolicyDescriptorType{
 				Arn: aws.String("arn:aws:iam::aws:policy/IAMAuditRootUserCredentials"),
 			},
@@ -171,7 +171,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_MissingTaskPolicyArn", func() error {
 		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
-			TargetPrincipal: aws.String("000000000000"),
+			TargetPrincipal: aws.String(tc.accountID),
 			DurationSeconds: aws.Int32(900),
 		})
 		if err == nil {
@@ -182,7 +182,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_DurationExceedsMax", func() error {
 		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
-			TargetPrincipal: aws.String("000000000000"),
+			TargetPrincipal: aws.String(tc.accountID),
 			TaskPolicyArn: &types.PolicyDescriptorType{
 				Arn: aws.String("arn:aws:iam::aws:policy/IAMAuditRootUserCredentials"),
 			},
@@ -209,7 +209,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_InvalidTaskPolicyArn", func() error {
 		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
-			TargetPrincipal: aws.String("000000000000"),
+			TargetPrincipal: aws.String(tc.accountID),
 			TaskPolicyArn: &types.PolicyDescriptorType{
 				Arn: aws.String("arn:aws:iam::aws:policy/AdministratorAccess"),
 			},

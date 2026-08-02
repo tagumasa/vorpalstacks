@@ -29,7 +29,7 @@ func (r *TestRunner) runSFNTaskLambda(ic *integClients, ts string) TestResult {
 	ic.createLambda(fnName, lambdaRoleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	definition := fmt.Sprintf(`{
 		"StartAt":"InvokeLambda",
@@ -44,7 +44,7 @@ func (r *TestRunner) runSFNTaskLambda(ic *integClients, ts string) TestResult {
 
 	createResp, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(definition),
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func (r *TestRunner) runSFNTaskSQS(ic *integClients, ts string) TestResult {
 
 	createResp, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(definition),
 	})
 	if err != nil {
@@ -173,7 +173,7 @@ func (r *TestRunner) runSFNTaskSNS(ic *integClients, ts string) TestResult {
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 
 	definition := fmt.Sprintf(`{
@@ -193,7 +193,7 @@ func (r *TestRunner) runSFNTaskSNS(ic *integClients, ts string) TestResult {
 
 	createResp, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(definition),
 	})
 	if err != nil {
@@ -252,7 +252,7 @@ func (r *TestRunner) runSFNTaskEventBridge(ic *integClients, ts string) TestResu
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
 
 	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{
 		Name:         aws.String(ruleName),
@@ -288,7 +288,7 @@ func (r *TestRunner) runSFNTaskEventBridge(ic *integClients, ts string) TestResu
 
 	createResp, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(definition),
 	})
 	if err != nil {
@@ -367,7 +367,7 @@ func (r *TestRunner) runSFNTaskDynamoDB(ic *integClients, ts string) TestResult 
 
 	createResp, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName + "-put"),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(putDef),
 	})
 	if err != nil {

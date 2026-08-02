@@ -45,7 +45,7 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 		},
 		NotificationConfiguration: &tqtypes.NotificationConfiguration{
 			SnsConfiguration: &tqtypes.SnsConfiguration{
-				TopicArn: aws.String("arn:aws:sns:us-east-1:000000000000:test-topic"),
+				TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:test-topic", tc.region, tc.accountID)),
 			},
 		},
 		ErrorReportConfiguration: &tqtypes.ErrorReportConfiguration{
@@ -53,7 +53,7 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 				BucketName: aws.String("error-report-bucket"),
 			},
 		},
-		ScheduledQueryExecutionRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", sqRoleName)),
+		ScheduledQueryExecutionRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, sqRoleName)),
 		Tags: []tqtypes.Tag{
 			{Key: aws.String("env"), Value: aws.String("scheduled-test")},
 		},
@@ -198,7 +198,7 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 	}))
 
 	results = append(results, r.RunTest("timestream", "DescribeScheduledQuery_NonExistent", func() error {
-		fakeARN := "arn:aws:timestream:us-east-1:000000000000:scheduled-query/nonexistent"
+		fakeARN := fmt.Sprintf("arn:aws:timestream:%s:%s:scheduled-query/nonexistent", tc.region, tc.accountID)
 		_, err := tc.queryClient.DescribeScheduledQuery(tc.ctx, &timestreamquery.DescribeScheduledQueryInput{
 			ScheduledQueryArn: aws.String(fakeARN),
 		})
@@ -215,7 +215,7 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 			},
 			NotificationConfiguration: &tqtypes.NotificationConfiguration{
 				SnsConfiguration: &tqtypes.SnsConfiguration{
-					TopicArn: aws.String("arn:aws:sns:us-east-1:000000000000:test-topic"),
+					TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:test-topic", tc.region, tc.accountID)),
 				},
 			},
 			ErrorReportConfiguration: &tqtypes.ErrorReportConfiguration{
@@ -223,14 +223,14 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 					BucketName: aws.String("error-report-bucket"),
 				},
 			},
-			ScheduledQueryExecutionRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", sqRoleName)),
+			ScheduledQueryExecutionRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, sqRoleName)),
 		}
 		_, err := tc.queryClient.CreateScheduledQuery(tc.ctx, dupInput)
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
 		defer tc.queryClient.DeleteScheduledQuery(tc.ctx, &timestreamquery.DeleteScheduledQueryInput{
-			ScheduledQueryArn: aws.String(fmt.Sprintf("arn:aws:timestream:us-east-1:000000000000:scheduled-query/%s", dupSQName)),
+			ScheduledQueryArn: aws.String(fmt.Sprintf("arn:aws:timestream:%s:%s:scheduled-query/%s", tc.region, tc.accountID, dupSQName)),
 		})
 		_, err = tc.queryClient.CreateScheduledQuery(tc.ctx, dupInput)
 		return AssertErrorContains(err, "ConflictException")

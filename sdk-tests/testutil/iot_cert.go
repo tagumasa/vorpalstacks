@@ -28,6 +28,9 @@ func (r *TestRunner) runIoTCertTests(tc *iotTestContext) []TestResult {
 		}
 		certID = *out.CertificateId
 		certARN = aws.ToString(out.CertificateArn)
+		if certARN == "" {
+			return fmt.Errorf("expected non-empty certificateArn")
+		}
 		if out.CertificatePem == nil || !strings.Contains(*out.CertificatePem, "BEGIN CERTIFICATE") {
 			return fmt.Errorf("expected PEM certificate")
 		}
@@ -179,7 +182,6 @@ func (r *TestRunner) runIoTCertTests(tc *iotTestContext) []TestResult {
 		return expectNotFound(err)
 	}))
 
-	_ = certARN // retained for potential attach-to-thing assertions
 	return results
 }
 

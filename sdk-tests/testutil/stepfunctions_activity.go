@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
-	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
 )
 
 func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
@@ -88,7 +87,7 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 	taskSMName := fmt.Sprintf("TaskSM-%d", time.Now().UnixNano())
 	var taskSMARN string
 	results = append(results, r.RunTest("stepfunctions", "GetActivityTask_SendTaskSuccess", func() error {
-		taskDef := fmt.Sprintf(`{"Comment":"task","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:000000000000:activity:%s","End":true}}}`, r.region, activityName)
+		taskDef := fmt.Sprintf(`{"Comment":"task","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:%s:activity:%s","End":true}}}`, r.region, r.accountID, activityName)
 		_, taskRoleARN, taskRoleCleanup := tc.createRoleForSM("TaskRole")
 		defer taskRoleCleanup()
 
@@ -136,7 +135,7 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		defer taskRole2Cleanup()
 
 		taskSM2Name := fmt.Sprintf("TaskSM2-%d", time.Now().UnixNano())
-		failDef := fmt.Sprintf(`{"Comment":"fail task","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:000000000000:activity:%s","End":true}}}`, r.region, activityName)
+		failDef := fmt.Sprintf(`{"Comment":"fail task","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:%s:activity:%s","End":true}}}`, r.region, r.accountID, activityName)
 		failResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(taskSM2Name),
 			Definition: aws.String(failDef),
@@ -179,7 +178,7 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "SendTaskHeartbeat", func() error {
 		heartbeatSMName := fmt.Sprintf("HBSM-%d", time.Now().UnixNano())
-		hbDef := fmt.Sprintf(`{"Comment":"hb","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:000000000000:activity:%s","HeartbeatSeconds":60,"End":true}}}`, r.region, activityName)
+		hbDef := fmt.Sprintf(`{"Comment":"hb","StartAt":"Task","States":{"Task":{"Type":"Task","Resource":"arn:aws:states:%s:%s:activity:%s","HeartbeatSeconds":60,"End":true}}}`, r.region, r.accountID, activityName)
 		_, hbRoleARN, hbRoleCleanup := tc.createRoleForSM("HBRole")
 		defer hbRoleCleanup()
 
@@ -240,6 +239,5 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		})
 	}
 
-	_ = types.ExecutionStatusSucceeded
 	return results
 }

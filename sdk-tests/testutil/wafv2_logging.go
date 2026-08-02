@@ -38,7 +38,7 @@ func (r *TestRunner) runWAFv2LoggingTests(tc *wafv2TestContext) []TestResult {
 			LoggingConfiguration: &types.LoggingConfiguration{
 				ResourceArn: aws.String(logACLARN),
 				LogDestinationConfigs: []string{
-					"arn:aws:logs:us-east-1:123456789012:log-group:/aws/waf/test-log",
+					fmt.Sprintf("arn:aws:logs:%s:%s:log-group:/aws/waf/test-log", tc.region, tc.accountID),
 				},
 			},
 		})

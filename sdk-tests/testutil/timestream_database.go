@@ -83,7 +83,7 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("timestream", "UpdateDatabase_KmsKey", func() error {
-		kmsKey := "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+		kmsKey := fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", tc.region, tc.accountID)
 		resp, err := tc.writeClient.UpdateDatabase(tc.ctx, &timestreamwrite.UpdateDatabaseInput{
 			DatabaseName: aws.String(dbName),
 			KmsKeyId:     aws.String(kmsKey),
@@ -143,7 +143,7 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("timestream", "TagResource_Database", func() error {
-		dbARN := fmt.Sprintf("arn:aws:timestream:us-east-1:000000000000:database/%s", tagDBName)
+		dbARN := fmt.Sprintf("arn:aws:timestream:%s:%s:database/%s", tc.region, tc.accountID, tagDBName)
 		_, err := tc.writeClient.TagResource(tc.ctx, &timestreamwrite.TagResourceInput{
 			ResourceARN: aws.String(dbARN),
 			Tags: []types.Tag{
@@ -154,7 +154,7 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("timestream", "ListTagsForResource_Database", func() error {
-		dbARN := fmt.Sprintf("arn:aws:timestream:us-east-1:000000000000:database/%s", tagDBName)
+		dbARN := fmt.Sprintf("arn:aws:timestream:%s:%s:database/%s", tc.region, tc.accountID, tagDBName)
 		resp, err := tc.writeClient.ListTagsForResource(tc.ctx, &timestreamwrite.ListTagsForResourceInput{
 			ResourceARN: aws.String(dbARN),
 		})
@@ -168,7 +168,7 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("timestream", "UntagResource_Database", func() error {
-		dbARN := fmt.Sprintf("arn:aws:timestream:us-east-1:000000000000:database/%s", tagDBName)
+		dbARN := fmt.Sprintf("arn:aws:timestream:%s:%s:database/%s", tc.region, tc.accountID, tagDBName)
 		_, err := tc.writeClient.UntagResource(tc.ctx, &timestreamwrite.UntagResourceInput{
 			ResourceARN: aws.String(dbARN),
 			TagKeys:     []string{"extra"},

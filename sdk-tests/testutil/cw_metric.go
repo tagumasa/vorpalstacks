@@ -12,6 +12,7 @@ import (
 
 func (tc *cloudwatchTestCtx) metricTests() []TestResult {
 	var results []TestResult
+	reg := tc.runner.Region()
 
 	namespace := tc.uniquePrefix("TestNS")
 	metricName := tc.uniquePrefix("TestMetric")
@@ -218,7 +219,7 @@ func (tc *cloudwatchTestCtx) metricTests() []TestResult {
 					Value:      aws.Float64(1.0),
 					Dimensions: []types.Dimension{
 						{Name: aws.String("Host"), Value: aws.String("server-1")},
-						{Name: aws.String("Region"), Value: aws.String("us-east-1")},
+						{Name: aws.String("Region"), Value: aws.String(reg)},
 					},
 				},
 			},
@@ -247,12 +248,12 @@ func (tc *cloudwatchTestCtx) metricTests() []TestResult {
 			if d.Name != nil && *d.Name == "Host" && d.Value != nil && *d.Value == "server-1" {
 				hasHost = true
 			}
-			if d.Name != nil && *d.Name == "Region" && d.Value != nil && *d.Value == "us-east-1" {
+			if d.Name != nil && *d.Name == "Region" && d.Value != nil && *d.Value == reg {
 				hasRegion = true
 			}
 		}
 		if !hasHost || !hasRegion {
-			return fmt.Errorf("expected Host=server-1 and Region=us-east-1 dimensions")
+			return fmt.Errorf("expected Host=server-1 and Region=%s dimensions", reg)
 		}
 		return nil
 	}))

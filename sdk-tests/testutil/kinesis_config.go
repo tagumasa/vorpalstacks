@@ -105,7 +105,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err := client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String("arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"),
+			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", r.region, r.accountID)),
 		})
 		if err != nil {
 			return err
@@ -126,7 +126,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err := client.StopStreamEncryption(ctx, &kinesis.StopStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String("arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"),
+			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", r.region, r.accountID)),
 		})
 		if err != nil {
 			return err
@@ -158,7 +158,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err = client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(sn),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String("arn:aws:kms:us-east-1:123456789012:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", r.region, r.accountID)),
 		})
 		if err != nil {
 			return fmt.Errorf("start encryption: %v", err)

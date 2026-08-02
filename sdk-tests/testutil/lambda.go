@@ -19,13 +19,20 @@ const lambdaFunctionCode = "exports.handler = async (event) => { return { status
 // zipLambdaCode wraps raw JavaScript source code into a zip archive
 // with entry name "index.js", matching the handler "index.handler".
 // AWS Lambda requires ZipFile to be a base64-encoded zip archive.
-func zipLambdaCode(src string) []byte {
+func zipLambdaCode(src string) ([]byte, error) {
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
-	f, _ := w.Create("index.js")
-	f.Write([]byte(src))
-	w.Close()
-	return buf.Bytes()
+	f, err := w.Create("index.js")
+	if err != nil {
+		return nil, fmt.Errorf("zip create index.js: %w", err)
+	}
+	if _, err := f.Write([]byte(src)); err != nil {
+		return nil, fmt.Errorf("zip write source: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return nil, fmt.Errorf("zip close: %w", err)
+	}
+	return buf.Bytes(), nil
 }
 
 func (r *TestRunner) RunLambdaTests() []TestResult {

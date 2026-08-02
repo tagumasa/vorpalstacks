@@ -19,7 +19,7 @@ func (r *TestRunner) runAppSyncDomainTests(res *appsyncResources) []TestResult {
 	results = append(results, r.RunTest("appsync", "CreateDomainName", func() error {
 		resp, err := client.CreateDomainName(ctx, &appsync.CreateDomainNameInput{
 			DomainName:     aws.String(res.domainName),
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/test-cert"),
+			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/test-cert", r.region, r.accountID)),
 			Description:    aws.String("test domain"),
 		})
 		if err != nil {
@@ -47,7 +47,7 @@ func (r *TestRunner) runAppSyncDomainTests(res *appsyncResources) []TestResult {
 		res.tagDomainName = fmt.Sprintf("tag-domain-%d.example.com", uid)
 		resp, err := client.CreateDomainName(ctx, &appsync.CreateDomainNameInput{
 			DomainName:     aws.String(res.tagDomainName),
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/tag-cert"),
+			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/tag-cert", r.region, r.accountID)),
 			Tags:           map[string]string{"env": "prod"},
 		})
 		if err != nil {

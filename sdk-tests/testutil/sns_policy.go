@@ -9,6 +9,8 @@ import (
 
 func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 	var results []TestResult
+	reg := tc.region
+	acct := tc.accountID
 
 	results = append(results, r.RunTest("sns", "AddPermission", func() error {
 		topicName := tc.uniqueName("PermTopic")
@@ -21,7 +23,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		_, err = tc.client.AddPermission(tc.ctx, &sns.AddPermissionInput{
 			TopicArn:     aws.String(topicArn),
 			Label:        aws.String("TestPermission"),
-			AWSAccountId: []string{"000000000000"},
+			AWSAccountId: []string{acct},
 			ActionName:   []string{"Publish"},
 		})
 		if err != nil {
@@ -52,7 +54,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		_, err = tc.client.AddPermission(tc.ctx, &sns.AddPermissionInput{
 			TopicArn:     aws.String(topicArn),
 			Label:        aws.String("TestPermission"),
-			AWSAccountId: []string{"000000000000"},
+			AWSAccountId: []string{acct},
 			ActionName:   []string{"Publish"},
 		})
 		if err != nil {
@@ -120,7 +122,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sns", "GetDataProtectionPolicy_NonExistent", func() error {
 		_, err := tc.client.GetDataProtectionPolicy(tc.ctx, &sns.GetDataProtectionPolicyInput{
-			ResourceArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-dpp-topic"),
+			ResourceArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-dpp-topic", reg, acct)),
 		})
 		return AssertErrorContains(err, "NotFound")
 	}))

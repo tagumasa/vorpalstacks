@@ -13,6 +13,9 @@ type kmsTestContext struct {
 	client *kms.Client
 	ctx    context.Context
 
+	region    string
+	accountID string
+
 	keyID     string
 	keyAlias  string
 	keyARN    string
@@ -59,8 +62,10 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 	}
 
 	tc := &kmsTestContext{
-		client: kms.NewFromConfig(cfg),
-		ctx:    context.Background(),
+		client:    kms.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}
 
 	results = append(results, r.runKMSKeyTests(tc)...)

@@ -36,7 +36,7 @@ func (r *TestRunner) runAlarmToSNS(ic *integClients, ts string) TestResult {
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 
 	_, err = ic.cw.PutMetricAlarm(ic.ctx, &cloudwatch.PutMetricAlarmInput{
@@ -89,7 +89,7 @@ func (r *TestRunner) runAlarmToLambda(ic *integClients, ts string) TestResult {
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	_, err := ic.cw.PutMetricAlarm(ic.ctx, &cloudwatch.PutMetricAlarmInput{
 		AlarmName:          aws.String(alarmName),
@@ -145,7 +145,7 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 
 	_, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(`{"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}}`),
 	})
 	if err != nil {
@@ -153,11 +153,11 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 	}
 	defer func() {
 		ic.sfn.DeleteStateMachine(ic.ctx, &sfn.DeleteStateMachineInput{
-			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName)),
+			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName)),
 		})
 	}()
 
-	smARN := fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName)
+	smARN := fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName)
 
 	_, err = ic.cw.PutMetricAlarm(ic.ctx, &cloudwatch.PutMetricAlarmInput{
 		AlarmName:          aws.String(alarmName),

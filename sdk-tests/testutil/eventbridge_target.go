@@ -20,7 +20,7 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 			Targets: []types.Target{
 				{
 					Id:  aws.String(targetID),
-					Arn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFunction", r.region)),
+					Arn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:TestFunction", r.region, r.accountID)),
 				},
 			},
 		})
@@ -81,7 +81,7 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		}
 		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(trRule), EventBusName: aws.String(trBus)})
 
-		targetARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TargetFunc", r.region)
+		targetARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:TargetFunc", r.region, r.accountID)
 		_, err = client.PutTargets(ctx, &eventbridge.PutTargetsInput{
 			Rule:         aws.String(trRule),
 			EventBusName: aws.String(trBus),
@@ -157,7 +157,7 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		}
 		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(lrntRule), EventBusName: aws.String(lrntBus)})
 
-		targetARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:ListRulesFn", r.region)
+		targetARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:ListRulesFn", r.region, r.accountID)
 		_, err = client.PutTargets(ctx, &eventbridge.PutTargetsInput{
 			Rule:         aws.String(lrntRule),
 			EventBusName: aws.String(lrntBus),
@@ -233,7 +233,7 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 			Targets: []types.Target{
 				{
 					Id:  aws.String(dtTarget),
-					Arn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:F", r.region)),
+					Arn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:F", r.region, r.accountID)),
 				},
 			},
 		})

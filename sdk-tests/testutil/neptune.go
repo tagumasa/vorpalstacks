@@ -12,11 +12,12 @@ import (
 )
 
 type neptuneContext struct {
-	client  *neptune.Client
-	ec2User *ec2.Client
-	ctx     context.Context
-	region  string
-	ts      int64
+	client    *neptune.Client
+	ec2User   *ec2.Client
+	ctx       context.Context
+	region    string
+	accountID string
+	ts        int64
 
 	clusterID       string
 	paramGroupName  string
@@ -51,6 +52,7 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		ec2User:         ec2.NewFromConfig(cfg),
 		ctx:             context.Background(),
 		region:          r.region,
+		accountID:       r.accountID,
 		ts:              ts,
 		clusterID:       fmt.Sprintf("test-cluster-%d", ts),
 		paramGroupName:  fmt.Sprintf("test-cpg-%d", ts),

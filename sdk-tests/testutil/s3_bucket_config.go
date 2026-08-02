@@ -138,7 +138,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 	}))
 
 	results = append(results, r.RunTest("s3", "GetBucketPolicy_PlainJSON", func() error {
-		policyDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:root"},"Action":"s3:*","Resource":"arn:aws:s3:::` + bucketName + `/*"}]}`
+		principalARN := fmt.Sprintf("arn:aws:iam::%s:root", r.accountID)
+		policyDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"` + principalARN + `"},"Action":"s3:*","Resource":"arn:aws:s3:::` + bucketName + `/*"}]}`
 		_, err := client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
 			Bucket: aws.String(bucketName),
 			Policy: aws.String(policyDoc),
@@ -482,7 +483,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 	}))
 
 	results = append(results, r.RunTest("s3", "PutBucketNotificationConfiguration", func() error {
-		topicArn := "arn:aws:sns:us-east-1:123456789012:test-topic"
+		topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:test-topic", r.region, r.accountID)
 		_, err := client.PutBucketNotificationConfiguration(ctx, &s3.PutBucketNotificationConfigurationInput{
 			Bucket: aws.String(bucketName),
 			NotificationConfiguration: &types.NotificationConfiguration{
@@ -719,7 +720,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String("arn:aws:iam::123456789012:role/s3-replication"),
+				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
 				Rules: []types.ReplicationRule{
 					{
 						ID:       aws.String("rule-1"),
@@ -781,7 +782,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String("arn:aws:iam::123456789012:role/s3-replication"),
+				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
 				Rules: []types.ReplicationRule{{
 					ID:       aws.String("copy-rule"),
 					Status:   types.ReplicationRuleStatusEnabled,
@@ -842,7 +843,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String("arn:aws:iam::123456789012:role/s3-replication"),
+				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
 				Rules: []types.ReplicationRule{{
 					ID:       aws.String("tag-rule"),
 					Status:   types.ReplicationRuleStatusEnabled,
@@ -936,7 +937,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String("arn:aws:iam::123456789012:role/s3-replication"),
+				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
 				Rules: []types.ReplicationRule{{
 					ID:       aws.String("dm-rule"),
 					Status:   types.ReplicationRuleStatusEnabled,

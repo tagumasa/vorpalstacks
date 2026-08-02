@@ -17,6 +17,8 @@ type rdsDataTestContext struct {
 	resourceArn string
 	secretArn   string
 	database    string
+	region      string
+	accountID   string
 }
 
 func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
@@ -28,7 +30,7 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	secretArn := "arn:aws:secretsmanager:us-east-1:000000000000:secret:test"
+	secretArn := fmt.Sprintf("arn:aws:secretsmanager:%s:%s:secret:test", r.region, r.accountID)
 	// The RDS Data service validates secretArn against Secrets Manager, so
 	// the test must seed a real secret carrying username/password fields
 	// before any Data API call references it. CreateSecret is idempotent:
@@ -50,9 +52,11 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 	return &rdsDataTestContext{
 		client:      rdsdata.NewFromConfig(cfg),
 		ctx:         context.Background(),
-		resourceArn: "arn:aws:rds:us-east-1:000000000000:db:test-instance",
+		resourceArn: fmt.Sprintf("arn:aws:rds:%s:%s:db:test-instance", r.region, r.accountID),
 		secretArn:   secretArn,
 		database:    "rdsdata_sdk_test",
+		region:      r.region,
+		accountID:   r.accountID,
 	}, nil
 }
 
@@ -338,7 +342,7 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "Error_NonexistentInstance", func() error {
-		arn := "arn:aws:rds:us-east-1:000000000000:db:nonexistent-instance"
+		arn := fmt.Sprintf("arn:aws:rds:%s:%s:db:nonexistent-instance", tc.region, tc.accountID)
 		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
 			ResourceArn: &arn,
 			SecretArn:   &tc.secretArn,

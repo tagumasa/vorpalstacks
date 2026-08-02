@@ -1,7 +1,7 @@
 package testutil
 
 func (r *TestRunner) RunSESv2Tests() []TestResult {
-	tc, err := newSESTestContext(r.endpoint, r.region)
+	tc, err := newSESTestContext(r.endpoint, r.region, r.accountID)
 	if err != nil {
 		return []TestResult{{
 			Service:  "sesv2",

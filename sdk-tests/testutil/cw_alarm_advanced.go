@@ -10,6 +10,8 @@ import (
 
 func (tc *cloudwatchTestCtx) alarmAdvancedTests() []TestResult {
 	var results []TestResult
+	reg := tc.runner.Region()
+	acct := tc.runner.AccountID()
 
 	results = append(results, tc.runner.RunTest("cloudwatch", "SetAlarmState_Verify", func() error {
 		alarmName := tc.uniquePrefix("StateAlarm")
@@ -138,8 +140,8 @@ func (tc *cloudwatchTestCtx) alarmAdvancedTests() []TestResult {
 			AlarmRule:        aws.String("TRUE"),
 			AlarmDescription: aws.String("Composite test alarm"),
 			ActionsEnabled:   aws.Bool(true),
-			AlarmActions:     []string{"arn:aws:sns:us-east-1:123456789012:my-topic"},
-			OKActions:        []string{"arn:aws:sns:us-east-1:123456789012:ok-topic"},
+			AlarmActions:     []string{fmt.Sprintf("arn:aws:sns:%s:%s:my-topic", reg, acct)},
+			OKActions:        []string{fmt.Sprintf("arn:aws:sns:%s:%s:ok-topic", reg, acct)},
 		})
 		if err != nil {
 			return fmt.Errorf("put composite alarm: %v", err)

@@ -460,7 +460,7 @@ func verifyVertexInResult(resp *gremlinWSResponse) error {
 	}
 	typeName, _ := resultMap["@type"].(string)
 	if typeName != "g:List" {
-		return nil
+		return fmt.Errorf("expected g:List type, got %q", typeName)
 	}
 	val, _ := resultMap["@value"].([]interface{})
 	if len(val) == 0 {
@@ -468,10 +468,10 @@ func verifyVertexInResult(resp *gremlinWSResponse) error {
 	}
 	vertex, ok := val[0].(map[string]interface{})
 	if !ok {
-		return nil
+		return fmt.Errorf("first element is not a map, got %T", val[0])
 	}
-	if vertex["@type"] == "g:Vertex" {
-		return nil
+	if vertex["@type"] != "g:Vertex" {
+		return fmt.Errorf("expected g:Vertex, got %v", vertex["@type"])
 	}
 	return nil
 }

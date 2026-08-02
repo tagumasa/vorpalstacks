@@ -9,13 +9,14 @@ import (
 
 func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 	var results []TestResult
+	acct := tc.runner.AccountID()
 
 	results = append(results, tc.runner.RunTest("logs", "PutDestination_VerifyFields", func() error {
 		destName := tc.uniquePrefix("TestDest")
 		resp, err := tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(destName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/dest-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/test-stream"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/dest-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/test-stream", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("put destination: %v", err)
@@ -26,10 +27,10 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		if resp.Destination.DestinationName == nil || *resp.Destination.DestinationName != destName {
 			return fmt.Errorf("destinationName mismatch: got %q", aws.ToString(resp.Destination.DestinationName))
 		}
-		if resp.Destination.TargetArn == nil || *resp.Destination.TargetArn != "arn:aws:kinesis:us-east-1:000000000000:stream/test-stream" {
+		if resp.Destination.TargetArn == nil || *resp.Destination.TargetArn != fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/test-stream", tc.region, acct) {
 			return fmt.Errorf("targetArn mismatch: got %q", aws.ToString(resp.Destination.TargetArn))
 		}
-		if resp.Destination.RoleArn == nil || *resp.Destination.RoleArn != "arn:aws:iam::000000000000:role/dest-role" {
+		if resp.Destination.RoleArn == nil || *resp.Destination.RoleArn != fmt.Sprintf("arn:aws:iam::%s:role/dest-role", acct) {
 			return fmt.Errorf("roleArn mismatch: got %q", aws.ToString(resp.Destination.RoleArn))
 		}
 		if resp.Destination.Arn == nil || *resp.Destination.Arn == "" {
@@ -45,8 +46,8 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		ddName := tc.uniquePrefix("DescDest")
 		_, err := tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(ddName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/dd-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/dd-stream"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/dd-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/dd-stream", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("put: %v", err)
@@ -77,8 +78,8 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		pdpName := tc.uniquePrefix("PdpDest")
 		_, err := tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(pdpName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/pdp-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/pdp-stream"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/pdp-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/pdp-stream", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("put: %v", err)
@@ -115,8 +116,8 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		udpName := tc.uniquePrefix("UdpDest")
 		_, err := tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(udpName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/original-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/original"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/original-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/original", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("initial put: %v", err)
@@ -127,8 +128,8 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 
 		_, err = tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(udpName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/updated-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/updated"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/updated-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/updated", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("update put: %v", err)
@@ -143,10 +144,10 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		if len(resp.Destinations) == 0 {
 			return fmt.Errorf("destination not found")
 		}
-		if *resp.Destinations[0].RoleArn != "arn:aws:iam::000000000000:role/updated-role" {
+		if *resp.Destinations[0].RoleArn != fmt.Sprintf("arn:aws:iam::%s:role/updated-role", acct) {
 			return fmt.Errorf("roleArn not updated: got %q", *resp.Destinations[0].RoleArn)
 		}
-		if *resp.Destinations[0].TargetArn != "arn:aws:kinesis:us-east-1:000000000000:stream/updated" {
+		if *resp.Destinations[0].TargetArn != fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/updated", tc.region, acct) {
 			return fmt.Errorf("targetArn not updated: got %q", *resp.Destinations[0].TargetArn)
 		}
 		return nil
@@ -156,8 +157,8 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		ddelName := tc.uniquePrefix("DelDest")
 		_, err := tc.client.PutDestination(tc.ctx, &cloudwatchlogs.PutDestinationInput{
 			DestinationName: aws.String(ddelName),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/ddel-role"),
-			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/ddel-stream"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/ddel-role", acct)),
+			TargetArn:       aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/ddel-stream", tc.region, acct)),
 		})
 		if err != nil {
 			return fmt.Errorf("put: %v", err)

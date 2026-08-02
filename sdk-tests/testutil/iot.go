@@ -14,9 +14,10 @@ import (
 )
 
 type iotTestContext struct {
-	client *iot.Client
-	ctx    context.Context
-	region string
+	client    *iot.Client
+	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) newIoTTestContext() (*iotTestContext, error) {
@@ -28,9 +29,10 @@ func (r *TestRunner) newIoTTestContext() (*iotTestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	return &iotTestContext{
-		client: iot.NewFromConfig(cfg),
-		ctx:    context.Background(),
-		region: r.region,
+		client:    iot.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}, nil
 }
 
@@ -49,12 +51,12 @@ func uniqueName(prefix string) string {
 // arn builds an AWS-style ARN using the test region rather than a hard-coded
 // us-east-1, so the IoT data plane stays correct under regional brokers.
 func (tc *iotTestContext) arn(service, resourceType, name string) string {
-	return fmt.Sprintf("arn:aws:%s:%s:000000000000:%s/%s", service, tc.region, resourceType, name)
+	return fmt.Sprintf("arn:aws:%s:%s:%s:%s/%s", service, tc.region, tc.accountID, resourceType, name)
 }
 
 // iamRoleARN returns a placeholder IAM role ARN for the test region.
 func (tc *iotTestContext) iamRoleARN(suffix string) string {
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", suffix)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, suffix)
 }
 
 // thingGroupExists paginates ListThingGroups and reports whether a group with

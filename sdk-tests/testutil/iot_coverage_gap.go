@@ -8,7 +8,7 @@ import (
 	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 )
 
-// runIoTCoverageGapTests covers 25 registered operations that previously had
+// runIoTCoverageGapTests covers 25 tc.regionistered operations that previously had
 // no SDK test coverage. Deprecated operations (DescribeTopicRule -> GetTopicRule,
 // ListThingsForThingType -> ListThings?thingTypeName=) are excluded as they
 // share the same handler code path and are already tested via their replacements.
@@ -105,7 +105,7 @@ func (r *TestRunner) runIoTPolicyV2GapTests(tc *iotTestContext) []TestResult {
 	}))
 
 	principalARN := func() string {
-		return fmt.Sprintf("arn:aws:iot:us-east-1:000000000000:cert/%s", certID)
+		return fmt.Sprintf("arn:aws:iot:%s:%s:cert/%s", tc.region, tc.accountID, certID)
 	}
 
 	results = append(results, r.RunTest("iot", "Gap_AttachPrincipalPolicy", func() error {
@@ -160,7 +160,7 @@ func (r *TestRunner) runIoTLoggingConfigGapTests(tc *iotTestContext) []TestResul
 	results = append(results, r.RunTest("iot", "Gap_SetLoggingOptions", func() error {
 		_, err := tc.client.SetLoggingOptions(tc.ctx, &iot.SetLoggingOptionsInput{
 			LoggingOptionsPayload: &iottypes.LoggingOptionsPayload{
-				RoleArn:  aws.String("arn:aws:iam::000000000000:role/test"),
+				RoleArn:  aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test", tc.accountID)),
 				LogLevel: iottypes.LogLevelInfo,
 			},
 		})
@@ -298,7 +298,7 @@ func (r *TestRunner) runIoTTopicRuleJobSecGapTests(tc *iotTestContext) []TestRes
 	results = append(results, r.RunTest("iot", "Gap_UpdateJob", func() error {
 		_, err := tc.client.CreateJob(tc.ctx, &iot.CreateJobInput{
 			JobId:    aws.String(jobID),
-			Targets:  []string{"arn:aws:iot:us-east-1:000000000000:thing/dummy"},
+			Targets:  []string{fmt.Sprintf("arn:aws:iot:%s:%s:thing/dummy", tc.region, tc.accountID)},
 			Document: aws.String(`{"operation":"test"}`),
 		})
 		if err != nil {
@@ -347,7 +347,7 @@ func (r *TestRunner) runIoTProvTemplateVersionGapTests(tc *iotTestContext) []Tes
 		_, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
 			TemplateName:        aws.String(templateName),
 			TemplateBody:        aws.String(templateBody),
-			ProvisioningRoleArn: aws.String("arn:aws:iam::000000000000:role/test"),
+			ProvisioningRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test", tc.accountID)),
 		})
 		return err
 	}))
@@ -523,7 +523,7 @@ func (r *TestRunner) runIoTCommandExecutionGapTests(tc *iotTestContext) []TestRe
 		return err
 	}))
 
-	cmdARN := fmt.Sprintf("arn:aws:iot:us-east-1:000000000000:command/%s", cmdID)
+	cmdARN := fmt.Sprintf("arn:aws:iot:%s:%s:command/%s", tc.region, tc.accountID, cmdID)
 
 	results = append(results, r.RunTest("iot", "Gap_ListCommandExecutions_Empty", func() error {
 		out, err := tc.client.ListCommandExecutions(tc.ctx, &iot.ListCommandExecutionsInput{
@@ -541,7 +541,7 @@ func (r *TestRunner) runIoTCommandExecutionGapTests(tc *iotTestContext) []TestRe
 	results = append(results, r.RunTest("iot", "Gap_GetCommandExecution_NotFound", func() error {
 		_, err := tc.client.GetCommandExecution(tc.ctx, &iot.GetCommandExecutionInput{
 			ExecutionId: aws.String(uniqueName("nonexistent-exec")),
-			TargetArn:   aws.String("arn:aws:iot:us-east-1:000000000000:thing/dummy"),
+			TargetArn:   aws.String(fmt.Sprintf("arn:aws:iot:%s:%s:thing/dummy", tc.region, tc.accountID)),
 		})
 		return expectNotFound(err)
 	}))
@@ -549,7 +549,7 @@ func (r *TestRunner) runIoTCommandExecutionGapTests(tc *iotTestContext) []TestRe
 	results = append(results, r.RunTest("iot", "Gap_DeleteCommandExecution_NotFound", func() error {
 		_, err := tc.client.DeleteCommandExecution(tc.ctx, &iot.DeleteCommandExecutionInput{
 			ExecutionId: aws.String(uniqueName("nonexistent-exec")),
-			TargetArn:   aws.String("arn:aws:iot:us-east-1:000000000000:thing/dummy"),
+			TargetArn:   aws.String(fmt.Sprintf("arn:aws:iot:%s:%s:thing/dummy", tc.region, tc.accountID)),
 		})
 		return expectNotFound(err)
 	}))
@@ -579,7 +579,7 @@ func (r *TestRunner) runIoTCertProviderUpdateGapTests(tc *iotTestContext) []Test
 	results = append(results, r.RunTest("iot", "Gap_CertProvider_Setup", func() error {
 		_, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
 			CertificateProviderName: aws.String(providerName),
-			LambdaFunctionArn:       aws.String("arn:aws:lambda:us-east-1:000000000000:function:test-cert-signer"),
+			LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", tc.region, tc.accountID)),
 			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
 				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
 			},
@@ -590,7 +590,7 @@ func (r *TestRunner) runIoTCertProviderUpdateGapTests(tc *iotTestContext) []Test
 	results = append(results, r.RunTest("iot", "Gap_UpdateCertificateProvider", func() error {
 		_, err := tc.client.UpdateCertificateProvider(tc.ctx, &iot.UpdateCertificateProviderInput{
 			CertificateProviderName: aws.String(providerName),
-			LambdaFunctionArn:       aws.String("arn:aws:lambda:us-east-1:000000000000:function:updated-cert-signer"),
+			LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:updated-cert-signer", tc.region, tc.accountID)),
 		})
 		return err
 	}))

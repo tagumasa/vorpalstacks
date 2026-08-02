@@ -210,7 +210,7 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 
 		resp, err := client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(cadName),
-			ConnectionArn:      aws.String(fmt.Sprintf("arn:aws:events:%s:000000000000:connection/%s", r.region, connName)),
+			ConnectionArn:      aws.String(fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, connName)),
 			HttpMethod:         types.ApiDestinationHttpMethodPost,
 			InvocationEndpoint: aws.String("https://example.com/webhook"),
 			Description:        aws.String("test api destination"),
@@ -246,7 +246,7 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 		}
 		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(dadConn)})
 
-		connARN := fmt.Sprintf("arn:aws:events:%s:000000000000:connection/%s", r.region, dadConn)
+		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, dadConn)
 		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(dadName),
 			ConnectionArn:      aws.String(connARN),
@@ -301,7 +301,7 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 		}
 		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(dladConn)})
 
-		connARN := fmt.Sprintf("arn:aws:events:%s:000000000000:connection/%s", r.region, dladConn)
+		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, dladConn)
 		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(dladName),
 			ConnectionArn:      aws.String(connARN),
@@ -349,7 +349,7 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 		}
 		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(ladConn)})
 
-		connARN := fmt.Sprintf("arn:aws:events:%s:000000000000:connection/%s", r.region, ladConn)
+		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, ladConn)
 		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(ladName),
 			ConnectionArn:      aws.String(connARN),
@@ -402,7 +402,7 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 		}
 		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(uadConn)})
 
-		connARN := fmt.Sprintf("arn:aws:events:%s:000000000000:connection/%s", r.region, uadConn)
+		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, uadConn)
 		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(uadName),
 			ConnectionArn:      aws.String(connARN),

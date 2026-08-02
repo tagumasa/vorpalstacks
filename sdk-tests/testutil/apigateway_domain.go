@@ -278,6 +278,12 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		if err != nil {
 			return fmt.Errorf("create domain: %v", err)
 		}
+		if aws.ToString(dnResp.DomainName) != domain {
+			return fmt.Errorf("expected domainName=%s, got %s", domain, aws.ToString(dnResp.DomainName))
+		}
+		if aws.ToString(dnResp.CertificateArn) != certArn {
+			return fmt.Errorf("expected certificateArn=%s, got %s", certArn, aws.ToString(dnResp.CertificateArn))
+		}
 
 		_, err = client.CreateBasePathMapping(ctx, &apigateway.CreateBasePathMappingInput{
 			DomainName: aws.String(domain),
@@ -304,7 +310,6 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 			return fmt.Errorf("delete base path mapping: %v", err)
 		}
 
-		_ = dnResp
 		_, err = client.DeleteDomainName(ctx, &apigateway.DeleteDomainNameInput{
 			DomainName: aws.String(domain),
 		})

@@ -134,7 +134,7 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("GetBucketLocation failed: %w", err)
 		}
 		loc := string(resp.LocationConstraint)
-		if loc == "" || loc == "us-east-1" {
+		if loc == "" || loc == r.region {
 			return nil
 		}
 		return fmt.Errorf("unexpected location: %s", loc)

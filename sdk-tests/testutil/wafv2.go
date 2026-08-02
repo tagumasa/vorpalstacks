@@ -12,12 +12,14 @@ import (
 )
 
 type wafv2TestContext struct {
-	client *wafv2.Client
-	ctx    context.Context
-	scope  types.Scope
+	client    *wafv2.Client
+	ctx       context.Context
+	scope     types.Scope
+	region    string
+	accountID string
 }
 
-func newWAFv2TestContext(endpoint, region string) (*wafv2TestContext, error) {
+func newWAFv2TestContext(endpoint, region, accountID string) (*wafv2TestContext, error) {
 	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
 		Endpoint: endpoint,
 		Region:   region,
@@ -26,9 +28,11 @@ func newWAFv2TestContext(endpoint, region string) (*wafv2TestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	return &wafv2TestContext{
-		client: wafv2.NewFromConfig(cfg),
-		ctx:    context.Background(),
-		scope:  types.ScopeCloudfront,
+		client:    wafv2.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		scope:     types.ScopeCloudfront,
+		region:    region,
+		accountID: accountID,
 	}, nil
 }
 
@@ -125,7 +129,7 @@ func (tc *wafv2TestContext) deleteWebACL(name, id, lockToken string) error {
 func (r *TestRunner) RunWAFv2Tests() []TestResult {
 	var results []TestResult
 
-	tc, err := newWAFv2TestContext(r.endpoint, r.region)
+	tc, err := newWAFv2TestContext(r.endpoint, r.region, r.accountID)
 	if err != nil {
 		return append(results, TestResult{
 			Service:  "wafv2",

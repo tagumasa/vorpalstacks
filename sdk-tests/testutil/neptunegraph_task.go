@@ -10,6 +10,7 @@ import (
 
 func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []TestResult {
 	var results []TestResult
+	acct := tc.accountID
 	var importTaskID string
 
 	results = append(results, r.RunTest("neptunegraph", "StartImportTask", func() error {
@@ -19,7 +20,7 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 		resp, err := tc.client.StartImportTask(tc.ctx, &neptunegraph.StartImportTaskInput{
 			GraphIdentifier: aws.String(tc.graphID),
 			Source:          aws.String("s3://test-bucket/import-data/"),
-			RoleArn:         aws.String("arn:aws:iam::000000000000:role/NeptuneImportRole"),
+			RoleArn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NeptuneImportRole", acct)),
 			Format:          types.FormatCsv,
 		})
 		if err != nil {
@@ -94,7 +95,7 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 		resp, err := tc.client.CreateGraphUsingImportTask(tc.ctx, &neptunegraph.CreateGraphUsingImportTaskInput{
 			GraphName: aws.String(importGraphName),
 			Source:    aws.String("s3://test-bucket/import-data/"),
-			RoleArn:   aws.String("arn:aws:iam::000000000000:role/NeptuneImportRole"),
+			RoleArn:   aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NeptuneImportRole", acct)),
 			Format:    types.FormatCsv,
 		})
 		if err != nil {
@@ -124,6 +125,8 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []TestResult {
 	var results []TestResult
 	var exportTaskID string
+	reg := tc.region
+	acct := tc.accountID
 
 	results = append(results, r.RunTest("neptunegraph", "StartExportTask", func() error {
 		if tc.graphID == "" {
@@ -132,8 +135,8 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 		resp, err := tc.client.StartExportTask(tc.ctx, &neptunegraph.StartExportTaskInput{
 			GraphIdentifier:  aws.String(tc.graphID),
 			Destination:      aws.String("s3://test-bucket/export-data/"),
-			KmsKeyIdentifier: aws.String("arn:aws:kms:us-east-1:000000000000:key/12345678-1234-1234-1234-123456789012"),
-			RoleArn:          aws.String("arn:aws:iam::000000000000:role/NeptuneExportRole"),
+			KmsKeyIdentifier: aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", reg, acct)),
+			RoleArn:          aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NeptuneExportRole", acct)),
 			Format:           types.ExportFormatCsv,
 		})
 		if err != nil {

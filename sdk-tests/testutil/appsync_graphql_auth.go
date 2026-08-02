@@ -55,11 +55,11 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 	graphqlURL := fmt.Sprintf("%s/v1/apis/%s/graphql", r.endpoint, authApiId)
 
 	// Helper to send a raw GraphQL POST with an optional API key.
-	sendGraphQL := func(apiKey string) (*http.Response, []byte) {
+	sendGraphQL := func(apiKey string) (*http.Response, []byte, error) {
 		body := []byte(`{"query":"{ __typename }"}`)
 		req, err := http.NewRequestWithContext(ctx, "POST", graphqlURL, bytes.NewReader(body))
 		if err != nil {
-			return nil, nil
+			return nil, nil, fmt.Errorf("create request: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		if apiKey != "" {
@@ -67,16 +67,22 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 		}
 		resp, err := r.client.Do(req)
 		if err != nil {
-			return nil, nil
+			return nil, nil, fmt.Errorf("send request: %w", err)
 		}
 		defer resp.Body.Close()
-		respBody, _ := io.ReadAll(resp.Body)
-		return resp, respBody
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return resp, nil, fmt.Errorf("read response body: %w", err)
+		}
+		return resp, respBody, nil
 	}
 
 	// Test: Missing API key -> 401 UnauthorizedException
 	results = append(results, r.RunTest("appsync", "GraphQL_MissingApiKey", func() error {
-		resp, respBody := sendGraphQL("")
+		resp, respBody, err := sendGraphQL("")
+		if err != nil {
+			return fmt.Errorf("send GraphQL: %w", err)
+		}
 		if resp == nil {
 			return fmt.Errorf("no response")
 		}
@@ -100,7 +106,10 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 
 	// Test: Invalid API key -> 401 UnauthorizedException
 	results = append(results, r.RunTest("appsync", "GraphQL_InvalidApiKey", func() error {
-		resp, respBody := sendGraphQL("invalid-key-value")
+		resp, respBody, err := sendGraphQL("invalid-key-value")
+		if err != nil {
+			return fmt.Errorf("send GraphQL: %w", err)
+		}
 		if resp == nil {
 			return fmt.Errorf("no response")
 		}
@@ -124,7 +133,10 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 
 	// Test: Valid API key -> should NOT be 401
 	results = append(results, r.RunTest("appsync", "GraphQL_ValidApiKey", func() error {
-		resp, respBody := sendGraphQL(authApiKeyId)
+		resp, respBody, err := sendGraphQL(authApiKeyId)
+		if err != nil {
+			return fmt.Errorf("send GraphQL: %w", err)
+		}
 		if resp == nil {
 			return fmt.Errorf("no response")
 		}

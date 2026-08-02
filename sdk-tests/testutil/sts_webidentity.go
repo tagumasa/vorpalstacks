@@ -97,7 +97,7 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_NonExistentRole", func() error {
 		_, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
-			RoleArn:          aws.String("arn:aws:iam::000000000000:role/NonExistentWebIdRole"),
+			RoleArn:          aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NonExistentWebIdRole", tc.accountID)),
 			RoleSessionName:  aws.String("WebIdSession"),
 			WebIdentityToken: aws.String("dummy-token"),
 			ProviderId:       aws.String("example.com"),

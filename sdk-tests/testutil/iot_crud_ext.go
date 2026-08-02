@@ -147,7 +147,15 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("DescribeMitigationAction failed: %w", err)
 		}
-		_ = out
+		if aws.ToString(out.ActionName) != mitName {
+			return fmt.Errorf("expected actionName=%s, got %s", mitName, aws.ToString(out.ActionName))
+		}
+		if out.RoleArn == nil || *out.RoleArn == "" {
+			return fmt.Errorf("DescribeMitigationAction returned empty roleArn")
+		}
+		if out.ActionParams == nil {
+			return fmt.Errorf("DescribeMitigationAction returned nil actionParams")
+		}
 		return nil
 	}))
 
@@ -231,7 +239,15 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("DescribeFleetMetric failed: %w", err)
 		}
-		_ = out
+		if aws.ToString(out.MetricName) != fmName {
+			return fmt.Errorf("expected metricName=%s, got %s", fmName, aws.ToString(out.MetricName))
+		}
+		if aws.ToString(out.QueryString) != "thingName:*" {
+			return fmt.Errorf("expected queryString echoed back")
+		}
+		if aws.ToInt32(out.Period) != 60 {
+			return fmt.Errorf("expected period=60, got %d", aws.ToInt32(out.Period))
+		}
 		return nil
 	}))
 
@@ -250,7 +266,12 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("DescribeScheduledAudit failed: %w", err)
 		}
-		_ = out
+		if aws.ToString(out.ScheduledAuditName) != saName {
+			return fmt.Errorf("expected scheduledAuditName=%s, got %s", saName, aws.ToString(out.ScheduledAuditName))
+		}
+		if out.Frequency != iottypes.AuditFrequencyDaily {
+			return fmt.Errorf("expected frequency=daily, got %s", out.Frequency)
+		}
 		return nil
 	}))
 

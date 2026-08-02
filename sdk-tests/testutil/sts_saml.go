@@ -15,7 +15,7 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 	results = append(results, r.RunTest("sts", "AssumeRoleWithSAML_ContentVerify", func() error {
 		resp, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
 			RoleArn:       aws.String(tc.samlRoleARN()),
-			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
+			PrincipalArn:  aws.String(fmt.Sprintf("arn:aws:iam::%s:saml-provider/TestProvider", tc.accountID)),
 			SAMLAssertion: aws.String(samlAssertion),
 		})
 		if err != nil {
@@ -55,7 +55,7 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 		inlinePolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}`
 		resp, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
 			RoleArn:       aws.String(tc.samlRoleARN()),
-			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
+			PrincipalArn:  aws.String(fmt.Sprintf("arn:aws:iam::%s:saml-provider/TestProvider", tc.accountID)),
 			SAMLAssertion: aws.String(samlAssertion),
 			Policy:        aws.String(inlinePolicy),
 		})
@@ -71,7 +71,7 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 	results = append(results, r.RunTest("sts", "AssumeRoleWithSAML_WithDuration", func() error {
 		resp, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
 			RoleArn:         aws.String(tc.samlRoleARN()),
-			PrincipalArn:    aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
+			PrincipalArn:    aws.String(fmt.Sprintf("arn:aws:iam::%s:saml-provider/TestProvider", tc.accountID)),
 			SAMLAssertion:   aws.String(samlAssertion),
 			DurationSeconds: aws.Int32(3600),
 		})
@@ -87,7 +87,7 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 	results = append(results, r.RunTest("sts", "AssumeRoleWithSAML_InvalidAssertion", func() error {
 		_, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
 			RoleArn:       aws.String(tc.samlRoleARN()),
-			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
+			PrincipalArn:  aws.String(fmt.Sprintf("arn:aws:iam::%s:saml-provider/TestProvider", tc.accountID)),
 			SAMLAssertion: aws.String(""),
 		})
 		if err := AssertErrorContains(err, "InvalidIdentityToken"); err != nil {
@@ -98,8 +98,8 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoleWithSAML_NonExistentRole", func() error {
 		_, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
-			RoleArn:       aws.String("arn:aws:iam::000000000000:role/NonExistentSAMLRole"),
-			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
+			RoleArn:       aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NonExistentSAMLRole", tc.accountID)),
+			PrincipalArn:  aws.String(fmt.Sprintf("arn:aws:iam::%s:saml-provider/TestProvider", tc.accountID)),
 			SAMLAssertion: aws.String(samlAssertion),
 		})
 		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {

@@ -12,6 +12,8 @@ import (
 // and Command operations that were previously unregistered stubs.
 func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
+	reg := tc.region
+	acct := tc.accountID
 	pkgName := uniqueName("test-pkg")
 	versionName := "1.0.0"
 	cmdID := uniqueName("test-cmd")
@@ -223,7 +225,7 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	results = append(results, r.RunTest("iot", "CertProvider_Create", func() error {
 		_, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
 			CertificateProviderName: aws.String(certProviderName),
-			LambdaFunctionArn:       aws.String("arn:aws:lambda:us-east-1:000000000000:function:test-cert-signer"),
+			LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", reg, acct)),
 			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
 				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
 			},

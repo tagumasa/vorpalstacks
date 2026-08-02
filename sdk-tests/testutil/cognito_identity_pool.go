@@ -36,11 +36,11 @@ func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cogni
 			AllowUnauthenticatedIdentities: false,
 			AllowClassicFlow:               aws.Bool(true),
 			DeveloperProviderName:          aws.String("my-dev-provider"),
-			OpenIdConnectProviderARNs:      []string{"arn:aws:iam::123456789012:oidc-provider/example.com"},
-			SamlProviderARNs:               []string{"arn:aws:iam::123456789012:saml-provider/example.com"},
+			OpenIdConnectProviderARNs:      []string{fmt.Sprintf("arn:aws:iam::%s:oidc-provider/example.com", r.accountID)},
+			SamlProviderARNs:               []string{fmt.Sprintf("arn:aws:iam::%s:saml-provider/example.com", r.accountID)},
 			CognitoIdentityProviders: []types.CognitoIdentityProvider{
 				{
-					ProviderName:         aws.String("cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxx"),
+					ProviderName:         aws.String(fmt.Sprintf("cognito-idp.%s.amazonaws.com/%s_xxxxx", r.region, r.region)),
 					ClientId:             aws.String("abc123"),
 					ServerSideTokenCheck: aws.Bool(true),
 				},

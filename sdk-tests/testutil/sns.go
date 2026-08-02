@@ -10,9 +10,10 @@ import (
 )
 
 type snsTestContext struct {
-	client *sns.Client
-	ctx    context.Context
-	region string
+	client    *sns.Client
+	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) initSNS() (*snsTestContext, error) {
@@ -24,9 +25,10 @@ func (r *TestRunner) initSNS() (*snsTestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	return &snsTestContext{
-		client: sns.NewFromConfig(cfg),
-		ctx:    context.Background(),
-		region: r.region,
+		client:    sns.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}, nil
 }
 

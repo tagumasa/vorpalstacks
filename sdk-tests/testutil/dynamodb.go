@@ -28,7 +28,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	client := dynamodb.NewFromConfig(cfg)
 	ctx := context.Background()
 	tableName := fmt.Sprintf("TestTable-%d", time.Now().UnixNano())
-	tableARN := fmt.Sprintf("arn:aws:dynamodb:%s:000000000000:table/%s", r.region, tableName)
+	tableARN := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", r.region, r.accountID, tableName)
 
 	// Phase 1: Main table lifecycle (shared state)
 	results = append(results, r.dynamoDBCreateTableTests(ctx, client, tableName)...)

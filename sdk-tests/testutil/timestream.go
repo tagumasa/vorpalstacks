@@ -17,6 +17,8 @@ type tsTestContext struct {
 	queryClient *timestreamquery.Client
 	iamClient   *iam.Client
 	ctx         context.Context
+	region      string
+	accountID   string
 }
 
 func newTSTestContext(r *TestRunner) (*tsTestContext, []TestResult) {
@@ -38,6 +40,8 @@ func newTSTestContext(r *TestRunner) (*tsTestContext, []TestResult) {
 		queryClient: timestreamquery.NewFromConfig(cfg),
 		iamClient:   iam.NewFromConfig(cfg),
 		ctx:         context.Background(),
+		region:      r.region,
+		accountID:   r.accountID,
 	}, results
 }
 

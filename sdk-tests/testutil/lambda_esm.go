@@ -23,9 +23,13 @@ func runLambdaESMTests(
 
 	esmFuncName := fmt.Sprintf("EsmFunc-%d", time.Now().UnixNano())
 	esmRoleName := fmt.Sprintf("EsmRole-%d", time.Now().UnixNano())
-	esmRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", esmRoleName)
-	esmCode := zipLambdaCode("exports.handler = async () => { return 1; };")
-	esmEventSourceArn := "arn:aws:sqs:us-east-1:000000000000:test-queue"
+	esmRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, esmRoleName)
+	esmCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+	if err != nil {
+		return []TestResult{{Service: "lambda", TestName: "CreateEventSourceMapping_Setup", Status: "FAIL",
+			Error: fmt.Sprintf("Failed to zip lambda code: %v", err)}}
+	}
+	esmEventSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:test-queue", r.region, r.accountID)
 
 	if err := createIAMRole(esmRoleName); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateEventSourceMapping_Setup", Status: "FAIL",
@@ -33,7 +37,7 @@ func runLambdaESMTests(
 	}
 	defer deleteIAMRole(esmRoleName)
 
-	_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+	_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 		FunctionName: aws.String(esmFuncName),
 		Runtime:      types.RuntimeNodejs22x,
 		Role:         aws.String(esmRole),

@@ -21,7 +21,7 @@ func (r *TestRunner) runS3NotificationToLambda(ic *integClients, ts string) Test
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	err := ic.createBucket(bucketName)
 	if err != nil {
@@ -61,7 +61,7 @@ func (r *TestRunner) runS3NotificationToSQS(ic *integClients, ts string) TestRes
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
 
 	err = ic.createBucket(bucketName)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *TestRunner) runS3NotificationToSNS(ic *integClients, ts string) TestRes
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 
 	err = ic.createBucket(bucketName)

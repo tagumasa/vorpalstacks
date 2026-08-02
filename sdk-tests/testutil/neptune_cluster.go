@@ -142,7 +142,7 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	results = append(results, r.RunTest("neptune", "AddRoleToDBCluster", func() error {
 		_, err := tc.client.AddRoleToDBCluster(tc.ctx, &neptune.AddRoleToDBClusterInput{
 			DBClusterIdentifier: aws.String(tc.clusterID),
-			RoleArn:             aws.String("arn:aws:iam::000000000000:role/test-role"),
+			RoleArn:             aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test-role", tc.accountID)),
 			FeatureName:         aws.String("s3Import"),
 		})
 		return err
@@ -158,7 +158,7 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 		c := resp.DBClusters[0]
 		found := false
 		for _, role := range c.AssociatedRoles {
-			if role.RoleArn != nil && *role.RoleArn == "arn:aws:iam::000000000000:role/test-role" {
+			if role.RoleArn != nil && *role.RoleArn == fmt.Sprintf("arn:aws:iam::%s:role/test-role", tc.accountID) {
 				found = true
 				if role.FeatureName != nil && *role.FeatureName != "s3Import" {
 					return fmt.Errorf("expected FeatureName=s3Import, got %v", role.FeatureName)
@@ -167,7 +167,7 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 			}
 		}
 		if !found {
-			return fmt.Errorf("expected role arn:aws:iam::000000000000:role/test-role in AssociatedRoles after AddRoleToDBCluster")
+			return fmt.Errorf("expected role arn:aws:iam::%s:role/test-role in AssociatedRoles after AddRoleToDBCluster", tc.accountID)
 		}
 		return nil
 	}))
@@ -175,7 +175,7 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	results = append(results, r.RunTest("neptune", "RemoveRoleFromDBCluster", func() error {
 		_, err := tc.client.RemoveRoleFromDBCluster(tc.ctx, &neptune.RemoveRoleFromDBClusterInput{
 			DBClusterIdentifier: aws.String(tc.clusterID),
-			RoleArn:             aws.String("arn:aws:iam::000000000000:role/test-role"),
+			RoleArn:             aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test-role", tc.accountID)),
 			FeatureName:         aws.String("s3Import"),
 		})
 		return err
@@ -190,7 +190,7 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 		}
 		c := resp.DBClusters[0]
 		for _, role := range c.AssociatedRoles {
-			if role.RoleArn != nil && *role.RoleArn == "arn:aws:iam::000000000000:role/test-role" {
+			if role.RoleArn != nil && *role.RoleArn == fmt.Sprintf("arn:aws:iam::%s:role/test-role", tc.accountID) {
 				return fmt.Errorf("expected role to be removed from AssociatedRoles after RemoveRoleFromDBCluster")
 			}
 		}

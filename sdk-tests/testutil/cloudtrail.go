@@ -9,8 +9,10 @@ import (
 )
 
 type cloudTrailTestContext struct {
-	client *cloudtrail.Client
-	ctx    context.Context
+	client    *cloudtrail.Client
+	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) RunCloudTrailTests() []TestResult {
@@ -31,7 +33,7 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 
 	client := cloudtrail.NewFromConfig(cfg)
 	ctx := context.Background()
-	tc := &cloudTrailTestContext{client: client, ctx: ctx}
+	tc := &cloudTrailTestContext{client: client, ctx: ctx, region: r.region, accountID: r.accountID}
 
 	results = append(results, r.runCloudTrailTrailTests(tc)...)
 	results = append(results, r.runCloudTrailLoggingTests(tc)...)

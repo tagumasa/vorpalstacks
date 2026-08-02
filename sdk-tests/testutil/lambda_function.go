@@ -27,7 +27,7 @@ func runLambdaFunctionTests(
 
 	functionName := fmt.Sprintf("TestFunction-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("TestRole-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
 
 	if err := createIAMRole(roleName); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateFunction", Status: "FAIL",
@@ -37,12 +37,16 @@ func runLambdaFunctionTests(
 	defer deleteLambdaLogGroup(cwlClient, ctx, functionName)
 
 	results = append(results, r.RunTest("lambda", "CreateFunction", func() error {
+		zipCode, err := zipLambdaCode(lambdaFunctionCode)
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		resp, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(functionName),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(roleARN),
 			Handler:      aws.String("index.handler"),
-			Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
+			Code:         &types.FunctionCode{ZipFile: zipCode},
 		})
 		if err != nil {
 			return err
@@ -146,7 +150,10 @@ func runLambdaFunctionTests(
 	}))
 
 	results = append(results, r.RunTest("lambda", "UpdateFunctionCode", func() error {
-		newCode := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: 'Updated' }; };")
+		newCode, err := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: 'Updated' }; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		resp, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
 			FunctionName: aws.String(functionName),
 			ZipFile:      newCode,
@@ -328,13 +335,16 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "CreateFunction_DuplicateName", func() error {
 		dupName := fmt.Sprintf("DupFunc-%d", time.Now().UnixNano())
 		dupRoleName := fmt.Sprintf("DupRole-%d", time.Now().UnixNano())
-		dupRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", dupRoleName)
-		dupCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		dupRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, dupRoleName)
+		dupCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		if err := createIAMRole(dupRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(dupRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(dupName),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(dupRole),
@@ -363,7 +373,7 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "CreateFunction_InvalidRuntime", func() error {
 		invRtFuncName := fmt.Sprintf("InvRtFunc-%d", time.Now().UnixNano())
 		invRtRoleName := fmt.Sprintf("InvRtRole-%d", time.Now().UnixNano())
-		invRtRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invRtRoleName)
+		invRtRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, invRtRoleName)
 		if err := createIAMRole(invRtRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
@@ -386,13 +396,16 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "Invoke_VerifyResponsePayload", func() error {
 		invFunc := fmt.Sprintf("InvFunc-%d", time.Now().UnixNano())
 		invRoleName := fmt.Sprintf("InvRole-%d", time.Now().UnixNano())
-		invRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invRoleName)
-		invCode := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({result: 'ok'}) }; };")
+		invRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, invRoleName)
+		invCode, err := zipLambdaCode("exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({result: 'ok'}) }; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		if err := createIAMRole(invRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(invRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(invFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(invRole),
@@ -448,14 +461,17 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "GetFunction_ContainsCodeConfig", func() error {
 		gfcFunc := fmt.Sprintf("GfcFunc-%d", time.Now().UnixNano())
 		gfcRoleName := fmt.Sprintf("GfcRole-%d", time.Now().UnixNano())
-		gfcRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", gfcRoleName)
-		gfcCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		gfcRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, gfcRoleName)
+		gfcCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		gfcDesc := "Test description for verification"
 		if err := createIAMRole(gfcRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(gfcRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(gfcFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(gfcRole),
@@ -501,13 +517,16 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "ListFunctions_ReturnsCreated", func() error {
 		lfFunc := fmt.Sprintf("LfFunc-%d", time.Now().UnixNano())
 		lfRoleName := fmt.Sprintf("LfRole-%d", time.Now().UnixNano())
-		lfRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", lfRoleName)
-		lfCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		lfRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, lfRoleName)
+		lfCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		if err := createIAMRole(lfRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(lfRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(lfFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(lfRole),
@@ -546,13 +565,16 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "UpdateFunctionConfiguration_VerifyUpdate", func() error {
 		ucFunc := fmt.Sprintf("UcFunc-%d", time.Now().UnixNano())
 		ucRoleName := fmt.Sprintf("UcRole-%d", time.Now().UnixNano())
-		ucRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", ucRoleName)
-		ucCode := zipLambdaCode("exports.handler = async () => { return 1; };")
+		ucRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, ucRoleName)
+		ucCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		if err := createIAMRole(ucRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
 		defer deleteIAMRole(ucRoleName)
-		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(ucFunc),
 			Runtime:      types.RuntimeNodejs22x,
 			Role:         aws.String(ucRole),
@@ -600,6 +622,10 @@ func runLambdaFunctionTests(
 	results = append(results, r.RunTest("lambda", "ListFunctions_Pagination", func() error {
 		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
 		var pgFuncs []string
+		pgZip, err := zipLambdaCode(lambdaFunctionCode)
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %w", err)
+		}
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagFunc-%s-%d", pgTs, i)
 			_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
@@ -607,7 +633,7 @@ func runLambdaFunctionTests(
 				Runtime:      types.RuntimeNodejs22x,
 				Role:         aws.String(roleARN),
 				Handler:      aws.String("index.handler"),
-				Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
+				Code:         &types.FunctionCode{ZipFile: pgZip},
 			})
 			if err != nil {
 				return fmt.Errorf("create function %s: %v", name, err)

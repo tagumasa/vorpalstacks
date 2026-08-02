@@ -21,7 +21,7 @@ func (r *TestRunner) runCWLogsToLambda(ic *integClients, ts string) TestResult {
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)})
 	defer func() {
@@ -70,7 +70,7 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("stream not active: %w", err) })
 	}
 
-	streamARN := fmt.Sprintf("arn:aws:kinesis:us-east-1:000000000000:stream/%s", streamName)
+	streamARN := fmt.Sprintf("arn:aws:kinesis:%s:000000000000:stream/%s", ic.region, streamName)
 
 	ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)})
 	defer func() {

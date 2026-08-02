@@ -25,7 +25,7 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		if resp.ScheduleGroupArn == nil || *resp.ScheduleGroupArn == "" {
 			return fmt.Errorf("ScheduleGroupArn is nil or empty")
 		}
-		expected := fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule-group/%s", tc.region, groupName)
+		expected := fmt.Sprintf("arn:aws:scheduler:%s:%s:schedule-group/%s", tc.region, tc.accountID, groupName)
 		if *resp.ScheduleGroupArn != expected {
 			return fmt.Errorf("ScheduleGroupArn mismatch: expected %q, got %q", expected, *resp.ScheduleGroupArn)
 		}

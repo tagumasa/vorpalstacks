@@ -24,7 +24,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 
 	results = append(results, tc.runner.RunTest("athena", "TagResource", func() error {
 		_, err := client.TagResource(ctx, &athena.TagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:workgroup/%s", tc.runner.region, tagWorkGroupName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
 			Tags: []types.Tag{
 				{Key: aws.String("env"), Value: aws.String("test")},
 				{Key: aws.String("team"), Value: aws.String("athena")},
@@ -35,7 +35,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 
 	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource", func() error {
 		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:workgroup/%s", tc.runner.region, tagWorkGroupName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
 		})
 		if err != nil {
 			return err
@@ -55,7 +55,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 
 	results = append(results, tc.runner.RunTest("athena", "UntagResource", func() error {
 		_, err := client.UntagResource(ctx, &athena.UntagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:workgroup/%s", tc.runner.region, tagWorkGroupName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
 			TagKeys:     []string{"env"},
 		})
 		return err
@@ -63,7 +63,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 
 	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource_AfterUntag", func() error {
 		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:workgroup/%s", tc.runner.region, tagWorkGroupName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
 		})
 		if err != nil {
 			return err
@@ -101,7 +101,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 			return err
 		}
 		_, err = client.TagResource(ctx, &athena.TagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:datacatalog/%s", tc.runner.region, tagCatalogName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:datacatalog/%s", tc.runner.region, tc.runner.AccountID(), tagCatalogName)),
 			Tags: []types.Tag{
 				{Key: aws.String("purpose"), Value: aws.String("testing")},
 			},
@@ -110,7 +110,7 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 			return err
 		}
 		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:000000000000:datacatalog/%s", tc.runner.region, tagCatalogName)),
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:datacatalog/%s", tc.runner.region, tc.runner.AccountID(), tagCatalogName)),
 		})
 		if err != nil {
 			return err

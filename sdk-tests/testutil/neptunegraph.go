@@ -42,6 +42,8 @@ type neptunegraphContext struct {
 	graphARN   string
 	snapshotID string
 	tsNano     string
+	region     string
+	accountID  string
 }
 
 func (r *TestRunner) RunNeptunegraphTests() []TestResult {
@@ -53,8 +55,10 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 	}
 
 	tc := &neptunegraphContext{
-		client: client,
-		ctx:    context.Background(),
+		client:    client,
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}
 	tc.tsNano = fmt.Sprintf("%d", time.Now().UnixNano())
 

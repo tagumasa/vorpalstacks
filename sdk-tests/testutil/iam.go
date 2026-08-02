@@ -21,6 +21,8 @@ type iamTestContext struct {
 	role    string
 	policy  string
 	profile string
+	region    string
+	accountID string
 
 	userInlinePolicy    string
 	roleInlinePolicy    string
@@ -39,7 +41,7 @@ type iamTestContext struct {
 	serviceCredPassword string
 }
 
-func newIAMTestContext(endpoint, region string) (*iamTestContext, error) {
+func newIAMTestContext(endpoint, region, accountID string) (*iamTestContext, error) {
 	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
 		Endpoint: endpoint,
 		Region:   region,
@@ -62,6 +64,8 @@ func newIAMTestContext(endpoint, region string) (*iamTestContext, error) {
 		roleInlinePolicy:  fmt.Sprintf("RolePolicy-%s", ts),
 		groupInlinePolicy: fmt.Sprintf("GroupPolicy-%s", ts),
 		accountAlias:      fmt.Sprintf("test-alias-%s", ts),
+		region:            region,
+		accountID:         accountID,
 	}, nil
 }
 
@@ -103,7 +107,7 @@ const samlMetadata = `<?xml version="1.0" encoding="UTF-8"?>
 func (r *TestRunner) RunIAMTests() []TestResult {
 	var results []TestResult
 
-	tc, err := newIAMTestContext(r.endpoint, r.region)
+	tc, err := newIAMTestContext(r.endpoint, r.region, r.accountID)
 	if err != nil {
 		return []TestResult{{Service: "iam", TestName: "Setup", Status: "FAIL", Error: err.Error()}}
 	}

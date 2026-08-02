@@ -42,7 +42,7 @@ func newSFNTestContext(r *TestRunner) (*sfnTestContext, func(), error) {
 	}
 
 	tc.roleName = fmt.Sprintf("TestSfnRole-%d", time.Now().UnixNano())
-	tc.roleARN = fmt.Sprintf("arn:aws:iam::000000000000:role/%s", tc.roleName)
+	tc.roleARN = fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, tc.roleName)
 
 	if err := IAMCreateRole(tc.iamClient, tc.roleName, tc.trustPolicy); err != nil {
 		return nil, nil, fmt.Errorf("create IAM role: %w", err)
@@ -93,7 +93,7 @@ func (tc *sfnTestContext) createPassSM(name, comment string) (string, error) {
 
 func (tc *sfnTestContext) createRoleForSM(name string) (string, string, func()) {
 	roleName := fmt.Sprintf("%s-%d", name, time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.runner.AccountID(), roleName)
 	IAMCreateRole(tc.iamClient, roleName, tc.trustPolicy)
 	cleanup := func() { IAMDeleteRole(tc.iamClient, roleName) }
 	return roleName, roleARN, cleanup

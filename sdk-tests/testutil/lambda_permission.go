@@ -25,7 +25,7 @@ func runLambdaPermissionTests(
 
 	funcName := fmt.Sprintf("PermFunc-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("PermRole-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
 
 	if err := createIAMRole(roleName); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Permission_Setup", Status: "FAIL",
@@ -33,12 +33,18 @@ func runLambdaPermissionTests(
 	}
 	defer deleteIAMRole(roleName)
 
-	_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+	zipCode, err := zipLambdaCode(lambdaFunctionCode)
+	if err != nil {
+		return []TestResult{{Service: "lambda", TestName: "Permission_Setup", Status: "FAIL",
+			Error: fmt.Sprintf("Failed to zip lambda code: %v", err)}}
+	}
+
+	_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 		FunctionName: aws.String(funcName),
 		Runtime:      types.RuntimeNodejs22x,
 		Role:         aws.String(roleARN),
 		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: zipLambdaCode(lambdaFunctionCode)},
+		Code:         &types.FunctionCode{ZipFile: zipCode},
 	})
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Permission_Setup", Status: "FAIL",
@@ -125,7 +131,7 @@ func runLambdaPermissionTests(
 		return nil
 	}))
 
-	functionARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", region, funcName)
+	functionARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", region, r.accountID, funcName)
 
 	results = append(results, r.RunTest("lambda", "TagResource", func() error {
 		_, err := client.TagResource(ctx, &lambda.TagResourceInput{

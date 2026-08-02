@@ -136,7 +136,7 @@ func (r *TestRunner) runEventBridgeTagTests(ctx context.Context, client *eventbr
 	var results []TestResult
 
 	results = append(results, r.RunTest("events", "TagResource", func() error {
-		ruleARN := fmt.Sprintf("arn:aws:events:%s:000000000000:rule/%s/%s", r.region, busName, ruleName)
+		ruleARN := fmt.Sprintf("arn:aws:events:%s:%s:rule/%s/%s", r.region, r.accountID, busName, ruleName)
 		resp, err := client.TagResource(ctx, &eventbridge.TagResourceInput{
 			ResourceARN: aws.String(ruleARN),
 			Tags: []types.Tag{
@@ -172,7 +172,7 @@ func (r *TestRunner) runEventBridgeTagTests(ctx context.Context, client *eventbr
 	}))
 
 	results = append(results, r.RunTest("events", "ListTagsForResource", func() error {
-		ruleARN := fmt.Sprintf("arn:aws:events:%s:000000000000:rule/%s/%s", r.region, busName, ruleName)
+		ruleARN := fmt.Sprintf("arn:aws:events:%s:%s:rule/%s/%s", r.region, r.accountID, busName, ruleName)
 		resp, err := client.ListTagsForResource(ctx, &eventbridge.ListTagsForResourceInput{
 			ResourceARN: aws.String(ruleARN),
 		})
@@ -186,7 +186,7 @@ func (r *TestRunner) runEventBridgeTagTests(ctx context.Context, client *eventbr
 	}))
 
 	results = append(results, r.RunTest("events", "UntagResource", func() error {
-		ruleARN := fmt.Sprintf("arn:aws:events:%s:000000000000:rule/%s/%s", r.region, busName, ruleName)
+		ruleARN := fmt.Sprintf("arn:aws:events:%s:%s:rule/%s/%s", r.region, r.accountID, busName, ruleName)
 		resp, err := client.UntagResource(ctx, &eventbridge.UntagResourceInput{
 			ResourceARN: aws.String(ruleARN),
 			TagKeys:     []string{"Environment"},

@@ -115,7 +115,7 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
 			QueueUrl:      urlResp.QueueUrl,
 			Label:         aws.String("TestPermission"),
-			AWSAccountIds: []string{"123456789012"},
+			AWSAccountIds: []string{r.accountID},
 			Actions:       []string{"SendMessage", "ReceiveMessage"},
 		})
 		if err != nil {
@@ -163,7 +163,7 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
 			QueueUrl:      urlResp.QueueUrl,
 			Label:         aws.String("RemoveTestPerm"),
-			AWSAccountIds: []string{"123456789012"},
+			AWSAccountIds: []string{r.accountID},
 			Actions:       []string{"SendMessage"},
 		})
 		if err != nil {

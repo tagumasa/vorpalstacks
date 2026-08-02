@@ -125,7 +125,7 @@ func (tc *cwlogsTestCtx) createSubscriptionRole() (string, func(), error) {
 	cleanup := func() {
 		tc.iamClient.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
 	}
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName), cleanup, nil
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.runner.AccountID(), roleName), cleanup, nil
 }
 
 func (tc *cwlogsTestCtx) putMetricFilter(group, filterName, pattern, metricName, metricNS string) error {

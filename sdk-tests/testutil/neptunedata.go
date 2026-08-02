@@ -36,6 +36,8 @@ type neptunedataContext struct {
 	client    *neptunedata.Client
 	ctx       context.Context
 	clusterID string
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) runNeptunedataClusterTests(tc *neptunedataContext) []TestResult {
@@ -67,8 +69,10 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 	}
 
 	tc := &neptunedataContext{
-		client: neptunedata.NewFromConfig(cfg),
-		ctx:    context.Background(),
+		client:    neptunedata.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}
 
 	results = append(results, r.runNeptunedataEngineTests(tc)...)
@@ -76,6 +80,7 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 
 	clusterID := fmt.Sprintf("sdk-test-%d", time.Now().UnixNano())
 	clusterPort, cleanup := r.createNeptuneClusterForDataTests(clusterID)
+	defer cleanup()
 	if clusterPort > 0 {
 		clusterCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
 			Endpoint: fmt.Sprintf("http://127.0.0.1:%d", clusterPort),
@@ -83,7 +88,7 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		})
 		if err != nil {
 			log.Printf("neptunedata: cluster config load failed: %v", err)
-			results = append(results, r.runNeptunedataClusterTests(tc)...)
+			results = append(results, SetupFailResult("neptunedata", "cluster config load failed: %v", err))
 		} else {
 			tcCluster := &neptunedataContext{
 				client:    neptunedata.NewFromConfig(clusterCfg),
@@ -92,9 +97,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 			}
 			results = append(results, r.runNeptunedataClusterTests(tcCluster)...)
 		}
-		cleanup()
 	} else {
-		results = append(results, r.runNeptunedataClusterTests(tc)...)
+		results = append(results, SetupFailResult("neptunedata", "cluster creation returned port 0"))
 	}
 
 	results = append(results, r.runNeptunedataServerAPITests(tc)...)

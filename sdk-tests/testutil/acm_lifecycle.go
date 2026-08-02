@@ -13,7 +13,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "DeleteCertificate_NonExistent", func() error {
 		_, err := tc.client.DeleteCertificate(tc.ctx, &acm.DeleteCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
@@ -115,7 +115,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "UpdateCertificateOptions_NonExistent", func() error {
 		_, err := tc.client.UpdateCertificateOptions(tc.ctx, &acm.UpdateCertificateOptionsInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
 			Options: &types.CertificateOptions{
 				CertificateTransparencyLoggingPreference: types.CertificateTransparencyLoggingPreferenceEnabled,
 			},
@@ -138,7 +138,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RenewCertificate_NonExistent", func() error {
 		_, err := tc.client.RenewCertificate(tc.ctx, &acm.RenewCertificateInput{
-			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
@@ -271,7 +271,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_NonExistent", func() error {
 		_, err := tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
+			CertificateArn:   aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")

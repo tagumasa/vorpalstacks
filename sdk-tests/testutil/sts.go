@@ -19,6 +19,8 @@ type stsTestContext struct {
 	roleName  string
 	samlRole  string
 	webIdRole string
+	region    string
+	accountID string
 }
 
 func newSTSTestContext(r *TestRunner) (*stsTestContext, []TestResult) {
@@ -45,57 +47,60 @@ func newSTSTestContext(r *TestRunner) (*stsTestContext, []TestResult) {
 	ts := fmt.Sprintf("%d", time.Now().UnixNano()%1000000)
 
 	roleName := fmt.Sprintf("TestRole-%s", ts)
-	trustPolicy := `{
+	trustPolicy := fmt.Sprintf(`{
 		"Version": "2012-10-17",
 		"Statement": [{
 			"Effect": "Allow",
-			"Principal": {"AWS": "arn:aws:iam::000000000000:root"},
+			"Principal": {"AWS": "arn:aws:iam::%s:root"},
 			"Action": "sts:AssumeRole"
 		}]
-	}`
+	}`, r.AccountID())
 
 	_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(roleName),
 		AssumeRolePolicyDocument: aws.String(trustPolicy),
 	})
 	if err != nil {
-		_ = fmt.Errorf("failed to create test role: %v", err)
+		results = append(results, SetupFailResult("sts", "failed to create test role: %v", err))
+		return nil, results
 	}
 
 	samlRole := fmt.Sprintf("SAMLRole-%s", ts)
-	samlTrustPolicy := `{
+	samlTrustPolicy := fmt.Sprintf(`{
 		"Version": "2012-10-17",
 		"Statement": [{
 			"Effect": "Allow",
-			"Principal": {"Federated": "arn:aws:iam::000000000000:saml-provider/TestProvider"},
+			"Principal": {"Federated": "arn:aws:iam::%s:saml-provider/TestProvider"},
 			"Action": "sts:AssumeRoleWithSAML"
 		}]
-	}`
+	}`, r.AccountID())
 
 	_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(samlRole),
 		AssumeRolePolicyDocument: aws.String(samlTrustPolicy),
 	})
 	if err != nil {
-		_ = fmt.Errorf("failed to create SAML test role: %v", err)
+		results = append(results, SetupFailResult("sts", "failed to create SAML test role: %v", err))
+		return nil, results
 	}
 
 	webIdRole := fmt.Sprintf("WebIdRole-%s", ts)
-	webIdTrustPolicy := `{
+	webIdTrustPolicy := fmt.Sprintf(`{
 		"Version": "2012-10-17",
 		"Statement": [{
 			"Effect": "Allow",
-			"Principal": {"Federated": "arn:aws:iam::000000000000:oidc-provider/example.com"},
+			"Principal": {"Federated": "arn:aws:iam::%s:oidc-provider/example.com"},
 			"Action": "sts:AssumeRoleWithWebIdentity"
 		}]
-	}`
+	}`, r.AccountID())
 
 	_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(webIdRole),
 		AssumeRolePolicyDocument: aws.String(webIdTrustPolicy),
 	})
 	if err != nil {
-		_ = fmt.Errorf("failed to create WebIdentity test role: %v", err)
+		results = append(results, SetupFailResult("sts", "failed to create WebIdentity test role: %v", err))
+		return nil, results
 	}
 
 	tc := &stsTestContext{
@@ -106,6 +111,8 @@ func newSTSTestContext(r *TestRunner) (*stsTestContext, []TestResult) {
 		roleName:  roleName,
 		samlRole:  samlRole,
 		webIdRole: webIdRole,
+		region:    r.region,
+		accountID: r.accountID,
 	}
 
 	return tc, results
@@ -118,15 +125,15 @@ func (tc *stsTestContext) cleanup() {
 }
 
 func (tc *stsTestContext) roleARN() string {
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", tc.roleName)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, tc.roleName)
 }
 
 func (tc *stsTestContext) samlRoleARN() string {
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", tc.samlRole)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, tc.samlRole)
 }
 
 func (tc *stsTestContext) webIdRoleARN() string {
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", tc.webIdRole)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, tc.webIdRole)
 }
 
 func (r *TestRunner) RunSTSTests() []TestResult {

@@ -32,7 +32,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if resp.ScheduleArn == nil || *resp.ScheduleArn == "" {
 			return fmt.Errorf("ScheduleArn is nil or empty")
 		}
-		expected := fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule/default/%s", tc.region, scheduleName)
+		expected := fmt.Sprintf("arn:aws:scheduler:%s:%s:schedule/default/%s", tc.region, tc.accountID, scheduleName)
 		if *resp.ScheduleArn != expected {
 			return fmt.Errorf("ScheduleArn mismatch: expected %q, got %q", expected, *resp.ScheduleArn)
 		}

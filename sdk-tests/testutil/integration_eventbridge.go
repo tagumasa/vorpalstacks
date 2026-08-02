@@ -35,7 +35,7 @@ func (r *TestRunner) runEventBridgeToLambda(ic *integClients, ts string) TestRes
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 	ic.eb.PutTargets(ic.ctx, &eventbridge.PutTargetsInput{
 		Rule: aws.String(ruleName), EventBusName: aws.String(busName),
 		Targets: []types.Target{{Id: aws.String("t1"), Arn: aws.String(fnARN)}},
@@ -83,17 +83,17 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 
 	_, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(roleName)),
+		RoleArn:    aws.String(intRoleARN(roleName, ic.accountID)),
 		Definition: aws.String(`{"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}}`),
 	})
 	if err != nil {
 		return r.RunTest(integSvc, "EventBridge_StepFunctions", func() error { return fmt.Errorf("create state machine: %w", err) })
 	}
 	defer func() {
-		ic.sfn.DeleteStateMachine(ic.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName))})
+		ic.sfn.DeleteStateMachine(ic.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName))})
 	}()
 
-	smARN := fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName)
+	smARN := fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName)
 	ic.eb.PutTargets(ic.ctx, &eventbridge.PutTargetsInput{
 		Rule: aws.String(ruleName), EventBusName: aws.String(busName),
 		Targets: []types.Target{{Id: aws.String("t1"), Arn: aws.String(smARN)}},
@@ -141,7 +141,7 @@ func (r *TestRunner) runEventBridgeToSQS(ic *integClients, ts string) TestResult
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
 
 	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(busName)})
 	defer func() {
@@ -198,7 +198,7 @@ func (r *TestRunner) runEventBridgeToSNS(ic *integClients, ts string) TestResult
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 
 	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(busName)})
@@ -250,7 +250,7 @@ func (r *TestRunner) runEventBridgeToKinesis(ic *integClients, ts string) TestRe
 		return r.RunTest(integSvc, "EventBridge_Kinesis", func() error { return fmt.Errorf("stream not active: %w", err) })
 	}
 
-	streamARN := fmt.Sprintf("arn:aws:kinesis:us-east-1:000000000000:stream/%s", streamName)
+	streamARN := fmt.Sprintf("arn:aws:kinesis:%s:000000000000:stream/%s", ic.region, streamName)
 
 	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(busName)})
 	defer func() {

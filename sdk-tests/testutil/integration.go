@@ -45,8 +45,8 @@ func intTimestamp() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
-func intRoleARN(roleName string) string {
-	return fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+func intRoleARN(roleName, accountID string) string {
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
 type integClients struct {
@@ -63,6 +63,8 @@ type integClients struct {
 	iam       *iam.Client
 	dynamodb  *dynamodb.Client
 	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) newIntegClients() (*integClients, error) {
@@ -87,22 +89,28 @@ func (r *TestRunner) newIntegClients() (*integClients, error) {
 		iam:       iam.NewFromConfig(cfg),
 		dynamodb:  dynamodb.NewFromConfig(cfg),
 		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}
 	return ic, nil
 }
 
 func (ic *integClients) createLambda(name, roleName string) (string, error) {
-	_, err := ic.lambda.CreateFunction(ic.ctx, &lambda.CreateFunctionInput{
+	zipCode, err := zipLambdaCode(echoHandlerCode)
+	if err != nil {
+		return "", fmt.Errorf("zip lambda code: %w", err)
+	}
+	_, err = ic.lambda.CreateFunction(ic.ctx, &lambda.CreateFunctionInput{
 		FunctionName: aws.String(name),
 		Runtime:      lambdatypes.RuntimeNodejs22x,
-		Role:         aws.String(intRoleARN(roleName)),
+		Role:         aws.String(intRoleARN(roleName, ic.accountID)),
 		Handler:      aws.String("index.handler"),
-		Code:         &lambdatypes.FunctionCode{ZipFile: zipLambdaCode(echoHandlerCode)},
+		Code:         &lambdatypes.FunctionCode{ZipFile: zipCode},
 	})
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", "us-east-1", name), nil
+	return fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", ic.region, ic.accountID, name), nil
 }
 
 func (ic *integClients) deleteLambda(name string) {
@@ -244,16 +252,29 @@ func (ic *integClients) createBucket(name string) error {
 }
 
 func (ic *integClients) deleteBucket(name string) {
-	listResp, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{Bucket: aws.String(name)})
-	if err == nil && len(listResp.Contents) > 0 {
-		var objs []s3types.ObjectIdentifier
-		for _, o := range listResp.Contents {
-			objs = append(objs, s3types.ObjectIdentifier{Key: o.Key})
-		}
-		ic.s3.DeleteObjects(ic.ctx, &s3.DeleteObjectsInput{
-			Bucket: aws.String(name),
-			Delete: &s3types.Delete{Objects: objs},
+	var contToken *string
+	for {
+		listResp, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{
+			Bucket:            aws.String(name),
+			ContinuationToken: contToken,
 		})
+		if err != nil {
+			break
+		}
+		if len(listResp.Contents) > 0 {
+			var objs []s3types.ObjectIdentifier
+			for _, o := range listResp.Contents {
+				objs = append(objs, s3types.ObjectIdentifier{Key: o.Key})
+			}
+			ic.s3.DeleteObjects(ic.ctx, &s3.DeleteObjectsInput{
+				Bucket: aws.String(name),
+				Delete: &s3types.Delete{Objects: objs},
+			})
+		}
+		if !aws.ToBool(listResp.IsTruncated) {
+			break
+		}
+		contToken = listResp.NextContinuationToken
 	}
 	ic.s3.DeleteBucket(ic.ctx, &s3.DeleteBucketInput{Bucket: aws.String(name)})
 }

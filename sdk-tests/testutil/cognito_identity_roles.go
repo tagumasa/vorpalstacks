@@ -11,13 +11,14 @@ import (
 
 func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cognitoidentity.Client, poolID string) []TestResult {
 	var results []TestResult
+	acct := r.accountID
 
 	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles", func() error {
 		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String(poolID),
 			Roles: map[string]string{
-				"authenticated":   "arn:aws:iam::123456789012:role/auth-role",
-				"unauthenticated": "arn:aws:iam::123456789012:role/unauth-role",
+				"authenticated":   fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
+				"unauthenticated": fmt.Sprintf("arn:aws:iam::%s:role/unauth-role", acct),
 			},
 		})
 		if err != nil {
@@ -29,7 +30,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if err != nil {
 			return fmt.Errorf("GetIdentityPoolRoles after set: %v", err)
 		}
-		if rolesResp.Roles["authenticated"] != "arn:aws:iam::123456789012:role/auth-role" {
+		if rolesResp.Roles["authenticated"] != fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct) {
 			return fmt.Errorf("authenticated role not saved")
 		}
 		return nil
@@ -45,10 +46,10 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if resp.Roles == nil {
 			return fmt.Errorf("roles is nil")
 		}
-		if resp.Roles["authenticated"] != "arn:aws:iam::123456789012:role/auth-role" {
+		if resp.Roles["authenticated"] != fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct) {
 			return fmt.Errorf("unexpected authenticated role: %v", resp.Roles["authenticated"])
 		}
-		if resp.Roles["unauthenticated"] != "arn:aws:iam::123456789012:role/unauth-role" {
+		if resp.Roles["unauthenticated"] != fmt.Sprintf("arn:aws:iam::%s:role/unauth-role", acct) {
 			return fmt.Errorf("unexpected unauthenticated role: %v", resp.Roles["unauthenticated"])
 		}
 		return nil
@@ -58,7 +59,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String(poolID),
 			Roles: map[string]string{
-				"authenticated": "arn:aws:iam::123456789012:role/auth-role",
+				"authenticated": fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
 			},
 			RoleMappings: map[string]types.RoleMapping{
 				"graph.facebook.com": {
@@ -101,7 +102,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		_, err = client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String(pid),
 			Roles: map[string]string{
-				"authenticated": "arn:aws:iam::123456789012:role/auth",
+				"authenticated": fmt.Sprintf("arn:aws:iam::%s:role/auth", acct),
 			},
 			RoleMappings: map[string]types.RoleMapping{
 				"graph.facebook.com": {
@@ -113,7 +114,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 								Claim:     aws.String("isAdmin"),
 								MatchType: types.MappingRuleMatchTypeEquals,
 								Value:     aws.String("true"),
-								RoleARN:   aws.String("arn:aws:iam::123456789012:role/admin"),
+								RoleARN:   aws.String(fmt.Sprintf("arn:aws:iam::%s:role/admin", acct)),
 							},
 						},
 					},

@@ -9,6 +9,7 @@ import (
 
 func (tc *cwlogsTestCtx) subscriptionTests() []TestResult {
 	var results []TestResult
+	acct := tc.runner.AccountID()
 
 	results = append(results, tc.runner.RunTest("logs", "PutSubscriptionFilter_VerifyFields", func() error {
 		sfName := tc.uniquePrefix("SFGroup")
@@ -23,7 +24,7 @@ func (tc *cwlogsTestCtx) subscriptionTests() []TestResult {
 		}
 		defer cleanup()
 
-		destARN := "arn:aws:lambda:us-east-1:000000000000:function:test-func"
+		destARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-func", tc.region, acct)
 		if err := tc.putSubscriptionFilter(sfName, "TestSub", "ERROR", destARN, roleARN); err != nil {
 			return fmt.Errorf("put subscription filter: %v", err)
 		}
@@ -67,7 +68,7 @@ func (tc *cwlogsTestCtx) subscriptionTests() []TestResult {
 			LogGroupName:   aws.String(dsfName),
 			FilterName:     aws.String("DescSub"),
 			FilterPattern:  aws.String("ERROR"),
-			DestinationArn: aws.String("arn:aws:lambda:us-east-1:000000000000:function:test"),
+			DestinationArn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test", tc.region, acct)),
 			RoleArn:        aws.String(roleARN),
 		})
 
@@ -83,7 +84,7 @@ func (tc *cwlogsTestCtx) subscriptionTests() []TestResult {
 		if *resp.SubscriptionFilters[0].FilterName != "DescSub" {
 			return fmt.Errorf("filter name mismatch: got %q", *resp.SubscriptionFilters[0].FilterName)
 		}
-		if *resp.SubscriptionFilters[0].DestinationArn != "arn:aws:lambda:us-east-1:000000000000:function:test" {
+		if *resp.SubscriptionFilters[0].DestinationArn != fmt.Sprintf("arn:aws:lambda:%s:%s:function:test", tc.region, acct) {
 			return fmt.Errorf("destination arn mismatch")
 		}
 		return nil
@@ -106,7 +107,7 @@ func (tc *cwlogsTestCtx) subscriptionTests() []TestResult {
 			LogGroupName:   aws.String(delSFName),
 			FilterName:     aws.String("DelSub"),
 			FilterPattern:  aws.String("ERROR"),
-			DestinationArn: aws.String("arn:aws:lambda:us-east-1:000000000000:function:test"),
+			DestinationArn: aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test", tc.region, acct)),
 			RoleArn:        aws.String(roleARN),
 		})
 

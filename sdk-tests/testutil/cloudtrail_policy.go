@@ -109,7 +109,7 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutResourcePolicy_NonExistentTrail", func() error {
-		fakeARN := "arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-policy-trail"
+		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-policy-trail", tc.region, tc.accountID)
 		_, err := tc.client.PutResourcePolicy(tc.ctx, &cloudtrail.PutResourcePolicyInput{
 			ResourceArn:    aws.String(fakeARN),
 			ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),

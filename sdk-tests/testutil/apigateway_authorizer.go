@@ -185,7 +185,7 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(ctx context.Context, client *a
 			Type:                         types.AuthorizerTypeToken,
 			AuthorizerUri:                aws.String("https://example.com/lambda"),
 			IdentitySource:               aws.String("method.request.header.Auth"),
-			AuthorizerCredentials:        aws.String("arn:aws:iam::123456789012:role/lambda-auth-role"),
+			AuthorizerCredentials:        aws.String(fmt.Sprintf("arn:aws:iam::%s:role/lambda-auth-role", r.accountID)),
 			IdentityValidationExpression: aws.String("Bearer .*"),
 			AuthorizerResultTtlInSeconds: aws.Int32(600),
 		})

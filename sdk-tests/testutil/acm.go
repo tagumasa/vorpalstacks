@@ -12,8 +12,10 @@ import (
 )
 
 type acmTestContext struct {
-	client *acm.Client
-	ctx    context.Context
+	client    *acm.Client
+	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) newACMTestContext() (*acmTestContext, error) {
@@ -25,8 +27,10 @@ func (r *TestRunner) newACMTestContext() (*acmTestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	return &acmTestContext{
-		client: acm.NewFromConfig(cfg),
-		ctx:    context.Background(),
+		client:    acm.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}, nil
 }
 

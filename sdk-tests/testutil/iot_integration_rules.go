@@ -10,7 +10,6 @@ import (
 	iotTypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 	iotdataplane "github.com/aws/aws-sdk-go-v2/service/iotdataplane"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	sqsTypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 
 	"vorpalstacks-sdk-tests/config"
 )
@@ -44,17 +43,7 @@ func (r *TestRunner) runIoTIntegrationRuleActionTests(tc *iotTestContext) []Test
 			_, _ = sqsClient.DeleteQueue(tc.ctx, &sqs.DeleteQueueInput{QueueUrl: aws.String(queueURL)})
 		}()
 
-		// Get the queue ARN for the TopicRule action.
-		attrOut, err := sqsClient.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl:       aws.String(queueURL),
-			AttributeNames: []sqsTypes.QueueAttributeName{sqsTypes.QueueAttributeNameQueueArn},
-		})
-		if err != nil {
-			return fmt.Errorf("GetQueueAttributes: %w", err)
-		}
-		queueARN := attrOut.Attributes["QueueArn"]
-
-		// 2. Create TopicRule with SQS action.
+		// Create TopicRule with SQS action.
 		ruleName := uniqueName("iot-rule-sqs")
 		topicFilter := "test/integration/" + queueName
 		_, err = tc.client.CreateTopicRule(ctx, &iot.CreateTopicRuleInput{
@@ -74,8 +63,6 @@ func (r *TestRunner) runIoTIntegrationRuleActionTests(tc *iotTestContext) []Test
 		if err != nil {
 			return fmt.Errorf("CreateTopicRule: %w", err)
 		}
-		// Use queueARN to avoid unused variable.
-		_ = queueARN
 		defer func() {
 			_, _ = tc.client.DeleteTopicRule(tc.ctx, &iot.DeleteTopicRuleInput{RuleName: aws.String(ruleName)})
 		}()

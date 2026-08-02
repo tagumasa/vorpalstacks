@@ -10,9 +10,10 @@ import (
 )
 
 type secretsManagerTestContext struct {
-	client *secretsmanager.Client
-	ctx    context.Context
-	region string
+	client    *secretsmanager.Client
+	ctx       context.Context
+	region    string
+	accountID string
 }
 
 func (r *TestRunner) initSecretsManager() (*secretsManagerTestContext, error) {
@@ -24,9 +25,10 @@ func (r *TestRunner) initSecretsManager() (*secretsManagerTestContext, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	return &secretsManagerTestContext{
-		client: secretsmanager.NewFromConfig(cfg),
-		ctx:    context.Background(),
-		region: r.region,
+		client:    secretsmanager.NewFromConfig(cfg),
+		ctx:       context.Background(),
+		region:    r.region,
+		accountID: r.accountID,
 	}, nil
 }
 

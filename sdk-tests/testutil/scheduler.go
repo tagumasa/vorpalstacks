@@ -18,6 +18,7 @@ type schedTestContext struct {
 	iamClient *iam.Client
 	ctx       context.Context
 	region    string
+	accountID string
 }
 
 func (r *TestRunner) RunSchedulerTests() []TestResult {
@@ -43,6 +44,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		iamClient: iam.NewFromConfig(cfg),
 		ctx:       ctx,
 		region:    r.region,
+		accountID: r.accountID,
 	}
 
 	results = append(results, tc.runScheduleTests()...)
@@ -58,7 +60,7 @@ func (tc *schedTestContext) createIAMRole() (string, string) {
 	roleName := fmt.Sprintf("SchedRole-%d", time.Now().UnixNano())
 	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
 	IAMCreateRole(tc.iamClient, roleName, trustPolicy)
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, roleName)
 	return roleName, roleARN
 }
 
@@ -68,14 +70,14 @@ func (tc *schedTestContext) deleteIAMRole(roleName string) {
 
 func (tc *schedTestContext) defaultTarget(roleARN string) *types.Target {
 	return &types.Target{
-		Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFunction", tc.region)),
+		Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:TestFunction", tc.region, tc.accountID)),
 		RoleArn: aws.String(roleARN),
 		Input:   aws.String(`{"message":"test message"}`),
 	}
 }
 
 func (tc *schedTestContext) lambdaARN() string {
-	return fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFunction", tc.region)
+	return fmt.Sprintf("arn:aws:lambda:%s:%s:function:TestFunction", tc.region, tc.accountID)
 }
 
 func (tc *schedTestContext) uniqueName(prefix string) string {
@@ -83,5 +85,5 @@ func (tc *schedTestContext) uniqueName(prefix string) string {
 }
 
 func (tc *schedTestContext) scheduleARN(scheduleName string) string {
-	return fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule/default/%s", tc.region, scheduleName)
+	return fmt.Sprintf("arn:aws:scheduler:%s:%s:schedule/default/%s", tc.region, tc.accountID, scheduleName)
 }

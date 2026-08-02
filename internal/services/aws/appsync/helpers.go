@@ -72,6 +72,9 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 				ap := appsyncstore.AuthProvider{
 					AuthType: request.GetStringParam(apMap, "authType"),
 				}
+				if ap.AuthType != "" && !validAuthenticationTypes[ap.AuthType] {
+					return nil, NewBadRequestException(fmt.Sprintf("Invalid authType in eventConfig.authProviders: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", ap.AuthType))
+				}
 				if cognitoRaw := request.GetMapParam(apMap, "cognitoConfig"); cognitoRaw != nil {
 					ap.CognitoConfig = &appsyncstore.CognitoEventConfig{
 						AwsRegion:        request.GetStringParam(cognitoRaw, "awsRegion"),
@@ -80,9 +83,13 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 					}
 				}
 				if lambdaRaw := request.GetMapParam(apMap, "lambdaAuthorizerConfig"); lambdaRaw != nil {
+					ttl := int32(request.GetIntParam(lambdaRaw, "authorizerResultTtlInSeconds"))
+					if err := validateLambdaAuthorizerTtl(ttl); err != nil {
+						return nil, err
+					}
 					ap.LambdaAuthorizerConfig = &appsyncstore.LambdaAuthorizerConfig{
 						AuthorizerUri:                request.GetStringParam(lambdaRaw, "authorizerUri"),
-						AuthorizerResultTtlInSeconds: int32(request.GetIntParam(lambdaRaw, "authorizerResultTtlInSeconds")),
+						AuthorizerResultTtlInSeconds: ttl,
 						IdentityValidationExpression: request.GetStringParam(lambdaRaw, "identityValidationExpression"),
 					}
 				}
@@ -111,6 +118,21 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 	ec.DefaultSubscribeAuthModes, authErr = parseAuthModes(request.GetArrayParam(ecRaw, "defaultSubscribeAuthModes"))
 	if authErr != nil {
 		return nil, authErr
+	}
+
+	// Reject empty required fields (H-1). AWS AppSync requires at least one
+	// auth provider and non-empty auth mode lists for each operation type.
+	if len(ec.AuthProviders) == 0 {
+		return nil, NewBadRequestException("eventConfig.authProviders is required and must contain at least one provider")
+	}
+	if len(ec.ConnectionAuthModes) == 0 {
+		return nil, NewBadRequestException("eventConfig.connectionAuthModes is required and must not be empty")
+	}
+	if len(ec.DefaultPublishAuthModes) == 0 {
+		return nil, NewBadRequestException("eventConfig.defaultPublishAuthModes is required and must not be empty")
+	}
+	if len(ec.DefaultSubscribeAuthModes) == 0 {
+		return nil, NewBadRequestException("eventConfig.defaultSubscribeAuthModes is required and must not be empty")
 	}
 
 	if logRaw := request.GetMapParam(ecRaw, "logConfig"); logRaw != nil {

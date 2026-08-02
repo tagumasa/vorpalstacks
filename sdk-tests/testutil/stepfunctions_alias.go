@@ -159,7 +159,7 @@ func (r *TestRunner) runSFNAliasTests(tc *sfnTestContext) []TestResult {
 		})
 		if err == nil {
 			tc.client.DeleteStateMachineAlias(tc.ctx, &sfn.DeleteStateMachineAliasInput{
-				StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachineAlias:%s", r.region, dupAliasName)),
+				StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachineAlias:%s", r.region, r.accountID, dupAliasName)),
 			})
 			return fmt.Errorf("expected error for duplicate alias")
 		}

@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"vorpalstacks-sdk-tests/config"
 )
 
 type TestResult struct {
@@ -23,10 +27,11 @@ type TestResult struct {
 }
 
 type TestRunner struct {
-	endpoint string
-	region   string
-	client   *http.Client
-	verbose  bool
+	endpoint  string
+	region    string
+	accountID string
+	client    *http.Client
+	verbose   bool
 }
 
 type ServiceFactory func(*TestRunner) []TestResult
@@ -90,16 +95,34 @@ func init() {
 }
 
 func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
-	return &TestRunner{
+	r := &TestRunner{
 		endpoint: endpoint,
 		region:   region,
 		client:   &http.Client{Timeout: 30 * time.Second},
 		verbose:  verbose,
 	}
+
+	// Resolve the account ID via STS GetCallerIdentity so that test
+	// assertions can build ARNs with the correct account instead of
+	// hardcoding fake values like 000000000000 or 123456789012.
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: endpoint,
+		Region:   region,
+	})
+	if err == nil {
+		stsClient := sts.NewFromConfig(cfg)
+		resp, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+		if err == nil && resp.Account != nil {
+			r.accountID = *resp.Account
+		}
+	}
+
+	return r
 }
 
-func (r *TestRunner) Endpoint() string { return r.endpoint }
-func (r *TestRunner) Region() string   { return r.region }
+func (r *TestRunner) Endpoint() string   { return r.endpoint }
+func (r *TestRunner) Region() string     { return r.region }
+func (r *TestRunner) AccountID() string  { return r.accountID }
 
 // CleanupStaleContainers removes orphaned Lambda Docker containers left by
 // previous test runs. The server's cleanupOrphanedContainers() only runs at

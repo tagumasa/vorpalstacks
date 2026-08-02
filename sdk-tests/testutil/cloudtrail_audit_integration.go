@@ -86,7 +86,7 @@ func (r *TestRunner) runAuditCreateTrailVerifyEvent(ac *auditClients) TestResult
 			return fmt.Errorf("create trail: %v", err)
 		}
 
-		return r.pollAuditEvent("CreateTrail event", func() (*cloudtrail.LookupEventsOutput, error) {
+		return r.pollAuditEvent("CreateTrail event", func(nextToken *string) (*cloudtrail.LookupEventsOutput, error) {
 			return ac.cloudtrail.LookupEvents(ac.ctx, &cloudtrail.LookupEventsInput{
 				LookupAttributes: []types.LookupAttribute{
 					{
@@ -95,6 +95,7 @@ func (r *TestRunner) runAuditCreateTrailVerifyEvent(ac *auditClients) TestResult
 					},
 				},
 				MaxResults: aws.Int32(50),
+				NextToken:  nextToken,
 			})
 		}, func(events []types.Event) error {
 			for _, e := range events {
@@ -127,7 +128,7 @@ func (r *TestRunner) runAuditS3PutObject(ac *auditClients) TestResult {
 			return fmt.Errorf("put object: %v", err)
 		}
 
-		return r.pollAuditEvent("S3 PutObject event", func() (*cloudtrail.LookupEventsOutput, error) {
+		return r.pollAuditEvent("S3 PutObject event", func(nextToken *string) (*cloudtrail.LookupEventsOutput, error) {
 			return ac.cloudtrail.LookupEvents(ac.ctx, &cloudtrail.LookupEventsInput{
 				LookupAttributes: []types.LookupAttribute{
 					{
@@ -136,6 +137,7 @@ func (r *TestRunner) runAuditS3PutObject(ac *auditClients) TestResult {
 					},
 				},
 				MaxResults: aws.Int32(50),
+				NextToken:  nextToken,
 			})
 		}, func(events []types.Event) error {
 			for _, e := range events {
@@ -186,16 +188,23 @@ func (r *TestRunner) runAuditCrossServiceEventSource(ac *auditClients) TestResul
 	})
 }
 
-func (r *TestRunner) pollAuditEvent(label string, lookup func() (*cloudtrail.LookupEventsOutput, error), verify func([]types.Event) error) error {
+func (r *TestRunner) pollAuditEvent(label string, lookup func(nextToken *string) (*cloudtrail.LookupEventsOutput, error), verify func([]types.Event) error) error {
 	for i := 0; i < auditPollRetry; i++ {
-		resp, err := lookup()
-		if err != nil {
-			return fmt.Errorf("lookup: %v", err)
-		}
-		if resp.Events != nil && len(resp.Events) > 0 {
-			if vErr := verify(resp.Events); vErr == nil {
-				return nil
+		var token *string
+		for {
+			resp, err := lookup(token)
+			if err != nil {
+				return fmt.Errorf("lookup: %v", err)
 			}
+			if resp.Events != nil && len(resp.Events) > 0 {
+				if vErr := verify(resp.Events); vErr == nil {
+					return nil
+				}
+			}
+			if resp.NextToken == nil || *resp.NextToken == "" {
+				break
+			}
+			token = resp.NextToken
 		}
 		time.Sleep(auditPollWait)
 	}

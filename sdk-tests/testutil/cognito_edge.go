@@ -15,7 +15,7 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 
 	results = append(results, r.RunTest("cognito", "DescribeUserPool_NonExistent", func() error {
 		_, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
-			UserPoolId: aws.String("us-east-1_nonexistentpool"),
+			UserPoolId: aws.String(fmt.Sprintf("%s_nonexistentpool", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -25,7 +25,7 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 
 	results = append(results, r.RunTest("cognito", "DeleteUserPool_NonExistent", func() error {
 		_, err := client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: aws.String("us-east-1_nonexistentpool"),
+			UserPoolId: aws.String(fmt.Sprintf("%s_nonexistentpool", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err

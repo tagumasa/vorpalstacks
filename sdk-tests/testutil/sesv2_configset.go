@@ -185,7 +185,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sesv2", "PutConfigurationSetArchivingOptions", func() error {
-		archiveArn := "arn:aws:mailmanager:us-east-1:000000000000:archive/test"
+		archiveArn := fmt.Sprintf("arn:aws:mailmanager:%s:%s:archive/test", tc.region, tc.accountID)
 		_, err := tc.client.PutConfigurationSetArchivingOptions(tc.ctx, &sesv2.PutConfigurationSetArchivingOptionsInput{
 			ConfigurationSetName: aws.String(configSetName),
 			ArchiveArn:           aws.String(archiveArn),

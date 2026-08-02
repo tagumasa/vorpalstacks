@@ -9,10 +9,11 @@ import (
 
 func (tc *cloudwatchTestCtx) dashboardTests() []TestResult {
 	var results []TestResult
+	reg := tc.runner.Region()
 
 	results = append(results, tc.runner.RunTest("cloudwatch", "PutDashboard_GetDashboard_Roundtrip", func() error {
 		dbName := tc.uniquePrefix("TestDashboard")
-		dashboardBody := `{"widgets":[{"type":"metric","x":0,"y":0,"width":12,"height":6,"properties":{"metrics":[["AWS/EC2","CPUUtilization"]],"period":300,"stat":"Average","region":"us-east-1","title":"EC2 CPU"}}]}`
+		dashboardBody := fmt.Sprintf(`{"widgets":[{"type":"metric","x":0,"y":0,"width":12,"height":6,"properties":{"metrics":[["AWS/EC2","CPUUtilization"]],"period":300,"stat":"Average","region":"%s","title":"EC2 CPU"}}]}`, reg)
 		_, err := tc.client.PutDashboard(tc.ctx, &cloudwatch.PutDashboardInput{
 			DashboardName: aws.String(dbName),
 			DashboardBody: aws.String(dashboardBody),

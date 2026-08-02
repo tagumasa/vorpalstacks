@@ -9,12 +9,15 @@ import (
 
 func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []TestResult {
 	var results []TestResult
+	reg := tc.region
+	acct := tc.accountID
+	snsARN := fmt.Sprintf("arn:aws:sns:%s:%s:test-topic", reg, acct)
 	subName := fmt.Sprintf("test-sub-%d", tc.ts)
 
 	results = append(results, r.RunTest("neptune", "CreateEventSubscription", func() error {
 		resp, err := tc.client.CreateEventSubscription(tc.ctx, &neptune.CreateEventSubscriptionInput{
 			SubscriptionName: aws.String(subName),
-			SnsTopicArn:      aws.String("arn:aws:sns:us-east-1:000000000000:test-topic"),
+			SnsTopicArn:      aws.String(snsARN),
 			SourceType:       aws.String("db-cluster"),
 			SourceIds:        []string{tc.clusterID},
 			EventCategories:  []string{"creation", "deletion", "failover"},
@@ -29,8 +32,8 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 		if es.CustSubscriptionId == nil || *es.CustSubscriptionId != subName {
 			return fmt.Errorf("expected CustSubscriptionId=%s, got %v", subName, es.CustSubscriptionId)
 		}
-		if es.SnsTopicArn == nil || *es.SnsTopicArn != "arn:aws:sns:us-east-1:000000000000:test-topic" {
-			return fmt.Errorf("expected SnsTopicArn=arn:aws:sns:us-east-1:000000000000:test-topic, got %v", es.SnsTopicArn)
+		if es.SnsTopicArn == nil || *es.SnsTopicArn != snsARN {
+			return fmt.Errorf("expected SnsTopicArn=%s, got %v", snsARN, es.SnsTopicArn)
 		}
 		if es.SourceType == nil || *es.SourceType != "db-cluster" {
 			return fmt.Errorf("expected SourceType=db-cluster, got %v", es.SourceType)
@@ -47,7 +50,7 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 		for _, sub := range resp.EventSubscriptionsList {
 			if sub.CustSubscriptionId != nil && *sub.CustSubscriptionId == subName {
 				found = true
-				if sub.SnsTopicArn == nil || *sub.SnsTopicArn != "arn:aws:sns:us-east-1:000000000000:test-topic" {
+				if sub.SnsTopicArn == nil || *sub.SnsTopicArn != snsARN {
 					return fmt.Errorf("expected SnsTopicArn in subscription, got %v", sub.SnsTopicArn)
 				}
 				if sub.Status == nil || *sub.Status == "" {

@@ -12,6 +12,8 @@ import (
 
 func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
+	reg := tc.region
+	acct := tc.accountID
 
 	results = append(results, r.RunTest("kms", "ListKeys_Basic", func() error {
 		resp, err := tc.client.ListKeys(tc.ctx, &kms.ListKeysInput{})
@@ -58,7 +60,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("kms", "DescribeKey_NonExistentKey", func() error {
 		_, err := tc.client.DescribeKey(tc.ctx, &kms.DescribeKeyInput{
-			KeyId: aws.String("arn:aws:kms:us-east-1:000000000000:key/00000000-0000-0000-0000-000000000000"),
+			KeyId: aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/00000000-0000-0000-0000-000000000000", reg, acct)),
 		})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -221,7 +223,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKey_NonExistent", func() error {
-		fakeKeyID := "arn:aws:kms:us-east-1:000000000000:key/ffffffff-ffff-ffff-ffff-ffffffffffff"
+		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -234,7 +236,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "EnableKey_NonExistent", func() error {
-		fakeKeyID := "arn:aws:kms:us-east-1:000000000000:key/ffffffff-ffff-ffff-ffff-ffffffffffff"
+		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
 		_, err := tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -247,7 +249,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ScheduleKeyDeletion_NonExistent", func() error {
-		fakeKeyID := "arn:aws:kms:us-east-1:000000000000:key/ffffffff-ffff-ffff-ffff-ffffffffffff"
+		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
 		_, err := tc.client.ScheduleKeyDeletion(tc.ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               aws.String(fakeKeyID),
 			PendingWindowInDays: aws.Int32(7),
@@ -259,7 +261,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GetPublicKey_NonExistent", func() error {
-		fakeKeyID := "arn:aws:kms:us-east-1:000000000000:key/ffffffff-ffff-ffff-ffff-ffffffffffff"
+		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
 		_, err := tc.client.GetPublicKey(tc.ctx, &kms.GetPublicKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -268,7 +270,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListGrants_NonExistent", func() error {
-		fakeKeyID := "arn:aws:kms:us-east-1:000000000000:key/ffffffff-ffff-ffff-ffff-ffffffffffff"
+		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
 		_, err := tc.client.ListGrants(tc.ctx, &kms.ListGrantsInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")

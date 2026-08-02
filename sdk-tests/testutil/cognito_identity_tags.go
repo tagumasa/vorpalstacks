@@ -12,7 +12,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito-identity", "TagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:000000000000:identitypool/%s", r.region, poolID)
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)
 		_, err := client.TagResource(ctx, &cognitoidentity.TagResourceInput{
 			ResourceArn: aws.String(arn),
 			Tags: map[string]string{
@@ -37,7 +37,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "ListTagsForResource", func() error {
 		resp, err := client.ListTagsForResource(ctx, &cognitoidentity.ListTagsForResourceInput{
-			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:000000000000:identitypool/%s", r.region, poolID)),
+			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)),
 		})
 		if err != nil {
 			return err
@@ -55,7 +55,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "UntagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:000000000000:identitypool/%s", r.region, poolID)
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)
 		_, err := client.UntagResource(ctx, &cognitoidentity.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"Team"},

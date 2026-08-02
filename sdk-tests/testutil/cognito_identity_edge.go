@@ -15,7 +15,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "DescribeIdentityPool_NonExistent", func() error {
 		_, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
-			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
+			IdentityPoolId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -25,7 +25,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "DeleteIdentityPool_NonExistent", func() error {
 		_, err := client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
-			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
+			IdentityPoolId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -45,7 +45,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "GetId_NonExistentPool", func() error {
 		_, err := client.GetId(ctx, &cognitoidentity.GetIdInput{
-			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
+			IdentityPoolId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -113,7 +113,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "GetIdentityPoolRoles_NonExistent", func() error {
 		_, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
+			IdentityPoolId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err

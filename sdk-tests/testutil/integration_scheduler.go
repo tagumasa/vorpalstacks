@@ -32,7 +32,7 @@ func (r *TestRunner) runSchedulerToLambda(ic *integClients, ts string) TestResul
 	ic.createLambda(fnName, lambdaRoleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:%s", fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
 
 	_, err := ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
 		Name:               aws.String(scheduleName),
@@ -40,7 +40,7 @@ func (r *TestRunner) runSchedulerToLambda(ic *integClients, ts string) TestResul
 		ScheduleExpression: aws.String("rate(1 minute)"),
 		Target: &schedulertypes.Target{
 			Arn:     aws.String(fnARN),
-			RoleArn: aws.String(intRoleARN(roleName)),
+			RoleArn: aws.String(intRoleARN(roleName, ic.accountID)),
 		},
 		FlexibleTimeWindow: &schedulertypes.FlexibleTimeWindow{Mode: schedulertypes.FlexibleTimeWindowModeOff},
 	})
@@ -79,7 +79,7 @@ func (r *TestRunner) runSchedulerToSQS(ic *integClients, ts string) TestResult {
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
 
 	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
 		Name:               aws.String(scheduleName),
@@ -87,7 +87,7 @@ func (r *TestRunner) runSchedulerToSQS(ic *integClients, ts string) TestResult {
 		ScheduleExpression: aws.String("rate(1 minute)"),
 		Target: &schedulertypes.Target{
 			Arn:     aws.String(queueARN),
-			RoleArn: aws.String(intRoleARN(roleName)),
+			RoleArn: aws.String(intRoleARN(roleName, ic.accountID)),
 		},
 		FlexibleTimeWindow: &schedulertypes.FlexibleTimeWindow{Mode: schedulertypes.FlexibleTimeWindowModeOff},
 	})
@@ -143,7 +143,7 @@ func (r *TestRunner) runSchedulerToSNS(ic *integClients, ts string) TestResult {
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
 	})
 
 	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
@@ -152,7 +152,7 @@ func (r *TestRunner) runSchedulerToSNS(ic *integClients, ts string) TestResult {
 		ScheduleExpression: aws.String("rate(1 minute)"),
 		Target: &schedulertypes.Target{
 			Arn:     aws.String(topicARN),
-			RoleArn: aws.String(intRoleARN(roleName)),
+			RoleArn: aws.String(intRoleARN(roleName, ic.accountID)),
 		},
 		FlexibleTimeWindow: &schedulertypes.FlexibleTimeWindow{Mode: schedulertypes.FlexibleTimeWindowModeOff},
 	})
@@ -197,7 +197,7 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 
 	_, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
-		RoleArn:    aws.String(intRoleARN(fmt.Sprintf("%s-sfn", roleName))),
+		RoleArn:    aws.String(intRoleARN(fmt.Sprintf("%s-sfn", roleName), ic.accountID)),
 		Definition: aws.String(`{"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}}`),
 	})
 	if err != nil {
@@ -205,11 +205,11 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 	}
 	defer func() {
 		ic.sfn.DeleteStateMachine(ic.ctx, &sfn.DeleteStateMachineInput{
-			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName)),
+			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName)),
 		})
 	}()
 
-	smARN := fmt.Sprintf("arn:aws:states:us-east-1:000000000000:stateMachine:%s", smName)
+	smARN := fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", ic.region, smName)
 
 	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
 		Name:               aws.String(scheduleName),
@@ -217,7 +217,7 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 		ScheduleExpression: aws.String("rate(1 minute)"),
 		Target: &schedulertypes.Target{
 			Arn:     aws.String(smARN),
-			RoleArn: aws.String(intRoleARN(roleName)),
+			RoleArn: aws.String(intRoleARN(roleName, ic.accountID)),
 		},
 		FlexibleTimeWindow: &schedulertypes.FlexibleTimeWindow{Mode: schedulertypes.FlexibleTimeWindowModeOff},
 	})

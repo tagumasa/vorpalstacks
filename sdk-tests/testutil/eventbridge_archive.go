@@ -25,7 +25,7 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		}
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(caBus)})
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, caBus)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, caBus)
 		resp, err := client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(caArchive),
 			EventSourceArn: aws.String(busARN),
@@ -55,7 +55,7 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		}
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(daBus)})
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, daBus)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, daBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(daArchive),
 			EventSourceArn: aws.String(busARN),
@@ -126,7 +126,7 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		}
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(dlaBus)})
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, dlaBus)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, dlaBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(dlaArchive),
 			EventSourceArn: aws.String(busARN),
@@ -165,7 +165,7 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		}
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(laBus)})
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, laBus)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, laBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(laArchive),
 			EventSourceArn: aws.String(busARN),
@@ -209,7 +209,7 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		}
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(uaBus)})
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, uaBus)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, uaBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(uaArchive),
 			EventSourceArn: aws.String(busARN),
@@ -256,8 +256,8 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 			return fmt.Errorf("create bus: %v", err)
 		}
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, srBus)
-		archiveARN := fmt.Sprintf("arn:aws:events:%s:000000000000:archive/%s", r.region, srArchive)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, srBus)
+		archiveARN := fmt.Sprintf("arn:aws:events:%s:%s:archive/%s", r.region, r.accountID, srArchive)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(srArchive),
 			EventSourceArn: aws.String(busARN),
@@ -332,8 +332,8 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 			return fmt.Errorf("create bus: %v", err)
 		}
 
-		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, lrBus)
-		archiveARN := fmt.Sprintf("arn:aws:events:%s:000000000000:archive/%s", r.region, lrArchive)
+		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, lrBus)
+		archiveARN := fmt.Sprintf("arn:aws:events:%s:%s:archive/%s", r.region, r.accountID, lrArchive)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName:    aws.String(lrArchive),
 			EventSourceArn: aws.String(busARN),

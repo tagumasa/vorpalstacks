@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
-	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
 )
 
 func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
@@ -15,7 +14,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachine_NonExistent", func() error {
 		_, err := tc.client.DescribeStateMachine(tc.ctx, &sfn.DescribeStateMachineInput{
-			StateMachineArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:nonexistent-fake-arn"),
+			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachine:nonexistent-fake-arn", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "StateMachineDoesNotExist"); err != nil {
 			return err
@@ -25,7 +24,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachine_NonExistent", func() error {
 		_, err := tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{
-			StateMachineArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:nonexistent-fake-arn"),
+			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachine:nonexistent-fake-arn", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "StateMachineDoesNotExist"); err != nil {
 			return err
@@ -35,7 +34,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DescribeExecution_NonExistent", func() error {
 		_, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-			ExecutionArn: aws.String("arn:aws:states:us-east-1:000000000000:execution:nonexistent:fake-exec"),
+			ExecutionArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:execution:nonexistent:fake-exec", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "ExecutionDoesNotExist"); err != nil {
 			return err
@@ -45,7 +44,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DescribeActivity_NonExistent", func() error {
 		_, err := tc.client.DescribeActivity(tc.ctx, &sfn.DescribeActivityInput{
-			ActivityArn: aws.String("arn:aws:states:us-east-1:000000000000:activity:nonexistent-fake-arn"),
+			ActivityArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:activity:nonexistent-fake-arn", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "ActivityDoesNotExist"); err != nil {
 			return err
@@ -55,7 +54,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineVersion_NonExistent", func() error {
 		_, err := tc.client.DeleteStateMachineVersion(tc.ctx, &sfn.DeleteStateMachineVersionInput{
-			StateMachineVersionArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:999"),
+			StateMachineVersionArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachine:fake:999", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "StateMachineVersionNotFound"); err != nil {
 			return err
@@ -65,7 +64,7 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineAlias_NonExistent", func() error {
 		_, err := tc.client.DeleteStateMachineAlias(tc.ctx, &sfn.DeleteStateMachineAliasInput{
-			StateMachineAliasArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:NONEXISTENT"),
+			StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachine:fake:NONEXISTENT", r.region, r.accountID)),
 		})
 		if err := AssertErrorContains(err, "StateMachineAliasDoesNotExist"); err != nil {
 			return err
@@ -183,6 +182,5 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	_ = types.StateMachineStatusActive
 	return results
 }
