@@ -66,6 +66,9 @@ func (s *DynamoDBService) UpdateTableReplicaAutoScaling(ctx context.Context, req
 	var replicas []map[string]interface{}
 
 	if globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName"); globalTableName != "" {
+		if err := validateGlobalTableName(globalTableName); err != nil {
+			return nil, err
+		}
 		gt, gtErr := store.GlobalTables().Get(globalTableName)
 		if gtErr == nil && gt != nil {
 			for _, replica := range gt.ReplicationGroup {

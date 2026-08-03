@@ -2,13 +2,9 @@
 package dynamodb
 
 import (
-	"regexp"
-
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
-
-var tableNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
 func parseKeySchema(params map[string]interface{}) []*dbstore.KeySchemaElement {
 	schema, ok := params["KeySchema"].([]interface{})
@@ -76,12 +72,22 @@ func parseGlobalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Glob
 	var result []*dbstore.GlobalSecondaryIndex
 	for _, g := range gsis {
 		if gm, ok := g.(map[string]interface{}); ok {
+			idxName := request.GetStringParam(gm, "IndexName")
+			if idxName == "" {
+				return nil, ErrInvalidParameter
+			}
+			if err := validateIndexName(idxName); err != nil {
+				return nil, err
+			}
 			proj, err := parseProjection(gm)
 			if err != nil {
 				return nil, err
 			}
+			if err := validateProjectionRequired(gm["Projection"].(map[string]interface{})); err != nil {
+				return nil, err
+			}
 			idx := &dbstore.GlobalSecondaryIndex{
-				IndexName:             request.GetStringParam(gm, "IndexName"),
+				IndexName:             idxName,
 				KeySchema:             parseKeySchema(gm),
 				Projection:            proj,
 				ProvisionedThroughput: parseProvisionedThroughput(gm),
@@ -102,12 +108,22 @@ func parseLocalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Local
 	var result []*dbstore.LocalSecondaryIndex
 	for _, l := range lsis {
 		if lm, ok := l.(map[string]interface{}); ok {
+			idxName := request.GetStringParam(lm, "IndexName")
+			if idxName == "" {
+				return nil, ErrInvalidParameter
+			}
+			if err := validateIndexName(idxName); err != nil {
+				return nil, err
+			}
 			proj, err := parseProjection(lm)
 			if err != nil {
 				return nil, err
 			}
+			if err := validateProjectionRequired(lm["Projection"].(map[string]interface{})); err != nil {
+				return nil, err
+			}
 			idx := &dbstore.LocalSecondaryIndex{
-				IndexName:  request.GetStringParam(lm, "IndexName"),
+				IndexName:  idxName,
 				KeySchema:  parseKeySchema(lm),
 				Projection: proj,
 			}

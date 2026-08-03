@@ -108,36 +108,16 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 // DeleteTable removes a DynamoDB table and all its data.
 func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableName := request.GetStringParam(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var deletedTable *dbstore.Table
-
-	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		table, err := txn.GetTable(tableName)
-		if err != nil {
-			if dbstore.IsTableNotFound(err) {
-				return ErrTableNotFound
-			}
-			return err
-		}
-		if table.DeletionProtectionEnabled {
-			return ErrTableDeletionProtected
-		}
-		deletedTable = table
-		return txn.DeleteTableCascade(tableName)
-	})
+	deletedTable, err := s.deleteTableCore(ctx, store, tableName)
 	if err != nil {
 		return nil, err
 	}
-
-	deletedTable.Status = dbstore.TableStatusArchived
 
 	return map[string]interface{}{
 		"TableDescription": s.buildTableDescription(deletedTable),
@@ -146,7 +126,14 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 
 // DescribeTable returns detailed metadata for a DynamoDB table.
 func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
+	tableName := request.GetStringParam(req.Parameters, "TableName")
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	table, err := s.describeTableCore(store, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -159,14 +146,26 @@ func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.Req
 // ListTables returns a list of DynamoDB tables.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_ListTables.html
 func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	limit := listTablesMaxLimit
+	if _, ok := req.Parameters["Limit"]; ok {
+		v := request.GetIntParam(req.Parameters, "Limit")
+		if err := validateListTablesLimit(v); err != nil {
+			return nil, err
+		}
+		limit = v
+	}
 	marker := pagination.GetMarker(req.Parameters, "ExclusiveStartTableName")
+	if estn := request.GetStringParam(req.Parameters, "ExclusiveStartTableName"); estn != "" {
+		if err := validateResourceName(estn); err != nil {
+			return nil, err
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	tables, nextToken, err := store.Tables().List(marker, limit)
+	tables, nextToken, err := s.listTablesCore(store, marker, limit)
 	if err != nil {
 		return nil, err
 	}

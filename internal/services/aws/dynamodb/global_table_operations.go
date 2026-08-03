@@ -10,8 +10,8 @@ import (
 // CreateGlobalTable creates a new global table.
 func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if globalTableName == "" {
-		return nil, ErrInvalidParameter
+	if err := validateGlobalTableName(globalTableName); err != nil {
+		return nil, err
 	}
 
 	replicationGroupParams, ok := req.Parameters["ReplicationGroup"].([]interface{})
@@ -62,8 +62,8 @@ func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request
 // DescribeGlobalTable returns information about a global table.
 func (s *DynamoDBService) DescribeGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if globalTableName == "" {
-		return nil, ErrInvalidParameter
+	if err := validateGlobalTableName(globalTableName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -83,8 +83,8 @@ func (s *DynamoDBService) DescribeGlobalTable(ctx context.Context, reqCtx *reque
 // DescribeGlobalTableSettings returns the settings of a global table.
 func (s *DynamoDBService) DescribeGlobalTableSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if globalTableName == "" {
-		return nil, ErrInvalidParameter
+	if err := validateGlobalTableName(globalTableName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -108,8 +108,17 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit == 0 {
 		limit = 100
+	} else {
+		if err := validateListGlobalTablesLimit(limit); err != nil {
+			return nil, err
+		}
 	}
 	exclusiveStartGlobalTableName := request.GetStringParam(req.Parameters, "ExclusiveStartGlobalTableName")
+	if exclusiveStartGlobalTableName != "" {
+		if err := validateGlobalTableName(exclusiveStartGlobalTableName); err != nil {
+			return nil, err
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -180,8 +189,8 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 // UpdateGlobalTable updates a global table.
 func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if globalTableName == "" {
-		return nil, ErrInvalidParameter
+	if err := validateGlobalTableName(globalTableName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -251,8 +260,8 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 // UpdateGlobalTableSettings updates the settings of a global table.
 func (s *DynamoDBService) UpdateGlobalTableSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if globalTableName == "" {
-		return nil, ErrInvalidParameter
+	if err := validateGlobalTableName(globalTableName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

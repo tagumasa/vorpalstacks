@@ -17,6 +17,9 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
 	if indexName != "" {
+		if err := validateIndexName(indexName); err != nil {
+			return nil, err
+		}
 		if !validateIndexExists(table, indexName) {
 			return nil, ErrIndexNotFound
 		}
@@ -224,6 +227,9 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
 	if indexName != "" {
+		if err := validateIndexName(indexName); err != nil {
+			return nil, err
+		}
 		if !validateIndexExists(table, indexName) {
 			return nil, ErrIndexNotFound
 		}
@@ -242,6 +248,19 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	exclusiveStartKey, eskErr := parseExclusiveStartKey(req.Parameters)
 	if eskErr != nil {
 		return nil, eskErr
+	}
+
+	// Validate parallel Scan parameters (Smithy ScanSegment: range 0-999999,
+	// ScanTotalSegments: range 1-1000000).
+	if _, ok := req.Parameters["Segment"]; ok {
+		if err := validateScanSegment(request.GetIntParam(req.Parameters, "Segment")); err != nil {
+			return nil, err
+		}
+	}
+	if _, ok := req.Parameters["TotalSegments"]; ok {
+		if err := validateScanTotalSegments(request.GetIntParam(req.Parameters, "TotalSegments")); err != nil {
+			return nil, err
+		}
 	}
 
 	store, err := s.store(reqCtx)

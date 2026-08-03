@@ -41,8 +41,8 @@ func (s *DynamoDBService) EnableKinesisStreamingDestination(ctx context.Context,
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if streamArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateStreamArn(streamArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -99,8 +99,8 @@ func (s *DynamoDBService) DisableKinesisStreamingDestination(ctx context.Context
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if streamArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateStreamArn(streamArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -163,8 +163,8 @@ func (s *DynamoDBService) UpdateKinesisStreamingDestination(ctx context.Context,
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if streamArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateStreamArn(streamArn); err != nil {
+		return nil, err
 	}
 
 	var precision int

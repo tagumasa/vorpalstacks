@@ -31,6 +31,11 @@ func (s *DynamoDBService) ExecuteTransaction(ctx context.Context, reqCtx *reques
 		return nil, ErrInvalidParameter
 	}
 
+	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
+	}
+
 	parsedStatements := make([]struct {
 		statement string
 		params    *partiQLParams
@@ -46,8 +51,8 @@ func (s *DynamoDBService) ExecuteTransaction(ctx context.Context, reqCtx *reques
 		}
 
 		statement, _ := stmtMap["Statement"].(string)
-		if statement == "" {
-			return nil, ErrInvalidParameter
+		if err := validatePartiQLStatement(statement); err != nil {
+			return nil, err
 		}
 
 		params := parsePartiQLParams(stmtMap)
@@ -435,6 +440,9 @@ func (s *DynamoDBService) BatchExecuteStatement(ctx context.Context, reqCtx *req
 	statements, ok := req.Parameters["Statements"].([]interface{})
 	if !ok {
 		return nil, ErrInvalidParameter
+	}
+	if err := validatePartiQLBatchCount(len(statements)); err != nil {
+		return nil, err
 	}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)

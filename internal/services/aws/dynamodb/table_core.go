@@ -1,9 +1,12 @@
 package dynamodb
 
 import (
+	"context"
+
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/aws/types"
 
+	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -136,4 +139,66 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 	}
 
 	return table, nil
+}
+
+// ---------------------------------------------------------------------------
+// Core functions for DeleteTable, DescribeTable, ListTables
+// ---------------------------------------------------------------------------
+
+// deleteTableCore is the single entry point for table deletion shared by the
+// HTTP API and the admin gRPC handler. It validates the table name, checks
+// for deletion protection, performs the cascade delete, and returns the
+// archived table description.
+func (s *DynamoDBService) deleteTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string) (*dbstore.Table, error) {
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	var deletedTable *dbstore.Table
+
+	err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		table, err := txn.GetTable(tableName)
+		if err != nil {
+			if dbstore.IsTableNotFound(err) {
+				return ErrTableNotFound
+			}
+			return err
+		}
+		if table.DeletionProtectionEnabled {
+			return ErrTableDeletionProtected
+		}
+		deletedTable = table
+		return txn.DeleteTableCascade(tableName)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	deletedTable.Status = dbstore.TableStatusArchived
+	return deletedTable, nil
+}
+
+// describeTableCore is the single entry point for table lookup shared by the
+// HTTP API and the admin gRPC handler. It validates the table name and maps
+// store errors to DynamoDB API errors.
+func (s *DynamoDBService) describeTableCore(store dbstore.DynamoDBStoreInterface, tableName string) (*dbstore.Table, error) {
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		if dbstore.IsTableNotFound(err) || commonstore.IsNotFound(err) {
+			return nil, ErrTableNotFound
+		}
+		return nil, err
+	}
+	return table, nil
+}
+
+// listTablesCore is the single entry point for table listing shared by the
+// HTTP API and the admin gRPC handler. It delegates to the store after
+// validating the limit range.
+func (s *DynamoDBService) listTablesCore(store dbstore.DynamoDBStoreInterface, marker string, limit int) ([]*dbstore.Table, string, error) {
+	return store.Tables().List(marker, limit)
 }

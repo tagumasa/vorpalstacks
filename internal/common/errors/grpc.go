@@ -11,11 +11,13 @@ import (
 // StoreErrorToGRPC maps a store-layer error to an appropriate gRPC status code.
 // "not found" → NotFound, "already exists"/"duplicate" → AlreadyExists,
 // "invalid"/"empty"/"required" → InvalidArgument, everything else → Internal.
+// Matching is case-insensitive so that capitalised messages like
+// "Invalid parameter" are handled correctly.
 func StoreErrorToGRPC(err error) error {
 	if err == nil {
 		return nil
 	}
-	msg := err.Error()
+	msg := strings.ToLower(err.Error())
 	code := connect.CodeInternal
 	switch {
 	case strings.Contains(msg, "not found"):

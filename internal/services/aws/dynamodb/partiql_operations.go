@@ -16,13 +16,18 @@ import (
 // ExecuteStatement executes a PartiQL statement.
 func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statement := request.GetStringParam(req.Parameters, "Statement")
-	if statement == "" {
-		return nil, ErrInvalidParameter
+	if err := validatePartiQLStatement(statement); err != nil {
+		return nil, err
 	}
 
 	params := parsePartiQLParams(req.Parameters)
 	consistentRead := request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
+	if limit > 0 {
+		if err := validateExecuteStatementLimit(limit); err != nil {
+			return nil, err
+		}
+	}
 
 	upperStmt := strings.ToUpper(strings.TrimSpace(statement))
 	var result interface{}

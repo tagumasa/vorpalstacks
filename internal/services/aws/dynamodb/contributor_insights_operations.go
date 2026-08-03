@@ -16,6 +16,11 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 	}
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
+	if indexName != "" {
+		if err := validateIndexName(indexName); err != nil {
+			return nil, err
+		}
+	}
 
 	status := "DISABLED"
 	if table.ContributorInsightsEnabled {
@@ -38,7 +43,14 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 // ListContributorInsights lists the contributor insights summaries for tables.
 func (s *DynamoDBService) ListContributorInsights(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableName := request.GetStringParam(req.Parameters, "TableName")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	maxResults := listContributorMaxLimit
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		v := request.GetIntParam(req.Parameters, "MaxResults")
+		if err := validateListContributorInsightsLimit(v); err != nil {
+			return nil, err
+		}
+		maxResults = v
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)

@@ -161,8 +161,8 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 	}
 
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if clientRequestToken != "" && len(clientRequestToken) > 36 {
-		return nil, ErrInvalidParameter
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

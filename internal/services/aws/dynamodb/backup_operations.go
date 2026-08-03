@@ -20,16 +20,8 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 	tableName := table.Name
 
 	backupName := request.GetStringParam(req.Parameters, "BackupName")
-	if backupName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	if len(backupName) < 3 || len(backupName) > 255 {
-		return nil, ErrInvalidParameter
-	}
-
-	if !tableNameRegex.MatchString(backupName) {
-		return nil, ErrInvalidParameter
+	if err := validateResourceName(backupName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -113,8 +105,8 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 // DeleteBackup deletes a DynamoDB table backup.
 func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if backupArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateBackupArn(backupArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -149,8 +141,8 @@ func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.Requ
 // DescribeBackup returns information about a DynamoDB table backup.
 func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if backupArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateBackupArn(backupArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -190,9 +182,18 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	timeRangeUpperBound := request.GetInt64Param(req.Parameters, "TimeRangeUpperBoundDateTime")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit == 0 {
-		limit = 100
+		limit = listBackupsMaxLimit
+	} else {
+		if err := validateListBackupsLimit(limit); err != nil {
+			return nil, err
+		}
 	}
 	exclusiveStartBackupArn := request.GetStringParam(req.Parameters, "ExclusiveStartBackupArn")
+	if exclusiveStartBackupArn != "" {
+		if err := validateBackupArn(exclusiveStartBackupArn); err != nil {
+			return nil, err
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -269,8 +270,8 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 // RestoreTableFromBackup restores a table from a DynamoDB backup.
 func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if backupArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateBackupArn(backupArn); err != nil {
+		return nil, err
 	}
 
 	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")

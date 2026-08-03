@@ -31,19 +31,33 @@ func (s *DynamoDBService) s3invoker() eventbus.S3Invoker {
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_ExportTableToPointInTime.html
 func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableArn := request.GetStringParam(req.Parameters, "TableArn")
-	if tableArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateTableArn(tableArn); err != nil {
+		return nil, err
 	}
 
 	s3Bucket := request.GetStringParam(req.Parameters, "S3Bucket")
-	if s3Bucket == "" {
-		return nil, ErrInvalidParameter
+	if err := validateS3Bucket(s3Bucket); err != nil {
+		return nil, err
 	}
 
 	s3Prefix := request.GetStringParam(req.Parameters, "S3Prefix")
+	if err := validateS3Prefix(s3Prefix); err != nil {
+		return nil, err
+	}
 
-	if len(s3Bucket) < 3 || len(s3Bucket) > 63 {
-		return nil, ErrInvalidParameter
+	s3BucketOwner := request.GetStringParam(req.Parameters, "S3BucketOwner")
+	if err := validateS3BucketOwner(s3BucketOwner); err != nil {
+		return nil, err
+	}
+
+	s3SseKmsKeyId := request.GetStringParam(req.Parameters, "S3SseKmsKeyId")
+	if err := validateS3SseKmsKeyId(s3SseKmsKeyId); err != nil {
+		return nil, err
+	}
+
+	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
+	if err := validateClientToken(clientToken); err != nil {
+		return nil, err
 	}
 
 	tableName := svcarn.ParseTableARN(tableArn)
@@ -207,8 +221,8 @@ func buildDynamoDBJSONItem(item *dbstore.Item) map[string]interface{} {
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeExport.html
 func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	exportArn := request.GetStringParam(req.Parameters, "ExportArn")
-	if exportArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateExportArn(exportArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -237,8 +251,20 @@ func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.Re
 // ListExports lists the exports for a table.
 func (s *DynamoDBService) ListExports(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableArn := request.GetStringParam(req.Parameters, "TableArn")
+	if tableArn != "" {
+		if err := validateTableArn(tableArn); err != nil {
+			return nil, err
+		}
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	maxResults := listExportsMaxLimit
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		v := request.GetIntParam(req.Parameters, "MaxResults")
+		if err := validateListExportsLimit(v); err != nil {
+			return nil, err
+		}
+		maxResults = v
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -285,16 +311,48 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 	}
 
 	s3Bucket, _ := s3BucketSourceParam["S3Bucket"].(string)
-	if s3Bucket == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	if len(s3Bucket) < 3 || len(s3Bucket) > 63 {
-		return nil, ErrInvalidParameter
+	if err := validateS3Bucket(s3Bucket); err != nil {
+		return nil, err
 	}
 
 	s3Prefix, _ := s3BucketSourceParam["S3Prefix"].(string)
+	if err := validateS3Prefix(s3Prefix); err != nil {
+		return nil, err
+	}
 	s3BucketOwner, _ := s3BucketSourceParam["S3BucketOwner"].(string)
+	if err := validateS3BucketOwner(s3BucketOwner); err != nil {
+		return nil, err
+	}
+
+	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
+	if err := validateClientToken(clientToken); err != nil {
+		return nil, err
+	}
+
+	// Validate CSV-specific options when InputFormat=CSV.
+	if inputFormat == "CSV" {
+		if csvOpts, ok := req.Parameters["CsvOptions"].(map[string]interface{}); ok {
+			if delim, ok := csvOpts["Delimiter"].(string); ok {
+				if err := validateCsvDelimiter(delim); err != nil {
+					return nil, err
+				}
+			}
+			if headerList, ok := csvOpts["HeaderList"].([]interface{}); ok {
+				if err := validateCsvHeaderList(len(headerList)); err != nil {
+					return nil, err
+				}
+				for _, h := range headerList {
+					hs, ok := h.(string)
+					if !ok {
+						return nil, ErrInvalidParameter
+					}
+					if err := validateCsvHeader(hs); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+	}
 
 	tableCreationParams, ok := req.Parameters["TableCreationParameters"].(map[string]interface{})
 	if !ok {
@@ -302,16 +360,8 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 	}
 
 	tableName, _ := tableCreationParams["TableName"].(string)
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	if len(tableName) < 3 || len(tableName) > 255 {
-		return nil, ErrInvalidParameter
-	}
-
-	if !tableNameRegex.MatchString(tableName) {
-		return nil, ErrInvalidParameter
+	if err := validateResourceName(tableName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -666,8 +716,8 @@ func importCSVData(ctx context.Context, data []byte, tableName string, store dbs
 // DescribeImport returns information about a table import.
 func (s *DynamoDBService) DescribeImport(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	importArn := request.GetStringParam(req.Parameters, "ImportArn")
-	if importArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateImportArn(importArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -694,14 +744,31 @@ func (s *DynamoDBService) DescribeImport(ctx context.Context, reqCtx *request.Re
 // ListImports lists the imports for a table.
 func (s *DynamoDBService) ListImports(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableArn := request.GetStringParam(req.Parameters, "TableArn")
+	if tableArn != "" {
+		if err := validateTableArn(tableArn); err != nil {
+			return nil, err
+		}
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	if token := request.GetStringParam(req.Parameters, "NextToken"); token != "" {
+		if err := validateImportNextToken(token); err != nil {
+			return nil, err
+		}
+	}
+	pageSize := listImportsMaxLimit
+	if _, ok := req.Parameters["PageSize"]; ok {
+		v := request.GetIntParam(req.Parameters, "PageSize")
+		if err := validateListImportsLimit(v); err != nil {
+			return nil, err
+		}
+		pageSize = v
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	imports, nextToken, err := store.Imports().List(tableArn, nextToken, maxResults)
+	imports, nextToken, err := store.Imports().List(tableArn, nextToken, pageSize)
 	if err != nil {
 		return nil, err
 	}

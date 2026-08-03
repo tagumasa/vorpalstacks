@@ -71,6 +71,12 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
+	if attrName != "" {
+		if err := validateTimeToLiveAttributeName(attrName); err != nil {
+			return nil, err
+		}
+	}
+
 	if enabled && attrName == "" {
 		return nil, ErrInvalidParameter
 	}

@@ -79,6 +79,11 @@ func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHa
 
 // TagResource adds or overwrites tags on a DynamoDB table.
 func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -87,11 +92,24 @@ func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.Reque
 	if tagutil.HasDuplicateKeys(tags) {
 		return nil, ErrInvalidParameter
 	}
+	for _, tag := range tags {
+		if err := validateTagKey(tag.Key); err != nil {
+			return nil, err
+		}
+		if err := validateTagValue(tag.Value); err != nil {
+			return nil, err
+		}
+	}
 	return tagutil.HandleTag(ctx, req, dynamodbTagConfig(store))
 }
 
 // UntagResource removes the specified tags from a DynamoDB table.
 func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -102,6 +120,11 @@ func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.Req
 // ListTagsForResource lists tags assigned to a DynamoDB table with pagination.
 // AWS paginates tags; the marker is the tag key of the last returned entry.
 func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

@@ -31,11 +31,14 @@ func revisionMatches(expected string, currentRev int) (bool, error) {
 // DeleteResourcePolicy deletes a resource policy from a DynamoDB table.
 func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
 	}
 
 	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
+	if err := validatePolicyRevisionId(expectedRevisionId); err != nil {
+		return nil, err
+	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
 	if tableName == "" {
@@ -75,8 +78,8 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 // GetResourcePolicy returns the resource policy for a DynamoDB table.
 func (s *DynamoDBService) GetResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
 	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
@@ -110,8 +113,8 @@ func (s *DynamoDBService) GetResourcePolicy(ctx context.Context, reqCtx *request
 // PutResourcePolicy creates or updates a resource policy for a DynamoDB table.
 func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
+	if err := validateResourceArnString(resourceArn); err != nil {
+		return nil, err
 	}
 
 	policy, ok := req.Parameters["Policy"].(string)
@@ -120,6 +123,9 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 	}
 
 	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
+	if err := validatePolicyRevisionId(expectedRevisionId); err != nil {
+		return nil, err
+	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
 	if tableName == "" {

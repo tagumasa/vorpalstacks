@@ -55,145 +55,35 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
 
-	var oldItem *dbstore.Item
-	var isNewItem bool
-	var storedItem *dbstore.Item
-
-	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		existingItem, err := txn.GetItem(tableName, key)
-		if err != nil {
-			if dbstore.IsItemNotFound(err) {
-				isNewItem = true
-				if conditionExpr != "" {
-					syntheticItem := &dbstore.Item{
-						TableName:  tableName,
-						Key:        key,
-						Attributes: make(map[string]*dbstore.AttributeValue),
-					}
-					conditionMet, evalErr := evaluateConditionExpression(syntheticItem, conditionExpr, exprAttrNames, exprAttrValues)
-					if evalErr != nil {
-						return evalErr
-					}
-					if !conditionMet {
-						return ErrConditionalCheckFailed
-					}
+	// Build condition checker callback from ConditionExpression.
+	var condChecker ConditionChecker
+	if conditionExpr != "" {
+		condChecker = func(existing *dbstore.Item, isNotFound bool) error {
+			var evalItem *dbstore.Item
+			if isNotFound {
+				evalItem = &dbstore.Item{
+					TableName:  tableName,
+					Key:        key,
+					Attributes: make(map[string]*dbstore.AttributeValue),
 				}
 			} else {
-				return err
+				evalItem = existing
 			}
-		} else {
-			oldItem = existingItem
-			if oldItem != nil {
-				if err := txn.DeleteIndexEntries(tableName, oldItem); err != nil {
-					return err
-				}
+			met, evalErr := evaluateConditionExpression(evalItem, conditionExpr, exprAttrNames, exprAttrValues)
+			if evalErr != nil {
+				return evalErr
 			}
-			if conditionExpr != "" {
-				conditionMet, err := evaluateConditionExpression(existingItem, conditionExpr, exprAttrNames, exprAttrValues)
-				if err != nil {
-					return err
-				}
-				if !conditionMet {
-					return ErrConditionalCheckFailed
-				}
+			if !met {
+				return ErrConditionalCheckFailed
 			}
+			return nil
 		}
+	}
 
-		if err := txn.PutItem(tableName, key, item); err != nil {
-			return err
-		}
-
-		storedItem = &dbstore.Item{
-			TableName:  tableName,
-			Key:        key,
-			Attributes: item,
-		}
-		if err := txn.PutIndexEntries(tableName, storedItem); err != nil {
-			return err
-		}
-
-		newItemSize := calculateItemSize(item)
-		if isNewItem {
-			if err := txn.UpdateItemCount(tableName, 1); err != nil {
-				return err
-			}
-			if err := txn.UpdateTableSize(tableName, newItemSize); err != nil {
-				return err
-			}
-		} else if oldItem != nil {
-			oldItemSize := calculateItemSize(oldItem.Attributes)
-			if newItemSize != oldItemSize {
-				if err := txn.UpdateTableSize(tableName, newItemSize-oldItemSize); err != nil {
-					return err
-				}
-			}
-		}
-
-		eventName := dbstore.StreamEventModify
-		if isNewItem {
-			eventName = dbstore.StreamEventInsert
-		}
-		s.captureStreamChangeTxn(txn, store, table, eventName, key, storedItem.Attributes, oldItemAttributes(oldItem))
-
-		return nil
-	})
-
+	storedItem, oldItem, err := s.putItemCore(ctx, store, reqCtx.GetRegion(), table, key, item, condChecker)
 	if err != nil {
 		return nil, err
 	}
-
-	eventName := dbstore.StreamEventModify
-	if isNewItem {
-		eventName = dbstore.StreamEventInsert
-	}
-	s.sendToKinesisDestinations(table, eventName, key, storedItem.Attributes, oldItemAttributes(oldItem))
-
-	repKey := key
-	repAttrs := storedItem.Attributes
-	repItemSize := calculateItemSize(repAttrs)
-	s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), tableName, func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
-		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			existing, getErr := txn.GetItem(tableName, repKey)
-			isNew := false
-			if getErr != nil {
-				if dbstore.IsItemNotFound(getErr) {
-					isNew = true
-				} else {
-					return getErr
-				}
-			}
-			if !isNew && existing != nil {
-				if err := txn.DeleteIndexEntries(tableName, existing); err != nil {
-					return err
-				}
-			}
-			if err := txn.PutItem(tableName, repKey, repAttrs); err != nil {
-				return err
-			}
-			repItem := &dbstore.Item{
-				TableName:  tableName,
-				Key:        repKey,
-				Attributes: repAttrs,
-			}
-			if err := txn.PutIndexEntries(tableName, repItem); err != nil {
-				return err
-			}
-			if isNew {
-				if err := txn.UpdateItemCount(tableName, 1); err != nil {
-					return err
-				}
-				if err := txn.UpdateTableSize(tableName, repItemSize); err != nil {
-					return err
-				}
-			} else {
-				oldSize := calculateItemSize(existing.Attributes)
-				if err := txn.UpdateTableSize(tableName, repItemSize-oldSize); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	})
 
 	resp := map[string]interface{}{}
 	if returnValues == "ALL_OLD" && oldItem != nil {
@@ -288,104 +178,35 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
 
-	var oldItem *dbstore.Item
-
-	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		existingItem, err := txn.GetItem(tableName, key)
-		if err != nil {
-			if dbstore.IsItemNotFound(err) {
-				if conditionExpr != "" {
-					syntheticItem := &dbstore.Item{
-						TableName:  tableName,
-						Key:        key,
-						Attributes: make(map[string]*dbstore.AttributeValue),
-					}
-					conditionMet, evalErr := evaluateConditionExpression(syntheticItem, conditionExpr, exprAttrNames, exprAttrValues)
-					if evalErr != nil {
-						return evalErr
-					}
-					if !conditionMet {
-						return ErrConditionalCheckFailed
-					}
+	// Build condition checker callback from ConditionExpression.
+	var condChecker ConditionChecker
+	if conditionExpr != "" {
+		condChecker = func(existing *dbstore.Item, isNotFound bool) error {
+			var evalItem *dbstore.Item
+			if isNotFound {
+				evalItem = &dbstore.Item{
+					TableName:  tableName,
+					Key:        key,
+					Attributes: make(map[string]*dbstore.AttributeValue),
 				}
-				return nil
+			} else {
+				evalItem = existing
 			}
-			return err
-		}
-
-		oldItem = existingItem
-
-		if conditionExpr != "" {
-			conditionMet, err := evaluateConditionExpression(existingItem, conditionExpr, exprAttrNames, exprAttrValues)
-			if err != nil {
-				return err
+			met, evalErr := evaluateConditionExpression(evalItem, conditionExpr, exprAttrNames, exprAttrValues)
+			if evalErr != nil {
+				return evalErr
 			}
-			if !conditionMet {
+			if !met {
 				return ErrConditionalCheckFailed
 			}
+			return nil
 		}
+	}
 
-		if oldItem != nil {
-			if err := txn.DeleteIndexEntries(tableName, oldItem); err != nil {
-				return err
-			}
-		}
-
-		if err := txn.DeleteItem(tableName, key); err != nil {
-			return err
-		}
-
-		if oldItem != nil {
-			if err := txn.UpdateItemCount(tableName, -1); err != nil {
-				return err
-			}
-			oldItemSize := calculateItemSize(oldItem.Attributes)
-			if err := txn.UpdateTableSize(tableName, -oldItemSize); err != nil {
-				return err
-			}
-		}
-
-		if oldItem != nil {
-			s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventRemove, key, nil, oldItem.Attributes)
-		}
-
-		return nil
-	})
-
+	oldItem, err := s.deleteItemCore(ctx, store, reqCtx.GetRegion(), table, key, condChecker)
 	if err != nil {
 		return nil, err
 	}
-
-	if oldItem != nil {
-		s.sendToKinesisDestinations(table, dbstore.StreamEventRemove, key, nil, oldItem.Attributes)
-	}
-
-	repKey := key
-	s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), tableName, func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
-		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			existing, err := txn.GetItem(tableName, repKey)
-			if err != nil {
-				if dbstore.IsItemNotFound(err) {
-					return nil
-				}
-				return err
-			}
-			if err := txn.DeleteIndexEntries(tableName, existing); err != nil {
-				return err
-			}
-			if err := txn.DeleteItem(tableName, repKey); err != nil {
-				return err
-			}
-			if err := txn.UpdateItemCount(tableName, -1); err != nil {
-				return err
-			}
-			existingSize := calculateItemSize(existing.Attributes)
-			if err := txn.UpdateTableSize(tableName, -existingSize); err != nil {
-				return err
-			}
-			return nil
-		})
-	})
 
 	resp := map[string]interface{}{}
 	if returnValues == "ALL_OLD" && oldItem != nil {

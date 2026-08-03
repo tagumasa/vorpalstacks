@@ -24,7 +24,8 @@ func parseItem(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 
 // parseKey parses a DynamoDB key map. Key attributes must be one of
 // S, N, or B — other attribute types (BOOL, NULL, SS, NS, BS, M, L)
-// are rejected to match the DynamoDB key schema constraint.
+// are rejected to match the DynamoDB key schema constraint. Empty values
+// are also rejected (S/N/B must be non-empty).
 func parseKey(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 	parsed, err := parseItem(v)
 	if err != nil {
@@ -33,14 +34,8 @@ func parseKey(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 	if parsed == nil {
 		return nil, nil
 	}
-	for _, av := range parsed {
-		if av == nil {
-			return nil, ErrInvalidParameter
-		}
-		// Only S, N, B are valid for key attributes.
-		if av.S == nil && av.N == nil && av.B == nil {
-			return nil, ErrInvalidParameter
-		}
+	if err := validateKeyAttributeValue(parsed); err != nil {
+		return nil, err
 	}
 	return parsed, nil
 }

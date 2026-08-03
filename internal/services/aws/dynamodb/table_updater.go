@@ -129,19 +129,16 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 		}
 
 		if create, ok := update["Create"].(map[string]interface{}); ok {
-			idxName := request.GetStringParam(create, "IndexName")
-			if idxName == "" {
-				continue
-			}
-			keySchema := parseKeySchema(create)
-			if len(keySchema) == 0 {
-				return nil, ErrInvalidParameter
-			}
-			if err := validateKeySchema(keySchema); err != nil {
+			if err := validateGSICreateRequired(create); err != nil {
 				return nil, err
 			}
+			idxName := request.GetStringParam(create, "IndexName")
+			keySchema := parseKeySchema(create)
 			proj, err := parseProjection(create)
 			if err != nil {
+				return nil, err
+			}
+			if err := validateProjectionRequired(create["Projection"].(map[string]interface{})); err != nil {
 				return nil, err
 			}
 			gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
@@ -156,6 +153,12 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 
 		if updateGSI, ok := update["Update"].(map[string]interface{}); ok {
 			idxName := request.GetStringParam(updateGSI, "IndexName")
+			if idxName == "" {
+				return nil, ErrInvalidParameter
+			}
+			if err := validateIndexName(idxName); err != nil {
+				return nil, err
+			}
 			if idx, exists := gsiMap[idxName]; exists {
 				if provThroughput := parseProvisionedThroughput(updateGSI); provThroughput != nil {
 					idx.ProvisionedThroughput = provThroughput
@@ -169,10 +172,10 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 		if deleteGSI, ok := update["Delete"].(map[string]interface{}); ok {
 			idxNameToDelete := request.GetStringParam(deleteGSI, "IndexName")
 			if idxNameToDelete == "" {
-				continue
+				return nil, ErrInvalidParameter
 			}
-			if _, exists := gsiMap[idxNameToDelete]; !exists {
-				return nil, ErrIndexNotFound
+			if err := validateGSIDeleteExists(gsiMap, idxNameToDelete); err != nil {
+				return nil, err
 			}
 			delete(gsiMap, idxNameToDelete)
 		}
