@@ -13,10 +13,10 @@ func (s *IAMService) AddUserToGroup(ctx context.Context, reqCtx *request.Request
 	groupName := request.GetStringParam(req.Parameters, "GroupName")
 
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	if groupName == "" {
-		return nil, ErrNoSuchGroup
+		return nil, NewValidationError("GroupName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -48,10 +48,10 @@ func (s *IAMService) RemoveUserFromGroup(ctx context.Context, reqCtx *request.Re
 	groupName := request.GetStringParam(req.Parameters, "GroupName")
 
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	if groupName == "" {
-		return nil, ErrNoSuchGroup
+		return nil, NewValidationError("GroupName")
 	}
 
 	store, err := s.store(reqCtx)

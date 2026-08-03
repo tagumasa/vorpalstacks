@@ -19,13 +19,16 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if name == "" {
 		return nil, NewValidationError("ServerCertificateName")
 	}
-	if !entityNamePattern128.MatchString(name) {
-		return nil, NewInvalidInputError("ServerCertificateName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	if err := validateEntityName128(name, "ServerCertificateName"); err != nil {
+		return nil, err
 	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {
 		path = "/"
+	}
+	if !validatePath(path) {
+		return nil, NewInvalidInputError("Path", "must be a valid path starting and ending with /")
 	}
 	certificateBody := request.GetStringParam(req.Parameters, "CertificateBody")
 	if certificateBody == "" {
@@ -38,6 +41,13 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if certificateChain != "" && len(certificateChain) > 2097152 {
 		return nil, NewInvalidInputError("CertificateChain", "must be 1 to 2097152 characters")
 	}
+	privateKey := request.GetStringParam(req.Parameters, "PrivateKey")
+	if privateKey == "" {
+		return nil, NewValidationError("PrivateKey")
+	}
+	if len(privateKey) > 16384 {
+		return nil, NewInvalidInputError("PrivateKey", "must be 1 to 16384 characters")
+	}
 
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateNewTags(newTags); err != nil {
@@ -48,7 +58,7 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	cert, err := store.ServerCertificates().Create(name, path, certificateBody, certificateChain, newTags)
+	cert, err := store.ServerCertificates().Create(name, path, certificateBody, privateKey, certificateChain, newTags)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrServerCertificateAlreadyExists) {
 			return nil, NewEntityAlreadyExistsError("Server Certificate " + name)
@@ -56,9 +66,13 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	uploadResp := map[string]interface{}{
 		"ServerCertificateMetadata": s.serverCertificateMetadataToResponse(cert),
-	}, nil
+	}
+	if certTags := tags.ToResponse(cert.Tags); certTags != nil {
+		uploadResp["Tags"] = certTags
+	}
+	return uploadResp, nil
 }
 
 // GetServerCertificate retrieves information about the specified server certificate.
@@ -83,6 +97,9 @@ func (s *IAMService) GetServerCertificate(ctx context.Context, reqCtx *request.R
 	}
 	if cert.CertificateChain != "" {
 		serverCert["CertificateChain"] = cert.CertificateChain
+	}
+	if certTags := tags.ToResponse(cert.Tags); certTags != nil {
+		serverCert["Tags"] = certTags
 	}
 
 	return map[string]interface{}{

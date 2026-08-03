@@ -24,12 +24,26 @@ func (s *AppSyncService) CreateDomainName(ctx context.Context, reqCtx *request.R
 	if domainName == "" {
 		return nil, NewBadRequestException("domainName is required")
 	}
+	if err := validateDomainName(domainName); err != nil {
+		return nil, err
+	}
 	certificateArn := request.GetStringParam(req.Parameters, "certificateArn")
 	if certificateArn == "" {
 		return nil, NewBadRequestException("certificateArn is required")
 	}
+	if err := validateCertificateArn(certificateArn); err != nil {
+		return nil, err
+	}
 
 	description := request.GetStringParam(req.Parameters, "description")
+	if err := validateDescription(description); err != nil {
+		return nil, err
+	}
+
+	tagMap, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	config := &appsyncstore.DomainNameConfig{
 		DomainName:        domainName,
@@ -39,7 +53,7 @@ func (s *AppSyncService) CreateDomainName(ctx context.Context, reqCtx *request.R
 		DomainNameArn:     store.BuildDomainNameARN(domainName),
 		HostedZoneId:      cloudFrontHostedZoneID,
 		// Tags must be parsed from the request and persisted at creation time.
-		Tags: parseTags(req.Parameters),
+		Tags: tagMap,
 	}
 
 	if err := store.CreateDomainName(config); err != nil {
@@ -116,13 +130,19 @@ func (s *AppSyncService) UpdateDomainName(ctx context.Context, reqCtx *request.R
 
 	description := request.GetStringParam(req.Parameters, "description")
 	if description != "" {
+		if err := validateDescription(description); err != nil {
+			return nil, err
+		}
 		config.Description = description
 	}
 
 	// Update tags if provided in the request.
-	tags := parseTags(req.Parameters)
-	if len(tags) > 0 {
-		config.Tags = tags
+	tagMap, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	if len(tagMap) > 0 {
+		config.Tags = tagMap
 	}
 
 	if err := store.UpdateDomainName(config); err != nil {

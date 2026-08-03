@@ -2,59 +2,74 @@
 
 ## Project Overview
 
-**vorpalstacks** is a lightweight edge and on-premise cloud platform providing AWS-compatible services. It is a real implementation (not a mock) that supports 32 AWS services with full SDK compatibility.
+**vorpalstacks** is a lightweight edge and on-premise cloud platform providing AWS-compatible services. It is a real implementation (not a mock) that supports 34 AWS service APIs with full SDK compatibility.
 
 - **Language**: Go 1.25+
 - **License**: FSL-1.1-MIT (root), Apache 2.0 (`pkg/`)
-- **SDK Tests**: 2216 SDK tests + 29 integration + 17 WebSocket (2262 Go total), 631 Python, 2028 TypeScript, 2019 C#
+- **SDK Tests**: 2,702 SDK + 47 integration + 17 WebSocket = 2,766 Go tests. Python, TypeScript, and C# test suites exist in separate repositories.
 
 ## Architecture
 
 ```
-cmd/                          — Entry points (server, proto_generator, pebble-loader)
 main.go                       — Application entry point
+cmd/
+  vstacks/                    — Admin CLI (server control, IAM, config, service modes, backup)
+  proto_generator/            — Generates .proto files from Smithy JSON models
+  pebble-loader/              — Loads Smithy JSON models into Pebble storage
 internal/
   services/aws/<service>/     — Service implementations (one package per AWS service)
   store/aws/                  — Persistent storage layer (PebbleDB per region)
   store/api/                  — Storage interface definitions
-  store/config/               — Storage configuration
+  store/config/               — Configuration storage (PebbleDB-backed app_config)
   server/http/                — HTTP routing, request parsing, dispatching
+    chain/                    — Middleware chain with gateway support
+    classifier/               — Request protocol/target classification
+    router/                   — Service index for route lookup
   server/actionregistry/      — IAM action routing registry
   server/authorization/       — IAM policy evaluation
   server/grpcweb/             — Connect-RPC gRPC-Web admin server
-  server/dispatcher/          — Request dispatching
+  server/dispatcher/          — Request dispatching, audit, fallback
   server/listener/            — Server lifecycle management
-  server/apps/                — Application wiring
-  core/resilience/            — Resilience patterns
+  server/fqdnrouter/          — Host-based FQDN routing for per-resource hostnames
+  server/portalloc/           — Per-resource port allocator (Individual mode)
+  server/apps/                — Application wiring, conditional service registration
+  config/                     — Bootstrap (env → struct) and runtime config (PebbleDB)
+  serviceconfig/              — Static service registry (names, env vars, port keys, FQDN support)
+  core/resilience/            — Resilience patterns (circuit breaker, retry, bulkhead, cache)
   core/auth/                  — Authentication
-  core/telemetry/             — Telemetry / observability
-  core/storage/               — Storage helpers
+  core/telemetry/             — Telemetry / observability (OpenTelemetry)
+  core/storage/               — Storage helpers (region manager, blob, multipart)
   core/hooks/                 — Lifecycle hooks
-  core/logs/                  — Logging utilities
-  eventbus/                   — Event-driven inter-service communication
+  core/logs/                  — CloudWatch Logs storage primitives
+  client/mobyclient/          — Docker/Moby client for Lambda container lifecycle
+  eventbus/                   — Event-driven inter-service communication (with transactional outbox)
   smithy/                     — AWS Smithy model processing
-  client/                     — Internal service clients
-  pb/                         — Generated protobuf / Connect-RPC code
-  utils/                      — Shared utilities
-  tools/                      — Development tools
-  common/                     — Common types and constants
+  common/                     — Shared types and constants (audit, pagination, protocol, serviceports, tags, iotutil, ...)
+  pb/                         — Generated protobuf / Connect-RPC code (aws/, storage/)
+  utils/                      — Shared utilities (aws, crypto, graphql, naming, ptrutil, timeutils, ...)
+  tools/                      — Development tools (converter, proto_generator, vstackscli)
 pkg/
   sqlparser/                  — SQL parser (vendored from vitess)
   vsjwt/                      — JWT library
   vtl/                        — VTL (Velocity Template Language) engine
   filterpattern/              — CloudWatch Logs filter patterns
-  cypherparser/               — openCypher query parser
-  gremlinparser/              — Gremlin query parser
-webconsole/                   — Web admin console (TypeScript/React, npm build, embedded via embed.FS)
+  metricmath/                 — CloudWatch metric math expression engine
+  cypherparser/               — openCypher query parser, planner, and executor
+  gremlinparser/              — Gremlin query parser and executor
+webconsole/                   — Web admin console (React 19 + Vite + TypeScript, npm build, embedded via embed.FS)
 proto/                        — Protocol buffer definitions
-sdk-tests/                    — AWS SDK v2 integration tests
-scripts/services/             — CLI integration test scripts per service
+sdk-tests/                    — AWS SDK v2 integration tests (independent Go module)
 docs/                         — Documentation
 ```
 
-## Implemented Services (32)
+## Implemented Services (34)
 
-ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch Logs, CloudWatch Metrics, Cognito IDP, Cognito Identity, DynamoDB, EC2, EventBridge, IAM, Kinesis, KMS, Lambda, Neptune, Neptune Data, Neptune Graph, Route53, S3, Scheduler, Secrets Manager, SESv2, SNS, SQS, SSM, STS, Step Functions, Timestream (Query + Write), WAFv2
+ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch Logs, CloudWatch Metrics, Cognito IDP, Cognito Identity, DynamoDB, EventBridge, IAM, IoT, Kinesis, KMS, Lambda, Neptune, Neptune Data, Neptune Graph, RDS Data (vMySQL), Route53, S3, Scheduler, Secrets Manager, SESv2, SNS, SQS, SSM, STS, Step Functions, Timestream Query, Timestream Write, WAFv2
+
+**Notes**:
+- EC2 exists as a data-plane-only package (VPC/Subnet/Security Group helpers for other services) and is not counted as a standalone service.
+- Neptune, Neptune Data, Neptune Graph, and RDS Data (vMySQL) share the composite `internal/services/aws/rds/` package, each with its own subdirectory and `service.go`.
+- IoT, CloudTrail, and RDS MySQL default to **disabled** (`IOT_ENABLED=false`, `CLOUDTRAIL_ENABLED=false`, `RDS_MYSQL_ENABLED=false`). All other services default to enabled.
 
 ## Key Patterns
 
@@ -64,11 +79,36 @@ Each AWS service has a handler in `internal/services/aws/<service>/` that implem
 
 ### Request Routing
 
-AWS requests are routed by protocol (REST-XML, REST-JSON, AWS JSON, Query) via `internal/server/http/`. IAM actions are routed through `internal/server/actionregistry/registry.go`.
+AWS requests are routed by protocol (REST-XML, REST-JSON, AWS JSON, Query) via `internal/server/http/`. The classifier detects the protocol and extracts service/operation. IAM actions are routed through `internal/server/actionregistry/registry.go`.
+
+### Service Modes
+
+Every service has a `<NAME>_ENABLED` environment variable (e.g. `S3_ENABLED`, `IOT_ENABLED`). Set `ALL_SERVICES_ENABLED=true` to force-enable all services regardless of individual flags. Conditional wiring is in `internal/server/apps/optional.go`. The static service registry lives in `internal/serviceconfig/`.
+
+→ See `docs/configuration.md` § Service Enablement for the full list.
+
+### Routing Modes
+
+Two port-routing strategies for services that expose per-resource hostnames (S3 Website, API Gateway, Cognito, CloudFront, Lambda URL, AppSync, Neptune):
+
+- **FQDN mode** (default): all traffic routes through `:50080` via `Host` header matching. No extra listener.
+- **Individual mode**: each resource gets its own port from the dynamic range (50200–50400).
+
+Implemented in `internal/server/fqdnrouter/` and `internal/server/portalloc/`. Switchable at runtime via `vstacks config set ports.<service>.mode individual|fqdn`.
+
+→ See `docs/architecture.md` § Port Architecture for details.
+
+### Config Store
+
+Runtime configuration is stored in PebbleDB (`app_config` bucket). Priority: **Pebble (persistent) > Environment variable > Default constant**. At startup, `internal/config/bootstrap.go` reads env vars into `BootstrapConfig`, then `store/config` seeds defaults and applies env overrides to Pebble. After startup, only Pebble is read.
+
+→ See `docs/configuration.md` § Admin Config System and `docs/architecture.md` § Config Store Architecture.
 
 ### Authorization
 
-IAM policy evaluation is handled in `internal/server/authorization/`. Enable with `AUTHORIZATION_ENABLED=true`. Actions are registered per service in the action registry.
+IAM policy evaluation is handled in `internal/server/authorization/`. Enable with `AUTHORIZATION_ENABLED=true`. Actions are registered per service in the action registry. Additional env vars: `AUTHORIZATION_FAILURE_MODE` (strict/permissive), `AUTHORIZATION_CACHE_TTL_SECONDS`, `AUTHORIZATION_DEFAULT_ACCESS_KEY_ID`.
+
+→ See `docs/configuration.md` § IAM Authorization.
 
 ### Storage
 
@@ -102,10 +142,16 @@ Connect-RPC gRPC-Web admin interface runs on a separate port (`GRPC_WEB_PORT`, d
 make build
 
 # Run in development mode
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks_server
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
+
+# Or use make run (wraps go run with signature verification disabled)
+make run
 
 # Run with Lambda support (requires Docker)
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/run/docker.sock ./vorpalstacks_server
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/run/docker.sock ./vorpalstacks
+
+# Run with all services (including IoT, CloudTrail, RDS MySQL)
+ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 
 # Format and tidy
 make fmt
@@ -115,45 +161,66 @@ make tidy
 - AWS API endpoints: port 50080 (`PORT`)
 - Admin console: `http://localhost:50090/webconsole/` (`GRPC_WEB_PORT`)
 
+### vstacks CLI
+
+The `vstacks` binary (`cmd/vstacks/`) provides server control, IAM management, configuration, service mode control, and backup operations. It communicates via gRPC-Web (server control) or reads PebbleDB directly (IAM, config, backup).
+
+```
+vstacks server status|stop
+vstacks iam create-user -user <name> | list-users | ...
+vstacks config get <key> | set <key> <value> | list | schema
+vstacks service get <name> | enable <name> | disable <name> | set-mode <name> -mode <MODE>
+vstacks backup create | restore <file> | list
+```
+
+→ See `docs/configuration.md` § vstacks CLI for the full command reference.
+
 ## Testing
 
 ```bash
 # Unit tests
 make test
 
-# SDK tests (requires running server with audit enabled)
-# Start server: VS_AUDIT_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks_server
+# SDK tests (requires running server)
+# Start server:
+#   ALL_SERVICES_ENABLED=true VS_AUDIT_ENABLED=true \
+#     SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 cd sdk-tests && go build -o sdk-tests-all .
 ./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
 
-# CLI integration tests (all services)
-make test-cli
-
-# Individual CLI tests
-cd scripts/services && bash test_sqs.sh
-cd scripts/services && bash test_dynamodb.sh
-cd scripts/services && bash test_s3.sh
-cd scripts/services && bash test_iam.sh
-cd scripts/services && bash test_lambda.sh
-cd scripts/services && bash test_stepfunctions.sh
-# ... see scripts/services/ for all available test scripts
+# Run specific service or test type
+./sdk-tests-all -service sqs -endpoint http://127.0.0.1:50080 -v
+./sdk-tests-all -service all -type sdk -v           # SDK tests only
+./sdk-tests-all -service all -type integration -v    # Cross-service integration tests
+./sdk-tests-all -service all -type ws -v             # WebSocket tests
+./sdk-tests-all -service all -parallel 4 -v          # Parallel execution
 ```
 
+`sdk-tests/` is an **independent Go module** (`vorpalstacks-sdk-tests`) with its own `go.mod`. Test services are registered declaratively in `sdk-tests/testutil/runner.go`.
+
 ## Key Environment Variables
+
+Core settings most commonly used:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `50080` | HTTP server port |
+| `GRPC_WEB_PORT` | `50090` | gRPC-Web admin server port |
 | `DATA_PATH` | `./data` | Persistent data storage path |
 | `AWS_REGION` | `us-east-1` | Default region |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS account ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | AWS Signature V4 verification |
-| `GRPC_WEB_PORT` | `50090` | gRPC-Web admin server port |
-| `TLS_ENABLED` | `false` | Enable TLS |
-| `AUTHORIZATION_ENABLED` | `false` | Enable IAM policy evaluation |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker socket for Lambda |
+| `ALL_SERVICES_ENABLED` | `false` | Force-enable all services |
+| `TEST_MODE` | `false` | Allow unauthenticated access (testing only) |
 
-See `docs/configuration.md` for the complete list.
+Additional variable groups (see `docs/configuration.md` for the complete list):
+- **Service enablement**: `<NAME>_ENABLED` per service (e.g. `IOT_ENABLED`, `S3_ENABLED`)
+- **TLS**: `TLS_ENABLED`, `TLS_PORT`, `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_HOSTNAME`
+- **Authorization**: `AUTHORIZATION_ENABLED`, `AUTHORIZATION_FAILURE_MODE`, `AUTHORIZATION_CACHE_TTL_SECONDS`
+- **Networking**: `BIND_MODE`, `BIND_INTERFACE`, `TRUST_FORWARDED_HEADERS`
+- **Telemetry**: `OTEL_TRACES_EXPORTER`, `OTEL_EXPORTER_OTLP_ENDPOINT`
+- **Routing**: `ROUTE53_DNS_ENABLED`, `USE_CHAIN_GATEWAY`
 
 ## Git Rules
 

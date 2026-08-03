@@ -25,6 +25,9 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateApiName(name); err != nil {
+		return nil, err
+	}
 
 	authType := request.GetStringParam(req.Parameters, "authenticationType")
 	if authType == "" {
@@ -62,21 +65,47 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, ErrApiLimitExceededException
 	}
 
+	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
+	if _, ok := req.Parameters["queryDepthLimit"]; ok {
+		if err := validateQueryDepthLimit(queryDepthLimit); err != nil {
+			return nil, err
+		}
+	}
+	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
+	if _, ok := req.Parameters["resolverCountLimit"]; ok {
+		if err := validateResolverCountLimit(resolverCountLimit); err != nil {
+			return nil, err
+		}
+	}
+
+	additionalAuthProviders, err := parseAdditionalAuthProviders(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	lambdaAuthConfig, err := parseLambdaAuthorizerConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	tagMap, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	api := &appsyncstore.GraphqlApi{
 		Name:                              name,
 		AuthenticationType:                authType,
-		AdditionalAuthenticationProviders: parseAdditionalAuthProviders(req.Parameters),
+		AdditionalAuthenticationProviders: additionalAuthProviders,
 		ApiType:                           apiType,
 		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
 		IntrospectionConfig:               introspectionConfig,
-		LambdaAuthorizerConfig:            parseLambdaAuthorizerConfig(req.Parameters),
+		LambdaAuthorizerConfig:            lambdaAuthConfig,
 		LogConfig:                         logCfg,
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
-		QueryDepthLimit:                   int32(request.GetIntParam(req.Parameters, "queryDepthLimit")),
-		ResolverCountLimit:                int32(request.GetIntParam(req.Parameters, "resolverCountLimit")),
-		Tags:                              parseTags(req.Parameters),
+		QueryDepthLimit:                   queryDepthLimit,
+		ResolverCountLimit:                resolverCountLimit,
+		Tags:                              tagMap,
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
 		Visibility:                        visibility,
 		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
@@ -155,6 +184,9 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateApiName(name); err != nil {
+		return nil, err
+	}
 	authType := request.GetStringParam(req.Parameters, "authenticationType")
 	if authType == "" {
 		return nil, NewBadRequestException("authenticationType is required")
@@ -191,19 +223,41 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		xrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
 	}
 
+	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
+	if _, ok := req.Parameters["queryDepthLimit"]; ok {
+		if err := validateQueryDepthLimit(queryDepthLimit); err != nil {
+			return nil, err
+		}
+	}
+	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
+	if _, ok := req.Parameters["resolverCountLimit"]; ok {
+		if err := validateResolverCountLimit(resolverCountLimit); err != nil {
+			return nil, err
+		}
+	}
+
+	additionalAuthProviders, err := parseAdditionalAuthProviders(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	lambdaAuthConfig, err := parseLambdaAuthorizerConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	api := &appsyncstore.GraphqlApi{
 		Name:                              name,
 		AuthenticationType:                authType,
-		AdditionalAuthenticationProviders: parseAdditionalAuthProviders(req.Parameters),
+		AdditionalAuthenticationProviders: additionalAuthProviders,
 		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
 		IntrospectionConfig:               introspectionConfig,
-		LambdaAuthorizerConfig:            parseLambdaAuthorizerConfig(req.Parameters),
+		LambdaAuthorizerConfig:            lambdaAuthConfig,
 		LogConfig:                         logCfg,
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
-		QueryDepthLimit:                   int32(request.GetIntParam(req.Parameters, "queryDepthLimit")),
-		ResolverCountLimit:                int32(request.GetIntParam(req.Parameters, "resolverCountLimit")),
+		QueryDepthLimit:                   queryDepthLimit,
+		ResolverCountLimit:                resolverCountLimit,
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
 		WafWebAclArn:                      wafWebAclArn,
 		XrayEnabled:                       xrayEnabled,

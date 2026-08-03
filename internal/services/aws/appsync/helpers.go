@@ -10,6 +10,7 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -120,8 +121,9 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 		return nil, authErr
 	}
 
-	// Reject empty required fields (H-1). AWS AppSync requires at least one
-	// auth provider and non-empty auth mode lists for each operation type.
+	// AWS AppSync requires at least one auth provider and non-empty auth
+	// mode lists for each operation type, so empty submissions must be
+	// rejected with a BadRequestException rather than silently persisted.
 	if len(ec.AuthProviders) == 0 {
 		return nil, NewBadRequestException("eventConfig.authProviders is required and must contain at least one provider")
 	}
@@ -165,30 +167,44 @@ func parseAuthModes(raw []interface{}) ([]appsyncstore.AuthMode, error) {
 
 // parseTags extracts a map[string]string from the "tags" request parameter.
 // Handles both flat map format ({"mykey": "myval"}) and CLI single-tag format ({"Key": "k", "Value": "v"}).
-func parseTags(params map[string]interface{}) map[string]string {
+func parseTags(params map[string]interface{}) (map[string]string, error) {
 	raw := request.GetMapParam(params, "tags")
 	if raw == nil {
 		raw = request.GetMapParam(params, "Tags")
 	}
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
+	// CLI single-tag format: {"key": "K", "value": "V"}.
 	if k, ok := raw["key"]; ok {
-		if v, ok2 := raw["value"]; ok2 {
-			if ks, ok3 := k.(string); ok3 {
-				if vs, ok4 := v.(string); ok4 {
-					return map[string]string{ks: vs}
-				}
+		v, ok2 := raw["value"]
+		if !ok2 {
+			return nil, NewBadRequestException("tags with 'key' field must also include 'value'")
+		}
+		ks, ok3 := k.(string)
+		vs, ok4 := v.(string)
+		if ok3 && ok4 {
+			result := map[string]string{ks: vs}
+			if err := tags.ValidateTagMap(result); err != nil {
+				return nil, NewBadRequestException(err.Error())
 			}
+			return result, nil
 		}
 	}
+	// CLI single-tag format (capitalised): {"Key": "K", "Value": "V"}.
 	if k, ok := raw["Key"]; ok {
-		if v, ok2 := raw["Value"]; ok2 {
-			if ks, ok3 := k.(string); ok3 {
-				if vs, ok4 := v.(string); ok4 {
-					return map[string]string{ks: vs}
-				}
+		v, ok2 := raw["Value"]
+		if !ok2 {
+			return nil, NewBadRequestException("tags with 'Key' field must also include 'Value'")
+		}
+		ks, ok3 := k.(string)
+		vs, ok4 := v.(string)
+		if ok3 && ok4 {
+			result := map[string]string{ks: vs}
+			if err := tags.ValidateTagMap(result); err != nil {
+				return nil, NewBadRequestException(err.Error())
 			}
+			return result, nil
 		}
 	}
 	result := make(map[string]string)
@@ -197,7 +213,10 @@ func parseTags(params map[string]interface{}) map[string]string {
 			result[k] = vs
 		}
 	}
-	return result
+	if err := tags.ValidateTagMap(result); err != nil {
+		return nil, NewBadRequestException(err.Error())
+	}
+	return result, nil
 }
 
 // parseHandlerConfigs parses HandlerConfigs from the request parameters.
@@ -238,16 +257,24 @@ func parseHandlerConfig(raw map[string]interface{}) *appsyncstore.HandlerConfig 
 // --- GraphQL API parse helpers ---
 
 // parseAdditionalAuthProviders parses additional authentication providers from request parameters.
-func parseAdditionalAuthProviders(params map[string]interface{}) []appsyncstore.AdditionalAuthenticationProvider {
+func parseAdditionalAuthProviders(params map[string]interface{}) ([]appsyncstore.AdditionalAuthenticationProvider, error) {
 	raw := request.GetArrayParam(params, "additionalAuthenticationProviders")
 	var providers []appsyncstore.AdditionalAuthenticationProvider
 	for _, p := range raw {
 		if pMap, ok := p.(map[string]interface{}); ok {
+			authType := request.GetStringParam(pMap, "authenticationType")
+			if authType != "" && !validAuthenticationTypes[authType] {
+				return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType in additionalAuthenticationProviders: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", authType))
+			}
 			ap := appsyncstore.AdditionalAuthenticationProvider{
-				AuthenticationType: request.GetStringParam(pMap, "authenticationType"),
+				AuthenticationType: authType,
 			}
 			if lambdaRaw := request.GetMapParam(pMap, "lambdaAuthorizerConfig"); lambdaRaw != nil {
-				ap.LambdaAuthorizerConfig = parseLambdaAuthorizerConfigFromMap(lambdaRaw)
+				cfg, err := parseLambdaAuthorizerConfigFromMap(lambdaRaw)
+				if err != nil {
+					return nil, err
+				}
+				ap.LambdaAuthorizerConfig = cfg
 			}
 			if oidcRaw := request.GetMapParam(pMap, "openIDConnectConfig"); oidcRaw != nil {
 				ap.OpenIDConnectConfig = parseOpenIDConnectConfigFromMap(oidcRaw)
@@ -262,7 +289,7 @@ func parseAdditionalAuthProviders(params map[string]interface{}) []appsyncstore.
 			providers = append(providers, ap)
 		}
 	}
-	return providers
+	return providers, nil
 }
 
 // parseEnhancedMetricsConfig parses an EnhancedMetricsConfig from request parameters.
@@ -279,21 +306,25 @@ func parseEnhancedMetricsConfig(params map[string]interface{}) *appsyncstore.Enh
 }
 
 // parseLambdaAuthorizerConfig parses a LambdaAuthorizerConfig from request parameters.
-func parseLambdaAuthorizerConfig(params map[string]interface{}) *appsyncstore.LambdaAuthorizerConfig {
+func parseLambdaAuthorizerConfig(params map[string]interface{}) (*appsyncstore.LambdaAuthorizerConfig, error) {
 	raw := request.GetMapParam(params, "lambdaAuthorizerConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	return parseLambdaAuthorizerConfigFromMap(raw)
 }
 
 // parseLambdaAuthorizerConfigFromMap parses a LambdaAuthorizerConfig from a raw map.
-func parseLambdaAuthorizerConfigFromMap(raw map[string]interface{}) *appsyncstore.LambdaAuthorizerConfig {
+func parseLambdaAuthorizerConfigFromMap(raw map[string]interface{}) (*appsyncstore.LambdaAuthorizerConfig, error) {
+	ttl := int32(request.GetIntParam(raw, "authorizerResultTtlInSeconds"))
+	if err := validateLambdaAuthorizerTtl(ttl); err != nil {
+		return nil, err
+	}
 	return &appsyncstore.LambdaAuthorizerConfig{
 		AuthorizerUri:                request.GetStringParam(raw, "authorizerUri"),
-		AuthorizerResultTtlInSeconds: int32(request.GetIntParam(raw, "authorizerResultTtlInSeconds")),
+		AuthorizerResultTtlInSeconds: ttl,
 		IdentityValidationExpression: request.GetStringParam(raw, "identityValidationExpression"),
-	}
+	}, nil
 }
 
 // parseLogConfig parses a LogConfig from request parameters.

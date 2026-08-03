@@ -3,8 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
-	"regexp"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -15,85 +13,27 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// entityNamePattern validates IAM entity names for users and roles.
-// Per Smithy userNameType/roleNameType: length 1-64, pattern ^[\w+=,.@-]+$.
-var entityNamePattern = regexp.MustCompile(`^[\w+=,.@-]{1,64}$`)
-
-// entityNamePattern128 validates entity names that allow up to 128
-// characters: groups, instance profiles, server certificates, policies,
-// and inline policy names. Per Smithy groupNameType/instanceProfileNameType/
-// serverCertificateNameType/policyNameType: length 1-128, pattern ^[\w+=,.@-]+$.
-var entityNamePattern128 = regexp.MustCompile(`^[\w+=,.@-]{1,128}$`)
-
-// samlProviderNamePattern validates SAML provider names. Per Smithy
-// samlProviderNameType: length 1-128, pattern ^[\w._-]+$.
-var samlProviderNamePattern = regexp.MustCompile(`^[\w._-]{1,128}$`)
-
-// accountAliasPattern validates account alias names. Per Smithy
-// accountAliasType: lowercase alphanumeric with no consecutive hyphens.
-// Length 3-63 is enforced separately.
-var accountAliasPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-
-// tagKeyPattern validates tag keys. Per Smithy tagKeyType: length 1-128,
-// pattern ^[\p{L}\p{Z}\p{N}_.:/=+\-@]+$.
-var tagKeyPattern = regexp.MustCompile(`^[\p{L}\p{Z}\p{N}_.:/=+\-@]{1,128}$`)
-
-// iamPolicyArnPattern validates IAM policy ARNs used for attach/detach.
-var iamPolicyArnPattern = regexp.MustCompile(`^arn:aws:iam::\d+:policy/.+$`)
-
-// awsServiceNamePattern validates AWSServiceName for service-linked roles.
-// Must be a dotted service name like "ec2.amazonaws.com".
-var awsServiceNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)+$`)
-
 // CreateRole creates a new IAM role.
 // RoleName is required and must not be empty.
 // Path defaults to "/" if not specified.
 // AssumeRolePolicyDocument is the trust policy that controls who can assume the role.
 // Description, MaxSessionDuration, and Tags are optional.
 func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewInvalidInputError("RoleName", "cannot be empty")
-	}
-	if !entityNamePattern.MatchString(roleName) {
-		return nil, NewInvalidInputError("RoleName", "must be 1 to 64 alphanumeric characters or any of +=,.@-_")
-	}
-
-	path := request.GetStringParam(req.Parameters, "Path")
-	if path == "" {
-		path = "/"
-	}
-
-	assumeRolePolicyDocument := request.GetStringParam(req.Parameters, "AssumeRolePolicyDocument")
-	if assumeRolePolicyDocument == "" {
-		return nil, ErrMalformedPolicyDocument
-	}
-	if !validateTrustPolicyDocument(assumeRolePolicyDocument) {
-		return nil, ErrMalformedPolicyDocument
-	}
-	description := request.GetStringParam(req.Parameters, "Description")
-	maxSessionDuration := request.GetIntParam(req.Parameters, "MaxSessionDuration")
-	if maxSessionDuration == 0 {
-		maxSessionDuration = 3600
-	}
-	if maxSessionDuration < 3600 || maxSessionDuration > 43200 {
-		return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
-	}
-
-	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if err := validateNewTags(newTags); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Create(roleName, path, s.accountID, assumeRolePolicyDocument, description, maxSessionDuration, newTags)
+	input := &CreateRoleInput{
+		RoleName:                 request.GetStringParam(req.Parameters, "RoleName"),
+		Path:                     request.GetStringParam(req.Parameters, "Path"),
+		AssumeRolePolicyDocument: request.GetStringParam(req.Parameters, "AssumeRolePolicyDocument"),
+		Description:              request.GetStringParam(req.Parameters, "Description"),
+		MaxSessionDuration:       request.GetIntParam(req.Parameters, "MaxSessionDuration"),
+		PermissionsBoundaryArn:   request.GetStringParam(req.Parameters, "PermissionsBoundary"),
+		Tags:                     tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	role, err := s.createRoleCore(store, input)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrRoleAlreadyExists) {
-			return nil, NewRoleAlreadyExistsError(roleName)
-		}
 		return nil, err
 	}
 
@@ -107,16 +47,16 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 func (s *IAMService) GetRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Get(roleName)
+	role, err := s.getRoleCore(store, roleName)
 	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -128,29 +68,16 @@ func (s *IAMService) GetRole(ctx context.Context, reqCtx *request.RequestContext
 // RoleName is required.
 // Description and MaxSessionDuration are optional parameters to update.
 func (s *IAMService) UpdateRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
-	maxSessionDuration := request.GetIntParam(req.Parameters, "MaxSessionDuration")
-	if maxSessionDuration > 0 {
-		if maxSessionDuration < 3600 || maxSessionDuration > 43200 {
-			return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := store.UpdateRoleFields(roleName, description, maxSessionDuration); err != nil {
-		return nil, err
+	input := &UpdateRoleInput{
+		RoleName:           request.GetStringParam(req.Parameters, "RoleName"),
+		Description:        request.GetStringParam(req.Parameters, "Description"),
+		MaxSessionDuration: request.GetIntParam(req.Parameters, "MaxSessionDuration"),
 	}
-
-	role, err := store.Roles().Get(roleName)
+	role, err := s.updateRoleCore(store, input)
 	if err != nil {
 		return nil, err
 	}
@@ -163,22 +90,15 @@ func (s *IAMService) UpdateRole(ctx context.Context, reqCtx *request.RequestCont
 // UpdateRoleDescription updates the description of an IAM role.
 // RoleName and Description are required.
 func (s *IAMService) UpdateRoleDescription(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := store.UpdateRoleFields(roleName, description, 0); err != nil {
-		return nil, err
+	input := &UpdateRoleInput{
+		RoleName:    request.GetStringParam(req.Parameters, "RoleName"),
+		Description: request.GetStringParam(req.Parameters, "Description"),
 	}
-
-	role, err := store.Roles().Get(roleName)
+	role, err := s.updateRoleCore(store, input)
 	if err != nil {
 		return nil, err
 	}
@@ -193,44 +113,14 @@ func (s *IAMService) UpdateRoleDescription(ctx context.Context, reqCtx *request.
 // Returns an error if the role is attached to instance profiles.
 // Also deletes all inline policies and detaches attached policies.
 func (s *IAMService) DeleteRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Roles().Exists(roleName) {
-		return nil, NewNoSuchRoleError(roleName)
+	input := &DeleteRoleInput{
+		RoleName: request.GetStringParam(req.Parameters, "RoleName"),
 	}
-
-	instanceProfiles, err := store.InstanceProfiles().ListForRole(roleName, "", 1)
-	if err != nil {
-		return nil, err
-	}
-	if len(instanceProfiles.InstanceProfiles) > 0 {
-		return nil, NewDeleteRoleConflictError("Cannot delete entity, must remove role from instance profile first.")
-	}
-
-	inlinePolicies, err := store.InlinePolicies().List(PrincipalTypeRole, roleName)
-	if err != nil {
-		return nil, err
-	}
-	if len(inlinePolicies) > 0 {
-		return nil, NewDeleteRoleConflictError("Cannot delete entity, must delete policies first.")
-	}
-
-	attachedPolicies, err := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeRole, roleName)
-	if err != nil {
-		return nil, err
-	}
-	if len(attachedPolicies) > 0 {
-		return nil, NewDeleteRoleConflictError("Cannot delete entity, must detach policies first.")
-	}
-
-	if err := store.Roles().Delete(roleName); err != nil {
+	if err := s.deleteRoleCore(store, input); err != nil {
 		return nil, err
 	}
 
@@ -249,7 +139,7 @@ func (s *IAMService) ListRoles(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Roles().List(pathPrefix, marker, maxItems)
+	result, err := s.listRolesCore(store, pathPrefix, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -277,28 +167,17 @@ func (s *IAMService) ListRoles(ctx context.Context, reqCtx *request.RequestConte
 func (s *IAMService) UpdateAssumeRolePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
+	policyDocument := request.GetStringParam(req.Parameters, "PolicyDocument")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	policyDocument := request.GetStringParam(req.Parameters, "PolicyDocument")
-	if !validateTrustPolicyDocument(policyDocument) {
-		return nil, ErrMalformedPolicyDocument
-	}
-	role.AssumeRolePolicyDocument = policyDocument
-
-	if err := store.Roles().Put(role); err != nil {
+	if err := s.updateAssumeRolePolicyCore(store, roleName, policyDocument); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -380,7 +259,7 @@ func (s *IAMService) roleToResponse(reqCtx *request.RequestContext, role *iamsto
 func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -422,39 +301,25 @@ func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *re
 func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	permissionsBoundary := request.GetStringParam(req.Parameters, "PermissionsBoundary")
 	if permissionsBoundary == "" {
-		return nil, ErrNoSuchPolicy
-	}
-	if !iamPolicyArnPattern.MatchString(permissionsBoundary) {
-		return nil, NewInvalidInputError("PermissionsBoundary", "must be a valid IAM policy ARN")
+		return nil, NewValidationError("PermissionsBoundary")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Get(roleName)
+	role, err := s.getRoleCore(store, roleName)
 	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	if !store.Policies().Exists(permissionsBoundary) {
-		return nil, NewNoSuchPolicyError(permissionsBoundary)
-	}
-
-	role.PermissionsBoundary = &iamstore.PermissionsBoundary{
-		PermissionsBoundaryType: "Policy",
-		PermissionsBoundaryArn:  permissionsBoundary,
-	}
-
-	if err := store.Roles().Put(role); err != nil {
 		return nil, err
 	}
-
+	if err := putRolePermissionsBoundaryCore(store, role, permissionsBoundary); err != nil {
+		return nil, err
+	}
 	return response.EmptyResponse(), nil
 }
 
@@ -463,21 +328,14 @@ func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *req
 func (s *IAMService) DeleteRolePermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	role.PermissionsBoundary = nil
-
-	if err := store.Roles().Put(role); err != nil {
+	if err := s.deleteRolePermissionsBoundaryCore(store, roleName); err != nil {
 		return nil, err
 	}
 

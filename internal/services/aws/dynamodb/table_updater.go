@@ -116,7 +116,7 @@ func deepCopyTable(t *dbstore.Table) *dbstore.Table {
 	return &cp
 }
 
-func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) []*dbstore.GlobalSecondaryIndex {
+func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) ([]*dbstore.GlobalSecondaryIndex, error) {
 	gsiMap := make(map[string]*dbstore.GlobalSecondaryIndex)
 	for _, g := range existing {
 		gsiMap[g.IndexName] = g
@@ -130,15 +130,27 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 
 		if create, ok := update["Create"].(map[string]interface{}); ok {
 			idxName := request.GetStringParam(create, "IndexName")
-			if idxName != "" {
-				gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
-					IndexName:             idxName,
-					IndexArn:              tableARN + "/index/" + idxName,
-					KeySchema:             parseKeySchema(create),
-					Projection:            parseProjection(create),
-					ProvisionedThroughput: parseProvisionedThroughput(create),
-					IndexStatus:           dbstore.IndexStatusActive,
-				}
+			if idxName == "" {
+				continue
+			}
+			keySchema := parseKeySchema(create)
+			if len(keySchema) == 0 {
+				return nil, ErrInvalidParameter
+			}
+			if err := validateKeySchema(keySchema); err != nil {
+				return nil, err
+			}
+			proj, err := parseProjection(create)
+			if err != nil {
+				return nil, err
+			}
+			gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
+				IndexName:             idxName,
+				IndexArn:              tableARN + "/index/" + idxName,
+				KeySchema:             keySchema,
+				Projection:            proj,
+				ProvisionedThroughput: parseProvisionedThroughput(create),
+				IndexStatus:           dbstore.IndexStatusActive,
 			}
 		}
 
@@ -149,11 +161,19 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 					idx.ProvisionedThroughput = provThroughput
 				}
 				idx.IndexStatus = dbstore.IndexStatusActive
+			} else {
+				return nil, ErrIndexNotFound
 			}
 		}
 
 		if deleteGSI, ok := update["Delete"].(map[string]interface{}); ok {
 			idxNameToDelete := request.GetStringParam(deleteGSI, "IndexName")
+			if idxNameToDelete == "" {
+				continue
+			}
+			if _, exists := gsiMap[idxNameToDelete]; !exists {
+				return nil, ErrIndexNotFound
+			}
 			delete(gsiMap, idxNameToDelete)
 		}
 	}
@@ -165,5 +185,5 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].IndexName < result[j].IndexName
 	})
-	return result
+	return result, nil
 }

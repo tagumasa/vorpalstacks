@@ -111,7 +111,10 @@ func (s *WorkGroupStore) CreateWorkGroup(wg *WorkGroup) error {
 func (s *WorkGroupStore) GetWorkGroup(name string) (*WorkGroup, error) {
 	var p pb.WorkGroup
 	if err := s.GetProto(name, &p); err != nil {
-		return nil, ErrWorkGroupNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrWorkGroupNotFound
+		}
+		return nil, fmt.Errorf("get workgroup %s: %w", name, err)
 	}
 	return ProtoToWorkGroup(&p), nil
 }
@@ -219,7 +222,10 @@ func (s *NamedQueryStore) CreateNamedQuery(nq *NamedQuery) error {
 func (s *NamedQueryStore) GetNamedQuery(id string) (*NamedQuery, error) {
 	var p pb.NamedQuery
 	if err := s.GetProto(id, &p); err != nil {
-		return nil, ErrNamedQueryNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrNamedQueryNotFound
+		}
+		return nil, fmt.Errorf("get named query %s: %w", id, err)
 	}
 	return ProtoToNamedQuery(&p), nil
 }
@@ -361,7 +367,10 @@ func (s *PreparedStatementStore) GetPreparedStatement(workGroup, name string) (*
 
 	var p pb.PreparedStatement
 	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrPreparedStatementNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrPreparedStatementNotFound
+		}
+		return nil, fmt.Errorf("get prepared statement %s: %w", key, err)
 	}
 	return ProtoToPreparedStatement(&p), nil
 }
@@ -442,6 +451,53 @@ func (s *QueryExecutionStore) workGroupIndexKey(workGroup, queryExecutionId stri
 	return "#wg:" + workGroup + ":" + queryExecutionId
 }
 
+// clientRequestTokenTTL is the maximum lifetime of a ClientRequestToken
+// idempotency mapping. AWS typically expires these after ~24 hours.
+const clientRequestTokenTTL = 24 * time.Hour
+
+// clientRequestTokenEntry is the stored value for a ClientRequestToken
+// idempotency mapping. It includes a timestamp for TTL-based expiry.
+type clientRequestTokenEntry struct {
+	QueryExecutionID string    `json:"queryExecutionId"`
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
+// clientRequestTokenKey returns the storage key for a ClientRequestToken
+// idempotency mapping.
+func (s *QueryExecutionStore) clientRequestTokenKey(token string) string {
+	return "#crt:" + token
+}
+
+// GetQueryExecutionIdByClientRequestToken looks up a previously stored
+// ClientRequestToken mapping. Returns the query execution ID and true if
+// found and not expired. Expired entries are treated as not found.
+func (s *QueryExecutionStore) GetQueryExecutionIdByClientRequestToken(token string) (string, bool) {
+	if token == "" {
+		return "", false
+	}
+	var entry clientRequestTokenEntry
+	if err := s.Get(s.clientRequestTokenKey(token), &entry); err != nil || entry.QueryExecutionID == "" {
+		return "", false
+	}
+	if time.Since(entry.CreatedAt) > clientRequestTokenTTL {
+		return "", false
+	}
+	return entry.QueryExecutionID, true
+}
+
+// StoreClientRequestToken persists a ClientRequestToken → queryExecutionId
+// mapping for idempotency with a creation timestamp for TTL expiry.
+func (s *QueryExecutionStore) StoreClientRequestToken(token, queryExecutionId string) error {
+	if token == "" {
+		return nil
+	}
+	entry := clientRequestTokenEntry{
+		QueryExecutionID: queryExecutionId,
+		CreatedAt:        time.Now().UTC(),
+	}
+	return s.Put(s.clientRequestTokenKey(token), entry)
+}
+
 // extractIDFromIndexKey parses "#wg:<workGroup>:<id>" and returns the id portion.
 func extractIDFromIndexKey(key string) string {
 	parts := strings.SplitN(key, ":", 3)
@@ -482,7 +538,10 @@ func (s *QueryExecutionStore) CreateQueryExecution(qe *QueryExecution) error {
 func (s *QueryExecutionStore) GetQueryExecution(id string) (*QueryExecution, error) {
 	var p pb.QueryExecution
 	if err := s.GetProto(id, &p); err != nil {
-		return nil, ErrQueryExecutionNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrQueryExecutionNotFound
+		}
+		return nil, fmt.Errorf("get query execution %s: %w", id, err)
 	}
 	return ProtoToQueryExecution(&p), nil
 }
@@ -616,7 +675,10 @@ func (s *ResultStore) StoreResult(queryExecutionId string, result *QueryResult) 
 func (s *ResultStore) GetResult(queryExecutionId string) (*QueryResult, error) {
 	var p pb.QueryResult
 	if err := s.GetProto(queryExecutionId, &p); err != nil {
-		return nil, fmt.Errorf("result not found")
+		if common.IsNotFound(err) {
+			return nil, fmt.Errorf("result not found for query execution %s", queryExecutionId)
+		}
+		return nil, fmt.Errorf("get result %s: %w", queryExecutionId, err)
 	}
 	return ProtoToQueryResult(&p), nil
 }
@@ -667,7 +729,10 @@ func (s *DataCatalogStore) CreateDataCatalog(dc *DataCatalog) error {
 func (s *DataCatalogStore) GetDataCatalog(name string) (*DataCatalog, error) {
 	var p pb.DataCatalog
 	if err := s.GetProto(name, &p); err != nil {
-		return nil, ErrDataCatalogNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrDataCatalogNotFound
+		}
+		return nil, fmt.Errorf("get data catalog %s: %w", name, err)
 	}
 	return ProtoToDataCatalog(&p), nil
 }
@@ -740,7 +805,10 @@ func (s *DatabaseStore) GetDatabase(catalog, name string) (*Database, error) {
 
 	var p pb.Database
 	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrDatabaseNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrDatabaseNotFound
+		}
+		return nil, fmt.Errorf("get database %s: %w", key, err)
 	}
 	return ProtoToDatabase(&p), nil
 }
@@ -802,7 +870,10 @@ func (s *TableStore) GetTable(catalog, database, name string) (*TableMetadata, e
 
 	var p pb.TableMetadata
 	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrTableNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrTableNotFound
+		}
+		return nil, fmt.Errorf("get table %s: %w", key, err)
 	}
 	return ProtoToTableMetadata(&p), nil
 }
@@ -856,6 +927,7 @@ func (s *TableStore) DeleteTablesByDatabase(catalog, database string) error {
 // TableDataStore provides Athena table data storage operations.
 type TableDataStore struct {
 	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewTableDataStore creates a new Athena table data store.
@@ -885,7 +957,10 @@ func (s *TableDataStore) GetTableData(catalog, database, table string) (*StoredT
 
 	var p pb.StoredTable
 	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrTableNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrTableNotFound
+		}
+		return nil, fmt.Errorf("get table data %s: %w", key, err)
 	}
 	return ProtoToStoredTable(&p), nil
 }
@@ -897,6 +972,34 @@ func (s *TableDataStore) DeleteTableData(catalog, database, table string) error 
 		return nil
 	}
 	return s.BaseStore.Delete(key)
+}
+
+// AppendRows atomically appends rows to an existing table under a key lock.
+// This prevents lost-update races when concurrent INSERT queries target the
+// same table. If the table data does not exist yet, it is created.
+func (s *TableDataStore) AppendRows(catalog, database, table string, newRows []*StoredRow) error {
+	key := s.tableDataKey(catalog, database, table)
+	return s.kl.WithLock(key, func() error {
+		var storedTable *StoredTable
+		var p pb.StoredTable
+		if err := s.GetProto(key, &p); err != nil {
+			if !common.IsNotFound(err) {
+				return fmt.Errorf("append rows: failed to read existing table data %s: %w", key, err)
+			}
+			storedTable = &StoredTable{
+				DatabaseName: database,
+				TableName:    table,
+			}
+		} else {
+			storedTable = ProtoToStoredTable(&p)
+		}
+		storedTable.Rows = append(storedTable.Rows, newRows...)
+		proto, err := StoredTableToProto(storedTable)
+		if err != nil {
+			return fmt.Errorf("append rows: %w", err)
+		}
+		return s.PutProto(key, proto)
+	})
 }
 
 // DeleteTableDataByDatabase removes all table data (rows) for the given catalog and database.
@@ -962,7 +1065,10 @@ func (s *CapacityReservationStore) CreateCapacityReservation(cr *CapacityReserva
 func (s *CapacityReservationStore) GetCapacityReservation(name string) (*CapacityReservation, error) {
 	var cr CapacityReservation
 	if err := s.Get(name, &cr); err != nil {
-		return nil, ErrCapacityReservationNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrCapacityReservationNotFound
+		}
+		return nil, fmt.Errorf("get capacity reservation %s: %w", name, err)
 	}
 	return &cr, nil
 }
@@ -981,7 +1087,7 @@ func (s *CapacityReservationStore) ListCapacityReservations(workGroup string) ([
 	err := s.ForEach(func(_ string, value []byte) error {
 		var cr CapacityReservation
 		if err := json.Unmarshal(value, &cr); err != nil {
-			return nil
+			return fmt.Errorf("unmarshal capacity reservation: %w", err)
 		}
 		if workGroup != "" && cr.TargetWorkGroup != workGroup {
 			return nil

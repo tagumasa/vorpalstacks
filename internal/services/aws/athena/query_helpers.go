@@ -78,14 +78,21 @@ func (s *AthenaService) queryExecutionToResponse(qe *athenastore.QueryExecution)
 			status["CompletionDateTime"] = float64(qe.Status.CompletionDateTime.UnixNano()) / 1e9
 		}
 		if qe.Status.AthenaError != nil {
-			status["AthenaError"] = map[string]interface{}{
-				"ErrorCategory":     qe.Status.AthenaError.ErrorCategory,
-				"ErrorType":         qe.Status.AthenaError.ErrorType,
-				"Retryable":         qe.Status.AthenaError.Retryable,
-				"ErrorMessage":      qe.Status.AthenaError.ErrorMessage,
-				"SyntaxErrorRow":    qe.Status.AthenaError.SyntaxErrorRow,
-				"SyntaxErrorColumn": qe.Status.AthenaError.SyntaxErrorColumn,
+			// AWS SDK expects ErrorType as int32 (not string). Our store/proto
+			// uses string, so we omit it if non-numeric to avoid deserialisation
+			// errors. ErrorCategory is already int32-compatible.
+			athenaErrMap := map[string]interface{}{
+				"ErrorCategory": qe.Status.AthenaError.ErrorCategory,
+				"Retryable":     qe.Status.AthenaError.Retryable,
+				"ErrorMessage":  qe.Status.AthenaError.ErrorMessage,
 			}
+			if qe.Status.AthenaError.SyntaxErrorRow != 0 {
+				athenaErrMap["SyntaxErrorRow"] = qe.Status.AthenaError.SyntaxErrorRow
+			}
+			if qe.Status.AthenaError.SyntaxErrorColumn != 0 {
+				athenaErrMap["SyntaxErrorColumn"] = qe.Status.AthenaError.SyntaxErrorColumn
+			}
+			status["AthenaError"] = athenaErrMap
 		}
 		response["Status"] = status
 	}

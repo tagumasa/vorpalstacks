@@ -6,6 +6,7 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
@@ -39,13 +40,16 @@ func (s *AthenaService) CreateCapacityReservation(ctx context.Context, reqCtx *r
 	if name == "" {
 		return nil, awserrors.NewValidationException("Name is required")
 	}
+	if err := validateCapacityReservationName(name); err != nil {
+		return nil, err
+	}
 	targetWG := request.GetStringParam(req.Parameters, "TargetWorkGroup")
 	if targetWG == "" {
 		targetWG = "primary"
 	}
 	capacity := int32(request.GetIntParam(req.Parameters, "TargetDpus"))
-	if capacity <= 0 {
-		return nil, awserrors.NewValidationException("TargetDpus must be positive")
+	if err := validateTargetDpus(capacity); err != nil {
+		return nil, err
 	}
 
 	cr := &athenastore.CapacityReservation{
@@ -87,6 +91,12 @@ func (s *AthenaService) GetCapacityReservation(ctx context.Context, reqCtx *requ
 
 // ListCapacityReservations returns capacity reservations, optionally filtered by work group.
 func (s *AthenaService) ListCapacityReservations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
+	if err != nil {
+		return nil, err
+	}
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -99,14 +109,16 @@ func (s *AthenaService) ListCapacityReservations(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(reservations))
+	var summaries []map[string]interface{}
 	for _, cr := range reservations {
-		items = append(items, formatCapacityReservation(cr))
+		summaries = append(summaries, formatCapacityReservation(cr))
 	}
 
-	return map[string]interface{}{
-		"CapacityReservations": items,
-	}, nil
+	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
+		return item["Name"].(string)
+	})
+
+	return pagination.BuildListResponse("CapacityReservations", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // UpdateCapacityReservation updates the specified capacity reservation.
@@ -127,6 +139,9 @@ func (s *AthenaService) UpdateCapacityReservation(ctx context.Context, reqCtx *r
 	}
 
 	if dpus := request.GetIntParam(req.Parameters, "TargetDpus"); dpus > 0 {
+		if err := validateTargetDpus(int32(dpus)); err != nil {
+			return nil, err
+		}
 		cr.Capacity = int32(dpus)
 	}
 	cr.LastModifiedTime = time.Now().UTC()
@@ -155,6 +170,10 @@ func (s *AthenaService) CancelCapacityReservation(ctx context.Context, reqCtx *r
 		return nil, capacityReservationNotFound(name)
 	}
 
+	if err := validateCapacityReservationStatusForCancel(string(cr.Status)); err != nil {
+		return nil, err
+	}
+
 	cr.Status = athenastore.CapacityReservationStatusCancelled
 	cr.LastModifiedTime = time.Now().UTC()
 	if err := stores.capacityReservationStore.UpdateCapacityReservation(cr); err != nil {
@@ -176,8 +195,13 @@ func (s *AthenaService) DeleteCapacityReservation(ctx context.Context, reqCtx *r
 		return nil, awserrors.NewValidationException("Name is required")
 	}
 
-	if _, err := stores.capacityReservationStore.GetCapacityReservation(name); err != nil {
+	cr, err := stores.capacityReservationStore.GetCapacityReservation(name)
+	if err != nil {
 		return nil, capacityReservationNotFound(name)
+	}
+
+	if err := validateCapacityReservationStatusForDelete(string(cr.Status)); err != nil {
+		return nil, err
 	}
 
 	if err := stores.capacityReservationStore.DeleteCapacityReservation(name); err != nil {

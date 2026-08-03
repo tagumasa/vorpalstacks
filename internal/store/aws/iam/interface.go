@@ -31,6 +31,7 @@ type AccessKeyStoreInterface interface {
 	UpdateStatus(accessKeyId string, status AccessKeyStatus) error
 	UpdateLastUsed(accessKeyId, region, service string) error
 	Create(userName string) (*AccessKey, error)
+	CreateWithLimit(userName string, maxKeys int) (*AccessKey, error)
 	Exists(accessKeyId string) bool
 	DeleteByUserName(userName string) error
 	Count() int
@@ -136,11 +137,14 @@ type PolicyStoreInterface interface {
 	ListVersions(policyArn string, marker string, maxItems int) (*PolicyVersionListResult, error)
 	GetDefaultVersion(policyArn string) (*PolicyVersion, error)
 	SetDefaultVersion(policyArn, versionId string) error
+	CreateVersion(policyArn, document string, setAsDefault bool, maxVersions int) (*PolicyVersion, error)
 	GetMaxVersion(policyArn string) (int, error)
 	CountVersions(policyArn string) (int, error)
 	DeleteAllVersions(policyArn string) error
 	IncrementAttachmentCount(policyArn string) error
 	DecrementAttachmentCount(policyArn string) error
+	IncrementPermissionsBoundaryUsageCount(policyArn string) error
+	DecrementPermissionsBoundaryUsageCount(policyArn string) error
 }
 
 // InlinePolicyStoreInterface defines operations for managing IAM inline policies.

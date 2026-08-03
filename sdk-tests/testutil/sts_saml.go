@@ -108,5 +108,19 @@ func (r *TestRunner) runSTSSAMLTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sts", "AssumeRoleWithSAML_ShortPrincipalArn", func() error {
+		// PrincipalArn shorter than arnType min (20 chars) should be
+		// rejected with ValidationError.
+		_, err := tc.client.AssumeRoleWithSAML(tc.ctx, &sts.AssumeRoleWithSAMLInput{
+			RoleArn:       aws.String(tc.samlRoleARN()),
+			PrincipalArn:  aws.String("arn:aws:iam::1"),
+			SAMLAssertion: aws.String(samlAssertion),
+		})
+		if err := AssertErrorContains(err, "ValidationError"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	return results
 }

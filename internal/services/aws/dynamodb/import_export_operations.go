@@ -345,14 +345,23 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
+	importGSI, err := parseGlobalSecondaryIndexes(tableCreationParams)
+	if err != nil {
+		return nil, err
+	}
+	importLSI, err := parseLocalSecondaryIndexes(tableCreationParams)
+	if err != nil {
+		return nil, err
+	}
+
 	table, err := store.Tables().Create(
 		tableName,
 		keySchema,
 		attrDefs,
 		billingMode,
 		provThroughput,
-		parseGlobalSecondaryIndexes(tableCreationParams),
-		parseLocalSecondaryIndexes(tableCreationParams),
+		importGSI,
+		importLSI,
 		nil,
 		nil,
 		false,
@@ -524,7 +533,10 @@ func importDynamoDBJSONData(ctx context.Context, data []byte, tableName string, 
 			continue
 		}
 
-		attrs := parseAttributeValueMap(itemMap)
+		attrs, parseErr := parseAttributeValueMap(itemMap)
+		if parseErr != nil {
+			continue
+		}
 		if len(attrs) == 0 {
 			continue
 		}

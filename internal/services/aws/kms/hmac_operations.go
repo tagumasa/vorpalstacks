@@ -68,6 +68,7 @@ func (s *KMSService) GenerateMac(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "GenerateMac")
 
 	return map[string]interface{}{
 		"KeyId":        key.Arn,
@@ -133,6 +134,7 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "VerifyMac")
 
 	return map[string]interface{}{
 		"KeyId":        key.Arn,

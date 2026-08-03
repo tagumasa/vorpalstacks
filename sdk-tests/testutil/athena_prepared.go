@@ -21,7 +21,7 @@ func (tc *athenaTestCtx) testPreparedStatements() []TestResult {
 		return err
 	}))
 
-	psName := fmt.Sprintf("ps-%d", time.Now().UnixNano()%1000000000)
+	psName := fmt.Sprintf("ps_%d", time.Now().UnixNano()%1000000000)
 	results = append(results, tc.runner.RunTest("athena", "CreatePreparedStatement", func() error {
 		_, err := client.CreatePreparedStatement(ctx, &athena.CreatePreparedStatementInput{
 			StatementName:  aws.String(psName),
@@ -98,7 +98,7 @@ func (tc *athenaTestCtx) testPreparedStatements() []TestResult {
 		return nil
 	}))
 
-	psName2 := fmt.Sprintf("ps2-%d", time.Now().UnixNano()%1000000000)
+	psName2 := fmt.Sprintf("ps2_%d", time.Now().UnixNano()%1000000000)
 	results = append(results, tc.runner.RunTest("athena", "CreatePreparedStatement_Second", func() error {
 		_, err := client.CreatePreparedStatement(ctx, &athena.CreatePreparedStatementInput{
 			StatementName:  aws.String(psName2),

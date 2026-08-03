@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"sort"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -98,11 +99,64 @@ func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.Req
 	return tagutil.HandleUntag(ctx, req, dynamodbTagConfig(store))
 }
 
-// ListTagsForResource lists all tags assigned to a DynamoDB table.
+// ListTagsForResource lists tags assigned to a DynamoDB table with pagination.
+// AWS paginates tags; the marker is the tag key of the last returned entry.
 func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleList(ctx, req, dynamodbTagConfig(store))
+
+	cfg := dynamodbTagConfig(store)
+	rawKey := tagutil.GetResourceKey(req.Parameters, cfg.Param)
+	if rawKey == "" {
+		return nil, dynamodbMapError(&tagutil.MissingResourceError{Param: "ResourceArn"})
+	}
+	resourceKey := rawKey
+	if cfg.ResourceKey != nil {
+		resourceKey = cfg.ResourceKey(rawKey)
+	}
+	if cfg.ValidateResource != nil {
+		if err := cfg.ValidateResource(ctx, resourceKey); err != nil {
+			return nil, dynamodbMapError(err)
+		}
+	}
+
+	allTags, err := cfg.ListFunc(ctx, resourceKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort tags for deterministic pagination.
+	sort.Slice(allTags, func(i, j int) bool {
+		return allTags[i].Key < allTags[j].Key
+	})
+
+	// Apply NextToken pagination (marker = tag key).
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	startIdx := 0
+	if nextToken != "" {
+		for i, t := range allTags {
+			if t.Key == nextToken {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	pageSize := 50
+	remaining := allTags[startIdx:]
+	hasMore := len(remaining) > pageSize
+	if hasMore {
+		remaining = remaining[:pageSize]
+	}
+
+	resp := map[string]interface{}{
+		"Tags": tagutil.ConvertToMapSlice(remaining),
+	}
+	if hasMore && len(remaining) > 0 {
+		resp["NextToken"] = remaining[len(remaining)-1].Key
+	}
+
+	return resp, nil
 }

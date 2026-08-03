@@ -3,6 +3,8 @@ package iam
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -195,6 +197,36 @@ func (s *PolicyStore) DecrementAttachmentCount(policyArn string) error {
 	})
 }
 
+// IncrementPermissionsBoundaryUsageCount increments the permissions boundary
+// usage count for a policy. Called when a user or role's permissions boundary
+// is set to this policy.
+func (s *PolicyStore) IncrementPermissionsBoundaryUsageCount(policyArn string) error {
+	return s.kl.WithLock(policyArn, func() error {
+		policy, err := s.Get(policyArn)
+		if err != nil {
+			return err
+		}
+		policy.PermissionsBoundaryUsageCount++
+		return s.Put(policy)
+	})
+}
+
+// DecrementPermissionsBoundaryUsageCount decrements the permissions boundary
+// usage count for a policy. Called when a user or role's permissions boundary
+// is removed or changed away from this policy.
+func (s *PolicyStore) DecrementPermissionsBoundaryUsageCount(policyArn string) error {
+	return s.kl.WithLock(policyArn, func() error {
+		policy, err := s.Get(policyArn)
+		if err != nil {
+			return err
+		}
+		if policy.PermissionsBoundaryUsageCount > 0 {
+			policy.PermissionsBoundaryUsageCount--
+		}
+		return s.Put(policy)
+	})
+}
+
 // Count returns the total number of policies.
 func (s *PolicyStore) Count() int {
 	return s.BaseStore.Count()
@@ -293,31 +325,95 @@ func (s *PolicyStore) GetDefaultVersion(policyArn string) (*PolicyVersion, error
 // SetDefaultVersion sets the default version for a policy.
 func (s *PolicyStore) SetDefaultVersion(policyArn, versionId string) error {
 	return s.kl.WithLock(policyArn, func() error {
-		policy, err := s.Get(policyArn)
+		return s.setDefaultVersionUnlocked(policyArn, versionId)
+	})
+}
+
+// setDefaultVersionUnlocked swaps the default version marker from the
+// current default to versionId.  The caller MUST already hold the
+// policyArn lock (used by CreateVersion which operates inside the same
+// lock scope to avoid a non-reentrant deadlock).
+func (s *PolicyStore) setDefaultVersionUnlocked(policyArn, versionId string) error {
+	policy, err := s.Get(policyArn)
+	if err != nil {
+		return err
+	}
+
+	oldDefault, err := s.GetVersion(policyArn, policy.DefaultVersionId)
+	if err == nil {
+		oldDefault.IsDefaultVersion = false
+		if err := s.PutVersion(oldDefault); err != nil {
+			return err
+		}
+	}
+
+	newDefault, err := s.GetVersion(policyArn, versionId)
+	if err != nil {
+		return err
+	}
+	newDefault.IsDefaultVersion = true
+	if err := s.PutVersion(newDefault); err != nil {
+		return err
+	}
+
+	policy.DefaultVersionId = versionId
+	return s.Put(policy)
+}
+
+// ErrPolicyVersionLimitExceeded is returned when a policy already has
+// the maximum allowed number of versions (5 per AWS spec).
+var ErrPolicyVersionLimitExceeded = errors.New("cannot exceed quota for PolicyVersions")
+
+// MaxPolicyVersions is the AWS-enforced maximum number of versions per
+// policy.
+const MaxPolicyVersions = 5
+
+// CreateVersion atomically creates a new policy version inside the
+// policy lock scope, enforcing the MaxPolicyVersions quota and
+// optionally swapping the default marker.  This prevents the race
+// condition where concurrent requests could both observe a version
+// count below the limit and both succeed in creating a new version.
+func (s *PolicyStore) CreateVersion(policyArn, document string, setAsDefault bool, maxVersions int) (*PolicyVersion, error) {
+	var version *PolicyVersion
+	err := s.kl.WithLock(policyArn, func() error {
+		count, err := s.CountVersions(policyArn)
 		if err != nil {
 			return err
 		}
+		if count >= maxVersions {
+			return NewStoreError("create_policy_version", ErrPolicyVersionLimitExceeded)
+		}
 
-		oldDefault, err := s.GetVersion(policyArn, policy.DefaultVersionId)
-		if err == nil {
-			oldDefault.IsDefaultVersion = false
-			if err := s.PutVersion(oldDefault); err != nil {
+		maxVer, err := s.GetMaxVersion(policyArn)
+		if err != nil {
+			return err
+		}
+		versionId := fmt.Sprintf("v%d", maxVer+1)
+
+		version = &PolicyVersion{
+			VersionId:        versionId,
+			PolicyArn:        policyArn,
+			IsDefaultVersion: false,
+			Document:         document,
+		}
+
+		if err := s.PutVersion(version); err != nil {
+			return err
+		}
+
+		if setAsDefault {
+			if err := s.setDefaultVersionUnlocked(policyArn, versionId); err != nil {
 				return err
 			}
+			// Reflect the persisted default marker on the local copy.
+			version.IsDefaultVersion = true
 		}
-
-		newDefault, err := s.GetVersion(policyArn, versionId)
-		if err != nil {
-			return err
-		}
-		newDefault.IsDefaultVersion = true
-		if err := s.PutVersion(newDefault); err != nil {
-			return err
-		}
-
-		policy.DefaultVersionId = versionId
-		return s.Put(policy)
+		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return version, nil
 }
 
 func extractVersionNumber(versionId string) int {

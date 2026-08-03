@@ -222,8 +222,14 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 		}
 	}()
 
-	tableName, assignments, whereExpr := parseUpdateStatement(statement)
+	tableName, clauses, whereExpr := parseUpdateStatement(statement)
 	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// At least one clause must be present.
+	if len(clauses.setAssignments) == 0 && len(clauses.removeAttrs) == 0 &&
+		len(clauses.addAssignments) == 0 && len(clauses.deleteAssignments) == 0 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -265,7 +271,14 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 			Attributes: copyAttributes(item.Attributes),
 		}
 
-		applySetAssignments(item.Attributes, assignments, params)
+		applySetAssignments(item.Attributes, clauses.setAssignments, params)
+		applyRemoveAttrs(item.Attributes, clauses.removeAttrs)
+		if err := applyAddAssignments(item.Attributes, clauses.addAssignments, params); err != nil {
+			return nil, err
+		}
+		if err := applyDeleteAssignments(item.Attributes, clauses.deleteAssignments, params); err != nil {
+			return nil, err
+		}
 
 		newSize := calculateItemSize(item.Attributes)
 		sizeDelta := newSize - oldSize
@@ -583,4 +596,172 @@ func attrValueToCompareString(attr *dbstore.AttributeValue) string {
 		return "false"
 	}
 	return ""
+}
+
+// applyRemoveAttrs deletes the named top-level attributes from the item.
+func applyRemoveAttrs(attrs map[string]*dbstore.AttributeValue, removeAttrs []string) {
+	for _, name := range removeAttrs {
+		delete(attrs, name)
+	}
+}
+
+// applyAddAssignments performs DynamoDB ADD operations: if the attribute
+// is a number, add the value numerically; if it is a set, add elements.
+// Returns ErrInvalidParameter when the existing attribute and the ADD
+// value have incompatible types.
+func applyAddAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
+	for _, asgn := range assignments {
+		existing := attrs[asgn.attrName]
+		addValue := exprToAttributeValueWithParams(asgn.value, params)
+		if addValue == nil {
+			continue
+		}
+
+		if existing == nil {
+			// Attribute does not exist — ADD creates it.
+			attrs[asgn.attrName] = addValue
+			continue
+		}
+
+		// Numeric ADD.
+		if existing.N != nil && addValue.N != nil {
+			result := addNumbers(*existing.N, *addValue.N)
+			if result != "" {
+				r := result
+				attrs[asgn.attrName] = &dbstore.AttributeValue{N: &r}
+			}
+			continue
+		}
+
+		// String set ADD.
+		if existing.SS != nil && addValue.SS != nil {
+			setMap := make(map[string]bool)
+			for _, s := range existing.SS {
+				setMap[s] = true
+			}
+			for _, s := range addValue.SS {
+				setMap[s] = true
+			}
+			merged := make([]string, 0, len(setMap))
+			for s := range setMap {
+				merged = append(merged, s)
+			}
+			attrs[asgn.attrName] = dbstore.StringSet(merged)
+			continue
+		}
+
+		// Number set ADD.
+		if existing.NS != nil && addValue.NS != nil {
+			setMap := make(map[string]bool)
+			for _, n := range existing.NS {
+				setMap[n] = true
+			}
+			for _, n := range addValue.NS {
+				setMap[n] = true
+			}
+			merged := make([]string, 0, len(setMap))
+			for n := range setMap {
+				merged = append(merged, n)
+			}
+			attrs[asgn.attrName] = dbstore.NumberSet(merged)
+			continue
+		}
+
+		// Binary set ADD.
+		if existing.BS != nil && addValue.BS != nil {
+			existingSet := make(map[string]bool)
+			for _, b := range existing.BS {
+				existingSet[string(b)] = true
+			}
+			for _, b := range addValue.BS {
+				if !existingSet[string(b)] {
+					existing.BS = append(existing.BS, b)
+				}
+			}
+			attrs[asgn.attrName] = dbstore.BinarySet(existing.BS)
+			continue
+		}
+
+		// No compatible type pair matched — type mismatch.
+		return ErrInvalidParameter
+	}
+	return nil
+}
+
+// applyDeleteAssignments performs DynamoDB DELETE operations: remove
+// elements from a set attribute (SS, NS, or BS). Returns
+// ErrInvalidParameter when the existing attribute and the DELETE value
+// have incompatible types.
+func applyDeleteAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
+	for _, asgn := range assignments {
+		existing := attrs[asgn.attrName]
+		delValue := exprToAttributeValueWithParams(asgn.value, params)
+		if delValue == nil || existing == nil {
+			continue
+		}
+
+		// String set DELETE.
+		if existing.SS != nil && delValue.SS != nil {
+			delSet := make(map[string]bool)
+			for _, s := range delValue.SS {
+				delSet[s] = true
+			}
+			var remaining []string
+			for _, s := range existing.SS {
+				if !delSet[s] {
+					remaining = append(remaining, s)
+				}
+			}
+			if len(remaining) == 0 {
+				delete(attrs, asgn.attrName)
+			} else {
+				attrs[asgn.attrName] = dbstore.StringSet(remaining)
+			}
+			continue
+		}
+
+		// Number set DELETE.
+		if existing.NS != nil && delValue.NS != nil {
+			delSet := make(map[string]bool)
+			for _, n := range delValue.NS {
+				delSet[n] = true
+			}
+			var remaining []string
+			for _, n := range existing.NS {
+				if !delSet[n] {
+					remaining = append(remaining, n)
+				}
+			}
+			if len(remaining) == 0 {
+				delete(attrs, asgn.attrName)
+			} else {
+				attrs[asgn.attrName] = dbstore.NumberSet(remaining)
+			}
+			continue
+		}
+
+		// Binary set DELETE.
+		if existing.BS != nil && delValue.BS != nil {
+			delSet := make(map[string]bool)
+			for _, b := range delValue.BS {
+				delSet[string(b)] = true
+			}
+			var remaining [][]byte
+			for _, b := range existing.BS {
+				if !delSet[string(b)] {
+					remaining = append(remaining, b)
+				}
+			}
+			if len(remaining) == 0 {
+				delete(attrs, asgn.attrName)
+			} else {
+				attrs[asgn.attrName] = dbstore.BinarySet(remaining)
+			}
+			continue
+		}
+
+		// No compatible type pair matched — type mismatch.
+		return ErrInvalidParameter
+	}
+	return nil
 }

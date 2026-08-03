@@ -273,6 +273,10 @@ func (a *App) initTimestreamQuery(st *serviceState) error {
 	timestreamQueryService.SetStorageManager(a.server.StorageManager())
 	st.timestreamQueryService = timestreamQueryService
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("timestreamquery", func(ctx context.Context) error {
+		st.timestreamQueryService.Close()
+		return nil
+	})
 	return nil
 }
 
@@ -329,10 +333,10 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 // independent of the Neptune service. It uses the same Pebble bucket
 // configuration as the Neptune store (neptune_clusters, neptune_instances,
 // etc.), so data written via the RDS admin API is visible to all consumers
-// regardless of which services are enabled. This eliminates the
-// Neptune-dependency that previously caused cluster ARN resolution to fail
-// with InternalServerError when Neptune was disabled (M-2) and the nil
-// dereference in the RDS admin handler under the same condition (L-5).
+// regardless of which services are enabled. This eliminates the implicit
+// Neptune dependency that previously caused cluster ARN resolution to fail
+// with InternalServerError when Neptune was disabled, and the nil
+// dereference in the RDS admin handler under the same condition.
 func (a *App) initRDSStoreLookup(st *serviceState) {
 	sm := a.server.StorageManager()
 	var cache sync.Map

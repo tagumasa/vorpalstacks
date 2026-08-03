@@ -9,8 +9,6 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateApiKey creates a new API key.
@@ -23,32 +21,32 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 		return nil, storeErr(err)
 	}
 
-	// When generateDistinctId is false, a customer-supplied Value is required
-	// to serve as the API key identifier (AWS spec: 20-128 characters).
+	in := &ApiKeyInput{
+		Name:        req.Msg.Name,
+		Description: req.Msg.Description,
+		CustomerId:  req.Msg.Customerid,
+		Value:       req.Msg.Value,
+		Enabled:     true,
+	}
+
 	generateDistinctId := true
 	if req.Msg.Generatedistinctid != nil {
 		generateDistinctId = *req.Msg.Generatedistinctid
 	}
-	apiKeyValue := req.Msg.Value
 	if !generateDistinctId {
-		if apiKeyValue == "" {
+		if in.Value == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value is required when generateDistinctId is false"))
 		}
-		if len(apiKeyValue) < 20 || len(apiKeyValue) > 128 {
+		if len(in.Value) < 20 || len(in.Value) > 128 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value must be between 20 and 128 characters"))
 		}
+	} else {
+		// The data-plane path drops the caller-supplied value when
+		// generateDistinctId is true. Mirror that to keep behaviour
+		// identical to the previous admin implementation.
+		in.Value = ""
 	}
 
-	apiKey := &apigatewaystore.ApiKey{
-		Name:        req.Msg.Name,
-		Description: req.Msg.Description,
-		Enabled:     true,
-		CustomerId:  req.Msg.Customerid,
-		Value:       apiKeyValue,
-	}
-	if !generateDistinctId && apiKeyValue != "" {
-		apiKey.Id = apiKeyValue
-	}
 	for _, sk := range req.Msg.Stagekeys {
 		if sk != nil {
 			stageKey := sk.Restapiid + "/" + sk.Stagename
@@ -56,11 +54,11 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 				return nil, connect.NewError(connect.CodeInvalidArgument,
 					fmt.Errorf("invalid stageKey format, expected restApiId/stageName: %s", stageKey))
 			}
-			apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
+			in.StageKeys = append(in.StageKeys, stageKey)
 		}
 	}
 
-	created, err := stores.usage.CreateApiKey(apiKey)
+	created, err := h.service.createApiKeyCore(stores, in)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -73,16 +71,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	if err != nil {
 		return nil, storeErr(err)
 	}
-
-	limit := int(req.Msg.GetLimit())
-	if limit < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
-	}
-
-	result, err := stores.usage.ListApiKeys(common.ListOptions{
-		Marker:   req.Msg.Position,
-		MaxItems: limit,
-	})
+	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -100,14 +89,11 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 
 // GetApiKey returns a single API key by ID.
 func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.GetApiKeyRequest]) (*connect.Response[pb.ApiKey], error) {
-	if req.Msg.Apikey == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("api_key is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	k, err := stores.usage.GetApiKey(req.Msg.Apikey)
+	k, err := h.service.getApiKeyCore(stores, req.Msg.Apikey)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -116,14 +102,11 @@ func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.Ge
 
 // DeleteApiKey removes an API key.
 func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb.DeleteApiKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Apikey == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("api_key is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if err := stores.usage.DeleteApiKey(req.Msg.Apikey); err != nil {
+	if err := h.service.deleteApiKeyCore(stores, req.Msg.Apikey); err != nil {
 		return nil, storeErr(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -131,54 +114,39 @@ func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb
 
 // CreateUsagePlan creates a new usage plan.
 func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request[pb.CreateUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
 
-	usagePlan := &apigatewaystore.UsagePlan{
+	in := &UsagePlanInput{
 		Name:        req.Msg.Name,
 		Description: req.Msg.Description,
 	}
 	for _, as := range req.Msg.Apistages {
 		if as != nil {
-			stage := apigatewaystore.ApiStage{
+			in.ApiStages = append(in.ApiStages, ApiStageInput{
 				ApiId: as.Apiid,
 				Stage: as.Stage,
-			}
-			usagePlan.ApiStages = append(usagePlan.ApiStages, stage)
+			})
 		}
 	}
 	if req.Msg.Quota != nil {
 		periodStr := strings.TrimPrefix(req.Msg.Quota.Period.String(), "QUOTA_PERIOD_TYPE_")
-		if !validateQuotaPeriod(periodStr) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid quota period: must be DAY, WEEK, or MONTH"))
-		}
-		usagePlan.Quota = &apigatewaystore.Quota{
+		in.Quota = &QuotaInput{
 			Limit:  int64(req.Msg.Quota.GetLimit()),
 			Offset: int64(req.Msg.Quota.GetOffset()),
 			Period: periodStr,
 		}
 	}
 	if req.Msg.Throttle != nil {
-		burstLimit := int64(req.Msg.Throttle.GetBurstlimit())
-		if !validateThrottleBurstLimit(burstLimit) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("throttle burstLimit must be between 0 and 10000"))
-		}
-		rateLimit := req.Msg.Throttle.Ratelimit
-		if !validateThrottleRateLimit(rateLimit) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("throttle rateLimit must be between 0 and 10000"))
-		}
-		usagePlan.Throttle = &apigatewaystore.Throttle{
-			BurstLimit: burstLimit,
-			RateLimit:  rateLimit,
+		in.Throttle = &ThrottleInput{
+			BurstLimit: int64(req.Msg.Throttle.GetBurstlimit()),
+			RateLimit:  req.Msg.Throttle.Ratelimit,
 		}
 	}
 
-	created, err := stores.usage.CreateUsagePlan(usagePlan)
+	created, err := h.service.createUsagePlanCore(stores, in)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -191,16 +159,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	if err != nil {
 		return nil, storeErr(err)
 	}
-
-	limit := int(req.Msg.GetLimit())
-	if limit < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
-	}
-
-	result, err := stores.usage.ListUsagePlans(common.ListOptions{
-		Marker:   req.Msg.Position,
-		MaxItems: limit,
-	})
+	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -218,14 +177,11 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 
 // GetUsagePlan returns a single usage plan by ID.
 func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb.GetUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
-	if req.Msg.Usageplanid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	p, err := stores.usage.GetUsagePlan(req.Msg.Usageplanid)
+	p, err := h.service.getUsagePlanCore(stores, req.Msg.Usageplanid)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -234,14 +190,11 @@ func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb
 
 // DeleteUsagePlan removes a usage plan.
 func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Usageplanid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if err := stores.usage.DeleteUsagePlan(req.Msg.Usageplanid); err != nil {
+	if err := h.service.deleteUsagePlanCore(stores, req.Msg.Usageplanid); err != nil {
 		return nil, storeErr(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -249,30 +202,15 @@ func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request
 
 // CreateUsagePlanKey adds an API key to a usage plan.
 func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Request[pb.CreateUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
-	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" || req.Msg.Keytype == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id, key_id, and key_type are required"))
-	}
-	if req.Msg.Keytype != "API_KEY" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key_type must be API_KEY"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-
-	apiKey, err := stores.usage.GetApiKey(req.Msg.Keyid)
-	if err != nil {
-		return nil, storeErr(err)
+	in := &UsagePlanKeyInput{
+		KeyId:   req.Msg.Keyid,
+		KeyType: req.Msg.Keytype,
 	}
-
-	key := &apigatewaystore.UsagePlanKey{
-		Id:    req.Msg.Keyid,
-		Type:  req.Msg.Keytype,
-		Value: apiKey.Value,
-		Name:  apiKey.Name,
-	}
-
-	created, err := stores.usage.CreateUsagePlanKey(req.Msg.Usageplanid, key)
+	created, err := h.service.createUsagePlanKeyCore(stores, req.Msg.Usageplanid, in)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -281,23 +219,11 @@ func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Requ
 
 // GetUsagePlanKeys returns all keys in a usage plan.
 func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeysRequest]) (*connect.Response[pb.UsagePlanKeys], error) {
-	if req.Msg.Usageplanid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-
-	limit := int(req.Msg.GetLimit())
-	if limit < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
-	}
-
-	result, err := stores.usage.ListUsagePlanKeys(req.Msg.Usageplanid, common.ListOptions{
-		Marker:   req.Msg.Position,
-		MaxItems: limit,
-	})
+	result, err := h.service.listUsagePlanKeysCore(stores, req.Msg.Usageplanid, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -315,14 +241,11 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 
 // GetUsagePlanKey returns a single key from a usage plan.
 func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
-	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id and key_id are required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	k, err := stores.usage.GetUsagePlanKey(req.Msg.Usageplanid, req.Msg.Keyid)
+	k, err := h.service.getUsagePlanKeyCore(stores, req.Msg.Usageplanid, req.Msg.Keyid)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -331,14 +254,11 @@ func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request
 
 // DeleteUsagePlanKey removes a key from a usage plan.
 func (h *AdminHandler) DeleteUsagePlanKey(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id and key_id are required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if err := stores.usage.DeleteUsagePlanKey(req.Msg.Usageplanid, req.Msg.Keyid); err != nil {
+	if err := h.service.deleteUsagePlanKeyCore(stores, req.Msg.Usageplanid, req.Msg.Keyid); err != nil {
 		return nil, storeErr(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil

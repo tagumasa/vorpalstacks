@@ -48,6 +48,7 @@ type IAMStore struct {
 	oidcProviders        *OpenIDConnectProviderStore
 	accountSettings      *AccountSettingsStore
 	serviceLastAccessed  *ServiceLastAccessedDetailsJobStore
+	slRoleDeletionTasks  *SLRoleDeletionTaskStore
 	arnBuilder           *ARNBuilder
 	accountID            string
 }
@@ -76,6 +77,7 @@ func NewIAMStore(store storage.BasicStorage, accountID string) *IAMStore {
 		oidcProviders:        NewOpenIDConnectProviderStore(store, accountID),
 		accountSettings:      NewAccountSettingsStore(store),
 		serviceLastAccessed:  NewServiceLastAccessedDetailsJobStore(store),
+		slRoleDeletionTasks:  NewSLRoleDeletionTaskStore(store),
 		arnBuilder:           NewARNBuilder(accountID),
 		accountID:            accountID,
 	}
@@ -331,6 +333,11 @@ func (s *IAMStore) AccountSettings() *AccountSettingsStore {
 // ServiceLastAccessed returns the service last accessed details job store.
 func (s *IAMStore) ServiceLastAccessed() *ServiceLastAccessedDetailsJobStore {
 	return s.serviceLastAccessed
+}
+
+// SLRoleDeletionTasks returns the service-linked role deletion task store.
+func (s *IAMStore) SLRoleDeletionTasks() *SLRoleDeletionTaskStore {
+	return s.slRoleDeletionTasks
 }
 
 // RenameUser changes a user's name and/or path, migrating all associated

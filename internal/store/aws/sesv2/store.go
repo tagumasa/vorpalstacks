@@ -77,9 +77,10 @@ func (s *SESv2Store) BuildTemplateArn(name string) string {
 
 // BuildContactListArn builds an ARN for an SES contact list. Contact lists
 // live under the `ses:contact-list/<name>` resource path. All tag operations
-// (Create/Read/Delete) and the admin handler must use this helper to keep
-// the key consistent — otherwise tags stored at one key cannot be retrieved
-// at another (the previous raw-string bug C-3).
+// (Create/Read/Delete) and the admin handler must use this helper so the
+// ARN form stays consistent across every code path; using a raw-string
+// ARN builder at one site would store the tag under one key while another
+// site tried to retrieve it from a different key.
 func (s *SESv2Store) BuildContactListArn(name string) string {
 	return s.arnBuilder.Build("ses", "contact-list/"+name)
 }

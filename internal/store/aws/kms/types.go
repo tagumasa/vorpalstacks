@@ -82,20 +82,27 @@ const (
 
 // Key represents a KMS key.
 type Key struct {
-	KeyID                          string                    `json:"key_id"`
-	Arn                            string                    `json:"arn"`
-	KeyState                       KeyState                  `json:"key_state"`
-	KeyUsage                       KeyUsage                  `json:"key_usage"`
-	KeySpec                        KeySpec                   `json:"key_spec"`
-	Description                    string                    `json:"description,omitempty"`
-	Enabled                        bool                      `json:"enabled"`
-	CreationDate                   time.Time                 `json:"creation_date"`
-	DeletionDate                   *time.Time                `json:"deletion_date,omitempty"`
-	PendingWindowInDays            int                       `json:"pending_window_in_days,omitempty"`
-	ValidTo                        *time.Time                `json:"valid_to,omitempty"`
-	Origin                         OriginType                `json:"origin"`
-	KeyManager                     KeyManagerType            `json:"key_manager"`
-	KeyRotationEnabled             bool                      `json:"key_rotation_enabled"`
+	KeyID               string         `json:"key_id"`
+	Arn                 string         `json:"arn"`
+	KeyState            KeyState       `json:"key_state"`
+	KeyUsage            KeyUsage       `json:"key_usage"`
+	KeySpec             KeySpec        `json:"key_spec"`
+	Description         string         `json:"description,omitempty"`
+	Enabled             bool           `json:"enabled"`
+	CreationDate        time.Time      `json:"creation_date"`
+	DeletionDate        *time.Time     `json:"deletion_date,omitempty"`
+	PendingWindowInDays int            `json:"pending_window_in_days,omitempty"`
+	ValidTo             *time.Time     `json:"valid_to,omitempty"`
+	Origin              OriginType     `json:"origin"`
+	KeyManager          KeyManagerType `json:"key_manager"`
+	KeyRotationEnabled  bool           `json:"key_rotation_enabled"`
+	// KeyRotationEnabledAt records when automatic rotation was most
+	// recently enabled. Used by GetKeyRotationStatus to compute
+	// NextRotationDate as max(KeyRotationEnabledAt, lastRotationDate)
+	// + RotationPeriodInDays, matching the AWS documented behaviour.
+	// Reset to zero when rotation is disabled so that a subsequent
+	// re-enable starts a fresh window.
+	KeyRotationEnabledAt           time.Time                 `json:"key_rotation_enabled_at,omitempty"`
 	RotationPeriodInDays           int32                     `json:"rotation_period_in_days,omitempty"`
 	OnDemandRotationStartDate      *time.Time                `json:"on_demand_rotation_start_date,omitempty"`
 	CustomKeyStoreID               string                    `json:"custom_key_store_id,omitempty"`
@@ -110,9 +117,14 @@ type Key struct {
 	PreDeletionRotationEnabled     bool                      `json:"pre_deletion_rotation_enabled,omitempty"`
 	Tags                           []types.Tag               `json:"tags,omitempty"`
 	ImportToken                    string                    `json:"import_token,omitempty"`
-	WrappingPrivateKey             []byte                    `json:"wrapping_private_key,omitempty"`
-	WrappingAlgorithm              string                    `json:"wrapping_algorithm,omitempty"`
-	WrappingKeySpec                string                    `json:"wrapping_key_spec,omitempty"`
+	// ImportTokenValidTo records the expiry timestamp of the current
+	// import token. Set by GetParametersForImport (24-hour window) and
+	// checked by ImportKeyMaterial to reject expired tokens per the
+	// AWS ExpiredImportTokenException contract.
+	ImportTokenValidTo *time.Time `json:"import_token_valid_to,omitempty"`
+	WrappingPrivateKey []byte     `json:"wrapping_private_key,omitempty"`
+	WrappingAlgorithm  string     `json:"wrapping_algorithm,omitempty"`
+	WrappingKeySpec    string     `json:"wrapping_key_spec,omitempty"`
 	// ExpirationModel indicates whether imported key material expires.
 	// Valid values: KEY_MATERIAL_EXPIRES (default when ValidTo is set),
 	// KEY_MATERIAL_DOES_NOT_EXPIRE. Populated only for keys with Origin

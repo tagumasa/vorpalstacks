@@ -144,6 +144,64 @@ func (s *RestApiStore) Update(api *RestApi) error {
 	return s.updateLocked(api)
 }
 
+// CloneFromSource deep-copies resources, models, authorizers and request
+// validators from the source API into target, restamping every RestApiId
+// (including those nested under Method and MethodIntegration) to target.Id.
+// The caller is responsible for having already persisted target via Create.
+// Returns ErrRestApiNotFound if sourceApiId does not exist.
+func (s *RestApiStore) CloneFromSource(target *RestApi, sourceApiId string) error {
+	source, err := s.Get(sourceApiId)
+	if err != nil {
+		return err
+	}
+
+	resources, err := deepCopyResources(source.Resources)
+	if err != nil {
+		return fmt.Errorf("clone resources: %w", err)
+	}
+	models, err := deepCopyModels(source.Models)
+	if err != nil {
+		return fmt.Errorf("clone models: %w", err)
+	}
+	authorizers, err := deepCopyAuthorizers(source.Authorizers)
+	if err != nil {
+		return fmt.Errorf("clone authorizers: %w", err)
+	}
+	validators, err := deepCopyRequestValidators(source.RequestValidators)
+	if err != nil {
+		return fmt.Errorf("clone validators: %w", err)
+	}
+
+	// Restamp RestApiId on all cloned child elements. AWS assigns the new
+	// API id to every nested resource so that GetResources, GetModels etc.
+	// associate them with the clone rather than the source.
+	for _, r := range resources {
+		r.RestApiId = target.Id
+		for _, m := range r.ResourceMethods {
+			m.RestApiId = target.Id
+			if m.MethodIntegration != nil {
+				m.MethodIntegration.RestApiId = target.Id
+			}
+		}
+	}
+	for _, m := range models {
+		m.RestApiId = target.Id
+	}
+	for _, a := range authorizers {
+		a.RestApiId = target.Id
+	}
+	for _, v := range validators {
+		v.RestApiId = target.Id
+	}
+
+	target.Resources = resources
+	target.Models = models
+	target.Authorizers = authorizers
+	target.RequestValidators = validators
+
+	return s.Update(target)
+}
+
 // Delete deletes a REST API.
 func (s *RestApiStore) Delete(apiId string) error {
 	if !s.Exists(apiId) {

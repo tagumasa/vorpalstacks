@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -108,6 +109,44 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ShortProviderId", func() error {
+		// ProviderId shorter than urlType min (4 chars) should return
+		// ValidationError, not InvalidIdentityToken (L6 fix).
+		_, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
+			RoleArn:          aws.String(tc.webIdRoleARN()),
+			RoleSessionName:  aws.String("WebIdShortProvider"),
+			WebIdentityToken: aws.String("dummy-web-identity-token"),
+			ProviderId:       aws.String("ab"),
+		})
+		if err := AssertErrorContains(err, "ValidationError"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ShortSubjectFallback", func() error {
+		// roleSessionName "ab" (2 chars) is valid for roleSessionNameType
+		// (min 2) but below webIdentitySubjectType min (6).  The server
+		// must pad the fallback Subject to meet the constraint (L7 fix).
+		resp, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
+			RoleArn:          aws.String(tc.webIdRoleARN()),
+			RoleSessionName:  aws.String("ab"),
+			WebIdentityToken: aws.String("dummy-web-identity-token"),
+			ProviderId:       aws.String("example.com"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.SubjectFromWebIdentityToken == nil || *resp.SubjectFromWebIdentityToken == "" {
+			return fmt.Errorf("subject is nil or empty")
+		}
+		if len(*resp.SubjectFromWebIdentityToken) < 6 {
+			return fmt.Errorf("subject too short: %d chars (min 6), got: %s",
+				len(*resp.SubjectFromWebIdentityToken), *resp.SubjectFromWebIdentityToken)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sts", "GetWebIdentityToken_Basic", func() error {
 		resp, err := tc.client.GetWebIdentityToken(tc.ctx, &sts.GetWebIdentityTokenInput{
 			Audience:         []string{"sts.amazonaws.com"},
@@ -121,6 +160,33 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 		}
 		if resp.Expiration == nil || resp.Expiration.IsZero() {
 			return fmt.Errorf("expiration is nil or zero")
+		}
+		return nil
+	}))
+
+	// M5: When the WebIdentityToken is a parseable JWT with an iss claim,
+	// the Provider field in the response must contain the iss value,
+	// not the caller-supplied ProviderId.
+	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ProviderFromISS", func() error {
+		// Build a minimal JWT with iss/sub/aud claims.
+		payload := `{"iss":"https://test.oidc.example.com","sub":"test-subject-123456","aud":"test-audience","exp":9999999999}`
+		encodedPayload := base64.RawURLEncoding.EncodeToString([]byte(payload))
+		jwtToken := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." + encodedPayload + ".sig"
+
+		resp, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
+			RoleArn:          aws.String(tc.webIdRoleARN()),
+			RoleSessionName:  aws.String("IssProviderSession"),
+			WebIdentityToken: aws.String(jwtToken),
+			ProviderId:       aws.String("example.com"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Provider == nil {
+			return fmt.Errorf("Provider field is nil")
+		}
+		if *resp.Provider != "https://test.oidc.example.com" {
+			return fmt.Errorf("expected Provider to be JWT iss value, got: %s", *resp.Provider)
 		}
 		return nil
 	}))

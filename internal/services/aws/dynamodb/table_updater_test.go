@@ -26,7 +26,10 @@ func TestDeepCopyTable(t *testing.T) {
 		assert.Equal(t, orig.ItemCount, cp.ItemCount)
 	})
 
-	t.Run("KeySchema deep copy isolates mutations (Bug D-1)", func(t *testing.T) {
+	// Mutating the KeySchema of the deep copy must not affect the original
+	// table so that concurrent UpdateTable operations do not corrupt shared
+	// state held by the store.
+	t.Run("KeySchema deep copy isolates mutations", func(t *testing.T) {
 		orig := &dbstore.Table{
 			Name: "test",
 			KeySchema: []*dbstore.KeySchemaElement{

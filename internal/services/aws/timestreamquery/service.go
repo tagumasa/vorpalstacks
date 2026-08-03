@@ -38,6 +38,13 @@ type tsQueryStores struct {
 	arnBuilder             *svcarn.ARNBuilder
 }
 
+// Close stops background goroutines in the RecordStore.
+func (s *tsQueryStores) Close() {
+	if s.recordStore != nil {
+		s.recordStore.Close()
+	}
+}
+
 // Service represents the Timestream Query service.
 type TimestreamQueryService struct {
 	accountID      string
@@ -61,6 +68,16 @@ func NewTimestreamQueryService(accountID, serverHost, dataPath string) *Timestre
 // SetStorageManager injects the region storage manager for lazy store creation.
 func (s *TimestreamQueryService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// Close stops background goroutines in all cached stores.
+func (s *TimestreamQueryService) Close() {
+	s.stores.Range(func(_, v any) bool {
+		if c, ok := v.(interface{ Close() }); ok {
+			c.Close()
+		}
+		return true
+	})
 }
 
 func (s *TimestreamQueryService) createStoreGroup(region string) (*tsQueryStores, error) {
@@ -99,7 +116,10 @@ func (s *TimestreamQueryService) GetScheduledQueryStoreForRegion(region string) 
 	if err != nil {
 		return nil, err
 	}
-	actual, _ := s.stores.LoadOrStore(region, stores)
+	actual, loaded := s.stores.LoadOrStore(region, stores)
+	if loaded {
+		stores.Close()
+	}
 	return actual.(*tsQueryStores).scheduledQueryStore, nil
 }
 

@@ -3,44 +3,19 @@ package apigateway
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	store "vorpalstacks/internal/store/aws/apigateway"
+	"vorpalstacks/internal/store/aws/apigateway"
 )
 
 // PutIntegration creates or updates an integration for a resource in API Gateway.
 func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
 
-	integrationType := request.GetStringParam(req.Parameters, "type")
-	if integrationType == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-
-	if !validateIntegrationType(integrationType) {
-		return nil, NewBadRequestException("Invalid integration type: " + integrationType)
-	}
-
-	// uri is required for all types except MOCK.
-	if integrationType != "MOCK" && request.GetStringParam(req.Parameters, "uri") == "" {
-		return nil, NewBadRequestException("uri is required for " + integrationType + " integration")
-	}
-
-	// integrationHttpMethod is required for AWS (non-proxy) integrations.
-	if integrationType == "AWS" && request.GetStringParam(req.Parameters, "integrationHttpMethod") == "" {
-		return nil, NewBadRequestException("integrationHttpMethod is required for AWS integration")
-	}
-
-	integration := &store.Integration{
-		Type:                  integrationType,
+	in := &IntegrationInput{
+		Type:                  request.GetStringParam(req.Parameters, "type"),
 		IntegrationHttpMethod: request.GetStringParam(req.Parameters, "integrationHttpMethod"),
 		Uri:                   request.GetStringParam(req.Parameters, "uri"),
 		Credentials:           request.GetStringParam(req.Parameters, "credentials"),
@@ -50,178 +25,113 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 		TimeoutInMillis:       int32(request.GetIntParam(req.Parameters, "timeoutInMillis")),
 		ConnectionType:        request.GetStringParam(req.Parameters, "connectionType"),
 		ConnectionId:          request.GetStringParam(req.Parameters, "connectionId"),
+		ResponseTransferMode:  request.GetStringParam(req.Parameters, "responseTransferMode"),
+		IntegrationTarget:     request.GetStringParam(req.Parameters, "integrationTarget"),
 	}
-
-	if integration.ConnectionType != "" {
-		if !validateConnectionType(integration.ConnectionType) {
-			return nil, NewBadRequestException("Invalid connectionType: " + integration.ConnectionType)
-		}
-	}
-
-	if integration.PassthroughBehavior != "" {
-		if !validatePassthroughBehavior(integration.PassthroughBehavior) {
-			return nil, NewBadRequestException("Invalid passthroughBehavior: " + integration.PassthroughBehavior)
-		}
-	}
-
-	if integration.ContentHandling != "" {
-		if !validateContentHandling(integration.ContentHandling) {
-			return nil, NewBadRequestException("Invalid contentHandling: " + integration.ContentHandling)
-		}
-	}
-
-	if integration.TimeoutInMillis > 0 && (integration.TimeoutInMillis < 50 || integration.TimeoutInMillis > 30000) {
-		return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
-	}
-
-	if integration.TimeoutInMillis <= 0 {
-		integration.TimeoutInMillis = 29000
-	}
-
-	if reqParams, ok := req.Parameters["requestParameters"].(map[string]interface{}); ok {
-		integration.RequestParameters = make(map[string]string)
-		for k, v := range reqParams {
+	if rp, ok := req.Parameters["requestParameters"].(map[string]interface{}); ok {
+		in.RequestParameters = make(map[string]string)
+		for k, v := range rp {
 			if vs, ok := v.(string); ok {
-				integration.RequestParameters[k] = vs
+				in.RequestParameters[k] = vs
 			}
 		}
 	}
-
-	if reqTemplates, ok := req.Parameters["requestTemplates"].(map[string]interface{}); ok {
-		integration.RequestTemplates = make(map[string]string)
-		for k, v := range reqTemplates {
+	if rt, ok := req.Parameters["requestTemplates"].(map[string]interface{}); ok {
+		in.RequestTemplates = make(map[string]string)
+		for k, v := range rt {
 			if vs, ok := v.(string); ok {
-				integration.RequestTemplates[k] = vs
+				in.RequestTemplates[k] = vs
 			}
 		}
 	}
-
-	if cacheKeyParams, ok := req.Parameters["cacheKeyParameters"].([]interface{}); ok {
-		for _, p := range cacheKeyParams {
+	if ckp, ok := req.Parameters["cacheKeyParameters"].([]interface{}); ok {
+		for _, p := range ckp {
 			if ps, ok := p.(string); ok {
-				integration.CacheKeyParameters = append(integration.CacheKeyParameters, ps)
+				in.CacheKeyParameters = append(in.CacheKeyParameters, ps)
 			}
 		}
 	}
-
 	if tlsConfigMap, ok := req.Parameters["tlsConfig"].(map[string]interface{}); ok {
-		integration.TlsConfig = &store.TlsConfig{}
+		in.TlsConfig = &apigateway.TlsConfig{}
 		if v, ok := tlsConfigMap["insecureSkipVerification"].(bool); ok {
-			integration.TlsConfig.InsecureSkipVerification = v
+			in.TlsConfig.InsecureSkipVerification = v
 		}
 	}
-
-	integration.ResponseTransferMode = request.GetStringParam(req.Parameters, "responseTransferMode")
-	if !validateResponseTransferMode(integration.ResponseTransferMode) {
-		return nil, NewBadRequestException("Invalid responseTransferMode: must be BUFFERED or STREAM")
-	}
-	integration.IntegrationTarget = request.GetStringParam(req.Parameters, "integrationTarget")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := stores.restApis.PutIntegration(apiId, resourceId, httpMethod, integration)
+	created, err := s.putIntegrationCore(stores, apiId, resourceId, httpMethod, in)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
 	return s.toIntegrationResponse(created), nil
 }
 
 // GetIntegration retrieves an integration for a resource in API Gateway.
 func (s *APIGatewayService) GetIntegration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
-	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	integration, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod)
+	integration, err := s.getIntegrationCore(stores, apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
 	return s.toIntegrationResponse(integration), nil
 }
 
 // DeleteIntegration deletes an integration from a resource in API Gateway.
 func (s *APIGatewayService) DeleteIntegration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
-	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteIntegration(apiId, resourceId, httpMethod); err != nil {
-		return nil, ErrNotFoundException
+	if err := s.deleteIntegrationCore(stores, apiId, resourceId, httpMethod); err != nil {
+		return nil, toApiGatewayError(err)
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // PutIntegrationResponse creates or updates an integration response for a method in API Gateway.
 func (s *APIGatewayService) PutIntegrationResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
 	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
-
 	statusCode := request.GetStringParam(req.Parameters, "statusCode")
-	if statusCode == "" {
-		return nil, NewBadRequestException("statusCode is required")
-	}
 
-	response := &store.IntegrationResponse{
-		StatusCode:       statusCode,
+	in := &IntegrationResponseInput{
 		SelectionPattern: request.GetStringParam(req.Parameters, "selectionPattern"),
 		ContentHandling:  request.GetStringParam(req.Parameters, "contentHandling"),
 	}
-
-	if respParams, ok := req.Parameters["responseParameters"].(map[string]interface{}); ok {
-		response.ResponseParameters = make(map[string]string)
-		for k, v := range respParams {
+	if rp, ok := req.Parameters["responseParameters"].(map[string]interface{}); ok {
+		in.ResponseParameters = make(map[string]string)
+		for k, v := range rp {
 			if vs, ok := v.(string); ok {
-				response.ResponseParameters[k] = vs
+				in.ResponseParameters[k] = vs
 			}
 		}
 	}
-
-	if respTemplates, ok := req.Parameters["responseTemplates"].(map[string]interface{}); ok {
-		response.ResponseTemplates = make(map[string]string)
-		for k, v := range respTemplates {
+	if rt, ok := req.Parameters["responseTemplates"].(map[string]interface{}); ok {
+		in.ResponseTemplates = make(map[string]string)
+		for k, v := range rt {
 			if vs, ok := v.(string); ok {
-				response.ResponseTemplates[k] = vs
+				in.ResponseTemplates[k] = vs
 			}
 		}
 	}
@@ -230,84 +140,59 @@ func (s *APIGatewayService) PutIntegrationResponse(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
-	created, err := stores.restApis.PutIntegrationResponse(apiId, resourceId, httpMethod, statusCode, response)
+	created, err := s.putIntegrationResponseCore(stores, apiId, resourceId, httpMethod, statusCode, in)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
-
 	return s.toIntegrationResponseResponse(created), nil
 }
 
 // GetIntegrationResponse retrieves an integration response for a method in API Gateway.
 func (s *APIGatewayService) GetIntegrationResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
 	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
-
 	statusCode := request.GetStringParam(req.Parameters, "statusCode")
 	if statusCode == "" {
 		statusCode = getPathParam(req, "statusCode")
-	}
-	if statusCode == "" {
-		return nil, NewBadRequestException("statusCode is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	response, err := stores.restApis.GetIntegrationResponse(apiId, resourceId, httpMethod, statusCode)
+	response, err := s.getIntegrationResponseCore(stores, apiId, resourceId, httpMethod, statusCode)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
 	return s.toIntegrationResponseResponse(response), nil
 }
 
 // DeleteIntegrationResponse deletes an integration response from a method in API Gateway.
 func (s *APIGatewayService) DeleteIntegrationResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
 	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
-
 	statusCode := request.GetStringParam(req.Parameters, "statusCode")
 	if statusCode == "" {
 		statusCode = getPathParam(req, "statusCode")
-	}
-	if statusCode == "" {
-		return nil, NewBadRequestException("statusCode is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteIntegrationResponse(apiId, resourceId, httpMethod, statusCode); err != nil {
-		return nil, ErrNotFoundException
+	if err := s.deleteIntegrationResponseCore(stores, apiId, resourceId, httpMethod, statusCode); err != nil {
+		return nil, toApiGatewayError(err)
 	}
-
 	return response.EmptyResponse(), nil
 }
 
-func (s *APIGatewayService) toIntegrationResponse(i *store.Integration) map[string]interface{} {
+func (s *APIGatewayService) toIntegrationResponse(i *apigateway.Integration) map[string]interface{} {
 	response := map[string]interface{}{
 		"type": i.Type,
 	}
@@ -368,7 +253,7 @@ func (s *APIGatewayService) toIntegrationResponse(i *store.Integration) map[stri
 	return response
 }
 
-func (s *APIGatewayService) toIntegrationResponseResponse(r *store.IntegrationResponse) map[string]interface{} {
+func (s *APIGatewayService) toIntegrationResponseResponse(r *apigateway.IntegrationResponse) map[string]interface{} {
 	response := map[string]interface{}{
 		"statusCode": r.StatusCode,
 	}

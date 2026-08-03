@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -674,17 +675,40 @@ func (s *EventsService) deliverToTarget(ctx context.Context, region string, even
 }
 
 const (
-	defaultMaxRetryAttempts     = 185
-	defaultMaxEventAgeInSeconds = 86400
-	retryInitialBackoff         = 1 * time.Second
-	retryMaxBackoff             = 60 * time.Second
+	// AWS production defaults: 185 retries / 86400 s (24 h) deadline,
+	// 1 s initial backoff, 60 s max backoff. These match the AWS
+	// EventBridge retry behaviour for target delivery.
+	prodMaxRetryAttempts     = 185
+	prodMaxEventAgeInSeconds = 86400
+	prodRetryInitialBackoff  = 1 * time.Second
+	prodRetryMaxBackoff      = 60 * time.Second
+
+	// TEST_MODE defaults: reduced limits so integration tests are not
+	// blocked for hours when a target is temporarily unreachable. The
+	// delivery semaphore (targetConcurrencyLimit = 100) can be
+	// exhausted by retrying goroutines under the production defaults,
+	// stalling the entire delivery pipeline during tests.
+	testMaxRetryAttempts     = 3
+	testMaxEventAgeInSeconds = 60
+	testRetryInitialBackoff  = 500 * time.Millisecond
+	testRetryMaxBackoff      = 5 * time.Second
 )
+
+// retryDefaults returns the retry constants appropriate for the current
+// runtime mode. In TEST_MODE, reduced limits prevent goroutine
+// exhaustion during integration tests. In production, AWS-compatible
+// defaults ensure transient target failures are retried for up to 24 h.
+func retryDefaults() (maxRetry int32, maxAge int32, initialBackoff, maxBackoff time.Duration) {
+	if os.Getenv("TEST_MODE") == "true" {
+		return testMaxRetryAttempts, testMaxEventAgeInSeconds, testRetryInitialBackoff, testRetryMaxBackoff
+	}
+	return prodMaxRetryAttempts, prodMaxEventAgeInSeconds, prodRetryInitialBackoff, prodRetryMaxBackoff
+}
 
 func (s *EventsService) dispatchToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, payload []byte) {
 	targetType := s.parseTargetType(target.ARN)
 
-	maxRetries := int32(defaultMaxRetryAttempts)
-	maxAge := int32(defaultMaxEventAgeInSeconds)
+	maxRetries, maxAge, defaultBackoff, maxBackoff := retryDefaults()
 	if target.RetryPolicy != nil {
 		if target.RetryPolicy.MaximumRetryAttempts > 0 {
 			maxRetries = target.RetryPolicy.MaximumRetryAttempts
@@ -696,7 +720,7 @@ func (s *EventsService) dispatchToTarget(ctx context.Context, region string, eve
 	deadline := time.Now().Add(time.Duration(maxAge) * time.Second)
 
 	attempt := int32(0)
-	backoff := retryInitialBackoff
+	backoff := defaultBackoff
 	var deliverErr error
 
 	for {
@@ -732,8 +756,8 @@ func (s *EventsService) dispatchToTarget(ctx context.Context, region string, eve
 		}
 
 		// Exponential backoff with jitter.
-		if backoff > retryMaxBackoff {
-			backoff = retryMaxBackoff
+		if backoff > maxBackoff {
+			backoff = maxBackoff
 		}
 		jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
 		sleepDur := backoff + jitter

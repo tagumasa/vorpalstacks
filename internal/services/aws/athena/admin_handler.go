@@ -2,7 +2,6 @@ package athena
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -13,14 +12,11 @@ import (
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
-	athenastore "vorpalstacks/internal/store/aws/athena"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the Athena admin console gRPC-Web handler.
-// It delegates to the shared AthenaService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// It delegates to core functions in workgroup_core.go so that validation,
+// cascade cleanup, and error handling are shared with the HTTP API path.
 type AdminHandler struct {
 	athenaconnect.UnimplementedAthenaServiceHandler
 	service *AthenaService
@@ -28,73 +24,72 @@ type AdminHandler struct {
 
 var _ athenaconnect.AthenaServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Athena admin handler backed by the given
-// service instance.
 func NewAdminHandler(svc *AthenaService) *AdminHandler {
-	return &AdminHandler{
-		service: svc,
-	}
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getWorkGroupStoreFromHeaders(headers http.Header) (*athenastore.WorkGroupStore, error) {
+// getStores extracts the region from request headers and returns the full
+// athenaStores for that region.
+func (h *AdminHandler) getStores(headers http.Header) (*athenaStores, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetWorkGroupStoreForRegion(region)
+	return h.service.getStoresForRegion(region)
 }
 
-// CreateWorkGroup creates a new Athena work group via the admin console gRPC-Web interface.
+// CreateWorkGroup creates a new Athena work group via the admin console.
 func (h *AdminHandler) CreateWorkGroup(ctx context.Context, req *connect.Request[pb.CreateWorkGroupInput]) (*connect.Response[pb.CreateWorkGroupOutput], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
-
-	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	wg := &athenastore.WorkGroup{
+	input := WorkGroupCreateInput{
 		Name:        req.Msg.Name,
 		Description: req.Msg.Description,
-		State:       athenastore.WorkGroupStateEnabled,
 	}
 	if req.Msg.Configuration != nil {
-		wg.Configuration = &athenastore.WorkGroupConfiguration{}
-		if req.Msg.Configuration.Resultconfiguration != nil {
-			wg.Configuration.ResultConfiguration = &athenastore.ResultConfiguration{
-				OutputLocation: req.Msg.Configuration.Resultconfiguration.Outputlocation,
-			}
+		protoCfg := req.Msg.Configuration
+		cfg := &WorkGroupConfigInput{
+			EnforceConfig:           protoCfg.GetEnforceworkgroupconfiguration(),
+			PublishMetrics:          protoCfg.GetPublishcloudwatchmetricsenabled(),
+			BytesScannedCutoff:      int64(protoCfg.GetBytesscannedcutoffperquery()),
+			RequesterPaysEnabled:    protoCfg.GetRequesterpaysenabled(),
+			AdditionalConfiguration: protoCfg.GetAdditionalconfiguration(),
+			ExecutionRole:           protoCfg.GetExecutionrole(),
 		}
-		wg.Configuration.PublishCloudWatchMetricsEnabled = req.Msg.Configuration.GetPublishcloudwatchmetricsenabled()
-		wg.Configuration.BytesScannedCutoffPerQuery = req.Msg.Configuration.GetBytesscannedcutoffperquery()
-		wg.Configuration.RequesterPaysEnabled = req.Msg.Configuration.GetRequesterpaysenabled()
-		if req.Msg.Configuration.Engineversion != nil {
-			wg.Configuration.EngineVersion = &athenastore.EngineVersion{
-				SelectedEngineVersion:  req.Msg.Configuration.Engineversion.Selectedengineversion,
-				EffectiveEngineVersion: req.Msg.Configuration.Engineversion.Effectiveengineversion,
-			}
+		if protoCfg.Resultconfiguration != nil {
+			cfg.OutputLocation = protoCfg.Resultconfiguration.Outputlocation
 		}
+		if protoCfg.Engineversion != nil {
+			cfg.EngineVersionSelected = protoCfg.Engineversion.Selectedengineversion
+			cfg.EngineVersionEffective = protoCfg.Engineversion.Effectiveengineversion
+		}
+		input.Config = cfg
 	}
 
-	if err := store.CreateWorkGroup(wg); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	for _, tag := range req.Msg.Tags {
+		if input.Tags == nil {
+			input.Tags = make(map[string]string)
+		}
+		input.Tags[tag.Key] = tag.Value
+	}
+
+	if err := createWorkGroupCore(stores, input); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateWorkGroupOutput{}), nil
 }
 
-// DeleteWorkGroup deletes an Athena work group via the admin console gRPC-Web interface.
+// DeleteWorkGroup deletes an Athena work group via the admin console.
+// Delegates to deleteWorkGroupCore for cascade cleanup of dependent resources.
 func (h *AdminHandler) DeleteWorkGroup(ctx context.Context, req *connect.Request[pb.DeleteWorkGroupInput]) (*connect.Response[pb.DeleteWorkGroupOutput], error) {
-	if req.Msg.Workgroup == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("WorkGroup is required"))
-	}
-
-	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := store.DeleteWorkGroup(req.Msg.Workgroup); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := deleteWorkGroupCore(stores, req.Msg.Workgroup); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteWorkGroupOutput{}), nil
@@ -102,21 +97,16 @@ func (h *AdminHandler) DeleteWorkGroup(ctx context.Context, req *connect.Request
 
 // ListWorkGroups retrieves Athena work groups with pagination support.
 func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[pb.ListWorkGroupsInput]) (*connect.Response[pb.ListWorkGroupsOutput], error) {
-	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetMaxresults())
-	if limit <= 0 {
-		limit = 100
-	}
-	result, err := store.ListWorkGroups(storecommon.ListOptions{
-		Marker:   req.Msg.Nexttoken,
-		MaxItems: limit,
-	})
+	maxResults := clampMaxResults(int(req.Msg.GetMaxresults()), athenaMaxWorkGroupsResults, athenaMaxWorkGroupsResults)
+
+	result, err := listWorkGroupsCore(stores, maxResults, req.Msg.Nexttoken)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	var summaries []*pb.WorkGroupSummary
@@ -132,8 +122,8 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 		if wg.Description != "" {
 			summary.Description = wg.Description
 		}
-		if !wg.CreatedTime.IsZero() {
-			summary.Creationtime = wg.CreatedTime.Format(timeutils.ISO8601UTCFormat)
+		if !wg.CreationTime.IsZero() {
+			summary.Creationtime = wg.CreationTime.Format(timeutils.ISO8601UTCFormat)
 		}
 		summaries = append(summaries, summary)
 	}

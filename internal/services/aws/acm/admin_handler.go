@@ -2,9 +2,7 @@ package acm
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -17,7 +15,6 @@ import (
 	pb "vorpalstacks/internal/pb/aws/acm"
 	acmconnect "vorpalstacks/internal/pb/aws/acm/acmconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	acmstore "vorpalstacks/internal/store/aws/acm"
 )
 
 // AdminHandler implements the ACM admin console gRPC-Web handler.
@@ -45,22 +42,21 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*acmStores, err
 func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Request[pb.ListCertificatesRequest]) (*connect.Response[pb.ListCertificatesResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	marker := req.Msg.GetNexttoken()
+	nextToken := req.Msg.GetNexttoken()
 	maxItems := int(req.Msg.GetMaxitems())
 	if maxItems <= 0 {
 		maxItems = 100
 	}
-	// Smithy MaxItems: @range(1, 1000). Reject out-of-range instead of clamping.
-	if maxItems > 1000 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("MaxItems must not exceed 1000"))
-	}
 
-	result, err := stores.certificates.List(marker, maxItems)
+	result, err := h.service.listCertificatesCore(stores, ListCertificatesInput{
+		NextToken: nextToken,
+		MaxItems:  maxItems,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	summaries := make([]*pb.CertificateSummary, 0, len(result.Certificates))
@@ -107,91 +103,58 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Request[pb.RequestCertificateRequest]) (*connect.Response[pb.RequestCertificateResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	domain, err := validateDomainName(req.Msg.Domainname)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	region := svccommon.GetRegionFromHeader(req.Header())
+
+	input := RequestCertificateInput{
+		DomainName:       req.Msg.Domainname,
+		SANs:             req.Msg.Subjectalternativenames,
+		SANsProvided:     len(req.Msg.Subjectalternativenames) > 0,
+		IdempotencyToken: req.Msg.Idempotencytoken,
+		PCAArn:           req.Msg.Certificateauthorityarn,
+		TagsProvided:     len(req.Msg.Tags) > 0,
+		AccountID:        h.service.accountID,
+		Region:           region,
 	}
 
-	// Validate SubjectAlternativeNames (Smithy DomainList: min 1, max 100,
-	// each entry must be a valid domain name).
-	sans := req.Msg.Subjectalternativenames
-	if len(sans) > 100 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("SubjectAlternativeNames must not exceed 100 entries"))
-	}
-	for _, san := range sans {
-		if _, err := validateDomainName(san); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid SAN %q: %w", san, err))
-		}
-	}
-
-	// Smithy IdempotencyToken: @length(1-32) + @pattern(^\w+$).
-	if err := validateIdempotencyToken(req.Msg.Idempotencytoken); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	keyAlgorithm := "RSA_2048"
+	// KeyAlgorithm (proto enum → Smithy string).
 	if req.Msg.Keyalgorithm != 0 {
-		keyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
+		input.KeyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
 	}
 
-	validationMethod := "DNS"
+	// ValidationMethod (proto enum → Smithy string).
 	if req.Msg.Validationmethod == pb.ValidationMethod_VALIDATION_METHOD_EMAIL {
-		validationMethod = "EMAIL"
+		input.ValidationMethod = "EMAIL"
 	}
 
-	certId := acmstore.GenerateCertificateId()
-	certArn := stores.arnBuilder.BuildCertificateARN(certId)
-
-	cert, err := generateAmazonIssuedCert(certArn, domain, sans, keyAlgorithm, validationMethod)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	cert.AccountID = h.service.accountID
-
-	// ManagedBy (Smithy CertificateManagedBy enum: CLOUDFRONT only).
+	// ManagedBy (proto enum → Smithy string).
 	if req.Msg.Managedby == pb.CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT {
-		cert.ManagedBy = "CLOUDFRONT"
+		input.ManagedBy = "CLOUDFRONT"
 	}
 
-	// CertificateAuthorityArn (Smithy PcaArn: @length 20-2048 + pattern).
-	pcaArn, err := validateCertificateAuthorityArn(req.Msg.Certificateauthorityarn)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	cert.CertificateAuthorityArn = pcaArn
-
-	// Tags: convert proto Tags to types.Tag, validate, set on cert.
-	if len(req.Msg.Tags) > 0 {
+	// Tags: convert proto Tags to types.Tag.
+	if input.TagsProvided {
 		tags := make([]types.Tag, 0, len(req.Msg.Tags))
 		for _, t := range req.Msg.Tags {
 			tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
 		}
-		if len(tags) > 50 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, NewTooManyTagsException("Tags must not exceed 50 entries"))
-		}
-		if err := validateACMTags(tags); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		cert.Tags = tags
+		input.Tags = tags
 	}
 
-	// DomainValidationOptions: merge user-provided ValidationDomain overrides
-	// into the auto-generated DVOs from generateAmazonIssuedCert.
-	for _, dvo := range req.Msg.Domainvalidationoptions {
-		if err := validateDomainValidationFields(dvo.Domainname, dvo.Validationdomain); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		for _, dv := range cert.DomainValidationOptions {
-			if strings.EqualFold(dv.DomainName, dvo.Domainname) {
-				dv.ValidationDomain = strings.ToLower(dvo.Validationdomain)
-			}
+	// DomainValidationOptions: convert proto to overrides.
+	if len(req.Msg.Domainvalidationoptions) > 0 {
+		input.DVOsProvided = true
+		for _, dvo := range req.Msg.Domainvalidationoptions {
+			input.DVOs = append(input.DVOs, DomainValidationOverride{
+				DomainName:       dvo.Domainname,
+				ValidationDomain: dvo.Validationdomain,
+			})
 		}
 	}
 
+	// Options (proto → CertificateOptionsInput).
 	if req.Msg.Options != nil {
 		ctlp := "DISABLED"
 		if req.Msg.Options.Certificatetransparencyloggingpreference == pb.CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_ENABLED {
@@ -201,21 +164,15 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		if req.Msg.Options.Export == pb.CertificateExport_CERTIFICATE_EXPORT_ENABLED {
 			exportOpt = "ENABLED"
 		}
-		cert.Options = &acmstore.CertificateOptions{
-			CertificateTransparencyLoggingPreference: ctlp,
-			Export:                                   exportOpt,
-		}
-	} else {
-		// Match the HTTP API default (certificate_operations.go:226-231):
-		// CTLPreference=ENABLED, Export=DISABLED.
-		cert.Options = &acmstore.CertificateOptions{
-			CertificateTransparencyLoggingPreference: "ENABLED",
-			Export:                                   "DISABLED",
+		input.Options = &CertificateOptionsInput{
+			CTLPreference: ctlp,
+			Export:        exportOpt,
 		}
 	}
 
-	if err := stores.certificates.Create(cert); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	certArn, err := h.service.requestCertificateCore(ctx, stores, input)
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.RequestCertificateResponse{
@@ -227,26 +184,11 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 func (h *AdminHandler) DeleteCertificate(ctx context.Context, req *connect.Request[pb.DeleteCertificateRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if req.Msg.Certificatearn == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("CertificateArn is required"))
-	}
-	if err := validateCertificateArn(req.Msg.Certificatearn); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	cert, err := stores.certificates.Get(req.Msg.Certificatearn)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-	if len(cert.InUseBy) > 0 {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("certificate %s is in use", req.Msg.Certificatearn))
-	}
-
-	if err := stores.certificates.Delete(req.Msg.Certificatearn); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteCertificateCore(stores, req.Msg.Certificatearn); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

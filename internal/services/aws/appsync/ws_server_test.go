@@ -22,8 +22,11 @@ func TestChannelManager_SameConnDifferentSubIds(t *testing.T) {
 	cm.subscribe("ch1", "conn1", "sub1")
 	cm.subscribe("ch1", "conn1", "sub2")
 
+	// A connection that subscribes twice under different subscription
+	// ids must be tracked twice so that unsubscribing one id leaves the
+	// other intact.
 	matches := cm.matchSubscriptions("ch1")
-	assert.Equal(t, 2, len(matches), "both subscriptions should be tracked (Bug A-1)")
+	assert.Equal(t, 2, len(matches), "both subscriptions should be tracked")
 
 	cm.unsubscribe("ch1", "conn1", "sub1")
 	matches = cm.matchSubscriptions("ch1")

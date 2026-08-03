@@ -1073,8 +1073,8 @@ func generateDbiResourceId() string {
 // enum's zero value. The proto3 wire format cannot distinguish "unset" from
 // "explicitly zero", so any caller that omits SourceType (the common case
 // for "list all events") delivers 0 to the server. We therefore treat 0 as
-// the wildcard sentinel and return "" — matching the pre-L-3 behaviour and
-// the AWS DescribeEvents API contract (omit SourceType => events of every
+// the wildcard sentinel and return "" — matching the prior default and the
+// AWS DescribeEvents API contract (omit SourceType => events of every
 // source type).
 //
 // Workaround: DescribeEvents checks the Filters parameter for a "source-type"

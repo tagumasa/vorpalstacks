@@ -62,8 +62,14 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
-	enabled, _ := ttlSpec["Enabled"].(bool)
-	attrName, _ := ttlSpec["AttributeName"].(string)
+	enabled, err := validateBoolParam(ttlSpec, "Enabled", false)
+	if err != nil {
+		return nil, err
+	}
+	attrName, ok := ttlSpec["AttributeName"].(string)
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
 
 	if enabled && attrName == "" {
 		return nil, ErrInvalidParameter

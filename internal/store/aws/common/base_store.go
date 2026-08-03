@@ -483,24 +483,11 @@ func ForEachAllProto[T proto.Message](store *BaseStore, prefix string, newFunc f
 	}
 }
 
-// GetOrCreateStore retrieves a cached store or creates a new one using the provided function.
-// This is a thread-safe pattern using sync.Map.LoadOrStore.
-func GetOrCreateStore[T any](stores *sync.Map, region string, createFn func() T) T {
-	if cached, ok := stores.Load(region); ok {
-		if typed, ok := cached.(T); ok {
-			return typed
-		}
-	}
-	store := createFn()
-	actual, _ := stores.LoadOrStore(region, store)
-	if typed, ok := actual.(T); ok {
-		return typed
-	}
-	return store
-}
-
 // GetOrCreateStoreE retrieves a cached store or creates a new one with error handling.
-// This is a thread-safe pattern using sync.Map.LoadOrStore.
+// This is a thread-safe pattern using sync.Map.LoadOrStore. If two
+// goroutines race to create the same regional store, the loser's store
+// is closed via its Close() method (if implemented) to prevent
+// goroutine and resource leaks from background workers.
 func GetOrCreateStoreE[T any](stores *sync.Map, region string, createFn func() (T, error)) (T, error) {
 	if cached, ok := stores.Load(region); ok {
 		if typed, ok := cached.(T); ok {
@@ -512,9 +499,20 @@ func GetOrCreateStoreE[T any](stores *sync.Map, region string, createFn func() (
 		var zero T
 		return zero, err
 	}
-	actual, _ := stores.LoadOrStore(region, store)
+	actual, loaded := stores.LoadOrStore(region, store)
+	if loaded {
+		// Another goroutine won the race. Close the loser store to
+		// stop any background goroutines it may have started.
+		if c, ok := any(store).(interface{ Close() }); ok {
+			c.Close()
+		}
+	}
 	if typed, ok := actual.(T); ok {
 		return typed, nil
 	}
-	return store, nil
+	// Type mismatch (different type stored under the same key) is a
+	// programmer error. Return an error rather than a possibly-closed
+	// store.
+	var zero T
+	return zero, errors.New("store type mismatch: cached value is not of expected type")
 }

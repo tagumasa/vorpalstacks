@@ -332,3 +332,63 @@ func validateThrottleBurstLimit(v int64) bool {
 func validateThrottleRateLimit(v float64) bool {
 	return v >= 0 && v <= maxThrottleRateLimit
 }
+
+// maxMinimumCompressionSize is the upper bound for minimumCompressionSize.
+const maxMinimumCompressionSize = 10485760
+
+// validateMinimumCompressionSize returns true if the value is within the
+// accepted range [0, 10485760].
+func validateMinimumCompressionSize(v int32) bool {
+	return v >= 0 && v <= maxMinimumCompressionSize
+}
+
+// validateTimeoutInMillis returns true if the value is within the accepted
+// range [50, 30000] for integration timeout.
+func validateTimeoutInMillis(v int32) bool {
+	return v >= 50 && v <= 30000
+}
+
+// validateCacheTtlInSeconds returns true if the value is within the
+// accepted range [0, 86400] for method-setting cache TTL.
+func validateCacheTtlInSeconds(v int32) bool {
+	return v >= 0 && v <= 86400
+}
+
+// validatePercentTraffic returns true if the value is within the accepted
+// range [0, 100] for canary percent traffic.
+func validatePercentTraffic(v float64) bool {
+	return v >= 0 && v <= 100
+}
+
+// validateAuthorizerTtl returns true if the value is within the accepted
+// range [0, 3600] for authorizer result TTL.
+func validateAuthorizerTtl(v int32) bool {
+	return v >= 0 && v <= 3600
+}
+
+// validateUsagePlanNameLen returns true if the name length is within the
+// accepted range [1, 255].
+func validateUsagePlanNameLen(name string) bool {
+	return len(name) >= 1 && len(name) <= 255
+}
+
+// maxMethodSettingThrottleBurstLimit is the upper bound for per-method
+// throttle burst limit in stage method settings (distinct from the
+// usage-plan-level limit of 10000).
+const maxMethodSettingThrottleBurstLimit = 100000
+
+// maxMethodSettingThrottleRateLimit is the upper bound for per-method
+// throttle rate limit in stage method settings.
+const maxMethodSettingThrottleRateLimit = 100000.0
+
+// validateMethodSettingThrottleBurstLimit returns true if the per-method
+// burst limit is within the accepted range [0, 100000].
+func validateMethodSettingThrottleBurstLimit(v int64) bool {
+	return v >= 0 && v <= maxMethodSettingThrottleBurstLimit
+}
+
+// validateMethodSettingThrottleRateLimit returns true if the per-method
+// rate limit is within the accepted range [0, 100000].
+func validateMethodSettingThrottleRateLimit(v float64) bool {
+	return v >= 0 && v <= maxMethodSettingThrottleRateLimit
+}

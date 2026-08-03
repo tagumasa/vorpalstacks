@@ -28,8 +28,17 @@ const (
 )
 
 var (
-	// ErrInvalidRoleArn is returned when the specified role ARN is invalid.
+	// ErrInvalidRoleArn is returned when the specified role ARN is empty
+	// or does not correspond to a known role.
 	ErrInvalidRoleArn = errors.NewAWSError("InvalidRoleArn", "The specified role ARN is invalid.", http.StatusBadRequest)
+	// ErrInvalidRoleArnFormat is returned when RoleArn fails the Smithy
+	// arnType constraint (length 20-2048, arnType pattern).  AWS returns
+	// ValidationError for constraint violations before attempting role
+	// resolution.
+	ErrInvalidRoleArnFormat = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'roleArn' failed to satisfy constraint: Member must have length greater than or equal to 20", http.StatusBadRequest)
+	// ErrInvalidPrincipalArnFormat is returned when PrincipalArn in
+	// AssumeRoleWithSAML fails the Smithy arnType constraint.
+	ErrInvalidPrincipalArnFormat = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'principalArn' failed to satisfy constraint: Member must have length greater than or equal to 20", http.StatusBadRequest)
 	// ErrInvalidExternalId is returned when the ExternalId parameter fails AWS
 	// spec validation (length 2-1224, pattern [\w+=,.@:\/-]*).
 	ErrInvalidExternalId = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'externalId' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@:\\/-]*", http.StatusBadRequest)
@@ -44,6 +53,11 @@ var (
 	ErrInvalidSAMLAssertion = errors.NewAWSError("InvalidIdentityToken", "The SAML assertion is invalid.", http.StatusBadRequest)
 	// ErrInvalidWebIdentityToken is returned when the web identity token is invalid.
 	ErrInvalidWebIdentityToken = errors.NewAWSError("InvalidIdentityToken", "The web identity token is invalid.", http.StatusBadRequest)
+	// ErrInvalidProviderID is returned when ProviderId fails the Smithy
+	// urlType length constraint (4-2048).  AWS returns ValidationError
+	// for this parameter, distinct from InvalidIdentityToken which is
+	// reserved for token validation failures.
+	ErrInvalidProviderID = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'providerId' failed to satisfy constraint: Member must have length greater than or equal to 4", http.StatusBadRequest)
 	// ErrInvalidEncodedMessage is returned when the encoded message is invalid.
 	// The Smithy aws.protocols#awsQueryError trait value for the
 	// InvalidAuthorizationMessageException shape is "InvalidAuthorizationMessageException";
@@ -52,6 +66,10 @@ var (
 	ErrInvalidEncodedMessage = errors.NewAWSError("InvalidAuthorizationMessageException", "The encoded message is invalid.", http.StatusBadRequest)
 	// ErrInvalidAccessKeyId is returned when the access key ID is invalid.
 	ErrInvalidAccessKeyId = errors.NewAWSError("InvalidAccessKeyId", "The access key ID is invalid.", http.StatusBadRequest)
+	// ErrInvalidClientTokenId is returned by GetAccessKeyInfo when the
+	// supplied AccessKeyId does not correspond to any IAM permanent key
+	// or STS temporary session in the store.
+	ErrInvalidClientTokenId = errors.NewAWSError("InvalidClientTokenId", "The security token included in the request is invalid.", http.StatusForbidden)
 	// ErrInvalidFederationName is returned when the federation name is invalid.
 	ErrInvalidFederationName = errors.NewAWSError("InvalidInput", "The federation name is invalid.", http.StatusBadRequest)
 	// ErrInvalidTradeInToken is returned when the trade-in token is invalid.
@@ -64,6 +82,30 @@ var (
 	ErrNoSuchRole = errors.NewAWSError("NoSuchEntity", "The role with the specified ARN cannot be found.", http.StatusNotFound)
 	// ErrMalformedPolicyDocument is returned when the policy document is invalid.
 	ErrMalformedPolicyDocument = errors.NewAWSError("MalformedPolicyDocument", "The policy document is invalid.", http.StatusBadRequest)
+	// ErrInvalidPolicyArn is returned when a PolicyDescriptorType.arn
+	// fails the Smithy arnType constraint (length 20-2048, arnType
+	// pattern).  Used only for PolicyArns.member.N.arn validation.
+	ErrInvalidPolicyArn = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'policyArn' failed to satisfy constraint: Member must satisfy regular expression pattern: arnType", http.StatusBadRequest)
+	// ErrInvalidProviderArn is returned when a ProvidedContext
+	// ProviderArn fails the Smithy arnType constraint.  Separate from
+	// ErrInvalidPolicyArn so the error message references the correct
+	// field name ("ProviderArn", not "policyArn").
+	ErrInvalidProviderArn = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'providerArn' failed to satisfy constraint: Member must satisfy regular expression pattern: arnType", http.StatusBadRequest)
+	// ErrTooManyPolicyArns is returned when the PolicyArns list exceeds
+	// the AWS-documented maximum of 10 managed policy ARNs.
+	ErrTooManyPolicyArns = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'policyArns' failed to satisfy constraint: Member must have length less than or equal to 10", http.StatusBadRequest)
+	// ErrDuplicatePolicyArn is returned when the same policy ARN appears
+	// more than once in the PolicyArns parameter. Duplicate managed
+	// policies are semantically redundant; the dedup check mirrors the
+	// ErrDuplicateSessionTagKey guard used for session tags.
+	ErrDuplicatePolicyArn = errors.NewAWSError("ValidationError", "Duplicate policy ARNs are not allowed.", http.StatusBadRequest)
+	// ErrInvalidContextAssertion is returned when a ProvidedContext
+	// ContextAssertion fails the Smithy contextAssertionType length
+	// constraint (4-2048).
+	ErrInvalidContextAssertion = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'contextAssertion' failed to satisfy constraint: Member must have length 4-2048", http.StatusBadRequest)
+	// ErrTooManyProvidedContexts is returned when the ProvidedContexts
+	// list exceeds the Smithy ProvidedContextsListType maximum of 5.
+	ErrTooManyProvidedContexts = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'providedContexts' failed to satisfy constraint: Member must have length less than or equal to 5", http.StatusBadRequest)
 	// ErrInvalidParameter is returned when a parameter value is invalid.
 	ErrInvalidParameter = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'roleSessionName' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@-]*", http.StatusBadRequest)
 	// ErrAccessDenied is returned when the caller is not authorized to assume the role.
@@ -123,6 +165,12 @@ var (
 	// ErrDuplicateSessionTagKey is returned when the same tag key appears more
 	// than once in the Tags parameter. AWS rejects duplicate session tag keys.
 	ErrDuplicateSessionTagKey = errors.NewAWSError("ValidationError", "Duplicate session tag keys are not allowed.", http.StatusBadRequest)
+	// ErrTransitiveKeyWithoutTag is returned when a TransitiveTagKeys
+	// entry has no corresponding value in the session tags (neither in
+	// the request Tags nor inherited from the caller session). AWS docs:
+	// "If you set a tag key as transitive, the corresponding key and
+	// value passes to subsequent sessions."
+	ErrTransitiveKeyWithoutTag = errors.NewAWSError("ValidationError", "Transitive tag key has no corresponding session tag.", http.StatusBadRequest)
 	// ErrInvalidSigningAlgorithm is returned when GetWebIdentityToken
 	// SigningAlgorithm is not RS256 or ES384.
 	ErrInvalidSigningAlgorithm = errors.NewAWSError("ValidationError", "SigningAlgorithm must be RS256 or ES384.", http.StatusBadRequest)
@@ -146,4 +194,17 @@ var (
 	// Smithy JWTPayloadSizeExceededException, awsQueryError code
 	// "JWTPayloadSizeExceededException", httpResponseCode 400.
 	ErrJWTPayloadSizeExceeded = errors.NewAWSError("JWTPayloadSizeExceededException", "The payload size of the JWT token exceeds the allowed size.", http.StatusBadRequest)
+	// ErrInternalError is returned when the service encounters an
+	// infrastructure failure (e.g. storage unavailable). This must
+	// not be masked as an authentication error.
+	ErrInternalError = errors.NewAWSError("InternalError", "An internal error occurred.", http.StatusInternalServerError)
+	// ErrExpiredToken is returned when the caller's temporary credentials
+	// or the supplied web identity / SAML token has expired. Smithy
+	// awsQueryError code "ExpiredTokenException", httpResponseCode 400.
+	ErrExpiredToken = errors.NewAWSError("ExpiredTokenException", "The security token included in the request is expired.", http.StatusBadRequest)
+	// ErrSessionDurationEscalation is returned by GetWebIdentityToken when
+	// the requested DurationSeconds would extend beyond the caller's own
+	// session expiration. Smithy awsQueryError code
+	// "SessionDurationEscalationException", httpResponseCode 403.
+	ErrSessionDurationEscalation = errors.NewAWSError("SessionDurationEscalationException", "The requested token duration would extend the session beyond its original expiration time.", http.StatusForbidden)
 )

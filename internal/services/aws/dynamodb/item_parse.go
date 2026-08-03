@@ -9,29 +9,52 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func parseItem(v interface{}) map[string]*dbstore.AttributeValue {
+func parseItem(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 	if v == nil {
-		return nil
+		return nil, nil
 	}
 
 	m, ok := v.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	return parseAttributeValueMap(m)
 }
 
-func parseKey(v interface{}) map[string]*dbstore.AttributeValue {
-	return parseItem(v)
+// parseKey parses a DynamoDB key map. Key attributes must be one of
+// S, N, or B — other attribute types (BOOL, NULL, SS, NS, BS, M, L)
+// are rejected to match the DynamoDB key schema constraint.
+func parseKey(v interface{}) (map[string]*dbstore.AttributeValue, error) {
+	parsed, err := parseItem(v)
+	if err != nil {
+		return nil, err
+	}
+	if parsed == nil {
+		return nil, nil
+	}
+	for _, av := range parsed {
+		if av == nil {
+			return nil, ErrInvalidParameter
+		}
+		// Only S, N, B are valid for key attributes.
+		if av.S == nil && av.N == nil && av.B == nil {
+			return nil, ErrInvalidParameter
+		}
+	}
+	return parsed, nil
 }
 
-func parseAttributeValueMap(m map[string]interface{}) map[string]*dbstore.AttributeValue {
+func parseAttributeValueMap(m map[string]interface{}) (map[string]*dbstore.AttributeValue, error) {
 	result := make(map[string]*dbstore.AttributeValue)
 	for k, v := range m {
-		result[k] = parseAttributeValue(v)
+		parsed := parseAttributeValue(v)
+		if parsed == nil {
+			return nil, ErrInvalidParameter
+		}
+		result[k] = parsed
 	}
-	return result
+	return result, nil
 }
 
 func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
@@ -70,11 +93,13 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 		return dbstore.NullValue()
 	}
 	if ss, ok := m["SS"].([]interface{}); ok {
-		var strs []string
+		strs := make([]string, 0, len(ss))
 		for _, s := range ss {
-			if str, ok := s.(string); ok {
-				strs = append(strs, str)
+			str, ok := s.(string)
+			if !ok {
+				return nil
 			}
+			strs = append(strs, str)
 		}
 		if len(strs) == 0 {
 			return nil
@@ -82,13 +107,16 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 		return dbstore.StringSet(strs)
 	}
 	if ns, ok := m["NS"].([]interface{}); ok {
-		var nums []string
+		nums := make([]string, 0, len(ns))
 		for _, n := range ns {
-			if str, ok := n.(string); ok {
-				if isValidDynamoDBNumber(str) {
-					nums = append(nums, str)
-				}
+			str, ok := n.(string)
+			if !ok {
+				return nil
 			}
+			if !isValidDynamoDBNumber(str) {
+				return nil
+			}
+			nums = append(nums, str)
 		}
 		if len(nums) == 0 {
 			return nil
@@ -96,7 +124,7 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 		return dbstore.NumberSet(nums)
 	}
 	if bs, ok := m["BS"].([]interface{}); ok {
-		var binaries [][]byte
+		binaries := make([][]byte, 0, len(bs))
 		for _, b := range bs {
 			if bytes, ok := b.([]byte); ok {
 				binaries = append(binaries, bytes)
@@ -106,6 +134,8 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 					return nil
 				}
 				binaries = append(binaries, decoded)
+			} else {
+				return nil
 			}
 		}
 		if len(binaries) == 0 {
@@ -114,14 +144,20 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 		return dbstore.BinarySet(binaries)
 	}
 	if mm, ok := m["M"].(map[string]interface{}); ok {
-		return dbstore.MapValue(parseAttributeValueMap(mm))
+		parsed, err := parseAttributeValueMap(mm)
+		if err != nil {
+			return nil
+		}
+		return dbstore.MapValue(parsed)
 	}
 	if l, ok := m["L"].([]interface{}); ok {
-		var list []*dbstore.AttributeValue
+		list := make([]*dbstore.AttributeValue, 0, len(l))
 		for _, item := range l {
-			if parsed := parseAttributeValue(item); parsed != nil {
-				list = append(list, parsed)
+			parsed := parseAttributeValue(item)
+			if parsed == nil {
+				return nil
 			}
+			list = append(list, parsed)
 		}
 		return dbstore.ListValue(list)
 	}
@@ -239,16 +275,20 @@ func buildLastEvaluatedKeyWithIndex(item *dbstore.Item, table *dbstore.Table, in
 	return key
 }
 
-func parseExpressionAttributeNames(params map[string]interface{}) map[string]string {
+func parseExpressionAttributeNames(params map[string]interface{}) (map[string]string, error) {
 	names := make(map[string]string)
-	if ean, ok := params["ExpressionAttributeNames"].(map[string]interface{}); ok {
-		for k, v := range ean {
-			if vs, ok := v.(string); ok {
-				names[k] = vs
-			}
-		}
+	ean, ok := params["ExpressionAttributeNames"].(map[string]interface{})
+	if !ok {
+		return names, nil
 	}
-	return names
+	for k, v := range ean {
+		vs, ok := v.(string)
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		names[k] = vs
+	}
+	return names, nil
 }
 
 func parseExpressionAttributeValues(params map[string]interface{}) map[string]*dbstore.AttributeValue {
@@ -261,13 +301,16 @@ func parseExpressionAttributeValues(params map[string]interface{}) map[string]*d
 	return values
 }
 
-func parseProjectionExpression(params map[string]interface{}) []string {
+func parseProjectionExpression(params map[string]interface{}) ([]string, error) {
 	projExpr := request.GetStringParam(params, "ProjectionExpression")
 	if projExpr == "" {
-		return nil
+		return nil, nil
 	}
 
-	names := parseExpressionAttributeNames(params)
+	names, err := parseExpressionAttributeNames(params)
+	if err != nil {
+		return nil, err
+	}
 	var projection []string
 
 	attrs := splitAndTrim(projExpr, ",")
@@ -276,7 +319,7 @@ func parseProjectionExpression(params map[string]interface{}) []string {
 		projection = append(projection, resolved)
 	}
 
-	return projection
+	return projection, nil
 }
 
 func resolvePathTokens(path string, names map[string]string) string {
@@ -492,22 +535,32 @@ func parseProjPathParts(path string) []projPathPart {
 	return parts
 }
 
-func parseExclusiveStartKey(params map[string]interface{}) map[string]*dbstore.AttributeValue {
-	if esk, ok := params["ExclusiveStartKey"].(map[string]interface{}); ok {
-		return parseAttributeValueMap(esk)
+func parseExclusiveStartKey(params map[string]interface{}) (map[string]*dbstore.AttributeValue, error) {
+	raw, present := params["ExclusiveStartKey"]
+	if !present || raw == nil {
+		return nil, nil
 	}
-	return nil
+	esk, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	if len(esk) == 0 {
+		return nil, ErrInvalidParameter
+	}
+	return parseAttributeValueMap(esk)
 }
 
-func getExpressionAttributes(params map[string]interface{}) (map[string]string, map[string]*dbstore.AttributeValue) {
+func getExpressionAttributes(params map[string]interface{}) (map[string]string, map[string]*dbstore.AttributeValue, error) {
 	names := make(map[string]string)
 	values := make(map[string]*dbstore.AttributeValue)
 
 	if namesMap, ok := params["ExpressionAttributeNames"].(map[string]interface{}); ok {
 		for k, v := range namesMap {
-			if vs, ok := v.(string); ok {
-				names[k] = vs
+			vs, ok := v.(string)
+			if !ok {
+				return nil, nil, ErrInvalidParameter
 			}
+			names[k] = vs
 		}
 	}
 
@@ -519,7 +572,7 @@ func getExpressionAttributes(params map[string]interface{}) (map[string]string, 
 		}
 	}
 
-	return names, values
+	return names, values, nil
 }
 
 func isValidDynamoDBNumber(n string) bool {

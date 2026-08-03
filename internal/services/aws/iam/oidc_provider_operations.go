@@ -24,11 +24,16 @@ func (s *IAMService) CreateOpenIDConnectProvider(ctx context.Context, reqCtx *re
 
 	thumbprintList := request.GetStringList(req.Parameters, "ThumbprintList")
 	for _, tp := range thumbprintList {
-		if len(tp) != 40 {
-			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be exactly 40 characters")
+		if !validateThumbprint(tp) {
+			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be a 40-character hex-encoded SHA-1 hash")
 		}
 	}
 	clientIdList := request.GetStringList(req.Parameters, "ClientIDList")
+	for _, cid := range clientIdList {
+		if !validateClientID(cid) {
+			return nil, NewInvalidInputError("ClientIDList", "each client ID must be 1 to 255 characters")
+		}
+	}
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateNewTags(newTags); err != nil {
 		return nil, err
@@ -102,9 +107,10 @@ func (s *IAMService) ListOpenIDConnectProviders(ctx context.Context, reqCtx *req
 
 	providerList := make([]interface{}, len(result.OpenIDConnectProviderList))
 	for i, provider := range result.OpenIDConnectProviderList {
+		// Smithy OpenIDConnectProviderListEntry contains only Arn.
+		// CreateDate is intentionally omitted (L2 spec compliance).
 		providerList[i] = map[string]interface{}{
-			"Arn":        provider.Arn,
-			"CreateDate": provider.CreateDate.Format(timeutils.ISO8601SimpleFormat),
+			"Arn": provider.Arn,
 		}
 	}
 
@@ -122,8 +128,8 @@ func (s *IAMService) UpdateOpenIDConnectProviderThumbprint(ctx context.Context, 
 
 	thumbprintList := request.GetStringList(req.Parameters, "ThumbprintList")
 	for _, tp := range thumbprintList {
-		if len(tp) != 40 {
-			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be exactly 40 characters")
+		if !validateThumbprint(tp) {
+			return nil, NewInvalidInputError("ThumbprintList", "each thumbprint must be a 40-character hex-encoded SHA-1 hash")
 		}
 	}
 
@@ -157,19 +163,16 @@ func (s *IAMService) AddClientIDToOpenIDConnectProvider(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	provider, err := store.OpenIDConnectProviders().Get(providerArn)
-	if err != nil {
-		return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
-	}
-
-	for _, existing := range provider.ClientIDList {
-		if existing == clientId {
+	// Atomic AddClientID holds the per-ARN lock across the
+	// read-modify-write cycle, preventing lost updates from concurrent
+	// callers (M3).
+	if err := store.OpenIDConnectProviders().AddClientID(providerArn, clientId); err != nil {
+		if errors.Is(err, iamstore.ErrOpenIDConnectProviderNotFound) {
+			return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
+		}
+		if errors.Is(err, iamstore.ErrOpenIDConnectProviderClientIDExists) {
 			return nil, NewInvalidInputError("ClientID", "already exists")
 		}
-	}
-
-	provider.ClientIDList = append(provider.ClientIDList, clientId)
-	if err := store.OpenIDConnectProviders().Put(provider); err != nil {
 		return nil, err
 	}
 
@@ -191,27 +194,14 @@ func (s *IAMService) RemoveClientIDFromOpenIDConnectProvider(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	provider, err := store.OpenIDConnectProviders().Get(providerArn)
-	if err != nil {
-		return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
-	}
-
-	found := false
-	newList := make([]string, 0, len(provider.ClientIDList))
-	for _, existing := range provider.ClientIDList {
-		if existing == clientId {
-			found = true
-			continue
+	// Atomic RemoveClientID mirrors AddClientID's locking guarantee.
+	if err := store.OpenIDConnectProviders().RemoveClientID(providerArn, clientId); err != nil {
+		if errors.Is(err, iamstore.ErrOpenIDConnectProviderNotFound) {
+			return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
 		}
-		newList = append(newList, existing)
-	}
-
-	if !found {
-		return nil, NewNoSuchEntityError("ClientID", clientId)
-	}
-
-	provider.ClientIDList = newList
-	if err := store.OpenIDConnectProviders().Put(provider); err != nil {
+		if errors.Is(err, iamstore.ErrOpenIDConnectProviderClientIDNotFound) {
+			return nil, NewNoSuchEntityError("ClientID", clientId)
+		}
 		return nil, err
 	}
 

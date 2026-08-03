@@ -39,7 +39,10 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 		return nil, ErrResourceNotFound
 	}
 
-	latestSeq, _ := store.Streams().GetLatestSequence(tableName)
+	latestSeq, seqErr := store.Streams().GetLatestSequence(tableName)
+	if seqErr != nil {
+		return nil, seqErr
+	}
 
 	seqRange := map[string]interface{}{
 		"StartingSequenceNumber": fmt.Sprintf("%d", int64(1)),
@@ -258,3 +261,104 @@ func decodeShardIterator(iterator string) (string, int64, error) {
 
 // streamTimeNow returns the current time. Extracted for potential testing.
 var streamTimeNow = func() time.Time { return time.Now().UTC() }
+
+// ListStreams returns stream ARNs associated with the current account and
+// endpoint. If TableName is provided, only streams for that table are returned.
+// AWS API: DynamoDB Streams — ListStreams
+func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	tableNameFilter := request.GetStringParam(req.Parameters, "TableName")
+	exclusiveStartStreamArn := request.GetStringParam(req.Parameters, "ExclusiveStartStreamArn")
+	limit := request.GetIntParam(req.Parameters, "Limit")
+	if limit == 0 {
+		limit = 100
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	store, err := s.GetCachedStoreForRegion(reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect ALL tables by walking every store page. A single List call is
+	// capped at DefaultMaxItems (100), so tables beyond that would be
+	// invisible if we only fetched one page.
+	type streamEntry struct {
+		StreamArn   string
+		TableName   string
+		StreamLabel string
+	}
+
+	var allStreams []streamEntry
+	{
+		var marker string
+		for {
+			page, nextMarker, err := store.Tables().List(marker, 0)
+			if err != nil {
+				return nil, err
+			}
+			for _, t := range page {
+				if tableNameFilter != "" && t.Name != tableNameFilter {
+					continue
+				}
+				if t.StreamSpecification == nil || !t.StreamSpecification.StreamEnabled {
+					continue
+				}
+				allStreams = append(allStreams, streamEntry{
+					StreamArn:   t.StreamArn,
+					TableName:   t.Name,
+					StreamLabel: t.LatestStreamLabel,
+				})
+			}
+			if nextMarker == "" {
+				break
+			}
+			marker = nextMarker
+		}
+	}
+
+	// Apply cursor-based pagination over the complete stream list.
+	var streams []streamEntry
+	if exclusiveStartStreamArn == "" {
+		streams = allStreams
+	} else {
+		// Find the cursor position. AWS returns an empty page when the
+		// cursor is invalid (stale or nonexistent), NOT a restart.
+		cursorIdx := -1
+		for i, st := range allStreams {
+			if st.StreamArn == exclusiveStartStreamArn {
+				cursorIdx = i
+				break
+			}
+		}
+		if cursorIdx == -1 {
+			streams = nil // invalid cursor → empty page
+		} else {
+			streams = allStreams[cursorIdx+1:]
+		}
+	}
+
+	if limit > 0 && len(streams) > limit {
+		streams = streams[:limit]
+	}
+
+	streamList := make([]map[string]interface{}, 0, len(streams))
+	for _, st := range streams {
+		streamList = append(streamList, map[string]interface{}{
+			"StreamArn":   st.StreamArn,
+			"TableName":   st.TableName,
+			"StreamLabel": st.StreamLabel,
+		})
+	}
+
+	result := map[string]interface{}{
+		"Streams": streamList,
+	}
+
+	if len(streams) == limit && len(streamList) > 0 {
+		result["LastEvaluatedStreamArn"] = streams[len(streams)-1].StreamArn
+	}
+
+	return result, nil
+}

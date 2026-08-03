@@ -189,6 +189,10 @@ func (a *App) initDynamoDB(st *serviceState) error {
 	st.dynamoDBService = svcdynamodb.NewDynamoDBService(st.accountID)
 	st.dynamoDBService.SetStorageManager(a.server.StorageManager())
 	st.dynamoDBService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("dynamodb", func(ctx context.Context) error {
+		st.dynamoDBService.Close()
+		return nil
+	})
 	return nil
 }
 
@@ -228,9 +232,12 @@ func (a *App) initIAM(st *serviceState) error {
 	st.iamService = svciam.NewIAMService(st.accountID)
 	st.iamService.SetStorageManager(a.server.StorageManager())
 	st.iamService.RegisterHandlers(a.server.Dispatcher())
+	// Recover any orphaned service-linked role deletion tasks left
+	// IN_PROGRESS by a previous server crash/restart.
+	st.iamService.RecoverOrphanedSLRoleDeletionTasks()
 	a.addShutdown("iam", func(ctx context.Context) error {
+		st.iamService.WaitForSLRoleDeletions()
 		st.iamService.WaitForReport()
-		svciam.ShutdownSLRoleCleanup()
 		return nil
 	})
 
@@ -434,5 +441,9 @@ func (a *App) initSSM(st *serviceState) error {
 func (a *App) initSTS(st *serviceState) error {
 	st.stsService = svcsts.NewSTSService()
 	st.stsService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("sts", func(ctx context.Context) error {
+		st.stsService.Close()
+		return nil
+	})
 	return nil
 }

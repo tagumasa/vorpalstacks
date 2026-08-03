@@ -369,7 +369,7 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	// Atomically commit the LogGroup, LogStream, and any pending chunk
 	// indexes in a single transaction. Without this, a failure between
 	// the chunk index write and the metadata update leaves orphaned
-	// chunks and inconsistent StoredBytes/timestamps (M-S1).
+	// chunks with inconsistent StoredBytes and timestamp metadata.
 	if err := s.updateLogGroupStreamAndChunks(logGroupName, lg, logStreamName, ls, pendingChunks); err != nil {
 		// The transaction failed; remove the orphaned chunk files so they
 		// do not leak storage with no index pointing to them.

@@ -35,6 +35,13 @@ type tsWriteStores struct {
 	batchLoadStore *tsstore.BatchLoadTaskStore
 }
 
+// Close stops background goroutines in the RecordStore.
+func (s *tsWriteStores) Close() {
+	if s.recordStore != nil {
+		s.recordStore.Close()
+	}
+}
+
 // Service provides AWS Timestream Write operations.
 type TimestreamWriteService struct {
 	accountID      string
@@ -102,7 +109,10 @@ func (s *TimestreamWriteService) GetDatabaseStoreForRegion(region string) (*tsst
 	if err != nil {
 		return nil, err
 	}
-	actual, _ := s.stores.LoadOrStore(region, stores)
+	actual, loaded := s.stores.LoadOrStore(region, stores)
+	if loaded {
+		stores.Close()
+	}
 	return actual.(*tsWriteStores).store, nil
 }
 
@@ -116,7 +126,10 @@ func (s *TimestreamWriteService) GetTableStoreForRegion(region string) (*tsstore
 	if err != nil {
 		return nil, err
 	}
-	actual, _ := s.stores.LoadOrStore(region, stores)
+	actual, loaded := s.stores.LoadOrStore(region, stores)
+	if loaded {
+		stores.Close()
+	}
 	return actual.(*tsWriteStores).tableStore, nil
 }
 
@@ -175,10 +188,17 @@ func (s *TimestreamWriteService) mapStoreError(err error) error {
 	return ErrInternalServer
 }
 
-// Close waits for any in-flight batch load simulation goroutines to finish.
+// Close waits for any in-flight batch load simulation goroutines to
+// finish and stops background goroutines in all cached stores.
 func (s *TimestreamWriteService) Close() {
 	if s.batchCancel != nil {
 		s.batchCancel()
 	}
 	s.batchWg.Wait()
+	s.stores.Range(func(_, v any) bool {
+		if c, ok := v.(interface{ Close() }); ok {
+			c.Close()
+		}
+		return true
+	})
 }

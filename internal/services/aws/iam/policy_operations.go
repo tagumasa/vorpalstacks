@@ -3,19 +3,17 @@ package iam
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"fmt"
-	"net/http"
-	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	awsarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -26,43 +24,24 @@ import (
 // PolicyDocument must be a valid JSON policy document.
 // Description and Tags are optional.
 func (s *IAMService) CreatePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetStringParam(req.Parameters, "PolicyName")
-	if policyName == "" {
-		return nil, NewInvalidInputError("PolicyName", "cannot be empty")
-	}
-	if !entityNamePattern128.MatchString(policyName) {
-		return nil, NewInvalidInputError("PolicyName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
-	}
-
-	path := request.GetStringParam(req.Parameters, "Path")
-	if path == "" {
-		path = "/"
-	}
-
-	document := request.GetStringParam(req.Parameters, "PolicyDocument")
-	if !validatePolicyDocument(document) {
-		return nil, ErrMalformedPolicyDocument
-	}
-	description := request.GetStringParam(req.Parameters, "Description")
-	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if err := validateNewTags(newTags); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := store.Policies().Create(policyName, path, s.accountID, document, description, newTags)
+	input := &CreatePolicyInput{
+		PolicyName:     request.GetStringParam(req.Parameters, "PolicyName"),
+		Path:           request.GetStringParam(req.Parameters, "Path"),
+		PolicyDocument: request.GetStringParam(req.Parameters, "PolicyDocument"),
+		Description:    request.GetStringParam(req.Parameters, "Description"),
+		Tags:           tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	policy, err := s.createPolicyCore(store, input)
 	if err != nil {
-		if stderrors.Is(err, iamstore.ErrPolicyAlreadyExists) {
-			return nil, NewPolicyAlreadyExistsError(policyName)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"Policy": s.policyToResponse(reqCtx, policy),
+		"Policy": s.policyToResponse(policy),
 	}, nil
 }
 
@@ -71,20 +50,20 @@ func (s *IAMService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 func (s *IAMService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := store.Policies().Get(policyArn)
+	policy, err := s.getPolicyCore(store, policyArn)
 	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"Policy": s.policyToResponse(reqCtx, policy),
+		"Policy": s.policyToResponse(policy),
 	}, nil
 }
 
@@ -92,29 +71,14 @@ func (s *IAMService) GetPolicy(ctx context.Context, reqCtx *request.RequestConte
 // Returns an error if the policy is attached to any users, groups, or roles.
 // Returns an error if the policy does not exist.
 func (s *IAMService) DeletePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := store.Policies().Get(policyArn)
-	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
+	input := &DeletePolicyInput{
+		PolicyArn: request.GetStringParam(req.Parameters, "PolicyArn"),
 	}
-
-	if policy.AttachmentCount > 0 {
-		return nil, NewDeletePolicyConflictError(policyArn)
-	}
-
-	if err := store.Policies().DeleteAllVersions(policyArn); err != nil {
-		return nil, err
-	}
-
-	if err := store.Policies().Delete(policyArn); err != nil {
+	if err := s.deletePolicyCore(store, input); err != nil {
 		return nil, err
 	}
 
@@ -131,6 +95,9 @@ func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 	if scope == "" {
 		scope = "Local"
 	}
+	if !validatePolicyScope(scope) {
+		return nil, NewInvalidInputError("Scope", "must be one of: All, AWS, Local")
+	}
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	onlyAttached := request.GetBoolParam(req.Parameters, "OnlyAttached")
 	marker := request.GetStringParam(req.Parameters, "Marker")
@@ -140,14 +107,14 @@ func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Policies().List(scope, pathPrefix, onlyAttached, marker, maxItems)
+	result, err := s.listPoliciesCore(store, scope, pathPrefix, marker, onlyAttached, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
 	policies := make([]interface{}, len(result.Policies))
 	for i, policy := range result.Policies {
-		policies[i] = s.policyToResponse(reqCtx, policy)
+		policies[i] = s.policyToResponse(policy)
 	}
 
 	response := map[string]interface{}{
@@ -170,7 +137,7 @@ func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 func (s *IAMService) CreatePolicyVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	document := request.GetStringParam(req.Parameters, "PolicyDocument")
@@ -187,38 +154,20 @@ func (s *IAMService) CreatePolicyVersion(ctx context.Context, reqCtx *request.Re
 		return nil, NewNoSuchPolicyError(policyArn)
 	}
 
-	versionCount, err := store.Policies().CountVersions(policyArn)
+	// CreateVersion atomically enforces the MaxPolicyVersions quota and
+	// performs the default-version swap inside a single lock scope,
+	// eliminating the race condition where concurrent requests could both
+	// observe a version count below the limit.
+	version, err := store.Policies().CreateVersion(policyArn, document, setAsDefault, MaxPolicyVersions)
 	if err != nil {
-		return nil, err
-	}
-	if versionCount >= MaxPolicyVersions {
-		return nil, ErrLimitExceededPolicyVersions
-	}
-
-	maxVersion, err := store.Policies().GetMaxVersion(policyArn)
-	if err != nil {
-		return nil, err
-	}
-	versionId := fmt.Sprintf("v%d", maxVersion+1)
-	version := &iamstore.PolicyVersion{
-		VersionId:        versionId,
-		PolicyArn:        policyArn,
-		IsDefaultVersion: setAsDefault,
-		Document:         document,
-	}
-
-	if err := store.Policies().PutVersion(version); err != nil {
-		return nil, err
-	}
-
-	if setAsDefault {
-		if err := store.Policies().SetDefaultVersion(policyArn, versionId); err != nil {
-			return nil, err
+		if errors.Is(err, iamstore.ErrPolicyVersionLimitExceeded) {
+			return nil, ErrLimitExceededPolicyVersions
 		}
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"PolicyVersion": s.policyVersionToResponse(reqCtx, version),
+		"PolicyVersion": s.policyVersionToResponse(version),
 	}, nil
 }
 
@@ -230,20 +179,20 @@ func (s *IAMService) GetPolicyVersion(ctx context.Context, reqCtx *request.Reque
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	version, err := store.Policies().GetVersion(policyArn, versionId)
+	version, err := s.getPolicyVersionCore(store, policyArn, versionId)
 	if err != nil {
-		return nil, NewNoSuchPolicyVersionError(versionId)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"PolicyVersion": s.policyVersionToResponse(reqCtx, version),
+		"PolicyVersion": s.policyVersionToResponse(version),
 	}, nil
 }
 
@@ -255,7 +204,7 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	store, err := s.store(reqCtx)
@@ -263,17 +212,8 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	policy, err := store.Policies().Get(policyArn)
-	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
-
-	if policy.DefaultVersionId == versionId {
-		return nil, errors.NewAWSError("DeleteConflict", "Cannot delete the default policy version.", http.StatusConflict)
-	}
-
-	if err := store.Policies().DeleteVersion(policyArn, versionId); err != nil {
-		return nil, NewNoSuchPolicyVersionError(versionId)
+	if err := s.deletePolicyVersionCore(store, policyArn, versionId); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -285,28 +225,25 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 func (s *IAMService) ListPolicyVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Policies().Exists(policyArn) {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
-	result, err := store.Policies().ListVersions(policyArn, marker, maxItems)
+	result, err := s.listPolicyVersionsCore(store, policyArn, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
 	versions := make([]interface{}, len(result.Versions))
 	for i, version := range result.Versions {
-		versions[i] = s.policyVersionToResponse(reqCtx, version)
+		versions[i] = s.policyVersionToResponse(version)
 	}
 
 	response := map[string]interface{}{
@@ -329,19 +266,16 @@ func (s *IAMService) SetDefaultPolicyVersion(ctx context.Context, reqCtx *reques
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Policies().Exists(policyArn) {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
 
-	if err := store.Policies().SetDefaultVersion(policyArn, versionId); err != nil {
-		return nil, NewNoSuchPolicyVersionError(versionId)
+	if err := s.setDefaultPolicyVersionCore(store, policyArn, versionId); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -380,7 +314,7 @@ func (s *IAMService) ListPolicyTags(ctx context.Context, reqCtx *request.Request
 func (s *IAMService) ListEntitiesForPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
 
 	entityFilter := request.GetStringParam(req.Parameters, "EntityFilter")
@@ -389,149 +323,40 @@ func (s *IAMService) ListEntitiesForPolicy(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	if !store.Policies().Exists(policyArn) {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
 
-	refs, err := store.AttachedPolicies().ListPrincipalsForPolicy(policyArn)
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
+	result, err := s.listEntitiesForPolicyCore(store, policyArn, entityFilter, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
 	response := map[string]interface{}{
-		"IsTruncated": false,
+		"PolicyUsers":  result.PolicyUsers,
+		"PolicyGroups": result.PolicyGroups,
+		"PolicyRoles":  result.PolicyRoles,
+		"IsTruncated":  result.IsTruncated,
 	}
-
-	policyUsers := make([]interface{}, 0)
-	policyGroups := make([]interface{}, 0)
-	policyRoles := make([]interface{}, 0)
-
-	type entityEntry struct {
-		entityType string
-		name       string
-		data       map[string]interface{}
-	}
-
-	combined := make([]entityEntry, 0)
-
-	for _, ref := range refs {
-		switch ref.PrincipalType {
-		case PrincipalTypeUser:
-			if entityFilter != "" && entityFilter != "User" {
-				continue
-			}
-			if user, err := store.Users().Get(ref.PrincipalName); err == nil {
-				entry := map[string]interface{}{
-					"UserName": user.UserName,
-					"UserId":   user.ID,
-					"Arn":      user.Arn,
-				}
-				combined = append(combined, entityEntry{"User", user.UserName, entry})
-			}
-		case PrincipalTypeGroup:
-			if entityFilter != "" && entityFilter != "Group" {
-				continue
-			}
-			if group, err := store.Groups().Get(ref.PrincipalName); err == nil {
-				entry := map[string]interface{}{
-					"GroupName": group.GroupName,
-					"GroupId":   group.ID,
-					"Arn":       group.Arn,
-				}
-				combined = append(combined, entityEntry{"Group", group.GroupName, entry})
-			}
-		case PrincipalTypeRole:
-			if entityFilter != "" && entityFilter != "Role" {
-				continue
-			}
-			if role, err := store.Roles().Get(ref.PrincipalName); err == nil {
-				entry := map[string]interface{}{
-					"RoleName": role.RoleName,
-					"RoleId":   role.ID,
-					"Arn":      role.Arn,
-				}
-				combined = append(combined, entityEntry{"Role", role.RoleName, entry})
-			}
-		}
-	}
-
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
-
-	paged := pagination.PaginateSlice(combined, marker, maxItems, func(item entityEntry) string {
-		return item.entityType + ":" + item.name
-	})
-
-	for _, entry := range paged.Items {
-		switch entry.entityType {
-		case "User":
-			policyUsers = append(policyUsers, entry.data)
-		case "Group":
-			policyGroups = append(policyGroups, entry.data)
-		case "Role":
-			policyRoles = append(policyRoles, entry.data)
-		}
-	}
-
-	response["PolicyUsers"] = policyUsers
-	response["PolicyGroups"] = policyGroups
-	response["PolicyRoles"] = policyRoles
-	response["IsTruncated"] = paged.IsTruncated
-	if paged.NextMarker != "" {
-		response["Marker"] = paged.NextMarker
+	if result.Marker != "" {
+		response["Marker"] = result.Marker
 	}
 
 	return response, nil
 }
 
-func (s *IAMService) policyToResponse(reqCtx *request.RequestContext, policy *iamstore.Policy) map[string]interface{} {
+func (s *IAMService) policyToResponse(policy *iamstore.Policy) map[string]interface{} {
 	resp := map[string]interface{}{
-		"PolicyId":         policy.ID,
-		"Path":             policy.Path,
-		"PolicyName":       policy.PolicyName,
-		"Arn":              policy.Arn,
-		"CreateDate":       policy.CreateDate.Format(timeutils.ISO8601SimpleFormat),
-		"UpdateDate":       policy.UpdateDate.Format(timeutils.ISO8601SimpleFormat),
-		"DefaultVersionId": policy.DefaultVersionId,
-		"AttachmentCount":  policy.AttachmentCount,
-		"IsAttachable":     policy.IsAttachable,
-	}
-
-	if store, err := s.store(reqCtx); err == nil {
-		count := 0
-		userMarker := ""
-		for {
-			users, err := store.Users().List("", userMarker, 1000)
-			if err != nil {
-				break
-			}
-			for _, u := range users.Users {
-				if u.PermissionsBoundary != nil && u.PermissionsBoundary.PermissionsBoundaryArn == policy.Arn {
-					count++
-				}
-			}
-			if !users.IsTruncated || users.Marker == "" {
-				break
-			}
-			userMarker = users.Marker
-		}
-		roleMarker := ""
-		for {
-			roles, err := store.Roles().List("", roleMarker, 1000)
-			if err != nil {
-				break
-			}
-			for _, r := range roles.Roles {
-				if r.PermissionsBoundary != nil && r.PermissionsBoundary.PermissionsBoundaryArn == policy.Arn {
-					count++
-				}
-			}
-			if !roles.IsTruncated || roles.Marker == "" {
-				break
-			}
-			roleMarker = roles.Marker
-		}
-		resp["PermissionsBoundaryUsageCount"] = count
+		"PolicyId":                      policy.ID,
+		"Path":                          policy.Path,
+		"PolicyName":                    policy.PolicyName,
+		"Arn":                           policy.Arn,
+		"CreateDate":                    policy.CreateDate.Format(timeutils.ISO8601SimpleFormat),
+		"UpdateDate":                    policy.UpdateDate.Format(timeutils.ISO8601SimpleFormat),
+		"DefaultVersionId":              policy.DefaultVersionId,
+		"AttachmentCount":               policy.AttachmentCount,
+		"PermissionsBoundaryUsageCount": policy.PermissionsBoundaryUsageCount,
+		"IsAttachable":                  policy.IsAttachable,
 	}
 
 	if policy.Description != "" {
@@ -543,7 +368,7 @@ func (s *IAMService) policyToResponse(reqCtx *request.RequestContext, policy *ia
 	return resp
 }
 
-func (s *IAMService) policyVersionToResponse(reqCtx *request.RequestContext, version *iamstore.PolicyVersion) map[string]interface{} {
+func (s *IAMService) policyVersionToResponse(version *iamstore.PolicyVersion) map[string]interface{} {
 	return map[string]interface{}{
 		"VersionId":        version.VersionId,
 		"IsDefaultVersion": version.IsDefaultVersion,
@@ -718,6 +543,11 @@ func (s *IAMService) gatherPrincipalPolicies(reqCtx *request.RequestContext, pri
 		}
 		docs = append(docs, collectInlinePolicies(store, PrincipalTypeGroup, entityName)...)
 		docs = append(docs, collectAttachedPolicies(store, PrincipalTypeGroup, entityName)...)
+
+	default:
+		// Unknown or non-principal ARN (e.g. policy, server-certificate).
+		// Fail-closed instead of silently returning an empty policy list.
+		return nil, NewInvalidInputError("PolicySourceArn", "must be a user, role, or group ARN")
 	}
 
 	return docs, nil
@@ -769,12 +599,8 @@ func extractPrincipalNameFromARN(arn string) string {
 }
 
 func extractAccountFromARN(arn string) string {
-	// arn:aws:iam::123456789012:user/Bob
-	parts := strings.Split(arn, ":")
-	if len(parts) >= 5 {
-		return parts[4]
-	}
-	return ""
+	_, _, _, accountID, _ := awsarn.SplitARN(arn)
+	return accountID
 }
 
 func buildSimulationContextEntries(params map[string]interface{}) map[string]string {

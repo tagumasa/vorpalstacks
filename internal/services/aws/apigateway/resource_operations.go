@@ -3,15 +3,10 @@ package apigateway
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"net/http"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	store "vorpalstacks/internal/store/aws/apigateway"
-	common "vorpalstacks/internal/store/aws/common"
 )
 
 func getApiIdAndResourceId(req *request.ParsedRequest) (string, string) {
@@ -31,119 +26,53 @@ func getResourceId(req *request.ParsedRequest) string {
 // CreateResource creates a new resource in API Gateway.
 func (s *APIGatewayService) CreateResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	parentId := request.GetStringParam(req.Parameters, "parentId")
 	if parentId == "" {
 		parentId = request.GetStringParam(req.Parameters, "resourceId")
 	}
 	pathPart := request.GetStringParam(req.Parameters, "pathPart")
 
-	if parentId == "" {
-		return nil, NewBadRequestException("parentId is required")
-	}
-	if pathPart == "" {
-		return nil, NewBadRequestException("pathPart is required")
-	}
-	if strings.Contains(pathPart, "/") {
-		return nil, NewBadRequestException("pathPart must not contain '/'")
-	}
-	if !validatePathPart(pathPart) {
-		return nil, NewBadRequestException("pathPart has unbalanced braces or invalid path parameter syntax")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	parentResource, err := stores.restApis.GetResource(apiId, parentId)
+	created, err := s.createResourceCore(stores, apiId, parentId, pathPart)
 	if err != nil {
-		return nil, ErrNotFoundException
-	}
-
-	path := parentResource.Path
-	if path != "/" {
-		path += "/"
-	}
-	path += pathPart
-
-	resource := &store.Resource{
-		ParentId:        parentId,
-		Path:            path,
-		PathPart:        pathPart,
-		ResourceMethods: make(map[string]*store.Method),
-	}
-
-	created, err := stores.restApis.CreateResource(apiId, resource)
-	if err != nil {
-		if errors.Is(err, store.ErrResourceAlreadyExists) {
-			return nil, NewConflictException("Resource already exists")
-		}
 		return nil, toApiGatewayError(err)
 	}
-
 	return s.toResourceResponse(created), nil
 }
 
 // GetResource retrieves a resource from API Gateway.
 func (s *APIGatewayService) GetResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	resource, err := stores.restApis.GetResource(apiId, resourceId)
+	resource, err := s.getResourceCore(stores, apiId, resourceId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
 	return s.toResourceResponse(resource), nil
 }
 
 // DeleteResource deletes a resource from API Gateway.
 func (s *APIGatewayService) DeleteResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteResource(apiId, resourceId); err != nil {
-		var storeErr *common.StoreError
-		if errors.As(err, &storeErr) {
-			msg := storeErr.Err.Error()
-			if strings.Contains(msg, "cannot delete resource with child resources") {
-				return nil, NewBadRequestException("Resource has child resources")
-			}
-			if strings.Contains(msg, "cannot delete the root resource") {
-				return nil, NewBadRequestException("Cannot delete the root resource")
-			}
-		}
-		if common.IsNotFound(err) {
-			return nil, ErrNotFoundException
-		}
-		return nil, NewApiGatewayError("InternalServerError", fmt.Sprintf("Failed to delete resource: %v", err), http.StatusInternalServerError)
+	if err := s.deleteResourceCore(stores, apiId, resourceId); err != nil {
+		return nil, toApiGatewayError(err)
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // GetResources lists all resources for a REST API in API Gateway.
 func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -154,7 +83,7 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	resources, err := stores.restApis.ListResources(apiId)
+	resources, err := s.listResourcesCore(stores, apiId)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

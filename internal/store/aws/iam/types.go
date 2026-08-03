@@ -161,18 +161,19 @@ type AttachedPolicy struct {
 
 // Policy represents an IAM managed policy.
 type Policy struct {
-	ID               string      `json:"id"`
-	Path             string      `json:"path"`
-	PolicyName       string      `json:"policy_name"`
-	Arn              string      `json:"arn"`
-	AccountId        string      `json:"account_id"`
-	CreateDate       time.Time   `json:"create_date"`
-	UpdateDate       time.Time   `json:"update_date"`
-	DefaultVersionId string      `json:"default_version_id"`
-	AttachmentCount  int         `json:"attachment_count"`
-	IsAttachable     bool        `json:"is_attachable"`
-	Description      string      `json:"description,omitempty"`
-	Tags             []types.Tag `json:"tags,omitempty"`
+	ID                            string      `json:"id"`
+	Path                          string      `json:"path"`
+	PolicyName                    string      `json:"policy_name"`
+	Arn                           string      `json:"arn"`
+	AccountId                     string      `json:"account_id"`
+	CreateDate                    time.Time   `json:"create_date"`
+	UpdateDate                    time.Time   `json:"update_date"`
+	DefaultVersionId              string      `json:"default_version_id"`
+	AttachmentCount               int         `json:"attachment_count"`
+	PermissionsBoundaryUsageCount int         `json:"permissions_boundary_usage_count"`
+	IsAttachable                  bool        `json:"is_attachable"`
+	Description                   string      `json:"description,omitempty"`
+	Tags                          []types.Tag `json:"tags,omitempty"`
 }
 
 // PolicyVersion represents a version of an IAM managed policy.
@@ -268,6 +269,7 @@ type ServerCertificate struct {
 	CreateDate            time.Time   `json:"create_date"`
 	Expiration            *time.Time  `json:"expiration,omitempty"`
 	CertificateBody       string      `json:"certificate_body,omitempty"`
+	PrivateKey            string      `json:"private_key,omitempty"` // sensitive — stored for TLS, never returned in API responses
 	CertificateChain      string      `json:"certificate_chain,omitempty"`
 	Tags                  []types.Tag `json:"tags,omitempty"`
 }
@@ -300,24 +302,38 @@ type SSHPublicKey struct {
 
 // ServiceSpecificCredential represents an IAM service-specific credential.
 type ServiceSpecificCredential struct {
-	ServiceSpecificCredentialId   string    `json:"service_specific_credential_id"`
-	ServiceSpecificCredentialName string    `json:"service_specific_credential_name"`
-	ServiceName                   string    `json:"service_name"`
-	UserName                      string    `json:"user_name"`
-	ServicePassword               string    `json:"service_password,omitempty"`
-	ServiceSpecificCredentialArn  string    `json:"service_specific_credential_arn,omitempty"`
-	CreateDate                    time.Time `json:"create_date"`
-	Status                        string    `json:"status"`
+	ServiceSpecificCredentialId   string     `json:"service_specific_credential_id"`
+	ServiceSpecificCredentialName string     `json:"service_specific_credential_name"`
+	ServiceName                   string     `json:"service_name"`
+	UserName                      string     `json:"user_name"`
+	ServicePassword               string     `json:"service_password,omitempty"`
+	ServiceSpecificCredentialArn  string     `json:"service_specific_credential_arn,omitempty"`
+	CreateDate                    time.Time  `json:"create_date"`
+	ExpirationDate                *time.Time `json:"expiration_date,omitempty"`
+	Status                        string     `json:"status"`
+}
+
+// SAMLPrivateKey represents a single private key entry on a SAML provider.
+// The KeyId is a privateKeyIdType (length [22,64], uppercase alphanumeric)
+// used by UpdateSAMLProvider.RemovePrivateKey to target a specific key.
+// The Key field holds the raw PEM material (privateKeyType, sensitive) and
+// is never exposed in API responses.
+type SAMLPrivateKey struct {
+	KeyId   string    `json:"key_id"`
+	Key     string    `json:"key"` // privateKeyType, sensitive — not returned in responses
+	AddedAt time.Time `json:"added_at"`
 }
 
 // SAMLProvider represents an IAM SAML provider.
 type SAMLProvider struct {
-	Arn                  string      `json:"arn"`
-	AccountId            string      `json:"account_id"`
-	SAMLMetadataDocument string      `json:"saml_metadata_document,omitempty"`
-	ValidUntil           *time.Time  `json:"valid_until,omitempty"`
-	CreateDate           time.Time   `json:"create_date"`
-	Tags                 []types.Tag `json:"tags,omitempty"`
+	Arn                     string           `json:"arn"`
+	AccountId               string           `json:"account_id"`
+	SAMLMetadataDocument    string           `json:"saml_metadata_document,omitempty"`
+	ValidUntil              *time.Time       `json:"valid_until,omitempty"`
+	CreateDate              time.Time        `json:"create_date"`
+	AssertionEncryptionMode string           `json:"assertion_encryption_mode,omitempty"` // enum: Required, Allowed
+	PrivateKeys             []SAMLPrivateKey `json:"private_keys,omitempty"`
+	Tags                    []types.Tag      `json:"tags,omitempty"`
 }
 
 // SAMLProviderListResult represents the result of listing SAML providers.

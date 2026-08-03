@@ -35,8 +35,17 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 		// ValidationException, not AccessDenied.
 		return nil, ErrValidation
 	}
+	if err := validatePrincipalId(granteePrincipal); err != nil {
+		return nil, err
+	}
 
 	retiringPrincipal := request.GetStringParam(req.Parameters, "RetiringPrincipal")
+	if retiringPrincipal != "" {
+		if err := validatePrincipalId(retiringPrincipal); err != nil {
+			return nil, err
+		}
+	}
+
 	name := request.GetStringParam(req.Parameters, "Name")
 	// AWS: Name is optional but if present must be 1-256 chars matching
 	// the grantNamePattern (alnum, colon, slash, underscore, hyphen).
@@ -57,6 +66,15 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 	// AWS: Operations is a required field for CreateGrant.
 	if len(operations) == 0 {
 		return nil, ErrValidation
+	}
+
+	// Smithy GrantTokenList: length 0-10.
+	if gt, ok := req.Parameters["GrantTokens"]; ok {
+		if gtList, ok := gt.([]interface{}); ok {
+			if err := validateGrantTokenListSize(gtList); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	constraints, err := parseGrantConstraints(req.Parameters)
@@ -96,9 +114,17 @@ func (s *KMSService) ListGrants(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 	granteePrincipal := request.GetStringParam(req.Parameters, "GranteePrincipal")
 	grantIDFilter := request.GetStringParam(req.Parameters, "GrantId")
+	if grantIDFilter != "" {
+		if err := validateGrantIdLength(grantIDFilter); err != nil {
+			return nil, err
+		}
+	}
 	granteeServicePrincipal := request.GetStringParam(req.Parameters, "GranteeServicePrincipal")
 
 	// When GrantId is specified, fetch the single grant directly instead
@@ -154,6 +180,9 @@ func (s *KMSService) ListRetirableGrants(ctx context.Context, reqCtx *request.Re
 	}
 
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
 	result, err := stores.grants.ListByRetiringPrincipal(retiringPrincipal, marker, maxItems)
@@ -254,6 +283,9 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 		// not NotFoundException.
 		return nil, ErrValidation
 	}
+	if err := validateGrantIdLength(grantID); err != nil {
+		return nil, err
+	}
 
 	grant, err := stores.grants.Get(grantID)
 	if err != nil {
@@ -290,6 +322,9 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	var grant *kmsstore.Grant
 	if grantID != "" {
+		if err := validateGrantIdLength(grantID); err != nil {
+			return nil, err
+		}
 		var err error
 		grant, err = stores.grants.Get(grantID)
 		if err != nil {
@@ -299,6 +334,9 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 			return nil, err
 		}
 	} else if grantToken != "" {
+		if err := validateGrantTokenLength(grantToken); err != nil {
+			return nil, err
+		}
 		var err error
 		grant, err = stores.grants.GetByToken(grantToken)
 		if err != nil {
@@ -401,6 +439,9 @@ func parseGrantConstraints(params map[string]interface{}) (*kmsstore.GrantConstr
 				sourceArn, ok := sourceArnVal.(string)
 				if !ok || sourceArn == "" {
 					return nil, ErrValidation
+				}
+				if err := validateGrantSourceArn(sourceArn); err != nil {
+					return nil, err
 				}
 				if constraints == nil {
 					constraints = &kmsstore.GrantConstraints{}

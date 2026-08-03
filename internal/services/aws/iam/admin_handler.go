@@ -13,6 +13,7 @@ import (
 	pb "vorpalstacks/internal/pb/aws/iam"
 	"vorpalstacks/internal/pb/aws/iam/iamconnect"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -59,6 +60,33 @@ func storeErr(err error) error {
 	if err == nil {
 		return nil
 	}
+	// If the error is an AWSError (from core validation), map it by AWS
+	// error code to the closest connect.Code.  HTTP 409 carries three
+	// distinct AWS codes (DeleteConflict, LimitExceeded, EntityAlreadyExists)
+	// that must map to different connect codes.
+	var awsErr *awserrors.AWSError
+	if errors.As(err, &awsErr) {
+		switch awsErr.GetHTTPStatusCode() {
+		case http.StatusBadRequest:
+			return connect.NewError(connect.CodeInvalidArgument, awsErr)
+		case http.StatusForbidden:
+			return connect.NewError(connect.CodePermissionDenied, awsErr)
+		case http.StatusNotFound:
+			return connect.NewError(connect.CodeNotFound, awsErr)
+		case http.StatusConflict:
+			switch awsErr.GetCode() {
+			case "DeleteConflict":
+				return connect.NewError(connect.CodeFailedPrecondition, awsErr)
+			case "LimitExceeded":
+				return connect.NewError(connect.CodeResourceExhausted, awsErr)
+			default:
+				return connect.NewError(connect.CodeAlreadyExists, awsErr)
+			}
+		default:
+			return connect.NewError(connect.CodeInternal, awsErr)
+		}
+	}
+	// Fall back to store sentinel-error mapping.
 	switch {
 	case errors.Is(err, iamstore.ErrUserNotFound),
 		errors.Is(err, iamstore.ErrRoleNotFound),
@@ -110,7 +138,7 @@ func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetU
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
-	user, err := stores.Users().Get(req.Msg.Username)
+	user, err := h.service.getUserCore(stores, req.Msg.Username)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -125,7 +153,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := stores.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listUsersCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -148,16 +176,12 @@ func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.C
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	input := &CreateUserInput{
+		UserName: req.Msg.Username,
+		Path:     req.Msg.Path,
+		Tags:     pbTagsToStoreTags(req.Msg.Tags),
 	}
-	if !entityNamePattern.MatchString(req.Msg.Username) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName does not match the required pattern"))
-	}
-
-	tags := pbTagsToStoreTags(req.Msg.Tags)
-
-	user, err := stores.Users().Create(req.Msg.Username, req.Msg.Path, stores.AccountID(), tags)
+	user, err := h.service.createUserCore(stores, input)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -173,11 +197,12 @@ func (h *AdminHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.U
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	input := &UpdateUserInput{
+		UserName:    req.Msg.Username,
+		NewPath:     req.Msg.Newpath,
+		NewUserName: req.Msg.Newusername,
 	}
-
-	if err := stores.RenameUser(req.Msg.Username, req.Msg.Newusername, req.Msg.Newpath); err != nil {
+	if _, err := h.service.updateUserCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -190,11 +215,11 @@ func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.D
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	input := &DeleteUserInput{
+		UserName: req.Msg.Username,
+		Cascade:  true,
 	}
-
-	if err := cascadeDeleteUser(stores, req.Msg.Username); err != nil {
+	if err := h.service.deleteUserCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -212,7 +237,7 @@ func (h *AdminHandler) GetRole(ctx context.Context, req *connect.Request[pb.GetR
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
-	role, err := stores.Roles().Get(req.Msg.Rolename)
+	role, err := h.service.getRoleCore(stores, req.Msg.Rolename)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -227,7 +252,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := stores.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listRolesCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -250,35 +275,15 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	input := &CreateRoleInput{
+		RoleName:                 req.Msg.Rolename,
+		Path:                     req.Msg.Path,
+		AssumeRolePolicyDocument: req.Msg.Assumerolepolicydocument,
+		Description:              req.Msg.Description,
+		MaxSessionDuration:       int(req.Msg.GetMaxsessionduration()),
+		Tags:                     pbTagsToStoreTags(req.Msg.Tags),
 	}
-	if !entityNamePattern.MatchString(req.Msg.Rolename) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName does not match the required pattern"))
-	}
-	if req.Msg.Assumerolepolicydocument == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is required"))
-	}
-	if !validateTrustPolicyDocument(req.Msg.Assumerolepolicydocument) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is malformed"))
-	}
-
-	tags := pbTagsToStoreTags(req.Msg.Tags)
-
-	maxSessionDuration := int(req.Msg.GetMaxsessionduration())
-	if maxSessionDuration == 0 {
-		maxSessionDuration = 3600
-	}
-
-	role, err := stores.Roles().Create(
-		req.Msg.Rolename,
-		req.Msg.Path,
-		stores.AccountID(),
-		req.Msg.Assumerolepolicydocument,
-		req.Msg.Description,
-		maxSessionDuration,
-		tags,
-	)
+	role, err := h.service.createRoleCore(stores, input)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -294,11 +299,12 @@ func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.U
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	input := &UpdateRoleInput{
+		RoleName:           req.Msg.Rolename,
+		Description:        req.Msg.Description,
+		MaxSessionDuration: int(req.Msg.GetMaxsessionduration()),
 	}
-
-	if err := stores.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.GetMaxsessionduration())); err != nil {
+	if _, err := h.service.updateRoleCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -311,11 +317,11 @@ func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.D
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	input := &DeleteRoleInput{
+		RoleName: req.Msg.Rolename,
+		Cascade:  true,
 	}
-
-	if err := cascadeDeleteRole(stores, req.Msg.Rolename); err != nil {
+	if err := h.service.deleteRoleCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -333,7 +339,7 @@ func (h *AdminHandler) GetPolicy(ctx context.Context, req *connect.Request[pb.Ge
 	if req.Msg.Policyarn == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
 	}
-	policy, err := stores.Policies().Get(req.Msg.Policyarn)
+	policy, err := h.service.getPolicyCore(stores, req.Msg.Policyarn)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -355,7 +361,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 		scope = "All"
 	}
 
-	result, err := stores.Policies().List(scope, req.Msg.Pathprefix, req.Msg.GetOnlyattached(), req.Msg.Marker, maxItems)
+	result, err := h.service.listPoliciesCore(stores, scope, req.Msg.Pathprefix, req.Msg.Marker, req.Msg.GetOnlyattached(), maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -378,22 +384,14 @@ func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Policyname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName is required"))
+	input := &CreatePolicyInput{
+		PolicyName:     req.Msg.Policyname,
+		Path:           req.Msg.Path,
+		PolicyDocument: req.Msg.Policydocument,
+		Description:    req.Msg.Description,
+		Tags:           pbTagsToStoreTags(req.Msg.Tags),
 	}
-	if !entityNamePattern128.MatchString(req.Msg.Policyname) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName does not match the required pattern"))
-	}
-	if req.Msg.Policydocument == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyDocument is required"))
-	}
-	if !validatePolicyDocument(req.Msg.Policydocument) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyDocument is malformed"))
-	}
-
-	tags := pbTagsToStoreTags(req.Msg.Tags)
-
-	policy, err := stores.Policies().Create(req.Msg.Policyname, req.Msg.Path, stores.AccountID(), req.Msg.Policydocument, req.Msg.Description, tags)
+	policy, err := h.service.createPolicyCore(stores, input)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -407,11 +405,10 @@ func (h *AdminHandler) DeletePolicy(ctx context.Context, req *connect.Request[pb
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Policyarn == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
+	input := &DeletePolicyInput{
+		PolicyArn: req.Msg.Policyarn,
 	}
-
-	if err := stores.Policies().Delete(req.Msg.Policyarn); err != nil {
+	if err := h.service.deletePolicyCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -429,7 +426,7 @@ func (h *AdminHandler) GetGroup(ctx context.Context, req *connect.Request[pb.Get
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
-	group, err := stores.Groups().Get(req.Msg.Groupname)
+	group, err := h.service.getGroupCore(stores, req.Msg.Groupname)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -444,7 +441,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := stores.Groups().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listGroupsCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -467,14 +464,11 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Groupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	input := &CreateGroupInput{
+		GroupName: req.Msg.Groupname,
+		Path:      req.Msg.Path,
 	}
-	if !entityNamePattern128.MatchString(req.Msg.Groupname) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName does not match the required pattern"))
-	}
-
-	group, err := stores.Groups().Create(req.Msg.Groupname, req.Msg.Path, stores.AccountID())
+	group, err := h.service.createGroupCore(stores, input)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -488,11 +482,12 @@ func (h *AdminHandler) UpdateGroup(ctx context.Context, req *connect.Request[pb.
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Groupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	input := &UpdateGroupInput{
+		GroupName:    req.Msg.Groupname,
+		NewPath:      req.Msg.Newpath,
+		NewGroupName: req.Msg.Newgroupname,
 	}
-
-	if err := stores.RenameGroup(req.Msg.Groupname, req.Msg.Newgroupname, req.Msg.Newpath); err != nil {
+	if _, err := h.service.updateGroupCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -505,11 +500,11 @@ func (h *AdminHandler) DeleteGroup(ctx context.Context, req *connect.Request[pb.
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if req.Msg.Groupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	input := &DeleteGroupInput{
+		GroupName: req.Msg.Groupname,
+		Cascade:   true,
 	}
-
-	if err := cascadeDeleteGroup(stores, req.Msg.Groupname); err != nil {
+	if err := h.service.deleteGroupCore(stores, input); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -588,16 +583,17 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 
 func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	pbPolicy := &pb.Policy{
-		Policyname:       policy.PolicyName,
-		Policyid:         policy.ID,
-		Arn:              policy.Arn,
-		Path:             policy.Path,
-		Createdate:       policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
-		Updatedate:       policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
-		Defaultversionid: policy.DefaultVersionId,
-		Attachmentcount:  proto.Int32(int32(policy.AttachmentCount)),
-		Isattachable:     proto.Bool(policy.IsAttachable),
-		Description:      policy.Description,
+		Policyname:                    policy.PolicyName,
+		Policyid:                      policy.ID,
+		Arn:                           policy.Arn,
+		Path:                          policy.Path,
+		Createdate:                    policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
+		Updatedate:                    policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
+		Defaultversionid:              policy.DefaultVersionId,
+		Attachmentcount:               proto.Int32(int32(policy.AttachmentCount)),
+		Permissionsboundaryusagecount: proto.Int32(int32(policy.PermissionsBoundaryUsageCount)),
+		Isattachable:                  proto.Bool(policy.IsAttachable),
+		Description:                   policy.Description,
 	}
 
 	if len(policy.Tags) > 0 {

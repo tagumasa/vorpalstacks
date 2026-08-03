@@ -129,18 +129,6 @@ func protoAVListToStore(l []*pb.AttributeValue) []*dbstore.AttributeValue {
 	return result
 }
 
-func extractKeyFromAttributes(table *dbstore.Table, attrs map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
-	key := make(map[string]*dbstore.AttributeValue, len(table.KeySchema))
-	for _, ks := range table.KeySchema {
-		attr, ok := attrs[ks.AttributeName]
-		if !ok {
-			return nil
-		}
-		key[ks.AttributeName] = attr
-	}
-	return key
-}
-
 func storeTableToProtoDescription(table *dbstore.Table) *pb.TableDescription {
 	if table == nil {
 		return nil

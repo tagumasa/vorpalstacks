@@ -259,50 +259,65 @@ func decodeBase32(t *testing.T, seed string) []byte {
 }
 
 func TestComputePackedPolicySize(t *testing.T) {
-	params := map[string]interface{}{
-		"PolicyArns.member.1.arn": "arn:aws:iam::123456789012:policy/test1",
-		"PolicyArns.member.2.arn": "arn:aws:iam::123456789012:policy/test2",
+	arns := []string{
+		"arn:aws:iam::123456789012:policy/test1",
+		"arn:aws:iam::123456789012:policy/test2",
+	}
+
+	// ceilPct mirrors the ceiling division used by computePackedPolicySize.
+	ceilPct := func(totalSize int) int32 {
+		if totalSize <= 0 {
+			return 0
+		}
+		pct := totalSize * 100
+		result := int32(pct / 2048)
+		if pct%2048 != 0 {
+			result++
+		}
+		return result
 	}
 
 	t.Run("empty policy and params", func(t *testing.T) {
-		size := computePackedPolicySize("", map[string]interface{}{}, nil)
+		size := computePackedPolicySize("", nil, nil, nil)
 		assert.Equal(t, int32(0), size)
 	})
 
 	t.Run("policy only", func(t *testing.T) {
 		policy := `{"Version":"2012-10-17"}`
-		size := computePackedPolicySize(policy, map[string]interface{}{}, nil)
-		expected := int32((len(policy) * 100) / 2048)
-		assert.Equal(t, expected, size)
+		size := computePackedPolicySize(policy, nil, nil, nil)
+		assert.Equal(t, ceilPct(len(policy)), size)
 	})
 
 	t.Run("policy with arns", func(t *testing.T) {
 		policy := `{"Version":"2012-10-17"}`
-		size := computePackedPolicySize(policy, params, nil)
+		size := computePackedPolicySize(policy, arns, nil, nil)
 		// Each ARN has 3 bytes overhead (quotes + comma), plus 2 for array brackets.
-		arn1 := "arn:aws:iam::123456789012:policy/test1"
-		arn2 := "arn:aws:iam::123456789012:policy/test2"
-		totalLen := len(policy) + len(arn1) + 3 + len(arn2) + 3 + 2
-		expected := int32((totalLen * 100) / 2048)
-		assert.Equal(t, expected, size)
+		totalLen := len(policy) + len(arns[0]) + 3 + len(arns[1]) + 3 + 2
+		assert.Equal(t, ceilPct(totalLen), size)
 	})
 
 	t.Run("policy with tags", func(t *testing.T) {
 		policy := `{"Version":"2012-10-17"}`
 		tags := map[string]string{"Department": "Engineering", "Project": "Alpha"}
-		size := computePackedPolicySize(policy, map[string]interface{}{}, tags)
+		size := computePackedPolicySize(policy, nil, nil, tags)
 		// Each tag has 20 bytes overhead ({"Key":"","Value":""}), plus 2 for array brackets.
 		tagLen := len("Department") + len("Engineering") + 20 + len("Project") + len("Alpha") + 20 + 2
-		expected := int32(((len(policy) + tagLen) * 100) / 2048)
-		assert.Equal(t, expected, size)
+		assert.Equal(t, ceilPct(len(policy)+tagLen), size)
 	})
 
 	t.Run("tags only", func(t *testing.T) {
 		tags := map[string]string{"Env": "prod"}
-		size := computePackedPolicySize("", map[string]interface{}{}, tags)
+		size := computePackedPolicySize("", nil, nil, tags)
 		// Tag overhead: 20 bytes per tag + 2 for array brackets.
-		expected := int32(((len("Env") + len("prod") + 20 + 2) * 100) / 2048)
-		assert.Equal(t, expected, size)
+		assert.Equal(t, ceilPct(len("Env")+len("prod")+20+2), size)
+	})
+
+	t.Run("transitive keys only", func(t *testing.T) {
+		keys := []string{"Project", "Department"}
+		size := computePackedPolicySize("", nil, keys, nil)
+		// Each key has 3 bytes overhead + 2 for array brackets.
+		totalLen := len("Project") + 3 + len("Department") + 3 + 2
+		assert.Equal(t, ceilPct(totalLen), size)
 	})
 }
 

@@ -25,7 +25,10 @@ func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request
 		if !ok {
 			continue
 		}
-		regionName, _ := rMap["RegionName"].(string)
+		regionName, ok := rMap["RegionName"].(string)
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
 		if regionName != "" {
 			replicationGroup = append(replicationGroup, &dbstore.Replica{
 				RegionName:    regionName,

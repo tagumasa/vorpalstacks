@@ -195,6 +195,33 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	// AWS-managed policy attach/detach
+	results = append(results, r.RunTest("iam", "AttachUserPolicy_AWSManaged", func() error {
+		awsManagedArn := "arn:aws:iam::aws:policy/ReadOnlyAccess"
+		_, err := tc.client.AttachUserPolicy(tc.ctx, &iam.AttachUserPolicyInput{
+			UserName:  aws.String(tc.user),
+			PolicyArn: aws.String(awsManagedArn),
+		})
+		if err != nil {
+			return fmt.Errorf("AttachUserPolicy with AWS-managed ARN failed: %w", err)
+		}
+		resp, err := tc.client.ListAttachedUserPolicies(tc.ctx, &iam.ListAttachedUserPoliciesInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return err
+		}
+		if !iamFindAttachedPolicy(resp.AttachedPolicies, awsManagedArn) {
+			return fmt.Errorf("AWS-managed policy %s not found after attach", awsManagedArn)
+		}
+		// Detach to clean up
+		_, _ = tc.client.DetachUserPolicy(tc.ctx, &iam.DetachUserPolicyInput{
+			UserName:  aws.String(tc.user),
+			PolicyArn: aws.String(awsManagedArn),
+		})
+		return nil
+	}))
+
 	// Attached policies — Group
 	results = append(results, r.RunTest("iam", "AttachGroupPolicy", func() error {
 		_, err := tc.client.AttachGroupPolicy(tc.ctx, &iam.AttachGroupPolicyInput{
@@ -339,6 +366,59 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		}
 		if resp.PolicyVersion.IsDefaultVersion {
 			return fmt.Errorf("expected non-default version")
+		}
+		return nil
+	}))
+
+	// SetAsDefault=true exercises the 2-step PutVersion + SetDefaultVersion
+	// path.  The invariant "exactly one default version per policy" must
+	// hold after the swap (M1 regression guard).
+	results = append(results, r.RunTest("iam", "CreatePolicyVersion_SetAsDefault", func() error {
+		v3Document := `{
+			"Version": "2012-10-17",
+			"Statement": [{
+				"Effect": "Allow",
+				"Action": "s3:*",
+				"Resource": "*"
+			}]
+		}`
+		resp, err := tc.client.CreatePolicyVersion(tc.ctx, &iam.CreatePolicyVersionInput{
+			PolicyArn:      aws.String(tc.policyArn),
+			PolicyDocument: aws.String(v3Document),
+			SetAsDefault:   true,
+		})
+		if err != nil {
+			return err
+		}
+		if resp.PolicyVersion == nil {
+			return fmt.Errorf("policy version is nil")
+		}
+		if !resp.PolicyVersion.IsDefaultVersion {
+			return fmt.Errorf("expected new version to be the default")
+		}
+		newVersionId := aws.ToString(resp.PolicyVersion.VersionId)
+
+		// Re-list and confirm exactly one default remains, and it is the
+		// newly-created version.
+		listResp, err := tc.client.ListPolicyVersions(tc.ctx, &iam.ListPolicyVersionsInput{
+			PolicyArn: aws.String(tc.policyArn),
+		})
+		if err != nil {
+			return err
+		}
+		defaultCount := 0
+		defaultVersionId := ""
+		for _, v := range listResp.Versions {
+			if v.IsDefaultVersion {
+				defaultCount++
+				defaultVersionId = aws.ToString(v.VersionId)
+			}
+		}
+		if defaultCount != 1 {
+			return fmt.Errorf("expected exactly 1 default version after SetAsDefault, got %d", defaultCount)
+		}
+		if defaultVersionId != newVersionId {
+			return fmt.Errorf("expected default version %s, got %s", newVersionId, defaultVersionId)
 		}
 		return nil
 	}))

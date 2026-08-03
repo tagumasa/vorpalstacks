@@ -25,8 +25,8 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	}
 	tableName := table.Name
 
-	item := parseItem(req.Parameters["Item"])
-	if item == nil {
+	item, itemErr := parseItem(req.Parameters["Item"])
+	if itemErr != nil || item == nil {
 		return nil, ErrInvalidParameter
 	}
 
@@ -49,7 +49,10 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
-	exprAttrNames, exprAttrValues := getExpressionAttributes(req.Parameters)
+	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
 
 	var oldItem *dbstore.Item
@@ -215,9 +218,9 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 	}
 	tableName := table.Name
 
-	key := parseKey(req.Parameters["Key"])
-	if key == nil {
-		return nil, ErrMissingKey
+	key, keyErr := parseKey(req.Parameters["Key"])
+	if keyErr != nil || key == nil {
+		return nil, ErrInvalidParameter
 	}
 
 	if !validateKeyValueNotEmpty(key) {
@@ -236,7 +239,10 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	projection := parseProjectionExpression(req.Parameters)
+	projection, err := parseProjectionExpression(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if projection != nil {
 		item.Attributes = applyProjection(item.Attributes, projection)
 	}
@@ -261,9 +267,9 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 	}
 	tableName := table.Name
 
-	key := parseKey(req.Parameters["Key"])
-	if key == nil {
-		return nil, ErrMissingKey
+	key, keyErr := parseKey(req.Parameters["Key"])
+	if keyErr != nil || key == nil {
+		return nil, ErrInvalidParameter
 	}
 
 	if !validateKeyValueNotEmpty(key) {
@@ -276,7 +282,10 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 	}
 
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
-	exprAttrNames, exprAttrValues := getExpressionAttributes(req.Parameters)
+	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
 
 	var oldItem *dbstore.Item
@@ -393,15 +402,16 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 
 // UpdateItem edits an existing item's attributes or creates a new item if it does not exist.
 func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
+	// Table must be ACTIVE — matches PutItem and DeleteItem behaviour.
+	table, err := s.validateAndGetActiveTable(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 	tableName := table.Name
 
-	key := parseKey(req.Parameters["Key"])
-	if key == nil {
-		return nil, ErrMissingKey
+	key, keyErr := parseKey(req.Parameters["Key"])
+	if keyErr != nil || key == nil {
+		return nil, ErrInvalidParameter
 	}
 
 	if !validateKeyValueNotEmpty(key) {
@@ -415,7 +425,10 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
-	exprAttrNames, exprAttrValues := getExpressionAttributes(req.Parameters)
+	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	updateExpr := request.GetStringParam(req.Parameters, "UpdateExpression")
 	attrs := req.Parameters["AttributeUpdates"]
@@ -495,12 +508,16 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 		}
 
 		if updateExpr != "" {
-			paths := extractUpdatedPaths(updateExpr, parseExpressionAttributeNames(req.Parameters))
+			updateNames, namesErr := parseExpressionAttributeNames(req.Parameters)
+			if namesErr != nil {
+				return namesErr
+			}
+			paths := extractUpdatedPaths(updateExpr, updateNames)
 			if err := validateNotKeyAttributes(table, paths); err != nil {
 				return err
 			}
 			var err error
-			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, updateExpr, parseExpressionAttributeNames(req.Parameters), parseExpressionAttributeValues(req.Parameters))
+			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, updateExpr, updateNames, parseExpressionAttributeValues(req.Parameters))
 			if err != nil {
 				if err.Error() == "TYPE_MISMATCH: Type mismatch for attribute to update" {
 					return ErrInvalidParameter

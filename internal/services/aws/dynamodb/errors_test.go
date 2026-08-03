@@ -120,7 +120,9 @@ func TestTransactionCanceledError_ToJSON(t *testing.T) {
 		assert.NotNil(t, reason["Item"])
 	})
 
-	t.Run("fallback on marshal failure (Bug D-7)", func(t *testing.T) {
+	// Verify that JSON marshal failure falls back to the protocol-buffer
+	// error path so callers always receive a serialisable representation.
+	t.Run("fallback on marshal failure", func(t *testing.T) {
 		err := &TransactionCanceledError{
 			APIError: &APIError{awserrors.NewAWSError("TestCode", "TestMsg", 400)},
 		}

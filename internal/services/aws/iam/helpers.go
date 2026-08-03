@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 
 	"vorpalstacks/internal/common/request"
@@ -25,144 +24,6 @@ const (
 	// MaxTagValueLength is the maximum length of a tag value.
 	MaxTagValueLength = 256
 )
-
-// policyValidationMode controls which fields are required for each statement.
-type policyValidationMode int
-
-const (
-	// policyModeManaged is for identity-based policies (managed and inline).
-	// Requires Effect + Action/NotAction + Resource/NotResource per statement.
-	policyModeManaged policyValidationMode = iota
-	// policyModeTrust is for AssumeRolePolicyDocument (resource-based trust
-	// policies). Requires Effect + Action/NotAction + Principal/NotPrincipal.
-	policyModeTrust
-)
-
-// validatePolicyDocument checks if a policy document is valid JSON and has
-// the minimum required structure for an IAM identity-based policy: a
-// top-level object with a "Statement" field containing at least one
-// statement object with Effect, Action/NotAction, and Resource/NotResource.
-func validatePolicyDocument(document string) bool {
-	return validatePolicyDocumentMode(document, policyModeManaged)
-}
-
-// validateTrustPolicyDocument validates an AssumeRolePolicyDocument (trust
-// policy).  Each statement must have Effect, Action/NotAction, and
-// Principal/NotPrincipal.
-func validateTrustPolicyDocument(document string) bool {
-	return validatePolicyDocumentMode(document, policyModeTrust)
-}
-
-func validatePolicyDocumentMode(document string, mode policyValidationMode) bool {
-	if document == "" {
-		return false
-	}
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(document), &raw); err != nil {
-		return false
-	}
-	statementsRaw, ok := raw["Statement"]
-	if !ok {
-		return false
-	}
-
-	// Statement can be a single object or an array of objects.
-	var singleStmt map[string]interface{}
-	if err := json.Unmarshal(statementsRaw, &singleStmt); err == nil {
-		return validateStatement(singleStmt, mode)
-	}
-
-	var stmtArray []map[string]interface{}
-	if err := json.Unmarshal(statementsRaw, &stmtArray); err != nil {
-		return false
-	}
-	if len(stmtArray) == 0 {
-		return false
-	}
-	for _, stmt := range stmtArray {
-		if !validateStatement(stmt, mode) {
-			return false
-		}
-	}
-	return true
-}
-
-// validateStatement checks that a single policy statement has the required
-// members for the given validation mode:
-//   - Effect must be "Allow" or "Deny"
-//   - Action or NotAction must be present
-//   - For managed policies: Resource or NotResource must be present
-//   - For trust policies: Principal or NotPrincipal must be present
-func validateStatement(stmt map[string]interface{}, mode policyValidationMode) bool {
-	effect, ok := stmt["Effect"].(string)
-	if !ok {
-		return false
-	}
-	if effect != "Allow" && effect != "Deny" {
-		return false
-	}
-
-	// Action or NotAction is required in all policy statements.
-	if !hasPolicyKey(stmt, "Action") && !hasPolicyKey(stmt, "NotAction") {
-		return false
-	}
-
-	switch mode {
-	case policyModeManaged:
-		// Identity-based policies require Resource or NotResource.
-		if !hasPolicyKey(stmt, "Resource") && !hasPolicyKey(stmt, "NotResource") {
-			return false
-		}
-	case policyModeTrust:
-		// Trust policies require Principal or NotPrincipal.
-		if !hasPolicyKey(stmt, "Principal") && !hasPolicyKey(stmt, "NotPrincipal") {
-			return false
-		}
-	}
-	return true
-}
-
-// hasPolicyKey returns true if the statement map contains the given key
-// with a non-nil value.  A key set to JSON null is treated as absent.
-func hasPolicyKey(stmt map[string]interface{}, key string) bool {
-	val, ok := stmt[key]
-	if !ok {
-		return false
-	}
-	return val != nil
-}
-
-// validateTagEntries validates the key and value length limits for each
-// individual tag entry.  It does NOT check the total tag count — the caller
-// is responsible for that because the acceptable count depends on context
-// (new tags on Create vs. merged tags on TagResource).
-func validateTagEntries(newTags []types.Tag) error {
-	for _, t := range newTags {
-		if len(t.Key) == 0 || len(t.Key) > MaxTagKeyLength {
-			return NewInvalidInputError("TagKey", "must be 1 to "+strconv.Itoa(MaxTagKeyLength)+" characters")
-		}
-		if !tagKeyPattern.MatchString(t.Key) {
-			return NewInvalidInputError("TagKey", "contains invalid characters")
-		}
-		if len(t.Value) > MaxTagValueLength {
-			return NewInvalidInputError("TagValue", "must be 0 to "+strconv.Itoa(MaxTagValueLength)+" characters")
-		}
-	}
-	return nil
-}
-
-// validateNewTags validates both per-tag entry limits and the total tag
-// count for resources being created.  On Create operations there are no
-// pre-existing tags, so the total count is simply len(newTags).
-func validateNewTags(newTags []types.Tag) error {
-	if err := validateTagEntries(newTags); err != nil {
-		return err
-	}
-	if len(newTags) > MaxTagsPerResource {
-		return NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(MaxTagsPerResource)+" tags per resource")
-	}
-	return nil
-}
 
 // resolveUserName returns userName if non-empty, otherwise defaults to the
 // caller's IAM principal name.  Per AWS spec, several IAM operations allow
@@ -361,6 +222,17 @@ func listAllPolicies(store *iamstore.IAMStore, scope, pathPrefix string, onlyAtt
 // cascadeDeleteUser removes all resources associated with a user before deleting
 // the user record. Used by the admin handler to ensure consistent cleanup.
 func cascadeDeleteUser(store *iamstore.IAMStore, userName string) error {
+	// Decrement permissions boundary usage count before the cascade removes
+	// the user record. AWS allows deleting an entity that still has a
+	// permissions boundary attached, so the policy counter must be adjusted
+	// here to avoid drift. Best-effort, matching the PutUserPermissionsBoundary
+	// / DeleteUserPermissionsBoundary pattern.
+	if user, gErr := store.Users().Get(userName); gErr == nil {
+		if user.PermissionsBoundary != nil && user.PermissionsBoundary.PermissionsBoundaryArn != "" {
+			_ = store.Policies().DecrementPermissionsBoundaryUsageCount(user.PermissionsBoundary.PermissionsBoundaryArn)
+		}
+	}
+
 	if store.LoginProfiles().Exists(userName) {
 		if err := store.LoginProfiles().Delete(userName); err != nil {
 			return err
@@ -420,6 +292,17 @@ func cascadeDeleteUser(store *iamstore.IAMStore, userName string) error {
 // cascadeDeleteRole removes all resources associated with a role before deleting
 // the role record. Used by the admin handler to ensure consistent cleanup.
 func cascadeDeleteRole(store *iamstore.IAMStore, roleName string) error {
+	// Decrement permissions boundary usage count before the cascade removes
+	// the role record. AWS allows deleting an entity that still has a
+	// permissions boundary attached, so the policy counter must be adjusted
+	// here to avoid drift. Best-effort, matching the PutRolePermissionsBoundary
+	// / DeleteRolePermissionsBoundary pattern.
+	if role, gErr := store.Roles().Get(roleName); gErr == nil {
+		if role.PermissionsBoundary != nil && role.PermissionsBoundary.PermissionsBoundaryArn != "" {
+			_ = store.Policies().DecrementPermissionsBoundaryUsageCount(role.PermissionsBoundary.PermissionsBoundaryArn)
+		}
+	}
+
 	if err := store.InlinePolicies().DeleteAllForPrincipal(PrincipalTypeRole, roleName); err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -56,7 +57,7 @@ func (r *TestRunner) runKMSTagTests(tc *kmsTestContext) []TestResult {
 		if tc.keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		tagAlias := fmt.Sprintf("alias/tag-test-%d", len(tc.keyID))
+		tagAlias := fmt.Sprintf("alias/tag-test-%d", time.Now().UnixNano())
 		_, err := tc.client.CreateAlias(tc.ctx, &kms.CreateAliasInput{
 			AliasName:   aws.String(tagAlias),
 			TargetKeyId: aws.String(tc.keyID),

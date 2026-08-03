@@ -16,8 +16,8 @@ func (s *AthenaService) CreatePreparedStatement(ctx context.Context, reqCtx *req
 		return nil, ErrInvalidRequestException
 	}
 
-	if len(statementName) > 256 {
-		return nil, ErrInvalidParameterException
+	if err := validateStatementName(statementName); err != nil {
+		return nil, err
 	}
 
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
@@ -26,6 +26,11 @@ func (s *AthenaService) CreatePreparedStatement(ctx context.Context, reqCtx *req
 	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
+	if description != "" {
+		if err := validateDescriptionString(description); err != nil {
+			return nil, err
+		}
+	}
 	queryStatement := request.GetParamCaseInsensitive(req.Parameters, "QueryStatement")
 
 	if len(queryStatement) > maxQueryStringSize {
@@ -139,7 +144,10 @@ func (s *AthenaService) ListPreparedStatements(ctx context.Context, reqCtx *requ
 		})
 	}
 
-	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
+	if err != nil {
+		return nil, err
+	}
 	marker := pagination.GetMarker(req.Parameters, "NextToken")
 	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
 		return item["StatementName"].(string)

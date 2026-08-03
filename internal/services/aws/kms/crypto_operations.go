@@ -75,6 +75,7 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "Encrypt")
 
 	return map[string]interface{}{
 		"CiphertextBlob":      base64.StdEncoding.EncodeToString(result.Ciphertext),
@@ -98,6 +99,9 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
 		return nil, ErrInvalidCiphertext
+	}
+	if err := validateCiphertextLength(len(ciphertext)); err != nil {
+		return nil, err
 	}
 
 	encryptionContext := parseEncryptionContext(req.Parameters)
@@ -169,6 +173,8 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		resolvedKey = key
 	}
 
+	s.markKeyLastUsed(stores, resolvedKey.KeyID, "Decrypt")
+
 	return map[string]interface{}{
 		"Plaintext":           base64.StdEncoding.EncodeToString(result.Plaintext),
 		"KeyId":               keyArn,
@@ -190,6 +196,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
 		return nil, ErrInvalidCiphertext
+	}
+	if err := validateCiphertextLength(len(ciphertext)); err != nil {
+		return nil, err
 	}
 
 	sourceEncryptionContext := parseEncryptionContextForPrefix(req.Parameters, "SourceEncryptionContext")
@@ -272,6 +281,8 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, sourceKey.KeyID, "ReEncrypt")
+	s.markKeyLastUsed(stores, destinationKey.KeyID, "ReEncrypt")
 
 	return map[string]interface{}{
 		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
@@ -318,6 +329,7 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "GenerateDataKey")
 
 	return map[string]interface{}{
 		"CiphertextBlob": base64.StdEncoding.EncodeToString(result.Ciphertext),
@@ -362,6 +374,7 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "GenerateDataKeyWithoutPlaintext")
 
 	return map[string]interface{}{
 		"CiphertextBlob": base64.StdEncoding.EncodeToString(result.Ciphertext),
@@ -463,6 +476,7 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "GenerateDataKeyPair")
 
 	return map[string]interface{}{
 		"PrivateKeyCiphertextBlob": base64.StdEncoding.EncodeToString(encryptedResult.Ciphertext),
@@ -512,6 +526,7 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "GenerateDataKeyPairWithoutPlaintext")
 
 	return map[string]interface{}{
 		"PrivateKeyCiphertextBlob": base64.StdEncoding.EncodeToString(encryptedResult.Ciphertext),
@@ -536,6 +551,9 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	}
 
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
 	// Return the actual rotation history recorded by RotateKeyOnDemand.
@@ -617,10 +635,16 @@ func isRSAKeySpec(spec kmsstore.KeySpec) bool {
 // RSA_2048, RSA_3072, RSA_4096, ECC_NIST_P256, ECC_NIST_P384,
 // ECC_NIST_P521, ECC_SECG_P256K1, SM2, ECC_NIST_EDWARDS25519.
 func isValidKeyPairSpec(spec hsm.KeySpec) bool {
+	// The HSM backend (generateKeyPairDER) supports 7 specs:
+	// RSA_2048/3072/4096, ECC_NIST_P256/P384/P521, ECC_SECG_P256K1.
+	// SM2 and ECC_NIST_EDWARDS25519 are not implemented; accepting them
+	// here caused the HSM to return ErrInvalidKeySpec which
+	// mapHSMError translated to ErrKMSInternal (500) instead of the
+	// expected ValidationException (400).
 	switch spec {
 	case hsm.KeySpecRSA2048, hsm.KeySpecRSA3072, hsm.KeySpecRSA4096,
 		hsm.KeySpecECCNISTP256, hsm.KeySpecECCNISTP384, hsm.KeySpecECCNISTP521,
-		hsm.KeySpecECCSECGP256K1, hsm.KeySpecSM2, hsm.KeySpecECCNISTEdwards25519:
+		hsm.KeySpecECCSECGP256K1:
 		return true
 	}
 	return false

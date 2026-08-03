@@ -47,6 +47,21 @@ func GetIntParam(params map[string]interface{}, key string) int {
 	return 0
 }
 
+// GetIntParamCaseInsensitive extracts an integer parameter using
+// case-insensitive key matching (exact, lower-first-letter, all-lower).
+// Returns (value, true) if found and parseable, (0, false) otherwise.
+// Unlike GetIntParam, the caller can distinguish "absent" from "zero".
+func GetIntParamCaseInsensitive(params map[string]interface{}, key string) (int, bool) {
+	for _, k := range []string{key, LowerFirst(key), strings.ToLower(key)} {
+		if v, ok := params[k]; ok {
+			if n, ok := asInt(v); ok {
+				return n, true
+			}
+		}
+	}
+	return 0, false
+}
+
 func asInt(v interface{}) (int, bool) {
 	switch n := v.(type) {
 	case int:

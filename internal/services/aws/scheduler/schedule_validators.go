@@ -109,9 +109,10 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		}
 	}
 
-	// 5. State enum (H1). State defaults to ENABLED and ActionAfterCompletion
-	// defaults to NONE per the AWS Scheduler API contract — both for
-	// CreateSchedule and the PUT semantics of UpdateSchedule (BUG 1).
+	// State defaults to ENABLED and ActionAfterCompletion defaults to NONE
+	// per the AWS Scheduler API contract — both for CreateSchedule and the
+	// PUT semantics of UpdateSchedule, where omitted fields are reset to
+	// the documented default.
 	result := &ValidatedSchedule{
 		State:                 schedulerstore.ScheduleStateEnabled,
 		ActionAfterCompletion: schedulerstore.ActionAfterCompletionNone,

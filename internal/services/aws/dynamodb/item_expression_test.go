@@ -12,7 +12,9 @@ func TestFindMatchingCloseParen(t *testing.T) {
 		assert.Equal(t, 4, findMatchingCloseParen("(abc)", 0))
 	})
 
-	t.Run("nested parentheses (Bug D-8)", func(t *testing.T) {
+	// findMatchingCloseParen must skip over inner groups so that the
+	// outermost close position is returned for nested function calls.
+	t.Run("nested parentheses", func(t *testing.T) {
 		assert.Equal(t, 10, findMatchingCloseParen("(a,(b,c),d)", 0))
 	})
 
@@ -20,7 +22,10 @@ func TestFindMatchingCloseParen(t *testing.T) {
 		assert.Equal(t, 8, findMatchingCloseParen("(a(b(c)))", 0))
 	})
 
-	t.Run("list_append nested (Bug D-8 regression)", func(t *testing.T) {
+	// Nested list_append calls must each be balanced correctly so that the
+	// parser identifies the outer expression boundaries rather than the
+	// first inner close.
+	t.Run("list_append nested", func(t *testing.T) {
 		s := "list_append(:a, list_append(:b, :c))"
 		openPos := strings.Index(s, "(")
 		closePos := findMatchingCloseParen(s, openPos)

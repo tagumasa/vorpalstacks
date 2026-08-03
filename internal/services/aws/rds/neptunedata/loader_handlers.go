@@ -171,8 +171,8 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	// BUG 1 fix: use the Neptune cluster's region (from request context) for
-	// store operations, NOT params.Region which is the S3 bucket region.
+	// Use the Neptune cluster's region (from the request context) for
+	// store operations, not params.Region which is the S3 bucket region.
 	// The S3 bucket region is already persisted in the job proto
 	// (job.GetS3BucketRegion()) and is used by loadFromS3 for S3 calls.
 	clusterRegion := reqCtx.GetRegion()

@@ -40,10 +40,13 @@ func TestTypeDefInSDL(t *testing.T) {
 		def  string
 		want bool
 	}{
+		// A trailing word boundary must anchor the type-name match so
+		// "type User {" is not matched by the unrelated "UserProfile" or
+		// "UserExtended" SDL fragments.
 		{"type present", "type User {", true},
 		{"type absent", "type Post {", false},
-		{"substring should not false-match (Bug A-4)", "type User {", true},
-		{"UserProfile distinct from User (Bug A-4 regression)", "type UserProfile {", true},
+		{"substring should not false-match", "type User {", true},
+		{"UserProfile distinct from User", "type UserProfile {", true},
 		{"User does not match UserProfile", "type User {\n  id: ID\n}", true},
 		{"non-existent type", "type Order {", false},
 		{"enum present in SDL", "enum Status {", false},

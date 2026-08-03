@@ -8,28 +8,16 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
 // CreateAuthorizer creates a new authorizer for a REST API.
 func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Request[pb.CreateAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
-	if req.Msg.Restapiid == "" || req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and name are required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
 
-	ttl := int32(300) // AWS default
-	if req.Msg.Authorizerresultttlinseconds != nil {
-		ttl = *req.Msg.Authorizerresultttlinseconds
-		if ttl < 0 || ttl > 3600 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("authorizerResultTtlInSeconds must be between 0 and 3600"))
-		}
-	}
-
-	authorizer := &apigatewaystore.Authorizer{
+	in := &AuthorizerInput{
 		Name:                         req.Msg.Name,
 		Type:                         fromPbAuthorizerType(req.Msg.Type),
 		AuthType:                     req.Msg.Authtype,
@@ -37,17 +25,14 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 		AuthorizerCredentials:        req.Msg.Authorizercredentials,
 		IdentitySource:               req.Msg.Identitysource,
 		IdentityValidationExpression: req.Msg.Identityvalidationexpression,
-		AuthorizerResultTtlInSeconds: ttl,
 		ProviderArns:                 req.Msg.Providerarns,
 	}
-	if !validateAuthorizerType(authorizer.Type) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid authorizer type: %s", authorizer.Type))
-	}
-	if authorizer.Type == "" {
-		authorizer.Type = "TOKEN"
+	if req.Msg.Authorizerresultttlinseconds != nil {
+		v := *req.Msg.Authorizerresultttlinseconds
+		in.AuthorizerResultTtlInSeconds = &v
 	}
 
-	created, err := stores.restApis.CreateAuthorizer(req.Msg.Restapiid, authorizer)
+	created, err := h.service.createAuthorizerCore(stores, req.Msg.Restapiid, in)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -56,14 +41,11 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 
 // GetAuthorizers returns all authorizers for a REST API.
 func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[pb.GetAuthorizersRequest]) (*connect.Response[pb.Authorizers], error) {
-	if req.Msg.Restapiid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	authorizers, err := stores.restApis.ListAuthorizers(req.Msg.Restapiid)
+	authorizers, err := h.service.listAuthorizersCore(stores, req.Msg.Restapiid)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -87,14 +69,11 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 
 // GetAuthorizer returns a single authorizer by ID.
 func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[pb.GetAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
-	if req.Msg.Restapiid == "" || req.Msg.Authorizerid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and authorizer_id are required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	a, err := stores.restApis.GetAuthorizer(req.Msg.Restapiid, req.Msg.Authorizerid)
+	a, err := h.service.getAuthorizerCore(stores, req.Msg.Restapiid, req.Msg.Authorizerid)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -103,14 +82,11 @@ func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[p
 
 // DeleteAuthorizer removes an authorizer from a REST API.
 func (h *AdminHandler) DeleteAuthorizer(ctx context.Context, req *connect.Request[pb.DeleteAuthorizerRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Restapiid == "" || req.Msg.Authorizerid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and authorizer_id are required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if err := stores.restApis.DeleteAuthorizer(req.Msg.Restapiid, req.Msg.Authorizerid); err != nil {
+	if err := h.service.deleteAuthorizerCore(stores, req.Msg.Restapiid, req.Msg.Authorizerid); err != nil {
 		return nil, storeErr(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil

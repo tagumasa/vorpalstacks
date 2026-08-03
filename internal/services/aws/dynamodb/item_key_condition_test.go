@@ -21,7 +21,9 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		":v": {B: rawBytes},
 	}
 
-	t.Run("binary key encoded as base64 (Bug D-4)", func(t *testing.T) {
+	// Binary partition keys must be base64-encoded so that the resulting
+	// lookup string is comparable across API and storage layers.
+	t.Run("binary key encoded as base64", func(t *testing.T) {
 		hashKey, _ := extractPrimaryKeyCondition(table, "id = :v", nil, values)
 		expected := base64.StdEncoding.EncodeToString(rawBytes)
 		assert.Equal(t, expected, hashKey,

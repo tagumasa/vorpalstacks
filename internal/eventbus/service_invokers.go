@@ -259,8 +259,17 @@ type CloudTrailEventInfo struct {
 // CloudTrailInvoker provides CloudTrail event lookup for cross-service
 // consumers (e.g. IAM GenerateServiceLastAccessedDetails). Consumers call
 // these methods instead of holding a direct reference to the CloudTrail store.
+//
+// The CloudTrail store is scoped to a single account at construction time
+// (NewCloudTrailStore receives the account ID), so LookupEvents does not
+// take an accountID parameter: the caller's account is implicit in the
+// store resolved by region.
+//
+// nextToken supports pagination: pass the token returned by the previous
+// call to fetch the next page. Per AWS LookupEvents spec, maxResults must
+// be 1-50.
 type CloudTrailInvoker interface {
-	LookupEvents(ctx context.Context, region, accountID, username string, startTime, endTime time.Time, maxResults int32) ([]CloudTrailEventInfo, string, error)
+	LookupEvents(ctx context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]CloudTrailEventInfo, string, error)
 }
 
 // LogsLogEntry carries a single log entry for cross-service delivery.

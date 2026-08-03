@@ -59,7 +59,10 @@ func (s *DynamoDBService) UpdateContinuousBackups(ctx context.Context, reqCtx *r
 		return nil, ErrInvalidParameter
 	}
 
-	enabled, _ := pitrSpec["PointInTimeRecoveryEnabled"].(bool)
+	enabled, err := validateBoolParam(pitrSpec, "PointInTimeRecoveryEnabled", false)
+	if err != nil {
+		return nil, err
+	}
 
 	pitr := &dbstore.PointInTimeRecoveryDescription{
 		Status: dbstore.PITRStatusDisabled,

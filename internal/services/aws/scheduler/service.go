@@ -103,7 +103,10 @@ func (s *SchedulerService) GetStoreForRegion(region string) (*schedulerstore.Sch
 		return nil, err
 	}
 	store := schedulerstore.NewSchedulerStore(st, s.accountID, region)
-	actual, _ := s.stores.LoadOrStore(region, store)
+	actual, loaded := s.stores.LoadOrStore(region, store)
+	if loaded {
+		store.Close()
+	}
 	return actual.(*schedulerstore.SchedulerStore), nil
 }
 
@@ -148,11 +151,11 @@ func (s *SchedulerService) StopEngine() error {
 	if s.engine != nil {
 		firstErr = s.engine.Stop()
 	}
-	// Stop all cached per-region stores to release their ClientTokenStore
+	// Close all cached per-region stores to release their ClientTokenStore
 	// background cleanup goroutines.
 	s.stores.Range(func(_, v interface{}) bool {
 		if store, ok := v.(*schedulerstore.SchedulerStore); ok {
-			store.Stop()
+			store.Close()
 		}
 		return true
 	})

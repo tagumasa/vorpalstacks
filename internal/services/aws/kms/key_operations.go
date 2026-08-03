@@ -43,132 +43,28 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
-	description := request.GetStringParam(req.Parameters, "Description")
-	keyUsage := request.GetStringParam(req.Parameters, "KeyUsage")
-	keySpec := request.GetStringParam(req.Parameters, "KeySpec")
-	origin := request.GetStringParam(req.Parameters, "Origin")
-	multiRegion := request.GetBoolParam(req.Parameters, "MultiRegion")
-	tagList := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
 
-	if keyUsage == "" {
-		keyUsage = string(kmsstore.KeyUsageEncryptDecrypt)
-	}
-	if keySpec == "" {
-		keySpec = string(kmsstore.KeySpecSymmetricDefault)
-	}
-	if origin == "" {
-		origin = string(kmsstore.OriginTypeAWSKMS)
-	}
-
-	// AWS_CLOUDHSM origin requires a CustomKeyStoreId pointing at a real
-	// CloudHSM custom key store. CloudHSM integration is not implemented
-	// (one of the 9 documented operation gaps), so reject AWS_CLOUDHSM
-	// explicitly rather than silently storing a key that no HSM backend
-	// can serve. AWS returns UnsupportedOperationException in the same
-	// situation when no custom key store is configured.
-	if kmsstore.OriginType(origin) == kmsstore.OriginTypeAWSCloudHSM {
-		return nil, ErrUnsupportedOperation
-	}
-
-	if allowed, ok := keyUsageKeySpecConstraints[kmsstore.KeyUsage(keyUsage)]; ok {
-		valid := false
-		for _, spec := range allowed {
-			if kmsstore.KeySpec(keySpec) == spec {
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			return nil, NewValidationError(fmt.Sprintf("Invalid KeySpec: %q", keySpec))
-		}
-	}
-
-	// Validate tags BEFORE creating any state so that an invalid tag list
-	// cannot leave a half-created key behind. The previous ordering
-	// (create key -> validate tags -> on failure return without cleanup)
-	// left an orphan key + HSM material + default policy in the store.
-	if len(tagList) > 0 {
-		if err := validateKMSTags(tagList); err != nil {
-			return nil, err
-		}
-	}
-
-	keyID, err := kmsstore.GenerateKeyID()
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := stores.keys.Create(
-		keyID,
-		kmsstore.KeyUsage(keyUsage),
-		kmsstore.KeySpec(keySpec),
-		description,
-		kmsstore.OriginType(origin),
-		multiRegion,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tagList) > 0 {
-		if err := stores.keys.TagStore.Tag(keyID, tagutil.ToMap(tagList)); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after Tag failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, err
-		}
-	}
-
-	isExternal := kmsstore.OriginType(origin) == kmsstore.OriginTypeExternal
-	if isExternal {
-		if err := stores.keys.SetPendingImport(keyID); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after SetPendingImport failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, err
-		}
-		key.KeyState = kmsstore.KeyStatePendingImport
-		key.Enabled = false
-	} else {
-		if err := s.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, err
-		}
-	}
-
-	policyStr := request.GetStringParam(req.Parameters, "Policy")
-	if policyStr == "" {
-		policyStr = kmsstore.DefaultKeyPolicy
-	}
-
-	// Validate the supplied policy does not lock out the root principal
-	// unless BypassPolicyLockoutSafetyCheck is explicitly true. This mirrors
-	// the PutKeyPolicy logic at policy_operations.go:80-88.
 	bypassLockoutCheck := false
 	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
 		if b, ok := v.(string); ok && b == "true" {
 			bypassLockoutCheck = true
 		}
 	}
-	if !bypassLockoutCheck {
-		if err := validatePolicyDoesNotLockOutRoot(policyStr); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after policy lockout check failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, err
-		}
-	}
-	key.BypassPolicyLockoutSafetyCheck = bypassLockoutCheck
-	if err := stores.keys.Update(key); err != nil {
-		return nil, err
-	}
 
-	if err := stores.keyPolicies.PutDefault(keyID, policyStr); err != nil {
-		if delErr := stores.CascadeDeleteKey(s.hsmBackend, keyID); delErr != nil {
-			logs.Error("Failed to cascade-delete key after PutDefault policy failure", logs.Err(delErr), logs.String("keyId", keyID))
-		}
+	key, err := s.createKeyCore(stores, CreateKeyInput{
+		Description:        request.GetStringParam(req.Parameters, "Description"),
+		KeyUsage:           kmsstore.KeyUsage(request.GetStringParam(req.Parameters, "KeyUsage")),
+		KeySpec:            kmsstore.KeySpec(request.GetStringParam(req.Parameters, "KeySpec")),
+		Origin:             kmsstore.OriginType(request.GetStringParam(req.Parameters, "Origin")),
+		MultiRegion:        request.GetBoolParam(req.Parameters, "MultiRegion"),
+		CustomKeyStoreID:   request.GetStringParam(req.Parameters, "CustomKeyStoreId"),
+		XksKeyID:           request.GetStringParam(req.Parameters, "XksKeyId"),
+		Policy:             request.GetStringParam(req.Parameters, "Policy"),
+		BypassLockoutCheck: bypassLockoutCheck,
+		Tags:               tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue"),
+		AccountID:          reqCtx.GetAccountID(),
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -203,6 +99,9 @@ func (s *KMSService) ListKeys(ctx context.Context, reqCtx *request.RequestContex
 		return nil, err
 	}
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
 	result, err := stores.keys.List(marker, maxItems)
@@ -282,32 +181,24 @@ func (s *KMSService) ScheduleKeyDeletion(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	// PendingWindowInDays: AWS min 7, max 30, default 30. The previous
-	// code used GetIntParam (value check), which treated an explicit 0 as
-	// "unset" and silently defaulted to 30. AWS rejects PendingWindowInDays=0
-	// with ValidationException. Use existence check to distinguish.
+	// PendingWindowInDays: AWS min 7, max 30, default 30. Use existence
+	// check to distinguish unset from explicit 0. Range validation is
+	// performed by scheduleKeyDeletionCore.
 	pendingWindowInDays := 30
 	if _, ok := req.Parameters["PendingWindowInDays"]; ok {
 		pendingWindowInDays = request.GetIntParam(req.Parameters, "PendingWindowInDays")
-		if pendingWindowInDays < 7 || pendingWindowInDays > 30 {
-			return nil, NewValidationError(fmt.Sprintf("PendingWindowInDays %d does not fit range 7-30", pendingWindowInDays))
-		}
 	}
 
-	if err := stores.keys.ScheduleDeletion(key.KeyID, pendingWindowInDays); err != nil {
+	updatedKey, days, err := s.scheduleKeyDeletionCore(stores, key.KeyID, pendingWindowInDays)
+	if err != nil {
 		return nil, err
-	}
-
-	updatedKey, err := stores.keys.Get(key.KeyID)
-	if err != nil || updatedKey == nil {
-		return nil, fmt.Errorf("failed to retrieve key after scheduling deletion: %w", err)
 	}
 
 	return map[string]interface{}{
 		"KeyId":               key.KeyID,
 		"DeletionDate":        updatedKey.DeletionDate.Unix(),
 		"KeyState":            updatedKey.KeyState,
-		"PendingWindowInDays": pendingWindowInDays,
+		"PendingWindowInDays": days,
 	}, nil
 }
 
@@ -352,9 +243,8 @@ func (s *KMSService) UpdateKeyDescription(ctx context.Context, reqCtx *request.R
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
-	// AWS: DescriptionType is 0-8192 characters.
-	if len(description) > 8192 {
-		return nil, NewValidationError(fmt.Sprintf("Description length %d exceeds maximum of 8192", len(description)))
+	if err := validateDescriptionLength(description); err != nil {
+		return nil, err
 	}
 
 	if err := stores.keys.UpdateDescription(key.KeyID, description); err != nil {
@@ -542,9 +432,26 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	validTo := request.GetIntParam(req.Parameters, "ValidTo")
 	expirationModel := request.GetStringParam(req.Parameters, "ExpirationModel")
 
+	// Enforce AWS-documented length constraints (max 6144
+	// base64-encoded characters) before decoding to prevent memory
+	// exhaustion from arbitrarily large blobs.
+	if err := validateImportTokenSize(importToken); err != nil {
+		return nil, err
+	}
+	if err := validateEncryptedKeyMaterialSize(encryptedKeyMaterialB64); err != nil {
+		return nil, err
+	}
+
 	encryptedKeyMaterial, err := base64.StdEncoding.DecodeString(encryptedKeyMaterialB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid EncryptedKeyMaterial: %w", err)
+	}
+
+	// Reject expired import tokens. GetParametersForImport issues tokens
+	// with a 24-hour validity window; using an expired token returns
+	// ExpiredImportTokenException per the AWS contract.
+	if key.ImportTokenValidTo != nil && time.Now().After(*key.ImportTokenValidTo) {
+		return nil, ErrExpiredImportToken
 	}
 
 	// AWS: ExpirationModel controls whether the imported key material
@@ -602,17 +509,18 @@ func (s *KMSService) DeleteImportedKeyMaterial(ctx context.Context, reqCtx *requ
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "DeleteImportedKeyMaterial", keyID, nil); err != nil {
 		return nil, err
 	}
+
+	// Delete from the HSM first so that if it fails, the store still
+	// reflects the imported state (Enabled + key material present).
+	// The previous ordering (store → HSM) left an inconsistent state
+	// when the HSM delete failed: the store showed PendingImport but
+	// key material still resided in the HSM.
+	if err := s.hsmBackend.DeleteKey(keyID); err != nil {
+		logs.Error("DeleteImportedKeyMaterial: HSM DeleteKey failed", logs.String("keyId", keyID), logs.Err(err))
+		return nil, ErrKMSInternal
+	}
 	if err := stores.keys.DeleteImportedKeyMaterial(keyID); err != nil {
 		return nil, err
-	}
-
-	// Surface HSM-side failures rather than silently dropping them. If the
-	// HSM delete fails the key material may still reside in the HSM while
-	// the store has already transitioned to PendingImport, leaving the key
-	// in an inconsistent state.
-	if err := s.hsmBackend.DeleteKey(keyID); err != nil {
-		logs.Error("DeleteImportedKeyMaterial: HSM DeleteKey failed after store update", logs.String("keyId", keyID), logs.Err(err))
-		return nil, ErrKMSInternal
 	}
 
 	return response.EmptyResponse(), nil
@@ -630,6 +538,9 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 	replicaRegion := request.GetStringParam(req.Parameters, "ReplicaRegion")
 	if replicaRegion == "" {
 		return nil, NewValidationError("ReplicaRegion is required")
+	}
+	if err := validateReplicaRegion(replicaRegion); err != nil {
+		return nil, err
 	}
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ReplicateKey", keyID, nil); err != nil {
 		return nil, err
@@ -672,8 +583,11 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 			bypassCheck = true
 		}
 	}
+	if err := validatePolicySize(replicaPolicy); err != nil {
+		return nil, err
+	}
 	if !bypassCheck {
-		if err := validatePolicyDoesNotLockOutRoot(replicaPolicy); err != nil {
+		if err := validatePolicyDoesNotLockOutRoot(replicaPolicy, reqCtx.GetAccountID()); err != nil {
 			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
 				logs.Error("Failed to cascade-delete replica after policy lockout check", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
 			}
@@ -681,6 +595,9 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 		}
 	}
 	if desc := request.GetStringParam(req.Parameters, "Description"); desc != "" {
+		if err := validateDescriptionLength(desc); err != nil {
+			return nil, err
+		}
 		replicaKey.Description = desc
 	}
 	replicaKey.BypassPolicyLockoutSafetyCheck = bypassCheck
@@ -743,6 +660,13 @@ func (s *KMSService) UpdatePrimaryRegion(ctx context.Context, reqCtx *request.Re
 	keyID := s.getKeyID(req.Parameters)
 	primaryRegion := request.GetStringParam(req.Parameters, "PrimaryRegion")
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UpdatePrimaryRegion", keyID, nil); err != nil {
+		return nil, err
+	}
+
+	// Reject empty PrimaryRegion before it reaches the store.
+	// Without this check the store persists a broken PrimaryKeyInfo
+	// with an empty Region field.
+	if err := validatePrimaryRegion(primaryRegion); err != nil {
 		return nil, err
 	}
 

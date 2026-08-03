@@ -1805,6 +1805,8 @@ const (
 	NaturalJoinStr      = "natural join"
 	NaturalLeftJoinStr  = "natural left join"
 	NaturalRightJoinStr = "natural right join"
+	NaturalFullJoinStr  = "natural full join"
+	FullJoinStr         = "full join"
 )
 
 // Format formats the node.

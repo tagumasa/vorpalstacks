@@ -89,7 +89,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles_RuleMappings", func() error {
-		name := fmt.Sprintf("test-idpool-rules-%d", poolID[len(poolID)-5:])
+		name := fmt.Sprintf("test-idpool-rules-%s", poolID[len(poolID)-5:])
 		createResp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
 			IdentityPoolName:               aws.String(name),
 			AllowUnauthenticatedIdentities: true,

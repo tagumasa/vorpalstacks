@@ -4,65 +4,12 @@ package iam
 import (
 	"context"
 	"errors"
-	"regexp"
-	"unicode"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
-
-var (
-	symbolPattern = regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':",\.<>?/\\|~]`)
-	numberPattern = regexp.MustCompile(`[0-9]`)
-)
-
-func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPasswordPolicy) bool {
-	if len(password) < policy.MinimumPasswordLength {
-		return false
-	}
-
-	if policy.RequireSymbols {
-		if !symbolPattern.MatchString(password) {
-			return false
-		}
-	}
-
-	if policy.RequireNumbers {
-		if !numberPattern.MatchString(password) {
-			return false
-		}
-	}
-
-	if policy.RequireUppercaseCharacters {
-		hasUpper := false
-		for _, r := range password {
-			if unicode.IsUpper(r) {
-				hasUpper = true
-				break
-			}
-		}
-		if !hasUpper {
-			return false
-		}
-	}
-
-	if policy.RequireLowercaseCharacters {
-		hasLower := false
-		for _, r := range password {
-			if unicode.IsLower(r) {
-				hasLower = true
-				break
-			}
-		}
-		if !hasLower {
-			return false
-		}
-	}
-
-	return true
-}
 
 // GetLoginProfile retrieves the login profile for a user.
 // Returns the login profile details including username, creation date,
@@ -102,7 +49,7 @@ func (s *IAMService) GetLoginProfile(ctx context.Context, reqCtx *request.Reques
 func (s *IAMService) CreateLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	password := request.GetStringParam(req.Parameters, "Password")
@@ -176,7 +123,7 @@ func (s *IAMService) DeleteLoginProfile(ctx context.Context, reqCtx *request.Req
 func (s *IAMService) UpdateLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	password := request.GetStringParam(req.Parameters, "Password")
@@ -253,7 +200,7 @@ func (s *IAMService) ChangePassword(ctx context.Context, reqCtx *request.Request
 
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	store, err := s.store(reqCtx)

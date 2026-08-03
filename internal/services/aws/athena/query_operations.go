@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	athenastore "vorpalstacks/internal/store/aws/athena"
@@ -41,9 +43,27 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 		workGroup = "primary"
 	}
 
+	clientRequestToken := request.GetParamCaseInsensitive(req.Parameters, "ClientRequestToken")
+	if clientRequestToken != "" {
+		if err := validateClientRequestToken(clientRequestToken); err != nil {
+			return nil, err
+		}
+	}
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Idempotency: if a ClientRequestToken was provided and a previous
+	// StartQueryExecution with the same token already succeeded, return
+	// the existing QueryExecutionId instead of creating a duplicate.
+	if clientRequestToken != "" {
+		if existingId, found := st.queryExecutionStore.GetQueryExecutionIdByClientRequestToken(clientRequestToken); found {
+			return map[string]interface{}{
+				"QueryExecutionId": existingId,
+			}, nil
+		}
 	}
 
 	wg, err := st.workGroupStore.GetWorkGroup(workGroup)
@@ -118,6 +138,12 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 
 	if err := st.queryExecutionStore.CreateQueryExecution(queryExecution); err != nil {
 		return nil, err
+	}
+
+	if clientRequestToken != "" {
+		if err := st.queryExecutionStore.StoreClientRequestToken(clientRequestToken, queryExecution.QueryExecutionId); err != nil {
+			logs.Warn("Failed to store ClientRequestToken mapping", logs.Err(err))
+		}
 	}
 
 	s.asyncWg.Add(1)
@@ -198,20 +224,9 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 
-	maxResults := athenaListMaxResults
-	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
-			if val < athenaListMaxResults {
-				maxResults = val
-			}
-		}
-	}
-
-	offset := 0
-	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil && val >= 0 {
-			offset = val
-		}
+	maxResults, err := validateMaxResults(req.Parameters, athenaListMaxResults, 0, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
@@ -224,26 +239,14 @@ func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	var ids []string
-	for i, id := range allIds {
-		if i < offset {
-			continue
-		}
-		if len(ids) >= maxResults {
-			break
-		}
-		ids = append(ids, id)
-	}
+	sort.Strings(allIds)
 
-	result := map[string]interface{}{
-		"QueryExecutionIds": ids,
-	}
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(allIds, marker, maxResults, func(id string) string {
+		return id
+	})
 
-	if offset+maxResults < len(allIds) {
-		result["NextToken"] = strconv.Itoa(offset + maxResults)
-	}
-
-	return result, nil
+	return pagination.BuildListResponse("QueryExecutionIds", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // BatchGetQueryExecution retrieves details for multiple query executions in a single call.
@@ -327,10 +330,8 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 	}
 
 	maxRows := maxResultRows
-	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 && val < maxResultRows {
-			maxRows = val
-		}
+	if val, ok := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults"); ok && val > 0 && val < maxResultRows {
+		maxRows = val
 	}
 
 	if result.ResultSet == nil || len(result.ResultSet.Rows) == 0 {

@@ -248,10 +248,16 @@ func (s *AppSyncStore) SaveEnvironmentVariables(apiId string, envVars *Environme
 }
 
 // GetEnvironmentVariables retrieves environment variables for a GraphQL API.
+// Returns an empty map when no variables have been set (first-time access),
+// distinguishing "explicitly empty" from "never configured" by the absence
+// of a stored key.
 func (s *AppSyncStore) GetEnvironmentVariables(apiId string) (*EnvironmentVariables, error) {
 	var envVars EnvironmentVariables
 	if err := s.envVariablesStore.Get(apiId, &envVars); err != nil {
 		return &EnvironmentVariables{EnvironmentVariables: map[string]string{}}, nil
+	}
+	if envVars.EnvironmentVariables == nil {
+		envVars.EnvironmentVariables = map[string]string{}
 	}
 	return &envVars, nil
 }

@@ -14,7 +14,7 @@ import (
 func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	sshPublicKeyBody := request.GetStringParam(req.Parameters, "SSHPublicKeyBody")
 	if sshPublicKeyBody == "" {
@@ -50,7 +50,7 @@ func (s *IAMService) GetSSHPublicKey(ctx context.Context, reqCtx *request.Reques
 	}
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -79,7 +79,7 @@ func (s *IAMService) UpdateSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	}
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	status := request.GetStringParam(req.Parameters, "Status")
 	if status == "" {
@@ -163,7 +163,7 @@ func (s *IAMService) DeleteSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	}
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	store, err := s.store(reqCtx)

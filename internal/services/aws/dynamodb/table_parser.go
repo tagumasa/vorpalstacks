@@ -67,59 +67,72 @@ func parseProvisionedThroughput(params map[string]interface{}) *dbstore.Provisio
 	}
 }
 
-func parseGlobalSecondaryIndexes(params map[string]interface{}) []*dbstore.GlobalSecondaryIndex {
+func parseGlobalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.GlobalSecondaryIndex, error) {
 	gsis, ok := params["GlobalSecondaryIndexes"].([]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	var result []*dbstore.GlobalSecondaryIndex
 	for _, g := range gsis {
 		if gm, ok := g.(map[string]interface{}); ok {
+			proj, err := parseProjection(gm)
+			if err != nil {
+				return nil, err
+			}
 			idx := &dbstore.GlobalSecondaryIndex{
 				IndexName:             request.GetStringParam(gm, "IndexName"),
 				KeySchema:             parseKeySchema(gm),
-				Projection:            parseProjection(gm),
+				Projection:            proj,
 				ProvisionedThroughput: parseProvisionedThroughput(gm),
 				IndexStatus:           dbstore.IndexStatusActive,
 			}
 			result = append(result, idx)
 		}
 	}
-	return result
+	return result, nil
 }
 
-func parseLocalSecondaryIndexes(params map[string]interface{}) []*dbstore.LocalSecondaryIndex {
+func parseLocalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.LocalSecondaryIndex, error) {
 	lsis, ok := params["LocalSecondaryIndexes"].([]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	var result []*dbstore.LocalSecondaryIndex
 	for _, l := range lsis {
 		if lm, ok := l.(map[string]interface{}); ok {
+			proj, err := parseProjection(lm)
+			if err != nil {
+				return nil, err
+			}
 			idx := &dbstore.LocalSecondaryIndex{
 				IndexName:  request.GetStringParam(lm, "IndexName"),
 				KeySchema:  parseKeySchema(lm),
-				Projection: parseProjection(lm),
+				Projection: proj,
 			}
 			result = append(result, idx)
 		}
 	}
-	return result
+	return result, nil
 }
 
-func parseProjection(params map[string]interface{}) *dbstore.Projection {
+func parseProjection(params map[string]interface{}) (*dbstore.Projection, error) {
 	proj, ok := params["Projection"].(map[string]interface{})
 	if !ok {
-		return &dbstore.Projection{ProjectionType: "ALL"}
+		// Projection is required for GSI and LSI definitions.
+		return nil, ErrInvalidParameter
 	}
 
 	p := &dbstore.Projection{
 		ProjectionType: request.GetStringParam(proj, "ProjectionType"),
 	}
 	if p.ProjectionType == "" {
-		p.ProjectionType = "ALL"
+		p.ProjectionType = ProjectionTypeAll
+	}
+	// Validate the ProjectionType enum (ALL, KEYS_ONLY, INCLUDE).
+	if err := validateProjectionType(p.ProjectionType); err != nil {
+		return nil, err
 	}
 
 	if nkAs, ok := proj["NonKeyAttributes"].([]interface{}); ok {
@@ -129,24 +142,24 @@ func parseProjection(params map[string]interface{}) *dbstore.Projection {
 			}
 		}
 	}
-	return p
+	return p, nil
 }
 
-func parseStreamSpecification(params map[string]interface{}) *dbstore.StreamSpecification {
+func parseStreamSpecification(params map[string]interface{}) (*dbstore.StreamSpecification, error) {
 	ss, ok := params["StreamSpecification"].(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
-	enabled := false
-	if e, ok := ss["StreamEnabled"].(bool); ok {
-		enabled = e
+	enabled, err := validateBoolParam(ss, "StreamEnabled", false)
+	if err != nil {
+		return nil, err
 	}
 
 	return &dbstore.StreamSpecification{
 		StreamEnabled:  enabled,
 		StreamViewType: dbstore.StreamViewType(request.GetStringParam(ss, "StreamViewType")),
-	}
+	}, nil
 }
 
 func parseSSESpecification(ss map[string]interface{}) (*dbstore.SSEDescription, error) {

@@ -44,8 +44,8 @@ func (s *KMSService) EnableKeyRotation(ctx context.Context, reqCtx *request.Requ
 	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
 		return nil, ErrKeyDisabled
 	}
-	if key.KeySpec != kmsstore.KeySpecSymmetricDefault || key.Origin != kmsstore.OriginTypeAWSKMS {
-		return nil, ErrUnsupportedOperation
+	if err := validateRotationKeyEligibility(key.KeySpec, key.Origin); err != nil {
+		return nil, err
 	}
 
 	// AWS: RotationPeriodInDays is optional, range 90-2560, default 365.
@@ -86,6 +86,13 @@ func (s *KMSService) DisableKeyRotation(ctx context.Context, reqCtx *request.Req
 	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
 		return nil, ErrKeyDisabled
 	}
+	// DisableKeyRotation must apply the same KeySpec/Origin
+	// eligibility check as EnableKeyRotation. Without this, callers
+	// can invoke DisableKeyRotation on asymmetric/HMAC keys without
+	// error, violating the API contract.
+	if err := validateRotationKeyEligibility(key.KeySpec, key.Origin); err != nil {
+		return nil, err
+	}
 
 	if err := stores.keys.SetKeyRotation(key.KeyID, false); err != nil {
 		return nil, err
@@ -120,8 +127,21 @@ func (s *KMSService) GetKeyRotationStatus(ctx context.Context, reqCtx *request.R
 		response["OnDemandRotationStartDate"] = key.OnDemandRotationStartDate.Unix()
 	}
 
-	if key.KeyRotationEnabled && !key.CreationDate.IsZero() {
-		nextRotation := key.CreationDate.AddDate(0, 0, int(rotationPeriod))
+	// Compute NextRotationDate per the AWS documented behaviour:
+	// "approximately RotationPeriodInDays after the key was enabled
+	// for automatic rotation, or after the key was last rotated,
+	// whichever is most recent." Using CreationDate as the base
+	// produced past-due dates for keys created long before rotation
+	// was enabled.
+	if key.KeyRotationEnabled && !key.KeyRotationEnabledAt.IsZero() {
+		base := key.KeyRotationEnabledAt
+		if len(key.RotationHistory) > 0 {
+			lastRotation := key.RotationHistory[len(key.RotationHistory)-1].RotationDate
+			if lastRotation.After(base) {
+				base = lastRotation
+			}
+		}
+		nextRotation := base.AddDate(0, 0, int(rotationPeriod))
 		response["NextRotationDate"] = nextRotation.Unix()
 	}
 

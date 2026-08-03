@@ -437,5 +437,52 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		return nil
 	}))
 
+	// CustomKeyStoreId must be rejected because the platform does
+	// not implement Custom Key Stores. Without the check the parameter
+	// is silently dropped, causing the caller to believe a key was
+	// created in a custom key store.
+	results = append(results, r.RunTest("kms", "CreateKey_CustomKeyStoreIdRejected", func() error {
+		_, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+			CustomKeyStoreId: aws.String("cks-1234567890abcdef0"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for CustomKeyStoreId without custom key store support")
+		}
+		return AssertErrorContains(err, "ValidationException")
+	}))
+
+	// DisableKeyRotation must reject asymmetric keys with
+	// UnsupportedOperationException, matching the EnableKeyRotation
+	// behaviour.
+	results = append(results, r.RunTest("kms", "DisableKeyRotation_AsymmetricKey", func() error {
+		if tc.rsaKeyID == "" {
+			return fmt.Errorf("RSA key ID not available")
+		}
+		_, err := tc.client.DisableKeyRotation(tc.ctx, &kms.DisableKeyRotationInput{
+			KeyId: aws.String(tc.rsaKeyID),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for DisableKeyRotation on asymmetric key")
+		}
+		return AssertErrorContains(err, "UnsupportedOperationException")
+	}))
+
+	// GenerateDataKeyPair with an unsupported KeyPairSpec (SM2) must
+	// return ValidationException, not KMSInternalException. The HSM
+	// backend does not implement SM2 key pair generation.
+	results = append(results, r.RunTest("kms", "GenerateDataKeyPair_UnsupportedSpec", func() error {
+		if tc.keyID == "" {
+			return fmt.Errorf("key ID not available")
+		}
+		_, err := tc.client.GenerateDataKeyPair(tc.ctx, &kms.GenerateDataKeyPairInput{
+			KeyId:       aws.String(tc.keyID),
+			KeyPairSpec: types.DataKeyPairSpecSm2,
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for unsupported KeyPairSpec SM2")
+		}
+		return AssertErrorContains(err, "ValidationException")
+	}))
+
 	return results
 }

@@ -3,6 +3,8 @@ package iam
 
 import (
 	"context"
+	"errors"
+
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -11,6 +13,8 @@ import (
 )
 
 // CreateAccessKey creates a new access key for the specified user.
+// The per-user quota (MaxAccessKeysPerUser) is enforced atomically inside
+// the store layer to prevent race conditions on concurrent requests.
 func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	userName, err := resolveUserName(reqCtx, userName)
@@ -26,16 +30,11 @@ func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.Reques
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	currentKeyCount, err := store.AccessKeys().CountByUserName(userName)
+	key, err := store.AccessKeys().CreateWithLimit(userName, MaxAccessKeysPerUser)
 	if err != nil {
-		return nil, err
-	}
-	if currentKeyCount >= MaxAccessKeysPerUser {
-		return nil, ErrAccessKeyLimitExceeded
-	}
-
-	key, err := store.AccessKeys().Create(userName)
-	if err != nil {
+		if errors.Is(err, iamstore.ErrAccessKeyLimitExceeded) {
+			return nil, ErrAccessKeyLimitExceeded
+		}
 		return nil, err
 	}
 
@@ -54,7 +53,7 @@ func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.Reques
 func (s *IAMService) DeleteAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
 	if accessKeyId == "" {
-		return nil, ErrNoSuchAccessKey
+		return nil, NewValidationError("AccessKeyId")
 	}
 
 	userName := request.GetStringParam(req.Parameters, "UserName")
@@ -128,7 +127,7 @@ func (s *IAMService) ListAccessKeys(ctx context.Context, reqCtx *request.Request
 func (s *IAMService) GetAccessKeyLastUsed(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
 	if accessKeyId == "" {
-		return nil, ErrNoSuchAccessKey
+		return nil, NewValidationError("AccessKeyId")
 	}
 
 	store, err := s.store(reqCtx)
@@ -164,7 +163,7 @@ func (s *IAMService) GetAccessKeyLastUsed(ctx context.Context, reqCtx *request.R
 func (s *IAMService) UpdateAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
 	if accessKeyId == "" {
-		return nil, ErrNoSuchAccessKey
+		return nil, NewValidationError("AccessKeyId")
 	}
 
 	userName := request.GetStringParam(req.Parameters, "UserName")

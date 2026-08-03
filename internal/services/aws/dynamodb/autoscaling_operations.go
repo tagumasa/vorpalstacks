@@ -84,7 +84,9 @@ func (s *DynamoDBService) UpdateTableReplicaAutoScaling(ctx context.Context, req
 	settings := map[string]interface{}{
 		"replicas": replicas,
 	}
-	_ = store.Tables().SetAutoScalingSettings(table.Name, settings)
+	if err := store.Tables().SetAutoScalingSettings(table.Name, settings); err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"TableAutoScalingDescription": map[string]interface{}{

@@ -483,12 +483,26 @@ func (s *CloudTrailStore) PutEvent(event *Event) error {
 	return nil
 }
 
-// LookupEvents looks up CloudTrail events by query.
+// LookupEvents looks up CloudTrail events by query. The indexer paths
+// (EventName, Username, EventSource, Time) paginate via an opaque
+// IndexCursor encoded into the returned nextToken. The default scan path
+// uses a plain marker string. Callers should treat nextToken as opaque
+// and pass it back unchanged in subsequent calls.
 func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, error) {
 	if query.MaxResults <= 0 {
 		query.MaxResults = 50
 	}
+
+	// Decode the incoming nextToken into an IndexCursor for indexer paths.
+	// Non-indexed tokens (empty or scan-path markers) yield an empty cursor,
+	// causing the query to start from the beginning.
+	cursor, cursorErr := decodeIndexCursor(query.NextToken)
+	if cursorErr != nil {
+		cursor = IndexCursor{}
+	}
+
 	var eventIDs []string
+	var nextCursor IndexCursor
 	var err error
 
 	switch {
@@ -499,13 +513,13 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 		}
 		return []*Event{event}, "", nil
 	case len(query.EventNames) > 0 && s.indexer != nil:
-		eventIDs, err = s.indexer.QueryByEventName(query.EventNames, query.MaxResults)
+		eventIDs, nextCursor, err = s.indexer.QueryByEventName(query.EventNames, query.MaxResults, cursor)
 	case query.Username != "" && s.indexer != nil:
-		eventIDs, err = s.indexer.QueryByUsername(query.Username, query.MaxResults)
+		eventIDs, nextCursor, err = s.indexer.QueryByUsername(query.Username, query.MaxResults, cursor)
 	case query.EventSource != "" && s.indexer != nil:
-		eventIDs, err = s.indexer.QueryByEventSource(query.EventSource, query.MaxResults)
+		eventIDs, nextCursor, err = s.indexer.QueryByEventSource(query.EventSource, query.MaxResults, cursor)
 	case (query.StartTime != nil || query.EndTime != nil) && s.indexer != nil:
-		eventIDs, err = s.indexer.QueryByTime(query.StartTime, query.EndTime, query.MaxResults)
+		eventIDs, nextCursor, err = s.indexer.QueryByTime(query.StartTime, query.EndTime, query.MaxResults, cursor)
 	default:
 		return s.lookupEventsScan(query)
 	}
@@ -528,7 +542,7 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 		}
 	}
 
-	return events, "", nil
+	return events, encodeIndexCursor(nextCursor), nil
 }
 
 func (s *CloudTrailStore) eventIDIndexBucket() storage.Bucket {

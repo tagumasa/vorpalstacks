@@ -227,7 +227,7 @@ func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *requ
 // modifySecurityGroupRules is the common handler for Authorize/Revoke Ingress/Egress.
 // validateRules controls whether new rules are validated: Authorize passes true
 // so malformed rules are rejected; Revoke passes false so legacy rules that were
-// created with looser validation can still be removed (M-3).
+// created with looser validation can still be removed by their owner.
 func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, req *request.ParsedRequest, validateRules bool, apply func(*ec2store.SecurityGroup, []ec2store.IPRule)) (interface{}, error) {
 	if err := checkDryRun(req.Parameters); err != nil {
 		return nil, err

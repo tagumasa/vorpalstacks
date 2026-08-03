@@ -21,6 +21,7 @@ type IAMService struct {
 	storageManager        *storage.RegionStorageManager
 	cloudTrailInvoker     eventbus.CloudTrailInvoker
 	reportWg              sync.WaitGroup
+	slRoleDeletionWg      sync.WaitGroup
 	credentialReportMu    sync.RWMutex
 	credentialReportState string
 	credentialReportData  string
@@ -239,4 +240,14 @@ func (s *IAMService) RegisterHandlers(d handler.Registrar) {
 // goroutines have finished. Call during shutdown.
 func (s *IAMService) WaitForReport() {
 	s.reportWg.Wait()
+}
+
+// WaitForSLRoleDeletions blocks until any in-flight service-linked role
+// deletion goroutines have finished. Call during shutdown so that the
+// background cleanup is not aborted mid-way, which would leave the role
+// partially detached (instance profiles still attached, managed policies
+// still linked, etc.). Recovery on next startup is possible but only
+// marks the task as FAILED; it does not resume cleanup.
+func (s *IAMService) WaitForSLRoleDeletions() {
+	s.slRoleDeletionWg.Wait()
 }

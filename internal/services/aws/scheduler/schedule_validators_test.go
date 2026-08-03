@@ -294,8 +294,9 @@ func TestValidateScheduleFields_StartEndDateOrdering(t *testing.T) {
 }
 
 func TestValidateScheduleFields_ActionAfterCompletionDefault(t *testing.T) {
-	// When AAC is omitted, the validator should default to NONE (BUG 1).
-	// AWS UpdateSchedule is a PUT and always defaults AAC to NONE.
+	// When ActionAfterCompletion is omitted, the validator must default to
+	// NONE because AWS UpdateSchedule is a PUT operation that resets
+	// unspecified fields to the documented defaults.
 	spec := &ScheduleSpec{
 		Name:               "test-schedule",
 		ScheduleExpression: "rate(1 minute)",

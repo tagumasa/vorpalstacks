@@ -35,6 +35,9 @@ func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *
 	if _, err := store.GetGraphqlApiById(sourceApiId); err != nil {
 		return mapStoreError(err)
 	}
+	if _, err := store.GetGraphqlApiById(mergedApiId); err != nil {
+		return mapStoreError(err)
+	}
 
 	description := request.GetStringParam(req.Parameters, "description")
 
@@ -236,6 +239,9 @@ func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *
 	}
 
 	if _, err := store.GetGraphqlApiById(sourceApiId); err != nil {
+		return mapStoreError(err)
+	}
+	if _, err := store.GetGraphqlApiById(mergedApiId); err != nil {
 		return mapStoreError(err)
 	}
 

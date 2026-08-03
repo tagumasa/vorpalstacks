@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -57,9 +58,17 @@ func (s *AppSyncService) PutGraphqlApiEnvironmentVariables(ctx context.Context, 
 
 	stringMap := make(map[string]string)
 	for k, v := range envVars {
-		if s, ok := v.(string); ok {
-			stringMap[k] = s
+		s, ok := v.(string)
+		if !ok {
+			return nil, NewBadRequestException(fmt.Sprintf("environment variable value for %q must be a string", k))
 		}
+		if err := validateEnvVarKey(k); err != nil {
+			return nil, err
+		}
+		if err := validateEnvVarValue(s); err != nil {
+			return nil, err
+		}
+		stringMap[k] = s
 	}
 
 	toSave := &appsyncstore.EnvironmentVariables{

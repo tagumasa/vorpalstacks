@@ -38,7 +38,10 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 			UseQueryFallback: false,
 		},
 		ParseTags: func(_ map[string]interface{}) []types.Tag {
-			m := parseTags(req.Parameters)
+			m, err := parseTags(req.Parameters)
+			if err != nil {
+				return nil
+			}
 			return tags.MapToTags(m)
 		},
 		ParseTagKeys: func(_ map[string]interface{}) []string {
@@ -227,6 +230,14 @@ func (s *AppSyncService) TagResource(ctx context.Context, reqCtx *request.Reques
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
+	}
+	// Pre-validate tags so that specific validation errors (e.g. aws:
+	// prefix reservation, 50-tag limit, key/value length) surface to the
+	// caller. Without this, the ParseTags callback inside
+	// appsyncTagConfig swallows the error and the handler converts the
+	// resulting empty tag slice into a generic "tags are required".
+	if _, err := parseTags(req.Parameters); err != nil {
+		return nil, err
 	}
 	return tags.HandleTag(ctx, req, appsyncTagConfig(store, req))
 }

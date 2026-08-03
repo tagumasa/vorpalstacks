@@ -145,6 +145,9 @@ func (s *KMSService) ListResourceTags(ctx context.Context, reqCtx *request.Reque
 	}
 
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
 	result := pagination.PaginateSlice(tags, marker, maxItems, func(t types.Tag) string {

@@ -26,7 +26,7 @@ func TestEvaluateConditionExpr_NOT_CaseInsensitive(t *testing.T) {
 	}{
 		{"NOT uppercase", "NOT #s = :v", false},
 		{"not lowercase", "not #s = :v", false},
-		{"Not mixed case (Bug D-9)", "Not #s = :v", false},
+		{"Not mixed case", "Not #s = :v", false},
 		{"NoT mixed case", "NoT #s = :v", false},
 		{"double NOT", "NOT NOT #s = :v", true},
 	}
@@ -48,7 +48,9 @@ func TestEvaluateFilterExpression_MalformedReturnsFalse(t *testing.T) {
 		},
 	}
 
-	t.Run("missing attribute name mapping returns false (Bug D-3)", func(t *testing.T) {
+	// A filter expression that references an unmapped placeholder name must
+	// evaluate to false rather than panic or return a misleading true.
+	t.Run("missing attribute name mapping returns false", func(t *testing.T) {
 		values := map[string]*dbstore.AttributeValue{
 			":v": {S: ptrStr("active")},
 		}

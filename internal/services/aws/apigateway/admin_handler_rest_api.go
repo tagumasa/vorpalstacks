@@ -2,8 +2,6 @@ package apigateway
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"connectrpc.com/connect"
 
@@ -11,7 +9,6 @@ import (
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // GetRestApis returns all REST APIs.
@@ -21,15 +18,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 		return nil, storeErr(err)
 	}
 
-	limit := int(req.Msg.GetLimit())
-	if limit < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("limit must not be negative"))
-	}
-
-	result, err := stores.restApis.List(storecommon.ListOptions{
-		Marker:   req.Msg.Position,
-		MaxItems: limit,
-	})
+	result, err := h.service.listRestApisCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -48,14 +37,11 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 
 // GetRestApi returns a single REST API by ID.
 func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.GetRestApiRequest]) (*connect.Response[pb.RestApi], error) {
-	if req.Msg.Restapiid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	api, err := stores.restApis.Get(req.Msg.Restapiid)
+	api, err := h.service.getRestApiCore(stores, req.Msg.Restapiid)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -64,9 +50,6 @@ func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.G
 
 // CreateRestApi creates a new REST API.
 func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[pb.CreateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
@@ -87,9 +70,6 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	}
 	if req.Msg.Minimumcompressionsize != nil {
 		v := *req.Msg.Minimumcompressionsize
-		if v < 0 || v > 10485760 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("minimumCompressionSize must be between 0 and 10485760"))
-		}
 		api.MinimumCompressionSize = &v
 	}
 	if req.Msg.Endpointconfiguration != nil {
@@ -103,23 +83,21 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 		api.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
-	created, err := stores.restApis.Create(api)
+	created, err := h.service.createRestApiCore(stores, api, req.Msg.Clonefrom)
 	if err != nil {
 		return nil, storeErr(err)
 	}
+
 	return connect.NewResponse(toPbRestApi(created)), nil
 }
 
 // DeleteRestApi removes a REST API.
 func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[pb.DeleteRestApiRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Restapiid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	if err := stores.restApis.Delete(req.Msg.Restapiid); err != nil {
+	if err := h.service.deleteRestApiCore(stores, req.Msg.Restapiid); err != nil {
 		return nil, storeErr(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -127,88 +105,37 @@ func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[p
 
 // UpdateRestApi modifies an existing REST API.
 func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[pb.UpdateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
-	if req.Msg.Restapiid == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, storeErr(err)
 	}
-	api, err := stores.restApis.Get(req.Msg.Restapiid)
+
+	patches := make([]PatchOperation, 0, len(req.Msg.Patchoperations))
+	for _, po := range req.Msg.Patchoperations {
+		patches = append(patches, PatchOperation{
+			Op:    opFromPb(po.Op),
+			Path:  po.Path,
+			Value: po.Value,
+		})
+	}
+
+	api, err := h.service.updateRestApiCore(stores, req.Msg.Restapiid, patches)
 	if err != nil {
 		return nil, storeErr(err)
 	}
-
-	for _, po := range req.Msg.Patchoperations {
-		switch po.Path {
-		case "/name":
-			api.Name = po.Value
-		case "/description":
-			api.Description = po.Value
-		case "/version":
-			api.Version = po.Value
-		case "/apiKeySource":
-			if !validateApiKeySource(po.Value) {
-				return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
-			}
-			api.ApiKeySource = po.Value
-		case "/policy":
-			api.Policy = po.Value
-		case "/disableExecuteApiEndpoint":
-			api.DisableExecuteApiEndpoint = po.Value == "true"
-		case "/securityPolicy":
-			if !validateSecurityPolicy(po.Value) {
-				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
-			}
-			api.SecurityPolicy = po.Value
-		case "/endpointAccessMode":
-			if !validateEndpointAccessMode(po.Value) {
-				return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
-			}
-			api.EndpointAccessMode = po.Value
-		case "/minimumCompressionSize":
-			v, err := parseInt32(po.Value)
-			if err != nil {
-				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
-			}
-			if v < 0 || v > 10485760 {
-				return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
-			}
-			api.MinimumCompressionSize = &v
-		}
-
-		if strings.HasPrefix(po.Path, "/binaryMediaTypes/") {
-		MediaTypeLoop:
-			for i, mt := range api.BinaryMediaTypes {
-				if mt == po.Value {
-					if po.Op == pb.Op_OP_REMOVE {
-						api.BinaryMediaTypes = append(api.BinaryMediaTypes[:i], api.BinaryMediaTypes[i+1:]...)
-					}
-					break MediaTypeLoop
-				}
-			}
-			if (po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE) && !sliceContains(api.BinaryMediaTypes, po.Value) {
-				api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
-			}
-		}
-
-		if strings.HasPrefix(po.Path, "/endpointConfiguration/types") {
-			if api.EndpointConfiguration == nil {
-				api.EndpointConfiguration = &apigatewaystore.EndpointConfiguration{}
-			}
-			typeName := strings.TrimPrefix(po.Path, "/endpointConfiguration/types/")
-			if po.Op == pb.Op_OP_ADD || po.Op == pb.Op_OP_REPLACE {
-				if !sliceContains(api.EndpointConfiguration.Types, typeName) {
-					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, typeName)
-				}
-			} else if po.Op == pb.Op_OP_REMOVE {
-				api.EndpointConfiguration.Types = removeString(api.EndpointConfiguration.Types, typeName)
-			}
-		}
-	}
-
-	if err := stores.restApis.Update(api); err != nil {
-		return nil, storeErr(err)
-	}
 	return connect.NewResponse(toPbRestApi(api)), nil
+}
+
+// opFromPb maps a protobuf patch op enum to its canonical string form.
+func opFromPb(op pb.Op) string {
+	switch op {
+	case pb.Op_OP_ADD:
+		return "add"
+	case pb.Op_OP_REMOVE:
+		return "remove"
+	case pb.Op_OP_REPLACE:
+		return "replace"
+	default:
+		return ""
+	}
 }

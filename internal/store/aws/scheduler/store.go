@@ -52,8 +52,8 @@ func (s *SchedulerStore) ClientTokens() *ClientTokenStore {
 	return s.clientTokens
 }
 
-// Stop releases background resources associated with this store.
-func (s *SchedulerStore) Stop() {
+// Close stops the background cleanup goroutine in the ClientTokenStore.
+func (s *SchedulerStore) Close() {
 	if s.clientTokens != nil {
 		s.clientTokens.Stop()
 	}

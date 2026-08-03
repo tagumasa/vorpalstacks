@@ -120,9 +120,9 @@ func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
 	return r
 }
 
-func (r *TestRunner) Endpoint() string   { return r.endpoint }
-func (r *TestRunner) Region() string     { return r.region }
-func (r *TestRunner) AccountID() string  { return r.accountID }
+func (r *TestRunner) Endpoint() string  { return r.endpoint }
+func (r *TestRunner) Region() string    { return r.region }
+func (r *TestRunner) AccountID() string { return r.accountID }
 
 // CleanupStaleContainers removes orphaned Lambda Docker containers left by
 // previous test runs. The server's cleanupOrphanedContainers() only runs at

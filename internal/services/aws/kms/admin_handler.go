@@ -8,8 +8,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/kms/hsm"
 	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
@@ -22,9 +20,9 @@ import (
 )
 
 // AdminHandler implements the KMS admin console gRPC-Web handler.
-// It delegates to the shared KMSService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// It delegates to the shared KMSService *Core methods so that the same
+// validation, key creation, and policy handling code path is used by
+// both the HTTP API handlers and the admin console handlers.
 type AdminHandler struct {
 	kmsconnect.UnimplementedKMSServiceHandler
 	service *KMSService
@@ -32,7 +30,7 @@ type AdminHandler struct {
 
 var _ kmsconnect.KMSServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new KMS admin handler with the given key store.
+// NewAdminHandler creates a new KMS admin handler with the given service.
 func NewAdminHandler(svc *KMSService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
@@ -51,6 +49,10 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 	limit := int(req.Msg.GetLimit())
 	if limit <= 0 {
 		limit = 100
+	}
+	// Smithy LimitType: @range(1-1000).
+	if limit > 1000 {
+		limit = 1000
 	}
 	result, err := stores.keys.List(req.Msg.Marker, limit)
 	if err != nil {
@@ -72,145 +74,67 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 	}), nil
 }
 
-// CreateKey creates a new KMS key via the admin console.
+// CreateKey creates a new KMS key via the admin console. It converts the
+// proto request into a CreateKeyInput DTO and delegates all validation
+// and persistence to KMSService.createKeyCore, ensuring the same code
+// path as the HTTP API.
 func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.CreateKeyRequest]) (*connect.Response[pb.CreateKeyResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
-	keyUsage := kmsstore.KeyUsageEncryptDecrypt
-	switch req.Msg.GetKeyusage() {
-	case pb.KeyUsageType_KEY_USAGE_TYPE_SIGN_VERIFY:
-		keyUsage = kmsstore.KeyUsageSignVerify
-	case pb.KeyUsageType_KEY_USAGE_TYPE_GENERATE_VERIFY_MAC:
-		keyUsage = kmsstore.KeyUsageGenerateVerifyMAC
+
+	// Apply proto-level defaults so the response carries the resolved
+	// enum values, not the zero-value "unspecified".
+	keyUsageProto := req.Msg.GetKeyusage()
+	if keyUsageProto == 0 {
+		keyUsageProto = pb.KeyUsageType_KEY_USAGE_TYPE_ENCRYPT_DECRYPT
+	}
+	keySpecProto := req.Msg.GetKeyspec()
+	if keySpecProto == 0 {
+		keySpecProto = pb.KeySpec_KEY_SPEC_SYMMETRIC_DEFAULT
+	}
+	originProto := req.Msg.GetOrigin()
+	if originProto == 0 {
+		originProto = pb.OriginType_ORIGIN_TYPE_AWS_KMS
 	}
 
-	keySpec := kmsstore.KeySpecSymmetricDefault
-	switch req.Msg.GetKeyspec() {
-	case pb.KeySpec_KEY_SPEC_SYMMETRIC_DEFAULT:
-		keySpec = kmsstore.KeySpecSymmetricDefault
-	case pb.KeySpec_KEY_SPEC_RSA_2048:
-		keySpec = kmsstore.KeySpecRSA2048
-	case pb.KeySpec_KEY_SPEC_RSA_3072:
-		keySpec = kmsstore.KeySpecRSA3072
-	case pb.KeySpec_KEY_SPEC_RSA_4096:
-		keySpec = kmsstore.KeySpecRSA4096
-	case pb.KeySpec_KEY_SPEC_ECC_NIST_P256:
-		keySpec = kmsstore.KeySpecECCNISTP256
-	case pb.KeySpec_KEY_SPEC_ECC_NIST_P384:
-		keySpec = kmsstore.KeySpecECCNISTP384
-	case pb.KeySpec_KEY_SPEC_ECC_NIST_P521:
-		keySpec = kmsstore.KeySpecECCNISTP521
-	case pb.KeySpec_KEY_SPEC_ECC_SECG_P256K1:
-		keySpec = kmsstore.KeySpecECCSECGP256K1
-	case pb.KeySpec_KEY_SPEC_SM2:
-		keySpec = kmsstore.KeySpecSM2
-	case pb.KeySpec_KEY_SPEC_HMAC_224:
-		keySpec = kmsstore.KeySpecHMAC224
-	case pb.KeySpec_KEY_SPEC_HMAC_256:
-		keySpec = kmsstore.KeySpecHMAC256
-	case pb.KeySpec_KEY_SPEC_HMAC_384:
-		keySpec = kmsstore.KeySpecHMAC384
-	case pb.KeySpec_KEY_SPEC_HMAC_512:
-		keySpec = kmsstore.KeySpecHMAC512
+	// Convert proto enums to store types.
+	keyUsage := protoKeyUsageToStore(keyUsageProto)
+	keySpec := protoKeySpecToStore(keySpecProto)
+	origin := protoOriginToStore(originProto)
+
+	// Convert proto tags.
+	var tags []types.Tag
+	for _, t := range req.Msg.GetTags() {
+		tags = append(tags, types.Tag{Key: t.GetTagkey(), Value: t.GetTagvalue()})
 	}
 
-	origin := kmsstore.OriginTypeAWSKMS
-	switch req.Msg.GetOrigin() {
-	case pb.OriginType_ORIGIN_TYPE_EXTERNAL:
-		origin = kmsstore.OriginTypeExternal
-	}
-
-	keyID, err := kmsstore.GenerateKeyID()
+	key, err := h.service.createKeyCore(stores, CreateKeyInput{
+		Description:        req.Msg.GetDescription(),
+		KeyUsage:           keyUsage,
+		KeySpec:            keySpec,
+		Origin:             origin,
+		MultiRegion:        req.Msg.GetMultiregion(),
+		CustomKeyStoreID:   req.Msg.GetCustomkeystoreid(),
+		XksKeyID:           req.Msg.GetXkskeyid(),
+		Policy:             req.Msg.GetPolicy(),
+		BypassLockoutCheck: req.Msg.GetBypasspolicylockoutsafetycheck(),
+		Tags:               tags,
+		AccountID:          h.service.accountID,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	key, err := stores.keys.Create(keyID, keyUsage, keySpec, req.Msg.GetDescription(), origin, req.Msg.GetMultiregion())
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	if origin == kmsstore.OriginTypeExternal {
-		if err := stores.keys.SetPendingImport(keyID); err != nil {
-			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after SetPendingImport failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
-		key.KeyState = kmsstore.KeyStatePendingImport
-		key.Enabled = false
-	} else {
-		if err := h.service.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
-			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
-	}
-
-	// Apply caller-supplied policy. When omitted, inherit the primary's
-	// policy or fall back to the default.
-	keyPolicy := ""
-	if req.Msg.GetPolicy() != "" {
-		keyPolicy = req.Msg.GetPolicy()
-	} else {
-		keyPolicy = kmsstore.DefaultKeyPolicy
-	}
-	bypassLockoutCheck := req.Msg.GetBypasspolicylockoutsafetycheck()
-	if !bypassLockoutCheck {
-		if err := validatePolicyDoesNotLockOutRoot(keyPolicy); err != nil {
-			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after policy lockout check failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-	}
-	key.BypassPolicyLockoutSafetyCheck = bypassLockoutCheck
-	if err := stores.keys.Update(key); err != nil {
-		if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-			logs.Error("Failed to cascade-delete key after Update", logs.Err(delErr), logs.String("keyId", keyID))
-		}
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-	if err := stores.keyPolicies.PutDefault(keyID, keyPolicy); err != nil {
-		if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-			logs.Error("Failed to cascade-delete key after PutDefault policy failure", logs.Err(delErr), logs.String("keyId", keyID))
-		}
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	// Apply tags from the request.
-	if len(req.Msg.GetTags()) > 0 {
-		var tagList []types.Tag
-		for _, t := range req.Msg.GetTags() {
-			tagList = append(tagList, types.Tag{Key: t.GetTagkey(), Value: t.GetTagvalue()})
-		}
-		if err := validateKMSTags(tagList); err != nil {
-			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after tag validation failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		tagMap := make(map[string]string, len(tagList))
-		for _, t := range tagList {
-			tagMap[t.Key] = t.Value
-		}
-		if err := stores.keys.TagStore.Tag(keyID, tagMap); err != nil {
-			if delErr := stores.CascadeDeleteKey(h.service.hsmBackend, keyID); delErr != nil {
-				logs.Error("Failed to cascade-delete key after Tag failure", logs.Err(delErr), logs.String("keyId", keyID))
-			}
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateKeyResponse{
-		Keymetadata: h.buildProtoKeyMetadata(key, req.Msg.GetKeyusage(), req.Msg.GetKeyspec(), req.Msg.GetOrigin()),
+		Keymetadata: h.buildProtoKeyMetadata(key, keyUsageProto, keySpecProto, originProto),
 	}), nil
 }
 
-// ScheduleKeyDeletion schedules a KMS key for deletion via the admin console.
+// ScheduleKeyDeletion schedules a KMS key for deletion via the admin
+// console. It resolves the key through the service layer (supporting
+// alias and ARN forms) and delegates to scheduleKeyDeletionCore.
 func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Request[pb.ScheduleKeyDeletionRequest]) (*connect.Response[pb.ScheduleKeyDeletionResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
@@ -221,48 +145,94 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeyId is required"))
 	}
 
-	// AWS: PendingWindowInDays is optional (defaults to 30 when omitted)
-	// but if explicitly supplied must be 7-30. Negative or zero values
-	// are ValidationException. The previous code silently coerced
-	// pendingDays <= 0 to 30, hiding invalid input from callers.
+	// Resolve the key through the service layer to support alias and ARN.
+	key, err := h.service.resolveKey(stores, map[string]interface{}{"KeyId": req.Msg.GetKeyid()})
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	// AWS: PendingWindowInDays defaults to 30 when omitted. Proto3 zero
+	// value (0) cannot distinguish unset from explicit 0, so we treat 0
+	// as "default to 30". Range validation (7-30) is in the Core method.
 	pendingDays := int(req.Msg.GetPendingwindowindays())
 	if pendingDays == 0 {
 		pendingDays = 30
 	}
-	if pendingDays < 7 || pendingDays > 30 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PendingWindowInDays must be between 7 and 30"))
-	}
 
-	if err := stores.keys.ScheduleDeletion(req.Msg.GetKeyid(), pendingDays); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	key, err := stores.keys.Get(req.Msg.GetKeyid())
+	updatedKey, days, err := h.service.scheduleKeyDeletionCore(stores, key.KeyID, pendingDays)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	resp := &pb.ScheduleKeyDeletionResponse{
-		Keyid:               key.KeyID,
-		Pendingwindowindays: proto.Int32(int32(pendingDays)),
+		Keyid:               updatedKey.KeyID,
+		Keystate:            storeKeyStateToProto(updatedKey.KeyState),
+		Pendingwindowindays: proto.Int32(int32(days)),
 	}
-	switch key.KeyState {
-	case kmsstore.KeyStateEnabled:
-		resp.Keystate = pb.KeyState_KEY_STATE_ENABLED
-	case kmsstore.KeyStateDisabled:
-		resp.Keystate = pb.KeyState_KEY_STATE_DISABLED
-	case kmsstore.KeyStatePendingDeletion:
-		resp.Keystate = pb.KeyState_KEY_STATE_PENDINGDELETION
-	case kmsstore.KeyStatePendingImport:
-		resp.Keystate = pb.KeyState_KEY_STATE_PENDINGIMPORT
-	case kmsstore.KeyStateUnavailable:
-		resp.Keystate = pb.KeyState_KEY_STATE_UNAVAILABLE
-	}
-	if key.DeletionDate != nil {
-		resp.Deletiondate = key.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
+	if updatedKey.DeletionDate != nil {
+		resp.Deletiondate = updatedKey.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
 	}
 	return connect.NewResponse(resp), nil
 }
+
+// ---------------------------------------------------------------------------
+// Proto ↔ store type conversion helpers
+// ---------------------------------------------------------------------------
+
+func protoKeyUsageToStore(v pb.KeyUsageType) kmsstore.KeyUsage {
+	switch v {
+	case pb.KeyUsageType_KEY_USAGE_TYPE_SIGN_VERIFY:
+		return kmsstore.KeyUsageSignVerify
+	case pb.KeyUsageType_KEY_USAGE_TYPE_GENERATE_VERIFY_MAC:
+		return kmsstore.KeyUsageGenerateVerifyMAC
+	default:
+		return kmsstore.KeyUsageEncryptDecrypt
+	}
+}
+
+func protoKeySpecToStore(v pb.KeySpec) kmsstore.KeySpec {
+	switch v {
+	case pb.KeySpec_KEY_SPEC_SYMMETRIC_DEFAULT:
+		return kmsstore.KeySpecSymmetricDefault
+	case pb.KeySpec_KEY_SPEC_RSA_2048:
+		return kmsstore.KeySpecRSA2048
+	case pb.KeySpec_KEY_SPEC_RSA_3072:
+		return kmsstore.KeySpecRSA3072
+	case pb.KeySpec_KEY_SPEC_RSA_4096:
+		return kmsstore.KeySpecRSA4096
+	case pb.KeySpec_KEY_SPEC_ECC_NIST_P256:
+		return kmsstore.KeySpecECCNISTP256
+	case pb.KeySpec_KEY_SPEC_ECC_NIST_P384:
+		return kmsstore.KeySpecECCNISTP384
+	case pb.KeySpec_KEY_SPEC_ECC_NIST_P521:
+		return kmsstore.KeySpecECCNISTP521
+	case pb.KeySpec_KEY_SPEC_ECC_SECG_P256K1:
+		return kmsstore.KeySpecECCSECGP256K1
+	case pb.KeySpec_KEY_SPEC_SM2:
+		return kmsstore.KeySpecSM2
+	case pb.KeySpec_KEY_SPEC_HMAC_224:
+		return kmsstore.KeySpecHMAC224
+	case pb.KeySpec_KEY_SPEC_HMAC_256:
+		return kmsstore.KeySpecHMAC256
+	case pb.KeySpec_KEY_SPEC_HMAC_384:
+		return kmsstore.KeySpecHMAC384
+	case pb.KeySpec_KEY_SPEC_HMAC_512:
+		return kmsstore.KeySpecHMAC512
+	default:
+		return kmsstore.KeySpecSymmetricDefault
+	}
+}
+
+func protoOriginToStore(v pb.OriginType) kmsstore.OriginType {
+	switch v {
+	case pb.OriginType_ORIGIN_TYPE_EXTERNAL:
+		return kmsstore.OriginTypeExternal
+	default:
+		return kmsstore.OriginTypeAWSKMS
+	}
+}
+
+// ---------------------------------------------------------------------------
 
 // buildProtoKeyMetadata constructs a full pb.KeyMetadata from a store Key,
 // mapping all fields that the HTTP API's buildKeyMetadata also emits. This

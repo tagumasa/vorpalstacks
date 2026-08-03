@@ -135,7 +135,7 @@ func (h *AdminHandler) PutItem(ctx context.Context, req *connect.Request[pb.PutI
 			return connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("table %s is not active", tableName))
 		}
 
-		key := extractKeyFromAttributes(table, attrs)
+		key := h.service.extractKeyFromItem(table, attrs)
 		if key == nil {
 			return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key attributes not found in item"))
 		}

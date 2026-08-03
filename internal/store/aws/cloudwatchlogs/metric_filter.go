@@ -29,8 +29,8 @@ func (s *Store) metricFilterPrefixForGroup(logGroupName string) string {
 
 // PutMetricFilter creates or updates a metric filter. When the filter is
 // newly created, MetricFilterCount on the parent LogGroup is incremented
-// atomically within a storage transaction, preventing lost-update races
-// with concurrent PutLogEvents operations (M-2, M-3 fix).
+// atomically within a storage transaction so concurrent PutLogEvents
+// operations observe a consistent count.
 func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 	key := s.metricFilterKey(filter.LogGroupName, filter.Name)
 
@@ -80,9 +80,10 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 	if isNew {
 		lg, err := s.GetLogGroup(filter.LogGroupName)
 		if err != nil {
-			// Rollback: remove the filter we just wrote (M-2 fix).
-			// Log the rollback error so silent failures are visible, but do
-			// not mask the original error (L-3).
+			// Rollback: remove the filter we just wrote so the count
+			// does not drift if the parent LogGroup lookup fails.
+			// The rollback error is logged so silent failures remain
+			// visible, but the original error is preserved for the caller.
 			if rmErr := s.Delete(key); rmErr != nil {
 				logs.Warn("Failed to rollback metric filter after LogGroup lookup failure",
 					logs.String("key", key), logs.Err(rmErr))
@@ -113,7 +114,7 @@ func (s *Store) GetMetricFilter(logGroupName, filterName string) (*MetricFilter,
 
 // DeleteMetricFilter deletes a metric filter and decrements
 // MetricFilterCount on the parent LogGroup atomically within a storage
-// transaction (M-3, M-4 fix).
+// transaction so concurrent readers always observe a consistent count.
 func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
 	key := s.metricFilterKey(logGroupName, filterName)
 
@@ -136,7 +137,8 @@ func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
 				return err
 			}
 			if lgBytes == nil {
-				// LogGroup already deleted; nothing to decrement (M-4 fix).
+				// LogGroup already deleted; the count is implicitly zero
+				// so there is nothing to decrement.
 				return nil
 			}
 			var lgProto pb.LogGroup
@@ -155,7 +157,9 @@ func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
 		})
 	}
 
-	// Fallback: sequential writes with error-type distinction (M-4 fix).
+	// Fallback path used when no transactional store is configured:
+	// sequential writes with explicit error-type distinction so the caller
+	// still receives ErrMetricFilterNotFound vs. a generic storage error.
 	if !s.Exists(key) {
 		return ErrMetricFilterNotFound
 	}

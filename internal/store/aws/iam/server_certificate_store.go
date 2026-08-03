@@ -32,7 +32,7 @@ func (s *ServerCertificateStore) Put(cert *ServerCertificate) error {
 }
 
 // Create creates a new server certificate with the given name, path, certificate body, and chain.
-func (s *ServerCertificateStore) Create(name, path, certificateBody, certificateChain string, tags []types.Tag) (*ServerCertificate, error) {
+func (s *ServerCertificateStore) Create(name, path, certificateBody, privateKey, certificateChain string, tags []types.Tag) (*ServerCertificate, error) {
 	var cert *ServerCertificate
 	err := s.kl.WithLock(name, func() error {
 		if s.Exists(name) {
@@ -50,6 +50,7 @@ func (s *ServerCertificateStore) Create(name, path, certificateBody, certificate
 			AccountId:             s.arnBuilder.AccountID(),
 			CreateDate:            time.Now().UTC(),
 			CertificateBody:       certificateBody,
+			PrivateKey:            privateKey,
 			CertificateChain:      certificateChain,
 			Tags:                  tags,
 		}

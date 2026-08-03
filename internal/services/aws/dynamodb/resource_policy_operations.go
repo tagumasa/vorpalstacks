@@ -13,13 +13,19 @@ import (
 )
 
 // revisionMatches compares an ExpectedRevisionId ("v<N>") against the
-// current revision number stored on the table. Returns true if they match.
-func revisionMatches(expected string, currentRev int) bool {
-	expectedNum, err := strconv.Atoi(strings.TrimPrefix(expected, "v"))
-	if err != nil {
-		return false
+// current revision number stored on the table. Returns true if they match,
+// or an error if the format is invalid.
+func revisionMatches(expected string, currentRev int) (bool, error) {
+	trimmed := strings.TrimPrefix(expected, "v")
+	if trimmed == "" || trimmed == expected {
+		// Either "v" alone, or no "v" prefix at all.
+		return false, ErrInvalidParameter
 	}
-	return expectedNum == currentRev
+	expectedNum, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return false, ErrInvalidParameter
+	}
+	return expectedNum == currentRev, nil
 }
 
 // DeleteResourcePolicy deletes a resource policy from a DynamoDB table.
@@ -46,8 +52,15 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 	}
 
 	if expectedRevisionId != "" {
-		currentRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if !revisionMatches(expectedRevisionId, currentRev) {
+		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
+		if revErr != nil {
+			return nil, revErr
+		}
+		matched, matchErr := revisionMatches(expectedRevisionId, currentRev)
+		if matchErr != nil {
+			return nil, matchErr
+		}
+		if !matched {
 			return nil, ErrPolicyNotFound
 		}
 	}
@@ -123,8 +136,15 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 	}
 
 	if expectedRevisionId != "" {
-		currentRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if !revisionMatches(expectedRevisionId, currentRev) {
+		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
+		if revErr != nil {
+			return nil, revErr
+		}
+		matched, matchErr := revisionMatches(expectedRevisionId, currentRev)
+		if matchErr != nil {
+			return nil, matchErr
+		}
+		if !matched {
 			return nil, ErrPolicyNotFound
 		}
 	}
@@ -133,7 +153,10 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	newRev, _ := store.Tables().GetResourcePolicyRevisionId(tableName)
+	newRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
+	if revErr != nil {
+		return nil, revErr
+	}
 	revisionId := fmt.Sprintf("v%d", newRev)
 
 	return map[string]interface{}{

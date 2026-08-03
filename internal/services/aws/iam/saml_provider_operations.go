@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
-	"regexp"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -16,9 +15,6 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
-
-var x509CertDataPattern = regexp.MustCompile(`(?s)<(?:ds:)?X509Certificate>([^<]+)</(?:ds:)?X509Certificate>`)
-var whitespacePattern = regexp.MustCompile(`\s+`)
 
 func extractValidUntilFromSAMLMetadata(metadata string) *time.Time {
 	matches := x509CertDataPattern.FindStringSubmatch(metadata)
@@ -51,8 +47,8 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	if name == "" {
 		return nil, NewValidationError("Name")
 	}
-	if !samlProviderNamePattern.MatchString(name) {
-		return nil, NewInvalidInputError("Name", "must be 1 to 128 alphanumeric characters or any of ._-")
+	if err := validateSAMLProviderName(name); err != nil {
+		return nil, err
 	}
 	metadataDocument := request.GetStringParam(req.Parameters, "SAMLMetadataDocument")
 	if metadataDocument == "" {
@@ -67,12 +63,24 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	assertionEncryptionMode := request.GetStringParam(req.Parameters, "AssertionEncryptionMode")
+	if assertionEncryptionMode != "" && !validateAssertionEncryptionMode(assertionEncryptionMode) {
+		return nil, NewInvalidInputError("AssertionEncryptionMode", "must be 'Required' or 'Allowed'")
+	}
+
+	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
+	if addPrivateKey != "" {
+		if len(addPrivateKey) > 16384 {
+			return nil, NewInvalidInputError("AddPrivateKey", "must be 1 to 16384 characters")
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	validUntil := extractValidUntilFromSAMLMetadata(metadataDocument)
-	provider, err := store.SAMLProviders().Create(name, metadataDocument, validUntil, newTags)
+	provider, err := store.SAMLProviders().Create(name, metadataDocument, validUntil, assertionEncryptionMode, addPrivateKey, newTags)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrSAMLProviderAlreadyExists) {
 			return nil, NewEntityAlreadyExistsError("SAML Provider " + name)
@@ -109,6 +117,24 @@ func (s *IAMService) GetSAMLProvider(ctx context.Context, reqCtx *request.Reques
 
 	if provider.ValidUntil != nil {
 		resp["ValidUntil"] = provider.ValidUntil.Format(timeutils.ISO8601SimpleFormat)
+	}
+
+	if provider.AssertionEncryptionMode != "" {
+		resp["AssertionEncryptionMode"] = provider.AssertionEncryptionMode
+	}
+
+	if len(provider.PrivateKeys) > 0 {
+		// PrivateKeyList — each entry contains KeyId and Timestamp
+		// metadata only.  Raw private key material is sensitive and not
+		// returned (Smithy privateKeyType has sensitive trait).
+		pkList := make([]interface{}, len(provider.PrivateKeys))
+		for i, pk := range provider.PrivateKeys {
+			pkList[i] = map[string]interface{}{
+				"KeyId":     pk.KeyId,
+				"Timestamp": pk.AddedAt.Format(timeutils.ISO8601SimpleFormat),
+			}
+		}
+		resp["PrivateKeyList"] = pkList
 	}
 
 	if provider.Tags != nil {
@@ -154,6 +180,28 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	}
 	metadataDocument := request.GetStringParam(req.Parameters, "SAMLMetadataDocument")
 
+	assertionEncryptionMode := request.GetStringParam(req.Parameters, "AssertionEncryptionMode")
+	if assertionEncryptionMode != "" && !validateAssertionEncryptionMode(assertionEncryptionMode) {
+		return nil, NewInvalidInputError("AssertionEncryptionMode", "must be 'Required' or 'Allowed'")
+	}
+
+	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
+	if addPrivateKey != "" && len(addPrivateKey) > 16384 {
+		return nil, NewInvalidInputError("AddPrivateKey", "must be 1 to 16384 characters")
+	}
+
+	// RemovePrivateKey is a privateKeyIdType (Smithy: length [22,64],
+	// pattern ^[A-Z0-9]+$) identifying the key to remove.
+	removePrivateKey := request.GetStringParam(req.Parameters, "RemovePrivateKey")
+	if removePrivateKey != "" {
+		if len(removePrivateKey) < 22 || len(removePrivateKey) > 64 {
+			return nil, NewInvalidInputError("RemovePrivateKey", "must be 22 to 64 characters")
+		}
+		if err := validateSAMLPrivateKeyId(removePrivateKey); err != nil {
+			return nil, err
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -163,7 +211,10 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	}
 
 	validUntil := extractValidUntilFromSAMLMetadata(metadataDocument)
-	if err := store.SAMLProviders().Update(providerArn, metadataDocument, validUntil); err != nil {
+	if err := store.SAMLProviders().Update(providerArn, metadataDocument, validUntil, assertionEncryptionMode, addPrivateKey, removePrivateKey); err != nil {
+		if errors.Is(err, iamstore.ErrSAMLPrivateKeyNotFound) {
+			return nil, NewNoSuchEntityError("SAML private key", removePrivateKey)
+		}
 		return nil, err
 	}
 

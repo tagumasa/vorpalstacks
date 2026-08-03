@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -15,28 +14,16 @@ import (
 
 // CreateGroup creates a new IAM group.
 func (s *IAMService) CreateGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, NewInvalidInputError("GroupName", "cannot be empty")
-	}
-	if !entityNamePattern128.MatchString(groupName) {
-		return nil, NewInvalidInputError("GroupName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
-	}
-
-	path := request.GetStringParam(req.Parameters, "Path")
-	if path == "" {
-		path = "/"
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	group, err := store.Groups().Create(groupName, path, s.accountID)
+	input := &CreateGroupInput{
+		GroupName: request.GetStringParam(req.Parameters, "GroupName"),
+		Path:      request.GetStringParam(req.Parameters, "Path"),
+	}
+	group, err := s.createGroupCore(store, input)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrGroupAlreadyExists) {
-			return nil, NewGroupAlreadyExistsError(groupName)
-		}
 		return nil, err
 	}
 
@@ -49,17 +36,18 @@ func (s *IAMService) CreateGroup(ctx context.Context, reqCtx *request.RequestCon
 func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetStringParam(req.Parameters, "GroupName")
 	if groupName == "" {
-		return nil, ErrNoSuchGroup
+		return nil, NewValidationError("GroupName")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	group, err := store.Groups().Get(groupName)
+	group, err := s.getGroupCore(store, groupName)
 	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
+		return nil, err
 	}
+	_ = group // presence verified; response uses groupName + member list
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
@@ -98,32 +86,16 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 
 // UpdateGroup updates an IAM group.
 func (s *IAMService) UpdateGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, ErrNoSuchGroup
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	newPath := request.GetStringParam(req.Parameters, "NewPath")
-	newGroupName := request.GetStringParam(req.Parameters, "NewGroupName")
-
-	if newPath == "" && newGroupName == "" {
-		return nil, NewInvalidInputError("UpdateGroup", "at least one of NewPath or NewGroupName must be specified")
+	input := &UpdateGroupInput{
+		GroupName:    request.GetStringParam(req.Parameters, "GroupName"),
+		NewPath:      request.GetStringParam(req.Parameters, "NewPath"),
+		NewGroupName: request.GetStringParam(req.Parameters, "NewGroupName"),
 	}
-
-	if err := store.RenameGroup(groupName, newGroupName, newPath); err != nil {
-		return nil, err
-	}
-
-	targetName := groupName
-	if newGroupName != "" {
-		targetName = newGroupName
-	}
-	group, err := store.Groups().Get(targetName)
+	group, err := s.updateGroupCore(store, input)
 	if err != nil {
 		return nil, err
 	}
@@ -135,41 +107,14 @@ func (s *IAMService) UpdateGroup(ctx context.Context, reqCtx *request.RequestCon
 
 // DeleteGroup deletes an IAM group.
 func (s *IAMService) DeleteGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, ErrNoSuchGroup
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Groups().Exists(groupName) {
-		return nil, NewNoSuchGroupError(groupName)
+	input := &DeleteGroupInput{
+		GroupName: request.GetStringParam(req.Parameters, "GroupName"),
 	}
-
-	userCount := store.UserGroups().CountUsersInGroup(groupName)
-	if userCount > 0 {
-		return nil, NewDeleteGroupConflictError("Cannot delete entity, must remove users from group first.")
-	}
-
-	inlinePolicies, err := store.InlinePolicies().List(PrincipalTypeGroup, groupName)
-	if err != nil {
-		return nil, err
-	}
-	if len(inlinePolicies) > 0 {
-		return nil, NewDeleteGroupConflictError("Cannot delete entity, must delete policies first.")
-	}
-
-	attachedPolicies, err := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeGroup, groupName)
-	if err != nil {
-		return nil, err
-	}
-	if len(attachedPolicies) > 0 {
-		return nil, NewDeleteGroupConflictError("Cannot delete entity, must detach policies first.")
-	}
-
-	if err := store.Groups().Delete(groupName); err != nil {
+	if err := s.deleteGroupCore(store, input); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +131,7 @@ func (s *IAMService) ListGroups(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Groups().List(pathPrefix, marker, maxItems)
+	result, err := s.listGroupsCore(store, pathPrefix, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -212,27 +157,21 @@ func (s *IAMService) ListGroups(ctx context.Context, reqCtx *request.RequestCont
 func (s *IAMService) ListGroupsForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	groupNames, err := store.UserGroups().ListGroupsForUser(userName)
+	groupList, err := s.listGroupsForUserCore(store, userName)
 	if err != nil {
 		return nil, err
 	}
 
-	groups := make([]interface{}, 0, len(groupNames))
-	for _, groupName := range groupNames {
-		if group, err := store.Groups().Get(groupName); err == nil {
-			groups = append(groups, s.groupToResponse(reqCtx, group))
-		}
+	groups := make([]interface{}, 0, len(groupList))
+	for _, group := range groupList {
+		groups = append(groups, s.groupToResponse(reqCtx, group))
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")

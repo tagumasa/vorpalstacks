@@ -59,7 +59,7 @@ func (s *ServiceSpecificCredentialStore) Exists(credentialId string) bool {
 }
 
 // Create generates a new service-specific credential for the given user and service.
-func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string) (*ServiceSpecificCredential, error) {
+func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string, credentialAgeDays int) (*ServiceSpecificCredential, error) {
 	id, err := generateServiceCredentialID()
 	if err != nil {
 		return nil, err
@@ -69,6 +69,7 @@ func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string) (*
 		return nil, err
 	}
 	credName := fmt.Sprintf("%s-at-%d", userName, time.Now().Unix())
+	now := time.Now().UTC()
 	cred := &ServiceSpecificCredential{
 		ServiceSpecificCredentialId:   id,
 		ServiceSpecificCredentialName: credName,
@@ -76,8 +77,12 @@ func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string) (*
 		UserName:                      userName,
 		ServicePassword:               password,
 		ServiceSpecificCredentialArn:  arnutil.NewARNBuilder(s.accountID, "").IAM().User(userName),
-		CreateDate:                    time.Now().UTC(),
+		CreateDate:                    now,
 		Status:                        "Active",
+	}
+	if credentialAgeDays > 0 {
+		exp := now.AddDate(0, 0, credentialAgeDays)
+		cred.ExpirationDate = &exp
 	}
 	if err := s.Put(cred); err != nil {
 		return nil, err

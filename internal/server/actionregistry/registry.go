@@ -184,9 +184,11 @@ func (r *ActionRegistry) initDefaults() {
 		"ListCertificates", "DescribeCertificate",
 		"ResendValidationEmail",
 		"AddTagsToCertificate", "RemoveTagsFromCertificate", "ListTagsForCertificate",
+		"TagResource", "UntagResource", "ListTagsForResource",
 		"ImportCertificate", "ExportCertificate",
 		"GetAccountConfiguration", "PutAccountConfiguration",
 		"UpdateCertificateOptions", "RenewCertificate", "RevokeCertificate",
+		"SearchCertificates",
 	})
 
 	r.Register("cloudtrail", []string{

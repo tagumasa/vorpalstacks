@@ -44,21 +44,34 @@ func (s *SAMLProviderStore) Put(provider *SAMLProvider) error {
 	return s.BaseStore.Put(provider.Arn, provider)
 }
 
-// Create creates a new SAML provider with the given name, metadata document, and optional validity period.
-func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *time.Time, tags []types.Tag) (*SAMLProvider, error) {
+// Create creates a new SAML provider with the given name, metadata document,
+// and optional validity period.  When addPrivateKey is non-empty, a
+// SAMLPrivateKey entry with a generated KeyId is stored.
+func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *time.Time, assertionEncryptionMode string, addPrivateKey string, tags []types.Tag) (*SAMLProvider, error) {
 	arn := s.arnBuilder.SAMLProviderARN(name)
 	var provider *SAMLProvider
 	err := s.kl.WithLock(arn, func() error {
 		if s.Exists(arn) {
 			return NewStoreError("create_saml_provider", ErrSAMLProviderAlreadyExists)
 		}
+		now := time.Now().UTC()
 		provider = &SAMLProvider{
-			Arn:                  arn,
-			AccountId:            s.arnBuilder.AccountID(),
-			SAMLMetadataDocument: metadataDocument,
-			ValidUntil:           validUntil,
-			CreateDate:           time.Now().UTC(),
-			Tags:                 tags,
+			Arn:                     arn,
+			AccountId:               s.arnBuilder.AccountID(),
+			SAMLMetadataDocument:    metadataDocument,
+			ValidUntil:              validUntil,
+			CreateDate:              now,
+			AssertionEncryptionMode: assertionEncryptionMode,
+			Tags:                    tags,
+		}
+		if addPrivateKey != "" {
+			keyId, err := generateSAMLPrivateKeyID()
+			if err != nil {
+				return NewStoreError("create_saml_provider", err)
+			}
+			provider.PrivateKeys = []SAMLPrivateKey{
+				{KeyId: keyId, Key: addPrivateKey, AddedAt: now},
+			}
 		}
 		return s.Put(provider)
 	})
@@ -68,8 +81,12 @@ func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *ti
 	return provider, nil
 }
 
-// Update modifies the metadata document and validity period of an existing SAML provider.
-func (s *SAMLProviderStore) Update(arn, metadataDocument string, validUntil *time.Time) error {
+// Update modifies the metadata document, validity period, and encryption
+// settings of an existing SAML provider.  When addPrivateKey is non-empty,
+// a new SAMLPrivateKey entry is appended.  When removePrivateKey is
+// non-empty, the entry whose KeyId matches is removed; if no match is
+// found, ErrSAMLPrivateKeyNotFound is returned.
+func (s *SAMLProviderStore) Update(arn, metadataDocument string, validUntil *time.Time, assertionEncryptionMode string, addPrivateKey string, removePrivateKey string) error {
 	return s.kl.WithLock(arn, func() error {
 		provider, err := s.Get(arn)
 		if err != nil {
@@ -80,6 +97,33 @@ func (s *SAMLProviderStore) Update(arn, metadataDocument string, validUntil *tim
 		}
 		if validUntil != nil {
 			provider.ValidUntil = validUntil
+		}
+		if assertionEncryptionMode != "" {
+			provider.AssertionEncryptionMode = assertionEncryptionMode
+		}
+		if addPrivateKey != "" {
+			keyId, err := generateSAMLPrivateKeyID()
+			if err != nil {
+				return NewStoreError("update_saml_provider", err)
+			}
+			provider.PrivateKeys = append(provider.PrivateKeys, SAMLPrivateKey{
+				KeyId:   keyId,
+				Key:     addPrivateKey,
+				AddedAt: time.Now().UTC(),
+			})
+		}
+		if removePrivateKey != "" {
+			found := false
+			for i, pk := range provider.PrivateKeys {
+				if pk.KeyId == removePrivateKey {
+					provider.PrivateKeys = append(provider.PrivateKeys[:i], provider.PrivateKeys[i+1:]...)
+					found = true
+					break
+				}
+			}
+			if !found {
+				return NewStoreError("update_saml_provider", ErrSAMLPrivateKeyNotFound)
+			}
 		}
 		return s.Put(provider)
 	})

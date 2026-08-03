@@ -55,10 +55,10 @@ func attachPolicy(ctx context.Context, s *IAMService, reqCtx *request.RequestCon
 		return nil, ops.emptyErr
 	}
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
-	if !iamPolicyArnPattern.MatchString(policyArn) {
-		return nil, NewInvalidInputError("PolicyArn", "must be a valid IAM policy ARN (arn:aws:iam::<account>:policy/<name>)")
+	if err := validateAttachPolicyArn(policyArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -98,10 +98,10 @@ func detachPolicy(ctx context.Context, s *IAMService, reqCtx *request.RequestCon
 		return nil, ops.emptyErr
 	}
 	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyArn")
 	}
-	if !iamPolicyArnPattern.MatchString(policyArn) {
-		return nil, NewInvalidInputError("PolicyArn", "must be a valid IAM policy ARN (arn:aws:iam::<account>:policy/<name>)")
+	if err := validateAttachPolicyArn(policyArn); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

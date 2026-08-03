@@ -1,12 +1,12 @@
 package athena
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -165,7 +165,7 @@ func (s *AthenaService) executeDropTable(reqCtx *request.RequestContext, querySt
 	}
 
 	if err := stores.tableDataStore.DeleteTableData(catalog, database, tableName); err != nil {
-		logs.Warn("failed to delete table data after DROP TABLE", logs.String("table", tableName), logs.Err(err))
+		return nil, nil, fmt.Errorf("failed to delete table data for %s.%s: %w", database, tableName, err)
 	}
 
 	rs, stats := emptyDDLResult(startTime)
@@ -201,11 +201,26 @@ func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryStrin
 		}
 	}
 
+	// Table data may not exist yet if CREATE TABLE didn't initialise it.
+	// Only fall back to table metadata columns for ErrTableNotFound; any
+	// other storage error must be propagated, not swallowed.
+	var columns []athenastore.Column
 	tableData, err := stores.tableDataStore.GetTableData(catalog, database, tableName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("table not found: %w", err)
+		if !errors.Is(err, athenastore.ErrTableNotFound) {
+			return nil, nil, fmt.Errorf("get table data for %s.%s: %w", database, tableName, err)
+		}
+		if tblErr != nil {
+			return nil, nil, fmt.Errorf("table not found: %w", tblErr)
+		}
+		for _, col := range table.Columns {
+			columns = append(columns, athenastore.Column{Name: col.Name, Type: col.Type})
+		}
+	} else {
+		columns = tableData.Columns
 	}
 
+	var newRows []*athenastore.StoredRow
 	for _, rowValues := range rawValues {
 		newRow := &athenastore.StoredRow{Values: make(map[string]interface{})}
 
@@ -221,17 +236,17 @@ func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryStrin
 				}
 			}
 		} else {
-			for i, col := range tableData.Columns {
+			for i, col := range columns {
 				if i < len(rowVals) {
 					newRow.Values[col.Name] = rowVals[i]
 				}
 			}
 		}
 
-		tableData.Rows = append(tableData.Rows, newRow)
+		newRows = append(newRows, newRow)
 	}
 
-	if err := stores.tableDataStore.StoreTableData(catalog, database, tableName, tableData); err != nil {
+	if err := stores.tableDataStore.AppendRows(catalog, database, tableName, newRows); err != nil {
 		return nil, nil, fmt.Errorf("failed to store data: %w", err)
 	}
 

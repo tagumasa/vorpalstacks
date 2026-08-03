@@ -2,12 +2,14 @@ package http
 
 import (
 	"crypto/subtle"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/server/http/classifier"
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 // SignatureMiddleware returns an HTTP middleware that verifies AWS Signature
@@ -89,7 +91,28 @@ func trySessionCredentials(
 	}
 
 	session, err := sessionResolver.ResolveSession(accessKeyId)
-	if err != nil || session == nil {
+	if err != nil {
+		// When the caller's temporary credentials have expired, AWS
+		// SDK clients expect ExpiredTokenException (HTTP 400) so they
+		// can trigger credential refresh. Without this mapping the SDK
+		// receives a generic 403 and cannot distinguish a permanent
+		// auth failure from a retryable expiry.
+		if errors.Is(err, auth.ErrSessionExpired) {
+			awsErr := awserrors.NewAWSError(
+				"ExpiredTokenException",
+				"The security token included in the request is expired.",
+				http.StatusBadRequest,
+			)
+			ct := r.Header.Get("Content-Type")
+			if ct == "" {
+				ct = "application/x-www-form-urlencoded"
+			}
+			awserrors.WriteAWSError(w, awsErr, ct)
+			return true
+		}
+		return false
+	}
+	if session == nil {
 		return false
 	}
 

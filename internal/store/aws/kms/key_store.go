@@ -283,6 +283,7 @@ func (s *KeyStore) SetKeyRotation(keyID string, enabled bool) error {
 		key.KeyRotationEnabled = enabled
 		if !enabled {
 			key.RotationPeriodInDays = 0
+			key.KeyRotationEnabledAt = time.Time{}
 		}
 		return nil
 	})
@@ -296,9 +297,26 @@ func (s *KeyStore) SetKeyRotationWithPeriod(keyID string, enabled bool, periodIn
 		key.KeyRotationEnabled = enabled
 		if enabled {
 			key.RotationPeriodInDays = periodInDays
+			if key.KeyRotationEnabledAt.IsZero() {
+				key.KeyRotationEnabledAt = time.Now().UTC()
+			}
 		} else {
 			key.RotationPeriodInDays = 0
+			key.KeyRotationEnabledAt = time.Time{}
 		}
+		return nil
+	})
+}
+
+// UpdateLastUsed atomically records the timestamp and operation name of
+// the most recent cryptographic use of the key. It acquires the per-key
+// lock so that the metadata update cannot clobber a concurrent state
+// change (e.g. Disable, ScheduleDeletion, SetKeyRotation).
+func (s *KeyStore) UpdateLastUsed(keyID string, operation string) error {
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		now := time.Now().UTC()
+		key.LastUsedAt = &now
+		key.LastUsageOperation = operation
 		return nil
 	})
 }
@@ -395,6 +413,8 @@ func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string, 
 
 	if err := s.atomicUpdate(keyID, func(k *Key) error {
 		k.ImportToken = importToken
+		validTo := time.Now().Add(24 * time.Hour)
+		k.ImportTokenValidTo = &validTo
 		k.WrappingPrivateKey = privKeyBytes
 		k.WrappingAlgorithm = wrappingAlgorithm
 		k.WrappingKeySpec = wrappingKeySpec

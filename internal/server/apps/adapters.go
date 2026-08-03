@@ -786,7 +786,11 @@ func (a *cloudTrailInvokerAdapter) getOrCreateStore(region string) (*cloudtrails
 }
 
 // LookupEvents queries CloudTrail for events matching the given criteria.
-func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, accountID, username string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
+// The adapter is scoped to a single account via a.accountID at construction
+// time, so the per-call accountID parameter of the previous signature was
+// redundant; the resolved CloudTrailStore already filters by account.
+// nextToken supports pagination by forwarding it to EventQuery.NextToken.
+func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
 	ctStore, err := a.getOrCreateStore(region)
 	if err != nil {
 		return nil, "", err
@@ -796,6 +800,7 @@ func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, accou
 		StartTime:  &startTime,
 		EndTime:    &endTime,
 		Username:   username,
+		NextToken:  nextToken,
 	}
 	events, nextToken, err := ctStore.LookupEvents(query)
 	if err != nil {

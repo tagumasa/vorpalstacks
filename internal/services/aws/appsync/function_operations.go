@@ -28,17 +28,25 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateResourceName(name); err != nil {
+		return nil, err
+	}
 
 	dataSourceName := request.GetStringParam(req.Parameters, "dataSourceName")
 	if dataSourceName == "" {
 		return nil, NewBadRequestException("dataSourceName is required")
 	}
 
+	description := request.GetStringParam(req.Parameters, "description")
+	if err := validateDescription(description); err != nil {
+		return nil, err
+	}
+
 	f := &appsyncstore.FunctionConfiguration{
 		ApiId:                   apiId,
 		Name:                    name,
 		DataSourceName:          dataSourceName,
-		Description:             request.GetStringParam(req.Parameters, "description"),
+		Description:             description,
 		FunctionVersion:         request.GetStringParam(req.Parameters, "functionVersion"),
 		RequestMappingTemplate:  request.GetStringParam(req.Parameters, "requestMappingTemplate"),
 		ResponseMappingTemplate: request.GetStringParam(req.Parameters, "responseMappingTemplate"),
@@ -50,6 +58,29 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 
 	if err := validateAppSyncRuntime(f.Runtime); err != nil {
 		return nil, err
+	}
+	if err := validateSyncConfig(f.SyncConfig); err != nil {
+		return nil, err
+	}
+	if _, ok := req.Parameters["maxBatchSize"]; ok {
+		if err := validateMaxBatchSize(f.MaxBatchSize); err != nil {
+			return nil, err
+		}
+	}
+	if f.Code != "" {
+		if err := validateCode(f.Code); err != nil {
+			return nil, err
+		}
+	}
+	if f.RequestMappingTemplate != "" {
+		if err := validateMappingTemplate(f.RequestMappingTemplate); err != nil {
+			return nil, err
+		}
+	}
+	if f.ResponseMappingTemplate != "" {
+		if err := validateMappingTemplate(f.ResponseMappingTemplate); err != nil {
+			return nil, err
+		}
 	}
 
 	created, err := store.CreateFunction(f)
@@ -104,10 +135,18 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateResourceName(name); err != nil {
+		return nil, err
+	}
 
 	dataSourceName := request.GetStringParam(req.Parameters, "dataSourceName")
 	if dataSourceName == "" {
 		return nil, NewBadRequestException("dataSourceName is required")
+	}
+
+	description := request.GetStringParam(req.Parameters, "description")
+	if err := validateDescription(description); err != nil {
+		return nil, err
 	}
 
 	f := &appsyncstore.FunctionConfiguration{
@@ -115,7 +154,7 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 		FunctionId:              functionId,
 		Name:                    name,
 		DataSourceName:          dataSourceName,
-		Description:             request.GetStringParam(req.Parameters, "description"),
+		Description:             description,
 		FunctionVersion:         request.GetStringParam(req.Parameters, "functionVersion"),
 		RequestMappingTemplate:  request.GetStringParam(req.Parameters, "requestMappingTemplate"),
 		ResponseMappingTemplate: request.GetStringParam(req.Parameters, "responseMappingTemplate"),
@@ -127,6 +166,29 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 
 	if err := validateAppSyncRuntime(f.Runtime); err != nil {
 		return nil, err
+	}
+	if err := validateSyncConfig(f.SyncConfig); err != nil {
+		return nil, err
+	}
+	if _, ok := req.Parameters["maxBatchSize"]; ok {
+		if err := validateMaxBatchSize(f.MaxBatchSize); err != nil {
+			return nil, err
+		}
+	}
+	if f.Code != "" {
+		if err := validateCode(f.Code); err != nil {
+			return nil, err
+		}
+	}
+	if f.RequestMappingTemplate != "" {
+		if err := validateMappingTemplate(f.RequestMappingTemplate); err != nil {
+			return nil, err
+		}
+	}
+	if f.ResponseMappingTemplate != "" {
+		if err := validateMappingTemplate(f.ResponseMappingTemplate); err != nil {
+			return nil, err
+		}
 	}
 
 	updated, err := store.UpdateFunction(f)

@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -283,4 +284,180 @@ func validateRelationalDatabaseSourceType(t string) bool {
 // *MetricsConfig and *HealthMetricsConfig shapes.
 func validateEnabledDisabled(v string) bool {
 	return validEnabledDisabled[v]
+}
+
+// ============================================================================
+// Pattern validators (Smithy [pattern] + [length] traits)
+// Source: third_party/api-models-aws/models/appsync/service/2017-07-25/appsync-2017-07-25.json
+// ============================================================================
+
+// Compiled patterns from Smithy string shapes.
+var (
+	apiNamePattern        = regexp.MustCompile(`^[A-Za-z0-9_\- ]+$`)
+	resourceNamePattern   = regexp.MustCompile(`^[_A-Za-z][_0-9A-Za-z]*$`)
+	namespacePattern      = regexp.MustCompile(`^([A-Za-z0-9](?:[A-Za-z0-9\-]{0,48}[A-Za-z0-9])?)$`)
+	domainNamePattern     = regexp.MustCompile(`^(\*[\w\d-]*\.)?([\w\d-]+\.)+[\w\d-]+$`)
+	certificateArnPattern = regexp.MustCompile(`^arn:[a-z-]*:(acm|iam):[a-z0-9-]*:\d{12}:(certificate|server-certificate)/[0-9A-Za-z_/-]*$`)
+	envVarKeyPattern      = regexp.MustCompile(`^[A-Za-z]+\w*$`)
+)
+
+// validateApiName validates the ApiName shape: ^[A-Za-z0-9_\-\ ]+$, length 1-50.
+func validateApiName(name string) error {
+	if len(name) < 1 || len(name) > 50 {
+		return NewBadRequestException("name must be between 1 and 50 characters")
+	}
+	if !apiNamePattern.MatchString(name) {
+		return NewBadRequestException("name contains invalid characters; must match ^[A-Za-z0-9_\\- ]+$")
+	}
+	return nil
+}
+
+// validateResourceName validates the ResourceName shape:
+// ^[_A-Za-z][_0-9A-Za-z]*$, length 1-65536.
+func validateResourceName(name string) error {
+	if len(name) < 1 || len(name) > 65536 {
+		return NewBadRequestException("resource name must be between 1 and 65536 characters")
+	}
+	if !resourceNamePattern.MatchString(name) {
+		return NewBadRequestException("resource name contains invalid characters; must match ^[_A-Za-z][_0-9A-Za-z]*$")
+	}
+	return nil
+}
+
+// validateNamespace validates the Namespace shape used by ChannelNamespace:
+// ^([A-Za-z0-9](?:[A-Za-z0-9\-]{0,48}[A-Za-z0-9])?)$, length 1-50.
+func validateNamespace(name string) error {
+	if len(name) < 1 || len(name) > 50 {
+		return NewBadRequestException("namespace name must be between 1 and 50 characters")
+	}
+	if !namespacePattern.MatchString(name) {
+		return NewBadRequestException("namespace name contains invalid characters; must match ^([A-Za-z0-9](?:[A-Za-z0-9\\-]{0,48}[A-Za-z0-9])?)$")
+	}
+	return nil
+}
+
+// validateDomainName validates the DomainName shape:
+// ^(\*[\w\d-]*\.)?([\w\d-]+\.)+[\w\d-]+$, length 1-253.
+func validateDomainName(name string) error {
+	if len(name) < 1 || len(name) > 253 {
+		return NewBadRequestException("domainName must be between 1 and 253 characters")
+	}
+	if !domainNamePattern.MatchString(name) {
+		return NewBadRequestException("domainName has an invalid format")
+	}
+	return nil
+}
+
+// validateCertificateArn validates the CertificateArn shape:
+// ^arn:[a-z-]*:(acm|iam):..., length 20-2048.
+func validateCertificateArn(arn string) error {
+	if len(arn) < 20 || len(arn) > 2048 {
+		return NewBadRequestException("certificateArn must be between 20 and 2048 characters")
+	}
+	if !certificateArnPattern.MatchString(arn) {
+		return NewBadRequestException("certificateArn has an invalid format")
+	}
+	return nil
+}
+
+// validateEnvVarKey validates the EnvironmentVariableKey shape:
+// ^[A-Za-z]+\w*, length 2-64.
+func validateEnvVarKey(key string) error {
+	if len(key) < 2 || len(key) > 64 {
+		return NewBadRequestException("environment variable key must be between 2 and 64 characters")
+	}
+	if !envVarKeyPattern.MatchString(key) {
+		return NewBadRequestException("environment variable key contains invalid characters; must match ^[A-Za-z]+\\w*$")
+	}
+	return nil
+}
+
+// validateEnvVarValue validates the EnvironmentVariableValue shape: length 0-512.
+func validateEnvVarValue(val string) error {
+	if len(val) > 512 {
+		return NewBadRequestException("environment variable value must not exceed 512 characters")
+	}
+	return nil
+}
+
+// ============================================================================
+// Length validators (Smithy [length] trait only)
+// ============================================================================
+
+// validateDescription validates the Description shape: length 0-255.
+func validateDescription(desc string) error {
+	if len(desc) > 255 {
+		return NewBadRequestException("description must not exceed 255 characters")
+	}
+	return nil
+}
+
+// validateCode validates the Code shape: length 1-32768.
+func validateCode(code string) error {
+	if len(code) < 1 || len(code) > 32768 {
+		return NewBadRequestException("code must be between 1 and 32768 characters")
+	}
+	return nil
+}
+
+// validateMappingTemplate validates the MappingTemplate shape: length 1-65536.
+func validateMappingTemplate(tmpl string) error {
+	if len(tmpl) < 1 || len(tmpl) > 65536 {
+		return NewBadRequestException("mapping template must be between 1 and 65536 characters")
+	}
+	return nil
+}
+
+// validateContext validates the Context shape: length 2-28000.
+func validateContext(ctx string) error {
+	if len(ctx) < 2 || len(ctx) > 28000 {
+		return NewBadRequestException("context must be between 2 and 28000 characters")
+	}
+	return nil
+}
+
+// validateTemplate validates the Template shape: length 2-65536.
+func validateTemplate(tmpl string) error {
+	if len(tmpl) < 2 || len(tmpl) > 65536 {
+		return NewBadRequestException("template must be between 2 and 65536 characters")
+	}
+	return nil
+}
+
+// ============================================================================
+// Range validators (Smithy [range] trait)
+// ============================================================================
+
+// validateQueryDepthLimit validates the QueryDepthLimit shape: range 0-75.
+func validateQueryDepthLimit(v int32) error {
+	if v < 0 || v > 75 {
+		return NewBadRequestException("queryDepthLimit must be between 0 and 75")
+	}
+	return nil
+}
+
+// validateResolverCountLimit validates the ResolverCountLimit shape: range 0-10000.
+func validateResolverCountLimit(v int32) error {
+	if v < 0 || v > 10000 {
+		return NewBadRequestException("resolverCountLimit must be between 0 and 10000")
+	}
+	return nil
+}
+
+// validateMaxBatchSize validates the MaxBatchSize shape: range 0-2000.
+func validateMaxBatchSize(v int32) error {
+	if v < 0 || v > 2000 {
+		return NewBadRequestException("maxBatchSize must be between 0 and 2000")
+	}
+	return nil
+}
+
+// validateLambdaAuthorizerTtl validates the TTL shape (shared by
+// LambdaAuthorizerConfig.authorizerResultTtlInSeconds and ApiCache.ttl):
+// range 0-3600.
+func validateLambdaAuthorizerTtl(v int32) error {
+	if v < 0 || v > 3600 {
+		return NewBadRequestException("authorizerResultTtlInSeconds must be between 0 and 3600")
+	}
+	return nil
 }

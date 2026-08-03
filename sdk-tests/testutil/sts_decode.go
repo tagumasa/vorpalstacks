@@ -61,54 +61,36 @@ func (r *TestRunner) runSTSDecodeTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_AKIAPrefix", func() error {
+	// GetAccessKeyInfo: verify against a real temporary access key
+	// obtained from GetSessionToken. The server validates key
+	// existence; fake key IDs are rejected with
+	// InvalidClientTokenId.
+	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_RealTempKey", func() error {
+		// Obtain a temporary session to get a real ASIA-prefixed key.
+		stsResp, err := tc.client.GetSessionToken(tc.ctx, &sts.GetSessionTokenInput{
+			DurationSeconds: aws.Int32(900),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get session token: %w", err)
+		}
 		resp, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
+			AccessKeyId: stsResp.Credentials.AccessKeyId,
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Account == nil || *resp.Account == "" {
+			return fmt.Errorf("account is nil or empty for real temporary key")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_NonExistentKey", func() error {
+		_, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
 			AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
 		})
-		if err != nil {
-			return err
-		}
-		if resp.Account == nil || *resp.Account == "" {
-			return fmt.Errorf("account is nil or empty for AKIA prefix")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_ASIAPrefix", func() error {
-		resp, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
-			AccessKeyId: aws.String("ASIAIOSFODNN7EXAMPLE"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Account == nil || *resp.Account == "" {
-			return fmt.Errorf("account is nil or empty for ASIA prefix")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_ABIAPrefix", func() error {
-		resp, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
-			AccessKeyId: aws.String("ABIAIOSFODNN7EXAMPLE"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Account == nil || *resp.Account == "" {
-			return fmt.Errorf("account is nil or empty for ABIA prefix")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_ACCAPrefix", func() error {
-		resp, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
-			AccessKeyId: aws.String("ACCAIOSFODNN7EXAMPLE"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Account == nil || *resp.Account == "" {
-			return fmt.Errorf("account is nil or empty for ACCA prefix")
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent access key, got nil")
 		}
 		return nil
 	}))

@@ -45,7 +45,11 @@ func (s *AthenaService) executeAdvancedSelect(reqCtx *request.RequestContext, se
 	if len(tables) == 1 {
 		for _, row := range tables[0].Data.Rows {
 			if selectStmt.Where != nil {
-				if !s.evaluateWhere(selectStmt.Where.Expr, row.Values) {
+				match, err := s.evaluateWhere(selectStmt.Where.Expr, row.Values)
+				if err != nil {
+					return nil, err
+				}
+				if !match {
 					continue
 				}
 			}
@@ -62,11 +66,19 @@ func (s *AthenaService) executeAdvancedSelect(reqCtx *request.RequestContext, se
 	if hasAggregates {
 		rows = s.executeGroupBy(selectStmt, rows)
 		if selectStmt.Having != nil {
-			rows = s.applyHaving(rows, selectStmt.Having.Expr)
+			filtered, err := s.applyHaving(rows, selectStmt.Having.Expr)
+			if err != nil {
+				return nil, err
+			}
+			rows = filtered
 		}
 	} else {
 		if selectStmt.Having != nil {
-			rows = s.applyHaving(rows, selectStmt.Having.Expr)
+			filtered, err := s.applyHaving(rows, selectStmt.Having.Expr)
+			if err != nil {
+				return nil, err
+			}
+			rows = filtered
 		}
 		rows = s.projectColumns(rows, selectStmt.SelectExprs)
 	}
@@ -175,7 +187,10 @@ func (s *AthenaService) executeJoin(selectStmt *sqlparser.Select, tables []resol
 		return nil, fmt.Errorf("failed to build join tree")
 	}
 
-	result := s.executeJoinTree(joinTree, selectStmt.Where)
+	result, err := s.executeJoinTree(joinTree, selectStmt.Where)
+	if err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -235,21 +250,27 @@ func (s *AthenaService) buildJoinTree(from sqlparser.TableExprs, tables []resolv
 	return result
 }
 
-func (s *AthenaService) executeJoinTree(ji *joinInfo, where *sqlparser.Where) []*athenastore.StoredRow {
+func (s *AthenaService) executeJoinTree(ji *joinInfo, where *sqlparser.Where) ([]*athenastore.StoredRow, error) {
 	if ji == nil {
-		return nil
+		return nil, nil
 	}
 
 	if ji.table != nil {
-		return ji.table.Data.Rows
+		return ji.table.Data.Rows, nil
 	}
 
 	if ji.left == nil || ji.right == nil {
-		return nil
+		return nil, nil
 	}
 
-	leftRows := s.executeJoinTree(ji.left, nil)
-	rightRows := s.executeJoinTree(ji.right, nil)
+	leftRows, err := s.executeJoinTree(ji.left, nil)
+	if err != nil {
+		return nil, err
+	}
+	rightRows, err := s.executeJoinTree(ji.right, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	leftName := s.getJoinTableName(ji.left)
 	rightName := s.getJoinTableName(ji.right)
@@ -258,24 +279,42 @@ func (s *AthenaService) executeJoinTree(ji *joinInfo, where *sqlparser.Where) []
 
 	switch ji.joinType {
 	case sqlparser.LeftJoinStr, sqlparser.NaturalLeftJoinStr:
-		result = s.leftJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		result, err = s.leftJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		if err != nil {
+			return nil, err
+		}
 	case sqlparser.RightJoinStr, sqlparser.NaturalRightJoinStr:
-		result = s.rightJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		result, err = s.rightJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		if err != nil {
+			return nil, err
+		}
+	case sqlparser.FullJoinStr, sqlparser.NaturalFullJoinStr:
+		result, err = s.fullOuterJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		if err != nil {
+			return nil, err
+		}
 	default:
-		result = s.innerJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		result, err = s.innerJoin(leftRows, rightRows, leftName, rightName, ji.onExpr)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if where != nil {
 		var filtered []*athenastore.StoredRow
 		for _, row := range result {
-			if s.evaluateWhere(where.Expr, row.Values) {
+			match, wErr := s.evaluateWhere(where.Expr, row.Values)
+			if wErr != nil {
+				return nil, wErr
+			}
+			if match {
 				filtered = append(filtered, row)
 			}
 		}
 		result = filtered
 	}
 
-	return result
+	return result, nil
 }
 
 func (s *AthenaService) getJoinTableName(ji *joinInfo) string {
@@ -288,22 +327,30 @@ func (s *AthenaService) getJoinTableName(ji *joinInfo) string {
 	return "joined"
 }
 
-func (s *AthenaService) innerJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) innerJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) ([]*athenastore.StoredRow, error) {
 	var result []*athenastore.StoredRow
 
 	for _, leftRow := range leftRows {
 		for _, rightRow := range rightRows {
 			combined := s.mergeRows(leftRow, rightRow, leftName, rightName)
-			if onExpr == nil || s.evaluateWhere(onExpr, combined.Values) {
+			if onExpr == nil {
 				result = append(result, combined)
+			} else {
+				match, err := s.evaluateWhere(onExpr, combined.Values)
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					result = append(result, combined)
+				}
 			}
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func (s *AthenaService) leftJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) leftJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) ([]*athenastore.StoredRow, error) {
 	var result []*athenastore.StoredRow
 
 	var rightCols []string
@@ -317,9 +364,18 @@ func (s *AthenaService) leftJoin(leftRows, rightRows []*athenastore.StoredRow, l
 		matched := false
 		for _, rightRow := range rightRows {
 			combined := s.mergeRows(leftRow, rightRow, leftName, rightName)
-			if onExpr == nil || s.evaluateWhere(onExpr, combined.Values) {
+			if onExpr == nil {
 				result = append(result, combined)
 				matched = true
+			} else {
+				match, err := s.evaluateWhere(onExpr, combined.Values)
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					result = append(result, combined)
+					matched = true
+				}
 			}
 		}
 		if !matched {
@@ -328,10 +384,10 @@ func (s *AthenaService) leftJoin(leftRows, rightRows []*athenastore.StoredRow, l
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func (s *AthenaService) rightJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) rightJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) ([]*athenastore.StoredRow, error) {
 	var result []*athenastore.StoredRow
 
 	var leftCols []string
@@ -345,9 +401,18 @@ func (s *AthenaService) rightJoin(leftRows, rightRows []*athenastore.StoredRow, 
 		matched := false
 		for _, leftRow := range leftRows {
 			combined := s.mergeRows(leftRow, rightRow, leftName, rightName)
-			if onExpr == nil || s.evaluateWhere(onExpr, combined.Values) {
+			if onExpr == nil {
 				result = append(result, combined)
 				matched = true
+			} else {
+				match, err := s.evaluateWhere(onExpr, combined.Values)
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					result = append(result, combined)
+					matched = true
+				}
 			}
 		}
 		if !matched {
@@ -356,7 +421,60 @@ func (s *AthenaService) rightJoin(leftRows, rightRows []*athenastore.StoredRow, 
 		}
 	}
 
-	return result
+	return result, nil
+}
+
+func (s *AthenaService) fullOuterJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) ([]*athenastore.StoredRow, error) {
+	var result []*athenastore.StoredRow
+
+	var leftCols, rightCols []string
+	if len(leftRows) > 0 {
+		for k := range leftRows[0].Values {
+			leftCols = append(leftCols, k)
+		}
+	}
+	if len(rightRows) > 0 {
+		for k := range rightRows[0].Values {
+			rightCols = append(rightCols, k)
+		}
+	}
+
+	rightMatched := make([]bool, len(rightRows))
+
+	for _, leftRow := range leftRows {
+		matched := false
+		for i, rightRow := range rightRows {
+			combined := s.mergeRows(leftRow, rightRow, leftName, rightName)
+			if onExpr == nil {
+				result = append(result, combined)
+				matched = true
+				rightMatched[i] = true
+			} else {
+				match, err := s.evaluateWhere(onExpr, combined.Values)
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					result = append(result, combined)
+					matched = true
+					rightMatched[i] = true
+				}
+			}
+		}
+		if !matched {
+			combined := s.mergeRowsWithNullRight(leftRow, leftName, rightName, rightCols)
+			result = append(result, combined)
+		}
+	}
+
+	for i, rightRow := range rightRows {
+		if !rightMatched[i] {
+			combined := s.mergeRowsWithNullLeft(rightRow, leftName, rightName, leftCols)
+			result = append(result, combined)
+		}
+	}
+
+	return result, nil
 }
 
 func (s *AthenaService) mergeRows(leftRow, rightRow *athenastore.StoredRow, leftName, rightName string) *athenastore.StoredRow {
@@ -448,16 +566,21 @@ func (s *AthenaService) executeGroupBy(selectStmt *sqlparser.Select, rows []*ath
 }
 
 func (s *AthenaService) buildGroupKey(groupBy sqlparser.GroupBy, row map[string]interface{}) string {
-	var keyParts []string
+	var sb strings.Builder
 	for _, expr := range groupBy {
 		colName := s.extractColumnName(expr)
-		if val, ok := row[colName]; ok {
-			keyParts = append(keyParts, fmt.Sprintf("%v", val))
-		} else {
-			keyParts = append(keyParts, "")
+		var val string
+		if v, ok := row[colName]; ok {
+			val = fmt.Sprintf("%v", v)
 		}
+		// Length-prefix encoding prevents separator collision: if a value
+		// contains the delimiter character, the length prefix disambiguates
+		// the field boundaries.
+		sb.WriteString(strconv.Itoa(len(val)))
+		sb.WriteByte(':')
+		sb.WriteString(val)
 	}
-	return strings.Join(keyParts, "|")
+	return sb.String()
 }
 
 func (s *AthenaService) executeAggregateWithoutGroup(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) []*athenastore.StoredRow {
@@ -616,14 +739,18 @@ func (s *AthenaService) toFloat(val interface{}) (float64, error) {
 	}
 }
 
-func (s *AthenaService) applyHaving(rows []*athenastore.StoredRow, expr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) applyHaving(rows []*athenastore.StoredRow, expr sqlparser.Expr) ([]*athenastore.StoredRow, error) {
 	var result []*athenastore.StoredRow
 
 	for _, row := range rows {
-		if s.evaluateWhere(expr, row.Values) {
+		match, err := s.evaluateWhere(expr, row.Values)
+		if err != nil {
+			return nil, err
+		}
+		if match {
 			result = append(result, row)
 		}
 	}
 
-	return result
+	return result, nil
 }

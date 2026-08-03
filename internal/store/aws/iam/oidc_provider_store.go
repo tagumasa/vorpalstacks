@@ -106,3 +106,58 @@ func (s *OpenIDConnectProviderStore) GetByArn(arn string) (*OpenIDConnectProvide
 func (s *OpenIDConnectProviderStore) ListByPrefix(prefix string) ([]*OpenIDConnectProvider, error) {
 	return listEntitiesByPrefix(s.BaseStore, prefix, func(p *OpenIDConnectProvider) string { return p.Arn })
 }
+
+// AddClientID atomically appends a client ID to the provider's
+// ClientIDList.  The read-modify-write cycle is performed under the
+// per-ARN lock to prevent lost updates when multiple callers modify the
+// same provider concurrently.
+//
+// Returns ErrOpenIDConnectProviderClientIDExists if the client ID is
+// already present.
+func (s *OpenIDConnectProviderStore) AddClientID(arn, clientID string) error {
+	return s.kl.WithLock(arn, func() error {
+		provider, err := s.Get(arn)
+		if err != nil {
+			return err
+		}
+		for _, existing := range provider.ClientIDList {
+			if existing == clientID {
+				return NewStoreError("add_oidc_client_id", ErrOpenIDConnectProviderClientIDExists)
+			}
+		}
+		provider.ClientIDList = append(provider.ClientIDList, clientID)
+		now := time.Now().UTC()
+		provider.LastModifiedDate = &now
+		return s.Put(provider)
+	})
+}
+
+// RemoveClientID atomically removes a client ID from the provider's
+// ClientIDList.  Read-modify-write is performed under the per-ARN lock.
+//
+// Returns ErrOpenIDConnectProviderClientIDNotFound if the client ID is
+// not present.
+func (s *OpenIDConnectProviderStore) RemoveClientID(arn, clientID string) error {
+	return s.kl.WithLock(arn, func() error {
+		provider, err := s.Get(arn)
+		if err != nil {
+			return err
+		}
+		newList := make([]string, 0, len(provider.ClientIDList))
+		found := false
+		for _, existing := range provider.ClientIDList {
+			if existing == clientID {
+				found = true
+				continue
+			}
+			newList = append(newList, existing)
+		}
+		if !found {
+			return NewStoreError("remove_oidc_client_id", ErrOpenIDConnectProviderClientIDNotFound)
+		}
+		provider.ClientIDList = newList
+		now := time.Now().UTC()
+		provider.LastModifiedDate = &now
+		return s.Put(provider)
+	})
+}

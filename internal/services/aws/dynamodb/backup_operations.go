@@ -3,6 +3,7 @@ package dynamodb
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -11,7 +12,8 @@ import (
 
 // CreateBackup creates a backup of a DynamoDB table.
 func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
+	// Table must be ACTIVE to create a backup.
+	table, err := s.validateAndGetActiveTable(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +198,22 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	backups, _, err := store.Backups().List(exclusiveStartBackupArn, limit, tableName)
+	// Convert ExclusiveStartBackupArn to backup name for the store marker
+	// (store keys are backup names, not ARNs).
+	marker := ""
+	if exclusiveStartBackupArn != "" {
+		parts := strings.Split(exclusiveStartBackupArn, "/")
+		if len(parts) > 0 {
+			marker = parts[len(parts)-1]
+		}
+	}
+
+	// Fetch with a larger window than limit so post-filter pagination works.
+	fetchLimit := limit
+	if fetchLimit < 100 {
+		fetchLimit = 100
+	}
+	backups, _, err := store.Backups().List(marker, fetchLimit, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -217,18 +234,6 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 
 		filteredBackups = append(filteredBackups, b)
 	}
-
-	startIdx := 0
-	if exclusiveStartBackupArn != "" {
-		for i, b := range filteredBackups {
-			if b.BackupArn == exclusiveStartBackupArn {
-				startIdx = i + 1
-				break
-			}
-		}
-	}
-
-	filteredBackups = filteredBackups[startIdx:]
 
 	backupSummaries := make([]map[string]interface{}, 0)
 	hasMore := len(filteredBackups) > limit

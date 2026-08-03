@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"encoding/base32"
 	"encoding/base64"
 	"strconv"
 	"strings"
@@ -52,7 +51,7 @@ func (s *IAMService) CreateVirtualMFADevice(ctx context.Context, reqCtx *request
 func (s *IAMService) DeleteVirtualMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
 	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
+		return nil, NewValidationError("SerialNumber")
 	}
 
 	store, err := s.store(reqCtx)
@@ -88,10 +87,10 @@ func (s *IAMService) EnableMFADevice(ctx context.Context, reqCtx *request.Reques
 	authCode2 := request.GetStringParam(req.Parameters, "AuthenticationCode2")
 
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
+		return nil, NewValidationError("SerialNumber")
 	}
 
 	store, err := s.store(reqCtx)
@@ -141,7 +140,7 @@ func (s *IAMService) DeactivateMFADevice(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
+		return nil, NewValidationError("SerialNumber")
 	}
 
 	store, err := s.store(reqCtx)
@@ -245,7 +244,7 @@ func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.
 func (s *IAMService) GetMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
 	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
+		return nil, NewValidationError("SerialNumber")
 	}
 
 	store, err := s.store(reqCtx)
@@ -283,10 +282,10 @@ func (s *IAMService) ResyncMFADevice(ctx context.Context, reqCtx *request.Reques
 	authCode2 := request.GetStringParam(req.Parameters, "AuthenticationCode2")
 
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
+		return nil, NewValidationError("SerialNumber")
 	}
 
 	store, err := s.store(reqCtx)
@@ -483,10 +482,13 @@ func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device 
 		resp["FriendlyName"] = device.FriendlyName
 	}
 
+	// Base32StringSeed is a Smithy blob (BootstrapDatum).  Per AWS docs
+	// ("Type: Base64-encoded binary data object") the blob content is the
+	// UTF-8 bytes of the base32 seed string.  The previous implementation
+	// base32-decoded the seed to raw 20 bytes then base64-encoded those,
+	// producing a value that TOTP clients could not consume.
 	if includeSecret && device.Base32StringSeed != "" {
-		if decoded, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(device.Base32StringSeed); err == nil {
-			resp["Base32StringSeed"] = base64.StdEncoding.EncodeToString(decoded)
-		}
+		resp["Base32StringSeed"] = base64.StdEncoding.EncodeToString([]byte(device.Base32StringSeed))
 	}
 
 	if device.EnableDate != nil {

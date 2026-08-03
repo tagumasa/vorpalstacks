@@ -113,10 +113,16 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 	if body.Code == "" {
 		return nil, NewBadRequestException("code is required")
 	}
+	if err := validateCode(body.Code); err != nil {
+		return nil, err
+	}
 
 	// Per Smithy EvaluateCodeRequest, context and runtime are @required.
 	if len(body.Context) == 0 {
 		return nil, NewBadRequestException("context is required")
+	}
+	if err := validateContext(string(body.Context)); err != nil {
+		return nil, err
 	}
 	if body.Runtime.Name == "" {
 		return nil, NewBadRequestException("runtime is required")
@@ -416,20 +422,25 @@ func (s *AppSyncService) EvaluateMappingTemplate(ctx context.Context, reqCtx *re
 		return nil, NewBadRequestException("invalid request body")
 	}
 
-	// Per Smithy EvaluateMappingTemplateRequest, context is @required.
+	// Per Smithy EvaluateMappingTemplateRequest, context and template
+	// are both @required. Check emptiness before length validation so
+	// the user sees "template is required" rather than a length error.
 	if body.Context == "" {
 		return nil, NewBadRequestException("context is required")
 	}
-
-	ctxMap := make(map[string]interface{})
-	if body.Context != "" {
-		if err := json.Unmarshal([]byte(body.Context), &ctxMap); err != nil {
-			return nil, NewBadRequestException("invalid context JSON")
-		}
+	if err := validateContext(body.Context); err != nil {
+		return nil, err
 	}
-
 	if body.Template == "" {
 		return nil, NewBadRequestException("template is required")
+	}
+	if err := validateTemplate(body.Template); err != nil {
+		return nil, err
+	}
+
+	ctxMap := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(body.Context), &ctxMap); err != nil {
+		return nil, NewBadRequestException("invalid context JSON")
 	}
 
 	stash := make(map[string]interface{})

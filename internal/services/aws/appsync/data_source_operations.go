@@ -29,6 +29,9 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateResourceName(name); err != nil {
+		return nil, err
+	}
 
 	dsType := request.GetStringParam(req.Parameters, "type")
 	if dsType == "" {
@@ -43,6 +46,11 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
 	}
 
+	description := request.GetStringParam(req.Parameters, "description")
+	if err := validateDescription(description); err != nil {
+		return nil, err
+	}
+
 	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
 	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
@@ -52,7 +60,7 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		ApiId:                    apiId,
 		Name:                     name,
 		Type:                     dsType,
-		Description:              request.GetStringParam(req.Parameters, "description"),
+		Description:              description,
 		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
 		DynamodbConfig:           parseDynamoDBConfig(req.Parameters),
 		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),
@@ -112,6 +120,9 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 	if apiId == "" || name == "" {
 		return nil, NewBadRequestException("apiId and name are required")
 	}
+	if err := validateResourceName(name); err != nil {
+		return nil, err
+	}
 
 	dsType := request.GetStringParam(req.Parameters, "type")
 	if dsType == "" {
@@ -126,6 +137,11 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
 	}
 
+	description := request.GetStringParam(req.Parameters, "description")
+	if err := validateDescription(description); err != nil {
+		return nil, err
+	}
+
 	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
 	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
@@ -135,7 +151,7 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		ApiId:                    apiId,
 		Name:                     name,
 		Type:                     dsType,
-		Description:              request.GetStringParam(req.Parameters, "description"),
+		Description:              description,
 		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
 		DynamodbConfig:           parseDynamoDBConfig(req.Parameters),
 		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),

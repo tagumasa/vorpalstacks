@@ -22,13 +22,16 @@ func (s *IAMService) CreateInstanceProfile(ctx context.Context, reqCtx *request.
 	if instanceProfileName == "" {
 		return nil, NewInvalidInputError("InstanceProfileName", "cannot be empty")
 	}
-	if !entityNamePattern128.MatchString(instanceProfileName) {
-		return nil, NewInvalidInputError("InstanceProfileName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	if err := validateEntityName128(instanceProfileName, "InstanceProfileName"); err != nil {
+		return nil, err
 	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {
 		path = "/"
+	}
+	if !validatePath(path) {
+		return nil, NewInvalidInputError("Path", "must be a valid path starting and ending with /")
 	}
 
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
@@ -58,7 +61,7 @@ func (s *IAMService) CreateInstanceProfile(ctx context.Context, reqCtx *request.
 func (s *IAMService) GetInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
 	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
+		return nil, NewValidationError("InstanceProfileName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -80,7 +83,7 @@ func (s *IAMService) GetInstanceProfile(ctx context.Context, reqCtx *request.Req
 func (s *IAMService) DeleteInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
 	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
+		return nil, NewValidationError("InstanceProfileName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -137,16 +140,18 @@ func (s *IAMService) ListInstanceProfiles(ctx context.Context, reqCtx *request.R
 }
 
 // AddRoleToInstanceProfile adds a role to an instance profile.
-// The role and instance profile must already exist.
+// The role and instance profile must already exist.  AWS enforces a
+// maximum of one role per instance profile; the limit is enforced
+// atomically inside the store layer.
 func (s *IAMService) AddRoleToInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 
 	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
+		return nil, NewValidationError("InstanceProfileName")
 	}
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -161,22 +166,13 @@ func (s *IAMService) AddRoleToInstanceProfile(ctx context.Context, reqCtx *reque
 		return nil, NewNoSuchRoleError(roleName)
 	}
 
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
-	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	// AWS allows only one role per instance profile
-	if len(profile.Roles) > 0 {
-		for _, r := range profile.Roles {
-			if r == roleName {
-				return nil, NewRoleAlreadyInInstanceProfileError(roleName, instanceProfileName)
-			}
-		}
-		return nil, ErrInstanceProfileRoleLimit
-	}
-
 	if err := store.InstanceProfiles().AddRole(instanceProfileName, roleName); err != nil {
+		if errors.Is(err, iamstore.ErrRoleAlreadyInInstanceProfile) {
+			return nil, NewRoleAlreadyInInstanceProfileError(roleName, instanceProfileName)
+		}
+		if errors.Is(err, iamstore.ErrInstanceProfileRoleLimit) {
+			return nil, ErrInstanceProfileRoleLimit
+		}
 		return nil, err
 	}
 
@@ -190,10 +186,10 @@ func (s *IAMService) RemoveRoleFromInstanceProfile(ctx context.Context, reqCtx *
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
 
 	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
+		return nil, NewValidationError("InstanceProfileName")
 	}
 	if roleName == "" {
-		return nil, ErrNoSuchRole
+		return nil, NewValidationError("RoleName")
 	}
 
 	store, err := s.store(reqCtx)

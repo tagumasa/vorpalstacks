@@ -19,57 +19,29 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidParameter
 	}
 
-	if len(tableName) < 3 || len(tableName) > 255 {
-		return nil, ErrInvalidParameter
-	}
-
-	if !tableNameRegex.MatchString(tableName) {
-		return nil, ErrInvalidParameter
-	}
-
 	keySchema := parseKeySchema(req.Parameters)
-	if len(keySchema) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := validateKeySchema(keySchema); err != nil {
-		return nil, err
-	}
-
 	attrDefs := parseAttributeDefinitions(req.Parameters)
-	if err := validateAttributeDefinitions(keySchema, attrDefs); err != nil {
-		return nil, err
-	}
 
 	billingMode := dbstore.BillingMode(request.GetStringParam(req.Parameters, "BillingMode"))
-	if billingMode == "" {
-		billingMode = dbstore.BillingModeProvisioned
-	}
 
 	var provThroughput *dbstore.ProvisionedThroughput
 	if billingMode == dbstore.BillingModeProvisioned {
 		provThroughput = parseProvisionedThroughput(req.Parameters)
-		if provThroughput == nil {
-			return nil, ErrInvalidParameter
-		}
 	}
 
-	gsi := parseGlobalSecondaryIndexes(req.Parameters)
-	lsi := parseLocalSecondaryIndexes(req.Parameters)
-
-	if err := validateAllKeyAttributesInDefs(keySchema, gsi, lsi, attrDefs); err != nil {
+	gsi, err := parseGlobalSecondaryIndexes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	lsi, err := parseLocalSecondaryIndexes(req.Parameters)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := validateLSIPartitionKey(keySchema, lsi); err != nil {
+	streamSpec, err := parseStreamSpecification(req.Parameters)
+	if err != nil {
 		return nil, err
 	}
-
-	if err := validateIndexNameUniqueness(gsi, lsi); err != nil {
-		return nil, err
-	}
-
-	streamSpec := parseStreamSpecification(req.Parameters)
 	tagList := tagutil.ParseTags(req.Parameters, "Tags")
 	deletionProtectionEnabled := request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 
@@ -100,55 +72,32 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
+	tableClass := request.GetStringParam(req.Parameters, "TableClass")
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := store.Tables().Create(
-		tableName,
-		keySchema,
-		attrDefs,
-		billingMode,
-		provThroughput,
-		gsi,
-		lsi,
-		streamSpec,
-		tagList,
-		deletionProtectionEnabled,
-	)
+
+	table, err := s.createTableCore(store, CreateTableInput{
+		TableName:                 tableName,
+		KeySchema:                 keySchema,
+		AttributeDefinitions:      attrDefs,
+		BillingMode:               billingMode,
+		ProvisionedThroughput:     provThroughput,
+		GlobalSecondaryIndexes:    gsi,
+		LocalSecondaryIndexes:     lsi,
+		StreamSpecification:       streamSpec,
+		Tags:                      tagList,
+		DeletionProtectionEnabled: deletionProtectionEnabled,
+		WarmThroughput:            warmThroughput,
+		OnDemandThroughput:        onDemandThroughput,
+		GlobalTableSourceArn:      globalTableSourceArn,
+		SSEDescription:            sseDesc,
+		TableClass:                tableClass,
+	})
 	if err != nil {
-		if dbstore.IsTableAlreadyExists(err) {
-			return nil, ErrTableAlreadyExists
-		}
 		return nil, err
-	}
-
-	if sseDesc != nil {
-		table.SSEDescription = sseDesc
-	}
-
-	if warmThroughput != nil {
-		table.WarmThroughput = warmThroughput
-	}
-	if onDemandThroughput != nil {
-		table.OnDemandThroughput = onDemandThroughput
-	}
-	if globalTableSourceArn != "" {
-		table.GlobalTableSourceArn = globalTableSourceArn
-	}
-
-	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
-		table.TableClass = tableClass
-	}
-
-	if sseDesc != nil || request.GetStringParam(req.Parameters, "TableClass") != "" {
-		if err := store.Tables().Put(table); err != nil {
-			return nil, err
-		}
-	}
-
-	if len(tagList) > 0 {
-		store.Tables().Tags().Tag(tableName, tagutil.ToMap(tagList))
 	}
 
 	return map[string]interface{}{
@@ -240,6 +189,11 @@ func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.Reques
 // UpdateTable updates a DynamoDB table.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html
 func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// TableName must pass the same length and character checks as CreateTable.
+	if err := validateTableName(request.GetStringParam(req.Parameters, "TableName")); err != nil {
+		return nil, err
+	}
+
 	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
@@ -259,7 +213,16 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 		table.ProvisionedThroughput = provThroughput
 	}
 
+	// PROVISIONED billing mode requires ProvisionedThroughput.
+	if err := validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput); err != nil {
+		return nil, err
+	}
+
 	if attrDefs := parseAttributeDefinitions(req.Parameters); len(attrDefs) > 0 {
+		// New attribute definitions must cover all key attributes.
+		if err := validateAttributeDefinitions(table.KeySchema, attrDefs); err != nil {
+			return nil, err
+		}
 		table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, attrDefs)
 	}
 
@@ -271,10 +234,28 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if gsiUpdates, ok := req.Parameters["GlobalSecondaryIndexUpdates"].([]interface{}); ok {
-		table.GlobalSecondaryIndexes = applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, gsiUpdates)
+		updatedGSIs, err := applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, gsiUpdates)
+		if err != nil {
+			return nil, err
+		}
+		table.GlobalSecondaryIndexes = updatedGSIs
 	}
 
-	if streamSpec := parseStreamSpecification(req.Parameters); streamSpec != nil {
+	// Validate that all key attributes across table + GSIs + LSIs are
+	// present in AttributeDefinitions, and that index names are unique.
+	// These checks run on the merged post-update table state.
+	if err := validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions); err != nil {
+		return nil, err
+	}
+	if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes); err != nil {
+		return nil, err
+	}
+
+	streamSpec, err := parseStreamSpecification(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	if streamSpec != nil {
 		table.StreamSpecification = streamSpec
 		if streamSpec.StreamEnabled {
 			now := time.Now().UTC()

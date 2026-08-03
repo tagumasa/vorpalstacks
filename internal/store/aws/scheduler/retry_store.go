@@ -10,13 +10,13 @@ import (
 )
 
 // RetryStore manages the persistence of RetryRecords in Pebble so that
-// pending retries survive server restarts (S-B10).
+// pending retries survive server restarts.
 //
 // Key format: "<zero-padded 20-digit UnixNano>:<record.ID>"
 // Pebble stores keys in lexicographic byte order, so zero-padded numeric
 // timestamps sort chronologically. GetDueRetryRecords uses ScanRange to
 // read only records whose NextAttemptAt is at or before the cutoff,
-// avoiding a full-table scan on every tick cycle (M-2).
+// avoiding a full-table scan on every tick cycle.
 type RetryStore struct {
 	store *common.BaseStore
 }
@@ -53,7 +53,7 @@ func (rs *RetryStore) DeleteRetryRecord(recordID string, nextAttemptAt time.Time
 
 // GetDueRetryRecords returns all RetryRecords whose NextAttemptAt is at or
 // before the given cutoff time. Uses ScanRange to read only the relevant
-// prefix of the keyspace instead of iterating every record (M-2).
+// prefix of the keyspace instead of iterating every record.
 func (rs *RetryStore) GetDueRetryRecords(cutoff time.Time) ([]*RetryRecord, error) {
 	// Include records whose timestamp equals the cutoff by adding 1ns
 	// to the end key (ScanRange is exclusive on the end boundary).

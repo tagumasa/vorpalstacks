@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	store "vorpalstacks/internal/store/aws/apigateway"
-	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -72,13 +71,8 @@ func getRestApiId(req *request.ParsedRequest) string {
 
 // CreateRestApi creates a new REST API in API Gateway.
 func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-
 	api := &store.RestApi{
-		Name:                      name,
+		Name:                      request.GetStringParam(req.Parameters, "name"),
 		Description:               request.GetStringParam(req.Parameters, "description"),
 		Version:                   request.GetStringParam(req.Parameters, "version"),
 		ApiKeySource:              request.GetStringParam(req.Parameters, "apiKeySource"),
@@ -88,21 +82,8 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		EndpointAccessMode:        request.GetStringParam(req.Parameters, "endpointAccessMode"),
 	}
 
-	if !validateApiKeySource(api.ApiKeySource) {
-		return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
-	}
-	if !validateSecurityPolicy(api.SecurityPolicy) {
-		return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
-	}
-	if !validateEndpointAccessMode(api.EndpointAccessMode) {
-		return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
-	}
-
 	if _, ok := req.Parameters["minimumCompressionSize"]; ok {
 		v := int32(request.GetIntParam(req.Parameters, "minimumCompressionSize"))
-		if v < 0 || v > 10485760 {
-			return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
-		}
 		api.MinimumCompressionSize = &v
 	}
 
@@ -124,11 +105,6 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 			}
 		}
 	}
-	if api.EndpointConfiguration == nil || len(api.EndpointConfiguration.Types) == 0 {
-		api.EndpointConfiguration = &store.EndpointConfiguration{
-			Types: []string{"REGIONAL"},
-		}
-	}
 
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
 		api.Tags = tagutil.MapInterfaceToTags(tags)
@@ -139,23 +115,10 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	created, err := stores.restApis.Create(api)
+	cloneFrom := request.GetStringParam(req.Parameters, "cloneFrom")
+	created, err := s.createRestApiCore(stores, api, cloneFrom)
 	if err != nil {
-		return nil, err
-	}
-
-	if cloneFrom := request.GetStringParam(req.Parameters, "cloneFrom"); cloneFrom != "" {
-		sourceApi, err := stores.restApis.Get(cloneFrom)
-		if err != nil {
-			return nil, NewNotFoundException("RestApi", cloneFrom)
-		}
-		created.Resources = sourceApi.Resources
-		created.Models = sourceApi.Models
-		created.Authorizers = sourceApi.Authorizers
-		created.RequestValidators = sourceApi.RequestValidators
-		if err := stores.restApis.Update(created); err != nil {
-			return nil, err
-		}
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toRestApiResponse(created), nil
@@ -163,20 +126,14 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 
 // GetRestApi retrieves a REST API from API Gateway.
 func (s *APIGatewayService) GetRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	api, err := stores.restApis.Get(apiId)
+	api, err := s.getRestApiCore(stores, getRestApiId(req))
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
 	return s.toRestApiResponse(api), nil
 }
 
@@ -185,128 +142,40 @@ func (s *APIGatewayService) GetRestApi(ctx context.Context, reqCtx *request.Requ
 // models, authorizers, etc.) embedded in the RestApi document. It also
 // removes any base path mappings that reference the deleted API.
 func (s *APIGatewayService) DeleteRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.Delete(apiId); err != nil {
+	if err := s.deleteRestApiCore(stores, getRestApiId(req)); err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
-	// Clean up dangling base path mappings that referenced the deleted API.
-	_ = stores.domains.RemoveBasePathMappingsForApi(apiId)
-
 	return response.EmptyResponse(), nil
 }
 
 // UpdateRestApi updates an existing REST API in API Gateway.
 func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	stores.keyLocker.Lock(apiId)
-	defer stores.keyLocker.Unlock(apiId)
-
-	api, err := stores.restApis.Get(apiId)
+	api, err := s.updateRestApiCore(stores, getRestApiId(req), parsePatchOperations(req.Parameters))
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
-	for _, po := range parsePatchOperations(req.Parameters) {
-		switch {
-		case po.Path == "/name":
-			api.Name = po.Value
-		case po.Path == "/description":
-			api.Description = po.Value
-		case po.Path == "/version":
-			api.Version = po.Value
-		case po.Path == "/apiKeySource":
-			if !validateApiKeySource(po.Value) {
-				return nil, NewBadRequestException("Invalid apiKeySource: must be HEADER or AUTHORIZER")
-			}
-			api.ApiKeySource = po.Value
-		case po.Path == "/policy":
-			api.Policy = po.Value
-		case po.Path == "/disableExecuteApiEndpoint":
-			api.DisableExecuteApiEndpoint = po.Value == "true"
-		case po.Path == "/securityPolicy":
-			if !validateSecurityPolicy(po.Value) {
-				return nil, NewBadRequestException("Invalid securityPolicy: must be TLS_1_0, TLS_1_2, or start with SecurityPolicy_")
-			}
-			api.SecurityPolicy = po.Value
-		case po.Path == "/endpointAccessMode":
-			if !validateEndpointAccessMode(po.Value) {
-				return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
-			}
-			api.EndpointAccessMode = po.Value
-		case po.Path == "/minimumCompressionSize":
-			v, err := parseInt32(po.Value)
-			if err != nil {
-				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
-			}
-			if v < 0 || v > 10485760 {
-				return nil, NewBadRequestException("minimumCompressionSize must be between 0 and 10485760")
-			}
-			api.MinimumCompressionSize = &v
-		case strings.HasPrefix(po.Path, "/binaryMediaTypes"):
-			if po.Op == "add" {
-				if !sliceContains(api.BinaryMediaTypes, po.Value) {
-					api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
-				}
-			} else if po.Op == "remove" {
-				target := resolveBinaryMediaTypeToRemove(po.Path, po.Value, api.BinaryMediaTypes)
-				api.BinaryMediaTypes = removeString(api.BinaryMediaTypes, target)
-			}
-		case strings.HasPrefix(po.Path, "/endpointConfiguration/types"):
-			if api.EndpointConfiguration == nil {
-				api.EndpointConfiguration = &store.EndpointConfiguration{}
-			}
-			typeName := strings.TrimPrefix(po.Path, "/endpointConfiguration/types/")
-			if po.Op == "add" || po.Op == "replace" {
-				if !sliceContains(api.EndpointConfiguration.Types, typeName) {
-					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, typeName)
-				}
-			} else if po.Op == "remove" {
-				api.EndpointConfiguration.Types = removeString(api.EndpointConfiguration.Types, typeName)
-			}
-		}
-	}
-
-	if err := stores.restApis.Update(api); err != nil {
-		return nil, err
-	}
-
 	return s.toRestApiResponse(api), nil
 }
 
 // GetRestApis lists all REST APIs in API Gateway.
 func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	marker := request.GetStringParam(req.Parameters, "position")
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.restApis.List(common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	})
+	result, err := s.listRestApisCore(stores, limit, request.GetStringParam(req.Parameters, "position"))
 	if err != nil {
 		return nil, err
 	}
@@ -316,14 +185,14 @@ func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.Req
 		items = append(items, s.toRestApiResponse(api))
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"item": items,
 	}
 	if result.IsTruncated {
-		response["position"] = result.NextMarker
+		resp["position"] = result.NextMarker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]interface{} {

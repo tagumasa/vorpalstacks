@@ -165,7 +165,13 @@ func calculateNumberSize(numStr string) int64 {
 
 func validateKeyValueNotEmpty(key map[string]*dbstore.AttributeValue) bool {
 	for _, av := range key {
+		if av == nil {
+			return false
+		}
 		if av.S != nil && *av.S == "" {
+			return false
+		}
+		if av.N != nil && *av.N == "" {
 			return false
 		}
 		if av.B != nil && len(av.B) == 0 {
@@ -173,15 +179,6 @@ func validateKeyValueNotEmpty(key map[string]*dbstore.AttributeValue) bool {
 		}
 	}
 	return true
-}
-
-func getBoolParamWithDefault(params map[string]interface{}, key string, defaultValue bool) bool {
-	if v, ok := params[key]; ok {
-		if b, ok := v.(bool); ok {
-			return b
-		}
-	}
-	return defaultValue
 }
 
 func tokenizeExpression(expr string) []string {

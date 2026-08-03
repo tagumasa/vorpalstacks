@@ -39,7 +39,10 @@ func TestPaginateItems(t *testing.T) {
 		assert.False(t, truncated)
 	})
 
-	t.Run("invalid marker returns empty (Bug M2 regression)", func(t *testing.T) {
+	// A pagination marker that does not match any key must yield an empty
+	// page rather than iterating from the start of the slice. This
+	// preserves cursor semantics across paginated list APIs.
+	t.Run("invalid marker returns empty", func(t *testing.T) {
 		result, marker, truncated := paginateItems(items, "nonexistent", 3, keyFn)
 		assert.Equal(t, 0, len(result))
 		assert.Equal(t, "", marker)

@@ -14,11 +14,24 @@ import (
 func (s *IAMService) CreateServiceSpecificCredential(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	serviceName := request.GetStringParam(req.Parameters, "ServiceName")
 	if serviceName == "" {
 		return nil, NewValidationError("ServiceName")
+	}
+	if !validateServiceNamespace(serviceName) {
+		return nil, NewInvalidInputError("ServiceName", "must be 1 to 64 characters: alphanumeric or hyphens only")
+	}
+
+	// CredentialAgeDays (Smithy range [1, 36600]). When not specified the
+	// credential does not expire.
+	credentialAgeDays := 0
+	if _, ok := req.Parameters["CredentialAgeDays"]; ok {
+		credentialAgeDays = request.GetIntParam(req.Parameters, "CredentialAgeDays")
+		if credentialAgeDays < 1 || credentialAgeDays > 36600 {
+			return nil, NewInvalidInputError("CredentialAgeDays", "must be between 1 and 36600")
+		}
 	}
 
 	store, err := s.store(reqCtx)
@@ -29,7 +42,7 @@ func (s *IAMService) CreateServiceSpecificCredential(ctx context.Context, reqCtx
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	cred, err := store.ServiceSpecificCredentials().Create(userName, serviceName)
+	cred, err := store.ServiceSpecificCredentials().Create(userName, serviceName, credentialAgeDays)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +197,9 @@ func (s *IAMService) serviceSpecificCredentialToResponse(cred *iamstore.ServiceS
 		"ServiceSpecificCredentialArn": cred.ServiceSpecificCredentialArn,
 		"CreateDate":                   cred.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 		"Status":                       cred.Status,
+	}
+	if cred.ExpirationDate != nil {
+		resp["ExpirationDate"] = cred.ExpirationDate.Format(timeutils.ISO8601SimpleFormat)
 	}
 	if includePassword {
 		resp["ServicePassword"] = cred.ServicePassword

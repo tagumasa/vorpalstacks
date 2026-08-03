@@ -1,7 +1,16 @@
 // Package auth provides AWS authentication utilities for vorpalstacks.
 package auth
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+// ErrSessionExpired is a sentinel error indicating that the caller's
+// temporary credentials (STS session) have expired. The auth middleware
+// uses errors.Is to detect this and return an ExpiredTokenException
+// response so that AWS SDK clients can trigger credential refresh.
+var ErrSessionExpired = errors.New("session expired")
 
 // Credentials represents AWS credentials for authentication.
 type Credentials struct {

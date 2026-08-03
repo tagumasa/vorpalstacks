@@ -3,7 +3,6 @@ package athena
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -87,30 +86,11 @@ func (s *AthenaService) getAndRemoveCancelFunc(id string) (context.CancelFunc, b
 // GetWorkGroupStoreForRegion returns the cached WorkGroupStore for the given
 // region, creating a new store group if not already cached.
 func (s *AthenaService) GetWorkGroupStoreForRegion(region string) (*athena.WorkGroupStore, error) {
-	if v, ok := s.stores.Load(region); ok {
-		return v.(*athenaStores).workGroupStore, nil
-	}
-	if s.storageManager == nil {
-		return nil, fmt.Errorf("athena storage manager not initialised")
-	}
-	st, err := s.storageManager.GetStorage(region)
+	stores, err := s.getStoresForRegion(region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+		return nil, err
 	}
-	stores := &athenaStores{
-		workGroupStore:           athena.NewWorkGroupStore(st, s.accountID, region),
-		namedQueryStore:          athena.NewNamedQueryStore(st, region),
-		preparedStatementStore:   athena.NewPreparedStatementStore(st, region),
-		queryExecutionStore:      athena.NewQueryExecutionStore(st, region),
-		resultStore:              athena.NewResultStore(st, region),
-		dataCatalogStore:         athena.NewDataCatalogStore(st, s.accountID, region),
-		databaseStore:            athena.NewDatabaseStore(st, region),
-		tableStore:               athena.NewTableStore(st, region),
-		tableDataStore:           athena.NewTableDataStore(st, region),
-		capacityReservationStore: athena.NewCapacityReservationStore(st, s.accountID, region),
-	}
-	actual, _ := s.stores.LoadOrStore(region, stores)
-	return actual.(*athenaStores).workGroupStore, nil
+	return stores.workGroupStore, nil
 }
 
 func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, error) {

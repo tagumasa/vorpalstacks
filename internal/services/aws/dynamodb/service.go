@@ -29,6 +29,16 @@ func NewDynamoDBService(accountID string) *DynamoDBService {
 	}
 }
 
+// Close stops background goroutines (TTL workers) in all cached stores.
+func (s *DynamoDBService) Close() {
+	s.stores.Range(func(_, v any) bool {
+		if c, ok := v.(interface{ Close() }); ok {
+			c.Close()
+		}
+		return true
+	})
+}
+
 // SetStorageManager sets the storage manager for cross-service store access
 // (e.g. from the EventBus DynamoDBInvoker).
 func (s *DynamoDBService) SetStorageManager(sm *storage.RegionStorageManager) {
@@ -71,7 +81,10 @@ func (s *DynamoDBService) GetCachedStoreForRegion(region string) (dynamodbstore.
 		return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
 	}
 	store := dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region)
-	actual, _ := s.stores.LoadOrStore(region, store)
+	actual, loaded := s.stores.LoadOrStore(region, store)
+	if loaded {
+		store.Close()
+	}
 	return actual.(dynamodbstore.DynamoDBStoreInterface), nil
 }
 
@@ -121,6 +134,7 @@ func (s *DynamoDBService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("dynamodb", "DescribeStream", s.DescribeStream)
 	d.RegisterHandlerForService("dynamodb", "GetShardIterator", s.GetShardIterator)
 	d.RegisterHandlerForService("dynamodb", "GetRecords", s.GetRecords)
+	d.RegisterHandlerForService("dynamodb", "ListStreams", s.ListStreams)
 	d.RegisterHandlerForService("dynamodb", "DescribeLimits", s.DescribeLimits)
 
 	d.RegisterHandlerForService("dynamodb", "CreateBackup", s.CreateBackup)

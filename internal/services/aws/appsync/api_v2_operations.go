@@ -20,6 +20,9 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateApiName(name); err != nil {
+		return nil, err
+	}
 
 	eventConfig, err := parseEventConfig(req.Parameters)
 	if err != nil {
@@ -33,11 +36,16 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrApiLimitExceededException
 	}
 
+	tagMap, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	api := &appsyncstore.Api{
 		Name:         name,
 		EventConfig:  eventConfig,
 		OwnerContact: request.GetStringParam(req.Parameters, "ownerContact"),
-		Tags:         parseTags(req.Parameters),
+		Tags:         tagMap,
 		WafWebAclArn: request.GetStringParam(req.Parameters, "wafWebAclArn"),
 		XrayEnabled:  request.GetBoolParam(req.Parameters, "xrayEnabled"),
 	}
@@ -112,6 +120,9 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 	name := request.GetStringParam(req.Parameters, "name")
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
+	}
+	if err := validateApiName(name); err != nil {
+		return nil, err
 	}
 
 	// Fetch existing to preserve fields that were not provided in the request.

@@ -70,6 +70,7 @@ func (s *KMSService) Sign(ctx context.Context, reqCtx *request.RequestContext, r
 		}
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "Sign")
 
 	return map[string]interface{}{
 		"KeyId":            key.Arn,
@@ -144,6 +145,7 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 		}
 		return nil, err
 	}
+	s.markKeyLastUsed(stores, key.KeyID, "Verify")
 
 	return map[string]interface{}{
 		"KeyId":            key.Arn,

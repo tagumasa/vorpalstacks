@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 	"vorpalstacks/internal/utils/aws/types"
@@ -33,10 +32,6 @@ func validateSingleEnum(value, paramName string, validSet map[string]bool) error
 		return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", paramName, value))
 	}
 	return nil
-}
-
-func getMaxItems(params map[string]interface{}) int {
-	return pagination.GetMaxItems(params, pagination.DefaultMaxItems)
 }
 
 func parseCertificateArn(params map[string]interface{}, paramName string) (string, error) {
@@ -85,9 +80,9 @@ func validateDomainName(domain string) (string, error) {
 }
 
 // validateDomainValidationFields validates the DomainName and ValidationDomain
-// fields of a DomainValidationOption against the Smithy constraints. Shared by
-// the HTTP API (applyUserDomainValidationOptions) and the admin handler to
-// ensure consistent validation across both paths.
+// fields of a DomainValidationOption against the Smithy constraints (Smithy
+// DomainNameString: @length 1-253 + pattern). Shared by the HTTP API core
+// function and the admin handler to ensure consistent validation.
 func validateDomainValidationFields(domainName, validationDomain string) error {
 	if domainName == "" {
 		return NewInvalidDomainValidationOptionsException("DomainName is required in DomainValidationOptions")
@@ -95,39 +90,13 @@ func validateDomainValidationFields(domainName, validationDomain string) error {
 	if validationDomain == "" {
 		return NewInvalidDomainValidationOptionsException("ValidationDomain is required in DomainValidationOptions")
 	}
-	if !domainNamePattern.MatchString(domainName) {
+	if !isValidDomainName(domainName) {
 		return NewInvalidDomainValidationOptionsException(fmt.Sprintf("Invalid DomainName in DomainValidationOptions: %s", domainName))
 	}
-	if !domainNamePattern.MatchString(validationDomain) {
+	if !isValidDomainName(validationDomain) {
 		return NewInvalidDomainValidationOptionsException(fmt.Sprintf("Invalid ValidationDomain in DomainValidationOptions: %s", validationDomain))
 	}
 	return nil
-}
-
-func parseDomainName(params map[string]interface{}) (string, error) {
-	return validateDomainName(request.GetStringParam(params, "DomainName"))
-}
-
-func parseValidationMethod(params map[string]interface{}) (string, error) {
-	method := request.GetStringParam(params, "ValidationMethod")
-	if method == "" {
-		return "DNS", nil
-	}
-	if !isValidValidationMethod(method) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ValidationMethod: %s. Valid values are DNS, EMAIL, HTTP.", method))
-	}
-	return method, nil
-}
-
-func parseKeyAlgorithm(params map[string]interface{}) (string, error) {
-	algo := request.GetStringParam(params, "KeyAlgorithm")
-	if algo == "" {
-		return "RSA_2048", nil
-	}
-	if !isValidKeyAlgorithm(algo) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid KeyAlgorithm: %s. Valid values are RSA_1024, RSA_2048, RSA_3072, RSA_4096, EC_prime256v1, EC_secp384r1, EC_secp521r1.", algo))
-	}
-	return algo, nil
 }
 
 func parseCertificateTransparencyLoggingPreference(params map[string]interface{}) (string, error) {
@@ -189,20 +158,9 @@ func validateACMTags(tags []types.Tag) error {
 	return nil
 }
 
-func parseManagedBy(params map[string]interface{}) (string, error) {
-	mb := request.GetStringParam(params, "ManagedBy")
-	if mb == "" {
-		return "", nil
-	}
-	if !isValidManagedBy(mb) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid ManagedBy value: %s", mb))
-	}
-	return mb, nil
-}
-
 // validateCertificateAuthorityArn validates a PCA ARN string against the
-// Smithy PcaArn constraints. Shared by the HTTP API (via
-// parseCertificateAuthorityArn) and the admin handler.
+// Smithy PcaArn constraints. Shared by the HTTP API (via the core function)
+// and the admin handler.
 func validateCertificateAuthorityArn(arn string) (string, error) {
 	if arn == "" {
 		return "", nil
@@ -214,10 +172,6 @@ func validateCertificateAuthorityArn(arn string) (string, error) {
 		return "", awserrors.NewInvalidParameterException("Invalid CertificateAuthorityArn format")
 	}
 	return arn, nil
-}
-
-func parseCertificateAuthorityArn(params map[string]interface{}) (string, error) {
-	return validateCertificateAuthorityArn(request.GetStringParam(params, "CertificateAuthorityArn"))
 }
 
 func certificateOptionsToResponse(opts *acmstorelib.CertificateOptions) map[string]interface{} {
@@ -367,7 +321,7 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 	return result
 }
 
-func certificateSummaryToResponse(summary *acmstorelib.CertificateSummary) map[string]interface{} {
+func certificateSummaryToResponse(summary *CertSummaryOut) map[string]interface{} {
 	result := map[string]interface{}{
 		"CertificateArn":     summary.CertificateArn,
 		"DomainName":         summary.DomainName,
@@ -422,10 +376,10 @@ func certificateSummaryToResponse(summary *acmstorelib.CertificateSummary) map[s
 	return result
 }
 
-func listResultToResponse(result *acmstorelib.CertificateListResult) map[string]interface{} {
+func listResultToResponse(result *ListCertificatesResult) map[string]interface{} {
 	certs := make([]interface{}, len(result.Certificates))
-	for i, cert := range result.Certificates {
-		certs[i] = certificateSummaryToResponse(cert)
+	for i := range result.Certificates {
+		certs[i] = certificateSummaryToResponse(&result.Certificates[i])
 	}
 	resp := map[string]interface{}{
 		"CertificateSummaryList": certs,

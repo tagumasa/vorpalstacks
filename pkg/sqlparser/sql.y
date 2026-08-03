@@ -1845,6 +1845,14 @@ outer_join:
   {
     $$ = RightJoinStr
   }
+| FULL JOIN
+  {
+    $$ = FullJoinStr
+  }
+| FULL OUTER JOIN
+  {
+    $$ = FullJoinStr
+  }
 
 natural_join:
  NATURAL JOIN
@@ -1855,6 +1863,8 @@ natural_join:
   {
     if $2 == LeftJoinStr {
       $$ = NaturalLeftJoinStr
+    } else if $2 == FullJoinStr {
+      $$ = NaturalFullJoinStr
     } else {
       $$ = NaturalRightJoinStr
     }

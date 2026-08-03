@@ -86,6 +86,10 @@ func (s *InstanceProfileStore) Create(instanceProfileName, path, accountId strin
 }
 
 // AddRole adds a role to an instance profile.
+// AWS enforces a maximum of one role per instance profile; this limit
+// is checked atomically inside the lock to prevent race conditions
+// where two concurrent requests for different roles could both bypass
+// the check.
 func (s *InstanceProfileStore) AddRole(instanceProfileName, roleName string) error {
 	return s.kl.WithLock(instanceProfileName, func() error {
 		profile, err := s.Get(instanceProfileName)
@@ -97,6 +101,13 @@ func (s *InstanceProfileStore) AddRole(instanceProfileName, roleName string) err
 			if r == roleName {
 				return NewStoreError("add_role_to_instance_profile", ErrRoleAlreadyInInstanceProfile)
 			}
+		}
+
+		// Enforce the one-role-per-instance-profile limit inside the
+		// lock so concurrent requests for different roles cannot both
+		// succeed.
+		if len(profile.Roles) >= 1 {
+			return NewStoreError("add_role_to_instance_profile", ErrInstanceProfileRoleLimit)
 		}
 
 		profile.Roles = append(profile.Roles, roleName)

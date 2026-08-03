@@ -246,6 +246,8 @@ func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
 // Enforcement rules:
 //   - If storeLookup is nil or apiId is empty → allow (test mode / no FQDN).
 //   - If the API has no EventConfig or no auth modes configured → allow.
+//   - Per-namespace auth modes take precedence over EventConfig defaults
+//     when the channel falls under a namespace with explicit overrides.
 //   - If auth modes are configured → verify credentials for each type:
 //     API_KEY (store lookup + expiry), AWS_IAM (connection-level SigV4),
 //     AMAZON_COGNITO_USER_POOLS (JWT via CognitoTokenValidator),
@@ -253,7 +255,7 @@ func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
 //     OPENID_CONNECT (fail-closed — out of scope per docs/services.md).
 //
 // Returns nil when authorised; a non-nil error string when denied.
-func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId string, auth map[string]interface{}, isSubscribe bool, iamVerified bool) *string {
+func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channel string, auth map[string]interface{}, isSubscribe bool, iamVerified bool) *string {
 	if s.storeLookup == nil || apiId == "" {
 		return nil
 	}
@@ -268,12 +270,10 @@ func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId string,
 		return nil
 	}
 
-	var authModes []appsyncstore.AuthMode
-	if isSubscribe {
-		authModes = api.EventConfig.DefaultSubscribeAuthModes
-	} else {
-		authModes = api.EventConfig.DefaultPublishAuthModes
-	}
+	// Determine the effective auth modes. If the channel falls under a
+	// namespace with explicit auth-mode overrides, those take precedence;
+	// otherwise fall back to the EventConfig defaults.
+	authModes := resolveEffectiveAuthModes(store, apiId, channel, api.EventConfig, isSubscribe)
 
 	if len(authModes) == 0 {
 		return nil
@@ -306,6 +306,54 @@ func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId string,
 
 	msg := "Unauthorized: valid authentication required for this operation"
 	return &msg
+}
+
+// resolveEffectiveAuthModes returns the auth modes that apply to the given
+// channel. Channels use /{namespace}/{path} format. If a ChannelNamespace
+// with a matching name exists and has non-empty auth-mode overrides for the
+// requested operation, those are used instead of the EventConfig defaults.
+func resolveEffectiveAuthModes(store *appsyncstore.AppSyncStore, apiId, channel string, ec *appsyncstore.EventConfig, isSubscribe bool) []appsyncstore.AuthMode {
+	// Default auth modes from EventConfig.
+	var defaults []appsyncstore.AuthMode
+	if isSubscribe {
+		defaults = ec.DefaultSubscribeAuthModes
+	} else {
+		defaults = ec.DefaultPublishAuthModes
+	}
+
+	nsName := extractNamespaceFromChannel(channel)
+	if nsName == "" {
+		return defaults
+	}
+
+	ns, err := store.GetChannelNamespace(apiId, nsName)
+	if err != nil || ns == nil {
+		return defaults
+	}
+
+	if isSubscribe {
+		if len(ns.SubscribeAuthModes) > 0 {
+			return ns.SubscribeAuthModes
+		}
+	} else {
+		if len(ns.PublishAuthModes) > 0 {
+			return ns.PublishAuthModes
+		}
+	}
+
+	return defaults
+}
+
+// extractNamespaceFromChannel extracts the namespace segment from a channel
+// path. Channels use /{namespace}/{path...} format. Returns "" if the path
+// is too short or the namespace segment is empty.
+func extractNamespaceFromChannel(channel string) string {
+	channel = strings.TrimPrefix(channel, "/")
+	idx := strings.Index(channel, "/")
+	if idx < 0 {
+		return channel
+	}
+	return channel[:idx]
 }
 
 // verifyAPIKey looks up the provided API key in the store and checks expiry.
@@ -400,32 +448,6 @@ func extractFunctionNameFromAuthorizerUri(uri string) string {
 	return parts[len(parts)-1]
 }
 
-// isIAMAuthMode checks whether the given API has AWS_IAM in its
-// publish or subscribe auth modes.
-func (s *EventServer) isIAMAuthMode(apiId string, isSubscribe bool) bool {
-	if s.storeLookup == nil {
-		return false
-	}
-	store, err := s.storeLookup(apiId)
-	if err != nil || store == nil {
-		return false
-	}
-	api, err := store.GetApiById(apiId)
-	if err != nil || api == nil || api.EventConfig == nil {
-		return false
-	}
-	modes := api.EventConfig.DefaultPublishAuthModes
-	if isSubscribe {
-		modes = api.EventConfig.DefaultSubscribeAuthModes
-	}
-	for _, m := range modes {
-		if m.AuthType == "AWS_IAM" {
-			return true
-		}
-	}
-	return false
-}
-
 // lookupRegion resolves the store region for a given API ID.
 func (s *EventServer) lookupRegion(apiId string) string {
 	if s.storeLookup == nil {
@@ -438,29 +460,18 @@ func (s *EventServer) lookupRegion(apiId string) string {
 	return store.GetRegion()
 }
 
-// verifyConnectionIAM checks whether the WebSocket upgrade request carries
-// a valid AWS_IAM signature. Returns true when the connection-level
-// ConnectionAuthModes include AWS_IAM and the signature verifies.
+// verifyConnectionIAM attempts SigV4 verification of the WebSocket upgrade
+// request. Unlike the previous implementation that gated on
+// ConnectionAuthModes, this always attempts verification so that the
+// iamVerified flag is available for per-operation auth checks that may
+// include namespace-level IAM overrides (which are only resolved inside
+// authorizeEventOperation).
 func (s *EventServer) verifyConnectionIAM(r *http.Request, apiId string) bool {
-	if s.storeLookup == nil {
+	if s.sigVerifier == nil || s.storeLookup == nil {
 		return false
 	}
 	store, err := s.storeLookup(apiId)
 	if err != nil || store == nil {
-		return false
-	}
-	api, err := store.GetApiById(apiId)
-	if err != nil || api == nil || api.EventConfig == nil {
-		return false
-	}
-	hasIAM := false
-	for _, m := range api.EventConfig.ConnectionAuthModes {
-		if m.AuthType == "AWS_IAM" {
-			hasIAM = true
-			break
-		}
-	}
-	if !hasIAM {
 		return false
 	}
 	if err := s.sigVerifier.VerifyRequest(r, "appsync", store.GetRegion()); err != nil {
@@ -542,7 +553,7 @@ func (s *EventServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	apiId := s.extractApiId(r)
 
 	iamVerified := false
-	if s.sigVerifier != nil && apiId != "" {
+	if s.sigVerifier != nil && apiId != "" && r.Header.Get("Authorization") != "" {
 		iamVerified = s.verifyConnectionIAM(r, apiId)
 	}
 
@@ -625,17 +636,21 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 		auth["Authorization"] = authorization
 	}
 
-	// Verify SigV4 signature for AWS_IAM auth mode on HTTP requests.
+	// Verify SigV4 signature when an Authorization header is present.
+	// We always attempt verification rather than gating on a specific auth
+	// mode, because namespace-level IAM overrides are only resolved later
+	// inside authorizeEventOperation. If the client sent a valid SigV4
+	// signature, iamVerified will be true and any IAM auth mode (default or
+	// namespace-scoped) will accept it. If IAM is not among the effective
+	// auth modes, the flag is simply ignored.
 	iamVerified := false
 	if s.sigVerifier != nil && apiId != "" && r.Header.Get("Authorization") != "" {
-		if s.isIAMAuthMode(apiId, false) {
-			if err := s.sigVerifier.VerifyRequest(r, "appsync", s.lookupRegion(apiId)); err == nil {
-				iamVerified = true
-			}
+		if err := s.sigVerifier.VerifyRequest(r, "appsync", s.lookupRegion(apiId)); err == nil {
+			iamVerified = true
 		}
 	}
 
-	if msg := s.authorizeEventOperation(r.Context(), apiId, auth, false, iamVerified); msg != nil {
+	if msg := s.authorizeEventOperation(r.Context(), apiId, req.Channel, auth, false, iamVerified); msg != nil {
 		s.writeHTTPError(w, http.StatusUnauthorized, "%s", *msg)
 		return
 	}
@@ -827,7 +842,7 @@ func (s *EventServer) handleSubscribe(ctx context.Context, ws *wsConnection, sub
 	}
 
 	// Enforce configured auth modes.
-	if msg := s.authorizeEventOperation(ctx, ws.apiId, auth, true, ws.iamVerified); msg != nil {
+	if msg := s.authorizeEventOperation(ctx, ws.apiId, channel, auth, true, ws.iamVerified); msg != nil {
 		s.sendSubscribeError(ws, subId, "UnauthorizedException", *msg)
 		return
 	}
@@ -874,7 +889,7 @@ func (s *EventServer) handlePublish(ctx context.Context, ws *wsConnection, pubId
 	}
 
 	// Enforce configured auth modes.
-	if msg := s.authorizeEventOperation(ctx, ws.apiId, auth, false, ws.iamVerified); msg != nil {
+	if msg := s.authorizeEventOperation(ctx, ws.apiId, channel, auth, false, ws.iamVerified); msg != nil {
 		s.sendPublishError(ws, pubId, "UnauthorizedException", *msg)
 		return
 	}

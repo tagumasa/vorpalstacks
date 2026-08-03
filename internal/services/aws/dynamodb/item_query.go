@@ -32,8 +32,14 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	if limit > 1000 {
 		limit = 1000
 	}
-	exclusiveStartKey := parseExclusiveStartKey(req.Parameters)
-	scanIndexForward := getBoolParamWithDefault(req.Parameters, "ScanIndexForward", true)
+	exclusiveStartKey, eskErr := parseExclusiveStartKey(req.Parameters)
+	if eskErr != nil {
+		return nil, eskErr
+	}
+	scanIndexForward, err := validateBoolParam(req.Parameters, "ScanIndexForward", true)
+	if err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -42,7 +48,10 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 
 	var allItems []*dbstore.Item
 	keyCondExpr := request.GetStringParam(req.Parameters, "KeyConditionExpression")
-	exprAttrNames := parseExpressionAttributeNames(req.Parameters)
+	exprAttrNames, err := parseExpressionAttributeNames(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	exprAttrValues := parseExpressionAttributeValues(req.Parameters)
 
 	if keyCondExpr == "" {
@@ -163,7 +172,10 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 
 	hasMoreItems := len(allItems) > limit
 
-	projection := parseProjectionExpression(req.Parameters)
+	projection, err := parseProjectionExpression(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if projection != nil {
 		for _, item := range items {
 			item.Attributes = applyProjection(item.Attributes, projection)
@@ -227,7 +239,10 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	if limit > 1000 {
 		limit = 1000
 	}
-	exclusiveStartKey := parseExclusiveStartKey(req.Parameters)
+	exclusiveStartKey, eskErr := parseExclusiveStartKey(req.Parameters)
+	if eskErr != nil {
+		return nil, eskErr
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -266,14 +281,21 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	filterExpr := request.GetStringParam(req.Parameters, "FilterExpression")
 	var items []*dbstore.Item
 	if filterExpr != "" {
-		items = filterByExpression(scannedItems, filterExpr, parseExpressionAttributeNames(req.Parameters), parseExpressionAttributeValues(req.Parameters))
+		scanNames, namesErr := parseExpressionAttributeNames(req.Parameters)
+		if namesErr != nil {
+			return nil, namesErr
+		}
+		items = filterByExpression(scannedItems, filterExpr, scanNames, parseExpressionAttributeValues(req.Parameters))
 	} else {
 		items = scannedItems
 	}
 
 	hasMoreItems := len(allItems) > limit
 
-	projection := parseProjectionExpression(req.Parameters)
+	projection, err := parseProjectionExpression(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if projection != nil {
 		for _, item := range items {
 			item.Attributes = applyProjection(item.Attributes, projection)

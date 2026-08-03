@@ -60,7 +60,10 @@ func (s *AthenaService) ListDataCatalogs(ctx context.Context, reqCtx *request.Re
 		},
 	}, summaries...)
 
-	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	maxResults, err := validateMaxResults(req.Parameters, 50, 2, 50)
+	if err != nil {
+		return nil, err
+	}
 	marker := pagination.GetMarker(req.Parameters, "NextToken")
 	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
 		return item["CatalogName"].(string)
@@ -113,17 +116,31 @@ func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.R
 	if name == "AwsDataCatalog" {
 		return nil, ErrInvalidRequestException
 	}
+	if err := validateCatalogNameString(name); err != nil {
+		return nil, err
+	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
+	if description != "" {
+		if err := validateDescriptionString(description); err != nil {
+			return nil, err
+		}
+	}
 	catalogType := request.GetParamCaseInsensitive(req.Parameters, "Type")
 	if catalogType == "" {
 		catalogType = "GLUE"
+	}
+	if err := validateDataCatalogType(catalogType); err != nil {
+		return nil, err
 	}
 
 	parametersRaw := request.GetMapParamCaseInsensitive(req.Parameters, "Parameters")
 	parameters := convertMapToStringMap(parametersRaw)
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	if err := validateTags(tags); err != nil {
+		return nil, err
+	}
 
 	catalog := &athenastore.DataCatalog{
 		Name:        name,
@@ -205,6 +222,9 @@ func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.R
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {
+		if err := validateDescriptionString(description); err != nil {
+			return nil, err
+		}
 		catalog.Description = description
 	}
 
@@ -228,6 +248,12 @@ func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.Reque
 	if catalogName == "" {
 		catalogName = "AwsDataCatalog"
 	}
+
+	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
+	if err != nil {
+		return nil, err
+	}
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -262,9 +288,11 @@ func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	return map[string]interface{}{
-		"DatabaseList": dbList,
-	}, nil
+	pageResult := pagination.PaginateSlice(dbList, marker, maxResults, func(item map[string]interface{}) string {
+		return item["Name"].(string)
+	})
+
+	return pagination.BuildListResponse("DatabaseList", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // GetDatabase retrieves metadata for the specified database.
@@ -342,7 +370,10 @@ func (s *AthenaService) ListTableMetadata(ctx context.Context, reqCtx *request.R
 		})
 	}
 
-	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
+	if err != nil {
+		return nil, err
+	}
 	marker := pagination.GetMarker(req.Parameters, "NextToken")
 	pageResult := pagination.PaginateSlice(tableList, marker, maxResults, func(item map[string]interface{}) string {
 		return item["Name"].(string)

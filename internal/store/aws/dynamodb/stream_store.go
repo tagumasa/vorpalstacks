@@ -269,7 +269,10 @@ func (s *StreamStore) GetRecords(tableName string, fromSeq int64, limit int) ([]
 
 	nextSeq := fromSeq
 	if len(records) > 0 {
-		lastSeq, _ := strconv.ParseInt(records[len(records)-1].Dynamodb.SequenceNumber, 10, 64)
+		lastSeq, err := strconv.ParseInt(records[len(records)-1].Dynamodb.SequenceNumber, 10, 64)
+		if err != nil {
+			return nil, 0, fmt.Errorf("invalid sequence number in stream record: %w", err)
+		}
 		nextSeq = lastSeq
 	}
 

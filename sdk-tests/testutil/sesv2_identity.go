@@ -80,9 +80,9 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if !resp.VerifiedForSendingStatus {
 			return fmt.Errorf("expected VerifiedForSendingStatus=true")
 		}
-		// Tag the identity and verify GetEmailIdentity now returns the tag
-		// inline (H-2: per Smithy GetEmailIdentityResponse, Tags is part of
-		// the response shape).
+		// Tag the identity and verify GetEmailIdentity returns the tag
+		// inline; per the Smithy GetEmailIdentityResponse shape, Tags is
+		// part of the response and must be populated by the handler.
 		arn := tc.identityARN(emailAddress)
 		_, err = tc.client.TagResource(tc.ctx, &sesv2.TagResourceInput{
 			ResourceArn: aws.String(arn),
@@ -107,7 +107,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 			}
 		}
 		if !found {
-			return fmt.Errorf("GetEmailIdentity did not return Owner=sdk-test tag (H-2 regression)")
+			return fmt.Errorf("GetEmailIdentity did not return Owner=sdk-test tag")
 		}
 		return nil
 	}))

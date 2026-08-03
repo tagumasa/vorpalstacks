@@ -1074,11 +1074,11 @@ func (s *NeptuneDataService) dispatchQueuedJobs() (int, error) {
 
 			clusterDB := s.GetClusterEngineForRegion(region)
 
-			// BUG 4 fix: re-read the job from the store to detect a
-			// concurrent CancelLoaderJob before transitioning to
-			// LOAD_IN_PROGRESS. Without this, the dispatcher's snapshot
-			// can overwrite a CANCELLED status set between ListLoaderJobs
-			// and UpdateLoaderJob.
+			// Re-read the job from the store to detect a concurrent
+			// CancelLoaderJob before transitioning to LOAD_IN_PROGRESS.
+			// Without this, the dispatcher's snapshot can overwrite a
+			// CANCELLED status set between ListLoaderJobs and
+			// UpdateLoaderJob.
 			current, err := store.GetLoaderJob(job.GetLoadId())
 			if err != nil || current == nil || current.GetStatus() != "LOAD_QUEUED" {
 				continue

@@ -6,23 +6,52 @@ import (
 	"strconv"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *AthenaService) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) bool {
+// evaluateWhere evaluates a WHERE clause expression against a row and returns
+// whether the row matches. An error is returned for unsupported expression
+// types — these must NOT silently pass (fail-OPEN was the old behaviour,
+// which caused incorrect query results for NOT, BETWEEN, etc.).
+func (s *AthenaService) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) (bool, error) {
 	switch e := expr.(type) {
 	case *sqlparser.ComparisonExpr:
-		return s.evaluateComparison(e, row)
+		return s.evaluateComparison(e, row), nil
 	case *sqlparser.AndExpr:
-		return s.evaluateWhere(e.Left, row) && s.evaluateWhere(e.Right, row)
+		left, err := s.evaluateWhere(e.Left, row)
+		if err != nil {
+			return false, err
+		}
+		if !left {
+			return false, nil
+		}
+		return s.evaluateWhere(e.Right, row)
 	case *sqlparser.OrExpr:
-		return s.evaluateWhere(e.Left, row) || s.evaluateWhere(e.Right, row)
+		left, err := s.evaluateWhere(e.Left, row)
+		if err != nil {
+			return false, err
+		}
+		if left {
+			return true, nil
+		}
+		return s.evaluateWhere(e.Right, row)
 	case *sqlparser.ParenExpr:
 		return s.evaluateWhere(e.Expr, row)
 	case *sqlparser.IsExpr:
-		return s.evaluateIs(e, row)
+		return s.evaluateIs(e, row), nil
+	case *sqlparser.NotExpr:
+		result, err := s.evaluateWhere(e.Expr, row)
+		if err != nil {
+			return false, err
+		}
+		return !result, nil
+	case *sqlparser.RangeCond:
+		return s.evaluateRangeCond(e, row), nil
+	default:
+		return false, awserrors.NewAWSError("InvalidRequestException",
+			fmt.Sprintf("unsupported WHERE expression type: %T", expr), 400)
 	}
-	return true
 }
 
 func (s *AthenaService) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
@@ -46,6 +75,23 @@ func (s *AthenaService) evaluateComparison(expr *sqlparser.ComparisonExpr, row m
 		return s.matchLike(fmt.Sprintf("%v", leftVal), fmt.Sprintf("%v", rightVal))
 	case sqlparser.NotLikeStr:
 		return !s.matchLike(fmt.Sprintf("%v", leftVal), fmt.Sprintf("%v", rightVal))
+	}
+	return false
+}
+
+// evaluateRangeCond evaluates BETWEEN / NOT BETWEEN expressions.
+func (s *AthenaService) evaluateRangeCond(expr *sqlparser.RangeCond, row map[string]interface{}) bool {
+	val := s.getExprValue(expr.Left, row)
+	fromVal := s.getExprValue(expr.From, row)
+	toVal := s.getExprValue(expr.To, row)
+
+	inRange := s.compareValues(val, fromVal) >= 0 && s.compareValues(val, toVal) <= 0
+
+	switch expr.Operator {
+	case sqlparser.BetweenStr:
+		return inRange
+	case sqlparser.NotBetweenStr:
+		return !inRange
 	}
 	return false
 }

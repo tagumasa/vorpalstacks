@@ -269,8 +269,14 @@ func (s *DynamoDBService) executePartiQLInsertInTxn(ctx context.Context, reqCtx 
 }
 
 func (s *DynamoDBService) executePartiQLUpdateInTxn(ctx context.Context, reqCtx *request.RequestContext, txn *dbstore.DynamoDBTxn, statement string, params *partiQLParams) (interface{}, error) {
-	tableName, assignments, whereExpr := parseUpdateStatement(statement)
+	tableName, clauses, whereExpr := parseUpdateStatement(statement)
 	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// At least one clause must be present.
+	if len(clauses.setAssignments) == 0 && len(clauses.removeAttrs) == 0 &&
+		len(clauses.addAssignments) == 0 && len(clauses.deleteAssignments) == 0 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -314,7 +320,14 @@ func (s *DynamoDBService) executePartiQLUpdateInTxn(ctx context.Context, reqCtx 
 			Attributes: copyAttributes(item.Attributes),
 		}
 
-		applySetAssignments(item.Attributes, assignments, params)
+		applySetAssignments(item.Attributes, clauses.setAssignments, params)
+		applyRemoveAttrs(item.Attributes, clauses.removeAttrs)
+		if err := applyAddAssignments(item.Attributes, clauses.addAssignments, params); err != nil {
+			return nil, err
+		}
+		if err := applyDeleteAssignments(item.Attributes, clauses.deleteAssignments, params); err != nil {
+			return nil, err
+		}
 
 		newSize := calculateItemSize(item.Attributes)
 		sizeDelta := newSize - oldSize

@@ -3,76 +3,64 @@ package apigateway
 
 import (
 	"context"
-	"strconv"
-	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
-	store "vorpalstacks/internal/store/aws/apigateway"
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CreateApiKey creates a new API key in API Gateway.
 func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiKey := &store.ApiKey{
+	in := &ApiKeyInput{
 		Name:        request.GetStringParam(req.Parameters, "name"),
 		Description: request.GetStringParam(req.Parameters, "description"),
 		Enabled:     true,
 		CustomerId:  request.GetStringParam(req.Parameters, "customerId"),
 		Value:       request.GetStringParam(req.Parameters, "value"),
 	}
-
 	if v, ok := req.Parameters["enabled"]; ok {
 		if b, ok := v.(bool); ok {
-			apiKey.Enabled = b
+			in.Enabled = b
 		}
 	}
-
 	if stageKeys, ok := req.Parameters["stageKeys"].([]interface{}); ok {
 		for _, sk := range stageKeys {
 			if sks, ok := sk.(string); ok {
 				if !validateStageKey(sks) {
 					return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + sks)
 				}
-				apiKey.StageKeys = append(apiKey.StageKeys, sks)
+				in.StageKeys = append(in.StageKeys, sks)
 			}
 		}
 	}
-
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
-		apiKey.Tags = tagutil.MapInterfaceToTags(tags)
+		in.Tags = tagutil.MapInterfaceToTags(tags)
 	}
 
-	generateDistinctId := true
-	if v, ok := req.Parameters["generateDistinctId"].(bool); ok {
-		generateDistinctId = v
-	}
-
-	// When generateDistinctId is false, a customer-supplied Value is required
-	// to serve as the API key identifier.
-	if !generateDistinctId {
-		if apiKey.Value == "" {
+	// generateDistinctId=false forces the caller-supplied value to become
+	// the key id; otherwise the store generates one.
+	if v, ok := req.Parameters["generateDistinctId"].(bool); ok && !v {
+		if in.Value == "" {
 			return nil, NewBadRequestException("value is required when generateDistinctId is false")
 		}
-		if len(apiKey.Value) < 20 || len(apiKey.Value) > 128 {
+		if len(in.Value) < 20 || len(in.Value) > 128 {
 			return nil, NewBadRequestException("value must be between 20 and 128 characters")
 		}
-		apiKey.Id = apiKey.Value
+		in.Id = in.Value
+	} else {
+		in.Value = ""
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := stores.usage.CreateApiKey(apiKey)
+	created, err := s.createApiKeyCore(stores, in)
 	if err != nil {
 		return nil, err
 	}
-
 	return s.toApiKeyResponseWithIncludeValue(created, true), nil
 }
 
@@ -82,21 +70,16 @@ func (s *APIGatewayService) GetApiKey(ctx context.Context, reqCtx *request.Reque
 	if apiKeyId == "" {
 		apiKeyId = getPathParam(req, "apiKey")
 	}
-	if apiKeyId == "" {
-		return nil, NewBadRequestException("apiKey is required")
-	}
-
 	includeValue := request.GetBoolParam(req.Parameters, "includeValue")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	apiKey, err := stores.usage.GetApiKey(apiKeyId)
+	apiKey, err := s.getApiKeyCore(stores, apiKeyId)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
 	return s.toApiKeyResponseWithIncludeValue(apiKey, includeValue), nil
 }
 
@@ -106,22 +89,14 @@ func (s *APIGatewayService) DeleteApiKey(ctx context.Context, reqCtx *request.Re
 	if apiKeyId == "" {
 		apiKeyId = getPathParam(req, "apiKey")
 	}
-	if apiKeyId == "" {
-		return nil, NewBadRequestException("apiKey is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.usage.DeleteApiKey(apiKeyId); err != nil {
+	if err := s.deleteApiKeyCore(stores, apiKeyId); err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
-	if s.runtimeServer != nil {
-		s.runtimeServer.RemoveApiKey(apiKeyId)
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -131,77 +106,29 @@ func (s *APIGatewayService) UpdateApiKey(ctx context.Context, reqCtx *request.Re
 	if apiKeyId == "" {
 		apiKeyId = getPathParam(req, "apiKey")
 	}
-	if apiKeyId == "" {
-		return nil, NewBadRequestException("apiKey is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	stores.keyLocker.Lock(apiKeyId)
-	defer stores.keyLocker.Unlock(apiKeyId)
-
-	apiKey, err := stores.usage.GetApiKey(apiKeyId)
+	apiKey, err := s.updateApiKeyCore(stores, apiKeyId, parsePatchOperations(req.Parameters))
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
-	for _, po := range parsePatchOperations(req.Parameters) {
-		switch {
-		case po.Path == "/name":
-			apiKey.Name = po.Value
-		case po.Path == "/description":
-			apiKey.Description = po.Value
-		case po.Path == "/customerId":
-			apiKey.CustomerId = po.Value
-		case po.Path == "/enabled":
-			apiKey.Enabled = po.Value == "true"
-		case strings.HasPrefix(po.Path, "/stageKeys/"):
-			if apiKey.StageKeys == nil {
-				apiKey.StageKeys = []string{}
-			}
-			stageKey := strings.TrimPrefix(po.Path, "/stageKeys/")
-			if (po.Op == "add" || po.Op == "replace") && !validateStageKey(stageKey) {
-				return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + stageKey)
-			}
-			if po.Op == "add" || po.Op == "replace" {
-				if !sliceContains(apiKey.StageKeys, stageKey) {
-					apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
-				}
-			} else if po.Op == "remove" {
-				apiKey.StageKeys = removeString(apiKey.StageKeys, stageKey)
-			}
-		}
-	}
-	if err := stores.usage.UpdateApiKey(apiKey); err != nil {
-		return nil, err
-	}
-
-	if s.runtimeServer != nil {
-		s.runtimeServer.RemoveApiKey(apiKeyId)
-	}
-
 	return s.toApiKeyResponse(apiKey), nil
 }
 
 // GetApiKeys retrieves all API keys from API Gateway.
 func (s *APIGatewayService) GetApiKeys(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	marker := request.GetStringParam(req.Parameters, "position")
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.usage.ListApiKeys(common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	})
+	result, err := s.listApiKeysCore(stores, limit, request.GetStringParam(req.Parameters, "position"))
 	if err != nil {
 		return nil, err
 	}
@@ -221,11 +148,11 @@ func (s *APIGatewayService) GetApiKeys(ctx context.Context, reqCtx *request.Requ
 	return response, nil
 }
 
-func (s *APIGatewayService) toApiKeyResponse(k *store.ApiKey) map[string]interface{} {
+func (s *APIGatewayService) toApiKeyResponse(k *apigateway.ApiKey) map[string]interface{} {
 	return s.toApiKeyResponseWithIncludeValue(k, false)
 }
 
-func (s *APIGatewayService) toApiKeyResponseWithIncludeValue(k *store.ApiKey, includeValue bool) map[string]interface{} {
+func (s *APIGatewayService) toApiKeyResponseWithIncludeValue(k *apigateway.ApiKey, includeValue bool) map[string]interface{} {
 	response := map[string]interface{}{
 		"id":              k.Id,
 		"name":            k.Name,
@@ -255,23 +182,14 @@ func (s *APIGatewayService) toApiKeyResponseWithIncludeValue(k *store.ApiKey, in
 
 // CreateUsagePlan creates a new usage plan in API Gateway.
 func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if len(name) > 255 {
-		return nil, NewBadRequestException("name must be between 1 and 255 characters")
-	}
-
-	usagePlan := &store.UsagePlan{
-		Name:        name,
+	in := &UsagePlanInput{
+		Name:        request.GetStringParam(req.Parameters, "name"),
 		Description: request.GetStringParam(req.Parameters, "description"),
 	}
-
 	if apiStages, ok := req.Parameters["apiStages"].([]interface{}); ok {
 		for _, as := range apiStages {
 			if asMap, ok := as.(map[string]interface{}); ok {
-				stage := store.ApiStage{}
+				stage := ApiStageInput{}
 				if apiId, ok := asMap["apiId"].(string); ok {
 					stage.ApiId = apiId
 				}
@@ -279,10 +197,10 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 					stage.Stage = stageName
 				}
 				if throttleMap, ok := asMap["throttle"].(map[string]interface{}); ok {
-					stage.Throttle = make(map[string]*store.Throttle)
+					stage.Throttle = make(map[string]*apigateway.Throttle)
 					for k, v := range throttleMap {
 						if ts, ok := v.(map[string]interface{}); ok {
-							t := &store.Throttle{}
+							t := &apigateway.Throttle{}
 							if bl, ok := ts["burstLimit"]; ok {
 								switch bv := bl.(type) {
 								case int:
@@ -295,8 +213,7 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 								}
 							}
 							if rl, ok := ts["rateLimit"]; ok {
-								switch rv := rl.(type) {
-								case float64:
+								if rv, ok := rl.(float64); ok {
 									t.RateLimit = rv
 								}
 								if !validateThrottleRateLimit(t.RateLimit) {
@@ -307,76 +224,62 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 						}
 					}
 				}
-				usagePlan.ApiStages = append(usagePlan.ApiStages, stage)
+				in.ApiStages = append(in.ApiStages, stage)
 			}
 		}
 	}
-
 	if quotaMap, ok := req.Parameters["quota"].(map[string]interface{}); ok {
-		usagePlan.Quota = &store.Quota{}
+		in.Quota = &QuotaInput{}
 		if limit, ok := quotaMap["limit"]; ok {
 			switch v := limit.(type) {
 			case int:
-				usagePlan.Quota.Limit = int64(v)
+				in.Quota.Limit = int64(v)
 			case float64:
-				usagePlan.Quota.Limit = int64(v)
+				in.Quota.Limit = int64(v)
 			}
 		}
 		if period, ok := quotaMap["period"].(string); ok {
-			if !validateQuotaPeriod(period) {
-				return nil, NewBadRequestException("Invalid quota period: must be DAY, WEEK, or MONTH")
-			}
-			usagePlan.Quota.Period = period
+			in.Quota.Period = period
 		} else {
 			return nil, NewBadRequestException("quota period is required when quota is set")
 		}
 		if offset, ok := quotaMap["offset"]; ok {
 			switch v := offset.(type) {
 			case int:
-				usagePlan.Quota.Offset = int64(v)
+				in.Quota.Offset = int64(v)
 			case float64:
-				usagePlan.Quota.Offset = int64(v)
+				in.Quota.Offset = int64(v)
 			}
 		}
 	}
-
 	if throttleMap, ok := req.Parameters["throttle"].(map[string]interface{}); ok {
-		usagePlan.Throttle = &store.Throttle{}
+		in.Throttle = &ThrottleInput{}
 		if burst, ok := throttleMap["burstLimit"]; ok {
 			switch v := burst.(type) {
 			case int:
-				usagePlan.Throttle.BurstLimit = int64(v)
+				in.Throttle.BurstLimit = int64(v)
 			case float64:
-				usagePlan.Throttle.BurstLimit = int64(v)
-			}
-			if !validateThrottleBurstLimit(usagePlan.Throttle.BurstLimit) {
-				return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+				in.Throttle.BurstLimit = int64(v)
 			}
 		}
 		if rate, ok := throttleMap["rateLimit"]; ok {
-			switch v := rate.(type) {
-			case float64:
-				usagePlan.Throttle.RateLimit = v
-			}
-			if !validateThrottleRateLimit(usagePlan.Throttle.RateLimit) {
-				return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+			if v, ok := rate.(float64); ok {
+				in.Throttle.RateLimit = v
 			}
 		}
 	}
-
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
-		usagePlan.Tags = tagutil.MapInterfaceToTags(tags)
+		in.Tags = tagutil.MapInterfaceToTags(tags)
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := stores.usage.CreateUsagePlan(usagePlan)
+	created, err := s.createUsagePlanCore(stores, in)
 	if err != nil {
 		return nil, err
 	}
-
 	return s.toUsagePlanResponse(created), nil
 }
 
@@ -386,20 +289,16 @@ func (s *APIGatewayService) GetUsagePlan(ctx context.Context, reqCtx *request.Re
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	usagePlan, err := stores.usage.GetUsagePlan(usagePlanId)
+	plan, err := s.getUsagePlanCore(stores, usagePlanId)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
-	return s.toUsagePlanResponse(usagePlan), nil
+	return s.toUsagePlanResponse(plan), nil
 }
 
 // DeleteUsagePlan deletes a usage plan from API Gateway.
@@ -408,18 +307,14 @@ func (s *APIGatewayService) DeleteUsagePlan(ctx context.Context, reqCtx *request
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.usage.DeleteUsagePlan(usagePlanId); err != nil {
+	if err := s.deleteUsagePlanCore(stores, usagePlanId); err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -429,150 +324,29 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	stores.keyLocker.Lock(usagePlanId)
-	defer stores.keyLocker.Unlock(usagePlanId)
-
-	usagePlan, err := stores.usage.GetUsagePlan(usagePlanId)
+	plan, err := s.updateUsagePlanCore(stores, usagePlanId, parsePatchOperations(req.Parameters))
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-
-	for _, po := range parsePatchOperations(req.Parameters) {
-		switch {
-		case po.Path == "/name":
-			usagePlan.Name = po.Value
-		case po.Path == "/description":
-			usagePlan.Description = po.Value
-		case po.Path == "/productCode":
-			usagePlan.ProductCode = po.Value
-		case po.Path == "/quota/limit":
-			if usagePlan.Quota == nil {
-				usagePlan.Quota = &store.Quota{}
-			}
-			if v, err := parseInt64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid quota limit: not a number")
-			} else {
-				usagePlan.Quota.Limit = v
-			}
-		case po.Path == "/quota/period":
-			if usagePlan.Quota == nil {
-				usagePlan.Quota = &store.Quota{}
-			}
-			if !validateQuotaPeriod(po.Value) {
-				return nil, NewBadRequestException("Invalid quota period: must be DAY, WEEK, or MONTH")
-			}
-			usagePlan.Quota.Period = po.Value
-		case po.Path == "/quota/offset":
-			if usagePlan.Quota == nil {
-				usagePlan.Quota = &store.Quota{}
-			}
-			if v, err := parseInt64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid quota offset: not a number")
-			} else {
-				usagePlan.Quota.Offset = v
-			}
-		case po.Path == "/throttle/burstLimit":
-			if usagePlan.Throttle == nil {
-				usagePlan.Throttle = &store.Throttle{}
-			}
-			if v, err := parseInt64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid throttle burstLimit: not a number")
-			} else if !validateThrottleBurstLimit(v) {
-				return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
-			} else {
-				usagePlan.Throttle.BurstLimit = v
-			}
-		case po.Path == "/throttle/rateLimit":
-			if usagePlan.Throttle == nil {
-				usagePlan.Throttle = &store.Throttle{}
-			}
-			if v, err := parseFloat64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid throttle rateLimit: not a number")
-			} else if !validateThrottleRateLimit(v) {
-				return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
-			} else {
-				usagePlan.Throttle.RateLimit = v
-			}
-		case strings.HasPrefix(po.Path, "/apiStages/"):
-			rest := strings.TrimPrefix(po.Path, "/apiStages/")
-			parts := strings.SplitN(rest, "/", 2)
-			idxStr := parts[0]
-			var idx int
-			if idxStr == "-" || idxStr == "" {
-				if po.Op != "remove" {
-					usagePlan.ApiStages = append(usagePlan.ApiStages, store.ApiStage{})
-					idx = len(usagePlan.ApiStages) - 1
-				} else {
-					continue
-				}
-			} else {
-				var err error
-				idx, err = strconv.Atoi(idxStr)
-				if err != nil || idx < 0 {
-					continue
-				}
-				if idx >= len(usagePlan.ApiStages) {
-					if po.Op != "remove" {
-						usagePlan.ApiStages = append(usagePlan.ApiStages, store.ApiStage{})
-						idx = len(usagePlan.ApiStages) - 1
-					} else {
-						continue
-					}
-				}
-			}
-			if len(parts) < 2 {
-				continue
-			}
-			field := parts[1]
-			switch {
-			case field == "apiId":
-				usagePlan.ApiStages[idx].ApiId = po.Value
-			case field == "stage":
-				usagePlan.ApiStages[idx].Stage = po.Value
-			}
-		}
-	}
-
-	// Ensure quota period is set whenever quota exists. This catches cases
-	// where /quota/limit or /quota/offset is patched on a plan that
-	// previously had no quota, which would leave Period empty and cause
-	// fail-closed denial at runtime.
-	if usagePlan.Quota != nil && !validateQuotaPeriod(usagePlan.Quota.Period) {
-		return nil, NewBadRequestException("quota period is required when quota is set")
-	}
-
-	if err := stores.usage.UpdateUsagePlan(usagePlan); err != nil {
-		return nil, err
-	}
-
-	return s.toUsagePlanResponse(usagePlan), nil
+	return s.toUsagePlanResponse(plan), nil
 }
 
 // GetUsagePlans retrieves all usage plans from API Gateway.
 func (s *APIGatewayService) GetUsagePlans(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	marker := request.GetStringParam(req.Parameters, "position")
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.usage.ListUsagePlans(common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	})
+	result, err := s.listUsagePlansCore(stores, limit, request.GetStringParam(req.Parameters, "position"))
 	if err != nil {
 		return nil, err
 	}
@@ -592,7 +366,7 @@ func (s *APIGatewayService) GetUsagePlans(ctx context.Context, reqCtx *request.R
 	return response, nil
 }
 
-func (s *APIGatewayService) toUsagePlanResponse(p *store.UsagePlan) map[string]interface{} {
+func (s *APIGatewayService) toUsagePlanResponse(p *apigateway.UsagePlan) map[string]interface{} {
 	response := map[string]interface{}{
 		"id":   p.Id,
 		"name": p.Name,
@@ -651,44 +425,19 @@ func (s *APIGatewayService) CreateUsagePlanKey(ctx context.Context, reqCtx *requ
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
-
-	keyId := request.GetStringParam(req.Parameters, "keyId")
-	keyType := request.GetStringParam(req.Parameters, "keyType")
-	if keyId == "" {
-		return nil, NewBadRequestException("keyId is required")
-	}
-	if keyType == "" {
-		return nil, NewBadRequestException("keyType is required")
-	}
-	if keyType != "API_KEY" {
-		return nil, NewBadRequestException("keyType must be API_KEY")
+	in := &UsagePlanKeyInput{
+		KeyId:   request.GetStringParam(req.Parameters, "keyId"),
+		KeyType: request.GetStringParam(req.Parameters, "keyType"),
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	apiKey, err := stores.usage.GetApiKey(keyId)
+	created, err := s.createUsagePlanKeyCore(stores, usagePlanId, in)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
-	key := &store.UsagePlanKey{
-		Id:    keyId,
-		Type:  keyType,
-		Value: apiKey.Value,
-		Name:  apiKey.Name,
-	}
-
-	created, err := stores.usage.CreateUsagePlanKey(usagePlanId, key)
-	if err != nil {
-		return nil, err
-	}
-
 	return s.toUsagePlanKeyResponse(created), nil
 }
 
@@ -698,27 +447,19 @@ func (s *APIGatewayService) GetUsagePlanKey(ctx context.Context, reqCtx *request
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
-
 	keyId := request.GetStringParam(req.Parameters, "keyId")
 	if keyId == "" {
 		keyId = getPathParam(req, "keyId")
-	}
-	if keyId == "" {
-		return nil, NewBadRequestException("keyId is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key, err := stores.usage.GetUsagePlanKey(usagePlanId, keyId)
+	key, err := s.getUsagePlanKeyCore(stores, usagePlanId, keyId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
-
 	return s.toUsagePlanKeyResponse(key), nil
 }
 
@@ -728,26 +469,18 @@ func (s *APIGatewayService) DeleteUsagePlanKey(ctx context.Context, reqCtx *requ
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
-
 	keyId := request.GetStringParam(req.Parameters, "keyId")
 	if keyId == "" {
 		keyId = getPathParam(req, "keyId")
-	}
-	if keyId == "" {
-		return nil, NewBadRequestException("keyId is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.usage.DeleteUsagePlanKey(usagePlanId, keyId); err != nil {
-		return nil, ErrNotFoundException
+	if err := s.deleteUsagePlanKeyCore(stores, usagePlanId, keyId); err != nil {
+		return nil, toApiGatewayError(err)
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -757,24 +490,16 @@ func (s *APIGatewayService) GetUsagePlanKeys(ctx context.Context, reqCtx *reques
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
 
-	maxItems, err := ResolvePaginationLimit(req.Parameters)
+	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	marker := request.GetStringParam(req.Parameters, "position")
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	})
+	result, err := s.listUsagePlanKeysCore(stores, usagePlanId, limit, request.GetStringParam(req.Parameters, "position"))
 	if err != nil {
 		return nil, err
 	}
@@ -794,7 +519,7 @@ func (s *APIGatewayService) GetUsagePlanKeys(ctx context.Context, reqCtx *reques
 	return response, nil
 }
 
-func (s *APIGatewayService) toUsagePlanKeyResponse(k *store.UsagePlanKey) map[string]interface{} {
+func (s *APIGatewayService) toUsagePlanKeyResponse(k *apigateway.UsagePlanKey) map[string]interface{} {
 	return map[string]interface{}{
 		"id":    k.Id,
 		"type":  k.Type,
@@ -809,82 +534,16 @@ func (s *APIGatewayService) GetUsage(ctx context.Context, reqCtx *request.Reques
 	if usagePlanId == "" {
 		usagePlanId = getPathParam(req, "usagePlanId")
 	}
-	if usagePlanId == "" {
-		return nil, NewBadRequestException("usagePlanId is required")
-	}
-
 	keyId := request.GetStringParam(req.Parameters, "keyId")
 	if keyId == "" {
 		keyId = getPathParam(req, "keyId")
 	}
-
 	startDate := request.GetStringParam(req.Parameters, "startDate")
 	endDate := request.GetStringParam(req.Parameters, "endDate")
-	if startDate == "" || endDate == "" {
-		return nil, NewBadRequestException("startDate and endDate are required")
-	}
-	if !validateUsageDateFormat(startDate) || !validateUsageDateFormat(endDate) {
-		return nil, NewBadRequestException("startDate and endDate must be in YYYY-MM-DD format")
-	}
-
-	// AWS spec: startDate must not be after endDate, and the range must not
-	// exceed 90 days.
-	startTime, _ := time.Parse("2006-01-02", startDate)
-	endTime, _ := time.Parse("2006-01-02", endDate)
-	if startTime.After(endTime) {
-		return nil, NewBadRequestException("startDate must not be after endDate")
-	}
-	if endTime.Sub(startTime).Hours()/24 > 90 {
-		return nil, NewBadRequestException("The date range must not exceed 90 days")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	_, err = stores.usage.GetUsagePlan(usagePlanId)
-	if err != nil {
-		return nil, ErrNotFoundException
-	}
-
-	var apiKeys []string
-	if keyId != "" {
-		apiKeys = []string{keyId}
-	} else {
-		allKeys, err := common.ListMatching[store.UsagePlanKey](stores.usage.BaseStore, "usageplankey#"+usagePlanId+"#", nil)
-		if err != nil {
-			return nil, err
-		}
-		for _, key := range allKeys {
-			apiKeys = append(apiKeys, key.Id)
-		}
-	}
-
-	usageCounts := make(map[string]int64)
-	for _, keyId := range apiKeys {
-		records, err := stores.usage.ListUsageRecordsForAPIKey(usagePlanId, keyId, startDate, endDate)
-		if err != nil {
-			logs.Warn("GetUsage: failed to list usage records for key", logs.String("keyId", keyId), logs.Err(err))
-			continue
-		}
-		for _, record := range records {
-			usageCounts[record.Date] += record.RequestCount
-		}
-	}
-
-	items := make([]interface{}, 0, len(usageCounts))
-	for date, count := range usageCounts {
-		items = append(items, map[string]interface{}{
-			"date":         date,
-			"requestCount": count,
-		})
-	}
-
-	return map[string]interface{}{
-		"usagePlanId": usagePlanId,
-		"startDate":   startDate,
-		"endDate":     endDate,
-		"items":       items,
-	}, nil
+	return s.getUsageCore(stores, usagePlanId, keyId, startDate, endDate)
 }

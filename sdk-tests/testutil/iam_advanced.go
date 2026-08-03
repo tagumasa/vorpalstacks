@@ -107,6 +107,50 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	// Concurrent AddClientID race regression guard (M3).  Five goroutines
+	// each add a distinct client ID to the same provider.  Under the old
+	// unlocked Get-modify-Put path, at least one update was lost.  The
+	// atomic store-side AddClientID holds the per-ARN lock across the
+	// cycle, so all five IDs must be present afterwards.
+	results = append(results, r.RunTest("iam", "AddClientIDToOpenIDConnectProvider_Concurrent", func() error {
+		const concurrency = 5
+		ids := make([]string, concurrency)
+		for i := range ids {
+			ids[i] = fmt.Sprintf("concurrent-client-%d-%s", i, tc.ts)
+		}
+		errs := make(chan error, concurrency)
+		for i := 0; i < concurrency; i++ {
+			go func(id string) {
+				_, err := tc.client.AddClientIDToOpenIDConnectProvider(tc.ctx, &iam.AddClientIDToOpenIDConnectProviderInput{
+					OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
+					ClientID:                 aws.String(id),
+				})
+				errs <- err
+			}(ids[i])
+		}
+		for i := 0; i < concurrency; i++ {
+			if err := <-errs; err != nil {
+				return fmt.Errorf("concurrent AddClientID failed: %w", err)
+			}
+		}
+		resp, err := tc.client.GetOpenIDConnectProvider(tc.ctx, &iam.GetOpenIDConnectProviderInput{
+			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
+		})
+		if err != nil {
+			return err
+		}
+		present := make(map[string]bool, len(resp.ClientIDList))
+		for _, id := range resp.ClientIDList {
+			present[id] = true
+		}
+		for _, id := range ids {
+			if !present[id] {
+				return fmt.Errorf("client id %s missing after concurrent AddClientID (race regression)", id)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("iam", "UpdateOpenIDConnectProviderThumbprint", func() error {
 		newThumbprint := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 		_, err := tc.client.UpdateOpenIDConnectProviderThumbprint(tc.ctx, &iam.UpdateOpenIDConnectProviderThumbprintInput{
@@ -368,6 +412,9 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 			ServerCertificateName: aws.String(serverCertName),
 			CertificateBody:       aws.String(testCertBody),
 			PrivateKey:            aws.String(testPrivateKey),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
 		})
 		if err != nil {
 			return err
@@ -378,7 +425,22 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 		if aws.ToString(resp.ServerCertificateMetadata.ServerCertificateName) != serverCertName {
 			return fmt.Errorf("server certificate name mismatch")
 		}
+		if len(resp.Tags) == 0 {
+			return fmt.Errorf("UploadServerCertificate response missing Tags")
+		}
 		tc.serverCertArn = aws.ToString(resp.ServerCertificateMetadata.Arn)
+		return nil
+	}))
+
+	// UploadServerCertificate without PrivateKey (a required field) must fail
+	results = append(results, r.RunTest("iam", "Error_UploadServerCertificate_MissingPrivateKey", func() error {
+		_, err := tc.client.UploadServerCertificate(tc.ctx, &iam.UploadServerCertificateInput{
+			ServerCertificateName: aws.String(serverCertName + "-nokey"),
+			CertificateBody:       aws.String(testCertBody),
+		})
+		if err == nil {
+			return fmt.Errorf("expected validation error for missing PrivateKey")
+		}
 		return nil
 	}))
 
@@ -394,6 +456,9 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 		}
 		if aws.ToString(resp.ServerCertificate.CertificateBody) == "" {
 			return fmt.Errorf("certificate body is empty")
+		}
+		if len(resp.ServerCertificate.Tags) == 0 {
+			return fmt.Errorf("GetServerCertificate response missing Tags")
 		}
 		return nil
 	}))
@@ -512,8 +577,9 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 	// ========== Service-Specific Credential ==========
 	results = append(results, r.RunTest("iam", "CreateServiceSpecificCredential", func() error {
 		resp, err := tc.client.CreateServiceSpecificCredential(tc.ctx, &iam.CreateServiceSpecificCredentialInput{
-			UserName:    aws.String(sshUserName),
-			ServiceName: aws.String("codecommit.amazonaws.com"),
+			UserName:          aws.String(sshUserName),
+			ServiceName:       aws.String("codecommit.amazonaws.com"),
+			CredentialAgeDays: aws.Int32(30),
 		})
 		if err != nil {
 			return err
@@ -523,6 +589,10 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 		}
 		if aws.ToString(resp.ServiceSpecificCredential.ServiceUserName) == "" {
 			return fmt.Errorf("service user name is empty")
+		}
+		// ExpirationDate must be set when CredentialAgeDays is specified
+		if resp.ServiceSpecificCredential.ExpirationDate == nil {
+			return fmt.Errorf("ExpirationDate is nil despite CredentialAgeDays=30")
 		}
 		tc.serviceCredId = aws.ToString(resp.ServiceSpecificCredential.ServiceSpecificCredentialId)
 		return nil

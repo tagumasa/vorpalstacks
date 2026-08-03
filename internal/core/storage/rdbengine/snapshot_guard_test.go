@@ -8,12 +8,10 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
-// ===== NEW-1: errReadOnly guard =====
-
 // TestSnapshotReadOnlyGuard verifies that every write method on a
-// snapshot Store returns errReadOnly. This prevents the inconsistent
-// state described in NEW-1 where reads observe the snapshot while
-// writes silently go to the live backend.
+// snapshot Store returns errReadOnly. Without this guard, reads would
+// observe the snapshot while writes silently went to the live backend,
+// producing an inconsistent view across operations on the same handle.
 func TestSnapshotReadOnlyGuard(t *testing.T) {
 	ctx := context.Background()
 	store := newTestStoreWithDB(t)
@@ -93,12 +91,10 @@ func TestSnapshotReadOnlyGuard(t *testing.T) {
 	}
 }
 
-// ===== NEW-2: Close releases snapshot =====
-
 // TestSnapshotCloseReleases verifies that Close() on a snapshot Store
 // releases the underlying Pebble snapshot handle. After Close, the
-// source store should still be fully functional (no leaked locks or
-// iterator caps).
+// source store must remain fully functional with no leaked locks or
+// iterator caps.
 func TestSnapshotCloseReleases(t *testing.T) {
 	ctx := context.Background()
 	store := newTestStoreWithDB(t)

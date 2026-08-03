@@ -105,10 +105,11 @@ func fnReplace(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 3 {
 		return nil, nil
 	}
-	// Revert BUG-4: ignore argument eval errors for consistency with
-	// all other builtins (fnUpper, fnLower, fnAbs, fnCeil, fnFloor all
-	// use val, _ := e.Eval(...)). BUG-4 changed only fnReplace and
-	// fnSubstring to propagate errors, creating an inconsistency.
+	// Argument evaluation errors are intentionally ignored so fnReplace
+	// behaves consistently with the other rule builtins (fnUpper,
+	// fnLower, fnAbs, fnCeil, fnFloor all use the same
+	// val, _ := e.Eval(...) pattern). A propagating variant would
+	// create an inconsistent error contract across builtins.
 	str, _ := e.Eval(args[0])
 	old, _ := e.Eval(args[1])
 	repl, _ := e.Eval(args[2])
@@ -119,8 +120,8 @@ func fnSubstring(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 2 {
 		return nil, nil
 	}
-	// Revert BUG-4: ignore argument eval errors for consistency with
-	// all other builtins. See fnReplace for details.
+	// Argument evaluation errors are ignored for consistency with the
+	// other rule builtins; see fnReplace for the rationale.
 	str, _ := e.Eval(args[0])
 	startVal, _ := e.Eval(args[1])
 	start := int(toFloat(startVal)) - 1

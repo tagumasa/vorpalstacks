@@ -56,8 +56,8 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 		var unprocessedKeys []interface{}
 
 		for _, k := range keys {
-			key := parseKey(k)
-			if key == nil {
+			key, keyErr := parseKey(k)
+			if keyErr != nil || key == nil {
 				unprocessedKeys = append(unprocessedKeys, k)
 				continue
 			}
@@ -71,7 +71,11 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 				continue
 			}
 
-			projection := parseProjectionExpression(tr)
+			projection, projErr := parseProjectionExpression(tr)
+			if projErr != nil {
+				unprocessedKeys = append(unprocessedKeys, k)
+				continue
+			}
 			if projection != nil {
 				item.Attributes = applyProjection(item.Attributes, projection)
 			}
@@ -163,13 +167,23 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 			}
 
 			if putReq, ok := writeReq["PutRequest"].(map[string]interface{}); ok {
-				item := parseItem(putReq["Item"])
-				if item == nil {
+				item, itemErr := parseItem(putReq["Item"])
+				if itemErr != nil || item == nil {
+					return nil, ErrInvalidParameter
+				}
+
+				// Item size must not exceed 400 KB (same as PutItem).
+				if calculateItemSize(item) > maxItemSizeBytes {
 					return nil, ErrInvalidParameter
 				}
 
 				key := s.extractKeyFromItem(table, item)
 				if key == nil {
+					return nil, ErrInvalidParameter
+				}
+
+				// Key attribute values must not be empty.
+				if !validateKeyValueNotEmpty(key) {
 					return nil, ErrInvalidParameter
 				}
 
@@ -183,8 +197,13 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 			}
 
 			if delReq, ok := writeReq["DeleteRequest"].(map[string]interface{}); ok {
-				key := parseKey(delReq["Key"])
-				if key == nil {
+				key, keyErr := parseKey(delReq["Key"])
+				if keyErr != nil || key == nil {
+					return nil, ErrInvalidParameter
+				}
+
+				// Key attribute values must not be empty.
+				if !validateKeyValueNotEmpty(key) {
 					return nil, ErrInvalidParameter
 				}
 

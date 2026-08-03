@@ -28,6 +28,9 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 	if name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
+	if err := validateNamespace(name); err != nil {
+		return nil, err
+	}
 
 	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
 	if err != nil {
@@ -38,14 +41,26 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
+	codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
+	if codeHandlers != "" {
+		if err := validateCode(codeHandlers); err != nil {
+			return nil, err
+		}
+	}
+
+	tagMap, err := parseTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	ns := &appsyncstore.ChannelNamespace{
 		ApiId:              apiId,
 		Name:               name,
-		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
+		CodeHandlers:       codeHandlers,
 		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
 		PublishAuthModes:   publishAuthModes,
 		SubscribeAuthModes: subscribeAuthModes,
-		Tags:               parseTags(req.Parameters),
+		Tags:               tagMap,
 	}
 
 	created, err := store.CreateChannelNamespace(ns)
@@ -115,6 +130,9 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 	if apiId == "" || name == "" {
 		return nil, NewBadRequestException("apiId and name are required")
 	}
+	if err := validateNamespace(name); err != nil {
+		return nil, err
+	}
 
 	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
 	if err != nil {
@@ -125,10 +143,17 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
+	codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
+	if codeHandlers != "" {
+		if err := validateCode(codeHandlers); err != nil {
+			return nil, err
+		}
+	}
+
 	ns := &appsyncstore.ChannelNamespace{
 		ApiId:              apiId,
 		Name:               name,
-		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
+		CodeHandlers:       codeHandlers,
 		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
 		PublishAuthModes:   publishAuthModes,
 		SubscribeAuthModes: subscribeAuthModes,

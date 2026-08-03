@@ -57,13 +57,19 @@ func (r *TestRunner) runAlarmToSNS(ic *integClients, ts string) TestResult {
 		ic.cw.DeleteAlarms(ic.ctx, &cloudwatch.DeleteAlarmsInput{AlarmNames: []string{alarmName}})
 	}()
 
+	// Put metric data at three timestamps spanning three evaluation
+	// windows so the alarm evaluator sees the data even if a tick is
+	// delayed under full-suite load. The evaluator checks one 60 s
+	// window per tick; a single data point is only visible for one
+	// window (~25-60 s of wall-clock time).
+	base := time.Now().Truncate(60 * time.Second)
 	ic.cw.PutMetricData(ic.ctx, &cloudwatch.PutMetricDataInput{
 		Namespace: aws.String("AWS/EC2"),
-		MetricData: []cloudwatchtypes.MetricDatum{{
-			MetricName: aws.String("CPUUtilization"),
-			Value:      aws.Float64(100),
-			Timestamp:  aws.Time(time.Now().Truncate(60 * time.Second).Add(-30 * time.Second)),
-		}},
+		MetricData: []cloudwatchtypes.MetricDatum{
+			{MetricName: aws.String("CPUUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-30 * time.Second))},
+			{MetricName: aws.String("CPUUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-90 * time.Second))},
+			{MetricName: aws.String("CPUUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-150 * time.Second))},
+		},
 	})
 
 	return r.pollVerify("CWAlarm_SNS", alarmPollTimeout, func() error {
@@ -109,13 +115,14 @@ func (r *TestRunner) runAlarmToLambda(ic *integClients, ts string) TestResult {
 		ic.cw.DeleteAlarms(ic.ctx, &cloudwatch.DeleteAlarmsInput{AlarmNames: []string{alarmName}})
 	}()
 
+	base := time.Now().Truncate(60 * time.Second)
 	ic.cw.PutMetricData(ic.ctx, &cloudwatch.PutMetricDataInput{
 		Namespace: aws.String("AWS/EC2"),
-		MetricData: []cloudwatchtypes.MetricDatum{{
-			MetricName: aws.String("MemoryUtilization"),
-			Value:      aws.Float64(100),
-			Timestamp:  aws.Time(time.Now().Truncate(60 * time.Second).Add(-30 * time.Second)),
-		}},
+		MetricData: []cloudwatchtypes.MetricDatum{
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-30 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-90 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-150 * time.Second))},
+		},
 	})
 
 	return r.pollVerify("CWAlarm_Lambda", alarmPollTimeout, func() error {
@@ -177,13 +184,14 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 		ic.cw.DeleteAlarms(ic.ctx, &cloudwatch.DeleteAlarmsInput{AlarmNames: []string{alarmName}})
 	}()
 
+	base := time.Now().Truncate(60 * time.Second)
 	ic.cw.PutMetricData(ic.ctx, &cloudwatch.PutMetricDataInput{
 		Namespace: aws.String("AWS/EC2"),
-		MetricData: []cloudwatchtypes.MetricDatum{{
-			MetricName: aws.String("MemoryUtilization"),
-			Value:      aws.Float64(100),
-			Timestamp:  aws.Time(time.Now().Truncate(60 * time.Second).Add(-30 * time.Second)),
-		}},
+		MetricData: []cloudwatchtypes.MetricDatum{
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-30 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-90 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-150 * time.Second))},
+		},
 	})
 
 	return r.pollVerify("CWAlarm_StepFunctions", alarmPollTimeout, func() error {

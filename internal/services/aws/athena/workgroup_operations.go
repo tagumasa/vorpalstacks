@@ -3,20 +3,21 @@ package athena
 import (
 	"context"
 	"regexp"
-	"strconv"
+	"sort"
 	"strings"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
-var workGroupNameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
-
-var arnRegex = regexp.MustCompile(`^arn:aws:athena:[^:]+:[^:]*:(workgroup|datacatalog|namedquery|preparedstatement|capacityreservation)/(.+)$`)
+// arnRegex matches the three taggable Athena resource types per the Smithy
+// TagResource documentation: "workgroups, data catalogs, or capacity
+// reservations". Named queries and prepared statements are NOT taggable.
+var arnRegex = regexp.MustCompile(`^arn:aws:athena:[^:]+:[^:]*:(workgroup|datacatalog|capacityreservation)/(.+)$`)
 
 func normalizeAthenaARN(arn string, accountID string) string {
 	parts := strings.SplitN(arn, ":", 6)
@@ -25,16 +26,6 @@ func normalizeAthenaARN(arn string, accountID string) string {
 		return strings.Join(parts, ":")
 	}
 	return arn
-}
-
-func validateWorkGroupName(name string) error {
-	if len(name) < 1 || len(name) > 32 {
-		return ErrInvalidParameterException
-	}
-	if !workGroupNameRegex.MatchString(name) {
-		return ErrInvalidParameterException
-	}
-	return nil
 }
 
 // CreateWorkGroup creates a new workgroup in Athena.
@@ -50,6 +41,11 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
+	if description != "" {
+		if err := validateWorkGroupDescriptionString(description); err != nil {
+			return nil, err
+		}
+	}
 
 	configMap := request.GetMapParamCaseInsensitive(req.Parameters, "Configuration")
 	var configuration *athenastore.WorkGroupConfiguration
@@ -70,6 +66,9 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	if err := validateTags(tags); err != nil {
+		return nil, err
+	}
 
 	workGroup := &athenastore.WorkGroup{
 		Name:          name,
@@ -144,11 +143,17 @@ func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.Req
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {
+		if err := validateWorkGroupDescriptionString(description); err != nil {
+			return nil, err
+		}
 		workGroup.Description = description
 	}
 
 	state := request.GetParamCaseInsensitive(req.Parameters, "State")
 	if state != "" {
+		if err := validateWorkGroupState(state); err != nil {
+			return nil, err
+		}
 		workGroup.State = athenastore.WorkGroupState(state)
 	}
 
@@ -169,28 +174,13 @@ func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.Req
 // DeleteWorkGroup deletes a workgroup from Athena.
 func (s *AthenaService) DeleteWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
-
-	if name == "primary" {
-		return nil, ErrInvalidRequestException
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	stores.namedQueryStore.DeleteNamedQueriesByWorkGroup(name)
-	stores.preparedStatementStore.DeletePreparedStatementsByWorkGroup(name)
-	deletedQEIds, _ := stores.queryExecutionStore.DeleteQueryExecutionsByWorkGroup(name)
-	stores.resultStore.DeleteResultsByIDs(deletedQEIds)
-
-	if err := stores.workGroupStore.DeleteWorkGroup(name); err != nil {
-		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, workGroupNotFound(name)
-		}
+	if err := deleteWorkGroupCore(stores, name); err != nil {
 		return nil, err
 	}
 
@@ -204,22 +194,14 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	maxResults := 50
-	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
-			maxResults = val
-		}
+	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
+	if err != nil {
+		return nil, err
 	}
 
-	var marker string
-	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		marker = nextToken
-	}
+	marker := request.GetParamCaseInsensitive(req.Parameters, "NextToken")
 
-	result, err := stores.workGroupStore.ListWorkGroups(storecommon.ListOptions{
-		Marker:   marker,
-		MaxItems: maxResults,
-	})
+	result, err := listWorkGroupsCore(stores, maxResults, marker)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +212,7 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 			"Name":         wg.Name,
 			"State":        wg.State,
 			"Description":  wg.Description,
-			"CreationTime": float64(wg.CreatedTime.Unix()) + float64(wg.CreatedTime.Nanosecond())/1e9,
+			"CreationTime": float64(wg.CreationTime.Unix()) + float64(wg.CreationTime.Nanosecond())/1e9,
 		}
 	}
 
@@ -257,6 +239,11 @@ func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceTyp
 		if err != nil {
 			return dataCatalogNotFound(resourceName)
 		}
+	case "capacityreservation":
+		_, err := stores.capacityReservationStore.GetCapacityReservation(resourceName)
+		if err != nil {
+			return capacityReservationNotFound(resourceName)
+		}
 	default:
 		return ErrInvalidRequestException
 	}
@@ -279,6 +266,9 @@ func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.Request
 	resourceName := matches[2]
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	if err := validateTags(tags); err != nil {
+		return nil, err
+	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -299,6 +289,10 @@ func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.Request
 			}
 		case "datacatalog":
 			if err := stores.dataCatalogStore.Tag(resourceArn, tags); err != nil {
+				return nil, err
+			}
+		case "capacityreservation":
+			if err := stores.capacityReservationStore.Tag(resourceArn, tags); err != nil {
 				return nil, err
 			}
 		default:
@@ -344,6 +338,10 @@ func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.Reque
 			if err := stores.dataCatalogStore.Untag(resourceArn, tagKeys); err != nil {
 				return nil, err
 			}
+		case "capacityreservation":
+			if err := stores.capacityReservationStore.Untag(resourceArn, tagKeys); err != nil {
+				return nil, err
+			}
 		default:
 			return nil, ErrInvalidRequestException
 		}
@@ -381,6 +379,8 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 		tags, err = stores.workGroupStore.List(resourceArn)
 	case "datacatalog":
 		tags, err = stores.dataCatalogStore.List(resourceArn)
+	case "capacityreservation":
+		tags, err = stores.capacityReservationStore.List(resourceArn)
 	default:
 		return nil, ErrInvalidRequestException
 	}
@@ -388,9 +388,22 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Tags": tagutil.MapToResponse(tags),
-	}, nil
+	tagList := tagutil.MapToResponse(tags)
+	sort.Slice(tagList, func(i, j int) bool {
+		return tagList[i]["Key"].(string) < tagList[j]["Key"].(string)
+	})
+
+	maxResults, err := validateMaxResults(req.Parameters, len(tagList), 75, pagination.AbsoluteMaxItems)
+	if err != nil {
+		return nil, err
+	}
+
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(tagList, marker, maxResults, func(item map[string]interface{}) string {
+		return item["Key"].(string)
+	})
+
+	return pagination.BuildListResponse("Tags", pageResult.Items, pageResult.NextMarker), nil
 }
 
 func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{}) (*athenastore.WorkGroupConfiguration, error) {
@@ -416,6 +429,9 @@ func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{
 
 	if bytesScanned, ok := config["BytesScannedCutoffPerQuery"].(float64); ok {
 		cfg.BytesScannedCutoffPerQuery = int64(bytesScanned)
+		if err := validateBytesScannedCutoff(cfg.BytesScannedCutoffPerQuery); err != nil {
+			return nil, err
+		}
 	}
 
 	if requesterPays, ok := config["RequesterPaysEnabled"].(bool); ok {
@@ -429,10 +445,16 @@ func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{
 	}
 
 	if additional, ok := config["AdditionalConfiguration"].(string); ok {
+		if err := validateAdditionalConfiguration(additional); err != nil {
+			return nil, err
+		}
 		cfg.AdditionalConfiguration = additional
 	}
 
 	if executionRole, ok := config["ExecutionRole"].(string); ok {
+		if err := validateExecutionRole(executionRole); err != nil {
+			return nil, err
+		}
 		cfg.ExecutionRole = executionRole
 	}
 
@@ -523,6 +545,9 @@ func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGro
 
 	if bytesScanned, ok := updates["BytesScannedCutoffPerQuery"].(float64); ok {
 		workGroup.Configuration.BytesScannedCutoffPerQuery = int64(bytesScanned)
+		if err := validateBytesScannedCutoff(workGroup.Configuration.BytesScannedCutoffPerQuery); err != nil {
+			return err
+		}
 	}
 
 	if remove, ok := updates["RemoveBytesScannedCutoffPerQuery"].(bool); ok && remove {
@@ -544,10 +569,16 @@ func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGro
 	}
 
 	if additional, ok := updates["AdditionalConfiguration"].(string); ok {
+		if err := validateAdditionalConfiguration(additional); err != nil {
+			return err
+		}
 		workGroup.Configuration.AdditionalConfiguration = additional
 	}
 
 	if executionRole, ok := updates["ExecutionRole"].(string); ok {
+		if err := validateExecutionRole(executionRole); err != nil {
+			return err
+		}
 		workGroup.Configuration.ExecutionRole = executionRole
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/pagination"
@@ -73,6 +72,9 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 	if policyDocument == "" {
 		return nil, ErrMalformedPolicy
 	}
+	if err := validatePolicySize(policyDocument); err != nil {
+		return nil, err
+	}
 
 	var js interface{}
 	if err := json.Unmarshal([]byte(policyDocument), &js); err != nil {
@@ -87,7 +89,7 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if !bypassPolicyLockoutSafetyCheck {
-		if err := validatePolicyDoesNotLockOutRoot(policyDocument); err != nil {
+		if err := validatePolicyDoesNotLockOutRoot(policyDocument, reqCtx.GetAccountID()); err != nil {
 			return nil, err
 		}
 	}
@@ -102,13 +104,18 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 // validatePolicyDoesNotLockOutRoot verifies that the supplied policy
 // grants the account root principal kms:PutKeyPolicy (or kms:*). AWS
 // rejects policies that lock out the root principal unless
-// BypassPolicyLockoutSafetyCheck=true.
+// BypassPolicyLockoutSafetyCheck is explicitly set to true.
 //
-// The check uses the full IAM PolicyEvaluator (not manual JSON parsing)
-// to correctly handle conditions, NotPrincipal, NotAction, and
-// Deny statements that could implicitly lock out root. The root
-// principal ARN is constructed from the policy's resource account.
-func validatePolicyDoesNotLockOutRoot(policyDocument string) error {
+// The accountID parameter comes from the request context, not from the
+// policy's Resource ARN. This avoids the wildcard-resource pitfall:
+// when Resource is ["*"], extracting the account from the ARN yields
+// nothing, and the previous fallback to "000000000000" caused
+// legitimate root-only policies to be rejected.
+//
+// The evaluator handles NotAction, NotPrincipal, Conditions, and Deny
+// statements that could implicitly lock out root. The root principal
+// ARN is constructed as "arn:vorpalstacks:iam::<accountID>:root".
+func validatePolicyDoesNotLockOutRoot(policyDocument string, accountID string) error {
 	parsedPolicy, err := policy.ParseDocument(policyDocument)
 	if err != nil {
 		return ErrMalformedPolicy
@@ -117,20 +124,12 @@ func validatePolicyDoesNotLockOutRoot(policyDocument string) error {
 		return ErrMalformedPolicy
 	}
 
-	// Extract the account ID from the first resource ARN in the policy.
-	// The root principal ARN is "arn:vorpalstacks:iam::<account>:root".
-	accountID := "000000000000"
-	for _, stmt := range parsedPolicy.Statement {
-		for _, res := range stmt.Resource {
-			if id := extractAccountFromARN(res); id != "" {
-				accountID = id
-				break
-			}
-		}
-		if accountID != "000000000000" {
-			break
-		}
-	}
+	// Construct the root principal from the caller's account ID. The
+	// previous implementation extracted the account ID from the policy's
+	// Resource ARN, but that fails when Resource is "*" or when the
+	// resource belongs to a different account. Using the request
+	// context's account ID ensures the lockout check always evaluates
+	// against the real account root principal.
 	rootPrincipal := fmt.Sprintf("arn:vorpalstacks:iam::%s:root", accountID)
 
 	evaluator := policy.NewPolicyEvaluator()
@@ -161,15 +160,6 @@ func validatePolicyDoesNotLockOutRoot(policyDocument string) error {
 	return ErrMalformedPolicy
 }
 
-// extractAccountFromARN extracts the account ID from an ARN string.
-func extractAccountFromARN(arnStr string) string {
-	parts := strings.Split(arnStr, ":")
-	if len(parts) >= 5 {
-		return parts[4]
-	}
-	return ""
-}
-
 // ListKeyPolicies retrieves the names of all key policies attached to a key.
 func (s *KMSService) ListKeyPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
@@ -187,6 +177,9 @@ func (s *KMSService) ListKeyPolicies(ctx context.Context, reqCtx *request.Reques
 	}
 
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
 	result := pagination.PaginateSlice(policies, marker, maxItems, func(p string) string {

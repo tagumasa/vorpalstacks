@@ -24,6 +24,12 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 	if apiId == "" || typeName == "" || fieldName == "" {
 		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
 	}
+	if err := validateResourceName(typeName); err != nil {
+		return nil, err
+	}
+	if err := validateResourceName(fieldName); err != nil {
+		return nil, err
+	}
 	if err := validateGraphqlApiExists(store, apiId); err != nil {
 		return nil, err
 	}
@@ -60,6 +66,26 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 	}
 	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
+	}
+	if _, ok := req.Parameters["maxBatchSize"]; ok {
+		if err := validateMaxBatchSize(r.MaxBatchSize); err != nil {
+			return nil, err
+		}
+	}
+	if r.Code != "" {
+		if err := validateCode(r.Code); err != nil {
+			return nil, err
+		}
+	}
+	if r.RequestMappingTemplate != "" {
+		if err := validateMappingTemplate(r.RequestMappingTemplate); err != nil {
+			return nil, err
+		}
+	}
+	if r.ResponseMappingTemplate != "" {
+		if err := validateMappingTemplate(r.ResponseMappingTemplate); err != nil {
+			return nil, err
+		}
 	}
 
 	created, err := store.CreateResolver(r)
@@ -148,6 +174,26 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 	}
 	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
+	}
+	if _, ok := req.Parameters["maxBatchSize"]; ok {
+		if err := validateMaxBatchSize(r.MaxBatchSize); err != nil {
+			return nil, err
+		}
+	}
+	if r.Code != "" {
+		if err := validateCode(r.Code); err != nil {
+			return nil, err
+		}
+	}
+	if r.RequestMappingTemplate != "" {
+		if err := validateMappingTemplate(r.RequestMappingTemplate); err != nil {
+			return nil, err
+		}
+	}
+	if r.ResponseMappingTemplate != "" {
+		if err := validateMappingTemplate(r.ResponseMappingTemplate); err != nil {
+			return nil, err
+		}
 	}
 
 	updated, err := store.UpdateResolver(r)

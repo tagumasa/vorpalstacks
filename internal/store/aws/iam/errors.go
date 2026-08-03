@@ -19,6 +19,10 @@ var (
 	// does not exist for the user.
 	ErrAccessKeyNotFound = errors.New("access key not found")
 
+	// ErrAccessKeyLimitExceeded is returned when the user already has the
+	// maximum allowed number of access keys (2 per AWS spec).
+	ErrAccessKeyLimitExceeded = errors.New("cannot exceed quota for AccessKeysPerUser")
+
 	// ErrLoginProfileNotFound is returned when the user does not have a
 	// console login profile configured.
 	ErrLoginProfileNotFound = errors.New("login profile not found")
@@ -70,8 +74,13 @@ var (
 	ErrRoleNotInInstanceProfile = errors.New("role not in instance profile")
 
 	// ErrRoleAlreadyInInstanceProfile is returned when attempting to attach
-	// a role that is already attached to the instance profile.
+	// a role that is already attached to an instance profile.
 	ErrRoleAlreadyInInstanceProfile = errors.New("role already in instance profile")
+
+	// ErrInstanceProfileRoleLimit is returned when an instance profile
+	// already has a role and another (different) role is being added.
+	// AWS enforces a maximum of one role per instance profile.
+	ErrInstanceProfileRoleLimit = errors.New("instance profile already has a role")
 
 	// ErrPolicyNotFound is returned when the specified IAM policy does not exist.
 	ErrPolicyNotFound = errors.New("policy not found")
@@ -104,6 +113,10 @@ var (
 	// SAML provider that already exists.
 	ErrSAMLProviderAlreadyExists = errors.New("saml provider already exists")
 
+	// ErrSAMLPrivateKeyNotFound is returned when UpdateSAMLProvider specifies
+	// a RemovePrivateKey KeyId that does not match any stored key.
+	ErrSAMLPrivateKeyNotFound = errors.New("saml private key not found")
+
 	// ErrOpenIDConnectProviderNotFound is returned when the specified OIDC
 	// provider does not exist.
 	ErrOpenIDConnectProviderNotFound = errors.New("openid connect provider not found")
@@ -111,6 +124,14 @@ var (
 	// ErrOpenIDConnectProviderAlreadyExists is returned when attempting to
 	// create an OIDC provider that already exists.
 	ErrOpenIDConnectProviderAlreadyExists = errors.New("openid connect provider already exists")
+
+	// ErrOpenIDConnectProviderClientIDExists is returned by AddClientID
+	// when the client ID is already present on the provider.
+	ErrOpenIDConnectProviderClientIDExists = errors.New("openid connect provider client id already exists")
+
+	// ErrOpenIDConnectProviderClientIDNotFound is returned by RemoveClientID
+	// when the client ID is not present on the provider.
+	ErrOpenIDConnectProviderClientIDNotFound = errors.New("openid connect provider client id not found")
 
 	// ErrSigningCertificateNotFound is returned when the specified signing
 	// certificate does not exist for the user.

@@ -14,7 +14,7 @@ import (
 func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 	certificateBody := request.GetStringParam(req.Parameters, "CertificateBody")
 	if certificateBody == "" {
@@ -46,7 +46,7 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 func (s *IAMService) ListSigningCertificates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
-		return nil, ErrNoSuchUser
+		return nil, NewValidationError("UserName")
 	}
 
 	store, err := s.store(reqCtx)

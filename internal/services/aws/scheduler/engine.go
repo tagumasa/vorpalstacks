@@ -180,7 +180,7 @@ func (e *Engine) checkSchedules() {
 				// Provisionally reserve the dedup slot so a concurrent tick
 				// does not double-fire while the goroutine is still in flight.
 				// If executeSchedule fails or panics the goroutine releases
-				// the reservation so the next tick can retry (H-2).
+				// the reservation so the next tick can retry the schedule.
 				dedupKey := lastFiredKey(region, schedule.GroupName, schedule.Name)
 				e.lastFired.Store(dedupKey, now)
 				e.wg.Add(1)
@@ -189,7 +189,7 @@ func (e *Engine) checkSchedules() {
 					defer func() {
 						if r := recover(); r != nil {
 							logs.Error("scheduler: panic executing schedule", logs.String("name", sch.Name), logs.Any("panic", r))
-							// Release the dedup slot so the next tick can retry (H-2).
+							// Release the dedup slot so the next tick can retry the schedule.
 							e.lastFired.Delete(key)
 						}
 					}()
@@ -198,7 +198,7 @@ func (e *Engine) checkSchedules() {
 						return
 					default:
 						if err := e.executeSchedule(e.ctx, sch); err != nil {
-							// Release the dedup slot so the next tick can retry (H-2).
+							// Release the dedup slot so the next tick can retry the schedule.
 							e.lastFired.Delete(key)
 						}
 					}
@@ -207,10 +207,10 @@ func (e *Engine) checkSchedules() {
 		}
 	}
 
-	// Remove lastFired entries for schedules that no longer exist (B-R2 fix).
-	// This prevents unbounded growth when schedules are created and deleted.
-	// Runs once after the full region sweep so that other regions' entries
-	// are not destroyed mid-iteration (C-2).
+	// Remove lastFired entries for schedules that no longer exist so the
+	// dedup map does not grow unbounded across schedule create/delete
+	// cycles. Runs once after the full region sweep so that other regions'
+	// entries are not destroyed while their sweep is still iterating.
 	e.lastFired.Range(func(key, _ interface{}) bool {
 		if k, ok := key.(string); ok {
 			if !allActiveKeys[k] {
@@ -946,7 +946,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 	// completion (success or retry exhaustion) by maybeAutoDelete, not here.
 	// AWS deletes the schedule "shortly after its last target invocation",
 	// i.e. after the retry policy terminates. Deleting here would orphan
-	// retry records and break at-least-once delivery (M-3 regression).
+	// retry records and break at-least-once delivery semantics.
 
 	return nil
 }
@@ -1118,7 +1118,7 @@ func (e *Engine) deliverWithRetry(ctx context.Context, schedule *schedulerstore.
 	}
 
 	// AWS: MaximumRetryAttempts=0 means no retries — only the initial
-	// attempt. Route to DLQ immediately on failure (H-1).
+	// attempt. Route to DLQ immediately on failure.
 	if maxRetries == 0 {
 		logs.Warn("Scheduler delivery failed, no retries configured",
 			logs.String("schedule", schedule.Name),
@@ -1254,7 +1254,7 @@ func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.Retr
 	// entire retry lifecycle, so this check passes for ActionAfterCompletion
 	// = DELETE schedules and the retry continues. If the user manually
 	// deletes the schedule mid-retry, this check fails and the retry record
-	// is discarded — matching the user's intent to cancel (M-3).
+	// is discarded — matching the user's intent to cancel.
 	schedStore := e.getStoreForSchedule(schedule)
 	if schedStore != nil {
 		if _, err := schedStore.GetSchedule(ctx, record.GroupName, record.ScheduleName); err != nil {
@@ -1362,8 +1362,10 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 			return
 		}
 		// FIFO queues require MessageGroupId. Propagate from the
-		// target's SqsParameters if available, otherwise fall back
-		// to the schedule name (L-1).
+		// target's SqsParameters if available; otherwise, when the
+		// destination queue ends with the FIFO suffix, fall back to
+		// the schedule name so the SendMessage call satisfies the
+		// SQS FIFO requirement.
 		sendOpts := eventbus.SQSSendOptions{}
 		if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 			sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId

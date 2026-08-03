@@ -173,6 +173,47 @@ func (s *AccessKeyStore) Create(userName string) (*AccessKey, error) {
 	return key, nil
 }
 
+// CreateWithLimit atomically checks the per-user access-key quota and
+// creates a new key inside a single lock scope, preventing the
+// race condition where concurrent requests could both observe a count
+// below the limit and both succeed.
+func (s *AccessKeyStore) CreateWithLimit(userName string, maxKeys int) (*AccessKey, error) {
+	var newKey *AccessKey
+	err := s.kl.WithLock("user:"+userName, func() error {
+		count, err := s.CountByUserName(userName)
+		if err != nil {
+			return err
+		}
+		if count >= maxKeys {
+			return NewStoreError("create_access_key", ErrAccessKeyLimitExceeded)
+		}
+
+		accessKeyID, err := GenerateAccessKeyID()
+		if err != nil {
+			return NewStoreError("generate_access_key_id", err)
+		}
+
+		secretAccessKey, err := GenerateSecretAccessKey()
+		if err != nil {
+			return NewStoreError("generate_secret_access_key", err)
+		}
+
+		newKey = &AccessKey{
+			AccessKeyId:     accessKeyID,
+			UserName:        userName,
+			Status:          AccessKeyStatusActive,
+			SecretAccessKey: secretAccessKey,
+			CreateDate:      time.Now().UTC(),
+		}
+
+		return s.Put(newKey)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return newKey, nil
+}
+
 // Exists checks whether an access key exists.
 func (s *AccessKeyStore) Exists(accessKeyId string) bool {
 	return s.BaseStore.Exists(accessKeyId)

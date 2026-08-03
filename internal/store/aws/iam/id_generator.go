@@ -100,3 +100,15 @@ func generateID(prefix string) (string, error) {
 	}
 	return prefix + base32Encoder.EncodeToString(bytes), nil
 }
+
+// generateSAMLPrivateKeyID generates a privateKeyIdType identifier.
+// Smithy constraint: length [22,64], pattern ^[A-Z0-9]+$.
+// 14 crypto-random bytes encoded as base32 → 23 characters, satisfying
+// both constraints with strong collision resistance for edge/on-prem use.
+func generateSAMLPrivateKeyID() (string, error) {
+	bytes := make([]byte, 14)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base32Encoder.EncodeToString(bytes), nil
+}

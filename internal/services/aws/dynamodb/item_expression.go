@@ -121,7 +121,9 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					return nil, ErrInvalidParameter
 				}
 				path := resolveName(tokens[i], names)
-				removeNestedValue(attrs, path)
+				if rmErr := removeNestedValue(attrs, path); rmErr != nil {
+					return nil, rmErr
+				}
 				updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
 				i++
 				if i < len(tokens) && tokens[i] == "," {
@@ -184,7 +186,10 @@ func getTopLevelAttr(path string) string {
 }
 
 func setNestedValue(attrs map[string]*dbstore.AttributeValue, path string, value *dbstore.AttributeValue) error {
-	parts := parsePathParts(path)
+	parts, err := parsePathParts(path)
+	if err != nil {
+		return err
+	}
 	if len(parts) == 0 {
 		return nil
 	}
@@ -251,23 +256,27 @@ func setNestedValueRecursive(current *dbstore.AttributeValue, parts []pathPart, 
 	}
 }
 
-func removeNestedValue(attrs map[string]*dbstore.AttributeValue, path string) {
-	parts := parsePathParts(path)
+func removeNestedValue(attrs map[string]*dbstore.AttributeValue, path string) error {
+	parts, err := parsePathParts(path)
+	if err != nil {
+		return err
+	}
 	if len(parts) == 0 {
-		return
+		return nil
 	}
 
 	if len(parts) == 1 {
 		delete(attrs, parts[0].name)
-		return
+		return nil
 	}
 
 	current, exists := attrs[parts[0].name]
 	if !exists {
-		return
+		return nil
 	}
 
 	removeNestedValueRecursive(current, parts[1:])
+	return nil
 }
 
 func removeNestedValueRecursive(current *dbstore.AttributeValue, parts []pathPart) {
@@ -313,7 +322,7 @@ type pathPart struct {
 	isIndex bool
 }
 
-func parsePathParts(path string) []pathPart {
+func parsePathParts(path string) ([]pathPart, error) {
 	var parts []pathPart
 	current := ""
 	i := 0
@@ -337,11 +346,9 @@ func parsePathParts(path string) []pathPart {
 				j++
 			}
 			idxStr := path[i+1 : j]
-			idx := 0
-			for _, ch := range idxStr {
-				if ch >= '0' && ch <= '9' {
-					idx = idx*10 + int(ch-'0')
-				}
+			idx, idxErr := validateBracketIndex(idxStr)
+			if idxErr != nil {
+				return nil, idxErr
 			}
 			parts = append(parts, pathPart{index: idx, isIndex: true})
 			i = j + 1
@@ -355,7 +362,7 @@ func parsePathParts(path string) []pathPart {
 		parts = append(parts, pathPart{name: current})
 	}
 
-	return parts
+	return parts, nil
 }
 
 func addNumbers(a, b string) string {
@@ -526,7 +533,7 @@ func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, att
 func applyAttributeUpdatesWithTracking(attrs map[string]*dbstore.AttributeValue, updates interface{}) ([]string, error) {
 	updatesMap, ok := updates.(map[string]interface{})
 	if !ok {
-		return nil, nil
+		return nil, ErrInvalidParameter
 	}
 
 	var updatedAttrs []string

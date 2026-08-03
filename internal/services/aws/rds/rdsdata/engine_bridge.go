@@ -166,8 +166,10 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 		if strings.EqualFold(formatRecordsAs, "JSON") {
 			formatted, jerr := formatAsJSON(rows, schema)
 			if jerr != nil {
-				// L-8: previously swallowed silently. Surface the failure
-				// in logs so operators can diagnose schema mismatches.
+				// JSON formatting failures are surfaced in logs rather
+				// than swallowed so operators can diagnose schema
+				// mismatches between the requested projection and the
+				// underlying row layout.
 				logs.Warn("rdsdata: failed to format records as JSON",
 					logs.Err(jerr),
 					logs.Int("rows", len(rows)))
@@ -286,10 +288,10 @@ func convertSchema(schema sql.Schema) []ColumnMetadata {
 // The default (no opts, or "DOUBLE_VALUE"/"LONG_VALUE") keeps the native
 // numeric encoding.
 //
-// uint64 (added for H-2): values exceeding int64's positive range still fit
-// in LongValue as a negative int64, mirroring what JDBC clients do when
-// reading BIGINT UNSIGNED via DatabaseMetaData. Callers that need the
-// unsigned value should request LongReturnType=STRING.
+// uint64: values exceeding int64's positive range still fit in LongValue
+// as a negative int64, mirroring what JDBC clients do when reading
+// BIGINT UNSIGNED via DatabaseMetaData. Callers that need the unsigned
+// value should request LongReturnType=STRING.
 func convertValue(val interface{}, schema sql.Schema, colIdx int, opts *ResultSetOptions) Field {
 	if val == nil {
 		t := true
@@ -342,11 +344,10 @@ func convertValue(val interface{}, schema sql.Schema, colIdx int, opts *ResultSe
 		lv := int64(v)
 		return Field{LongValue: &lv}
 	case uint64:
-		// H-2: previously fell through to the default branch and was
-		// stringified via fmt.Sprintf("%v"). That broke AWS-spec clients
-		// expecting LongValue for integer-typed columns. Encode as int64
-		// (with wrap-around for values > MaxInt64) so the type matches;
-		// clients that need the unsigned magnitude request
+		// uint64 is encoded as int64 (with wrap-around for values
+		// exceeding MaxInt64) so the response shape matches what
+		// AWS-spec clients expect for integer-typed columns. Callers
+		// that need the unsigned magnitude should request
 		// LongReturnType=STRING.
 		lv := int64(v)
 		return Field{LongValue: &lv}
@@ -780,16 +781,18 @@ func getParamRegex(names []string) *regexp.Regexp {
 
 // substituteParameters replaces named parameters (:name) in SQL with values.
 // It builds a single alternation regex covering every named parameter and
-// applies it once, which avoids the previous per-parameter
-// regexp.MustCompile cost (M-1). Single-quoted string literals are skipped
-// so that parameter-like substrings inside literals are not substituted.
-// The compiled regex is cached across calls with the same parameter-name
-// set (L-9).
+// applies it once, which avoids the per-parameter regexp.MustCompile cost
+// of compiling one regex per parameter. Single-quoted string literals are
+// skipped so that parameter-like substrings inside literals are not
+// substituted. The compiled regex is cached across calls with the same
+// parameter-name set so callers that reuse the same parameter list do not
+// pay the regex-compile cost on every invocation.
 //
 // The replacement string is produced via fieldToSQLString, which:
-//   - backslash-escapes '\' and single-quotes inside string values (H-6)
-//   - honours TypeHint for DATE / DECIMAL / JSON / TIME / TIMESTAMP
-//     values (M-3)
+//   - backslash-escapes '\' and single-quotes inside string values so the
+//     substituted literal remains syntactically valid SQL
+//   - honours TypeHint for DATE / DECIMAL / JSON / TIME / TIMESTAMP values
+//     by rendering StringValue as the canonical literal form for that type
 func substituteParameters(sqlStr string, params []SqlParameter) string {
 	if len(params) == 0 {
 		return sqlStr

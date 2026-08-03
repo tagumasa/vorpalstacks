@@ -23,7 +23,7 @@ import (
 // Without these checks a malicious or careless caller could craft a
 // database name like "foo/table/bar" whose catalogDBKey collides with
 // the catalogTableKey of table "bar" in database "foo", silently
-// corrupting both entries (C-4).
+// corrupting both entries.
 const (
 	identifierMaxBytes = 64
 )

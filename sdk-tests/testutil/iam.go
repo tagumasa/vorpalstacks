@@ -13,14 +13,14 @@ import (
 )
 
 type iamTestContext struct {
-	client  *iam.Client
-	ctx     context.Context
-	ts      string
-	user    string
-	group   string
-	role    string
-	policy  string
-	profile string
+	client    *iam.Client
+	ctx       context.Context
+	ts        string
+	user      string
+	group     string
+	role      string
+	policy    string
+	profile   string
 	region    string
 	accountID string
 
@@ -31,6 +31,7 @@ type iamTestContext struct {
 	policyArn           string
 	accountAlias        string
 	samlProviderArn     string
+	samlPrivateKeyId    string
 	virtualMFASerial    string
 	svcLinkedRoleName   string
 	deletionTaskId      string

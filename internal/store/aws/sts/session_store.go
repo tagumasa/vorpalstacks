@@ -1,11 +1,14 @@
 package sts
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/auth"
@@ -30,19 +33,84 @@ type SessionStore struct {
 	bucket          storage.Bucket
 	accessKeyBucket storage.Bucket
 	delegatedBucket storage.Bucket
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
 }
 
-// NewSessionStore creates a new SessionStore instance.
+// cleanupInterval is how often the background TTL sweeper runs.
+const cleanupInterval = 5 * time.Minute
+
+// NewSessionStore creates a new SessionStore instance and starts a
+// background goroutine that periodically removes expired sessions,
+// their access-key index entries, and expired delegated tokens.
 func NewSessionStore(store storage.BasicStorage, region string) *SessionStore {
 	bucketName := "sts_sessions-" + region
 	akBucketName := "sts_access_keys-" + region
 	delegatedBucketName := "sts_delegated_tokens-" + region
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &SessionStore{
 		bucket:          store.Bucket(bucketName),
 		accessKeyBucket: store.Bucket(akBucketName),
 		delegatedBucket: store.Bucket(delegatedBucketName),
+		ctx:             ctx,
+		cancel:          cancel,
 	}
+	s.wg.Add(1)
+	go s.startCleanupSweeper(cleanupInterval)
 	return s
+}
+
+// Close stops the background TTL sweeper goroutine and waits for it
+// to exit. Safe to call multiple times.
+func (s *SessionStore) Close() {
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.wg.Wait()
+}
+
+// startCleanupSweeper periodically removes expired sessions and
+// delegated tokens until the store's context is cancelled.
+func (s *SessionStore) startCleanupSweeper(interval time.Duration) {
+	defer s.wg.Done()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			s.sweepExpired()
+		}
+	}
+}
+
+// sweepExpired iterates the session and delegated-token buckets,
+// deleting entries whose Expiration is in the past.
+func (s *SessionStore) sweepExpired() {
+	now := time.Now().UTC()
+	_ = s.bucket.ForEach(func(k, v []byte) error {
+		var session Session
+		if err := json.Unmarshal(v, &session); err != nil {
+			return nil // skip corrupt entries
+		}
+		if session.Expiration.Before(now) {
+			_ = s.bucket.Delete(k)
+			_ = s.accessKeyBucket.Delete([]byte(session.AccessKeyId))
+		}
+		return nil
+	})
+	_ = s.delegatedBucket.ForEach(func(k, v []byte) error {
+		var entry delegatedTokenEntry
+		if err := json.Unmarshal(v, &entry); err != nil {
+			return nil
+		}
+		if entry.Expires.Before(now) {
+			_ = s.delegatedBucket.Delete(k)
+		}
+		return nil
+	})
 }
 
 // SeedTestDelegatedTokens populates delegated tokens for test mode.
@@ -133,6 +201,9 @@ func (s *SessionStore) Get(sessionToken string) (*Session, error) {
 		if err := s.bucket.Delete([]byte(sessionToken)); err != nil {
 			logs.Error("Failed to delete expired session", logs.Err(err))
 		}
+		// Also clean up the access-key index entry to prevent orphaned
+		// lookups that dereference a deleted session token.
+		_ = s.accessKeyBucket.Delete([]byte(session.AccessKeyId))
 		return nil, ErrSessionExpired
 	}
 
@@ -167,6 +238,12 @@ func (s *SessionStore) GetByAccessKeyId(accessKeyId string) (*Session, error) {
 func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredentials, error) {
 	session, err := s.GetByAccessKeyId(accessKeyId)
 	if err != nil {
+		// Map the store-level sentinel to the cross-cutting auth
+		// sentinel so that the auth middleware can detect expired
+		// sessions and return ExpiredTokenException.
+		if errors.Is(err, ErrSessionExpired) {
+			return nil, auth.ErrSessionExpired
+		}
 		return nil, err
 	}
 	return &auth.SessionCredentials{
@@ -195,12 +272,14 @@ func (s *SessionStore) StoreDelegationToken(token, principalArn string, expires 
 	return s.delegatedBucket.Put([]byte(token), data)
 }
 
-// RedeemDelegationToken looks up a trade-in token and returns the associated principal ARN.
-// Returns ErrDelegationTokenNotFound if the token does not exist or has expired.
+// RedeemDelegationToken looks up a trade-in token and returns the
+// associated principal ARN. Returns ErrDelegationTokenNotFound if the
+// token does not exist, ErrDelegationTokenExpired if it has expired,
+// or the underlying storage error for I/O failures.
 func (s *SessionStore) RedeemDelegationToken(token string) (string, error) {
 	data, err := s.delegatedBucket.Get([]byte(token))
 	if err != nil {
-		return "", ErrDelegationTokenNotFound
+		return "", err
 	}
 	if data == nil {
 		return "", ErrDelegationTokenNotFound

@@ -236,17 +236,13 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 
 	tableData, err := s.getTableData(reqCtx, catalog, database, tableName)
 	if err != nil {
-		columnInfo := s.buildColumnInfoFromSelectWithTypes(selectStmt, nil)
-		return &athenastore.ResultSet{
-				Rows:              []athenastore.Row{},
-				ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columnInfo},
-			}, &athenastore.QueryExecutionStatistics{
-				QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-				DataScannedInBytes:        0,
-			}, nil
+		return nil, nil, fmt.Errorf("TABLE_NOT_FOUND: table %s.%s not found in catalog %s", database, tableName, catalog)
 	}
 
-	rows := s.applyQuery(selectStmt, tableData)
+	rows, err := s.applyQuery(selectStmt, tableData)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	columnInfo := s.buildColumnInfoFromSelect(selectStmt)
 	var columns []athenastore.Column
@@ -274,6 +270,9 @@ func (s *AthenaService) getTableData(reqCtx *request.RequestContext, catalog, da
 
 	table, err := stores.tableStore.GetTable(catalog, database, tableName)
 	if err != nil {
+		if err != athenastore.ErrTableNotFound {
+			return nil, fmt.Errorf("failed to get table metadata for %s.%s: %w", database, tableName, err)
+		}
 		return stores.tableDataStore.GetTableData(catalog, database, tableName)
 	}
 
@@ -387,12 +386,16 @@ func (s *AthenaService) extractTableName(selectStmt *sqlparser.Select) (string, 
 	return tableNameExpr.Name.String(), nil
 }
 
-func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athenastore.StoredTable) []*athenastore.StoredRow {
+func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athenastore.StoredTable) ([]*athenastore.StoredRow, error) {
 	var rows []*athenastore.StoredRow
 
 	for _, row := range tableData.Rows {
 		if selectStmt.Where != nil {
-			if !s.evaluateWhere(selectStmt.Where.Expr, row.Values) {
+			match, err := s.evaluateWhere(selectStmt.Where.Expr, row.Values)
+			if err != nil {
+				return nil, err
+			}
+			if !match {
 				continue
 			}
 		}
@@ -407,7 +410,7 @@ func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athe
 		rows = s.applyLimit(rows, selectStmt.Limit)
 	}
 
-	return s.projectColumns(rows, selectStmt.SelectExprs)
+	return s.projectColumns(rows, selectStmt.SelectExprs), nil
 }
 
 // executeUnion handles UNION / UNION ALL / UNION DISTINCT set operations.

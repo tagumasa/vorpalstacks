@@ -120,10 +120,10 @@ func (m *webIdentityTokenManager) signingKey(algorithm string) interface{} {
 
 // extractJWTClaim returns the value of claim from a JSON Web Token's payload
 // segment, or the empty string when the token is not a parseable JWT or the
-// claim is absent. Used by AssumeRoleWithWebIdentity to honour M5
-// (SubjectFromWebIdentityToken) and L4 (Audience) without requiring
-// signature verification — the platform cannot reach external IdPs in
-// TEST_MODE and SDK tests pass dummy tokens that are not real JWTs.
+// claim is absent. Used by AssumeRoleWithWebIdentity to extract the subject
+// and audience without requiring signature verification — the platform
+// cannot reach external IdPs in TEST_MODE and SDK tests pass dummy tokens
+// that are not real JWTs.
 func extractJWTClaim(token, claim string) string {
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
@@ -148,15 +148,17 @@ func extractJWTClaim(token, claim string) string {
 	case string:
 		return v
 	case []interface{}:
-		// "aud" is the most common array-valued claim; join with spaces
-		// so the caller can surface it as a single value.
-		strs := make([]string, 0, len(v))
+		// "aud" is the most common array-valued claim. AWS returns a
+		// single Audience string (the OIDC client ID that matched the
+		// provider configuration). VorpalStacks does not track per-
+		// provider client IDs, so return the first array element as
+		// the best approximation of AWS behaviour.
 		for _, item := range v {
 			if s, ok := item.(string); ok {
-				strs = append(strs, s)
+				return s
 			}
 		}
-		return strings.Join(strs, " ")
+		return ""
 	default:
 		return ""
 	}
@@ -173,4 +175,45 @@ func validateWebIdentityDurationSeconds(durationSeconds int) (int, error) {
 		return 0, ErrInvalidWebIdentityDuration
 	}
 	return durationSeconds, nil
+}
+
+// isJWTExpired performs a soft expiry check on a web identity token. It
+// extracts the standard "exp" claim from the JWT payload and returns true
+// when the token is past its expiry. Tokens that are not parseable JWTs
+// (e.g. dummy tokens used in SDK tests) return false — the check is
+// intentionally lenient to preserve TEST_MODE compatibility while still
+// rejecting real expired OIDC tokens. Signature verification is not
+// performed because VorpalStacks cannot reach external IdPs.
+//
+// This function is only reached in TEST_MODE; in production,
+// AssumeRoleWithWebIdentity returns ErrIDPCommunicationError before
+// reaching this check.
+func isJWTExpired(token string) bool {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return false
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		raw, err = base64.StdEncoding.DecodeString(parts[1])
+		if err != nil {
+			return false
+		}
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return false
+	}
+	exp, ok := payload["exp"]
+	if !ok {
+		// A parseable JWT without an exp claim is malformed — OIDC
+		// tokens must declare an expiry. Fail-closed to reject it.
+		return true
+	}
+	// json.Unmarshal into interface{} always returns float64 for JSON
+	// numbers, so only that case needs handling.
+	if v, ok := exp.(float64); ok {
+		return time.Now().UTC().Unix() >= int64(v)
+	}
+	return false
 }

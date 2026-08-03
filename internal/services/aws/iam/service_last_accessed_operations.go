@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	awsarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"github.com/google/uuid"
@@ -85,6 +86,36 @@ func generateJobID() string {
 	return uuid.New().String()
 }
 
+// lookupAllEventsPageSize is the per-page MaxResults for CloudTrail
+// LookupEvents. AWS spec (Smithy range trait) bounds MaxResults to 1-50.
+const lookupAllEventsPageSize int32 = 50
+
+// lookupAllEventsMaxPages caps the total number of pages fetched to avoid
+// unbounded work in busy accounts. 20 pages × 50 events = 1000 events,
+// which is ample for the ServiceLastAccessed report's 90-day window.
+const lookupAllEventsMaxPages = 20
+
+// lookupAllEvents paginates through CloudTrail LookupEvents results until
+// either nextToken is empty or the page cap is reached. The caller passes
+// a username filter ("" for unfiltered). The AWS LookupEvents spec bounds
+// MaxResults to 1-50, so the per-page size is fixed at 50 by the helper.
+func lookupAllEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker, region, username string, startTime, endTime time.Time) ([]eventbus.CloudTrailEventInfo, error) {
+	var all []eventbus.CloudTrailEventInfo
+	nextToken := ""
+	for page := 0; page < lookupAllEventsMaxPages; page++ {
+		events, nt, err := invoker.LookupEvents(ctx, region, username, nextToken, startTime, endTime, lookupAllEventsPageSize)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, events...)
+		if nt == "" {
+			break
+		}
+		nextToken = nt
+	}
+	return all, nil
+}
+
 // parseGranularity converts an ISO 8601 duration string to a time.Duration.
 // Supported values are P7D, P30D, and P90D; defaults to P30D.
 func parseGranularity(granularity string) time.Duration {
@@ -100,15 +131,16 @@ func parseGranularity(granularity string) time.Duration {
 	}
 }
 
-// parseIAMARNResource splits an IAM ARN into entity type and name by
-// parsing the colon-delimited resource section, rather than substring
-// matching which can misclassify paths containing "user/" etc.
+// parseIAMARNResource splits an IAM ARN into entity type and name.
+// Uses arn.SplitARN for robust colon-delimited parsing instead of a
+// local strings.Split.  Covers all IAM resource types defined in the
+// AWS ARN reference; unknown types return empty strings so callers can
+// fail-closed rather than silently defaulting to "User".
 func parseIAMARNResource(arn string) (entityType, entityName string) {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
-		return "User", arn
+	_, _, _, _, resource := awsarn.SplitARN(arn)
+	if resource == "" {
+		return "", ""
 	}
-	resource := parts[5]
 	resourceParts := strings.SplitN(resource, "/", 2)
 	switch resourceParts[0] {
 	case "user":
@@ -117,8 +149,30 @@ func parseIAMARNResource(arn string) (entityType, entityName string) {
 		entityType = "Role"
 	case "group":
 		entityType = "Group"
+	case "instance-profile":
+		entityType = "InstanceProfile"
+	case "policy":
+		entityType = "Policy"
+	case "policy-version":
+		entityType = "PolicyVersion"
+	case "mfa":
+		entityType = "MFADevice"
+	case "server-certificate":
+		entityType = "ServerCertificate"
+	case "saml-provider":
+		entityType = "SAMLProvider"
+	case "oidc-provider":
+		entityType = "OpenIDConnectProvider"
+	case "access-key":
+		entityType = "AccessKey"
+	case "signing-certificate":
+		entityType = "SigningCertificate"
+	case "ssh-public-key":
+		entityType = "SSHPublicKey"
+	case "service-specific-credential":
+		entityType = "ServiceSpecificCredential"
 	default:
-		entityType = "User"
+		return "", ""
 	}
 	if len(resourceParts) > 1 {
 		entityName = resourceParts[1]
@@ -149,7 +203,7 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, regio
 
 	var filteredEvents []eventbus.CloudTrailEventInfo
 	if s.cloudTrailInvoker != nil {
-		events, _, err := s.cloudTrailInvoker.LookupEvents(context.Background(), region, s.accountID, entityName, startTime, now, 1000)
+		events, err := lookupAllEvents(context.Background(), s.cloudTrailInvoker, region, entityName, startTime, now)
 		if err == nil {
 			filteredEvents = events
 		}
@@ -157,6 +211,30 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, regio
 
 	serviceMap := make(map[string]*iamstore.ServiceLastAccessed)
 	actionMap := make(map[string]*iamstore.TrackedActionLastAccessed)
+
+	// Build a per-service unique-entity count from an unfiltered event
+	// query so that TotalAuthenticatedEntities reflects the actual number
+	// of distinct entities that accessed each service (not just the
+	// requested principal).
+	entityCountMap := make(map[string]map[string]bool)
+	if s.cloudTrailInvoker != nil {
+		allEvents, err := lookupAllEvents(context.Background(), s.cloudTrailInvoker, region, "", startTime, now)
+		if err == nil {
+			for _, event := range allEvents {
+				ns := eventSourceToServiceNamespace[event.EventSource]
+				if ns == "" && event.EventSource != "" {
+					parts := strings.SplitN(event.EventSource, ".", 2)
+					ns = parts[0]
+				}
+				if entityCountMap[ns] == nil {
+					entityCountMap[ns] = make(map[string]bool)
+				}
+				if event.Username != "" {
+					entityCountMap[ns][event.Username] = true
+				}
+			}
+		}
+	}
 
 	for _, event := range filteredEvents {
 		eventRegion := region
@@ -174,10 +252,14 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, regio
 
 		svc, ok := serviceMap[serviceNamespace]
 		if !ok {
+			totalEntities := 1
+			if users, ok := entityCountMap[serviceNamespace]; ok && len(users) > 0 {
+				totalEntities = len(users)
+			}
 			svc = &iamstore.ServiceLastAccessed{
 				ServiceName:                serviceName,
 				ServiceNamespace:           serviceNamespace,
-				TotalAuthenticatedEntities: 1,
+				TotalAuthenticatedEntities: totalEntities,
 			}
 			serviceMap[serviceNamespace] = svc
 		}
@@ -413,11 +495,24 @@ func (s *IAMService) GetServiceLastAccessedDetailsWithEntities(_ context.Context
 			"EntityPath": entityPath,
 		}
 		entityPolicyNames := make([]map[string]interface{}, 0)
-		entityPolicyNames = append(entityPolicyNames, map[string]interface{}{
-			"EntityName":        resolveEntityName(entityPath),
-			"EntityType":        resolveEntityType(entityPath),
-			"LastAuthenticated": job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
-		})
+		entityEntry := map[string]interface{}{
+			"EntityName": resolveEntityName(entityPath),
+			"EntityType": resolveEntityType(entityPath),
+		}
+		// Compute the entity-level LastAuthenticated as the most recent
+		// action-level LastAccessedDate for this entity.
+		var entityLastAccessed *time.Time
+		for _, a := range actions {
+			if a.LastAccessedDate != nil {
+				if entityLastAccessed == nil || a.LastAccessedDate.After(*entityLastAccessed) {
+					entityLastAccessed = a.LastAccessedDate
+				}
+			}
+		}
+		if entityLastAccessed != nil {
+			entityEntry["LastAuthenticated"] = entityLastAccessed.Format(timeutils.ISO8601SimpleFormat)
+		}
+		entityPolicyNames = append(entityPolicyNames, entityEntry)
 		entity["EntityPolicyList"] = entityPolicyNames
 
 		svcMap := make(map[string][]iamstore.TrackedActionLastAccessed)

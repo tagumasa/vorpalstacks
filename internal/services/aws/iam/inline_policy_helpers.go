@@ -58,10 +58,10 @@ func putInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Request
 		return nil, ops.emptyErr
 	}
 	if policyName == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyName")
 	}
-	if !entityNamePattern128.MatchString(policyName) {
-		return nil, NewInvalidInputError("PolicyName", "must be 1 to 128 alphanumeric characters or any of +=,.@-_")
+	if err := validateEntityName128(policyName, "PolicyName"); err != nil {
+		return nil, err
 	}
 	if !validatePolicyDocument(policyDocument) {
 		return nil, ErrMalformedPolicyDocument
@@ -91,7 +91,7 @@ func getInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Request
 		return nil, ops.emptyErr
 	}
 	if policyName == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyName")
 	}
 
 	store, err := s.store(reqCtx)
@@ -123,7 +123,7 @@ func deleteInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Requ
 		return nil, ops.emptyErr
 	}
 	if policyName == "" {
-		return nil, ErrNoSuchPolicy
+		return nil, NewValidationError("PolicyName")
 	}
 
 	store, err := s.store(reqCtx)

@@ -57,12 +57,15 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 			return nil, ErrInvalidParameter
 		}
 
-		key := parseKey(getMap["Key"])
-		if key == nil {
+		key, keyErr := parseKey(getMap["Key"])
+		if keyErr != nil || key == nil {
 			return nil, ErrInvalidParameter
 		}
 
-		projection := parseProjectionExpression(getMap)
+		projection, projErr := parseProjectionExpression(getMap)
+		if projErr != nil {
+			return nil, ErrInvalidParameter
+		}
 
 		getItems = append(getItems, getItem{
 			tableName:  tableName,
@@ -277,20 +280,32 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 			usedWriteKeys[keyStr] = true
 		}
 
+		opNames, namesErr := parseExpressionAttributeNames(opMap)
+		if namesErr != nil {
+			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+		}
+
 		op := &writeOperation{
 			idx:                          idx,
 			opType:                       opType,
 			tableName:                    tableName,
 			key:                          key,
 			conditionExpr:                request.GetStringParam(opMap, "ConditionExpression"),
-			exprAttrNames:                parseExpressionAttributeNames(opMap),
+			exprAttrNames:                opNames,
 			exprAttrValues:               parseExpressionAttributeValues(opMap),
 			returnValuesOnConditionCheck: request.GetStringParam(opMap, "ReturnValuesOnConditionCheckFailure"),
 		}
 
+		if opType == "ConditionCheck" && op.conditionExpr == "" {
+			// ConditionExpression is required for ConditionCheck (Smithy @required).
+			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+		}
+
 		if opType == "Put" {
-			itemData := parseItem(opMap["Item"])
-			if itemData == nil {
+			itemData, itemErr := parseItem(opMap["Item"])
+			if itemErr != nil || itemData == nil {
 				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
 				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 			}
@@ -298,6 +313,11 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		}
 
 		if opType == "Update" {
+			// UpdateExpression is required for Update (Smithy @required).
+			if request.GetStringParam(opMap, "UpdateExpression") == "" {
+				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			}
 			op.updateReq = opMap
 		}
 
@@ -320,8 +340,8 @@ func (e *opParseError) Error() string {
 
 func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, opType string, opMap map[string]interface{}, tableName string) (map[string]*dbstore.AttributeValue, error) {
 	if opType == "Put" {
-		itemData := parseItem(opMap["Item"])
-		if itemData == nil {
+		itemData, itemErr := parseItem(opMap["Item"])
+		if itemErr != nil || itemData == nil {
 			return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("invalid item data")}
 		}
 		table, err := store.Tables().Get(tableName)
@@ -335,8 +355,8 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		return key, nil
 	}
 
-	key := parseKey(opMap["Key"])
-	if key == nil {
+	key, keyErr := parseKey(opMap["Key"])
+	if keyErr != nil || key == nil {
 		return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("invalid key")}
 	}
 	return key, nil

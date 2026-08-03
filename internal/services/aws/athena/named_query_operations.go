@@ -2,8 +2,9 @@ package athena
 
 import (
 	"context"
-	"strconv"
+	"sort"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	athenastore "vorpalstacks/internal/store/aws/athena"
@@ -16,11 +17,17 @@ func (s *AthenaService) CreateNamedQuery(ctx context.Context, reqCtx *request.Re
 		return nil, ErrInvalidRequestException
 	}
 
-	if len(name) > 128 {
-		return nil, ErrInvalidParameterException
+	if err := validateNameString(name); err != nil {
+		return nil, err
 	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
+	if description != "" {
+		if err := validateNamedQueryDescriptionString(description); err != nil {
+			return nil, err
+		}
+	}
+
 	database := request.GetParamCaseInsensitive(req.Parameters, "Database")
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 
@@ -36,6 +43,10 @@ func (s *AthenaService) CreateNamedQuery(ctx context.Context, reqCtx *request.Re
 
 	if database == "" || queryString == "" {
 		return nil, ErrInvalidRequestException
+	}
+
+	if err := validateDatabaseString(database); err != nil {
+		return nil, err
 	}
 
 	namedQuery := &athenastore.NamedQuery{
@@ -123,40 +134,23 @@ func (s *AthenaService) ListNamedQueries(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	maxResults := 50
-	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
-			maxResults = val
-		}
-	}
-
-	offset := 0
-	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil && val >= 0 {
-			offset = val
-		}
-	}
-
-	var ids []string
-	for i, nq := range namedQueries {
-		if i < offset {
-			continue
-		}
-		if len(ids) >= maxResults {
-			break
-		}
+	ids := make([]string, 0, len(namedQueries))
+	for _, nq := range namedQueries {
 		ids = append(ids, nq.NamedQueryId)
 	}
+	sort.Strings(ids)
 
-	result := map[string]interface{}{
-		"NamedQueryIds": ids,
+	maxResults, err := validateMaxResults(req.Parameters, 50, 0, 50)
+	if err != nil {
+		return nil, err
 	}
 
-	if offset+maxResults < len(namedQueries) {
-		result["NextToken"] = strconv.Itoa(offset + maxResults)
-	}
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(ids, marker, maxResults, func(id string) string {
+		return id
+	})
 
-	return result, nil
+	return pagination.BuildListResponse("NamedQueryIds", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // UpdateNamedQuery updates the specified named query.
@@ -180,11 +174,17 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name != "" {
+		if err := validateNameString(name); err != nil {
+			return nil, err
+		}
 		namedQuery.Name = name
 	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {
+		if err := validateNamedQueryDescriptionString(description); err != nil {
+			return nil, err
+		}
 		namedQuery.Description = description
 	}
 

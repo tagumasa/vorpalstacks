@@ -3,6 +3,8 @@ package acm
 import (
 	"regexp"
 	"strings"
+
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // ---------------------------------------------------------------------------
@@ -74,6 +76,21 @@ var validKeyPairOrigins = map[string]bool{
 	"CUSTOMER_PROVIDED": true,
 }
 
+// validRenewalStatuses contains the Smithy RenewalStatus enum values.
+var validRenewalStatuses = map[string]bool{
+	"PENDING_AUTO_RENEWAL": true,
+	"PENDING_VALIDATION":   true,
+	"SUCCESS":              true,
+	"FAILED":               true,
+}
+
+// validCertTypes contains the Smithy CertificateType enum values.
+var validCertTypes = map[string]bool{
+	"AMAZON_ISSUED": true,
+	"PRIVATE":       true,
+	"IMPORTED":      true,
+}
+
 // validKeyUsageNames contains the Smithy KeyUsageName enum values.
 var validKeyUsageNames = map[string]bool{
 	"DIGITAL_SIGNATURE":   true,
@@ -130,7 +147,11 @@ func isValidRevocationReason(reason string) bool {
 
 // isValidCertificateArn returns true when the string conforms to the ACM ARN
 // structure: arn:partition:acm:region:account-id:certificate/<id>.
+// Smithy Arn: @length(20-2048) + pattern.
 func isValidCertificateArn(arn string) bool {
+	if len(arn) < 20 || len(arn) > 2048 {
+		return false
+	}
 	parts := strings.Split(arn, ":")
 	if len(parts) != 6 || parts[0] != "arn" || parts[2] != "acm" {
 		return false
@@ -188,4 +209,24 @@ func isValidExportOption(export string) bool {
 // enum value.
 func isValidManagedBy(mb string) bool {
 	return validManagedByValues[mb]
+}
+
+// isValidFilterString returns true when the string conforms to the Smithy
+// FilterString constraints: @length(1-256). Used by search filter values
+// (CommonNameFilter.Value, DnsNameFilter.Value).
+func isValidFilterString(s string) bool {
+	return len(s) >= 1 && len(s) <= 256
+}
+
+// validateNextToken validates an opaque NextToken against the Smithy
+// constraints: @length(1-10000). Empty token is allowed (means "first page").
+// Non-empty token must be within length range.
+func validateNextToken(token string) error {
+	if token == "" {
+		return nil
+	}
+	if len(token) > 10000 {
+		return awserrors.NewValidationException("NextToken exceeds maximum length of 10000")
+	}
+	return nil
 }

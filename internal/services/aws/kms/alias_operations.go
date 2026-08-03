@@ -131,6 +131,9 @@ func (s *KMSService) ListAliases(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 	marker := pagination.GetMarker(req.Parameters)
+	if err := validateMarkerLength(marker); err != nil {
+		return nil, err
+	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 	keyID := s.getKeyID(req.Parameters)
 

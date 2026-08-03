@@ -91,11 +91,10 @@ func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[p
 }
 
 // CreateTable creates a new DynamoDB table from the admin console request.
+// It converts the proto request into a CreateTableInput DTO and delegates
+// all validation and persistence to DynamoDBService.createTableCore,
+// ensuring the same code path as the HTTP API.
 func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.CreateTableInput]) (*connect.Response[pb.CreateTableOutput], error) {
-	if req.Msg.GetTablename() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
-	}
-
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
@@ -113,17 +112,6 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 		})
 	}
 
-	hasHash := false
-	for _, ks := range keySchema {
-		if ks.KeyType == dynamodbstore.KeyTypeHash {
-			hasHash = true
-			break
-		}
-	}
-	if !hasHash {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeySchema must contain at least one HASH key"))
-	}
-
 	var attrDefs []*dynamodbstore.AttributeDefinition
 	for _, ad := range req.Msg.GetAttributedefinitions() {
 		at := "S"
@@ -139,11 +127,24 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 	}
 
 	billingMode := dynamodbstore.BillingModePayPerRequest
+	var provThroughput *dynamodbstore.ProvisionedThroughput
 	if req.Msg.GetBillingmode() == pb.BillingMode_BILLING_MODE_PROVISIONED {
 		billingMode = dynamodbstore.BillingModeProvisioned
+		if pt := req.Msg.GetProvisionedthroughput(); pt != nil {
+			provThroughput = &dynamodbstore.ProvisionedThroughput{
+				ReadCapacityUnits:  pt.GetReadcapacityunits(),
+				WriteCapacityUnits: pt.GetWritecapacityunits(),
+			}
+		}
 	}
 
-	table, err := store.Tables().Create(req.Msg.GetTablename(), keySchema, attrDefs, billingMode, nil, nil, nil, nil, nil, false)
+	table, err := h.service.createTableCore(store, CreateTableInput{
+		TableName:             req.Msg.GetTablename(),
+		KeySchema:             keySchema,
+		AttributeDefinitions:  attrDefs,
+		BillingMode:           billingMode,
+		ProvisionedThroughput: provThroughput,
+	})
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
