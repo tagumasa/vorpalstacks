@@ -116,7 +116,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		return nil
 	}))
 
-	// --- M9: INNER JOIN ---
+	// --- INNER JOIN ---
 	results = append(results, tc.runner.RunTest("athena", "SQL_InnerJoin", func() error {
 		q := fmt.Sprintf(
 			"SELECT u.name, d.name FROM users_%d u JOIN depts_%d d ON u.dept_id = d.id",
@@ -161,7 +161,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		return nil
 	}))
 
-	// --- M9: LEFT JOIN ---
+	// --- LEFT JOIN ---
 	results = append(results, tc.runner.RunTest("athena", "SQL_LeftJoin", func() error {
 		q := fmt.Sprintf(
 			"SELECT u.name FROM users_%d u LEFT JOIN depts_%d d ON u.dept_id = d.id",
@@ -206,7 +206,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		return nil
 	}))
 
-	// --- M9: FULL OUTER JOIN (was unparseable before fix) ---
+	// --- FULL OUTER JOIN (was unparseable before fix) ---
 	results = append(results, tc.runner.RunTest("athena", "SQL_FullOuterJoin", func() error {
 		q := fmt.Sprintf(
 			"SELECT u.name, d.name FROM users_%d u FULL OUTER JOIN depts_%d d ON u.dept_id = d.id",
@@ -256,7 +256,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		return nil
 	}))
 
-	// --- H4: WHERE with NOT expression (was silent fail-OPEN before fix) ---
+	// --- WHERE with NOT expression (was silent fail-OPEN before fix) ---
 	results = append(results, tc.runner.RunTest("athena", "SQL_WhereNotExpr", func() error {
 		q := fmt.Sprintf("SELECT name FROM users_%d WHERE NOT (id = 1)", suffix)
 		resp, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
@@ -280,7 +280,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		}
 
 		// NOT (id=1) should return 3 rows (bob, charlie, dave)
-		// Before H4 fix, evaluateWhere returned true for NotExpr → all 4 rows
+		// Before the fix, evaluateWhere returned true for NotExpr → all 4 rows
 		resultsResp, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
 			QueryExecutionId: resp.QueryExecutionId,
 		})
@@ -307,7 +307,7 @@ func (tc *athenaTestCtx) testSQL() []TestResult {
 		return nil
 	}))
 
-	// --- DROP TABLE (tests N6: error propagation for data deletion) ---
+	// --- DROP TABLE (tests error propagation for data deletion) ---
 	results = append(results, tc.runner.RunTest("athena", "SQL_DropTable", func() error {
 		// Drop both tables
 		for _, table := range []string{fmt.Sprintf("users_%d", suffix), fmt.Sprintf("depts_%d", suffix)} {

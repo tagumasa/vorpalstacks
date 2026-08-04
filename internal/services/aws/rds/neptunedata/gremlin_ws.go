@@ -25,7 +25,7 @@ const (
 // gremlinUpgrader is the WebSocket upgrader for TinkerPop Gremlin Server
 // connections. Accepts all origins in test mode; production deployments
 // should restrict CheckOrigin.
-// M17: Supports all standard TinkerPop Gremlin Server subprotocols so
+// Supports all standard TinkerPop Gremlin Server subprotocols so
 // that GraphBinary and older GraphSON clients can connect.
 var gremlinUpgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
@@ -323,7 +323,7 @@ func updateSession(ws *gremlinWSConn, req *GremlinRequest, result interface{}) {
 }
 
 // sendResponse serialises and queues a GremlinResponse for sending on the
-// WebSocket connection. If the send buffer is full (M1 fix), the connection
+// WebSocket connection. If the send buffer is full, the connection
 // is force-closed to prevent silent message loss.
 func (s *GremlinWSServer) sendResponse(ws *gremlinWSConn, resp GremlinResponse) {
 	msg, err := encodeResponseToJSON(resp)
@@ -340,7 +340,7 @@ func (s *GremlinWSServer) sendResponse(ws *gremlinWSConn, resp GremlinResponse) 
 	case ws.sendCh <- msg:
 		ws.mu.RUnlock()
 	default:
-		// M1: Buffer is full — upgrade to write lock to force-close.
+		// Buffer is full — upgrade to write lock to force-close.
 		ws.mu.RUnlock()
 		ws.mu.Lock()
 		if !ws.closed {

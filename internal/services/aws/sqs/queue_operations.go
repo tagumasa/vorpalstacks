@@ -195,7 +195,7 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	// M10: Validate FIFO queue naming bidirectionally.
+	// Validate FIFO queue naming bidirectionally.
 	// FifoQueue=true requires ".fifo" suffix; ".fifo" suffix requires FifoQueue=true.
 	// Standard queue names cannot contain dots per AWS spec.
 	if queue.FifoQueue && !strings.HasSuffix(queueName, ".fifo") {
@@ -261,7 +261,7 @@ func (s *SQSService) GetQueueUrl(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrMissingParameter
 	}
 
-	// L10: QueueOwnerAWSAccountId parsed for future cross-account support.
+	// QueueOwnerAWSAccountId parsed for future cross-account support.
 	_ = request.GetParamCaseInsensitive(req.Parameters, "QueueOwnerAWSAccountId")
 
 	store, err := s.store(reqCtx)

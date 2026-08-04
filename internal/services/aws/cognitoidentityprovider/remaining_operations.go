@@ -9,11 +9,12 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
-// ===================== Phase 14: WebAuthn =====================
+// ===================== WebAuthn =====================
 
 // StartWebAuthnRegistration starts a WebAuthn credential registration flow.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_StartWebAuthnRegistration.html
@@ -32,7 +33,7 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 	rand.Read(challenge)
 	challengeB64 := base64.RawURLEncoding.EncodeToString(challenge)
 
-	// M11: Store the challenge in a session for CompleteWebAuthnRegistration binding
+	// Store the challenge in a session for CompleteWebAuthnRegistration binding
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -50,12 +51,13 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 		ChallengeName: "WEB_AUTHN_REGISTRATION",
 		CreatedAt:     time.Now().UTC(),
 		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+		ChallengeData: challengeB64,
 	}
 	if err := store.SaveChallengeSession(challengeSession); err != nil {
 		return nil, ErrInternalError
 	}
 
-	// M10: Use custom domain as RP ID if configured, otherwise default
+	// Use custom domain as RP ID if configured, otherwise default to host.
 	rpID := cognitoIdpHost(s.region)
 	if domain, err := store.GetUserPoolDomainByPool(user.UserPoolID); err == nil && domain.Domain != "" {
 		rpID = domain.Domain
@@ -113,6 +115,26 @@ func (s *CognitoService) CompleteWebAuthnRegistration(ctx context.Context, reqCt
 		return nil, ErrUserNotFound
 	}
 
+	sessionID := req.GetParam("Session")
+	if sessionID == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	challengeSession, err := store.GetChallengeSession(sessionID)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+
+	if challengeSession.ChallengeName != "WEB_AUTHN_REGISTRATION" {
+		return nil, ErrInvalidParameter
+	}
+	if time.Now().UTC().After(challengeSession.ExpiresAt) {
+		return nil, ErrNotAuthorized
+	}
+	if challengeSession.Username != user.Username {
+		return nil, ErrNotAuthorized
+	}
+
 	credentialRaw, ok := req.Parameters["Credential"]
 	if !ok {
 		return nil, ErrInvalidParameter
@@ -123,9 +145,37 @@ func (s *CognitoService) CompleteWebAuthnRegistration(ctx context.Context, reqCt
 		ID        string `json:"id"`
 		PublicKey string `json:"publicKey"`
 		Type      string `json:"type"`
+		Response  struct {
+			ClientDataJSON    string `json:"clientDataJSON"`
+			AttestationObject string `json:"attestationObject"`
+		} `json:"response"`
 	}
 	json.Unmarshal(credentialBytes, &credential)
 	if credential.ID == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// Verify the challenge in clientDataJSON matches the stored challenge.
+	if credential.Response.ClientDataJSON != "" {
+		clientDataBytes, decErr := base64.RawURLEncoding.DecodeString(credential.Response.ClientDataJSON)
+		if decErr != nil {
+			clientDataBytes, decErr = base64.StdEncoding.DecodeString(credential.Response.ClientDataJSON)
+			if decErr != nil {
+				return nil, ErrInvalidParameter
+			}
+		}
+		var clientData struct {
+			Type      string `json:"type"`
+			Challenge string `json:"challenge"`
+			Origin    string `json:"origin"`
+		}
+		if json.Unmarshal(clientDataBytes, &clientData) == nil {
+			if clientData.Challenge != challengeSession.ChallengeData {
+				return nil, ErrNotAuthorized
+			}
+		}
+	} else if challengeSession.ChallengeData != "" {
+		// No clientDataJSON to verify against, but we have a stored challenge.
 		return nil, ErrInvalidParameter
 	}
 
@@ -237,7 +287,7 @@ func (s *CognitoService) DeleteWebAuthnCredential(ctx context.Context, reqCtx *r
 	return response.EmptyResponse(), nil
 }
 
-// ===================== Phase 15: Managed Login Branding =====================
+// ===================== Managed Login Branding =====================
 
 // CreateManagedLoginBranding creates a managed login branding configuration.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateManagedLoginBranding.html
@@ -255,7 +305,11 @@ func (s *CognitoService) CreateManagedLoginBranding(ctx context.Context, reqCtx 
 		return nil, ErrResourceNotFound
 	}
 
-	brandingID := "branding-" + generateID()
+	bid, err := generateID()
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	brandingID := "branding-" + bid
 	b := &cognitostore.ManagedLoginBranding{
 		ManagedLoginBrandingId: brandingID,
 		UserPoolID:             userPoolID,
@@ -417,7 +471,7 @@ func parseBrandingAssets(req *request.ParsedRequest, b *cognitostore.ManagedLogi
 			category := getStringParam(m, "Category")
 			extension := getStringParam(m, "Extension")
 			colorMode := getStringParam(m, "Color")
-			// L3: Validate enum values
+			// Validate enum values
 			if category != "" && !validAssetCategories[category] {
 				return ErrInvalidParameter
 			}
@@ -486,13 +540,17 @@ func formatManagedLoginBranding(b *cognitostore.ManagedLoginBranding) map[string
 	return result
 }
 
-// ===================== Phase 16: Terms =====================
+// ===================== Terms =====================
 
 // CreateTerms creates a terms document.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateTerms.html
 func (s *CognitoService) CreateTerms(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
+	termsName := req.GetParam("TermsName")
+	if userPoolID == "" || termsName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !validateTermsName(termsName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -504,12 +562,16 @@ func (s *CognitoService) CreateTerms(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrResourceNotFound
 	}
 
-	termsID := "terms-" + generateID()
+	tid, err := generateID()
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	termsID := "terms-" + tid
 	t := &cognitostore.Terms{
 		TermsID:    termsID,
 		UserPoolID: userPoolID,
 		ClientID:   req.GetParam("ClientId"),
-		TermsName:  req.GetParam("TermsName"),
+		TermsName:  termsName,
 	}
 	if source, ok := req.Parameters["TermsSource"].(map[string]interface{}); ok {
 		t.TermsSource = source
@@ -609,6 +671,9 @@ func (s *CognitoService) UpdateTerms(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if name := req.GetParam("TermsName"); name != "" {
+		if !validateTermsName(name) {
+			return nil, ErrInvalidParameter
+		}
 		t.TermsName = name
 	}
 	if source, ok := req.Parameters["TermsSource"].(map[string]interface{}); ok {
@@ -676,7 +741,7 @@ func formatTerms(t *cognitostore.Terms) map[string]interface{} {
 	return result
 }
 
-// ===================== Phase 17: Replicas =====================
+// ===================== Replicas =====================
 
 // CreateUserPoolReplica creates a cross-region replica of a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPoolReplica.html
@@ -685,6 +750,9 @@ func (s *CognitoService) CreateUserPoolReplica(ctx context.Context, reqCtx *requ
 	regionName := req.GetParam("RegionName")
 	if userPoolID == "" || regionName == "" {
 		return nil, ErrInvalidParameter
+	}
+	if err := validateRegionName(regionName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -696,17 +764,29 @@ func (s *CognitoService) CreateUserPoolReplica(ctx context.Context, reqCtx *requ
 		return nil, ErrResourceNotFound
 	}
 
+	replicaArn := "arn:aws:cognito-idp:" + s.region + ":" + s.accountID + ":userpool/" + pool.ID
 	replica := &cognitostore.UserPoolReplica{
 		UserPoolID:   userPoolID,
 		RegionName:   regionName,
 		Status:       "Active",
 		Role:         "Full",
-		UserPoolArn:  "arn:aws:cognito-idp:" + s.region + ":" + s.accountID + ":userpool/" + pool.ID,
+		UserPoolArn:  replicaArn,
 		CreationDate: time.Now().UTC(),
 	}
 
 	if err := store.SaveUserPoolReplica(replica); err != nil {
 		return nil, ErrInternalError
+	}
+
+	parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags")
+	if len(parsedTags) > 0 {
+		replica.Tags = parsedTags
+		tagMap := tagutil.ToMap(parsedTags)
+		if err := store.Tag(replicaArn, tagMap); err != nil {
+			// Rollback: remove the saved replica to avoid an untagged orphan.
+			_ = store.DeleteUserPoolReplica(userPoolID, regionName)
+			return nil, ErrInternalError
+		}
 	}
 
 	return map[string]interface{}{"UserPoolReplica": formatUserPoolReplica(replica)}, nil
@@ -791,6 +871,9 @@ func (s *CognitoService) UpdateUserPoolReplica(ctx context.Context, reqCtx *requ
 	}
 
 	if status := req.GetParam("Status"); status != "" {
+		if !validateUpdateReplicaStatus(status) {
+			return nil, ErrInvalidParameter
+		}
 		replica.Status = status
 	}
 

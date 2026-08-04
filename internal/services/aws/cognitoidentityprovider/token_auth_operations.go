@@ -26,16 +26,21 @@ func (s *CognitoService) RevokeToken(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
+	// RevokeToken always returns 200 OK per AWS spec, even for invalid,
+	// expired, or already-revoked tokens. The sole exception is a
+	// ClientSecret mismatch for a client that has a secret configured.
 	rt, err := store.GetRefreshTokenByValue(token)
 	if err != nil {
 		return response.EmptyResponse(), nil
 	}
 
+	// Silently succeed when the token belongs to a different client —
+	// do not delete, do not reveal the token's existence.
 	if rt.ClientID != clientID {
-		return nil, ErrInvalidParameter
+		return response.EmptyResponse(), nil
 	}
 
-	// M24: Verify ClientSecret when the client has one configured
+	// Verify ClientSecret when the client has one configured.
 	if clientSecret != "" {
 		client, err := store.GetUserPoolClient(rt.UserPoolID, clientID)
 		if err != nil {
@@ -46,9 +51,9 @@ func (s *CognitoService) RevokeToken(ctx context.Context, reqCtx *request.Reques
 		}
 	}
 
-	if err := store.DeleteRefreshToken(rt.UserPoolID, rt.UserID, token); err != nil {
-		return nil, err
-	}
+	// Best-effort deletion; a concurrent revocation may have already removed
+	// the token, which is not an error.
+	_ = store.DeleteRefreshToken(rt.UserPoolID, rt.UserID, token)
 
 	return response.EmptyResponse(), nil
 }
@@ -58,6 +63,8 @@ func (s *CognitoService) RevokeToken(ctx context.Context, reqCtx *request.Reques
 func (s *CognitoService) GetTokensFromRefreshToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	refreshToken := req.GetParam("RefreshToken")
 	clientID := req.GetParam("ClientId")
+	deviceKey := req.GetParam("DeviceKey")
+	clientMetadata := parseClientMetadata(req)
 
 	if refreshToken == "" || clientID == "" {
 		return nil, ErrInvalidParameter
@@ -86,7 +93,18 @@ func (s *CognitoService) GetTokensFromRefreshToken(ctx context.Context, reqCtx *
 		return nil, ErrNotAuthorized
 	}
 
-	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, rt.UserPoolID, user.ID, clientID)
+	// When DeviceKey is provided, verify the device is remembered for this
+	// user and include it in the token claims for device-aware sessions.
+	if deviceKey != "" {
+		device, err := store.GetDevice(rt.UserPoolID, user.ID, deviceKey)
+		if err != nil || device.DeviceRememberedStatus != "remembered" {
+			return nil, ErrNotAuthorized
+		}
+	}
+
+	// CreateTokens fires TokenGenerationRefreshTokens internally and applies
+	// the trigger result to the token claims. ClientMetadata is forwarded.
+	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, rt.UserPoolID, user.ID, clientID, TokenGenerationRefreshTokens, clientMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +239,14 @@ func (s *CognitoService) ResendConfirmationCode(ctx context.Context, reqCtx *req
 
 	user, err := store.GetUser(userPool.ID, username)
 	if err != nil {
-		return nil, ErrUserNotFound
+		// Return a masked CodeDeliveryDetails to prevent user enumeration.
+		return map[string]interface{}{
+			"CodeDeliveryDetails": map[string]interface{}{
+				"Destination":    "***",
+				"DeliveryMedium": "EMAIL",
+				"AttributeName":  "email",
+			},
+		}, nil
 	}
 
 	code, err := generateConfirmationCode()
@@ -268,65 +293,7 @@ func (s *CognitoService) GetUserAuthFactors(ctx context.Context, reqCtx *request
 		return nil, ErrUserNotFound
 	}
 
-	result := map[string]interface{}{
-		"Username": user.Username,
-	}
-
-	var configuredFactors []string
-	var preferredFactor string
-
-	if user.SmsMfa != nil && user.SmsMfa.Enabled {
-		configuredFactors = append(configuredFactors, "SMS_MFA")
-		if user.SmsMfa.PreferredMfa && preferredFactor == "" {
-			preferredFactor = "SMS_MFA"
-		}
-	}
-
-	if user.EmailMfa != nil && user.EmailMfa.Enabled {
-		configuredFactors = append(configuredFactors, "EMAIL")
-		if user.EmailMfa.PreferredMfa && preferredFactor == "" {
-			preferredFactor = "EMAIL"
-		}
-	}
-
-	if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Enabled {
-		configuredFactors = append(configuredFactors, "SOFTWARE_TOKEN_MFA")
-		if user.SoftwareTokenMfa.PreferredMfa && preferredFactor == "" {
-			preferredFactor = "SOFTWARE_TOKEN_MFA"
-		}
-	}
-
-	if user.WebAuthnMfaEnabled {
-		configuredFactors = append(configuredFactors, "WEBAUTHN")
-	}
-
-	if len(user.MFAOptions) > 0 {
-		for _, opt := range user.MFAOptions {
-			if opt.DeliveryMedium == "SMS" {
-				alreadyHas := false
-				for _, f := range configuredFactors {
-					if f == "SMS_MFA" {
-						alreadyHas = true
-						break
-					}
-				}
-				if !alreadyHas {
-					configuredFactors = append(configuredFactors, "SMS_MFA")
-				}
-			}
-		}
-	}
-
-	if preferredFactor != "" {
-		result["PreferredMfaSetting"] = preferredFactor
-	}
-
-	if len(configuredFactors) == 0 {
-		configuredFactors = []string{}
-	}
-	result["ConfiguredUserAuthFactors"] = configuredFactors
-
-	return result, nil
+	return computeUserAuthFactors(user), nil
 }
 
 // determineDeliveryMedium picks the appropriate delivery medium and attribute
@@ -353,5 +320,101 @@ func determineDeliveryMedium(pool *cognitostore.UserPool, user *cognitostore.Use
 	if phone, ok := user.Attributes["phone_number"]; ok && phone != "" {
 		return "SMS", "phone_number"
 	}
-	return "", ""
+	// Default to EMAIL when the user has neither phone nor email — this
+	// matches Cognito behaviour which always returns a delivery medium
+	// rather than an empty CodeDeliveryDetails.
+	return "EMAIL", "email"
+}
+
+// AdminGetUserAuthFactors returns the configured authentication factors for a
+// user as viewed by an administrator.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminGetUserAuthFactors.html
+func (s *CognitoService) AdminGetUserAuthFactors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	userPoolID := getUserPoolID(req)
+	username := getUsername(req)
+
+	if userPoolID == "" || username == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := store.GetUser(userPoolID, username)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	return computeUserAuthFactors(user), nil
+}
+
+// computeUserAuthFactors builds the auth factors response for a user, shared
+// by GetUserAuthFactors (access-token based) and AdminGetUserAuthFactors
+// (admin based).
+func computeUserAuthFactors(user *cognitostore.User) map[string]interface{} {
+	result := map[string]interface{}{
+		"Username": user.Username,
+	}
+
+	var configuredFactors []string
+	var preferredFactor string
+
+	if user.PasswordHash != "" {
+		configuredFactors = append(configuredFactors, "PASSWORD")
+	}
+
+	if user.SmsMfa != nil && user.SmsMfa.Enabled {
+		configuredFactors = append(configuredFactors, "SMS_OTP")
+		if user.SmsMfa.PreferredMfa && preferredFactor == "" {
+			preferredFactor = "SMS_OTP"
+		}
+	}
+
+	if user.EmailMfa != nil && user.EmailMfa.Enabled {
+		configuredFactors = append(configuredFactors, "EMAIL_OTP")
+		if user.EmailMfa.PreferredMfa && preferredFactor == "" {
+			preferredFactor = "EMAIL_OTP"
+		}
+	}
+
+	if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Enabled {
+		configuredFactors = append(configuredFactors, "SOFTWARE_TOKEN")
+		if user.SoftwareTokenMfa.PreferredMfa && preferredFactor == "" {
+			preferredFactor = "SOFTWARE_TOKEN"
+		}
+	}
+
+	if user.WebAuthnMfaEnabled {
+		configuredFactors = append(configuredFactors, "WEB_AUTHN")
+	}
+
+	if len(user.MFAOptions) > 0 {
+		for _, opt := range user.MFAOptions {
+			if opt.DeliveryMedium == "SMS" {
+				alreadyHas := false
+				for _, f := range configuredFactors {
+					if f == "SMS_OTP" {
+						alreadyHas = true
+						break
+					}
+				}
+				if !alreadyHas {
+					configuredFactors = append(configuredFactors, "SMS_OTP")
+				}
+			}
+		}
+	}
+
+	if preferredFactor != "" {
+		result["PreferredMfaSetting"] = preferredFactor
+	}
+
+	if len(configuredFactors) == 0 {
+		configuredFactors = []string{}
+	}
+	result["ConfiguredUserAuthFactors"] = configuredFactors
+
+	return result
 }

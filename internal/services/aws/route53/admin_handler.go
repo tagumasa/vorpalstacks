@@ -202,7 +202,7 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 			Privatezone: proto.Bool(z.Config.PrivateZone),
 		}
 	}
-	// L3: Output VPCs so the admin console can display associations.
+	// Output VPCs so the admin console can display associations.
 	if len(z.VPCs) > 0 {
 		pbZone.Vpcs = make([]*pb.VPC, len(z.VPCs))
 		for i, vpc := range z.VPCs {

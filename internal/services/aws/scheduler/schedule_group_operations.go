@@ -39,7 +39,7 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 		return nil, ErrValidation
 	}
 
-	// ClientToken idempotency (M5).
+	// ClientToken idempotency.
 	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
 	tokenClaimed := false
 	if clientToken != "" {
@@ -67,7 +67,7 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 	}
 
 	// Apply tags atomically: if tagging fails after group creation, roll
-	// back the group so we never leave an orphan resource (M7).
+	// back the group so we never leave an orphan resource.
 	if len(parsedTags) > 0 {
 		arn := group.ARN
 		if err := store.TagFromSlice(arn, parsedTags); err != nil {

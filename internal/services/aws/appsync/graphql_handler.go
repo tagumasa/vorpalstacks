@@ -67,7 +67,7 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 
 	// Enforce per-authentication-type access control on the data-plane
 	// endpoint. Management API calls are already gated by the dispatcher's
-	// IAM authoriser (Phase 1); this check protects the GraphQL query path.
+	// IAM authoriser; this check protects the GraphQL query path.
 	if authResp := s.authorizeGraphQLRequest(store, req, api); authResp != nil {
 		return authResp, nil
 	}

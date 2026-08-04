@@ -111,7 +111,7 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ShortProviderId", func() error {
 		// ProviderId shorter than urlType min (4 chars) should return
-		// ValidationError, not InvalidIdentityToken (L6 fix).
+		// ValidationError, not InvalidIdentityToken.
 		_, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(tc.webIdRoleARN()),
 			RoleSessionName:  aws.String("WebIdShortProvider"),
@@ -127,7 +127,7 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ShortSubjectFallback", func() error {
 		// roleSessionName "ab" (2 chars) is valid for roleSessionNameType
 		// (min 2) but below webIdentitySubjectType min (6).  The server
-		// must pad the fallback Subject to meet the constraint (L7 fix).
+		// must pad the fallback Subject to meet the constraint.
 		resp, err := tc.client.AssumeRoleWithWebIdentity(tc.ctx, &sts.AssumeRoleWithWebIdentityInput{
 			RoleArn:          aws.String(tc.webIdRoleARN()),
 			RoleSessionName:  aws.String("ab"),
@@ -164,7 +164,7 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
-	// M5: When the WebIdentityToken is a parseable JWT with an iss claim,
+	// When the WebIdentityToken is a parseable JWT with an iss claim,
 	// the Provider field in the response must contain the iss value,
 	// not the caller-supplied ProviderId.
 	results = append(results, r.RunTest("sts", "AssumeRoleWithWebIdentity_ProviderFromISS", func() error {

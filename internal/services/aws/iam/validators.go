@@ -456,7 +456,7 @@ func validateAssertionEncryptionMode(mode string) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Centralised regex-backed validators (M5 refactor).
+// Centralised regex-backed validators.
 //
 // These helpers wrap the bare regex variables above so that callers do not
 // have to repeat the pattern+error-message dance at every call site.  Each

@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/services/aws/rds/rdsdata"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -573,6 +574,7 @@ type neptuneGraphInvokerAdapter struct {
 type rdsDataInvokerAdapter struct {
 	service interface {
 		ExecuteStatementForInvoker(ctx context.Context, resourceArn, secretArn, database, schema, sql string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error)
+		BatchExecuteStatementForInvoker(ctx context.Context, resourceArn, secretArn, database, schema, sql string, parameterSets [][]rdsdata.SqlParameter) (interface{}, error)
 		BeginTransactionForInvoker(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error)
 		CommitTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error
 		RollbackTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error
@@ -584,8 +586,19 @@ func (a *rdsDataInvokerAdapter) ExecuteStatement(ctx context.Context, resourceAr
 }
 
 func (a *rdsDataInvokerAdapter) BatchExecuteStatement(ctx context.Context, resourceArn, secretArn, database, schema, sql string, parameterSets [][]interface{}) (interface{}, error) {
-	// Batch is delegated as repeated single executions
-	return nil, fmt.Errorf("batch execute not yet supported via invoker")
+	paramSets := make([][]rdsdata.SqlParameter, len(parameterSets))
+	for i, rawSet := range parameterSets {
+		params := make([]rdsdata.SqlParameter, len(rawSet))
+		for j, raw := range rawSet {
+			p, err := rdsdata.SqlParameterFromInterface(raw)
+			if err != nil {
+				return nil, err
+			}
+			params[j] = p
+		}
+		paramSets[i] = params
+	}
+	return a.service.BatchExecuteStatementForInvoker(ctx, resourceArn, secretArn, database, schema, sql, paramSets)
 }
 
 func (a *rdsDataInvokerAdapter) BeginTransaction(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error) {

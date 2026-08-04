@@ -107,7 +107,7 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// Concurrent AddClientID race regression guard (M3).  Five goroutines
+	// Concurrent AddClientID race regression guard.  Five goroutines
 	// each add a distinct client ID to the same provider.  Under the old
 	// unlocked Get-modify-Put path, at least one update was lost.  The
 	// atomic store-side AddClientID holds the per-ARN lock across the

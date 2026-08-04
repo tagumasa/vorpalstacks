@@ -194,21 +194,22 @@ func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "GetCSVHeader", s.GetCSVHeader)
 	d.RegisterHandlerForService("cognito-idp", "DescribeRiskConfiguration", s.DescribeRiskConfiguration)
 
-	// Token & auth operations (Phase 2)
+	// Token & auth operations
 	d.RegisterHandlerForService("cognito-idp", "RevokeToken", s.RevokeToken)
 	d.RegisterHandlerForService("cognito-idp", "GetTokensFromRefreshToken", s.GetTokensFromRefreshToken)
 	d.RegisterHandlerForService("cognito-idp", "GetUserAttributeVerificationCode", s.GetUserAttributeVerificationCode)
 	d.RegisterHandlerForService("cognito-idp", "VerifyUserAttribute", s.VerifyUserAttribute)
 	d.RegisterHandlerForService("cognito-idp", "ResendConfirmationCode", s.ResendConfirmationCode)
 	d.RegisterHandlerForService("cognito-idp", "GetUserAuthFactors", s.GetUserAuthFactors)
+	d.RegisterHandlerForService("cognito-idp", "AdminGetUserAuthFactors", s.AdminGetUserAuthFactors)
 
-	// MFA & user settings (Phase 3)
+	// MFA & user settings
 	d.RegisterHandlerForService("cognito-idp", "AdminSetUserMFAPreference", s.AdminSetUserMFAPreference)
 	d.RegisterHandlerForService("cognito-idp", "SetUserMFAPreference", s.SetUserMFAPreference)
 	d.RegisterHandlerForService("cognito-idp", "AdminSetUserSettings", s.AdminSetUserSettings)
 	d.RegisterHandlerForService("cognito-idp", "SetUserSettings", s.SetUserSettings)
 
-	// Device management (Phase 4)
+	// Device management
 	d.RegisterHandlerForService("cognito-idp", "ConfirmDevice", s.ConfirmDevice)
 	d.RegisterHandlerForService("cognito-idp", "GetDevice", s.GetDevice)
 	d.RegisterHandlerForService("cognito-idp", "ForgetDevice", s.ForgetDevice)
@@ -219,68 +220,68 @@ func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "AdminListDevices", s.AdminListDevices)
 	d.RegisterHandlerForService("cognito-idp", "AdminUpdateDeviceStatus", s.AdminUpdateDeviceStatus)
 
-	// Auth events (Phase 5)
+	// Auth events
 	d.RegisterHandlerForService("cognito-idp", "AdminListUserAuthEvents", s.AdminListUserAuthEvents)
 	d.RegisterHandlerForService("cognito-idp", "AdminUpdateAuthEventFeedback", s.AdminUpdateAuthEventFeedback)
 	d.RegisterHandlerForService("cognito-idp", "UpdateAuthEventFeedback", s.UpdateAuthEventFeedback)
 
-	// Client secrets (Phase 6)
+	// Client secrets
 	d.RegisterHandlerForService("cognito-idp", "AddUserPoolClientSecret", s.AddUserPoolClientSecret)
 	d.RegisterHandlerForService("cognito-idp", "DeleteUserPoolClientSecret", s.DeleteUserPoolClientSecret)
 	d.RegisterHandlerForService("cognito-idp", "ListUserPoolClientSecrets", s.ListUserPoolClientSecrets)
 
-	// Log delivery (Phase 7)
+	// Log delivery
 	d.RegisterHandlerForService("cognito-idp", "SetLogDeliveryConfiguration", s.SetLogDeliveryConfiguration)
 	d.RegisterHandlerForService("cognito-idp", "GetLogDeliveryConfiguration", s.GetLogDeliveryConfiguration)
 
-	// Risk configuration (Phase 8)
+	// Risk configuration
 	d.RegisterHandlerForService("cognito-idp", "SetRiskConfiguration", s.SetRiskConfiguration)
 
-	// UI customisation (Phase 9)
+	// UI customisation
 	d.RegisterHandlerForService("cognito-idp", "GetUICustomization", s.GetUICustomization)
 	d.RegisterHandlerForService("cognito-idp", "SetUICustomization", s.SetUICustomization)
 
-	// Provider user linking (Phase 10)
+	// Provider user linking
 	d.RegisterHandlerForService("cognito-idp", "AdminDisableProviderForUser", s.AdminDisableProviderForUser)
 	d.RegisterHandlerForService("cognito-idp", "AdminLinkProviderForUser", s.AdminLinkProviderForUser)
 
-	// Misc small operations (Phase 11)
+	// Misc small operations
 	d.RegisterHandlerForService("cognito-idp", "AddCustomAttributes", s.AddCustomAttributes)
 	d.RegisterHandlerForService("cognito-idp", "GetIdentityProviderByIdentifier", s.GetIdentityProviderByIdentifier)
 	d.RegisterHandlerForService("cognito-idp", "GetSigningCertificate", s.GetSigningCertificate)
 
-	// Provisioned limits (Phase 12)
+	// Provisioned limits
 	d.RegisterHandlerForService("cognito-idp", "GetProvisionedLimit", s.GetProvisionedLimit)
 	d.RegisterHandlerForService("cognito-idp", "UpdateProvisionedLimit", s.UpdateProvisionedLimit)
 
-	// User import (Phase 13)
+	// User import
 	d.RegisterHandlerForService("cognito-idp", "CreateUserImportJob", s.CreateUserImportJob)
 	d.RegisterHandlerForService("cognito-idp", "DescribeUserImportJob", s.DescribeUserImportJob)
 	d.RegisterHandlerForService("cognito-idp", "ListUserImportJobs", s.ListUserImportJobs)
 	d.RegisterHandlerForService("cognito-idp", "StartUserImportJob", s.StartUserImportJob)
 	d.RegisterHandlerForService("cognito-idp", "StopUserImportJob", s.StopUserImportJob)
 
-	// WebAuthn (Phase 14)
+	// WebAuthn
 	d.RegisterHandlerForService("cognito-idp", "StartWebAuthnRegistration", s.StartWebAuthnRegistration)
 	d.RegisterHandlerForService("cognito-idp", "CompleteWebAuthnRegistration", s.CompleteWebAuthnRegistration)
 	d.RegisterHandlerForService("cognito-idp", "ListWebAuthnCredentials", s.ListWebAuthnCredentials)
 	d.RegisterHandlerForService("cognito-idp", "DeleteWebAuthnCredential", s.DeleteWebAuthnCredential)
 
-	// Managed login branding (Phase 15)
+	// Managed login branding
 	d.RegisterHandlerForService("cognito-idp", "CreateManagedLoginBranding", s.CreateManagedLoginBranding)
 	d.RegisterHandlerForService("cognito-idp", "DescribeManagedLoginBranding", s.DescribeManagedLoginBranding)
 	d.RegisterHandlerForService("cognito-idp", "DescribeManagedLoginBrandingByClient", s.DescribeManagedLoginBrandingByClient)
 	d.RegisterHandlerForService("cognito-idp", "UpdateManagedLoginBranding", s.UpdateManagedLoginBranding)
 	d.RegisterHandlerForService("cognito-idp", "DeleteManagedLoginBranding", s.DeleteManagedLoginBranding)
 
-	// Terms (Phase 16)
+	// Terms
 	d.RegisterHandlerForService("cognito-idp", "CreateTerms", s.CreateTerms)
 	d.RegisterHandlerForService("cognito-idp", "DescribeTerms", s.DescribeTerms)
 	d.RegisterHandlerForService("cognito-idp", "ListTerms", s.ListTerms)
 	d.RegisterHandlerForService("cognito-idp", "UpdateTerms", s.UpdateTerms)
 	d.RegisterHandlerForService("cognito-idp", "DeleteTerms", s.DeleteTerms)
 
-	// Replicas (Phase 17)
+	// Replicas
 	d.RegisterHandlerForService("cognito-idp", "CreateUserPoolReplica", s.CreateUserPoolReplica)
 	d.RegisterHandlerForService("cognito-idp", "ListUserPoolReplicas", s.ListUserPoolReplicas)
 	d.RegisterHandlerForService("cognito-idp", "DeleteUserPoolReplica", s.DeleteUserPoolReplica)

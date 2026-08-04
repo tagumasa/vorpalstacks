@@ -35,7 +35,7 @@ func (s *TimestreamQueryService) DescribeAccountSettings(ctx context.Context, re
 
 // UpdateAccountSettings updates the account settings for Timestream Query.
 func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// M2: Use existence check instead of value check. MaxQueryTCU has no
+	// Use existence check instead of value check. MaxQueryTCU has no
 	// Smithy range trait — 0 is a valid value meaning "use default".
 	var maxQueryTCU *int64
 	if _, ok := req.Parameters["MaxQueryTCU"]; ok {
@@ -46,7 +46,7 @@ func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqC
 
 	queryPricingModel := request.GetParamCaseInsensitive(req.Parameters, "QueryPricingModel")
 
-	// M13: Validate QueryPricingModel enum (Smithy: BYTES_SCANNED, COMPUTE_UNITS).
+	// Validate QueryPricingModel enum (Smithy: BYTES_SCANNED, COMPUTE_UNITS).
 	if queryPricingModel != "" && !validQueryPricingModels[queryPricingModel] {
 		return nil, ErrValidationException
 	}
@@ -56,14 +56,14 @@ func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqC
 
 	if qcMap := request.GetMapParamCaseInsensitive(req.Parameters, "QueryCompute"); qcMap != nil {
 		if mode, ok := qcMap["ComputeMode"].(string); ok {
-			// M13: Validate ComputeMode enum (Smithy: ON_DEMAND, PROVISIONED).
+			// Validate ComputeMode enum (Smithy: ON_DEMAND, PROVISIONED).
 			if mode != "" && !validComputeModes[mode] {
 				return nil, ErrValidationException
 			}
 			queryComputeType = mode
 		}
 
-		// M2/M3: Parse ProvisionedCapacityRequest (Smithy: TargetQueryTCU +
+		// Parse ProvisionedCapacityRequest (Smithy: TargetQueryTCU +
 		// NotificationConfiguration).
 		if pcMap, ok := qcMap["ProvisionedCapacity"].(map[string]interface{}); ok {
 			provisionedCapacity = parseProvisionedCapacityRequest(pcMap)
@@ -110,7 +110,7 @@ func formatAccountSettingsResponse(settings *tsstore.AccountSettings) map[string
 		"ComputeMode": settings.QueryComputeType,
 	}
 
-	// M3: Include ProvisionedCapacity in output when configured.
+	// Include ProvisionedCapacity in output when configured.
 	if settings.ProvisionedCapacity != nil {
 		pcMap := map[string]interface{}{
 			"ActiveQueryTCU": settings.ProvisionedCapacity.ActiveQueryTCU,

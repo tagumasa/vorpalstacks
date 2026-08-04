@@ -33,7 +33,7 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrResourceNotFound
 	}
 
-	// Reject self-registration when admin-only creation is enforced (CIPD-11)
+	// Reject self-registration when admin-only creation is enforced.
 	if targetPool.AdminCreateUserConfig != nil && targetPool.AdminCreateUserConfig.AllowAdminCreateUserOnly {
 		return nil, ErrNotAuthorized
 	}
@@ -91,7 +91,7 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 		}
 	} else {
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, user.ConfirmationCode, userAttributesMap(user)); err != nil {
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, user.ConfirmationCode, userAttributesMap(user), parseClientMetadata(req)); err != nil {
 			logs.Warn("CustomMessage trigger failed", logs.Err(err))
 		}
 	}
@@ -102,10 +102,11 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	if !preSignUpResult.AutoConfirmUser {
+		medium, attrName := determineDeliveryMedium(targetPool, user)
 		result["CodeDeliveryDetails"] = map[string]interface{}{
 			"Destination":    "***",
-			"DeliveryMedium": "EMAIL",
-			"AttributeName":  "email",
+			"DeliveryMedium": medium,
+			"AttributeName":  attrName,
 		}
 	}
 

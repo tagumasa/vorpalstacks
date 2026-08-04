@@ -89,26 +89,34 @@ func (r *TestRunner) runACMListTests(tc *acmTestContext) []TestResult {
 		importArn := aws.ToString(importResp.CertificateArn)
 		defer tc.deleteCert(importArn)
 
-		resp, err := tc.client.ListCertificates(tc.ctx, &acm.ListCertificatesInput{
-			CertificateStatuses: []types.CertificateStatus{types.CertificateStatusIssued},
-		})
-		if err != nil {
-			return err
-		}
 		found := false
-		for _, s := range resp.CertificateSummaryList {
-			if aws.ToString(s.CertificateArn) == importArn {
-				found = true
+		var nextToken *string
+		for {
+			input := &acm.ListCertificatesInput{
+				CertificateStatuses: []types.CertificateStatus{types.CertificateStatusIssued},
+			}
+			if nextToken != nil {
+				input.NextToken = nextToken
+			}
+			resp, err := tc.client.ListCertificates(tc.ctx, input)
+			if err != nil {
+				return err
+			}
+			for _, s := range resp.CertificateSummaryList {
+				if aws.ToString(s.CertificateArn) == importArn {
+					found = true
+				}
+				if s.Status != types.CertificateStatusIssued {
+					return fmt.Errorf("found non-ISSUED cert in filtered list: %s", s.Status)
+				}
+			}
+			if found || resp.NextToken == nil || aws.ToString(resp.NextToken) == "" {
 				break
 			}
+			nextToken = resp.NextToken
 		}
 		if !found {
 			return fmt.Errorf("imported ISSUED cert not found in filtered list")
-		}
-		for _, s := range resp.CertificateSummaryList {
-			if s.Status != types.CertificateStatusIssued {
-				return fmt.Errorf("found non-ISSUED cert in filtered list: %s", s.Status)
-			}
 		}
 		return nil
 	}))

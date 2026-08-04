@@ -50,8 +50,8 @@ func TestValidateScheduleFields_CronFieldCount(t *testing.T) {
 	}{
 		{"cron(0 12 * * * ?)", false}, // 6 fields, valid
 		{"cron(0 12 * * ? *)", false}, // 6 fields, valid
-		{"cron(0 12 * * *)", true},    // 5 fields, invalid (H5)
-		{"cron(0)", true},             // 1 field, invalid (H5)
+		{"cron(0 12 * * *)", true},    // 5 fields, invalid
+		{"cron(0)", true},             // 1 field, invalid
 		{"cron(* * * * * *)", false},  // 6 wildcards, valid
 	}
 	for _, tt := range tests {
@@ -75,8 +75,8 @@ func TestValidateScheduleFields_AtSemanticDate(t *testing.T) {
 		wantErr bool
 	}{
 		{"at(2025-01-15T10:00:00)", false}, // valid date
-		{"at(2025-13-45T99:99:99)", true},  // month 13, hour 99 (H6)
-		{"at(2025-02-30T10:00:00)", true},  // Feb 30 doesn't exist (H6)
+		{"at(2025-13-45T99:99:99)", true},  // month 13, hour 99
+		{"at(2025-02-30T10:00:00)", true},  // Feb 30 doesn't exist
 	}
 	for _, tt := range tests {
 		t.Run(tt.expr, func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestValidateScheduleFields_FlexibleTimeWindowModeEnum(t *testing.T) {
 		{"FLEXIBLE", nil, true},          // FLEXIBLE requires MaximumWindowInMinutes
 		{"FLEXIBLE", intPtr(0), true},    // below min
 		{"FLEXIBLE", intPtr(1441), true}, // above max
-		{"INVALID_MODE", nil, true},      // invalid enum (H3)
+		{"INVALID_MODE", nil, true},      // invalid enum
 	}
 	for _, tt := range tests {
 		t.Run(tt.mode, func(t *testing.T) {
@@ -164,10 +164,10 @@ func TestValidateScheduleFields_RetryPolicyRanges(t *testing.T) {
 	}{
 		{"valid", intPtr(60), intPtr(0), false},
 		{"valid-max", intPtr(86400), intPtr(185), false},
-		{"age-below-min", intPtr(59), nil, true},    // H2
-		{"age-above-max", intPtr(86401), nil, true}, // H2
-		{"retry-above-max", nil, intPtr(186), true}, // H2
-		{"retry-below-min", nil, intPtr(-1), true},  // H2
+		{"age-below-min", intPtr(59), nil, true},    // below minimum age
+		{"age-above-max", intPtr(86401), nil, true}, // above maximum age
+		{"retry-above-max", nil, intPtr(186), true}, // above maximum retry attempts
+		{"retry-below-min", nil, intPtr(-1), true},  // below minimum retry attempts
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -205,7 +205,7 @@ func TestValidateScheduleFields_DescriptionLength(t *testing.T) {
 
 	spec.Description = strings.Repeat("a", 513)
 	if _, err := ValidateScheduleFields(spec); err == nil {
-		t.Error("513 chars should fail (M6)")
+		t.Error("513 chars should fail")
 	}
 }
 
@@ -244,7 +244,7 @@ func TestValidateScheduleFields_Timezone(t *testing.T) {
 		{"America/New_York", false},
 		{"Asia/Tokyo", false},
 		{"Invalid/NotReal", true},       // not in IANA database
-		{strings.Repeat("a", 51), true}, // too long (M3)
+		{strings.Repeat("a", 51), true}, // too long
 		{"", false},                     // empty is OK (optional)
 	}
 	for _, tt := range tests {
@@ -271,7 +271,7 @@ func TestValidateScheduleFields_StartEndDateOrdering(t *testing.T) {
 		wantErr bool
 	}{
 		{"valid-order", "2025-01-01T00:00:00Z", "2025-12-31T23:59:59Z", false},
-		{"end-before-start", "2025-12-31T00:00:00Z", "2025-01-01T00:00:00Z", true}, // M4
+		{"end-before-start", "2025-12-31T00:00:00Z", "2025-01-01T00:00:00Z", true}, // end date precedes start date
 		{"same-time", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z", false},
 		{"start-only", "2025-01-01T00:00:00Z", "", false},
 		{"end-only", "", "2025-01-01T00:00:00Z", false},

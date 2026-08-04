@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -154,9 +155,26 @@ func (s *AthenaService) ListNamedQueries(ctx context.Context, reqCtx *request.Re
 }
 
 // UpdateNamedQuery updates the specified named query.
+// Per the Smithy model, NamedQueryId, Name, and QueryString are all REQUIRED.
 func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
 	if namedQueryId == "" {
+		return nil, ErrInvalidRequestException
+	}
+
+	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
+	if name == "" {
+		return nil, awserrors.NewInvalidParameterException("Name is required for UpdateNamedQuery")
+	}
+	if err := validateNameString(name); err != nil {
+		return nil, err
+	}
+
+	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
+	if queryString == "" {
+		return nil, awserrors.NewInvalidParameterException("QueryString is required for UpdateNamedQuery")
+	}
+	if len(queryString) > maxQueryStringSize {
 		return nil, ErrInvalidRequestException
 	}
 
@@ -172,13 +190,8 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name != "" {
-		if err := validateNameString(name); err != nil {
-			return nil, err
-		}
-		namedQuery.Name = name
-	}
+	namedQuery.Name = name
+	namedQuery.QueryString = queryString
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {
@@ -186,11 +199,6 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 			return nil, err
 		}
 		namedQuery.Description = description
-	}
-
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-	if queryString != "" {
-		namedQuery.QueryString = queryString
 	}
 
 	if err := stores.namedQueryStore.UpdateNamedQuery(namedQueryId, namedQuery); err != nil {

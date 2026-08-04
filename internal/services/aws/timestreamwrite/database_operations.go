@@ -55,7 +55,7 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 	}
 
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	// L2: Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
+	// Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
 	if kmsKeyID != "" && !validateKmsKeyId(kmsKeyID) {
 		return nil, ErrValidationException
 	}
@@ -157,7 +157,7 @@ func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *req
 	if kmsKeyID == "" {
 		return nil, ErrValidationException
 	}
-	// L2: Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
+	// Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
 	if !validateKmsKeyId(kmsKeyID) {
 		return nil, ErrValidationException
 	}

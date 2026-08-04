@@ -428,6 +428,7 @@ func invokePreTokenGeneration(
 	config *cognitostore.LambdaConfig,
 	userAttrs map[string]string,
 	userGroups []string,
+	clientMetadata map[string]string,
 ) (*preTokenGenerationResult, error) {
 	lambdaARN := resolveTriggerARN(config, triggerSource)
 	if lambdaARN == "" {
@@ -441,7 +442,7 @@ func invokePreTokenGeneration(
 			"iamRolesToOverride": nil,
 			"preferredRole":      nil,
 		},
-		"clientMetadata": nil,
+		"clientMetadata": clientMetadata,
 	}
 
 	responseDefaults := map[string]interface{}{
@@ -519,6 +520,7 @@ func invokeCustomMessage(
 	config *cognitostore.LambdaConfig,
 	codeParameter string,
 	userAttrs map[string]string,
+	clientMetadata map[string]string,
 ) (*customMessageResult, error) {
 	lambdaARN := resolveTriggerARN(config, triggerSource)
 	if lambdaARN == "" {
@@ -529,7 +531,7 @@ func invokeCustomMessage(
 		"codeParameter":     codeParameter,
 		"usernameParameter": nil,
 		"userAttributes":    userAttrs,
-		"clientMetadata":    nil,
+		"clientMetadata":    clientMetadata,
 	}
 
 	responseDefaults := map[string]interface{}{

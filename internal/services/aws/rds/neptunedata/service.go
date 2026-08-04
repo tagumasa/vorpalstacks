@@ -581,12 +581,11 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 	return map[string]interface{}{
 		"status":    "healthy",
 		"startTime": s.startTime.UTC().Format(timeutils.ISO8601UTCFormat),
-		// M16: dbEngineVersion — the engine version string used by clients
-		// for feature detection. Neptune 1.x series.
+		// Engine version string used by clients for feature detection (Neptune 1.x series).
 		"dbEngineVersion": "1.3.3.0",
 		"role":            "writer",
-		// M16: dfeQueryEngine — DFE (Distributed Forwarding Engine) state.
-		// "Disabled" indicates TinkerPop-only execution (no DFE).
+		// DFE (Distributed Forwarding Engine) state. "Disabled" indicates
+		// TinkerPop-only execution (no DFE).
 		"dfeQueryEngine": "Disabled",
 		"gremlin": map[string]interface{}{
 			"version": "3.7.x",
@@ -598,12 +597,11 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 			"version": "1.1",
 		},
 		"labMode": map[string]interface{}{},
-		// M16: rollingBackTrxCount — number of currently rolling-back
-		// transactions. 0 when healthy.
+		// Number of currently rolling-back transactions. 0 when healthy.
 		"rollingBackTrxCount": 0,
-		// M16: rollingBackTrxEarliestStartTime — empty when no rollbacks.
+		// Empty when no rollbacks.
 		"rollingBackTrxEarliestStartTime": "",
-		// M16: features — engine feature flags (e.g. Streams, ML).
+		// Engine feature flags (e.g. Streams, ML).
 		"features": map[string]interface{}{
 			"streams": map[string]interface{}{
 				"property_graph": map[string]interface{}{
@@ -928,7 +926,7 @@ func (s *NeptuneDataService) refreshStatisticsForRegion(region string) {
 
 func refreshStatisticsWithReader(reader graphengine.GraphReader, region string, s *NeptuneDataService) {
 	if reader == nil {
-		// M21: Log when no graph reader is available so silent failures
+		// Log when no graph reader is available so silent failures
 		// are diagnosable.
 		logs.Warn("refreshStatistics: no graph reader available",
 			logs.String("region", region))

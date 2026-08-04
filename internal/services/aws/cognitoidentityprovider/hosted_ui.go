@@ -243,7 +243,7 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID)
+		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationHostedAuth, nil)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -316,7 +316,7 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID)
+		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationRefreshTokens, nil)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)

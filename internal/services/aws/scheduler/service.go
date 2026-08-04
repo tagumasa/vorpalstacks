@@ -121,7 +121,7 @@ func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.S
 }
 
 // SetRoleProvider injects the IAM role policy provider so that the admin
-// console handler can validate RoleArn trust policies (H1).
+// console handler can validate RoleArn trust policies.
 func (s *SchedulerService) SetRoleProvider(rp iam.RolePolicyProvider) {
 	s.roleProvider = rp
 }

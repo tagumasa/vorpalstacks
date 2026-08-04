@@ -6,6 +6,7 @@ import (
 
 	"vorpalstacks/internal/store/aws/apigateway"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // createRestApiCore is the shared business logic for creating a REST API.
@@ -22,11 +23,48 @@ import (
 //   - source-not-found cases persisting an empty target API in Pebble
 //     because Create ran before the source lookup;
 //   - missing endpointConfiguration default (REGIONAL) in the admin handler.
+//
+// CreateRestApiInput is the transport-agnostic DTO for creating a REST API.
+// Both the HTTP API handler and the admin gRPC handler build this struct
+// and delegate to createRestApiCore, ensuring validation follows a single
+// code path.
+type CreateRestApiInput struct {
+	Name                      string
+	Description               string
+	Version                   string
+	BinaryMediaTypes          []string
+	ApiKeySource              string
+	Policy                    string
+	SecurityPolicy            string
+	EndpointAccessMode        string
+	DisableExecuteApiEndpoint bool
+	MinimumCompressionSize    *int32
+	EndpointTypes             []string
+	Tags                      []types.Tag
+	CloneFrom                 string
+}
+
 func (s *APIGatewayService) createRestApiCore(
 	stores *apiGatewayStores,
-	api *apigateway.RestApi,
-	cloneFrom string,
+	in CreateRestApiInput,
 ) (*apigateway.RestApi, error) {
+	api := &apigateway.RestApi{
+		Name:                      in.Name,
+		Description:               in.Description,
+		Version:                   in.Version,
+		BinaryMediaTypes:          in.BinaryMediaTypes,
+		ApiKeySource:              in.ApiKeySource,
+		Policy:                    in.Policy,
+		SecurityPolicy:            in.SecurityPolicy,
+		EndpointAccessMode:        in.EndpointAccessMode,
+		DisableExecuteApiEndpoint: in.DisableExecuteApiEndpoint,
+		MinimumCompressionSize:    in.MinimumCompressionSize,
+		Tags:                      in.Tags,
+	}
+	if len(in.EndpointTypes) > 0 {
+		api.EndpointConfiguration = &apigateway.EndpointConfiguration{Types: in.EndpointTypes}
+	}
+	cloneFrom := in.CloneFrom
 	if api.Name == "" {
 		return nil, NewBadRequestException("name is required")
 	}

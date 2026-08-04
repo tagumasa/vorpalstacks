@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// TestPolicyEvaluator_IntraPolicyDenyWins guards H5: an explicit Deny
+// TestPolicyEvaluator_IntraPolicyDenyWins is a regression test: an explicit Deny
 // within the same policy must override an Allow, regardless of statement
 // order. Pre-fix the evaluator returned on the first matching statement,
 // letting an earlier Allow short-circuit a later Deny.

@@ -8,7 +8,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
 // GetRestApis returns all REST APIs.
@@ -55,7 +54,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 		return nil, storeErr(err)
 	}
 
-	api := &apigatewaystore.RestApi{
+	input := CreateRestApiInput{
 		Name:               req.Msg.Name,
 		Description:        req.Msg.Description,
 		Version:            req.Msg.Version,
@@ -64,26 +63,25 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 		Policy:             req.Msg.Policy,
 		SecurityPolicy:     securityPolicyFromPb(req.Msg.Securitypolicy),
 		EndpointAccessMode: endpointAccessModeFromPb(req.Msg.Endpointaccessmode),
+		CloneFrom:          req.Msg.Clonefrom,
 	}
 	if req.Msg.Disableexecuteapiendpoint != nil {
-		api.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
+		input.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
 	}
 	if req.Msg.Minimumcompressionsize != nil {
 		v := *req.Msg.Minimumcompressionsize
-		api.MinimumCompressionSize = &v
+		input.MinimumCompressionSize = &v
 	}
 	if req.Msg.Endpointconfiguration != nil {
-		types := make([]string, len(req.Msg.Endpointconfiguration.Types))
-		for i, t := range req.Msg.Endpointconfiguration.Types {
-			types[i] = fromPbEndpointType(t)
+		for _, t := range req.Msg.Endpointconfiguration.Types {
+			input.EndpointTypes = append(input.EndpointTypes, fromPbEndpointType(t))
 		}
-		api.EndpointConfiguration = &apigatewaystore.EndpointConfiguration{Types: types}
 	}
 	if len(req.Msg.Tags) > 0 {
-		api.Tags = tagutil.MapToTags(req.Msg.Tags)
+		input.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
-	created, err := h.service.createRestApiCore(stores, api, req.Msg.Clonefrom)
+	created, err := h.service.createRestApiCore(stores, input)
 	if err != nil {
 		return nil, storeErr(err)
 	}

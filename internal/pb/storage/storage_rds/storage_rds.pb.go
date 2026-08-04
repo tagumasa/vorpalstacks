@@ -392,9 +392,9 @@ type DBCluster struct {
 	// MasterUserPasswordHash stores the bcrypt hash of the master user
 	// password. Persisted for verification but never surfaced in API
 	// responses (the Go struct uses json:"-" to exclude it from HTTP
-	// output). Write-only per AWS spec (H1 fix).
+	// output). Write-only per AWS spec.
 	MasterUserPasswordHash string `protobuf:"bytes,34,opt,name=master_user_password_hash,json=masterUserPasswordHash,proto3" json:"master_user_password_hash,omitempty"`
-	// AWS-standard DBCluster output fields previously dropped (M5 fix).
+	// AWS-standard DBCluster output fields previously dropped.
 	// Populated at create time and surfaced through DescribeDBClusters.
 	// proto3 treats unset scalars as the zero value, so existing
 	// serialised records remain readable (forward compatibility).
@@ -804,7 +804,7 @@ type DBInstance struct {
 	LatestRestorableTime               *timestamppb.Timestamp `protobuf:"bytes,46,opt,name=latest_restorable_time,json=latestRestorableTime,proto3" json:"latest_restorable_time,omitempty"`
 	PreferredBackupWindow              string                 `protobuf:"bytes,47,opt,name=preferred_backup_window,json=preferredBackupWindow,proto3" json:"preferred_backup_window,omitempty"`
 	// MasterUserPasswordHash for the instance. Write-only: persisted
-	// but never surfaced in API responses (json:"-" on Go struct) (H1 fix).
+	// but never surfaced in API responses (json:"-" on Go struct).
 	MasterUserPasswordHash string `protobuf:"bytes,48,opt,name=master_user_password_hash,json=masterUserPasswordHash,proto3" json:"master_user_password_hash,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache

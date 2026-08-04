@@ -23,7 +23,7 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		if err != nil {
 			return nil, s.mapStoreError(err)
 		}
-		// M11: Verify StreamCreationTimestamp matches when provided
+		// Verify StreamCreationTimestamp matches when provided
 		// (used to disambiguate deleted+recreated streams)
 		if tsStr := request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"); tsStr != "" {
 			if unixTs, err := strconv.ParseFloat(tsStr, 64); err == nil {
@@ -83,7 +83,7 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
-	// M15: Apply ShardOrder (ASCENDING is default, DESCENDING reverses)
+	// Apply ShardOrder (ASCENDING is default, DESCENDING reverses)
 	shardOrder := request.GetParamLowerFirst(req.Parameters, "ShardOrder")
 	if shardOrder == "DESCENDING" {
 		sort.Slice(shards, func(i, j int) bool {

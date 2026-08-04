@@ -135,7 +135,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
-	// M6: FIFO receive dedup via ReceiveRequestAttemptId
+	// FIFO receive dedup via ReceiveRequestAttemptId
 	if queue.FifoQueue && receiveRequestAttemptId != "" {
 		if cached := s.checkReceiveAttemptCache(queueURL, receiveRequestAttemptId, now); cached != nil {
 			return cached, nil
@@ -192,7 +192,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		messages = append(messages, msg)
 	}
 
-	// M6: Cache the result for FIFO receive dedup
+	// Cache the result for FIFO receive dedup
 	if queue.FifoQueue && receiveRequestAttemptId != "" && len(messages) > 0 {
 		s.cacheReceiveAttempt(queueURL, receiveRequestAttemptId, messages)
 	}
@@ -443,7 +443,7 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 }
 
 // ---------------------------------------------------------------------------
-// M6: ReceiveRequestAttemptId FIFO receive dedup
+// ReceiveRequestAttemptId FIFO receive dedup
 // ---------------------------------------------------------------------------
 
 const receiveAttemptCacheMaxSize = 500

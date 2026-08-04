@@ -198,7 +198,7 @@ func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
 		return awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
 	}
 
-	// H4: Type must be one of the 8 valid values.
+	// Type must be one of the 8 valid values.
 	validTypes := map[string]bool{
 		"HTTP": true, "HTTPS": true, "HTTP_STR_MATCH": true,
 		"HTTPS_STR_MATCH": true, "TCP": true,
@@ -210,7 +210,7 @@ func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
 			fmt.Sprintf("Invalid or missing health check type: %q. Must be one of: HTTP, HTTPS, HTTP_STR_MATCH, HTTPS_STR_MATCH, TCP, CALCULATED, CLOUDWATCH_METRIC, RECOVERY_CONTROL", config.Type), 400)
 	}
 
-	// H5: Numeric range validation (only validates when the field is set).
+	// Numeric range validation (only validates when the field is set).
 	if config.Port > 65535 {
 		return awserrors.NewAWSError("InvalidInput", "Port must be between 1 and 65535", 400)
 	}
@@ -224,7 +224,7 @@ func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
 		return awserrors.NewAWSError("InvalidInput", "HealthThreshold must be between 0 and 256", 400)
 	}
 
-	// H5: String length validation (AWS docs constraints).
+	// String length validation (AWS docs constraints).
 	if len(config.ResourcePath) > 255 {
 		return awserrors.NewAWSError("InvalidInput", "ResourcePath must not exceed 255 characters", 400)
 	}
@@ -314,7 +314,7 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 		}
 	}
 
-	// M5: Process ResetElements — reset specified fields to their default
+	// Process ResetElements — reset specified fields to their default
 	// values. Applied AFTER field updates so that resets take precedence.
 	if resetsRaw, ok := updates["ResetElements"].([]interface{}); ok {
 		for _, r := range resetsRaw {
@@ -421,7 +421,7 @@ func (s *Route53Service) healthCheckToResponse(hc *route53store.HealthCheck) map
 		"HealthCheckVersion": hc.HealthCheckVersion,
 	}
 
-	// M6: Output CloudWatchAlarmConfiguration when populated on the store
+	// Output CloudWatchAlarmConfiguration when populated on the store
 	// object, or derive minimal info from AlarmIdentifier for
 	// CLOUDWATCH_METRIC health checks.
 	if hc.CloudWatchAlarmConfiguration != nil {

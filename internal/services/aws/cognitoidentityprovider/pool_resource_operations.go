@@ -36,14 +36,52 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 		UserPoolID:       userPoolID,
 		CloudFrontDomain: cfDomain,
 		CreatedDate:      time.Now().UTC(),
+		Status:           "ACTIVE",
+	}
+	if v, ok := req.Parameters["ManagedLoginVersion"]; ok {
+		switch n := v.(type) {
+		case int:
+			mlv := n
+			domainEntry.ManagedLoginVersion = &mlv
+		case float64:
+			mlv := int(n)
+			domainEntry.ManagedLoginVersion = &mlv
+		}
+	}
+	if cdc, ok := req.Parameters["CustomDomainConfig"].(map[string]interface{}); ok {
+		cfg := &cognitostore.CustomDomainConfig{}
+		if v, ok := cdc["CertificateArn"].(string); ok {
+			cfg.CertificateArn = v
+		}
+		if v, ok := cdc["SecurityPolicy"].(string); ok {
+			cfg.SecurityPolicy = v
+		}
+		domainEntry.CustomDomainConfig = cfg
+	}
+	if rt, ok := req.Parameters["Routing"].(map[string]interface{}); ok {
+		routing := &cognitostore.Routing{}
+		if v, ok := rt["Failover"].(string); ok {
+			routing.Failover = v
+		}
+		domainEntry.Routing = routing
 	}
 	if err := store.SetUserPoolDomain(domain, domainEntry); err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"CloudFrontDomain": cfDomain,
-	}, nil
+	}
+	if domainEntry.ManagedLoginVersion != nil {
+		resp["ManagedLoginVersion"] = *domainEntry.ManagedLoginVersion
+	}
+	if domainEntry.Routing != nil {
+		resp["Routing"] = map[string]interface{}{
+			"Failover": domainEntry.Routing.Failover,
+		}
+	}
+
+	return resp, nil
 }
 
 // DescribeUserPoolDomain returns information about a user pool domain.
@@ -69,6 +107,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 			"UserPoolId":       domainEntry.UserPoolID,
 			"CloudFrontDomain": domainEntry.CloudFrontDomain,
 			"CreatedDate":      domainEntry.CreatedDate.Unix(),
+			"Status":           domainEntry.Status,
 		},
 	}, nil
 }
@@ -312,6 +351,9 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 	if userPoolID == "" || providerName == "" || providerType == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateProviderType(providerType) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -338,7 +380,7 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 		ProviderDetails: providerDetails,
 	}
 
-	// Parse AttributeMapping and IdpIdentifiers (CIPD-14)
+	// Parse AttributeMapping and IdpIdentifiers.
 	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
 		ip.AttributeMapping = make(map[string]string)
 		for k, v := range am {
@@ -362,25 +404,11 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 
 // DescribeIdentityProvider returns details of a specified identity provider in a user pool.
 func (s *CognitoService) DescribeIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	providerName := req.GetParam("ProviderName")
-	if userPoolID == "" || providerName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	ip, err := s.describeIdentityProviderCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("ProviderName"))
 	if err != nil {
 		return nil, err
 	}
-
-	ip, err := store.GetIdentityProvider(userPoolID, providerName)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	return map[string]interface{}{
-		"IdentityProvider": formatIdentityProvider(ip),
-	}, nil
+	return map[string]interface{}{"IdentityProvider": formatIdentityProvider(ip)}, nil
 }
 
 // UpdateIdentityProvider updates the configuration of a specified identity provider in a user pool.
@@ -391,17 +419,15 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
+	ip, err := s.describeIdentityProviderCore(reqCtx.GetRegion(), userPoolID, providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	ip, err := store.GetIdentityProvider(userPoolID, providerName)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	if providerType := req.GetParam("ProviderType"); providerType != "" {
+		if !validateProviderType(providerType) {
+			return nil, ErrInvalidParameter
+		}
 		ip.ProviderType = providerType
 	}
 
@@ -415,7 +441,6 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 		ip.ProviderDetails = providerDetails
 	}
 
-	// Parse AttributeMapping and IdpIdentifiers on update (CIPD-14)
 	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
 		ip.AttributeMapping = make(map[string]string)
 		for k, v := range am {
@@ -428,74 +453,42 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 		ip.IdpIdentifiers = ids
 	}
 
-	if err := store.UpdateIdentityProvider(ip); err != nil {
-		return nil, ErrInternalError
+	if err := s.updateIdentityProviderCore(reqCtx.GetRegion(), ip); err != nil {
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"IdentityProvider": formatIdentityProvider(ip),
-	}, nil
+	return map[string]interface{}{"IdentityProvider": formatIdentityProvider(ip)}, nil
 }
 
 // DeleteIdentityProvider deletes a specified identity provider from a user pool.
 func (s *CognitoService) DeleteIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	providerName := req.GetParam("ProviderName")
-	if userPoolID == "" || providerName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteIdentityProviderCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("ProviderName")); err != nil {
 		return nil, err
 	}
-
-	if err := store.DeleteIdentityProvider(userPoolID, providerName); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // ListIdentityProviders lists all identity providers in a user pool.
 func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.listIdentityProvidersCore(reqCtx.GetRegion(), ListIdentityProvidersInput{
+		UserPoolID: getUserPoolID(req),
+		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	// Smithy ListProvidersLimitType: range {min: 0, max: 60}
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}
-
-	result, err := store.ListIdentityProvidersPaginated(userPoolID, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]interface{}, 0, len(result.Items))
-	for _, ip := range result.Items {
+	items := make([]interface{}, 0, len(result.Providers))
+	for _, ip := range result.Providers {
 		items = append(items, formatIdentityProvider(ip))
 	}
 
 	resp := map[string]interface{}{
 		"Providers": items,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
 
 	return resp, nil

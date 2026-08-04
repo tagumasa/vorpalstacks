@@ -21,6 +21,15 @@ func cognitoIdpMapError(err error) error {
 func cognitoIdpTagConfig(store cognitostore.CognitoStoreInterface) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
+		// ValidateResource checks the ARN length [20, 2048] per Smithy ArnType.
+		ValidateResource: func(_ context.Context, resourceKey string) error {
+			return validateCognitoResourceArn(resourceKey)
+		},
+		// ValidateTagsFunc checks each tag key [1, 128] and value [0, 256]
+		// per Smithy TagKeysType / TagValueType.
+		ValidateTagsFunc: func(tags []types.Tag) error {
+			return validateCognitoTagsFromTypes(tags)
+		},
 		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
 			if err := store.Tag(resourceKey, tagutil.ToMap(tags)); err != nil {
 				return ErrInternalError
@@ -28,6 +37,9 @@ func cognitoIdpTagConfig(store cognitostore.CognitoStoreInterface) tagutil.TagHa
 			return nil
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			if err := validateCognitoTagKeys(tagKeys); err != nil {
+				return err
+			}
 			if err := store.Untag(resourceKey, tagKeys); err != nil {
 				return ErrInternalError
 			}

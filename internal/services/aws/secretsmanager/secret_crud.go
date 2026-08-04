@@ -30,7 +30,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	if name == "" {
 		return nil, errors.ErrMissingParameter
 	}
-	// M12: NameType length constraint is 1-512 (Smithy).
+	// NameType length constraint is 1-512 (Smithy).
 	if len(name) > 512 {
 		return nil, errors.NewAWSError("InvalidParameterException",
 			"Secret name must be between 1 and 512 characters long.", http.StatusBadRequest)
@@ -39,7 +39,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	secretString := request.GetStringParam(req.Parameters, "SecretString")
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
 	description := request.GetStringParam(req.Parameters, "Description")
-	// M17: DescriptionType length constraint is 0-2048 (Smithy).
+	// DescriptionType length constraint is 0-2048 (Smithy).
 	if len(description) > 2048 {
 		return nil, errors.NewAWSError("InvalidParameterException",
 			"Description must be between 0 and 2048 characters long.", http.StatusBadRequest)
@@ -122,7 +122,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 		return nil, mapStoreError(err)
 	}
 
-	// M10/M1: AddReplicaRegions — when provided, replicate the secret to
+	// AddReplicaRegions — when provided, replicate the secret to
 	// the specified regions immediately after creation (same as calling
 	// ReplicateSecretToRegions separately).
 	addReplicaRegions, err := parseReplicaRegions(req.Parameters, "AddReplicaRegions")
@@ -137,7 +137,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	// M11: Include ReplicationStatus in the response when replication was
+	// Include ReplicationStatus in the response when replication was
 	// requested.
 	result := map[string]interface{}{
 		"ARN":       created.ARN,
@@ -247,7 +247,7 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 	secretString := request.GetStringParam(req.Parameters, "SecretString")
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
 	description := request.GetStringParam(req.Parameters, "Description")
-	// M17: DescriptionType length constraint is 0-2048 (Smithy).
+	// DescriptionType length constraint is 0-2048 (Smithy).
 	if len(description) > 2048 {
 		return nil, errors.NewAWSError("InvalidParameterException",
 			"Description must be between 0 and 2048 characters long.", http.StatusBadRequest)
@@ -255,7 +255,7 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
 	secretType := request.GetStringParam(req.Parameters, "Type")
 
-	// M2: ClientRequestToken — when provided with a secret value, becomes
+	// ClientRequestToken — when provided with a secret value, becomes
 	// the VersionId of the new version (Smithy ClientRequestTokenType
 	// length 32-64, idempotencyToken trait).
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
@@ -296,7 +296,7 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 
 	var versionId string
 	if hasSecretValue {
-		// M2: ClientRequestToken becomes the version ID when a new
+		// ClientRequestToken becomes the version ID when a new
 		// version is created.
 		secret.InitialVersionId = clientRequestToken
 		updated, err := store.UpdateSecret(secret)

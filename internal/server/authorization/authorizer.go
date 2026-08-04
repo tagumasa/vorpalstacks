@@ -133,7 +133,7 @@ func (a *Authorizer) Authorize(
 		// IAM permanent key lookup failed. If the caller presents a
 		// temporary "ASIA" access key and we have a session resolver
 		// configured, attempt session-based authorisation before
-		// fail-closing (H2/M1 enforcement).
+		// fail-closing.
 		if strings.HasPrefix(accessKeyID, "ASIA") && a.sessionResolver != nil {
 			return a.authorizeSession(ctx, reqCtx, parsedReq, serviceName, r, accessKeyID)
 		}
@@ -332,7 +332,7 @@ func (a *Authorizer) buildEvaluationContext(
 // key) via the session resolver and evaluates the assumed role's policies
 // intersected with any session policy the caller supplied. Session tags
 // surface as aws:PrincipalTag/<key> values and SourceIdentity as
-// sts:SourceIdentity in the policy evaluation context (M1/H2 enforcement).
+// sts:SourceIdentity in the policy evaluation context.
 //
 // The Root principal type bypasses policy evaluation, matching the
 // permanent-key root-user behaviour. Federated users (GetFederationToken)

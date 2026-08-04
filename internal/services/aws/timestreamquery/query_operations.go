@@ -210,7 +210,7 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 		return nil, ErrValidationException
 	}
 
-	// M6: Parse ValidateOnly. When true, AWS validates syntax only and
+	// Parse ValidateOnly. When true, AWS validates syntax only and
 	// does not compute column metadata.
 	validateOnly := false
 	if val, ok := req.Parameters["ValidateOnly"]; ok {

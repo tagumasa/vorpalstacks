@@ -99,7 +99,7 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	scheduleExpression := nestedString(rotationRulesRaw, "ScheduleExpression")
 	duration := nestedString(rotationRulesRaw, "Duration")
 
-	// M3: ClientRequestToken — idempotency token for rotation. When
+	// ClientRequestToken — idempotency token for rotation. When
 	// provided, passed to executeRotation as the rotation cycle token.
 	// Smithy ClientRequestTokenType length 32-64.
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
@@ -154,7 +154,7 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 				secret.NextRotationDate = origNextRotation
 				secret.LastChangedDate = time.Now().UTC()
 				_ = store.UpdateSecretMetadata(secret)
-				// L5: Distinguish Lambda-not-found (ResourceNotFoundException)
+				// Distinguish Lambda-not-found (ResourceNotFoundException)
 				// from contract violations (InvalidRequestException).
 				if stderrors.Is(rotErr, errRotationLambdaNotFound) {
 					return nil, errors.NewAWSError("ResourceNotFoundException",

@@ -61,7 +61,7 @@ func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	// Parse and structurally validate the policy JSON (H3).  Malformed
+	// Parse and structurally validate the policy JSON.  Malformed
 	// JSON returns MalformedPolicyDocumentException.
 	doc, err := ensurePolicyJSONValid(policyStr)
 	if err != nil {
@@ -71,7 +71,7 @@ func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *r
 
 	// BlockPublicPolicy: when true, Secrets Manager rejects resource policies
 	// that grant broad access (Principal "*" without a restricting Condition).
-	// By default (false / unset) public policies are accepted (H3).
+	// By default (false / unset) public policies are accepted.
 	blockPublicPolicy := request.GetBoolParam(req.Parameters, "BlockPublicPolicy")
 	if blockPublicPolicy && isPolicyPublic(doc) {
 		return nil, errors.NewAWSError("PublicPolicyException",
@@ -123,7 +123,7 @@ func (s *SecretsManagerService) DeleteResourcePolicy(ctx context.Context, reqCtx
 // ValidateResourcePolicy validates a resource policy for a secret.
 // Runs multiple validation checks (syntax, missing version, public access)
 // and returns all failures in ValidationErrors, matching the AWS behaviour
-// where a single call may report multiple issues (H4, M14).
+// where a single call may report multiple issues.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ValidateResourcePolicy.html
 func (s *SecretsManagerService) ValidateResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")

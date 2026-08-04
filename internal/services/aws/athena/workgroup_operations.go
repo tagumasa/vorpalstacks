@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -36,63 +35,34 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInvalidRequestException
 	}
 
-	if err := validateWorkGroupName(name); err != nil {
-		return nil, err
-	}
-
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateWorkGroupDescriptionString(description); err != nil {
-			return nil, err
-		}
-	}
-
-	configMap := request.GetMapParamCaseInsensitive(req.Parameters, "Configuration")
-	var configuration *athenastore.WorkGroupConfiguration
-	if configMap != nil {
-		var err error
-		configuration, err = s.parseWorkGroupConfiguration(configMap)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if configuration == nil {
-		configuration = &athenastore.WorkGroupConfiguration{
-			ResultConfiguration: &athenastore.ResultConfiguration{
-				OutputLocation: "s3://aws-athena-query-results-" + s.accountID + "-" + reqCtx.GetRegion() + "/",
-			},
-		}
-	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if err := validateTags(tags); err != nil {
-		return nil, err
+
+	var cfg *WorkGroupConfigInput
+	configMap := request.GetMapParamCaseInsensitive(req.Parameters, "Configuration")
+	if configMap != nil {
+		cfg = parseConfigMapToInput(configMap)
+	} else {
+		cfg = &WorkGroupConfigInput{
+			OutputLocation: "s3://aws-athena-query-results-" + s.accountID + "-" + reqCtx.GetRegion() + "/",
+		}
 	}
 
-	workGroup := &athenastore.WorkGroup{
-		Name:          name,
-		Description:   description,
-		Configuration: configuration,
-		State:         athenastore.WorkGroupStateEnabled,
+	input := WorkGroupCreateInput{
+		Name:        name,
+		Description: description,
+		Config:      cfg,
+		Tags:        tags,
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.workGroupStore.CreateWorkGroup(workGroup); err != nil {
-		if err == athenastore.ErrWorkGroupAlreadyExists {
-			return nil, ErrResourceAlreadyExistsException
-		}
-		return nil, err
-	}
 
-	if len(tags) > 0 {
-		arn := stores.workGroupStore.GetARN(name)
-		if err := stores.workGroupStore.Tag(arn, tags); err != nil {
-			logs.Warn("Failed to tag workgroup", logs.String("workgroup", name), logs.Err(err))
-		}
+	if err := createWorkGroupCore(stores, input); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -406,32 +376,31 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 	return pagination.BuildListResponse("Tags", pageResult.Items, pageResult.NextMarker), nil
 }
 
-func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{}) (*athenastore.WorkGroupConfiguration, error) {
-	cfg := &athenastore.WorkGroupConfiguration{}
+// parseConfigMapToInput converts the raw HTTP Configuration map into a
+// WorkGroupConfigInput DTO. Validation is deferred to createWorkGroupCore
+// so that both HTTP and admin handler share a single validation path.
+func parseConfigMapToInput(config map[string]interface{}) *WorkGroupConfigInput {
+	cfg := &WorkGroupConfigInput{}
 
 	if resultConfigRaw, ok := config["ResultConfiguration"]; ok {
 		if resultConfig, ok := resultConfigRaw.(map[string]interface{}); ok {
-			rc, err := s.parseResultConfiguration(resultConfig)
-			if err != nil {
-				return nil, err
+			if outputLocation, ok := resultConfig["OutputLocation"].(string); ok {
+				cfg.OutputLocation = outputLocation
 			}
-			cfg.ResultConfiguration = rc
 		}
 	}
 
 	if enforce, ok := config["EnforceWorkGroupConfiguration"].(bool); ok {
-		cfg.EnforceWorkGroupConfiguration = enforce
+		cfg.EnforceConfig = enforce
 	}
 
 	if publish, ok := config["PublishCloudWatchMetricsEnabled"].(bool); ok {
-		cfg.PublishCloudWatchMetricsEnabled = publish
+		cfg.PublishMetrics = publish
 	}
 
 	if bytesScanned, ok := config["BytesScannedCutoffPerQuery"].(float64); ok {
-		cfg.BytesScannedCutoffPerQuery = int64(bytesScanned)
-		if err := validateBytesScannedCutoff(cfg.BytesScannedCutoffPerQuery); err != nil {
-			return nil, err
-		}
+		v := int64(bytesScanned)
+		cfg.BytesScannedCutoff = &v
 	}
 
 	if requesterPays, ok := config["RequesterPaysEnabled"].(bool); ok {
@@ -440,28 +409,26 @@ func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{
 
 	if engineVersionRaw, ok := config["EngineVersion"]; ok {
 		if engineVersion, ok := engineVersionRaw.(map[string]interface{}); ok {
-			cfg.EngineVersion = s.parseEngineVersion(engineVersion)
+			if selected, ok := engineVersion["SelectedEngineVersion"].(string); ok {
+				cfg.EngineVersionSelected = selected
+			}
+			if effective, ok := engineVersion["EffectiveEngineVersion"].(string); ok {
+				cfg.EngineVersionEffective = effective
+			}
 		}
 	}
 
 	if additional, ok := config["AdditionalConfiguration"].(string); ok {
-		if err := validateAdditionalConfiguration(additional); err != nil {
-			return nil, err
-		}
 		cfg.AdditionalConfiguration = additional
 	}
 
 	if executionRole, ok := config["ExecutionRole"].(string); ok {
-		if err := validateExecutionRole(executionRole); err != nil {
-			return nil, err
-		}
 		cfg.ExecutionRole = executionRole
 	}
 
 	if custEncMap, ok := config["CustomerContentEncryptionConfiguration"].(map[string]interface{}); ok {
-		cfg.CustomerContentEncryptionConfiguration = &athenastore.CustomerContentEncryptionConfiguration{}
 		if kmsKey, ok := custEncMap["KmsKey"].(string); ok {
-			cfg.CustomerContentEncryptionConfiguration.KmsKey = kmsKey
+			cfg.CustomerContentEncryptionKmsKey = kmsKey
 		}
 	}
 
@@ -469,7 +436,7 @@ func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{
 		cfg.EnableMinimumEncryptionConfiguration = enableMin
 	}
 
-	return cfg, nil
+	return cfg
 }
 
 func (s *AthenaService) parseEngineVersion(engineVersion map[string]interface{}) *athenastore.EngineVersion {

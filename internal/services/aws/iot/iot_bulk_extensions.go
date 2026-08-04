@@ -74,7 +74,7 @@ func resourceIdentifierFromParams(params map[string]interface{}) map[string]inte
 	return out
 }
 
-// Phase 7-11 handlers for Security, Detect, Audit, Fleet Indexing, Logging,
+// Handlers for Security, Detect, Audit, Fleet Indexing, Logging,
 // Encryption and Topic Rule Destinations. State is persisted via the generic-KV
 // store (Pebble-backed), so it survives restarts. The CRUD entities
 // (CustomMetric, Dimension, MitigationAction, FleetMetric, ScheduledAudit,
@@ -204,7 +204,7 @@ func bulkName(rec map[string]interface{}) string {
 	return ""
 }
 
-// ---- Phase 7: Security Profile attach ---------------------------------------
+// ---- Security Profile attach ---------------------------------------
 // AWS persists profile<->target associations so that ListSecurityProfilesForTarget
 // and ListTargetsForSecurityProfile return real data. Attach/Detach enforce
 // ResourceNotFoundException when the association does not exist (Detach) and
@@ -354,7 +354,7 @@ func (s *IoTService) PutVerificationStateOnViolation(ctx context.Context, reqCtx
 	return map[string]interface{}{}, nil
 }
 
-// ---- Phase 7: Custom Metrics -----------------------------------------------
+// ---- Custom Metrics -----------------------------------------------
 
 func (s *IoTService) CreateCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
@@ -432,7 +432,7 @@ func (s *IoTService) UpdateCustomMetric(ctx context.Context, reqCtx *request.Req
 	}, nil
 }
 
-// ---- Phase 7: Dimensions ----------------------------------------------------
+// ---- Dimensions ----------------------------------------------------
 
 func (s *IoTService) CreateDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, err := s.bulkCreate(reqCtx, "dimension", req, "name", map[string]interface{}{
@@ -502,7 +502,7 @@ func (s *IoTService) UpdateDimension(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-// ---- Phase 7: Mitigation Actions --------------------------------------------
+// ---- Mitigation Actions --------------------------------------------
 
 func (s *IoTService) CreateMitigationAction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := request.GetMapParamCaseInsensitive(req.Parameters, "actionParams")
@@ -610,7 +610,7 @@ func (s *IoTService) UpdateMitigationAction(ctx context.Context, reqCtx *request
 	}, nil
 }
 
-// ---- Phase 7: Detect Mitigation Actions Tasks --------------------------------
+// ---- Detect Mitigation Actions Tasks --------------------------------
 // These handlers persist task records so that Cancel/Describe can resolve the
 // identifier and return ResourceNotFoundException for unknown task ids,
 // matching the Smithy error trait set on each operation.
@@ -712,7 +712,7 @@ func (s *IoTService) ListDetectMitigationActionsTasks(ctx context.Context, reqCt
 	return paginatedMaps("tasks", tasks, req.Parameters), nil
 }
 
-// ---- Phase 8: Audit (task/findings) ------------------------------------------
+// ---- Audit (task/findings) ------------------------------------------
 // Audit task lifecycle mirrors the Detect Mitigation task pattern: Start
 // persists the task id, Cancel/Describe enforce ResourceNotFoundException for
 // unknown ids. Audit findings are not generated without a Defender engine,
@@ -1122,7 +1122,7 @@ func (s *IoTService) ListAuditMitigationActionsTasks(ctx context.Context, reqCtx
 	return paginatedMaps("tasks", tasks, req.Parameters), nil
 }
 
-// ---- Phase 8: Scheduled Audits ----------------------------------------------
+// ---- Scheduled Audits ----------------------------------------------
 
 func (s *IoTService) CreateScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	rec, err := s.bulkCreate(reqCtx, "scheduledAudit", req, "scheduledAuditName", map[string]interface{}{
@@ -1353,7 +1353,7 @@ func (s *IoTService) TestAuthorization(ctx context.Context, reqCtx *request.Requ
 	return map[string]interface{}{"authResults": results}, nil
 }
 
-// ---- Phase 9: Fleet Indexing / Metrics --------------------------------------
+// ---- Fleet Indexing / Metrics --------------------------------------
 
 func (s *IoTService) DescribeIndex(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "indexName")
@@ -1542,7 +1542,7 @@ func (s *IoTService) UpdateFleetMetric(ctx context.Context, reqCtx *request.Requ
 	}, nil
 }
 
-// ---- Phase 10: Logging / Event / Encryption config --------------------------
+// ---- Logging / Event / Encryption config --------------------------
 // Persisted via GenericKV under "config/<name>". A missing key means "not yet
 // configured"; the handlers return a default/empty shape for that case and
 // propagate genuine store errors.
@@ -1766,7 +1766,7 @@ func (s *IoTService) UpdateEncryptionConfiguration(ctx context.Context, reqCtx *
 	return map[string]interface{}{}, nil
 }
 
-// ---- Phase 11: Topic Rule Destinations --------------------------------------
+// ---- Topic Rule Destinations --------------------------------------
 // AWS identifies destinations by ARN (auto-generated at create time, derived
 // from a UUID) and resolves Confirm by confirmationToken. The earlier
 // "destinationName" keying was a misreading of the Smithy model: neither

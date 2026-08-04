@@ -28,7 +28,7 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 
 	config := parseHealthCheckConfig(healthCheckConfigMap, s.defaultHCPort)
 
-	// H4/H5: Validate Type enum and field ranges before persisting.
+	// Validate Type enum and field ranges before persisting.
 	if err := validateHealthCheckConfig(config); err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *Route53Service) DeleteHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// H7: Reject deletion if any record set references this health check.
+	// Reject deletion if any record set references this health check.
 	if st.RecordSets().IsHealthCheckReferenced(healthCheckId) {
 		return nil, NewHealthCheckInUseError(healthCheckId)
 	}
@@ -133,7 +133,7 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// M11: Verify HealthCheckVersion matches when provided.
+	// Verify HealthCheckVersion matches when provided.
 	if reqVersion := request.GetIntParam(req.Parameters, "HealthCheckVersion"); reqVersion > 0 {
 		existingVersion, _ := strconv.ParseInt(healthCheck.HealthCheckVersion, 10, 64)
 		if int64(reqVersion) != existingVersion {
@@ -278,7 +278,7 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 		return nil, mapStoreError(err)
 	}
 
-	// M4: Parse and include Comment in ChangeInfo response.
+	// Parse and include Comment in ChangeInfo response.
 	comment := request.GetStringParam(req.Parameters, "Comment")
 	changeId := generateChangeId()
 	now := time.Now()
@@ -329,11 +329,11 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 	}
 
 	if len(newVPCs) == len(zone.VPCs) {
-		// M3: Use VPCAssociationNotFound instead of InvalidInput.
+		// Use VPCAssociationNotFound instead of InvalidInput.
 		return nil, NewVPCAssociationNotFoundError(vpcId)
 	}
 
-	// H8: Prevent removing the last VPC association from a private zone.
+	// Prevent removing the last VPC association from a private zone.
 	if len(newVPCs) == 0 {
 		return nil, NewLastVPCAssociationError()
 	}
@@ -347,7 +347,7 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 		return nil, mapStoreError(err)
 	}
 
-	// M4: Parse and include Comment in ChangeInfo response.
+	// Parse and include Comment in ChangeInfo response.
 	comment := request.GetStringParam(req.Parameters, "Comment")
 	changeId := generateChangeId()
 	now := time.Now()

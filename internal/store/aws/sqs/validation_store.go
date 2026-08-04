@@ -123,7 +123,7 @@ func validateTags(tags map[string]string) error {
 }
 
 // ---------------------------------------------------------------------------
-// Newer SQS attribute validation (M1)
+// Newer SQS attribute validation
 // ---------------------------------------------------------------------------
 
 var (
@@ -251,7 +251,7 @@ func validatePolicyJSON(policy string) error {
 }
 
 // ---------------------------------------------------------------------------
-// AddPermission validation (M4)
+// AddPermission validation
 // ---------------------------------------------------------------------------
 
 func validatePermissionLabel(label string) error {

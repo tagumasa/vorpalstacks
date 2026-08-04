@@ -161,16 +161,16 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 			}
 		}
 
-		// M1/H2: Validate TTL and HealthCheckId only for CREATE/UPSERT.
+		// Validate TTL and HealthCheckId only for CREATE/UPSERT.
 		// DELETE only requires Name + Type (+ SetIdentifier); AWS does
 		// not enforce TTL or HealthCheckId existence on deletion.
 		if action != "DELETE" {
-			// M1: Non-alias records must have TTL > 0.
+			// Non-alias records must have TTL > 0.
 			if rrs.AliasTarget == nil && rrs.TTL <= 0 {
 				return nil, awserrors.NewAWSError("InvalidInput", "TTL is required and must be greater than 0 for non-alias resource record sets", 400)
 			}
 
-			// H2: Verify that the referenced HealthCheckId exists.
+			// Verify that the referenced HealthCheckId exists.
 			if rrs.HealthCheckID != "" {
 				if !st.HealthChecks().Exists(rrs.HealthCheckID) {
 					return nil, awserrors.NewAWSError("InvalidChangeBatch",

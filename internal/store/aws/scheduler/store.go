@@ -47,7 +47,7 @@ func NewSchedulerStore(store storage.BasicStorage, accountID, region string) *Sc
 	}
 }
 
-// ClientTokens returns the per-region ClientToken idempotency store (M5).
+// ClientTokens returns the per-region ClientToken idempotency store.
 func (s *SchedulerStore) ClientTokens() *ClientTokenStore {
 	return s.clientTokens
 }

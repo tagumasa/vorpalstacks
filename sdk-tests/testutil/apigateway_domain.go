@@ -35,8 +35,48 @@ func (r *TestRunner) createTestCertArn(ctx context.Context) (string, error) {
 	return *resp.CertificateArn, nil
 }
 
+// cleanupStaleDomainNames deletes accumulated test-residue domain names from
+// previous test runs. When the test runner is interrupted (SIGKILL, timeout),
+// deferred cleanup may not execute, leaving domains behind. Over many sessions
+// these accumulate and push newly created domains beyond the first page of
+// GetDomainNames, causing false failures.
+func (r *TestRunner) cleanupStaleDomainNames(ctx context.Context, client *apigateway.Client) {
+	prefixes := []string{"test-", "none-", "full-lifecycle-"}
+	var position *string
+	for {
+		resp, err := client.GetDomainNames(ctx, &apigateway.GetDomainNamesInput{
+			Limit:    aws.Int32(500),
+			Position: position,
+		})
+		if err != nil {
+			return
+		}
+		for _, item := range resp.Items {
+			if item.DomainName == nil {
+				continue
+			}
+			dn := *item.DomainName
+			for _, p := range prefixes {
+				if strings.HasPrefix(dn, p) {
+					client.DeleteDomainName(ctx, &apigateway.DeleteDomainNameInput{
+						DomainName: aws.String(dn),
+					})
+					break
+				}
+			}
+		}
+		if resp.Position == nil {
+			break
+		}
+		position = resp.Position
+	}
+}
+
 func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
 	var results []TestResult
+
+	// Clean up stale domains from previous interrupted test runs.
+	r.cleanupStaleDomainNames(ctx, client)
 
 	// Provision an ACM certificate for all domain tests.
 	certArn, err := r.createTestCertArn(ctx)
@@ -50,6 +90,15 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 	}
 
 	var domainName string
+	// Ensure the created domain is deleted even if a subsequent test fails
+	// and aborts the test runner, preventing test-residue accumulation.
+	defer func() {
+		if domainName != "" {
+			client.DeleteDomainName(ctx, &apigateway.DeleteDomainNameInput{
+				DomainName: aws.String(domainName),
+			})
+		}
+	}()
 	results = append(results, r.RunTest("apigateway", "CreateDomainName", func() error {
 		domain := fmt.Sprintf("test-%d.example.com", time.Now().UnixNano())
 		resp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
@@ -72,27 +121,28 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		return nil
 	}))
 	results = append(results, r.RunTest("apigateway", "GetDomainNames", func() error {
-		resp, err := client.GetDomainNames(ctx, &apigateway.GetDomainNamesInput{
-			Limit: aws.Int32(100),
-		})
-		if err != nil {
-			return err
-		}
-		if len(resp.Items) == 0 {
-			return fmt.Errorf("expected at least 1 domain name")
-		}
-		// Verify the created domain appears in the list.
-		found := false
-		for _, item := range resp.Items {
-			if item.DomainName != nil && *item.DomainName == domainName {
-				found = true
+		// Paginate through all pages — accumulated domains from previous
+		// test runs can push the newly created domain beyond the first page.
+		var position *string
+		for {
+			resp, err := client.GetDomainNames(ctx, &apigateway.GetDomainNamesInput{
+				Limit:    aws.Int32(100),
+				Position: position,
+			})
+			if err != nil {
+				return err
+			}
+			for _, item := range resp.Items {
+				if item.DomainName != nil && *item.DomainName == domainName {
+					return nil
+				}
+			}
+			if resp.Position == nil {
 				break
 			}
+			position = resp.Position
 		}
-		if !found {
-			return fmt.Errorf("created domain %q not found in list", domainName)
-		}
-		return nil
+		return fmt.Errorf("created domain %q not found in list", domainName)
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetDomainName", func() error {

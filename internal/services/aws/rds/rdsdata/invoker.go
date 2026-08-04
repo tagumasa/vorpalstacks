@@ -2,11 +2,14 @@ package rdsdata
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/google/uuid"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 // ExecuteStatementForInvoker is the EventBus invoker entry point for ExecuteStatement.
@@ -64,7 +67,7 @@ func (s *RDSDataService) ExecuteStatementInTxForInvoker(ctx context.Context, res
 		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", transactionId))
 	}
 
-	// Serialise concurrent statements on the same transaction (see M13).
+	// Serialise concurrent statements on the same transaction.
 	entry.execMu.Lock()
 	defer entry.execMu.Unlock()
 
@@ -128,23 +131,7 @@ func (s *RDSDataService) CommitTransactionForInvoker(ctx context.Context, resour
 		return err
 	}
 
-	s.mu.Lock()
-	entry, ok := s.transactions[transactionId]
-	if ok {
-		delete(s.transactions, transactionId)
-	}
-	s.mu.Unlock()
-
-	if !ok {
-		return transactionNotFound(transactionId)
-	}
-
-	commitCtx := entry.sqlCtx
-	if commitCtx == nil {
-		commitCtx = newSQLContext(entry.database)
-	}
-	_, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, "", "")
-	return err
+	return s.commitTransactionCore(transactionId)
 }
 
 // RollbackTransactionForInvoker is the EventBus invoker entry point for RollbackTransaction.
@@ -159,21 +146,61 @@ func (s *RDSDataService) RollbackTransactionForInvoker(ctx context.Context, reso
 		return err
 	}
 
-	s.mu.Lock()
-	entry, ok := s.transactions[transactionId]
-	if ok {
-		delete(s.transactions, transactionId)
-	}
-	s.mu.Unlock()
+	return s.rollbackTransactionCore(transactionId)
+}
 
-	if !ok {
-		return transactionNotFound(transactionId)
+// BatchExecuteStatementForInvoker is the EventBus invoker entry point for
+// BatchExecuteStatement. It runs the same SQL once per parameter set,
+// collecting generated fields for each execution.
+func (s *RDSDataService) BatchExecuteStatementForInvoker(ctx context.Context, resourceArn, secretArn, database, schema, sqlStr string, parameterSets [][]SqlParameter) (interface{}, error) {
+	if err := validateCommon(resourceArn, secretArn, database, schema); err != nil {
+		return nil, err
+	}
+	if err := validateSQL(sqlStr); err != nil {
+		return nil, err
+	}
+	engine, instanceID, err := s.resolveEngine(resourceArn)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validateCredentials(ctx, secretArn); err != nil {
+		return nil, err
 	}
 
-	rollbackCtx := entry.sqlCtx
-	if rollbackCtx == nil {
-		rollbackCtx = newSQLContext(entry.database)
+	if len(parameterSets) == 0 {
+		return nil, invalidParam("parameterSets is required and must contain at least one entry")
 	}
-	_, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "", "")
-	return err
+
+	var results []UpdateResult
+	for _, params := range parameterSets {
+		if err := validateParameters(params); err != nil {
+			return nil, err
+		}
+		sqlWithParams := substituteParameters(sqlStr, params)
+		res, err := executeSQL(engine, newSQLContext(database), sqlWithParams, false, "", instanceID)
+		if err != nil {
+			return nil, mapSQLError(err)
+		}
+		results = append(results, UpdateResult{GeneratedFields: res.GeneratedFields})
+	}
+
+	logs.Info("rdsdata: BatchExecuteStatementForInvoker", logs.String("instance", instanceID), logs.Int("paramSets", len(parameterSets)))
+	return &BatchExecuteStatementResponse{UpdateResults: results}, nil
+}
+
+// SqlParameterFromInterface converts a raw map (as received from AppSync
+// VTL templates via the EventBus) to a SqlParameter. The map is expected
+// to have "name" (string) and "value" (map with one of longValue,
+// stringValue, doubleValue, booleanValue, blobValue, isNull) and an
+// optional "typeHint" (string).
+func SqlParameterFromInterface(raw interface{}) (SqlParameter, error) {
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return SqlParameter{}, fmt.Errorf("failed to marshal parameter: %w", err)
+	}
+	var p SqlParameter
+	if err := json.Unmarshal(data, &p); err != nil {
+		return SqlParameter{}, fmt.Errorf("failed to unmarshal parameter: %w", err)
+	}
+	return p, nil
 }

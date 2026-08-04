@@ -321,14 +321,6 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken")
-	offset := 0
-	if nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil {
-			offset = val
-		}
-	}
-
 	maxRows := maxResultRows
 	if val, ok := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults"); ok && val > 0 && val < maxResultRows {
 		maxRows = val
@@ -344,28 +336,33 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 		}, nil
 	}
 
-	end := offset + maxRows
-	if end > len(result.ResultSet.Rows) {
-		end = len(result.ResultSet.Rows)
+	type indexedRow struct {
+		idx int
+		row map[string]interface{}
 	}
 
-	pagedRows := result.ResultSet.Rows[offset:end]
-	responseNextToken := ""
-	if end < len(result.ResultSet.Rows) {
-		responseNextToken = strconv.Itoa(end)
-	}
-
-	var rows []map[string]interface{}
-	for _, row := range pagedRows {
+	allRows := make([]indexedRow, len(result.ResultSet.Rows))
+	for i, row := range result.ResultSet.Rows {
 		var data []map[string]interface{}
 		for _, datum := range row.Data {
 			data = append(data, map[string]interface{}{
 				"VarCharValue": datum.VarCharValue,
 			})
 		}
-		rows = append(rows, map[string]interface{}{
-			"Data": data,
-		})
+		allRows[i] = indexedRow{
+			idx: i,
+			row: map[string]interface{}{"Data": data},
+		}
+	}
+
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(allRows, marker, maxRows, func(item indexedRow) string {
+		return strconv.Itoa(item.idx)
+	})
+
+	rows := make([]map[string]interface{}, len(pageResult.Items))
+	for i, item := range pageResult.Items {
+		rows[i] = item.row
 	}
 
 	var columnInfo []map[string]interface{}
@@ -396,8 +393,8 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 		},
 		"QueryExecutionId": queryExecutionId,
 	}
-	if responseNextToken != "" {
-		resp["NextToken"] = responseNextToken
+	if pageResult.NextMarker != "" {
+		resp["NextToken"] = pageResult.NextMarker
 	}
 	return resp, nil
 }

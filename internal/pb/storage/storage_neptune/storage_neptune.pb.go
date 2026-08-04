@@ -234,7 +234,7 @@ type LoaderJob struct {
 	TotalErrors   int64                  `protobuf:"varint,8,opt,name=total_errors,json=totalErrors,proto3" json:"total_errors,omitempty"`
 	OverallStatus string                 `protobuf:"bytes,9,opt,name=overall_status,json=overallStatus,proto3" json:"overall_status,omitempty"`
 	Details       map[string]string      `protobuf:"bytes,10,rep,name=details,proto3" json:"details,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Input parameters persisted from StartLoaderJob (Phase 2).
+	// Input parameters persisted from StartLoaderJob.
 	S3BucketRegion                    string            `protobuf:"bytes,11,opt,name=s3_bucket_region,json=s3BucketRegion,proto3" json:"s3_bucket_region,omitempty"`
 	IamRoleArn                        string            `protobuf:"bytes,12,opt,name=iam_role_arn,json=iamRoleArn,proto3" json:"iam_role_arn,omitempty"`
 	Mode                              string            `protobuf:"bytes,13,opt,name=mode,proto3" json:"mode,omitempty"`
@@ -246,7 +246,7 @@ type LoaderJob struct {
 	Dependencies                      []string          `protobuf:"bytes,19,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
 	UserProvidedEdgeIds               bool              `protobuf:"varint,20,opt,name=user_provided_edge_ids,json=userProvidedEdgeIds,proto3" json:"user_provided_edge_ids,omitempty"`
 	EdgeOnlyLoad                      bool              `protobuf:"varint,21,opt,name=edge_only_load,json=edgeOnlyLoad,proto3" json:"edge_only_load,omitempty"`
-	// Status output fields matching AWS Neptune loader status response (Phase 3).
+	// Status output fields matching AWS Neptune loader status response.
 	FullUri                string   `protobuf:"bytes,22,opt,name=full_uri,json=fullUri,proto3" json:"full_uri,omitempty"`
 	RunNumber              int32    `protobuf:"varint,23,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
 	RetryNumber            int32    `protobuf:"varint,24,opt,name=retry_number,json=retryNumber,proto3" json:"retry_number,omitempty"`
@@ -256,7 +256,7 @@ type LoaderJob struct {
 	InsertErrors           int64    `protobuf:"varint,28,opt,name=insert_errors,json=insertErrors,proto3" json:"insert_errors,omitempty"`
 	FailedFeeds            []string `protobuf:"bytes,29,rep,name=failed_feeds,json=failedFeeds,proto3" json:"failed_feeds,omitempty"`
 	ErrorLog               string   `protobuf:"bytes,30,opt,name=error_log,json=errorLog,proto3" json:"error_log,omitempty"`
-	// Queue management (Phase 8).
+	// Queue management.
 	QueuePosition int32 `protobuf:"varint,31,opt,name=queue_position,json=queuePosition,proto3" json:"queue_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

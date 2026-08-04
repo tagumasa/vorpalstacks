@@ -42,7 +42,7 @@ message LoaderJob {
   string overall_status = 9;
   map<string, string> details = 10;
 
-  // Input parameters persisted from StartLoaderJob (Phase 2).
+  // Input parameters persisted from StartLoaderJob.
   string s3_bucket_region = 11;
   string iam_role_arn = 12;
   string mode = 13;
@@ -55,7 +55,7 @@ message LoaderJob {
   bool user_provided_edge_ids = 20;
   bool edge_only_load = 21;
 
-  // Status output fields matching AWS Neptune loader status response (Phase 3).
+  // Status output fields matching AWS Neptune loader status response.
   string full_uri = 22;
   int32 run_number = 23;
   int32 retry_number = 24;
@@ -66,7 +66,7 @@ message LoaderJob {
   repeated string failed_feeds = 29;
   string error_log = 30;
 
-  // Queue management (Phase 8).
+  // Queue management.
   int32 queue_position = 31;
 }
 

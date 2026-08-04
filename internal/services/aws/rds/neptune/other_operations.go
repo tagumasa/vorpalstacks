@@ -411,7 +411,7 @@ func (s *NeptuneService) ApplyPendingMaintenanceAction(ctx context.Context, reqC
 		return nil, awserrors.NewMissingParameter("OptInType is required")
 	}
 
-	// L2: Validate that the resource exists.
+	// Validate that the resource exists.
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

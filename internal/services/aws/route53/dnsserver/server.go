@@ -59,7 +59,7 @@ func (s *DNSServer) Start() error {
 		return fmt.Errorf("resolve UDP addr: %w", err)
 	}
 
-	// L9: Bind synchronously so that port conflicts are detected
+	// Bind synchronously so that port conflicts are detected
 	// before reporting started=true. Previously, ListenAndServe ran
 	// in a goroutine and bind failures were silently logged while
 	// started remained true.
@@ -150,7 +150,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m.RecursionAvailable = false
 
 	if len(r.Question) == 0 {
-		// L6: Return FORMERR per DNS spec for empty question section.
+		// Return FORMERR per DNS spec for empty question section.
 		m.Rcode = dns.RcodeFormatError
 		if err := w.WriteMsg(m); err != nil {
 			logs.Error("DNS write error", logs.Err(err))
@@ -200,7 +200,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func (s *DNSServer) findHostedZone(qname string) *route53store.HostedZone {
-	// L7: Paginate through all hosted zones instead of capping at 100.
+	// Paginate through all hosted zones instead of capping at 100.
 	var allZones []*route53store.HostedZone
 	marker := ""
 	for {
@@ -232,7 +232,7 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string,
 	var rrs []dns.RR
 
 	ttl := uint32(rs.TTL)
-	// L5: Respect TTL=0 per RFC 1035 ("do not cache") instead of
+	// Respect TTL=0 per RFC 1035 ("do not cache") instead of
 	// silently overriding to 300.
 
 	if rs.AliasTarget != nil {
@@ -323,7 +323,7 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string,
 			rr := &dns.SOA{}
 			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: ttl}
 			parts := strings.Fields(record.Value)
-			// L4: Fail-closed for malformed SOA — skip the record
+			// Fail-closed for malformed SOA — skip the record
 			// instead of emitting one with zero-valued fields.
 			if len(parts) < 7 {
 				break

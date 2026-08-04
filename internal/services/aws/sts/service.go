@@ -296,7 +296,7 @@ func (s *STSService) resolveRoleForAssume(reqCtx *request.RequestContext, roleAr
 				evalCtx.TokenIssueTime = time.Now().UTC()
 			}
 		}
-		// M3: surface caller-supplied ProvidedContexts as
+		// Surface caller-supplied ProvidedContexts as
 		// sts:ProvidedContextProviderArn.N and
 		// sts:ProvidedContextAssertion.N variables on the trust-policy
 		// evaluation context so policy templates that reference the
@@ -999,7 +999,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	// Enforce role.MaxSessionDuration after role resolution (H1).
+	// Enforce role.MaxSessionDuration after role resolution.
 	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
 	if err != nil {
 		return nil, err
@@ -1147,7 +1147,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	// Enforce role.MaxSessionDuration after role resolution (H1).
+	// Enforce role.MaxSessionDuration after role resolution.
 	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
 	if err != nil {
 		return nil, err

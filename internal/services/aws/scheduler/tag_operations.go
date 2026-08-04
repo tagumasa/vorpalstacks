@@ -24,8 +24,8 @@ func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandler
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
 		// ValidateResource ensures the ARN refers to an existing schedule
-		// or schedule group before tag operations proceed (M12). Without
-		// this, tags could be applied to non-existent resources.
+		// or schedule group before tag operations proceed. Without this,
+		// tags could be applied to non-existent resources.
 		ValidateResource: func(ctx context.Context, resourceKey string) error {
 			// Scheduler ARNs are formatted as:
 			//   arn:aws:scheduler:<region>:<account>:schedule/<group>/<name>

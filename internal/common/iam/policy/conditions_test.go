@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-// TestConditionEvaluator_ResolvedAWSVariables exercises the regression for
-// C1: conditions with aws:* keys must be evaluated against the resolved
+// TestConditionEvaluator_ResolvedAWSVariables exercises the regression:
+// conditions with aws:* keys must be evaluated against the resolved
 // value, not re-resolved as if the value were a fresh key.
 func TestConditionEvaluator_ResolvedAWSVariables(t *testing.T) {
 	evaluator := NewConditionEvaluator()

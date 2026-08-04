@@ -334,7 +334,7 @@ func TestGetJWKSMap(t *testing.T) {
 	}
 }
 
-// --- H3 regression: token without exp must be rejected ---
+// --- Regression: token without exp must be rejected ---
 
 func TestValidateRejectsMissingExp(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
@@ -365,7 +365,7 @@ func TestValidateRejectsMissingExp(t *testing.T) {
 	}
 }
 
-// --- L1 regression: token signed with RS384 must be rejected ---
+// --- Regression: token signed with RS384 must be rejected ---
 
 func TestValidateRejectsNonRS256(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
@@ -402,7 +402,7 @@ func TestValidateRejectsNonRS256(t *testing.T) {
 	_ = token
 }
 
-// --- M1 regression: PKCS8 format PEM must be decodable ---
+// --- Regression: PKCS8 format PEM must be decodable ---
 
 func TestDecodePKCS8PrivateKey(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()

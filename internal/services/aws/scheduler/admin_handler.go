@@ -87,7 +87,7 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 }
 
 // CreateSchedule creates a new schedule via the admin console.
-// Uses the same shared validation layer as the HTTP API (H1).
+// Uses the same shared validation layer as the HTTP API.
 func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[pb.CreateScheduleInput]) (*connect.Response[pb.CreateScheduleOutput], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
@@ -118,7 +118,7 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 	}
 
 	// Build the common spec and run full validation — same path as the
-	// HTTP API (H1). This covers namePattern, ScheduleExpression, Target
+	// HTTP API. This covers namePattern, ScheduleExpression, Target
 	// ARN, RoleArn, State enum, ActionAfterCompletion enum,
 	// FlexibleTimeWindow Mode enum, KmsKeyArn ARN, Timezone IANA,
 	// Description length, and StartDate/EndDate ordering.

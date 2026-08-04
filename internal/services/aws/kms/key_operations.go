@@ -51,11 +51,11 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 		}
 	}
 
-	key, err := s.createKeyCore(stores, CreateKeyInput{
+	keyMeta, err := s.createKeyCore(stores, CreateKeyInput{
 		Description:        request.GetStringParam(req.Parameters, "Description"),
-		KeyUsage:           kmsstore.KeyUsage(request.GetStringParam(req.Parameters, "KeyUsage")),
-		KeySpec:            kmsstore.KeySpec(request.GetStringParam(req.Parameters, "KeySpec")),
-		Origin:             kmsstore.OriginType(request.GetStringParam(req.Parameters, "Origin")),
+		KeyUsage:           request.GetStringParam(req.Parameters, "KeyUsage"),
+		KeySpec:            request.GetStringParam(req.Parameters, "KeySpec"),
+		Origin:             request.GetStringParam(req.Parameters, "Origin"),
 		MultiRegion:        request.GetBoolParam(req.Parameters, "MultiRegion"),
 		CustomKeyStoreID:   request.GetStringParam(req.Parameters, "CustomKeyStoreId"),
 		XksKeyID:           request.GetStringParam(req.Parameters, "XksKeyId"),
@@ -69,7 +69,7 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	return map[string]interface{}{
-		"KeyMetadata": s.buildKeyMetadata(key),
+		"KeyMetadata": keyMetadataResultToResponse(keyMeta),
 	}, nil
 }
 
@@ -90,9 +90,6 @@ func (s *KMSService) DescribeKey(ctx context.Context, reqCtx *request.RequestCon
 	}, nil
 }
 
-// ListKeys returns a list of all customer master keys (CMKs) in the account.
-// The list includes the key ID and ARN for each key.
-// Results can be paginated using the Marker and MaxItems parameters.
 func (s *KMSService) ListKeys(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -104,7 +101,7 @@ func (s *KMSService) ListKeys(ctx context.Context, reqCtx *request.RequestContex
 	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
-	result, err := stores.keys.List(marker, maxItems)
+	result, err := s.listKeysCore(stores, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +191,14 @@ func (s *KMSService) ScheduleKeyDeletion(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
+	deletionDate := int64(0)
+	if updatedKey.DeletionDate != nil {
+		deletionDate = updatedKey.DeletionDate.Unix()
+	}
+
 	return map[string]interface{}{
-		"KeyId":               key.KeyID,
-		"DeletionDate":        updatedKey.DeletionDate.Unix(),
+		"KeyId":               updatedKey.KeyID,
+		"DeletionDate":        deletionDate,
 		"KeyState":            updatedKey.KeyState,
 		"PendingWindowInDays": days,
 	}, nil

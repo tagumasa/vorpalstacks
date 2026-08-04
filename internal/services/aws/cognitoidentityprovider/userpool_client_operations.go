@@ -2,13 +2,11 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPoolClient creates a user pool client for a Cognito user pool.
@@ -20,30 +18,19 @@ func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *reque
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	client := cognitostore.NewUserPoolClient(userPoolID, clientName)
+	if err := applyUserPoolClientParams(req, client); err != nil {
 		return nil, err
 	}
-	_, err = store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
 
-	client := cognitostore.NewUserPoolClient(userPoolID, clientName)
-	applyUserPoolClientParams(req, client)
-
-	// Suppress client secret when GenerateSecret is explicitly false (CIPD-12)
-	if v, ok := req.Parameters["GenerateSecret"].(bool); ok && !v {
-		client.ClientSecret = ""
-	} else if gs := req.GetParam("GenerateSecret"); gs == "false" || gs == "False" {
+	// Suppress the client secret when GenerateSecret is explicitly false.
+	// The value may arrive as a JSON bool or a query-string string.
+	if !client.GenerateSecret {
 		client.ClientSecret = ""
 	}
 
-	if err := store.CreateUserPoolClient(client); err != nil {
-		if errors.Is(err, cognitostore.ErrClientAlreadyExists) {
-			return nil, ErrClientAlreadyExists
-		}
-		return nil, ErrInternalError
+	if _, err := s.createUserPoolClientCore(reqCtx.GetRegion(), client); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -54,19 +41,9 @@ func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *reque
 // DescribeUserPoolClient returns information about a user pool client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_DescribeUserPoolClient.html
 func (s *CognitoService) DescribeUserPoolClient(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	clientID := getClientId(req)
-	if userPoolID == "" || clientID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	client, err := s.describeUserPoolClientCore(reqCtx.GetRegion(), getUserPoolID(req), getClientId(req))
 	if err != nil {
 		return nil, err
-	}
-	client, err := store.GetUserPoolClient(userPoolID, clientID)
-	if err != nil {
-		return nil, ErrClientNotFound
 	}
 
 	return map[string]interface{}{
@@ -83,22 +60,20 @@ func (s *CognitoService) UpdateUserPoolClient(ctx context.Context, reqCtx *reque
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
+	client, err := s.describeUserPoolClientCore(reqCtx.GetRegion(), userPoolID, clientID)
 	if err != nil {
 		return nil, err
-	}
-	client, err := store.GetUserPoolClient(userPoolID, clientID)
-	if err != nil {
-		return nil, ErrClientNotFound
 	}
 
 	if clientName := req.GetParam("ClientName"); clientName != "" {
 		client.ClientName = clientName
 	}
-	applyUserPoolClientParams(req, client)
+	if err := applyUserPoolClientParams(req, client); err != nil {
+		return nil, err
+	}
 
-	if err := store.UpdateUserPoolClient(client); err != nil {
-		return nil, ErrInternalError
+	if err := s.updateUserPoolClientCore(reqCtx.GetRegion(), client); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -106,14 +81,23 @@ func (s *CognitoService) UpdateUserPoolClient(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
-func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.UserPoolClient) {
+func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.UserPoolClient) error {
 	if val := getIntParam(req, "RefreshTokenValidity"); val > 0 {
+		if !validateRefreshTokenValidity(val) {
+			return ErrInvalidParameter
+		}
 		client.RefreshTokenValidity = val
 	}
 	if val := getIntParam(req, "AccessTokenValidity"); val > 0 {
+		if !validateAccessTokenValidity(val) {
+			return ErrInvalidParameter
+		}
 		client.AccessTokenValidity = val
 	}
 	if val := getIntParam(req, "IdTokenValidity"); val > 0 {
+		if !validateIdTokenValidity(val) {
+			return ErrInvalidParameter
+		}
 		client.IDTokenValidity = val
 	}
 	if flows := getStringSliceParam(req, "ExplicitAuthFlows"); len(flows) > 0 {
@@ -137,13 +121,13 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if scopes := getStringSliceParam(req, "AllowedOAuthScopes"); len(scopes) > 0 {
 		client.AllowedOAuthScopes = scopes
 	}
-	// Parse AllowedOAuthFlowsUserPoolClient (CIPD-3)
+	// Parse AllowedOAuthFlowsUserPoolClient.
 	client.AllowedOAuthFlowsUserPoolClient = getBoolParam(req, "AllowedOAuthFlowsUserPoolClient")
-	// Parse PreventUserExistenceErrors (CIPD-4)
+	// Parse PreventUserExistenceErrors.
 	if v := req.GetParam("PreventUserExistenceErrors"); v != "" {
 		client.PreventUserExistenceErrors = v
 	}
-	// M2: Parse missing Smithy fields
+	// Parse missing Smithy fields.
 	if val := getIntParam(req, "AuthSessionValidity"); val > 0 {
 		client.AuthSessionValidity = val
 	}
@@ -203,67 +187,44 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 		}
 		client.RefreshTokenRotation = rtr
 	}
+	return nil
 }
 
 // DeleteUserPoolClient deletes a user pool client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_DeleteUserPoolClient.html
 func (s *CognitoService) DeleteUserPoolClient(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	clientID := getClientId(req)
-	if userPoolID == "" || clientID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteUserPoolClientCore(reqCtx.GetRegion(), getUserPoolID(req), getClientId(req)); err != nil {
 		return nil, err
 	}
-	if err := store.DeleteUserPoolClient(userPoolID, clientID); err != nil {
-		return nil, ErrClientNotFound
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // ListUserPoolClients lists the user pool clients for a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPoolClients.html
 func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.listUserPoolClientsCore(reqCtx.GetRegion(), ListUserPoolClientsInput{
+		UserPoolID: getUserPoolID(req),
+		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}
-
-	result, err := store.ListUserPoolClientsPaginated(userPoolID, opts)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	clientList := make([]map[string]interface{}, 0, len(result.Items))
-	for _, client := range result.Items {
-		clientList = append(clientList, formatUserPoolClientSummary(client))
+	clientList := make([]map[string]interface{}, 0, len(result.Clients))
+	for _, c := range result.Clients {
+		clientList = append(clientList, map[string]interface{}{
+			"ClientId":   c.ClientID,
+			"UserPoolId": c.UserPoolID,
+			"ClientName": c.ClientName,
+		})
 	}
 
 	resp := map[string]interface{}{
 		"UserPoolClients": clientList,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -334,7 +295,7 @@ func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret boo
 	if client.PreventUserExistenceErrors != "" {
 		result["PreventUserExistenceErrors"] = client.PreventUserExistenceErrors
 	}
-	// Always include AllowedOAuthFlowsUserPoolClient (CIPD-5)
+	// Always include AllowedOAuthFlowsUserPoolClient.
 	result["AllowedOAuthFlowsUserPoolClient"] = client.AllowedOAuthFlowsUserPoolClient
 	result["EnablePropagateAdditionalUserContextData"] = client.EnablePropagateAdditionalUserContextData
 	result["EnableTokenRevocation"] = client.EnableTokenRevocation
@@ -390,12 +351,4 @@ func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret boo
 	}
 
 	return result
-}
-
-func formatUserPoolClientSummary(client *cognitostore.UserPoolClient) map[string]interface{} {
-	return map[string]interface{}{
-		"ClientId":   client.ClientID,
-		"UserPoolId": client.UserPoolID,
-		"ClientName": client.ClientName,
-	}
 }

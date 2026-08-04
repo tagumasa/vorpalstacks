@@ -81,10 +81,10 @@ message DBCluster {
   // MasterUserPasswordHash stores the bcrypt hash of the master user
   // password. Persisted for verification but never surfaced in API
   // responses (the Go struct uses json:"-" to exclude it from HTTP
-  // output). Write-only per AWS spec (H1 fix).
+  // output). Write-only per AWS spec.
   string master_user_password_hash = 34;
 
-  // AWS-standard DBCluster output fields previously dropped (M5 fix).
+  // AWS-standard DBCluster output fields previously dropped.
   // Populated at create time and surfaced through DescribeDBClusters.
   // proto3 treats unset scalars as the zero value, so existing
   // serialised records remain readable (forward compatibility).
@@ -155,7 +155,7 @@ message DBInstance {
   string preferred_backup_window = 47;
 
   // MasterUserPasswordHash for the instance. Write-only: persisted
-  // but never surfaced in API responses (json:"-" on Go struct) (H1 fix).
+  // but never surfaced in API responses (json:"-" on Go struct).
   string master_user_password_hash = 48;
 }
 

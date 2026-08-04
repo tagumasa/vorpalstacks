@@ -1,0 +1,318 @@
+package cognitoidentityprovider
+
+import (
+	"fmt"
+	"regexp"
+
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/aws/types"
+)
+
+// validators.go — input validation functions derived from Smithy model traits.
+// All validators return bool (true = valid) following the API Gateway pattern.
+
+// validAuthFlows is the set of Smithy AuthFlowType enum values (8 total).
+// Reference: cognito-identity-provider-2016-04-18.json shape AuthFlowType.
+var validAuthFlows = map[string]bool{
+	"USER_SRP_AUTH":            true,
+	"REFRESH_TOKEN_AUTH":       true,
+	"REFRESH_TOKEN":            true,
+	"CUSTOM_AUTH":              true,
+	"ADMIN_NO_SRP_AUTH":        true,
+	"USER_PASSWORD_AUTH":       true,
+	"ADMIN_USER_PASSWORD_AUTH": true,
+	"USER_AUTH":                true,
+}
+
+// validInitiateAuthFlows is the subset valid for InitiateAuth (client-side).
+// ADMIN_NO_SRP_AUTH and ADMIN_USER_PASSWORD_AUTH are AdminInitiateAuth-only.
+var validInitiateAuthFlows = map[string]bool{
+	"USER_SRP_AUTH":      true,
+	"REFRESH_TOKEN_AUTH": true,
+	"REFRESH_TOKEN":      true,
+	"CUSTOM_AUTH":        true,
+	"USER_PASSWORD_AUTH": true,
+	"USER_AUTH":          true,
+}
+
+// validAdminInitiateAuthFlows is the subset valid for AdminInitiateAuth.
+var validAdminInitiateAuthFlows = map[string]bool{
+	"ADMIN_NO_SRP_AUTH":        true,
+	"ADMIN_USER_PASSWORD_AUTH": true,
+	"REFRESH_TOKEN_AUTH":       true,
+	"REFRESH_TOKEN":            true,
+	"CUSTOM_AUTH":              true,
+}
+
+// validChallengeNames is the set of Smithy ChallengeNameType enum values
+// (16 total).
+var validChallengeNames = map[string]bool{
+	"SMS_MFA":                  true,
+	"EMAIL_OTP":                true,
+	"SOFTWARE_TOKEN_MFA":       true,
+	"SELECT_MFA_TYPE":          true,
+	"MFA_SETUP":                true,
+	"PASSWORD_VERIFIER":        true,
+	"CUSTOM_CHALLENGE":         true,
+	"SELECT_CHALLENGE":         true,
+	"DEVICE_SRP_AUTH":          true,
+	"DEVICE_PASSWORD_VERIFIER": true,
+	"ADMIN_NO_SRP_AUTH":        true,
+	"NEW_PASSWORD_REQUIRED":    true,
+	"SMS_OTP":                  true,
+	"PASSWORD":                 true,
+	"WEB_AUTHN":                true,
+	"PASSWORD_SRP":             true,
+}
+
+// validProviderTypes is the set of Smithy IdentityProviderTypeType enum
+// values (6 total).
+var validProviderTypes = map[string]bool{
+	"SAML":            true,
+	"Facebook":        true,
+	"Google":          true,
+	"LoginWithAmazon": true,
+	"SignInWithApple": true,
+	"OIDC":            true,
+}
+
+// validAuthFactors is the set of Smithy AuthFactorType enum values (5 total).
+// Used by GetUserAuthFactors response (ConfiguredUserAuthFactors field).
+var validAuthFactors = map[string]bool{
+	"PASSWORD":       true,
+	"EMAIL_OTP":      true,
+	"SMS_OTP":        true,
+	"WEB_AUTHN":      true,
+	"SOFTWARE_TOKEN": true,
+}
+
+// validDeliveryMediums is the set of Smithy DeliveryMediumType enum values.
+var validDeliveryMediums = map[string]bool{
+	"SMS":   true,
+	"EMAIL": true,
+}
+
+// validateInitiateAuthFlow returns true if the auth flow is a recognised
+// Smithy AuthFlowType value valid for the client-side InitiateAuth API.
+func validateInitiateAuthFlow(flow string) bool {
+	return validInitiateAuthFlows[flow]
+}
+
+// validateAdminInitiateAuthFlow returns true if the auth flow is a recognised
+// Smithy AuthFlowType value valid for the server-side AdminInitiateAuth API.
+func validateAdminInitiateAuthFlow(flow string) bool {
+	return validAdminInitiateAuthFlows[flow]
+}
+
+// validateChallengeName returns true if the challenge name is a recognised
+// Smithy ChallengeNameType enum value.
+func validateChallengeName(name string) bool {
+	return validChallengeNames[name]
+}
+
+// validateProviderType returns true if the provider type is a recognised
+// Smithy IdentityProviderTypeType enum value.
+func validateProviderType(t string) bool {
+	return validProviderTypes[t]
+}
+
+// validatePasswordHistorySize returns true if the value is within the Smithy
+// PasswordHistorySizeType range [0, 24].
+func validatePasswordHistorySize(v int) bool {
+	return v >= 0 && v <= 24
+}
+
+// maxImageFileSize is the maximum allowed ImageFile blob size in bytes.
+// Smithy ImageFileType trait: @length(min=0, max=131072).
+const maxImageFileSize = 131072
+
+// validateImageFileSize returns true if the decoded blob does not exceed the
+// 131072-byte (128 KiB) Smithy length constraint.
+func validateImageFileSize(data []byte) bool {
+	return len(data) <= maxImageFileSize
+}
+
+// ---------------------------------------------------------------------------
+// Tag validation — Smithy ArnType, TagKeysType, TagValueType constraints.
+// Shared by both the Core layer (tag_core.go, admin handler path) and the
+// HTTP tag handler (tag_operations.go, via tagutil callbacks).
+// Reference: cognito-identity-provider-2016-04-18.json shapes ArnType
+// (@length(min=20, max=2048)), TagKeysType (@length(min=1, max=128)),
+// TagValueType (@length(min=0, max=256)).
+// ---------------------------------------------------------------------------
+
+// validateCognitoResourceArn validates the ResourceArn parameter against the
+// Smithy ArnType length constraint [20, 2048] and the @required trait.
+func validateCognitoResourceArn(arn string) error {
+	if arn == "" {
+		return ErrInvalidParameter
+	}
+	if len(arn) < 20 || len(arn) > 2048 {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("ResourceArn length must be 20-2048: got %d", len(arn)))
+	}
+	return nil
+}
+
+// validateCognitoTagKey validates a single tag key against the Smithy
+// TagKeysType length constraint [1, 128].
+func validateCognitoTagKey(key string) error {
+	if len(key) < 1 || len(key) > 128 {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Tag key length must be 1-128: got %d", len(key)))
+	}
+	return nil
+}
+
+// validateCognitoTagValue validates a single tag value against the Smithy
+// TagValueType length constraint [0, 256].
+func validateCognitoTagValue(value string) error {
+	if len(value) > 256 {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Tag value length must not exceed 256: got %d", len(value)))
+	}
+	return nil
+}
+
+// validateCognitoTags validates all keys and values in a tag map.
+func validateCognitoTags(tags map[string]string) error {
+	for k, v := range tags {
+		if err := validateCognitoTagKey(k); err != nil {
+			return err
+		}
+		if err := validateCognitoTagValue(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateCognitoTagKeys validates all keys in a tag-key slice (UntagResource).
+func validateCognitoTagKeys(keys []string) error {
+	for _, k := range keys {
+		if err := validateCognitoTagKey(k); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateCognitoTagsFromTypes validates []types.Tag — the slice form used by
+// the HTTP tag handler framework via the ValidateTagsFunc callback.
+func validateCognitoTagsFromTypes(tags []types.Tag) error {
+	for _, t := range tags {
+		if err := validateCognitoTagKey(t.Key); err != nil {
+			return err
+		}
+		if err := validateCognitoTagValue(t.Value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Enum / pattern / range validators for Smithy-constrained input types.
+// ---------------------------------------------------------------------------
+
+// validTermsNames is the set of Smithy TermsNameType enum values.
+// Pattern: ^(terms-of-use|privacy-policy)$
+var validTermsNames = map[string]bool{
+	"terms-of-use":   true,
+	"privacy-policy": true,
+}
+
+// validateTermsName returns true if the value matches the Smithy
+// TermsNameType pattern.
+func validateTermsName(name string) bool {
+	return validTermsNames[name]
+}
+
+// validUpdateReplicaStatuses is the set of Smithy UpdateReplicaStatusType
+// enum values (wire format is uppercase).
+var validUpdateReplicaStatuses = map[string]bool{
+	"ACTIVE":   true,
+	"INACTIVE": true,
+}
+
+// validateUpdateReplicaStatus returns true if the value is a recognised
+// Smithy UpdateReplicaStatusType enum value.
+func validateUpdateReplicaStatus(status string) bool {
+	return validUpdateReplicaStatuses[status]
+}
+
+// validAttributeDataTypes is the set of Smithy AttributeDataType enum values
+// (wire format is PascalCase: String/Number/DateTime/Boolean).
+var validAttributeDataTypes = map[string]bool{
+	"String":   true,
+	"Number":   true,
+	"DateTime": true,
+	"Boolean":  true,
+}
+
+// validateAttributeDataType returns true if the value is a recognised
+// Smithy AttributeDataType enum value.
+func validateAttributeDataType(t string) bool {
+	return validAttributeDataTypes[t]
+}
+
+// validateAccessTokenValidity returns true if the value is within the Smithy
+// AccessTokenValidityType range [0, 86400].
+func validateAccessTokenValidity(v int) bool {
+	return v >= 0 && v <= 86400
+}
+
+// validateIdTokenValidity returns true if the value is within the Smithy
+// IdTokenValidityType range [0, 86400].
+func validateIdTokenValidity(v int) bool {
+	return v >= 0 && v <= 86400
+}
+
+// validateRefreshTokenValidity returns true if the value is within the Smithy
+// RefreshTokenValidityType range [0, 315360000].
+func validateRefreshTokenValidity(v int) bool {
+	return v >= 0 && v <= 315360000
+}
+
+// validatePrecedence returns true if the value satisfies the Smithy
+// PrecedenceType minimum constraint (>= 0).
+func validatePrecedence(v int) bool {
+	return v >= 0
+}
+
+// customAttributeNamePattern is the Smithy CustomAttributeNameType pattern:
+// ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$
+var customAttributeNamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
+
+// validateCustomAttributeName validates a custom attribute name against the
+// Smithy CustomAttributeNameType length [1, 20] and pattern constraints.
+func validateCustomAttributeName(name string) error {
+	if len(name) < 1 || len(name) > 20 {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Custom attribute name length must be 1-20: got %d", len(name)))
+	}
+	if !customAttributeNamePattern.MatchString(name) {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Custom attribute name has invalid characters: %s", name))
+	}
+	return nil
+}
+
+// totpCodePattern matches 6-digit TOTP codes per RFC 6238.
+var totpCodePattern = regexp.MustCompile(`^[0-9]{6}$`)
+
+// validateMFADeliveryMedium returns true if the value is a recognised Smithy
+// DeliveryMediumType enum value (SMS/EMAIL).
+func validateMFADeliveryMedium(m string) bool {
+	return validDeliveryMediums[m]
+}
+
+// validateRegionName validates a region name against the Smithy
+// RegionNameType length constraint [5, 32].
+func validateRegionName(name string) error {
+	if len(name) < 5 || len(name) > 32 {
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("RegionName length must be 5-32: got %d", len(name)))
+	}
+	return nil
+}

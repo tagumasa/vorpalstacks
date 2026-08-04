@@ -387,7 +387,7 @@ func (s *AppSyncStore) GetDomainName(domainName string) (*DomainNameConfig, erro
 }
 
 // UpdateDomainName updates a domain name configuration.
-// Returns ErrDomainNameNotFound if the domain does not exist (R2-H3).
+// Returns ErrDomainNameNotFound if the domain does not exist.
 func (s *AppSyncStore) UpdateDomainName(domainName *DomainNameConfig) error {
 	if !s.domainNamesStore.Exists(domainName.DomainName) {
 		return ErrDomainNameNotFound

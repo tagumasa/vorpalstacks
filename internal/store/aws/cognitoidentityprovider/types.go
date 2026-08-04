@@ -541,6 +541,11 @@ type ChallengeSession struct {
 	SrpB        string `json:"srpB,omitempty"`
 	SrpPrivateB string `json:"srpPrivateB,omitempty"`
 	SecretBlock string `json:"secretBlock,omitempty"`
+	// ChallengeData stores the opaque challenge bytes (base64 RawURL encoded)
+	// for challenge types that require server-side verification (e.g.
+	// WEB_AUTHN_REGISTRATION: the WebAuthn challenge that the client must sign
+	// with their authenticator).
+	ChallengeData string `json:"challengeData,omitempty"`
 }
 
 func generateToken() string {
@@ -549,10 +554,26 @@ func generateToken() string {
 
 // UserPoolDomain represents a custom domain assigned to a Cognito user pool.
 type UserPoolDomain struct {
-	Domain           string    `json:"domain"`
-	UserPoolID       string    `json:"userPoolId"`
-	CloudFrontDomain string    `json:"cloudFrontDomain"`
-	CreatedDate      time.Time `json:"createdDate"`
+	Domain              string              `json:"domain"`
+	UserPoolID          string              `json:"userPoolId"`
+	CloudFrontDomain    string              `json:"cloudFrontDomain"`
+	CreatedDate         time.Time           `json:"createdDate"`
+	ManagedLoginVersion *int                `json:"managedLoginVersion,omitempty"`
+	CustomDomainConfig  *CustomDomainConfig `json:"customDomainConfig,omitempty"`
+	Routing             *Routing            `json:"routing,omitempty"`
+	Status              string              `json:"status,omitempty"`
+}
+
+// CustomDomainConfig holds the certificate and security policy for a custom
+// domain.
+type CustomDomainConfig struct {
+	CertificateArn string `json:"certificateArn,omitempty"`
+	SecurityPolicy string `json:"securityPolicy,omitempty"`
+}
+
+// Routing holds the failover configuration for a user pool domain.
+type Routing struct {
+	Failover string `json:"failover,omitempty"`
 }
 
 // ResourceServer represents an OAuth 2.0 resource server within a Cognito user pool.
@@ -788,10 +809,11 @@ type Terms struct {
 
 // UserPoolReplica represents a cross-region replica of a user pool.
 type UserPoolReplica struct {
-	UserPoolID   string    `json:"userPoolId"`
-	RegionName   string    `json:"regionName"`
-	Status       string    `json:"status"`
-	Role         string    `json:"role"`
-	UserPoolArn  string    `json:"userPoolArn,omitempty"`
-	CreationDate time.Time `json:"creationDate,omitempty"`
+	UserPoolID   string      `json:"userPoolId"`
+	RegionName   string      `json:"regionName"`
+	Status       string      `json:"status"`
+	Role         string      `json:"role"`
+	UserPoolArn  string      `json:"userPoolArn,omitempty"`
+	CreationDate time.Time   `json:"creationDate,omitempty"`
+	Tags         []types.Tag `json:"tags,omitempty"`
 }

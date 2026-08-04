@@ -32,7 +32,7 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		// Base32StringSeed is a Smithy blob whose content is the UTF-8
 		// bytes of the base32 seed string.  Verifying that the decoded
 		// bytes form a valid base32 string (RFC 3548 alphabet) catches
-		// the H3 regression where raw 20 bytes were re-encoded instead.
+		// the regression where raw 20 bytes were re-encoded instead.
 		seed := resp.VirtualMFADevice.Base32StringSeed
 		if len(seed) == 0 {
 			return fmt.Errorf("base32 seed is empty")

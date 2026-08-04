@@ -50,7 +50,7 @@ func validateDefaultAction(action *waf.Action) error {
 	return invalidParamError("DefaultAction must be Allow or Block")
 }
 
-// --- Enum validators (L1-L7) ---
+// --- Enum validators ---
 
 func isValidTextTransformationType(t string) bool {
 	switch t {

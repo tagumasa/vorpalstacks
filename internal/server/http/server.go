@@ -99,7 +99,7 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	// Create STS session store for temporary credential verification.
 	// Initialised before the authorizer so ASIA-prefixed temporary
-	// credentials can be resolved at request time (H2/M1 enforcement).
+	// credentials can be resolved at request time.
 	stsSessionStore := stsstore.NewSessionStore(globalStore, region)
 
 	if os.Getenv("TEST_MODE") == "true" {

@@ -3,6 +3,7 @@ package cognitoidentityprovider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -24,7 +25,11 @@ func (s *CognitoService) GetUserPool(reqCtx *request.RequestContext) *cognitosto
 }
 
 // CreateTokens creates access, ID, and refresh tokens for the specified user.
-func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID, userID, clientID string) (accessToken, idToken, refreshToken string, expiresIn int64, err error) {
+// The triggerSource parameter controls which PreTokenGeneration Lambda event
+// fires (TokenGenerationAuthentication, TokenGenerationRefreshTokens, or
+// TokenGenerationHostedAuth). The clientMetadata parameter is forwarded to
+// the trigger so Lambda can customise claims.
+func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID, userID, clientID, triggerSource string, clientMetadata map[string]string) (accessToken, idToken, refreshToken string, expiresIn int64, err error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return "", "", "", 0, err
@@ -52,8 +57,8 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 
 	attrs := userAttributesMap(user)
 	tokGenResult, tokGenErr := invokePreTokenGeneration(
-		reqCtx, s, TokenGenerationAuthentication, userPoolID, user.Username, clientID,
-		userPool.LambdaConfig, attrs, user.Groups,
+		reqCtx, s, triggerSource, userPoolID, user.Username, clientID,
+		userPool.LambdaConfig, attrs, user.Groups, clientMetadata,
 	)
 	if tokGenErr != nil {
 		return "", "", "", 0, fmt.Errorf("pre-token-generation trigger failed: %w", tokGenErr)
@@ -71,7 +76,7 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 		}
 	}
 
-	// Determine token validity from client configuration (CIPD-1)
+	// Determine token validity from client configuration.
 	atValidityMin := 60
 	idValidityMin := 60
 	rtValidityDays := 30
@@ -108,7 +113,7 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 		return "", "", "", 0, fmt.Errorf("failed to generate ID token: %w", err)
 	}
 
-	// Store ID token so it can be validated and revoked (CIPD-10)
+	// Store ID token so it can be validated and revoked.
 	it := cognitostore.NewIDToken(userPoolID, user.ID, clientID, "", time.Now().Add(idExpiry), user.Groups)
 	it.Token = idToken
 	if err := store.CreateIDToken(it); err != nil {
@@ -117,7 +122,14 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 
 	refreshToken = jwtManager.GenerateRefreshToken()
 
-	rt := cognitostore.NewRefreshToken(userPoolID, user.ID, clientID, "openid", time.Now().Add(rtExpiry))
+	// Use the client's AllowedOAuthScopes if configured, falling back to
+	// "openid" as the default scope.
+	scope := "openid"
+	if client, cerr := store.GetUserPoolClient(userPoolID, clientID); cerr == nil && client != nil && len(client.AllowedOAuthScopes) > 0 {
+		scope = strings.Join(client.AllowedOAuthScopes, " ")
+	}
+
+	rt := cognitostore.NewRefreshToken(userPoolID, user.ID, clientID, scope, time.Now().Add(rtExpiry))
 	rt.Token = refreshToken
 	if err := store.CreateRefreshToken(rt); err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to store refresh token: %w", err)
@@ -140,7 +152,7 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 
 	userPools, err := store.ListUserPools()
 	if err != nil || len(userPools) == 0 {
-		return "", ErrResourceNotFound
+		return "", ErrNotAuthorized
 	}
 
 	for _, pool := range userPools {
@@ -176,6 +188,11 @@ func (s *CognitoService) ValidateTokenForPool(ctx context.Context, region, userP
 	pool, err := store.GetUserPool(userPoolID)
 	if err != nil {
 		return "", ErrResourceNotFound
+	}
+
+	// Verify the token has not been revoked.
+	if _, err := store.GetAccessTokenByValue(accessToken); err != nil {
+		return "", ErrNotAuthorized
 	}
 
 	publicKey, err := vsjwt.DecodePublicKeyFromPEM(pool.JwtPublicKey)

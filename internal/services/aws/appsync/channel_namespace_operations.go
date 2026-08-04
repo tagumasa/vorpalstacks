@@ -197,7 +197,7 @@ func (s *AppSyncService) DeleteChannelNamespace(ctx context.Context, reqCtx *req
 	}
 
 	// Clean up active subscriptions on the deleted namespace to prevent
-	// stale data delivery (R2-M4).
+	// stale data delivery.
 	s.eventServer.RemoveSubscriptionsByNamespace(name)
 
 	return map[string]interface{}{}, nil

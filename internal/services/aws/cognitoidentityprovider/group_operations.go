@@ -6,7 +6,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateGroup creates a group in a Cognito user pool.
@@ -18,20 +17,13 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	group := cognitostore.NewGroup(userPoolID, groupName)
 	group.Description = req.GetParam("Description")
 	group.RoleArn = req.GetParam("RoleArn")
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
+		if !validatePrecedence(precedence) {
+			return nil, ErrInvalidParameter
+		}
 		group.Precedence = &precedence
 	}
 
@@ -46,8 +38,8 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 		}
 	}
 
-	if err := store.CreateGroup(group); err != nil {
-		return nil, ErrGroupAlreadyExists
+	if _, err := s.createGroupCore(reqCtx.GetRegion(), group); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -58,87 +50,44 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 // GetGroup returns information about a group in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetGroup.html
 func (s *CognitoService) GetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	groupName := getGroupName(req)
-	if userPoolID == "" || groupName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	group, err := s.getGroupCore(reqCtx.GetRegion(), getUserPoolID(req), getGroupName(req))
 	if err != nil {
 		return nil, err
 	}
-
-	group, err := store.GetGroup(userPoolID, groupName)
-	if err != nil {
-		return nil, ErrGroupNotFound
-	}
-
-	return map[string]interface{}{
-		"Group": formatGroup(group),
-	}, nil
+	return map[string]interface{}{"Group": formatGroup(group)}, nil
 }
 
 // DeleteGroup deletes a group from a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_DeleteGroup.html
 func (s *CognitoService) DeleteGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	groupName := getGroupName(req)
-	if userPoolID == "" || groupName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteGroupCore(reqCtx.GetRegion(), getUserPoolID(req), getGroupName(req)); err != nil {
 		return nil, err
 	}
-
-	if err := store.DeleteGroup(userPoolID, groupName); err != nil {
-		return nil, ErrGroupNotFound
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // ListGroups lists the groups in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListGroups.html
 func (s *CognitoService) ListGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.listGroupsCore(reqCtx.GetRegion(), ListGroupsInput{
+		UserPoolID: getUserPoolID(req),
+		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "Limit")
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}
-
-	result, err := store.ListGroupsPaginated(userPoolID, opts)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	groupList := make([]map[string]interface{}, 0, len(result.Items))
-	for _, group := range result.Items {
+	groupList := make([]map[string]interface{}, 0, len(result.Groups))
+	for _, group := range result.Groups {
 		groupList = append(groupList, formatGroup(group))
 	}
 
 	resp := map[string]interface{}{
 		"Groups": groupList,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -153,14 +102,9 @@ func (s *CognitoService) UpdateGroup(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
+	group, err := s.getGroupCore(reqCtx.GetRegion(), userPoolID, groupName)
 	if err != nil {
 		return nil, err
-	}
-
-	group, err := store.GetGroup(userPoolID, groupName)
-	if err != nil {
-		return nil, ErrGroupNotFound
 	}
 
 	if description := req.GetParam("Description"); description != "" {
@@ -178,72 +122,33 @@ func (s *CognitoService) UpdateGroup(ctx context.Context, reqCtx *request.Reques
 		group.RoleArn = roleArn
 	}
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
+		if !validatePrecedence(precedence) {
+			return nil, ErrInvalidParameter
+		}
 		group.Precedence = &precedence
 	}
 
-	if err := store.UpdateGroup(group); err != nil {
-		return nil, ErrInternalError
+	if err := s.updateGroupCore(reqCtx.GetRegion(), group); err != nil {
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Group": formatGroup(group),
-	}, nil
+	return map[string]interface{}{"Group": formatGroup(group)}, nil
 }
 
 // AdminAddUserToGroup adds a user to a group in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminAddUserToGroup.html
 func (s *CognitoService) AdminAddUserToGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	groupName := getGroupName(req)
-	username := getUsername(req)
-
-	if userPoolID == "" || groupName == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.adminAddUserToGroupCore(reqCtx.GetRegion(), getUserPoolID(req), getGroupName(req), getUsername(req)); err != nil {
 		return nil, err
 	}
-
-	if err := store.AddUserToGroup(userPoolID, groupName, username); err != nil {
-		if err == cognitostore.ErrGroupNotFound {
-			return nil, ErrGroupNotFound
-		}
-		if err == cognitostore.ErrUserNotFound {
-			return nil, ErrUserNotFound
-		}
-		return nil, ErrInternalError
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // AdminRemoveUserFromGroup removes a user from a group in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminRemoveUserFromGroup.html
 func (s *CognitoService) AdminRemoveUserFromGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	groupName := getGroupName(req)
-	username := getUsername(req)
-
-	if userPoolID == "" || groupName == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.adminRemoveUserFromGroupCore(reqCtx.GetRegion(), getUserPoolID(req), getGroupName(req), getUsername(req)); err != nil {
 		return nil, err
 	}
-
-	if err := store.RemoveUserFromGroup(userPoolID, groupName, username); err != nil {
-		if err == cognitostore.ErrGroupNotFound {
-			return nil, ErrGroupNotFound
-		}
-		if err == cognitostore.ErrUserNotFound {
-			return nil, ErrUserNotFound
-		}
-		return nil, ErrInternalError
-	}
-
 	return response.EmptyResponse(), nil
 }

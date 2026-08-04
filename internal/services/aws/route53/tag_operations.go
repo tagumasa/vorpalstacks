@@ -49,7 +49,7 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	// H6: Verify resource exists before applying tag operations.
+	// Verify resource exists before applying tag operations.
 	if err := s.verifyResourceExists(st, normalizedType, resourceId); err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		}
 	}
 
-	// M8: Validate tag Key (max 128) and Value (max 256) lengths.
+	// Validate tag Key (max 128) and Value (max 256) lengths.
 	for _, t := range addTags {
 		if len(t.Key) > 128 {
 			return nil, awserrors.NewAWSError("InvalidInput", "Tag key must not exceed 128 characters", 400)
@@ -108,7 +108,7 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		}
 	}
 
-	// M9: Enforce 50-tag limit — compute the resulting key set
+	// Enforce 50-tag limit — compute the resulting key set
 	// after applying both AddTags and RemoveTagKeys.
 	existingTags, _ := st.Tags().ListTagsForResource(resourceKey)
 	keySet := make(map[string]bool)
@@ -152,7 +152,7 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	// H6: Verify resource exists before listing tags.
+	// Verify resource exists before listing tags.
 	if err := s.verifyResourceExists(st, normalizedType, resourceId); err != nil {
 		return nil, err
 	}

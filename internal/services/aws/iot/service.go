@@ -447,7 +447,7 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "DeleteSecurityProfile", s.DeleteSecurityProfile)
 	d.RegisterHandlerForService("iot", "ListSecurityProfiles", s.ListSecurityProfiles)
 
-	// Phase 3: Device Management Extensions
+	// Device Management Extensions
 	d.RegisterHandlerForService("iot", "CreateDynamicThingGroup", s.CreateDynamicThingGroup)
 	d.RegisterHandlerForService("iot", "DeleteDynamicThingGroup", s.DeleteDynamicThingGroup)
 	d.RegisterHandlerForService("iot", "UpdateDynamicThingGroup", s.UpdateDynamicThingGroup)
@@ -461,7 +461,7 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "ListThingRegistrationTasks", s.ListThingRegistrationTasks)
 	d.RegisterHandlerForService("iot", "ListThingRegistrationTaskReports", s.ListThingRegistrationTaskReports)
 
-	// Phase 4: Certificates & CA
+	// Certificates & CA
 	d.RegisterHandlerForService("iot", "RegisterCACertificate", s.RegisterCACertificate)
 	d.RegisterHandlerForService("iot", "DescribeCACertificate", s.DescribeCACertificate)
 	d.RegisterHandlerForService("iot", "ListCACertificates", s.ListCACertificates)
@@ -475,7 +475,7 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "RejectCertificateTransfer", s.RejectCertificateTransfer)
 	d.RegisterHandlerForService("iot", "ListOutgoingCertificates", s.ListOutgoingCertificates)
 
-	// Phase 5: Policy/Authorizer add-ons
+	// Policy/Authorizer add-ons
 	d.RegisterHandlerForService("iot", "CreatePolicyVersion", s.CreatePolicyVersion)
 	d.RegisterHandlerForService("iot", "DeletePolicyVersion", s.DeletePolicyVersion)
 	d.RegisterHandlerForService("iot", "SetDefaultPolicyVersion", s.SetDefaultPolicyVersion)
@@ -487,7 +487,7 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "DescribeDefaultAuthorizer", s.DescribeDefaultAuthorizer)
 	d.RegisterHandlerForService("iot", "TestInvokeAuthorizer", s.TestInvokeAuthorizer)
 
-	// Phase 6: Jobs ecosystem
+	// Jobs ecosystem
 	d.RegisterHandlerForService("iot", "CreateJobTemplate", s.CreateJobTemplate)
 	d.RegisterHandlerForService("iot", "DeleteJobTemplate", s.DeleteJobTemplate)
 	d.RegisterHandlerForService("iot", "DescribeJobTemplate", s.DescribeJobTemplate)
@@ -554,7 +554,7 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "DeleteCommandExecution", s.DeleteCommandExecution)
 	d.RegisterHandlerForService("iot", "ListCommandExecutions", s.ListCommandExecutions)
 
-	// Phase 7-11: Security/Audit/Fleet/Logging/TopicRuleDest bulk
+	// Security/Audit/Fleet/Logging/TopicRuleDest bulk handlers
 	d.RegisterHandlerForService("iot", "AttachSecurityProfile", s.AttachSecurityProfile)
 	d.RegisterHandlerForService("iot", "DetachSecurityProfile", s.DetachSecurityProfile)
 	d.RegisterHandlerForService("iot", "ListSecurityProfilesForTarget", s.ListSecurityProfilesForTarget)

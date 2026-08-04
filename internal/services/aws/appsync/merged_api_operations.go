@@ -152,7 +152,7 @@ func (s *AppSyncService) DisassociateSourceGraphqlApi(ctx context.Context, reqCt
 		return mapStoreError(err)
 	}
 
-	// Async deletion with persistent failure status (R2-M7).
+	// Async deletion with persistent failure status.
 	// On delete failure, the association status is updated to DELETION_FAILED
 	// so it does not silently remain in DELETION_SCHEDULED forever.
 	go func() {
@@ -297,7 +297,7 @@ func (s *AppSyncService) DisassociateMergedGraphqlApi(ctx context.Context, reqCt
 	}
 
 	mergedApiId := assoc.MergedApiId
-	// Async deletion with persistent failure status (R2-M7).
+	// Async deletion with persistent failure status.
 	go func() {
 		defer func() { resilience.RecoverPanic("appsync DisassociateMergedGraphqlApi async cleanup") }()
 		time.Sleep(5 * time.Second)

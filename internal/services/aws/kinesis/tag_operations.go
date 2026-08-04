@@ -49,7 +49,7 @@ func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req 
 			return store.ListAsSlice(resourceKey)
 		},
 		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
-			// L6: Implement pagination with ExclusiveStartTagKey and Limit
+			// Implement pagination with ExclusiveStartTagKey and Limit
 			startKey := request.GetStringParam(req.Parameters, "ExclusiveStartTagKey")
 			limit := request.GetIntParam(req.Parameters, "Limit")
 			if limit <= 0 || limit > 50 {

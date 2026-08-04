@@ -300,7 +300,7 @@ func (s *AccountSettingsStore) UpdateAccountSettings(maxQueryTCU *int64, queryPr
 	if provisionedCapacity != nil {
 		settings.ProvisionedCapacity = provisionedCapacity
 	}
-	// C3: When switching to ON_DEMAND, clear any lingering ProvisionedCapacity
+	// When switching to ON_DEMAND, clear any lingering ProvisionedCapacity
 	// settings so stale config does not persist after the mode change.
 	if queryComputeType == QueryComputeTypeOnDemand {
 		settings.ProvisionedCapacity = nil

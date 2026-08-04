@@ -118,7 +118,7 @@ func parseUserAttributes(req *request.ParsedRequest) map[string]string {
 	return parseNamedAttributeList(req, "UserAttributes")
 }
 
-// parseValidationData extracts ValidationData from the request (CIPD-8).
+// parseValidationData extracts ValidationData from the request.
 func parseValidationData(req *request.ParsedRequest) map[string]string {
 	return parseNamedAttributeList(req, "ValidationData")
 }
@@ -153,7 +153,7 @@ func parseNamedAttributeList(req *request.ParsedRequest, key string) map[string]
 	return attributes
 }
 
-// parseClientMetadata extracts ClientMetadata from the request (CIPD-8).
+// parseClientMetadata extracts ClientMetadata from the request.
 func parseClientMetadata(req *request.ParsedRequest) map[string]string {
 	metadata := make(map[string]string)
 	if cm, ok := req.Parameters["ClientMetadata"].(map[string]interface{}); ok {
@@ -242,6 +242,20 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 				}
 				hasPolicy = true
 			}
+			if val, ok := ppMap["PasswordHistorySize"]; ok {
+				switch v := val.(type) {
+				case int:
+					policy.PasswordHistorySize = v
+				case float64:
+					policy.PasswordHistorySize = int(v)
+				case string:
+					policy.PasswordHistorySize = parseInt(v)
+				}
+				if !validatePasswordHistorySize(policy.PasswordHistorySize) {
+					policy.PasswordHistorySize = 0
+				}
+				hasPolicy = true
+			}
 		}
 	}
 
@@ -263,6 +277,13 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 	}
 	if val := req.GetParam("Policies.PasswordPolicy.RequireSymbols"); val != "" {
 		policy.RequireSymbols = strings.ToLower(val) == "true"
+		hasPolicy = true
+	}
+	if val := req.GetParam("Policies.PasswordPolicy.PasswordHistorySize"); val != "" {
+		phs := parseInt(val)
+		if validatePasswordHistorySize(phs) {
+			policy.PasswordHistorySize = phs
+		}
 		hasPolicy = true
 	}
 	if val := req.GetParam("Policies.PasswordPolicy.TemporaryPasswordValidityDays"); val != "" {
@@ -805,6 +826,7 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 				"RequireNumbers":                pool.PasswordPolicy.RequireNumbers,
 				"RequireSymbols":                pool.PasswordPolicy.RequireSymbols,
 				"TemporaryPasswordValidityDays": pool.PasswordPolicy.TemporaryPasswordValidityDays,
+				"PasswordHistorySize":           pool.PasswordPolicy.PasswordHistorySize,
 			},
 		}
 	}

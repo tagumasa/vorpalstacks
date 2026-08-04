@@ -41,6 +41,9 @@ func (s *CognitoService) InitiateAuth(ctx context.Context, reqCtx *request.Reque
 	if authFlow == "" || clientID == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateInitiateAuthFlow(authFlow) {
+		return nil, ErrInvalidParameter
+	}
 
 	switch authFlow {
 	case "USER_PASSWORD_AUTH":
@@ -49,9 +52,163 @@ func (s *CognitoService) InitiateAuth(ctx context.Context, reqCtx *request.Reque
 		return s.handleUserSrpAuth(reqCtx, req)
 	case "REFRESH_TOKEN_AUTH", "REFRESH_TOKEN":
 		return s.handleRefreshTokenAuth(reqCtx, req)
+	case "CUSTOM_AUTH":
+		return s.handleCustomAuth(ctx, reqCtx, req)
+	case "USER_AUTH":
+		return s.handleUserAuth(ctx, reqCtx, req)
 	default:
 		return nil, ErrInvalidParameter
 	}
+}
+
+// handleCustomAuth implements the CUSTOM_AUTH flow. The client provides a
+// USERNAME (and optionally a PASSWORD for the initial verification). The
+// server invokes the DefineAuthChallenge and CreateAuthChallenge Lambda
+// triggers to produce a custom challenge that the client must answer via
+// RespondToAuthChallenge.
+func (s *CognitoService) handleCustomAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	clientID := getClientId(req)
+	username := getUsername(req)
+	password := getPassword(req)
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	userPool, err := store.GetUserPoolByClientID(clientID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	user, err := store.GetUser(userPool.ID, username)
+	if err != nil {
+		// Return the same NotAuthorized error used by other auth flows to
+		// prevent user enumeration via distinguishable session or error.
+		return nil, ErrNotAuthorized
+	}
+
+	// If a password is provided, verify it as part of the initial auth.
+	if password != "" {
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+			return nil, ErrNotAuthorized
+		}
+	}
+
+	// Invoke DefineAuthChallenge Lambda trigger to determine the challenge.
+	var lambdaResult map[string]interface{}
+	if userPool.LambdaConfig != nil && userPool.LambdaConfig.DefineAuthChallenge != "" {
+		lambdaResult, _ = s.invokeTrigger(ctx, DefineAuthChallenge, userPool.ID, username, clientID,
+			userPool.LambdaConfig.DefineAuthChallenge,
+			map[string]interface{}{
+				"userAttributes":  userAttributesMap(user),
+				"challengeResult": "FAILED",
+			},
+			map[string]interface{}{
+				"challengeName":      "",
+				"issueTokens":        false,
+				"failAuthentication": false,
+			},
+			true,
+		)
+	}
+
+	sessionID := generateSessionID()
+	challengeParams := map[string]string{
+		"USERNAME": username,
+	}
+
+	challengeName := "CUSTOM_CHALLENGE"
+	if lambdaResult != nil {
+		if cn, ok := lambdaResult["challengeName"].(string); ok && cn != "" {
+			challengeName = cn
+		}
+	}
+
+	// Invoke CreateAuthChallenge Lambda trigger to produce challenge parameters.
+	if userPool.LambdaConfig != nil && userPool.LambdaConfig.CreateAuthChallenge != "" {
+		createResult, _ := s.invokeTrigger(ctx, CreateAuthChallenge, userPool.ID, username, clientID,
+			userPool.LambdaConfig.CreateAuthChallenge,
+			map[string]interface{}{
+				"userAttributes": userAttributesMap(user),
+				"challengeName":  challengeName,
+			},
+			map[string]interface{}{
+				"publicChallengeParameters": map[string]string{},
+			},
+			true,
+		)
+		if createResult != nil {
+			if params, ok := createResult["publicChallengeParameters"].(map[string]interface{}); ok {
+				for k, v := range params {
+					if vs, ok := v.(string); ok {
+						challengeParams[k] = vs
+					}
+				}
+			}
+		}
+	}
+
+	challengeSession := &cognitostore.ChallengeSession{
+		SessionID:     sessionID,
+		UserPoolID:    userPool.ID,
+		ClientID:      clientID,
+		Username:      username,
+		ChallengeName: challengeName,
+		CreatedAt:     time.Now().UTC(),
+		ExpiresAt:     time.Now().UTC().Add(3 * time.Minute),
+	}
+	if err := store.SaveChallengeSession(challengeSession); err != nil {
+		return nil, ErrInternalError
+	}
+
+	return map[string]interface{}{
+		"ChallengeName":       challengeName,
+		"Session":             sessionID,
+		"ChallengeParameters": challengeParams,
+	}, nil
+}
+
+// handleUserAuth implements the USER_AUTH flow (the modern recommended auth
+// flow). The server inspects the user's configured auth factors and returns
+// the set of available challenges for the client to choose from.
+func (s *CognitoService) handleUserAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	clientID := getClientId(req)
+	username := getUsername(req)
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	userPool, err := store.GetUserPoolByClientID(clientID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	user, err := store.GetUser(userPool.ID, username)
+	if err != nil {
+		// Return a minimal response to avoid user enumeration.
+		return map[string]interface{}{
+			"AvailableChallenges": []interface{}{},
+		}, nil
+	}
+
+	available := make([]string, 0, 4)
+	available = append(available, "PASSWORD")
+	if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Verified {
+		available = append(available, "SOFTWARE_TOKEN_MFA")
+	}
+	if isAttributeVerified(user.Attributes, "phone_number") {
+		available = append(available, "SMS_OTP")
+	}
+	if isAttributeVerified(user.Attributes, "email") {
+		available = append(available, "EMAIL_OTP")
+	}
+
+	return map[string]interface{}{
+		"AvailableChallenges": available,
+	}, nil
 }
 
 // authenticateUser contains the shared authentication logic used by both
@@ -138,7 +295,7 @@ func (s *CognitoService) authenticateUser(
 		return nil, fmt.Errorf("PostAuthentication trigger failed: %w", err)
 	}
 
-	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
+	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID, TokenGenerationAuthentication, clientMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
@@ -347,7 +504,7 @@ func (s *CognitoService) refreshAuthToken(reqCtx *request.RequestContext, userPo
 		return nil, fmt.Errorf("PostAuthentication trigger failed: %w", err)
 	}
 
-	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, poolID, user.ID, rt.ClientID)
+	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, poolID, user.ID, rt.ClientID, TokenGenerationRefreshTokens, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
@@ -380,6 +537,9 @@ func (s *CognitoService) RespondToAuthChallenge(ctx context.Context, reqCtx *req
 	if clientID == "" || challengeName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateChallengeName(challengeName) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -397,7 +557,7 @@ func (s *CognitoService) RespondToAuthChallenge(ctx context.Context, reqCtx *req
 		return s.respondToPasswordVerifier(reqCtx, req, userPool.ID, clientID, session)
 	}
 
-	return nil, ErrInvalidParameter
+	return s.respondToMfaOrCustomChallenge(ctx, reqCtx, req, challengeName, userPool, clientID, session)
 }
 
 // parseAuthParams extracts USERNAME and PASSWORD from the AuthParameters
@@ -471,14 +631,16 @@ func (s *CognitoService) SignOut(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
+	// SignOut always returns 200 OK per AWS spec, even for invalid or
+	// already-revoked access tokens. A client that calls SignOut after token
+	// expiry or a previous sign-out receives an empty success.
 	at, err := store.GetAccessTokenByValue(accessToken)
 	if err != nil {
 		return response.EmptyResponse(), nil
 	}
 
-	if err := store.DeleteAccessToken(at.UserPoolID, at.UserID, accessToken); err != nil {
-		return nil, err
-	}
+	// Best-effort deletion; the token may have been concurrently revoked.
+	_ = store.DeleteAccessToken(at.UserPoolID, at.UserID, accessToken)
 
 	return response.EmptyResponse(), nil
 }
@@ -592,7 +754,14 @@ func (s *CognitoService) ForgotPassword(ctx context.Context, reqCtx *request.Req
 
 	user, err := store.GetUser(userPool.ID, username)
 	if err != nil {
-		return nil, ErrUserNotFound
+		// Return a masked CodeDeliveryDetails to prevent user enumeration.
+		return map[string]interface{}{
+			"CodeDeliveryDetails": map[string]interface{}{
+				"Destination":    "***",
+				"DeliveryMedium": "EMAIL",
+				"AttributeName":  "email",
+			},
+		}, nil
 	}
 
 	confirmationCode, err := generateConfirmationCode()
@@ -606,7 +775,7 @@ func (s *CognitoService) ForgotPassword(ctx context.Context, reqCtx *request.Req
 	}
 
 	attrs := userAttributesMap(user)
-	customMsg, _ := invokeCustomMessage(ctx, s, CustomMessageForgotPassword, userPool.ID, username, clientID, userPool.LambdaConfig, "####", attrs)
+	customMsg, _ := invokeCustomMessage(ctx, s, CustomMessageForgotPassword, userPool.ID, username, clientID, userPool.LambdaConfig, "####", attrs, nil)
 
 	codeDeliveryDetails := map[string]interface{}{
 		"Destination":    "***",
@@ -692,6 +861,9 @@ func (s *CognitoService) AdminInitiateAuth(ctx context.Context, reqCtx *request.
 	if userPoolID == "" || clientID == "" || authFlow == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateAdminInitiateAuthFlow(authFlow) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -732,6 +904,9 @@ func (s *CognitoService) AdminRespondToAuthChallenge(ctx context.Context, reqCtx
 	if userPoolID == "" || clientID == "" || challengeName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateChallengeName(challengeName) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -749,7 +924,11 @@ func (s *CognitoService) AdminRespondToAuthChallenge(ctx context.Context, reqCtx
 		return s.respondToPasswordVerifier(reqCtx, req, userPoolID, clientID, session)
 	}
 
-	return nil, ErrInvalidParameter
+	userPool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return s.respondToMfaOrCustomChallenge(ctx, reqCtx, req, challengeName, userPool, clientID, session)
 }
 
 // respondToNewPasswordChallenge handles the NEW_PASSWORD_REQUIRED challenge
@@ -820,7 +999,7 @@ func (s *CognitoService) respondToNewPasswordChallenge(reqCtx *request.RequestCo
 		return nil, ErrInternalError
 	}
 
-	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
+	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID, TokenGenerationAuthentication, parseClientMetadata(req))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
@@ -944,7 +1123,7 @@ func (s *CognitoService) respondToPasswordVerifier(reqCtx *request.RequestContex
 		return nil, ErrNotAuthorized
 	}
 
-	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
+	accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID, TokenGenerationAuthentication, parseClientMetadata(req))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
@@ -957,6 +1136,199 @@ func (s *CognitoService) respondToPasswordVerifier(reqCtx *request.RequestContex
 			"RefreshToken": refreshToken,
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
+		},
+	}, nil
+}
+
+// respondToMfaOrCustomChallenge handles all challenge types beyond
+// NEW_PASSWORD_REQUIRED and PASSWORD_VERIFIER. It covers MFA challenges
+// (SOFTWARE_TOKEN_MFA, SMS_MFA, SMS_OTP, EMAIL_OTP), the PASSWORD
+// challenge, SELECT_MFA_TYPE, SELECT_CHALLENGE, MFA_SETUP, and
+// CUSTOM_CHALLENGE (via VerifyAuthChallengeResponse Lambda trigger).
+// On success it issues tokens and returns an AuthenticationResult.
+func (s *CognitoService) respondToMfaOrCustomChallenge(
+	ctx context.Context,
+	reqCtx *request.RequestContext,
+	req *request.ParsedRequest,
+	challengeName string,
+	userPool *cognitostore.UserPool,
+	clientID, session string,
+) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Resolve the user from the session or AuthParameters.
+	username := req.GetParam("USERNAME")
+	if username == "" {
+		if session != "" {
+			cs, err := store.GetChallengeSession(session)
+			if err != nil {
+				return nil, ErrNotAuthorized
+			}
+			username = cs.Username
+		}
+	}
+	if username == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	user, err := store.GetUser(userPool.ID, username)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+
+	switch challengeName {
+	case "SOFTWARE_TOKEN_MFA":
+		code := req.GetParam("SOFTWARE_TOKEN_MFA_CODE")
+		if code == "" {
+			code = getStringParam(req.Parameters, "SoftwareTokenMfaCode")
+		}
+		if code == "" {
+			return nil, ErrInvalidParameter
+		}
+		if user.SoftwareTokenMfa == nil || !user.SoftwareTokenMfa.Verified {
+			return nil, ErrNotAuthorized
+		}
+		if !validateTOTPCode(user.SoftwareTokenMfa.SecretKey, code) {
+			return nil, ErrCodeMismatch
+		}
+
+	case "SMS_MFA", "SMS_OTP":
+		code := req.GetParam("SMS_MFA_CODE")
+		if code == "" {
+			code = getStringParam(req.Parameters, "SmsMfaCode")
+		}
+		if code == "" {
+			return nil, ErrInvalidParameter
+		}
+		if user.ConfirmationCode == "" || user.ConfirmationCode != code {
+			return nil, ErrCodeMismatch
+		}
+		user.ConfirmationCode = ""
+
+	case "EMAIL_OTP":
+		code := req.GetParam("EMAIL_OTP_CODE")
+		if code == "" {
+			code = getStringParam(req.Parameters, "EmailOtpCode")
+		}
+		if code == "" {
+			return nil, ErrInvalidParameter
+		}
+		if user.ConfirmationCode == "" || user.ConfirmationCode != code {
+			return nil, ErrCodeMismatch
+		}
+		user.ConfirmationCode = ""
+
+	case "PASSWORD":
+		password := req.GetParam("PASSWORD")
+		if password == "" {
+			password = getStringParam(req.Parameters, "Password")
+		}
+		if password == "" {
+			return nil, ErrInvalidParameter
+		}
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+			return nil, ErrNotAuthorized
+		}
+
+	case "SELECT_MFA_TYPE":
+		mfaType := req.GetParam("MFA_TYPE")
+		if mfaType == "" {
+			mfaType = getStringParam(req.Parameters, "MfaType")
+		}
+		if mfaType == "" {
+			return nil, ErrInvalidParameter
+		}
+		// Issue a new challenge of the selected type.
+		return map[string]interface{}{
+			"ChallengeName": mfaType,
+			"Session":       session,
+			"ChallengeParameters": map[string]string{
+				"USERNAME": username,
+			},
+		}, nil
+
+	case "SELECT_CHALLENGE":
+		selected := req.GetParam("SELECTED_CHALLENGE")
+		if selected == "" {
+			selected = getStringParam(req.Parameters, "SelectedChallenge")
+		}
+		if selected == "" {
+			return nil, ErrInvalidParameter
+		}
+		return map[string]interface{}{
+			"ChallengeName": selected,
+			"Session":       session,
+			"ChallengeParameters": map[string]string{
+				"USERNAME": username,
+			},
+		}, nil
+
+	case "MFA_SETUP":
+		// The client should enrol an MFA factor via AssociateSoftwareToken
+		// or VerifySoftwareToken, then retry authentication.
+		return map[string]interface{}{
+			"ChallengeName": "MFA_SETUP",
+			"Session":       session,
+			"ChallengeParameters": map[string]string{
+				"USERNAME": username,
+			},
+		}, nil
+
+	case "CUSTOM_CHALLENGE":
+		// Invoke VerifyAuthChallengeResponse Lambda trigger to verify the
+		// client's answer.
+		if userPool.LambdaConfig != nil && userPool.LambdaConfig.VerifyAuthChallengeResponse != "" {
+			answer := req.GetParam("ANSWER")
+			if answer == "" {
+				answer = getStringParam(req.Parameters, "Answer")
+			}
+			result, _ := s.invokeTrigger(ctx, VerifyAuthChallengeResponse, userPool.ID, username, clientID,
+				userPool.LambdaConfig.VerifyAuthChallengeResponse,
+				map[string]interface{}{
+					"userAttributes":  userAttributesMap(user),
+					"challengeAnswer": answer,
+					"clientMetadata":  parseClientMetadata(req),
+				},
+				map[string]interface{}{
+					"answerCorrect": false,
+				},
+				true,
+			)
+			if result == nil {
+				return nil, ErrNotAuthorized
+			}
+			if correct, _ := result["answerCorrect"].(bool); !correct {
+				return nil, ErrNotAuthorized
+			}
+		} else {
+			return nil, ErrNotAuthorized
+		}
+
+	default:
+		// DEVICE_SRP_AUTH, DEVICE_PASSWORD_VERIFIER, WEB_AUTHN, PASSWORD_SRP
+		// require protocol-specific verification not yet implemented.
+		return nil, ErrInvalidParameter
+	}
+
+	// Challenge passed — persist any user state changes and issue tokens.
+	if err := store.UpdateUser(user); err != nil {
+		return nil, ErrInternalError
+	}
+
+	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, userPool.ID, user.ID, clientID, TokenGenerationAuthentication, parseClientMetadata(req))
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	return map[string]interface{}{
+		"AuthenticationResult": map[string]interface{}{
+			"AccessToken": accessToken,
+			"IdToken":     idToken,
+			"TokenType":   "Bearer",
+			"ExpiresIn":   expiresIn,
 		},
 	}, nil
 }

@@ -58,7 +58,7 @@ type SecretVersion struct {
 	// KmsKeyIds lists the KMS keys used to encrypt this version.  On
 	// vorpalstacks secrets are encrypted with a single platform key so
 	// this slice is typically empty in stored data, but the field exists
-	// for API output compatibility (M16).
+	// for API output compatibility.
 	KmsKeyIds []string `json:"kmsKeyIds,omitempty"`
 }
 

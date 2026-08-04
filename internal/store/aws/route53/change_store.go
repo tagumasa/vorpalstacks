@@ -37,7 +37,7 @@ func (s *ChangeStore) Create(change *ChangeInfo) error {
 	if change.SubmittedAt.IsZero() {
 		change.SubmittedAt = time.Now()
 	}
-	// L8: Default to PENDING, not INSYNC. A change that has not been
+	// Default to PENDING, not INSYNC. A change that has not been
 	// explicitly marked complete should remain PENDING so that missing
 	// status transitions are visible rather than silently masked.
 	if change.Status == "" {

@@ -250,7 +250,7 @@ func validateProjectionRequired(projMap map[string]interface{}) error {
 
 // validateKeyAttributeValue ensures key attribute values use only the
 // types allowed for DynamoDB keys: S, N, or B (Smithy KeySchemaAttribute).
-// Also rejects empty values (H6: N type empty check included).
+// Also rejects empty values (N type empty check included).
 func validateKeyAttributeValue(key map[string]*dbstore.AttributeValue) error {
 	for _, av := range key {
 		if av == nil {
@@ -261,7 +261,7 @@ func validateKeyAttributeValue(key map[string]*dbstore.AttributeValue) error {
 		if av.S == nil && av.N == nil && av.B == nil {
 			return ErrInvalidParameter
 		}
-		// Reject empty values (H6: extend to N type).
+		// Reject empty values (extend to N type).
 		if av.S != nil && *av.S == "" {
 			return ErrInvalidParameter
 		}

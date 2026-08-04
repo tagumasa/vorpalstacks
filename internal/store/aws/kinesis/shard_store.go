@@ -256,7 +256,7 @@ func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shar
 
 	shardCounter2 := atomic.AddInt64(&s.shardIDCounter, 1)
 	newShardID2 := fmt.Sprintf("shardId-%012d", shardCounter2)
-	// H1 fix: child shards use inclusive ranges with no gaps; adjacent
+	// Child shards use inclusive ranges with no gaps; adjacent
 	// shards differ by exactly 1 in their boundary hash keys.
 	newShard2 := NewShard(newShardID2, streamName, child2Start.String(), shard.HashKeyRange.EndingHashKey)
 	newShard2.ParentShardID = shardID

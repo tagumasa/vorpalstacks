@@ -60,7 +60,7 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 
 	now := time.Now()
 
-	// H1: Accept MasterUserPassword and store as bcrypt hash (write-only).
+	// Accept MasterUserPassword and store as bcrypt hash (write-only).
 	masterPassword := request.GetStringParam(params, "MasterUserPassword")
 	masterPasswordHash, err := hashMasterPassword(masterPassword)
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	// M5: Register the instance in the cluster's DBClusterMembers list
+	// Register the instance in the cluster's DBClusterMembers list
 	// so DescribeDBClusters returns a complete member list.
 	if clusterID != "" {
 		if cluster, err := store.GetCluster(clusterID); err == nil {
@@ -203,7 +203,7 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	// M5: Remove the instance from the cluster's DBClusterMembers list.
+	// Remove the instance from the cluster's DBClusterMembers list.
 	if instance.DBClusterIdentifier != "" {
 		if cluster, err := store.GetCluster(instance.DBClusterIdentifier); err == nil {
 			filtered := make([]neptunestore.DBClusterMember, 0, len(cluster.DBClusterMembers))
@@ -276,7 +276,7 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	// M16: Support NewDBInstanceIdentifier (instance rename).
+	// Support NewDBInstanceIdentifier (instance rename).
 	// Follows the same create-new + delete-old pattern as ModifyDBCluster.
 	if newID := request.GetStringParam(params, "NewDBInstanceIdentifier"); newID != "" && newID != id {
 		oldArn := instance.DBInstanceArn

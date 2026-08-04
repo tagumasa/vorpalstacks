@@ -1218,7 +1218,7 @@ func (e *Engine) checkRetries() {
 					}
 				}()
 				// Propagate e.ctx so retry processing stops when the engine
-				// shuts down (H8). Previously e.ctx was used inside
+				// shuts down. Previously e.ctx was used inside
 				// processRetryRecord but the passed context was ignored,
 				// causing retry goroutines to outlive the engine.
 				e.processRetryRecord(e.ctx, rs, rec, now)
@@ -1230,7 +1230,7 @@ func (e *Engine) checkRetries() {
 // processRetryRecord attempts redelivery of a single RetryRecord and handles
 // the outcome: success -> delete, failure -> update next attempt or route to DLQ.
 // The ctx parameter is propagated from checkRetries so that engine shutdown
-// cancels in-flight retry processing (H8).
+// cancels in-flight retry processing.
 func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.RetryStore, record *schedulerstore.RetryRecord, now time.Time) {
 	var target schedulerstore.Target
 	if err := json.Unmarshal([]byte(record.Target), &target); err != nil {
@@ -1461,7 +1461,7 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 
 	// Honour SqsParameters.MessageGroupId for FIFO queues. AWS requires
 	// MessageGroupId when the target is a FIFO queue. Fall back to the
-	// schedule name if not explicitly set, matching routeToDLQ behaviour (M10).
+	// schedule name if not explicitly set, matching routeToDLQ behaviour.
 	sendOpts := eventbus.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
@@ -1499,7 +1499,7 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 	// Delegate to the SNS service's Publish API. This ensures the SNS
 	// service handles topic policy evaluation, subscription filtering,
 	// message persistence, fan-out to all subscription endpoints (SQS,
-	// Lambda, HTTP, etc.), and EventBridge bus event publication (H7).
+	// Lambda, HTTP, etc.), and EventBridge bus event publication.
 	messageID, err := snsInvoker.PublishToTopic(ctx, target.Arn, message, "", nil)
 	if err != nil {
 		logs.Debug("Failed to publish to SNS topic",

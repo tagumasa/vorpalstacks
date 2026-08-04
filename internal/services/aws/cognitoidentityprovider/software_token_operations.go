@@ -80,6 +80,20 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 		if err != nil {
 			return nil, ErrNotAuthorized
 		}
+	} else if session != "" {
+		// Session-based flow: used during MFA_SETUP challenge when the user
+		// has not yet completed authentication but needs to enrol a TOTP secret.
+		challengeSession, err := store.GetChallengeSession(session)
+		if err != nil {
+			return nil, ErrNotAuthorized
+		}
+		if time.Now().UTC().After(challengeSession.ExpiresAt) {
+			return nil, ErrNotAuthorized
+		}
+		user, err = store.GetUser(challengeSession.UserPoolID, challengeSession.Username)
+		if err != nil {
+			return nil, ErrNotAuthorized
+		}
 	}
 	if user == nil {
 		return nil, ErrNotAuthorized
@@ -100,9 +114,13 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"SecretCode": secret,
-	}, nil
+	}
+	if session != "" {
+		result["Session"] = session
+	}
+	return result, nil
 }
 
 // VerifySoftwareToken verifies a TOTP code provided by the user during MFA setup.
@@ -115,6 +133,9 @@ func (s *CognitoService) VerifySoftwareToken(ctx context.Context, reqCtx *reques
 		return nil, ErrInvalidParameter
 	}
 	if userCode == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !totpCodePattern.MatchString(userCode) {
 		return nil, ErrInvalidParameter
 	}
 

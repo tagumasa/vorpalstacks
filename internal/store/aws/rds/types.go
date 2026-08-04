@@ -52,10 +52,10 @@ type DBCluster struct {
 	// MasterUserPasswordHash stores the bcrypt hash of the master user
 	// password. It is persisted but never serialised to API responses
 	// (write-only per AWS spec). json tag omits it from protocol output
-	// but keeps it in Pebble persistence (H1 fix).
+	// but keeps it in Pebble persistence.
 	MasterUserPasswordHash string `json:"-"`
 
-	// AWS-standard DBCluster output fields previously dropped (M5 fix).
+	// AWS-standard DBCluster output fields previously dropped.
 	// These are populated at create time and surfaced through
 	// DescribeDBClusters so that SDK clients see a complete response.
 	AllocatedStorage       int32                         `json:"AllocatedStorage,omitempty"`
@@ -82,7 +82,7 @@ type DBClusterRole struct {
 }
 
 // DBClusterMember represents a DB instance that belongs to a DB cluster.
-// Surfaced in DBCluster output as the DBClusterMembers list (M5 fix).
+// Surfaced in DBCluster output as the DBClusterMembers list.
 type DBClusterMember struct {
 	DBInstanceIdentifier          string `json:"DBInstanceIdentifier"`
 	IsClusterWriter               bool   `json:"IsClusterWriter"`
@@ -92,7 +92,7 @@ type DBClusterMember struct {
 
 // ClusterPendingModifiedValues holds pending changes that have not yet been
 // applied to the DB cluster. Populated when ApplyImmediately=false during
-// ModifyDBCluster (M5 fix).
+// ModifyDBCluster.
 type ClusterPendingModifiedValues struct {
 	DBClusterIdentifier              string `json:"DBClusterIdentifier,omitempty"`
 	IAMDatabaseAuthenticationEnabled *bool  `json:"IAMDatabaseAuthenticationEnabled,omitempty"`
@@ -160,7 +160,7 @@ type DBInstance struct {
 
 	// MasterUserPasswordHash stores the bcrypt hash of the master user
 	// password for the instance. Write-only: persisted but never surfaced
-	// in API responses (H1 fix).
+	// in API responses.
 	MasterUserPasswordHash string `json:"-"`
 }
 

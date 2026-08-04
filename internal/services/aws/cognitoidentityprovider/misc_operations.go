@@ -2,6 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"encoding/base64"
 	"sync"
 
 	"vorpalstacks/internal/common/request"
@@ -9,7 +10,7 @@ import (
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
-// ===================== Phase 9: UI Customization =====================
+// ===================== UI Customization =====================
 
 // GetUICustomization retrieves the UI customisation for a user pool/client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUICustomization.html
@@ -64,7 +65,14 @@ func (s *CognitoService) SetUICustomization(ctx context.Context, reqCtx *request
 		ui.CSS = css
 	}
 	if imageFile, ok := req.Parameters["ImageFile"].(string); ok && imageFile != "" {
-		ui.ImageFile = []byte(imageFile)
+		decoded, err := base64.StdEncoding.DecodeString(imageFile)
+		if err != nil {
+			return nil, ErrInvalidParameter
+		}
+		if !validateImageFileSize(decoded) {
+			return nil, ErrInvalidParameter
+		}
+		ui.ImageFile = decoded
 	}
 
 	if err := store.SaveUICustomization(ui); err != nil {
@@ -94,7 +102,7 @@ func formatUICustomization(ui *cognitostore.UICustomization) map[string]interfac
 	return result
 }
 
-// ===================== Phase 10: Provider User Linking =====================
+// ===================== Provider User Linking =====================
 
 // AdminDisableProviderForUser disables a federated provider for a user.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminDisableProviderForUser.html
@@ -154,6 +162,10 @@ func (s *CognitoService) AdminLinkProviderForUser(ctx context.Context, reqCtx *r
 	}
 
 	destUsername := getStringParam(destRaw, "ProviderAttributeValue")
+	destProviderName := getStringParam(destRaw, "ProviderName")
+	if destProviderName == "" {
+		return nil, ErrInvalidParameter
+	}
 	srcProviderName := getStringParam(srcRaw, "ProviderName")
 	srcProviderAttrName := getStringParam(srcRaw, "ProviderAttributeName")
 	srcProviderAttrValue := getStringParam(srcRaw, "ProviderAttributeValue")
@@ -178,7 +190,7 @@ func (s *CognitoService) AdminLinkProviderForUser(ctx context.Context, reqCtx *r
 	return response.EmptyResponse(), nil
 }
 
-// ===================== Phase 11: Misc Small Operations =====================
+// ===================== Misc Small Operations =====================
 
 // AddCustomAttributes adds custom schema attributes to a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AddCustomAttributes.html
@@ -207,7 +219,18 @@ func (s *CognitoService) AddCustomAttributes(ctx context.Context, reqCtx *reques
 			attrName := getStringParam(m, "Name")
 			attrType := getStringParam(m, "AttributeDataType")
 			if attrName == "" || attrType == "" {
-				continue
+				return nil, ErrInvalidParameter
+			}
+			if err := validateCustomAttributeName(attrName); err != nil {
+				return nil, err
+			}
+			if !validateAttributeDataType(attrType) {
+				return nil, ErrInvalidParameter
+			}
+			for _, existing := range pool.SchemaAttributes {
+				if existing.Name == attrName {
+					return nil, ErrInvalidParameter
+				}
 			}
 			newAttr := cognitostore.SchemaAttributeType{
 				Name:              attrName,
@@ -218,6 +241,29 @@ func (s *CognitoService) AddCustomAttributes(ctx context.Context, reqCtx *reques
 			}
 			if mut, ok := m["Mutable"].(bool); ok {
 				newAttr.Mutable = mut
+			}
+			if reqVal, ok := m["Required"].(bool); ok {
+				newAttr.Required = reqVal
+			}
+			if nac, ok := m["NumberAttributeConstraints"].(map[string]interface{}); ok {
+				nc := &cognitostore.NumberAttributeConstraints{}
+				if v, ok := nac["MinValue"].(string); ok {
+					nc.MinValue = v
+				}
+				if v, ok := nac["MaxValue"].(string); ok {
+					nc.MaxValue = v
+				}
+				newAttr.NumberAttributeConstraints = nc
+			}
+			if sac, ok := m["StringAttributeConstraints"].(map[string]interface{}); ok {
+				sc := &cognitostore.StringAttributeConstraints{}
+				if v, ok := sac["MinLength"].(string); ok {
+					sc.MinLength = v
+				}
+				if v, ok := sac["MaxLength"].(string); ok {
+					sc.MaxLength = v
+				}
+				newAttr.StringAttributeConstraints = sc
 			}
 			pool.SchemaAttributes = append(pool.SchemaAttributes, newAttr)
 		}
@@ -283,7 +329,7 @@ func (s *CognitoService) GetSigningCertificate(ctx context.Context, reqCtx *requ
 	}, nil
 }
 
-// ===================== Phase 12: Provisioned Limits =====================
+// ===================== Provisioned Limits =====================
 
 // provisionedLimits is a simple in-memory store since this is rarely used.
 var (

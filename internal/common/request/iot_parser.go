@@ -12,7 +12,7 @@ func pathHasRoutePrefix(path, prefix string) bool {
 }
 
 func (p *iotRESTParser) MatchPath(path string) bool {
-	// R18-C1: expanded to cover all IoT REST-JSON paths from Smithy model.
+	// Covers all IoT REST-JSON paths from the Smithy model.
 	// MatchPath gates ExtractPathParams, so it must return true for any path
 	// that carries URI-bound parameters. Operation name extraction is handled
 	// by ExtractOperation independently.
@@ -433,8 +433,8 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 
 	case path == "/effective-policies" && method == http.MethodPost:
 		return "GetEffectivePolicies"
-	// R18-C1: auto-generated cases for missing operations
-	// Derived from Smithy model @http traits
+	// Auto-generated cases for missing operations.
+	// Derived from Smithy model @http traits.
 
 	case strings.HasPrefix(path, "/accept-certificate-transfer/") && method == http.MethodPatch:
 		return "AcceptCertificateTransfer"
@@ -889,7 +889,7 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 			params["principal"] = p
 		}
 
-	// R18-C1: path parameter extraction for newly-routed operations.
+	// Path parameter extraction for newly-routed operations.
 	case strings.HasPrefix(path, "/cacertificate/") && len(parts) >= 2:
 		params["certificateId"] = parts[1]
 	case strings.HasPrefix(path, "/job-templates/") && len(parts) >= 2:

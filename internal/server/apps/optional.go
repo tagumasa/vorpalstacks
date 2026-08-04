@@ -739,7 +739,7 @@ func (a *App) initGRPCWebAdmin() {
 	// RDS admin handler — serves both Neptune and MySQL data via the
 	// standalone RDS store lookup (always available, independent of
 	// Neptune service initialisation).
-	p, h = svcrds.NewConnectHandler(
+	rdsSvc := svcrds.NewRDSService(
 		svcrds.StoreProvider(func(region string) (storerds.StoreInterface, error) {
 			return st.rdsStoreLookup(region)
 		}),
@@ -756,6 +756,7 @@ func (a *App) initGRPCWebAdmin() {
 		}),
 		aid,
 		&vmysqlSnapshotOperatorAdapter{svc: st.vmysqlService})
+	p, h = svcrds.NewConnectHandler(rdsSvc)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcappsync.NewConnectHandler(st.appSyncService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})

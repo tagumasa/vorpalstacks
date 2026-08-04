@@ -564,7 +564,7 @@ func (s *AppSyncStore) ListResolvers(apiId, typeName string, opts common.ListOpt
 
 // ListResolversByFunction returns resolvers that reference a given function ID.
 // Uses common.List with a filter function for opaque-token pagination
-// consistent with all other List operations (R2-M2).
+// consistent with all other List operations.
 func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts common.ListOptions) ([]*Resolver, string, error) {
 	prefixOpts := common.ListOptions{
 		Prefix:   apiId + "/",

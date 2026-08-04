@@ -725,7 +725,7 @@ func TestCommentBlock(t *testing.T) {
 	}
 }
 
-// --- H1/H2 regression tests: full phase pipeline inside #foreach and #if ---
+// --- Regression tests: full phase pipeline inside #foreach and #if ---
 
 func TestForeachWithInputBody(t *testing.T) {
 	engine := NewEngine()

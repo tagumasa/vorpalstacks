@@ -327,7 +327,7 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 		return fmt.Errorf("invalid DLQ ARN: %s", dlqARN)
 	}
 
-	// M14: Preserve original SentTimestamp for standard queues. FIFO messages
+	// Preserve original SentTimestamp for standard queues. FIFO messages
 	// always have a MessageGroupID; only reset SentTimestamp for those.
 	sentTimestamp := msg.SentTimestamp
 	if msg.MessageGroupID != "" {

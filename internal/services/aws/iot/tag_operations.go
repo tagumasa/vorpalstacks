@@ -126,8 +126,7 @@ func (s *IoTService) ListViolationEvents(ctx context.Context, reqCtx *request.Re
 }
 
 // No ML behaviour-model training pipeline exists in this platform; an empty
-// list matches the AWS wire shape and is the documented FULL promotion per
-// the gap-implementation plan Phase 1.1.
+// list matches the AWS wire shape.
 func (s *IoTService) GetBehaviorModelTrainingSummaries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"summaries": []map[string]interface{}{},

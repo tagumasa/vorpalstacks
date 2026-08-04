@@ -262,7 +262,7 @@ func (s *CloudTrailService) GetQueryResults(ctx context.Context, reqCtx *request
 		end = len(qr.QueryResultRows)
 	}
 
-	// L1: initialise with make to ensure JSON serialises as [] not null.
+	// Initialise with make to ensure JSON serialises as [] not null.
 	rows := make([]interface{}, 0)
 	if offset < len(qr.QueryResultRows) {
 		for i := offset; i < end; i++ {

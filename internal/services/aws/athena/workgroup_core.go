@@ -25,15 +25,24 @@ type WorkGroupCreateInput struct {
 // can be set at creation time. Mirrors athenastore.WorkGroupConfiguration but
 // uses only primitive types so callers need not import the store package.
 type WorkGroupConfigInput struct {
-	OutputLocation          string
-	EnforceConfig           bool
-	PublishMetrics          bool
-	BytesScannedCutoff      int64
-	RequesterPaysEnabled    bool
-	EngineVersionSelected   string
-	EngineVersionEffective  string
-	AdditionalConfiguration string
-	ExecutionRole           string
+	OutputLocation                       string
+	EnforceConfig                        bool
+	PublishMetrics                       bool
+	BytesScannedCutoff                   *int64
+	RequesterPaysEnabled                 bool
+	EngineVersionSelected                string
+	EngineVersionEffective               string
+	AdditionalConfiguration              string
+	ExecutionRole                        string
+	CustomerContentEncryptionKmsKey      string
+	EnableMinimumEncryptionConfiguration bool
+}
+
+func (in *WorkGroupConfigInput) bytesScannedCutoffValue() int64 {
+	if in.BytesScannedCutoff != nil {
+		return *in.BytesScannedCutoff
+	}
+	return 0
 }
 
 // WorkGroupOut is the transport-neutral representation of a workgroup summary.
@@ -67,9 +76,21 @@ func createWorkGroupCore(stores *athenaStores, input WorkGroupCreateInput) error
 			return err
 		}
 	}
-	if input.Config != nil && input.Config.BytesScannedCutoff != 0 {
-		if err := validateBytesScannedCutoff(input.Config.BytesScannedCutoff); err != nil {
-			return err
+	if input.Config != nil {
+		if input.Config.BytesScannedCutoff != nil {
+			if err := validateBytesScannedCutoff(*input.Config.BytesScannedCutoff); err != nil {
+				return err
+			}
+		}
+		if input.Config.AdditionalConfiguration != "" {
+			if err := validateAdditionalConfiguration(input.Config.AdditionalConfiguration); err != nil {
+				return err
+			}
+		}
+		if input.Config.ExecutionRole != "" {
+			if err := validateExecutionRole(input.Config.ExecutionRole); err != nil {
+				return err
+			}
 		}
 	}
 	if len(input.Tags) > 0 {
@@ -155,22 +176,24 @@ func listWorkGroupsCore(stores *athenaStores, maxResults int, marker string) (*W
 	return out, nil
 }
 
-// --- Internal converters ---
-
-// configInputToStore converts a service-layer WorkGroupConfigInput to the
-// store-layer WorkGroupConfiguration type.
 func configInputToStore(in *WorkGroupConfigInput) *athenastore.WorkGroupConfiguration {
 	cfg := &athenastore.WorkGroupConfiguration{
-		EnforceWorkGroupConfiguration:   in.EnforceConfig,
-		PublishCloudWatchMetricsEnabled: in.PublishMetrics,
-		BytesScannedCutoffPerQuery:      in.BytesScannedCutoff,
-		RequesterPaysEnabled:            in.RequesterPaysEnabled,
-		AdditionalConfiguration:         in.AdditionalConfiguration,
-		ExecutionRole:                   in.ExecutionRole,
+		EnforceWorkGroupConfiguration:        in.EnforceConfig,
+		PublishCloudWatchMetricsEnabled:      in.PublishMetrics,
+		BytesScannedCutoffPerQuery:           in.bytesScannedCutoffValue(),
+		RequesterPaysEnabled:                 in.RequesterPaysEnabled,
+		AdditionalConfiguration:              in.AdditionalConfiguration,
+		ExecutionRole:                        in.ExecutionRole,
+		EnableMinimumEncryptionConfiguration: in.EnableMinimumEncryptionConfiguration,
 	}
 	if in.OutputLocation != "" {
 		cfg.ResultConfiguration = &athenastore.ResultConfiguration{
 			OutputLocation: in.OutputLocation,
+		}
+	}
+	if in.CustomerContentEncryptionKmsKey != "" {
+		cfg.CustomerContentEncryptionConfiguration = &athenastore.CustomerContentEncryptionConfiguration{
+			KmsKey: in.CustomerContentEncryptionKmsKey,
 		}
 	}
 	evSelected := in.EngineVersionSelected

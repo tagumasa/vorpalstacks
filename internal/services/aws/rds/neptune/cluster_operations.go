@@ -33,7 +33,7 @@ func hashMasterPassword(plaintext string) (string, error) {
 }
 
 // validateBackupRetentionPeriod checks that the retention period is within
-// the AWS-specified range of 1-35 days for Neptune (M1/M13 fix).
+// the AWS-specified range of 1-35 days for Neptune.
 func validateBackupRetentionPeriod(v int) error {
 	if v < 1 || v > 35 {
 		return fmt.Errorf("BackupRetentionPeriod must be between 1 and 35")
@@ -42,7 +42,7 @@ func validateBackupRetentionPeriod(v int) error {
 }
 
 // validatePort checks that the port number is within the AWS-specified
-// valid range for Neptune DB clusters (M2 fix).
+// valid range for Neptune DB clusters.
 func validatePort(v int) error {
 	if v < 1150 || v > 65535 {
 		return fmt.Errorf("Port must be between 1150 and 65535")
@@ -51,7 +51,7 @@ func validatePort(v int) error {
 }
 
 // isValidIAMRoleArn validates that the given string is a well-formed IAM
-// role ARN (arn:aws:iam::<account>:role/<name>) (H_orig_H5 fix).
+// role ARN (arn:aws:iam::<account>:role/<name>).
 func isValidIAMRoleArn(arn string) bool {
 	parts := strings.Split(arn, ":")
 	if len(parts) < 6 {
@@ -76,7 +76,7 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		"DeletionProtection":               c.DeletionProtection,
 		"IAMDatabaseAuthenticationEnabled": c.IAMDatabaseAuthenticationEnabled,
 		"DBClusterArn":                     c.DBClusterArn,
-		// M5: Previously dropped output fields.
+		// Previously dropped output fields.
 		"AllocatedStorage": c.AllocatedStorage,
 	}
 	if c.EngineVersion != "" {
@@ -98,7 +98,7 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		m["AvailabilityZones"] = protocol.XMLElements{ElementName: "AvailabilityZone", Items: stringSliceToInterface(c.AvailabilityZones)}
 	}
 	if len(c.VpcSecurityGroupIds) > 0 {
-		// M7: Use Smithy-correct output key "VpcSecurityGroups" (was "VpcSecurityGroupIds").
+		// Use Smithy-correct output key "VpcSecurityGroups" (was "VpcSecurityGroupIds").
 		m["VpcSecurityGroups"] = protocol.XMLElements{ElementName: "VpcSecurityGroupMembership", Items: vpcSecurityToInterface(c.VpcSecurityGroupIds, c.Status)}
 	}
 	if c.DBSubnetGroupName != "" {
@@ -151,7 +151,7 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		// use dynamic port allocation.
 		m["Endpoint"] = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
 	}
-	// M5: Previously dropped output fields (conditional).
+	// Previously dropped output fields (conditional).
 	if c.DbClusterResourceId != "" {
 		m["DbClusterResourceId"] = c.DbClusterResourceId
 	}
@@ -193,7 +193,7 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 
 // vpcSecurityToInterface converts VPC security group IDs to the AWS response
 // format, deriving the Status from the cluster's lifecycle state instead of
-// hardcoding "active" (M7 fix).
+// hardcoding "active".
 func vpcSecurityToInterface(ids []string, clusterStatus string) []interface{} {
 	sgStatus := "active"
 	switch clusterStatus {
@@ -237,7 +237,7 @@ func (s *NeptuneService) setClusterEndpoint(store neptunestore.NeptuneStoreInter
 		return
 	}
 	cluster.Endpoint = &neptunestore.Endpoint{Address: addr, Port: enginePort}
-	// M5: ReaderEndpoint mirrors the cluster endpoint for Neptune's
+	// ReaderEndpoint mirrors the cluster endpoint for Neptune's
 	// single-writer topology. AWS Neptune surfaces both endpoints.
 	if cluster.ReaderEndpoint == nil {
 		cluster.ReaderEndpoint = &neptunestore.Endpoint{Address: addr, Port: enginePort}
@@ -292,13 +292,13 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	// H2: Validate that referenced DBClusterParameterGroupName exists.
+	// Validate that referenced DBClusterParameterGroupName exists.
 	if pgName := request.GetStringParam(params, "DBClusterParameterGroupName"); pgName != "" {
 		if _, err := store.GetClusterParameterGroup(pgName); err != nil {
 			return nil, awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", fmt.Sprintf("DB Cluster Parameter Group not found: %s", pgName), http.StatusNotFound)
 		}
 	}
-	// H2: Validate that referenced DBSubnetGroupName exists.
+	// Validate that referenced DBSubnetGroupName exists.
 	if sgName := request.GetStringParam(params, "DBSubnetGroupName"); sgName != "" {
 		if _, err := store.GetSubnetGroup(sgName); err != nil {
 			return nil, awserrors.NewAWSError("DBSubnetGroupNotFoundFault", fmt.Sprintf("DB Subnet Group not found: %s", sgName), http.StatusNotFound)
@@ -307,7 +307,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 
 	now := time.Now()
 	port := request.GetIntParam(params, "Port")
-	// M2: Validate Port range when explicitly provided.
+	// Validate Port range when explicitly provided.
 	if request.HasParam(params, "Port") && port > 0 {
 		if err := validatePort(port); err != nil {
 			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
@@ -317,12 +317,12 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	if backupRetention == 0 {
 		backupRetention = 1
 	}
-	// M1: Validate BackupRetentionPeriod range (1-35).
+	// Validate BackupRetentionPeriod range (1-35).
 	if err := validateBackupRetentionPeriod(backupRetention); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
-	// H1: Accept MasterUserPassword and store as bcrypt hash.
+	// Accept MasterUserPassword and store as bcrypt hash.
 	// Write-only: never surfaced in API responses.
 	masterPassword := request.GetStringParam(params, "MasterUserPassword")
 	masterPasswordHash, err := hashMasterPassword(masterPassword)
@@ -374,7 +374,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	if logExports := request.GetStringList(params, "EnableCloudwatchLogsExports"); len(logExports) > 0 {
 		cluster.EnabledCloudwatchLogsExports = logExports
 	}
-	// M4: Parse ServerlessV2ScalingConfiguration from input (previously dropped).
+	// Parse ServerlessV2ScalingConfiguration from input (previously dropped).
 	if svsc := request.GetMapParam(params, "ServerlessV2ScalingConfiguration"); svsc != nil {
 		minCap := request.GetFloatParam(svsc, "MinCapacity")
 		maxCap := request.GetFloatParam(svsc, "MaxCapacity")
@@ -509,14 +509,14 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 			Region:                      reqCtx.GetRegion(),
 		}
 		if err := store.CreateSnapshot(snapshot); err != nil {
-			// H4: Roll back cluster status if snapshot creation fails.
+			// Roll back cluster status if snapshot creation fails.
 			cluster.Status = "available"
 			store.UpdateCluster(cluster)
 			return nil, translateStoreError(err)
 		}
 	}
 
-	// H4: Delete the cluster before cascading cleanup so that a
+	// Delete the cluster before cascading cleanup so that a
 	// DeleteCluster failure leaves the snapshot and cascade untouched.
 	// On failure we roll back the status and remove the orphaned snapshot.
 	if err := store.DeleteCluster(id); err != nil {
@@ -585,14 +585,14 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.EngineVersion = v
 	}
 	if v := request.GetStringParam(params, "DBClusterParameterGroupName"); v != "" {
-		// H2: Validate referenced parameter group exists before assigning.
+		// Validate referenced parameter group exists before assigning.
 		if _, err := store.GetClusterParameterGroup(v); err != nil {
 			return nil, awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", fmt.Sprintf("DB Cluster Parameter Group not found: %s", v), http.StatusNotFound)
 		}
 		cluster.DBClusterParameterGroupName = v
 	}
 	if v := request.GetIntParam(params, "Port"); v > 0 {
-		// M2: Validate Port range on modify.
+		// Validate Port range on modify.
 		if err := validatePort(v); err != nil {
 			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 		}
@@ -602,7 +602,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 	if v := request.GetIntParam(params, "BackupRetentionPeriod"); v > 0 {
-		// M13: Validate BackupRetentionPeriod range on modify.
+		// Validate BackupRetentionPeriod range on modify.
 		if err := validateBackupRetentionPeriod(v); err != nil {
 			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 		}
@@ -617,7 +617,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 	if v := request.GetStringParam(params, "StorageType"); v != "" {
 		cluster.StorageType = v
 	}
-	// H1: Accept MasterUserPassword on modify and store as bcrypt hash.
+	// Accept MasterUserPassword on modify and store as bcrypt hash.
 	if pwd := request.GetStringParam(params, "MasterUserPassword"); pwd != "" {
 		hash, hashErr := hashMasterPassword(pwd)
 		if hashErr != nil {
@@ -625,11 +625,11 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 		cluster.MasterUserPasswordHash = hash
 	}
-	// M6: Handle NetworkType on modify (Smithy ModifyDBClusterMessage member).
+	// Handle NetworkType on modify (Smithy ModifyDBClusterMessage member).
 	if nt := request.GetStringParam(params, "NetworkType"); nt != "" {
 		cluster.NetworkType = nt
 	}
-	// M4: Handle ServerlessV2ScalingConfiguration on modify.
+	// Handle ServerlessV2ScalingConfiguration on modify.
 	if svsc := request.GetMapParam(params, "ServerlessV2ScalingConfiguration"); svsc != nil {
 		minCap := request.GetFloatParam(svsc, "MinCapacity")
 		maxCap := request.GetFloatParam(svsc, "MaxCapacity")
@@ -839,7 +839,7 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 		return nil, translateStoreError(err)
 	}
 
-	// M11: FailoverDBCluster requires the cluster to be in 'available' state.
+	// FailoverDBCluster requires the cluster to be in 'available' state.
 	if cluster.Status != "available" {
 		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("DBCluster %s is not in available state (current: %s)", id, cluster.Status), http.StatusBadRequest)
 	}

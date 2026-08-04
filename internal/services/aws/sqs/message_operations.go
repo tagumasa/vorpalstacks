@@ -225,14 +225,14 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 	}
 	message.MessageAttributes = messageAttributes
 
-	// M11: Validate DataType for all message attributes
+	// Validate DataType for all message attributes
 	for _, attr := range messageAttributes {
 		if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
 			return nil, convertStoreError(err)
 		}
 	}
 
-	// M13: Parse MessageSystemAttributes (only AWSTraceHeader is valid for sends)
+	// Parse MessageSystemAttributes (only AWSTraceHeader is valid for sends)
 	systemAttrs, err := parseMessageSystemAttributes(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -550,8 +550,7 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 }
 
 // parseBatchEntrySystemAttributesJSON extracts system attributes from a JSON
-// batch entry map. Only AWSTraceHeader is valid for sends (C5 enforcement
-// added in Batch C).
+// batch entry map. Only AWSTraceHeader is valid for sends.
 func parseBatchEntrySystemAttributesJSON(entryMap map[string]interface{}) (map[string]*sqsstore.MessageAttributeValue, error) {
 	result := make(map[string]*sqsstore.MessageAttributeValue)
 	sysAttrs, ok := entryMap["MessageSystemAttributes"].(map[string]interface{})
@@ -645,7 +644,7 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 	// Parse message attribute names
 	msgAttrNames := request.GetStringList(req.Parameters, "MessageAttributeNames")
 
-	// M6: Parse ReceiveRequestAttemptId for FIFO receive dedup
+	// Parse ReceiveRequestAttemptId for FIFO receive dedup
 	receiveRequestAttemptId := request.GetParamCaseInsensitive(req.Parameters, "ReceiveRequestAttemptId")
 
 	store, err := s.store(reqCtx)

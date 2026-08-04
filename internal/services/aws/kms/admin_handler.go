@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 
-	"connectrpc.com/connect"
-
 	pb "vorpalstacks/internal/pb/aws/kms"
 	"vorpalstacks/internal/pb/aws/kms/kmsconnect"
-	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // AdminHandler implements the KMS admin console gRPC-Web handler.
@@ -40,23 +38,16 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*kmsStores, err
 	return h.service.GetStoreForRegion(region)
 }
 
-// ListKeys retrieves all KMS keys from the key store with pagination.
+// ListKeys retrieves all KMS keys with pagination.
 func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.ListKeysRequest]) (*connect.Response[pb.ListKeysResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	limit := int(req.Msg.GetLimit())
-	if limit <= 0 {
-		limit = 100
-	}
-	// Smithy LimitType: @range(1-1000).
-	if limit > 1000 {
-		limit = 1000
-	}
-	result, err := stores.keys.List(req.Msg.Marker, limit)
+
+	result, err := h.service.listKeysCore(stores, req.Msg.Marker, int(req.Msg.GetLimit()))
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	keys := make([]*pb.KeyListEntry, len(result.Keys))
@@ -81,7 +72,7 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.CreateKeyRequest]) (*connect.Response[pb.CreateKeyResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	// Apply proto-level defaults so the response carries the resolved
@@ -99,22 +90,17 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 		originProto = pb.OriginType_ORIGIN_TYPE_AWS_KMS
 	}
 
-	// Convert proto enums to store types.
-	keyUsage := protoKeyUsageToStore(keyUsageProto)
-	keySpec := protoKeySpecToStore(keySpecProto)
-	origin := protoOriginToStore(originProto)
-
 	// Convert proto tags.
 	var tags []types.Tag
 	for _, t := range req.Msg.GetTags() {
 		tags = append(tags, types.Tag{Key: t.GetTagkey(), Value: t.GetTagvalue()})
 	}
 
-	key, err := h.service.createKeyCore(stores, CreateKeyInput{
+	meta, err := h.service.createKeyCore(stores, CreateKeyInput{
 		Description:        req.Msg.GetDescription(),
-		KeyUsage:           keyUsage,
-		KeySpec:            keySpec,
-		Origin:             origin,
+		KeyUsage:           protoKeyUsageToString(keyUsageProto),
+		KeySpec:            protoKeySpecToString(keySpecProto),
+		Origin:             protoOriginToString(originProto),
 		MultiRegion:        req.Msg.GetMultiregion(),
 		CustomKeyStoreID:   req.Msg.GetCustomkeystoreid(),
 		XksKeyID:           req.Msg.GetXkskeyid(),
@@ -128,7 +114,7 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 	}
 
 	return connect.NewResponse(&pb.CreateKeyResponse{
-		Keymetadata: h.buildProtoKeyMetadata(key, keyUsageProto, keySpecProto, originProto),
+		Keymetadata: buildProtoKeyMetadata(meta, keyUsageProto, keySpecProto, originProto),
 	}), nil
 }
 
@@ -138,7 +124,7 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Request[pb.ScheduleKeyDeletionRequest]) (*connect.Response[pb.ScheduleKeyDeletionResponse], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	if req.Msg.GetKeyid() == "" {
@@ -146,7 +132,7 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 	}
 
 	// Resolve the key through the service layer to support alias and ARN.
-	key, err := h.service.resolveKey(stores, map[string]interface{}{"KeyId": req.Msg.GetKeyid()})
+	resolvedKeyID, err := h.service.resolveKeyID(stores, req.Msg.GetKeyid())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -159,136 +145,135 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		pendingDays = 30
 	}
 
-	updatedKey, days, err := h.service.scheduleKeyDeletionCore(stores, key.KeyID, pendingDays)
+	meta, days, err := h.service.scheduleKeyDeletionCore(stores, resolvedKeyID, pendingDays)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	resp := &pb.ScheduleKeyDeletionResponse{
-		Keyid:               updatedKey.KeyID,
-		Keystate:            storeKeyStateToProto(updatedKey.KeyState),
+		Keyid:               meta.KeyID,
+		Keystate:            keyStateToProto(meta.KeyState),
 		Pendingwindowindays: proto.Int32(int32(days)),
 	}
-	if updatedKey.DeletionDate != nil {
-		resp.Deletiondate = updatedKey.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
+	if meta.DeletionDate != nil {
+		resp.Deletiondate = meta.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
 	}
 	return connect.NewResponse(resp), nil
 }
 
 // ---------------------------------------------------------------------------
-// Proto ↔ store type conversion helpers
+// Proto conversion helpers (no store imports)
 // ---------------------------------------------------------------------------
 
-func protoKeyUsageToStore(v pb.KeyUsageType) kmsstore.KeyUsage {
+func protoKeyUsageToString(v pb.KeyUsageType) string {
 	switch v {
 	case pb.KeyUsageType_KEY_USAGE_TYPE_SIGN_VERIFY:
-		return kmsstore.KeyUsageSignVerify
+		return "SIGN_VERIFY"
 	case pb.KeyUsageType_KEY_USAGE_TYPE_GENERATE_VERIFY_MAC:
-		return kmsstore.KeyUsageGenerateVerifyMAC
+		return "GENERATE_VERIFY_MAC"
 	default:
-		return kmsstore.KeyUsageEncryptDecrypt
+		return "ENCRYPT_DECRYPT"
 	}
 }
 
-func protoKeySpecToStore(v pb.KeySpec) kmsstore.KeySpec {
+func protoKeySpecToString(v pb.KeySpec) string {
 	switch v {
 	case pb.KeySpec_KEY_SPEC_SYMMETRIC_DEFAULT:
-		return kmsstore.KeySpecSymmetricDefault
+		return "SYMMETRIC_DEFAULT"
 	case pb.KeySpec_KEY_SPEC_RSA_2048:
-		return kmsstore.KeySpecRSA2048
+		return "RSA_2048"
 	case pb.KeySpec_KEY_SPEC_RSA_3072:
-		return kmsstore.KeySpecRSA3072
+		return "RSA_3072"
 	case pb.KeySpec_KEY_SPEC_RSA_4096:
-		return kmsstore.KeySpecRSA4096
+		return "RSA_4096"
 	case pb.KeySpec_KEY_SPEC_ECC_NIST_P256:
-		return kmsstore.KeySpecECCNISTP256
+		return "ECC_NIST_P256"
 	case pb.KeySpec_KEY_SPEC_ECC_NIST_P384:
-		return kmsstore.KeySpecECCNISTP384
+		return "ECC_NIST_P384"
 	case pb.KeySpec_KEY_SPEC_ECC_NIST_P521:
-		return kmsstore.KeySpecECCNISTP521
+		return "ECC_NIST_P521"
 	case pb.KeySpec_KEY_SPEC_ECC_SECG_P256K1:
-		return kmsstore.KeySpecECCSECGP256K1
+		return "ECC_SECG_P256K1"
 	case pb.KeySpec_KEY_SPEC_SM2:
-		return kmsstore.KeySpecSM2
+		return "SM2"
 	case pb.KeySpec_KEY_SPEC_HMAC_224:
-		return kmsstore.KeySpecHMAC224
+		return "HMAC_224"
 	case pb.KeySpec_KEY_SPEC_HMAC_256:
-		return kmsstore.KeySpecHMAC256
+		return "HMAC_256"
 	case pb.KeySpec_KEY_SPEC_HMAC_384:
-		return kmsstore.KeySpecHMAC384
+		return "HMAC_384"
 	case pb.KeySpec_KEY_SPEC_HMAC_512:
-		return kmsstore.KeySpecHMAC512
+		return "HMAC_512"
 	default:
-		return kmsstore.KeySpecSymmetricDefault
+		return "SYMMETRIC_DEFAULT"
 	}
 }
 
-func protoOriginToStore(v pb.OriginType) kmsstore.OriginType {
+func protoOriginToString(v pb.OriginType) string {
 	switch v {
 	case pb.OriginType_ORIGIN_TYPE_EXTERNAL:
-		return kmsstore.OriginTypeExternal
+		return "EXTERNAL"
 	default:
-		return kmsstore.OriginTypeAWSKMS
+		return "AWS_KMS"
 	}
 }
 
-// ---------------------------------------------------------------------------
-
-// buildProtoKeyMetadata constructs a full pb.KeyMetadata from a store Key,
-// mapping all fields that the HTTP API's buildKeyMetadata also emits. This
-// ensures admin console clients see the same metadata richness as SDK clients.
-func (h *AdminHandler) buildProtoKeyMetadata(key *kmsstore.Key, keyUsage pb.KeyUsageType, keySpec pb.KeySpec, origin pb.OriginType) *pb.KeyMetadata {
-	_, _, _, accountID, _ := arn.SplitARN(key.Arn)
-
-	md := &pb.KeyMetadata{
-		Awsaccountid:          accountID,
-		Keyid:                 key.KeyID,
-		Arn:                   key.Arn,
-		Keystate:              storeKeyStateToProto(key.KeyState),
-		Keyusage:              keyUsage,
-		Keyspec:               keySpec,
-		Customermasterkeyspec: pb.CustomerMasterKeySpec(keySpec),
-		Description:           key.Description,
-		Enabled:               proto.Bool(key.Enabled),
-		Origin:                origin,
-		Keymanager:            pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
-		Multiregion:           proto.Bool(key.MultiRegion),
-		Creationdate:          key.CreationDate.Format(timeutils.ISO8601UTCFormat),
-	}
-
-	if key.DeletionDate != nil {
-		md.Deletiondate = key.DeletionDate.Format(timeutils.ISO8601UTCFormat)
-	}
-	if key.KeyState == kmsstore.KeyStatePendingDeletion && key.PendingWindowInDays > 0 {
-		md.Pendingdeletionwindowindays = proto.Int32(int32(key.PendingWindowInDays))
-	}
-	if key.ValidTo != nil {
-		md.Validto = key.ValidTo.Format(timeutils.ISO8601UTCFormat)
-	}
-	if key.ExpirationModel == "KEY_MATERIAL_EXPIRES" {
-		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES
-	} else if key.ExpirationModel == "KEY_MATERIAL_DOES_NOT_EXPIRE" {
-		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
-	}
-
-	return md
-}
-
-func storeKeyStateToProto(state kmsstore.KeyState) pb.KeyState {
+// keyStateToProto maps a key-state string to the proto enum.
+func keyStateToProto(state string) pb.KeyState {
 	switch state {
-	case kmsstore.KeyStateEnabled:
+	case "Enabled":
 		return pb.KeyState_KEY_STATE_ENABLED
-	case kmsstore.KeyStateDisabled:
+	case "Disabled":
 		return pb.KeyState_KEY_STATE_DISABLED
-	case kmsstore.KeyStatePendingDeletion:
+	case "PendingDeletion":
 		return pb.KeyState_KEY_STATE_PENDINGDELETION
-	case kmsstore.KeyStatePendingImport:
+	case "PendingImport":
 		return pb.KeyState_KEY_STATE_PENDINGIMPORT
-	case kmsstore.KeyStateUnavailable:
+	case "Unavailable":
 		return pb.KeyState_KEY_STATE_UNAVAILABLE
 	default:
 		return pb.KeyState_KEY_STATE_ENABLED
 	}
+}
+
+// buildProtoKeyMetadata constructs a full pb.KeyMetadata from a
+// KeyMetadataResult, mapping all fields that the HTTP API's
+// buildKeyMetadata also emits.
+func buildProtoKeyMetadata(meta *KeyMetadataResult, keyUsage pb.KeyUsageType, keySpec pb.KeySpec, origin pb.OriginType) *pb.KeyMetadata {
+	_, _, _, accountID, _ := arnutil.SplitARN(meta.Arn)
+
+	md := &pb.KeyMetadata{
+		Awsaccountid:          accountID,
+		Keyid:                 meta.KeyID,
+		Arn:                   meta.Arn,
+		Keystate:              keyStateToProto(meta.KeyState),
+		Keyusage:              keyUsage,
+		Keyspec:               keySpec,
+		Customermasterkeyspec: pb.CustomerMasterKeySpec(keySpec),
+		Description:           meta.Description,
+		Enabled:               proto.Bool(meta.Enabled),
+		Origin:                origin,
+		Keymanager:            pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
+		Multiregion:           proto.Bool(meta.MultiRegion),
+		Creationdate:          meta.CreationDate.Format(timeutils.ISO8601UTCFormat),
+	}
+
+	if meta.DeletionDate != nil {
+		md.Deletiondate = meta.DeletionDate.Format(timeutils.ISO8601UTCFormat)
+	}
+	if meta.KeyState == "PendingDeletion" && meta.PendingWindowInDays > 0 {
+		md.Pendingdeletionwindowindays = proto.Int32(int32(meta.PendingWindowInDays))
+	}
+	if meta.ValidTo != nil {
+		md.Validto = meta.ValidTo.Format(timeutils.ISO8601UTCFormat)
+	}
+	if meta.ExpirationModel == "KEY_MATERIAL_EXPIRES" {
+		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES
+	} else if meta.ExpirationModel == "KEY_MATERIAL_DOES_NOT_EXPIRE" {
+		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
+	}
+
+	return md
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Kms admin console.

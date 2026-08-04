@@ -229,7 +229,7 @@ func (s *EventServer) SetEventBus(bus eventbus.Bus) {
 }
 
 // SetStoreLookup injects the store lookup function used for Event API
-// auth-mode enforcement (R2-H1).
+// auth-mode enforcement.
 func (s *EventServer) SetStoreLookup(fn StoreLookupFunc) {
 	s.storeLookup = fn
 }

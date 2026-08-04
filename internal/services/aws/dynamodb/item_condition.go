@@ -314,7 +314,7 @@ func splitByLogicalOp(expr string, op string) []string {
 			}
 
 			if depth == 0 && i+opLen <= len(upperExpr) && upperExpr[i:i+opLen] == opUpper {
-				// N1: When splitting by " AND ", skip ANDs that are part
+				// When splitting by " AND ", skip ANDs that are part
 				// of a BETWEEN expression. The accumulated text ending
 				// with "<token> BETWEEN <token>" means this AND is the
 				// BETWEEN separator, not a logical conjunction.

@@ -37,7 +37,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 	if dataSourceConfig == nil {
 		return nil, ErrValidationException
 	}
-	// M9: Validate DataFormat enum (Smithy BatchLoadDataFormat: CSV only).
+	// Validate DataFormat enum (Smithy BatchLoadDataFormat: CSV only).
 	if dataSourceConfig.DataFormat != "" && dataSourceConfig.DataFormat != tsstore.BatchLoadDataFormatCsv {
 		return nil, ErrValidationException
 	}
@@ -48,7 +48,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 	}
 
 	dataModelConfig := parseDataModelConfiguration(req.Parameters["DataModelConfiguration"])
-	// M2: DimensionMappings is REQUIRED when DataModel is provided (Smithy).
+	// DimensionMappings is REQUIRED when DataModel is provided (Smithy).
 	if dataModelConfig != nil && dataModelConfig.DataModel != nil && len(dataModelConfig.DataModel.DimensionMappings) == 0 {
 		return nil, ErrValidationException
 	}
@@ -61,7 +61,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 	}
 
 	clientToken := request.GetParamCaseInsensitive(req.Parameters, "ClientToken")
-	// L4: Validate ClientToken length (Smithy ClientRequestToken: 1-64).
+	// Validate ClientToken length (Smithy ClientRequestToken: 1-64).
 	if clientToken != "" && !validateClientToken(clientToken) {
 		return nil, ErrValidationException
 	}
@@ -71,7 +71,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	// M8: @idempotencyToken — if ClientToken matches an existing task,
+	// @idempotencyToken — if ClientToken matches an existing task,
 	// return that task instead of creating a new one. The AWS SDK
 	// auto-generates a UUID for the ClientToken (Smithy idempotencyToken
 	// trait), but the TaskId is always server-generated (uppercase
@@ -116,7 +116,7 @@ func (s *TimestreamWriteService) DescribeBatchLoadTask(ctx context.Context, reqC
 	if taskId == "" {
 		return nil, ErrValidationException
 	}
-	// L3: Validate BatchLoadTaskId pattern (Smithy: ^[A-Z0-9]+$, 3-32 chars).
+	// Validate BatchLoadTaskId pattern (Smithy: ^[A-Z0-9]+$, 3-32 chars).
 	if !batchLoadTaskIdRegex.MatchString(taskId) {
 		return nil, ErrValidationException
 	}
@@ -184,7 +184,7 @@ func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx
 	if taskId == "" {
 		return nil, ErrValidationException
 	}
-	// L3: Validate BatchLoadTaskId pattern (Smithy: ^[A-Z0-9]+$, 3-32 chars).
+	// Validate BatchLoadTaskId pattern (Smithy: ^[A-Z0-9]+$, 3-32 chars).
 	if !batchLoadTaskIdRegex.MatchString(taskId) {
 		return nil, ErrValidationException
 	}

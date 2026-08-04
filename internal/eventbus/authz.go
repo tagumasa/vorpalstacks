@@ -77,7 +77,7 @@ func (a *iamPolicyEvaluatorAdapter) Evaluate(ctx context.Context, policy *BusPol
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4A: RoleResolver
+// RoleResolver
 // ---------------------------------------------------------------------------
 
 // RoleLookupFunc retrieves a role's assume-role trust policy document by
@@ -122,7 +122,7 @@ func (r *IAMRoleResolver) ValidateRole(ctx context.Context, roleARN string) erro
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4B: Policy document parsing and evaluation
+// Policy document parsing and evaluation
 // ---------------------------------------------------------------------------
 
 // ParsePolicyDocument parses a JSON IAM policy document string into a
@@ -354,7 +354,7 @@ func stringSliceMatches(patterns []string, value string) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4B: Resource policy factory functions
+// Resource policy factory functions
 // ---------------------------------------------------------------------------
 
 // LambdaPolicyLookupFunc retrieves a Lambda function's resource-based

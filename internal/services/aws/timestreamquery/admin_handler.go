@@ -61,7 +61,7 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 			Name:         sq.Name,
 			Creationtime: sq.CreationTime.Format(timeutils.ISO8601UTCFormat),
 		}
-		// L11: Enrich admin handler projection with State, LastRunStatus,
+		// Enrich admin handler projection with State, LastRunStatus,
 		// ErrorReportConfiguration, and TargetDestination.
 		summary.State = pb.ScheduledQueryState_SCHEDULED_QUERY_STATE_ENABLED
 		if sq.ScheduledQueryStatus == timestreamstore.ScheduledQueryStatusDisabled {

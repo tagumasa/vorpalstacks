@@ -82,7 +82,7 @@ func (h *AdminHandler) CreateEmailIdentity(ctx context.Context, req *connect.Req
 	if req.Msg.Emailidentity == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity is required"))
 	}
-	// Validate format to match the HTTP API behaviour (M2/L7 alignment).
+	// Validate format to match the HTTP API behaviour.
 	if !isValidIdentityFormat(req.Msg.Emailidentity) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity format is invalid"))
 	}

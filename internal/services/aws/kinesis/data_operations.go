@@ -179,7 +179,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 	stream, _ := store.GetStream(iterator.StreamName)
 	encType := resolveEncryptionType(stream)
 
-	// L4: Filter out records older than the retention period.
+	// Filter out records older than the retention period.
 	retentionCutoff := time.Now().UTC().Add(-time.Duration(stream.RetentionPeriodHours) * time.Hour)
 	if len(records) > 0 {
 		filtered := records[:0]
@@ -196,7 +196,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	// M1: Calculate MillisBehindLatest from the last record's arrival time.
+	// Calculate MillisBehindLatest from the last record's arrival time.
 	var millisBehindLatest int64
 	if len(records) > 0 {
 		last := records[len(records)-1]
@@ -251,7 +251,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 		"MillisBehindLatest": millisBehindLatest,
 	}
 
-	// H3: When the shard is closed (split or merged), include ChildShards so
+	// When the shard is closed (split or merged), include ChildShards so
 	// consumers know which shards to read from next.
 	if shardClosed {
 		childShards, _ := store.GetChildShards(iterator.StreamName, iterator.ShardID)

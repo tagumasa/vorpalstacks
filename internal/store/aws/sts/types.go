@@ -26,7 +26,7 @@ type Session struct { // #nosec G117
 	// supplied when assuming the role. Without these fields the policy
 	// passed JSON validation and PackedPolicySize accounting but was
 	// discarded, leaving temporary credentials with full role
-	// permissions regardless of the requested scope (H2).
+	// permissions regardless of the requested scope.
 	Policy     string   `json:"policy,omitempty"`
 	PolicyArns []string `json:"policy_arns,omitempty"`
 }
@@ -46,7 +46,7 @@ type CreateSessionParams struct {
 	MultiFactorAuthPresent bool
 	TransitiveTagKeys      []string
 	// Policy and PolicyArns carry the session-scoping policy through to
-	// the stored session (H2). They are validated (JSON parse +
+	// the stored session. They are validated (JSON parse +
 	// PackedPolicySize) at the handler level before reaching the store.
 	Policy     string
 	PolicyArns []string

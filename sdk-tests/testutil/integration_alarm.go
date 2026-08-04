@@ -48,6 +48,7 @@ func (r *TestRunner) runAlarmToSNS(ic *integClients, ts string) TestResult {
 		EvaluationPeriods:  aws.Int32(1),
 		Threshold:          aws.Float64(0),
 		ComparisonOperator: cloudwatchtypes.ComparisonOperatorGreaterThanThreshold,
+		TreatMissingData:   aws.String("breaching"),
 		AlarmActions:       []string{topicARN},
 	})
 	if err != nil {
@@ -175,6 +176,7 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 		EvaluationPeriods:  aws.Int32(1),
 		Threshold:          aws.Float64(0),
 		ComparisonOperator: cloudwatchtypes.ComparisonOperatorGreaterThanThreshold,
+		TreatMissingData:   aws.String("breaching"),
 		AlarmActions:       []string{smARN},
 	})
 	if err != nil {

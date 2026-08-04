@@ -4,8 +4,6 @@ package rdsdata
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -15,7 +13,6 @@ import (
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/google/uuid"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -462,7 +459,7 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 			database = entry.database
 		}
 		txCtx = entry.sqlCtx
-		// Serialise concurrent statements on the same transaction (M13).
+		// Serialise concurrent statements on the same transaction.
 		entry.execMu.Lock()
 		defer entry.execMu.Unlock()
 	}
@@ -622,64 +619,9 @@ func (s *RDSDataService) CommitTransaction(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	s.mu.Lock()
-	entry, ok := s.transactions[input.TransactionID]
-	s.mu.Unlock()
-
-	if !ok {
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
+	if err := s.commitTransactionCore(input.TransactionID); err != nil {
+		return nil, err
 	}
-
-	// Pre-check expiry: if the transaction has already exceeded its
-	// idle or max-life deadline, purgeExpired should have already rolled
-	// it back. But the purge ticker has a 30 s gap, so an expired-but-
-	// not-yet-purged transaction may still be in the map. Reject it
-	// explicitly rather than allowing a stale COMMIT to succeed.
-	if entry.isExpired(time.Now()) {
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
-	}
-
-	// Wait for outstanding ContinueAfterTimeout background statements
-	// before committing. The wait is bounded by the Data API's 45-second
-	// call timeout (AWS spec: "the Data API cancels an operation and
-	// returns a timeout error if the operation doesn't finish processing
-	// within 45 seconds"). If the background statement has not finished,
-	// the transaction stays in the map and the client can retry
-	// CommitTransaction. Deleting from the map only after the wait
-	// succeeds ensures the transaction is retryable on timeout.
-	if !waitForBg(&entry.bgWg, defaultStatementTimeout) {
-		return nil, statementTimeout(fmt.Sprintf(
-			"CommitTransaction timed out waiting for a background statement; retry %s",
-			input.TransactionID), "")
-	}
-
-	// Acquire execMu to wait for any in-flight (non-background)
-	// ExecuteStatement or BatchExecuteStatement that is still running
-	// on this transaction's sql.Context. bgWg only tracks
-	// ContinueAfterTimeout background goroutines; regular statements
-	// hold execMu instead.
-	entry.execMu.Lock()
-	defer entry.execMu.Unlock()
-
-	// Background statements are done (or none were running). Atomically
-	// remove from the map so a concurrent retry cannot double-commit.
-	s.mu.Lock()
-	if _, stillThere := s.transactions[input.TransactionID]; !stillThere {
-		s.mu.Unlock()
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
-	}
-	delete(s.transactions, input.TransactionID)
-	s.mu.Unlock()
-
-	commitCtx := entry.sqlCtx
-	if commitCtx == nil {
-		commitCtx = newSQLContext(entry.database)
-	}
-	if _, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, "", ""); err != nil {
-		return nil, mapSQLError(err)
-	}
-
-	logs.Info("rdsdata: CommitTransaction", logs.String("txId", input.TransactionID))
 	return &CommitTransactionResponse{TransactionStatus: "COMMIT"}, nil
 }
 
@@ -700,63 +642,11 @@ func (s *RDSDataService) RollbackTransaction(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	s.mu.Lock()
-	entry, ok := s.transactions[input.TransactionID]
-	s.mu.Unlock()
-
-	if !ok {
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
+	if err := s.rollbackTransactionCore(input.TransactionID); err != nil {
+		return nil, err
 	}
-
-	// Pre-check expiry (see CommitTransaction for rationale).
-	if entry.isExpired(time.Now()) {
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
-	}
-
-	// Bounded wait for background statements (see CommitTransaction).
-	if !waitForBg(&entry.bgWg, defaultStatementTimeout) {
-		return nil, statementTimeout(fmt.Sprintf(
-			"RollbackTransaction timed out waiting for a background statement; retry %s",
-			input.TransactionID), "")
-	}
-
-	// Wait for in-flight ExecuteStatement / BatchExecuteStatement (M13).
-	entry.execMu.Lock()
-	defer entry.execMu.Unlock()
-
-	// Atomically remove from the map (see CommitTransaction).
-	s.mu.Lock()
-	if _, stillThere := s.transactions[input.TransactionID]; !stillThere {
-		s.mu.Unlock()
-		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
-	}
-	delete(s.transactions, input.TransactionID)
-	s.mu.Unlock()
-
-	rollbackCtx := entry.sqlCtx
-	if rollbackCtx == nil {
-		rollbackCtx = newSQLContext(entry.database)
-	}
-	if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, "", ""); err != nil {
-		return nil, mapSQLError(err)
-	}
-
-	logs.Info("rdsdata: RollbackTransaction", logs.String("txId", input.TransactionID))
 	return &RollbackTransactionResponse{TransactionStatus: "ROLLBACK"}, nil
 }
-
-// AWS Data API parameter length bounds (see
-// https://docs.aws.amazon.com/rdsdataservice/latest/APIReference/).
-const (
-	resourceArnMinLen   = 11
-	resourceArnMaxLen   = 100
-	secretArnMinLen     = 11
-	secretArnMaxLen     = 100
-	sqlMaxLen           = 65536
-	transactionIDMaxLen = 192
-	databaseMaxLen      = 64
-	schemaMaxLen        = 64
-)
 
 // waitForBg waits up to timeout for the WaitGroup to reach zero. Returns
 // true if the wait completed, false if the timeout expired. The helper
@@ -775,100 +665,6 @@ func waitForBg(wg *sync.WaitGroup, timeout time.Duration) bool {
 	case <-time.After(timeout):
 		return false
 	}
-}
-
-// validateLength enforces AWS-spec string length constraints and returns a
-// typed InvalidParameterException on violation. The min check is skipped
-// when allowEmpty=true (AWS marks database / schema / transactionId as
-// optional with min length 0).
-func validateLength(field, value string, min, max int, allowEmpty bool) error {
-	n := len(value)
-	if allowEmpty && n == 0 {
-		return nil
-	}
-	if n < min {
-		return invalidParam(fmt.Sprintf("%s length %d is shorter than minimum %d", field, n, min))
-	}
-	if n > max {
-		return invalidParam(fmt.Sprintf("%s length %d exceeds maximum %d", field, n, max))
-	}
-	return nil
-}
-
-// validateResourceArn enforces the AWS-spec resourceArn constraints.
-func validateResourceArn(arn string) error {
-	return validateLength("resourceArn", arn, resourceArnMinLen, resourceArnMaxLen, false)
-}
-
-// validateSecretArn enforces the AWS-spec secretArn constraints.
-func validateSecretArn(arn string) error {
-	return validateLength("secretArn", arn, secretArnMinLen, secretArnMaxLen, false)
-}
-
-// validateSQL enforces the AWS-spec sql constraints (sql is required).
-func validateSQL(sqlStr string) error {
-	return validateLength("sql", sqlStr, 1, sqlMaxLen, false)
-}
-
-// validateTransactionID enforces the AWS-spec transactionId constraints.
-// transactionId is optional for ExecuteStatement / BatchExecuteStatement but
-// required for CommitTransaction / RollbackTransaction — callers that need
-// 'required' semantics pass allowEmpty=false.
-func validateTransactionID(id string, allowEmpty bool) error {
-	return validateLength("transactionId", id, 0, transactionIDMaxLen, allowEmpty)
-}
-
-// validateDatabase enforces the AWS-spec database constraints.
-func validateDatabase(db string) error {
-	return validateLength("database", db, 0, databaseMaxLen, true)
-}
-
-// validateSchema enforces the AWS-spec schema constraints.
-func validateSchema(schema string) error {
-	return validateLength("schema", schema, 0, schemaMaxLen, true)
-}
-
-// validateCommon enforces the resourceArn + secretArn + database + schema
-// constraints shared by every Data API operation.
-func validateCommon(resourceArn, secretArn, database, schema string) error {
-	if err := validateResourceArn(resourceArn); err != nil {
-		return err
-	}
-	if err := validateSecretArn(secretArn); err != nil {
-		return err
-	}
-	if err := validateDatabase(database); err != nil {
-		return err
-	}
-	if err := validateSchema(schema); err != nil {
-		return err
-	}
-	return nil
-}
-
-// mapSQLError preserves AWS-spec exception types emitted by executeSQL
-// (StatementTimeoutException, DatabaseErrorException) and wraps any other
-// engine-emitted error in DatabaseErrorException so callers see the
-// correct exception name rather than a generic BadRequestException.
-func mapSQLError(err error) error {
-	if err == nil {
-		return nil
-	}
-	var awsErr *awserrors.AWSError
-	if errors.As(err, &awsErr) {
-		return awsErr
-	}
-	return databaseError(err.Error())
-}
-
-func parseRequest(req *request.ParsedRequest, v interface{}) error {
-	if req == nil || len(req.Body) == 0 {
-		return invalidParam("request body is empty")
-	}
-	if err := json.Unmarshal(req.Body, v); err != nil {
-		return badRequest(fmt.Sprintf("failed to parse request: %v", err))
-	}
-	return nil
 }
 
 // resolveEngine resolves a resource ARN to the sqle.Engine for that instance.

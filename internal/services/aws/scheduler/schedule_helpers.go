@@ -18,8 +18,8 @@ var (
 )
 
 func isValidScheduleExpression(expr string) bool {
-	// Delegate to the full validator which checks cron field count (H5)
-	// and at() semantic date validity (H6) in addition to format.
+	// Delegate to the full validator which checks cron field count and
+	// at() semantic date validity in addition to format.
 	return isValidScheduleExpressionFull(expr)
 }
 
@@ -143,7 +143,7 @@ func getStringFromMap(m map[string]interface{}, keys ...string) string {
 func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) *schedulerstore.RetryPolicy {
 	rp := &schedulerstore.RetryPolicy{}
 	// Accept the raw values without range filtering. Range validation is
-	// performed by validateTarget in schedule_validators.go (H2).
+	// performed by validateTarget in schedule_validators.go.
 	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok {
 		rp.MaximumEventAgeInSeconds = &val
 	}
@@ -342,7 +342,7 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 	}
 
 	// Mode enum and MaximumWindowInMinutes range validation is performed
-	// by validateFlexibleTimeWindow in schedule_validators.go (H3).
+	// by validateFlexibleTimeWindow in schedule_validators.go.
 
 	return ftw, nil
 }

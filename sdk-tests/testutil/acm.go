@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -104,6 +105,33 @@ func (tc *acmTestContext) importDefaultCert() (*acm.ImportCertificateOutput, err
 	})
 }
 
+// cleanupStaleCertificates removes certificates left over from previous test
+// runs. These accumulate across sessions and eventually fill the first page
+// of ListCertificates, causing pagination-dependent tests to fail.
+func (tc *acmTestContext) cleanupStaleCertificates() {
+	var nextToken *string
+	for {
+		input := &acm.ListCertificatesInput{MaxItems: aws.Int32(100)}
+		if nextToken != nil {
+			input.NextToken = nextToken
+		}
+		resp, err := tc.client.ListCertificates(tc.ctx, input)
+		if err != nil {
+			return
+		}
+		for _, s := range resp.CertificateSummaryList {
+			domain := aws.ToString(s.DomainName)
+			if strings.HasPrefix(domain, "page-") || strings.HasPrefix(domain, "summary-") || strings.HasPrefix(domain, "test-") {
+				tc.deleteCert(aws.ToString(s.CertificateArn))
+			}
+		}
+		if resp.NextToken == nil || aws.ToString(resp.NextToken) == "" {
+			break
+		}
+		nextToken = resp.NextToken
+	}
+}
+
 func (tc *acmTestContext) importCertWithChain() (*acm.ImportCertificateOutput, error) {
 	return tc.client.ImportCertificate(tc.ctx, &acm.ImportCertificateInput{
 		Certificate:      testCertPEM,
@@ -128,6 +156,8 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			Error:    err.Error(),
 		}}
 	}
+
+	tc.cleanupStaleCertificates()
 
 	var results []TestResult
 	results = append(results, r.runACMCertificateTests(tc)...)

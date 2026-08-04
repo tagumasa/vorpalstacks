@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -54,7 +55,7 @@ func (s *AthenaService) CreatePreparedStatement(ctx context.Context, reqCtx *req
 	}
 	if err := stores.preparedStatementStore.CreatePreparedStatement(preparedStatement); err != nil {
 		if err == athenastore.ErrPreparedStatementAlreadyExists {
-			return nil, ErrInvalidRequestException
+			return nil, ErrResourceAlreadyExistsException
 		}
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (s *AthenaService) GetPreparedStatement(ctx context.Context, reqCtx *reques
 	preparedStatement, err := stores.preparedStatementStore.GetPreparedStatement(workGroup, statementName)
 	if err != nil {
 		if err == athenastore.ErrPreparedStatementNotFound {
-			return nil, ErrInvalidRequestException
+			return nil, preparedStatementNotFound(statementName)
 		}
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (s *AthenaService) DeletePreparedStatement(ctx context.Context, reqCtx *req
 
 	if err := stores.preparedStatementStore.DeletePreparedStatement(workGroup, statementName); err != nil {
 		if err == athenastore.ErrPreparedStatementNotFound {
-			return nil, ErrInvalidRequestException
+			return nil, preparedStatementNotFound(statementName)
 		}
 		return nil, err
 	}
@@ -157,6 +158,7 @@ func (s *AthenaService) ListPreparedStatements(ctx context.Context, reqCtx *requ
 }
 
 // UpdatePreparedStatement updates the specified prepared statement.
+// Per the Smithy model, StatementName, WorkGroup, and QueryStatement are all REQUIRED.
 func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statementName := request.GetParamCaseInsensitive(req.Parameters, "StatementName")
 	if statementName == "" {
@@ -166,6 +168,15 @@ func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *req
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if workGroup == "" {
 		workGroup = "primary"
+	}
+
+	queryStatement := request.GetParamCaseInsensitive(req.Parameters, "QueryStatement")
+	if queryStatement == "" {
+		return nil, awserrors.NewInvalidParameterException("QueryStatement is required for UpdatePreparedStatement")
+	}
+
+	if len(queryStatement) > maxQueryStringSize {
+		return nil, ErrInvalidRequestException
 	}
 
 	stores, err := s.store(reqCtx)
@@ -181,17 +192,17 @@ func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
+	preparedStatement.QueryStatement = queryStatement
+
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {
 		preparedStatement.Description = description
 	}
 
-	queryStatement := request.GetParamCaseInsensitive(req.Parameters, "QueryStatement")
-	if queryStatement != "" {
-		preparedStatement.QueryStatement = queryStatement
-	}
-
 	if err := stores.preparedStatementStore.UpdatePreparedStatement(preparedStatement); err != nil {
+		if err == athenastore.ErrPreparedStatementNotFound {
+			return nil, preparedStatementNotFound(statementName)
+		}
 		return nil, err
 	}
 

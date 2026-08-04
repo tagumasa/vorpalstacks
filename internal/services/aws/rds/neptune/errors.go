@@ -59,7 +59,7 @@ func translateStoreError(err error) error {
 	case errors.Is(err, neptunestore.ErrDBClusterEndpointAlreadyExists):
 		return awserrors.NewAWSError("DBClusterEndpointAlreadyExistsFault", "DBClusterEndpoint already exists", http.StatusConflict)
 	case errors.Is(err, neptunestore.ErrInvalidParameterGroupState):
-		// M14: Use Smithy-correct error type name (was 'InvalidParameterGroupState').
+		// Use Smithy-correct error type name (was 'InvalidParameterGroupState').
 		return awserrors.NewAWSError("InvalidDBParameterGroupStateFault", "Invalid DB cluster parameter group state", http.StatusBadRequest)
 	}
 	return err

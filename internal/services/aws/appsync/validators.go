@@ -190,7 +190,7 @@ func validateApiKeyExpiry(expires int64) error {
 }
 
 // ============================================================================
-// Sync config validation (new — addresses audit M5)
+// Sync config validation.
 // ============================================================================
 
 // validateSyncConfig validates ConflictDetection and ConflictHandler enum values

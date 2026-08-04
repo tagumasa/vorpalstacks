@@ -51,12 +51,6 @@ type IntegrationResponseInput struct {
 	ResponseTemplates  map[string]string
 }
 
-// MethodResponseInput is the transport-agnostic input for a method response.
-type MethodResponseInput struct {
-	ResponseParameters map[string]bool
-	ResponseModels     map[string]string
-}
-
 // putMethodCore validates the input, builds a Method struct, and persists
 // it via the store. The caller is responsible for resolving the HTTP
 // method value before invocation.
@@ -307,74 +301,6 @@ func (s *APIGatewayService) deleteIntegrationResponseCore(
 		return NewBadRequestException("statusCode is required")
 	}
 	if err := stores.restApis.DeleteIntegrationResponse(apiId, resourceId, httpMethod, statusCode); err != nil {
-		return ErrNotFoundException
-	}
-	return nil
-}
-
-// putMethodResponseCore creates or replaces a method response.
-func (s *APIGatewayService) putMethodResponseCore(
-	stores *apiGatewayStores,
-	apiId, resourceId, httpMethod, statusCode string,
-	in *MethodResponseInput,
-) (*apigateway.MethodResponse, error) {
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
-	if statusCode == "" {
-		return nil, NewBadRequestException("statusCode is required")
-	}
-	response := &apigateway.MethodResponse{
-		StatusCode:         statusCode,
-		ResponseParameters: in.ResponseParameters,
-		ResponseModels:     in.ResponseModels,
-	}
-	created, err := stores.restApis.PutMethodResponse(apiId, resourceId, httpMethod, statusCode, response)
-	if err != nil {
-		return nil, toApiGatewayError(err)
-	}
-	return created, nil
-}
-
-// getMethodResponseCore retrieves a method response.
-func (s *APIGatewayService) getMethodResponseCore(
-	stores *apiGatewayStores,
-	apiId, resourceId, httpMethod, statusCode string,
-) (*apigateway.MethodResponse, error) {
-	if apiId == "" || resourceId == "" {
-		return nil, NewBadRequestException("restApiId and resourceId are required")
-	}
-	if httpMethod == "" {
-		return nil, NewBadRequestException("httpMethod is required")
-	}
-	if statusCode == "" {
-		return nil, NewBadRequestException("statusCode is required")
-	}
-	response, err := stores.restApis.GetMethodResponse(apiId, resourceId, httpMethod, statusCode)
-	if err != nil {
-		return nil, ErrNotFoundException
-	}
-	return response, nil
-}
-
-// deleteMethodResponseCore removes a method response.
-func (s *APIGatewayService) deleteMethodResponseCore(
-	stores *apiGatewayStores,
-	apiId, resourceId, httpMethod, statusCode string,
-) error {
-	if apiId == "" || resourceId == "" {
-		return NewBadRequestException("restApiId and resourceId are required")
-	}
-	if httpMethod == "" {
-		return NewBadRequestException("httpMethod is required")
-	}
-	if statusCode == "" {
-		return NewBadRequestException("statusCode is required")
-	}
-	if err := stores.restApis.DeleteMethodResponse(apiId, resourceId, httpMethod, statusCode); err != nil {
 		return ErrNotFoundException
 	}
 	return nil

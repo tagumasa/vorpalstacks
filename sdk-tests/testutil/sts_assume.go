@@ -344,7 +344,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 	// AssumeRole to call GetCallerIdentity.  The caller ARN must be
 	// the assumed-role ARN (arn:aws:sts::account:assumed-role/...),
 	// not the bare role ARN.  This verifies the resolveCallerIdentity
-	// fix (M1/M2).
+	// fix.
 	results = append(results, r.RunTest("sts", "AssumeRole_ChainedCallerIdentity", func() error {
 		resp, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(tc.roleARN()),
@@ -387,7 +387,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
-	// M1: PolicyArns max 10 limit (AWS docs: "up to 10 managed policy
+	// PolicyArns max 10 limit (AWS docs: "up to 10 managed policy
 	// ARNs"). The Smithy policyDescriptorListType has no length trait,
 	// so the SDK does not validate client-side.
 	results = append(results, r.RunTest("sts", "AssumeRole_TooManyPolicyArns", func() error {
@@ -408,7 +408,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationError")
 	}))
 
-	// M2: TransitiveTagKeys must have a corresponding session tag.
+	// TransitiveTagKeys must have a corresponding session tag.
 	results = append(results, r.RunTest("sts", "AssumeRole_TransitiveKeyNotInTags", func() error {
 		_, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(tc.roleARN()),

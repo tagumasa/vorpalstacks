@@ -50,7 +50,7 @@ func (s *KinesisService) RegisterStreamConsumer(ctx context.Context, reqCtx *req
 		return nil, s.mapStoreError(err)
 	}
 
-	// M14: Apply tags if provided in RegisterStreamConsumer request
+	// Apply tags if provided in RegisterStreamConsumer request
 	if tagList := tags.ParseTags(req.Parameters, "Tags"); len(tagList) > 0 {
 		tagMap := make(map[string]string, len(tagList))
 		for _, t := range tagList {

@@ -25,7 +25,7 @@ func (s *NeptuneDataService) ExecuteGremlinQuery(ctx context.Context, reqCtx *re
 		return nil, missingParameter("gremlin")
 	}
 
-	// M11: Read the Accept header (Smithy httpHeader trait on serializer).
+	// Read the Accept header (Smithy httpHeader trait on serializer).
 	// Currently only GraphSON v3 (application/json) is supported for HTTP.
 	// Other formats are acknowledged but not yet implemented.
 	acceptHeader := req.Headers.Get("Accept")
@@ -99,7 +99,7 @@ func (s *NeptuneDataService) ExecuteGremlinExplainQuery(ctx context.Context, req
 		return nil, malformedQuery(err.Error())
 	}
 
-	// M12: Smithy output field is "output" with httpPayload trait.
+	// Smithy output field is "output" with httpPayload trait.
 	// Return the formatted explain plan as a text block matching
 	// AWS Neptune's explain response format.
 	outputText := formatExplainOutput(plan)
@@ -140,7 +140,7 @@ func (s *NeptuneDataService) ExecuteGremlinProfileQuery(ctx context.Context, req
 		return nil, malformedQuery(err.Error())
 	}
 
-	// M12/M13: Smithy output field is "output" with httpPayload trait.
+	// Smithy output field is "output" with httpPayload trait.
 	outputText := formatProfileOutput(plan, profOpts)
 	return map[string]interface{}{
 		"output": outputText,

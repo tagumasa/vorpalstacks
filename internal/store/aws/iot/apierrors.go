@@ -39,7 +39,7 @@ var (
 	ErrTemplateVersionNotFound          = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
 	ErrInvalidSecurityProfileBehaviors  = awserrors.NewAWSError("InvalidRequestException", "The security profile behaviors are not valid.", 400)
 
-	// Phase 7-11 bulk entities: dedicated NotFound sentinels so Describe/Update
+	// Bulk entities: dedicated NotFound sentinels so Describe/Update
 	// can return a proper ResourceNotFoundException (404) instead of a generic
 	// InvalidRequestException (400), matching AWS behaviour.
 	ErrCustomMetricNotFound          = awserrors.NewAWSError("ResourceNotFoundException", "The specified custom metric does not exist.", 404)

@@ -122,15 +122,21 @@ func (s *AthenaService) ListCapacityReservations(ctx context.Context, reqCtx *re
 }
 
 // UpdateCapacityReservation updates the specified capacity reservation.
+// Per the Smithy model, both Name and TargetDpus are REQUIRED on this operation.
 func (s *AthenaService) UpdateCapacityReservation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
 		return nil, awserrors.NewValidationException("Name is required")
+	}
+
+	dpus := request.GetIntParam(req.Parameters, "TargetDpus")
+	if err := validateTargetDpus(int32(dpus)); err != nil {
+		return nil, err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	cr, err := stores.capacityReservationStore.GetCapacityReservation(name)
@@ -138,12 +144,7 @@ func (s *AthenaService) UpdateCapacityReservation(ctx context.Context, reqCtx *r
 		return nil, capacityReservationNotFound(name)
 	}
 
-	if dpus := request.GetIntParam(req.Parameters, "TargetDpus"); dpus > 0 {
-		if err := validateTargetDpus(int32(dpus)); err != nil {
-			return nil, err
-		}
-		cr.Capacity = int32(dpus)
-	}
+	cr.Capacity = int32(dpus)
 	cr.LastModifiedTime = time.Now().UTC()
 
 	if err := stores.capacityReservationStore.UpdateCapacityReservation(cr); err != nil {

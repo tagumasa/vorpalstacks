@@ -171,7 +171,7 @@ func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleI
 // Used by both createUserCore (when PermissionsBoundaryArn is specified
 // at creation time) and the PutUserPermissionsBoundary HTTP operation.
 // Consolidating the logic here prevents the create-time vs update-time
-// drift that previously existed (M7).
+// drift that previously existed.
 func putUserPermissionsBoundaryCore(store *iamstore.IAMStore, user *iamstore.User, pbArn string) error {
 	if err := validateIAMPolicyArn(pbArn); err != nil {
 		return err
@@ -290,7 +290,7 @@ func (s *IAMService) createPolicyCore(store *iamstore.IAMStore, input *CreatePol
 }
 
 // ---------------------------------------------------------------------------
-// Get/List core functions (M6: route admin handler + HTTP API through cores)
+// Get/List core functions: route admin handler and HTTP API through cores.
 //
 // These functions encapsulate the store lookup + not-found error mapping so
 // that both the admin gRPC-Web handler and the AWS-compatible HTTP API
@@ -361,7 +361,7 @@ func (s *IAMService) listGroupsCore(store *iamstore.IAMStore, pathPrefix, marker
 // updateAssumeRolePolicyCore validates the trust policy document and
 // replaces the role's AssumeRolePolicyDocument field.  Used by the HTTP
 // API UpdateAssumeRolePolicy operation; routing through core keeps the
-// validation identical if a future admin handler mirrors the op (L6).
+// validation identical if a future admin handler mirrors the op.
 func (s *IAMService) updateAssumeRolePolicyCore(store *iamstore.IAMStore, roleName, policyDocument string) error {
 	role, err := s.getRoleCore(store, roleName)
 	if err != nil {
@@ -998,7 +998,7 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(store *iamstore.IAMStore
 }
 
 // ---------------------------------------------------------------------------
-// PolicyVersion core functions (M2 core-ification)
+// PolicyVersion core functions.
 // ---------------------------------------------------------------------------
 
 // getPolicyVersionCore retrieves a specific policy version.

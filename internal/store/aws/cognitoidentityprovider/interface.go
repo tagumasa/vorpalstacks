@@ -140,6 +140,8 @@ type GroupOperations interface {
 	RemoveUserFromGroup(userPoolID, groupName, username string) error
 	ListGroupsForUser(userPoolID, username string) ([]*Group, error)
 	ListUsersInGroup(userPoolID, groupName string) ([]*User, error)
+	ListUsersInGroupPaginated(userPoolID, groupName string, opts common.ListOptions) (*common.ListResult[User], error)
+	ListGroupsForUserPaginated(userPoolID, username string, opts common.ListOptions) (*common.ListResult[Group], error)
 }
 
 // ClientOperations defines operations for managing user pool clients.

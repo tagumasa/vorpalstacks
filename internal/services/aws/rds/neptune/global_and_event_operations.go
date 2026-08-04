@@ -17,7 +17,7 @@ import (
 )
 
 // clusterIDFromARN extracts the cluster identifier from an RDS cluster ARN.
-// Uses SplitN to correctly handle identifiers that may contain colons (L7 fix).
+// Uses SplitN to correctly handle identifiers that may contain colons.
 func clusterIDFromARN(arn string) string {
 	idx := strings.Index(arn, "cluster:")
 	if idx < 0 {
@@ -37,7 +37,7 @@ func isValidSnsTopicArn(arn string) bool {
 }
 
 // isValidEventCategory checks whether the given category is one of the
-// known Neptune event categories (M15 fix).  The list mirrors the output
+// known Neptune event categories.  The list mirrors the output
 // of DescribeEventCategories.
 var validEventCategories = map[string]bool{
 	"creation": true, "deletion": true, "failover": true,
@@ -234,7 +234,7 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 			return nil, translateStoreError(err)
 		}
 
-		// M10: Delete old entry before updating member clusters.  If
+		// Delete old entry before updating member clusters.  If
 		// DeleteGlobalCluster fails, clean up the new entry and return
 		// error; member clusters still reference oldID which remains in
 		// the store, preserving referential integrity.
@@ -421,7 +421,7 @@ func (s *NeptuneService) CreateEventSubscription(ctx context.Context, reqCtx *re
 	if topicArn == "" {
 		return nil, awserrors.NewMissingParameter("SnsTopicArn is required")
 	}
-	// H3: Validate SNS topic ARN format (arn:aws:sns:region:account:topic).
+	// Validate SNS topic ARN format (arn:aws:sns:region:account:topic).
 	if !isValidSnsTopicArn(topicArn) {
 		return nil, awserrors.NewAWSError("SNSInvalidTopicFault", fmt.Sprintf("Invalid SNS topic ARN: %s", topicArn), http.StatusBadRequest)
 	}
@@ -446,7 +446,7 @@ func (s *NeptuneService) CreateEventSubscription(ctx context.Context, reqCtx *re
 		sub.SourceIdsList = sourceIds
 	}
 	if categories := request.GetStringList(params, "EventCategories"); len(categories) > 0 {
-		// M15: Validate EventCategories against the known Neptune categories.
+		// Validate EventCategories against the known Neptune categories.
 		for _, cat := range categories {
 			if !isValidEventCategory(cat) {
 				return nil, awserrors.NewAWSError("SubscriptionCategoryNotFoundFault",
@@ -460,7 +460,7 @@ func (s *NeptuneService) CreateEventSubscription(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
-	// M8: State machine — synchronous transition from 'creating' to 'active'
+	// State machine — synchronous transition from 'creating' to 'active'
 	// with safety-net goroutine.
 	sub.Status = "active"
 	if err := store.UpdateEventSubscription(sub); err != nil {
@@ -585,7 +585,7 @@ func (s *NeptuneService) ModifyEventSubscription(ctx context.Context, reqCtx *re
 	}
 	if request.HasParam(params, "EventCategories") {
 		categories := request.GetStringList(params, "EventCategories")
-		// M15: Validate EventCategories on modify.
+		// Validate EventCategories on modify.
 		for _, cat := range categories {
 			if !isValidEventCategory(cat) {
 				return nil, awserrors.NewAWSError("SubscriptionCategoryNotFoundFault",

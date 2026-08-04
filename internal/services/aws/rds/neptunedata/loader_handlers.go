@@ -545,7 +545,7 @@ func normalizeS3HTTPSURI(uri string) string {
 
 // loadFromS3 reads objects from S3 via the S3Reader invoker and delegates to
 // format-specific loaders. Supports CSV, ntriples and nquads formats.
-// Progress metrics are persisted per-file for real-time monitoring (M18).
+// Progress metrics are persisted per-file for real-time monitoring.
 // s3Region is the S3 bucket region (may differ from the Neptune cluster region).
 func (s *NeptuneDataService) loadFromS3(s3Region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB, cancelCh chan struct{}, store *neptunestore.NeptuneStore) string {
 	if s.s3Invoker == nil {
@@ -624,7 +624,7 @@ func (s *NeptuneDataService) loadFromS3(s3Region string, job *pb.LoaderJob, load
 		f.Close()
 		os.Remove(tmpPath)
 
-		// Persist progress after each file for real-time monitoring (M18).
+		// Persist progress after each file for real-time monitoring.
 		job.TotalRecords = stats.totalRecords
 		job.TotalErrors = stats.failed
 		job.TotalDuplicates = stats.duplicates

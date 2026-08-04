@@ -34,7 +34,7 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
 	versionStages := request.GetStringList(req.Parameters, "VersionStages")
 
-	// M6: RotationToken is an opaque token used for cross-account rotation
+	// RotationToken is an opaque token used for cross-account rotation
 	// validation. Accept it so rotation Lambda PutSecretValue calls don't
 	// error. Smithy RotationTokenType: length 36-256, pattern alphanumeric+dash.
 	rotationToken := request.GetStringParam(req.Parameters, "RotationToken")
@@ -193,7 +193,7 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 
 	secretFilter := buildSecretFilter(includePlannedDeletion, filters)
 
-	// L4: When SortBy is not specified, AWS defaults to sorting by name
+	// When SortBy is not specified, AWS defaults to sorting by name
 	// in ascending order.
 	if sortBy == "" {
 		sortBy = "name"
@@ -453,7 +453,7 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 
 // ListSecretVersionIds lists the versions of a secret.
 // Supports MaxResults (1-100), NextToken pagination, and IncludeDeprecated
-// filtering (H1, M16).
+// filtering.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ListSecretVersionIds.html
 func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
@@ -478,7 +478,7 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 
 	// IncludeDeprecated defaults to false: versions without staging
 	// labels are considered deprecated and excluded unless explicitly
-	// requested (H1).
+	// requested.
 	includeDeprecated := request.GetBoolParam(req.Parameters, "IncludeDeprecated")
 	if !includeDeprecated {
 		filtered := make([]secretsmanagerstore.SecretVersion, 0, len(versions))
@@ -491,7 +491,7 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 	}
 
 	// Pagination: offset-based NextToken matching the ListSecrets sorted-
-	// result pattern (H1).  Smithy MaxResultsType range is 1-100; clamp
+	// result pattern.  Smithy MaxResultsType range is 1-100; clamp
 	// explicitly because GetMaxItems allows up to AbsoluteMaxItems (1000).
 	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
 	if maxResults > 100 {
@@ -564,7 +564,7 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 			"You must specify either MoveToVersionId or RemoveFromVersionId.", http.StatusBadRequest)
 	}
 
-	// M13: MoveToVersionId == RemoveFromVersionId is a no-op "move" that
+	// MoveToVersionId == RemoveFromVersionId is a no-op "move" that
 	// AWS rejects with InvalidParameterException.
 	if moveToVersionId != "" && removeFromVersionId != "" && moveToVersionId == removeFromVersionId {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
@@ -639,13 +639,13 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 // BatchGetSecretValue retrieves multiple secret values.
 // You must include either SecretIdList or Filters, but not both.
 // MaxResults (1-20) and NextToken pagination are supported when using
-// Filters (H2).
+// Filters.
 func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretIdList := request.GetStringList(req.Parameters, "SecretIdList")
 	filters := request.GetListParam(req.Parameters, "Filters")
 
 	// Mutual exclusion: exactly one of SecretIdList or Filters must be
-	// provided (H2).  AWS: "You must include Filters or SecretIdList,
+	// provided.  AWS: "You must include Filters or SecretIdList,
 	// but not both."
 	if len(secretIdList) == 0 && len(filters) == 0 {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
@@ -669,7 +669,7 @@ func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx 
 	// Build the list of secret IDs to retrieve.
 	//
 	// When using Filters, we list all matching secrets first, apply
-	// pagination, then retrieve values for the current page (H2).
+	// pagination, then retrieve values for the current page.
 	var targetIds []string
 	var nextToken string
 	var isTruncated bool

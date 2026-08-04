@@ -77,7 +77,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 		return nil
 	}))
 
-	// --- N5 / Phase 4: BytesScannedCutoffPerQuery strict min ---
+	// --- BytesScannedCutoffPerQuery strict min ---
 	results = append(results, tc.runner.RunTest("athena", "CreateWorkGroup_BytesScannedCutoff_Invalid", func() error {
 		wgName := fmt.Sprintf("bsc-wg-%d", time.Now().UnixNano()%1000000000)
 		defer client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wgName)})
@@ -97,7 +97,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 		return nil
 	}))
 
-	// --- Phase 4: ClientRequestToken length validation ---
+	// --- ClientRequestToken length validation ---
 	results = append(results, tc.runner.RunTest("athena", "StartQueryExecution_ClientRequestToken_TooShort", func() error {
 		_, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
 			QueryString:        aws.String("SELECT 1"),
@@ -112,7 +112,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 		return nil
 	}))
 
-	// --- Phase 4: ExecutionRole ARN pattern validation ---
+	// --- ExecutionRole ARN pattern validation ---
 	results = append(results, tc.runner.RunTest("athena", "CreateWorkGroup_InvalidExecutionRole", func() error {
 		wgName := fmt.Sprintf("erole-wg-%d", time.Now().UnixNano()%1000000000)
 		defer client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wgName)})
@@ -132,7 +132,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 		return nil
 	}))
 
-	// --- Phase 4: AdditionalConfiguration length validation ---
+	// --- AdditionalConfiguration length validation ---
 	results = append(results, tc.runner.RunTest("athena", "CreateWorkGroup_AdditionalConfiguration_TooLong", func() error {
 		wgName := fmt.Sprintf("ac-wg-%d", time.Now().UnixNano()%1000000000)
 		defer client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wgName)})

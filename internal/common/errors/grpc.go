@@ -40,7 +40,24 @@ func AWSErrorToGRPC(err error) error {
 	}
 	var awsErr *AWSError
 	if stderrors.As(err, &awsErr) {
-		return connect.NewError(httpStatusToConnectCode(awsErr.HTTPStatus), err)
+		code := httpStatusToConnectCode(awsErr.HTTPStatus)
+		// HTTP 409 carries several distinct AWS error codes that must
+		// map to different connect codes: DeleteConflict is a precondition
+		// failure, LimitExceeded is a resource exhaustion condition, and
+		// EntityAlreadyExists / *AlreadyExists represent duplicate resources.
+		if awsErr.HTTPStatus == http.StatusConflict {
+			switch awsErr.Code {
+			case "DeleteConflict":
+				code = connect.CodeFailedPrecondition
+			case "LimitExceeded":
+				code = connect.CodeResourceExhausted
+			default:
+				if strings.HasSuffix(awsErr.Code, "AlreadyExists") {
+					code = connect.CodeAlreadyExists
+				}
+			}
+		}
+		return connect.NewError(code, err)
 	}
 	return connect.NewError(connect.CodeInternal, err)
 }

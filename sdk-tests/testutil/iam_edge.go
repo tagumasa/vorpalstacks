@@ -281,7 +281,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// H4: CreateUser with invalid path must be rejected.
+	// CreateUser with invalid path must be rejected.
 	results = append(results, r.RunTest("iam", "Error_CreateUserInvalidPath", func() error {
 		_, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{
 			UserName: aws.String("edge-user-" + tc.ts),
@@ -293,7 +293,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// H4: CreateRole with invalid path must be rejected.
+	// CreateRole with invalid path must be rejected.
 	results = append(results, r.RunTest("iam", "Error_CreateRoleInvalidPath", func() error {
 		_, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
 			RoleName:                 aws.String("edge-role-" + tc.ts),
@@ -306,7 +306,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// H3: CreatePolicy with empty Action string must be rejected.
+	// CreatePolicy with empty Action string must be rejected.
 	results = append(results, r.RunTest("iam", "Error_CreatePolicyEmptyAction", func() error {
 		_, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
 			PolicyName:     aws.String("edge-policy-" + tc.ts),
@@ -318,7 +318,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// H3: CreatePolicy with Action and NotAction both present must be rejected.
+	// CreatePolicy with Action and NotAction both present must be rejected.
 	results = append(results, r.RunTest("iam", "Error_CreatePolicyActionNotActionExclusive", func() error {
 		_, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
 			PolicyName:     aws.String("edge-policy-ex-" + tc.ts),
@@ -330,7 +330,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// H2: DeleteServiceLinkedRole on a non-service-linked role must return DeleteConflict.
+	// DeleteServiceLinkedRole on a non-service-linked role must return DeleteConflict.
 	results = append(results, r.RunTest("iam", "Error_DeleteServiceLinkedRoleNonSLR", func() error {
 		roleName := "EdgeSLRTest-" + tc.ts
 		_, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
@@ -355,7 +355,7 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
-	// L4: DeleteAccountAlias with wrong alias name must return NoSuchEntity.
+	// DeleteAccountAlias with wrong alias name must return NoSuchEntity.
 	results = append(results, r.RunTest("iam", "Error_DeleteAccountAliasMismatch", func() error {
 		_, err := tc.client.DeleteAccountAlias(tc.ctx, &iam.DeleteAccountAliasInput{
 			AccountAlias: aws.String("nonexistent-alias-" + tc.ts),

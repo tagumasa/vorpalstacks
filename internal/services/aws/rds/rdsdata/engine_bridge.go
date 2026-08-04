@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,13 +17,17 @@ import (
 	"vorpalstacks/internal/core/logs"
 )
 
-// AWS Data API operational constants. The response size cap and the default
-// statement timeout are documented in the AWS Data API reference and the
-// Aurora User Guide ("If the binary response data from the database is more
-// than 1 MB, the call is terminated.").
+// AWS Data API operational constants. The binary response size cap (1 MiB)
+// and the default statement timeout are documented in the AWS Data API
+// reference and the Aurora User Guide ("If the binary response data from
+// the database is more than 1 MB, the call is terminated."). The
+// formattedRecords size limit (10 MB) is documented in the
+// ExecuteStatement API reference ("The size limit for this field is
+// currently 10 MB").
 const (
-	maxResponseBytes        = 1 << 20 // 1 MiB
-	defaultStatementTimeout = 45 * time.Second
+	maxBinaryResponseBytes   = 1 << 20  // 1 MiB — binary Records + ColumnMetadata
+	maxFormattedRecordsBytes = 10 << 20 // 10 MB — FormattedRecords (JSON)
+	defaultStatementTimeout  = 45 * time.Second
 	// maxBgStatementTime bounds how long a ContinueAfterTimeout statement
 	// may run in the background after the client has received
 	// StatementTimeoutException. AWS does not publish a hard ceiling for
@@ -159,22 +164,22 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 	isResultProducing := schema != nil && len(schema) > 0 && !types.IsOkResultSchema(schema)
 
 	if isResultProducing {
-		resp.Records = convertRows(rows, schema, resultSetOpts)
-		if includeMetadata {
-			resp.ColumnMetadata = convertSchema(schema)
-		}
 		if strings.EqualFold(formatRecordsAs, "JSON") {
+			// AWS docs: Records and ColumnMetadata are blank when
+			// formatRecordsAs is set to JSON; only FormattedRecords
+			// is populated.
 			formatted, jerr := formatAsJSON(rows, schema)
 			if jerr != nil {
-				// JSON formatting failures are surfaced in logs rather
-				// than swallowed so operators can diagnose schema
-				// mismatches between the requested projection and the
-				// underlying row layout.
 				logs.Warn("rdsdata: failed to format records as JSON",
 					logs.Err(jerr),
 					logs.Int("rows", len(rows)))
 			} else {
 				resp.FormattedRecords = formatted
+			}
+		} else {
+			resp.Records = convertRows(rows, schema, resultSetOpts)
+			if includeMetadata {
+				resp.ColumnMetadata = convertSchema(schema)
 			}
 		}
 	} else {
@@ -194,25 +199,32 @@ func executeSQLOpts(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, inc
 		}
 	}
 
-	// AWS spec: 'If the binary response data from the database is more than
-	// 1 MB, the call is terminated.' Enforce after assembly so the cap
-	// reflects the actual payload the client would receive.
-	if approxResponseSize(resp) > maxResponseBytes {
-		return nil, statementTimeout(fmt.Sprintf("response size exceeds %d bytes", maxResponseBytes), instanceID)
+	// AWS spec: "If the binary response data from the database is more
+	// than 1 MB, the call is terminated." This applies to the binary
+	// Records + ColumnMetadata payload. FormattedRecords (JSON) has a
+	// separate 10 MB limit per the ExecuteStatement API reference.
+	if approxBinarySize(resp) > maxBinaryResponseBytes {
+		return nil, statementTimeout(fmt.Sprintf("binary response size exceeds %d bytes", maxBinaryResponseBytes), instanceID)
+	}
+	if len(resp.FormattedRecords) > maxFormattedRecordsBytes {
+		return nil, statementTimeout(fmt.Sprintf("formattedRecords size exceeds %d bytes", maxFormattedRecordsBytes), instanceID)
 	}
 
 	return resp, nil
 }
 
-// approxResponseSize estimates the marshalled size of the response without
-// performing the full JSON encode. Each Field is sized by its actual value
-// type: StringValue/BlobValue contribute their byte length, LongValue up
-// to 20 bytes (int64 max digits + sign), DoubleValue up to 24 bytes
-// (float64 repr), BooleanValue 5 bytes. Column-metadata entries are sized
-// at 256 bytes to account for type/name/label strings. The estimate is
-// conservative (slightly over) so genuinely oversized payloads are caught.
-func approxResponseSize(resp *ExecuteStatementResponse) int {
-	total := len(resp.FormattedRecords)
+// approxBinarySize estimates the marshalled size of the binary response
+// payload (Records + ColumnMetadata + GeneratedFields) without performing
+// the full JSON encode. FormattedRecords is excluded — it has a separate
+// 10 MB cap enforced by the caller. Each Field is sized by its actual
+// value type: StringValue/BlobValue contribute their byte length,
+// LongValue up to 20 bytes (int64 max digits + sign), DoubleValue up to
+// 24 bytes (float64 repr), BooleanValue 5 bytes. Column-metadata entries
+// are sized at 256 bytes to account for type/name/label strings. The
+// estimate is conservative (slightly over) so genuinely oversized
+// payloads are caught.
+func approxBinarySize(resp *ExecuteStatementResponse) int {
+	total := 0
 	for _, row := range resp.Records {
 		for _, f := range row {
 			if f.StringValue != nil {
@@ -257,14 +269,18 @@ func convertRows(rows []sql.Row, schema sql.Schema, opts *ResultSetOptions) [][]
 	return result
 }
 
-// convertSchema converts sql.Schema to ColumnMetadata.
+// convertSchema converts sql.Schema to ColumnMetadata, populating all
+// 14 Smithy fields. Precision and Scale are extracted from DECIMAL types
+// via the sql.DecimalType interface. ArrayBaseColumnType is always 0 (MySQL
+// has no ARRAY type). IsCurrency is always false (MySQL has no native
+// currency type).
 func convertSchema(schema sql.Schema) []ColumnMetadata {
 	if schema == nil {
 		return nil
 	}
 	metadata := make([]ColumnMetadata, len(schema))
 	for i, col := range schema {
-		metadata[i] = ColumnMetadata{
+		cm := ColumnMetadata{
 			Name:            col.Name,
 			Label:           col.Name,
 			IsSigned:        isSignedType(col.Type),
@@ -272,7 +288,15 @@ func convertSchema(schema sql.Schema) []ColumnMetadata {
 			Nullable:        nullableToInt(col.Nullable),
 			Type:            sqlTypeToRDS(col.Type),
 			TypeName:        col.Type.String(),
+			IsAutoIncrement: col.AutoIncrement,
+			TableName:       col.Source,
+			SchemaName:      col.DatabaseSource,
 		}
+		if dt, ok := col.Type.(sql.DecimalType); ok {
+			cm.Precision = int32(dt.Precision())
+			cm.Scale = int32(dt.Scale())
+		}
+		metadata[i] = cm
 	}
 	return metadata
 }
@@ -301,16 +325,30 @@ func convertValue(val interface{}, schema sql.Schema, colIdx int, opts *ResultSe
 	// Apply DecimalReturnType / LongReturnType directives when we know the
 	// originating column. Without schema information (e.g. for values that
 	// bypassed convertRows) the directives are no-ops.
-	if schema != nil && colIdx < len(schema) && opts != nil {
+	//
+	// AWS defaults (ResultSetOptions docs):
+	//   - DecimalReturnType default = "STRING"
+	//   - LongReturnType default    = "LONG"
+	if schema != nil && colIdx < len(schema) {
 		typeStr := ""
 		if schema[colIdx].Type != nil {
 			typeStr = schema[colIdx].Type.String()
 		}
+
+		decimalReturn := "STRING"
+		if opts != nil && opts.DecimalReturnType != "" {
+			decimalReturn = strings.ToUpper(opts.DecimalReturnType)
+		}
+		longReturn := "LONG"
+		if opts != nil && opts.LongReturnType != "" {
+			longReturn = strings.ToUpper(opts.LongReturnType)
+		}
+
 		switch {
-		case strings.Contains(typeStr, "DECIMAL") && strings.EqualFold(opts.DecimalReturnType, "STRING"):
+		case strings.Contains(typeStr, "DECIMAL") && decimalReturn == "STRING":
 			sv := fmtDecimalString(val)
 			return Field{StringValue: &sv}
-		case strings.Contains(typeStr, "BIGINT") && strings.EqualFold(opts.LongReturnType, "STRING"):
+		case strings.Contains(typeStr, "BIGINT") && longReturn == "STRING":
 			sv := fmt.Sprintf("%d", toInt64(val))
 			return Field{StringValue: &sv}
 		}
@@ -419,6 +457,10 @@ func fmtDecimalString(val interface{}) string {
 }
 
 // fieldToValue converts a Field to a Value (deprecated ExecuteSql format).
+// The deprecated Value type has finer-grained numeric variants (IntValue
+// for int32, BigIntValue for int64, RealValue for float32) that do not
+// exist in the Field union. We populate them from the Field's LongValue
+// and DoubleValue, casting down where the value fits.
 func fieldToValue(f Field) Value {
 	v := Value{}
 	if f.IsNull != nil && *f.IsNull {
@@ -431,9 +473,17 @@ func fieldToValue(f Field) Value {
 	}
 	if f.LongValue != nil {
 		v.LongValue = f.LongValue
+		bv := *f.LongValue
+		v.BigIntValue = &bv
+		if *f.LongValue >= math.MinInt32 && *f.LongValue <= math.MaxInt32 {
+			iv := int32(*f.LongValue)
+			v.IntValue = &iv
+		}
 	}
 	if f.DoubleValue != nil {
 		v.DoubleValue = f.DoubleValue
+		rv := float32(*f.DoubleValue)
+		v.RealValue = &rv
 	}
 	if f.BooleanValue != nil {
 		v.BitValue = f.BooleanValue

@@ -138,7 +138,7 @@ func (tc *athenaTestCtx) testPreparedStatements() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -149,7 +149,7 @@ func (tc *athenaTestCtx) testPreparedStatements() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

@@ -69,7 +69,7 @@ func (s *CognitoStore) buildUserPoolArn(userPoolID string) string {
 
 // CreateUserPool creates a new Cognito user pool.
 func (s *CognitoStore) CreateUserPool(userPool *UserPool) (*UserPool, error) {
-	// H9: Generate RSA key outside createMu to avoid blocking CreateUser
+	// Generate RSA key outside createMu to avoid blocking CreateUserPool
 	// and CreateGroup operations during the 100-300ms key generation.
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -158,19 +158,19 @@ func (s *CognitoStore) DeleteUserPool(userPoolID string) error {
 		return s.challengeSessionsStore.Delete(key)
 	})
 
-	// Cascade: delete resource servers (CIPD-2)
+	// Cascade: delete resource servers.
 	rsPrefix := resourceServerPrefix(userPoolID)
 	_ = s.BaseStore.ScanPrefix(rsPrefix, func(key string, _ []byte) error {
 		return s.BaseStore.Delete(key)
 	})
 
-	// Cascade: delete identity providers (CIPD-2)
+	// Cascade: delete identity providers.
 	idpPrefix := identityProviderPrefix(userPoolID)
 	_ = s.BaseStore.ScanPrefix(idpPrefix, func(key string, _ []byte) error {
 		return s.BaseStore.Delete(key)
 	})
 
-	// Cascade: delete domains associated with this pool (CIPD-2)
+	// Cascade: delete domains associated with this pool.
 	_ = s.BaseStore.ScanPrefix("domain:", func(key string, value []byte) error {
 		var entry UserPoolDomain
 		if err := json.Unmarshal(value, &entry); err == nil && entry.UserPoolID == userPoolID {
@@ -275,9 +275,9 @@ func (s *CognitoStore) CreateUser(user *User) error {
 	if err := s.usersStore.Put(key, user); err != nil {
 		return err
 	}
-	// M16: Write secondary index for O(1) GetUserByID lookup
+	// Write secondary index for O(1) GetUserByID lookup.
 	_ = s.usersStore.Put(userIndexKey(user.ID), user.UserPoolID+"#"+user.Username)
-	// M17: Write secondary index for O(1) GetUserByProvider lookup
+	// Write secondary index for O(1) GetUserByProvider lookup.
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
 	}
@@ -296,7 +296,7 @@ func (s *CognitoStore) GetUser(userPoolID, username string) (*User, error) {
 
 // GetUserByID retrieves a Cognito user by user ID.
 func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
-	// M16: Use secondary index for O(1) lookup
+	// Use secondary index for O(1) lookup.
 	var idx string
 	if err := s.usersStore.Get(userIndexKey(userID), &idx); err == nil && idx != "" {
 		parts := strings.SplitN(idx, "#", 2)
@@ -334,7 +334,7 @@ func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
 // given federated provider with the matching attribute value. Returns
 // ErrUserNotFound if no user matches.
 func (s *CognitoStore) GetUserByProvider(userPoolID, providerName, providerAttrValue string) (*User, error) {
-	// M17: Use secondary index for O(1) lookup
+	// Use secondary index for O(1) lookup.
 	var username string
 	if err := s.usersStore.Get(providerIndexKey(userPoolID, providerName, providerAttrValue), &username); err == nil && username != "" {
 		return s.GetUser(userPoolID, username)
@@ -368,6 +368,9 @@ func (s *CognitoStore) GetUserByProvider(userPoolID, providerName, providerAttrV
 
 // UpdateUser updates an existing Cognito user.
 func (s *CognitoStore) UpdateUser(user *User) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
 	key := userPoolUserKey(user.UserPoolID, user.Username)
 	if !s.usersStore.Exists(key) {
 		return ErrUserNotFound
@@ -376,7 +379,7 @@ func (s *CognitoStore) UpdateUser(user *User) error {
 	if err := s.usersStore.Put(key, user); err != nil {
 		return err
 	}
-	// M17: Update provider index if provider info is set
+	// Update provider index if provider info is set.
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
 	}
@@ -411,7 +414,7 @@ func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 			logs.Warn("failed to update group after user deletion", logs.String("group", groupName), logs.Err(err))
 		}
 	}
-	// M16/M17: Clean up secondary indexes
+	// Clean up secondary indexes.
 	_ = s.usersStore.Delete(userIndexKey(user.ID))
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Delete(providerIndexKey(userPoolID, user.ProviderName, user.ProviderAttributeValue))
@@ -642,7 +645,7 @@ func (s *CognitoStore) CreateUserPoolClient(client *UserPoolClient) error {
 	if err := s.clientsStore.Put(key, client); err != nil {
 		return err
 	}
-	// M19: Write secondary index for O(1) GetUserPoolByClientID lookup
+	// Write secondary index for O(1) GetUserPoolByClientID lookup.
 	_ = s.clientsStore.Put(clientIndexKey(client.ClientID), client.UserPoolID)
 	return nil
 }
@@ -696,7 +699,7 @@ func (s *CognitoStore) DeleteUserPoolClient(userPoolID, clientID string) error {
 	if !s.clientsStore.Exists(key) {
 		return ErrClientNotFound
 	}
-	// M19: Clean up secondary index
+	// Clean up secondary index.
 	_ = s.clientsStore.Delete(clientIndexKey(clientID))
 	return s.clientsStore.Delete(key)
 }
@@ -721,7 +724,7 @@ func (s *CognitoStore) ListUserPoolClients(userPoolID string) ([]*UserPoolClient
 
 // GetUserPoolByClientID retrieves the user pool associated with a client ID.
 func (s *CognitoStore) GetUserPoolByClientID(clientID string) (*UserPool, error) {
-	// M19: Use secondary index for O(1) lookup
+	// Use secondary index for O(1) lookup.
 	var poolID string
 	if err := s.clientsStore.Get(clientIndexKey(clientID), &poolID); err == nil && poolID != "" {
 		return s.GetUserPool(poolID)
@@ -764,6 +767,94 @@ func (s *CognitoStore) ListUsersInGroup(userPoolID, groupName string) ([]*User, 
 		}
 	}
 	return users, nil
+}
+
+// ListUsersInGroupPaginated returns a page of users belonging to the
+// specified group. The Marker is a zero-based index into group.Members.
+func (s *CognitoStore) ListUsersInGroupPaginated(userPoolID, groupName string, opts common.ListOptions) (*common.ListResult[User], error) {
+	group, err := s.GetGroup(userPoolID, groupName)
+	if err != nil {
+		return nil, err
+	}
+
+	members := group.Members
+	start := 0
+	if opts.Marker != "" {
+		if idx, perr := strconv.Atoi(opts.Marker); perr == nil && idx >= 0 && idx < len(members) {
+			start = idx
+		}
+	}
+
+	limit := opts.MaxItems
+	if limit <= 0 {
+		limit = 60
+	}
+
+	end := start + limit
+	if end > len(members) {
+		end = len(members)
+	}
+
+	var users []*User
+	for i := start; i < end; i++ {
+		user, err := s.GetUser(userPoolID, members[i])
+		if err == nil {
+			users = append(users, user)
+		}
+	}
+
+	result := &common.ListResult[User]{
+		Items:       users,
+		IsTruncated: end < len(members),
+	}
+	if end < len(members) {
+		result.NextMarker = strconv.Itoa(end)
+	}
+	return result, nil
+}
+
+// ListGroupsForUserPaginated returns a page of groups the specified user
+// belongs to. The Marker is a zero-based index into user.Groups.
+func (s *CognitoStore) ListGroupsForUserPaginated(userPoolID, username string, opts common.ListOptions) (*common.ListResult[Group], error) {
+	user, err := s.GetUser(userPoolID, username)
+	if err != nil {
+		return nil, err
+	}
+
+	groupNames := user.Groups
+	start := 0
+	if opts.Marker != "" {
+		if idx, perr := strconv.Atoi(opts.Marker); perr == nil && idx >= 0 && idx < len(groupNames) {
+			start = idx
+		}
+	}
+
+	limit := opts.MaxItems
+	if limit <= 0 {
+		limit = 60
+	}
+
+	end := start + limit
+	if end > len(groupNames) {
+		end = len(groupNames)
+	}
+
+	var groups []*Group
+	for i := start; i < end; i++ {
+		group, err := s.GetGroup(userPoolID, groupNames[i])
+		if err == nil {
+			groups = append(groups, group)
+		}
+	}
+
+	result := &common.ListResult[Group]{
+		Items:       groups,
+		IsTruncated: end < len(groupNames),
+	}
+	if end < len(groupNames) {
+		result.NextMarker = strconv.Itoa(end)
+	}
+	return result, nil
 }
 
 // CreateRefreshToken creates a new Cognito refresh token.

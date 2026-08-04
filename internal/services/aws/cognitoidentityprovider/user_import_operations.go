@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -29,7 +31,12 @@ func (s *CognitoService) CreateUserImportJob(ctx context.Context, reqCtx *reques
 		return nil, ErrResourceNotFound
 	}
 
-	jobID := "import-" + generateID()
+	id, err := generateID()
+	if err != nil {
+		logs.Error("failed to generate import job ID", logs.Err(err))
+		return nil, ErrInternalError
+	}
+	jobID := "import-" + id
 	preSignedUrl := "https://cognito-import." + s.region + ".amazonaws.com/" + userPoolID + "/" + jobID
 
 	job := &cognitostore.UserImportJob{
@@ -218,8 +225,10 @@ func formatUserImportJob(job *cognitostore.UserImportJob) map[string]interface{}
 	return result
 }
 
-func generateID() string {
+func generateID() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate random ID: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }

@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminSetUserMFAPreference sets the MFA preferences for a user.
@@ -33,7 +34,7 @@ func (s *CognitoService) AdminSetUserMFAPreference(ctx context.Context, reqCtx *
 		return nil, ErrResourceNotFound
 	}
 
-	if err := validateMFAPrerequisites(req, user, pool); err != nil {
+	if err := validateMFAPrerequisites(req, store, user, pool); err != nil {
 		return nil, err
 	}
 
@@ -74,7 +75,7 @@ func (s *CognitoService) SetUserMFAPreference(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	if err := validateMFAPrerequisites(req, user, pool); err != nil {
+	if err := validateMFAPrerequisites(req, store, user, pool); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +108,11 @@ func (s *CognitoService) AdminSetUserSettings(ctx context.Context, reqCtx *reque
 		return nil, ErrUserNotFound
 	}
 
-	user.MFAOptions = parseMFAOptions(req)
+	opts, err := parseMFAOptions(req)
+	if err != nil {
+		return nil, err
+	}
+	user.MFAOptions = opts
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -139,7 +144,11 @@ func (s *CognitoService) SetUserSettings(ctx context.Context, reqCtx *request.Re
 		return nil, ErrUserNotFound
 	}
 
-	user.MFAOptions = parseMFAOptions(req)
+	opts, err := parseMFAOptions(req)
+	if err != nil {
+		return nil, err
+	}
+	user.MFAOptions = opts
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -237,20 +246,23 @@ func clearPreferredMfaExcept(user *cognitostore.User, keep string) {
 }
 
 // parseMFAOptions parses the legacy MFAOptions list from the request.
-func parseMFAOptions(req *request.ParsedRequest) []*cognitostore.MFAOptionType {
+func parseMFAOptions(req *request.ParsedRequest) ([]*cognitostore.MFAOptionType, error) {
 	val, ok := req.Parameters["MFAOptions"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	slice, ok := val.([]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	result := make([]*cognitostore.MFAOptionType, 0, len(slice))
 	for _, v := range slice {
 		if m, ok := v.(map[string]interface{}); ok {
 			opt := &cognitostore.MFAOptionType{}
 			if dm, ok := m["DeliveryMedium"].(string); ok {
+				if !validateMFADeliveryMedium(dm) {
+					return nil, ErrInvalidParameter
+				}
 				opt.DeliveryMedium = dm
 			}
 			if an, ok := m["AttributeName"].(string); ok {
@@ -259,7 +271,7 @@ func parseMFAOptions(req *request.ParsedRequest) []*cognitostore.MFAOptionType {
 			result = append(result, opt)
 		}
 	}
-	return result
+	return result, nil
 }
 
 // validateMFAPrerequisites checks that the requested MFA settings are
@@ -269,7 +281,7 @@ func parseMFAOptions(req *request.ParsedRequest) []*cognitostore.MFAOptionType {
 //   - SoftwareToken MFA requires the user to have an enrolled TOTP secret
 //     (user.SoftwareTokenMfa != nil with a non-empty Secret).
 //   - Email MFA requires a verified email attribute.
-func validateMFAPrerequisites(req *request.ParsedRequest, user *cognitostore.User, pool *cognitostore.UserPool) error {
+func validateMFAPrerequisites(req *request.ParsedRequest, store cognitostore.CognitoStoreInterface, user *cognitostore.User, pool *cognitostore.UserPool) error {
 	if pool.MfaConfiguration == "OFF" {
 		for _, key := range []string{"SMSMfaSettings", "SoftwareTokenMfaSettings", "EmailMfaSettings", "WebAuthnMfaSettings"} {
 			if m, ok := req.Parameters[key].(map[string]interface{}); ok {
@@ -300,6 +312,16 @@ func validateMFAPrerequisites(req *request.ParsedRequest, user *cognitostore.Use
 	if em, ok := req.Parameters["EmailMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := em["Enabled"].(bool); enabled {
 			if !isAttributeVerified(user.Attributes, "email") {
+				return ErrInvalidParameter
+			}
+		}
+	}
+
+	// WebAuthn MFA requires at least one registered WebAuthn credential.
+	if wa, ok := req.Parameters["WebAuthnMfaSettings"].(map[string]interface{}); ok {
+		if enabled, _ := wa["Enabled"].(bool); enabled {
+			creds, _ := store.ListWebAuthnCredentialsPaginated(user.UserPoolID, user.ID, storecommon.ListOptions{})
+			if creds == nil || len(creds.Items) == 0 {
 				return ErrInvalidParameter
 			}
 		}

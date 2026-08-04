@@ -108,7 +108,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
-	// R8-H2: SearchCertificates with invalid metadata filter Status value
+	// SearchCertificates with invalid metadata filter Status value
 	// should return ValidationException, not silent no-match.
 	results = append(results, r.RunTest("acm", "SearchCertificates_InvalidMetadataFilter", func() error {
 		_, err := tc.client.SearchCertificates(tc.ctx, &acm.SearchCertificatesInput{
@@ -123,7 +123,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
-	// R8-M7: DescribeCertificate Serial must match the X.509 PEM SerialNumber.
+	// DescribeCertificate Serial must match the X.509 PEM SerialNumber.
 	results = append(results, r.RunTest("acm", "DescribeCertificate_SerialConsistency", func() error {
 		domain := acmUniqueDomain("serial-consistency")
 		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
@@ -178,7 +178,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
-	// R8-M6: ImportCertificate with invalid base64 should return
+	// ImportCertificate with invalid base64 should return
 	// ValidationException, not silently accept the raw string.
 	results = append(results, r.RunTest("acm", "ImportCertificate_InvalidBase64", func() error {
 		// "!!!" is not valid base64 and not a PEM block.
@@ -189,7 +189,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
-	// R8-H1: SearchCertificates SortBy=EXPORTED should sort by WasExported
+	// SearchCertificates SortBy=EXPORTED should sort by WasExported
 	// (historical fact), not by Options.Export (permission flag).
 	results = append(results, r.RunTest("acm", "SearchCertificates_SortByExported", func() error {
 		// Create and export a cert to mark WasExported=true.

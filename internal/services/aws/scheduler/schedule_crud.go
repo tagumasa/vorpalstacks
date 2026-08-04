@@ -65,7 +65,7 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
-	// Build the common spec and run full validation (H1 shared layer).
+	// Build the common spec and run full validation through the shared layer.
 	spec := &ScheduleSpec{
 		Name:                       request.GetStringParam(req.Parameters, "Name"),
 		GroupName:                  request.GetStringParam(req.Parameters, "GroupName"),
@@ -108,7 +108,7 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 	}
 
 	// ClientToken idempotency: if the same token was used within the TTL
-	// window, return the previously created resource's ARN (M5).
+	// window, return the previously created resource's ARN.
 	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
 	tokenClaimed := false
 	if clientToken != "" {
@@ -250,7 +250,7 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
-	// Build the common spec and run full validation (H1 shared layer).
+	// Build the common spec and run full validation through the shared layer.
 	spec := &ScheduleSpec{
 		Name:                       name,
 		GroupName:                  groupName,

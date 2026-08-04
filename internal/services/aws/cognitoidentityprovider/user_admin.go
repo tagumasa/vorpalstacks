@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	"vorpalstacks/internal/store/aws/common"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -35,7 +34,10 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	userAttrs := parseUserAttributes(req)
 	userAttrs["sub"] = ""
 
-	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs, nil, parseClientMetadata(req))
+	validationData := parseValidationData(req)
+	forceAliasCreation := getBoolParam(req, "ForceAliasCreation")
+
+	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs, validationData, parseClientMetadata(req))
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -70,6 +72,16 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	if preSignUpResult.AutoConfirmUser {
 		user.UserStatus = "CONFIRMED"
 		markAutoVerifiedAttributes(user, userPool)
+	} else if forceAliasCreation {
+		markAutoVerifiedAttributes(user, userPool)
+	}
+
+	// DesiredDeliveryMediums controls how the invitation is delivered.
+	// Valid values are SMS and EMAIL per the Smithy DeliveryMediumType enum.
+	for _, dm := range getStringSliceParam(req, "DesiredDeliveryMediums") {
+		if !validDeliveryMediums[dm] {
+			return nil, ErrInvalidParameter
+		}
 	}
 
 	if err := store.CreateUser(user); err != nil {
@@ -85,7 +97,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 		}
 	} else {
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs); err != nil {
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs, parseClientMetadata(req)); err != nil {
 			logs.Warn("CustomMessage trigger failed", logs.Err(err))
 		}
 	}
@@ -98,45 +110,17 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 // AdminDeleteUser permanently deletes the specified user from the user pool.
 // The user is removed regardless of their current status.
 func (s *CognitoService) AdminDeleteUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.adminDeleteUserCore(reqCtx.GetRegion(), getUserPoolID(req), getUsername(req)); err != nil {
 		return nil, err
 	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-	if err := store.DeleteUserTokens(userPoolID, user.ID); err != nil {
-		return nil, ErrInternalError
-	}
-	if err := store.DeleteUser(userPoolID, username); err != nil {
-		return nil, ErrUserNotFound
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // AdminGetUser retrieves the specified user from the user pool with all their attributes.
 func (s *CognitoService) AdminGetUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	user, err := s.adminGetUserCore(reqCtx.GetRegion(), getUserPoolID(req), getUsername(req))
 	if err != nil {
 		return nil, err
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
 	}
 
 	result := formatUser(user)
@@ -179,54 +163,26 @@ func (s *CognitoService) AdminUpdateUserAttributes(ctx context.Context, reqCtx *
 
 // ListUsers returns a list of users in the specified user pool.
 func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.listUsersCore(reqCtx.GetRegion(), ListUsersInput{
+		UserPoolID: getUserPoolID(req),
+		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		NextToken:  request.GetStringParam(req.Parameters, "PaginationToken"),
+		Filter:     req.GetParam("Filter"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	maxResults := request.GetIntParam(req.Parameters, "Limit")
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
-	}
-	paginationToken := request.GetStringParam(req.Parameters, "PaginationToken")
-
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   paginationToken,
-	}
-
-	filterStr := req.GetParam("Filter")
-	var filterFunc func(*cognitostore.User) bool
-	if filterStr != "" {
-		filterFunc = func(user *cognitostore.User) bool {
-			return matchUserFilter(user, filterStr)
-		}
-	}
-
-	result, err := store.ListUsersPaginated(userPoolID, opts, filterFunc)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	userList := make([]map[string]interface{}, 0, len(result.Items))
-	for _, user := range result.Items {
+	userList := make([]map[string]interface{}, 0, len(result.Users))
+	for _, user := range result.Users {
 		userList = append(userList, formatUser(user))
 	}
 
 	resp := map[string]interface{}{
 		"Users": userList,
 	}
-	if result.NextMarker != "" {
-		resp["PaginationToken"] = result.NextMarker
+	if result.NextToken != "" {
+		resp["PaginationToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -234,37 +190,17 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 
 // AdminEnableUser enables the specified user in the user pool.
 func (s *CognitoService) AdminEnableUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
+	if err := s.adminEnableUserCore(reqCtx.GetRegion(), getUserPoolID(req), getUsername(req)); err != nil {
+		return nil, err
 	}
-
-	if err := s.setUserEnabled(reqCtx, userPoolID, username, true); err != nil {
-		if err == cognitostore.ErrUserNotFound {
-			return nil, ErrUserNotFound
-		}
-		return nil, ErrInternalError
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // AdminDisableUser disables the specified user in the user pool.
 func (s *CognitoService) AdminDisableUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
+	if err := s.adminDisableUserCore(reqCtx.GetRegion(), getUserPoolID(req), getUsername(req)); err != nil {
+		return nil, err
 	}
-
-	if err := s.setUserEnabled(reqCtx, userPoolID, username, false); err != nil {
-		if err == cognitostore.ErrUserNotFound {
-			return nil, ErrUserNotFound
-		}
-		return nil, ErrInternalError
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -314,6 +250,10 @@ func (s *CognitoService) AdminResetUserPassword(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
+	userPool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
 	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -322,6 +262,14 @@ func (s *CognitoService) AdminResetUserPassword(ctx context.Context, reqCtx *req
 	user.UserStatus = "RESET_REQUIRED"
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
+	}
+
+	// AdminResetUserPassword always sends a reset code via the CustomMessage
+	// trigger. The AWS API does not accept a MessageAction parameter for this
+	// operation, so suppression is not an option.
+	clientMetadata := parseClientMetadata(req)
+	if _, err := invokeCustomMessage(ctx, s, CustomMessageForgotPassword, userPoolID, username, "", userPool.LambdaConfig, "####", userAttributesMap(user), clientMetadata); err != nil {
+		logs.Warn("CustomMessage trigger failed for AdminResetUserPassword", logs.Err(err))
 	}
 
 	return response.EmptyResponse(), nil

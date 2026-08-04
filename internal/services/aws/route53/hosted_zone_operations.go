@@ -29,7 +29,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	if !strings.HasSuffix(name, ".") {
 		name = name + "."
 	}
-	// M10: Validate domain name format per RFC 1035.
+	// Validate domain name format per RFC 1035.
 	if err := validateDomainName(name); err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 
 	// Idempotent: if same CallerReference already exists, return existing zone
 	if existing, err := st.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
-		// H9: Include ChangeInfo in idempotent return — AWS spec requires
+		// Include ChangeInfo in idempotent return — AWS spec requires
 		// {HostedZone, ChangeInfo, DelegationSet} and the SDK parser fails
 		// on null ChangeInfo.
 		result := map[string]interface{}{
@@ -218,7 +218,7 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 	if delegationSetId != "" {
 		delegationSetId = strings.TrimPrefix(delegationSetId, "/delegationset/")
 	}
-	// M2: HostedZoneType filter (private/public).
+	// HostedZoneType filter (private/public).
 	hostedZoneType := request.GetStringParam(req.Parameters, "HostedZoneType")
 
 	st, err := s.store(reqCtx)
@@ -424,7 +424,7 @@ func (s *Route53Service) UpdateHostedZoneComment(ctx context.Context, reqCtx *re
 	}
 
 	comment := request.GetStringParam(req.Parameters, "Comment")
-	// L2: Validate comment length (AWS max 256 characters).
+	// Validate comment length (AWS max 256 characters).
 	if len(comment) > 256 {
 		return nil, awserrors.NewAWSError("InvalidInput", "Comment must not exceed 256 characters", 400)
 	}

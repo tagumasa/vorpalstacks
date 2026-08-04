@@ -71,7 +71,7 @@ func getRestApiId(req *request.ParsedRequest) string {
 
 // CreateRestApi creates a new REST API in API Gateway.
 func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	api := &store.RestApi{
+	input := CreateRestApiInput{
 		Name:                      request.GetStringParam(req.Parameters, "name"),
 		Description:               request.GetStringParam(req.Parameters, "description"),
 		Version:                   request.GetStringParam(req.Parameters, "version"),
@@ -80,34 +80,34 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		DisableExecuteApiEndpoint: request.GetBoolParam(req.Parameters, "disableExecuteApiEndpoint"),
 		SecurityPolicy:            request.GetStringParam(req.Parameters, "securityPolicy"),
 		EndpointAccessMode:        request.GetStringParam(req.Parameters, "endpointAccessMode"),
+		CloneFrom:                 request.GetStringParam(req.Parameters, "cloneFrom"),
 	}
 
 	if _, ok := req.Parameters["minimumCompressionSize"]; ok {
 		v := int32(request.GetIntParam(req.Parameters, "minimumCompressionSize"))
-		api.MinimumCompressionSize = &v
+		input.MinimumCompressionSize = &v
 	}
 
 	if binaryMediaTypes, ok := req.Parameters["binaryMediaTypes"].([]interface{}); ok {
 		for _, t := range binaryMediaTypes {
 			if ts, ok := t.(string); ok {
-				api.BinaryMediaTypes = append(api.BinaryMediaTypes, ts)
+				input.BinaryMediaTypes = append(input.BinaryMediaTypes, ts)
 			}
 		}
 	}
 
 	if endpointConfig, ok := req.Parameters["endpointConfiguration"].(map[string]interface{}); ok {
-		api.EndpointConfiguration = &store.EndpointConfiguration{}
 		if types, ok := endpointConfig["types"].([]interface{}); ok {
 			for _, t := range types {
 				if ts, ok := t.(string); ok {
-					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, ts)
+					input.EndpointTypes = append(input.EndpointTypes, ts)
 				}
 			}
 		}
 	}
 
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
-		api.Tags = tagutil.MapInterfaceToTags(tags)
+		input.Tags = tagutil.MapInterfaceToTags(tags)
 	}
 
 	stores, err := s.store(reqCtx)
@@ -115,8 +115,7 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	cloneFrom := request.GetStringParam(req.Parameters, "cloneFrom")
-	created, err := s.createRestApiCore(stores, api, cloneFrom)
+	created, err := s.createRestApiCore(stores, input)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

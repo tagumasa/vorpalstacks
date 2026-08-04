@@ -20,7 +20,7 @@ import (
 
 // errRotationLambdaNotFound indicates that the configured rotation Lambda
 // function does not exist. RotateSecret maps this to
-// ResourceNotFoundException (L5) rather than the generic
+// ResourceNotFoundException rather than the generic
 // InvalidRequestException used for contract violations.
 var errRotationLambdaNotFound = errors.New("rotation Lambda function not found")
 
@@ -214,7 +214,7 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 		return fmt.Errorf("lambda invoker not configured on event bus")
 	}
 
-	// Use the caller-provided ClientRequestToken when available (M3);
+	// Use the caller-provided ClientRequestToken when available;
 	// otherwise auto-generate one for this rotation cycle.
 	clientToken := clientRequestToken
 	if clientToken == "" {
@@ -236,8 +236,8 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 
 		statusCode, respBytes, invokeErr := lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
 		if invokeErr != nil {
-			// Distinguish Lambda-not-found from other invocation errors
-			// (L5). AWS returns ResourceNotFoundException when the
+			// Distinguish Lambda-not-found from other invocation errors.
+			// AWS returns ResourceNotFoundException when the
 			// rotation Lambda doesn't exist.
 			if errors.Is(invokeErr, errRotationLambdaNotFound) || isLambdaNotFoundInvokeError(invokeErr) {
 				return fmt.Errorf("%w: %v", errRotationLambdaNotFound, invokeErr)

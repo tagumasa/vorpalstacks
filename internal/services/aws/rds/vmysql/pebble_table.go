@@ -283,7 +283,7 @@ func (s *pebbleAutoIncSetter) Close(ctx *sql.Context) error { return nil }
 // CREATE INDEX both succeed. The index is NOT used for query-plan
 // optimisation: pebbleIndex.CanSupport returns false (line 415), so the
 // go-mysql-server planner falls back to primary-key / full-table scan.
-// This is acceptable for vmysql Phase 0c — the index metadata round-
+// This is acceptable for the current vmysql scope — the index metadata round-
 // trips correctly through SHOW INDEX / information_schema, but lookups
 // are not accelerated. A warning is logged on every CreateIndex call so
 // operators are aware that the index is metadata-only.

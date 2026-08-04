@@ -1,7 +1,6 @@
 package cognitoidentityprovider
 
 import (
-	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -24,19 +23,6 @@ func markAutoVerifiedAttributes(user *cognitostore.User, pool *cognitostore.User
 // AND has it marked as verified.
 func isAttributeVerified(attrs map[string]string, name string) bool {
 	return attrs[name] != "" && attrs[name+"_verified"] == "true"
-}
-
-func (s *CognitoService) setUserEnabled(reqCtx *request.RequestContext, userPoolID, username string, enabled bool) error {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return err
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return err
-	}
-	user.Enabled = enabled
-	return store.UpdateUser(user)
 }
 
 func formatUserAttributes(attrs map[string]string) []map[string]string {

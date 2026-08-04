@@ -6,7 +6,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPool creates a new Cognito user pool.
@@ -20,25 +19,15 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
 	applyUserPoolUpdates(userPool, req)
 
-	// M6: AliasAttributes and UsernameAttributes are mutually exclusive
-	if len(userPool.AliasAttributes) > 0 && len(userPool.UsernameAttributes) > 0 {
-		return nil, ErrInvalidParameter
-	}
+	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
 
-	store, err := s.store(reqCtx)
+	created, err := s.createUserPoolCore(CreateUserPoolInput{
+		Pool:   userPool,
+		Region: reqCtx.GetRegion(),
+		Tags:   tags,
+	})
 	if err != nil {
 		return nil, err
-	}
-	created, err := store.CreateUserPool(userPool)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
-	if len(tags) > 0 {
-		if err := store.Tag(created.Arn, tags); err != nil {
-			return nil, ErrInternalError
-		}
 	}
 
 	return map[string]interface{}{
@@ -54,17 +43,10 @@ func (s *CognitoService) DescribeUserPool(ctx context.Context, reqCtx *request.R
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
+	userPool, err := s.describeUserPoolCore(reqCtx.GetRegion(), userPoolID)
 	if err != nil {
 		return nil, err
 	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	tags, _ := store.ListAsSlice(userPool.Arn)
-	userPool.Tags = tags
 
 	return map[string]interface{}{
 		"UserPool": formatUserPool(userPool),
@@ -74,19 +56,9 @@ func (s *CognitoService) DescribeUserPool(ctx context.Context, reqCtx *request.R
 // DeleteUserPool deletes a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_DeleteUserPool.html
 func (s *CognitoService) DeleteUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteUserPoolCore(reqCtx.GetRegion(), getUserPoolID(req)); err != nil {
 		return nil, err
 	}
-	if err := store.DeleteUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -119,29 +91,16 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 // ListUserPools lists the Cognito user pools.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPools.html
 func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
+	result, err := s.listUserPoolsCore(reqCtx.GetRegion(), ListUserPoolsInput{
+		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}
-
-	result, err := store.ListUserPoolsPaginated(opts)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	pools := make([]map[string]interface{}, 0, len(result.Items))
-	for _, pool := range result.Items {
+	pools := make([]map[string]interface{}, 0, len(result.UserPools))
+	for _, pool := range result.UserPools {
 		pools = append(pools, map[string]interface{}{
 			"Id":               pool.ID,
 			"Name":             pool.Name,
@@ -155,8 +114,8 @@ func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.Requ
 	resp := map[string]interface{}{
 		"UserPools": pools,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
 
 	return resp, nil

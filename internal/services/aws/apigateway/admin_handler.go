@@ -1,14 +1,12 @@
 package apigateway
 
 import (
-	"errors"
 	"net/http"
 
-	"connectrpc.com/connect"
-
 	svccommon "vorpalstacks/internal/common"
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	apigatewayconnect "vorpalstacks/internal/pb/aws/apigateway/apigatewayconnect"
-	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
 // AdminHandler implements the gRPC admin console handlers for API Gateway.
@@ -29,56 +27,15 @@ func (h *AdminHandler) getStores(headers http.Header) (*apiGatewayStores, error)
 	return h.service.GetStoreForRegion(region)
 }
 
+// storeErr maps a service-layer error to a connect gRPC error.
+// Core functions may return raw store sentinel errors (e.g.
+// ErrRestApiNotFound) that are not *AWSError values.  toApiGatewayError
+// converts those sentinels into *ApiGatewayError via the
+// storeErrorMappings table; then AWSErrorToGRPC performs the canonical
+// HTTP-status-to-connect-code mapping, including 409 sub-code
+// distinctions (DeleteConflict, LimitExceeded, *AlreadyExists).
 func storeErr(err error) error {
-	notFoundErrors := []error{
-		apigatewaystore.ErrRestApiNotFound,
-		apigatewaystore.ErrResourceNotFound,
-		apigatewaystore.ErrMethodNotFound,
-		apigatewaystore.ErrIntegrationNotFound,
-		apigatewaystore.ErrDeploymentNotFound,
-		apigatewaystore.ErrStageNotFound,
-		apigatewaystore.ErrRequestValidatorNotFound,
-		apigatewaystore.ErrModelNotFound,
-		apigatewaystore.ErrApiKeyNotFound,
-		apigatewaystore.ErrUsagePlanNotFound,
-		apigatewaystore.ErrUsagePlanKeyNotFound,
-		apigatewaystore.ErrDomainNameNotFound,
-		apigatewaystore.ErrBasePathMappingNotFound,
-		apigatewaystore.ErrAuthorizerNotFound,
-		apigatewaystore.ErrMethodResponseNotFound,
-		apigatewaystore.ErrIntegrationResponseNotFound,
-	}
-	for _, nf := range notFoundErrors {
-		if errors.Is(err, nf) {
-			return connect.NewError(connect.CodeNotFound, err)
-		}
-	}
-
-	alreadyExistsErrors := []error{
-		apigatewaystore.ErrRestApiAlreadyExists,
-		apigatewaystore.ErrResourceAlreadyExists,
-		apigatewaystore.ErrDeploymentAlreadyExists,
-		apigatewaystore.ErrStageAlreadyExists,
-		apigatewaystore.ErrRequestValidatorAlreadyExists,
-		apigatewaystore.ErrModelAlreadyExists,
-		apigatewaystore.ErrApiKeyAlreadyExists,
-		apigatewaystore.ErrUsagePlanAlreadyExists,
-		apigatewaystore.ErrUsagePlanKeyAlreadyExists,
-		apigatewaystore.ErrDomainNameAlreadyExists,
-		apigatewaystore.ErrBasePathMappingAlreadyExists,
-		apigatewaystore.ErrAuthorizerAlreadyExists,
-	}
-	for _, ae := range alreadyExistsErrors {
-		if errors.Is(err, ae) {
-			return connect.NewError(connect.CodeAlreadyExists, err)
-		}
-	}
-
-	if errors.Is(err, apigatewaystore.ErrDeploymentInUse) {
-		return connect.NewError(connect.CodeFailedPrecondition, err)
-	}
-
-	return connect.NewError(connect.CodeInternal, err)
+	return svcerrors.AWSErrorToGRPC(toApiGatewayError(err))
 }
 
 // NewConnectHandler returns the connect RPC path and handler for API Gateway admin.

@@ -142,9 +142,9 @@ func (s *SQSStore) runMessageMoveTask(taskID, sourceURL, destURL string, maxRate
 // each to destURL, and deletes the original. Returns moved/failed counts and
 // whether the source queue is now empty.
 //
-// C1: FIFO destination queues get sequence number assignment and deduplication
+// FIFO destination queues get sequence number assignment and deduplication
 // checking applied to each moved message.
-// C2: Each message copy+delete is atomic via storage.Update transaction,
+// Each message copy+delete is atomic via storage.Update transaction,
 // preventing duplication on partial failure.
 func (s *SQSStore) moveMessageBatch(sourceURL, destURL string) (moved, failed int32, done bool, err error) {
 	opts := common.ListOptions{Prefix: messagePrefix(sourceURL), MaxItems: moveTaskBatchSize}
@@ -185,7 +185,7 @@ func (s *SQSStore) moveMessageBatch(sourceURL, destURL string) (moved, failed in
 		newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", now.UnixMilli())
 		newMsg.Attributes["SenderId"] = s.accountID
 
-		// C1: FIFO destination — assign sequence number and check deduplication
+		// FIFO destination — assign sequence number and check deduplication
 		srcKey := messageKey(sourceURL, msgPb.Id)
 		var dedupKey string
 		if destQueue.FifoQueue {
@@ -228,7 +228,7 @@ func (s *SQSStore) moveMessageBatch(sourceURL, destURL string) (moved, failed in
 			continue
 		}
 
-		// C2: Atomic copy + delete in a single transaction
+		// Atomic copy + delete in a single transaction
 		handle := msgPb.ReceiptHandle
 		txErr := s.storage.Update(context.Background(), func(txn storage.Transaction) error {
 			if err := txn.Bucket(messagesBucket).Put([]byte(destKey), data); err != nil {

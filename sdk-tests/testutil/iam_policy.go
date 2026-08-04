@@ -372,7 +372,7 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 
 	// SetAsDefault=true exercises the 2-step PutVersion + SetDefaultVersion
 	// path.  The invariant "exactly one default version per policy" must
-	// hold after the swap (M1 regression guard).
+	// hold after the swap (regression guard).
 	results = append(results, r.RunTest("iam", "CreatePolicyVersion_SetAsDefault", func() error {
 		v3Document := `{
 			"Version": "2012-10-17",

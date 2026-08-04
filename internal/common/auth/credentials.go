@@ -54,7 +54,7 @@ type SessionCredentials struct {
 	SourceIdentity string
 	// Policy and PolicyArns carry the session-scoping policy through to
 	// the authorisation layer, where it is intersected with the
-	// assumed role's identity-based policies (H2).
+	// assumed role's identity-based policies.
 	Policy     string
 	PolicyArns []string
 }

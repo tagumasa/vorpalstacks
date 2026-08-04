@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -198,6 +199,7 @@ func (s *AthenaService) DeleteDataCatalog(ctx context.Context, reqCtx *request.R
 }
 
 // UpdateDataCatalog updates the specified data catalog with new metadata.
+// Per the Smithy model, Name and Type are both REQUIRED on this operation.
 func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
@@ -206,6 +208,14 @@ func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.R
 
 	if name == "AwsDataCatalog" {
 		return nil, ErrInvalidRequestException
+	}
+
+	catalogType := request.GetParamCaseInsensitive(req.Parameters, "Type")
+	if catalogType == "" {
+		return nil, awserrors.NewInvalidParameterException("Type is required for UpdateDataCatalog")
+	}
+	if err := validateDataCatalogType(catalogType); err != nil {
+		return nil, err
 	}
 
 	stores, err := s.store(reqCtx)
@@ -219,6 +229,8 @@ func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.R
 		}
 		return nil, err
 	}
+
+	catalog.Type = catalogType
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 	if description != "" {

@@ -108,7 +108,7 @@ func (s *IAMService) ListOpenIDConnectProviders(ctx context.Context, reqCtx *req
 	providerList := make([]interface{}, len(result.OpenIDConnectProviderList))
 	for i, provider := range result.OpenIDConnectProviderList {
 		// Smithy OpenIDConnectProviderListEntry contains only Arn.
-		// CreateDate is intentionally omitted (L2 spec compliance).
+		// CreateDate is intentionally omitted for spec compliance.
 		providerList[i] = map[string]interface{}{
 			"Arn": provider.Arn,
 		}
@@ -165,7 +165,7 @@ func (s *IAMService) AddClientIDToOpenIDConnectProvider(ctx context.Context, req
 	}
 	// Atomic AddClientID holds the per-ARN lock across the
 	// read-modify-write cycle, preventing lost updates from concurrent
-	// callers (M3).
+	// callers.
 	if err := store.OpenIDConnectProviders().AddClientID(providerArn, clientId); err != nil {
 		if errors.Is(err, iamstore.ErrOpenIDConnectProviderNotFound) {
 			return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)

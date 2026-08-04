@@ -13,7 +13,7 @@ import (
 
 // ScheduleSpec is the common input structure for schedule creation and
 // update, used by both the HTTP API and the admin console to guarantee
-// identical validation (H1 shared validation layer).
+// identical validation through the shared validation layer.
 type ScheduleSpec struct {
 	Name                       string
 	GroupName                  string
@@ -40,7 +40,7 @@ type ValidatedSchedule struct {
 }
 
 // validateClientToken validates the ClientToken format per Smithy spec:
-// length [1, 64], pattern ^[a-zA-Z0-9-_]+$ (M5).
+// length [1, 64], pattern ^[a-zA-Z0-9-_]+$.
 func validateClientToken(token string) error {
 	if len(token) < 1 || len(token) > 64 {
 		return awserrors.NewValidationException("ClientToken must be 1-64 characters")
@@ -77,16 +77,16 @@ func validateDateFlexible(s string) (time.Time, error) {
 }
 
 // ValidateScheduleFields validates all schedule fields per AWS Smithy spec.
-// Called by both HTTP API and admin console paths (H1 — shared validation).
+// Called by both HTTP API and admin console paths (shared validation).
 // Returns the normalised schedule fields or an error.
 func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
-	// 1. Name pattern (H1).
+	// 1. Name pattern.
 	if spec.Name == "" || !namePattern.MatchString(spec.Name) {
 		return nil, ErrValidation
 	}
 
-	// 2. Schedule expression validity including cron field count (H1, H5)
-	//    and at() semantic date check (H6).
+	// 2. Schedule expression validity including cron field count
+	//    and at() semantic date check.
 	if spec.ScheduleExpression == "" {
 		return nil, ErrValidation
 	}
@@ -94,7 +94,7 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		return nil, ErrInvalidScheduleExpression
 	}
 
-	// 3. Target required + ARN format validation (H1, M1, H2, L5).
+	// 3. Target required and ARN format validation.
 	if spec.Target == nil {
 		return nil, ErrInvalidTarget
 	}
@@ -102,7 +102,7 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		return nil, err
 	}
 
-	// 4. FlexibleTimeWindow Mode enum (H1, H3).
+	// 4. FlexibleTimeWindow Mode enum.
 	if spec.FlexibleTimeWindow != nil {
 		if err := validateFlexibleTimeWindow(spec.FlexibleTimeWindow); err != nil {
 			return nil, err
@@ -124,7 +124,7 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		result.State = schedulerstore.ScheduleState(spec.State)
 	}
 
-	// 6. ActionAfterCompletion enum (H1).
+	// 6. ActionAfterCompletion enum.
 	if spec.ActionAfterCompletion != "" {
 		if spec.ActionAfterCompletion != "NONE" && spec.ActionAfterCompletion != "DELETE" {
 			return nil, ErrInvalidActionAfterCompletion
@@ -132,7 +132,7 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		result.ActionAfterCompletion = schedulerstore.ActionAfterCompletion(spec.ActionAfterCompletion)
 	}
 
-	// 7. KmsKeyArn ARN validation (M2).
+	// 7. KmsKeyArn ARN validation.
 	if spec.KmsKeyArn != "" {
 		parsed, err := svcarn.ParseARN(spec.KmsKeyArn)
 		if err != nil {
@@ -143,7 +143,7 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		}
 	}
 
-	// 8. ScheduleExpressionTimezone length + IANA TZ database (M3).
+	// 8. ScheduleExpressionTimezone length and IANA TZ database.
 	if spec.ScheduleExpressionTimezone != "" {
 		if len(spec.ScheduleExpressionTimezone) < 1 || len(spec.ScheduleExpressionTimezone) > 50 {
 			return nil, awserrors.NewValidationException("ScheduleExpressionTimezone must be 1-50 characters")
@@ -153,12 +153,12 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		}
 	}
 
-	// 9. Description length 0-512 (M6).
+	// 9. Description length 0-512.
 	if len(spec.Description) > 512 {
 		return nil, awserrors.NewValidationException("Description must be 0-512 characters")
 	}
 
-	// 10. StartDate / EndDate parse + ordering (M4).
+	// 10. StartDate / EndDate parse and ordering.
 	if spec.StartDate != "" {
 		t, err := validateDateFlexible(spec.StartDate)
 		if err != nil {
@@ -181,8 +181,8 @@ func ValidateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 }
 
 // validateTarget validates the Target structure: ARN format for Target,
-// RoleArn, and DeadLetterConfig (M1); RetryPolicy ranges (H2); and
-// EventBridge / Kinesis sub-parameter lengths (L5).
+// RoleArn, and DeadLetterConfig; RetryPolicy ranges; and
+// EventBridge / Kinesis sub-parameter lengths.
 func validateTarget(target *schedulerstore.Target) error {
 	if target.Arn == "" {
 		return ErrInvalidTarget
@@ -197,7 +197,7 @@ func validateTarget(target *schedulerstore.Target) error {
 		return ErrInvalidTarget
 	}
 
-	// DeadLetterConfig ARN format (M1).
+	// DeadLetterConfig ARN format.
 	if target.DeadLetterConfig != nil && target.DeadLetterConfig.Arn != "" {
 		if _, err := svcarn.ParseARN(target.DeadLetterConfig.Arn); err != nil {
 			return ErrInvalidTarget
@@ -205,7 +205,7 @@ func validateTarget(target *schedulerstore.Target) error {
 	}
 
 	// RetryPolicy ranges — reject out-of-range instead of silently
-	// dropping (H2). Smithy: MaximumEventAgeInSeconds [60, 86400],
+	// dropping. Smithy: MaximumEventAgeInSeconds [60, 86400],
 	// MaximumRetryAttempts [0, 185].
 	if target.RetryPolicy != nil {
 		if target.RetryPolicy.MaximumEventAgeInSeconds != nil {
@@ -222,7 +222,7 @@ func validateTarget(target *schedulerstore.Target) error {
 		}
 	}
 
-	// EventBridge / Kinesis sub-parameter lengths (L5).
+	// EventBridge / Kinesis sub-parameter lengths.
 	// Smithy: DetailType [1, 128], Source [1, 256], PartitionKey [1, 256].
 	if target.EventBridgeParameters != nil {
 		if l := len(target.EventBridgeParameters.DetailType); l < 1 || l > 128 {
@@ -242,7 +242,7 @@ func validateTarget(target *schedulerstore.Target) error {
 }
 
 // validateFlexibleTimeWindow validates the FlexibleTimeWindow Mode enum
-// (H3 — Smithy enum [OFF, FLEXIBLE]) and the MaximumWindowInMinutes range
+// (Smithy enum [OFF, FLEXIBLE]) and the MaximumWindowInMinutes range
 // when Mode is FLEXIBLE (Smithy range [1, 1440]).
 func validateFlexibleTimeWindow(ftw *schedulerstore.FlexibleTimeWindow) error {
 	if ftw.Mode != schedulerstore.FlexibleTimeWindowModeOff && ftw.Mode != schedulerstore.FlexibleTimeWindowModeFlexible {
@@ -257,8 +257,8 @@ func validateFlexibleTimeWindow(ftw *schedulerstore.FlexibleTimeWindow) error {
 }
 
 // validateScheduleExpressionFull performs the same checks as
-// isValidScheduleExpression but also includes cron field-count (H5) and
-// at() semantic date validation (H6) so that invalid expressions are
+// isValidScheduleExpression but also includes cron field-count and
+// at() semantic date validation so that invalid expressions are
 // rejected at the API layer rather than silently stored.
 func isValidScheduleExpressionFull(expr string) bool {
 	// Smithy model: ScheduleExpression max length is 256 characters.
@@ -266,7 +266,7 @@ func isValidScheduleExpressionFull(expr string) bool {
 		return false
 	}
 
-	// at() — validate semantic date correctness (H6). The regex captures
+	// at() — validate semantic date correctness. The regex captures
 	// the date component; we additionally parse it to reject impossible
 	// values such as month 13 or hour 99.
 	if matches := atExpressionRegex.FindStringSubmatch(expr); len(matches) == 2 {
@@ -281,7 +281,7 @@ func isValidScheduleExpressionFull(expr string) bool {
 		return true
 	}
 
-	// cron() — validate exactly 6 fields (H5). AWS cron requires:
+	// cron() — validate exactly 6 fields. AWS cron requires:
 	// Minutes Hours Day-of-month Month Day-of-week Year.
 	if matches := cronExpressionRegex.FindStringSubmatch(expr); len(matches) == 2 {
 		fields := strings.Fields(matches[1])

@@ -314,7 +314,7 @@ func InstanceToProto(i *DBInstance) *pb.DBInstance {
 		PreferredBackupWindow:              i.PreferredBackupWindow,
 
 		// MasterUserPasswordHash: write-only, persisted for verification
-		// (H1 fix). json:"-" on the Go struct prevents it from appearing
+		// The json:"-" on the Go struct prevents it from appearing
 		// in API responses.
 		MasterUserPasswordHash: i.MasterUserPasswordHash,
 	}
@@ -382,7 +382,7 @@ func ProtoToInstance(p *pb.DBInstance) *DBInstance {
 		DbiResourceId:                      p.GetDbiResourceId(),
 		PreferredBackupWindow:              p.GetPreferredBackupWindow(),
 
-		// MasterUserPasswordHash: write-only (H1 fix).
+		// MasterUserPasswordHash: write-only.
 		MasterUserPasswordHash: p.GetMasterUserPasswordHash(),
 	}
 	if p.InstanceCreateTime != nil {

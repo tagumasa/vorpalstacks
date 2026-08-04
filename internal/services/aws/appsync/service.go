@@ -119,8 +119,8 @@ func (s *AppSyncService) store(reqCtx *request.RequestContext) (*appsyncstore.Ap
 }
 
 // RegisterHandlers registers all AppSync control-plane operation handlers with the dispatcher.
-// Phase 1: Event API (v2) operations + tag operations.
-// Phase 2: GraphQL API (v1) core — data sources, resolvers, functions, types, schema.
+// Event API (v2) operations and tag operations.
+// GraphQL API (v1) core — data sources, resolvers, functions, types, schema.
 func (s *AppSyncService) RegisterHandlers(d handler.Registrar) {
 	// Event API (v2) operations
 	d.RegisterHandlerForService("appsync", "CreateApi", s.CreateApi)

@@ -87,7 +87,7 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 		s.mu.Lock()
 		s.statsDisabled = false
 		s.mu.Unlock()
-		// L10: Use a timeout to prevent indefinite blocking on refresh.
+		// Use a timeout to prevent indefinite blocking on refresh.
 		// The statistics refresh scans all nodes and edges; on very large
 		// graphs this can take significant time. A 30s timeout prevents
 		// the handler from hanging indefinitely.
@@ -202,7 +202,7 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 
-	// M8: Read the encoding preference from the Accept-Encoding HTTP header
+	// Read the encoding preference from the Accept-Encoding HTTP header
 	// (Smithy httpHeader trait). Currently only "gzip" is defined in the
 	// Encoding enum. Framework-level gzip middleware is required for actual
 	// compression; we log the request for diagnostics.
@@ -264,7 +264,7 @@ func appendNodeRecords(reader graphengine.GraphReader, records []interface{}, re
 	if remaining <= 0 {
 		return records, remaining
 	}
-	// M7: Propagate iteration errors instead of silently swallowing them.
+	// Propagate iteration errors instead of silently swallowing them.
 	err := reader.ForEachNode(func(node *graphengine.Node) error {
 		if remaining <= 0 {
 			return errLimitReached
@@ -300,7 +300,7 @@ func appendEdgeRecords(reader graphengine.GraphReader, records []interface{}, re
 	if remaining <= 0 {
 		return records, remaining
 	}
-	// M7: Propagate iteration errors instead of silently swallowing them.
+	// Propagate iteration errors instead of silently swallowing them.
 	err := reader.ForEachEdge(func(edge *graphengine.Edge) error {
 		if remaining <= 0 {
 			return errLimitReached

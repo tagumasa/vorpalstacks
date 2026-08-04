@@ -160,7 +160,8 @@ func rdsDataOperationFromPath(path string) string {
 // @http uri traits. When a path is missing from this list, the AWS SDK v2
 // (restJson1 protocol, no X-Amz-Target header) cannot route the request,
 // causing the dispatcher to fall back to mock generation and return '{}'.
-// R18-C1: added 41 missing prefixes to restore routing for ~140 operations.
+// 41 prefixes were added here to restore routing for the operations that
+// were previously falling back to mock generation.
 var iotPathPrefixes = []string{
 	// Original prefixes (pre-R18)
 	"/things", "/thing-groups", "/thing-types", "/billing-groups",
@@ -179,7 +180,7 @@ var iotPathPrefixes = []string{
 	"/detector-models", "/detector-model/",
 	"/inputs", "/input/",
 	"/messages", "/destinations", "/effective-policies",
-	// R18-C1: 41 missing prefixes (extracted from Smithy @http uri traits)
+	// 41 missing prefixes (extracted from Smithy @http uri traits)
 	// CA Certificate lifecycle (12 ops)
 	"/cacertificate", "/cacertificates",
 	"/accept-certificate-transfer", "/cancel-certificate-transfer",

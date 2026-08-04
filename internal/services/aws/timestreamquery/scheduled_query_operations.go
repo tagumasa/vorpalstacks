@@ -71,7 +71,7 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 	notificationConfig := s.parseNotificationConfiguration(req.Parameters)
 	roleARN := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryExecutionRoleArn")
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	// L1: KmsKeyId targets Smithy StringValue2048 — length 1-2048.
+	// KmsKeyId targets Smithy StringValue2048 — length 1-2048.
 	if kmsKeyID != "" && len(kmsKeyID) > 2048 {
 		return nil, ErrValidationException
 	}
@@ -277,7 +277,7 @@ func (s *TimestreamQueryService) DescribeScheduledQuery(ctx context.Context, req
 	// Query the most recent run to populate LastRunSummary with full
 	// details (InvocationTime, TriggerTime, ExecutionStats,
 	// FailureReason) per the Smithy ScheduledQueryRunSummary shape.
-	// M5: Also collect failed runs for RecentlyFailedRuns.
+	// Also collect failed runs for RecentlyFailedRuns.
 	var lastRun *tsstore.ScheduledQueryRun
 	var failedRuns []*tsstore.ScheduledQueryRun
 	runs, runErr := st.scheduledQueryRunStore.ListRuns(sq.ARN)
@@ -407,7 +407,7 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 		return nil, ErrInternalServer
 	}
 
-	// M10: Parse InvocationTime (defaults to now). QueryInsights is accepted
+	// Parse InvocationTime (defaults to now). QueryInsights is accepted
 	// but currently not applied to the query execution (would require
 	// extending the query executor to collect per-query insights).
 	now := time.Now().UTC()
@@ -926,7 +926,7 @@ func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tss
 		response["LastRunSummary"] = summary
 	}
 
-	// M5: Populate RecentlyFailedRuns (Smithy: ScheduledQueryRunSummaryList).
+	// Populate RecentlyFailedRuns (Smithy: ScheduledQueryRunSummaryList).
 	if len(failedRuns) > 0 {
 		recentlyFailed := make([]map[string]interface{}, 0, len(failedRuns))
 		for _, fr := range failedRuns {
