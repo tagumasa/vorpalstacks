@@ -57,7 +57,6 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 | EventBridge | 较全面 | 不支持全局终端节点或合作伙伴事件源 |
 | IAM | 较全面 | 不支持策略模拟器或 Organizations 集成 |
 | IoT Core | 较全面 | 272 个操作（设备、证书、策略、规则引擎 16 种动作、作业、设备影子、设备管理）。无固件配置执行 |
-| IoT Events | 较全面 | 检测器模型、警报模型、输入。无计划审计执行 |
 | Kinesis | 完整 | |
 | KMS | 完整 | |
 | Lambda | 较全面 | 不支持 Durable Functions 或代码签名 |
@@ -209,7 +208,6 @@ DATA_PATH/
 - [架构](docs/architecture.md) - 系统架构概览
 - [服务](docs/services.md) - 已实现的 AWS 服务
 - [配置](docs/configuration.md) - 环境变量和设置
-- [联动](docs/integration.md) - 服务间通信
 
 ## 已知限制
 

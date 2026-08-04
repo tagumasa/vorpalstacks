@@ -57,7 +57,6 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | EventBridge | Broad | No global endpoints or partner event sources |
 | IAM | Broad | No policy simulator or organisations integration |
 | IoT Core | Broad | 272 operations incl. things, certificates, policies, rules engine (16 action types), jobs, shadows, device management. No firmware provisioning execution |
-| IoT Events | Broad | Detector models, alarm models, inputs. No scheduled audit execution |
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions or code signing |
@@ -209,7 +208,6 @@ For Lambda functionality:
 - [Architecture](docs/architecture.md) - System architecture overview
 - [Services](docs/services.md) - Implemented AWS services
 - [Configuration](docs/configuration.md) - Environment variables and settings
-- [Integration](docs/integration.md) - Service-to-service communication
 
 ## Known Limitations
 

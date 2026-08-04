@@ -140,7 +140,6 @@ cloudfront
 cloudtrail
 wafv2
 iot
-iotevents
 neptune
 neptunedata
 neptunegraph

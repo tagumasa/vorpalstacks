@@ -182,7 +182,7 @@ func (s *IoTService) ListThingsForThingType(ctx context.Context, reqCtx *request
 }
 
 // store returns the singleton IotStore for the request region, shared with
-// iotevents and the MQTT auth provider via iotstore.GetOrCreateStore.
+// the MQTT auth provider via iotstore.GetOrCreateStore.
 func (s *IoTService) store(reqCtx *request.RequestContext) (iotstore.IotStoreInterface, error) {
 	st, err := reqCtx.GetStorage()
 	if err != nil {

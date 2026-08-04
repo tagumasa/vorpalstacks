@@ -2,26 +2,21 @@ package cognitoidentity
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/core/logs"
 
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
 	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
 	"vorpalstacks/internal/pb/aws/common"
-	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler provides Cognito Identity service administration functionality.
-// It delegates to the shared CognitoIdentityService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// It delegates to Core methods on CognitoIdentityService, ensuring that
+// validation and persistence follow a single code path shared with the HTTP API.
 type AdminHandler struct {
 	cognitoidentityconnect.UnimplementedCognitoIdentityServiceHandler
 	service *CognitoIdentityService
@@ -29,80 +24,65 @@ type AdminHandler struct {
 
 var _ cognitoidentityconnect.CognitoIdentityServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Cognito Identity AdminHandler.
 func NewAdminHandler(svc *CognitoIdentityService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (cognitoidentitystore.CognitoIdentityStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
-}
-
 // ListIdentityPools lists identity pools in Cognito Identity with pagination.
 func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Request[pb.ListIdentityPoolsInput]) (*connect.Response[pb.ListIdentityPoolsResponse], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	maxResults := int(req.Msg.Maxresults)
-	if maxResults <= 0 {
-		maxResults = 60
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: maxResults,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	result, err := store.ListIdentityPools(opts)
+	items, nextToken, err := h.service.listIdentityPoolsShortCore(store, ListIdentityPoolsInput{
+		MaxResults: int(req.Msg.Maxresults),
+		NextToken:  req.Msg.Nexttoken,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	descriptions := make([]*pb.IdentityPoolShortDescription, 0, len(result.Items))
-	for _, pool := range result.Items {
+	descriptions := make([]*pb.IdentityPoolShortDescription, 0, len(items))
+	for _, pool := range items {
 		descriptions = append(descriptions, &pb.IdentityPoolShortDescription{
 			Identitypoolid:   pool.ID,
 			Identitypoolname: pool.Name,
 		})
 	}
 
-	return connect.NewResponse(&pb.ListIdentityPoolsResponse{
+	resp := &pb.ListIdentityPoolsResponse{
 		Identitypools: descriptions,
-		Nexttoken:     result.NextMarker,
-	}), nil
+	}
+	if nextToken != "" {
+		resp.Nexttoken = nextToken
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // CreateIdentityPool creates a new Cognito Identity Pool via the admin console.
 func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Request[pb.CreateIdentityPoolInput]) (*connect.Response[pb.IdentityPool], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if req.Msg.GetIdentitypoolname() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IdentityPoolName is required"))
+	input := CreateIdentityPoolInput{
+		IdentityPoolName:               req.Msg.GetIdentitypoolname(),
+		AllowUnauthenticatedIdentities: req.Msg.GetAllowunauthenticatedidentities(),
+		DeveloperProviderName:          req.Msg.GetDeveloperprovidername(),
+		Region:                         region,
 	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-
-	pool := cognitoidentitystore.NewIdentityPool(
-		req.Msg.GetIdentitypoolname(),
-		req.Msg.GetAllowunauthenticatedidentities(),
-		region,
-	)
 
 	if req.Msg.GetAllowclassicflow() {
-		pool.AllowClassicFlow = req.Msg.GetAllowclassicflow()
-	}
-	if req.Msg.GetDeveloperprovidername() != "" {
-		pool.DeveloperProviderName = req.Msg.GetDeveloperprovidername()
+		input.AllowClassicFlow = req.Msg.GetAllowclassicflow()
+		input.AllowClassicFlowProvided = true
 	}
 
 	for _, p := range req.Msg.GetCognitoidentityproviders() {
-		pool.CognitoIdentityProviders = append(pool.CognitoIdentityProviders, cognitoidentitystore.CognitoIdentityProvider{
+		input.CognitoIdentityProviders = append(input.CognitoIdentityProviders, ProviderOut{
 			ProviderName:         p.GetProvidername(),
 			ClientID:             p.GetClientid(),
 			ServerSideTokenCheck: p.GetServersidetokencheck(),
@@ -110,88 +90,37 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 	}
 
 	if m := req.Msg.GetSupportedloginproviders(); len(m) > 0 {
-		pool.SupportedLoginProviders = m
+		input.SupportedLoginProviders = m
 	}
 	if s := req.Msg.GetOpenidconnectproviderarns(); len(s) > 0 {
-		pool.OpenIdConnectProviderARNs = s
+		input.OpenIdConnectProviderARNs = s
 	}
 	if s := req.Msg.GetSamlproviderarns(); len(s) > 0 {
-		pool.SamlProviderARNs = s
+		input.SamlProviderARNs = s
 	}
 	if t := req.Msg.GetIdentitypooltags(); len(t) > 0 {
-		pool.Tags = t
+		input.Tags = t
+		input.TagsProvided = true
 	}
 
-	created, err := store.CreateIdentityPool(pool)
+	result, err := h.service.createIdentityPoolCore(store, input)
 	if err != nil {
-		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolAlreadyExists) {
-			return nil, connect.NewError(connect.CodeAlreadyExists, err)
-		}
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	// Persist tags through the tag store so they are visible via the HTTP API
-	// (DescribeIdentityPool / ListTagsForResource), matching the HTTP API path.
-	if t := req.Msg.GetIdentitypooltags(); len(t) > 0 {
-		if err := store.Tag(created.Arn, t); err != nil {
-			logs.Error("Failed to tag identity pool via admin console, attempting cleanup",
-				logs.String("poolId", created.ID), logs.Err(err))
-			if delErr := store.DeleteIdentityPool(created.ID); delErr != nil {
-				logs.Error("Failed to cleanup identity pool after tag failure",
-					logs.String("poolId", created.ID), logs.Err(delErr))
-			}
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
-	}
-
-	resp := &pb.IdentityPool{
-		Identitypoolid:                 created.ID,
-		Identitypoolname:               created.Name,
-		Allowunauthenticatedidentities: proto.Bool(created.AllowUnauthenticatedIdentities),
-		Allowclassicflow:               proto.Bool(created.AllowClassicFlow),
-		Developerprovidername:          created.DeveloperProviderName,
-	}
-	if len(created.CognitoIdentityProviders) > 0 {
-		for _, p := range created.CognitoIdentityProviders {
-			resp.Cognitoidentityproviders = append(resp.Cognitoidentityproviders, &pb.CognitoIdentityProvider{
-				Providername:         p.ProviderName,
-				Clientid:             p.ClientID,
-				Serversidetokencheck: proto.Bool(p.ServerSideTokenCheck),
-			})
-		}
-	}
-	if len(created.SupportedLoginProviders) > 0 {
-		resp.Supportedloginproviders = created.SupportedLoginProviders
-	}
-	if len(created.OpenIdConnectProviderARNs) > 0 {
-		resp.Openidconnectproviderarns = created.OpenIdConnectProviderARNs
-	}
-	if len(created.SamlProviderARNs) > 0 {
-		resp.Samlproviderarns = created.SamlProviderARNs
-	}
-	if len(created.Tags) > 0 {
-		resp.Identitypooltags = created.Tags
-	}
-
-	return connect.NewResponse(resp), nil
+	return connect.NewResponse(poolOutToProto(result)), nil
 }
 
 // DeleteIdentityPool deletes a Cognito Identity Pool via the admin console.
 func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Request[pb.DeleteIdentityPoolInput]) (*connect.Response[common.Empty], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if req.Msg.GetIdentitypoolid() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IdentityPoolId is required"))
-	}
-
-	if err := store.DeleteIdentityPool(req.Msg.GetIdentitypoolid()); err != nil {
-		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteIdentityPoolCore(store, req.Msg.GetIdentitypoolid()); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&common.Empty{}), nil
@@ -200,4 +129,34 @@ func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Requ
 // NewConnectHandler creates a gRPC-Web connect handler for the Cognito Identity admin console.
 func NewConnectHandler(svc *CognitoIdentityService) (string, http.Handler) {
 	return cognitoidentityconnect.NewCognitoIdentityServiceHandler(NewAdminHandler(svc))
+}
+
+func poolOutToProto(p *IdentityPoolOut) *pb.IdentityPool {
+	resp := &pb.IdentityPool{
+		Identitypoolid:                 p.ID,
+		Identitypoolname:               p.Name,
+		Allowunauthenticatedidentities: proto.Bool(p.AllowUnauthenticatedIdentities),
+		Allowclassicflow:               proto.Bool(p.AllowClassicFlow),
+		Developerprovidername:          p.DeveloperProviderName,
+	}
+	for _, cp := range p.CognitoIdentityProviders {
+		resp.Cognitoidentityproviders = append(resp.Cognitoidentityproviders, &pb.CognitoIdentityProvider{
+			Providername:         cp.ProviderName,
+			Clientid:             cp.ClientID,
+			Serversidetokencheck: proto.Bool(cp.ServerSideTokenCheck),
+		})
+	}
+	if len(p.SupportedLoginProviders) > 0 {
+		resp.Supportedloginproviders = p.SupportedLoginProviders
+	}
+	if len(p.OpenIdConnectProviderARNs) > 0 {
+		resp.Openidconnectproviderarns = p.OpenIdConnectProviderARNs
+	}
+	if len(p.SamlProviderARNs) > 0 {
+		resp.Samlproviderarns = p.SamlProviderARNs
+	}
+	if len(p.Tags) > 0 {
+		resp.Identitypooltags = p.Tags
+	}
+	return resp
 }

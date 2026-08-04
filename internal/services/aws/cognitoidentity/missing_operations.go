@@ -2,7 +2,6 @@ package cognitoidentity
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -64,9 +63,13 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 		return nil, ErrResourceNotFound
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	maxResults := 60
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		n := request.GetIntParam(req.Parameters, "MaxResults")
+		if err := validateQueryLimit(n); err != nil {
+			return nil, err
+		}
+		maxResults = n
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 	// HideDisabled is accepted for SPEC compliance. Edge identities have no
@@ -123,9 +126,9 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 	// without side effects to prevent identity takeover via Logins injection.
 	_ = parseMapParam(req, "Logins")
 
-	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 900, nil)
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 900, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate OpenID token: %w", err)
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
@@ -143,6 +146,11 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 
 	logins := parseMapParam(req, "Logins")
 	if len(logins) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
+	// AWS expects exactly one Login entry per request (1 developer user).
+	if len(logins) != 1 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -167,18 +175,41 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 		tokenDuration = int64(td)
 	}
 
+	// PrincipalTags are embedded into the JWT as cognito:principal_tags
+	// so that STS AssumeRoleWithWebIdentity propagates them as session tags.
+	var principalTags map[string]string
+	if ptVal, ok := req.Parameters["PrincipalTags"]; ok {
+		if ptMap, ok := ptVal.(map[string]interface{}); ok {
+			if len(ptMap) > 50 {
+				return nil, ErrInvalidParameter
+			}
+			principalTags = make(map[string]string, len(ptMap))
+			for k, v := range ptMap {
+				if s, ok := v.(string); ok {
+					principalTags[k] = s
+				}
+			}
+		}
+	}
+
 	for providerName, devUserID := range logins {
 		existing, err := store.GetDeveloperIdentity(poolID, providerName, devUserID)
 		if err == nil && existing.IdentityID != "" {
+			// The developer identity already exists. If the caller supplied
+			// an IdentityId that differs from the existing link, AWS returns
+			// DeveloperUserAlreadyRegisteredException.
+			if identityID != "" && existing.IdentityID != identityID {
+				return nil, ErrDeveloperUserAlreadyRegistered
+			}
 			identityID = existing.IdentityID
-			continue
+			break
 		}
 
 		if identityID == "" {
 			identity := cognitoidentitystore.NewIdentity(poolID)
 			identityID = identity.ID
 			if err := store.CreateIdentity(identity); err != nil {
-				return nil, fmt.Errorf("failed to create identity: %w", err)
+				return nil, ErrInternalError
 			}
 		}
 
@@ -189,13 +220,13 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 			IdentityID:              identityID,
 		}
 		if err := store.LinkDeveloperIdentity(di); err != nil {
-			return nil, fmt.Errorf("failed to link developer identity: %w", err)
+			return nil, ErrInternalError
 		}
 	}
 
-	token, err := s.tokenMgr.generateOpenIdToken(identityID, poolID, tokenDuration, nil)
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, poolID, tokenDuration, nil, principalTags)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate OpenID token: %w", err)
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
@@ -295,12 +326,13 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 
 	identityID := req.GetParam("IdentityId")
 	devUserID := req.GetParam("DeveloperUserIdentifier")
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 {
-		maxResults = 60
-	}
-	if maxResults > 60 {
-		return nil, ErrInvalidParameter
+	maxResults := 60
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		n := request.GetIntParam(req.Parameters, "MaxResults")
+		if err := validateQueryLimit(n); err != nil {
+			return nil, err
+		}
+		maxResults = n
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
@@ -379,13 +411,13 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 
 		sourceKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
 		if err := store.Identities().Delete(sourceKey); err != nil {
-			return nil, fmt.Errorf("failed to delete source identity: %w", err)
+			return nil, ErrInternalError
 		}
 	}
 
 	destDI, err = store.GetDeveloperIdentity(poolID, providerName, destUserID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to re-fetch destination developer identity after merge: %w", err)
+		return nil, ErrInternalError
 	}
 	if err := store.LinkDeveloperIdentity(&cognitoidentitystore.DeveloperIdentity{
 		DeveloperUserIdentifier: sourceUserID,
@@ -393,7 +425,7 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 		IdentityPoolID:          poolID,
 		IdentityID:              destDI.IdentityID,
 	}); err != nil {
-		return nil, fmt.Errorf("failed to link merged developer identity: %w", err)
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
@@ -463,10 +495,11 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 	}
 
 	// Verify the caller holds a token for at least one provider linked to
-	// this identity.
+	// this identity. Both the provider name AND the token value must match
+	// to prevent impersonation via provider-name-only knowledge.
 	providerMatch := false
-	for provider := range logins {
-		if _, exists := identity.Logins[provider]; exists {
+	for provider, tokenValue := range logins {
+		if storedValue, exists := identity.Logins[provider]; exists && storedValue == tokenValue {
 			providerMatch = true
 			break
 		}

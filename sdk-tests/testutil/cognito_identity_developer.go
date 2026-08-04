@@ -118,7 +118,7 @@ func (r *TestRunner) cognitoIdentityDeveloperTests(ctx context.Context, client *
 		_, err := client.UnlinkIdentity(ctx, &cognitoidentity.UnlinkIdentityInput{
 			IdentityId: aws.String(identityID),
 			Logins: map[string]string{
-				"graph.facebook.com": "token",
+				"graph.facebook.com": "test-token",
 			},
 			LoginsToRemove: []string{"graph.facebook.com"},
 		})

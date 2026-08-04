@@ -84,7 +84,7 @@ var (
 
 // NewNoSuchUserError creates a new error indicating that a user with the specified name cannot be found.
 func NewNoSuchUserError(userName string) *awserrors.AWSError {
-	return awserrors.NewNoSuchEntityException("User", userName)
+	return awserrors.NewNoSuchEntityException("user", userName)
 }
 
 // NewUserAlreadyExistsError creates a new error indicating that a user with the specified name already exists.
@@ -114,7 +114,7 @@ func NewDeleteConflictError(message string) *awserrors.AWSError {
 
 // NewNoSuchGroupError creates a new error indicating that a group with the specified name cannot be found.
 func NewNoSuchGroupError(groupName string) *awserrors.AWSError {
-	return awserrors.NewNoSuchEntityException("Group", groupName)
+	return awserrors.NewNoSuchEntityException("group", groupName)
 }
 
 // NewGroupAlreadyExistsError creates a new error indicating that a group with the specified name already exists.
@@ -139,7 +139,7 @@ func NewUserAlreadyInGroupError(userName, groupName string) *awserrors.AWSError 
 
 // NewNoSuchRoleError creates a new error indicating that a role with the specified name cannot be found.
 func NewNoSuchRoleError(roleName string) *awserrors.AWSError {
-	return awserrors.NewNoSuchEntityException("Role", roleName)
+	return awserrors.NewNoSuchEntityException("role", roleName)
 }
 
 // NewRoleAlreadyExistsError creates a new error indicating that a role with the specified name already exists.
@@ -179,7 +179,7 @@ func NewRoleAlreadyInInstanceProfileError(roleName, instanceProfileName string) 
 
 // NewNoSuchPolicyError creates a new error indicating that a policy with the specified ARN cannot be found.
 func NewNoSuchPolicyError(policyArn string) *awserrors.AWSError {
-	return awserrors.NewNoSuchEntityException("Policy", policyArn)
+	return awserrors.NewNoSuchEntityException("policy", policyArn)
 }
 
 // NewPolicyAlreadyExistsError creates a new error indicating that a policy with the specified name already exists.

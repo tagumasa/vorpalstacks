@@ -56,7 +56,6 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 | EventBridge | Broad | グローバルエンドポイント、パートナーイベントソースなし |
 | IAM | Broad | ポリシーシモュレータ、Organizations統合なし |
 | IoT Core | Broad | 272操作（モノ、証明書、ポリシー、ルールエンジン16アクション、ジョブ、シャドウ、デバイス管理）。ファームウェアプロビジョニング実行なし |
-| IoT Events | Broad | 検出モデル、アラームモデル、入力。スケジュール監査実行なし |
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | Durable Functions、コード署名なし |
@@ -208,7 +207,6 @@ Lambda機能を使用する場合：
 - [アーキテクチャ](docs/architecture.md) - システムアーキテクチャ概要
 - [サービス](docs/services.md) - 実装済みAWSサービス
 - [設定](docs/configuration.md) - 環境変数と設定
-- [統合](docs/integration.md) - サービス間通信
 
 ## 既知の制限事項
 

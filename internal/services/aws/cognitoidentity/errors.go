@@ -20,6 +20,9 @@ var (
 	ErrResourceInUse = awserrors.NewAWSError("ResourceInUseException", "Resource already exists", http.StatusConflict)
 	// ErrInvalidIdentityPoolConfig is returned when the identity pool has no roles configured.
 	ErrInvalidIdentityPoolConfig = awserrors.NewAWSError("InvalidIdentityPoolConfigurationException", "Invalid identity pool configuration", http.StatusBadRequest)
+	// ErrDeveloperUserAlreadyRegistered is returned when the input IdentityId does not
+	// match the existing developer identity's IdentityId.
+	ErrDeveloperUserAlreadyRegistered = awserrors.NewAWSError("DeveloperUserAlreadyRegisteredException", "This developer user identifier is already registered with Cognito", http.StatusConflict)
 )
 
 // CredentialResult holds temporary credentials issued for a Cognito identity.

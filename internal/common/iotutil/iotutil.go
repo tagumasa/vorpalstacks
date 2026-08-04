@@ -1,5 +1,5 @@
 // Package iotutil provides shared utility functions used across IoT service
-// packages (iot, iotevents, policy, rules) to eliminate duplication.
+// packages (iot, policy, rules) to eliminate duplication.
 package iotutil
 
 import (

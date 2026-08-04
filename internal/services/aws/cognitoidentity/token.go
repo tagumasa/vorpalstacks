@@ -43,8 +43,10 @@ func (tm *tokenManager) init() {
 
 // generateOpenIdToken creates an OpenID Connect JWT for a Cognito identity.
 // The token follows the format AWS Cognito Identity uses: signed with RS256,
-// with iss, sub, aud, iat, exp claims.
-func (tm *tokenManager) generateOpenIdToken(identityID, poolID string, expiresIn int64, amr []string) (string, error) {
+// with iss, sub, aud, iat, exp, jti claims. When principalTags are provided
+// they are embedded as the cognito:principal_tags claim so that downstream
+// STS AssumeRoleWithWebIdentity propagates them as session tags.
+func (tm *tokenManager) generateOpenIdToken(identityID, poolID string, expiresIn int64, amr []string, principalTags map[string]string) (string, error) {
 	tm.init()
 	if tm.err != nil {
 		return "", tm.err
@@ -61,6 +63,9 @@ func (tm *tokenManager) generateOpenIdToken(identityID, poolID string, expiresIn
 	}
 	if len(amr) > 0 {
 		claims["amr"] = amr
+	}
+	if len(principalTags) > 0 {
+		claims["cognito:principal_tags"] = principalTags
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
