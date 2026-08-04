@@ -65,6 +65,29 @@ type IdentityPoolShortOut struct {
 	Name string
 }
 
+// RoleMappingInput is the transport-agnostic representation of a RoleMapping,
+// used by validators and service-layer Core functions without depending on
+// the store package.
+type RoleMappingInput struct {
+	Type                    string
+	AmbiguousRoleResolution string
+	RulesConfiguration      *RulesConfigInput
+}
+
+// RulesConfigInput is the transport-agnostic representation of
+// RulesConfiguration.
+type RulesConfigInput struct {
+	Rules []MappingRuleInput
+}
+
+// MappingRuleInput is the transport-agnostic representation of a MappingRule.
+type MappingRuleInput struct {
+	Claim     string
+	MatchType string
+	Value     string
+	RoleARN   string
+}
+
 // ---------------------------------------------------------------------------
 // Core functions — single validation + persistence path
 // ---------------------------------------------------------------------------
@@ -72,25 +95,25 @@ type IdentityPoolShortOut struct {
 // createIdentityPoolCore is the single entry point for identity pool creation
 // shared by the HTTP API and the admin gRPC handler.
 func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitystore.CognitoIdentityStoreInterface, in CreateIdentityPoolInput) (*IdentityPoolOut, error) {
-	if err := validateIdentityPoolName(in.IdentityPoolName); err != nil {
-		return nil, err
+	if !validateIdentityPoolName(in.IdentityPoolName) {
+		return nil, ErrInvalidParameter
 	}
 
 	if in.DeveloperProviderName != "" {
-		if err := validateDeveloperProviderName(in.DeveloperProviderName); err != nil {
-			return nil, err
+		if !validateDeveloperProviderName(in.DeveloperProviderName) {
+			return nil, ErrInvalidParameter
 		}
 	}
 
 	for _, p := range in.CognitoIdentityProviders {
 		if p.ProviderName != "" {
-			if err := validateProviderName(p.ProviderName); err != nil {
-				return nil, err
+			if !validateProviderName(p.ProviderName) {
+				return nil, ErrInvalidParameter
 			}
 		}
 		if p.ClientID != "" {
-			if err := validateProviderClientId(p.ClientID); err != nil {
-				return nil, err
+			if !validateProviderClientId(p.ClientID) {
+				return nil, ErrInvalidParameter
 			}
 		}
 	}
@@ -152,8 +175,8 @@ func (s *CognitoIdentityService) listIdentityPoolsShortCore(store cognitoidentit
 	if in.MaxResults <= 0 {
 		in.MaxResults = 60
 	}
-	if err := validateQueryLimit(in.MaxResults); err != nil {
-		return nil, "", err
+	if !validateQueryLimit(in.MaxResults) {
+		return nil, "", ErrInvalidParameter
 	}
 
 	opts := storecommon.ListOptions{

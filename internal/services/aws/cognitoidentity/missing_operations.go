@@ -66,8 +66,8 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 	maxResults := 60
 	if _, ok := req.Parameters["MaxResults"]; ok {
 		n := request.GetIntParam(req.Parameters, "MaxResults")
-		if err := validateQueryLimit(n); err != nil {
-			return nil, err
+		if !validateQueryLimit(n) {
+			return nil, ErrInvalidParameter
 		}
 		maxResults = n
 	}
@@ -329,8 +329,8 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	maxResults := 60
 	if _, ok := req.Parameters["MaxResults"]; ok {
 		n := request.GetIntParam(req.Parameters, "MaxResults")
-		if err := validateQueryLimit(n); err != nil {
-			return nil, err
+		if !validateQueryLimit(n) {
+			return nil, ErrInvalidParameter
 		}
 		maxResults = n
 	}

@@ -1,11 +1,6 @@
 package cognitoidentity
 
-import (
-	"fmt"
-	"regexp"
-
-	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-)
+import "regexp"
 
 // ---------------------------------------------------------------------------
 // Smithy-derived patterns
@@ -58,114 +53,91 @@ var validMappingRuleMatchTypes = map[string]bool{
 // Validators
 // ---------------------------------------------------------------------------
 
-func validateIdentityPoolName(name string) error {
+func validateIdentityPoolName(name string) bool {
 	if len(name) < 1 || len(name) > 128 {
-		return fmt.Errorf("%w: IdentityPoolName must be 1-128 characters", ErrInvalidParameter)
+		return false
 	}
-	if !identityPoolNamePattern.MatchString(name) {
-		return fmt.Errorf("%w: IdentityPoolName contains invalid characters", ErrInvalidParameter)
-	}
-	return nil
+	return identityPoolNamePattern.MatchString(name)
 }
 
-func validateDeveloperProviderName(name string) error {
+func validateDeveloperProviderName(name string) bool {
 	if len(name) < 1 || len(name) > 128 {
-		return fmt.Errorf("%w: DeveloperProviderName must be 1-128 characters", ErrInvalidParameter)
+		return false
 	}
-	if !developerProviderNamePattern.MatchString(name) {
-		return fmt.Errorf("%w: DeveloperProviderName contains invalid characters", ErrInvalidParameter)
-	}
-	return nil
+	return developerProviderNamePattern.MatchString(name)
 }
 
-func validateProviderName(name string) error {
+func validateProviderName(name string) bool {
 	if len(name) < 1 || len(name) > 128 {
-		return fmt.Errorf("%w: ProviderName must be 1-128 characters", ErrInvalidParameter)
+		return false
 	}
-	if !providerNamePattern.MatchString(name) {
-		return fmt.Errorf("%w: ProviderName contains invalid characters", ErrInvalidParameter)
-	}
-	return nil
+	return providerNamePattern.MatchString(name)
 }
 
-func validateProviderClientId(id string) error {
+func validateProviderClientId(id string) bool {
 	if len(id) < 1 || len(id) > 128 {
-		return fmt.Errorf("%w: ClientId must be 1-128 characters", ErrInvalidParameter)
+		return false
 	}
-	if !providerClientIdPattern.MatchString(id) {
-		return fmt.Errorf("%w: ClientId contains invalid characters", ErrInvalidParameter)
-	}
-	return nil
+	return providerClientIdPattern.MatchString(id)
 }
 
 // validateQueryLimit enforces the Smithy QueryLimit range (min=1, max=60)
 // for MaxResults on ListIdentityPools, ListIdentities, and
 // LookupDeveloperIdentity. AWS rejects values outside this range server-side
 // with InvalidParameterException.
-func validateQueryLimit(n int) error {
-	if n < 1 || n > 60 {
-		return fmt.Errorf("%w: MaxResults must be between 1 and 60", ErrInvalidParameter)
-	}
-	return nil
+func validateQueryLimit(n int) bool {
+	return n >= 1 && n <= 60
 }
 
-func validateRoleKeys(roles map[string]interface{}) error {
-	if len(roles) > 2 {
-		return fmt.Errorf("%w: Roles must not exceed 2 entries", ErrInvalidParameter)
-	}
-	for k := range roles {
-		if !validRoleTypes[k] {
-			return fmt.Errorf("%w: Role type must be one of [authenticated, unauthenticated]", ErrInvalidParameter)
-		}
-	}
-	return nil
+func validateRoleKeys(authRole, unauthRole string) bool {
+	return authRole != "" || unauthRole != ""
 }
 
-func validateRoleMappings(mappings map[string]cognitoidentitystore.RoleMapping) error {
+func validateRoleMappings(mappings map[string]RoleMappingInput) bool {
 	for _, rm := range mappings {
 		if !validRoleMappingTypes[rm.Type] {
-			return fmt.Errorf("%w: RoleMapping Type must be Token or Rules", ErrInvalidParameter)
+			return false
 		}
 		// Per Smithy RoleMapping documentation, AmbiguousRoleResolution is
 		// required whenever Type is Token or Rules.
 		if rm.AmbiguousRoleResolution == "" {
-			return fmt.Errorf("%w: AmbiguousRoleResolution is required when Type is Token or Rules", ErrInvalidParameter)
+			return false
 		}
 		if !validAmbiguousRoleResolutions[rm.AmbiguousRoleResolution] {
-			return fmt.Errorf("%w: AmbiguousRoleResolution must be AuthenticatedRole or Deny", ErrInvalidParameter)
+			return false
 		}
 		if rm.Type == "Rules" && rm.RulesConfiguration == nil {
-			return fmt.Errorf("%w: RulesConfiguration is required when Type is Rules", ErrInvalidParameter)
+			return false
 		}
 		if rm.Type == "Rules" && rm.RulesConfiguration != nil {
 			if len(rm.RulesConfiguration.Rules) == 0 {
-				return fmt.Errorf("%w: RulesConfiguration must contain at least 1 rule", ErrInvalidParameter)
+				return false
 			}
 			for _, rule := range rm.RulesConfiguration.Rules {
-				if err := validateMappingRule(rule); err != nil {
-					return err
+				if !validateMappingRule(rule) {
+					return false
 				}
 			}
 		}
 	}
-	return nil
+	return true
 }
 
-func validateMappingRule(rule cognitoidentitystore.MappingRule) error {
+func validateMappingRule(rule MappingRuleInput) bool {
 	if len(rule.Claim) < 1 || len(rule.Claim) > 64 {
-		return fmt.Errorf("%w: Claim must be 1-64 characters", ErrInvalidParameter)
+		return false
 	}
 	if !claimNamePattern.MatchString(rule.Claim) {
-		return fmt.Errorf("%w: Claim contains invalid characters", ErrInvalidParameter)
+		return false
 	}
 	if !validMappingRuleMatchTypes[rule.MatchType] {
-		return fmt.Errorf("%w: MatchType must be Equals, Contains, StartsWith, or NotEqual", ErrInvalidParameter)
+		return false
 	}
 	if rule.Value == "" {
-		return fmt.Errorf("%w: Value is required", ErrInvalidParameter)
+		return false
 	}
 	if len(rule.RoleARN) < 20 || len(rule.RoleARN) > 2048 {
-		return fmt.Errorf("%w: RoleARN must be 20-2048 characters", ErrInvalidParameter)
+		return false
 	}
-	return nil
+	return true
 }

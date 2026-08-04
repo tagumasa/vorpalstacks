@@ -148,8 +148,8 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 	if poolName == "" {
 		return nil, ErrInvalidParameter
 	}
-	if err := validateIdentityPoolName(poolName); err != nil {
-		return nil, err
+	if !validateIdentityPoolName(poolName) {
+		return nil, ErrInvalidParameter
 	}
 	pool.Name = poolName
 
@@ -170,8 +170,8 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 		}
 	}
 	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
-		if err := validateDeveloperProviderName(providerName); err != nil {
-			return nil, err
+		if !validateDeveloperProviderName(providerName) {
+			return nil, ErrInvalidParameter
 		}
 		pool.DeveloperProviderName = providerName
 	}
@@ -286,8 +286,10 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 		if !ok {
 			return nil, ErrInvalidParameter
 		}
-		if err := validateRoleKeys(rolesMap); err != nil {
-			return nil, err
+		for k := range rolesMap {
+			if !validRoleTypes[k] {
+				return nil, ErrInvalidParameter
+			}
 		}
 		if v, ok := rolesMap["authenticated"].(string); ok {
 			authRole = v
@@ -301,15 +303,15 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 		// with InvalidParameterException.
 		return nil, ErrInvalidParameter
 	}
-	if authRole == "" && unauthRole == "" {
+	if !validateRoleKeys(authRole, unauthRole) {
 		return nil, ErrInvalidParameter
 	}
-	mappings, err := parseRoleMappings(req)
+	mappingDTOs, err := parseRoleMappings(req)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.SetIdentityPoolRoles(poolID, authRole, unauthRole, mappings); err != nil {
+	if err := store.SetIdentityPoolRoles(poolID, authRole, unauthRole, roleMappingMapToStore(mappingDTOs)); err != nil {
 		return nil, ErrResourceNotFound
 	}
 

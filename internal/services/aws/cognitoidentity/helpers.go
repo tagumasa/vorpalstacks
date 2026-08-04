@@ -52,14 +52,14 @@ func parseCognitoIdentityProviders(req *request.ParsedRequest) ([]cognitoidentit
 		}
 		provider := cognitoidentitystore.CognitoIdentityProvider{}
 		if name, ok := m["ProviderName"].(string); ok {
-			if err := validateProviderName(name); err != nil {
-				return nil, err
+			if !validateProviderName(name) {
+				return nil, ErrInvalidParameter
 			}
 			provider.ProviderName = name
 		}
 		if clientID, ok := m["ClientId"].(string); ok {
-			if err := validateProviderClientId(clientID); err != nil {
-				return nil, err
+			if !validateProviderClientId(clientID) {
+				return nil, ErrInvalidParameter
 			}
 			provider.ClientID = clientID
 		}
@@ -80,7 +80,7 @@ func parseMapParam(req *request.ParsedRequest, key string) map[string]string {
 	return nil
 }
 
-func parseRoleMappings(req *request.ParsedRequest) (map[string]cognitoidentitystore.RoleMapping, error) {
+func parseRoleMappings(req *request.ParsedRequest) (map[string]RoleMappingInput, error) {
 	val, ok := req.Parameters["RoleMappings"]
 	if !ok {
 		return nil, nil
@@ -89,13 +89,13 @@ func parseRoleMappings(req *request.ParsedRequest) (map[string]cognitoidentityst
 	if !ok {
 		return nil, ErrInvalidParameter
 	}
-	result := make(map[string]cognitoidentitystore.RoleMapping)
+	result := make(map[string]RoleMappingInput)
 	for k, v := range m {
 		mapping, ok := v.(map[string]interface{})
 		if !ok {
 			return nil, ErrInvalidParameter
 		}
-		rm := cognitoidentitystore.RoleMapping{}
+		rm := RoleMappingInput{}
 		if t, ok := mapping["Type"].(string); ok {
 			rm.Type = t
 		}
@@ -111,26 +111,26 @@ func parseRoleMappings(req *request.ParsedRequest) (map[string]cognitoidentityst
 		}
 		result[k] = rm
 	}
-	if err := validateRoleMappings(result); err != nil {
-		return nil, err
+	if !validateRoleMappings(result) {
+		return nil, ErrInvalidParameter
 	}
 	return result, nil
 }
 
-func parseRulesConfiguration(m map[string]interface{}) (*cognitoidentitystore.RulesConfiguration, error) {
+func parseRulesConfiguration(m map[string]interface{}) (*RulesConfigInput, error) {
 	rules, ok := m["Rules"].([]interface{})
 	if !ok {
 		return nil, ErrInvalidParameter
 	}
-	config := &cognitoidentitystore.RulesConfiguration{
-		Rules: make([]cognitoidentitystore.MappingRule, 0),
+	config := &RulesConfigInput{
+		Rules: make([]MappingRuleInput, 0),
 	}
 	for _, r := range rules {
 		rule, ok := r.(map[string]interface{})
 		if !ok {
 			return nil, ErrInvalidParameter
 		}
-		mr := cognitoidentitystore.MappingRule{}
+		mr := MappingRuleInput{}
 		if claim, ok := rule["Claim"].(string); ok {
 			mr.Claim = claim
 		}
@@ -179,4 +179,39 @@ func formatRulesConfiguration(config *cognitoidentitystore.RulesConfiguration) m
 	return map[string]interface{}{
 		"Rules": rules,
 	}
+}
+
+// roleMappingInputToStore converts a service-layer RoleMappingInput DTO into
+// the store-layer RoleMapping type required by SetIdentityPoolRoles.
+func roleMappingInputToStore(in RoleMappingInput) cognitoidentitystore.RoleMapping {
+	rm := cognitoidentitystore.RoleMapping{
+		Type:                    in.Type,
+		AmbiguousRoleResolution: in.AmbiguousRoleResolution,
+	}
+	if in.RulesConfiguration != nil {
+		rules := make([]cognitoidentitystore.MappingRule, len(in.RulesConfiguration.Rules))
+		for i, r := range in.RulesConfiguration.Rules {
+			rules[i] = cognitoidentitystore.MappingRule{
+				Claim:     r.Claim,
+				MatchType: r.MatchType,
+				Value:     r.Value,
+				RoleARN:   r.RoleARN,
+			}
+		}
+		rm.RulesConfiguration = &cognitoidentitystore.RulesConfiguration{Rules: rules}
+	}
+	return rm
+}
+
+// roleMappingMapToStore converts a map of RoleMappingInput DTOs into the
+// store-layer map required by SetIdentityPoolRoles.
+func roleMappingMapToStore(in map[string]RoleMappingInput) map[string]cognitoidentitystore.RoleMapping {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make(map[string]cognitoidentitystore.RoleMapping, len(in))
+	for k, v := range in {
+		result[k] = roleMappingInputToStore(v)
+	}
+	return result
 }
