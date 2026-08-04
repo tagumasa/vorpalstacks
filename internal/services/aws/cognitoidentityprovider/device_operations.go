@@ -50,8 +50,8 @@ func (s *CognitoService) ConfirmDevice(ctx context.Context, reqCtx *request.Requ
 			if sigVerifier, ok := m["PasswordVerifier"].(string); ok {
 				device.DeviceSecretVerifierB = sigVerifier
 			}
-			if saltVerifier, ok := m["SaltVerifier"].(string); ok {
-				device.DeviceSaltVerifier = saltVerifier
+			if salt, ok := m["Salt"].(string); ok {
+				device.DeviceSaltVerifier = salt
 			}
 		}
 	}

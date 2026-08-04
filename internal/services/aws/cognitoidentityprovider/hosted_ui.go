@@ -2,12 +2,17 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/server/fqdnrouter"
@@ -42,7 +47,11 @@ func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request)
 
 	switch {
 	case path == "/login" || path == "/signin":
-		s.renderLoginPage(w, r, poolID)
+		if r.Method == http.MethodPost {
+			s.handleLoginSubmit(w, r, poolID)
+		} else {
+			s.renderLoginPage(w, r, poolID)
+		}
 	case path == "/signup" || path == "/register":
 		s.renderSignUpPage(w, r, poolID)
 	case path == "/oauth2/authorize":
@@ -67,6 +76,156 @@ func (s *CognitoService) extractDomain(host string) string {
 		return parts[0]
 	}
 	return ""
+}
+
+type authCodeEntry struct {
+	poolID   string
+	userID   string
+	clientID string
+	expires  time.Time
+}
+
+func generateAuthCode() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func (s *CognitoService) startAuthCodeCleanup() {
+	s.authCodeCleanupOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(1 * time.Minute)
+			defer ticker.Stop()
+			for range ticker.C {
+				now := time.Now()
+				s.authCodes.Range(func(key, value interface{}) bool {
+					if entry, ok := value.(authCodeEntry); ok && now.After(entry.expires) {
+						s.authCodes.Delete(key)
+					}
+					return true
+				})
+			}
+		}()
+	})
+}
+
+// isRegisteredRedirectURI returns true if the redirectURI matches the client's
+// DefaultRedirectURI or one of its registered CallbackURLs.
+func isRegisteredRedirectURI(client *cognitostore.UserPoolClient, redirectURI string) bool {
+	if client.DefaultRedirectURI != "" && client.DefaultRedirectURI == redirectURI {
+		return true
+	}
+	for _, cb := range client.CallbackURLs {
+		if cb == redirectURI {
+			return true
+		}
+	}
+	return false
+}
+
+func writeOAuthError(w http.ResponseWriter, status int, errCode, desc string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{
+		"error":             errCode,
+		"error_description": desc,
+	})
+}
+
+func writeTokenJSON(w http.ResponseWriter, accessToken, idToken, refreshToken string, expiresIn int64) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"access_token":  accessToken,
+		"token_type":    "Bearer",
+		"expires_in":    expiresIn,
+		"id_token":      idToken,
+		"refresh_token": refreshToken,
+	})
+}
+
+func (s *CognitoService) handleLoginSubmit(w http.ResponseWriter, r *http.Request, poolID string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not parse form data", http.StatusBadRequest)
+		return
+	}
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	clientID := r.FormValue("client_id")
+	redirectURI := r.FormValue("redirect_uri")
+	responseType := r.FormValue("response_type")
+
+	if username == "" || password == "" {
+		s.renderLoginPage(w, r, poolID)
+		return
+	}
+
+	ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
+	store, err := s.store(ctx)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if clientID != "" {
+		client, err := store.GetUserPoolClient(poolID, clientID)
+		if err != nil || client == nil {
+			http.Error(w, "Invalid client_id", http.StatusBadRequest)
+			return
+		}
+		if redirectURI != "" && !isRegisteredRedirectURI(client, redirectURI) {
+			http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
+			return
+		}
+	}
+
+	user, err := store.GetUser(poolID, username)
+	if err != nil || !user.Enabled || user.UserStatus != "CONFIRMED" {
+		s.renderLoginPage(w, r, poolID)
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		s.renderLoginPage(w, r, poolID)
+		return
+	}
+
+	code, err := generateAuthCode()
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+	s.authCodes.Store(code, authCodeEntry{
+		poolID:   poolID,
+		userID:   user.ID,
+		clientID: clientID,
+		expires:  time.Now().Add(5 * time.Minute),
+	})
+	s.startAuthCodeCleanup()
+
+	if redirectURI == "" {
+		redirectURI = "/"
+	}
+
+	if responseType == "token" {
+		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationHostedAuth, nil)
+		if err != nil {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
+		frag := fmt.Sprintf("access_token=%s&id_token=%s&expires_in=%d&token_type=Bearer", accessToken, idToken, expiresIn)
+		http.Redirect(w, r, redirectURI+"#"+frag, http.StatusFound)
+		return
+	}
+
+	q := url.Values{}
+	q.Set("code", code)
+	sep := "?"
+	if strings.Contains(redirectURI, "?") {
+		sep = "&"
+	}
+	http.Redirect(w, r, redirectURI+sep+q.Encode(), http.StatusFound)
 }
 
 func (s *CognitoService) resolveDomainToPoolID(domain string) (string, error) {
@@ -154,22 +313,12 @@ button:hover { background: #1274A3; }
 
 func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Request, poolID string) {
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":             "invalid_request",
-			"error_description": "Method not allowed",
-		})
+		writeOAuthError(w, http.StatusMethodNotAllowed, "invalid_request", "Method not allowed")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":             "invalid_request",
-			"error_description": "Could not parse form data",
-		})
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Could not parse form data")
 		return
 	}
 
@@ -177,172 +326,133 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 	clientID := r.FormValue("client_id")
 
 	switch grantType {
-	case "authorization_code", "password":
+	case "authorization_code":
+		code := r.FormValue("code")
+		if code == "" {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing code parameter")
+			return
+		}
+		raw, ok := s.authCodes.LoadAndDelete(code)
+		if !ok {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Invalid authorization code.")
+			return
+		}
+		entry := raw.(authCodeEntry)
+		if time.Now().After(entry.expires) {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Authorization code has expired.")
+			return
+		}
+		if clientID != entry.clientID {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Client ID mismatch.")
+			return
+		}
+		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
+		if entry.clientID != "" {
+			store, err := s.store(ctx)
+			if err == nil {
+				client, err := store.GetUserPoolClient(entry.poolID, entry.clientID)
+				if err == nil && client != nil && client.ClientSecret != "" {
+					clientSecret := r.FormValue("client_secret")
+					if subtle.ConstantTimeCompare([]byte(clientSecret), []byte(client.ClientSecret)) != 1 {
+						writeOAuthError(w, http.StatusUnauthorized, "invalid_client", "Client authentication failed.")
+						return
+					}
+				}
+			}
+		}
+		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, entry.poolID, entry.userID, entry.clientID, TokenGenerationHostedAuth, nil)
+		if err != nil {
+			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
+			return
+		}
+		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
+
+	case "password":
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 		if username == "" || password == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_request",
-				"error_description": "Missing username or password",
-			})
+			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing username or password")
 			return
 		}
 
 		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
 		store, err := s.store(ctx)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "server_error",
-				"error_description": "Internal error",
-			})
+			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Internal error")
 			return
 		}
 
 		user, err := store.GetUser(poolID, username)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "Incorrect username or password.",
-			})
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
 			return
 		}
 
 		if !user.Enabled {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "Incorrect username or password.",
-			})
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
 			return
 		}
 
 		if user.UserStatus != "CONFIRMED" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "User is not confirmed.",
-			})
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "User is not confirmed.")
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "Incorrect username or password.",
-			})
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
 			return
 		}
 
 		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationHostedAuth, nil)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "server_error",
-				"error_description": "Failed to create tokens.",
-			})
+			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"access_token":  accessToken,
-			"token_type":    "Bearer",
-			"expires_in":    expiresIn,
-			"id_token":      idToken,
-			"refresh_token": refreshToken,
-		})
+		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
 
 	case "refresh_token":
 		refreshToken := r.FormValue("refresh_token")
 		if refreshToken == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_request",
-				"error_description": "Missing refresh_token",
-			})
+			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing refresh_token")
 			return
 		}
 
 		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
 		store, err := s.store(ctx)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "server_error",
-				"error_description": "Internal error",
-			})
+			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Internal error")
 			return
 		}
 
 		storedToken, err := store.GetRefreshTokenByValue(refreshToken)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
 			errCode := "invalid_grant"
 			errDesc := "Invalid refresh token."
 			if errors.Is(err, cognitostore.ErrTokenExpired) {
 				errCode = "expired_grant"
 				errDesc = "Refresh token has expired."
 			}
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             errCode,
-				"error_description": errDesc,
-			})
+			writeOAuthError(w, http.StatusUnauthorized, errCode, errDesc)
 			return
 		}
 
 		user, err := store.GetUserByID(storedToken.UserID)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "Invalid refresh token.",
-			})
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Invalid refresh token.")
 			return
 		}
 
 		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationRefreshTokens, nil)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "server_error",
-				"error_description": "Failed to create tokens.",
-			})
+			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"access_token":  accessToken,
-			"token_type":    "Bearer",
-			"expires_in":    expiresIn,
-			"id_token":      idToken,
-			"refresh_token": refreshToken,
-		})
+		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
 
 	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":             "unsupported_grant_type",
-			"error_description": fmt.Sprintf("Grant type '%s' is not supported", grantType),
-		})
+		writeOAuthError(w, http.StatusBadRequest, "unsupported_grant_type",
+			fmt.Sprintf("Grant type '%s' is not supported", grantType))
 	}
 }

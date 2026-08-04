@@ -187,27 +187,39 @@ func (s *CognitoService) handleUserAuth(ctx context.Context, reqCtx *request.Req
 	}
 
 	user, err := store.GetUser(userPool.ID, username)
-	if err != nil {
-		// Return a minimal response to avoid user enumeration.
-		return map[string]interface{}{
-			"AvailableChallenges": []interface{}{},
-		}, nil
-	}
 
 	available := make([]string, 0, 4)
 	available = append(available, "PASSWORD")
-	if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Verified {
-		available = append(available, "SOFTWARE_TOKEN_MFA")
+
+	if err == nil && user != nil {
+		if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Verified {
+			available = append(available, "SOFTWARE_TOKEN_MFA")
+		}
+		if isAttributeVerified(user.Attributes, "phone_number") {
+			available = append(available, "SMS_OTP")
+		}
+		if isAttributeVerified(user.Attributes, "email") {
+			available = append(available, "EMAIL_OTP")
+		}
 	}
-	if isAttributeVerified(user.Attributes, "phone_number") {
-		available = append(available, "SMS_OTP")
+
+	sessionID := generateSessionID()
+	challengeSession := &cognitostore.ChallengeSession{
+		SessionID:     sessionID,
+		UserPoolID:    userPool.ID,
+		ClientID:      clientID,
+		Username:      username,
+		ChallengeName: "SELECT_CHALLENGE",
+		CreatedAt:     time.Now().UTC(),
+		ExpiresAt:     time.Now().UTC().Add(3 * time.Minute),
 	}
-	if isAttributeVerified(user.Attributes, "email") {
-		available = append(available, "EMAIL_OTP")
+	if err := store.SaveChallengeSession(challengeSession); err != nil {
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
 		"AvailableChallenges": available,
+		"Session":             sessionID,
 	}, nil
 }
 
@@ -877,6 +889,8 @@ func (s *CognitoService) AdminInitiateAuth(ctx context.Context, reqCtx *request.
 	switch authFlow {
 	case "ADMIN_NO_SRP_AUTH", "ADMIN_USER_PASSWORD_AUTH":
 		return s.handleAdminNoSrpAuth(ctx, reqCtx, req, userPoolID, clientID, userPool.LambdaConfig)
+	case "CUSTOM_AUTH":
+		return s.handleCustomAuth(ctx, reqCtx, req)
 	case "REFRESH_TOKEN_AUTH", "REFRESH_TOKEN":
 		return s.handleAdminRefreshTokenAuth(reqCtx, req, userPoolID)
 	default:

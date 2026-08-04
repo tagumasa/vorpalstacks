@@ -416,5 +416,19 @@ func computeUserAuthFactors(user *cognitostore.User) map[string]interface{} {
 	}
 	result["ConfiguredUserAuthFactors"] = configuredFactors
 
+	if len(user.MFAOptions) > 0 {
+		mfaSettings := make([]map[string]interface{}, 0, len(user.MFAOptions))
+		for _, opt := range user.MFAOptions {
+			entry := map[string]interface{}{
+				"DeliveryMedium": opt.DeliveryMedium,
+			}
+			if opt.AttributeName != "" {
+				entry["AttributeName"] = opt.AttributeName
+			}
+			mfaSettings = append(mfaSettings, entry)
+		}
+		result["UserMFASettingList"] = mfaSettings
+	}
+
 	return result
 }

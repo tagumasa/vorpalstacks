@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -229,6 +230,18 @@ func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map
 			wg.Add(1)
 			go func(s string) {
 				defer wg.Done()
+				defer func() {
+					if r := recover(); r != nil {
+						mu.Lock()
+						results[s] = []TestResult{{
+							Service:  s,
+							TestName: "RunServiceTests",
+							Status:   "FAIL",
+							Error:    fmt.Sprintf("panic: %v\n%s", r, debug.Stack()),
+						}}
+						mu.Unlock()
+					}
+				}()
 				sem <- struct{}{}
 				defer func() { <-sem }()
 				res := r.RunServiceTests(s)
@@ -257,6 +270,11 @@ func (r *TestRunner) RunTest(service, testName string, testFunc func() error) Te
 	start := time.Now()
 	errCh := make(chan error, 1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errCh <- fmt.Errorf("panic: %v\n%s", r, debug.Stack())
+			}
+		}()
 		errCh <- testFunc()
 	}()
 

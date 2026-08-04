@@ -101,9 +101,19 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 		client.IDTokenValidity = val
 	}
 	if flows := getStringSliceParam(req, "ExplicitAuthFlows"); len(flows) > 0 {
+		for _, f := range flows {
+			if !validateExplicitAuthFlow(f) {
+				return ErrInvalidParameter
+			}
+		}
 		client.ExplicitAuthFlows = flows
 	}
 	if flows := getStringSliceParam(req, "AllowedOAuthFlows"); len(flows) > 0 {
+		for _, f := range flows {
+			if !validateOAuthFlow(f) {
+				return ErrInvalidParameter
+			}
+		}
 		client.AllowedOAuthFlows = flows
 	}
 	if urls := getStringSliceParam(req, "CallbackURLs"); len(urls) > 0 {
@@ -162,12 +172,21 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if m, ok := req.Parameters["TokenValidityUnits"].(map[string]interface{}); ok {
 		tvu := &cognitostore.TokenValidityUnits{}
 		if v, ok := m["AccessToken"].(string); ok {
+			if !validateTimeUnit(v) {
+				return ErrInvalidParameter
+			}
 			tvu.AccessToken = v
 		}
 		if v, ok := m["IdToken"].(string); ok {
+			if !validateTimeUnit(v) {
+				return ErrInvalidParameter
+			}
 			tvu.IdToken = v
 		}
 		if v, ok := m["RefreshToken"].(string); ok {
+			if !validateTimeUnit(v) {
+				return ErrInvalidParameter
+			}
 			tvu.RefreshToken = v
 		}
 		client.TokenValidityUnits = tvu
@@ -175,6 +194,9 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if m, ok := req.Parameters["RefreshTokenRotation"].(map[string]interface{}); ok {
 		rtr := &cognitostore.RefreshTokenRotation{}
 		if v, ok := m["Feature"].(string); ok {
+			if !validateFeatureType(v) {
+				return ErrInvalidParameter
+			}
 			rtr.Feature = v
 		}
 		if v, ok := m["RetryGracePeriodSeconds"]; ok {

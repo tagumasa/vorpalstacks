@@ -1047,7 +1047,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		preflightReq.Header.Set("Access-Control-Request-Method", "PUT")
 		preflightReq.Header.Set("Access-Control-Request-Headers", "x-amz-meta-author")
 
-		resp, err := http.DefaultClient.Do(preflightReq)
+		resp, err := testHTTPClient.Do(preflightReq)
 		if err != nil {
 			return fmt.Errorf("preflight request failed: %w", err)
 		}
@@ -1080,7 +1080,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		req.Header.Set("Origin", "https://example.com")
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := testHTTPClient.Do(req)
 		if err != nil {
 			return fmt.Errorf("request failed: %w", err)
 		}

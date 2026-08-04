@@ -15,10 +15,12 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 	var results []TestResult
 
 	streamName := kinesisStream(ts, "cfg")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(streamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream setup failed: %v", err)}
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	results = append(results, r.RunTest("kinesis", "EnableEnhancedMonitoring", func() error {
@@ -256,12 +258,17 @@ func (r *TestRunner) kinesisResourcePolicyTests(ctx context.Context, client *kin
 	var results []TestResult
 
 	policyStreamName := kinesisStream(ts, "policy")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(policyStreamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream (policy) setup failed: %v", err)}
+	}
 	time.Sleep(1 * time.Second)
-	policyStreamDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(policyStreamName)})
+	policyStreamDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(policyStreamName)})
+	if err != nil {
+		return []TestResult{SetupFailResult("kinesis", "DescribeStream (policy) setup failed: %v", err)}
+	}
 	var policyStreamARN string
 	if policyStreamDesc != nil && policyStreamDesc.StreamDescription != nil {
 		policyStreamARN = aws.ToString(policyStreamDesc.StreamDescription.StreamARN)
@@ -332,12 +339,17 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 	var results []TestResult
 
 	maxRecordStreamName := kinesisStream(ts, "maxrec")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(maxRecordStreamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream (maxrec) setup failed: %v", err)}
+	}
 	time.Sleep(1 * time.Second)
-	maxRecordDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(maxRecordStreamName)})
+	maxRecordDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(maxRecordStreamName)})
+	if err != nil {
+		return []TestResult{SetupFailResult("kinesis", "DescribeStream (maxrec) setup failed: %v", err)}
+	}
 
 	if maxRecordDesc != nil && maxRecordDesc.StreamDescription != nil {
 		results = append(results, r.RunTest("kinesis", "UpdateMaxRecordSize", func() error {
@@ -356,12 +368,17 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(maxRecordStreamName)})
 
 	warmStreamName := kinesisStream(ts, "warm")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(warmStreamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream (warm) setup failed: %v", err)}
+	}
 	time.Sleep(1 * time.Second)
-	warmDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(warmStreamName)})
+	warmDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(warmStreamName)})
+	if err != nil {
+		return []TestResult{SetupFailResult("kinesis", "DescribeStream (warm) setup failed: %v", err)}
+	}
 
 	if warmDesc != nil && warmDesc.StreamDescription != nil {
 		results = append(results, r.RunTest("kinesis", "UpdateStreamWarmThroughput", func() error {

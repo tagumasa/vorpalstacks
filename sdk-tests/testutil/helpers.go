@@ -3,11 +3,17 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 )
+
+// testHTTPClient is a shared *http.Client with a sensible timeout so that a
+// hung server connection cannot block the test goroutine indefinitely.
+var testHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func SetupFailResult(service, msg string, args ...interface{}) TestResult {
 	return TestResult{

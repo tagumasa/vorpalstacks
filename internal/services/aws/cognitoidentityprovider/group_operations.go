@@ -16,6 +16,9 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 	if userPoolID == "" || groupName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateUsernamePattern(groupName) {
+		return nil, ErrInvalidParameter
+	}
 
 	group := cognitostore.NewGroup(userPoolID, groupName)
 	group.Description = req.GetParam("Description")

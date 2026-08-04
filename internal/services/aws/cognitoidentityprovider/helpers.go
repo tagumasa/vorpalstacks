@@ -680,14 +680,20 @@ func parseSchemaAttributes(req *request.ParsedRequest) []cognitostore.SchemaAttr
 	return result
 }
 
-func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedRequest) {
+func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedRequest) error {
 	if v := req.GetParam("PoolName"); v != "" {
 		pool.Name = v
 	}
 	if v := req.GetParam("MfaConfiguration"); v != "" {
+		if !validateUserPoolMfaConfig(v) {
+			return ErrInvalidParameter
+		}
 		pool.MfaConfiguration = v
 	}
 	if v := req.GetParam("DeletionProtection"); v != "" {
+		if !validateDeletionProtection(v) {
+			return ErrInvalidParameter
+		}
 		pool.DeletionProtection = v
 	}
 	if v := req.GetParam("EmailVerificationMessage"); v != "" {
@@ -721,6 +727,9 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		pool.LambdaConfig = v
 	}
 	if v := parseEmailConfiguration(req); v != nil {
+		if v.EmailSendingAccount != "" && !validateEmailSendingAccount(v.EmailSendingAccount) {
+			return ErrInvalidParameter
+		}
 		pool.EmailConfiguration = v
 	}
 	if v := parseSmsConfiguration(req); v != nil {
@@ -730,15 +739,26 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		pool.AdminCreateUserConfig = v
 	}
 	if v := parseVerificationMessageTemplate(req); v != nil {
+		if v.DefaultEmailOption != "" && !validateDefaultEmailOption(v.DefaultEmailOption) {
+			return ErrInvalidParameter
+		}
 		pool.VerificationMessageTemplate = v
 	}
 	if v := parseUserAttributeUpdateSettings(req); v != nil {
 		pool.UserAttributeUpdateSettings = v
 	}
 	if v := parseUserPoolAddOns(req); v != nil {
+		if v.AdvancedSecurityMode != "" && !validateAdvancedSecurityMode(v.AdvancedSecurityMode) {
+			return ErrInvalidParameter
+		}
 		pool.UserPoolAddOns = v
 	}
 	if v := parseAccountRecoverySetting(req); v != nil {
+		for _, rm := range v.RecoveryMechanisms {
+			if rm.Name != "" && !validateRecoveryOptionName(rm.Name) {
+				return ErrInvalidParameter
+			}
+		}
 		pool.AccountRecoverySetting = v
 	}
 	if v := parseUsernameConfiguration(req); v != nil {
@@ -759,8 +779,12 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		}
 	}
 	if v := req.GetParam("UserPoolTier"); v != "" {
+		if !validateUserPoolTier(v) {
+			return ErrInvalidParameter
+		}
 		pool.UserPoolTier = v
 	}
+	return nil
 }
 
 func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {

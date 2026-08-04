@@ -113,7 +113,20 @@ func (r *TestRunner) runIoTPolicyV2GapTests(tc *iotTestContext) []TestResult {
 			PolicyName: aws.String(policyName),
 			Principal:  aws.String(principalARN()),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		// Verify the policy is still valid after the attach operation.
+		getResp, err := tc.client.GetPolicy(tc.ctx, &iot.GetPolicyInput{
+			PolicyName: aws.String(policyName),
+		})
+		if err != nil {
+			return fmt.Errorf("GetPolicy after attach: %w", err)
+		}
+		if getResp.PolicyName == nil || *getResp.PolicyName != policyName {
+			return fmt.Errorf("expected PolicyName=%s, got %v", policyName, getResp.PolicyName)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "Gap_DetachPrincipalPolicy", func() error {
@@ -121,7 +134,21 @@ func (r *TestRunner) runIoTPolicyV2GapTests(tc *iotTestContext) []TestResult {
 			PolicyName: aws.String(policyName),
 			Principal:  aws.String(principalARN()),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		listResp, err := tc.client.ListTargetsForPolicy(tc.ctx, &iot.ListTargetsForPolicyInput{
+			PolicyName: aws.String(policyName),
+		})
+		if err != nil {
+			return fmt.Errorf("ListTargetsForPolicy after detach: %w", err)
+		}
+		for _, t := range listResp.Targets {
+			if t == principalARN() {
+				return fmt.Errorf("principal %s still attached after detach", principalARN())
+			}
+		}
+		return nil
 	}))
 
 	// Teardown

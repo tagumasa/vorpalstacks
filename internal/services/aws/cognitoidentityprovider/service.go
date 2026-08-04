@@ -19,11 +19,13 @@ import (
 
 // CognitoService provides operations for AWS Cognito User Pools.
 type CognitoService struct {
-	storageManager *storage.RegionStorageManager
-	accountID      string
-	region         string
-	bus            eventbus.Bus
-	stores         sync.Map // region → cognitostore.CognitoStoreInterface
+	storageManager      *storage.RegionStorageManager
+	accountID           string
+	region              string
+	bus                 eventbus.Bus
+	stores              sync.Map // region → cognitostore.CognitoStoreInterface
+	authCodes           sync.Map // code string → authCodeEntry
+	authCodeCleanupOnce sync.Once
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.

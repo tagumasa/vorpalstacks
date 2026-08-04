@@ -26,7 +26,7 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		testReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
 		testReq.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
 
-		testResp, err := http.DefaultClient.Do(testReq)
+		testResp, err := testHTTPClient.Do(testReq)
 		if err != nil {
 			return err
 		}

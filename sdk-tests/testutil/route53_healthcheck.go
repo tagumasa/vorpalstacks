@@ -214,9 +214,11 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
+		// route53HCPort mirrors internal/common/serviceports.Route53HC.
+		const route53HCPort = 50089
 		port := aws.ToInt32(getResp.HealthCheck.HealthCheckConfig.Port)
-		if port != 50089 {
-			return fmt.Errorf("expected default port 50089, got %d", port)
+		if port != route53HCPort {
+			return fmt.Errorf("expected default port %d, got %d", route53HCPort, port)
 		}
 		return nil
 	}))

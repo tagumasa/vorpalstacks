@@ -54,14 +54,24 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 			cfg.CertificateArn = v
 		}
 		if v, ok := cdc["SecurityPolicy"].(string); ok {
+			if !validateSecurityPolicy(v) {
+				return nil, ErrInvalidParameter
+			}
 			cfg.SecurityPolicy = v
 		}
 		domainEntry.CustomDomainConfig = cfg
 	}
 	if rt, ok := req.Parameters["Routing"].(map[string]interface{}); ok {
 		routing := &cognitostore.Routing{}
-		if v, ok := rt["Failover"].(string); ok {
-			routing.Failover = v
+		if fo, ok := rt["Failover"].(map[string]interface{}); ok {
+			failover := &cognitostore.FailoverType{}
+			if v, ok := fo["SecondaryRegion"].(string); ok {
+				failover.SecondaryRegion = v
+			}
+			if v, ok := fo["PrimaryRoute53HealthCheckId"].(string); ok {
+				failover.PrimaryRoute53HealthCheckId = v
+			}
+			routing.Failover = failover
 		}
 		domainEntry.Routing = routing
 	}
@@ -75,13 +85,50 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 	if domainEntry.ManagedLoginVersion != nil {
 		resp["ManagedLoginVersion"] = *domainEntry.ManagedLoginVersion
 	}
-	if domainEntry.Routing != nil {
-		resp["Routing"] = map[string]interface{}{
-			"Failover": domainEntry.Routing.Failover,
-		}
+	if domainEntry.Routing != nil && domainEntry.Routing.Failover != nil {
+		resp["Routing"] = routingToMap(domainEntry.Routing)
 	}
 
 	return resp, nil
+}
+
+// routingToMap serialises a Routing store struct into the Smithy Routing JSON shape.
+func routingToMap(r *cognitostore.Routing) map[string]interface{} {
+	m := map[string]interface{}{}
+	if r.Failover != nil {
+		m["Failover"] = map[string]interface{}{
+			"SecondaryRegion":             r.Failover.SecondaryRegion,
+			"PrimaryRoute53HealthCheckId": r.Failover.PrimaryRoute53HealthCheckId,
+		}
+	}
+	return m
+}
+
+// buildDomainDescription constructs a DomainDescriptionType map from a store
+// UserPoolDomain, including all Smithy-defined members.
+func buildDomainDescription(d *cognitostore.UserPoolDomain) map[string]interface{} {
+	desc := map[string]interface{}{
+		"Domain":                 d.Domain,
+		"UserPoolId":             d.UserPoolID,
+		"CloudFrontDistribution": d.CloudFrontDomain,
+		"Status":                 d.Status,
+	}
+	if d.ManagedLoginVersion != nil {
+		desc["ManagedLoginVersion"] = *d.ManagedLoginVersion
+	}
+	if d.CustomDomainConfig != nil {
+		cfg := map[string]interface{}{
+			"CertificateArn": d.CustomDomainConfig.CertificateArn,
+		}
+		if d.CustomDomainConfig.SecurityPolicy != "" {
+			cfg["SecurityPolicy"] = d.CustomDomainConfig.SecurityPolicy
+		}
+		desc["CustomDomainConfig"] = cfg
+	}
+	if d.Routing != nil && d.Routing.Failover != nil {
+		desc["Routing"] = routingToMap(d.Routing)
+	}
+	return desc
 }
 
 // DescribeUserPoolDomain returns information about a user pool domain.
@@ -102,13 +149,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 	}
 
 	return map[string]interface{}{
-		"DomainDescription": map[string]interface{}{
-			"Domain":           domainEntry.Domain,
-			"UserPoolId":       domainEntry.UserPoolID,
-			"CloudFrontDomain": domainEntry.CloudFrontDomain,
-			"CreatedDate":      domainEntry.CreatedDate.Unix(),
-			"Status":           domainEntry.Status,
-		},
+		"DomainDescription": buildDomainDescription(domainEntry),
 	}, nil
 }
 
@@ -196,9 +237,14 @@ func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *reque
 	if scopes, ok := req.Parameters["Scopes"].([]interface{}); ok {
 		for _, sc := range scopes {
 			if m, ok := sc.(map[string]interface{}); ok {
+				scopeName, _ := m["ScopeName"].(string)
+				scopeDesc, _ := m["ScopeDescription"].(string)
+				if scopeName == "" {
+					return nil, ErrInvalidParameter
+				}
 				rs.Scopes = append(rs.Scopes, cognitostore.ResourceServerScope{
-					ScopeName:        fmt.Sprintf("%v", m["ScopeName"]),
-					ScopeDescription: fmt.Sprintf("%v", m["ScopeDescription"]),
+					ScopeName:        scopeName,
+					ScopeDescription: scopeDesc,
 				})
 			}
 		}
@@ -262,9 +308,14 @@ func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *reque
 		var newScopes []cognitostore.ResourceServerScope
 		for _, sc := range scopes {
 			if m, ok := sc.(map[string]interface{}); ok {
+				scopeName, _ := m["ScopeName"].(string)
+				scopeDesc, _ := m["ScopeDescription"].(string)
+				if scopeName == "" {
+					return nil, ErrInvalidParameter
+				}
 				newScopes = append(newScopes, cognitostore.ResourceServerScope{
-					ScopeName:        fmt.Sprintf("%v", m["ScopeName"]),
-					ScopeDescription: fmt.Sprintf("%v", m["ScopeDescription"]),
+					ScopeName:        scopeName,
+					ScopeDescription: scopeDesc,
 				})
 			}
 		}

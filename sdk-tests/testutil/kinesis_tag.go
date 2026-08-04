@@ -13,10 +13,12 @@ func (r *TestRunner) kinesisTagTests(ctx context.Context, client *kinesis.Client
 	var results []TestResult
 
 	streamName := kinesisStream(ts, "tag")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(streamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream setup failed: %v", err)}
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	results = append(results, r.RunTest("kinesis", "AddTagsToStream", func() error {
@@ -108,12 +110,17 @@ func (r *TestRunner) kinesisARNTagTests(ctx context.Context, client *kinesis.Cli
 	var results []TestResult
 
 	tagStreamName := kinesisStream(ts, "tagarn")
-	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(tagStreamName),
 		ShardCount: aws.Int32(1),
-	})
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream (tagarn) setup failed: %v", err)}
+	}
 	time.Sleep(1 * time.Second)
-	tagStreamDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(tagStreamName)})
+	tagStreamDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(tagStreamName)})
+	if err != nil {
+		return []TestResult{SetupFailResult("kinesis", "DescribeStream (tagarn) setup failed: %v", err)}
+	}
 	var tagStreamARN string
 	if tagStreamDesc != nil && tagStreamDesc.StreamDescription != nil {
 		tagStreamARN = aws.ToString(tagStreamDesc.StreamDescription.StreamARN)

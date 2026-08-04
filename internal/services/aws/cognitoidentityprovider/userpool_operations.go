@@ -15,9 +15,14 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	if poolName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateUserPoolNamePattern(poolName) {
+		return nil, ErrInvalidParameter
+	}
 
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
-	applyUserPoolUpdates(userPool, req)
+	if err := applyUserPoolUpdates(userPool, req); err != nil {
+		return nil, err
+	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
 
@@ -79,7 +84,9 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 		return nil, ErrResourceNotFound
 	}
 
-	applyUserPoolUpdates(userPool, req)
+	if err := applyUserPoolUpdates(userPool, req); err != nil {
+		return nil, err
+	}
 
 	if err := store.UpdateUserPool(userPool); err != nil {
 		return nil, ErrInternalError
@@ -157,6 +164,9 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 	}
 
 	if mfaConfig := req.GetParam("MfaConfiguration"); mfaConfig != "" {
+		if !validateUserPoolMfaConfig(mfaConfig) {
+			return nil, ErrInvalidParameter
+		}
 		userPool.MfaConfiguration = mfaConfig
 	}
 

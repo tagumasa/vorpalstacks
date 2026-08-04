@@ -120,8 +120,10 @@ func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *
 
 	start := 0
 	if token := req.GetParam("NextToken"); token != "" {
-		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
-			start = n
+		if decoded, err := base64.RawURLEncoding.DecodeString(token); err == nil {
+			if n, err := strconv.Atoi(string(decoded)); err == nil && n >= 0 {
+				start = n
+			}
 		}
 	}
 
@@ -142,7 +144,7 @@ func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *
 
 	resp := map[string]interface{}{"ClientSecrets": secrets}
 	if end < total {
-		resp["NextToken"] = strconv.Itoa(end)
+		resp["NextToken"] = base64.RawURLEncoding.EncodeToString([]byte(strconv.Itoa(end)))
 	}
 	return resp, nil
 }

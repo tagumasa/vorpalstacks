@@ -74,13 +74,33 @@ func (r *TestRunner) runIoTUpdateAndTailTests(tc *iotTestContext) []TestResult {
 		_, err := tc.client.UpdateDimension(tc.ctx, &iot.UpdateDimensionInput{
 			Name: aws.String(dimName), StringValues: []string{"updated"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeDimension(tc.ctx, &iot.DescribeDimensionInput{Name: aws.String(dimName)})
+		if err != nil {
+			return fmt.Errorf("DescribeDimension after update: %w", err)
+		}
+		if len(desc.StringValues) != 1 || desc.StringValues[0] != "updated" {
+			return fmt.Errorf("expected StringValues=[updated], got %v", desc.StringValues)
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "UpdateMitigationAction", func() error {
 		_, err := tc.client.UpdateMitigationAction(tc.ctx, &iot.UpdateMitigationActionInput{
 			ActionName: aws.String(mitName), RoleArn: aws.String(tc.iamRoleARN("test")), ActionParams: &iottypes.MitigationActionParams{},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeMitigationAction(tc.ctx, &iot.DescribeMitigationActionInput{ActionName: aws.String(mitName)})
+		if err != nil {
+			return fmt.Errorf("DescribeMitigationAction after update: %w", err)
+		}
+		if desc.ActionName == nil || *desc.ActionName != mitName {
+			return fmt.Errorf("expected ActionName=%s, got %v", mitName, desc.ActionName)
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "UpdateFleetMetric", func() error {
 		_, err := tc.client.UpdateFleetMetric(tc.ctx, &iot.UpdateFleetMetricInput{
@@ -88,18 +108,48 @@ func (r *TestRunner) runIoTUpdateAndTailTests(tc *iotTestContext) []TestResult {
 			AggregationField: aws.String("thingName"), Period: aws.Int32(120),
 			AggregationType: &iottypes.AggregationType{Name: iottypes.AggregationTypeNameStatistics},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeFleetMetric(tc.ctx, &iot.DescribeFleetMetricInput{MetricName: aws.String(fmName)})
+		if err != nil {
+			return fmt.Errorf("DescribeFleetMetric after update: %w", err)
+		}
+		if desc.Period == nil || *desc.Period != 120 {
+			return fmt.Errorf("expected Period=120 after update, got %v", desc.Period)
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "UpdateScheduledAudit", func() error {
 		_, err := tc.client.UpdateScheduledAudit(tc.ctx, &iot.UpdateScheduledAuditInput{
 			ScheduledAuditName: aws.String(saName), Frequency: iottypes.AuditFrequencyWeekly,
 			TargetCheckNames: []string{"DEVICE_CERTIFICATE_EXPIRING_CHECK"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeScheduledAudit(tc.ctx, &iot.DescribeScheduledAuditInput{ScheduledAuditName: aws.String(saName)})
+		if err != nil {
+			return fmt.Errorf("DescribeScheduledAudit after update: %w", err)
+		}
+		if desc.Frequency != iottypes.AuditFrequencyWeekly {
+			return fmt.Errorf("expected Frequency=Weekly after update, got %v", desc.Frequency)
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "UpdateStream", func() error {
 		_, err := tc.client.UpdateStream(tc.ctx, &iot.UpdateStreamInput{StreamId: aws.String(streamID), Files: []iottypes.StreamFile{}})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeStream(tc.ctx, &iot.DescribeStreamInput{StreamId: aws.String(streamID)})
+		if err != nil {
+			return fmt.Errorf("DescribeStream after update: %w", err)
+		}
+		if desc.StreamInfo == nil || desc.StreamInfo.StreamId == nil || *desc.StreamInfo.StreamId != streamID {
+			return fmt.Errorf("expected StreamId=%s after update", streamID)
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "UpdateThingGroupsForThing", func() error {
 		_, err := tc.client.UpdateThingGroupsForThing(tc.ctx, &iot.UpdateThingGroupsForThingInput{ThingName: aws.String(thingName)})

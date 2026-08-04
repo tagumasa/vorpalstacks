@@ -122,11 +122,14 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 	}
 
 	if consumerARN != "" && shardID != "" {
-		_, _ = client.PutRecord(ctx, &kinesis.PutRecordInput{
+		if _, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
 			StreamName:   aws.String(streamName),
 			Data:         []byte("subscribe-test-data"),
 			PartitionKey: aws.String("subscribe-pk"),
-		})
+		}); err != nil {
+			results = append(results, SetupFailResult("kinesis", "PutRecord setup failed: %v", err))
+			return results
+		}
 
 		results = append(results, r.RunTest("kinesis", "SubscribeToShard", func() error {
 			type subResult struct {

@@ -316,3 +316,131 @@ func validateRegionName(name string) error {
 	}
 	return nil
 }
+
+// ---------------------------------------------------------------------------
+// Smithy enum validators (Round 3 additions).
+// All maps derived from cognito-identity-provider-2016-04-18.json enum shapes.
+// ---------------------------------------------------------------------------
+
+// validTimeUnits is the Smithy TimeUnitsType enum (lowercase wire format).
+var validTimeUnits = map[string]bool{
+	"seconds": true,
+	"minutes": true,
+	"hours":   true,
+	"days":    true,
+}
+
+func validateTimeUnit(v string) bool { return validTimeUnits[v] }
+
+// validUserPoolMfaConfigs is the Smithy UserPoolMfaType enum.
+var validUserPoolMfaConfigs = map[string]bool{
+	"OFF": true, "ON": true, "OPTIONAL": true,
+}
+
+func validateUserPoolMfaConfig(v string) bool { return validUserPoolMfaConfigs[v] }
+
+// validDeletionProtections is the Smithy DeletionProtectionType enum.
+var validDeletionProtections = map[string]bool{
+	"ACTIVE": true, "INACTIVE": true,
+}
+
+func validateDeletionProtection(v string) bool { return validDeletionProtections[v] }
+
+// validEmailSendingAccounts is the Smithy EmailSendingAccountType enum.
+var validEmailSendingAccounts = map[string]bool{
+	"COGNITO_DEFAULT": true, "DEVELOPER": true,
+}
+
+func validateEmailSendingAccount(v string) bool { return validEmailSendingAccounts[v] }
+
+// validUserPoolTiers is the Smithy UserPoolTierType enum.
+var validUserPoolTiers = map[string]bool{
+	"LITE": true, "ESSENTIALS": true, "PLUS": true,
+}
+
+func validateUserPoolTier(v string) bool { return validUserPoolTiers[v] }
+
+// validExplicitAuthFlows is the Smithy ExplicitAuthFlowsType enum (9 values).
+var validExplicitAuthFlows = map[string]bool{
+	"ADMIN_NO_SRP_AUTH":              true,
+	"CUSTOM_AUTH_FLOW_ONLY":          true,
+	"USER_PASSWORD_AUTH":             true,
+	"ALLOW_ADMIN_USER_PASSWORD_AUTH": true,
+	"ALLOW_CUSTOM_AUTH":              true,
+	"ALLOW_USER_PASSWORD_AUTH":       true,
+	"ALLOW_USER_SRP_AUTH":            true,
+	"ALLOW_REFRESH_TOKEN_AUTH":       true,
+	"ALLOW_USER_AUTH":                true,
+}
+
+func validateExplicitAuthFlow(v string) bool { return validExplicitAuthFlows[v] }
+
+// validOAuthFlows is the Smithy OAuthFlowType enum (lowercase wire format).
+var validOAuthFlows = map[string]bool{
+	"code":               true,
+	"implicit":           true,
+	"client_credentials": true,
+}
+
+func validateOAuthFlow(v string) bool { return validOAuthFlows[v] }
+
+// validSecurityPolicies is the Smithy SecurityPolicyType enum.
+var validSecurityPolicies = map[string]bool{
+	"TLS_V1":        true,
+	"TLS_V1_2_2021": true,
+	"TLS_V1_3_2025": true,
+}
+
+func validateSecurityPolicy(v string) bool { return validSecurityPolicies[v] }
+
+// validAdvancedSecurityModes is the Smithy AdvancedSecurityModeType enum.
+var validAdvancedSecurityModes = map[string]bool{
+	"OFF": true, "AUDIT": true, "ENFORCED": true,
+}
+
+func validateAdvancedSecurityMode(v string) bool { return validAdvancedSecurityModes[v] }
+
+// validDefaultEmailOptions is the Smithy DefaultEmailOptionType enum.
+var validDefaultEmailOptions = map[string]bool{
+	"CONFIRM_WITH_LINK": true,
+	"CONFIRM_WITH_CODE": true,
+}
+
+func validateDefaultEmailOption(v string) bool { return validDefaultEmailOptions[v] }
+
+// validFeatures is the Smithy FeatureType enum.
+var validFeatures = map[string]bool{
+	"ENABLED": true, "DISABLED": true,
+}
+
+func validateFeatureType(v string) bool { return validFeatures[v] }
+
+// validRecoveryOptionNames is the Smithy RecoveryOptionNameType enum
+// (lowercase wire format).
+var validRecoveryOptionNames = map[string]bool{
+	"verified_email":        true,
+	"verified_phone_number": true,
+	"admin_only":            true,
+}
+
+func validateRecoveryOptionName(v string) bool { return validRecoveryOptionNames[v] }
+
+// usernamePattern is the Smithy pattern for UsernameType and GroupNameType:
+// ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$ (length 1-128).
+var usernamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
+
+// validateUsernamePattern returns true if the value matches the Smithy
+// pattern and length constraint (1-128) for UsernameType / GroupNameType.
+func validateUsernamePattern(v string) bool {
+	return len(v) >= 1 && len(v) <= 128 && usernamePattern.MatchString(v)
+}
+
+// userPoolNamePattern is the Smithy pattern for UserPoolNameType:
+// ^[\w\s+=,.@-]+$ (length 1-128).
+var userPoolNamePattern = regexp.MustCompile(`^[\w\s+=,.@-]+$`)
+
+// validateUserPoolNamePattern returns true if the value matches the Smithy
+// pattern and length constraint (1-128) for UserPoolNameType.
+func validateUserPoolNamePattern(v string) bool {
+	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+}

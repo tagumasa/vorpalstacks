@@ -10,8 +10,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const wsTestEndpoint = "ws://127.0.0.1:50106/event/realtime"
-const wsTestHTTPEndpoint = "http://127.0.0.1:50106/event"
+// appsyncListenerPort mirrors internal/common/serviceports.AppSync.
+const appsyncListenerPort = 50106
+
+var wsTestEndpoint = fmt.Sprintf("ws://127.0.0.1:%d/event/realtime", appsyncListenerPort)
+var wsTestHTTPEndpoint = fmt.Sprintf("http://127.0.0.1:%d/event", appsyncListenerPort)
 
 func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	var results []TestResult

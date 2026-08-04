@@ -573,7 +573,13 @@ type CustomDomainConfig struct {
 
 // Routing holds the failover configuration for a user pool domain.
 type Routing struct {
-	Failover string `json:"failover,omitempty"`
+	Failover *FailoverType `json:"failover,omitempty"`
+}
+
+// FailoverType holds the failover detail for a domain routing configuration.
+type FailoverType struct {
+	SecondaryRegion             string `json:"secondaryRegion,omitempty"`
+	PrimaryRoute53HealthCheckId string `json:"primaryRoute53HealthCheckId,omitempty"`
 }
 
 // ResourceServer represents an OAuth 2.0 resource server within a Cognito user pool.

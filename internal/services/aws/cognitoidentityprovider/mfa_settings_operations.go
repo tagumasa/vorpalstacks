@@ -266,6 +266,9 @@ func parseMFAOptions(req *request.ParsedRequest) ([]*cognitostore.MFAOptionType,
 				opt.DeliveryMedium = dm
 			}
 			if an, ok := m["AttributeName"].(string); ok {
+				if an != "email" && an != "phone_number" {
+					return nil, ErrInvalidParameter
+				}
 				opt.AttributeName = an
 			}
 			result = append(result, opt)

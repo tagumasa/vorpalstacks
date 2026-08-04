@@ -227,7 +227,7 @@ func (r *TestRunner) runSFNExecutionTests(tc *sfnTestContext) []TestResult {
 		syncReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
 		syncReq.Header.Set("X-Amz-Target", "AWSStepFunctions.StartSyncExecution")
 
-		httpResp, err := http.DefaultClient.Do(syncReq)
+		httpResp, err := testHTTPClient.Do(syncReq)
 		if err != nil {
 			return err
 		}

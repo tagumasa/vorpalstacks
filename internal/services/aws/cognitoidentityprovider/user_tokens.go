@@ -44,7 +44,7 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 		return "", "", "", 0, fmt.Errorf("failed to decode JWT private key: %w", err)
 	}
 
-	issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", reqCtx.GetRegion(), userPoolID)
+	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(reqCtx.GetRegion()), userPoolID)
 	jwtManager, err := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
 	if err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to create JWT manager: %w", err)
@@ -161,7 +161,7 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 			continue
 		}
 
-		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", reqCtx.GetRegion(), pool.ID)
+		issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(reqCtx.GetRegion()), pool.ID)
 		jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
 		if err != nil {
 			continue
@@ -200,7 +200,7 @@ func (s *CognitoService) ValidateTokenForPool(ctx context.Context, region, userP
 		return "", ErrNotAuthorized
 	}
 
-	issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, pool.ID)
+	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(region), pool.ID)
 	jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
 	if err != nil {
 		return "", ErrNotAuthorized

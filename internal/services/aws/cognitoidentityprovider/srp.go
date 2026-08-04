@@ -91,16 +91,21 @@ func ComputeVerifier(saltHex, poolName, userID, password string) *big.Int {
 // private scalar b. b is a fresh 256-bit random integer reduced mod N, and
 // B is computed as (k*v + g^b) mod N.
 func GenerateB(verifier *big.Int) (B, b *big.Int, err error) {
-	b, err = randBigIntModN()
-	if err != nil {
-		return nil, nil, err
+	for attempt := 0; attempt < 32; attempt++ {
+		b, err = randBigIntModN()
+		if err != nil {
+			return nil, nil, err
+		}
+		gb := new(big.Int).Exp(cognitoSrpG, b, cognitoSrpN)
+		kv := new(big.Int).Mul(cognitoSrpK, verifier)
+		kv.Mod(kv, cognitoSrpN)
+		B = new(big.Int).Add(kv, gb)
+		B.Mod(B, cognitoSrpN)
+		if B.Sign() != 0 {
+			return B, b, nil
+		}
 	}
-	gb := new(big.Int).Exp(cognitoSrpG, b, cognitoSrpN)
-	kv := new(big.Int).Mul(cognitoSrpK, verifier)
-	kv.Mod(kv, cognitoSrpN)
-	B = new(big.Int).Add(kv, gb)
-	B.Mod(B, cognitoSrpN)
-	return B, b, nil
+	return nil, nil, errors.New("SRP: failed to generate B != 0 mod N after 32 attempts")
 }
 
 // ComputeServerS derives the shared secret S = (A * v^u)^b mod N. It rejects

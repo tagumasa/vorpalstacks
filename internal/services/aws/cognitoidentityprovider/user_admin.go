@@ -21,6 +21,9 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	if userPoolID == "" || username == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateUsernamePattern(username) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

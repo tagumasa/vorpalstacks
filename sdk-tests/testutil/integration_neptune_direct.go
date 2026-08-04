@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 	"time"
 
@@ -356,7 +355,7 @@ func postGremlin(baseURL, query string) error {
 
 func postRaw(url string, body map[string]string) (map[string]interface{}, error) {
 	jsonBody, _ := json.Marshal(body)
-	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonBody))
+	resp, err := testHTTPClient.Post(url, "application/json", bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("POST %s failed: %w", url, err)
 	}
