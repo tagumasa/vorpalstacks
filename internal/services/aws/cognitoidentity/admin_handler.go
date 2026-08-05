@@ -37,8 +37,9 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 	}
 
 	items, nextToken, err := h.service.listIdentityPoolsShortCore(store, ListIdentityPoolsInput{
-		MaxResults: int(req.Msg.Maxresults),
-		NextToken:  req.Msg.Nexttoken,
+		MaxResults:         int(req.Msg.Maxresults),
+		MaxResultsProvided: true,
+		NextToken:          req.Msg.Nexttoken,
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

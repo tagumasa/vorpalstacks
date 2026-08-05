@@ -104,7 +104,10 @@ func (s *CognitoIdentityStore) CreateIdentityPool(pool *IdentityPool) (*Identity
 func (s *CognitoIdentityStore) GetIdentityPool(id string) (*IdentityPool, error) {
 	var pool IdentityPool
 	if err := s.BaseStore.Get(id, &pool); err != nil {
-		return nil, ErrIdentityPoolNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityPoolNotFound
+		}
+		return nil, err
 	}
 	return &pool, nil
 }
@@ -208,7 +211,10 @@ func (s *CognitoIdentityStore) GetIdentity(poolID, identityID string) (*Identity
 	key := IdentityPoolIdentityKey(poolID, identityID)
 	var identity Identity
 	if err := s.identitiesStore.Get(key, &identity); err != nil {
-		return nil, ErrIdentityNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityNotFound
+		}
+		return nil, err
 	}
 	return &identity, nil
 }
@@ -424,7 +430,10 @@ func (s *CognitoIdentityStore) GetDeveloperIdentity(poolID, providerName, devUse
 	key := developerIdentityKey(poolID, providerName, devUserID)
 	var di DeveloperIdentity
 	if err := s.developerIdStore.Get(key, &di); err != nil {
-		return nil, ErrIdentityNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityNotFound
+		}
+		return nil, err
 	}
 	return &di, nil
 }
@@ -456,7 +465,10 @@ func (s *CognitoIdentityStore) GetPrincipalTagAttributeMap(poolID, providerName 
 	key := principalTagKey(poolID, providerName)
 	var ptam PrincipalTagAttributeMap
 	if err := s.principalTagStore.Get(key, &ptam); err != nil {
-		return nil, ErrIdentityNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityNotFound
+		}
+		return nil, err
 	}
 	if ptam.PrincipalTags == nil {
 		ptam.PrincipalTags = make(map[string]string)

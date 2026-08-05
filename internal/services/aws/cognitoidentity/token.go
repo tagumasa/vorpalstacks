@@ -3,6 +3,7 @@ package cognitoidentity
 import (
 	"crypto/rsa"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,10 +12,24 @@ import (
 	"vorpalstacks/pkg/vsjwt"
 )
 
+// cognitoIdentityIssuer returns the Cognito Identity OIDC issuer hostname
+// for the given AWS partition. The standard partition uses a regionless
+// hostname; China and GovCloud partitions include the region.
+func cognitoIdentityIssuer(region string) string {
+	if strings.HasPrefix(region, "cn-") {
+		return "cognito-identity." + region + ".amazonaws.com.cn"
+	}
+	if strings.HasPrefix(region, "us-gov-") {
+		return "cognito-identity." + region + ".amazonaws.com"
+	}
+	return "cognito-identity.amazonaws.com"
+}
+
 // tokenManager lazily generates an RSA key pair for signing Cognito Identity
 // OpenID Connect tokens. The key is shared across all identity pools in the
 // service instance and is regenerated on each process restart — acceptable
-// because the tokens are short-lived (default 15 minutes).
+// because the tokens are short-lived (10 minutes for GetOpenIdToken,
+// configurable up to 24 hours for GetOpenIdTokenForDeveloperIdentity).
 type tokenManager struct {
 	once       sync.Once
 	privateKey *rsa.PrivateKey
@@ -23,9 +38,9 @@ type tokenManager struct {
 	err        error
 }
 
-func newTokenManager() *tokenManager {
+func newTokenManager(region string) *tokenManager {
 	return &tokenManager{
-		issuer: "cognito-identity.amazonaws.com",
+		issuer: cognitoIdentityIssuer(region),
 	}
 }
 

@@ -35,7 +35,7 @@ func formatLoginKeys(logins map[string]string) []string {
 	return keys
 }
 
-func parseCognitoIdentityProviders(req *request.ParsedRequest) ([]cognitoidentitystore.CognitoIdentityProvider, error) {
+func parseCognitoIdentityProviders(req *request.ParsedRequest) ([]ProviderOut, error) {
 	val, ok := req.Parameters["CognitoIdentityProviders"]
 	if !ok {
 		return nil, nil
@@ -44,13 +44,13 @@ func parseCognitoIdentityProviders(req *request.ParsedRequest) ([]cognitoidentit
 	if !ok {
 		return nil, ErrInvalidParameter
 	}
-	providers := make([]cognitoidentitystore.CognitoIdentityProvider, 0)
+	providers := make([]ProviderOut, 0)
 	for _, v := range slice {
 		m, ok := v.(map[string]interface{})
 		if !ok {
 			return nil, ErrInvalidParameter
 		}
-		provider := cognitoidentitystore.CognitoIdentityProvider{}
+		provider := ProviderOut{}
 		if name, ok := m["ProviderName"].(string); ok {
 			if !validateProviderName(name) {
 				return nil, ErrInvalidParameter
@@ -214,4 +214,18 @@ func roleMappingMapToStore(in map[string]RoleMappingInput) map[string]cognitoide
 		result[k] = roleMappingInputToStore(v)
 	}
 	return result
+}
+
+// providerOutsToStore converts a slice of service-layer ProviderOut DTOs into
+// the store-layer CognitoIdentityProvider slice.
+func providerOutsToStore(outs []ProviderOut) []cognitoidentitystore.CognitoIdentityProvider {
+	providers := make([]cognitoidentitystore.CognitoIdentityProvider, 0, len(outs))
+	for _, p := range outs {
+		providers = append(providers, cognitoidentitystore.CognitoIdentityProvider{
+			ProviderName:         p.ProviderName,
+			ClientID:             p.ClientID,
+			ServerSideTokenCheck: p.ServerSideTokenCheck,
+		})
+	}
+	return providers
 }

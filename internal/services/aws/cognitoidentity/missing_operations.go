@@ -2,10 +2,12 @@ package cognitoidentity
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
@@ -13,6 +15,9 @@ import (
 func (s *CognitoIdentityService) DeleteIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityIDs := getStringSliceParam(req, "IdentityIdsToDelete")
 	if len(identityIDs) == 0 {
+		return nil, ErrInvalidParameter
+	}
+	if len(identityIDs) > 60 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -50,7 +55,7 @@ func (s *CognitoIdentityService) DeleteIdentities(ctx context.Context, reqCtx *r
 // ListIdentities lists the identities in an identity pool.
 func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -60,18 +65,21 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 	}
 
 	if _, err := store.GetIdentityPool(poolID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
-	maxResults := 60
-	if _, ok := req.Parameters["MaxResults"]; ok {
-		n := request.GetIntParam(req.Parameters, "MaxResults")
-		if !validateQueryLimit(n) {
-			return nil, ErrInvalidParameter
-		}
-		maxResults = n
+	_, ok := req.Parameters["MaxResults"]
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	if !validateQueryLimit(maxResults) {
+		return nil, ErrInvalidParameter
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	if !validatePaginationKey(nextToken) {
+		return nil, ErrInvalidParameter
+	}
 	// HideDisabled is accepted for SPEC compliance. Edge identities have no
 	// disabled state, so the filter has no effect.
 	_ = getBoolParam(req, "HideDisabled")
@@ -105,7 +113,7 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 // GetOpenIdToken gets an OpenID token for a Cognito identity.
 func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
-	if identityID == "" {
+	if !validateIdentityId(identityID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -116,7 +124,7 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 
 	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	// Logins are accepted for wire compatibility but NOT persisted. In AWS,
@@ -124,9 +132,16 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 	// identity provider before issuing a token. The edge environment cannot
 	// perform external provider verification, so the parameter is accepted
 	// without side effects to prevent identity takeover via Logins injection.
-	_ = parseMapParam(req, "Logins")
+	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
+		if !validateMapSize(len(logins), 10) {
+			return nil, ErrInvalidParameter
+		}
+		if !validateLoginsValues(logins) {
+			return nil, ErrInvalidParameter
+		}
+	}
 
-	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 900, nil, nil)
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 600, nil, nil)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -140,12 +155,15 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 // GetOpenIdTokenForDeveloperIdentity registers (or retrieves) a developer identity and returns an OpenID token.
 func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
 	logins := parseMapParam(req, "Logins")
 	if len(logins) == 0 {
+		return nil, ErrInvalidParameter
+	}
+	if !validateLoginsValues(logins) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -160,19 +178,22 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 	}
 
 	if _, err := store.GetIdentityPool(poolID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	identityID := req.GetParam("IdentityId")
+	if identityID != "" && !validateIdentityId(identityID) {
+		return nil, ErrInvalidParameter
+	}
 
 	// TokenDuration controls token expiry (range 1-86400 seconds per AWS spec).
 	tokenDuration := int64(900) // default 15 minutes
 	if _, ok := req.Parameters["TokenDuration"]; ok {
-		td := request.GetIntParam(req.Parameters, "TokenDuration")
-		if td < 1 || td > 86400 {
+		td := int64(request.GetIntParam(req.Parameters, "TokenDuration"))
+		if !validateTokenDuration(td) {
 			return nil, ErrInvalidParameter
 		}
-		tokenDuration = int64(td)
+		tokenDuration = td
 	}
 
 	// PrincipalTags are embedded into the JWT as cognito:principal_tags
@@ -180,14 +201,16 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 	var principalTags map[string]string
 	if ptVal, ok := req.Parameters["PrincipalTags"]; ok {
 		if ptMap, ok := ptVal.(map[string]interface{}); ok {
-			if len(ptMap) > 50 {
+			if !validateMapSize(len(ptMap), 50) {
 				return nil, ErrInvalidParameter
 			}
 			principalTags = make(map[string]string, len(ptMap))
 			for k, v := range ptMap {
-				if s, ok := v.(string); ok {
-					principalTags[k] = s
+				s, ok := v.(string)
+				if !ok || !validatePrincipalTagValue(s) {
+					return nil, ErrInvalidParameter
 				}
+				principalTags[k] = s
 			}
 		}
 	}
@@ -238,7 +261,7 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 // GetPrincipalTagAttributeMap retrieves the principal tag attribute map for an identity provider.
 func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("IdentityProviderName")
@@ -252,11 +275,14 @@ func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context
 	}
 
 	if _, err := store.GetIdentityPool(poolID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	ptam, err := store.GetPrincipalTagAttributeMap(poolID, providerName)
 	if err != nil {
+		if !errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
+			return nil, ErrInternalError
+		}
 		return map[string]interface{}{
 			"IdentityPoolId":       poolID,
 			"IdentityProviderName": providerName,
@@ -276,7 +302,7 @@ func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context
 // SetPrincipalTagAttributeMap sets the principal tag attribute map for an identity provider.
 func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("IdentityProviderName")
@@ -290,7 +316,7 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 	}
 
 	if _, err := store.GetIdentityPool(poolID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	principalTags := parseMapParam(req, "PrincipalTags")
@@ -311,7 +337,7 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 // LookupDeveloperIdentity looks up a developer identity identifier and returns the mapped identity IDs.
 func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -321,10 +347,13 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	}
 
 	if _, err := store.GetIdentityPool(poolID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	identityID := req.GetParam("IdentityId")
+	if identityID != "" && !validateIdentityId(identityID) {
+		return nil, ErrInvalidParameter
+	}
 	devUserID := req.GetParam("DeveloperUserIdentifier")
 	maxResults := 60
 	if _, ok := req.Parameters["MaxResults"]; ok {
@@ -335,6 +364,9 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 		maxResults = n
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	if !validatePaginationKey(nextToken) {
+		return nil, ErrInvalidParameter
+	}
 
 	matchedIdentityID, devUserIDs, nextTokenOut, err := store.LookupDeveloperIdentity(poolID, identityID, devUserID, maxResults, nextToken)
 	if err != nil {
@@ -358,7 +390,7 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 // MergeDeveloperIdentities merges two developer user identities.
 func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 	sourceUserID := req.GetParam("SourceUserIdentifier")
@@ -381,32 +413,44 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 
 	sourceDI, err := store.GetDeveloperIdentity(poolID, providerName, sourceUserID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 	destDI, err := store.GetDeveloperIdentity(poolID, providerName, destUserID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	if sourceDI.IdentityID != "" && destDI.IdentityID != "" && sourceDI.IdentityID != destDI.IdentityID {
 		// Merge the source identity's logins into the destination identity so that
-		// public provider links (Facebook, Google, etc.) are not lost.
+		// public provider links (Facebook, Google, etc.) are not lost. Both
+		// identities must be retrievable before any mutation occurs; if either
+		// lookup fails the operation aborts to prevent data loss.
 		sourceIdentity, srcErr := store.GetIdentity(poolID, sourceDI.IdentityID)
-		if srcErr == nil && sourceIdentity != nil {
-			destIdentity, dstErr := store.GetIdentity(poolID, destDI.IdentityID)
-			if dstErr == nil && destIdentity != nil {
-				if destIdentity.Logins == nil {
-					destIdentity.Logins = make(map[string]string)
-				}
-				for provider, token := range sourceIdentity.Logins {
-					if _, exists := destIdentity.Logins[provider]; !exists {
-						destIdentity.Logins[provider] = token
-					}
-				}
-				destIdentity.LastModifiedDate = time.Now().UTC()
-				destKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, destDI.IdentityID)
-				_ = store.Identities().Put(destKey, destIdentity)
+		if srcErr != nil {
+			return nil, mapStoreError(srcErr, cognitoidentitystore.ErrIdentityNotFound)
+		}
+
+		destIdentity, dstErr := store.GetIdentity(poolID, destDI.IdentityID)
+		if dstErr != nil {
+			return nil, mapStoreError(dstErr, cognitoidentitystore.ErrIdentityNotFound)
+		}
+
+		if destIdentity.Logins == nil {
+			destIdentity.Logins = make(map[string]string)
+		}
+		for provider, token := range sourceIdentity.Logins {
+			if _, exists := destIdentity.Logins[provider]; !exists {
+				destIdentity.Logins[provider] = token
 			}
+		}
+		destIdentity.LastModifiedDate = time.Now().UTC()
+		destKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, destDI.IdentityID)
+		if putErr := store.Identities().Put(destKey, destIdentity); putErr != nil {
+			logs.Error("Failed to merge identity logins during developer identity merge",
+				logs.String("sourceIdentityId", sourceDI.IdentityID),
+				logs.String("destIdentityId", destDI.IdentityID),
+				logs.Err(putErr))
+			return nil, ErrInternalError
 		}
 
 		sourceKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
@@ -436,11 +480,11 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 // UnlinkDeveloperIdentity unlinks a developer identity from a Cognito identity.
 func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
-	if identityID == "" {
+	if !validateIdentityId(identityID) {
 		return nil, ErrInvalidParameter
 	}
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("DeveloperProviderName")
@@ -458,7 +502,7 @@ func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, re
 	}
 
 	if err := store.UnlinkDeveloperIdentity(poolID, providerName, devUserID); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	return response.EmptyResponse(), nil
@@ -467,7 +511,7 @@ func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, re
 // UnlinkIdentity unlinks login providers from a Cognito identity.
 func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
-	if identityID == "" {
+	if !validateIdentityId(identityID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -483,6 +527,12 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 	if len(logins) == 0 {
 		return nil, ErrNotAuthorized
 	}
+	if !validateMapSize(len(logins), 10) {
+		return nil, ErrInvalidParameter
+	}
+	if !validateLoginsValues(logins) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -491,7 +541,7 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 
 	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	// Verify the caller holds a token for at least one provider linked to
@@ -509,7 +559,7 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 	}
 
 	if err := store.UnlinkLogins(identity.IdentityPoolID, identityID, loginsToRemove); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	return response.EmptyResponse(), nil

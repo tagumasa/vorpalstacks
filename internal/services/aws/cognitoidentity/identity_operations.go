@@ -11,7 +11,7 @@ import (
 // GetId obtains a unique identity ID for a Cognito identity pool.
 func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := req.GetParam("IdentityPoolId")
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -19,13 +19,8 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 	// It is accepted and validated for SPEC compliance; the edge environment
 	// operates single-account so no cross-account check is enforced.
 	if accountID := req.GetParam("AccountId"); accountID != "" {
-		if len(accountID) < 1 || len(accountID) > 15 {
+		if !validateAccountId(accountID) {
 			return nil, ErrInvalidParameter
-		}
-		for _, c := range accountID {
-			if c < '0' || c > '9' {
-				return nil, ErrInvalidParameter
-			}
 		}
 	}
 
@@ -36,10 +31,16 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 
 	_, err = store.GetIdentityPool(poolID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	logins := parseMapParam(req, "Logins")
+	if !validateMapSize(len(logins), 10) {
+		return nil, ErrInvalidParameter
+	}
+	if !validateLoginsValues(logins) {
+		return nil, ErrInvalidParameter
+	}
 
 	// For authenticated identities (Logins provided), AWS reuses the existing
 	// identity whose logins match. Only create a new identity when no match exists.
@@ -70,7 +71,7 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 // GetOpenIdToken followed by AssumeRoleWithWebIdentity.
 func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
-	if identityID == "" {
+	if !validateIdentityId(identityID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -81,7 +82,7 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 
 	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	customRoleArn := req.GetParam("CustomRoleArn")
@@ -90,6 +91,12 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 	// onto the identity so that subsequent role selection and credential
 	// issuance reflect the current authentication state.
 	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
+		if !validateMapSize(len(logins), 10) {
+			return nil, ErrInvalidParameter
+		}
+		if !validateLoginsValues(logins) {
+			return nil, ErrInvalidParameter
+		}
 		if identity.Logins == nil {
 			identity.Logins = make(map[string]string)
 		}
@@ -145,7 +152,7 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 // DescribeIdentity returns information about a Cognito identity.
 func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
-	if identityID == "" {
+	if !validateIdentityId(identityID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -156,7 +163,7 @@ func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *r
 
 	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	return map[string]interface{}{

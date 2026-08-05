@@ -27,7 +27,7 @@ func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService
 	return &CognitoIdentityService{
 		accountID: accountID,
 		region:    region,
-		tokenMgr:  newTokenManager(),
+		tokenMgr:  newTokenManager(region),
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
+	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
 // CreateIdentityPool creates a new Cognito identity pool.
@@ -25,13 +27,7 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	if providers, perr := parseCognitoIdentityProviders(req); perr != nil {
 		return nil, perr
 	} else {
-		for _, p := range providers {
-			input.CognitoIdentityProviders = append(input.CognitoIdentityProviders, ProviderOut{
-				ProviderName:         p.ProviderName,
-				ClientID:             p.ClientID,
-				ServerSideTokenCheck: p.ServerSideTokenCheck,
-			})
-		}
+		input.CognitoIdentityProviders = providers
 	}
 
 	input.DeveloperProviderName = req.GetParam("DeveloperProviderName")
@@ -63,7 +59,7 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 // DescribeIdentityPool returns details about a Cognito identity pool.
 func (s *CognitoIdentityService) DescribeIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := getIdentityPoolID(req)
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -101,9 +97,11 @@ func (s *CognitoIdentityService) ListIdentityPools(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
+	_, maxResultsProvided := req.Parameters["MaxResults"]
 	items, nextToken, err := s.listIdentityPoolsShortCore(store, ListIdentityPoolsInput{
-		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
-		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+		MaxResults:         request.GetIntParam(req.Parameters, "MaxResults"),
+		MaxResultsProvided: maxResultsProvided,
+		NextToken:          request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {
 		return nil, err
@@ -129,7 +127,7 @@ func (s *CognitoIdentityService) ListIdentityPools(ctx context.Context, reqCtx *
 // UpdateIdentityPool updates a Cognito identity pool.
 func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := getIdentityPoolID(req)
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -140,7 +138,7 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 
 	pool, err := store.GetIdentityPool(poolID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	// IdentityPoolName is @required in the Smithy IdentityPool shape.
@@ -178,21 +176,37 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 	if providers, err := parseCognitoIdentityProviders(req); err != nil {
 		return nil, err
 	} else if len(providers) > 0 {
-		pool.CognitoIdentityProviders = providers
+		pool.CognitoIdentityProviders = providerOutsToStore(providers)
 	}
 	if loginProviders := parseMapParam(req, "SupportedLoginProviders"); len(loginProviders) > 0 {
+		if !validateMapSize(len(loginProviders), 10) {
+			return nil, ErrInvalidParameter
+		}
 		pool.SupportedLoginProviders = loginProviders
 	}
 	if oidcArns := getStringSliceParam(req, "OpenIdConnectProviderARNs"); len(oidcArns) > 0 {
+		for _, arn := range oidcArns {
+			if !validateRoleARN(arn) {
+				return nil, ErrInvalidParameter
+			}
+		}
 		pool.OpenIdConnectProviderARNs = oidcArns
 	}
 	if samlArns := getStringSliceParam(req, "SamlProviderARNs"); len(samlArns) > 0 {
+		for _, arn := range samlArns {
+			if !validateRoleARN(arn) {
+				return nil, ErrInvalidParameter
+			}
+		}
 		pool.SamlProviderARNs = samlArns
 	}
 
 	var updatedTags map[string]string
 	if _, ok := req.Parameters["IdentityPoolTags"]; ok {
 		updatedTags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
+		if !validateTagValues(updatedTags) {
+			return nil, ErrInvalidParameter
+		}
 		existingTags, _ := store.List(pool.Arn)
 		var keysToRemove []string
 		removedTags := make(map[string]string)
@@ -211,7 +225,11 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 			// Rollback: re-apply the tags that were removed to avoid
 			// leaving the resource in a partially-untagged state.
 			if len(removedTags) > 0 {
-				_ = store.Tag(pool.Arn, removedTags)
+				if rbErr := store.Tag(pool.Arn, removedTags); rbErr != nil {
+					logs.Error("Failed to rollback identity pool tags",
+						logs.String("poolId", poolID),
+						logs.Err(rbErr))
+				}
 			}
 			return nil, ErrInternalError
 		}
@@ -233,7 +251,7 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 // GetIdentityPoolRoles returns the roles for a Cognito identity pool.
 func (s *CognitoIdentityService) GetIdentityPoolRoles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := getIdentityPoolID(req)
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -244,7 +262,7 @@ func (s *CognitoIdentityService) GetIdentityPoolRoles(ctx context.Context, reqCt
 
 	authRole, unauthRole, mappings, err := store.GetIdentityPoolRoles(poolID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	result := map[string]interface{}{
@@ -271,7 +289,7 @@ func (s *CognitoIdentityService) GetIdentityPoolRoles(ctx context.Context, reqCt
 // SetIdentityPoolRoles sets the roles for a Cognito identity pool.
 func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := getIdentityPoolID(req)
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -291,11 +309,20 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 				return nil, ErrInvalidParameter
 			}
 		}
+		if !validateMapSize(len(rolesMap), 2) {
+			return nil, ErrInvalidParameter
+		}
 		if v, ok := rolesMap["authenticated"].(string); ok {
 			authRole = v
 		}
 		if v, ok := rolesMap["unauthenticated"].(string); ok {
 			unauthRole = v
+		}
+		if authRole != "" && !validateRoleARN(authRole) {
+			return nil, ErrInvalidParameter
+		}
+		if unauthRole != "" && !validateRoleARN(unauthRole) {
+			return nil, ErrInvalidParameter
 		}
 	} else {
 		// Roles is semantically required by AWS. Absent Roles would silently
@@ -310,9 +337,12 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 	if err != nil {
 		return nil, err
 	}
+	if !validateMapSize(len(mappingDTOs), 10) {
+		return nil, ErrInvalidParameter
+	}
 
 	if err := store.SetIdentityPoolRoles(poolID, authRole, unauthRole, roleMappingMapToStore(mappingDTOs)); err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	return map[string]interface{}{

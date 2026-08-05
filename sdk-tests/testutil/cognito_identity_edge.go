@@ -35,7 +35,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "DescribeIdentity_NonExistent", func() error {
 		_, err := client.DescribeIdentity(ctx, &cognitoidentity.DescribeIdentityInput{
-			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
+			IdentityId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -80,7 +80,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "GetCredentialsForIdentity_NonExistent", func() error {
 		_, err := client.GetCredentialsForIdentity(ctx, &cognitoidentity.GetCredentialsForIdentityInput{
-			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
+			IdentityId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -90,7 +90,7 @@ func (r *TestRunner) cognitoIdentityEdgeTests(ctx context.Context, client *cogni
 
 	results = append(results, r.RunTest("cognito-identity", "GetOpenIdToken_NonExistent", func() error {
 		_, err := client.GetOpenIdToken(ctx, &cognitoidentity.GetOpenIdTokenInput{
-			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
+			IdentityId: aws.String(fmt.Sprintf("%s:00000000-0000-0000-0000-000000000000", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err

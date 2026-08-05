@@ -31,8 +31,9 @@ type CreateIdentityPoolInput struct {
 
 // ListIdentityPoolsInput carries every field that ListIdentityPools needs.
 type ListIdentityPoolsInput struct {
-	MaxResults int
-	NextToken  string
+	MaxResults         int
+	MaxResultsProvided bool
+	NextToken          string
 }
 
 // IdentityPoolOut is the transport-agnostic representation of an IdentityPool,
@@ -118,18 +119,38 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 		}
 	}
 
+	if !validateMapSize(len(in.SupportedLoginProviders), 10) {
+		return nil, ErrInvalidParameter
+	}
+	if in.TagsProvided && len(in.Tags) > 0 {
+		if !validateTagValues(in.Tags) {
+			return nil, ErrInvalidParameter
+		}
+	}
+	for _, arn := range in.OpenIdConnectProviderARNs {
+		if !validateRoleARN(arn) {
+			return nil, ErrInvalidParameter
+		}
+	}
+	for _, arn := range in.SamlProviderARNs {
+		if !validateRoleARN(arn) {
+			return nil, ErrInvalidParameter
+		}
+	}
+
+	// Enforce per-account identity pool limit (AWS default: 50).
+	existing, err := store.ListIdentityPools(storecommon.ListOptions{MaxItems: 100})
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	if len(existing.Items) >= 50 {
+		return nil, ErrLimitExceeded
+	}
+
 	pool := cognitoidentitystore.NewIdentityPool(in.IdentityPoolName, in.AllowUnauthenticatedIdentities, in.Region)
 
 	if len(in.CognitoIdentityProviders) > 0 {
-		providers := make([]cognitoidentitystore.CognitoIdentityProvider, 0, len(in.CognitoIdentityProviders))
-		for _, p := range in.CognitoIdentityProviders {
-			providers = append(providers, cognitoidentitystore.CognitoIdentityProvider{
-				ProviderName:         p.ProviderName,
-				ClientID:             p.ClientID,
-				ServerSideTokenCheck: p.ServerSideTokenCheck,
-			})
-		}
-		pool.CognitoIdentityProviders = providers
+		pool.CognitoIdentityProviders = providerOutsToStore(in.CognitoIdentityProviders)
 	}
 	if in.DeveloperProviderName != "" {
 		pool.DeveloperProviderName = in.DeveloperProviderName
@@ -172,10 +193,13 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 // listIdentityPoolsShortCore returns only the short description (ID + Name),
 // matching the Smithy IdentityPoolShortDescription shape.
 func (s *CognitoIdentityService) listIdentityPoolsShortCore(store cognitoidentitystore.CognitoIdentityStoreInterface, in ListIdentityPoolsInput) ([]IdentityPoolShortOut, string, error) {
-	if in.MaxResults <= 0 {
-		in.MaxResults = 60
+	if !in.MaxResultsProvided {
+		return nil, "", ErrInvalidParameter
 	}
 	if !validateQueryLimit(in.MaxResults) {
+		return nil, "", ErrInvalidParameter
+	}
+	if !validatePaginationKey(in.NextToken) {
 		return nil, "", ErrInvalidParameter
 	}
 
@@ -202,7 +226,7 @@ func (s *CognitoIdentityService) listIdentityPoolsShortCore(store cognitoidentit
 
 // deleteIdentityPoolCore is the single entry point for identity pool deletion.
 func (s *CognitoIdentityService) deleteIdentityPoolCore(store cognitoidentitystore.CognitoIdentityStoreInterface, poolID string) error {
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return ErrInvalidParameter
 	}
 	if err := store.DeleteIdentityPool(poolID); err != nil {
@@ -216,12 +240,12 @@ func (s *CognitoIdentityService) deleteIdentityPoolCore(store cognitoidentitysto
 
 // describeIdentityPoolCore is the single entry point for identity pool retrieval.
 func (s *CognitoIdentityService) describeIdentityPoolCore(store cognitoidentitystore.CognitoIdentityStoreInterface, poolID string) (*IdentityPoolOut, error) {
-	if poolID == "" {
+	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
 	pool, err := store.GetIdentityPool(poolID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 	tags, _ := store.List(pool.Arn)
 	if len(tags) > 0 {
