@@ -19,15 +19,20 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 	}
 
 	authType := request.GetStringParam(req.Parameters, "AuthType")
-	if authType == "" {
-		authType = "NONE"
+	if err := validateAuthType(authType); err != nil {
+		return nil, err
+	}
+
+	invokeMode := request.GetStringParam(req.Parameters, "InvokeMode")
+	if err := validateInvokeMode(invokeMode); err != nil {
+		return nil, err
 	}
 
 	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
 
 	config := &lambdastore.FunctionUrlConfig{
 		AuthType:   authType,
-		InvokeMode: request.GetStringParam(req.Parameters, "InvokeMode"),
+		InvokeMode: invokeMode,
 		Qualifier:  qualifier,
 	}
 
@@ -112,9 +117,15 @@ func (s *LambdaService) UpdateFunctionUrlConfig(ctx context.Context, reqCtx *req
 	}
 
 	if authType := request.GetStringParam(req.Parameters, "AuthType"); authType != "" {
+		if err := validateAuthType(authType); err != nil {
+			return nil, err
+		}
 		function.UrlConfig.AuthType = authType
 	}
 	if invokeMode := request.GetStringParam(req.Parameters, "InvokeMode"); invokeMode != "" {
+		if err := validateInvokeMode(invokeMode); err != nil {
+			return nil, err
+		}
 		function.UrlConfig.InvokeMode = invokeMode
 	}
 	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {

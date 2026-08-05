@@ -23,20 +23,18 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 	config := &lambdastore.EventInvokeConfig{}
 
 	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
-		maxEventAge := request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds")
-		if maxEventAge < 60 || maxEventAge > 21600 {
-			return nil, NewInvalidParameter("MaximumEventAgeInSeconds",
-				"MaximumEventAgeInSeconds must be between 60 and 21600 seconds")
+		val := int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+		if err := validateMaximumEventAgeInSeconds(val); err != nil {
+			return nil, err
 		}
-		config.MaximumEventAgeInSeconds = int32(maxEventAge)
+		config.MaximumEventAgeInSeconds = val
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		maxRetry := request.GetIntParam(req.Parameters, "MaximumRetryAttempts")
-		if maxRetry < 0 || maxRetry > 2 {
-			return nil, NewInvalidParameter("MaximumRetryAttempts",
-				"MaximumRetryAttempts must be between 0 and 2")
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		if err := validateMaximumRetryAttempts(val); err != nil {
+			return nil, err
 		}
-		config.MaximumRetryAttempts = int32(maxRetry)
+		config.MaximumRetryAttempts = val
 	}
 	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
 		config.DestinationConfig = parseDestinationConfig(destMap)
@@ -173,10 +171,18 @@ func (s *LambdaService) UpdateFunctionEventInvokeConfig(ctx context.Context, req
 
 	// Overwrite only the fields that were explicitly provided in the request.
 	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
-		config.MaximumEventAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+		if err := validateMaximumEventAgeInSeconds(val); err != nil {
+			return nil, err
+		}
+		config.MaximumEventAgeInSeconds = val
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		config.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		if err := validateMaximumRetryAttempts(val); err != nil {
+			return nil, err
+		}
+		config.MaximumRetryAttempts = val
 	}
 	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
 		config.DestinationConfig = parseDestinationConfig(destMap)

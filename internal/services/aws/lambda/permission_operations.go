@@ -29,17 +29,13 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	existingPolicies, _ := store.Functions.GetPolicy(function.FunctionName)
-	for _, p := range existingPolicies {
-		if p.Id == statementId {
-			return nil, NewResourceConflict(fmt.Sprintf("StatementId %s already exists", statementId))
-		}
-	}
+	principal := request.GetStringParam(req.Parameters, "Principal")
+	action := request.GetStringParam(req.Parameters, "Action")
 
 	policy := &lambdastore.FunctionPolicy{
 		Id:        statementId,
-		Principal: request.GetStringParam(req.Parameters, "Principal"),
-		Action:    request.GetStringParam(req.Parameters, "Action"),
+		Principal: principal,
+		Action:    action,
 		Statement: request.GetStringParam(req.Parameters, "Statement"),
 		Resource:  function.FunctionArn,
 	}
@@ -49,14 +45,22 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if err := store.Functions.AddPolicyAtomically(function.FunctionName, policy); err != nil {
+		if errors.Is(err, lambdastore.ErrPolicyAlreadyExists) {
+			return nil, NewResourceConflict(fmt.Sprintf("StatementId %s already exists", statementId))
+		}
 		return nil, err
 	}
+
+	// Build the IAM policy statement with the correct Principal key.
+	// IAM ARN → {"AWS": ...}, service principal → {"Service": ...},
+	// wildcard "*" → "*" (direct value, no wrapper key).
+	principalField := buildPrincipalField(principal)
 
 	statement := map[string]interface{}{
 		"Sid":       statementId,
 		"Effect":    "Allow",
-		"Principal": map[string]interface{}{"Service": request.GetStringParam(req.Parameters, "Principal")},
-		"Action":    request.GetStringParam(req.Parameters, "Action"),
+		"Principal": principalField,
+		"Action":    action,
 		"Resource":  function.FunctionArn,
 	}
 
@@ -65,9 +69,28 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"Statement": string(statementJSON),
-	}, nil
+	}
+
+	// Include RevisionId so clients can use conditional updates.
+	updated, getErr := store.Functions.Get(function.FunctionName)
+	if getErr == nil && updated.RevisionId != "" {
+		result["RevisionId"] = updated.RevisionId
+	}
+
+	return result, nil
+}
+
+// buildPrincipalField returns the IAM policy Principal value for the
+// given principal string. Returns a wrapped map for ARN and service
+// principals, or the bare string for the wildcard.
+func buildPrincipalField(principal string) interface{} {
+	pt := principalType(principal)
+	if pt == "" {
+		return principal
+	}
+	return map[string]interface{}{pt: principal}
 }
 
 // RemovePermission removes a permission from a Lambda function's resource-based policy.
@@ -103,6 +126,8 @@ func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
 
+	functionName = extractFunctionName(functionName)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -120,7 +145,8 @@ func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestCo
 	for _, p := range policies {
 		stmt := map[string]interface{}{
 			"Sid":       p.Id,
-			"Principal": p.Principal,
+			"Effect":    "Allow",
+			"Principal": buildPrincipalField(p.Principal),
 			"Action":    p.Action,
 		}
 		if p.Resource != "" {

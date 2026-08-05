@@ -79,7 +79,7 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			eventBusName = "default"
 		}
 
-		// M10: DetailType max 128 chars (AWS API Reference).
+		// DetailType max 128 chars per AWS EventBridge PutEvents API reference.
 		if !validateDetailType(detailType) {
 			resultEntries = append(resultEntries, map[string]interface{}{
 				"ErrorCode":    "ValidationException",
@@ -99,7 +99,7 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			continue
 		}
 
-		// L1: TraceHeader max 500 chars (Smithy @length).
+		// TraceHeader max 500 chars per Smithy @length trait.
 		if !validateTraceHeader(traceHeader) {
 			resultEntries = append(resultEntries, map[string]interface{}{
 				"ErrorCode":    "ValidationException",

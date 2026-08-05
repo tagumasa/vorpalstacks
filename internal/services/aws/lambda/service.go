@@ -783,23 +783,7 @@ func (s *LambdaService) IsSecurityGroupInUse(ctx context.Context, region, sgId s
 }
 
 func (s *LambdaService) getOrCreateFunctionStore(region string) *lambdastore.FunctionStore {
-	if cached, ok := s.storeCache.Load(region); ok {
-		if typed, ok := cached.(*lambdaStore); ok {
-			return typed.Functions
-		}
-	}
-	storage := s.getRegionalStorage(region)
-	newStore := &lambdaStore{
-		Functions:    lambdastore.NewFunctionStore(storage, s.accountID, region),
-		Layers:       lambdastore.NewLayerStore(storage, s.accountID, region),
-		EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, region),
-	}
-	if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
-		if typed, ok := actual.(*lambdaStore); ok {
-			return typed.Functions
-		}
-	}
-	return newStore.Functions
+	return s.getOrCreateLambdaStore(region).Functions
 }
 
 // GetFunctionPolicy retrieves the resource-based policy for a Lambda function.

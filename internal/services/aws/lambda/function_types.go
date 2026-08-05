@@ -8,30 +8,6 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// CreateFunctionInput is the request structure for creating a new Lambda function.
-type CreateFunctionInput struct {
-	FunctionName     string            `json:"FunctionName"`
-	Runtime          string            `json:"Runtime"`
-	Role             string            `json:"Role"`
-	Handler          string            `json:"Handler"`
-	Code             *FunctionCode     `json:"Code"`
-	Description      string            `json:"Description,omitempty"`
-	Timeout          int32             `json:"Timeout,omitempty"`
-	MemorySize       int32             `json:"MemorySize,omitempty"`
-	Publish          bool              `json:"Publish,omitempty"`
-	VpcConfig        *VpcConfig        `json:"VpcConfig,omitempty"`
-	Environment      *Environment      `json:"Environment,omitempty"`
-	DeadLetterConfig *DeadLetterConfig `json:"DeadLetterConfig,omitempty"`
-	KMSKeyArn        string            `json:"KMSKeyArn,omitempty"`
-	TracingConfig    *TracingConfig    `json:"TracingConfig,omitempty"`
-	Tags             map[string]string `json:"Tags,omitempty"`
-	Layers           []string          `json:"Layers,omitempty"`
-	Architectures    []string          `json:"Architectures,omitempty"`
-	EphemeralStorage *EphemeralStorage `json:"EphemeralStorage,omitempty"`
-	SnapStart        *SnapStart        `json:"SnapStart,omitempty"`
-	PackageType      string            `json:"PackageType,omitempty"`
-}
-
 // FunctionCode contains the location of the function's deployment package.
 type FunctionCode struct {
 	ZipFile         []byte `json:"ZipFile,omitempty"`

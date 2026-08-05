@@ -176,6 +176,19 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 	}
 
 	var oldContainerID string
+
+	// Parse and resolve VpcConfig before the atomic callback so that
+	// EC2 subnet validation (I/O) happens outside the store lock.
+	var newVpcConfig *lambdastore.VpcConfig
+	if request.GetMapParam(req.Parameters, "VpcConfig") != nil {
+		newVpcConfig = parseVpcConfig(req.Parameters)
+		if newVpcConfig != nil && len(newVpcConfig.SubnetIds) > 0 {
+			if err := s.resolveVpcConfig(ctx, reqCtx.GetRegion(), newVpcConfig); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	function, err := store.Functions.UpdateAtomically(functionName, func(fn *lambdastore.Function) error {
 		if runtime != "" {
 			fn.Runtime = lambdastore.Runtime(runtime)
@@ -199,8 +212,15 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 			fn.KMSKeyArn = kmsKeyArn
 		}
 
+		if cscArn := request.GetStringParam(req.Parameters, "CodeSigningConfigArn"); cscArn != "" {
+			if err := validateCodeSigningConfigArn(cscArn); err != nil {
+				return err
+			}
+			fn.CodeSigningConfigArn = cscArn
+		}
+
 		if request.GetMapParam(req.Parameters, "VpcConfig") != nil {
-			fn.VpcConfig = parseVpcConfig(req.Parameters)
+			fn.VpcConfig = newVpcConfig
 		}
 
 		if request.GetMapParam(req.Parameters, "Environment") != nil {

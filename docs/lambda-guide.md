@@ -2,17 +2,45 @@
 
 This document covers runtime behaviour and configuration specific to Lambda function execution in vorpalstacks.
 
+## Resource-Based Policy Principal Validation
+
+`AddPermission` validates the `Principal` parameter against a known service-principal allowlist (`validServicePrincipals` in `validators.go`). This is stricter than real AWS, which accepts any `*.amazonaws.com` suffix. Rationale: on an edge/on-premises platform without the full IAM service-principal registry, a bare suffix check would accept typos (e.g. `lamda.amazonaws.com`) and spoofed principals (e.g. `evil.amazonaws.com`).
+
+Accepted principal formats:
+
+| Format | Example | Mapping |
+|--------|---------|---------|
+| Wildcard | `*` | `"Principal": "*"` |
+| IAM ARN | `arn:aws:iam::123456789012:role/MyRole` | `"Principal": {"AWS": "arn:..."}` |
+| Known service | `lambda.amazonaws.com` | `"Principal": {"Service": "lambda.amazonaws.com"}` |
+| Unknown `*.amazonaws.com` | `evil.amazonaws.com` | **rejected** |
+
+To add a new service principal, append it to `validServicePrincipals` in `internal/services/aws/lambda/validators.go`.
+
 ## Container Execution
 
 Lambda functions run in Docker containers. The runtime lifecycle is:
 
-1. On first invocation, vorpalstacks pulls the runtime image (e.g. `public.ecr.aws/lambda/nodejs:20`) and creates a container.
+1. On first invocation, vorpalstacks pulls the runtime image (e.g. `public.ecr.aws/lambda/nodejs:22`) and creates a container.
 2. The container persists across subsequent invocations of the same function version until explicitly deleted or the function is updated.
 3. Container names follow the pattern `lambda-{function-name}-{version}`.
 
 ### Supported Runtimes
 
-Node.js 20.x is the primary supported runtime. Other runimes with published Lambda base images (Python, Java, .NET) may work but are not fully tested.
+The following runtimes are supported for new function creation. EOL runtimes (e.g. `nodejs20.x`, `go1.x`, `python3.9`) are rejected at validation time:
+
+| Language | Identifiers |
+|----------|------------|
+| Node.js | `nodejs24.x`, `nodejs22.x` |
+| Python | `python3.14`, `python3.13`, `python3.12`, `python3.11`, `python3.10` |
+| Java | `java25`, `java21`, `java17`, `java11`, `java8.al2` |
+| .NET | `dotnet10`, `dotnet9`*, `dotnet8` |
+| Ruby | `ruby4.0`, `ruby3.4`, `ruby3.3` |
+| OS-only | `provided.al2023`, `provided.al2` |
+
+\* `dotnet9` is container-image only (no `--runtime` CLI support); it can be set via `UpdateFunctionConfiguration` on Image-package functions.
+
+Deprecated runtimes that still have Docker base images (e.g. `nodejs20.x`, `go1.x`) will execute existing functions but cannot be selected for new functions. Go is supported via the `provided.al2023` custom runtime.
 
 ## Host Endpoint Injection
 
@@ -78,7 +106,7 @@ API Gateway invoke requests are served on a dedicated secondary listener (defaul
 # 1. Create a Lambda function
 aws lambda create-function \
     --function-name api-handler \
-    --runtime nodejs20.x \
+    --runtime nodejs22.x \
     --handler index.handler \
     --role arn:aws:iam::000000000000:role/lambda-role \
     --zip-file fileb://function.zip
@@ -160,5 +188,5 @@ If missing, the function's environment may be overriding it. Check with `aws lam
 Ensure Docker can reach `public.ecr.aws`. In air-gapped environments, pre-pull and tag images:
 
 ```bash
-docker pull public.ecr.aws/lambda/nodejs:20
+docker pull public.ecr.aws/lambda/nodejs:22
 ```

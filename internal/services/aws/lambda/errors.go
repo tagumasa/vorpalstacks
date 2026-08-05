@@ -4,7 +4,6 @@ package lambda
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 )
@@ -132,54 +131,6 @@ func GetLambdaError(err error) *LambdaError {
 		return lambdaErr
 	}
 	return ErrServiceException
-}
-
-var validRuntimes = []string{
-	"nodejs24.x", "nodejs22.x",
-	"python3.14", "python3.13", "python3.12", "python3.11", "python3.10",
-	"java25", "java21", "java17", "java11", "java8.al2",
-	"dotnet10", "dotnet9", "dotnet8",
-	"ruby4.0", "ruby3.4", "ruby3.3",
-	"provided.al2023", "provided.al2",
-}
-
-// ValidateRuntime checks if the provided runtime is a valid Lambda runtime.
-func ValidateRuntime(runtime string) bool {
-	runtimeLower := strings.ToLower(runtime)
-	for _, r := range validRuntimes {
-		if r == runtimeLower {
-			return true
-		}
-	}
-	return false
-}
-
-// ValidateHandler validates the handler string for a Lambda function.
-// Checks that the handler is not empty and conforms to runtime-specific format requirements.
-func ValidateHandler(runtime, handler string) error {
-	if handler == "" {
-		return NewInvalidParameter("Handler", "Handler cannot be empty")
-	}
-
-	if strings.HasPrefix(runtime, "python") {
-		if !strings.Contains(handler, ".") {
-			return NewInvalidParameter("Handler", "Python handler must be in the format module.function")
-		}
-	}
-
-	if strings.HasPrefix(runtime, "nodejs") {
-		if !strings.Contains(handler, ".") {
-			return NewInvalidParameter("Handler", "Node.js handler must be in the format file.function")
-		}
-	}
-
-	if strings.HasPrefix(runtime, "java") {
-		if !strings.Contains(handler, "::") && !strings.Contains(handler, ".") {
-			return NewInvalidParameter("Handler", "Java handler must be in the format package.Class::method")
-		}
-	}
-
-	return nil
 }
 
 // Response represents a response from a Lambda function invocation.

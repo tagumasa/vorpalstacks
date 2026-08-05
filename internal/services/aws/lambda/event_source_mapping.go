@@ -41,6 +41,13 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 			return nil, err
 		}
 	}
+	if err := validateStartingPositionForStream(startingPosition, eventSourceArn); err != nil {
+		return nil, err
+	}
+	_, hasTimestamp := req.Parameters["StartingPositionTimestamp"]
+	if err := validateStartingPositionTimestamp(startingPosition, hasTimestamp); err != nil {
+		return nil, err
+	}
 
 	mapping := &lambdastore.EventSourceMapping{
 		FunctionArn:                    function.FunctionArn,

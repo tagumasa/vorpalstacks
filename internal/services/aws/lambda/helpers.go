@@ -5,15 +5,12 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
-
-var functionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 
 func extractFunctionName(arnOrName string) string {
 	if strings.HasPrefix(arnOrName, "arn:") {
@@ -24,52 +21,6 @@ func extractFunctionName(arnOrName string) string {
 	return arnOrName
 }
 
-func validateFunctionName(name string) error {
-	if len(name) == 0 || len(name) > 64 {
-		return NewInvalidParameter("FunctionName", "Function name must be between 1 and 64 characters")
-	}
-	if !functionNameRegex.MatchString(name) {
-		return NewInvalidParameter("FunctionName", "Function name can only contain alphanumeric characters, hyphens, and underscores")
-	}
-	return nil
-}
-
-// validatePermission validates the Principal and Action fields of a
-// resource-based policy statement. Principal must be an IAM ARN, a
-// service principal (e.g. "lambda.amazonaws.com"), or "*". Action must
-// start with "lambda:".
-func validatePermission(p *lambdastore.FunctionPolicy) error {
-	if p.Principal == "" {
-		return NewInvalidParameter("Principal", "Principal is required")
-	}
-	if !isValidPrincipal(p.Principal) {
-		return NewInvalidParameter("Principal",
-			fmt.Sprintf("Principal %q is not a valid IAM ARN, service principal, or wildcard", p.Principal))
-	}
-	if p.Action == "" {
-		return NewInvalidParameter("Action", "Action is required")
-	}
-	if !strings.HasPrefix(p.Action, "lambda:") {
-		return NewInvalidParameter("Action",
-			fmt.Sprintf("Action %q must start with 'lambda:'", p.Action))
-	}
-	return nil
-}
-
-// isValidPrincipal checks whether the principal string is a recognised
-// format: wildcard "*", an IAM/IAM-with-path ARN, or a service principal
-// ending in ".amazonaws.com".
-func isValidPrincipal(principal string) bool {
-	if principal == "*" {
-		return true
-	}
-	if strings.HasPrefix(principal, "arn:") {
-		_, service, _, _, _ := arnutil.SplitARN(principal)
-		return service == "iam"
-	}
-	return strings.HasSuffix(principal, ".amazonaws.com")
-}
-
 // repositoryType returns the AWS repository type for a function's code
 // source: "ECR" for container image packages, "S3" for zip-based
 // packages.
@@ -78,61 +29,6 @@ func repositoryType(fn *lambdastore.Function) string {
 		return "ECR"
 	}
 	return "S3"
-}
-
-// validateEventSourceArn checks that the ARN refers to a supported event
-// source service (SQS, Kinesis, or DynamoDB streams). Other services
-// (Kafka, MSK, DocumentDB) are accepted by AWS but not polled by this
-// implementation; rejecting them prevents silent no-op mappings.
-func validateEventSourceArn(arn string) error {
-	service := arnutil.GetServiceFromARN(arn)
-	switch service {
-	case "sqs", "kinesis", "dynamodb":
-		return nil
-	default:
-		return NewInvalidParameter("EventSourceArn",
-			fmt.Sprintf("Unsupported event source service %q: only sqs, kinesis, and dynamodb are supported", service))
-	}
-}
-
-// validateStartingPosition validates the EventSourcePosition enum per
-// the Smithy model (TRIM_HORIZON, LATEST, AT_TIMESTAMP).
-func validateStartingPosition(pos string) error {
-	switch pos {
-	case "TRIM_HORIZON", "LATEST", "AT_TIMESTAMP":
-		return nil
-	default:
-		return NewInvalidParameter("StartingPosition",
-			fmt.Sprintf("StartingPosition must be one of TRIM_HORIZON, LATEST, AT_TIMESTAMP; got %q", pos))
-	}
-}
-
-func isValidLayerARN(arnStr string) bool {
-	if arnStr == "" {
-		return false
-	}
-	if _, service, _, _, _ := arnutil.SplitARN(arnStr); service != "lambda" {
-		return false
-	}
-	resource := arnutil.ExtractResourceFromARN(arnStr)
-	if resource == "" {
-		return false
-	}
-	return strings.HasPrefix(resource, "layer:")
-}
-
-func validateTimeout(timeout int32) error {
-	if timeout < 1 || timeout > 900 {
-		return NewInvalidParameter("Timeout", "Timeout must be between 1 and 900 seconds")
-	}
-	return nil
-}
-
-func validateMemorySize(memorySize int32) error {
-	if memorySize < 128 || memorySize > 10240 {
-		return NewInvalidParameter("MemorySize", "MemorySize must be between 128 and 10240 MB")
-	}
-	return nil
 }
 
 // resolveAliasTargetVersion resolves the concrete Version that an alias
@@ -253,7 +149,9 @@ func parseVpcConfig(params map[string]interface{}) *lambdastore.VpcConfig {
 // subnet. AWS Lambda derives the VPC from the subnets automatically.
 // Returns an error if the subnet lookup fails so callers can reject the
 // request instead of creating a function with an empty VpcId.
-func (s *LambdaService) resolveVpcConfig(ctx context.Context, vpcConfig *lambdastore.VpcConfig) error {
+// The region parameter ensures subnet lookup targets the request's region,
+// not the service default region.
+func (s *LambdaService) resolveVpcConfig(ctx context.Context, region string, vpcConfig *lambdastore.VpcConfig) error {
 	if s.bus == nil || len(vpcConfig.SubnetIds) == 0 {
 		return nil
 	}
@@ -261,7 +159,7 @@ func (s *LambdaService) resolveVpcConfig(ctx context.Context, vpcConfig *lambdas
 	if ec2 == nil {
 		return nil
 	}
-	vpcId, _, err := ec2.LookupSubnet(ctx, s.region, vpcConfig.SubnetIds[0])
+	vpcId, _, err := ec2.LookupSubnet(ctx, region, vpcConfig.SubnetIds[0])
 	if err != nil {
 		return fmt.Errorf("subnet %q not found or EC2 service unavailable: %w", vpcConfig.SubnetIds[0], err)
 	}

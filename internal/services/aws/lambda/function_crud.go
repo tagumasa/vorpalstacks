@@ -4,15 +4,12 @@ package lambda
 import (
 	"context"
 	"encoding/base64"
-	"errors"
-	"fmt"
 	"os"
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -22,78 +19,70 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 	if functionName == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
-
-	if err := validateFunctionName(functionName); err != nil {
-		return nil, err
-	}
+	functionName = extractFunctionName(functionName)
 
 	runtime := request.GetStringParam(req.Parameters, "Runtime")
 	role := request.GetStringParam(req.Parameters, "Role")
 	handler := request.GetStringParam(req.Parameters, "Handler")
 	packageType := request.GetStringParam(req.Parameters, "PackageType")
 
-	if runtime == "" && packageType != "Image" {
-		return nil, NewInvalidParameter("Runtime", "Runtime is required for Zip package type")
-	}
-
-	if runtime != "" && !ValidateRuntime(runtime) {
-		return nil, NewInvalidParameter("Runtime", "Runtime '"+runtime+"' is not supported")
-	}
-
-	if handler == "" && packageType != "Image" {
-		return nil, NewInvalidParameter("Handler", "Handler is required for Zip package type")
-	}
-
-	if handler != "" && runtime != "" {
-		if err := ValidateHandler(runtime, handler); err != nil {
-			return nil, err
+	// IAM role validation (requires reqCtx — not transport-agnostic).
+	if role != "" {
+		validator := reqCtx.GetIAMValidator()
+		if os.Getenv("TEST_MODE") != "true" {
+			if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	if role == "" {
-		return nil, NewInvalidParameter("Role", "Role ARN is required")
-	}
-
-	validator := reqCtx.GetIAMValidator()
-	if os.Getenv("TEST_MODE") != "true" {
-		if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
-			return nil, err
-		}
-	}
-
+	// Code handling — fetch from S3, decode ZipFile, or accept ImageUri.
+	// Results are passed to createFunctionCore as pre-processed metadata.
 	codeMap := request.GetMapParam(req.Parameters, "Code")
 	if codeMap == nil {
 		return nil, NewInvalidParameter("Code", "Code is required")
 	}
 
-	function := &lambdastore.Function{
-		FunctionName: functionName,
-		Runtime:      lambdastore.Runtime(runtime),
-		Role:         role,
-		Handler:      handler,
-		Description:  request.GetStringParam(req.Parameters, "Description"),
-		Publish:      request.GetBoolParam(req.Parameters, "Publish"),
-		KMSKeyArn:    request.GetStringParam(req.Parameters, "KMSKeyArn"),
-		PackageType:  packageType,
+	var codeLocation string
+	var codeSize int64
+	var codeSha256 string
+	var imageUri string
+
+	if uri, ok := codeMap["ImageUri"].(string); ok && uri != "" {
+		imageUri = uri
+		packageType = "Image"
 	}
 
-	if timeout := request.GetIntParam(req.Parameters, "Timeout"); timeout > 0 {
-		if err := validateTimeout(int32(timeout)); err != nil {
+	if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
+		s3Key, _ := codeMap["S3Key"].(string)
+		if s3Key == "" {
+			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
+		}
+		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, reqCtx.GetRegion())
+		if err != nil {
+			return nil, NewInvalidParameter("Code", err.Error())
+		}
+		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
+		if err != nil {
 			return nil, err
 		}
-		function.Timeout = int32(timeout)
-	} else {
-		function.Timeout = 3
-	}
-	if memorySize := request.GetIntParam(req.Parameters, "MemorySize"); memorySize > 0 {
-		if err := validateMemorySize(int32(memorySize)); err != nil {
-			return nil, err
-		}
-		function.MemorySize = int32(memorySize)
-	} else {
-		function.MemorySize = 128
+		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
 	}
 
+	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
+		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
+		if err != nil {
+			return nil, NewInvalidParameter("Code.ZipFile", "Invalid base64 encoding: "+err.Error())
+		}
+		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
+		if err != nil {
+			return nil, err
+		}
+		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	}
+
+	// Parse optional configurations.
+	var ephemeralStorage *lambdastore.EphemeralStorage
 	if ephemeralMap := request.GetMapParam(req.Parameters, "EphemeralStorage"); ephemeralMap != nil {
 		if size, ok := ephemeralMap["Size"]; ok {
 			var sizeValue int32
@@ -108,60 +97,68 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 			if sizeValue < 512 || sizeValue > 10240 {
 				return nil, NewInvalidParameter("EphemeralStorage.Size", "must be between 512 and 10240 MB")
 			}
-			function.EphemeralStorage = &lambdastore.EphemeralStorage{Size: sizeValue}
+			ephemeralStorage = &lambdastore.EphemeralStorage{Size: sizeValue}
 		}
 	}
 
-	if vpcMap := request.GetMapParam(req.Parameters, "VpcConfig"); vpcMap != nil {
-		function.VpcConfig = parseVpcConfig(req.Parameters)
-		if function.VpcConfig != nil && len(function.VpcConfig.SubnetIds) > 0 {
-			if err := s.resolveVpcConfig(ctx, function.VpcConfig); err != nil {
+	var vpcConfig *lambdastore.VpcConfig
+	if request.GetMapParam(req.Parameters, "VpcConfig") != nil {
+		vpcConfig = parseVpcConfig(req.Parameters)
+		if vpcConfig != nil && len(vpcConfig.SubnetIds) > 0 {
+			if err := s.resolveVpcConfig(ctx, reqCtx.GetRegion(), vpcConfig); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if envMap := request.GetMapParam(req.Parameters, "Environment"); envMap != nil {
-		function.Environment = parseEnvironment(req.Parameters)
+	var environment *lambdastore.Environment
+	if request.GetMapParam(req.Parameters, "Environment") != nil {
+		environment = parseEnvironment(req.Parameters)
 	}
 
-	if dlMap := request.GetMapParam(req.Parameters, "DeadLetterConfig"); dlMap != nil {
+	var deadLetterConfig *lambdastore.DeadLetterConfig
+	if request.GetMapParam(req.Parameters, "DeadLetterConfig") != nil {
 		dl, err := parseDeadLetterConfig(req.Parameters)
 		if err != nil {
 			return nil, err
 		}
-		function.DeadLetterConfig = dl
+		deadLetterConfig = dl
 	}
 
-	if traceMap := request.GetMapParam(req.Parameters, "TracingConfig"); traceMap != nil {
+	var tracingConfig *lambdastore.TracingConfig
+	if request.GetMapParam(req.Parameters, "TracingConfig") != nil {
 		trace, err := parseTracingConfig(req.Parameters)
 		if err != nil {
 			return nil, err
 		}
-		function.TracingConfig = trace
+		tracingConfig = trace
 	}
 
+	var snapStart *lambdastore.SnapStart
 	if snapMap := request.GetMapParam(req.Parameters, "SnapStart"); snapMap != nil {
 		applyOn, _ := snapMap["ApplyOn"].(string)
 		if applyOn != "PublishedVersions" && applyOn != "None" {
 			return nil, NewInvalidParameter("SnapStart.ApplyOn",
 				"SnapStart.ApplyOn must be 'PublishedVersions' or 'None'")
 		}
-		function.SnapStart = &lambdastore.SnapStart{ApplyOn: applyOn}
+		snapStart = &lambdastore.SnapStart{ApplyOn: applyOn}
 	}
 
+	var loggingConfig *lambdastore.LoggingConfig
 	if logMap := request.GetMapParam(req.Parameters, "LoggingConfig"); logMap != nil {
-		function.LoggingConfig = parseLoggingConfig(logMap)
+		loggingConfig = parseLoggingConfig(logMap)
 	}
 
+	var imageConfig *lambdastore.ImageConfig
 	if imgMap := request.GetMapParam(req.Parameters, "ImageConfig"); imgMap != nil {
-		function.ImageConfig = parseImageConfig(imgMap)
+		imageConfig = parseImageConfig(imgMap)
 	}
 
+	var fileSystemConfigs []lambdastore.FileSystemConfig
 	if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
 		for _, fsc := range fscs {
 			if m, ok := fsc.(map[string]interface{}); ok {
-				function.FileSystemConfigs = append(function.FileSystemConfigs, lambdastore.FileSystemConfig{
+				fileSystemConfigs = append(fileSystemConfigs, lambdastore.FileSystemConfig{
 					Arn:            request.GetStringParam(m, "Arn"),
 					LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
 				})
@@ -169,99 +166,72 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	if req.Parameters["CodeSigningConfigArn"] != nil {
-		function.CodeSigningConfigArn = request.GetStringParam(req.Parameters, "CodeSigningConfigArn")
-	}
-
-	if imageUri, ok := codeMap["ImageUri"].(string); ok && imageUri != "" {
-		function.ImageUri = imageUri
-		function.PackageType = "Image"
-	}
-
-	if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
-		s3Key, _ := codeMap["S3Key"].(string)
-		if s3Key == "" {
-			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, reqCtx.GetRegion())
-		if err != nil {
-			return nil, NewInvalidParameter("Code", err.Error())
-		}
-		codePath, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		function.CodeLocation = codePath
-		function.CodeSize = codeSize
-		function.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	}
-
-	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, NewInvalidParameter("Code.ZipFile", "Invalid base64 encoding: "+err.Error())
-		}
-		codePath, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		function.CodeLocation = codePath
-		function.CodeSize = codeSize
-		function.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	}
-
-	var tagsMap map[string]interface{}
-	if tm, ok := req.Parameters["Tags"].(map[string]interface{}); ok {
-		tagsMap = tm
-	}
-
-	if layers, ok := req.Parameters["Layers"].([]interface{}); ok {
-		for _, l := range layers {
+	var layers []lambdastore.LayerReference
+	if layerList, ok := req.Parameters["Layers"].([]interface{}); ok {
+		for _, l := range layerList {
 			if ls, ok := l.(string); ok {
 				if !isValidLayerARN(ls) {
 					return nil, NewInvalidParameter("Layers", "Invalid layer ARN format: "+ls)
 				}
-				function.Layers = append(function.Layers, lambdastore.LayerReference{Arn: ls})
+				layers = append(layers, lambdastore.LayerReference{Arn: ls})
 			}
 		}
 	}
 
+	var architectures []string
 	if archs, ok := req.Parameters["Architectures"].([]interface{}); ok {
-		function.Architectures = make([]string, 0, len(archs))
+		architectures = make([]string, 0, len(archs))
 		for _, a := range archs {
 			if as, ok := a.(string); ok {
 				if as != "x86_64" && as != "arm64" {
 					return nil, NewInvalidParameter("Architectures", "must be x86_64 or arm64")
 				}
-				function.Architectures = append(function.Architectures, as)
+				architectures = append(architectures, as)
 			}
 		}
+	}
+
+	var tags map[string]string
+	if tm, ok := req.Parameters["Tags"].(map[string]interface{}); ok {
+		tags = tagutil.ToMap(tagutil.MapInterfaceToTags(tm))
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := store.Functions.Create(function)
+
+	created, err := s.createFunctionCore(store, &CreateFunctionInput{
+		FunctionName:         functionName,
+		Runtime:              runtime,
+		Role:                 role,
+		Handler:              handler,
+		Description:          request.GetStringParam(req.Parameters, "Description"),
+		PackageType:          packageType,
+		KMSKeyArn:            request.GetStringParam(req.Parameters, "KMSKeyArn"),
+		Publish:              request.GetBoolParam(req.Parameters, "Publish"),
+		CodeSigningConfigArn: request.GetStringParam(req.Parameters, "CodeSigningConfigArn"),
+		CodeLocation:         codeLocation,
+		CodeSize:             codeSize,
+		CodeSha256:           codeSha256,
+		ImageUri:             imageUri,
+		Timeout:              int32(request.GetIntParam(req.Parameters, "Timeout")),
+		MemorySize:           int32(request.GetIntParam(req.Parameters, "MemorySize")),
+		VpcConfig:            vpcConfig,
+		Environment:          environment,
+		DeadLetterConfig:     deadLetterConfig,
+		TracingConfig:        tracingConfig,
+		SnapStart:            snapStart,
+		LoggingConfig:        loggingConfig,
+		ImageConfig:          imageConfig,
+		EphemeralStorage:     ephemeralStorage,
+		FileSystemConfigs:    fileSystemConfigs,
+		Layers:               layers,
+		Architectures:        architectures,
+		Tags:                 tags,
+	})
 	if err != nil {
-		if errors.Is(err, lambdastore.ErrFunctionAlreadyExists) {
-			return nil, NewResourceConflict(fmt.Sprintf("Function already exist: %s", function.FunctionName))
-		}
 		return nil, err
-	}
-
-	if len(tagsMap) > 0 {
-		tags := tagutil.MapInterfaceToTags(tagsMap)
-		if err := store.Functions.TagStore.Tag(functionName, tagutil.ToMap(tags)); err != nil {
-			return nil, err
-		}
-	}
-
-	if function.Publish {
-		_, err = store.Functions.PublishVersion(created, "")
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return s.toFunctionConfiguration(created), nil
@@ -269,63 +239,21 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 
 // DeleteFunction deletes the specified Lambda function.
 func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "$LATEST" {
-		return nil, NewInvalidParameter("Qualifier", "Cannot delete $LATEST version of a function")
+	functionName := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
-
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
+	functionName = extractFunctionName(functionName)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if qualifier != "" {
-		// Remove the version-specific container (if any) before deleting.
-		for _, v := range function.Versions {
-			if v.Version == qualifier && v.ContainerID != "" {
-				if rmErr := s.dockerClient.RemoveContainer(ctx, v.ContainerID, true); rmErr != nil {
-					logs.Warn("Failed to remove container for version",
-						logs.String("containerID", v.ContainerID),
-						logs.String("function", function.FunctionName),
-						logs.String("version", qualifier), logs.Err(rmErr))
-				}
-			}
-		}
-		if err := store.Functions.DeleteVersion(function.FunctionName, qualifier); err != nil {
-			return nil, err
-		}
-		return response.EmptyResponse(), nil
-	}
-
-	mappings, err := store.EventSources.ListByFunction(function.FunctionArn)
-	if err == nil && len(mappings) > 0 {
-		return nil, ErrResourceInUse
-	}
-
-	if function.ContainerID != "" {
-		if err := s.dockerClient.RemoveContainer(ctx, function.ContainerID, true); err != nil {
-			logs.Warn("Failed to remove container for function", logs.String("containerID", function.ContainerID), logs.String("function", function.FunctionName), logs.Err(err))
-		}
-	}
-
-	// Remove any version-specific containers that differ from the $LATEST one.
-	for _, v := range function.Versions {
-		if v.ContainerID != "" && v.ContainerID != function.ContainerID {
-			if rmErr := s.dockerClient.RemoveContainer(ctx, v.ContainerID, true); rmErr != nil {
-				logs.Warn("Failed to remove version container",
-					logs.String("containerID", v.ContainerID),
-					logs.String("function", function.FunctionName),
-					logs.String("version", v.Version), logs.Err(rmErr))
-			}
-		}
-	}
-
-	if err := store.Functions.Delete(function.FunctionName); err != nil {
+	if err := s.deleteFunctionCore(ctx, store, &DeleteFunctionInput{
+		FunctionName: functionName,
+		Qualifier:    request.GetStringParam(req.Parameters, "Qualifier"),
+	}); err != nil {
 		return nil, err
 	}
 

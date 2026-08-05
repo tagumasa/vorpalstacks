@@ -488,7 +488,10 @@ func (s *FunctionStore) DeleteAlias(functionName, aliasName string) error {
 	return ErrAliasNotFound
 }
 
-// AddPolicyAtomically adds a resource-based policy to a Lambda function atomically.
+// AddPolicyAtomically adds a resource-based policy to a Lambda function
+// atomically. The duplicate StatementId check is performed inside the
+// lock to prevent TOCTOU races where concurrent requests with the same
+// StatementId both pass the check and both append.
 func (s *FunctionStore) AddPolicyAtomically(functionName string, policy *FunctionPolicy) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -496,6 +499,12 @@ func (s *FunctionStore) AddPolicyAtomically(functionName string, policy *Functio
 	function, err := s.getInternal(functionName)
 	if err != nil {
 		return err
+	}
+
+	for _, p := range function.Policies {
+		if p.Id == policy.Id {
+			return ErrPolicyAlreadyExists
+		}
 	}
 
 	if policy.Id == "" {

@@ -67,6 +67,10 @@ var (
 	// does not exist.
 	ErrPolicyNotFound = errors.New("resource policy not found")
 
+	// ErrPolicyAlreadyExists is returned when a resource policy with the
+	// same StatementId already exists on the function.
+	ErrPolicyAlreadyExists = errors.New("resource policy already exists")
+
 	// ErrResourceConflict is returned when the requested operation conflicts
 	// with the current state of the resource.
 	ErrResourceConflict = errors.New("resource conflict")
