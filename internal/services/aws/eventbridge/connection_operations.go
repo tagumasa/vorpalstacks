@@ -308,6 +308,9 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 	if name == "" {
 		return nil, awserrors.NewValidationException("Connection name is required")
 	}
+	if !validateResourceName(name, "connection") {
+		return nil, awserrors.NewValidationException("Connection name must match the pattern and be 1-64 characters")
+	}
 
 	authType := request.GetParamLowerFirst(req.Parameters, "AuthorizationType")
 	if authType == "" {
@@ -332,7 +335,10 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		connection.Description = desc
 	}
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok && kms != "" {
+		if !validateKmsKeyIdentifier(kms) {
+			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
+		}
 		connection.KmsKeyIdentifier = kms
 	}
 	if icp := parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters"); icp != nil {
@@ -435,11 +441,13 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		connection.Description = desc
 	}
+	authChanged := false
 	if authType, ok := req.Parameters["AuthorizationType"].(string); ok && authType != "" {
 		if !validAuthTypes[authType] {
 			return nil, awserrors.NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
 		}
 		connection.AuthorizationType = authType
+		authChanged = true
 	}
 	// Re-parse and validate AuthParameters when supplied. AuthorizationType
 	// may be omitted on update (in which case the existing type is retained
@@ -451,8 +459,12 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 		}
 		connection.AuthParameters = authParams
 		connection.LastAuthorizedAt = time.Now().UTC()
+		authChanged = true
 	}
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok && kms != "" {
+		if !validateKmsKeyIdentifier(kms) {
+			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
+		}
 		connection.KmsKeyIdentifier = kms
 	}
 	if icp := parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters"); icp != nil {
@@ -460,7 +472,9 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 	}
 
 	connection.LastModifiedAt = time.Now().UTC()
-	connection.State = eventsstore.ConnectionStateAuthorized
+	if authChanged {
+		connection.State = eventsstore.ConnectionStateAuthorized
+	}
 
 	if err := store.UpdateConnection(ctx, connection); err != nil {
 		return nil, err

@@ -73,8 +73,9 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(trBus)})
 
 		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(trRule),
-			EventBusName: aws.String(trBus),
+			Name:               aws.String(trRule),
+			EventBusName:       aws.String(trBus),
+			ScheduleExpression: aws.String("rate(1 hour)"),
 		})
 		if err != nil {
 			return fmt.Errorf("put rule: %v", err)
@@ -149,8 +150,9 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(lrntBus)})
 
 		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(lrntRule),
-			EventBusName: aws.String(lrntBus),
+			Name:               aws.String(lrntRule),
+			EventBusName:       aws.String(lrntBus),
+			ScheduleExpression: aws.String("rate(1 hour)"),
 		})
 		if err != nil {
 			return fmt.Errorf("put rule: %v", err)
@@ -214,8 +216,9 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(dtBus)})
 
 		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(dtRule),
-			EventBusName: aws.String(dtBus),
+			Name:               aws.String(dtRule),
+			EventBusName:       aws.String(dtBus),
+			ScheduleExpression: aws.String("rate(1 hour)"),
 		})
 		if err != nil {
 			return fmt.Errorf("put rule: %v", err)

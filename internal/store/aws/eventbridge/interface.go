@@ -44,7 +44,7 @@ type EventsStoreInterface interface {
 	GetReplay(ctx context.Context, name string) (*Replay, error)
 	UpdateReplay(ctx context.Context, replay *Replay) error
 	DeleteReplay(ctx context.Context, name string) error
-	ListReplays(ctx context.Context, namePrefix string, state ReplayState, limit int32, nextToken string) (*ReplayListResult, error)
+	ListReplays(ctx context.Context, namePrefix string, state ReplayState, eventSourceArn string, limit int32, nextToken string) (*ReplayListResult, error)
 
 	CreateConnection(ctx context.Context, connection *Connection) error
 	GetConnection(ctx context.Context, name string) (*Connection, error)

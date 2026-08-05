@@ -53,10 +53,6 @@ var (
 	scheduleRateRegex = regexp.MustCompile(`^rate\((\d+)\s+(minute|minutes|hour|hours|day|days|week|weeks)\)$`)
 )
 
-func isValidRuleState(state string) bool {
-	return state == string(eventsstore.RuleStateEnabled) || state == string(eventsstore.RuleStateDisabled)
-}
-
 func isValidEventPattern(pattern string) bool {
 	if pattern == "" {
 		return true
@@ -228,6 +224,9 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 	if name == "" {
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
+	if !validateResourceName(name, "rule") {
+		return nil, awserrors.NewValidationException("Rule name must match the pattern and be 1-64 characters")
+	}
 
 	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
 	if eventBusName == "" {
@@ -278,15 +277,16 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 		rule.ScheduleExpression = schedule
 	}
 
-	// Note: AWS accepts PutRule with neither EventPattern nor
-	// ScheduleExpression (both are optional in Smithy). Such a rule simply
-	// matches no events and never fires from a schedule; it can still be
-	// updated later. We follow the same contract rather than imposing a
-	// stricter validation than AWS itself applies.
+	// AWS requires a rule to contain at least an EventPattern or
+	// ScheduleExpression.  A rule with neither is rejected with
+	// ValidationException.
+	if rule.EventPattern == "" && rule.ScheduleExpression == "" {
+		return nil, awserrors.NewValidationException("A rule must contain at least an EventPattern or ScheduleExpression")
+	}
 
 	if state, ok := req.Parameters["State"].(string); ok {
-		if !isValidRuleState(state) {
-			return nil, awserrors.NewValidationException("State must be 'ENABLED' or 'DISABLED'")
+		if !validateRuleState(state) {
+			return nil, awserrors.NewValidationException("State must be 'ENABLED', 'DISABLED', or 'ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS'")
 		}
 		rule.State = eventsstore.RuleState(state)
 	} else {
@@ -465,25 +465,20 @@ func (s *EventsService) DescribeRule(ctx context.Context, reqCtx *request.Reques
 // optionally filtered by name prefix with pagination support.
 func (s *EventsService) ListRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
-	}
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-
-	if limit == 0 {
-		limit = 100
-	}
-	if limit < 1 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListRules(ctx, eventBusName, namePrefix, limit, nextToken)
+	result, err := s.listRulesCore(ctx, store, ListRulesInput{
+		EventBusName: eventBusName,
+		NamePrefix:   namePrefix,
+		Limit:        limit,
+		NextToken:    nextToken,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -98,63 +97,53 @@ func eventBusToUpdateMap(eb *eventsstore.EventBus) map[string]interface{} {
 // CreateEventBus creates a new event bus.
 func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Event bus name is required")
-	}
-	if name == "default" {
-		return nil, awserrors.NewValidationException("Cannot create event bus named 'default'")
-	}
 
-	eventBus := &eventsstore.EventBus{
+	input := CreateEventBusInput{
 		Name: name,
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
-		eventBus.Description = desc
+		input.Description = desc
 	}
 
 	if policy, ok := req.Parameters["Policy"].(string); ok {
-		eventBus.Policy = policy
+		input.Policy = policy
 	}
 
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
-		eventBus.KmsKeyIdentifier = kms
+		input.KmsKeyIdentifier = kms
 	}
 	if dlc, ok := req.Parameters["DeadLetterConfig"].(map[string]interface{}); ok {
-		eventBus.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
+		input.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
 		if arn, ok := dlc["Arn"].(string); ok {
-			eventBus.DeadLetterConfig.Arn = arn
+			input.DeadLetterConfig.Arn = arn
 		}
 	}
 	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
-		eventBus.LogConfig = &eventsstore.BusLogConfig{}
+		input.LogConfig = &eventsstore.BusLogConfig{}
 		if id, ok := lc["IncludeDetail"].(string); ok {
-			if !isValidLogIncludeDetail(id) {
-				return nil, awserrors.NewValidationException("LogConfig.IncludeDetail must be one of: NONE, FULL")
-			}
-			eventBus.LogConfig.IncludeDetail = id
+			input.LogConfig.IncludeDetail = id
 		}
 		if lvl, ok := lc["Level"].(string); ok {
-			if !isValidLogLevel(lvl) {
-				return nil, awserrors.NewValidationException("LogConfig.Level must be one of: OFF, ERROR, INFO, TRACE")
-			}
-			eventBus.LogConfig.Level = lvl
+			input.LogConfig.Level = lvl
 		}
+	}
+
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+		input.Tags = tags
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.CreateEventBus(ctx, eventBus); err != nil {
-		return nil, mapStoreError(err, name)
+
+	result, err := s.createEventBusCore(ctx, store, input)
+	if err != nil {
+		return nil, err
 	}
 
-	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := store.TagStore.TagFromSlice(eventBus.ARN, tags); err != nil {
-			return nil, err
-		}
-	}
+	eventBus := result.EventBus
 
 	// CreateEventBusResponse shape: EventBusArn, Description,
 	// KmsKeyIdentifier, DeadLetterConfig, LogConfig.
@@ -190,104 +179,13 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 // DeleteEventBus deletes an event bus.
 func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Event bus name is required")
-	}
-	if name == "default" {
-		return nil, awserrors.NewValidationException("Cannot delete event bus 'default'")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetEventBus(ctx, name); err != nil {
-		return nil, mapStoreError(err, name)
-	}
-	// Cascade-delete: rules → targets (paginated), then archives.
-	// AWS aborts the entire DeleteEventBus when any cascade step fails
-	// (ConcurrentModificationException or InternalException), so that the
-	// bus remains queryable for follow-up diagnosis. We follow the same
-	// contract: collect the first cascade error and abort without deleting
-	// the bus when one occurs.
-	var cascadeErr error
 
-	ruleToken := ""
-	for cascadeErr == nil {
-		rulesResult, err := store.ListRules(ctx, name, "", 1000, ruleToken)
-		if err != nil {
-			cascadeErr = fmt.Errorf("DeleteEventBus: list rules: %w", err)
-			break
-		}
-		for _, rule := range rulesResult.Rules {
-			targetToken := ""
-			for cascadeErr == nil {
-				targetsResult, tErr := store.ListTargetsByRule(ctx, name, rule.Name, 1000, targetToken)
-				if tErr != nil {
-					cascadeErr = fmt.Errorf("DeleteEventBus: list targets for rule %s: %w", rule.Name, tErr)
-					break
-				}
-				for _, t := range targetsResult.Targets {
-					if err := store.DeleteTarget(ctx, name, rule.Name, t.ID); err != nil {
-						cascadeErr = fmt.Errorf("DeleteEventBus: delete target %s: %w", t.ID, err)
-						break
-					}
-				}
-				if cascadeErr != nil {
-					break
-				}
-				if targetsResult.NextToken == "" {
-					break
-				}
-				targetToken = targetsResult.NextToken
-			}
-			if cascadeErr != nil {
-				break
-			}
-			if err := store.DeleteRule(ctx, name, rule.Name); err != nil {
-				cascadeErr = fmt.Errorf("DeleteEventBus: delete rule %s: %w", rule.Name, err)
-				break
-			}
-			lastFireTimes.Delete(rule.ARN)
-			_ = store.TagStore.Delete(rule.ARN)
-		}
-		if cascadeErr != nil {
-			break
-		}
-		if rulesResult.NextToken == "" {
-			break
-		}
-		ruleToken = rulesResult.NextToken
-	}
-
-	if cascadeErr == nil {
-		archives, err := store.ListArchivesForEventBus(ctx, name)
-		if err != nil {
-			cascadeErr = fmt.Errorf("DeleteEventBus: list archives: %w", err)
-		} else {
-			for _, a := range archives {
-				if err := store.DeleteArchiveEvents(ctx, a.Name); err != nil {
-					cascadeErr = fmt.Errorf("DeleteEventBus: delete archive events %s: %w", a.Name, err)
-					break
-				}
-				if err := store.DeleteArchive(ctx, a.Name); err != nil {
-					cascadeErr = fmt.Errorf("DeleteEventBus: delete archive %s: %w", a.Name, err)
-					break
-				}
-			}
-		}
-	}
-
-	if cascadeErr != nil {
-		// Leave the bus in place so callers can inspect orphaned resources.
-		return nil, awserrors.NewAWSError(
-			"InternalException",
-			cascadeErr.Error(),
-			http.StatusInternalServerError,
-		)
-	}
-
-	if err := store.DeleteEventBus(ctx, name); err != nil {
+	if err := s.deleteEventBusCore(ctx, store, DeleteEventBusInput{Name: name}); err != nil {
 		return nil, err
 	}
 
@@ -329,18 +227,15 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
-	if limit == 0 {
-		limit = 100
-	}
-	if limit < 1 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListEventBuses(ctx, namePrefix, limit, nextToken)
+	result, err := s.listEventBusesCore(ctx, store, ListEventBusesInput{
+		NamePrefix: namePrefix,
+		Limit:      limit,
+		NextToken:  nextToken,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -492,9 +387,10 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 	}
 	if condition, ok := req.Parameters["Condition"].(string); ok && condition != "" {
 		var cond map[string]interface{}
-		if err := json.Unmarshal([]byte(condition), &cond); err == nil {
-			statement["Condition"] = cond
+		if err := json.Unmarshal([]byte(condition), &cond); err != nil {
+			return nil, awserrors.NewValidationException("Condition must be valid JSON: " + err.Error())
 		}
+		statement["Condition"] = cond
 	}
 
 	statements, _ := policyDoc["Statement"].([]interface{})

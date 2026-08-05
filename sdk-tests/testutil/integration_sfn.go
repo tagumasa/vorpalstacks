@@ -255,8 +255,9 @@ func (r *TestRunner) runSFNTaskEventBridge(ic *integClients, ts string) TestResu
 	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
 
 	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{
-		Name:         aws.String(ruleName),
-		EventBusName: aws.String(busName),
+		Name:               aws.String(ruleName),
+		EventBusName:       aws.String(busName),
+		ScheduleExpression: aws.String("rate(1 hour)"),
 	})
 	defer ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 

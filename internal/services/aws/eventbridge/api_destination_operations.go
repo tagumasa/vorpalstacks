@@ -41,6 +41,9 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 	if name == "" {
 		return nil, awserrors.NewValidationException("Api destination name is required")
 	}
+	if !validateResourceName(name, "api-destination") {
+		return nil, awserrors.NewValidationException("Api destination name must match the pattern and be 1-64 characters")
+	}
 
 	connectionArn := request.GetParamLowerFirst(req.Parameters, "ConnectionArn")
 	if connectionArn == "" {

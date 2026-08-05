@@ -27,7 +27,7 @@ func (r *TestRunner) runEventBridgeToLambda(ic *integClients, ts string) TestRes
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -76,7 +76,7 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -148,7 +148,7 @@ func (r *TestRunner) runEventBridgeToSQS(ic *integClients, ts string) TestResult
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -206,7 +206,7 @@ func (r *TestRunner) runEventBridgeToSNS(ic *integClients, ts string) TestResult
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -257,7 +257,7 @@ func (r *TestRunner) runEventBridgeToKinesis(ic *integClients, ts string) TestRe
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()

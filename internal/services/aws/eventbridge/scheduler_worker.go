@@ -87,7 +87,7 @@ func (s *EventsService) fireScheduledRulesForRegion(ctx context.Context, region 
 			return
 		}
 		for _, rule := range result.Rules {
-			if rule.State != eventsstore.RuleStateEnabled {
+			if rule.State != eventsstore.RuleStateEnabled && rule.State != eventsstore.RuleStateEnabledWithAllCloudtrailManagementEvents {
 				continue
 			}
 			if rule.ScheduleExpression == "" {

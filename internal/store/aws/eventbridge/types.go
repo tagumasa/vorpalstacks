@@ -22,8 +22,9 @@ type RuleState string
 
 // RuleState constants define the possible states of an EventBridge rule.
 const (
-	RuleStateEnabled  RuleState = "ENABLED"
-	RuleStateDisabled RuleState = "DISABLED"
+	RuleStateEnabled                                  RuleState = "ENABLED"
+	RuleStateDisabled                                 RuleState = "DISABLED"
+	RuleStateEnabledWithAllCloudtrailManagementEvents RuleState = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 )
 
 // ArchiveState represents the state of an EventBridge archive.
@@ -134,6 +135,7 @@ type Target struct {
 	RedshiftDataParameters      *RedshiftDataParameters      `json:"redshiftDataParameters,omitempty"`
 	SageMakerPipelineParameters *SageMakerPipelineParameters `json:"sageMakerPipelineParameters,omitempty"`
 	AppSyncParameters           *AppSyncParameters           `json:"appSyncParameters,omitempty"`
+	EcsParameters               *EcsParameters               `json:"ecsParameters,omitempty"`
 	CreatedAt                   time.Time                    `json:"createdAt"`
 }
 
@@ -202,6 +204,24 @@ type SageMakerPipelineParameters struct {
 // AppSyncParameters configures an AppSync GraphQL target.
 type AppSyncParameters struct {
 	GraphQLOperation string `json:"graphQLOperation,omitempty"`
+}
+
+// EcsParameters configures an ECS task target.  Delivery to ECS is not
+// available on this platform; parameters are persisted for SDK parity.
+type EcsParameters struct {
+	TaskDefinitionArn        string                   `json:"taskDefinitionArn,omitempty"`
+	TaskCount                int32                    `json:"taskCount,omitempty"`
+	LaunchType               string                   `json:"launchType,omitempty"`
+	NetworkConfiguration     map[string]interface{}   `json:"networkConfiguration,omitempty"`
+	PlatformVersion          string                   `json:"platformVersion,omitempty"`
+	Group                    string                   `json:"group,omitempty"`
+	CapacityProviderStrategy []map[string]interface{} `json:"capacityProviderStrategy,omitempty"`
+	EnableECSManagedTags     bool                     `json:"enableECSManagedTags,omitempty"`
+	EnableExecuteCommand     bool                     `json:"enableExecuteCommand,omitempty"`
+	PlacementConstraints     []map[string]interface{} `json:"placementConstraints,omitempty"`
+	PlacementStrategy        []map[string]interface{} `json:"placementStrategy,omitempty"`
+	PropagateTags            string                   `json:"propagateTags,omitempty"`
+	ReferenceId              string                   `json:"referenceId,omitempty"`
 }
 
 // InputTransformer represents an input transformer for EventBridge targets.

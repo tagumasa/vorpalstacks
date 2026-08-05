@@ -79,6 +79,36 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			eventBusName = "default"
 		}
 
+		// M10: DetailType max 128 chars (AWS API Reference).
+		if !validateDetailType(detailType) {
+			resultEntries = append(resultEntries, map[string]interface{}{
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": "DetailType must be between 1 and 128 characters",
+			})
+			failedCount++
+			continue
+		}
+
+		// Source max 256 chars (AWS PutEventsRequestEntry).
+		if !validateSource(source) {
+			resultEntries = append(resultEntries, map[string]interface{}{
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": "Source must be between 1 and 256 characters",
+			})
+			failedCount++
+			continue
+		}
+
+		// L1: TraceHeader max 500 chars (Smithy @length).
+		if !validateTraceHeader(traceHeader) {
+			resultEntries = append(resultEntries, map[string]interface{}{
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": "TraceHeader must be at most 500 characters",
+			})
+			failedCount++
+			continue
+		}
+
 		// Validate the event bus exists before attempting delivery so
 		// that callers receive a per-entry error code instead of a
 		// silent no-op when targeting a non-existent bus.
@@ -116,9 +146,23 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			case float64:
 				eventTime = time.Unix(int64(tv), 0).UTC()
 			case string:
-				if parsed, err := time.Parse(time.RFC3339, tv); err == nil {
-					eventTime = parsed.UTC()
+				parsed, err := time.Parse(time.RFC3339, tv)
+				if err != nil {
+					resultEntries = append(resultEntries, map[string]interface{}{
+						"ErrorCode":    "ValidationException",
+						"ErrorMessage": "Time must be a valid RFC3339 timestamp",
+					})
+					failedCount++
+					continue
 				}
+				eventTime = parsed.UTC()
+			default:
+				resultEntries = append(resultEntries, map[string]interface{}{
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": "Time must be a string or numeric timestamp",
+				})
+				failedCount++
+				continue
 			}
 		}
 
@@ -135,11 +179,32 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 			TraceHeader:  traceHeader,
 		}
 
-		if resources, ok := entryMap["Resources"].([]interface{}); ok {
+		if rv, ok := entryMap["Resources"]; ok {
+			resources, ok := rv.([]interface{})
+			if !ok {
+				resultEntries = append(resultEntries, map[string]interface{}{
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": "Resources must be an array of strings",
+				})
+				failedCount++
+				continue
+			}
+			valid := true
 			for _, r := range resources {
-				if rStr, ok := r.(string); ok {
-					event.Resources = append(event.Resources, rStr)
+				rStr, ok := r.(string)
+				if !ok {
+					valid = false
+					break
 				}
+				event.Resources = append(event.Resources, rStr)
+			}
+			if !valid {
+				resultEntries = append(resultEntries, map[string]interface{}{
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": "Resources must be an array of strings",
+				})
+				failedCount++
+				continue
 			}
 		}
 
@@ -191,7 +256,7 @@ func (s *EventsService) deliverEventWithStore(ctx context.Context, region string
 
 	var targetWg sync.WaitGroup
 	for _, rule := range allRules {
-		if rule.State != eventsstore.RuleStateEnabled {
+		if rule.State != eventsstore.RuleStateEnabled && rule.State != eventsstore.RuleStateEnabledWithAllCloudtrailManagementEvents {
 			continue
 		}
 
@@ -710,10 +775,10 @@ func (s *EventsService) dispatchToTarget(ctx context.Context, region string, eve
 
 	maxRetries, maxAge, defaultBackoff, maxBackoff := retryDefaults()
 	if target.RetryPolicy != nil {
-		if target.RetryPolicy.MaximumRetryAttempts > 0 {
+		if target.RetryPolicy.MaximumRetryAttempts >= 0 && target.RetryPolicy.MaximumRetryAttempts <= 185 {
 			maxRetries = target.RetryPolicy.MaximumRetryAttempts
 		}
-		if target.RetryPolicy.MaximumEventAgeInSeconds > 0 {
+		if target.RetryPolicy.MaximumEventAgeInSeconds >= 60 && target.RetryPolicy.MaximumEventAgeInSeconds <= 86400 {
 			maxAge = target.RetryPolicy.MaximumEventAgeInSeconds
 		}
 	}
@@ -742,6 +807,8 @@ func (s *EventsService) dispatchToTarget(ctx context.Context, region string, eve
 			deliverErr = s.deliverToFirehose(ctx, region, target.ARN, payload)
 		case "ecs":
 			deliverErr = s.deliverToECS(ctx, region, target.ARN, payload)
+		case "events":
+			deliverErr = s.deliverToEventBus(ctx, region, event, target.ARN)
 		default:
 			deliverErr = fmt.Errorf("target type %q not implemented", targetType)
 		}
@@ -1133,6 +1200,42 @@ func (s *EventsService) deliverToECS(ctx context.Context, region string, targetA
 		logs.String("targetArn", targetArn),
 		logs.String("region", region))
 	return fmt.Errorf("ecs delivery target %s is not available in this deployment", targetArn)
+}
+
+// deliveryDepthKey is used to track cross-bus delivery depth via context,
+// preventing infinite loops when bus A targets bus B and vice versa.
+type deliveryDepthKey struct{}
+
+const maxCrossBusDepth = 10
+
+// deliverToEventBus delivers an event to a cross-account or cross-region
+// event bus target.  The target ARN identifies the destination bus.  A
+// depth counter (propagated via context) prevents infinite delivery loops.
+func (s *EventsService) deliverToEventBus(ctx context.Context, sourceRegion string, event *eventsstore.Event, targetARN string) error {
+	depth := 0
+	if v, ok := ctx.Value(deliveryDepthKey{}).(int); ok {
+		depth = v
+	}
+	if depth >= maxCrossBusDepth {
+		return fmt.Errorf("maximum cross-bus delivery depth (%d) exceeded for event %s", maxCrossBusDepth, event.ID)
+	}
+
+	_, _, targetRegion, _, resource := arnutil.SplitARN(targetARN)
+	busName := strings.TrimPrefix(resource, "event-bus/")
+	if busName == "" {
+		return fmt.Errorf("invalid event bus target ARN: %s", targetARN)
+	}
+
+	store, err := s.GetStoreForRegion(targetRegion)
+	if err != nil {
+		return fmt.Errorf("failed to get store for region %s: %w", targetRegion, err)
+	}
+
+	childCtx := context.WithValue(ctx, deliveryDepthKey{}, depth+1)
+
+	s.archiveEvent(childCtx, store, event, busName)
+
+	return s.deliverEventWithStore(childCtx, targetRegion, event, busName, store)
 }
 
 // TestEventPattern tests whether an event pattern matches a given event.

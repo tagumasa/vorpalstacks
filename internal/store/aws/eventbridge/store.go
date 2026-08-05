@@ -910,7 +910,7 @@ type ReplayListResult struct {
 // Returns:
 //   - *ReplayListResult: The list result with replays and next token
 //   - error: An error if listing fails
-func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state ReplayState, limit int32, nextToken string) (*ReplayListResult, error) {
+func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state ReplayState, eventSourceArn string, limit int32, nextToken string) (*ReplayListResult, error) {
 	opts := common.ListOptions{
 		Marker:   nextToken,
 		MaxItems: int(limit),
@@ -921,6 +921,9 @@ func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state 
 			return false
 		}
 		if state != "" && r.State != state {
+			return false
+		}
+		if eventSourceArn != "" && r.EventSourceARN != eventSourceArn {
 			return false
 		}
 		return true

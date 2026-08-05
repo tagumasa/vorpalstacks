@@ -17,8 +17,9 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 
 	results = append(results, r.RunTest("events", "PutRule", func() error {
 		resp, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(ruleName),
-			EventBusName: aws.String(busName),
+			Name:               aws.String(ruleName),
+			EventBusName:       aws.String(busName),
+			ScheduleExpression: aws.String("rate(5 minutes)"),
 		})
 		if err != nil {
 			return err
@@ -87,9 +88,10 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(rdBus)})
 
 		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(rdRule),
-			EventBusName: aws.String(rdBus),
-			Description:  aws.String("test rule for disable"),
+			Name:               aws.String(rdRule),
+			EventBusName:       aws.String(rdBus),
+			Description:        aws.String("test rule for disable"),
+			ScheduleExpression: aws.String("rate(5 minutes)"),
 		})
 		if err != nil {
 			return fmt.Errorf("put rule: %v", err)
@@ -191,7 +193,8 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagRule-%s-%d", pgTs, i)
 			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
-				Name: aws.String(name),
+				Name:               aws.String(name),
+				ScheduleExpression: aws.String("rate(1 hour)"),
 			})
 			if err != nil {
 				return fmt.Errorf("put rule %s: %v", name, err)

@@ -72,6 +72,9 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 	if name == "" {
 		return nil, awserrors.NewValidationException("Archive name is required")
 	}
+	if !validateResourceName(name, "archive") {
+		return nil, awserrors.NewValidationException("Archive name must match the pattern and be 1-48 characters")
+	}
 
 	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
 	if eventSourceArn == "" {

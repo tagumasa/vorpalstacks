@@ -19,6 +19,9 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	if replayName == "" {
 		return nil, awserrors.NewValidationException("ReplayName is required")
 	}
+	if !validateReplayName(replayName) {
+		return nil, awserrors.NewValidationException("ReplayName must be 1-64 characters matching [.-_A-Za-z0-9]")
+	}
 
 	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
 	if eventSourceArn == "" {
@@ -247,6 +250,9 @@ func (s *EventsService) DescribeReplay(ctx context.Context, reqCtx *request.Requ
 	if replayName == "" {
 		return nil, awserrors.NewValidationException("ReplayName is required")
 	}
+	if !validateReplayName(replayName) {
+		return nil, awserrors.NewValidationException("ReplayName must be 1-64 characters matching [.-_A-Za-z0-9]")
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -301,6 +307,8 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 		state = eventsstore.ReplayState(stateStr)
 	}
 
+	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
+
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	if limit == 0 {
 		limit = 50
@@ -316,7 +324,7 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	result, err := store.ListReplays(ctx, namePrefix, state, limit, nextToken)
+	result, err := store.ListReplays(ctx, namePrefix, state, eventSourceArn, limit, nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -355,6 +363,9 @@ func (s *EventsService) CancelReplay(ctx context.Context, reqCtx *request.Reques
 	replayName := request.GetParamLowerFirst(req.Parameters, "ReplayName")
 	if replayName == "" {
 		return nil, awserrors.NewValidationException("ReplayName is required")
+	}
+	if !validateReplayName(replayName) {
+		return nil, awserrors.NewValidationException("ReplayName must be 1-64 characters matching [.-_A-Za-z0-9]")
 	}
 
 	store, err := s.store(reqCtx)

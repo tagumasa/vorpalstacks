@@ -23,6 +23,7 @@ func isValidTargetARN(arn string) bool {
 		"sqs":           true,
 		"sns":           true,
 		"events":        true,
+		"ecs":           true,
 		"kinesis":       true,
 		"stepfunctions": true,
 		"states":        true,
@@ -229,6 +230,15 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 			if maxRetry, ok := retryPolicy["MaximumRetryAttempts"].(float64); ok {
 				target.RetryPolicy.MaximumRetryAttempts = int32(maxRetry)
 			}
+			if !validateRetryPolicy(target.RetryPolicy) {
+				failedEntries = append(failedEntries, map[string]interface{}{
+					"TargetId":     targetID,
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": "RetryPolicy: MaximumRetryAttempts must be 0-185, MaximumEventAgeInSeconds must be 60-86400",
+				})
+				failedCount++
+				continue
+			}
 		}
 
 		if sqsParams, ok := targetMap["SqsParameters"].(map[string]interface{}); ok {
@@ -289,6 +299,19 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 			if op, ok := asp["GraphQLOperation"].(string); ok {
 				target.AppSyncParameters.GraphQLOperation = op
 			}
+		}
+		if ecs, ok := targetMap["EcsParameters"].(map[string]interface{}); ok {
+			ecsParams, err := parseEcsParameters(ecs)
+			if err != nil {
+				failedEntries = append(failedEntries, map[string]interface{}{
+					"TargetId":     targetID,
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": err.Error(),
+				})
+				failedCount++
+				continue
+			}
+			target.EcsParameters = ecsParams
 		}
 
 		if err := store.PutTarget(ctx, target); err != nil {
@@ -458,6 +481,113 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 				"PartitionKeyPath": t.KinesisParameters.PartitionKeyPath,
 			}
 		}
+		if t.RunCommandParameters != nil {
+			rcTargets := make([]map[string]interface{}, len(t.RunCommandParameters.RunCommandTargets))
+			for j, rct := range t.RunCommandParameters.RunCommandTargets {
+				rcTargets[j] = map[string]interface{}{
+					"Key":    rct.Key,
+					"Values": rct.Values,
+				}
+			}
+			targets[i]["RunCommandParameters"] = map[string]interface{}{
+				"RunCommandTargets": rcTargets,
+			}
+		}
+		if t.BatchParameters != nil {
+			bp := map[string]interface{}{
+				"JobDefinition": t.BatchParameters.JobDefinition,
+				"JobName":       t.BatchParameters.JobName,
+			}
+			if t.BatchParameters.ArrayProperties != nil {
+				bp["ArrayProperties"] = map[string]interface{}{
+					"Size": t.BatchParameters.ArrayProperties.Size,
+				}
+			}
+			if t.BatchParameters.RetryStrategy != nil {
+				bp["RetryStrategy"] = map[string]interface{}{
+					"Attempts": t.BatchParameters.RetryStrategy.Attempts,
+				}
+			}
+			targets[i]["BatchParameters"] = bp
+		}
+		if t.RedshiftDataParameters != nil {
+			rdp := map[string]interface{}{
+				"Database":      t.RedshiftDataParameters.Database,
+				"Sql":           t.RedshiftDataParameters.Sql,
+				"StatementName": t.RedshiftDataParameters.StatementName,
+				"WithEvent":     t.RedshiftDataParameters.WithEvent,
+			}
+			if t.RedshiftDataParameters.SecretManagerArn != "" {
+				rdp["SecretManagerArn"] = t.RedshiftDataParameters.SecretManagerArn
+			}
+			if t.RedshiftDataParameters.DbUser != "" {
+				rdp["DbUser"] = t.RedshiftDataParameters.DbUser
+			}
+			if len(t.RedshiftDataParameters.Sqls) > 0 {
+				rdp["Sqls"] = t.RedshiftDataParameters.Sqls
+			}
+			targets[i]["RedshiftDataParameters"] = rdp
+		}
+		if t.SageMakerPipelineParameters != nil {
+			ppl := make([]map[string]interface{}, len(t.SageMakerPipelineParameters.PipelineParameterList))
+			for j, pp := range t.SageMakerPipelineParameters.PipelineParameterList {
+				ppl[j] = map[string]interface{}{
+					"Name":  pp.Name,
+					"Value": pp.Value,
+				}
+			}
+			targets[i]["SageMakerPipelineParameters"] = map[string]interface{}{
+				"PipelineParameterList": ppl,
+			}
+		}
+		if t.AppSyncParameters != nil {
+			targets[i]["AppSyncParameters"] = map[string]interface{}{
+				"GraphQLOperation": t.AppSyncParameters.GraphQLOperation,
+			}
+		}
+		if t.EcsParameters != nil {
+			ecsp := map[string]interface{}{}
+			if t.EcsParameters.TaskDefinitionArn != "" {
+				ecsp["TaskDefinitionArn"] = t.EcsParameters.TaskDefinitionArn
+			}
+			if t.EcsParameters.TaskCount != 0 {
+				ecsp["TaskCount"] = t.EcsParameters.TaskCount
+			}
+			if t.EcsParameters.LaunchType != "" {
+				ecsp["LaunchType"] = t.EcsParameters.LaunchType
+			}
+			if t.EcsParameters.NetworkConfiguration != nil {
+				ecsp["NetworkConfiguration"] = t.EcsParameters.NetworkConfiguration
+			}
+			if t.EcsParameters.PlatformVersion != "" {
+				ecsp["PlatformVersion"] = t.EcsParameters.PlatformVersion
+			}
+			if t.EcsParameters.Group != "" {
+				ecsp["Group"] = t.EcsParameters.Group
+			}
+			if len(t.EcsParameters.CapacityProviderStrategy) > 0 {
+				ecsp["CapacityProviderStrategy"] = t.EcsParameters.CapacityProviderStrategy
+			}
+			if t.EcsParameters.EnableECSManagedTags {
+				ecsp["EnableECSManagedTags"] = true
+			}
+			if t.EcsParameters.EnableExecuteCommand {
+				ecsp["EnableExecuteCommand"] = true
+			}
+			if len(t.EcsParameters.PlacementConstraints) > 0 {
+				ecsp["PlacementConstraints"] = t.EcsParameters.PlacementConstraints
+			}
+			if len(t.EcsParameters.PlacementStrategy) > 0 {
+				ecsp["PlacementStrategy"] = t.EcsParameters.PlacementStrategy
+			}
+			if t.EcsParameters.PropagateTags != "" {
+				ecsp["PropagateTags"] = t.EcsParameters.PropagateTags
+			}
+			if t.EcsParameters.ReferenceId != "" {
+				ecsp["ReferenceId"] = t.EcsParameters.ReferenceId
+			}
+			targets[i]["EcsParameters"] = ecsp
+		}
 	}
 
 	response := map[string]interface{}{
@@ -560,4 +690,54 @@ func parseSageMakerPipelineParameters(m map[string]interface{}) *eventsstore.Sag
 		}
 	}
 	return out
+}
+
+// parseEcsParameters captures ECS task target parameters.  ECS delivery is
+// not available on this platform; parameters are persisted for SDK parity.
+func parseEcsParameters(m map[string]interface{}) (*eventsstore.EcsParameters, error) {
+	out := &eventsstore.EcsParameters{
+		TaskDefinitionArn: getStringField(m, "TaskDefinitionArn"),
+		LaunchType:        getStringField(m, "LaunchType"),
+		PlatformVersion:   getStringField(m, "PlatformVersion"),
+		Group:             getStringField(m, "Group"),
+		PropagateTags:     getStringField(m, "PropagateTags"),
+		ReferenceId:       getStringField(m, "ReferenceId"),
+	}
+	if v, ok := m["TaskCount"].(float64); ok {
+		out.TaskCount = int32(v)
+	}
+	if v, ok := m["EnableECSManagedTags"].(bool); ok {
+		out.EnableECSManagedTags = v
+	}
+	if v, ok := m["EnableExecuteCommand"].(bool); ok {
+		out.EnableExecuteCommand = v
+	}
+	if lt := out.LaunchType; lt != "" && !validateLaunchType(lt) {
+		return nil, awserrors.NewValidationException("LaunchType must be one of: EC2, FARGATE, EXTERNAL")
+	}
+	if nc, ok := m["NetworkConfiguration"].(map[string]interface{}); ok {
+		out.NetworkConfiguration = nc
+	}
+	if cps, ok := m["CapacityProviderStrategy"].([]interface{}); ok {
+		for _, cp := range cps {
+			if cpm, ok := cp.(map[string]interface{}); ok {
+				out.CapacityProviderStrategy = append(out.CapacityProviderStrategy, cpm)
+			}
+		}
+	}
+	if pcs, ok := m["PlacementConstraints"].([]interface{}); ok {
+		for _, pc := range pcs {
+			if pcm, ok := pc.(map[string]interface{}); ok {
+				out.PlacementConstraints = append(out.PlacementConstraints, pcm)
+			}
+		}
+	}
+	if pss, ok := m["PlacementStrategy"].([]interface{}); ok {
+		for _, ps := range pss {
+			if psm, ok := ps.(map[string]interface{}); ok {
+				out.PlacementStrategy = append(out.PlacementStrategy, psm)
+			}
+		}
+	}
+	return out, nil
 }
