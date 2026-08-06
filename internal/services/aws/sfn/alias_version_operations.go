@@ -364,8 +364,8 @@ func (s *StepFunctionService) ListStateMachineAliases(ctx context.Context, reqCt
 func (s *StepFunctionService) UpdateMapRun(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	mapRunArn := request.GetParamLowerFirst(req.Parameters, "mapRunArn")
 
-	if mapRunArn == "" {
-		return nil, NewInvalidName("mapRunArn is required")
+	if err := validateArnRequired(mapRunArn, "mapRunArn"); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -378,15 +378,27 @@ func (s *StepFunctionService) UpdateMapRun(ctx context.Context, reqCtx *request.
 		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
 	}
 
+	var maxConcurrency int64 = mr.MaxConcurrency
+	var toleratedFailureCount int64 = mr.ToleratedFailureCount
+	var toleratedFailurePercentage float32 = mr.ToleratedFailurePercentage
+
 	if _, ok := req.Parameters["maxConcurrency"]; ok {
-		mr.MaxConcurrency = int64(request.GetIntParam(req.Parameters, "maxConcurrency"))
+		maxConcurrency = int64(request.GetIntParam(req.Parameters, "maxConcurrency"))
 	}
 	if _, ok := req.Parameters["toleratedFailureCount"]; ok {
-		mr.ToleratedFailureCount = request.GetInt64Param(req.Parameters, "toleratedFailureCount")
+		toleratedFailureCount = request.GetInt64Param(req.Parameters, "toleratedFailureCount")
 	}
 	if _, ok := req.Parameters["toleratedFailurePercentage"]; ok {
-		mr.ToleratedFailurePercentage = float32(request.GetFloatParam(req.Parameters, "toleratedFailurePercentage"))
+		toleratedFailurePercentage = float32(request.GetFloatParam(req.Parameters, "toleratedFailurePercentage"))
 	}
+
+	if err := validateMapRunUpdateParams(maxConcurrency, toleratedFailureCount, toleratedFailurePercentage); err != nil {
+		return nil, err
+	}
+
+	mr.MaxConcurrency = maxConcurrency
+	mr.ToleratedFailureCount = toleratedFailureCount
+	mr.ToleratedFailurePercentage = toleratedFailurePercentage
 
 	if err := store.UpdateMapRun(ctx, mr); err != nil {
 		return nil, err

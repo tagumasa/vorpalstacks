@@ -152,8 +152,9 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 		} else if tn, ok := inputData["topicName"].(string); ok {
 			topicName = tn
 		}
-		if topicName == "" {
-			topicName = "default-topic"
+
+		if err := validateSNSTopicInput(topicArn, topicName); err != nil {
+			return "", err
 		}
 
 		_, _, topicRegion, _, _ := arnutil.SplitARN(state.Resource)
@@ -528,6 +529,25 @@ func (e *Executor) executeDynamoDBDeleteItem(ctx context.Context, region, tableN
 	return "{}", nil
 }
 
+// updateExprResult captures the parsed result of a DynamoDB UpdateExpression,
+// separating SET, ADD, and REMOVE operations so that the caller can apply
+// them to an existing item via read-modify-write.
+type updateExprResult struct {
+	Sets    map[string]interface{}
+	Adds    map[string]interface{}
+	Removes []string
+}
+
+// tokenizeUpdateExpression splits a DynamoDB UpdateExpression into tokens,
+// normalising whitespace and ensuring that '=' and ',' are standalone tokens.
+// This handles tabs, newlines, consecutive spaces, and expressions written
+// without spaces around '=' (e.g. "SET attr=:val").
+func tokenizeUpdateExpression(expr string) []string {
+	expr = strings.ReplaceAll(expr, "=", " = ")
+	expr = strings.ReplaceAll(expr, ",", " , ")
+	return strings.Fields(expr)
+}
+
 func (e *Executor) executeDynamoDBUpdateItem(ctx context.Context, region, tableName string, inputData map[string]interface{}) (string, error) {
 	keyRaw, ok := inputData["Key"].(map[string]interface{})
 	if !ok {
@@ -535,18 +555,188 @@ func (e *Executor) executeDynamoDBUpdateItem(ctx context.Context, region, tableN
 	}
 	key := awsAttrValuesToPlain(keyRaw)
 
-	attrValues := map[string]interface{}{}
-	if av, ok := inputData["AttributeValues"].(map[string]interface{}); ok {
-		attrValues = awsAttrValuesToPlain(av)
-	} else if av, ok := inputData["ExpressionAttributeValues"].(map[string]interface{}); ok {
-		attrValues = awsAttrValuesToPlain(av)
+	if updateExpr, ok := inputData["UpdateExpression"].(string); ok && updateExpr != "" {
+		exprAttrValues := map[string]interface{}{}
+		if av, ok := inputData["ExpressionAttributeValues"].(map[string]interface{}); ok {
+			exprAttrValues = awsAttrValuesToPlain(av)
+		}
+		exprAttrNames := map[string]string{}
+		if en, ok := inputData["ExpressionAttributeNames"].(map[string]interface{}); ok {
+			for placeholder, val := range en {
+				if s, ok := val.(string); ok {
+					exprAttrNames[placeholder] = s
+				}
+			}
+		}
+		parsed, err := resolveUpdateExpression(updateExpr, exprAttrValues, exprAttrNames)
+		if err != nil {
+			return "", fmt.Errorf("DynamoDB UpdateItem expression error: %w", err)
+		}
+
+		existing, err := e.bus.DynamoDBInvoker().GetItem(ctx, region, tableName, key)
+		if err != nil {
+			return "", fmt.Errorf("DynamoDB UpdateItem read failed: %w", err)
+		}
+
+		merged := make(map[string]interface{})
+		for k, v := range existing {
+			merged[k] = v
+		}
+		for k := range key {
+			delete(merged, k)
+		}
+		for name, val := range parsed.Sets {
+			merged[name] = val
+		}
+		for name, addVal := range parsed.Adds {
+			if existingNum, ok := toFloat64(merged[name]); ok {
+				if addNum, ok := toFloat64(addVal); ok {
+					merged[name] = existingNum + addNum
+				}
+			} else {
+				merged[name] = addVal
+			}
+		}
+		for _, name := range parsed.Removes {
+			delete(merged, name)
+		}
+
+		if err := e.bus.DynamoDBInvoker().UpdateItem(ctx, region, tableName, key, merged); err != nil {
+			return "", fmt.Errorf("DynamoDB UpdateItem failed: %w", err)
+		}
+		return "{}", nil
 	}
 
-	if err := e.bus.DynamoDBInvoker().UpdateItem(ctx, region, tableName, key, attrValues); err != nil {
-		return "", fmt.Errorf("DynamoDB UpdateItem failed: %w", err)
+	if av, ok := inputData["AttributeValues"].(map[string]interface{}); ok {
+		attrValues := awsAttrValuesToPlain(av)
+		if err := e.bus.DynamoDBInvoker().UpdateItem(ctx, region, tableName, key, attrValues); err != nil {
+			return "", fmt.Errorf("DynamoDB UpdateItem failed: %w", err)
+		}
+		return "{}", nil
+	}
+
+	if ev, ok := inputData["ExpressionAttributeValues"].(map[string]interface{}); ok && len(ev) > 0 {
+		return "", fmt.Errorf("ExpressionAttributeValues provided without UpdateExpression")
 	}
 
 	return "{}", nil
+}
+
+// resolveUpdateExpression parses a DynamoDB UpdateExpression and returns the
+// parsed SET, ADD, and REMOVE operations. Placeholder values (e.g. :val) are
+// resolved from exprAttrValues, and placeholder names (e.g. #attr) from
+// exprAttrNames. The caller is responsible for applying these operations to
+// the existing item via read-modify-write.
+func resolveUpdateExpression(expr string, exprAttrValues map[string]interface{}, exprAttrNames map[string]string) (*updateExprResult, error) {
+	result := &updateExprResult{
+		Sets:    map[string]interface{}{},
+		Adds:    map[string]interface{}{},
+		Removes: []string{},
+	}
+
+	tokens := tokenizeUpdateExpression(expr)
+	i := 0
+	for i < len(tokens) {
+		upper := strings.ToUpper(tokens[i])
+		switch upper {
+		case "SET":
+			i++
+			for i < len(tokens) {
+				upperNext := strings.ToUpper(tokens[i])
+				if upperNext == "ADD" || upperNext == "REMOVE" || upperNext == "DELETE" {
+					break
+				}
+				if i+2 < len(tokens) && tokens[i+1] == "=" {
+					name := resolveAttrName(tokens[i], exprAttrNames)
+					val := resolveAttrValue(tokens[i+2], exprAttrValues)
+					if name != "" && val != nil {
+						result.Sets[name] = val
+					}
+					i += 3
+					if i < len(tokens) && tokens[i] == "," {
+						i++
+					}
+				} else {
+					i++
+				}
+			}
+		case "ADD":
+			i++
+			for i < len(tokens) {
+				upperNext := strings.ToUpper(tokens[i])
+				if upperNext == "SET" || upperNext == "REMOVE" || upperNext == "DELETE" {
+					break
+				}
+				if i+1 < len(tokens) {
+					name := resolveAttrName(tokens[i], exprAttrNames)
+					val := resolveAttrValue(tokens[i+1], exprAttrValues)
+					if name != "" && val != nil {
+						result.Adds[name] = val
+					}
+					i += 2
+					if i < len(tokens) && tokens[i] == "," {
+						i++
+					}
+				} else {
+					i++
+				}
+			}
+		case "REMOVE":
+			i++
+			for i < len(tokens) {
+				upperNext := strings.ToUpper(tokens[i])
+				if upperNext == "SET" || upperNext == "ADD" || upperNext == "DELETE" {
+					break
+				}
+				name := resolveAttrName(tokens[i], exprAttrNames)
+				if name != "" {
+					result.Removes = append(result.Removes, name)
+				}
+				i++
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		case "DELETE":
+			i++
+			for i < len(tokens) {
+				upperNext := strings.ToUpper(tokens[i])
+				if upperNext == "SET" || upperNext == "ADD" || upperNext == "REMOVE" {
+					break
+				}
+				i++
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		default:
+			i++
+		}
+	}
+
+	return result, nil
+}
+
+func resolveAttrName(token string, exprAttrNames map[string]string) string {
+	token = strings.TrimSuffix(token, ",")
+	if strings.HasPrefix(token, "#") {
+		if name, ok := exprAttrNames[token]; ok {
+			return name
+		}
+		return ""
+	}
+	return token
+}
+
+func resolveAttrValue(token string, exprAttrValues map[string]interface{}) interface{} {
+	token = strings.TrimSuffix(token, ",")
+	if strings.HasPrefix(token, ":") {
+		if val, ok := exprAttrValues[token]; ok {
+			return val
+		}
+		return nil
+	}
+	return token
 }
 
 func awsAttrValuesToPlain(av map[string]interface{}) map[string]interface{} {

@@ -5,21 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // RedriveExecution restarts an unsuccessful execution from the failed state.
+// The execution keeps its original ARN, name, input, and history; new events
+// are appended. Previously-succeeded states are not re-executed.
 // https://docs.aws.amazon.com/step-functions/latest/apireference/API_RedriveExecution.html
 func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	executionArn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	if err := validateArnRequired(executionArn, "executionArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -34,12 +36,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	redrivableStatuses := map[string]bool{
-		"FAILED":    true,
-		"TIMED_OUT": true,
-		"ABORTED":   true,
-	}
-	if !redrivableStatuses[exec.Status] {
+	if !isRedrivableStatus(exec.Status) {
 		return nil, NewInvalidExecutionType(
 			fmt.Sprintf("Execution %s is in %s status and cannot be redriven", executionArn, exec.Status))
 	}
@@ -49,50 +46,53 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + exec.StateMachineArn)
 	}
 
-	history, _, err := store.GetExecutionHistory(ctx, executionArn, 100, "")
+	definition, err := parseStateMachineDefinition(sm.Definition)
 	if err != nil {
-		return nil, err
+		return nil, NewInvalidDefinitionException("Invalid state machine definition: " + err.Error())
 	}
-	_ = history
 
-	newExecutionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(
-		arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), exec.Name+"-redrive-"+strconv.FormatInt(time.Now().UnixNano(), 10))
+	rp, err := determineResumePoint(ctx, store, executionArn, definition)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine resume point: %w", err)
+	}
 
-	newExec := sfnstore.NewExecution(exec.StateMachineArn, exec.Name+"-redrive", exec.Input, "")
-	newExec.ExecutionArn = newExecutionArn
-	newExec.TraceHeader = exec.TraceHeader
+	redriveDate := time.Now().UTC()
+	exec.Status = "RUNNING"
+	exec.Error = ""
+	exec.Cause = ""
+	exec.StopDate = time.Time{}
+	exec.RedriveCount++
+	exec.RedriveDate = redriveDate
+	exec.Output = ""
 
-	if err := store.CreateExecution(ctx, newExec); err != nil {
-		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
-			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+newExecutionArn, 400)
-		}
-		return nil, err
+	if err := store.UpdateExecution(ctx, exec); err != nil {
+		return nil, fmt.Errorf("failed to update execution for redrive: %w", err)
 	}
 
 	executor := NewExecutorWithStores(store, s.bus, s.accountID, reqCtx.GetRegion())
-	execCtx, cancel := context.WithCancel(context.Background())
-	store.RegisterExecution(newExecutionArn, cancel)
+	resumeCtx, cancel := context.WithCancel(context.Background())
+	store.RegisterExecution(executionArn, cancel)
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
-		defer store.UnregisterExecution(newExecutionArn)
+		defer store.UnregisterExecution(executionArn)
 		defer func() {
 			if r := recover(); r != nil {
-				logs.Error("sfn: panic in redrive execution", logs.String("arn", newExecutionArn), logs.Any("panic", r))
+				logs.Error("sfn: panic in redrive execution", logs.String("arn", executionArn), logs.Any("panic", r))
+				exec.Status = "FAILED"
+				exec.Error = "States.InternalError"
+				exec.Cause = fmt.Sprintf("internal panic: %v", r)
+				exec.StopDate = time.Now().UTC()
+				_ = store.UpdateExecution(context.Background(), exec)
 			}
 		}()
-		if err := executor.ExecuteStateMachine(execCtx, newExec); err != nil {
-			logs.Error("sfn: redrive execution failed", logs.String("arn", newExecutionArn), logs.Err(err))
+		if err := executor.ExecuteStateMachineFromState(resumeCtx, exec, rp.StateName, rp.Input, rp.LastEventId); err != nil {
+			logs.Error("sfn: redrive execution failed", logs.String("arn", executionArn), logs.Err(err))
 		}
 	}()
 
-	redriveDate := time.Now().UTC()
 	return map[string]interface{}{
-		"executionArn":    newExec.ExecutionArn,
-		"stateMachineArn": newExec.StateMachineArn,
-		"name":            newExec.Name,
-		"startDate":       newExec.StartDate.Unix(),
-		"redriveDate":     redriveDate.Unix(),
+		"redriveDate": redriveDate.Unix(),
 	}, nil
 }
 

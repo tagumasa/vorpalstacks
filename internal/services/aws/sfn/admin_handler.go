@@ -2,24 +2,20 @@ package sfn
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"time"
 
+	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
-	"connectrpc.com/connect"
-
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sfn"
 	"vorpalstacks/internal/pb/aws/sfn/sfnconnect"
-	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
-// AdminHandler implements the Step Functions gRPC-Web admin console handler. It
-// exposes list operations for state machines for the Flutter management UI,
-// delegating to the shared StepFunctionService cache.
+// AdminHandler implements the Step Functions gRPC-Web admin console handler.
+// It delegates all operations to the shared service-layer Core functions,
+// ensuring that validation and persistence follow the same single code path
+// as the HTTP API (AGENTS.md #29: zero store imports).
 type AdminHandler struct {
 	sfnconnect.UnimplementedSFNServiceHandler
 	service *StepFunctionService
@@ -28,38 +24,32 @@ type AdminHandler struct {
 var _ sfnconnect.SFNServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new Step Functions admin console handler backed by
-// the given service instance, ensuring the same per-region cached stores are
-// used as the HTTP API handlers.
+// the given service instance.
 func NewAdminHandler(svc *StepFunctionService) *AdminHandler {
 	return &AdminHandler{service: svc}
-}
-
-func (h *AdminHandler) getStoreByRegion(region string) (*sfnstore.StepFunctionStore, error) {
-	return h.service.getStoreForRegion(region)
 }
 
 // ListStateMachines returns a paginated list of state machines in the
 // requested region.
 func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Request[pb.ListStateMachinesInput]) (*connect.Response[pb.ListStateMachinesOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, err := store.ListStateMachines(ctx, req.Msg.GetMaxresults(), req.Msg.Nexttoken)
+	result, err := h.service.listStateMachinesCore(ctx, store, ListStateMachinesInput{
+		MaxResults: req.Msg.GetMaxresults(),
+		NextToken:  req.Msg.Nexttoken,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	stateMachines := make([]*pb.StateMachineListItem, len(result.StateMachines))
 	for i, sm := range result.StateMachines {
-		stateMachines[i] = &pb.StateMachineListItem{
-			Statemachinearn: sm.StateMachineArn,
-			Name:            sm.Name,
-			Creationdate:    sm.CreationDate.Format(timeutils.ISO8601UTCFormat),
-			Type:            toPbStateMachineType(sm.Type),
-		}
+		item := stateMachineListItemToProto(sm)
+		item.Creationdate = sm.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		stateMachines[i] = item
 	}
 
 	return connect.NewResponse(&pb.ListStateMachinesOutput{
@@ -71,26 +61,9 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 // CreateStateMachine creates a new Step Functions state machine via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Request[pb.CreateStateMachineInput]) (*connect.Response[pb.CreateStateMachineOutput], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
-	if req.Msg.Definition == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("definition is required"))
-	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	smType := "STANDARD"
-	if req.Msg.Type == pb.StateMachineType_STATE_MACHINE_TYPE_EXPRESS {
-		smType = "EXPRESS"
-	}
-
-	if err := validateDefinitionJSONataFields(req.Msg.Definition); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid JSONata fields: %w", err))
 	}
 
 	tags := make(map[string]string)
@@ -98,62 +71,49 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 		tags[t.Key] = t.Value
 	}
 
-	now := time.Now().UTC()
-	sm := &sfnstore.StateMachine{
-		Name:               req.Msg.Name,
-		Definition:         req.Msg.Definition,
-		RoleArn:            req.Msg.Rolearn,
-		Type:               smType,
-		CreationDate:       now,
-		UpdateDate:         now,
-		Status:             "ACTIVE",
-		Tags:               tags,
-		VariableReferences: extractVariableReferences(req.Msg.Definition),
-		RevisionId:         generateRevisionId(),
-	}
-
-	if err := store.CreateStateMachine(ctx, sm); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	result, err := h.service.createStateMachineCore(ctx, store, CreateStateMachineInput{
+		Name:       req.Msg.Name,
+		Definition: req.Msg.Definition,
+		RoleArn:    req.Msg.Rolearn,
+		Type:       smTypeFromProto(req.Msg.Type),
+		Tags:       tags,
+	})
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateStateMachineOutput{
-		Statemachinearn: sm.StateMachineArn,
-		Creationdate:    sm.CreationDate.Format(timeutils.ISO8601UTCFormat),
+		Statemachinearn: result.StateMachineArn,
+		Creationdate:    result.CreationDate.Format(timeutils.ISO8601UTCFormat),
 	}), nil
 }
 
 // DeleteStateMachine deletes a Step Functions state machine via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) DeleteStateMachine(ctx context.Context, req *connect.Request[pb.DeleteStateMachineInput]) (*connect.Response[pb.DeleteStateMachineOutput], error) {
-	if req.Msg.Statemachinearn == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stateMachineArn is required"))
-	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if err := store.DeleteStateMachine(ctx, req.Msg.Statemachinearn); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteStateMachineCore(ctx, store, DeleteStateMachineInput{
+		StateMachineArn: req.Msg.Statemachinearn,
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteStateMachineOutput{}), nil
 }
 
-func toPbStateMachineType(typ string) pb.StateMachineType {
-	switch typ {
-	case "STANDARD":
-		return pb.StateMachineType_STATE_MACHINE_TYPE_STANDARD
-	case "EXPRESS":
-		return pb.StateMachineType_STATE_MACHINE_TYPE_EXPRESS
-	default:
-		return pb.StateMachineType_STATE_MACHINE_TYPE_STANDARD
+// smTypeFromProto converts the proto enum to the Smithy string type.
+func smTypeFromProto(t pb.StateMachineType) string {
+	if t == pb.StateMachineType_STATE_MACHINE_TYPE_EXPRESS {
+		return "EXPRESS"
 	}
+	return "STANDARD"
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Sfn admin console.
+// NewConnectHandler creates a gRPC-Web connect handler for the SFN admin console.
 func NewConnectHandler(svc *StepFunctionService) (string, http.Handler) {
 	return sfnconnect.NewSFNServiceHandler(NewAdminHandler(svc))
 }

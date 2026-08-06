@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -29,7 +28,6 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 	definition := request.GetParamLowerFirst(req.Parameters, "definition")
 	roleArn := request.GetParamLowerFirst(req.Parameters, "roleArn")
 	smType := request.GetParamLowerFirst(req.Parameters, "type")
-	description := request.GetParamLowerFirst(req.Parameters, "description")
 	publish := false
 	if v, ok := req.Parameters["publish"]; ok {
 		if vBool, ok := v.(bool); ok {
@@ -38,145 +36,57 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 	}
 	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
 
-	if name == "" {
-		return nil, NewInvalidName("State Machine name is required")
-	}
-	if definition == "" {
-		return nil, NewInvalidDefinitionException("State Machine definition is required")
-	}
-	if !json.Valid([]byte(definition)) {
-		return nil, NewInvalidDefinitionException("State Machine definition is not valid JSON")
+	// Role validation requires the IAM validator from the request context.
+	if err := validateStateMachineRole(ctx, reqCtx, roleArn); err != nil {
+		return nil, err
 	}
 
-	if smType == "" {
-		smType = "STANDARD"
-	}
-	if smType != "STANDARD" && smType != "EXPRESS" {
-		return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
+	loggingConfig, err := parseLoggingConfigurationFromJSON(req.Parameters["loggingConfiguration"])
+	if err != nil {
+		return nil, err
 	}
 
-	if roleArn != "" {
-		if err := validateStateMachineRole(ctx, reqCtx, roleArn); err != nil {
-			return nil, err
-		}
+	encryptionConfig, err := parseEncryptionConfigurationFromJSON(req.Parameters["encryptionConfiguration"])
+	if err != nil {
+		return nil, err
+	}
+
+	tracingConfig, err := parseTracingConfigurationFromJSON(req.Parameters["tracingConfiguration"])
+	if err != nil {
+		return nil, err
 	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags"))
-
-	if err := validateDefinitionJSONataFields(definition); err != nil {
-		return nil, err
-	}
-
-	sm := &sfnstore.StateMachine{
-		Name:               name,
-		Definition:         definition,
-		RoleArn:            roleArn,
-		Type:               smType,
-		Description:        description,
-		Tags:               tags,
-		VariableReferences: extractVariableReferences(definition),
-		RevisionId:         generateRevisionId(),
-	}
-
-	if lcRaw, ok := req.Parameters["loggingConfiguration"]; ok {
-		if lcBytes, err := json.Marshal(lcRaw); err == nil {
-			var lc sfnstore.LoggingConfiguration
-			if json.Unmarshal(lcBytes, &lc) == nil {
-				sm.LoggingConfiguration = &lc
-			}
-		}
-	}
-
-	if ec, err := parseEncryptionConfiguration(req); err != nil {
-		return nil, err
-	} else {
-		sm.EncryptionConfiguration = ec
-	}
-
-	if tc, err := parseTracingConfiguration(req); err != nil {
-		return nil, err
-	} else {
-		sm.TracingConfiguration = tc
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.CreateStateMachine(ctx, sm); err != nil {
-		if errors.Is(err, sfnstore.ErrStateMachineAlreadyExists) {
-			return nil, awserrors.NewAWSError("StateMachineAlreadyExists", "A state machine with the same name already exists: "+name, 400)
-		}
+
+	result, err := s.createStateMachineCore(ctx, store, CreateStateMachineInput{
+		Name:                 name,
+		Definition:           definition,
+		RoleArn:              roleArn,
+		Type:                 smType,
+		LoggingConfiguration: loggingConfig,
+		EncryptionConfig:     encryptionConfig,
+		TracingConfig:        tracingConfig,
+		Tags:                 tags,
+		Publish:              publish,
+		VersionDescription:   versionDescription,
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	if len(tags) > 0 {
-		if err := store.Tag(sm.StateMachineArn, tags); err != nil {
-			return nil, err
-		}
-	}
-
 	resp := map[string]interface{}{
-		"stateMachineArn": sm.StateMachineArn,
-		"creationDate":    sm.CreationDate.Unix(),
+		"stateMachineArn": result.StateMachineArn,
+		"creationDate":    result.CreationDate.Unix(),
 	}
-
-	if publish {
-		version, err := store.PublishStateMachineVersion(ctx, sm.StateMachineArn, versionDescription)
-		if err != nil {
-			return nil, err
-		}
-		resp["stateMachineVersionArn"] = version.StateMachineVersionArn
+	if result.StateMachineVersionArn != "" {
+		resp["stateMachineVersionArn"] = result.StateMachineVersionArn
 	}
-
 	return resp, nil
-}
-
-// parseEncryptionConfiguration extracts the encryptionConfiguration parameter
-// from the request and validates it. Returns nil if the parameter is absent.
-func parseEncryptionConfiguration(req *request.ParsedRequest) (*sfnstore.EncryptionConfiguration, error) {
-	raw, ok := req.Parameters["encryptionConfiguration"]
-	if !ok || raw == nil {
-		return nil, nil
-	}
-
-	bytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil, NewInvalidParameterValue("encryptionConfiguration is not serialisable: " + err.Error())
-	}
-	var ec sfnstore.EncryptionConfiguration
-	if err := json.Unmarshal(bytes, &ec); err != nil {
-		return nil, NewInvalidParameterValue("encryptionConfiguration is not valid JSON: " + err.Error())
-	}
-
-	if ec.Type == "" {
-		ec.Type = "AWS_OWNED_KEY"
-	}
-	if ec.Type != "AWS_OWNED_KEY" && ec.Type != "CUSTOMER_MANAGED_KMS_KEY" {
-		return nil, NewInvalidParameterValue("encryptionConfiguration.type must be AWS_OWNED_KEY or CUSTOMER_MANAGED_KMS_KEY, got " + ec.Type)
-	}
-	if ec.Type == "CUSTOMER_MANAGED_KMS_KEY" && ec.KmsKeyId == "" {
-		return nil, NewInvalidParameterValue("encryptionConfiguration.kmsKeyId is required when type is CUSTOMER_MANAGED_KMS_KEY")
-	}
-	return &ec, nil
-}
-
-// parseTracingConfiguration extracts the tracingConfiguration parameter from
-// the request. Returns nil if the parameter is absent.
-func parseTracingConfiguration(req *request.ParsedRequest) (*sfnstore.TracingConfiguration, error) {
-	raw, ok := req.Parameters["tracingConfiguration"]
-	if !ok || raw == nil {
-		return nil, nil
-	}
-	bytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil, NewInvalidParameterValue("tracingConfiguration is not serialisable: " + err.Error())
-	}
-	var tc sfnstore.TracingConfiguration
-	if err := json.Unmarshal(bytes, &tc); err != nil {
-		return nil, NewInvalidParameterValue("tracingConfiguration is not valid JSON: " + err.Error())
-	}
-	return &tc, nil
 }
 
 func generateRevisionId() string {
@@ -191,10 +101,9 @@ func (s *StepFunctionService) DeleteStateMachine(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteStateMachine(ctx, arn); err != nil {
-		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-		}
+	if err := s.deleteStateMachineCore(ctx, store, DeleteStateMachineInput{
+		StateMachineArn: arn,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -204,29 +113,24 @@ func (s *StepFunctionService) DeleteStateMachine(ctx context.Context, reqCtx *re
 // ValidateStateMachineDefinition validates a state machine definition without creating it.
 func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	definition := request.GetParamLowerFirst(req.Parameters, "definition")
-	if definition == "" {
-		return nil, NewInvalidDefinitionException("definition is required")
+	if err := validateDefinitionJSON(definition); err != nil {
+		return nil, err
 	}
 
-	severity := request.GetParamLowerFirst(req.Parameters, "severity")
-	if severity == "" {
-		severity = "ERROR"
-	}
-	if severity != "ERROR" && severity != "WARNING" {
-		return nil, NewInvalidParameterValue("severity must be ERROR or WARNING, got " + severity)
+	severity, err := validateSeverity(request.GetParamLowerFirst(req.Parameters, "severity"))
+	if err != nil {
+		return nil, err
 	}
 
-	smType := request.GetParamLowerFirst(req.Parameters, "type")
-	if smType == "" {
-		smType = "STANDARD"
+	smType, err := validateStateMachineType(request.GetParamLowerFirst(req.Parameters, "type"))
+	if err != nil {
+		return nil, err
 	}
-	if smType != "STANDARD" && smType != "EXPRESS" {
-		return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
-	}
+	_ = smType
 
 	maxResults := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if maxResults < 0 || maxResults > 100 {
-		return nil, NewInvalidParameterValue("maxResults must be in [0, 100], got " + strconv.FormatInt(int64(maxResults), 10))
+	if err := validateMaxResults(maxResults, 0, 100, "maxResults"); err != nil {
+		return nil, err
 	}
 	if maxResults == 0 {
 		maxResults = 100
@@ -407,7 +311,10 @@ func (s *StepFunctionService) ListStateMachines(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListStateMachines(ctx, limit, nextToken)
+	result, err := s.listStateMachinesCore(ctx, store, ListStateMachinesInput{
+		MaxResults: limit,
+		NextToken:  nextToken,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -422,15 +329,15 @@ func (s *StepFunctionService) ListStateMachines(ctx context.Context, reqCtx *req
 		}
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"stateMachines": stateMachines,
 	}
 
 	if result.NextToken != "" {
-		response["nextToken"] = result.NextToken
+		resp["nextToken"] = result.NextToken
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // UpdateStateMachine updates an existing state machine.
@@ -438,7 +345,6 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 	arn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
 	definition := request.GetParamLowerFirst(req.Parameters, "definition")
 	roleArn := request.GetParamLowerFirst(req.Parameters, "roleArn")
-	description := request.GetParamLowerFirst(req.Parameters, "description")
 	smType := request.GetParamLowerFirst(req.Parameters, "type")
 	publish := false
 	if v, ok := req.Parameters["publish"]; ok {
@@ -449,84 +355,60 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
 	revisionId := request.GetParamLowerFirst(req.Parameters, "revisionId")
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	sm, err := store.GetStateMachine(ctx, arn)
-	if err != nil {
-		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-		}
-		return nil, err
-	}
-
-	if revisionId != "" && sm.RevisionId != revisionId {
-		return nil, NewInvalidParameterValue("revisionId mismatch: expected " + sm.RevisionId + ", got " + revisionId)
-	}
-
-	if definition != "" {
-		sm.Definition = definition
-		if err := validateDefinitionJSONataFields(definition); err != nil {
-			return nil, err
-		}
-		sm.VariableReferences = extractVariableReferences(definition)
-	}
+	// Role validation requires the IAM validator from the request context.
 	if roleArn != "" {
 		if err := validateStateMachineRole(ctx, reqCtx, roleArn); err != nil {
 			return nil, err
 		}
-		sm.RoleArn = roleArn
-	}
-	if description != "" {
-		sm.Description = description
-	}
-	if smType != "" {
-		if smType != "STANDARD" && smType != "EXPRESS" {
-			return nil, NewInvalidExecutionType("State Machine type must be STANDARD or EXPRESS, got: " + smType)
-		}
-		sm.Type = smType
-	}
-	if lcRaw, ok := req.Parameters["loggingConfiguration"]; ok {
-		if lcBytes, err := json.Marshal(lcRaw); err == nil {
-			var lc sfnstore.LoggingConfiguration
-			if json.Unmarshal(lcBytes, &lc) == nil {
-				sm.LoggingConfiguration = &lc
-			}
-		}
-	}
-	if ec, err := parseEncryptionConfiguration(req); err != nil {
-		return nil, err
-	} else if ec != nil {
-		sm.EncryptionConfiguration = ec
-	}
-	if tc, err := parseTracingConfiguration(req); err != nil {
-		return nil, err
-	} else if tc != nil {
-		sm.TracingConfiguration = tc
 	}
 
-	sm.UpdateDate = time.Now().UTC()
-	sm.RevisionId = generateRevisionId()
+	loggingConfig, err := parseLoggingConfigurationFromJSON(req.Parameters["loggingConfiguration"])
+	if err != nil {
+		return nil, err
+	}
 
-	if err := store.UpdateStateMachine(ctx, sm); err != nil {
+	encryptionConfig, err := parseEncryptionConfigurationFromJSON(req.Parameters["encryptionConfiguration"])
+	if err != nil {
+		return nil, err
+	}
+
+	tracingConfig, err := parseTracingConfigurationFromJSON(req.Parameters["tracingConfiguration"])
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.updateStateMachineCore(ctx, store, UpdateStateMachineInput{
+		StateMachineArn:      arn,
+		Definition:           definition,
+		DefinitionProvided:   definition != "",
+		RoleArn:              roleArn,
+		RoleArnProvided:      roleArn != "",
+		Type:                 smType,
+		TypeProvided:         smType != "",
+		LoggingConfiguration: loggingConfig,
+		EncryptionConfig:     encryptionConfig,
+		TracingConfig:        tracingConfig,
+		Publish:              publish,
+		VersionDescription:   versionDescription,
+		RevisionId:           revisionId,
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	resp := map[string]interface{}{
-		"stateMachineArn": sm.StateMachineArn,
-		"updateDate":      sm.UpdateDate.Unix(),
-		"revisionId":      sm.RevisionId,
+		"stateMachineArn": result.StateMachineArn,
+		"updateDate":      result.UpdateDate.Unix(),
+		"revisionId":      result.RevisionId,
 	}
-
-	if publish {
-		version, err := store.PublishStateMachineVersion(ctx, sm.StateMachineArn, versionDescription)
-		if err != nil {
-			return nil, err
-		}
-		resp["stateMachineVersionArn"] = version.StateMachineVersionArn
+	if result.StateMachineVersionArn != "" {
+		resp["stateMachineVersionArn"] = result.StateMachineVersionArn
 	}
-
 	return resp, nil
 }
 
@@ -579,6 +461,11 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 		defer func() {
 			if r := recover(); r != nil {
 				logs.Error("sfn: panic in execution", logs.String("arn", executionArn), logs.Any("panic", r))
+				exec.Status = "FAILED"
+				exec.Error = "States.InternalError"
+				exec.Cause = fmt.Sprintf("internal panic: %v", r)
+				exec.StopDate = time.Now().UTC()
+				_ = store.UpdateExecution(context.Background(), exec)
 			}
 		}()
 		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {
@@ -611,13 +498,7 @@ func (s *StepFunctionService) StopExecution(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	terminalStates := map[string]bool{
-		"SUCCEEDED": true,
-		"FAILED":    true,
-		"TIMED_OUT": true,
-		"ABORTED":   true,
-	}
-	if terminalStates[exec.Status] {
+	if isTerminalStatus(exec.Status) {
 		return map[string]interface{}{
 			"stopDate": exec.StopDate.Unix(),
 		}, nil
@@ -791,15 +672,15 @@ func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *r
 func (s *StepFunctionService) CreateActivity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "name")
 
-	if name == "" {
-		return nil, NewInvalidName("Activity name is required")
+	if err := validateResourceName(name); err != nil {
+		return nil, err
 	}
 
 	activity := &sfnstore.Activity{
 		Name: name,
 	}
 
-	if ec, err := parseEncryptionConfiguration(req); err != nil {
+	if ec, err := parseEncryptionConfigurationFromJSON(req.Parameters["encryptionConfiguration"]); err != nil {
 		return nil, err
 	} else {
 		activity.EncryptionConfiguration = ec

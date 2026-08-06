@@ -106,94 +106,183 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 	}
 
 	err = e.executeStates(ctx, execCtx)
+	e.finalizeExecution(ctx, execution, execCtx, err)
+	if err != nil && execution.Status != "ABORTED" {
+		return err
+	}
+	return nil
+}
+
+// ExecuteStateMachineFromState resumes a previously-failed execution starting
+// from the given state. It does not emit an ExecutionStarted event (that
+// already exists from the original attempt); instead it emits an
+// ExecutionRedrived event and continues the event history from lastEventId.
+// The IsRedrive flag on the ExecutionContext signals to Map and Parallel
+// states that they should consult stored checkpoints for already-completed
+// iterations or branches.
+func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *sfnstore.Execution, startState string, startInput string, lastEventId int64) error {
+	e.currentExecution = execution
+	sm, err := e.store.GetStateMachine(ctx, execution.StateMachineArn)
+	if err == nil && sm != nil {
+		e.currentRoleArn = sm.RoleArn
+		e.currentStateMachine = sm
+	}
+
+	definition, states, err := e.parseDefinition(ctx, execution.StateMachineArn)
 	if err != nil {
-		if execution.Status == "ABORTED" {
-			return nil
+		execution.Status = "FAILED"
+		execution.Error = "InvalidDefinition"
+		execution.Cause = "Invalid state machine definition syntax"
+		execution.StopDate = time.Now().UTC()
+		if updateErr := e.updateExecutionWithRetry(ctx, execution); updateErr != nil {
+			logs.Error("Failed to update execution status to FAILED after definition error", logs.Err(updateErr))
 		}
+		return fmt.Errorf("failed to parse state machine definition: %w", err)
+	}
 
-		if ctx.Err() == context.DeadlineExceeded {
-			execution.Status = "TIMED_OUT"
-			execution.Error = "ExecutionTimedOut"
-			execution.Cause = "Execution timed out"
-			execution.StopDate = time.Now().UTC()
+	if definition.TimeoutSeconds > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(definition.TimeoutSeconds)*time.Second)
+		defer cancel()
+	}
 
-			if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
-				ExecutionArn: execution.ExecutionArn,
-				EventId:      *execCtx.EventId,
-				Type:         "ExecutionTimedOut",
-				Timestamp:    time.Now().UTC(),
-				ExecutionTimedOutEventDetails: &sfnstore.ExecutionTimedOutEventDetails{
-					Error: execution.Error,
-					Cause: execution.Cause,
-				},
-			}); err != nil {
-				logs.Error("Failed to add ExecutionTimedOut event", logs.Err(err))
-			}
-		} else if ctx.Err() == context.Canceled {
-			execution.Status = "ABORTED"
-			execution.Error = "ExecutionAborted"
-			execution.Cause = "Execution was aborted by StopExecution"
-			execution.StopDate = time.Now().UTC()
+	eventId := lastEventId + 1
 
-			if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
-				ExecutionArn: execution.ExecutionArn,
-				EventId:      *execCtx.EventId,
-				Type:         "ExecutionAborted",
-				Timestamp:    time.Now().UTC(),
-				ExecutionAbortedEventDetails: &sfnstore.ExecutionAbortedEventDetails{
-					Error: execution.Error,
-					Cause: execution.Cause,
-				},
-			}); err != nil {
-				logs.Error("Failed to add ExecutionAborted event", logs.Err(err))
-			}
-		} else {
-			execution.Status = "FAILED"
-			execution.Error = "ExecutionFailed"
-			logs.Error("State machine execution failed", logs.String("arn", execution.ExecutionArn), logs.Err(err))
-			execution.Cause = "An internal error occurred during execution"
-			execution.StopDate = time.Now().UTC()
+	redriveDate := time.Now().UTC()
+	if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn: execution.ExecutionArn,
+		EventId:      eventId,
+		Type:         "ExecutionRedriven",
+		Timestamp:    redriveDate,
+		ExecutionRedrivedEventDetails: &sfnstore.ExecutionRedrivedEventDetails{
+			RedriveDate:     redriveDate,
+			StateMachineArn: execution.StateMachineArn,
+			ExecutionArn:    execution.ExecutionArn,
+		},
+	}); err != nil {
+		logs.Error("Failed to add ExecutionRedriven event", logs.Err(err))
+	}
 
-			if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
-				ExecutionArn: execution.ExecutionArn,
-				EventId:      *execCtx.EventId,
-				Type:         "ExecutionFailed",
-				Timestamp:    time.Now().UTC(),
-				ExecutionFailedEventDetails: &sfnstore.ExecutionFailedEventDetails{
-					Error: execution.Error,
-					Cause: execution.Cause,
-				},
-			}); err != nil {
-				logs.Error("Failed to add ExecutionFailed event", logs.Err(err))
-			}
+	resumeInput := startInput
+	if resumeInput == "" {
+		resumeInput = execution.Input
+	}
+
+	execCtx := &ExecutionContext{
+		Execution:     execution,
+		Definition:    definition,
+		CurrentState:  startState,
+		Input:         resumeInput,
+		Output:        "",
+		EventId:       &eventId,
+		States:        states,
+		QueryLanguage: definition.QueryLanguage,
+		VariableScope: NewVariableScope(nil),
+		MapItemIndex:  -1,
+		IsRedrive:     true,
+	}
+
+	err = e.executeStates(ctx, execCtx)
+	e.finalizeExecution(ctx, execution, execCtx, err)
+	if err != nil && execution.Status != "ABORTED" {
+		return err
+	}
+	return nil
+}
+
+// finalizeExecution updates the execution record and appends the appropriate
+// terminal history event based on the execution outcome.
+func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Execution, execCtx *ExecutionContext, execErr error) {
+	if execErr == nil {
+		execution.Status = "SUCCEEDED"
+		execution.StopDate = time.Now().UTC()
+		execution.Output = execCtx.Output
+
+		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn: execution.ExecutionArn,
+			EventId:      *execCtx.EventId,
+			Type:         "ExecutionSucceeded",
+			Timestamp:    time.Now().UTC(),
+			ExecutionSucceededEventDetails: &sfnstore.ExecutionSucceededEventDetails{
+				Output: execCtx.Output,
+			},
+		}); err != nil {
+			logs.Error("Failed to add ExecutionSucceeded event", logs.Err(err))
 		}
 
 		if err := e.store.UpdateExecution(ctx, execution); err != nil {
-			logs.Error("Failed to update execution status", logs.String("status", execution.Status), logs.Err(err))
+			logs.Error("Failed to update execution status to SUCCEEDED", logs.Err(err))
 		}
-		return err
+		return
 	}
 
-	execution.Status = "SUCCEEDED"
-	execution.StopDate = time.Now().UTC()
-	execution.Output = execCtx.Output
+	if execution.Status == "ABORTED" {
+		if err := e.store.UpdateExecution(ctx, execution); err != nil {
+			logs.Error("Failed to update execution status", logs.String("status", execution.Status), logs.Err(err))
+		}
+		return
+	}
 
-	if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
-		ExecutionArn: execution.ExecutionArn,
-		EventId:      *execCtx.EventId,
-		Type:         "ExecutionSucceeded",
-		Timestamp:    time.Now().UTC(),
-		ExecutionSucceededEventDetails: &sfnstore.ExecutionSucceededEventDetails{
-			Output: execCtx.Output,
-		},
-	}); err != nil {
-		logs.Error("Failed to add ExecutionSucceeded event", logs.Err(err))
+	if ctx.Err() == context.DeadlineExceeded {
+		execution.Status = "TIMED_OUT"
+		execution.Error = "ExecutionTimedOut"
+		execution.Cause = "Execution timed out"
+		execution.StopDate = time.Now().UTC()
+
+		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn: execution.ExecutionArn,
+			EventId:      *execCtx.EventId,
+			Type:         "ExecutionTimedOut",
+			Timestamp:    time.Now().UTC(),
+			ExecutionTimedOutEventDetails: &sfnstore.ExecutionTimedOutEventDetails{
+				Error: execution.Error,
+				Cause: execution.Cause,
+			},
+		}); err != nil {
+			logs.Error("Failed to add ExecutionTimedOut event", logs.Err(err))
+		}
+	} else if ctx.Err() == context.Canceled {
+		execution.Status = "ABORTED"
+		execution.Error = "ExecutionAborted"
+		execution.Cause = "Execution was aborted by StopExecution"
+		execution.StopDate = time.Now().UTC()
+
+		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn: execution.ExecutionArn,
+			EventId:      *execCtx.EventId,
+			Type:         "ExecutionAborted",
+			Timestamp:    time.Now().UTC(),
+			ExecutionAbortedEventDetails: &sfnstore.ExecutionAbortedEventDetails{
+				Error: execution.Error,
+				Cause: execution.Cause,
+			},
+		}); err != nil {
+			logs.Error("Failed to add ExecutionAborted event", logs.Err(err))
+		}
+	} else {
+		execution.Status = "FAILED"
+		execution.Error = "ExecutionFailed"
+		logs.Error("State machine execution failed", logs.String("arn", execution.ExecutionArn), logs.Err(execErr))
+		execution.Cause = "An internal error occurred during execution"
+		execution.StopDate = time.Now().UTC()
+
+		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn: execution.ExecutionArn,
+			EventId:      *execCtx.EventId,
+			Type:         "ExecutionFailed",
+			Timestamp:    time.Now().UTC(),
+			ExecutionFailedEventDetails: &sfnstore.ExecutionFailedEventDetails{
+				Error: execution.Error,
+				Cause: execution.Cause,
+			},
+		}); err != nil {
+			logs.Error("Failed to add ExecutionFailed event", logs.Err(err))
+		}
 	}
 
 	if err := e.store.UpdateExecution(ctx, execution); err != nil {
-		logs.Error("Failed to update execution status to SUCCEEDED", logs.Err(err))
+		logs.Error("Failed to update execution status", logs.String("status", execution.Status), logs.Err(err))
 	}
-	return nil
 }
 
 // ExecutionContext holds the context for a state machine execution.
@@ -214,6 +303,7 @@ type ExecutionContext struct {
 	MapItemValue      interface{}
 	AfterArguments    *string
 	AfterItemSelector *string
+	IsRedrive         bool
 }
 
 func (ctx *ExecutionContext) nextEventId() int64 {

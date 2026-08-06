@@ -52,7 +52,20 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 	results := make([]string, len(state.Branches))
 	errors := make([]error, len(state.Branches))
 
+	if execCtx.IsRedrive && execCtx.Execution.ParallelCheckpoints != nil {
+		if cp, ok := execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState]; ok {
+			for idx, cached := range cp.BranchResults {
+				if idx >= 0 && idx < len(results) {
+					results[idx] = cached
+				}
+			}
+		}
+	}
+
 	for i, branch := range state.Branches {
+		if results[i] != "" {
+			continue
+		}
 		wg.Add(1)
 		go func(idx int, b *sfnstore.StateMachineDefinition) {
 			defer wg.Done()
@@ -89,6 +102,17 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 			errors[idx] = execErr
 			if execErr == nil {
 				results[idx] = branchCtx.Output
+				if execCtx.IsRedrive {
+					if execCtx.Execution.ParallelCheckpoints == nil {
+						execCtx.Execution.ParallelCheckpoints = make(map[string]*sfnstore.ParallelCheckpoint)
+					}
+					cp, ok := execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState]
+					if !ok {
+						cp = &sfnstore.ParallelCheckpoint{BranchResults: make(map[int]string)}
+						execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState] = cp
+					}
+					cp.BranchResults[idx] = branchCtx.Output
+				}
 			}
 		}(i, branch)
 	}

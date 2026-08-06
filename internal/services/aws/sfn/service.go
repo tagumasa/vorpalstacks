@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -107,6 +108,10 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 		defer func() {
 			if r := recover(); r != nil {
 				logs.Error("sfn: panic in bus-triggered execution", logs.String("arn", executionArn), logs.Any("panic", r))
+				exec.Status = "FAILED"
+				exec.Error = "States.InternalError"
+				exec.StopDate = time.Now().UTC()
+				_ = store.UpdateExecution(context.Background(), exec)
 			}
 		}()
 		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {

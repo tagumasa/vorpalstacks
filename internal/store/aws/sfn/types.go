@@ -14,7 +14,6 @@ type StateMachine struct {
 	Type                    string                   `json:"type"`
 	CreationDate            time.Time                `json:"creationDate"`
 	UpdateDate              time.Time                `json:"updateDate"`
-	Description             string                   `json:"description"`
 	Status                  string                   `json:"status"`
 	Tags                    map[string]string        `json:"tags"`
 	VariableReferences      map[string][]string      `json:"-"`
@@ -57,25 +56,33 @@ type TracingConfiguration struct {
 
 // Execution represents a single execution of a Step Functions state machine.
 type Execution struct {
-	ExecutionArn           string                  `json:"executionArn"`
-	StateMachineArn        string                  `json:"stateMachineArn"`
-	StateMachineVersionArn string                  `json:"stateMachineVersionArn,omitempty"`
-	StateMachineAliasArn   string                  `json:"stateMachineAliasArn,omitempty"`
-	Name                   string                  `json:"name"`
-	Status                 string                  `json:"status"`
-	Input                  string                  `json:"input"`
-	Output                 string                  `json:"output"`
-	TraceHeader            string                  `json:"traceHeader"`
-	InputDetails           *ExecutionInputDetails  `json:"inputDetails,omitempty"`
-	OutputDetails          *ExecutionOutputDetails `json:"outputDetails,omitempty"`
-	StartDate              time.Time               `json:"startDate"`
-	StopDate               time.Time               `json:"stopDate,omitempty"`
-	Error                  string                  `json:"error,omitempty"`
-	Cause                  string                  `json:"cause,omitempty"`
-	MapRunArn              string                  `json:"mapRunArn,omitempty"`
-	ItemCount              int64                   `json:"itemCount,omitempty"`
-	RedriveCount           int64                   `json:"redriveCount,omitempty"`
-	RedriveDate            time.Time               `json:"redriveDate,omitempty"`
+	ExecutionArn           string                         `json:"executionArn"`
+	StateMachineArn        string                         `json:"stateMachineArn"`
+	StateMachineVersionArn string                         `json:"stateMachineVersionArn,omitempty"`
+	StateMachineAliasArn   string                         `json:"stateMachineAliasArn,omitempty"`
+	Name                   string                         `json:"name"`
+	Status                 string                         `json:"status"`
+	Input                  string                         `json:"input"`
+	Output                 string                         `json:"output"`
+	TraceHeader            string                         `json:"traceHeader"`
+	InputDetails           *ExecutionInputDetails         `json:"inputDetails,omitempty"`
+	OutputDetails          *ExecutionOutputDetails        `json:"outputDetails,omitempty"`
+	StartDate              time.Time                      `json:"startDate"`
+	StopDate               time.Time                      `json:"stopDate,omitempty"`
+	Error                  string                         `json:"error,omitempty"`
+	Cause                  string                         `json:"cause,omitempty"`
+	MapRunArn              string                         `json:"mapRunArn,omitempty"`
+	ItemCount              int64                          `json:"itemCount,omitempty"`
+	RedriveCount           int64                          `json:"redriveCount,omitempty"`
+	RedriveDate            time.Time                      `json:"redriveDate,omitempty"`
+	ParallelCheckpoints    map[string]*ParallelCheckpoint `json:"parallelCheckpoints,omitempty"`
+}
+
+// ParallelCheckpoint stores the per-branch results of a Parallel state so that
+// a redriven execution can skip already-completed branches and re-run only
+// the failed ones.
+type ParallelCheckpoint struct {
+	BranchResults map[int]string `json:"branchResults"`
 }
 
 // ExecutionInputDetails describes the input included in an execution.
@@ -126,6 +133,7 @@ type ExecutionHistoryEvent struct {
 	EvaluationFailedEventDetails      *EvaluationFailedEventDetails      `json:"evaluationFailedEventDetails,omitempty"`
 	TaskStateEnteredEventDetails      *TaskStateEnteredEventDetails      `json:"taskStateEnteredEventDetails,omitempty"`
 	TaskStateExitedEventDetails       *TaskStateExitedEventDetails       `json:"taskStateExitedEventDetails,omitempty"`
+	ExecutionRedrivedEventDetails     *ExecutionRedrivedEventDetails     `json:"executionRedrivedEventDetails,omitempty"`
 }
 
 // ExecutionFailedEventDetails contains error and cause information for a failed execution.
@@ -187,6 +195,15 @@ type ExecutionAbortedEventDetails struct {
 type ExecutionTimedOutEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
+}
+
+// ExecutionRedrivedEventDetails contains details emitted when an execution is
+// redriven. The execution keeps its original ARN; this event marks the point
+// in history where the redrive occurred.
+type ExecutionRedrivedEventDetails struct {
+	RedriveDate     time.Time `json:"redriveDate"`
+	StateMachineArn string    `json:"stateMachineArn"`
+	ExecutionArn    string    `json:"executionArn"`
 }
 
 // ChoiceStateEnteredEventDetails contains details emitted when a Choice state is
@@ -1078,6 +1095,7 @@ type MapRun struct {
 	ToleratedFailurePercentage float32               `json:"toleratedFailurePercentage,omitempty"`
 	RedriveCount               int64                 `json:"redriveCount,omitempty"`
 	RedriveDate                int64                 `json:"redriveDate,omitempty"`
+	CompletedResults           map[int]string        `json:"completedResults,omitempty"`
 }
 
 // MapRunListResult holds a paginated list of map runs.

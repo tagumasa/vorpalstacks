@@ -144,8 +144,28 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		},
 		MaxConcurrency: int64(maxConcurrency),
 	}
-	if err := e.store.CreateMapRun(ctx, mapRunRecord); err != nil {
-		logs.Warn("failed to create map run record", logs.Err(err))
+	if execCtx.IsRedrive {
+		existingRuns, _ := e.store.ListMapRunsByExecution(ctx, execCtx.Execution.ExecutionArn)
+		for _, er := range existingRuns {
+			if er.Name == execCtx.CurrentState && len(er.CompletedResults) > 0 {
+				mapRunRecord = er
+				mapRunRecord.Status = "RUNNING"
+				mapRunRecord.StopDate = 0
+				break
+			}
+		}
+	}
+	if mapRunRecord.MapRunArn != "" && !execCtx.IsRedrive {
+		if err := e.store.CreateMapRun(ctx, mapRunRecord); err != nil {
+			logs.Warn("failed to create map run record", logs.Err(err))
+		}
+	} else if mapRunRecord.MapRunArn != "" {
+		if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
+			logs.Warn("failed to update map run record for redrive", logs.Err(err))
+		}
+	}
+	if mapRunRecord.CompletedResults == nil {
+		mapRunRecord.CompletedResults = make(map[int]string)
 	}
 
 	defer func() {
@@ -161,6 +181,13 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	itemsProcessed := int64(0)
 	itemsFailed := int64(0)
 	var mu sync.Mutex
+
+	for idx, cached := range mapRunRecord.CompletedResults {
+		if idx >= 0 && idx < len(results) {
+			results[idx] = cached
+			itemsProcessed++
+		}
+	}
 
 	processedItems := make([]interface{}, len(itemsArray))
 	if state.ItemSelector != nil {
@@ -191,6 +218,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	sem := make(chan struct{}, maxConcurrency)
 
 	for i := range processedItems {
+		if results[i] != "" {
+			continue
+		}
 		wg.Add(1)
 		go func(idx int, itemValue interface{}, originalItem interface{}) {
 			defer wg.Done()
@@ -243,6 +273,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			if execErr == nil {
 				results[idx] = iteratorCtx.Output
 				itemsProcessed++
+				mapRunRecord.CompletedResults[idx] = iteratorCtx.Output
 			} else {
 				itemsFailed++
 			}

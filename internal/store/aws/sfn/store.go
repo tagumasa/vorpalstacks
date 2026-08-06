@@ -903,20 +903,15 @@ func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn s
 		MaxItems: int(limit),
 	}
 
-	result, err := common.List[StateMachineAlias](s.aliasesStore, opts, nil)
+	result, err := common.List[StateMachineAlias](s.aliasesStore, opts, func(a *StateMachineAlias) bool {
+		return a.StateMachineArn == smArn
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var filtered []*StateMachineAlias
-	for _, a := range result.Items {
-		if a.StateMachineArn == smArn {
-			filtered = append(filtered, a)
-		}
-	}
-
 	return &StateMachineAliasListResult{
-		Aliases:   filtered,
+		Aliases:   result.Items,
 		NextToken: result.NextMarker,
 	}, nil
 }

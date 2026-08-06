@@ -126,9 +126,6 @@ func stateMachineToResponse(sm *sfnstore.StateMachine) map[string]interface{} {
 	if sm.RoleArn != "" {
 		response["roleArn"] = sm.RoleArn
 	}
-	if sm.Description != "" {
-		response["description"] = sm.Description
-	}
 	if sm.Status != "" {
 		response["status"] = sm.Status
 	}
@@ -377,6 +374,14 @@ func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent, includeExecut
 				"name":   event.TaskStateExitedEventDetails.Name,
 			}
 		}
+	case "ExecutionRedriven":
+		if event.ExecutionRedrivedEventDetails != nil {
+			response["executionRedrivedEventDetails"] = map[string]interface{}{
+				"redriveDate":     event.ExecutionRedrivedEventDetails.RedriveDate.Unix(),
+				"stateMachineArn": event.ExecutionRedrivedEventDetails.StateMachineArn,
+				"executionArn":    event.ExecutionRedrivedEventDetails.ExecutionArn,
+			}
+		}
 	}
 
 	if !includeExecutionData {
@@ -407,6 +412,7 @@ func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent, includeExecut
 			"activityTaskSucceededEventDetails",
 			"taskStateEnteredEventDetails",
 			"taskStateExitedEventDetails",
+			"executionRedrivedEventDetails",
 		} {
 			if details, ok := response[detailsKey].(map[string]interface{}); ok {
 				for f := range details {

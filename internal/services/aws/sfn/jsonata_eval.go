@@ -265,16 +265,6 @@ func awsHashFunc(args []interface{}, focus interface{}) (interface{}, error) {
 }
 
 func awsRandomFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	if len(args) > 0 {
-		if seed, ok := toFloat64(args[0]); ok {
-			n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-			if err != nil {
-				return nil, err
-			}
-			seeded := float64(n.Int64()) / float64(math.MaxInt64)
-			return (seeded + seed) - math.Floor(seeded+seed), nil
-		}
-	}
 	n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		return nil, err
