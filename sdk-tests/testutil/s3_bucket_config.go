@@ -10,6 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
+
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client, ts string, bucketName string) []TestResult {
@@ -483,8 +486,26 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 	}))
 
 	results = append(results, r.RunTest("s3", "PutBucketNotificationConfiguration", func() error {
-		topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:test-topic", r.region, r.accountID)
-		_, err := client.PutBucketNotificationConfiguration(ctx, &s3.PutBucketNotificationConfigurationInput{
+		snsCfg, snsErr := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if snsErr != nil {
+			return fmt.Errorf("failed to load SNS config: %w", snsErr)
+		}
+		snsClient := sns.NewFromConfig(snsCfg)
+		topicName := fmt.Sprintf("test-topic-%s", ts)
+		createTopicResp, err := snsClient.CreateTopic(ctx, &sns.CreateTopicInput{
+			Name: aws.String(topicName),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateTopic failed: %w", err)
+		}
+		topicArn := aws.ToString(createTopicResp.TopicArn)
+		defer snsClient.DeleteTopic(ctx, &sns.DeleteTopicInput{
+			TopicArn: createTopicResp.TopicArn,
+		})
+		_, err = client.PutBucketNotificationConfiguration(ctx, &s3.PutBucketNotificationConfigurationInput{
 			Bucket: aws.String(bucketName),
 			NotificationConfiguration: &types.NotificationConfiguration{
 				TopicConfigurations: []types.TopicConfiguration{

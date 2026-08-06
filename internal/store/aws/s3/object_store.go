@@ -289,3 +289,62 @@ func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClas
 		return nil
 	})
 }
+
+// SetReplicationStatus updates the replication status of an object.
+// Valid statuses are "PENDING", "COMPLETED", and "FAILED".
+func (s *ObjectStore) SetReplicationStatus(bucket, key, versionId, status string) error {
+	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
+		isVersioned := s.isVersioningEnabled(bucket)
+
+		var storageKey string
+		if versionId != "" {
+			storageKey = s.versionedStorageKey(bucket, key, versionId)
+		} else if isVersioned {
+			storageKey = s.latestKeyStorageKey(bucket, key)
+		} else {
+			storageKey = s.versionedStorageKey(bucket, key, "null")
+		}
+
+		var pbObj pb.Object
+		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+			if isVersioned && versionId == "" {
+				nullKey := s.versionedStorageKey(bucket, key, "null")
+				if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
+					return ErrObjectNotFound
+				}
+				storageKey = nullKey
+			} else {
+				return err
+			}
+		}
+		pbObj.ReplicationStatus = status
+		obj := ProtoToObject(&pbObj)
+
+		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
+			return err
+		}
+
+		if isVersioned {
+			vid := versionId
+			if vid == "" {
+				vid = obj.VersionID
+			}
+			versionedKey := s.versionedStorageKey(bucket, key, vid)
+			if versionedKey != storageKey {
+				if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
+					return err
+				}
+			}
+			if obj.IsLatest {
+				latestKey := s.latestKeyStorageKey(bucket, key)
+				if latestKey != storageKey {
+					if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+}

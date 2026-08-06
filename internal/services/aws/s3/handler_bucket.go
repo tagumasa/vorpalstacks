@@ -12,6 +12,14 @@ import (
 // handleServiceRequest handles service-level S3 operations (e.g. ListBuckets).
 func (h *S3Handler) handleServiceRequest(ctx *request.RequestContext, r *http.Request) (interface{}, int, error) {
 	if r.Method == "GET" {
+		stores, err := h.svc.store(ctx)
+		if err != nil {
+			return nil, http.StatusInternalServerError, err
+		}
+		if err := h.checkAccess(ctx, r, stores, "s3:ListAllMyBuckets", "", ""); err != nil {
+			return nil, http.StatusForbidden, err
+		}
+
 		input := &ListBucketsInput{
 			ContinuationToken: r.URL.Query().Get("continuation-token"),
 			Prefix:            r.URL.Query().Get("prefix"),

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	"vorpalstacks/internal/utils/aws/types"
@@ -141,6 +142,14 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		repCtx, repCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		go func() {
 			defer repCancel()
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("s3: replication goroutine panic",
+						logs.String("bucket", bucket.Name),
+						logs.String("key", input.Key),
+						logs.Any("panic", r))
+				}
+			}()
 			o.svc.replicateObject(repCtx, reqCtx, stores, bucket, input.Key, obj)
 		}()
 
@@ -166,10 +175,18 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	}
 
 	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
-	repCtx, repCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	repCtx2, repCancel2 := context.WithTimeout(context.Background(), 30*time.Second)
 	go func() {
-		defer repCancel()
-		o.svc.replicateObject(repCtx, reqCtx, stores, bucket, input.Key, obj)
+		defer repCancel2()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("s3: replication goroutine panic",
+					logs.String("bucket", bucket.Name),
+					logs.String("key", input.Key),
+					logs.Any("panic", r))
+			}
+		}()
+		o.svc.replicateObject(repCtx2, reqCtx, stores, bucket, input.Key, obj)
 	}()
 
 	return &PutObjectOutput{
@@ -405,18 +422,26 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 		return nil, ErrObjectAlreadyRestored
 	}
 
+	restoreDays := 1
 	if input.Body != nil {
 		var restoreReq RestoreRequest
-		if err := request.NewSafeXMLDecoder(input.Body).Decode(&restoreReq); err == nil {
-			if restoreReq.Days < 1 || restoreReq.Days > 3653 {
-				return nil, NewInvalidArgumentError("Days must be between 1 and 3653")
-			}
+		if err := request.NewSafeXMLDecoder(input.Body).Decode(&restoreReq); err != nil {
+			return nil, NewInvalidArgumentError("invalid RestoreObject request body")
 		}
+		if err := validateRestoreDays(restoreReq.Days); err != nil {
+			return nil, err
+		}
+		restoreDays = restoreReq.Days
 	}
 
 	if err := stores.objects.SetStorageClass(input.Bucket, input.Key, input.VersionId, s3store.StorageClassStandard); err != nil {
 		return nil, err
 	}
+
+	logs.Info("s3: object restored",
+		logs.String("bucket", input.Bucket),
+		logs.String("key", input.Key),
+		logs.String("days", fmt.Sprintf("%d", restoreDays)))
 
 	return nil, nil
 }

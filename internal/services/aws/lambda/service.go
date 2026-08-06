@@ -701,6 +701,25 @@ func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string
 	}
 }
 
+// GetFunctionARN resolves a function name or ARN to its canonical ARN.
+// Returns an error if the function does not exist.
+func (s *LambdaService) GetFunctionARN(ctx context.Context, functionRef string) (string, error) {
+	region := s.region
+	functionName := functionRef
+	if strings.HasPrefix(functionRef, "arn:") {
+		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
+			region = arnRegion
+		}
+		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
+	}
+	store := s.getOrCreateFunctionStore(region)
+	fn, err := store.Get(functionName)
+	if err != nil {
+		return "", err
+	}
+	return fn.FunctionArn, nil
+}
+
 // InvokeForGateway invokes a Lambda function for cross-service integration.
 // Accepts either a bare function name or a full Lambda ARN. When an ARN is
 // provided, both the region and function name are extracted from it;

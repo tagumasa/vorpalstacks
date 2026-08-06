@@ -151,6 +151,14 @@ func (o *ObjectOperations) PutObjectRetention(ctx context.Context, reqCtx *reque
 		return NewInvalidArgumentError("retention is required")
 	}
 
+	if err := validateRetentionMode(input.Retention.Mode); err != nil {
+		return err
+	}
+
+	if err := validateRetainUntilDate(input.Retention.RetainUntilDate); err != nil {
+		return err
+	}
+
 	retention := &s3store.ObjectLockRetention{
 		Mode:            s3store.ObjectLockRetentionMode(input.Retention.Mode),
 		RetainUntilDate: input.Retention.RetainUntilDate,

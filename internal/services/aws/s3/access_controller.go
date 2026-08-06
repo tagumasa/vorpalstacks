@@ -51,6 +51,13 @@ func (ac *AccessController) CheckAccess(
 	stores *s3Stores,
 	check *AccessCheck,
 ) error {
+	// Service-level operations (ListAllMyBuckets) and CreateBucket do not
+	// target an existing bucket, so skip the bucket lookup and policy/ACL
+	// evaluation.  IAM policy is evaluated upstream by dispatcher.Authorize.
+	if check.Action == "s3:ListAllMyBuckets" || check.Action == "s3:CreateBucket" {
+		return nil
+	}
+
 	bucket, err := stores.buckets.Get(check.Bucket)
 	if err != nil {
 		return ErrNoSuchBucket
@@ -249,10 +256,12 @@ func (ac *AccessController) permissionMatchesAction(perm s3store.Permission, act
 			return action == "s3:GetObject"
 		}
 		return action == "s3:GetObject" || action == "s3:ListBucket" ||
-			action == "s3:ListBucketVersions" || action == "s3:ListMultipartUploadParts"
+			action == "s3:ListBucketVersions" || action == "s3:ListMultipartUploadParts" ||
+			action == "s3:ListBucketMultipartUploads"
 	case s3store.PermissionWrite:
 		if isObject {
-			return action == "s3:PutObject" || action == "s3:DeleteObject"
+			return action == "s3:PutObject" || action == "s3:DeleteObject" ||
+				action == "s3:PutObjectTagging" || action == "s3:DeleteObjectTagging"
 		}
 		return action == "s3:PutObject" || action == "s3:DeleteObject" ||
 			action == "s3:AbortMultipartUpload" || action == "s3:CreateMultipartUpload" ||
@@ -261,12 +270,12 @@ func (ac *AccessController) permissionMatchesAction(perm s3store.Permission, act
 		if isObject {
 			return action == "s3:GetObjectAcl"
 		}
-		return action == "s3:GetBucketAcl"
+		return action == "s3:GetBucketAcl" || action == "s3:GetBucketPolicyStatus"
 	case s3store.PermissionWriteACP:
 		if isObject {
 			return action == "s3:PutObjectAcl"
 		}
-		return action == "s3:PutBucketAcl"
+		return action == "s3:PutBucketAcl" || action == "s3:PutBucketPolicy"
 	}
 	return false
 }

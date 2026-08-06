@@ -61,7 +61,7 @@ func (o *BucketOperations) PutBucketAcl(ctx *request.RequestContext, input *PutB
 
 	publicAccessBlock, _ := store.buckets.GetPublicAccessBlock(input.Bucket)
 	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if input.ACL == "public-read" || input.ACL == "public-read-write" {
+		if isPublicCannedACL(input.ACL) {
 			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
 		}
 		if acpContainsPublicAccess(acp) {

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -52,7 +53,7 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 			Key:        aws.String("multipart-obj.txt"),
 			UploadId:   uploadID,
 			PartNumber: aws.Int32(1),
-			Body:       strings.NewReader("part one content"),
+			Body:       bytes.NewReader(make([]byte, 5*1024*1024)),
 		})
 		if err != nil {
 			return fmt.Errorf("UploadPart 1 failed: %w", err)
@@ -160,7 +161,7 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("reading body failed: %w", err)
 		}
-		expected := "part one contentpart two content"
+		expected := strings.Repeat("\x00", 5*1024*1024) + "part two content"
 		if string(body) != expected {
 			return fmt.Errorf("expected body %q, got %q", expected, string(body))
 		}

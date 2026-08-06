@@ -69,6 +69,7 @@ type objectResponseHeaders struct {
 	ContentEncoding      string
 	ContentLanguage      string
 	StorageClass         string
+	ReplicationStatus    string
 	Metadata             map[string]string
 }
 
@@ -95,6 +96,9 @@ func setObjectResponseHeaders(header http.Header, h objectResponseHeaders) {
 	}
 	if h.StorageClass != "" {
 		header.Set("x-amz-storage-class", h.StorageClass)
+	}
+	if h.ReplicationStatus != "" {
+		header.Set("x-amz-replication-status", h.ReplicationStatus)
 	}
 	for k, v := range h.Metadata {
 		header.Set("x-amz-meta-"+k, v)
@@ -188,12 +192,22 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			partBody = decodeAwsChunkedBody(r.Body)
 		}
 
+		partContentLength := int64(-1)
+		if !isAwsChunkedRequest(r) {
+			if cl := r.Header.Get("Content-Length"); cl != "" {
+				if n, parseErr := strconv.ParseInt(cl, 10, 64); parseErr == nil && n >= 0 {
+					partContentLength = n
+				}
+			}
+		}
+
 		input := &UploadPartInput{
 			Bucket:               bucket,
 			Key:                  key,
 			UploadId:             query.Get("uploadId"),
 			PartNumber:           partNumber,
 			Body:                 partBody,
+			ContentLength:        partContentLength,
 			SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"),
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
@@ -373,7 +387,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
 			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
 			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
-			StorageClass: result.StorageClass, Metadata: result.Metadata,
+			StorageClass: result.StorageClass, ReplicationStatus: result.ReplicationStatus, Metadata: result.Metadata,
 		})
 		return result, header, http.StatusOK, nil
 
@@ -387,7 +401,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
 			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
 			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
-			StorageClass: result.StorageClass, Metadata: result.Metadata,
+			StorageClass: result.StorageClass, ReplicationStatus: result.ReplicationStatus, Metadata: result.Metadata,
 		})
 		return result, header, http.StatusOK, nil
 

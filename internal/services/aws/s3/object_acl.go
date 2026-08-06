@@ -113,7 +113,7 @@ func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.Req
 
 	publicAccessBlock, _ := stores.buckets.GetPublicAccessBlock(input.Bucket)
 	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if input.ACL == "public-read" || input.ACL == "public-read-write" || input.ACL == "authenticated-read" {
+		if isPublicCannedACL(input.ACL) {
 			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
 		}
 		if acpContainsPublicAccess(acp) {

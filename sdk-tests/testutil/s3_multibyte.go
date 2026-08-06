@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -211,14 +212,14 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("CreateMultipartUpload failed: %w", err)
 		}
-		part1Body := "パート1の内容"
+		part1Body := bytes.Repeat([]byte("パート1"), 2*1024*1024)
 		part2Body := "パート2の内容"
 		up1, err := client.UploadPart(ctx, &s3.UploadPartInput{
 			Bucket:     aws.String(bucketName),
 			Key:        aws.String(key),
 			UploadId:   initResp.UploadId,
 			PartNumber: aws.Int32(1),
-			Body:       strings.NewReader(part1Body),
+			Body:       bytes.NewReader(part1Body),
 		})
 		if err != nil {
 			return fmt.Errorf("UploadPart 1 failed: %w", err)
@@ -259,7 +260,7 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("ReadAll failed: %w", err)
 		}
-		expected := part1Body + part2Body
+		expected := string(part1Body) + part2Body
 		if string(body) != expected {
 			return fmt.Errorf("expected body %q, got %q", expected, string(body))
 		}

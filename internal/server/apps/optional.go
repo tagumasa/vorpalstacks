@@ -703,7 +703,7 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svclambda.NewConnectHandler(st.lambdaService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcs3.NewConnectHandler(a.server.S3Store(), aid, st.s3Service.EncryptionManager())
+	p, h = svcs3.NewConnectHandler(st.s3Service)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcstepfunction.NewConnectHandler(st.stepFunctionService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})

@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -20,53 +19,6 @@ type BucketOperations struct {
 // NewBucketOperations creates a new BucketOperations instance.
 func NewBucketOperations(svc *S3Service) *BucketOperations {
 	return &BucketOperations{svc: svc}
-}
-
-const (
-	maxBucketNameLength = 63
-	minBucketNameLength = 3
-)
-
-var bucketNameRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
-var ipAddressRegex = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
-
-var validCORSMethods = map[string]bool{
-	"GET":    true,
-	"PUT":    true,
-	"HEAD":   true,
-	"POST":   true,
-	"DELETE": true,
-}
-
-func validateBucketName(name string) error {
-	if len(name) < minBucketNameLength || len(name) > maxBucketNameLength {
-		return NewInvalidBucketNameError(name)
-	}
-	if !bucketNameRegex.MatchString(name) {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasPrefix(name, "xn--") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, "-s3alias") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, "--ol-s3") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, ".mrap") {
-		return NewInvalidBucketNameError(name)
-	}
-	if ipAddressRegex.MatchString(name) {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.Contains(name, "..") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.Contains(name, ".-") || strings.Contains(name, "-.") {
-		return NewInvalidBucketNameError(name)
-	}
-	return nil
 }
 
 // CreateBucketInput contains the input parameters for the CreateBucket operation.

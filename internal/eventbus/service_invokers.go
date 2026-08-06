@@ -11,6 +11,7 @@ import (
 // package.
 type LambdaInvoker interface {
 	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (statusCode int64, responsePayload []byte, err error)
+	GetFunctionARN(ctx context.Context, functionName string) (string, error)
 }
 
 // SQSInvoker provides SQS operations for cross-service consumers.

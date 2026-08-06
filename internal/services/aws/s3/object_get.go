@@ -52,6 +52,7 @@ type GetObjectOutput struct {
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
 	SSECustomerKeyMD5    string
+	ReplicationStatus    string
 }
 
 // GetObject retrieves an object from S3.
@@ -115,6 +116,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		Metadata:           obj.Metadata,
 		StorageClass:       string(obj.StorageClass),
 		VersionId:          obj.VersionID,
+		ReplicationStatus:  obj.ReplicationStatus,
 	}
 
 	var decryptedData []byte
@@ -279,6 +281,7 @@ type HeadObjectInput struct {
 	VersionId         string
 	SSECustomerKey    string
 	SSECustomerKeyMD5 string
+	ReplicationStatus string
 }
 
 // HeadObjectOutput contains the output from the HeadObject operation.
@@ -298,6 +301,7 @@ type HeadObjectOutput struct {
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
 	SSECustomerKeyMD5    string
+	ReplicationStatus    string
 }
 
 // HeadObject retrieves metadata for an object without returning the object itself.
@@ -332,6 +336,7 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		Metadata:           obj.Metadata,
 		StorageClass:       string(obj.StorageClass),
 		VersionId:          obj.VersionID,
+		ReplicationStatus:  obj.ReplicationStatus,
 	}
 
 	if obj.SSEMetadata != nil {

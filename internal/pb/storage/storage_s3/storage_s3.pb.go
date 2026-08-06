@@ -1048,6 +1048,7 @@ type Object struct {
 	ObjectLockLegalHold  *ObjectLockLegalHold   `protobuf:"bytes,22,opt,name=object_lock_legal_hold,json=objectLockLegalHold,proto3" json:"object_lock_legal_hold,omitempty"`
 	ObjectLockRetention  *ObjectLockRetention   `protobuf:"bytes,23,opt,name=object_lock_retention,json=objectLockRetention,proto3" json:"object_lock_retention,omitempty"`
 	SseMetadata          *SSEObjectMetadata     `protobuf:"bytes,24,opt,name=sse_metadata,json=sseMetadata,proto3" json:"sse_metadata,omitempty"`
+	ReplicationStatus    string                 `protobuf:"bytes,25,opt,name=replication_status,json=replicationStatus,proto3" json:"replication_status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1248,6 +1249,13 @@ func (x *Object) GetSseMetadata() *SSEObjectMetadata {
 		return x.SseMetadata
 	}
 	return nil
+}
+
+func (x *Object) GetReplicationStatus() string {
+	if x != nil {
+		return x.ReplicationStatus
+	}
+	return ""
 }
 
 // ObjectPart represents a part in a multipart upload.

@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -97,15 +98,7 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 	}
 
 	validateEvents := func(events []string) error {
-		if len(events) == 0 {
-			return NewInvalidArgumentError("at least one event must be specified")
-		}
-		for _, e := range events {
-			if !strings.HasPrefix(e, "s3:") {
-				return NewInvalidArgumentError(fmt.Sprintf("invalid event name: %s (must start with s3:)", e))
-			}
-		}
-		return nil
+		return validateS3EventNames(events)
 	}
 
 	config := &s3store.NotificationConfiguration{}
@@ -115,6 +108,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 			return err
 		}
 		if err := validateArn(tc.TopicArn, "sns"); err != nil {
+			return err
+		}
+		if err := o.svc.validateNotificationTarget(ctx, tc.TopicArn, "sns"); err != nil {
 			return err
 		}
 		if err := validateEvents(tc.Events); err != nil {
@@ -130,6 +126,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 				Key: &s3store.S3KeyFilter{},
 			}
 			for _, fr := range tc.Filter.S3Key.FilterRules {
+				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
+					return err
+				}
 				topicConfig.Filter.Key.FilterRules = append(topicConfig.Filter.Key.FilterRules, s3store.FilterRule{
 					Name:  fr.Name,
 					Value: fr.Value,
@@ -146,6 +145,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 		if err := validateArn(qc.QueueArn, "sqs"); err != nil {
 			return err
 		}
+		if err := o.svc.validateNotificationTarget(ctx, qc.QueueArn, "sqs"); err != nil {
+			return err
+		}
 		if err := validateEvents(qc.Events); err != nil {
 			return err
 		}
@@ -159,6 +161,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 				Key: &s3store.S3KeyFilter{},
 			}
 			for _, fr := range qc.Filter.S3Key.FilterRules {
+				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
+					return err
+				}
 				queueConfig.Filter.Key.FilterRules = append(queueConfig.Filter.Key.FilterRules, s3store.FilterRule{
 					Name:  fr.Name,
 					Value: fr.Value,
@@ -175,6 +180,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 		if err := validateArn(lc.LambdaFunctionArn, "lambda"); err != nil {
 			return err
 		}
+		if err := o.svc.validateNotificationTarget(ctx, lc.LambdaFunctionArn, "lambda"); err != nil {
+			return err
+		}
 		if err := validateEvents(lc.Events); err != nil {
 			return err
 		}
@@ -188,6 +196,9 @@ func (o *BucketOperations) PutBucketNotificationConfiguration(ctx *request.Reque
 				Key: &s3store.S3KeyFilter{},
 			}
 			for _, fr := range lc.Filter.S3Key.FilterRules {
+				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
+					return err
+				}
 				lambdaConfig.Filter.Key.FilterRules = append(lambdaConfig.Filter.Key.FilterRules, s3store.FilterRule{
 					Name:  fr.Name,
 					Value: fr.Value,
@@ -332,4 +343,45 @@ func (o *BucketOperations) GetBucketNotificationConfiguration(ctx *request.Reque
 	}
 
 	return output, nil
+}
+
+// validateNotificationTarget checks whether the target resource (SNS topic,
+// SQS queue, or Lambda function) exists via the event bus invokers.  If the
+// event bus or the relevant invoker is not available, the check is skipped.
+func (s *S3Service) validateNotificationTarget(ctx context.Context, arn, serviceType string) error {
+	if s.bus == nil {
+		return nil
+	}
+
+	switch serviceType {
+	case "sns":
+		snsInvoker := s.bus.SNSInvoker()
+		if snsInvoker == nil {
+			return nil
+		}
+		if _, err := snsInvoker.GetTopic(ctx, arn); err != nil {
+			return NewInvalidArgumentError(fmt.Sprintf("SNS topic does not exist: %s", arn))
+		}
+	case "sqs":
+		sqsInvoker := s.bus.SQSInvoker()
+		if sqsInvoker == nil {
+			return nil
+		}
+		parts := strings.SplitN(arn, ":", 6)
+		if len(parts) < 6 {
+			return nil
+		}
+		if _, err := sqsInvoker.GetQueueByName(ctx, parts[5]); err != nil {
+			return NewInvalidArgumentError(fmt.Sprintf("SQS queue does not exist: %s", arn))
+		}
+	case "lambda":
+		lambdaInvoker := s.bus.LambdaInvoker()
+		if lambdaInvoker == nil {
+			return nil
+		}
+		if _, err := lambdaInvoker.GetFunctionARN(ctx, arn); err != nil {
+			return NewInvalidArgumentError(fmt.Sprintf("Lambda function does not exist: %s", arn))
+		}
+	}
+	return nil
 }

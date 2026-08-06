@@ -55,6 +55,7 @@ func ObjectToProto(o *Object) *pb.Object {
 		ObjectLockLegalHold:  objectLockLegalHoldToProto(o.ObjectLockLegalHold),
 		ObjectLockRetention:  objectLockRetentionToProto(o.ObjectLockRetention),
 		SseMetadata:          sseObjectMetadataToProto(o.SSEMetadata),
+		ReplicationStatus:    o.ReplicationStatus,
 	}
 }
 
@@ -89,6 +90,7 @@ func ProtoToObject(p *pb.Object) *Object {
 		ObjectLockLegalHold:  protoToObjectLockLegalHold(p.ObjectLockLegalHold),
 		ObjectLockRetention:  protoToObjectLockRetention(p.ObjectLockRetention),
 		SSEMetadata:          protoToSSEObjectMetadata(p.SseMetadata),
+		ReplicationStatus:    p.ReplicationStatus,
 	}
 }
 

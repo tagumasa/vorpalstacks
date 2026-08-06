@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -214,6 +215,7 @@ type UploadPartInput struct {
 	UploadId             string
 	PartNumber           int
 	Body                 io.Reader
+	ContentLength        int64
 	SSECustomerAlgorithm string
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
@@ -266,6 +268,9 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		plainSize = encResult.PlainSize
 		contentNonce = encResult.ContentNonce
 		dataKey = encResult.DataKey
+	} else if input.ContentLength >= 0 {
+		reader = input.Body
+		plainSize = input.ContentLength
 	} else {
 		data, err := io.ReadAll(input.Body)
 		if err != nil {
@@ -474,11 +479,18 @@ func parseCopyRange(rangeHeader string, objectSize int64) (offset, length int64,
 		end = objectSize - 1
 	}
 
-	if start > end {
-		return 0, 0, NewInvalidArgumentError("invalid range: start > end")
-	}
+	// RFC 7233 §4.2: if last-byte-pos is absent or greater than or equal
+	// to the representation length, it is reduced to one less than the
+	// length.  AWS S3 follows this for x-amz-copy-source-range.
 	if end >= objectSize {
 		end = objectSize - 1
+	}
+
+	// After clamping, if start exceeds the (now clamped) end, the range
+	// is genuinely unsatisfiable — the requested start byte does not
+	// exist in the object.  This returns HTTP 416, matching AWS.
+	if start > end {
+		return 0, 0, ErrInvalidRange
 	}
 
 	return start, end - start + 1, nil
@@ -693,6 +705,11 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 		partsMap[p.PartNumber] = strings.Trim(p.ETag, "\"")
 	}
 
+	// AWS requires parts to be assembled in ascending part-number order.
+	// Sort once so that both the ETag validation loop, the size check, and
+	// the final parts slice passed to CompleteMultipartUpload are correct.
+	sort.Ints(orderedPartNumbers)
+
 	var parts []s3store.ObjectPart
 	for _, pn := range orderedPartNumbers {
 		parts = append(parts, s3store.ObjectPart{
@@ -714,6 +731,22 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 		expectedETag := strings.Trim(upload.Parts[idx].ETag, "\"")
 		if p.ETag != expectedETag {
 			return nil, ErrInvalidPart
+		}
+	}
+
+	// Validate part sizes: all parts except the last must be at least
+	// minPartSize (5 MiB). The last part (highest part number) may be
+	// smaller.
+	if len(orderedPartNumbers) > 0 {
+		maxPartNum := orderedPartNumbers[len(orderedPartNumbers)-1]
+		for _, pn := range orderedPartNumbers {
+			if pn == maxPartNum {
+				continue
+			}
+			idx, _ := upload.FindPart(pn)
+			if idx >= 0 && upload.Parts[idx].Size < int64(minPartSize) {
+				return nil, ErrEntityTooSmall
+			}
 		}
 	}
 

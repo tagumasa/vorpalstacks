@@ -163,6 +163,7 @@ message Object {
   ObjectLockLegalHold object_lock_legal_hold = 22;
   ObjectLockRetention object_lock_retention = 23;
   SSEObjectMetadata sse_metadata = 24;
+  string replication_status = 25;
 }
 
 // ObjectPart represents a part in a multipart upload.

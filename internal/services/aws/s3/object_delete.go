@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -90,6 +91,14 @@ func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.Req
 			dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			go func() {
 				defer dmCancel()
+				defer func() {
+					if r := recover(); r != nil {
+						logs.Error("s3: delete-marker replication goroutine panic",
+							logs.String("bucket", input.Bucket),
+							logs.String("key", input.Key),
+							logs.Any("panic", r))
+					}
+				}()
 				o.svc.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, input.Key)
 			}()
 		}

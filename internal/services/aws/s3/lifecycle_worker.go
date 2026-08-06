@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -104,12 +105,9 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 			continue
 		}
 
-		var prefix string
+		var filter *s3store.LifecycleRuleFilter
 		if rule.Filter != nil {
-			prefix = rule.Filter.Prefix
-			if rule.Filter.And != nil && rule.Filter.And.Prefix != "" {
-				prefix = rule.Filter.And.Prefix
-			}
+			filter = rule.Filter
 		}
 
 		if rule.Expiration != nil {
@@ -118,10 +116,10 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 				days = int(*rule.Expiration.Days)
 			}
 			if days > 0 {
-				w.expireObjectsByAge(bucket.Name, prefix, days, now)
+				w.expireObjectsByAge(bucket.Name, filter, days, now)
 			}
 			if rule.Expiration.Date != nil && now.After(*rule.Expiration.Date) {
-				w.expireObjectsAll(bucket.Name, prefix)
+				w.expireObjectsAll(bucket.Name, filter)
 			}
 		}
 
@@ -130,7 +128,7 @@ func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
 		}
 
 		if rule.NoncurrentVersionExpiration != nil && rule.NoncurrentVersionExpiration.NoncurrentDays != nil && *rule.NoncurrentVersionExpiration.NoncurrentDays > 0 {
-			w.expireNoncurrentVersions(bucket.Name, prefix, int(*rule.NoncurrentVersionExpiration.NoncurrentDays), now)
+			w.expireNoncurrentVersions(bucket.Name, filter, int(*rule.NoncurrentVersionExpiration.NoncurrentDays), now)
 		}
 	}
 }
@@ -151,7 +149,7 @@ func isProtectedByObjectLock(obj *s3store.Object, now time.Time) bool {
 }
 
 // expireObjectsByAge deletes objects older than the specified number of days.
-func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int, now time.Time) {
+func (w *LifecycleWorker) expireObjectsByAge(bucketName string, filter *s3store.LifecycleRuleFilter, days int, now time.Time) {
 	regionStore, err := w.storageManager.GetStorage(w.accountID)
 	if err != nil {
 		return
@@ -163,6 +161,7 @@ func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int
 	}
 
 	cutoff := now.AddDate(0, 0, -days)
+	prefix := filterPrefix(filter)
 	marker := ""
 	for {
 		result, err := objectStore.List(bucketName, prefix, "", marker, 1000)
@@ -173,6 +172,9 @@ func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int
 
 		for _, obj := range result.Objects {
 			if obj.IsDeleteMarker {
+				continue
+			}
+			if !matchesLifecycleFilter(obj, filter) {
 				continue
 			}
 			if isProtectedByObjectLock(obj, now) {
@@ -192,8 +194,8 @@ func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int
 	}
 }
 
-// expireObjectsAll deletes all objects matching the prefix (for Date-based expiration).
-func (w *LifecycleWorker) expireObjectsAll(bucketName, prefix string) {
+// expireObjectsAll deletes all objects matching the filter (for Date-based expiration).
+func (w *LifecycleWorker) expireObjectsAll(bucketName string, filter *s3store.LifecycleRuleFilter) {
 	regionStore, err := w.storageManager.GetStorage(w.accountID)
 	if err != nil {
 		return
@@ -204,6 +206,7 @@ func (w *LifecycleWorker) expireObjectsAll(bucketName, prefix string) {
 		return
 	}
 
+	prefix := filterPrefix(filter)
 	marker := ""
 	for {
 		result, err := objectStore.List(bucketName, prefix, "", marker, 1000)
@@ -214,6 +217,9 @@ func (w *LifecycleWorker) expireObjectsAll(bucketName, prefix string) {
 
 		for _, obj := range result.Objects {
 			if obj.IsDeleteMarker {
+				continue
+			}
+			if !matchesLifecycleFilter(obj, filter) {
 				continue
 			}
 			if isProtectedByObjectLock(obj, time.Now()) {
@@ -271,7 +277,7 @@ func (w *LifecycleWorker) abortIncompleteUploads(bucketName string, daysAfterIni
 
 // expireNoncurrentVersions deletes non-current (old) versions older than the
 // specified number of days.
-func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, noncurrentDays int, now time.Time) {
+func (w *LifecycleWorker) expireNoncurrentVersions(bucketName string, filter *s3store.LifecycleRuleFilter, noncurrentDays int, now time.Time) {
 	regionStore, err := w.storageManager.GetStorage(w.accountID)
 	if err != nil {
 		return
@@ -283,6 +289,7 @@ func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, no
 	}
 
 	cutoff := now.AddDate(0, 0, -noncurrentDays)
+	prefix := filterPrefix(filter)
 	keyMarker := ""
 	versionIdMarker := ""
 	for {
@@ -294,6 +301,9 @@ func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, no
 
 		for _, obj := range result.Objects {
 			if obj.IsLatest || obj.IsDeleteMarker {
+				continue
+			}
+			if !matchesLifecycleFilter(obj, filter) {
 				continue
 			}
 			if isProtectedByObjectLock(obj, now) {
@@ -312,4 +322,61 @@ func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, no
 		keyMarker = result.NextVersionKeyMarker
 		versionIdMarker = result.NextVersionIDMarker
 	}
+}
+
+// filterPrefix extracts the effective prefix from a lifecycle rule filter
+// for efficient List queries. When the And operator is present with a
+// non-empty prefix, that prefix takes precedence.
+func filterPrefix(filter *s3store.LifecycleRuleFilter) string {
+	if filter == nil {
+		return ""
+	}
+	if filter.And != nil && filter.And.Prefix != "" {
+		return filter.And.Prefix
+	}
+	return filter.Prefix
+}
+
+// matchesLifecycleFilter evaluates all filter criteria (Prefix, Tag,
+// ObjectSizeGreaterThan, ObjectSizeLessThan, and And.*) against an object.
+// Returns true when the object matches all applicable criteria.
+func matchesLifecycleFilter(obj *s3store.Object, filter *s3store.LifecycleRuleFilter) bool {
+	if filter == nil {
+		return true
+	}
+
+	if filter.And != nil {
+		and := filter.And
+		if and.Prefix != "" && !strings.HasPrefix(obj.Key, and.Prefix) {
+			return false
+		}
+		for _, tag := range and.Tags {
+			if !objectHasTag(obj.Tags, tag.Key, tag.Value) {
+				return false
+			}
+		}
+		if and.ObjectSizeGreaterThan != nil && obj.Size <= *and.ObjectSizeGreaterThan {
+			return false
+		}
+		if and.ObjectSizeLessThan != nil && obj.Size >= *and.ObjectSizeLessThan {
+			return false
+		}
+		return true
+	}
+
+	if filter.Prefix != "" && !strings.HasPrefix(obj.Key, filter.Prefix) {
+		return false
+	}
+	if filter.Tag != nil {
+		if !objectHasTag(obj.Tags, filter.Tag.Key, filter.Tag.Value) {
+			return false
+		}
+	}
+	if filter.ObjectSizeGreaterThan != nil && obj.Size <= *filter.ObjectSizeGreaterThan {
+		return false
+	}
+	if filter.ObjectSizeLessThan != nil && obj.Size >= *filter.ObjectSizeLessThan {
+		return false
+	}
+	return true
 }

@@ -5,35 +5,28 @@ import (
 	"fmt"
 	"net/http"
 
-	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/utils/timeutils"
-
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/pb/aws/common"
+	svcerrors "vorpalstacks/internal/common/errors"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/s3"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
 )
 
 // AdminHandler implements the S3 admin console gRPC-Web handler.
+// It delegates all business logic to S3Service Core methods and uses
+// admin_handler_convert.go for proto<->DTO conversion.
 type AdminHandler struct {
 	s3connect.UnimplementedS3ServiceHandler
-	s3Store           S3StoreProvider
-	accountId         string
-	encryptionManager *EncryptionManager
+	service *S3Service
 }
 
 var _ s3connect.S3ServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new S3 admin handler backed by the shared S3 store.
-func NewAdminHandler(s3Store S3StoreProvider, accountId string, encryptionManager *EncryptionManager) *AdminHandler {
-	return &AdminHandler{
-		s3Store:           s3Store,
-		accountId:         accountId,
-		encryptionManager: encryptionManager,
-	}
+// NewAdminHandler creates a new S3 admin handler backed by the given service.
+func NewAdminHandler(svc *S3Service) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
 // ListBuckets retrieves all S3 buckets from the regional store.
@@ -43,95 +36,56 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	buckets, err := bucketStore.List()
+	result, err := h.service.listBucketsCore(bucketStore)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	var bucketInfos []*pb.Bucket
-	for _, b := range buckets {
-		bucketInfos = append(bucketInfos, &pb.Bucket{
-			Name:         b.Name,
-			Creationdate: b.CreationDate.Format(timeutils.ISO8601UTCFormat),
-			Bucketregion: b.Region,
-		})
-	}
-
-	return connect.NewResponse(&pb.ListBucketsOutput{
-		Buckets: bucketInfos,
-	}), nil
+	return connect.NewResponse(listBucketsResultToPb(result)), nil
 }
 
 // CreateBucket creates a new S3 bucket via the admin console.
 func (h *AdminHandler) CreateBucket(ctx context.Context, req *connect.Request[pb.CreateBucketRequest]) (*connect.Response[pb.CreateBucketOutput], error) {
-	if req.Msg.Bucket == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("bucket name is required"))
+	if err := requireBucket(req.Msg.Bucket); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	if err := validateBucketName(req.Msg.Bucket); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid bucket name: %s", req.Msg.Bucket))
-	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-	bucketStore := h.s3Store.Buckets(region)
+	bucketStore := h.getBucketStoreFromHeaders(req.Header())
 	if bucketStore == nil {
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	bucket, err := bucketStore.Create(req.Msg.Bucket, region)
+	region := svccommon.GetRegionFromHeader(req.Header())
+	input := pbToCreateBucketInput(req.Msg, region)
+	result, err := h.service.createBucketCore(bucketStore, input)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	return connect.NewResponse(&pb.CreateBucketOutput{
-		Location: bucket.Name,
-	}), nil
+	return connect.NewResponse(createBucketResultToPb(result)), nil
 }
 
 // DeleteBucket deletes an S3 bucket via the admin console.
-func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb.DeleteBucketRequest]) (*connect.Response[common.Empty], error) {
-	if req.Msg.Bucket == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("bucket name is required"))
+func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb.DeleteBucketRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if err := requireBucket(req.Msg.Bucket); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	bucketStore := h.getBucketStoreFromHeaders(req.Header())
-	objectStore := h.getObjectStore(req.Header())
+	bucketStore, objectStore := h.getStoresFromHeaders(req.Header())
 	if bucketStore == nil || objectStore == nil {
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	bucket, err := bucketStore.Get(req.Msg.Bucket)
+	input := pbToDeleteBucketInput(req.Msg)
+	_, err := h.service.deleteBucketCore(bucketStore, objectStore, input)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-	if bucket.ObjectLockEnabled {
-		logs.Warn("s3: admin deleting bucket with Object Lock enabled", logs.String("bucket", req.Msg.Bucket))
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	count, err := objectStore.CountByBucket(req.Msg.Bucket)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-	if count > 0 {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("bucket is not empty: contains %d object(s), delete all objects first", count))
-	}
-
-	multipartCount, err := objectStore.CountMultipartUploadsByBucket(req.Msg.Bucket)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-	if multipartCount > 0 {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("bucket has %d incomplete multipart upload(s)", multipartCount))
-	}
-
-	if err := bucketStore.Delete(req.Msg.Bucket); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	return connect.NewResponse(&common.Empty{}), nil
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the S3 admin console.
-func NewConnectHandler(s3Store S3StoreProvider, accountID string, encryptionManager *EncryptionManager) (string, http.Handler) {
-	return s3connect.NewS3ServiceHandler(NewAdminHandler(s3Store, accountID, encryptionManager))
+func NewConnectHandler(svc *S3Service) (string, http.Handler) {
+	return s3connect.NewS3ServiceHandler(NewAdminHandler(svc))
 }

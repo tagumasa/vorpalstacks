@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
@@ -246,21 +245,35 @@ func (s *S3Service) replicateObject(ctx context.Context, reqCtx *request.Request
 			continue
 		}
 
-		data, err := io.ReadAll(reader)
-		reader.Close()
-		if err != nil {
-			logs.Warn("s3: replication source read failed", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(err))
-			continue
-		}
-
 		if srcObj.SSEMetadata != nil {
+			// SSE objects must be buffered because PutEncrypted accepts
+			// []byte, not io.Reader.  A streaming PutEncrypted would
+			// require a store interface change.
+			data, readErr := io.ReadAll(reader)
+			reader.Close()
+			if readErr != nil {
+				logs.Warn("s3: replication source read failed", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(readErr))
+				if err := stores.objects.SetReplicationStatus(bucket.Name, key, obj.VersionID, "FAILED"); err != nil {
+					logs.Warn("s3: failed to set replication status", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(err))
+				}
+				continue
+			}
 			_, err = destStores.objects.PutEncrypted(ctx, destBucketName, key, data, srcObj.ContentType, srcObj.Metadata, srcObj.SSEMetadata, srcObj.StorageClass, nil)
 		} else {
-			_, err = destStores.objects.Put(ctx, destBucketName, key, bytes.NewReader(data), srcObj.ContentType, srcObj.Metadata)
+			// Non-SSE objects can be streamed directly from source to
+			// destination without buffering the entire body.
+			_, err = destStores.objects.Put(ctx, destBucketName, key, reader, srcObj.ContentType, srcObj.Metadata)
+			reader.Close()
 		}
 		if err != nil {
 			logs.Warn("s3: replication write failed", logs.String("destBucket", destBucketName), logs.String("key", key), logs.Err(err))
+			if statusErr := stores.objects.SetReplicationStatus(bucket.Name, key, obj.VersionID, "FAILED"); statusErr != nil {
+				logs.Warn("s3: failed to set replication status", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(statusErr))
+			}
 			continue
+		}
+		if err := stores.objects.SetReplicationStatus(bucket.Name, key, obj.VersionID, "COMPLETED"); err != nil {
+			logs.Warn("s3: failed to set replication status", logs.String("bucket", bucket.Name), logs.String("key", key), logs.Err(err))
 		}
 	}
 }

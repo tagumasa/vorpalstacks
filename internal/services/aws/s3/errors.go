@@ -44,6 +44,9 @@ var (
 	ErrInvalidPart = awserrors.NewAWSError("InvalidPart", "One or more of the specified parts could not be found.", http.StatusBadRequest)
 	// ErrEntityTooLarge is returned when the proposed upload exceeds the maximum allowed size.
 	ErrEntityTooLarge = awserrors.NewAWSError("EntityTooLarge", "Your proposed upload exceeds the maximum allowed size", http.StatusBadRequest)
+	// ErrEntityTooSmall is returned when a multipart upload part is smaller than the minimum required size (5 MiB),
+	// except for the last part in the upload.
+	ErrEntityTooSmall = awserrors.NewAWSError("EntityTooSmall", "Your proposed upload is smaller than the minimum allowed object size", http.StatusBadRequest)
 	// ErrInvalidArgument is returned when an invalid argument is provided.
 	ErrInvalidArgument = awserrors.NewAWSError("InvalidArgument", "Invalid argument", http.StatusBadRequest)
 	// ErrNoSuchBucketPolicy is returned when the bucket policy does not exist.

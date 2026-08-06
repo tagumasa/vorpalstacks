@@ -305,6 +305,7 @@ type Object struct {
 	ObjectLockLegalHold  *ObjectLockLegalHold `json:"object_lock_legal_hold,omitempty"`
 	ObjectLockRetention  *ObjectLockRetention `json:"object_lock_retention,omitempty"`
 	SSEMetadata          *SSEObjectMetadata   `json:"sse_metadata,omitempty"`
+	ReplicationStatus    string               `json:"replication_status,omitempty"`
 }
 
 // SSEObjectMetadata represents the server-side encryption metadata for an S3 object.

@@ -287,6 +287,10 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		createConfig.ObjectLockEnabled = true
 	}
 
+	if err := h.checkAccess(ctx, r, stores, "s3:CreateBucket", bucket, ""); err != nil {
+		return nil, http.StatusForbidden, err
+	}
+
 	result, err := h.bucketOps.CreateBucket(ctx, &CreateBucketInput{
 		Bucket:                     bucket,
 		LocationConstraint:         createConfig.LocationConstraint,

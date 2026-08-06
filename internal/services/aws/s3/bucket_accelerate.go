@@ -19,6 +19,10 @@ type PutBucketAccelerateConfigurationInput struct {
 // PutBucketAccelerateConfiguration sets the accelerate configuration for an S3 bucket.
 // This enables or disables S3 Transfer Acceleration on the bucket.
 func (o *BucketOperations) PutBucketAccelerateConfiguration(ctx *request.RequestContext, input *PutBucketAccelerateConfigurationInput) error {
+	if err := validateAccelerateStatus(input.AccelerateConfiguration.Status); err != nil {
+		return err
+	}
+
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
