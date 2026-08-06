@@ -79,6 +79,16 @@ func (s *BaseStore) PutRaw(key string, data []byte) error {
 	return nil
 }
 
+// GetRaw retrieves the raw bytes for a key without JSON decoding.
+// Returns nil, nil if the key does not exist.
+func (s *BaseStore) GetRaw(key string) ([]byte, error) {
+	data, err := s.bucket.Get([]byte(key))
+	if err != nil {
+		return nil, NewStoreErrorWithKey(s.service, "get_raw", key, err)
+	}
+	return data, nil
+}
+
 // Delete removes an item from the store by key.
 func (s *BaseStore) Delete(key string) error {
 	if err := s.bucket.Delete([]byte(key)); err != nil {

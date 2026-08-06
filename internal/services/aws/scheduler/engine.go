@@ -88,6 +88,11 @@ func (e *Engine) Start() error {
 	e.stopChan = make(chan struct{})
 	e.ctx, e.cancel = context.WithCancel(context.Background())
 
+	// Ensure the default schedule group exists in every regional store.
+	// Without this, schedules created with GroupName="" use a phantom
+	// "default" group that cannot be deleted via DeleteScheduleGroup.
+	e.ensureDefaultGroups()
+
 	e.wg.Add(1)
 	go e.run()
 
@@ -130,6 +135,41 @@ func (e *Engine) run() {
 			e.checkSchedules()
 			// Process pending retries from previous failed deliveries (S-B10).
 			e.checkRetries()
+		}
+	}
+}
+
+// ensureDefaultGroups creates the default schedule group in every
+// regional store if it does not already exist. This is called once
+// during Engine.Start, before run() is launched.
+//
+// It iterates active regions via storageManager (not e.stores) because
+// e.stores is empty at this point — it is only populated inside
+// checkSchedules() which runs in the run() goroutine launched after
+// this method returns. The stores created here are cached in e.stores
+// via LoadOrStore so checkSchedules() reuses them.
+func (e *Engine) ensureDefaultGroups() {
+	if e.ctx == nil || e.storageManager == nil {
+		return
+	}
+
+	regions := e.storageManager.GetActiveRegions()
+	for _, region := range regions {
+		storage, err := e.storageManager.GetStorage(region)
+		if err != nil {
+			logs.Debug("Failed to get storage for region",
+				logs.String("region", region),
+				logs.String("error", err.Error()))
+			continue
+		}
+		store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
+		if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
+			store = actual.(*schedulerstore.SchedulerStore)
+		}
+		if err := store.EnsureDefaultGroup(e.ctx); err != nil {
+			logs.Warn("Failed to ensure default schedule group",
+				logs.String("region", store.GetRegion()),
+				logs.Err(err))
 		}
 	}
 }
@@ -396,8 +436,11 @@ func (e *Engine) parseCronNextTime(expr string, now time.Time) (time.Time, error
 					return nextTime, nil
 				}
 				// Advance to January 1st of the next allowed year and
-				// recalculate the cron next-time from there.
-				baseline := time.Date(y, 1, 1, 0, 0, 0, 0, time.UTC)
+				// recalculate the cron next-time from there. Use the
+				// schedule's evaluation timezone (now.Location) rather
+				// than UTC so that year boundaries are honoured
+				// correctly for non-UTC timezones (e.g. Asia/Tokyo).
+				baseline := time.Date(y, 1, 1, 0, 0, 0, 0, now.Location())
 				return schedule.Next(baseline.Add(-time.Minute)), nil
 			}
 		}
@@ -666,8 +709,14 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 			}
 			// Handle range: lo-hi
 			if idx := strings.Index(base, "-"); idx != -1 {
-				lo := parseAWSDoWValue(base[:idx])
-				hi := parseAWSDoWValue(base[idx+1:])
+				lo, err := parseAWSDoWValue(base[:idx])
+				if err != nil {
+					return nil, err
+				}
+				hi, err := parseAWSDoWValue(base[idx+1:])
+				if err != nil {
+					return nil, err
+				}
 				for d := lo; d <= hi; d += step {
 					allowed[awsDowToGo(d)] = true
 				}
@@ -676,7 +725,10 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 					allowed[awsDowToGo(d)] = true
 				}
 			} else {
-				d := parseAWSDoWValue(base)
+				d, err := parseAWSDoWValue(base)
+				if err != nil {
+					return nil, err
+				}
 				allowed[awsDowToGo(d)] = true
 			}
 		}
@@ -691,8 +743,12 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 			}
 			if strings.HasSuffix(part, "L") {
 				// e.g. "6L" = last Friday of the month (AWS: 6=FRI).
+				// "L" alone is invalid — AWS requires a day-of-week prefix.
 				dayStr := strings.TrimSuffix(part, "L")
-				dayNum := parseAWSDoWValue(dayStr)
+				dayNum, err := parseAWSDoWValue(dayStr)
+				if err != nil {
+					continue
+				}
 				goDay := awsDowToGo(dayNum)
 				if isLastWeekdayOfMonth(t, goDay) {
 					return true
@@ -702,7 +758,10 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 			if strings.Contains(part, "#") {
 				// e.g. "3#2" = second Tuesday of the month (AWS: 3=TUE).
 				hashParts := strings.SplitN(part, "#", 2)
-				dayNum := parseAWSDoWValue(hashParts[0])
+				dayNum, err := parseAWSDoWValue(hashParts[0])
+				if err != nil {
+					continue
+				}
 				weekNum, err := strconv.Atoi(hashParts[1])
 				if err != nil || weekNum < 1 || weekNum > 5 {
 					continue
@@ -713,7 +772,10 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 				}
 				continue
 			}
-			val := parseAWSDoWValue(part)
+			val, err := parseAWSDoWValue(part)
+			if err != nil {
+				continue
+			}
 			goDay := awsDowToGo(val)
 			if int(t.Weekday()) == goDay {
 				return true
@@ -724,33 +786,36 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 }
 
 // parseAWSDoWValue converts a single AWS day-of-week token (name or numeric)
-// to the AWS numeric convention (1=SUN..7=SAT).
-func parseAWSDoWValue(s string) int {
+// to the AWS numeric convention (1=SUN..7=SAT). Returns an error for
+// unrecognised values instead of silently falling back to SUNDAY.
+func parseAWSDoWValue(s string) (int, error) {
 	s = strings.TrimSpace(strings.ToUpper(s))
 	switch s {
 	case "SUN":
-		return 1
+		return 1, nil
 	case "MON":
-		return 2
+		return 2, nil
 	case "TUE":
-		return 3
+		return 3, nil
 	case "WED":
-		return 4
+		return 4, nil
 	case "THU":
-		return 5
+		return 5, nil
 	case "FRI":
-		return 6
+		return 6, nil
 	case "SAT":
-		return 7
+		return 7, nil
+	case "":
+		return 0, fmt.Errorf("empty day-of-week value")
 	}
-	n, _ := strconv.Atoi(s)
-	if n < 1 {
-		return 1
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("invalid day-of-week value: %q", s)
 	}
-	if n > 7 {
-		return 7
+	if n < 1 || n > 7 {
+		return 0, fmt.Errorf("day-of-week value must be 1-7, got %d", n)
 	}
-	return n
+	return n, nil
 }
 
 // awsDowToGo converts an AWS day-of-week number (1=SUN..7=SAT) to Go's
@@ -1007,44 +1072,44 @@ func (e *Engine) maybeAutoDelete(ctx context.Context, schedule *schedulerstore.S
 
 // getRetryStore returns the RetryStore for the given region, creating it
 // lazily on first access.
-func (e *Engine) getRetryStore(region string) *schedulerstore.RetryStore {
+func (e *Engine) getRetryStore(region string) (*schedulerstore.RetryStore, error) {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
 	if cached, ok := e.retryStores.Load(region); ok {
-		return cached.(*schedulerstore.RetryStore)
+		return cached.(*schedulerstore.RetryStore), nil
 	}
 	storage, err := e.storageManager.GetStorage(region)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("no storage available for region %q: %w", region, err)
 	}
 	rs := schedulerstore.NewRetryStore(storage, region)
 	actual, _ := e.retryStores.LoadOrStore(region, rs)
-	return actual.(*schedulerstore.RetryStore)
+	return actual.(*schedulerstore.RetryStore), nil
 }
 
 // deliverToTarget dispatches a schedule delivery to the appropriate target
 // type and returns an error on failure. This is the single entry point for
 // all target deliveries, used by both the direct path and the bus path.
 func (e *Engine) deliverToTarget(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) error {
-	targetArn := target.Arn
-	switch {
-	case strings.Contains(targetArn, ":lambda:"):
+	_, service, _, _, _ := svcarn.SplitARN(target.Arn)
+	switch service {
+	case "lambda":
 		return e.invokeLambda(ctx, schedule, target)
-	case strings.Contains(targetArn, ":sqs:"):
+	case "sqs":
 		return e.sendToSQS(ctx, schedule, target)
-	case strings.Contains(targetArn, ":sns:"):
+	case "sns":
 		return e.publishToSNS(ctx, schedule, target)
-	case strings.Contains(targetArn, ":kinesis:"):
+	case "kinesis":
 		return e.sendToKinesis(ctx, schedule, target)
-	case strings.Contains(targetArn, ":states:"):
+	case "states":
 		return e.startStepFunctionExecution(ctx, schedule, target)
-	case strings.Contains(targetArn, ":events:"):
+	case "events":
 		return e.sendToEventBridge(ctx, schedule, target)
-	case strings.Contains(targetArn, ":logs:"):
+	case "logs":
 		return e.sendToCloudWatchLogs(ctx, schedule, target)
 	default:
-		return fmt.Errorf("unsupported target type: %s", targetArn)
+		return fmt.Errorf("unsupported target type: %s", target.Arn)
 	}
 }
 
@@ -1170,11 +1235,13 @@ func (e *Engine) deliverWithRetry(ctx context.Context, schedule *schedulerstore.
 		ActionAfterCompletion: string(schedule.ActionAfterCompletion),
 	}
 
-	rs := e.getRetryStore(region)
-	if rs == nil {
-		logs.Error("No retry store available for region",
+	rs, rsErr := e.getRetryStore(region)
+	if rsErr != nil {
+		logs.Error("No retry store available for region, routing to DLQ",
 			logs.String("schedule", schedule.Name),
-			logs.String("region", region))
+			logs.String("region", region),
+			logs.Err(rsErr))
+		e.routeToDLQ(ctx, schedule, target, "retry store unavailable: "+rsErr.Error())
 		return
 	}
 	if sErr := rs.SaveRetryRecord(record); sErr != nil {
@@ -1194,8 +1261,8 @@ func (e *Engine) checkRetries() {
 	now := time.Now()
 
 	for _, region := range regions {
-		rs := e.getRetryStore(region)
-		if rs == nil {
+		rs, rsErr := e.getRetryStore(region)
+		if rsErr != nil {
 			continue
 		}
 		due, err := rs.GetDueRetryRecords(now)
@@ -1346,47 +1413,44 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 		logs.String("dlqArn", dlqArn),
 		logs.String("reason", reason))
 
-	if strings.Contains(dlqArn, ":sqs:") {
-		sqsInvoker := e.bus.SQSInvoker()
-		if sqsInvoker == nil {
-			logs.Error("SQS invoker not available for DLQ delivery",
-				logs.String("dlqArn", dlqArn))
-			return
-		}
-		queueName := svcarn.ExtractQueueNameFromARN(dlqArn)
-		queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
-		if qErr != nil {
-			logs.Error("Failed to resolve DLQ queue URL",
-				logs.String("dlqArn", dlqArn),
-				logs.Err(qErr))
-			return
-		}
-		// FIFO queues require MessageGroupId. Propagate from the
-		// target's SqsParameters if available; otherwise, when the
-		// destination queue ends with the FIFO suffix, fall back to
-		// the schedule name so the SendMessage call satisfies the
-		// SQS FIFO requirement.
-		sendOpts := eventbus.SQSSendOptions{}
-		if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
-			sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
-		} else if strings.HasSuffix(queueName, ".fifo") {
-			sendOpts.MessageGroupID = schedule.Name
-		}
-		if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, message, sendOpts); err != nil {
-			logs.Error("Failed to send to DLQ",
-				logs.String("dlqArn", dlqArn),
-				logs.Err(err))
-		}
-	} else if strings.Contains(dlqArn, ":sns:") {
-		dlqTarget := &schedulerstore.Target{Arn: dlqArn, Input: message}
-		if err := e.publishToSNS(ctx, schedule, dlqTarget); err != nil {
-			logs.Error("Failed to publish to SNS DLQ",
-				logs.String("dlqArn", dlqArn),
-				logs.Err(err))
-		}
-	} else {
-		logs.Error("Unsupported DLQ type",
+	// DeadLetterConfig must be an SQS queue (AWS specification).
+	_, dlqService, _, _, _ := svcarn.SplitARN(dlqArn)
+	if dlqService != "sqs" {
+		logs.Error("DeadLetterConfig ARN must reference an SQS queue",
+			logs.String("dlqArn", dlqArn),
+			logs.String("service", dlqService))
+		return
+	}
+
+	sqsInvoker := e.bus.SQSInvoker()
+	if sqsInvoker == nil {
+		logs.Error("SQS invoker not available for DLQ delivery",
 			logs.String("dlqArn", dlqArn))
+		return
+	}
+	queueName := svcarn.ExtractQueueNameFromARN(dlqArn)
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
+	if qErr != nil {
+		logs.Error("Failed to resolve DLQ queue URL",
+			logs.String("dlqArn", dlqArn),
+			logs.Err(qErr))
+		return
+	}
+	// FIFO queues require MessageGroupId. Propagate from the
+	// target's SqsParameters if available; otherwise, when the
+	// destination queue ends with the FIFO suffix, fall back to
+	// the schedule name so the SendMessage call satisfies the
+	// SQS FIFO requirement.
+	sendOpts := eventbus.SQSSendOptions{}
+	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
+		sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
+	} else if strings.HasSuffix(queueName, ".fifo") {
+		sendOpts.MessageGroupID = schedule.Name
+	}
+	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, message, sendOpts); err != nil {
+		logs.Error("Failed to send to DLQ",
+			logs.String("dlqArn", dlqArn),
+			logs.Err(err))
 	}
 }
 

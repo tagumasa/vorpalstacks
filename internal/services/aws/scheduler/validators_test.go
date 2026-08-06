@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"vorpalstacks/internal/core/storage"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
@@ -35,9 +37,9 @@ func TestValidateScheduleFields_NamePattern(t *testing.T) {
 				ScheduleExpression: "rate(1 minute)",
 				Target:             validTarget(),
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateScheduleFields() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("validateScheduleFields() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -61,7 +63,7 @@ func TestValidateScheduleFields_CronFieldCount(t *testing.T) {
 				ScheduleExpression: tt.expr,
 				Target:             validTarget(),
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("cron field count: expr=%q error=%v wantErr=%v", tt.expr, err, tt.wantErr)
 			}
@@ -85,7 +87,7 @@ func TestValidateScheduleFields_AtSemanticDate(t *testing.T) {
 				ScheduleExpression: tt.expr,
 				Target:             validTarget(),
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("at() semantic: expr=%q error=%v wantErr=%v", tt.expr, err, tt.wantErr)
 			}
@@ -112,7 +114,7 @@ func TestValidateScheduleFields_StateEnum(t *testing.T) {
 				Target:             validTarget(),
 				State:              tt.state,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("State enum: state=%q error=%v wantErr=%v", tt.state, err, tt.wantErr)
 			}
@@ -147,7 +149,7 @@ func TestValidateScheduleFields_FlexibleTimeWindowModeEnum(t *testing.T) {
 				Target:             validTarget(),
 				FlexibleTimeWindow: ftw,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FTW Mode: mode=%q wantErr=%v, got err=%v", tt.mode, tt.wantErr, err)
 			}
@@ -184,7 +186,7 @@ func TestValidateScheduleFields_RetryPolicyRanges(t *testing.T) {
 				ScheduleExpression: "rate(1 minute)",
 				Target:             target,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RetryPolicy: name=%q wantErr=%v, got err=%v", tt.name, tt.wantErr, err)
 			}
@@ -199,12 +201,12 @@ func TestValidateScheduleFields_DescriptionLength(t *testing.T) {
 		Target:             validTarget(),
 		Description:        strings.Repeat("a", 512),
 	}
-	if _, err := ValidateScheduleFields(spec); err != nil {
+	if _, err := validateScheduleFields(spec); err != nil {
 		t.Errorf("512 chars should pass, got err=%v", err)
 	}
 
 	spec.Description = strings.Repeat("a", 513)
-	if _, err := ValidateScheduleFields(spec); err == nil {
+	if _, err := validateScheduleFields(spec); err == nil {
 		t.Error("513 chars should fail")
 	}
 }
@@ -227,7 +229,7 @@ func TestValidateScheduleFields_KmsKeyArn(t *testing.T) {
 				Target:             validTarget(),
 				KmsKeyArn:          tt.arn,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("KmsKeyArn: arn=%q wantErr=%v, got err=%v", tt.arn, tt.wantErr, err)
 			}
@@ -255,7 +257,7 @@ func TestValidateScheduleFields_Timezone(t *testing.T) {
 				Target:                     validTarget(),
 				ScheduleExpressionTimezone: tt.tz,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Timezone: tz=%q wantErr=%v, got err=%v", tt.tz, tt.wantErr, err)
 			}
@@ -285,7 +287,7 @@ func TestValidateScheduleFields_StartEndDateOrdering(t *testing.T) {
 				StartDate:          tt.start,
 				EndDate:            tt.end,
 			}
-			_, err := ValidateScheduleFields(spec)
+			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Date ordering: name=%q wantErr=%v, got err=%v", tt.name, tt.wantErr, err)
 			}
@@ -303,7 +305,7 @@ func TestValidateScheduleFields_ActionAfterCompletionDefault(t *testing.T) {
 		Target:             validTarget(),
 		// ActionAfterCompletion intentionally omitted
 	}
-	validated, err := ValidateScheduleFields(spec)
+	validated, err := validateScheduleFields(spec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -313,7 +315,7 @@ func TestValidateScheduleFields_ActionAfterCompletionDefault(t *testing.T) {
 
 	// When explicitly set, should use the provided value.
 	spec.ActionAfterCompletion = "DELETE"
-	validated, err = ValidateScheduleFields(spec)
+	validated, err = validateScheduleFields(spec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -346,7 +348,9 @@ func TestValidateClientToken(t *testing.T) {
 }
 
 func TestClientTokenStore_LookupOrClaim(t *testing.T) {
-	store := schedulerstore.NewClientTokenStore()
+	bs, cleanup := testTokenBaseStore(t)
+	defer cleanup()
+	store := schedulerstore.NewClientTokenStore(bs)
 	defer store.Stop()
 
 	// First call claims the token.
@@ -375,7 +379,9 @@ func TestClientTokenStore_LookupOrClaim(t *testing.T) {
 }
 
 func TestClientTokenStore_Release(t *testing.T) {
-	store := schedulerstore.NewClientTokenStore()
+	bs, cleanup := testTokenBaseStore(t)
+	defer cleanup()
+	store := schedulerstore.NewClientTokenStore(bs)
 	defer store.Stop()
 
 	store.LookupOrClaim("token-release", "arn:original", "schedule")
@@ -389,3 +395,17 @@ func TestClientTokenStore_Release(t *testing.T) {
 }
 
 func intPtr(v int) *int { return &v }
+
+// testTokenBaseStore creates a Pebble-backed BaseStore for ClientTokenStore
+// tests. The temp directory is managed by the testing.T and cleaned up
+// automatically when the test finishes.
+func testTokenBaseStore(t *testing.T) (*storecommon.BaseStore, func()) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	s, err := storage.Open(tmpDir)
+	if err != nil {
+		t.Fatalf("storage.Open(%q) failed: %v", tmpDir, err)
+	}
+	bs := storecommon.NewBaseStore(s.Bucket("scheduler-tokens-test"), "scheduler-tokens")
+	return bs, func() { s.Close() }
+}

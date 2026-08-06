@@ -11,40 +11,31 @@ import (
 
 	"connectrpc.com/connect"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/scheduler"
 	schedulerconnect "vorpalstacks/internal/pb/aws/scheduler/schedulerconnect"
-	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
-// AdminHandler provides EventBridge Scheduler service administration functionality.
-// It implements the SchedulerServiceHandler interface for gRPC-Web communication.
-// It delegates to the shared SchedulerService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// AdminHandler provides EventBridge Scheduler service administration
+// functionality via gRPC-Web. It is a thin adapter that converts protobuf
+// requests to service-layer Input structs, delegates to the Core methods,
+// and converts results back to protobuf responses.
+//
+// This file has ZERO store package imports (AGENTS.md #29). All store
+// type conversions are in admin_handler_convert.go.
 type AdminHandler struct {
 	schedulerconnect.UnimplementedSchedulerServiceHandler
 	service *SchedulerService
 }
 
-// NewAdminHandler creates a new EventBridge Scheduler AdminHandler backed by
-// the given service instance.
 func NewAdminHandler(svc *SchedulerService) *AdminHandler {
-	return &AdminHandler{
-		service: svc,
-	}
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*schedulerstore.SchedulerStore, error) {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
-}
-
-// ListSchedules retrieves schedules from the store with optional filtering and pagination.
+// ListSchedules retrieves schedules with optional filtering and pagination.
 func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[pb.ListSchedulesInput]) (*connect.Response[pb.ListSchedulesOutput], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	maxResults := req.Msg.GetMaxresults()
@@ -55,9 +46,15 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("max-results must be between 1 and 100"))
 	}
 
-	result, err := store.ListSchedules(ctx, req.Msg.Groupname, req.Msg.Nameprefix, schedulerstore.ScheduleState(req.Msg.State), maxResults, req.Msg.Nexttoken)
+	result, err := h.service.listSchedulesCore(ctx, store, &ListSchedulesInput{
+		GroupName:  req.Msg.Groupname,
+		NamePrefix: req.Msg.Nameprefix,
+		State:      req.Msg.State,
+		MaxResults: maxResults,
+		NextToken:  req.Msg.Nexttoken,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	var summaries []*pb.ScheduleSummary
@@ -87,41 +84,15 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 }
 
 // CreateSchedule creates a new schedule via the admin console.
-// Uses the same shared validation layer as the HTTP API.
+// Delegates to createScheduleCore, which performs validation, IAM
+// validation, VPC validation, group existence check, and ClientToken
+// idempotency — identical to the HTTP API path.
 func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[pb.CreateScheduleInput]) (*connect.Response[pb.CreateScheduleOutput], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	// Convert the protobuf FlexibleTimeWindow to the store type.
-	var ftw *schedulerstore.FlexibleTimeWindow
-	if req.Msg.Flexibletimewindow != nil {
-		ftw = &schedulerstore.FlexibleTimeWindow{
-			Mode: schedulerstore.FlexibleTimeWindowMode(req.Msg.Flexibletimewindow.Mode),
-		}
-	}
-	if ftw == nil {
-		ftw = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
-	}
-
-	// Convert the protobuf Target to the store type.
-	var target *schedulerstore.Target
-	if req.Msg.Target != nil {
-		target = &schedulerstore.Target{
-			Arn:   req.Msg.Target.Arn,
-			Input: req.Msg.Target.Input,
-		}
-		if req.Msg.Target.Rolearn != "" {
-			target.RoleArn = req.Msg.Target.Rolearn
-		}
-	}
-
-	// Build the common spec and run full validation — same path as the
-	// HTTP API. This covers namePattern, ScheduleExpression, Target
-	// ARN, RoleArn, State enum, ActionAfterCompletion enum,
-	// FlexibleTimeWindow Mode enum, KmsKeyArn ARN, Timezone IANA,
-	// Description length, and StartDate/EndDate ordering.
 	spec := &ScheduleSpec{
 		Name:                       req.Msg.Name,
 		GroupName:                  req.Msg.Groupname,
@@ -133,66 +104,28 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 		StartDate:                  req.Msg.Startdate,
 		EndDate:                    req.Msg.Enddate,
 		ActionAfterCompletion:      req.Msg.Actionaftercompletion,
-		Target:                     target,
-		FlexibleTimeWindow:         ftw,
+		Target:                     protoTargetToStore(req.Msg.Target),
+		FlexibleTimeWindow:         protoFTWToStore(req.Msg.Flexibletimewindow),
 	}
 
-	validated, err := ValidateScheduleFields(spec)
+	var iamValidator *iam.IAMValidator
+	rp := h.service.RoleProvider()
+	if rp != nil {
+		iamValidator = iam.NewIAMValidator(rp, h.service.AccountID())
+	}
+
+	result, err := h.service.createScheduleCore(ctx, store, &CreateScheduleInput{
+		Spec:         spec,
+		ClientToken:  req.Msg.Clienttoken,
+		Region:       store.GetRegion(),
+		IAMValidator: iamValidator,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	// Validate RoleArn via IAM (same as HTTP API path).
-	if target != nil && target.RoleArn != "" {
-		rp := h.service.RoleProvider()
-		if rp != nil {
-			validator := iam.NewIAMValidator(rp, h.service.AccountID())
-			if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-				return nil, svcerrors.StoreErrorToGRPC(err)
-			}
-		}
-	}
-
-	// Validate VPC config (same as HTTP API path) (Minor 3).
-	if err := h.service.validateVpcConfig(ctx, store.GetRegion(), target); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	// Verify schedule group exists (same as HTTP API path).
-	groupName := spec.GroupName
-	if groupName == "" {
-		groupName = "default"
-	}
-	if groupName != "default" {
-		if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
-			if err == schedulerstore.ErrScheduleGroupNotFound {
-				return nil, svcerrors.StoreErrorToGRPC(ErrScheduleGroupNotFound)
-			}
-			return nil, svcerrors.StoreErrorToGRPC(ErrInternalServer)
-		}
-	}
-
-	schedule := &schedulerstore.Schedule{
-		Name:                       spec.Name,
-		GroupName:                  groupName,
-		ScheduleExpression:         spec.ScheduleExpression,
-		Target:                     target,
-		FlexibleTimeWindow:         ftw,
-		State:                      validated.State,
-		ScheduleExpressionTimezone: spec.ScheduleExpressionTimezone,
-		Description:                spec.Description,
-		KmsKeyArn:                  spec.KmsKeyArn,
-		StartDate:                  validated.StartDate,
-		EndDate:                    validated.EndDate,
-		ActionAfterCompletion:      validated.ActionAfterCompletion,
-	}
-
-	if err := store.CreateSchedule(ctx, schedule); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateScheduleOutput{
-		Schedulearn: schedule.ARN,
+		Schedulearn: result.ScheduleArn,
 	}), nil
 }
 
@@ -202,19 +135,28 @@ func (h *AdminHandler) DeleteSchedule(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
 	}
 
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := store.DeleteSchedule(ctx, req.Msg.Groupname, req.Msg.Name); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	groupName := req.Msg.Groupname
+	if groupName == "" {
+		groupName = "default"
+	}
+
+	if err := h.service.deleteScheduleCore(ctx, store, &DeleteScheduleInput{
+		Name:      req.Msg.Name,
+		GroupName: groupName,
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteScheduleOutput{}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Scheduler admin console.
+// NewConnectHandler creates a gRPC-Web connect handler for the Scheduler
+// admin console.
 func NewConnectHandler(svc *SchedulerService) (string, http.Handler) {
 	return schedulerconnect.NewSchedulerServiceHandler(NewAdminHandler(svc))
 }

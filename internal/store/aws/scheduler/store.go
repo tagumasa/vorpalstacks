@@ -40,7 +40,7 @@ func NewSchedulerStore(store storage.BasicStorage, accountID, region string) *Sc
 		BaseStore:      common.NewBaseStore(store.Bucket("scheduler-groups-"+region), "scheduler-groups"),
 		schedulesStore: common.NewBaseStore(store.Bucket("scheduler-schedules-"+region), "scheduler-schedules"),
 		TagStore:       common.NewTagStoreWithRegion(store, "scheduler", region),
-		clientTokens:   NewClientTokenStore(),
+		clientTokens:   NewClientTokenStore(common.NewBaseStore(store.Bucket("scheduler-tokens-"+region), "scheduler-tokens")),
 		arnBuilder:     svcarn.NewARNBuilder(accountID, region),
 		accountID:      accountID,
 		region:         region,

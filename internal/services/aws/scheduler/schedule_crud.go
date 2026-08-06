@@ -2,20 +2,15 @@ package scheduler
 
 import (
 	"context"
-	"regexp"
 	"strconv"
 
-	"vorpalstacks/internal/common/iam"
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	"vorpalstacks/internal/utils/timeutils"
-)
 
-// namePattern matches the AWS Scheduler Name/GroupName constraint:
-// 1-64 chars of alphanumeric, hyphen, underscore, and period.
-var namePattern = regexp.MustCompile(`^[0-9a-zA-Z-_.]{1,64}$`)
+	"vorpalstacks/internal/common/pagination"
+)
 
 func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string, err error) {
 	name = request.GetStringParam(params, "Name")
@@ -51,7 +46,6 @@ func getListGroupName(params map[string]interface{}) string {
 
 // CreateSchedule creates a new schedule in EventBridge Scheduler.
 func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// Parse target and flexible time window from request parameters.
 	target, err := parseTarget(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -65,7 +59,6 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
-	// Build the common spec and run full validation through the shared layer.
 	spec := &ScheduleSpec{
 		Name:                       request.GetStringParam(req.Parameters, "Name"),
 		GroupName:                  request.GetStringParam(req.Parameters, "GroupName"),
@@ -81,88 +74,23 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 		FlexibleTimeWindow:         flexibleTimeWindow,
 	}
 
-	validated, err := ValidateScheduleFields(spec)
-	if err != nil {
-		return nil, err
-	}
-
-	if target.RoleArn != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := s.validateVpcConfig(ctx, reqCtx.GetRegion(), target); err != nil {
-		return nil, err
-	}
-
-	groupName := spec.GroupName
-	if groupName == "" {
-		groupName = "default"
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// ClientToken idempotency: if the same token was used within the TTL
-	// window, return the previously created resource's ARN.
-	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
-	tokenClaimed := false
-	if clientToken != "" {
-		if err := validateClientToken(clientToken); err != nil {
-			return nil, err
-		}
-		expectedArn := store.BuildScheduleARN(groupName, spec.Name)
-		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule"); !created {
-			return map[string]interface{}{
-				"ScheduleArn": entry.ResourceArn,
-			}, nil
-		}
-		tokenClaimed = true
-	}
-
-	if groupName != "default" {
-		if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
-			if tokenClaimed {
-				store.ClientTokens().Release(clientToken)
-			}
-			if err == schedulerstore.ErrScheduleGroupNotFound {
-				return nil, ErrScheduleGroupNotFound
-			}
-			return nil, ErrInternalServer
-		}
-	}
-
-	schedule := &schedulerstore.Schedule{
-		Name:                       spec.Name,
-		GroupName:                  groupName,
-		ScheduleExpression:         spec.ScheduleExpression,
-		Target:                     target,
-		FlexibleTimeWindow:         flexibleTimeWindow,
-		State:                      validated.State,
-		ScheduleExpressionTimezone: spec.ScheduleExpressionTimezone,
-		Description:                spec.Description,
-		KmsKeyArn:                  spec.KmsKeyArn,
-		StartDate:                  validated.StartDate,
-		EndDate:                    validated.EndDate,
-		ActionAfterCompletion:      validated.ActionAfterCompletion,
-	}
-
-	if err := store.CreateSchedule(ctx, schedule); err != nil {
-		if tokenClaimed {
-			store.ClientTokens().Release(clientToken)
-		}
-		if err == schedulerstore.ErrScheduleAlreadyExists {
-			return nil, ErrScheduleAlreadyExists
-		}
-		return nil, ErrInternalServer
+	result, err := s.createScheduleCore(ctx, store, &CreateScheduleInput{
+		Spec:         spec,
+		ClientToken:  request.GetStringParam(req.Parameters, "ClientToken"),
+		Region:       reqCtx.GetRegion(),
+		IAMValidator: reqCtx.GetIAMValidator(),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"ScheduleArn": schedule.ARN,
+		"ScheduleArn": result.ScheduleArn,
 	}, nil
 }
 
@@ -178,11 +106,11 @@ func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	if err := store.DeleteSchedule(ctx, groupName, name); err != nil {
-		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
-		}
-		return nil, ErrInternalServer
+	if err := s.deleteScheduleCore(ctx, store, &DeleteScheduleInput{
+		Name:      name,
+		GroupName: groupName,
+	}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -200,12 +128,12 @@ func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	schedule, err := store.GetSchedule(ctx, groupName, name)
+	schedule, err := s.getScheduleCore(ctx, store, &GetScheduleInput{
+		Name:      name,
+		GroupName: groupName,
+	})
 	if err != nil {
-		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
-		}
-		return nil, ErrInternalServer
+		return nil, err
 	}
 
 	return scheduleToResponse(schedule), nil
@@ -223,20 +151,6 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	existing, err := store.GetSchedule(ctx, groupName, name)
-	if err != nil {
-		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
-		}
-		return nil, ErrInternalServer
-	}
-
-	// UpdateSchedule is a PUT operation (full replacement). All fields from
-	// the request replace the existing values, including empty strings which
-	// clear the field. Required fields (ScheduleExpression, Target,
-	// FlexibleTimeWindow) must be provided and are validated below.
-
-	// Parse target and flexible time window from request parameters.
 	target, err := parseTarget(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -250,7 +164,6 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
-	// Build the common spec and run full validation through the shared layer.
 	spec := &ScheduleSpec{
 		Name:                       name,
 		GroupName:                  groupName,
@@ -266,40 +179,17 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		FlexibleTimeWindow:         flexibleTimeWindow,
 	}
 
-	validated, err := ValidateScheduleFields(spec)
+	result, err := s.updateScheduleCore(ctx, store, &UpdateScheduleInput{
+		Spec:         spec,
+		Region:       reqCtx.GetRegion(),
+		IAMValidator: reqCtx.GetIAMValidator(),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if target.RoleArn != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := s.validateVpcConfig(ctx, reqCtx.GetRegion(), target); err != nil {
-		return nil, err
-	}
-
-	// Apply validated fields to the existing schedule.
-	existing.ScheduleExpression = spec.ScheduleExpression
-	existing.Target = target
-	existing.FlexibleTimeWindow = flexibleTimeWindow
-	existing.Description = spec.Description
-	existing.ScheduleExpressionTimezone = spec.ScheduleExpressionTimezone
-	existing.KmsKeyArn = spec.KmsKeyArn
-	existing.State = validated.State
-	existing.ActionAfterCompletion = validated.ActionAfterCompletion
-	existing.StartDate = validated.StartDate
-	existing.EndDate = validated.EndDate
-
-	if err := store.UpdateSchedule(ctx, existing); err != nil {
-		return nil, ErrInternalServer
-	}
-
 	return map[string]interface{}{
-		"ScheduleArn": existing.ARN,
+		"ScheduleArn": result.ScheduleArn,
 	}, nil
 }
 
@@ -307,7 +197,7 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := getListGroupName(req.Parameters)
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
-	stateFilter := schedulerstore.ScheduleState(request.GetStringParam(req.Parameters, "State"))
+	stateFilter := request.GetStringParam(req.Parameters, "State")
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := int32(100)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
@@ -326,9 +216,15 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	result, err := store.ListSchedules(ctx, groupName, namePrefix, stateFilter, maxResults, nextToken)
+	result, err := s.listSchedulesCore(ctx, store, &ListSchedulesInput{
+		GroupName:  groupName,
+		NamePrefix: namePrefix,
+		State:      stateFilter,
+		MaxResults: maxResults,
+		NextToken:  nextToken,
+	})
 	if err != nil {
-		return nil, ErrInternalServer
+		return nil, err
 	}
 
 	schedules := make([]map[string]interface{}, len(result.Schedules))
@@ -353,10 +249,10 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"Schedules": schedules,
 	}
-	pagination.SetNextToken(response, "NextToken", result.NextToken)
+	pagination.SetNextToken(resp, "NextToken", result.NextToken)
 
-	return response, nil
+	return resp, nil
 }

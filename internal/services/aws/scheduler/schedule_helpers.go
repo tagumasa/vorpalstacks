@@ -4,59 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strconv"
 
 	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
-
-var (
-	atExpressionRegex   = regexp.MustCompile(`^at\((\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\)$`)
-	rateExpressionRegex = regexp.MustCompile(`^rate\((\d+)\s+(minute|minutes|hour|hours|day|days)\)$`)
-	cronExpressionRegex = regexp.MustCompile(`^cron\((.+)\)$`)
-)
-
-func isValidScheduleExpression(expr string) bool {
-	// Delegate to the full validator which checks cron field count and
-	// at() semantic date validity in addition to format.
-	return isValidScheduleExpressionFull(expr)
-}
-
-// validateRateExpression checks a rate() expression against the AWS rules:
-// the value must be a positive number (>= 1) and the unit must agree with
-// the value — singular for 1, plural for values greater than 1.
-// AWS bounds: rate value must not exceed 1 year (365 days = 525600 minutes
-// = 8760 hours = 365 days).
-func validateRateExpression(expr string) bool {
-	matches := rateExpressionRegex.FindStringSubmatch(expr)
-	if len(matches) != 3 {
-		return false
-	}
-	value, err := strconv.Atoi(matches[1])
-	if err != nil || value < 1 {
-		return false
-	}
-	unit := matches[2]
-	// AWS: value == 1 requires singular unit; value > 1 requires plural.
-	// Apply upper bound: rate must not exceed 1 year.
-	if value == 1 {
-		switch unit {
-		case "minute", "hour", "day":
-			return true
-		}
-		return false
-	}
-	switch unit {
-	case "minutes":
-		return value <= 525600
-	case "hours":
-		return value <= 8760
-	case "days":
-		return value <= 365
-	}
-	return false
-}
 
 func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) {
 	targetData, _ := getMapField(params, "Target")
@@ -119,7 +70,34 @@ func parseTargetFromMap(m map[string]interface{}) schedulerstore.Target {
 	if kinesis, ok := getMapField(m, "kinesisParameters", "KinesisParameters"); ok {
 		target.KinesisParameters = parseKinesisParameters(kinesis)
 	}
+	if sage, ok := getMapField(m, "sageMakerPipelineParameters", "SageMakerPipelineParameters"); ok {
+		target.SageMakerPipelineParameters = parseSageMakerPipelineParameters(sage)
+	}
 	return target
+}
+
+// parseSageMakerPipelineParameters extracts SageMaker Pipeline parameters
+// from the request map. Each PipelineParameter Name is 1-256 chars and
+// Value is 1-1024 chars per AWS specification.
+func parseSageMakerPipelineParameters(data map[string]interface{}) *schedulerstore.SageMakerPipelineParameters {
+	params := &schedulerstore.SageMakerPipelineParameters{}
+	if list, ok := getSliceField(data, "pipelineParameterList", "PipelineParameterList"); ok {
+		for _, item := range list {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name := getStringFromMap(m, "name", "Name")
+			value := getStringFromMap(m, "value", "Value")
+			params.PipelineParameterList = append(params.PipelineParameterList,
+				schedulerstore.SageMakerPipelineParameter{
+					Name:  name,
+					Value: value,
+				},
+			)
+		}
+	}
+	return params
 }
 
 func getMapField(m map[string]interface{}, keys ...string) (map[string]interface{}, bool) {
@@ -143,7 +121,7 @@ func getStringFromMap(m map[string]interface{}, keys ...string) string {
 func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) *schedulerstore.RetryPolicy {
 	rp := &schedulerstore.RetryPolicy{}
 	// Accept the raw values without range filtering. Range validation is
-	// performed by validateTarget in schedule_validators.go.
+	// performed by validateTarget in validators.go.
 	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok {
 		rp.MaximumEventAgeInSeconds = &val
 	}
@@ -342,7 +320,7 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 	}
 
 	// Mode enum and MaximumWindowInMinutes range validation is performed
-	// by validateFlexibleTimeWindow in schedule_validators.go.
+	// by validateFlexibleTimeWindow in validators.go.
 
 	return ftw, nil
 }

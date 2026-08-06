@@ -13,6 +13,26 @@ import (
 func (tc *schedTestContext) runGroupTests() []TestResult {
 	var results []TestResult
 
+	// Verify the default schedule group exists after server start.
+	results = append(results, tc.runner.RunTest("scheduler", "GetScheduleGroup_Default", func() error {
+		resp, err := tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String("default"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Name == nil || *resp.Name != "default" {
+			return fmt.Errorf("expected default group name %q, got %q", "default", aws.ToString(resp.Name))
+		}
+		if resp.State != types.ScheduleGroupStateActive {
+			return fmt.Errorf("expected default group state ACTIVE, got %q", resp.State)
+		}
+		if resp.Arn == nil || *resp.Arn == "" {
+			return fmt.Errorf("default group Arn is nil or empty")
+		}
+		return nil
+	}))
+
 	groupName := tc.uniqueName("TestGroup")
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateScheduleGroup", func() error {

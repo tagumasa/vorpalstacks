@@ -1,8 +1,12 @@
 package scheduler
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
+
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // clientTokenTTL is the time-to-live for idempotency token mappings.
@@ -10,53 +14,73 @@ import (
 // be conservative (Smithy idempotencyToken trait does not specify TTL).
 const clientTokenTTL = 24 * time.Hour
 
+// tokenKeyPrefix is the Pebble key prefix for persisted ClientToken entries.
+const tokenKeyPrefix = "token:"
+
 // ClientTokenEntry records the resource created for a given ClientToken.
 type ClientTokenEntry struct {
 	ResourceArn  string    `json:"resourceArn"`
-	ResourceType string    `json:"resourceType"` // "schedule" or "schedule-group"
+	ResourceType string    `json:"resourceType"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
 // ClientTokenStore provides idempotency token deduplication for
-// CreateSchedule and CreateScheduleGroup operations. When a ClientToken
-// is reused within the TTL window, the original resource ARN is returned
-// without creating a duplicate.
-//
-// The store uses an in-memory map guarded by a mutex. Entries are
-// expired lazily on read. A background goroutine runs periodic cleanup
-// to bound memory usage.
+// CreateSchedule and CreateScheduleGroup operations. Entries are persisted
+// to Pebble so that idempotency survives server restarts.
 type ClientTokenStore struct {
-	mu      sync.Mutex
-	entries map[string]*ClientTokenEntry
-	stopCh  chan struct{}
+	mu     sync.Mutex
+	store  *common.BaseStore
+	stopCh chan struct{}
 }
 
-// NewClientTokenStore creates a new ClientTokenStore and starts the
-// background cleanup goroutine.
-func NewClientTokenStore() *ClientTokenStore {
+// NewClientTokenStore creates a new ClientTokenStore backed by the given
+// BaseStore (a Pebble bucket). Existing entries are loaded on construction
+// so that previously claimed tokens are honoured after a server restart.
+func NewClientTokenStore(store *common.BaseStore) *ClientTokenStore {
 	s := &ClientTokenStore{
-		entries: make(map[string]*ClientTokenEntry),
-		stopCh:  make(chan struct{}),
+		store:  store,
+		stopCh: make(chan struct{}),
 	}
+	s.loadExisting()
 	go s.cleanupLoop()
 	return s
 }
 
+// loadExisting scans the Pebble bucket and removes expired entries left
+// over from a previous server run. Non-expired entries are kept so that
+// idempotency is preserved across restarts.
+func (s *ClientTokenStore) loadExisting() {
+	now := time.Now()
+	_ = s.store.ScanPrefix(tokenKeyPrefix, func(key string, value []byte) error {
+		var entry ClientTokenEntry
+		if err := json.Unmarshal(value, &entry); err != nil {
+			return nil
+		}
+		if now.Sub(entry.CreatedAt) >= clientTokenTTL {
+			_ = s.store.Delete(key)
+		}
+		return nil
+	})
+}
+
 // LookupOrClaim checks if a ClientToken already maps to a resource.
 // If found (and not expired), returns the existing entry and false.
-// If not found, claims the token with the given resource details and
-// returns the new entry and true.
+// If not found, claims the token and persists it to Pebble.
 func (s *ClientTokenStore) LookupOrClaim(token, resourceArn, resourceType string) (*ClientTokenEntry, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Check for existing entry (lazy expiry).
-	if entry, ok := s.entries[token]; ok {
-		if time.Since(entry.CreatedAt) < clientTokenTTL {
-			return entry, false
+	key := tokenKeyPrefix + token
+
+	// Check Pebble for existing entry.
+	data, err := s.store.GetRaw(key)
+	if err == nil && data != nil {
+		var entry ClientTokenEntry
+		if json.Unmarshal(data, &entry) == nil {
+			if time.Since(entry.CreatedAt) < clientTokenTTL {
+				return &entry, false
+			}
 		}
-		// Expired — remove and allow re-claim.
-		delete(s.entries, token)
 	}
 
 	// Claim the token.
@@ -65,19 +89,25 @@ func (s *ClientTokenStore) LookupOrClaim(token, resourceArn, resourceType string
 		ResourceType: resourceType,
 		CreatedAt:    time.Now().UTC(),
 	}
-	s.entries[token] = entry
+
+	if err := s.store.PutRaw(key, mustMarshal(entry)); err != nil {
+		logs.Error("Failed to persist ClientToken entry",
+			logs.String("token", token),
+			logs.Err(err))
+	}
+
 	return entry, true
 }
 
-// Release removes a ClientToken entry. Used to roll back a claim when
-// resource creation fails after the token was claimed.
+// Release removes a ClientToken entry from Pebble. Used to roll back a
+// claim when resource creation fails after the token was claimed.
 func (s *ClientTokenStore) Release(token string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.entries, token)
+	_ = s.store.Delete(tokenKeyPrefix + token)
 }
 
-// cleanupLoop periodically removes expired entries to bound memory.
+// cleanupLoop periodically removes expired entries from Pebble.
 func (s *ClientTokenStore) cleanupLoop() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -96,14 +126,26 @@ func (s *ClientTokenStore) cleanupExpired() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
-	for token, entry := range s.entries {
-		if now.Sub(entry.CreatedAt) >= clientTokenTTL {
-			delete(s.entries, token)
+	_ = s.store.ScanPrefix(tokenKeyPrefix, func(key string, value []byte) error {
+		var entry ClientTokenEntry
+		if err := json.Unmarshal(value, &entry); err != nil {
+			return nil
 		}
-	}
+		if now.Sub(entry.CreatedAt) >= clientTokenTTL {
+			_ = s.store.Delete(key)
+		}
+		return nil
+	})
 }
 
 // Stop shuts down the background cleanup goroutine.
 func (s *ClientTokenStore) Stop() {
 	close(s.stopCh)
+}
+
+// mustMarshal serialises a ClientTokenEntry to JSON. Panics are impossible
+// because ClientTokenEntry contains only primitive types.
+func mustMarshal(entry *ClientTokenEntry) []byte {
+	b, _ := json.Marshal(entry)
+	return b
 }
