@@ -70,7 +70,7 @@ func (s *SecretsManagerService) TagResource(ctx context.Context, reqCtx *request
 	if secretId == "" {
 		return nil, errors.ErrMissingParameter
 	}
-	// B10: Enforce AWS Secrets Manager tag quotas.
+	// Enforce AWS Secrets Manager tag quotas.
 	newTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateSecretTags(newTags); err != nil {
 		return nil, err

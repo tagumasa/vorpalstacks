@@ -146,6 +146,10 @@ func generatePasswordWithRequiredTypes(charset string, length int, excludeCharac
 		}
 	}
 
+	if err := validatePasswordRequirements(len(requiredChars), length); err != nil {
+		return "", err
+	}
+
 	for i := 0; i < length; i++ {
 		n, err := rand.Int(rand.Reader, charsetLen)
 		if err != nil {
@@ -177,9 +181,7 @@ func generatePasswordWithRequiredTypes(charset string, length int, excludeCharac
 	}
 
 	for i, ch := range requiredChars {
-		if i < length {
-			result[positions[i]] = ch
-		}
+		result[positions[i]] = ch
 	}
 
 	return string(result), nil

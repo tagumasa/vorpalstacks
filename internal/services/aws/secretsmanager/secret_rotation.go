@@ -98,6 +98,11 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	automaticallyAfterDays := nestedInt(rotationRulesRaw, "AutomaticallyAfterDays")
 	scheduleExpression := nestedString(rotationRulesRaw, "ScheduleExpression")
 	duration := nestedString(rotationRulesRaw, "Duration")
+	if automaticallyAfterDays > 0 {
+		if err := validateAutomaticallyAfterDays(automaticallyAfterDays); err != nil {
+			return nil, err
+		}
+	}
 
 	// ClientRequestToken — idempotency token for rotation. When
 	// provided, passed to executeRotation as the rotation cycle token.
@@ -110,7 +115,7 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	// B11: RotateImmediately defaults to true per AWS spec.
+	// RotateImmediately defaults to true per AWS spec.
 	rotateImmediately := true
 	if request.HasParam(req.Parameters, "RotateImmediately") {
 		rotateImmediately = request.GetBoolParam(req.Parameters, "RotateImmediately")
@@ -142,6 +147,10 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	rotatedViaLambda := false
 
 	if rotateImmediately {
+		if secret.RotationLambdaARN != "" && s.bus == nil {
+			return nil, errors.NewAWSError("InvalidRequestException",
+				"Rotation Lambda is configured but the event bus is not available.", http.StatusBadRequest)
+		}
 		if secret.RotationLambdaARN != "" && s.bus != nil {
 			// executeRotation mutates LastRotatedDate/NextRotationDate on the
 			// secret pointer before calling finishRotation. If finishRotation

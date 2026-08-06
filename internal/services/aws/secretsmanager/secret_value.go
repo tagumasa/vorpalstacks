@@ -34,44 +34,35 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
 	versionStages := request.GetStringList(req.Parameters, "VersionStages")
 
-	// RotationToken is an opaque token used for cross-account rotation
-	// validation. Accept it so rotation Lambda PutSecretValue calls don't
-	// error. Smithy RotationTokenType: length 36-256, pattern alphanumeric+dash.
+	// RotationToken is an optional parameter used only for cross-account
+	// rotation (IAM assumed role). It is validated against the Smithy
+	// RotationTokenType constraints (@length 36-256, @pattern) when present
+	// but is not required for staging label assignment. AWS does not
+	// enforce AWSPENDING at the API level — the standard same-account
+	// rotation Lambda template calls PutSecretValue with
+	// VersionStages=["AWSPENDING"] and no RotationToken.
 	rotationToken := request.GetStringParam(req.Parameters, "RotationToken")
-	if rotationToken != "" {
-		if len(rotationToken) < 36 || len(rotationToken) > 256 {
-			return nil, awserrors.NewAWSError("InvalidParameterException",
-				"RotationToken must be between 36 and 256 characters long.", http.StatusBadRequest)
-		}
+	if err := validateRotationToken(rotationToken); err != nil {
+		return nil, err
 	}
 
-	// B6: At least one of SecretString or SecretBinary must be provided.
+	if err := validateSecretValueMutex(secretString, secretBinaryStr); err != nil {
+		return nil, err
+	}
 	if secretString == "" && secretBinaryStr == "" {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
 			"You must include either a SecretString or SecretBinary parameter.", http.StatusBadRequest)
 	}
-	// B7: SecretString and SecretBinary are mutually exclusive.
-	if secretString != "" && secretBinaryStr != "" {
-		return nil, awserrors.NewAWSError("InvalidParameterException",
-			"You can't specify both SecretString and SecretBinary in the same request.", http.StatusBadRequest)
+	if err := validateSecretStringLength(secretString); err != nil {
+		return nil, err
+	}
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
 	}
 
-	// ClientRequestToken: when provided, becomes the VersionId of the new
-	// version. AWS length constraint is 32-64 characters.
-	if clientRequestToken != "" {
-		if len(clientRequestToken) < 32 || len(clientRequestToken) > 64 {
-			return nil, awserrors.NewAWSError("InvalidParameterException",
-				"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
-		}
-	}
-
-	var secretBinary []byte
-	if secretBinaryStr != "" {
-		decoded, err := decodeSecretBinary(secretBinaryStr)
-		if err != nil {
-			return nil, awserrors.NewValidationException(fmt.Sprintf("invalid SecretBinary encoding: %v", err))
-		}
-		secretBinary = decoded
+	secretBinary, err := decodeAndValidateSecretBinary(secretBinaryStr)
+	if err != nil {
+		return nil, err
 	}
 
 	// Determine final staging labels.
@@ -80,7 +71,7 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 		finalStages = []string{"AWSCURRENT"}
 	}
 
-	// B5: Check whether AWSCURRENT is explicitly requested.
+	// Check whether AWSCURRENT is explicitly requested.
 	hasAWSCURRENT := false
 	for _, st := range finalStages {
 		if st == "AWSCURRENT" {
@@ -185,6 +176,9 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	sortBy := request.GetStringParam(req.Parameters, "SortBy")
 	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
 	filters := request.GetListParam(req.Parameters, "Filters")
+	if err := validateMaxFilters(len(filters)); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -260,6 +254,9 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 			entry["Type"] = secret.Type
 		}
 		s.addRotationFields(entry, secret)
+		if len(secret.Tags) > 0 {
+			entry["Tags"] = s.buildTagsList(secret)
+		}
 		if len(secret.ReplicationStatus) > 0 {
 			entry["ReplicationStatus"] = buildReplicationStatusResponse(secret.ReplicationStatus)
 		}
@@ -286,7 +283,7 @@ func buildSecretFilter(includePlannedDeletion bool, filters []map[string]interfa
 	}
 
 	return func(sec *secretsmanagerstore.Secret) bool {
-		if needsDeletionCheck && (sec.DeletedDate != nil || sec.ScheduledDeletionDate != nil) {
+		if needsDeletionCheck && sec.DeletedDate != nil {
 			return false
 		}
 		if needsFilterCheck && !secretMatchesFilters(sec, filters) {
@@ -656,9 +653,11 @@ func (s *SecretsManagerService) BatchGetSecretValue(ctx context.Context, reqCtx 
 			"You can't specify both Filters and SecretIdList in the same request.", http.StatusBadRequest)
 	}
 
-	if len(secretIdList) > 20 {
-		return nil, awserrors.NewAWSError("ValidationException",
-			"You can include up to 20 secrets in a batch.", http.StatusBadRequest)
+	if err := validateSecretIdList(secretIdList); err != nil {
+		return nil, err
+	}
+	if err := validateMaxFilters(len(filters)); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

@@ -452,7 +452,7 @@ func (r *TestRunner) runCloudTrailConfigTests(tc *cloudTrailTestContext) []TestR
 func (r *TestRunner) runCloudTrailBugFixTests(tc *cloudTrailTestContext) []TestResult {
 	var results []TestResult
 
-	// B1: CreateTrail without S3BucketName should fail.
+	// CreateTrail without S3BucketName should fail.
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_NoBucket_Error", func() error {
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name: aws.String("ct-no-bucket-test"),
@@ -463,7 +463,7 @@ func (r *TestRunner) runCloudTrailBugFixTests(tc *cloudTrailTestContext) []TestR
 		return nil
 	}))
 
-	// B2: UpdateTrail clears SnsTopicName by setting empty string.
+	// UpdateTrail clears SnsTopicName by setting empty string.
 	results = append(results, r.RunTest("cloudtrail", "UpdateTrail_ClearField", func() error {
 		// Create trail with SnsTopicName.
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
@@ -503,7 +503,7 @@ func (r *TestRunner) runCloudTrailBugFixTests(tc *cloudTrailTestContext) []TestR
 		return nil
 	}))
 
-	// B3: DeleteTrail by ARN.
+	// DeleteTrail by ARN.
 	results = append(results, r.RunTest("cloudtrail", "DeleteTrail_ByARN", func() error {
 		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String("ct-arn-delete-test"),

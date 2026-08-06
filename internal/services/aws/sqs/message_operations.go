@@ -279,7 +279,7 @@ type batchSendEntry struct {
 // SendMessageBatch sends multiple messages to an SQS queue in a single request.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_SendMessageBatch.html
 //
-// B2: Two-pass design — all entries are parsed and validated before any message
+// Two-pass design — all entries are parsed and validated before any message
 // is sent. This prevents partial sends when a later entry fails validation.
 func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")

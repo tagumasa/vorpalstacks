@@ -309,7 +309,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
-	// B2: Verify SANs are embedded in the actual x509 certificate
+	// Verify SANs are embedded in the actual x509 certificate
 	results = append(results, r.RunTest("acm", "RequestCertificate_SANsEmbeddedInCert", func() error {
 		domain := acmUniqueDomain("san-embed")
 		san1 := fmt.Sprintf("www.%s", domain)
@@ -352,7 +352,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
-	// B1: KeyAlgorithm EC_prime256v1
+	// KeyAlgorithm EC_prime256v1
 	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_EC_prime256v1", func() error {
 		domain := acmUniqueDomain("ec256")
 		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
@@ -391,7 +391,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
-	// B1: KeyAlgorithm RSA_4096
+	// KeyAlgorithm RSA_4096
 	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_RSA_4096", func() error {
 		domain := acmUniqueDomain("rsa4096")
 		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{

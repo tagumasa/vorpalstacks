@@ -136,7 +136,7 @@ func (s *SecretStore) GetSecret(name string) (*Secret, error) {
 	if err := s.BaseStore.Get(key, &secret); err != nil {
 		return nil, ErrSecretNotFound
 	}
-	if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
+	if secret.DeletedDate != nil {
 		return nil, ErrSecretNotFound
 	}
 	tags, err := s.TagStore.List(key)
@@ -219,7 +219,7 @@ func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
 		if err != nil {
 			return nil, err
 		}
-		if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
+		if secret.DeletedDate != nil {
 			return nil, ErrSecretNotFound
 		}
 	}
@@ -339,7 +339,13 @@ func (s *SecretStore) DeleteSecret(name string) error {
 		return err
 	}
 
-	return s.BaseStore.Delete(key)
+	if err := s.BaseStore.Delete(key); err != nil {
+		return err
+	}
+
+	// Clean up the ARN index entry to prevent orphan accumulation.
+	_ = s.BaseStore.Delete(s.arnIndexKey(secret.ARN))
+	return nil
 }
 
 // ListSecrets returns a list of secrets from the store using the specified list options.
@@ -485,7 +491,6 @@ func (s *SecretStore) RestoreSecret(name string) error {
 		return ErrSecretNotFound
 	}
 	secret.DeletedDate = nil
-	secret.ScheduledDeletionDate = nil
 	// AWS updates LastChangedDate when a secret is restored.
 	secret.LastChangedDate = time.Now().UTC()
 	return s.Put(key, &secret)
@@ -519,7 +524,6 @@ func (s *SecretStore) ScheduleDeletion(name string, deletionDate time.Time) erro
 	// (request time + RecoveryWindowInDays), not the time the request was made.
 	scheduled := deletionDate.UTC()
 	secret.DeletedDate = &scheduled
-	secret.ScheduledDeletionDate = &scheduled
 	return s.Put(key, &secret)
 }
 

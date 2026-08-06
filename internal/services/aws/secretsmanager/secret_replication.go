@@ -43,6 +43,18 @@ func (s *SecretsManagerService) replicateSecretToRegions(
 	forceOverwrite bool,
 	primaryRegion string,
 ) {
+	// Read the current version's value for replication. SecretString and
+	// SecretBinary on the Secret struct are transient (json:"-") and are
+	// not populated when the secret was deserialised from the store.
+	var srcSecretString string
+	var srcSecretBinary []byte
+	if secret.CurrentVersion != "" {
+		if currentVer, verErr := store.GetSecretVersion(secret.Name, secret.CurrentVersion); verErr == nil {
+			srcSecretString = currentVer.SecretString
+			srcSecretBinary = currentVer.SecretBinary
+		}
+	}
+
 	for _, replicaRegion := range regions {
 		// Check for existing replica. When forceOverwrite is true,
 		// delete the old replica first; otherwise skip with a warning.
@@ -83,9 +95,10 @@ func (s *SecretsManagerService) replicateSecretToRegions(
 
 		replica := secretsmanagerstore.NewSecret(secret.Name)
 		replica.Description = secret.Description
+		replica.PrimaryRegion = primaryRegion
 		replica.KmsKeyId = replicaRegion.KmsKeyId
-		replica.SecretString = secret.SecretString
-		replica.SecretBinary = secret.SecretBinary
+		replica.SecretString = srcSecretString
+		replica.SecretBinary = srcSecretBinary
 		replica.Tags = make(map[string]string)
 		for k, v := range secret.Tags {
 			replica.Tags[k] = v
@@ -105,7 +118,7 @@ func (s *SecretsManagerService) replicateSecretToRegions(
 		// fails to sync, the replica status reflects "Failed" instead
 		// of the misleading "InSync".
 		syncFailures := 0
-		if (len(secret.SecretString) > 0 || len(secret.SecretBinary) > 0) && replica.CurrentVersion != "" {
+		if (srcSecretString != "" || len(srcSecretBinary) > 0) && replica.CurrentVersion != "" {
 			srcVersions, err := store.ListSecretVersions(secret.Name)
 			if err == nil && len(srcVersions) > 0 {
 				for _, v := range srcVersions {
@@ -337,6 +350,10 @@ func (s *SecretsManagerService) StopReplicationToReplica(ctx context.Context, re
 	if len(secret.ReplicationStatus) == 0 {
 		return nil, ErrNoReplicationConfigured
 	}
+	// Note: AWS spec requires StopReplicationToReplica to be called from
+	// the replica region only. On this edge platform all regions share a
+	// single server instance, so the region distinction is not enforced.
+	// PrimaryRegion is populated on replicas for future use.
 
 	// Update the replica's LastAccessedDate to reflect the promotion
 	// to a standalone secret, matching AWS behaviour.
@@ -383,7 +400,7 @@ func parseReplicaRegions(params map[string]interface{}, key string) ([]replicaRe
 			kmsKey = k
 		}
 		if region == "" {
-			continue
+			return nil, ErrInvalidReplicationRegion
 		}
 		regions = append(regions, replicaRegion{Region: region, KmsKeyId: kmsKey})
 	}

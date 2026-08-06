@@ -203,7 +203,7 @@ func (s *SQSStore) moveMessageBatch(sourceURL, destURL string) (moved, failed in
 			dedupKey = s.buildDeduplicationKey(destURL, domainMsg)
 			if dedupKey != "" {
 				if _, ok := s.getDeduplicationMessageID(dedupKey); ok {
-					// B5: Delete source message on dedup hit to prevent
+					// Delete source message on dedup hit to prevent
 					// infinite re-listing on subsequent batch iterations.
 					handle := msgPb.ReceiptHandle
 					_ = s.storage.Update(context.Background(), func(txn storage.Transaction) error {

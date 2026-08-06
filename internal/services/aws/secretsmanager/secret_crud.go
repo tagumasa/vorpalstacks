@@ -27,49 +27,38 @@ func bytesEqual(a, b []byte) bool {
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_CreateSecret.html
 func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, errors.ErrMissingParameter
-	}
-	// NameType length constraint is 1-512 (Smithy).
-	if len(name) > 512 {
-		return nil, errors.NewAWSError("InvalidParameterException",
-			"Secret name must be between 1 and 512 characters long.", http.StatusBadRequest)
+	if err := validateSecretName(name); err != nil {
+		return nil, err
 	}
 
 	secretString := request.GetStringParam(req.Parameters, "SecretString")
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
+	if err := validateSecretValueMutex(secretString, secretBinaryStr); err != nil {
+		return nil, err
+	}
+	if err := validateSecretStringLength(secretString); err != nil {
+		return nil, err
+	}
+
 	description := request.GetStringParam(req.Parameters, "Description")
-	// DescriptionType length constraint is 0-2048 (Smithy).
-	if len(description) > 2048 {
-		return nil, errors.NewAWSError("InvalidParameterException",
-			"Description must be between 0 and 2048 characters long.", http.StatusBadRequest)
+	if err := validateDescription(description); err != nil {
+		return nil, err
 	}
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
 	secretType := request.GetStringParam(req.Parameters, "Type")
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
+	}
 	parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	// B10: Enforce AWS Secrets Manager tag quotas on creation.
 	if err := validateSecretTags(parsedTags); err != nil {
 		return nil, err
 	}
 	tags := tagutil.ToMap(parsedTags)
 
-	// ClientRequestToken: when provided, becomes the VersionId of the
-	// initial version. AWS length constraint is 32-64 characters.
-	if clientRequestToken != "" {
-		if len(clientRequestToken) < 32 || len(clientRequestToken) > 64 {
-			return nil, errors.NewAWSError("InvalidParameterException",
-				"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
-		}
-	}
-
-	var secretBinary []byte
-	if secretBinaryStr != "" {
-		var err error
-		secretBinary, err = decodeSecretBinary(secretBinaryStr)
-		if err != nil {
-			return nil, errors.NewValidationException(fmt.Sprintf("invalid SecretBinary encoding: %v", err))
-		}
+	secretBinary, err := decodeAndValidateSecretBinary(secretBinaryStr)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -129,7 +118,11 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	if len(addReplicaRegions) > 0 && s.storageManager != nil {
+	if len(addReplicaRegions) > 0 {
+		if s.storageManager == nil {
+			return nil, errors.NewAWSError("InvalidRequestException",
+				"Replication is not configured for this service.", http.StatusBadRequest)
+		}
 		forceOverwrite := request.GetBoolParam(req.Parameters, "ForceOverwriteReplicaSecret")
 		s.replicateSecretToRegions(store, created, addReplicaRegions, forceOverwrite, reqCtx.GetRegion())
 		if err := store.UpdateSecretMetadata(created); err != nil {
@@ -246,24 +239,21 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 
 	secretString := request.GetStringParam(req.Parameters, "SecretString")
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
+	if err := validateSecretValueMutex(secretString, secretBinaryStr); err != nil {
+		return nil, err
+	}
+	if err := validateSecretStringLength(secretString); err != nil {
+		return nil, err
+	}
 	description := request.GetStringParam(req.Parameters, "Description")
-	// DescriptionType length constraint is 0-2048 (Smithy).
-	if len(description) > 2048 {
-		return nil, errors.NewAWSError("InvalidParameterException",
-			"Description must be between 0 and 2048 characters long.", http.StatusBadRequest)
+	if err := validateDescription(description); err != nil {
+		return nil, err
 	}
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
 	secretType := request.GetStringParam(req.Parameters, "Type")
-
-	// ClientRequestToken — when provided with a secret value, becomes
-	// the VersionId of the new version (Smithy ClientRequestTokenType
-	// length 32-64, idempotencyToken trait).
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if clientRequestToken != "" {
-		if len(clientRequestToken) < 32 || len(clientRequestToken) > 64 {
-			return nil, errors.NewAWSError("InvalidParameterException",
-				"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
-		}
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
 	}
 
 	hasSecretValue := secretString != "" || secretBinaryStr != ""
@@ -272,9 +262,9 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 		secret.SecretString = secretString
 		secret.SecretBinary = nil
 	} else if secretBinaryStr != "" {
-		decoded, err := decodeSecretBinary(secretBinaryStr)
-		if err != nil {
-			return nil, err
+		decoded, decErr := decodeAndValidateSecretBinary(secretBinaryStr)
+		if decErr != nil {
+			return nil, decErr
 		}
 		secret.SecretBinary = decoded
 		secret.SecretString = ""
@@ -333,19 +323,8 @@ func (s *SecretsManagerService) DeleteSecret(ctx context.Context, reqCtx *reques
 	recoveryWindowInDays := request.GetIntParam(req.Parameters, "RecoveryWindowInDays")
 	forceDeleteWithoutRecovery := request.GetBoolParam(req.Parameters, "ForceDeleteWithoutRecovery")
 	hasRecoveryWindow := request.HasParam(req.Parameters, "RecoveryWindowInDays")
-
-	// B2: You can't use both ForceDeleteWithoutRecovery and RecoveryWindowInDays.
-	if forceDeleteWithoutRecovery && hasRecoveryWindow {
-		return nil, errors.NewAWSError("InvalidParameterException",
-			"You can't use ForceDeleteWithoutRecovery in conjunction with RecoveryWindowInDays.", http.StatusBadRequest)
-	}
-
-	// B1: RecoveryWindowInDays must be between 7 and 30 (inclusive).
-	if hasRecoveryWindow && !forceDeleteWithoutRecovery {
-		if recoveryWindowInDays < 7 || recoveryWindowInDays > 30 {
-			return nil, errors.NewAWSError("InvalidParameterException",
-				"RecoveryWindowInDays must be between 7 and 30 days.", http.StatusBadRequest)
-		}
+	if err := validateRecoveryWindow(recoveryWindowInDays, hasRecoveryWindow, forceDeleteWithoutRecovery); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -353,7 +332,7 @@ func (s *SecretsManagerService) DeleteSecret(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	// B9: You can't delete a primary secret that is replicated to other Regions.
+	// You can't delete a primary secret that is replicated to other Regions.
 	if len(secret.ReplicationStatus) > 0 {
 		return nil, errors.NewAWSError("InvalidRequestException",
 			"You can't delete a primary secret that is replicated to other Regions. Remove the replicas first.", http.StatusBadRequest)

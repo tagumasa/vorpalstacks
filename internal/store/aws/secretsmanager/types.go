@@ -6,37 +6,41 @@ import (
 )
 
 // Secret represents a Secrets Manager secret.
+//
+// SecretString and SecretBinary are transient fields (json:"-") used to pass
+// the initial or updated secret value from the service handler to the store.
+// The persisted value lives exclusively in SecretVersion, never in the Secret
+// metadata — this prevents accidental exposure of secret material through
+// DescribeSecret or ListSecrets.
+//
+// InitialVersionId is likewise transient (json:"-"); it carries the
+// ClientRequestToken so the store can use it as the version ID during
+// CreateSecret or UpdateSecret.
 type Secret struct {
-	Name                  string              `json:"name"`
-	ARN                   string              `json:"arn"`
-	SecretString          string              `json:"secretString,omitempty"`
-	SecretBinary          []byte              `json:"secretBinary,omitempty"`
-	VersionIDs            []string            `json:"versionIds"`
-	CurrentVersion        string              `json:"currentVersion"`
-	CreatedDate           time.Time           `json:"createdDate"`
-	LastChangedDate       time.Time           `json:"lastChangedDate"`
-	LastAccessedDate      time.Time           `json:"lastAccessedDate"`
-	Description           string              `json:"description,omitempty"`
-	KmsKeyId              string              `json:"kmsKeyId,omitempty"`
-	Tags                  map[string]string   `json:"tags"`
-	ReplicationStatus     []ReplicationStatus `json:"replicationStatus,omitempty"`
-	RotationEnabled       bool                `json:"rotationEnabled"`
-	RotationLambdaARN     string              `json:"rotationLambdaARN,omitempty"`
-	RotationRules         *RotationRules      `json:"rotationRules,omitempty"`
-	LastRotatedDate       time.Time           `json:"lastRotatedDate,omitempty"`
-	ResourcePolicy        string              `json:"resourcePolicy,omitempty"`
-	DeletedDate           *time.Time          `json:"deletedDate,omitempty"`
-	ScheduledDeletionDate *time.Time          `json:"scheduledDeletionDate,omitempty"`
-	Type                  string              `json:"type,omitempty"`
-	OwningService         string              `json:"owningService,omitempty"`
-	PrimaryRegion         string              `json:"primaryRegion,omitempty"`
-	NextRotationDate      time.Time           `json:"nextRotationDate,omitempty"`
-	// InitialVersionId is a transient field (not persisted) that, when set,
-	// overrides the auto-generated version ID during CreateSecret or
-	// UpdateSecret. It carries the ClientRequestToken value so that the
-	// initial or new version ID matches what the client requested, enabling
-	// idempotency per the AWS Secrets Manager specification.
-	InitialVersionId string `json:"-"`
+	Name              string              `json:"name"`
+	ARN               string              `json:"arn"`
+	SecretString      string              `json:"-"`
+	SecretBinary      []byte              `json:"-"`
+	VersionIDs        []string            `json:"versionIds"`
+	CurrentVersion    string              `json:"currentVersion"`
+	CreatedDate       time.Time           `json:"createdDate"`
+	LastChangedDate   time.Time           `json:"lastChangedDate"`
+	LastAccessedDate  time.Time           `json:"lastAccessedDate"`
+	Description       string              `json:"description,omitempty"`
+	KmsKeyId          string              `json:"kmsKeyId,omitempty"`
+	Tags              map[string]string   `json:"tags"`
+	ReplicationStatus []ReplicationStatus `json:"replicationStatus,omitempty"`
+	RotationEnabled   bool                `json:"rotationEnabled"`
+	RotationLambdaARN string              `json:"rotationLambdaARN,omitempty"`
+	RotationRules     *RotationRules      `json:"rotationRules,omitempty"`
+	LastRotatedDate   time.Time           `json:"lastRotatedDate,omitempty"`
+	ResourcePolicy    string              `json:"resourcePolicy,omitempty"`
+	DeletedDate       *time.Time          `json:"deletedDate,omitempty"`
+	Type              string              `json:"type,omitempty"`
+	OwningService     string              `json:"owningService,omitempty"`
+	PrimaryRegion     string              `json:"primaryRegion,omitempty"`
+	NextRotationDate  time.Time           `json:"nextRotationDate,omitempty"`
+	InitialVersionId  string              `json:"-"`
 }
 
 // RotationRules defines the rotation rules for a secret.

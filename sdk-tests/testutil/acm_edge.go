@@ -70,7 +70,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
-	// B3: ImportCertificate without PrivateKey (initial import) should fail.
+	// ImportCertificate without PrivateKey (initial import) should fail.
 	// The AWS SDK enforces PrivateKey as client-side required (nil check),
 	// but an empty byte slice bypasses it. The server should still reject.
 	results = append(results, r.RunTest("acm", "ImportCertificate_EmptyPrivateKey", func() error {
@@ -84,7 +84,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
-	// B4: Invalid domain name should fail
+	// Invalid domain name should fail
 	results = append(results, r.RunTest("acm", "RequestCertificate_InvalidDomainName", func() error {
 		_, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
 			DomainName:       aws.String("not-a-valid-domain"),
@@ -93,7 +93,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
-	// B7: Passphrase too short (< 4 bytes)
+	// Passphrase too short (< 4 bytes)
 	results = append(results, r.RunTest("acm", "ExportCertificate_PassphraseTooShort", func() error {
 		importResp, err := tc.importDefaultCert()
 		if err != nil {

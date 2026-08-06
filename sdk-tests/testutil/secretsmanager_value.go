@@ -215,5 +215,56 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 		return nil
 	}))
 
+	results = append(results, r.RunTest("secretsmanager", "PutSecretValue_AWSPENDING_WithoutRotationToken", func() error {
+		name := tc.uniqueName("Pending")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(name),
+			SecretString: aws.String("initial"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(name)
+
+		// The standard same-account rotation Lambda template calls
+		// PutSecretValue with VersionStages=["AWSPENDING"] and a
+		// ClientRequestToken (used as the version ID) but WITHOUT a
+		// RotationToken parameter. AWS does not gate AWSPENDING on
+		// RotationToken presence — it is only required for cross-account
+		// rotation. This test verifies that the server accepts the call.
+		token := "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+		putResp, err := tc.client.PutSecretValue(tc.ctx, &secretsmanager.PutSecretValueInput{
+			SecretId:           aws.String(name),
+			SecretString:       aws.String("pending-value"),
+			ClientRequestToken: aws.String(token),
+			VersionStages:      []string{"AWSPENDING"},
+		})
+		if err != nil {
+			return fmt.Errorf("put with AWSPENDING (no RotationToken): %v", err)
+		}
+		if putResp.VersionId == nil || *putResp.VersionId != token {
+			return fmt.Errorf("VersionId mismatch: expected %s", token)
+		}
+
+		verResp, err := tc.client.ListSecretVersionIds(tc.ctx, &secretsmanager.ListSecretVersionIdsInput{
+			SecretId: aws.String(name),
+		})
+		if err != nil {
+			return fmt.Errorf("list versions: %v", err)
+		}
+		foundPending := false
+		for _, v := range verResp.Versions {
+			for _, s := range v.VersionStages {
+				if s == "AWSPENDING" {
+					foundPending = true
+				}
+			}
+		}
+		if !foundPending {
+			return fmt.Errorf("AWSPENDING staging label not found in any version")
+		}
+		return nil
+	}))
+
 	return results
 }

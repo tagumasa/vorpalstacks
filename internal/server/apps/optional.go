@@ -562,11 +562,18 @@ func (r *rdsDataSecretResolver) ResolveSecret(ctx context.Context, secretArn str
 		// name for "secret wasn't found / couldn't be decrypted / timed out".
 		return nil, svcrdsdata.SecretsError(fmt.Sprintf("secret %s could not be retrieved: %v", secretArn, err))
 	}
-	if secret == nil || secret.SecretString == "" {
+	if secret == nil || secret.CurrentVersion == "" {
+		return nil, svcrdsdata.InvalidSecret(fmt.Sprintf("secret %s has no SecretString", secretArn))
+	}
+	version, err := store.GetSecretVersion(secret.Name, secret.CurrentVersion)
+	if err != nil {
+		return nil, svcrdsdata.SecretsError(fmt.Sprintf("secret %s version could not be retrieved: %v", secretArn, err))
+	}
+	if version.SecretString == "" {
 		return nil, svcrdsdata.InvalidSecret(fmt.Sprintf("secret %s has no SecretString", secretArn))
 	}
 	var cred svcrdsdata.SecretCredential
-	if err := json.Unmarshal([]byte(secret.SecretString), &cred); err != nil {
+	if err := json.Unmarshal([]byte(version.SecretString), &cred); err != nil {
 		return nil, svcrdsdata.InvalidSecret(fmt.Sprintf("secret %s is not valid JSON: %v", secretArn, err))
 	}
 	return &cred, nil

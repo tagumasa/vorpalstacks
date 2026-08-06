@@ -1,8 +1,6 @@
 package secretsmanager
 
 import (
-	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -11,40 +9,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	"vorpalstacks/internal/utils/aws/types"
 )
-
-const (
-	// maxTagsPerSecret is the maximum number of tags allowed on a single secret.
-	maxTagsPerSecret = 50
-	// maxTagKeyLength is the maximum length of a tag key in characters.
-	maxTagKeyLength = 128
-	// maxTagValueLength is the maximum length of a tag value in characters.
-	maxTagValueLength = 256
-)
-
-// validateSecretTags validates tag count, key length, and value length against
-// AWS Secrets Manager quotas.  Tag count overflow uses
-// InvalidParameterException — it is documented for both CreateSecret and
-// TagResource, whereas LimitExceededException is only documented for
-// CreateSecret.
-func validateSecretTags(tags []types.Tag) error {
-	if len(tags) > maxTagsPerSecret {
-		return awserrors.NewAWSError("InvalidParameterException",
-			fmt.Sprintf("You can't have more than %d tags on a secret.", maxTagsPerSecret), http.StatusBadRequest)
-	}
-	for _, t := range tags {
-		if t.Key == "" || len(t.Key) > maxTagKeyLength {
-			return awserrors.NewAWSError("InvalidParameterException",
-				fmt.Sprintf("Tag key length must be between 1 and %d characters.", maxTagKeyLength), http.StatusBadRequest)
-		}
-		if len(t.Value) > maxTagValueLength {
-			return awserrors.NewAWSError("InvalidParameterException",
-				fmt.Sprintf("Tag value length must be between 0 and %d characters.", maxTagValueLength), http.StatusBadRequest)
-		}
-	}
-	return nil
-}
 
 var (
 	// ErrSecretNotFound indicates that the specified secret does not exist.
@@ -138,8 +103,6 @@ func (s *SecretsManagerService) buildTagsList(secret *secretsmanagerstore.Secret
 func (s *SecretsManagerService) addRotationFields(m map[string]interface{}, secret *secretsmanagerstore.Secret) {
 	if secret.RotationEnabled || secret.RotationLambdaARN != "" {
 		m["RotationEnabled"] = secret.RotationEnabled
-	}
-	if secret.RotationLambdaARN != "" {
 		m["RotationLambdaARN"] = secret.RotationLambdaARN
 	}
 	if secret.RotationRules != nil {
@@ -163,17 +126,6 @@ func (s *SecretsManagerService) addRotationFields(m map[string]interface{}, secr
 	if secret.DeletedDate != nil {
 		m["DeletedDate"] = secret.DeletedDate.Unix()
 	}
-}
-
-func decodeSecretBinary(secretBinaryStr string) ([]byte, error) {
-	if secretBinaryStr == "" {
-		return nil, nil
-	}
-	decoded, err := base64.StdEncoding.DecodeString(secretBinaryStr)
-	if err != nil {
-		return nil, awserrors.NewValidationException(fmt.Sprintf("invalid SecretBinary encoding: %v", err))
-	}
-	return decoded, nil
 }
 
 func storeClock() time.Time {

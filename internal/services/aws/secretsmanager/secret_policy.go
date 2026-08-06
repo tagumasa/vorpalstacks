@@ -53,11 +53,17 @@ func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *r
 	if policyStr == "" {
 		return nil, errors.ErrMissingParameter
 	}
+	if err := validateResourcePolicyLength(policyStr); err != nil {
+		return nil, err
+	}
 
 	// Resolve the secret first so that non-existent secrets return
 	// ResourceNotFoundException before any policy validation.
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
 	if err != nil {
+		return nil, err
+	}
+	if err := checkNotDeleted(secret); err != nil {
 		return nil, err
 	}
 
@@ -103,6 +109,9 @@ func (s *SecretsManagerService) DeleteResourcePolicy(ctx context.Context, reqCtx
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
 	if err != nil {
+		return nil, err
+	}
+	if err := checkNotDeleted(secret); err != nil {
 		return nil, err
 	}
 
