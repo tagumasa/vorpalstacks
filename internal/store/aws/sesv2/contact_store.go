@@ -111,6 +111,12 @@ func (s *SESv2Store) ListContactLists(opts common.ListOptions) (*common.ListResu
 	return common.List[ContactList](s.contactListStore, opts, nil)
 }
 
+// ContactListExists reports whether a contact list with the given name
+// has been created.
+func (s *SESv2Store) ContactListExists(name string) bool {
+	return s.contactListStore.Exists(name)
+}
+
 // NewContact creates a new Contact with the given email address and contact list name.
 func NewContact(emailAddress, contactListName string) *Contact {
 	now := time.Now().UTC()

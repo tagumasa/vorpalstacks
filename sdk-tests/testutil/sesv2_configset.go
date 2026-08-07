@@ -105,7 +105,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 	results = append(results, r.RunTest("sesv2", "PutConfigurationSetDeliveryOptions", func() error {
 		_, err := tc.client.PutConfigurationSetDeliveryOptions(tc.ctx, &sesv2.PutConfigurationSetDeliveryOptionsInput{
 			ConfigurationSetName: aws.String(configSetName),
-			MaxDeliverySeconds:   aws.Int64(30),
+			MaxDeliverySeconds:   aws.Int64(300),
 		})
 		if err != nil {
 			return err
@@ -119,8 +119,8 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if resp.DeliveryOptions == nil {
 			return fmt.Errorf("DeliveryOptions is nil after put")
 		}
-		if resp.DeliveryOptions.MaxDeliverySeconds == nil || *resp.DeliveryOptions.MaxDeliverySeconds != 30 {
-			return fmt.Errorf("expected MaxDeliverySeconds=30, got %v", resp.DeliveryOptions.MaxDeliverySeconds)
+		if resp.DeliveryOptions.MaxDeliverySeconds == nil || *resp.DeliveryOptions.MaxDeliverySeconds != 300 {
+			return fmt.Errorf("expected MaxDeliverySeconds=300, got %v", resp.DeliveryOptions.MaxDeliverySeconds)
 		}
 		return nil
 	}))

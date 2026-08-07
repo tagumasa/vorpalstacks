@@ -65,6 +65,7 @@ type SESv2StoreInterface interface {
 	DeleteContactList(name string) error
 	UpdateContactList(cl *ContactList) error
 	ListContactLists(opts common.ListOptions) (*common.ListResult[ContactList], error)
+	ContactListExists(name string) bool
 
 	CreateContact(c *Contact) (*Contact, error)
 	GetContact(contactListName, emailAddress string) (*Contact, error)

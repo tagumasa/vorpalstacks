@@ -2,11 +2,11 @@ package sesv2
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	pagination "vorpalstacks/internal/common/pagination"
@@ -18,19 +18,11 @@ import (
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
-var contactListNameRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-
 // maxFilteredContactScan is the safety upper bound for the in-memory
 // filter path in ListContacts.  Without it, a pathological contact list
 // could cause unbounded memory and time consumption.  50k is well above
 // any realistic edge/on-prem list size.
 const maxFilteredContactScan = 50000
-
-// isValidContactListName validates that name matches the AWS spec
-// pattern [a-zA-Z0-9_-]+ (1-128 characters, checked separately).
-func isValidContactListName(name string) bool {
-	return contactListNameRe.MatchString(name)
-}
 
 func parseStoredTime(s string) float64 {
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
@@ -46,16 +38,19 @@ func parseStoredTime(s string) float64 {
 	return 0
 }
 
-func parseTopicsFromParams(params map[string]interface{}) []sesv2store.Topic {
+func parseTopicsFromParams(params map[string]interface{}) ([]sesv2store.Topic, error) {
 	topicsList := request.GetListParam(params, "Topics")
 	if len(topicsList) == 0 {
-		return nil
+		return nil, nil
 	}
 	topics := make([]sesv2store.Topic, 0, len(topicsList))
 	for _, t := range topicsList {
 		topic := sesv2store.Topic{
 			TopicName:                 request.GetStringParam(t, "TopicName"),
 			DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
+		}
+		if topic.DefaultSubscriptionStatus != "" && !validateSubscriptionStatus(topic.DefaultSubscriptionStatus) {
+			return nil, ErrBadRequest
 		}
 		if desc := request.GetStringParam(t, "Description"); desc != "" {
 			topic.Description = desc
@@ -65,22 +60,26 @@ func parseTopicsFromParams(params map[string]interface{}) []sesv2store.Topic {
 		}
 		topics = append(topics, topic)
 	}
-	return topics
+	return topics, nil
 }
 
-func parseTopicPreferencesFromParams(params map[string]interface{}) []sesv2store.TopicPreference {
+func parseTopicPreferencesFromParams(params map[string]interface{}) ([]sesv2store.TopicPreference, error) {
 	topicsList := request.GetListParam(params, "TopicPreferences")
 	if len(topicsList) == 0 {
-		return nil
+		return nil, nil
 	}
 	prefs := make([]sesv2store.TopicPreference, 0, len(topicsList))
 	for _, tp := range topicsList {
+		status := request.GetStringParam(tp, "SubscriptionStatus")
+		if status != "" && !validateSubscriptionStatus(status) {
+			return nil, ErrBadRequest
+		}
 		prefs = append(prefs, sesv2store.TopicPreference{
 			TopicName:          request.GetStringParam(tp, "TopicName"),
-			SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
+			SubscriptionStatus: status,
 		})
 	}
-	return prefs
+	return prefs, nil
 }
 
 // CreateDedicatedIpPool creates a new dedicated IP pool.
@@ -92,10 +91,16 @@ func (s *SESv2Service) CreateDedicatedIpPool(ctx context.Context, reqCtx *reques
 	if poolName == "" {
 		return nil, ErrMissingParameter
 	}
+	if !validatePoolName(poolName) {
+		return nil, ErrBadRequest
+	}
 
 	scalingMode := request.GetStringParam(req.Parameters, "ScalingMode")
 	if scalingMode == "" {
 		scalingMode = "STANDARD"
+	}
+	if !validateScalingMode(scalingMode) {
+		return nil, ErrBadRequest
 	}
 
 	parsedTags := tags.ParseTags(req.Parameters, "Tags")
@@ -247,9 +252,11 @@ func (s *SESv2Service) PutSuppressedDestination(ctx context.Context, reqCtx *req
 	if emailAddress == "" {
 		return nil, ErrMissingParameter
 	}
-	// Per Smithy com.amazonaws.sesv2#SuppressionListReason the Reason
-	// field is required and must be BOUNCE or COMPLAINT.
-	if reason != "BOUNCE" && reason != "COMPLAINT" {
+	if !validateSuppressionEmailAddress(emailAddress) {
+		return nil, ErrBadRequest
+	}
+	// Reason must be a valid SuppressionListReason enum value.
+	if !validateSuppressionListReason(reason) {
 		return nil, ErrBadRequest
 	}
 
@@ -312,6 +319,11 @@ func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *r
 	endDate := parseTimestampParam(req.Parameters, "EndDate")
 	hasFilter := len(reasonsFilter) > 0 || !startDate.IsZero() || !endDate.IsZero()
 
+	// Reject StartDate > EndDate.
+	if !startDate.IsZero() && !endDate.IsZero() && startDate.After(endDate) {
+		return nil, ErrBadRequest
+	}
+
 	opts := common.ListOptions{
 		MaxItems: pageSize,
 		Marker:   nextToken,
@@ -338,28 +350,39 @@ func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *r
 		return resp, nil
 	}
 
-	// Filter is supplied: walk the full list (bounded at 10k entries) and
+	// Filter is supplied: walk all pages with a safety cap and
 	// apply the predicate in-memory, then layer pagination on top of the
 	// filtered set via an offset token so NextToken stays stable across
 	// pages.
-	allOpts := common.ListOptions{MaxItems: 10000}
-	all, err := store.ListSuppressedDestinations(allOpts)
-	if err != nil {
-		return nil, err
-	}
-	filtered := make([]*sesv2store.SuppressedDestination, 0, len(all.Items))
-	for _, dest := range all.Items {
-		if !suppressedMatchesFilter(dest, reasonsFilter, startDate, endDate) {
-			continue
+	walkMarker := ""
+	var filtered []*sesv2store.SuppressedDestination
+	for {
+		walkResult, err := store.ListSuppressedDestinations(common.ListOptions{MaxItems: 1000, Marker: walkMarker})
+		if err != nil {
+			return nil, err
 		}
-		filtered = append(filtered, dest)
+		for _, dest := range walkResult.Items {
+			if !suppressedMatchesFilter(dest, reasonsFilter, startDate, endDate) {
+				continue
+			}
+			filtered = append(filtered, dest)
+		}
+		if len(filtered) > maxFilteredSuppressionScan {
+			return nil, ErrLimitExceeded
+		}
+		if !walkResult.IsTruncated || walkResult.NextMarker == "" {
+			break
+		}
+		walkMarker = walkResult.NextMarker
 	}
 
 	start := 0
 	if nextToken != "" {
-		if idx, ok := decodeContactOffset(nextToken); ok && idx >= 0 && idx < len(filtered) {
-			start = idx
+		idx, ok := decodeContactOffset(nextToken)
+		if !ok || idx < 0 || idx >= len(filtered) {
+			return nil, ErrBadRequest
 		}
+		start = idx
 	}
 	end := start + pageSize
 	if end > len(filtered) {
@@ -457,7 +480,7 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 		return nil, ErrInvalidParameter
 	}
 	// Per AWS spec ContactListName must match [a-zA-Z0-9_-]+
-	if !isValidContactListName(contactListName) {
+	if !validateContactListName(contactListName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -466,7 +489,10 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 		return nil, ErrInvalidParameter
 	}
 
-	topics := parseTopicsFromParams(req.Parameters)
+	topics, err := parseTopicsFromParams(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	for _, t := range topics {
 		if t.TopicName == "" || len(t.TopicName) > 50 {
 			return nil, ErrInvalidParameter
@@ -639,7 +665,11 @@ func (s *SESv2Service) UpdateContactList(ctx context.Context, reqCtx *request.Re
 	}
 
 	if _, ok := req.Parameters["Topics"]; ok {
-		cl.Topics = parseTopicsFromParams(req.Parameters)
+		topics, err := parseTopicsFromParams(req.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		cl.Topics = topics
 	}
 
 	if err := store.UpdateContactList(cl); err != nil {
@@ -663,6 +693,16 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrMissingParameter
 	}
 
+	// Verify the contact list exists before creating a contact.
+	if !store.ContactListExists(contactListName) {
+		return nil, ErrContactListNotFound
+	}
+
+	// Validate the email address format.
+	if !validateSuppressionEmailAddress(emailAddress) {
+		return nil, ErrBadRequest
+	}
+
 	contact := sesv2store.NewContact(emailAddress, contactListName)
 
 	if attrs := request.GetStringParam(req.Parameters, "AttributesData"); attrs != "" {
@@ -671,10 +711,17 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 		if err := json.Unmarshal([]byte(attrs), &jsonCheck); err != nil {
 			return nil, ErrBadRequest
 		}
+		// Cap the AttributesData size to prevent DoS.
+		if len(attrs) > maxAttributesDataSize {
+			return nil, ErrBadRequest
+		}
 		contact.AttributesData = attrs
 	}
 
-	contact.TopicPreferences = parseTopicPreferencesFromParams(req.Parameters)
+	contact.TopicPreferences, err = parseTopicPreferencesFromParams(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	if _, ok := req.Parameters["UnsubscribeAll"]; ok {
 		contact.UnsubscribeAll = request.GetBoolParam(req.Parameters, "UnsubscribeAll")
@@ -787,6 +834,11 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 	topicFilterUseDefault := false
 	if filterMap != nil {
 		filteredStatus = request.GetStringParam(filterMap, "FilteredStatus")
+		// Validate FilteredStatus against the Smithy
+		// SubscriptionStatus enum [OPT_IN, OPT_OUT].
+		if filteredStatus != "" && !validateSubscriptionStatus(filteredStatus) {
+			return nil, ErrBadRequest
+		}
 		topicFilterMap := request.GetMapParam(filterMap, "TopicFilter")
 		if topicFilterMap != nil {
 			topicFilterName = request.GetStringParam(topicFilterMap, "TopicName")
@@ -813,7 +865,7 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 			}
 			allItems = append(allItems, all.Items...)
 			if len(allItems) > maxFilteredContactScan {
-				return nil, ErrBadRequest
+				return nil, ErrLimitExceeded
 			}
 			if !all.IsTruncated || all.NextMarker == "" {
 				break
@@ -829,9 +881,11 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 		}
 		start := 0
 		if nextToken != "" {
-			if idx, ok := decodeContactOffset(nextToken); ok && idx >= 0 && idx < len(filtered) {
-				start = idx
+			idx, ok := decodeContactOffset(nextToken)
+			if !ok || idx < 0 || idx >= len(filtered) {
+				return nil, ErrBadRequest
 			}
+			start = idx
 		}
 		end := start + pageSize
 		if end > len(filtered) {
@@ -954,16 +1008,26 @@ func contactSummary(c *sesv2store.Contact) map[string]interface{} {
 	return m
 }
 
+// encodeContactOffset encodes a pagination offset as an opaque base64
+// token. Previously "off:N" exposed the internal offset value
+// and token structure; base64 encoding makes the token opaque to clients.
 func encodeContactOffset(n int) string {
-	return fmt.Sprintf("off:%d", n)
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, uint32(n))
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
+// decodeContactOffset decodes an opaque pagination token. Returns the
+// offset and true on success, or 0 and false when the token is invalid.
+// Callers should treat (0, false) as an error and reject the
+// request rather than silently falling back to offset 0.
 func decodeContactOffset(token string) (int, bool) {
-	if !strings.HasPrefix(token, "off:") {
+	b, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil || len(b) != 4 {
 		return 0, false
 	}
-	n, err := strconv.Atoi(strings.TrimPrefix(token, "off:"))
-	if err != nil || n < 0 {
+	n := int(binary.BigEndian.Uint32(b))
+	if n < 0 {
 		return 0, false
 	}
 	return n, true
@@ -990,6 +1054,11 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrMissingParameter
 	}
 
+	// Verify the contact list exists before updating a contact.
+	if !store.ContactListExists(contactListName) {
+		return nil, ErrContactListNotFound
+	}
+
 	contact, err := store.GetContact(contactListName, emailAddress)
 	if err != nil {
 		return nil, err
@@ -1002,12 +1071,19 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 			if err := json.Unmarshal([]byte(attrs), &jsonCheck); err != nil {
 				return nil, ErrBadRequest
 			}
+			// Cap the AttributesData size to prevent DoS.
+			if len(attrs) > maxAttributesDataSize {
+				return nil, ErrBadRequest
+			}
 		}
 		contact.AttributesData = attrs
 	}
 
 	if _, ok := req.Parameters["TopicPreferences"]; ok {
-		contact.TopicPreferences = parseTopicPreferencesFromParams(req.Parameters)
+		contact.TopicPreferences, err = parseTopicPreferencesFromParams(req.Parameters)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if _, ok := req.Parameters["UnsubscribeAll"]; ok {

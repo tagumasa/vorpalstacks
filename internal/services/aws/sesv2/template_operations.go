@@ -95,6 +95,9 @@ func (s *SESv2Service) CreateEmailTemplate(ctx context.Context, reqCtx *request.
 	if templateName == "" {
 		return nil, ErrMissingParameter
 	}
+	if !validateEmailTemplateName(templateName) {
+		return nil, ErrBadRequest
+	}
 
 	parsedTags := tags.ParseTags(req.Parameters, "Tags")
 
@@ -266,7 +269,19 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 		return nil, ErrMissingParameter
 	}
 
+	// TemplateData is Smithy @required — use a presence check rather
+	// than relying on GetStringParam (which cannot distinguish absent
+	// from empty).
+	if _, ok := req.Parameters["TemplateData"]; !ok {
+		return nil, ErrMissingParameter
+	}
 	tmplData := request.GetStringParam(req.Parameters, "TemplateData")
+
+	// Enforce the Smithy @length(max=262144) constraint to prevent
+	// unbounded JSON payload DoS.
+	if len(tmplData) > maxTemplateDataSize {
+		return nil, ErrBadRequest
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -313,7 +328,15 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 		body = renderedHtml
 	}
 
-	rendered := "Subject: " + renderedSubject + "\nContent-Type: " + contentType + "\n\n" + body
+	// When the rendered subject is empty, omit the "Subject:" line
+	// entirely to avoid producing a malformed MIME preamble
+	// ("Subject: \nContent-Type: ...").
+	var rendered string
+	if renderedSubject != "" {
+		rendered = "Subject: " + renderedSubject + "\nContent-Type: " + contentType + "\n\n" + body
+	} else {
+		rendered = "Content-Type: " + contentType + "\n\n" + body
+	}
 
 	return map[string]interface{}{
 		"RenderedTemplate": rendered,

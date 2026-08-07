@@ -13,7 +13,7 @@ import (
 
 // updateConfigSet is a common helper for PutConfigurationSet* operations.
 // It retrieves the configuration set, applies the modifier, and persists.
-func (s *SESv2Service) updateConfigSet(reqCtx *request.RequestContext, req *request.ParsedRequest, modify func(*sesv2store.ConfigurationSet, map[string]interface{})) (interface{}, error) {
+func (s *SESv2Service) updateConfigSet(reqCtx *request.RequestContext, req *request.ParsedRequest, modify func(*sesv2store.ConfigurationSet, map[string]interface{}) error) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,9 @@ func (s *SESv2Service) updateConfigSet(reqCtx *request.RequestContext, req *requ
 		return nil, err
 	}
 
-	modify(configSet, req.Parameters)
+	if err := modify(configSet, req.Parameters); err != nil {
+		return nil, err
+	}
 
 	if err := store.UpdateConfigurationSet(configSet); err != nil {
 		return nil, err
@@ -49,16 +51,27 @@ func (s *SESv2Service) CreateConfigurationSet(ctx context.Context, reqCtx *reque
 	if configSetName == "" {
 		return nil, ErrMissingParameter
 	}
+	if !validateConfigurationSetName(configSetName) {
+		return nil, ErrBadRequest
+	}
 
 	parsedTags := tags.ParseTags(req.Parameters, "Tags")
 
 	configSet := sesv2store.NewConfigurationSet(configSetName)
 
 	if deliveryOpts := request.GetMapParam(req.Parameters, "DeliveryOptions"); deliveryOpts != nil {
+		tls := request.GetStringParam(deliveryOpts, "TlsPolicy")
+		if tls != "" && !validateTlsPolicy(tls) {
+			return nil, ErrBadRequest
+		}
+		mds := int32(request.GetIntParam(deliveryOpts, "MaxDeliverySeconds"))
+		if mds > 0 && !validateMaxDeliverySeconds(mds) {
+			return nil, ErrBadRequest
+		}
 		configSet.DeliveryOptions = &sesv2store.DeliveryOptions{
 			SendingPoolName:    request.GetStringParam(deliveryOpts, "SendingPoolName"),
-			MaxDeliverySeconds: int32(request.GetIntParam(deliveryOpts, "MaxDeliverySeconds")),
-			TlsPolicy:          request.GetStringParam(deliveryOpts, "TlsPolicy"),
+			MaxDeliverySeconds: mds,
+			TlsPolicy:          tls,
 		}
 	}
 
@@ -75,28 +88,50 @@ func (s *SESv2Service) CreateConfigurationSet(ctx context.Context, reqCtx *reque
 	}
 
 	if trackingOpts := request.GetMapParam(req.Parameters, "TrackingOptions"); trackingOpts != nil {
+		https := request.GetStringParam(trackingOpts, "HttpsPolicy")
+		if https != "" && !validateHttpsPolicy(https) {
+			return nil, ErrBadRequest
+		}
 		configSet.TrackingOptions = &sesv2store.TrackingOptions{
 			CustomRedirectDomain: request.GetStringParam(trackingOpts, "CustomRedirectDomain"),
-			HttpsPolicy:          request.GetStringParam(trackingOpts, "HttpsPolicy"),
+			HttpsPolicy:          https,
 		}
 	}
 
 	if suppressionOpts := request.GetMapParam(req.Parameters, "SuppressionOptions"); suppressionOpts != nil {
+		for _, r := range request.GetStringList(suppressionOpts, "SuppressedReasons") {
+			if !validateSuppressionListReason(r) {
+				return nil, ErrBadRequest
+			}
+		}
+		scope := request.GetStringParam(suppressionOpts, "SuppressionScope")
+		if scope != "" && !validateSuppressionListScope(scope) {
+			return nil, ErrBadRequest
+		}
 		configSet.SuppressionOptions = &sesv2store.SuppressionOptions{
 			SuppressedReasons: request.GetStringList(suppressionOpts, "SuppressedReasons"),
+			SuppressionScope:  scope,
 		}
 	}
 
 	if vdmOpts := request.GetMapParam(req.Parameters, "VdmOptions"); vdmOpts != nil {
 		configSet.VdmOptions = &sesv2store.VdmOptions{}
 		if dashboardOpts := request.GetMapParam(vdmOpts, "DashboardOptions"); dashboardOpts != nil {
+			em := request.GetStringParam(dashboardOpts, "EngagementMetrics")
+			if em != "" && !validateFeatureStatus(em) {
+				return nil, ErrBadRequest
+			}
 			configSet.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{
-				EngagementMetrics: request.GetStringParam(dashboardOpts, "EngagementMetrics"),
+				EngagementMetrics: em,
 			}
 		}
 		if guardianOpts := request.GetMapParam(vdmOpts, "GuardianOptions"); guardianOpts != nil {
+			osd := request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
+			if osd != "" && !validateFeatureStatus(osd) {
+				return nil, ErrBadRequest
+			}
 			configSet.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{
-				OptimizedSharedDelivery: request.GetStringParam(guardianOpts, "OptimizedSharedDelivery"),
+				OptimizedSharedDelivery: osd,
 			}
 		}
 	}
@@ -267,16 +302,29 @@ func (s *SESv2Service) ListConfigurationSets(ctx context.Context, reqCtx *reques
 	return resp, nil
 }
 
-// parseEventDestinationDefinition extracts the destination type details (SNS,
-// Kinesis Firehose, CloudWatch, Pinpoint, EventBridge) from the request map.
-func parseEventDestinationDefinition(params map[string]interface{}) *sesv2store.EventDestinationDefinition {
+// parseEventDestinationDefinition extracts the destination-type details
+// (SNS, Kinesis Firehose, CloudWatch, Pinpoint, EventBridge) from the
+// request map. It returns the parsed definition, a boolean indicating
+// whether at least one destination type was supplied, and any validation
+// error.
+//
+// Enabled and MatchingEventTypes are intentionally NOT parsed here —
+// the caller manages those top-level fields directly from the
+// EventDestination map, avoiding the redundant double-assignment that
+// previously existed.
+func parseEventDestinationDefinition(params map[string]interface{}) (*sesv2store.EventDestinationDefinition, bool, error) {
 	def := &sesv2store.EventDestinationDefinition{}
-	hasDest := false
+
+	hasSns := false
+	hasKinesis := false
+	hasCloudWatch := false
+	hasPinpoint := false
+	hasEventBridge := false
 
 	if snsMap := request.GetMapParam(params, "SnsDestination"); snsMap != nil {
 		if arn := request.GetStringParam(snsMap, "TopicArn"); arn != "" {
 			def.SnsDestination = &sesv2store.SnsDestination{TopicARN: arn}
-			hasDest = true
+			hasSns = true
 		}
 	}
 	if kfMap := request.GetMapParam(params, "KinesisFirehoseDestination"); kfMap != nil {
@@ -287,33 +335,38 @@ func parseEventDestinationDefinition(params map[string]interface{}) *sesv2store.
 				DeliveryStreamARN: dsArn,
 				IAMRoleARN:        roleArn,
 			}
-			hasDest = true
+			hasKinesis = true
 		}
 	}
 	if cwMap := request.GetMapParam(params, "CloudWatchDestination"); cwMap != nil {
 		dims := parseCloudWatchDimensions(cwMap)
 		if len(dims) > 0 {
 			def.CloudWatchDestination = &sesv2store.CloudWatchDestination{DimensionConfigurations: dims}
-			hasDest = true
+			hasCloudWatch = true
 		}
 	}
 	if ppMap := request.GetMapParam(params, "PinpointDestination"); ppMap != nil {
 		if arn := request.GetStringParam(ppMap, "ApplicationArn"); arn != "" {
 			def.PinpointDestination = &sesv2store.PinpointDestination{ApplicationARN: arn}
-			hasDest = true
+			hasPinpoint = true
 		}
 	}
 	if ebMap := request.GetMapParam(params, "EventBridgeDestination"); ebMap != nil {
 		if arn := request.GetStringParam(ebMap, "EventBusArn"); arn != "" {
 			def.EventBridgeDestination = &sesv2store.EventBridgeDestination{EventBusARN: arn}
-			hasDest = true
+			hasEventBridge = true
 		}
 	}
 
-	if !hasDest {
-		return nil
+	// Per AWS docs, only one destination type may be specified per event
+	// destination. Zero destinations is permitted — the EventDestination
+	// can be created with only Enabled and MatchingEventTypes.
+	destCount := countEventDestinations(hasSns, hasKinesis, hasCloudWatch, hasPinpoint, hasEventBridge)
+	if destCount > 1 {
+		return nil, false, ErrBadRequest
 	}
-	return def
+
+	return def, destCount > 0, nil
 }
 
 // parseCloudWatchDimensions extracts dimension configurations from a CloudWatch
@@ -408,14 +461,33 @@ func (s *SESv2Service) CreateConfigurationSetEventDestination(ctx context.Contex
 	}
 
 	eventDest := &sesv2store.EventDestination{
-		Name:    eventDestinationName,
-		Enabled: true,
+		Name: eventDestinationName,
 	}
 
 	if defMap := request.GetMapParam(req.Parameters, "EventDestination"); defMap != nil {
-		eventDest.Enabled = request.GetBoolParam(defMap, "Enabled")
-		eventDest.MatchingEventTypes = request.GetStringList(defMap, "MatchingEventTypes")
-		eventDest.EventDestinationDefinition = parseEventDestinationDefinition(defMap)
+		// GetBoolParam returns false for an absent key, which
+		// would clobber the intended default. Use GetBoolParamDefault so
+		// the AWS default (true) is preserved when the caller omits
+		// Enabled.
+		eventDest.Enabled = request.GetBoolParamDefault(defMap, "Enabled", true)
+
+		// Parse MatchingEventTypes directly here instead of
+		// inside parseEventDestinationDefinition, eliminating the
+		// redundant double-assignment.
+		if types := request.GetStringList(defMap, "MatchingEventTypes"); len(types) > 0 {
+			if !validateEventTypes(types) {
+				return nil, ErrBadRequest
+			}
+			eventDest.MatchingEventTypes = types
+		}
+
+		def, _, err := parseEventDestinationDefinition(defMap)
+		if err != nil {
+			return nil, err
+		}
+		eventDest.EventDestinationDefinition = def
+	} else {
+		eventDest.Enabled = true
 	}
 
 	if eventDest.Enabled && len(eventDest.MatchingEventTypes) == 0 {
@@ -481,12 +553,32 @@ func (s *SESv2Service) UpdateConfigurationSetEventDestination(ctx context.Contex
 	for i, ed := range configSet.EventDestinations {
 		if ed.Name == eventDestinationName {
 			if defMap := request.GetMapParam(req.Parameters, "EventDestination"); defMap != nil {
-				configSet.EventDestinations[i].Enabled = request.GetBoolParam(defMap, "Enabled")
+				// Only update Enabled when the key is actually
+				// present. Previously GetBoolParam returned false for an
+				// absent key, silently disabling an active destination.
+				if _, ok := defMap["Enabled"]; ok {
+					configSet.EventDestinations[i].Enabled = request.GetBoolParam(defMap, "Enabled")
+				}
+
+				// Parse MatchingEventTypes directly.
 				if types := request.GetStringList(defMap, "MatchingEventTypes"); len(types) > 0 {
+					if !validateEventTypes(types) {
+						return nil, ErrBadRequest
+					}
 					configSet.EventDestinations[i].MatchingEventTypes = types
 				}
-				if newDef := parseEventDestinationDefinition(defMap); newDef != nil {
-					configSet.EventDestinations[i].EventDestinationDefinition = newDef
+
+				def, hasDestType, err := parseEventDestinationDefinition(defMap)
+				if err != nil {
+					return nil, err
+				}
+				// Only overwrite the destination definition
+				// when the caller supplied a destination type. Without
+				// this guard, a partial update (Enabled-only or
+				// MatchingEventTypes-only) would replace the stored SNS
+				// topic / Kinesis stream / etc. with nil pointers.
+				if hasDestType {
+					configSet.EventDestinations[i].EventDestinationDefinition = def
 				}
 			}
 			if configSet.EventDestinations[i].Enabled && len(configSet.EventDestinations[i].MatchingEventTypes) == 0 {
@@ -549,7 +641,7 @@ func (s *SESv2Service) DeleteConfigurationSetEventDestination(ctx context.Contex
 
 // PutConfigurationSetDeliveryOptions updates the delivery options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetDeliveryOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.DeliveryOptions == nil {
 			cs.DeliveryOptions = &sesv2store.DeliveryOptions{}
 		}
@@ -557,31 +649,40 @@ func (s *SESv2Service) PutConfigurationSetDeliveryOptions(ctx context.Context, r
 			cs.DeliveryOptions.SendingPoolName = v
 		}
 		if v := request.GetIntParam(params, "MaxDeliverySeconds"); v > 0 {
+			if !validateMaxDeliverySeconds(int32(v)) {
+				return ErrBadRequest
+			}
 			cs.DeliveryOptions.MaxDeliverySeconds = int32(v)
 		}
 		if v := request.GetStringParam(params, "TlsPolicy"); v != "" {
+			if !validateTlsPolicy(v) {
+				return ErrBadRequest
+			}
 			cs.DeliveryOptions.TlsPolicy = v
 		}
+		return nil
 	})
 }
 
 // PutConfigurationSetReputationOptions updates the reputation options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetReputationOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.ReputationOptions == nil {
 			cs.ReputationOptions = &sesv2store.ReputationOptions{}
 		}
 		cs.ReputationOptions.ReputationMetricsEnabled = request.GetBoolParam(params, "ReputationMetricsEnabled")
+		return nil
 	})
 }
 
 // PutConfigurationSetSendingOptions updates the sending options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetSendingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.SendingOptions == nil {
 			cs.SendingOptions = &sesv2store.SendingOptions{}
 		}
 		cs.SendingOptions.SendingEnabled = request.GetBoolParam(params, "SendingEnabled")
+		return nil
 	})
 }
 
@@ -590,21 +691,39 @@ func (s *SESv2Service) PutConfigurationSetSendingOptions(ctx context.Context, re
 // the input carries SuppressedReasons, SuppressionScope (ACCOUNT/TENANT),
 // and ValidationOptions (Auto Validation threshold settings).
 func (s *SESv2Service) PutConfigurationSetSuppressionOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.SuppressionOptions == nil {
 			cs.SuppressionOptions = &sesv2store.SuppressionOptions{}
 		}
+		for _, r := range request.GetStringList(params, "SuppressedReasons") {
+			if !validateSuppressionListReason(r) {
+				return ErrBadRequest
+			}
+		}
 		cs.SuppressionOptions.SuppressedReasons = request.GetStringList(params, "SuppressedReasons")
-		cs.SuppressionOptions.SuppressionScope = request.GetStringParam(params, "SuppressionScope")
+		if v := request.GetStringParam(params, "SuppressionScope"); v != "" {
+			if !validateSuppressionListScope(v) {
+				return ErrBadRequest
+			}
+			cs.SuppressionOptions.SuppressionScope = v
+		}
 
 		if vo := request.GetMapParam(params, "ValidationOptions"); vo != nil {
 			if ct := request.GetMapParam(vo, "ConditionThreshold"); ct != nil {
+				thresholdEnabled := request.GetStringParam(ct, "ConditionThresholdEnabled")
+				if thresholdEnabled != "" && !validateFeatureStatus(thresholdEnabled) {
+					return ErrBadRequest
+				}
 				threshold := &sesv2store.SuppressionConditionThreshold{
-					ConditionThresholdEnabled: request.GetStringParam(ct, "ConditionThresholdEnabled"),
+					ConditionThresholdEnabled: thresholdEnabled,
 				}
 				if oct := request.GetMapParam(ct, "OverallConfidenceThreshold"); oct != nil {
+					cvt := request.GetStringParam(oct, "ConfidenceVerdictThreshold")
+					if cvt != "" && !validateSuppressionConfidenceVerdictThreshold(cvt) {
+						return ErrBadRequest
+					}
 					threshold.OverallConfidenceThreshold = &sesv2store.SuppressionConfidenceThreshold{
-						ConfidenceVerdictThreshold: request.GetStringParam(oct, "ConfidenceVerdictThreshold"),
+						ConfidenceVerdictThreshold: cvt,
 					}
 				}
 				cs.SuppressionOptions.ValidationOptions = &sesv2store.SuppressionValidationOptions{
@@ -612,12 +731,13 @@ func (s *SESv2Service) PutConfigurationSetSuppressionOptions(ctx context.Context
 				}
 			}
 		}
+		return nil
 	})
 }
 
 // PutConfigurationSetTrackingOptions updates the tracking options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetTrackingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.TrackingOptions == nil {
 			cs.TrackingOptions = &sesv2store.TrackingOptions{}
 		}
@@ -625,57 +745,68 @@ func (s *SESv2Service) PutConfigurationSetTrackingOptions(ctx context.Context, r
 			cs.TrackingOptions.CustomRedirectDomain = v
 		}
 		if v := request.GetStringParam(params, "HttpsPolicy"); v != "" {
+			if !validateHttpsPolicy(v) {
+				return ErrBadRequest
+			}
 			cs.TrackingOptions.HttpsPolicy = v
 		}
+		return nil
 	})
 }
 
 // PutConfigurationSetVdmOptions updates the VDM options for a configuration set.
 // Per Smithy com.amazonaws.sesv2#PutConfigurationSetVdmOptionsRequest the
 // VdmOptions member carries DashboardOptions and GuardianOptions as nested
-// structs. The previous impl read DashboardOptions/GuardianOptions at the
-// top level of params, but the wire shape nests them one level deeper
-// inside VdmOptions.
+// structs.
 func (s *SESv2Service) PutConfigurationSetVdmOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		if cs.VdmOptions == nil {
 			cs.VdmOptions = &sesv2store.VdmOptions{}
 		}
 
 		vdmOpts := request.GetMapParam(params, "VdmOptions")
 		if vdmOpts == nil {
-			return
+			return nil
 		}
 
 		if dashboardOpts := request.GetMapParam(vdmOpts, "DashboardOptions"); dashboardOpts != nil {
 			if cs.VdmOptions.DashboardOptions == nil {
 				cs.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{}
 			}
-			cs.VdmOptions.DashboardOptions.EngagementMetrics = request.GetStringParam(dashboardOpts, "EngagementMetrics")
+			em := request.GetStringParam(dashboardOpts, "EngagementMetrics")
+			if em != "" && !validateFeatureStatus(em) {
+				return ErrBadRequest
+			}
+			cs.VdmOptions.DashboardOptions.EngagementMetrics = em
 		}
 
 		if guardianOpts := request.GetMapParam(vdmOpts, "GuardianOptions"); guardianOpts != nil {
 			if cs.VdmOptions.GuardianOptions == nil {
 				cs.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{}
 			}
-			cs.VdmOptions.GuardianOptions.OptimizedSharedDelivery = request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
+			osd := request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
+			if osd != "" && !validateFeatureStatus(osd) {
+				return ErrBadRequest
+			}
+			cs.VdmOptions.GuardianOptions.OptimizedSharedDelivery = osd
 		}
+		return nil
 	})
 }
 
 // PutConfigurationSetArchivingOptions updates the archiving options for a configuration set.
 // Per Smithy `PutConfigurationSetArchivingOptionsRequest`, only `ArchiveArn`
-// is accepted (no Enabled/RetentionPeriod/TargetArn — those were an
-// invented schema that silently dropped user input).
+// is accepted.
 func (s *SESv2Service) PutConfigurationSetArchivingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) error {
 		archiveArn := request.GetStringParam(params, "ArchiveArn")
 		if archiveArn == "" {
 			cs.ArchivingOptions = nil
-			return
+			return nil
 		}
 		cs.ArchivingOptions = &sesv2store.ArchivingOptions{
 			ArchiveArn: archiveArn,
 		}
+		return nil
 	})
 }

@@ -2,6 +2,7 @@ package sesv2
 
 import (
 	"context"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -9,28 +10,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
-
-// validateFromAddress validates that fromEmailAddress is a syntactically
-// valid email address or domain.  This is a lightweight check (presence
-// of "@" for email, non-empty for domain) — not a full RFC 5322 parser.
-// The goal is to reject obviously malformed input early rather than
-// relying on the identity-lookup to fail.
-func validateFromAddress(addr string) bool {
-	if addr == "" {
-		return false
-	}
-	// Domain identity: no "@" — accept as long as non-empty.
-	if !strings.Contains(addr, "@") {
-		return true
-	}
-	// Email address: must have exactly one "@" with non-empty local
-	// and domain parts.
-	parts := strings.Split(addr, "@")
-	if len(parts) != 2 {
-		return false
-	}
-	return parts[0] != "" && parts[1] != ""
-}
 
 // rejectTenantName returns ErrBadRequest when the caller supplies
 // TenantName.  Tenant management (48 ops) is not implemented in this
@@ -81,6 +60,9 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 	listMgmtOpts := parseListManagementOptions(req.Parameters)
 
 	destMap := request.GetMapParam(req.Parameters, "Destination")
+	if destMap == nil {
+		return nil, ErrBadRequest
+	}
 	destination, err := parseDestination(destMap)
 	if err != nil {
 		return nil, err
@@ -89,10 +71,32 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 	contentMap := request.GetMapParam(req.Parameters, "Content")
 	content := parseContent(contentMap)
 
+	// Content is Smithy @required — reject when absent or empty.
+	if content == nil {
+		return nil, ErrMissingParameter
+	}
+	// Reject content that has no meaningful payload (e.g. Simple with
+	// empty Body, Raw with empty Data, Template with empty TemplateName).
+	if err := validateContent(content); err != nil {
+		return nil, ErrMessageRejected
+	}
+	// Reject raw messages exceeding the 10 MB AWS SES size limit.
+	if content.Raw != nil && len(content.Raw.Data) > maxRawMessageSize {
+		return nil, ErrMessageRejected
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	// Verify configuration-set existence when supplied.
+	if configurationSetName != "" {
+		if !store.ConfigurationSetExists(configurationSetName) {
+			return nil, ErrConfigurationSetNotFound
+		}
+	}
+
 	if !identityExistsForEmail(store.Raw(), fromEmailAddress) {
 		return nil, ErrIdentityNotFound
 	}
@@ -109,17 +113,26 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 	email.Status = "SENT"
 	email.SentTimestamp = time.Now().UTC()
 
+	// Validate ReplyToAddresses email format.
 	replyTo := request.GetStringList(req.Parameters, "ReplyToAddresses")
 	if len(replyTo) > 0 {
+		if err := validateReplyToAddresses(replyTo); err != nil {
+			return nil, ErrBadRequest
+		}
 		email.ReplyToAddresses = replyTo
 	}
 
+	// Validate EmailTag Name/Value charset and length.
 	emailTagsRaw := tagutil.ParseMessageTags(req.Parameters, "EmailTags")
 	if len(emailTagsRaw) > 0 {
-		email.EmailTags = make([]sesv2store.MessageTag, len(emailTagsRaw))
+		tags := make([]sesv2store.MessageTag, len(emailTagsRaw))
 		for i, t := range emailTagsRaw {
-			email.EmailTags[i] = sesv2store.MessageTag{Name: t.Name, Value: t.Value}
+			tags[i] = sesv2store.MessageTag{Name: t.Name, Value: t.Value}
 		}
+		if err := validateMessageTags(tags); err != nil {
+			return nil, ErrBadRequest
+		}
+		email.EmailTags = tags
 	}
 
 	if err := store.SaveEmailRecord(email); err != nil {
@@ -166,6 +179,14 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 
 	defaultContent := parseContent(request.GetMapParam(req.Parameters, "DefaultContent"))
 
+	// DefaultContent is Smithy @required — reject when absent or empty.
+	if defaultContent == nil {
+		return nil, ErrMissingParameter
+	}
+	if err := validateContent(defaultContent); err != nil {
+		return nil, ErrMessageRejected
+	}
+
 	entries, err := parseBulkEmailEntries(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -174,9 +195,29 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrMissingParameter
 	}
 
+	// AWS limits BulkEmailEntries to 50 items.
+	if len(entries) > 50 {
+		return nil, ErrLimitExceeded
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Verify configuration-set existence when supplied.
+	if configurationSetName != "" {
+		if !store.ConfigurationSetExists(configurationSetName) {
+			return nil, ErrConfigurationSetNotFound
+		}
+	}
+
+	// Validate ReplyToAddresses format.
+	replyTo := request.GetStringList(req.Parameters, "ReplyToAddresses")
+	if len(replyTo) > 0 {
+		if err := validateReplyToAddresses(replyTo); err != nil {
+			return nil, ErrBadRequest
+		}
 	}
 
 	if !identityExistsForEmail(store.Raw(), fromEmailAddress) {
@@ -211,11 +252,23 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 		}
 
 		// Merge DefaultEmailTags with per-entry ReplacementTags.
+		var mergedTags []sesv2store.MessageTag
 		if len(defaultEmailTags) > 0 {
-			email.EmailTags = append(email.EmailTags, defaultEmailTags...)
+			mergedTags = append(mergedTags, defaultEmailTags...)
 		}
 		if len(entry.ReplacementTags) > 0 {
-			email.EmailTags = append(email.EmailTags, entry.ReplacementTags...)
+			mergedTags = append(mergedTags, entry.ReplacementTags...)
+		}
+		// Validate merged tag set (count + charset + length).
+		if len(mergedTags) > 0 {
+			if err := validateMessageTags(mergedTags); err != nil {
+				return nil, ErrBadRequest
+			}
+			email.EmailTags = mergedTags
+		}
+
+		if len(replyTo) > 0 {
+			email.ReplyToAddresses = replyTo
 		}
 
 		if len(entry.ReplacementHeaders) > 0 {
@@ -241,21 +294,6 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-// isValidEmailAddress validates that addr is a syntactically valid email
-// address (must contain exactly one "@" with non-empty local and domain
-// parts).  Used for recipient addresses in Destination — unlike sender
-// identities, recipients cannot be bare domains.
-func isValidEmailAddress(addr string) bool {
-	if addr == "" {
-		return false
-	}
-	parts := strings.Split(addr, "@")
-	if len(parts) != 2 {
-		return false
-	}
-	return parts[0] != "" && parts[1] != ""
-}
-
 func parseDestination(destMap map[string]interface{}) (*sesv2store.Destination, error) {
 	if destMap == nil {
 		return nil, nil
@@ -265,7 +303,7 @@ func parseDestination(destMap map[string]interface{}) (*sesv2store.Destination, 
 	if to, ok := destMap["ToAddresses"].([]interface{}); ok {
 		dest.ToAddresses = toStringSlice(to)
 		for _, a := range dest.ToAddresses {
-			if !isValidEmailAddress(a) {
+			if !validateEmailAddress(a) {
 				return nil, ErrBadRequest
 			}
 		}
@@ -273,7 +311,7 @@ func parseDestination(destMap map[string]interface{}) (*sesv2store.Destination, 
 	if cc, ok := destMap["CcAddresses"].([]interface{}); ok {
 		dest.CcAddresses = toStringSlice(cc)
 		for _, a := range dest.CcAddresses {
-			if !isValidEmailAddress(a) {
+			if !validateEmailAddress(a) {
 				return nil, ErrBadRequest
 			}
 		}
@@ -281,10 +319,15 @@ func parseDestination(destMap map[string]interface{}) (*sesv2store.Destination, 
 	if bcc, ok := destMap["BccAddresses"].([]interface{}); ok {
 		dest.BccAddresses = toStringSlice(bcc)
 		for _, a := range dest.BccAddresses {
-			if !isValidEmailAddress(a) {
+			if !validateEmailAddress(a) {
 				return nil, ErrBadRequest
 			}
 		}
+	}
+
+	// A Destination must contain at least one recipient across To/Cc/Bcc.
+	if len(dest.ToAddresses) == 0 && len(dest.CcAddresses) == 0 && len(dest.BccAddresses) == 0 {
+		return nil, ErrBadRequest
 	}
 
 	return dest, nil
@@ -297,19 +340,26 @@ func parseContent(contentMap map[string]interface{}) *sesv2store.EmailContent {
 
 	content := &sesv2store.EmailContent{}
 
+	// Per AWS docs EmailContent is a union — at most one of Simple, Raw,
+	// or Template may be specified. Accept the first and ignore the rest
+	// to avoid ambiguous content states.
 	if simple, ok := contentMap["Simple"].(map[string]interface{}); ok {
 		content.Simple = parseMessage(simple)
+		return content
 	}
 
 	if raw, ok := contentMap["Raw"].(map[string]interface{}); ok {
 		content.Raw = parseRawMessage(raw)
+		return content
 	}
 
 	if tmpl, ok := contentMap["Template"].(map[string]interface{}); ok {
 		content.Template = parseTemplate(tmpl)
+		return content
 	}
 
-	return content
+	// No recognised content member — treat as absent.
+	return nil
 }
 
 func parseMessage(msgMap map[string]interface{}) *sesv2store.Message {
@@ -405,17 +455,20 @@ func parseBulkEmailEntries(params map[string]interface{}) ([]sesv2store.BulkEmai
 	for _, e := range entryList {
 		entryMap, ok := e.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrBadRequest
 		}
 
 		entry := sesv2store.BulkEmailEntry{}
-		if dest, ok := entryMap["Destination"].(map[string]interface{}); ok {
-			parsed, err := parseDestination(dest)
-			if err != nil {
-				return nil, err
-			}
-			entry.Destination = parsed
+		// Per Smithy, BulkEmailEntry.Destination is @required.
+		dest, destOk := entryMap["Destination"].(map[string]interface{})
+		if !destOk {
+			return nil, ErrBadRequest
 		}
+		parsed, err := parseDestination(dest)
+		if err != nil {
+			return nil, err
+		}
+		entry.Destination = parsed
 
 		if tags, ok := entryMap["ReplacementTags"].([]interface{}); ok {
 			tagsRaw := tagutil.ParseMessageTagsFromList(tags)
@@ -453,20 +506,16 @@ func toStringSlice(iface []interface{}) []string {
 // looked up to authorise the FromEmailAddress. Per AWS, identities are
 // either an exact email address (user@example.com) or the bare domain
 // (example.com). RFC 5322 display-name forms such as 'John Doe <u@d>' are
-// not valid SES identities and are rejected upstream by the SDK before
-// reaching the service; we still try to extract the addr-spec when
-// possible so a slightly-lenient client does not get a confusing
-// 'identity not found' error.
+// handled correctly via net/mail.ParseAddressList.
 func extractIdentityFromEmail(email string) (string, bool) {
 	if email == "" {
 		return "", false
 	}
-	// Trim display-name form: 'Name <addr@domain>' -> 'addr@domain'
-	if i := strings.LastIndex(email, "<"); i >= 0 {
-		end := strings.Index(email[i:], ">")
-		if end > 0 {
-			email = email[i+1 : i+end]
-		}
+	// Use net/mail.ParseAddressList for robust RFC 5322 parsing
+	// instead of fragile manual angle-bracket extraction. Handles all
+	// display-name variants correctly without edge-case breakage.
+	if addrs, err := mail.ParseAddressList(email); err == nil && len(addrs) > 0 {
+		email = addrs[0].Address
 	}
 	email = strings.TrimSpace(email)
 	if !strings.Contains(email, "@") {
@@ -485,7 +534,11 @@ func extractIdentityFromEmail(email string) (string, bool) {
 // performed in two steps: first the exact email address, then the
 // extracted domain. Malformed inputs return false so the caller returns
 // ErrIdentityNotFound rather than a confusing 'no identity matches'.
+//
+// AWS SES treats identity names as case-insensitive. The lookup
+// is normalised to lowercase to match identities stored in any case.
 func identityExistsForEmail(store *sesv2store.SESv2Store, email string) bool {
+	email = strings.ToLower(email)
 	if _, err := store.GetEmailIdentity(email); err == nil {
 		return true
 	}

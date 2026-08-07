@@ -2,12 +2,10 @@ package sesv2
 
 import (
 	"context"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
@@ -88,7 +86,7 @@ func applyDkimSigningAttributes(d *sesv2store.DkimAttributes, byo *sesv2store.Dk
 
 // updateEmailIdentity is a common helper for PutEmailIdentity* operations.
 // It retrieves the identity, applies the modifier, and persists.
-func (s *SESv2Service) updateEmailIdentity(reqCtx *request.RequestContext, req *request.ParsedRequest, modify func(*sesv2store.EmailIdentity, map[string]interface{})) (interface{}, error) {
+func (s *SESv2Service) updateEmailIdentity(reqCtx *request.RequestContext, req *request.ParsedRequest, modify func(*sesv2store.EmailIdentity, map[string]interface{}) error) (interface{}, error) {
 	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
 	if emailIdentity == "" {
 		return nil, ErrMissingParameter
@@ -104,7 +102,9 @@ func (s *SESv2Service) updateEmailIdentity(reqCtx *request.RequestContext, req *
 		return nil, err
 	}
 
-	modify(identity, req.Parameters)
+	if err := modify(identity, req.Parameters); err != nil {
+		return nil, err
+	}
 
 	if err := store.UpdateEmailIdentity(identity); err != nil {
 		return nil, err
@@ -126,56 +126,27 @@ func ensureDkimAttributes(identity *sesv2store.EmailIdentity) {
 // present, the identity's DkimAttributes record the caller-supplied
 // selector and private key and SigningAttributesOrigin becomes EXTERNAL;
 // otherwise AWS-managed DKIM tokens are minted.
+// Validation, DKIM generation, configuration-set existence checking, and
+// atomic tag persistence are performed by createEmailIdentityCore.
 func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
-	if emailIdentity == "" {
-		return nil, ErrMissingParameter
-	}
-	if !isValidIdentityFormat(emailIdentity) {
-		return nil, ErrBadRequest
-	}
-
-	parsedTags := tags.ParseTags(req.Parameters, "Tags")
-	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-
-	identity := sesv2store.NewEmailIdentity(emailIdentity)
-	if configurationSetName != "" {
-		identity.ConfigurationSetName = configurationSetName
-	}
-
-	byoDkim := parseDkimSigningAttributes(request.GetMapParam(req.Parameters, "DkimSigningAttributes"))
-	if byoDkim != nil {
-		ensureDkimAttributes(identity)
-		applyDkimSigningAttributes(identity.DkimAttributes, byoDkim)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	created, err := store.CreateEmailIdentity(identity)
+	dkimMap := request.GetMapParam(req.Parameters, "DkimSigningAttributes")
+	result, err := s.createEmailIdentityCore(ctx, store, CreateEmailIdentityInput{
+		EmailIdentity:        request.GetStringParam(req.Parameters, "EmailIdentity"),
+		Tags:                 tags.ParseTags(req.Parameters, "Tags"),
+		ConfigurationSetName: request.GetStringParam(req.Parameters, "ConfigurationSetName"),
+		DkimSigningAttrs:     dkimMap,
+		DkimSigningProvided:  dkimMap != nil,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(parsedTags) > 0 {
-		arn := store.BuildIdentityArn(emailIdentity)
-		if err := store.TagFromSlice(arn, parsedTags); err != nil {
-			return nil, err
-		}
-	}
-
-	resp := map[string]interface{}{
-		"IdentityType":             created.IdentityType,
-		"VerifiedForSendingStatus": created.VerifiedForSending,
-	}
-
-	if dkim := dkimAttributesToMap(created.DkimAttributes); dkim != nil {
-		resp["DkimAttributes"] = dkim
-	}
-
-	return resp, nil
+	return identityResultToResponse(result), nil
 }
 
 // GetEmailIdentity retrieves the details of an email identity.
@@ -255,17 +226,12 @@ func (s *SESv2Service) GetEmailIdentity(ctx context.Context, reqCtx *request.Req
 
 // DeleteEmailIdentity deletes an email identity.
 func (s *SESv2Service) DeleteEmailIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
-	if emailIdentity == "" {
-		return nil, ErrMissingParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.DeleteEmailIdentity(emailIdentity); err != nil {
+	if err := s.deleteEmailIdentityCore(store, request.GetStringParam(req.Parameters, "EmailIdentity")); err != nil {
 		return nil, err
 	}
 
@@ -274,67 +240,28 @@ func (s *SESv2Service) DeleteEmailIdentity(ctx context.Context, reqCtx *request.
 
 // ListEmailIdentities returns a list of email identities for the account.
 func (s *SESv2Service) ListEmailIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	opts := common.ListOptions{
-		MaxItems: pageSize,
-		Marker:   nextToken,
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := store.ListEmailIdentities(opts)
+	result, err := s.listEmailIdentitiesCore(store, ListEmailIdentitiesInput{
+		NextToken: request.GetStringParam(req.Parameters, "NextToken"),
+		MaxItems:  request.GetIntParam(req.Parameters, "PageSize"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	identities := make([]map[string]interface{}, 0, len(result.Items))
-	for _, identity := range result.Items {
-		verificationStatus := "PENDING"
-		if identity.DkimAttributes != nil {
-			verificationStatus = identity.DkimAttributes.Status
-			if verificationStatus == "" {
-				verificationStatus = "SUCCESS"
-			}
-		}
-		if identity.VerifiedForSending {
-			verificationStatus = "SUCCESS"
-		}
-		item := map[string]interface{}{
-			"IdentityType":       identity.IdentityType,
-			"IdentityName":       identity.Identity,
-			"SendingEnabled":     identity.VerifiedForSending,
-			"VerificationStatus": verificationStatus,
-		}
-		identities = append(identities, item)
-	}
-
-	resp := map[string]interface{}{
-		"EmailIdentities": identities,
-	}
-
-	if result.IsTruncated {
-		resp["NextToken"] = result.NextMarker
-	}
-
-	return resp, nil
+	return listEmailIdentitiesResultToResponse(result), nil
 }
 
 // PutEmailIdentityDkimAttributes updates the DKIM attributes for an email identity.
 func (s *SESv2Service) PutEmailIdentityDkimAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
+	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) error {
 		ensureDkimAttributes(id)
 		id.DkimAttributes.SigningEnabled = request.GetBoolParam(params, "SigningEnabled")
+		return nil
 	})
 }
 
@@ -368,14 +295,27 @@ func (s *SESv2Service) PutEmailIdentityDkimSigningAttributes(ctx context.Context
 	ensureDkimAttributes(identity)
 	signingAttrs := request.GetMapParam(req.Parameters, "SigningAttributes")
 	byo := parseDkimSigningAttributes(signingAttrs)
+
+	// SigningAttributesOrigin is Smithy @required.
+	origin := request.GetStringParam(req.Parameters, "SigningAttributesOrigin")
+	if origin == "" && byo == nil {
+		return nil, ErrMissingParameter
+	}
+	if origin != "" && !validateDkimSigningAttributesOrigin(origin) {
+		return nil, ErrBadRequest
+	}
+
 	if byo == nil {
 		// Caller is switching back to AWS-managed DKIM (or only set
 		// the top-level SigningAttributesOrigin parameter on its own).
-		if v := request.GetStringParam(req.Parameters, "SigningAttributesOrigin"); v != "" {
-			identity.DkimAttributes.SigningAttributesOrigin = v
+		if origin != "" {
+			identity.DkimAttributes.SigningAttributesOrigin = origin
 		}
 	} else {
 		applyDkimSigningAttributes(identity.DkimAttributes, byo)
+		if origin != "" {
+			identity.DkimAttributes.SigningAttributesOrigin = origin
+		}
 	}
 
 	if err := store.UpdateEmailIdentity(identity); err != nil {
@@ -394,8 +334,9 @@ func (s *SESv2Service) PutEmailIdentityDkimSigningAttributes(ctx context.Context
 
 // PutEmailIdentityFeedbackAttributes updates the feedback attributes for an email identity.
 func (s *SESv2Service) PutEmailIdentityFeedbackAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
+	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) error {
 		id.FeedbackForwarding = request.GetBoolParam(params, "EmailForwardingEnabled")
+		return nil
 	})
 }
 
@@ -407,32 +348,48 @@ func (s *SESv2Service) PutEmailIdentityFeedbackAttributes(ctx context.Context, r
 // PENDING until they re-Put or AWS verifies, which on this platform is
 // immediate in practice but the wire value must be PENDING initially).
 func (s *SESv2Service) PutEmailIdentityMailFromAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
+	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) error {
 		if id.MailFromAttributes == nil {
 			id.MailFromAttributes = &sesv2store.MailFromAttributes{}
 		}
 		mailFromDomain := request.GetStringParam(params, "MailFromDomain")
 		if mailFromDomain == "" {
-			// Empty MailFromDomain resets the configuration entirely.
 			id.MailFromAttributes = &sesv2store.MailFromAttributes{}
-			return
+			return nil
 		}
 		id.MailFromAttributes.MailFromDomain = mailFromDomain
 		if v := request.GetStringParam(params, "BehaviorOnMxFailure"); v != "" {
+			if !validateBehaviorOnMxFailure(v) {
+				return ErrBadRequest
+			}
 			id.MailFromAttributes.BehaviorOnMxFailure = v
 		}
-		// Initial state per AWS: PENDING until MX verification completes.
-		// The platform does not actually perform MX verification, so a
-		// follow-up Put will keep the value at PENDING; this is the
-		// AWS-correct initial value.
 		id.MailFromAttributes.MailFromDomainStatus = "PENDING"
+		return nil
 	})
 }
 
 // PutEmailIdentityConfigurationSetAttributes associates a configuration set with an email identity.
 func (s *SESv2Service) PutEmailIdentityConfigurationSetAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) {
+	// Check EmailIdentity presence before fetching the store
+	// so a malformed request does not waste a store read on
+	// ConfigurationSetExists.
+	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
+	if emailIdentity == "" {
+		return nil, ErrMissingParameter
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	// Verify configuration-set existence when a name is supplied.
+	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
+	if configSetName != "" && !store.ConfigurationSetExists(configSetName) {
+		return nil, ErrConfigurationSetNotFound
+	}
+	return s.updateEmailIdentity(reqCtx, req, func(id *sesv2store.EmailIdentity, params map[string]interface{}) error {
 		id.ConfigurationSetName = request.GetStringParam(params, "ConfigurationSetName")
+		return nil
 	})
 }
 
@@ -470,21 +427,29 @@ func (s *SESv2Service) GetEmailIdentityPolicies(ctx context.Context, reqCtx *req
 
 // CreateEmailIdentityPolicy creates a sending authorisation policy for an email identity.
 func (s *SESv2Service) CreateEmailIdentityPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.putEmailIdentityPolicy(reqCtx, req)
+	return s.putEmailIdentityPolicy(reqCtx, req, true)
 }
 
 // UpdateEmailIdentityPolicy updates a sending authorisation policy for an email identity.
 func (s *SESv2Service) UpdateEmailIdentityPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.putEmailIdentityPolicy(reqCtx, req)
+	return s.putEmailIdentityPolicy(reqCtx, req, false)
 }
 
-func (s *SESv2Service) putEmailIdentityPolicy(reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *SESv2Service) putEmailIdentityPolicy(reqCtx *request.RequestContext, req *request.ParsedRequest, isCreate bool) (interface{}, error) {
 	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
 	policyName := request.GetStringParam(req.Parameters, "PolicyName")
 	policy := request.GetStringParam(req.Parameters, "Policy")
 
 	if emailIdentity == "" || policyName == "" {
 		return nil, ErrMissingParameter
+	}
+	// Policy is Smithy @required.
+	if policy == "" {
+		return nil, ErrMissingParameter
+	}
+	// Validate that the policy is well-formed JSON.
+	if err := validatePolicyJSON(policy); err != nil {
+		return nil, ErrBadRequest
 	}
 
 	store, err := s.store(reqCtx)
@@ -495,6 +460,25 @@ func (s *SESv2Service) putEmailIdentityPolicy(reqCtx *request.RequestContext, re
 	_, err = store.GetEmailIdentity(emailIdentity)
 	if err != nil {
 		return nil, err
+	}
+
+	// Distinguish Create (AlreadyExists) from Update (NotFound).
+	existingPolicies, err := store.ListEmailIdentityPolicies(emailIdentity)
+	if err != nil {
+		return nil, err
+	}
+	policyExists := false
+	for _, p := range existingPolicies {
+		if p.PolicyName == policyName {
+			policyExists = true
+			break
+		}
+	}
+	if isCreate && policyExists {
+		return nil, NewAlreadyExistsException("policy")
+	}
+	if !isCreate && !policyExists {
+		return nil, ErrNotFound
 	}
 
 	if err := store.PutEmailIdentityPolicy(emailIdentity, policyName, policy); err != nil {
@@ -523,31 +507,25 @@ func (s *SESv2Service) DeleteEmailIdentityPolicy(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	// Check that the policy exists before deleting — AWS returns NotFound.
+	existingPolicies, err := store.ListEmailIdentityPolicies(emailIdentity)
+	if err != nil {
+		return nil, err
+	}
+	policyExists := false
+	for _, p := range existingPolicies {
+		if p.PolicyName == policyName {
+			policyExists = true
+			break
+		}
+	}
+	if !policyExists {
+		return nil, ErrNotFound
+	}
+
 	if err := store.DeleteEmailIdentityPolicy(emailIdentity, policyName); err != nil {
 		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
-}
-
-// isValidIdentityFormat validates that identity is a syntactically valid
-// email address or domain.  A domain has no "@" and must contain a dot
-// (e.g. "example.com").  An email address must have exactly one "@" with
-// non-empty local and domain parts.  This is a lightweight check — not a
-// full RFC 5321/5322 parser — intended to reject obviously malformed
-// input like "@@@" or "a@b@c".
-func isValidIdentityFormat(identity string) bool {
-	if identity == "" {
-		return false
-	}
-	// Domain identity: no "@" — must contain at least one dot.
-	if !strings.Contains(identity, "@") {
-		return strings.Contains(identity, ".")
-	}
-	// Email address: exactly one "@" with non-empty local and domain parts.
-	parts := strings.Split(identity, "@")
-	if len(parts) != 2 {
-		return false
-	}
-	return parts[0] != "" && parts[1] != ""
 }

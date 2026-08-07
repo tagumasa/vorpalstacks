@@ -104,13 +104,16 @@ func (s *SESv2Service) PutAccountSendingAttributes(ctx context.Context, reqCtx *
 }
 
 // PutAccountSuppressionAttributes updates the suppression attributes for the SES v2 account.
-// Per Smithy com.amazonaws.sesv2#PutAccountSuppressionAttributesRequest
-// the input carries SuppressedReasons and ValidationAttributes (Auto
-// Validation threshold settings).
 func (s *SESv2Service) PutAccountSuppressionAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, r := range request.GetStringList(req.Parameters, "SuppressedReasons") {
+		if !validateSuppressionListReason(r) {
+			return nil, ErrBadRequest
+		}
 	}
 
 	attrs := &sesv2store.SuppressionAttributes{
@@ -119,12 +122,20 @@ func (s *SESv2Service) PutAccountSuppressionAttributes(ctx context.Context, reqC
 
 	if va := request.GetMapParam(req.Parameters, "ValidationAttributes"); va != nil {
 		if ct := request.GetMapParam(va, "ConditionThreshold"); ct != nil {
+			thresholdEnabled := request.GetStringParam(ct, "ConditionThresholdEnabled")
+			if thresholdEnabled != "" && !validateFeatureStatus(thresholdEnabled) {
+				return nil, ErrBadRequest
+			}
 			threshold := &sesv2store.SuppressionConditionThreshold{
-				ConditionThresholdEnabled: request.GetStringParam(ct, "ConditionThresholdEnabled"),
+				ConditionThresholdEnabled: thresholdEnabled,
 			}
 			if oct := request.GetMapParam(ct, "OverallConfidenceThreshold"); oct != nil {
+				cvt := request.GetStringParam(oct, "ConfidenceVerdictThreshold")
+				if cvt != "" && !validateSuppressionConfidenceVerdictThreshold(cvt) {
+					return nil, ErrBadRequest
+				}
 				threshold.OverallConfidenceThreshold = &sesv2store.SuppressionConfidenceThreshold{
-					ConfidenceVerdictThreshold: request.GetStringParam(oct, "ConfidenceVerdictThreshold"),
+					ConfidenceVerdictThreshold: cvt,
 				}
 			}
 			attrs.ValidationAttributes = &sesv2store.SuppressionValidationAttributes{
@@ -141,27 +152,53 @@ func (s *SESv2Service) PutAccountSuppressionAttributes(ctx context.Context, reqC
 }
 
 // PutAccountDetails updates the account details for the SES v2 account.
-// Per Smithy com.amazonaws.sesv2#PutAccountDetailsRequest,
-// ProductionAccessEnabled has Smithy type EnabledWrapper (a Boolean
-// wrapper that distinguishes unset from explicit false). We honour that
-// by only overwriting the stored value when the caller actually supplied
-// the parameter.
+// Per Smithy com.amazonaws.sesv2#PutAccountDetailsRequest, MailType and
+// WebsiteURL are @required. ProductionAccessEnabled has Smithy type
+// EnabledWrapper (a Boolean wrapper that distinguishes unset from explicit
+// false). We honour that by only overwriting the stored value when the
+// caller actually supplied the parameter.
 func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	details := &sesv2store.AccountDetails{
-		MailType:           request.GetStringParam(req.Parameters, "MailType"),
-		UseCaseDescription: request.GetStringParam(req.Parameters, "UseCaseDescription"),
-		WebsiteURL:         request.GetStringParam(req.Parameters, "WebsiteURL"),
-		ContactLanguage:    request.GetStringParam(req.Parameters, "ContactLanguage"),
+	mailType := request.GetStringParam(req.Parameters, "MailType")
+	websiteURL := request.GetStringParam(req.Parameters, "WebsiteURL")
+
+	// MailType and WebsiteURL are Smithy @required.
+	if mailType == "" {
+		return nil, ErrMissingParameter
+	}
+	if websiteURL == "" {
+		return nil, ErrMissingParameter
+	}
+	// Validate enum values.
+	if !validateMailType(mailType) {
+		return nil, ErrBadRequest
+	}
+	if cl := request.GetStringParam(req.Parameters, "ContactLanguage"); cl != "" {
+		if !validateContactLanguage(cl) {
+			return nil, ErrBadRequest
+		}
+	}
+	// AdditionalContactEmailAddresses: max 5, validate email format.
+	additionalEmails := request.GetStringList(req.Parameters, "AdditionalContactEmailAddresses")
+	if len(additionalEmails) > 5 {
+		return nil, ErrBadRequest
+	}
+	for _, e := range additionalEmails {
+		if !validateEmailAddressRFC5321(e) {
+			return nil, ErrBadRequest
+		}
 	}
 
-	additionalEmails := request.GetStringList(req.Parameters, "AdditionalContactEmailAddresses")
-	if len(additionalEmails) > 0 {
-		details.AdditionalContactEmailAddresses = additionalEmails
+	details := &sesv2store.AccountDetails{
+		MailType:                        mailType,
+		UseCaseDescription:              request.GetStringParam(req.Parameters, "UseCaseDescription"),
+		WebsiteURL:                      websiteURL,
+		ContactLanguage:                 request.GetStringParam(req.Parameters, "ContactLanguage"),
+		AdditionalContactEmailAddresses: additionalEmails,
 	}
 
 	if _, ok := req.Parameters["ProductionAccessEnabled"]; ok {
@@ -202,11 +239,19 @@ func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	if dashboardAttrs := request.GetMapParam(vdmAttrs, "DashboardAttributes"); dashboardAttrs != nil {
-		vdm.DashboardAttributes = request.GetStringParam(dashboardAttrs, "EngagementMetrics")
+		em := request.GetStringParam(dashboardAttrs, "EngagementMetrics")
+		if em != "" && !validateFeatureStatus(em) {
+			return nil, ErrBadRequest
+		}
+		vdm.DashboardAttributes = em
 	}
 
 	if guardianAttrs := request.GetMapParam(vdmAttrs, "GuardianAttributes"); guardianAttrs != nil {
-		vdm.GuardianAttributes = request.GetStringParam(guardianAttrs, "OptimizedSharedDelivery")
+		osd := request.GetStringParam(guardianAttrs, "OptimizedSharedDelivery")
+		if osd != "" && !validateFeatureStatus(osd) {
+			return nil, ErrBadRequest
+		}
+		vdm.GuardianAttributes = osd
 	}
 
 	if err := store.PutVdmAttributes(vdm); err != nil {

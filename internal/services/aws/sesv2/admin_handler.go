@@ -2,21 +2,19 @@ package sesv2
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
-
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2connect "vorpalstacks/internal/pb/aws/sesv2/sesv2connect"
-	storecommon "vorpalstacks/internal/store/aws/common"
-	sesv2store "vorpalstacks/internal/store/aws/sesv2"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// AdminHandler implements the SESv2 gRPC-Web admin console handler.
+// AdminHandler implements the SESv2 gRPC-Web admin console handler. It is
+// a thin adapter: every operation delegates to the service-layer Core
+// methods, ensuring identical validation to the HTTP API. No store
+// packages are imported directly (AGENTS.md rule #29).
 type AdminHandler struct {
 	sesv2connect.UnimplementedSESv2ServiceHandler
 	service *SESv2Service
@@ -24,136 +22,97 @@ type AdminHandler struct {
 
 var _ sesv2connect.SESv2ServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new SESv2 admin console handler.
+// NewAdminHandler creates a new SESv2 admin console handler backed by the
+// given service instance.
 func NewAdminHandler(svc *SESv2Service) *AdminHandler {
 	return &AdminHandler{service: svc}
-}
-
-func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (sesv2store.SESv2StoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
 }
 
 // ListEmailIdentities returns a paginated list of email identities in the
 // requested region.
 func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Request[pb.ListEmailIdentitiesRequest]) (*connect.Response[pb.ListEmailIdentitiesResponse], error) {
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getSESv2Store(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetPagesize())
-	if limit <= 0 {
-		limit = 100
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: limit,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	result, err := store.ListEmailIdentities(opts)
+	result, err := h.service.listEmailIdentitiesCore(store, ListEmailIdentitiesInput{
+		NextToken: req.Msg.GetNexttoken(),
+		MaxItems:  int(req.Msg.GetPagesize()),
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	var identities []*pb.IdentityInfo
-	for _, identity := range result.Items {
-		info := &pb.IdentityInfo{
-			Identityname:       identity.Identity,
-			Identitytype:       pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
-			Sendingenabled:     proto.Bool(identity.VerifiedForSending),
-			Verificationstatus: verificationStatusToProto(identity.DkimAttributes),
-		}
-		if identity.IdentityType == "DOMAIN" {
-			info.Identitytype = pb.IdentityType_IDENTITY_TYPE_DOMAIN
-		}
-		identities = append(identities, info)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.ListEmailIdentitiesResponse{
-		Emailidentities: identities,
-		Nexttoken:       result.NextMarker,
+		Emailidentities: toPbIdentityInfos(result.Identities),
+		Nexttoken:       result.NextToken,
 	}), nil
 }
 
 // CreateEmailIdentity creates a new email identity via the admin console.
+// Tags, ConfigurationSetName, and DkimSigningAttributes are fully
+// supported because the handler delegates to createEmailIdentityCore,
+// which performs the same validation and processing as the HTTP API.
 func (h *AdminHandler) CreateEmailIdentity(ctx context.Context, req *connect.Request[pb.CreateEmailIdentityRequest]) (*connect.Response[pb.CreateEmailIdentityResponse], error) {
-	if req.Msg.Emailidentity == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity is required"))
-	}
-	// Validate format to match the HTTP API behaviour.
-	if !isValidIdentityFormat(req.Msg.Emailidentity) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity format is invalid"))
-	}
-
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getSESv2Store(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	identity := sesv2store.NewEmailIdentity(req.Msg.Emailidentity)
-	result, err := store.CreateEmailIdentity(identity)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	var parsedTags []types.Tag
+	for _, t := range req.Msg.GetTags() {
+		parsedTags = append(parsedTags, types.Tag{Key: t.GetKey(), Value: t.GetValue()})
 	}
 
-	resp := &pb.CreateEmailIdentityResponse{
-		Identitytype:             pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
-		Verifiedforsendingstatus: proto.Bool(result.VerifiedForSending),
+	input := CreateEmailIdentityInput{
+		EmailIdentity:        req.Msg.GetEmailidentity(),
+		ConfigurationSetName: req.Msg.GetConfigurationsetname(),
+		Tags:                 parsedTags,
 	}
-	if result.IdentityType == "DOMAIN" {
-		resp.Identitytype = pb.IdentityType_IDENTITY_TYPE_DOMAIN
-	}
-	if result.DkimAttributes != nil {
-		resp.Dkimattributes = &pb.DkimAttributes{
-			Signingenabled: proto.Bool(result.DkimAttributes.SigningEnabled),
-			Tokens:         result.DkimAttributes.Tokens,
-			Status:         pb.DkimStatus_DKIM_STATUS_SUCCESS,
+
+	// Map proto DkimSigningAttributes into the Core input so
+	// BYODKIM data is not silently discarded. Only the string-typed
+	// fields (DomainSigningSelector, DomainSigningPrivateKey) are mapped
+	// because proto3 does not provide field presence for enum scalars —
+	// the proto getter returns the zero-value enum (AWS_SES_AP_NORTHEAST_3
+	// for origin, RSA_1024_BIT for key length) even when the client did
+	// not explicitly set them. Setting those defaults would override the
+	// identity's correct origin/length with spurious values.
+	//
+	// applyDkimSigningAttributes handles missing origin by defaulting to
+	// EXTERNAL, and missing key length by preserving the existing value.
+	if dkimAttrs := req.Msg.GetDkimsigningattributes(); dkimAttrs != nil {
+		input.DkimSigningAttrs = map[string]interface{}{
+			"DomainSigningSelector":   dkimAttrs.GetDomainsigningselector(),
+			"DomainSigningPrivateKey": dkimAttrs.GetDomainsigningprivatekey(),
 		}
+		input.DkimSigningProvided = true
 	}
-	return connect.NewResponse(resp), nil
+
+	result, err := h.service.createEmailIdentityCore(ctx, store, input)
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(toPbCreateEmailIdentityResponse(result)), nil
 }
 
 // DeleteEmailIdentity deletes an email identity via the admin console.
 func (h *AdminHandler) DeleteEmailIdentity(ctx context.Context, req *connect.Request[pb.DeleteEmailIdentityRequest]) (*connect.Response[pb.DeleteEmailIdentityResponse], error) {
-	if req.Msg.Emailidentity == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity is required"))
-	}
-
-	store, err := h.getStoreFromHeaders(req.Header())
+	store, err := h.getSESv2Store(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if err := store.DeleteEmailIdentity(req.Msg.Emailidentity); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteEmailIdentityCore(store, req.Msg.GetEmailidentity()); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteEmailIdentityResponse{}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Sesv2 admin console.
+// NewConnectHandler creates a gRPC-Web connect handler for the SESv2 admin console.
 func NewConnectHandler(svc *SESv2Service) (string, http.Handler) {
 	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(svc))
-}
-
-func verificationStatusToProto(dkim *sesv2store.DkimAttributes) pb.VerificationStatus {
-	if dkim == nil {
-		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
-	}
-	switch dkim.Status {
-	case "SUCCESS":
-		return pb.VerificationStatus_VERIFICATION_STATUS_SUCCESS
-	case "PENDING":
-		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
-	case "FAILED":
-		return pb.VerificationStatus_VERIFICATION_STATUS_FAILED
-	case "TEMPORARY_FAILURE":
-		return pb.VerificationStatus_VERIFICATION_STATUS_TEMPORARY_FAILURE
-	case "NOT_STARTED":
-		return pb.VerificationStatus_VERIFICATION_STATUS_NOT_STARTED
-	default:
-		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
-	}
 }
