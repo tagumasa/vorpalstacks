@@ -419,6 +419,9 @@ func (a *App) initSQS(st *serviceState) error {
 	st.sqsStoreInstance = storesqs.NewSQSStore(regionalStorage, st.accountID, st.region, appconfig.BaseURL())
 	st.sqsService = svcsqs.NewSQSServiceWithStore(st.sqsStoreInstance)
 	st.sqsService.SetStorageManager(a.server.StorageManager())
+	if st.kmsService != nil {
+		st.sqsService.SetKMSChecker(st.kmsService.NewKeyChecker())
+	}
 	st.sqsService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sqs", func(ctx context.Context) error {
 		st.sqsStoreInstance.Close()

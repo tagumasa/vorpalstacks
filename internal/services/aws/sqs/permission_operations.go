@@ -73,6 +73,13 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 		}
 	}
 
+	if err := validatePermissionLabelFormat(label); err != nil {
+		return nil, err
+	}
+	if err := validatePermissionActionsCount(actions); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

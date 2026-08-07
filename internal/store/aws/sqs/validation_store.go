@@ -127,15 +127,15 @@ func validateTags(tags map[string]string) error {
 // ---------------------------------------------------------------------------
 
 var (
-	kmsKeyIDRegex   = regexp.MustCompile(`^[a-fA-F0-9-]{36}$`)
 	awsAccountRegex = regexp.MustCompile(`^[0-9]{12}$`)
 	dataTypeRegex   = regexp.MustCompile(`^(String|Number|Binary)(\..+)?$`)
 )
 
 const (
-	maxPermissionLabels   = 10
-	maxPermissionAccounts = 10
-	maxPermissionLabelLen = 80
+	maxPermissionLabels    = 10
+	maxPermissionAccounts  = 10
+	maxPermissionLabelLen  = 80
+	maxActionsPerStatement = 7
 )
 
 var validDeduplicationScopes = map[string]bool{
@@ -254,8 +254,13 @@ func validatePolicyJSON(policy string) error {
 // AddPermission validation
 // ---------------------------------------------------------------------------
 
+var permissionLabelCharRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 func validatePermissionLabel(label string) error {
 	if label == "" || len(label) > maxPermissionLabelLen {
+		return ErrInvalidParameterValue
+	}
+	if !permissionLabelCharRegex.MatchString(label) {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -277,10 +282,18 @@ func validateSQSActionList(actions []string) error {
 	if len(actions) == 0 {
 		return ErrInvalidParameterValue
 	}
+	if len(actions) > maxActionsPerStatement {
+		return ErrOverLimit
+	}
+	seen := make(map[string]bool, len(actions))
 	for _, a := range actions {
 		if !validSQSActions[a] {
 			return ErrInvalidParameterValue
 		}
+		if seen[a] {
+			return ErrInvalidParameterValue
+		}
+		seen[a] = true
 	}
 	return nil
 }

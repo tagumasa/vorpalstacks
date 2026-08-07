@@ -3,10 +3,8 @@ package sqs
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -86,7 +84,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			}
 		case "MaximumMessageSize":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 1024 || val > 262144 {
+				if val < 1024 || val > 1048576 {
 					return ErrInvalidParameterValue
 				}
 				queue.MaximumMessageSize = int32(val)
@@ -175,145 +173,100 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 }
 
 // CreateQueue creates a new SQS queue.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_CreateQueue.html
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_CreateQueue.html
 func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueName := request.GetParamCaseInsensitive(req.Parameters, "QueueName")
-	if queueName == "" {
-		return nil, ErrMissingParameter
-	}
-	if !isValidQueueName(queueName) {
-		return nil, ErrInvalidQueueName
-	}
-
-	queue := sqsstore.NewQueue(queueName, reqCtx.GetRegion(), reqCtx.GetAccountID())
 
 	attrs := request.ParseQueryAttributes(req.Parameters, "Attribute")
 	if len(attrs) == 0 {
 		attrs = request.ParseAttributes(req.Parameters, "Attributes")
 	}
-	if err := applyQueueAttributes(attrs, queue); err != nil {
-		return nil, err
-	}
 
-	// Validate FIFO queue naming bidirectionally.
-	// FifoQueue=true requires ".fifo" suffix; ".fifo" suffix requires FifoQueue=true.
-	// Standard queue names cannot contain dots per AWS spec.
-	if queue.FifoQueue && !strings.HasSuffix(queueName, ".fifo") {
-		return nil, ErrInvalidParameterValue
-	}
-	if !queue.FifoQueue && strings.HasSuffix(queueName, ".fifo") {
-		return nil, ErrInvalidParameterValue
-	}
-
-	queue.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	created, err := store.CreateQueue(queue)
+	result, err := s.createQueueCore(ctx, store, CreateQueueInput{
+		QueueName: queueName,
+		Region:    reqCtx.GetRegion(),
+		Attrs:     attrs,
+		Tags:      tags,
+	})
 	if err != nil {
-		if errors.Is(err, sqsstore.ErrQueueAlreadyExists) {
-			existingQueue, getErr := store.GetQueueByName(queueName)
-			if getErr != nil {
-				return nil, convertStoreError(getErr)
-			}
-			if !queuesHaveSameAttributes(queue, existingQueue) {
-				return nil, ErrQueueNameExists
-			}
-			return map[string]interface{}{
-				"QueueUrl": existingQueue.URL,
-			}, nil
-		}
-		return nil, convertStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"QueueUrl": created.URL,
+		"QueueUrl": result.QueueURL,
 	}, nil
 }
 
 // DeleteQueue deletes an SQS queue.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_DeleteQueue.html
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
 func (s *SQSService) DeleteQueue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteQueue(queueURL); err != nil {
-		return nil, convertStoreError(err)
+
+	if err := s.deleteQueueCore(store, DeleteQueueInput{QueueURL: queueURL}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
 }
 
 // GetQueueUrl returns the URL of an SQS queue.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_GetQueueUrl.html
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueUrl.html
 func (s *SQSService) GetQueueUrl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueName := request.GetParamCaseInsensitive(req.Parameters, "QueueName")
-	if queueName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	// QueueOwnerAWSAccountId parsed for future cross-account support.
-	_ = request.GetParamCaseInsensitive(req.Parameters, "QueueOwnerAWSAccountId")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	queue, err := store.GetQueueByName(queueName)
+
+	result, err := s.getQueueUrlCore(store, GetQueueUrlInput{QueueName: queueName})
 	if err != nil {
-		return nil, convertStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"QueueUrl": queue.URL,
+		"QueueUrl": result.QueueURL,
 	}, nil
 }
 
 // ListQueues lists the SQS queues.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_ListQueues.html
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ListQueues.html
 func (s *SQSService) ListQueues(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	opts := getListOptions(req)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListQueues(getListOptions(req))
+
+	result, err := s.listQueuesCore(store, ListQueuesInput{
+		QueueNamePrefix: request.GetParamCaseInsensitive(req.Parameters, "QueueNamePrefix"),
+		MaxResults:      opts.MaxItems,
+		NextToken:       opts.Marker,
+	})
 	if err != nil {
-		return nil, convertStoreError(err)
+		return nil, err
 	}
 
-	queueNamePrefix := request.GetParamCaseInsensitive(req.Parameters, "QueueNamePrefix")
-
-	queueURLs := make([]string, 0, len(result.Items))
-	for _, queue := range result.Items {
-		if queueNamePrefix != "" {
-			queueName := queue.Name
-			if queueName == "" {
-				parts := strings.Split(queue.URL, "/")
-				queueName = parts[len(parts)-1]
-			}
-			if !strings.HasPrefix(queueName, queueNamePrefix) {
-				continue
-			}
-		}
-		queueURLs = append(queueURLs, queue.URL)
+	resp := map[string]interface{}{
+		"QueueUrls": result.QueueURLs,
 	}
-
-	response := map[string]interface{}{
-		"QueueUrls": queueURLs,
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
-	if result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
-	}
-	return response, nil
+	return resp, nil
 }
 
 // GetQueueAttributes returns the attributes of an SQS queue.
@@ -524,7 +477,12 @@ func (s *SQSService) StartMessageMoveTask(ctx context.Context, reqCtx *request.R
 
 	destARN := request.GetParamCaseInsensitive(req.Parameters, "DestinationArn")
 	maxMessages := int32(request.GetIntParam(req.Parameters, "MaxNumberOfMessagesPerSecond"))
+	if err := validateMessageMoveRate(maxMessages); err != nil {
+		return nil, err
+	}
 	if maxMessages == 0 {
+		// Unset — system-optimised variable rate (AWS: "the system will
+		// optimise the rate based on the queue message backlog size").
 		maxMessages = 1000
 	}
 
@@ -690,37 +648,4 @@ func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstor
 		return ""
 	}
 	return string(b)
-}
-
-// isValidQueueName checks whether a queue name meets the SQS naming rules.
-// Queue names must consist of alphanumeric characters, hyphens, and underscores.
-// Only FIFO queues may include the ".fifo" suffix; no other dots are permitted.
-// This must remain consistent with the store-layer regex in
-// internal/store/aws/sqs/validation_store.go.
-func isValidQueueName(name string) bool {
-	if len(name) == 0 || len(name) > 80 {
-		return false
-	}
-	if strings.HasSuffix(name, ".fifo") {
-		prefix := name[:len(name)-5]
-		if len(prefix) == 0 {
-			return false
-		}
-		for _, c := range prefix {
-			if !isAlphanumeric(c) && c != '-' && c != '_' {
-				return false
-			}
-		}
-		return true
-	}
-	for _, c := range name {
-		if !isAlphanumeric(c) && c != '-' && c != '_' {
-			return false
-		}
-	}
-	return true
-}
-
-func isAlphanumeric(c rune) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }

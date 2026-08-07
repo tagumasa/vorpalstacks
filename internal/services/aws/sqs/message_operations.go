@@ -171,7 +171,11 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 				attrValue.StringValue = &sv
 			}
 			if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
-				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+				decoded, dErr := sqsstore.DecodeBinaryValue(bv)
+				if dErr != nil {
+					return nil, ErrInvalidParameterValue
+				}
+				attrValue.BinaryValue = decoded
 			}
 			messageAttributes[name] = attrValue
 		}
@@ -217,7 +221,11 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 				}
 			}
 			if binaryValue != "" {
-				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(binaryValue)
+				decoded, dErr := sqsstore.DecodeBinaryValue(binaryValue)
+				if dErr != nil {
+					return nil, ErrInvalidParameterValue
+				}
+				attrValue.BinaryValue = decoded
 			}
 
 			messageAttributes[attrName] = attrValue
@@ -408,7 +416,11 @@ func parseBatchEntriesJSON(jsonEntries []interface{}) ([]*batchSendEntry, error)
 						attr.StringValue = &sv
 					}
 					if bv, ok := attrMap["BinaryValue"].(string); ok {
-						attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+						decoded, dErr := sqsstore.DecodeBinaryValue(bv)
+						if dErr != nil {
+							return nil, ErrInvalidParameterValue
+						}
+						attr.BinaryValue = decoded
 					}
 					msgAttrs[attrName] = attr
 				}
@@ -504,7 +516,11 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 				attr.StringValue = &sv
 			}
 			if bv := request.GetParamCaseInsensitive(params, attrPrefix+"Value.BinaryValue"); bv != "" {
-				attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+				decoded, dErr := sqsstore.DecodeBinaryValue(bv)
+				if dErr != nil {
+					return nil, ErrInvalidParameterValue
+				}
+				attr.BinaryValue = decoded
 			}
 			msgAttrs[attrName] = attr
 		}
@@ -572,7 +588,11 @@ func parseBatchEntrySystemAttributesJSON(entryMap map[string]interface{}) (map[s
 			attr.StringValue = &sv
 		}
 		if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
-			attr.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+			decoded, dErr := sqsstore.DecodeBinaryValue(bv)
+			if dErr != nil {
+				return nil, ErrInvalidParameterValue
+			}
+			attr.BinaryValue = decoded
 		}
 		result[name] = attr
 	}
@@ -614,7 +634,11 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 	}
 
 	maxNumberOfMessages := int32(request.GetIntParam(req.Parameters, "MaxNumberOfMessages"))
-	if maxNumberOfMessages <= 0 {
+	if err := validateMaxNumberOfMessages(maxNumberOfMessages); err != nil {
+		// Treat unset (0) as default 1; reject only when explicitly out of range.
+		if maxNumberOfMessages != 0 {
+			return nil, err
+		}
 		maxNumberOfMessages = 1
 	}
 
@@ -646,6 +670,9 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 
 	// Parse ReceiveRequestAttemptId for FIFO receive dedup
 	receiveRequestAttemptId := request.GetParamCaseInsensitive(req.Parameters, "ReceiveRequestAttemptId")
+	if err := validateReceiveRequestAttemptId(receiveRequestAttemptId); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -771,8 +798,66 @@ func (s *SQSService) DeleteMessage(ctx context.Context, reqCtx *request.RequestC
 	return response.EmptyResponse(), nil
 }
 
+// deleteBatchEntry holds a parsed DeleteMessageBatch entry awaiting execution.
+type deleteBatchEntry struct {
+	id            string
+	receiptHandle string
+}
+
+// parseDeleteBatchEntries extracts entries from both JSON and query formats.
+func parseDeleteBatchEntries(params map[string]interface{}) ([]deleteBatchEntry, error) {
+	if entries, ok := params["Entries"].([]interface{}); ok && len(entries) > 0 {
+		result := make([]deleteBatchEntry, 0, len(entries))
+		for _, entry := range entries {
+			entryMap, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			id, _ := entryMap["Id"].(string)
+			if id == "" {
+				continue
+			}
+			receiptHandle, _ := entryMap["ReceiptHandle"].(string)
+			result = append(result, deleteBatchEntry{id: id, receiptHandle: receiptHandle})
+		}
+		if len(result) == 0 {
+			return nil, ErrEmptyBatchRequest
+		}
+		return result, nil
+	}
+
+	result := make([]deleteBatchEntry, 0)
+	for i := 1; ; i++ {
+		id := request.GetParamCaseInsensitive(params, "DeleteMessageBatchRequestEntry."+strconv.Itoa(i)+".Id")
+		if id == "" {
+			idKey := "DeleteMessageBatchRequestEntry." + strconv.Itoa(i) + ".Id"
+			if val, ok := params[idKey].(string); ok {
+				id = val
+			}
+		}
+		if id == "" {
+			break
+		}
+		receiptHandle := request.GetParamCaseInsensitive(params, "DeleteMessageBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
+		if receiptHandle == "" {
+			rhKey := "DeleteMessageBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
+			if val, ok := params[rhKey].(string); ok {
+				receiptHandle = val
+			}
+		}
+		result = append(result, deleteBatchEntry{id: id, receiptHandle: receiptHandle})
+	}
+	if len(result) == 0 {
+		return nil, ErrEmptyBatchRequest
+	}
+	return result, nil
+}
+
 // DeleteMessageBatch deletes multiple messages from an SQS queue in a single request.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_DeleteMessageBatch.html
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessageBatch.html
+//
+// Two-pass design — all entries are parsed and validated before any deletion.
+// This prevents partial state when a later entry fails validation.
 func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
 	if queueURL == "" {
@@ -784,108 +869,44 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	successEntries := make([]map[string]interface{}, 0)
-	failedEntries := make([]map[string]interface{}, 0)
-	seenIDs := make(map[string]bool)
-	entryCount := 0
-
-	if entries, ok := req.Parameters["Entries"].([]interface{}); ok && len(entries) > 0 {
-		for _, entry := range entries {
-			entryMap, ok := entry.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			id, _ := entryMap["Id"].(string)
-			receiptHandle, _ := entryMap["ReceiptHandle"].(string)
-
-			if id == "" {
-				continue
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			if entryCount > 10 {
-				return nil, ErrTooManyEntriesInBatch
-			}
-
-			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				failedEntries = append(failedEntries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			successEntries = append(successEntries, map[string]interface{}{
-				"Id": id,
-			})
-		}
-	} else {
-		for i := 1; ; i++ {
-			id := request.GetParamCaseInsensitive(req.Parameters, "DeleteMessageBatchRequestEntry."+strconv.Itoa(i)+".Id")
-			if id == "" {
-				idKey := "DeleteMessageBatchRequestEntry." + strconv.Itoa(i) + ".Id"
-				if val, ok := req.Parameters[idKey].(string); ok {
-					id = val
-				}
-			}
-			if id == "" {
-				break
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			if entryCount > 10 {
-				return nil, ErrTooManyEntriesInBatch
-			}
-
-			receiptHandle := request.GetParamCaseInsensitive(req.Parameters, "DeleteMessageBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
-			if receiptHandle == "" {
-				rhKey := "DeleteMessageBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
-				if val, ok := req.Parameters[rhKey].(string); ok {
-					receiptHandle = val
-				}
-			}
-
-			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				failedEntries = append(failedEntries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			successEntries = append(successEntries, map[string]interface{}{
-				"Id": id,
-			})
-		}
+	// Pass 1: Parse and validate all entries (no mutations).
+	entries, err := parseDeleteBatchEntries(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
-	if entryCount == 0 {
-		return nil, ErrEmptyBatchRequest
+	seenIDs := make(map[string]bool, len(entries))
+	for _, e := range entries {
+		if err := sqsstore.ValidateBatchEntryId(e.id); err != nil {
+			return nil, ErrInvalidBatchEntryId
+		}
+		if seenIDs[e.id] {
+			return nil, ErrBatchEntryIdsNotDistinct
+		}
+		seenIDs[e.id] = true
+	}
+	if len(entries) > 10 {
+		return nil, ErrTooManyEntriesInBatch
+	}
+
+	// Pass 2: Execute deletions.
+	successEntries := make([]map[string]interface{}, 0)
+	failedEntries := make([]map[string]interface{}, 0)
+
+	for _, e := range entries {
+		if err := store.DeleteMessage(queueURL, e.receiptHandle); err != nil {
+			code, senderFault := mapStoreErrorToBatchCode(err)
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"Id":          e.id,
+				"SenderFault": senderFault,
+				"Code":        code,
+				"Message":     err.Error(),
+			})
+			continue
+		}
+		successEntries = append(successEntries, map[string]interface{}{
+			"Id": e.id,
+		})
 	}
 
 	return map[string]interface{}{
@@ -921,8 +942,77 @@ func (s *SQSService) ChangeMessageVisibility(ctx context.Context, reqCtx *reques
 	return response.EmptyResponse(), nil
 }
 
-// ChangeMessageVisibilityBatch changes the visibility timeout of multiple messages in a single request.
-// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_ChangeMessageVisibilityBatch.html
+type changeVisibilityBatchEntry struct {
+	id                string
+	receiptHandle     string
+	visibilityTimeout int32
+}
+
+// parseChangeVisibilityBatchEntries extracts entries from both JSON and query
+// formats.
+func parseChangeVisibilityBatchEntries(params map[string]interface{}) ([]changeVisibilityBatchEntry, error) {
+	if jsonEntries, ok := params["Entries"].([]interface{}); ok && len(jsonEntries) > 0 {
+		result := make([]changeVisibilityBatchEntry, 0, len(jsonEntries))
+		for _, entry := range jsonEntries {
+			entryMap, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			id := request.GetStringParam(entryMap, "Id")
+			if id == "" {
+				continue
+			}
+			receiptHandle := request.GetStringParam(entryMap, "ReceiptHandle")
+			visibilityTimeout := int32(request.GetIntParam(entryMap, "VisibilityTimeout"))
+			result = append(result, changeVisibilityBatchEntry{
+				id:                id,
+				receiptHandle:     receiptHandle,
+				visibilityTimeout: visibilityTimeout,
+			})
+		}
+		if len(result) == 0 {
+			return nil, ErrEmptyBatchRequest
+		}
+		return result, nil
+	}
+
+	result := make([]changeVisibilityBatchEntry, 0)
+	for i := 1; ; i++ {
+		id := request.GetParamCaseInsensitive(params, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".Id")
+		if id == "" {
+			idKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".Id"
+			if val, ok := params[idKey].(string); ok {
+				id = val
+			}
+		}
+		if id == "" {
+			break
+		}
+		receiptHandle := request.GetParamCaseInsensitive(params, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
+		if receiptHandle == "" {
+			rhKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
+			if val, ok := params[rhKey].(string); ok {
+				receiptHandle = val
+			}
+		}
+		visibilityTimeout := int32(request.GetIntParam(params, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".VisibilityTimeout"))
+		result = append(result, changeVisibilityBatchEntry{
+			id:                id,
+			receiptHandle:     receiptHandle,
+			visibilityTimeout: visibilityTimeout,
+		})
+	}
+	if len(result) == 0 {
+		return nil, ErrEmptyBatchRequest
+	}
+	return result, nil
+}
+
+// ChangeMessageVisibilityBatch changes the visibility timeout for multiple
+// messages in a single request.
+// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibilityBatch.html
+//
+// Two-pass design — all entries are parsed and validated before any mutation.
 func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
 	if queueURL == "" {
@@ -934,120 +1024,44 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	entries := make([]map[string]interface{}, 0)
-	seenIDs := make(map[string]bool)
-	entryCount := 0
-
-	if jsonEntries, ok := req.Parameters["Entries"].([]interface{}); ok && len(jsonEntries) > 0 {
-		for _, entry := range jsonEntries {
-			entryMap, ok := entry.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			id := request.GetStringParam(entryMap, "Id")
-			receiptHandle := request.GetStringParam(entryMap, "ReceiptHandle")
-			if id == "" {
-				continue
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			if entryCount > 10 {
-				return nil, ErrTooManyEntriesInBatch
-			}
-
-			visibilityTimeout := int32(request.GetIntParam(entryMap, "VisibilityTimeout"))
-
-			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			entries = append(entries, map[string]interface{}{
-				"Id": id,
-			})
-		}
-	} else {
-		for i := 1; ; i++ {
-			id := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".Id")
-			if id == "" {
-				idKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".Id"
-				if val, ok := req.Parameters[idKey].(string); ok {
-					id = val
-				}
-			}
-			if id == "" {
-				break
-			}
-
-			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-				return nil, ErrInvalidBatchEntryId
-			}
-
-			if seenIDs[id] {
-				return nil, ErrBatchEntryIdsNotDistinct
-			}
-			seenIDs[id] = true
-			entryCount++
-
-			if entryCount > 10 {
-				return nil, ErrTooManyEntriesInBatch
-			}
-
-			receiptHandle := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
-			if receiptHandle == "" {
-				rhKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
-				if val, ok := req.Parameters[rhKey].(string); ok {
-					receiptHandle = val
-				}
-			}
-
-			visibilityTimeout := int32(request.GetIntParam(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".VisibilityTimeout"))
-
-			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
-				code, senderFault := mapStoreErrorToBatchCode(err)
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": senderFault,
-					"Code":        code,
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
-			entries = append(entries, map[string]interface{}{
-				"Id": id,
-			})
-		}
+	// Pass 1: Parse and validate all entries (no mutations).
+	entries, err := parseChangeVisibilityBatchEntries(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(entries) == 0 {
-		return nil, ErrEmptyBatchRequest
+	seenIDs := make(map[string]bool, len(entries))
+	for _, e := range entries {
+		if err := sqsstore.ValidateBatchEntryId(e.id); err != nil {
+			return nil, ErrInvalidBatchEntryId
+		}
+		if seenIDs[e.id] {
+			return nil, ErrBatchEntryIdsNotDistinct
+		}
+		seenIDs[e.id] = true
+	}
+	if len(entries) > 10 {
+		return nil, ErrTooManyEntriesInBatch
 	}
 
+	// Pass 2: Execute visibility changes.
 	successEntries := make([]map[string]interface{}, 0)
 	failedEntries := make([]map[string]interface{}, 0)
-	for _, entry := range entries {
-		if _, ok := entry["SenderFault"]; ok {
-			failedEntries = append(failedEntries, entry)
-		} else {
-			successEntries = append(successEntries, entry)
+
+	for _, e := range entries {
+		if err := store.ChangeMessageVisibility(queueURL, e.receiptHandle, e.visibilityTimeout); err != nil {
+			code, senderFault := mapStoreErrorToBatchCode(err)
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"Id":          e.id,
+				"SenderFault": senderFault,
+				"Code":        code,
+				"Message":     err.Error(),
+			})
+			continue
 		}
+		successEntries = append(successEntries, map[string]interface{}{
+			"Id": e.id,
+		})
 	}
 
 	return map[string]interface{}{
@@ -1058,11 +1072,10 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 
 // parseMessageSystemAttributes extracts MessageSystemAttributes from the
 // request parameters. Supports both JSON map and flattened query formats.
-// Only AWSTraceHeader is valid for sends (per MessageSystemAttributeNameForSends
-// enum). Unknown system attribute names are rejected with InvalidParameterValue.
+// Only AWSTraceHeader is valid for sends. Unknown system attribute names are
+// rejected with InvalidParameterValue.
 func parseMessageSystemAttributes(params map[string]interface{}) (map[string]*sqsstore.MessageAttributeValue, error) {
 	result := make(map[string]*sqsstore.MessageAttributeValue)
-
 	if jsonAttrs, ok := params["MessageSystemAttributes"].(map[string]interface{}); ok {
 		for name, val := range jsonAttrs {
 			if name != "AWSTraceHeader" {
@@ -1079,7 +1092,11 @@ func parseMessageSystemAttributes(params map[string]interface{}) (map[string]*sq
 				attrValue.StringValue = &sv
 			}
 			if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
-				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(bv)
+				decoded, dErr := sqsstore.DecodeBinaryValue(bv)
+				if dErr != nil {
+					return nil, ErrInvalidParameterValue
+				}
+				attrValue.BinaryValue = decoded
 			}
 			result[name] = attrValue
 		}

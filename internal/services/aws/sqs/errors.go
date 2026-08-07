@@ -51,4 +51,12 @@ var (
 	ErrInvalidAttributeValue = awserrors.NewAWSError("InvalidAttributeValue", "The attribute value is invalid.", 400)
 	// ErrBatchRequestTooLong is returned when a batch request payload exceeds 262144 bytes.
 	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", "Batch requests cannot be longer than 262144 bytes.", 400).SetQueryErrorCode("AWS.SimpleQueueService.BatchRequestTooLong;Sender")
+	// KMS-related errors — granular mapping matching the AWS SQS API.
+	ErrKmsAccessDenied    = awserrors.NewAWSError("KmsAccessDenied", "Request was denied due to KMS access denied.", 400)
+	ErrKmsDisabled        = awserrors.NewAWSError("KmsDisabled", "The KMS key is disabled.", 400)
+	ErrKmsInvalidKeyUsage = awserrors.NewAWSError("KmsInvalidKeyUsage", "The KMS key usage is invalid.", 400)
+	ErrKmsInvalidState    = awserrors.NewAWSError("KmsInvalidState", "The KMS key is in an invalid state.", 400)
+	ErrKmsNotFound        = awserrors.NewAWSError("KmsNotFound", "The KMS key was not found.", 400)
+	ErrKmsOptInRequired   = awserrors.NewAWSError("KmsOptInRequired", "KMS opt-in is required.", 400)
+	ErrKmsThrottled       = awserrors.NewAWSError("KmsThrottled", "Request was throttled by KMS.", 400)
 )

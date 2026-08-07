@@ -22,6 +22,11 @@ const moveTaskBatchSize = 100
 // StartMessageMoveTask starts a task to move messages from a source queue to a
 // destination queue. A background goroutine performs the actual transfer.
 func (s *SQSStore) StartMessageMoveTask(sourceARN, destARN string, maxMessages int32) (*MessageMoveTask, error) {
+	// AWS SQS allows only one active message-move task per source queue.
+	if s.hasActiveMoveTask(sourceARN) {
+		return nil, ErrOverLimit
+	}
+
 	sourceURL := s.arnToQueueURL(sourceARN)
 	if sourceURL == "" || !s.Exists(sourceURL) {
 		return nil, ErrQueueNotFound
@@ -79,6 +84,13 @@ func (s *SQSStore) StartMessageMoveTask(sourceARN, destARN string, maxMessages i
 // messages, copies them to the destination, and deletes from source.
 func (s *SQSStore) runMessageMoveTask(taskID, sourceURL, destURL string, maxRate int32) {
 	defer s.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			logs.Error("SQS: panic in runMessageMoveTask goroutine",
+				logs.String("taskId", taskID), logs.Any("panic", r))
+			s.finalizeMoveTask(taskID, "FAILED", 0, 0, fmt.Sprintf("internal error: %v", r))
+		}
+	}()
 
 	// Yield before the first batch so callers have a window to cancel or
 	// list the task while it is still RUNNING. Without this, an empty source
@@ -374,6 +386,21 @@ func (s *SQSStore) ListMessageMoveTasks(sourceARN string, maxResults int32) ([]*
 		tasks[i] = ProtoToMessageMoveTask(t)
 	}
 	return tasks, nil
+}
+
+// hasActiveMoveTask returns true when there is at least one RUNNING or CANCELLING
+// task for the given source ARN.
+func (s *SQSStore) hasActiveMoveTask(sourceARN string) bool {
+	items, err := common.ListMatchingProto[*pb.MessageMoveTask](s.tasksStore, "",
+		func() *pb.MessageMoveTask { return &pb.MessageMoveTask{} },
+		func(t *pb.MessageMoveTask) bool {
+			return t.SourceQueueArn == sourceARN &&
+				(t.Status == "RUNNING" || t.Status == "CANCELLING")
+		})
+	if err != nil {
+		return false
+	}
+	return len(items) > 0
 }
 
 // GetMessageMoveTask retrieves a specific message move task by its ID.

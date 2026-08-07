@@ -111,11 +111,8 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		return nil, err
 	}
 
-	if maxNumberOfMessages <= 0 {
-		maxNumberOfMessages = 1
-	}
-	if maxNumberOfMessages > maxMaxNumberOfMessages {
-		maxNumberOfMessages = maxMaxNumberOfMessages
+	if maxNumberOfMessages < minMaxNumberOfMessages || maxNumberOfMessages > maxMaxNumberOfMessages {
+		return nil, ErrInvalidParameterValue
 	}
 
 	visibilityTimeout := queue.VisibilityTimeout

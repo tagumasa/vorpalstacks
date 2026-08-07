@@ -46,7 +46,7 @@ const (
 	minMessageRetentionPeriod = 60
 	maxMessageRetentionPeriod = 1209600
 	minMaximumMessageSize     = 1024
-	maxMaximumMessageSize     = 262144
+	maxMaximumMessageSize     = 1048576
 	minReceiveMessageWaitTime = 0
 	maxReceiveMessageWaitTime = 20
 	minMaxNumberOfMessages    = 1
@@ -124,6 +124,11 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 // can run without holding msgMutex.
 func (s *SQSStore) cleanupExpiredMessages() {
 	defer s.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			logs.Error("SQS: panic in cleanupExpiredMessages goroutine", logs.Any("panic", r))
+		}
+	}()
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 	for {
@@ -445,12 +450,8 @@ func uint32ToBytes(n uint32) []byte {
 }
 
 // DecodeBinaryValue decodes a base64-encoded string into a byte slice.
-func DecodeBinaryValue(encoded string) []byte {
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return nil
-	}
-	return decoded
+func DecodeBinaryValue(encoded string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(encoded)
 }
 
 // EncodeBinaryValue encodes a byte slice into a base64-encoded string.
@@ -495,6 +496,7 @@ func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delay
 		return nil
 	})
 	if err != nil {
+		logs.Error("SQS: failed to count messages", logs.String("queueUrl", queueURL), logs.Err(err))
 		return 0, 0, 0
 	}
 	return visible, notVisible, delayed

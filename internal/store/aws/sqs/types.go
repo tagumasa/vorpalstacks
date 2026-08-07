@@ -120,7 +120,7 @@ func NewQueue(name, region, accountID string) *Queue {
 		CreatedTimestamp:              now,
 		LastModifiedTimestamp:         now,
 		VisibilityTimeout:             30,
-		MaximumMessageSize:            262144,
+		MaximumMessageSize:            1048576,
 		MessageRetentionPeriod:        345600,
 		DelaySeconds:                  0,
 		ReceiveMessageWaitTimeSeconds: 0,
