@@ -38,8 +38,21 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	messageGroupId := request.GetParamLowerFirst(req.Parameters, "MessageGroupId")
 	messageDeduplicationId := request.GetParamLowerFirst(req.Parameters, "MessageDeduplicationId")
 
+	// M14: TargetArn is an AWS-supported alternative to TopicArn. L4:
+	// PhoneNumber is silently accepted but SMS is out-of-scope — reject
+	// explicitly so callers get a clear error instead of silent success.
+	targetArn := request.GetParamLowerFirst(req.Parameters, "TargetArn")
+	phoneNumber := request.GetParamLowerFirst(req.Parameters, "PhoneNumber")
+
+	if phoneNumber != "" {
+		return nil, awserrors.NewAWSError("InvalidParameter", "PhoneNumber is not supported (SMS sending is not available)", 400)
+	}
+
+	if topicArn == "" && targetArn == "" {
+		return nil, awserrors.NewInvalidParameterException("TopicArn (or TargetArn) is required")
+	}
 	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		topicArn = targetArn
 	}
 	if message == "" {
 		return nil, awserrors.NewInvalidParameterException("Message is required")
@@ -57,38 +70,15 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		return nil, err
 	}
 
-	if err := validatePublishParams(topic, message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
+	if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
 		return nil, err
 	}
 
-	if topic.IsFifoTopic() {
-		if messageGroupId == "" {
-			return nil, awserrors.NewInvalidParameterException("MessageGroupId is required for FIFO topics")
-		}
-
-		if messageDeduplicationId != "" {
-			if existingMsgID, isDuplicate := store.CheckDeduplication(topicArn, messageDeduplicationId); isDuplicate {
-				return map[string]interface{}{
-					"MessageId": existingMsgID,
-				}, nil
-			}
-		} else if !topic.IsContentBasedDeduplication() {
-			return nil, awserrors.NewInvalidParameterException("MessageDeduplicationId is required when ContentBasedDeduplication is false")
-		} else {
-			messageDeduplicationId = generateContentBasedDeduplicationId(message)
-			if existingMsgID, isDuplicate := store.CheckDeduplication(topicArn, messageDeduplicationId); isDuplicate {
-				return map[string]interface{}{
-					"MessageId": existingMsgID,
-				}, nil
-			}
-		}
+	if topic.IsFifoTopic() && messageDeduplicationId == "" {
+		messageDeduplicationId = generateContentBasedDeduplicationId(message)
 	}
 
 	messageId := uuid.New().String()
-
-	if topic.IsFifoTopic() && messageDeduplicationId != "" {
-		store.RecordDeduplication(topicArn, messageDeduplicationId, messageId)
-	}
 
 	msg := &snsstore.Message{
 		MessageId:              messageId,
@@ -102,6 +92,18 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 
 	if err := parseMessageAttributes(req.Parameters, msg); err != nil {
 		return nil, err
+	}
+
+	// Atomically check for duplicates and record the dedup ID. This runs
+	// after all validation to prevent cache leaks when validation fails,
+	// and is atomic to eliminate the TOCTOU race between separate
+	// check (RLock) and record (Lock) operations.
+	if topic.IsFifoTopic() && messageDeduplicationId != "" {
+		if existingMsgID, isDuplicate := store.CheckAndRecordDeduplication(topicArn, messageDeduplicationId, messageId); isDuplicate {
+			return map[string]interface{}{
+				"MessageId": existingMsgID,
+			}, nil
+		}
 	}
 
 	msg.PublishedTimestamp = time.Now().UTC()
@@ -184,11 +186,10 @@ func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions
 		case "lambda":
 			deliveryErr = s.deliverToLambda(msg, sub, region)
 		default:
-			logs.Warn("SNS: no delivery handler for protocol, message dropped",
-				logs.String("protocol", sub.Protocol),
-				logs.String("subscriptionArn", sub.SubscriptionArn),
-				logs.String("messageId", msg.MessageId))
-			continue
+			// H3: previously this was `logs.Warn + continue` (silent drop).
+			// Return a delivery error so the message routes to the DLQ when
+			// a RedrivePolicy is configured, rather than being silently lost.
+			deliveryErr = fmt.Errorf("unsupported protocol %q: no delivery handler available", sub.Protocol)
 		}
 
 		if deliveryErr != nil {
@@ -208,6 +209,15 @@ func (s *SNSService) handleDeliveryFailure(msg *snsstore.Message, sub *snsstore.
 		return
 	}
 	if rp == nil || rp.DeadLetterTargetArn == "" {
+		// No DLQ configured — the message is dropped. Log so that silent
+		// loss (e.g. unsupported protocol without RedrivePolicy) leaves
+		// a trace for operators.
+		logs.Warn("SNS delivery failed with no DLQ configured — message dropped",
+			logs.String("subscriptionArn", sub.SubscriptionArn),
+			logs.String("topicArn", msg.TopicArn),
+			logs.String("protocol", sub.Protocol),
+			logs.String("messageId", msg.MessageId),
+			logs.Err(deliveryErr))
 		return
 	}
 
@@ -586,8 +596,35 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 	return nil
 }
 
+// batchValidatedEntry holds a single PublishBatch entry that has passed all
+// validation in the first pass. The second pass uses these entries for
+// delivery without re-parsing. This separation ensures that a batch-level
+// error (e.g. BatchRequestTooLong) rejects the entire batch before any entry
+// is delivered, preserving the atomicity contract of the top-level error.
+type batchValidatedEntry struct {
+	id                     string
+	message                string
+	subject                string
+	messageStructure       string
+	messageGroupId         string
+	messageDeduplicationId string
+	msgAttrs               map[string]*snsstore.MessageAttribute
+	isDuplicate            bool
+	existingMsgID          string
+}
+
 // PublishBatch publishes multiple messages to an SNS topic in a single request.
 // https://docs.aws.amazon.com/sns/latest/api/API_PublishBatch.html
+//
+// Two-pass design:
+//   - Pass 1 validates every entry (params, attributes, dedup read-check,
+//     size accumulation). Per-entry failures go into the Failed list; valid
+//     entries are collected for Pass 2.
+//   - After Pass 1 the total batch size is checked. If it exceeds the limit
+//     the entire batch is rejected (BatchRequestTooLong) — no entry has been
+//     delivered or dedup-recorded.
+//   - Pass 2 delivers each validated entry, records dedup IDs, and collects
+//     results.
 func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
@@ -617,6 +654,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 	successful := make([]map[string]interface{}, 0)
 	failed := make([]map[string]interface{}, 0)
 	seenIds := make(map[string]bool, len(entryMaps))
+	validated := make([]batchValidatedEntry, 0, len(entryMaps))
 	batchTotalSize := 0
 
 	subscriptions, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{})
@@ -625,6 +663,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 	}
 	region := reqCtx.GetRegion()
 
+	// --- Pass 1: validate all entries (no side effects) ---
 	for _, entryMap := range entryMaps {
 
 		id, _ := entryMap["Id"].(string)
@@ -659,7 +698,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 		messageDeduplicationId, _ := entryMap["MessageDeduplicationId"].(string)
 		messageStructure, _ := entryMap["MessageStructure"].(string)
 
-		if err := validatePublishParams(topic, message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
+		if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
 			failed = append(failed, map[string]interface{}{
 				"Id":          id,
 				"Code":        "InvalidParameter",
@@ -669,71 +708,84 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			continue
 		}
 
+		entry := batchValidatedEntry{
+			id:               id,
+			message:          message,
+			subject:          subject,
+			messageStructure: messageStructure,
+			messageGroupId:   messageGroupId,
+		}
+
 		if topic.IsFifoTopic() {
-			if messageGroupId == "" {
+			if messageDeduplicationId == "" {
+				messageDeduplicationId = generateContentBasedDeduplicationId(message)
+			}
+			entry.messageDeduplicationId = messageDeduplicationId
+			if existingMsgID, isDuplicate := store.CheckDeduplication(topicArn, messageDeduplicationId); isDuplicate {
+				entry.isDuplicate = true
+				entry.existingMsgID = existingMsgID
+			}
+		}
+
+		if !entry.isDuplicate {
+			msg := &snsstore.Message{}
+			if err := parseMessageAttributes(entryMap, msg); err != nil {
 				failed = append(failed, map[string]interface{}{
 					"Id":          id,
 					"Code":        "InvalidParameter",
-					"Message":     "MessageGroupId is required for FIFO topics",
+					"Message":     err.Error(),
 					"SenderFault": true,
 				})
 				continue
 			}
+			entry.msgAttrs = msg.MessageAttributes
+			batchTotalSize += messageEntrySize(message, subject, entry.msgAttrs)
+		}
 
-			if messageDeduplicationId == "" {
-				if topic.IsContentBasedDeduplication() {
-					messageDeduplicationId = generateContentBasedDeduplicationId(message)
-				} else {
-					failed = append(failed, map[string]interface{}{
-						"Id":          id,
-						"Code":        "InvalidParameter",
-						"Message":     "MessageDeduplicationId is required when ContentBasedDeduplication is false",
-						"SenderFault": true,
-					})
-					continue
-				}
-			}
+		validated = append(validated, entry)
+	}
 
-			if existingMsgID, isDuplicate := store.CheckDeduplication(topicArn, messageDeduplicationId); isDuplicate {
+	// Batch-level size check: reject the entire batch before any delivery.
+	if batchTotalSize > maxBatchTotalSize {
+		return nil, awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Total batch request size %d exceeds maximum %d", batchTotalSize, maxBatchTotalSize), 400)
+	}
+
+	// --- Pass 2: deliver validated entries ---
+	for _, entry := range validated {
+		if entry.isDuplicate {
+			successful = append(successful, map[string]interface{}{
+				"Id":        entry.id,
+				"MessageId": entry.existingMsgID,
+			})
+			continue
+		}
+
+		messageId := uuid.New().String()
+
+		if topic.IsFifoTopic() && entry.messageDeduplicationId != "" {
+			existingMsgID, isDuplicate := store.CheckAndRecordDeduplication(topicArn, entry.messageDeduplicationId, messageId)
+			if isDuplicate {
+				// A concurrent publish with the same dedup ID won the
+				// race between Pass 1 and Pass 2. Return the existing
+				// message ID without delivering.
 				successful = append(successful, map[string]interface{}{
-					"Id":        id,
+					"Id":        entry.id,
 					"MessageId": existingMsgID,
 				})
 				continue
 			}
 		}
 
-		messageId := uuid.New().String()
-
-		if topic.IsFifoTopic() && messageDeduplicationId != "" {
-			store.RecordDeduplication(topicArn, messageDeduplicationId, messageId)
-		}
-
 		msg := &snsstore.Message{
 			MessageId:              messageId,
 			TopicArn:               topicArn,
-			Subject:                subject,
-			Message:                message,
-			MessageStructure:       messageStructure,
-			MessageGroupId:         messageGroupId,
-			MessageDeduplicationId: messageDeduplicationId,
+			Subject:                entry.subject,
+			Message:                entry.message,
+			MessageStructure:       entry.messageStructure,
+			MessageGroupId:         entry.messageGroupId,
+			MessageDeduplicationId: entry.messageDeduplicationId,
+			MessageAttributes:      entry.msgAttrs,
 		}
-
-		if err := parseMessageAttributes(entryMap, msg); err != nil {
-			failed = append(failed, map[string]interface{}{
-				"Id":          id,
-				"Code":        "InvalidParameter",
-				"Message":     err.Error(),
-				"SenderFault": true,
-			})
-			continue
-		}
-
-		batchTotalSize += messageEntrySize(message, subject, msg.MessageAttributes)
-		if batchTotalSize > maxBatchTotalSize {
-			return nil, awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Total batch request size %d exceeds maximum %d", batchTotalSize, maxBatchTotalSize), 400)
-		}
-
 		msg.PublishedTimestamp = time.Now().UTC()
 		msg.ReceivedTimestamp = time.Now().UTC()
 
@@ -759,10 +811,10 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 				snsEvt := &eventbus.SNSDeliveryEvent{
 					TopicARN:          topicArn,
 					MessageID:         messageId,
-					Message:           message,
-					Subject:           subject,
-					MessageStructure:  messageStructure,
-					MessageGroupId:    messageGroupId,
+					Message:           entry.message,
+					Subject:           entry.subject,
+					MessageStructure:  entry.messageStructure,
+					MessageGroupId:    entry.messageGroupId,
 					MessageAttributes: msgAttrs,
 				}
 				snsEvt.Region = region
@@ -775,13 +827,12 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 		}
 
 		result := map[string]interface{}{
-			"Id":        id,
+			"Id":        entry.id,
 			"MessageId": messageId,
 		}
 
 		if topic.IsFifoTopic() {
-			sequenceNumber := store.GetNextSequenceNumber(topicArn, messageGroupId)
-			result["SequenceNumber"] = sequenceNumber
+			result["SequenceNumber"] = store.GetNextSequenceNumber(topicArn, entry.messageGroupId)
 		}
 
 		successful = append(successful, result)

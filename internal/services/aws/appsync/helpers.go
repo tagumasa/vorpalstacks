@@ -17,7 +17,7 @@ import (
 // validateGraphqlApiExists checks that the given apiId refers to a GraphQL
 // API (v1). GraphQL-only child resources (DataSource, Resolver, Function,
 // Type) require this check. Returns NewNotFoundException when the API does
-// not exist or is not a GraphQL API (P-4).
+// not exist or is not a GraphQL API.
 func validateGraphqlApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
 	if _, err := store.GetGraphqlApiById(apiId); err != nil {
 		return NewNotFoundException("Graphql API")
@@ -28,7 +28,7 @@ func validateGraphqlApiExists(store *appsyncstore.AppSyncStore, apiId string) er
 // validateEventApiExists checks that the given apiId refers to an Event API
 // (v2). Event API-only child resources (ChannelNamespace) require this check.
 // Returns NewNotFoundException when the API does not exist or is not an
-// Event API (P-4).
+// Event API.
 func validateEventApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
 	if _, err := store.GetApiById(apiId); err != nil {
 		return NewNotFoundException("Event API")

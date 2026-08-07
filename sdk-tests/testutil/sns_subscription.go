@@ -1,7 +1,12 @@
 package testutil
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -298,28 +303,44 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		}
 		defer tc.deleteTopic(*tResp.TopicArn)
 
+		// Set up a local HTTP server to capture the confirmation token.
+		// AWS sends the token to the endpoint out-of-band; it is not
+		// exposed through GetSubscriptionAttributes.
+		tokenCh := make(chan string, 1)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]interface{}
+			if json.Unmarshal(body, &payload) == nil {
+				if t, ok := payload["Token"].(string); ok {
+					select {
+					case tokenCh <- t:
+					default:
+					}
+				}
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer srv.Close()
+
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn:              aws.String(*tResp.TopicArn),
-			Protocol:              aws.String("email"),
-			Endpoint:              aws.String("confirm-test@example.com"),
+			Protocol:              aws.String("http"),
+			Endpoint:              aws.String(srv.URL),
 			ReturnSubscriptionArn: true,
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
 		}
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
-		if err != nil {
-			return fmt.Errorf("get attrs before confirm: %v", err)
+		// Wait for the async confirmation message to arrive.
+		var token string
+		select {
+		case token = <-tokenCh:
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("timed out waiting for subscription confirmation")
 		}
-		if getResp.Attributes["PendingConfirmation"] != "true" {
-			return fmt.Errorf("should be pending before confirm, got %s", getResp.Attributes["PendingConfirmation"])
-		}
-		token := getResp.Attributes["Token"]
 		if token == "" {
-			return fmt.Errorf("Token attribute should be present for pending subscription")
+			return fmt.Errorf("Token should not be empty from confirmation message")
 		}
 
 		confResp, err := tc.client.ConfirmSubscription(tc.ctx, &sns.ConfirmSubscriptionInput{

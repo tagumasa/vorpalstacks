@@ -190,10 +190,10 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 			"GetQueueUrl", "PurgeQueue", "SetQueueAttributes",
 		}
 		_, err := client.AddPermission(ctx, &sqs.AddPermissionInput{
-			QueueUrl:     aws.String(queueURL),
-			Label:        aws.String("too-many-actions-test"),
+			QueueUrl:      aws.String(queueURL),
+			Label:         aws.String("too-many-actions-test"),
 			AWSAccountIds: []string{r.accountID},
-			Actions:      actions,
+			Actions:       actions,
 		})
 		if err := AssertErrorContains(err, "OverLimit"); err != nil {
 			return err
@@ -253,7 +253,7 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 	// StartMessageMoveTask with rate > 500 must be rejected.
 	results = append(results, r.RunTest("sqs", "StartMessageMoveTask_RateTooHigh_Rejected", func() error {
 		_, err := client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
-			SourceArn:                  aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:%s:nonexistent-dlq", r.accountID)),
+			SourceArn:                    aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:%s:nonexistent-dlq", r.accountID)),
 			MaxNumberOfMessagesPerSecond: aws.Int32(501),
 		})
 		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {

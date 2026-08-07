@@ -23,6 +23,13 @@ import (
 
 const deduplicationWindow = 5 * time.Minute
 
+// sequenceEntryTTL is how long an inactive FIFO message-group sequence counter
+// is retained before cleanup. AWS does not document a precise retention period;
+// this value is chosen to be generous (longer than the deduplication window)
+// so that message groups in active use retain their monotonically increasing
+// sequence numbers.
+const sequenceEntryTTL = 1 * time.Hour
+
 // SNSStore provides SNS topic and subscription storage functionality.
 type SNSStore struct {
 	*common.BaseStore
@@ -37,7 +44,7 @@ type SNSStore struct {
 	region             string
 	deduplicationCache map[string]*deduplicationEntry
 	deduplicationMu    sync.RWMutex
-	sequenceCounters   map[string]int64
+	sequenceCounters   map[string]*sequenceEntry
 	sequenceMu         sync.Mutex
 	topicMu            sync.RWMutex
 	subscriptionMu     sync.RWMutex
@@ -51,6 +58,14 @@ type SNSStore struct {
 type deduplicationEntry struct {
 	messageID string
 	expiresAt time.Time
+}
+
+// sequenceEntry tracks the monotonic sequence number and last-access time for
+// a FIFO topic message group. The lastUsed field enables cleanup of entries
+// for message groups that have been inactive for an extended period.
+type sequenceEntry struct {
+	value    int64
+	lastUsed time.Time
 }
 
 // NewSNSStore creates a new SNSStore instance with the specified storage, account ID, and region.
@@ -68,7 +83,7 @@ func NewSNSStore(store storage.BasicStorage, accountID, region string) *SNSStore
 		accountID:                 accountID,
 		region:                    region,
 		deduplicationCache:        make(map[string]*deduplicationEntry),
-		sequenceCounters:          make(map[string]int64),
+		sequenceCounters:          make(map[string]*sequenceEntry),
 		ctx:                       ctx,
 		cancel:                    cancel,
 	}
@@ -127,8 +142,8 @@ func (s *SNSStore) cleanupExpiredDeduplicationEntries() {
 
 			s.sequenceMu.Lock()
 			if len(s.sequenceCounters) > 1000 {
-				for k, v := range s.sequenceCounters {
-					if v == 0 {
+				for k, entry := range s.sequenceCounters {
+					if now.Sub(entry.lastUsed) > sequenceEntryTTL {
 						delete(s.sequenceCounters, k)
 					}
 				}
@@ -179,13 +194,18 @@ func (s *SNSStore) CreateTopic(topic *Topic) (*Topic, error) {
 		topic.Attributes = make(map[string]string)
 	}
 
+	// M3: TagStore is the single source of truth for tags. Extract tags
+	// before persistence so they are not duplicated in the Topic JSON.
+	tags := topic.Tags
+	topic.Tags = nil
+
 	if err := s.Put(topicArn, topic); err != nil {
 		return nil, err
 	}
 
-	if len(topic.Tags) > 0 {
-		tagSlice := make([]types.Tag, 0, len(topic.Tags))
-		for k, v := range topic.Tags {
+	if len(tags) > 0 {
+		tagSlice := make([]types.Tag, 0, len(tags))
+		for k, v := range tags {
 			tagSlice = append(tagSlice, types.Tag{Key: k, Value: v})
 		}
 		if err := s.TagStore.TagFromSlice(topicArn, tagSlice); err != nil {
@@ -226,18 +246,33 @@ func (s *SNSStore) UpdateTopic(topic *Topic) error {
 // DeleteTopic deletes an SNS topic by its ARN from the store.
 // Returns an error if the topic does not exist.
 func (s *SNSStore) DeleteTopic(topicArn string) error {
+	s.topicMu.Lock()
+	defer s.topicMu.Unlock()
+	s.subscriptionMu.Lock()
+	defer s.subscriptionMu.Unlock()
+
 	if !s.Exists(topicArn) {
 		return ErrTopicNotFound
 	}
 
-	subscriptions, err := s.ListSubscriptionsByTopic(topicArn, common.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("listing topic subscriptions: %w", err)
-	}
-	for _, sub := range subscriptions.Items {
-		if err := s.topicSubscriptionsStore.Delete(sub.SubscriptionArn); err != nil {
-			return fmt.Errorf("deleting subscription: %w", err)
+	// Paginate through all subscriptions for this topic. The default page
+	// size is 100, so topics with more subscriptions require multiple pages
+	// to avoid orphaning the overflow.
+	marker := ""
+	for {
+		result, err := s.ListSubscriptionsByTopic(topicArn, common.ListOptions{Marker: marker})
+		if err != nil {
+			return fmt.Errorf("listing topic subscriptions: %w", err)
 		}
+		for _, sub := range result.Items {
+			if err := s.topicSubscriptionsStore.Delete(sub.SubscriptionArn); err != nil {
+				return fmt.Errorf("deleting subscription: %w", err)
+			}
+		}
+		if !result.IsTruncated || result.NextMarker == "" {
+			break
+		}
+		marker = result.NextMarker
 	}
 
 	if err := s.TagStore.Delete(topicArn); err != nil {
@@ -361,7 +396,11 @@ func (s *SNSStore) DeleteSubscription(subscriptionArn string) error {
 	}
 
 	var topic Topic
-	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err == nil {
+	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err != nil {
+		logs.Warn("sns: topic not found during subscription deletion (concurrently deleted?)",
+			logs.String("topicArn", subscription.TopicArn),
+			logs.String("subscriptionArn", subscriptionArn))
+	} else {
 		if subscription.PendingConfirmation {
 			if topic.SubscriptionsPending > 0 {
 				topic.SubscriptionsPending--
@@ -374,7 +413,10 @@ func (s *SNSStore) DeleteSubscription(subscriptionArn string) error {
 		topic.SubscriptionsDeleted++
 		topic.LastModifiedTime = time.Now().UTC()
 		if err := s.Put(topic.Arn, &topic); err != nil {
-			return fmt.Errorf("updating topic: %w", err)
+			logs.Warn("sns: failed to update topic counter during subscription deletion",
+				logs.String("topicArn", subscription.TopicArn),
+				logs.String("subscriptionArn", subscriptionArn),
+				logs.Err(err))
 		}
 	}
 
@@ -404,14 +446,21 @@ func (s *SNSStore) AutoConfirmSubscription(subscription *Subscription) error {
 	}
 
 	var topic Topic
-	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err == nil {
+	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err != nil {
+		logs.Warn("sns: topic not found during auto-confirm (concurrently deleted?)",
+			logs.String("topicArn", subscription.TopicArn),
+			logs.String("subscriptionArn", subscription.SubscriptionArn))
+	} else {
 		if topic.SubscriptionsPending > 0 {
 			topic.SubscriptionsPending--
 		}
 		topic.SubscriptionsConfirmed++
 		topic.LastModifiedTime = time.Now().UTC()
 		if err := s.Put(topic.Arn, &topic); err != nil {
-			return fmt.Errorf("updating topic: %w", err)
+			logs.Warn("sns: failed to update topic counter during auto-confirm",
+				logs.String("topicArn", subscription.TopicArn),
+				logs.String("subscriptionArn", subscription.SubscriptionArn),
+				logs.Err(err))
 		}
 	}
 
@@ -428,6 +477,20 @@ func (s *SNSStore) ListSubscriptionsByTopic(topicArn string, opts common.ListOpt
 	return common.List[Subscription](s.topicSubscriptionsStore, opts, func(sub *Subscription) bool {
 		return sub.TopicArn == topicArn
 	})
+}
+
+// FindSubscriptionByToken finds a subscription for the given topic whose
+// confirmation token matches. Unlike ListSubscriptionsByTopic (which is
+// capped at DefaultMaxItems), this scans all subscriptions to ensure tokens
+// are found even when a topic has more than 100 pending subscriptions.
+func (s *SNSStore) FindSubscriptionByToken(topicArn, token string) (*Subscription, error) {
+	sub, err := common.FindFirst[Subscription](s.topicSubscriptionsStore, func(sub *Subscription) bool {
+		return sub.TopicArn == topicArn && sub.ConfirmationToken == token
+	})
+	if err != nil {
+		return nil, ErrSubscriptionNotFound
+	}
+	return sub, nil
 }
 
 // ConfirmSubscription confirms an SNS subscription using the subscription ARN and confirmation token.
@@ -455,14 +518,21 @@ func (s *SNSStore) ConfirmSubscription(subscriptionArn, token string) (*Subscrip
 	}
 
 	var topic Topic
-	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err == nil {
+	if err := s.BaseStore.Get(subscription.TopicArn, &topic); err != nil {
+		logs.Warn("sns: topic not found during confirm (concurrently deleted?)",
+			logs.String("topicArn", subscription.TopicArn),
+			logs.String("subscriptionArn", subscriptionArn))
+	} else {
 		if topic.SubscriptionsPending > 0 {
 			topic.SubscriptionsPending--
 		}
 		topic.SubscriptionsConfirmed++
 		topic.LastModifiedTime = time.Now().UTC()
 		if err := s.Put(topic.Arn, &topic); err != nil {
-			return nil, err
+			logs.Warn("sns: failed to update topic counter during confirm",
+				logs.String("topicArn", subscription.TopicArn),
+				logs.String("subscriptionArn", subscriptionArn),
+				logs.Err(err))
 		}
 	}
 
@@ -513,9 +583,6 @@ func (s *SNSStore) GetSubscriptionAttributes(subscriptionArn string) (map[string
 	if subscription.ConfirmationWasAuthenticated {
 		attrs["ConfirmationWasAuthenticated"] = "true"
 	}
-	if subscription.ConfirmationToken != "" {
-		attrs["Token"] = subscription.ConfirmationToken
-	}
 
 	return attrs, nil
 }
@@ -555,16 +622,27 @@ func (s *SNSStore) CheckDeduplication(topicArn, messageDeduplicationId string) (
 	return "", false
 }
 
-// RecordDeduplication records a deduplication ID for the 5-minute window.
-func (s *SNSStore) RecordDeduplication(topicArn, messageDeduplicationId, messageID string) {
+// CheckAndRecordDeduplication atomically checks for a duplicate and records
+// the deduplication ID if no duplicate exists. Returns (existingMessageID,
+// true) if a valid (non-expired) duplicate is found, ("", false) otherwise.
+// The atomicity of the check-and-record eliminates the TOCTOU race that
+// existed when CheckDeduplication (RLock) and RecordDeduplication (Lock) were
+// separate calls.
+func (s *SNSStore) CheckAndRecordDeduplication(topicArn, messageDeduplicationId, messageID string) (string, bool) {
 	if messageDeduplicationId == "" {
-		return
+		return "", false
 	}
 
 	key := topicArn + ":" + messageDeduplicationId
 
 	s.deduplicationMu.Lock()
 	defer s.deduplicationMu.Unlock()
+
+	if entry, ok := s.deduplicationCache[key]; ok {
+		if time.Now().Before(entry.expiresAt) {
+			return entry.messageID, true
+		}
+	}
 
 	s.deduplicationCache[key] = &deduplicationEntry{
 		messageID: messageID,
@@ -579,6 +657,8 @@ func (s *SNSStore) RecordDeduplication(topicArn, messageDeduplicationId, message
 			}
 		}
 	}
+
+	return "", false
 }
 
 // GetNextSequenceNumber returns the next sequence number for a FIFO topic message group.
@@ -592,13 +672,18 @@ func (s *SNSStore) GetNextSequenceNumber(topicArn, messageGroupId string) string
 	s.sequenceMu.Lock()
 	defer s.sequenceMu.Unlock()
 
-	// Start from a large base to emulate AWS's 19-digit numbers.
-	if s.sequenceCounters[key] == 0 {
-		s.sequenceCounters[key] = 1000000000000000000 + int64(rand.Intn(89999999999999999))
+	entry, ok := s.sequenceCounters[key]
+	if !ok {
+		entry = &sequenceEntry{
+			// Start from a large base to emulate AWS's 19-digit numbers.
+			value: 1000000000000000000 + int64(rand.Intn(89999999999999999)),
+		}
+		s.sequenceCounters[key] = entry
 	}
 	// Add a random increment (1-1000) to make numbers non-consecutive.
-	s.sequenceCounters[key] += int64(rand.Intn(1000)) + 1
-	return fmt.Sprintf("%d", s.sequenceCounters[key])
+	entry.value += int64(rand.Intn(1000)) + 1
+	entry.lastUsed = time.Now()
+	return fmt.Sprintf("%d", entry.value)
 }
 
 // GetDataProtectionPolicy retrieves the data protection policy for a topic.
@@ -731,17 +816,48 @@ func (s *SNSStore) DeletePlatformApplication(arn string) error {
 	s.platformEndpointMu.Lock()
 	defer s.platformEndpointMu.Unlock()
 
+	// Collect endpoint keys from the reverse index before mutating.
+	// Mutating a lazy iterator's backing store during iteration is unsafe;
+	// collect-then-delete follows the BaseStore.DeleteByPrefix pattern.
 	prefix := []byte(arn + "\x00")
+	var idxKeys [][]byte
+	var endpointArns []string
 	iter := s.platformAppEndpointsIndex.ScanPrefix(prefix)
 	for iter.Next() {
-		epArn := string(iter.Key()[len(prefix):])
+		raw := iter.Key()
+		copied := make([]byte, len(raw))
+		copy(copied, raw)
+		idxKeys = append(idxKeys, copied)
+		endpointArns = append(endpointArns, string(raw[len(prefix):]))
+	}
+	if err := iter.Error(); err != nil {
+		iter.Close()
+		return fmt.Errorf("scanning endpoint index: %w", err)
+	}
+	iter.Close()
+
+	for i, epArn := range endpointArns {
+		// Load endpoint to obtain token for token-index cleanup.
+		var ep PlatformEndpoint
+		hasToken := false
+		if err := s.platformEndpointsStore.Get(epArn, &ep); err == nil && ep.Token != "" {
+			hasToken = true
+		}
+
 		if delErr := s.platformEndpointsStore.Delete(epArn); delErr != nil {
 			logs.Warn("sns: failed to delete endpoint during application deletion",
 				logs.String("endpointArn", epArn), logs.Err(delErr))
 		}
-		if idxErr := s.platformAppEndpointsIndex.Delete(iter.Key()); idxErr != nil {
+		if idxErr := s.platformAppEndpointsIndex.Delete(idxKeys[i]); idxErr != nil {
 			logs.Warn("sns: failed to delete endpoint index entry",
 				logs.String("endpointArn", epArn), logs.Err(idxErr))
+		}
+		if hasToken {
+			tokenKey := []byte(arn + "\x00" + ep.Token)
+			if idxErr := s.endpointTokenIndex.Delete(tokenKey); idxErr != nil {
+				logs.Warn("sns: failed to delete endpoint token index entry",
+					logs.String("endpointArn", epArn), logs.Err(idxErr))
+			}
 		}
 	}
 
@@ -966,6 +1082,11 @@ func (s *SNSStore) ListEndpointsByPlatformApplication(platformAppArn string, opt
 		opts.MaxItems = common.AbsoluteMaxItems
 	}
 
+	s.platformEndpointMu.RLock()
+	defer s.platformEndpointMu.RUnlock()
+	s.platformAppMu.RLock()
+	defer s.platformAppMu.RUnlock()
+
 	prefix := []byte(platformAppArn + "\x00")
 	var items []*PlatformEndpoint
 	var lastEpArn string
@@ -974,6 +1095,7 @@ func (s *SNSStore) ListEndpointsByPlatformApplication(platformAppArn string, opt
 	started := opts.Marker == ""
 
 	iter := s.platformAppEndpointsIndex.ScanPrefix(prefix)
+	defer iter.Close()
 	for iter.Next() {
 		epArn := string(iter.Key()[len(prefix):])
 
@@ -996,16 +1118,18 @@ func (s *SNSStore) ListEndpointsByPlatformApplication(platformAppArn string, opt
 
 		var ep PlatformEndpoint
 		if err := s.platformEndpointsStore.Get(epArn, &ep); err != nil {
-			logs.Warn("sns: stale endpoint index entry, cleaning up",
+			logs.Warn("sns: stale endpoint index entry found during list",
 				logs.String("endpointArn", epArn),
 				logs.String("appArn", platformAppArn))
-			_ = s.platformAppEndpointsIndex.Delete(iter.Key())
 			continue
 		}
 
 		items = append(items, &ep)
 		lastEpArn = epArn
 		count++
+	}
+	if err := iter.Error(); err != nil {
+		return nil, fmt.Errorf("scanning endpoint index: %w", err)
 	}
 
 	nextMarker := ""

@@ -862,7 +862,7 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 	// Return an empty token at the boundary so clients can detect
 	// end-of-data and stop paginating. Without this check the encoded
 	// token (e.g. "f-<totalLen>" or "b-0") is non-empty and the AWS SDK
-	// client loops forever requesting the next page (C-1).
+	// client loops forever requesting the next page.
 	var newNextToken string
 	if (direction == PaginationForward && nextOffset < totalLen) ||
 		(direction == PaginationBackward && nextOffset > 0) {

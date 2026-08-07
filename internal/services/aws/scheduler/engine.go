@@ -177,7 +177,7 @@ func (e *Engine) ensureDefaultGroups() {
 // lastFiredKey builds the deduplication key used by the lastFired map.
 // Region is part of the key so that schedules sharing the same
 // group/name across regions do not interfere with each other's
-// deduplication state (C-2).
+// deduplication state.
 func lastFiredKey(region, groupName, name string) string {
 	return region + "/" + groupName + "/" + name
 }
@@ -192,7 +192,7 @@ func (e *Engine) checkSchedules() {
 	// Collect active schedule keys across ALL regions so the lazy cleanup
 	// pass at the end does not destroy entries belonging to a region that
 	// has not yet been visited, or to a region whose schedules happen to
-	// share a legacy (region-less) key with the current region (C-2).
+	// share a legacy (region-less) key with the current region.
 	allActiveKeys := make(map[string]bool)
 
 	for _, region := range regions {
@@ -304,9 +304,9 @@ func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time)
 	}
 
 	// Prevent duplicate firing: skip if already executed for this interval.
-	// Key includes region so multi-region schedules do not share state (C-2).
+	// Key includes region so multi-region schedules do not share state.
 	// shouldExecute is a pure predicate; the caller reserves the dedup slot
-	// after this returns true (H-2).
+	// after this returns true.
 	key := lastFiredKey(schedule.Region, schedule.GroupName, schedule.Name)
 	if last, ok := e.lastFired.Load(key); ok {
 		if lastTime, ok := last.(time.Time); ok && !lastTime.Before(nextTime) {

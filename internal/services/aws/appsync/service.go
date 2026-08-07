@@ -44,7 +44,7 @@ func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
 }
 
 // SetSigVerifier injects the SigV4 verifier for AWS_IAM auth mode
-// enforcement on the Event API data-plane (P-5).
+// enforcement on the Event API data-plane.
 func (s *AppSyncService) SetSigVerifier(v *auth.SignatureV4Verifier) {
 	s.eventServer.SetSigVerifier(v)
 }

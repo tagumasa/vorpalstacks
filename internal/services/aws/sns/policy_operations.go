@@ -104,19 +104,19 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 
 	var awsAccountIds []string
 	for _, item := range awsAccountIdsRaw {
-		if s, ok := item["value"].(string); ok {
-			awsAccountIds = append(awsAccountIds, s)
-		} else if s, ok := item["AwsAccountId"].(string); ok {
-			awsAccountIds = append(awsAccountIds, s)
+		if val, ok := item["value"].(string); ok {
+			awsAccountIds = append(awsAccountIds, val)
+		} else if val, ok := item["AwsAccountId"].(string); ok {
+			awsAccountIds = append(awsAccountIds, val)
 		}
 	}
 
 	var actionNames []string
 	for _, item := range actionNamesRaw {
-		if s, ok := item["value"].(string); ok {
-			actionNames = append(actionNames, s)
-		} else if s, ok := item["ActionName"].(string); ok {
-			actionNames = append(actionNames, s)
+		if val, ok := item["value"].(string); ok {
+			actionNames = append(actionNames, val)
+		} else if val, ok := item["ActionName"].(string); ok {
+			actionNames = append(actionNames, val)
 		}
 	}
 
@@ -140,7 +140,9 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 
 	for _, action := range actionNames {
 		if !validActionNames[action] {
-			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid action name %q", action))
+			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf(
+				"Invalid action name %q. Valid values: GetTopicAttributes, SetTopicAttributes, AddPermission, RemovePermission, DeleteTopic, Subscribe, ListSubscriptionsByTopic, Publish, Receive",
+				action))
 		}
 	}
 

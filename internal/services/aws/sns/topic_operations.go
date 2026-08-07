@@ -5,90 +5,50 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
+
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
 // CreateTopic creates a new SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_CreateTopic.html
 func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewInvalidParameterException("Topic name is required")
-	}
-	if len(name) > 256 {
-		return nil, awserrors.NewInvalidParameterException("Topic name must not exceed 256 characters")
-	}
-	isFifo := strings.HasSuffix(name, ".fifo")
-	baseName := name
-	if isFifo {
-		baseName = strings.TrimSuffix(name, ".fifo")
-	}
-	for _, c := range baseName {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-			return nil, awserrors.NewInvalidParameterException("Topic name can only contain alphanumeric characters, hyphens, and underscores")
-		}
-	}
-
-	topic := &snsstore.Topic{
-		Name: name,
-	}
-
-	topic.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	topic.Attributes = parseAttributes(req.Parameters)
-
-	if isFifo {
-		if topic.Attributes == nil {
-			topic.Attributes = make(map[string]string)
-		}
-		topic.Attributes["FifoTopic"] = "true"
-		if _, ok := topic.Attributes["ContentBasedDeduplication"]; !ok {
-			topic.Attributes["ContentBasedDeduplication"] = "false"
-		}
-	}
-
-	if topic.IsFifoTopic() && !isFifo {
-		return nil, awserrors.NewInvalidParameterException("FIFO Topic names must end with \".fifo\"")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := store.CreateTopic(topic)
+
+	in := CreateTopicInput{
+		Name:       request.GetParamLowerFirst(req.Parameters, "Name"),
+		Attributes: parseAttributes(req.Parameters),
+		Tags:       tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
+	}
+
+	result, err := s.createTopicCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"TopicArn": created.Arn,
+		"TopicArn": result.Arn,
 	}, nil
 }
 
 // DeleteTopic deletes an SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_DeleteTopic.html
 func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteTopic(topicArn); err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
+
+	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
+	if err := s.deleteTopicCore(store, topicArn); err != nil {
 		return nil, err
 	}
 
@@ -134,8 +94,8 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	}
 
 	if _, hasPolicy := attrs["Policy"]; !hasPolicy {
-		defaultPolicy := fmt.Sprintf(`{"Version":"2008-10-17","Id":"__default_policy_ID","Statement":[{"Sid":"__default_statement_ID","Effect":"Allow","Principal":{"AWS":"*"},"Action":["SNS:GetTopicAttributes","SNS:SetTopicAttributes","SNS:AddPermission","SNS:RemovePermission","SNS:DeleteTopic","SNS:Subscribe","SNS:ListSubscriptionsByTopic","SNS:Publish","SNS:Receive"],"Resource":"%s","Condition":{"StringEquals":{"AWS:SourceOwner":"%s"}}}]}`, topic.Arn, topic.Owner)
-		attrs["Policy"] = defaultPolicy
+		// L7: default policy version updated from legacy 2008-10-17 to 2012-10-17.
+		attrs["Policy"] = formatDefaultPolicy(topic.Arn, topic.Owner)
 	}
 
 	if len(topic.Permissions) > 0 {
@@ -168,11 +128,11 @@ func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.Req
 		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
 	}
 
-	attrs := map[string]string{attributeName: attributeValue}
-
 	if err := validateTopicAttribute(attributeName, attributeValue); err != nil {
 		return nil, err
 	}
+
+	attrs := map[string]string{attributeName: attributeValue}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -195,24 +155,21 @@ func (s *SNSService) ListTopics(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
+
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	result, err := store.ListTopics(common.ListOptions{Marker: nextToken})
+	result, err := s.listTopicsCore(store, ListTopicsInput{NextToken: nextToken})
 	if err != nil {
 		return nil, err
 	}
 
-	topics := make([]map[string]interface{}, 0, len(result.Items))
-	for _, topic := range result.Items {
+	topics := make([]map[string]interface{}, 0, len(result.Topics))
+	for _, t := range result.Topics {
 		topics = append(topics, map[string]interface{}{
-			"TopicArn": topic.Arn,
+			"TopicArn": t.TopicArn,
 		})
 	}
 
-	nextToken = ""
-	if result.IsTruncated && result.NextMarker != "" {
-		nextToken = result.NextMarker
-	}
-	return pagination.BuildListResponse("Topics", topics, nextToken), nil
+	return pagination.BuildListResponse("Topics", topics, result.NextToken), nil
 }
 
 func parseAttributes(params map[string]interface{}) map[string]string {

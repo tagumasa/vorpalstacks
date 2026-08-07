@@ -3,7 +3,6 @@ package sns
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,11 +39,17 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 	if topicArn == "" {
 		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
-	if protocol == "" {
-		return nil, awserrors.NewInvalidParameterException("Protocol is required")
+	// H1: validate protocol value against the nine AWS-supported protocols.
+	if err := validateProtocol(protocol); err != nil {
+		return nil, err
 	}
 	if endpoint == "" {
 		return nil, awserrors.NewInvalidParameterException("Endpoint is required")
+	}
+	// H2: validate endpoint format per protocol to catch grossly invalid
+	// endpoints at Subscribe time rather than silently failing at delivery.
+	if err := validateEndpointForProtocol(protocol, endpoint); err != nil {
+		return nil, err
 	}
 
 	subscription := &snsstore.Subscription{
@@ -82,7 +87,18 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 			return nil, err
 		}
 	} else if protocol == "http" || protocol == "https" {
-		s.sendSubscriptionConfirmation(created, reqCtx.GetRegion())
+		s.deliveryWg.Add(1)
+		go func() {
+			defer s.deliveryWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("SNS subscription confirmation panicked",
+						logs.String("endpoint", created.Endpoint),
+						logs.Any("panic", r))
+				}
+			}()
+			s.sendSubscriptionConfirmation(created, reqCtx.GetRegion())
+		}()
 	}
 
 	subArn := created.SubscriptionArn
@@ -134,24 +150,19 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{})
+	sub, err := store.FindSubscriptionByToken(topicArn, token)
+	if err != nil {
+		return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
+	}
+
+	confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, sub := range result.Items {
-		if subtle.ConstantTimeCompare([]byte(sub.ConfirmationToken), []byte(token)) == 1 {
-			confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token)
-			if err != nil {
-				return nil, err
-			}
-			return map[string]interface{}{
-				"SubscriptionArn": confirmed.SubscriptionArn,
-			}, nil
-		}
-	}
-
-	return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
+	return map[string]interface{}{
+		"SubscriptionArn": confirmed.SubscriptionArn,
+	}, nil
 }
 
 // GetSubscriptionAttributes returns the attributes of a subscription.

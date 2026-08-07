@@ -235,7 +235,7 @@ func (s *EventServer) SetStoreLookup(fn StoreLookupFunc) {
 }
 
 // SetSigVerifier injects the SigV4 verifier used for AWS_IAM auth mode
-// enforcement on HTTP publish and WebSocket connection upgrade (P-5).
+// enforcement on HTTP publish and WebSocket connection upgrade.
 func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
 	s.sigVerifier = v
 }

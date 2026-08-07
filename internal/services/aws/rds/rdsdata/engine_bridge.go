@@ -941,7 +941,7 @@ func fieldToSQLString(f *Field, typeHint string) string {
 	if f.IsNull != nil && *f.IsNull {
 		return "NULL"
 	}
-	// TypeHint-aware rendering (M-3): when the caller marks a value as
+	// TypeHint-aware rendering: when the caller marks a value as
 	// DATE / TIME / TIMESTAMP / DECIMAL / JSON, treat StringValue as the
 	// canonical literal form and render accordingly. The default case
 	// (no TypeHint) falls through to the value-type switch below.

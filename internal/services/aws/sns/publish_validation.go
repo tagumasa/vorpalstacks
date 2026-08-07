@@ -6,25 +6,9 @@ import (
 	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
-
-// SNS message and batch size limits (AWS documented constants).
-const (
-	maxMessageSize    = 256 * 1024 // 256 KB
-	maxSubjectLength  = 100
-	maxBatchTotalSize = 256 * 1024 // 256 KB total for all entries
-	maxBatchEntries   = 10
-)
-
-// validMessageAttributeDataTypes is the complete set of DataType values
-// accepted by SNS message attributes.
-var validMessageAttributeDataTypes = map[string]bool{
-	"String":       true,
-	"Number":       true,
-	"String.Array": true,
-	"Binary":       true,
-}
 
 // messageEntrySize estimates the serialised wire size of a single Publish or
 // PublishBatch entry: message body + subject + all message attributes
@@ -44,48 +28,14 @@ func messageEntrySize(message, subject string, attrs map[string]*snsstore.Messag
 	return size
 }
 
-// validatePublishParams validates all top-level Publish parameters that have
-// AWS-documented constraints. Returns an InvalidParameterException when any
-// constraint is violated.
-func validatePublishParams(topic *snsstore.Topic, message, subject, messageStructure, messageGroupId, messageDeduplicationId string) error {
-	if len(message) > maxMessageSize {
-		return awserrors.NewAWSError("InvalidParameter", fmt.Sprintf("Message too long: %d bytes (maximum %d)", len(message), maxMessageSize), 400)
-	}
-
-	if len(subject) > maxSubjectLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Subject too long: %d characters (maximum %d)", len(subject), maxSubjectLength))
-	}
-
-	if messageStructure != "" && messageStructure != "json" {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid MessageStructure: %s. Valid value: json", messageStructure))
-	}
-
-	if messageStructure == "json" {
-		var msgMap map[string]interface{}
-		if err := json.Unmarshal([]byte(message), &msgMap); err != nil {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid parameter: MessageStructure is json but message body is not valid JSON: %s", err.Error()))
-		}
-		if _, ok := msgMap["default"]; !ok {
-			return awserrors.NewInvalidParameterException("Invalid parameter: MessageStructure is json but message body does not contain a 'default' key")
-		}
-	}
-
-	if !topic.IsFifoTopic() {
-		if messageGroupId != "" {
-			return awserrors.NewInvalidParameterException("MessageGroupId is only valid for FIFO topics")
-		}
-		if messageDeduplicationId != "" {
-			return awserrors.NewInvalidParameterException("MessageDeduplicationId is only valid for FIFO topics")
-		}
-	}
-
-	return nil
-}
-
 // parseMessageAttributes extracts SNS message attributes from a request params
 // map and populates the Message's MessageAttributes field. Returns an error
 // (fail-closed) when an attribute entry is malformed or has an invalid
 // DataType instead of silently skipping it.
+//
+// M7: enforces max 10 attributes, String value max 256 chars, Binary value
+// max 256 bytes.
+// M8: enforces attribute name format [a-zA-Z0-9_.-]{1,256}.
 func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message) error {
 	var attrs map[string]interface{}
 	for _, key := range []string{"MessageAttributes", "messageAttributes"} {
@@ -94,12 +44,48 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 			break
 		}
 	}
+
+	// Also handle the AWS Query API flat-key format. The SDK sends message
+	// attributes as:
+	//   MessageAttributes.entry.N.Name=<name>
+	//   MessageAttributes.entry.N.Value.DataType=<type>
+	//   MessageAttributes.entry.N.Value.StringValue=<value>
+	// The HTTP query parser stores these as flat string keys, so we parse
+	// them manually.
+	if attrs == nil {
+		attrs = make(map[string]interface{})
+		for i := 1; i <= 30; i++ {
+			name := request.GetStringParam(params, fmt.Sprintf("MessageAttributes.entry.%d.Name", i))
+			if name == "" {
+				break
+			}
+			attrs[name] = map[string]interface{}{
+				"DataType":    request.GetStringParam(params, fmt.Sprintf("MessageAttributes.entry.%d.Value.DataType", i)),
+				"StringValue": request.GetStringParam(params, fmt.Sprintf("MessageAttributes.entry.%d.Value.StringValue", i)),
+				"BinaryValue": request.GetStringParam(params, fmt.Sprintf("MessageAttributes.entry.%d.Value.BinaryValue", i)),
+			}
+		}
+		if len(attrs) == 0 {
+			attrs = nil
+		}
+	}
+
 	if attrs == nil {
 		return nil
 	}
 
+	// M7: maximum 10 message attributes.
+	if len(attrs) > maxMessageAttributes {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), maxMessageAttributes))
+	}
+
 	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
 	for k, v := range attrs {
+		// M8: validate attribute name format.
+		if err := validateMessageAttributeName(k); err != nil {
+			return err
+		}
+
 		attrMap, ok := v.(map[string]interface{})
 		if !ok {
 			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute %q: value must be a map", k))
@@ -124,6 +110,12 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 			}
 			attr.BinaryValue = decoded
 		}
+
+		// M7: validate attribute value sizes.
+		if err := validateMessageAttributeLimits(k, attr.StringValue, attr.BinaryValue); err != nil {
+			return err
+		}
+
 		msg.MessageAttributes[k] = attr
 	}
 

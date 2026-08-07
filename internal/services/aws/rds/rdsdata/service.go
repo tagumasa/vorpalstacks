@@ -264,8 +264,8 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 				// If ContinueAfterTimeout will be used, pre-acquire the
 				// bg counters under s.mu so purgeExpired cannot delete
 				// the entry between Unlock and the goroutine start in
-				// executeWithContinueAfterTimeout (L-10 race fix).
-				// The matching decrement is in the goroutine's defer.
+				// executeWithContinueAfterTimeout. The matching decrement
+				// is in the goroutine's defer.
 				if input.ContinueAfterTimeout {
 					entry.bgCount.Add(1)
 					entry.bgWg.Add(1)

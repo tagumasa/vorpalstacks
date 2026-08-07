@@ -23,6 +23,7 @@ type SNSStoreInterface interface {
 	ConfirmSubscription(subscriptionArn, token string) (*Subscription, error)
 	ListSubscriptions(opts common.ListOptions) (*common.ListResult[Subscription], error)
 	ListSubscriptionsByTopic(topicArn string, opts common.ListOptions) (*common.ListResult[Subscription], error)
+	FindSubscriptionByToken(topicArn, token string) (*Subscription, error)
 	SetSubscriptionAttributes(subscriptionArn string, attributes map[string]string) error
 	GetSubscriptionAttributes(subscriptionArn string) (map[string]string, error)
 
@@ -31,7 +32,7 @@ type SNSStoreInterface interface {
 	Untag(resourceArn string, tagKeys []string) error
 
 	CheckDeduplication(topicArn, messageDeduplicationId string) (string, bool)
-	RecordDeduplication(topicArn, messageDeduplicationId, messageID string)
+	CheckAndRecordDeduplication(topicArn, messageDeduplicationId, messageID string) (string, bool)
 	GetNextSequenceNumber(topicArn, messageGroupId string) string
 
 	GetDataProtectionPolicy(topicArn string) (string, error)
