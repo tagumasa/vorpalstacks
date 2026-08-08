@@ -315,7 +315,7 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 
 	// Collect chunk index entries that must be committed atomically with
 	// the LogGroup/LogStream metadata update. If the metadata transaction
-	// fails, the chunk files are removed to prevent orphans (M-S1).
+	// fails, the chunk files are removed to prevent orphans.
 	var pendingChunks []pendingChunkIndex
 
 	// Flush existing entries first if appending the new batch would
@@ -388,7 +388,7 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 // pendingChunkIndex holds a chunk index entry that has been written to
 // disk but not yet committed to Pebble. The caller must write the index
 // entry to Pebble (ideally inside a transaction together with the
-// LogGroup/LogStream update) or remove chunkPath on failure (M-S1).
+// LogGroup/LogStream update) or remove chunkPath on failure.
 type pendingChunkIndex struct {
 	meta      *ChunkMeta
 	indexKey  string
@@ -399,7 +399,7 @@ type pendingChunkIndex struct {
 // and any pending chunk indexes using a storage transaction. Falls back to
 // sequential writes if the storage backend does not support transactions.
 // If this returns an error, the caller is responsible for removing the
-// orphaned chunk files referenced by pendingChunks (M-S1).
+// orphaned chunk files referenced by pendingChunks.
 func (s *Store) updateLogGroupStreamAndChunks(logGroupName string, lg *LogGroup, logStreamName string, ls *LogStream, pendingChunks []pendingChunkIndex) error {
 	if s.ts == nil {
 		if err := s.PutLogGroup(lg); err != nil {
@@ -458,7 +458,7 @@ func incrementToken(token string) (string, error) {
 // prepareChunkFlush writes the chunk file to disk and prepares the index
 // entry WITHOUT committing it to Pebble. The caller must commit the
 // returned pendingChunkIndex to Pebble (ideally inside a transaction) or
-// remove chunkPath on failure (M-S1).
+// remove chunkPath on failure.
 func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, ac *activeChunk) (pendingChunkIndex, error) {
 	if len(ac.entries) == 0 {
 		return pendingChunkIndex{}, nil
@@ -500,7 +500,7 @@ func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, ac *active
 // Used by callers that do not need transactional atomicity with metadata
 // updates (e.g. flushIfNeeded before reads). PutLogEvents uses
 // prepareChunkFlush instead so the index can be committed inside the
-// metadata transaction (M-S1).
+// metadata transaction.
 func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) error {
 	pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
 	if err != nil {

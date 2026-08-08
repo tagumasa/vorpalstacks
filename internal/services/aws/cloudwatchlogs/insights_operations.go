@@ -18,6 +18,7 @@ type queryState struct {
 	queryString         string
 	queryLanguage       string
 	status              string
+	errorMessage        string
 	results             []queryResultRow
 	stats               queryStats
 	createdAt           time.Time
@@ -59,10 +60,11 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 		}
 	}
 
-	limit := int64(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 10000
+	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 100000)
+	if err != nil {
+		return nil, err
 	}
+	limit := int64(limit32)
 
 	if len(logGroupNames) == 0 && len(logGroupIdentifiers) == 0 {
 		return nil, ErrMissingParameter
@@ -95,6 +97,12 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 }
 
 func (s *LogsService) executeQuery(region, queryId, queryString string, logGroupNames []string, startTime, endTime, limit int64) {
+	defer func() {
+		if r := recover(); r != nil {
+			s.failQuery(queryId, fmt.Sprintf("panic: %v", r))
+		}
+	}()
+
 	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		s.failQuery(queryId, fmt.Sprintf("store error: %v", err))
@@ -137,7 +145,7 @@ func (s *LogsService) failQuery(queryId, message string) {
 	}
 	qs := val.(*queryState)
 	qs.status = "Failed"
-	_ = message
+	qs.errorMessage = message
 }
 
 // StopQuery stops a running query.
@@ -166,9 +174,9 @@ func (s *LogsService) DescribeQueries(ctx context.Context, reqCtx *request.Reque
 	statusFilter := request.GetParamLowerFirst(req.Parameters, "Status")
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
-	if maxResults <= 0 {
-		maxResults = 50
+	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 50, 1000)
+	if err != nil {
+		return nil, err
 	}
 
 	var allQueries []*queryState
@@ -227,16 +235,20 @@ func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.Reque
 
 	qs := val.(*queryState)
 
-	limit := int(request.GetIntParam(req.Parameters, "MaxItems"))
-	if limit <= 0 {
-		limit = 10000
+	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxItems")), 10000, 10000)
+	if err != nil {
+		return nil, err
 	}
+	limit := int(limit32)
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	offset := 0
 	if nextToken != "" {
-		if n, err := parseInt(nextToken); err == nil {
-			offset = n
+		n, err := parseInt(nextToken)
+		if err != nil {
+			return nil, NewLogsError("InvalidParameterException",
+				"Invalid nextToken", 400)
 		}
+		offset = n
 	}
 
 	endIdx := offset + limit
@@ -298,6 +310,9 @@ func formatQueryInfo(qs *queryState) map[string]interface{} {
 		"status":       qs.status,
 		"createTime":   qs.createdAt.UnixMilli(),
 		"logGroupName": logGroupName,
+	}
+	if qs.errorMessage != "" {
+		result["errorMessage"] = qs.errorMessage
 	}
 	if qs.queryLanguage != "" {
 		result["queryLanguage"] = qs.queryLanguage

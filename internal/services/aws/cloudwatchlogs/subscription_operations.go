@@ -21,8 +21,17 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 	roleArn := request.GetParamLowerFirst(req.Parameters, "RoleArn")
 	distribution := request.GetParamLowerFirst(req.Parameters, "Distribution")
 
-	if logGroupName == "" || filterName == "" || destinationArn == "" {
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateFilterName(filterName); err != nil {
+		return nil, err
+	}
+	if destinationArn == "" {
 		return nil, ErrMissingParameter
+	}
+	if err := validateFilterPattern(filterPattern); err != nil {
+		return nil, err
 	}
 
 	if !arn.IsLambdaARN(destinationArn) && !arn.IsKinesisARN(destinationArn) &&
@@ -50,7 +59,7 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		distribution = "ByLogStream"
 	}
 
-	if distribution != "Random" && distribution != "ByLogStream" {
+	if !validateDistribution(distribution) {
 		return nil, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid distribution: %s. Allowed values: Random, ByLogStream", distribution), 400)
 	}
@@ -86,8 +95,11 @@ func (s *LogsService) DeleteSubscriptionFilter(ctx context.Context, reqCtx *requ
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterName := request.GetParamLowerFirst(req.Parameters, "FilterName")
 
-	if logGroupName == "" || filterName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateFilterName(filterName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -107,9 +119,9 @@ func (s *LogsService) DescribeSubscriptionFilters(ctx context.Context, reqCtx *r
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterNamePrefix := request.GetParamLowerFirst(req.Parameters, "FilterNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

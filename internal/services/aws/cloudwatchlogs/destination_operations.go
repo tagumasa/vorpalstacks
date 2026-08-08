@@ -18,8 +18,8 @@ func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.Reques
 	accessPolicy := request.GetParamLowerFirst(req.Parameters, "AccessPolicy")
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
-	if name == "" {
-		return nil, ErrMissingParameter
+	if err := validateDestinationName(name); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -51,8 +51,8 @@ func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.Reques
 func (s *LogsService) DeleteDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "DestinationName")
 
-	if name == "" {
-		return nil, ErrMissingParameter
+	if err := validateDestinationName(name); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -71,9 +71,9 @@ func (s *LogsService) DeleteDestination(ctx context.Context, reqCtx *request.Req
 func (s *LogsService) DescribeDestinations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	prefix := request.GetParamLowerFirst(req.Parameters, "DestinationNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -105,13 +105,21 @@ func (s *LogsService) DescribeDestinations(ctx context.Context, reqCtx *request.
 	return resp, nil
 }
 
-// PutDestinationPolicy sets the resource-based policy for a CloudWatch Logs destination.
+// PutDestinationPolicy sets the resource-based policy for a CloudWatch Logs
+// destination. AWS always overwrites the existing policy regardless of the
+// forceUpdate parameter — forceUpdate is only an affirmation that subscription
+// filters have been updated when migrating from individual AWS account
+// permissions to an Organisation ID, which is not applicable to this
+// edge/on-premises platform.
 func (s *LogsService) PutDestinationPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "DestinationName")
 	accessPolicy := request.GetParamLowerFirst(req.Parameters, "AccessPolicy")
 
-	if name == "" {
-		return nil, ErrMissingParameter
+	if err := validateDestinationName(name); err != nil {
+		return nil, err
+	}
+	if err := validateAccessPolicy(accessPolicy); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

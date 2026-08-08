@@ -19,8 +19,14 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 	queryString := request.GetParamLowerFirst(req.Parameters, "QueryString")
 	scheduleExpression := request.GetParamLowerFirst(req.Parameters, "ScheduleExpression")
 
-	if name == "" || queryString == "" || scheduleExpression == "" {
+	if err := validateScheduledQueryName(name); err != nil {
+		return nil, err
+	}
+	if queryString == "" || scheduleExpression == "" {
 		return nil, ErrMissingParameter
+	}
+	if err := validateQueryString(queryString); err != nil {
+		return nil, err
 	}
 
 	id := fmt.Sprintf("sq-%d", time.Now().UnixNano())
@@ -47,6 +53,10 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 	state := request.GetParamLowerFirst(req.Parameters, "State")
 	if state == "" {
 		state = "ENABLED"
+	}
+	if !validateScheduledQueryState(state) {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid state: %s. Allowed values: ENABLED, DISABLED", state), 400)
 	}
 	startTimeOffset := int64(request.GetIntParam(req.Parameters, "StartTimeOffset"))
 	endTimeOffset := int64(request.GetIntParam(req.Parameters, "EndTimeOffset"))
@@ -218,9 +228,9 @@ func (s *LogsService) GetScheduledQueryHistory(ctx context.Context, reqCtx *requ
 	}
 
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
-	if maxResults <= 0 {
-		maxResults = 50
+	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 50, 1000)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -307,9 +317,9 @@ func (s *LogsService) ListScheduledQueries(ctx context.Context, reqCtx *request.
 	state := request.GetParamLowerFirst(req.Parameters, "State")
 	scheduleTypeFilter := request.GetParamLowerFirst(req.Parameters, "ScheduleType")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
-	if maxResults <= 0 {
-		maxResults = 50
+	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 50, 1000)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -496,13 +506,22 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 		TriggerTime:      now,
 		Status:           "RUNNING",
 	}
-	_ = store.PutScheduledQueryExecution(exec)
+	if err := store.PutScheduledQueryExecution(exec); err != nil {
+		logs.Error("Failed to persist scheduled query execution (RUNNING)",
+			logs.String("scheduledQueryId", sq.Id),
+			logs.Err(err))
+		return
+	}
 
 	defer func() {
 		if r := recover(); r != nil {
 			exec.Status = "FAILED"
 			exec.ErrorMessage = fmt.Sprintf("panic: %v", r)
-			_ = store.PutScheduledQueryExecution(exec)
+			if err := store.PutScheduledQueryExecution(exec); err != nil {
+				logs.Error("Failed to persist scheduled query execution (FAILED after panic)",
+					logs.String("scheduledQueryId", sq.Id),
+					logs.Err(err))
+			}
 		}
 	}()
 
@@ -531,10 +550,18 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 	exec.Status = "SUCCESS"
 	exec.RecordsScanned = stats.recordsScanned
 	exec.RecordsMatched = stats.recordsMatched
-	_ = store.PutScheduledQueryExecution(exec)
+	if err := store.PutScheduledQueryExecution(exec); err != nil {
+		logs.Error("Failed to persist scheduled query execution (SUCCESS)",
+			logs.String("scheduledQueryId", sq.Id),
+			logs.Err(err))
+	}
 
 	sq.LastTriggeredTime = now
-	_ = store.PutScheduledQuery(sq)
+	if err := store.PutScheduledQuery(sq); err != nil {
+		logs.Error("Failed to update scheduled query LastTriggeredTime",
+			logs.String("scheduledQueryId", sq.Id),
+			logs.Err(err))
+	}
 }
 
 func computeNextTriggerTime(scheduleExpression string, lastTriggered int64) int64 {

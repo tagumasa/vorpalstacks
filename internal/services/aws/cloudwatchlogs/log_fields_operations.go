@@ -89,8 +89,11 @@ func (s *LogsService) GetLogRecord(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrMissingParameter
 	}
 
-	unmask := request.GetBoolParam(req.Parameters, "Unmask")
-	_ = unmask
+	// The Unmask parameter controls whether data-protection-masked fields
+	// are returned in their original form. Data protection masking is not
+	// implemented on this platform; the parameter is accepted but has no
+	// effect on the returned data.
+	_ = request.GetBoolParam(req.Parameters, "Unmask")
 
 	decoded, err := base64.StdEncoding.DecodeString(logRecordPointer)
 	if err != nil {
@@ -135,8 +138,9 @@ func (s *LogsService) GetLogObject(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrMissingParameter
 	}
 
-	unmask := request.GetBoolParam(req.Parameters, "Unmask")
-	_ = unmask
+	// Data protection masking is not implemented on this platform;
+	// the Unmask parameter is accepted but has no effect.
+	_ = request.GetBoolParam(req.Parameters, "Unmask")
 
 	decoded, err := base64.StdEncoding.DecodeString(logObjectPointer)
 	if err != nil {

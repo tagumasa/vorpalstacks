@@ -6,111 +6,87 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // AdminHandler provides CloudWatch Logs service administration functionality.
-// It delegates to the shared LogsService to ensure the same per-region cached
-// stores are used as the HTTP API handlers.
+// It delegates to the shared LogsService Core methods to ensure the same
+// validation, business logic, and per-region cached stores are used as the
+// HTTP API handlers. Per architecture rule #29, this handler does NOT import
+// any store package directly — all data access flows through Core methods
+// and conversion helpers in admin_handler_convert.go.
 type AdminHandler struct {
 	cloudwatchlogsconnect.UnimplementedCloudWatchLogsServiceHandler
 	service *LogsService
 }
 
-// NewAdminHandler creates a new CloudWatch Logs AdminHandler backed by the
-// given service instance.
+// NewAdminHandler creates a new AdminHandler bound to the given service.
 func NewAdminHandler(svc *LogsService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-// getStoreByRegion retrieves the CloudWatch Logs store for the specified region
-// via the shared service cache.
-func (h *AdminHandler) getStoreByRegion(region string) (*cloudwatchlogsstore.Store, error) {
-	return h.service.getLogsStoreByRegion(region)
-}
-
-// ListLogGroups lists log groups in CloudWatch Logs.
+// ListLogGroups lists log groups in CloudWatch Logs via the admin console.
 func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[pb.ListLogGroupsRequest]) (*connect.Response[pb.ListLogGroupsResponse], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+
+	limit, err := validateListLimit(int32(req.Msg.GetLimit()), 50, 1000)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetLimit())
-	if limit <= 0 {
-		limit = 50
+	input := ListLogGroupsInput{
+		LogGroupNamePrefix: req.Msg.Loggroupnamepattern,
+		NextToken:          req.Msg.Nexttoken,
+		Limit:              limit,
+		Region:             region,
 	}
 
-	groups, nextToken, err := store.ListLogGroups(req.Msg.Loggroupnamepattern, req.Msg.Nexttoken, limit)
+	result, err := h.service.listLogGroupsCore(input)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	summaries := make([]*pb.LogGroupSummary, len(groups))
-	for i, g := range groups {
-		summary := &pb.LogGroupSummary{
-			Loggrouparn:  g.ARN,
-			Loggroupname: g.Name,
-		}
-		switch g.LogGroupClass {
-		case "DELIVERY":
-			summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_DELIVERY
-		case "INFREQUENT_ACCESS":
-			summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_INFREQUENT_ACCESS
-		default:
-			summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_STANDARD
-		}
-		summaries[i] = summary
+	summaries := make([]*pb.LogGroupSummary, len(result.LogGroups))
+	for i, lg := range result.LogGroups {
+		summaries[i] = toPbLogGroupSummary(lg)
 	}
 
 	return connect.NewResponse(&pb.ListLogGroupsResponse{
 		Loggroups: summaries,
-		Nexttoken: nextToken,
+		Nexttoken: result.NextToken,
 	}), nil
 }
 
-// DescribeLogStreams describes log streams in CloudWatch Logs.
+// DescribeLogStreams describes log streams in CloudWatch Logs via the admin console.
 func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Request[pb.DescribeLogStreamsRequest]) (*connect.Response[pb.DescribeLogStreamsResponse], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+
+	input := DescribeLogStreamsInput{
+		LogGroupName:        req.Msg.Loggroupname,
+		LogStreamNamePrefix: req.Msg.Logstreamnameprefix,
+		NextToken:           req.Msg.Nexttoken,
+		Limit:               int32(req.Msg.GetLimit()),
+		Region:              region,
+	}
+
+	result, err := h.service.describeLogStreamsCore(input)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetLimit())
-	if limit <= 0 {
-		limit = 50
-	}
-
-	streams, nextToken, err := store.ListLogStreams(req.Msg.Loggroupname, req.Msg.Logstreamnameprefix, req.Msg.Nexttoken, limit)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	pbStreams := make([]*pb.LogStream, len(streams))
-	for i, s := range streams {
-		pbStreams[i] = &pb.LogStream{
-			Logstreamname:       s.Name,
-			Arn:                 s.ARN,
-			Creationtime:        proto.Int64(s.CreatedAt.UnixMilli()),
-			Firsteventtimestamp: proto.Int64(s.FirstEventTs),
-			Lasteventtimestamp:  proto.Int64(s.LastEventTs),
-			Lastingestiontime:   proto.Int64(s.LastIngestionTs),
-			Uploadsequencetoken: s.UploadSequenceToken,
-		}
+	pbStreams := make([]*pb.LogStream, len(result.LogStreams))
+	for i, ls := range result.LogStreams {
+		pbStreams[i] = toPbLogStream(ls)
 	}
 
 	return connect.NewResponse(&pb.DescribeLogStreamsResponse{
 		Logstreams: pbStreams,
-		Nexttoken:  nextToken,
+		Nexttoken:  result.NextToken,
 	}), nil
 }
 
@@ -121,25 +97,17 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+
+	input := CreateLogGroupInput{
+		LogGroupName:              req.Msg.Loggroupname,
+		LogGroupClass:             pbLogGroupClassToString(req.Msg.Loggroupclass),
+		Tags:                      req.Msg.Tags,
+		DeletionProtectionEnabled: req.Msg.GetDeletionprotectionenabled(),
+		Region:                    region,
 	}
 
-	logGroupClass := "STANDARD"
-	switch req.Msg.Loggroupclass {
-	case pb.LogGroupClass_LOG_GROUP_CLASS_DELIVERY:
-		logGroupClass = "DELIVERY"
-	case pb.LogGroupClass_LOG_GROUP_CLASS_INFREQUENT_ACCESS:
-		logGroupClass = "INFREQUENT_ACCESS"
-	}
-
-	lg := cloudwatchlogsstore.NewLogGroup(req.Msg.Loggroupname, region, h.service.AccountID())
-	lg.Tags = req.Msg.Tags
-	lg.LogGroupClass = logGroupClass
-
-	if err := store.CreateLogGroup(lg); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if _, err := h.service.createLogGroupCore(input); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -152,13 +120,14 @@ func (h *AdminHandler) DeleteLogGroup(ctx context.Context, req *connect.Request[
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+
+	input := DeleteLogGroupInput{
+		LogGroupName: req.Msg.Loggroupname,
+		Region:       region,
 	}
 
-	if err := store.DeleteLogGroup(req.Msg.Loggroupname); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteLogGroupCore(input); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

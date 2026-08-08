@@ -19,8 +19,14 @@ func (s *LogsService) PutMetricFilter(ctx context.Context, reqCtx *request.Reque
 	filterName := request.GetParamLowerFirst(req.Parameters, "FilterName")
 	filterPattern := request.GetParamLowerFirst(req.Parameters, "FilterPattern")
 
-	if logGroupName == "" || filterName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateFilterName(filterName); err != nil {
+		return nil, err
+	}
+	if err := validateFilterPattern(filterPattern); err != nil {
+		return nil, err
 	}
 
 	var transformations []logsstore.MetricTransformation
@@ -45,6 +51,23 @@ func (s *LogsService) PutMetricFilter(ctx context.Context, reqCtx *request.Reque
 
 	if len(transformations) == 0 {
 		transformations = parseMetricTransformationsFromMap(req)
+	}
+
+	if len(transformations) == 0 {
+		return nil, NewLogsError("InvalidParameterException",
+			"At least one metric transformation is required", 400)
+	}
+
+	for _, t := range transformations {
+		if err := validateMetricName(t.MetricName); err != nil {
+			return nil, err
+		}
+		if err := validateMetricNamespace(t.MetricNamespace); err != nil {
+			return nil, err
+		}
+		if err := validateMetricValue(t.MetricValue); err != nil {
+			return nil, err
+		}
 	}
 
 	store, err := s.store(reqCtx)
@@ -116,8 +139,11 @@ func (s *LogsService) DeleteMetricFilter(ctx context.Context, reqCtx *request.Re
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterName := request.GetParamLowerFirst(req.Parameters, "FilterName")
 
-	if logGroupName == "" || filterName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateFilterName(filterName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -137,9 +163,9 @@ func (s *LogsService) DescribeMetricFilters(ctx context.Context, reqCtx *request
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterNamePrefix := request.GetParamLowerFirst(req.Parameters, "FilterNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

@@ -18,6 +18,10 @@ func (s *LogsService) PutResourcePolicy(ctx context.Context, reqCtx *request.Req
 		return nil, ErrMissingParameter
 	}
 
+	if err := validatePolicyDocument(policyDocument); err != nil {
+		return nil, err
+	}
+
 	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
 	expectedRevisionId := request.GetParamLowerFirst(req.Parameters, "ExpectedRevisionId")
 	policyScope := "ACCOUNT"
@@ -92,9 +96,9 @@ func (s *LogsService) DescribeResourcePolicies(ctx context.Context, reqCtx *requ
 	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
 	policyScopeFilter := request.GetParamLowerFirst(req.Parameters, "PolicyScope")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

@@ -164,7 +164,13 @@ func (s *LogsService) executeImportTask(region, importId, bucket, s3Key, logGrou
 
 		streamName := fmt.Sprintf("import-%s-stream", importId)
 		ls := logsstore.NewLogStream(streamName, logGroupName)
-		_ = store.CreateLogStream(ls)
+		if err := store.CreateLogStream(ls); err != nil {
+			logs.Warn("Failed to create import log stream",
+				logs.String("importId", importId),
+				logs.String("stream", streamName),
+				logs.Err(err))
+			continue
+		}
 
 		_, err = store.PutLogEvents(logGroupName, streamName, events)
 		if err != nil {
@@ -241,7 +247,12 @@ func (s *LogsService) updateImportTaskStatus(region, importId, status, message s
 		task.ErrorMessage = message
 	}
 	task.LastUpdatedTime = time.Now().UTC().UnixMilli()
-	_ = store.PutImportTask(task)
+	if err := store.PutImportTask(task); err != nil {
+		logs.Error("Failed to persist import task status update",
+			logs.String("importId", importId),
+			logs.String("status", status),
+			logs.Err(err))
+	}
 }
 
 func (s *LogsService) updateImportStats(region, importId string, bytesImported int64) {
@@ -256,7 +267,11 @@ func (s *LogsService) updateImportStats(region, importId string, bytesImported i
 	task.ImportStatistics = map[string]interface{}{
 		"bytesImported": bytesImported,
 	}
-	_ = store.PutImportTask(task)
+	if err := store.PutImportTask(task); err != nil {
+		logs.Error("Failed to persist import task statistics",
+			logs.String("importId", importId),
+			logs.Err(err))
+	}
 }
 
 // DescribeImportTasks lists import tasks.
@@ -265,9 +280,9 @@ func (s *LogsService) DescribeImportTasks(ctx context.Context, reqCtx *request.R
 	status := request.GetParamLowerFirst(req.Parameters, "ImportStatus")
 	sourceArn := request.GetParamLowerFirst(req.Parameters, "ImportSourceArn")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -316,6 +331,11 @@ func (s *LogsService) CancelImportTask(ctx context.Context, reqCtx *request.Requ
 		return nil, mapStoreError(err)
 	}
 
+	if task.ImportStatus == "COMPLETED" || task.ImportStatus == "FAILED" || task.ImportStatus == "CANCELLED" {
+		return nil, NewLogsError("InvalidOperationException",
+			fmt.Sprintf("Cannot cancel import task in %s state", task.ImportStatus), 400)
+	}
+
 	task.ImportStatus = "CANCELLED"
 	task.LastUpdatedTime = time.Now().UTC().UnixMilli()
 	if err := store.PutImportTask(task); err != nil {
@@ -341,9 +361,8 @@ func (s *LogsService) DescribeImportTaskBatches(ctx context.Context, reqCtx *req
 		return nil, ErrMissingParameter
 	}
 
-	if statuses, ok := req.Parameters["batchImportStatus"]; ok {
-		_ = statuses
-	}
+	// batchImportStatus is accepted but batch-level status tracking is not
+	// implemented; the response always returns an empty importBatches list.
 
 	store, err := s.store(reqCtx)
 	if err != nil {

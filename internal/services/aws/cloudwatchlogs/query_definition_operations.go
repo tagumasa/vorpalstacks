@@ -16,13 +16,14 @@ func (s *LogsService) PutQueryDefinition(ctx context.Context, reqCtx *request.Re
 	queryString := request.GetParamLowerFirst(req.Parameters, "QueryString")
 	queryLanguage := request.GetParamLowerFirst(req.Parameters, "QueryLanguage")
 
-	if name == "" {
-		return nil, ErrMissingParameter
+	if err := validateQueryDefinitionName(name); err != nil {
+		return nil, err
+	}
+	if err := validateQueryString(queryString); err != nil {
+		return nil, err
 	}
 
 	queryDefinitionId := request.GetParamLowerFirst(req.Parameters, "QueryDefinitionId")
-	clientToken := request.GetParamLowerFirst(req.Parameters, "ClientToken")
-	_ = clientToken
 
 	var parameters map[string]interface{}
 	if p, ok := req.Parameters["parameters"]; ok {
@@ -95,9 +96,9 @@ func (s *LogsService) DeleteQueryDefinition(ctx context.Context, reqCtx *request
 func (s *LogsService) DescribeQueryDefinitions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "QueryDefinitionNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
-	if maxResults <= 0 {
-		maxResults = 1000
+	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 1000, 1000)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

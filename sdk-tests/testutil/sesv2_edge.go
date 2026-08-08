@@ -300,7 +300,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 	// --- UpdateEventDestination preserves destination type ---
 
 	results = append(results, r.RunTest("sesv2", "UpdateEventDestination_PreserveDestinationType", func() error {
-		csName := fmt.Sprintf("edge-bug1-%d", tc.uid)
+		csName := fmt.Sprintf("edge-update-preserve-%d", tc.uid)
 		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
 			ConfigurationSetName: aws.String(csName),
 		})
@@ -311,12 +311,12 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 		_, err = tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
-			EventDestinationName: aws.String("bug1-dest"),
+			EventDestinationName: aws.String("update-preserve-dest"),
 			EventDestination: &types.EventDestinationDefinition{
 				Enabled:            true,
 				MatchingEventTypes: []types.EventType{types.EventTypeSend},
 				SnsDestination: &types.SnsDestination{
-					TopicArn: aws.String("arn:aws:sns:us-east-1:123456789012:bug1-test"),
+					TopicArn: aws.String("arn:aws:sns:us-east-1:123456789012:update-preserve-sns"),
 				},
 			},
 		})
@@ -327,7 +327,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 		// Update only Enabled — destination type must be preserved.
 		_, err = tc.client.UpdateConfigurationSetEventDestination(tc.ctx, &sesv2.UpdateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
-			EventDestinationName: aws.String("bug1-dest"),
+			EventDestinationName: aws.String("update-preserve-dest"),
 			EventDestination: &types.EventDestinationDefinition{
 				Enabled: false,
 			},
@@ -344,11 +344,11 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 			return fmt.Errorf("get event destinations: %v", err)
 		}
 		for _, ed := range resp.EventDestinations {
-			if *ed.Name == "bug1-dest" {
+			if *ed.Name == "update-preserve-dest" {
 				if ed.SnsDestination == nil || ed.SnsDestination.TopicArn == nil {
 					return fmt.Errorf("SNS destination was wiped by partial update")
 				}
-				if *ed.SnsDestination.TopicArn != "arn:aws:sns:us-east-1:123456789012:bug1-test" {
+				if *ed.SnsDestination.TopicArn != "arn:aws:sns:us-east-1:123456789012:update-preserve-sns" {
 					return fmt.Errorf("SNS TopicArn changed: got %s", *ed.SnsDestination.TopicArn)
 				}
 			}
@@ -359,7 +359,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 	// --- Enabled defaults to true when omitted ---
 
 	results = append(results, r.RunTest("sesv2", "CreateEventDestination_DefaultEnabled", func() error {
-		csName := fmt.Sprintf("edge-bug2-%d", tc.uid)
+		csName := fmt.Sprintf("edge-default-enabled-%d", tc.uid)
 		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
 			ConfigurationSetName: aws.String(csName),
 		})
@@ -370,11 +370,11 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 		_, err = tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
-			EventDestinationName: aws.String("bug2-dest"),
+			EventDestinationName: aws.String("default-enabled-dest"),
 			EventDestination: &types.EventDestinationDefinition{
 				MatchingEventTypes: []types.EventType{types.EventTypeSend},
 				SnsDestination: &types.SnsDestination{
-					TopicArn: aws.String("arn:aws:sns:us-east-1:123456789012:bug2-test"),
+					TopicArn: aws.String("arn:aws:sns:us-east-1:123456789012:default-enabled-sns"),
 				},
 			},
 		})
@@ -389,7 +389,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 			return fmt.Errorf("get event destinations: %v", err)
 		}
 		for _, ed := range resp.EventDestinations {
-			if *ed.Name == "bug2-dest" {
+			if *ed.Name == "default-enabled-dest" {
 				if !ed.Enabled {
 					return fmt.Errorf("Enabled should default to true when omitted")
 				}

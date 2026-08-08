@@ -8,12 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
@@ -61,8 +59,11 @@ func (s *LogsService) CreateLogStream(ctx context.Context, reqCtx *request.Reque
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
 
-	if logGroupName == "" || logStreamName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateLogStreamName(logStreamName); err != nil {
+		return nil, err
 	}
 
 	ls := logsstore.NewLogStream(logStreamName, logGroupName)
@@ -84,8 +85,11 @@ func (s *LogsService) DeleteLogStream(ctx context.Context, reqCtx *request.Reque
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
 
-	if logGroupName == "" || logStreamName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateLogStreamName(logStreamName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -104,122 +108,37 @@ func (s *LogsService) DeleteLogStream(ctx context.Context, reqCtx *request.Reque
 func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	if logGroupName == "" {
-		return nil, ErrMissingParameter
+		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+		if logGroupName == "" {
+			return nil, ErrMissingParameter
+		}
 	}
 
-	prefix := request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	input := DescribeLogStreamsInput{
+		LogGroupName:        logGroupName,
+		LogStreamNamePrefix: request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix"),
+		OrderBy:             request.GetParamLowerFirst(req.Parameters, "OrderBy"),
+		Descending:          request.GetBoolParam(req.Parameters, "Descending"),
+		NextToken:           request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		Limit:               int32(request.GetIntParam(req.Parameters, "Limit")),
+		Region:              reqCtx.GetRegion(),
 	}
-	orderBy := request.GetParamLowerFirst(req.Parameters, "OrderBy")
-	descending := request.GetBoolParam(req.Parameters, "Descending")
 
-	store, err := s.store(reqCtx)
+	result, err := s.describeLogStreamsCore(input)
 	if err != nil {
 		return nil, err
 	}
 
-	if orderBy == "LastEventTime" {
-		if prefix != "" {
-			return nil, NewLogsError("InvalidParameterException",
-				"Cannot specify logStreamNamePrefix when orderBy is LastEventTime", 400)
-		}
-
-		allStreams, err := fetchAllLogStreams(store, logGroupName, "")
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-
-		sort.Slice(allStreams, func(i, j int) bool {
-			if descending {
-				return allStreams[i].LastEventTs > allStreams[j].LastEventTs
-			}
-			return allStreams[i].LastEventTs < allStreams[j].LastEventTs
-		})
-
-		// Use offset-based pagination for LastEventTime ordering because
-		// new events can change the sort order between paginated calls,
-		// making key-based markers unreliable (items shift position).
-		// DescribeLogStreams uses forward-only pagination (AWS does not
-		// support backward pagination for this operation).
-		_, offset, err := logsstore.ParsePaginationToken(nextToken)
-		if err != nil {
-			return nil, ErrInvalidParameter
-		}
-		if offset > len(allStreams) {
-			offset = len(allStreams)
-		}
-
-		endIdx := offset + int(limit)
-		if endIdx > len(allStreams) {
-			endIdx = len(allStreams)
-		}
-
-		var pageItems []*logsstore.LogStream
-		if offset < len(allStreams) {
-			pageItems = allStreams[offset:endIdx]
-		}
-
-		logStreams := make([]map[string]interface{}, 0, len(pageItems))
-		for _, ls := range pageItems {
-			logStreams = append(logStreams, logStreamToMap(ls))
-		}
-
-		resp := map[string]interface{}{
-			"logStreams": logStreams,
-		}
-		if endIdx < len(allStreams) {
-			resp["nextToken"] = logsstore.EncodePaginationToken(logsstore.PaginationForward, endIdx)
-		}
-		return resp, nil
-	}
-
-	// orderBy != "LastEventTime" (default: LogStreamName)
-	if descending {
-		allStreams, err := fetchAllLogStreams(store, logGroupName, prefix)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-
-		sort.Slice(allStreams, func(i, j int) bool {
-			return allStreams[i].Name > allStreams[j].Name
-		})
-
-		result := pagination.PaginateSlice(allStreams, nextToken, int(limit), func(ls *logsstore.LogStream) string {
-			return ls.Name
-		})
-
-		logStreams := make([]map[string]interface{}, 0, len(result.Items))
-		for _, ls := range result.Items {
-			logStreams = append(logStreams, logStreamToMap(ls))
-		}
-
-		resp := map[string]interface{}{
-			"logStreams": logStreams,
-		}
-		if result.NextMarker != "" {
-			resp["nextToken"] = result.NextMarker
-		}
-		return resp, nil
-	}
-
-	streams, nextMarker, err := store.ListLogStreams(logGroupName, prefix, nextToken, int(limit))
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	logStreams := make([]map[string]interface{}, 0, len(streams))
-	for _, ls := range streams {
+	logStreams := make([]map[string]interface{}, 0, len(result.LogStreams))
+	for _, ls := range result.LogStreams {
 		logStreams = append(logStreams, logStreamToMap(ls))
 	}
 
 	resp := map[string]interface{}{
 		"logStreams": logStreams,
 	}
-	if nextMarker != "" {
-		resp["nextToken"] = nextMarker
+	if result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -721,6 +640,9 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 // GetLogEvents retrieves log events from the specified CloudWatch Logs log stream.
 func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
+	if logGroupName == "" {
+		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+	}
 	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
 
 	if logGroupName == "" || logStreamName == "" {
@@ -729,10 +651,11 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 
 	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
 	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
-	limit := int(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 10000
+	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 10000)
+	if err != nil {
+		return nil, err
 	}
+	limit := int(limit32)
 	startFromHead := request.GetBoolParam(req.Parameters, "StartFromHead")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 
@@ -762,6 +685,9 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	if logGroupName == "" {
+		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+	}
+	if logGroupName == "" {
 		return nil, ErrMissingParameter
 	}
 
@@ -776,10 +702,11 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
 	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
 	filterPattern := request.GetParamLowerFirst(req.Parameters, "FilterPattern")
-	limit := int(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 10000
+	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 10000)
+	if err != nil {
+		return nil, err
 	}
+	limit := int(limit32)
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	// AWS spec: startFromHead defaults to true (oldest first / ascending).
 	startFromHead := request.GetBoolParamDefault(req.Parameters, "StartFromHead", true)

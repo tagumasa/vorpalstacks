@@ -19,14 +19,11 @@ func (s *LogsService) PutAccountPolicy(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrMissingParameter
 	}
 
-	validTypes := map[string]bool{
-		"DATA_PROTECTION_POLICY":     true,
-		"SUBSCRIPTION_FILTER_POLICY": true,
-		"FIELD_INDEX_POLICY":         true,
-		"TRANSFORMER_POLICY":         true,
-		"METRIC_EXTRACTION_POLICY":   true,
+	if err := validatePolicyDocument(policyDocument); err != nil {
+		return nil, err
 	}
-	if !validTypes[policyType] {
+
+	if !validatePolicyType(policyType) {
 		return nil, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid policyType: %s. Allowed values: DATA_PROTECTION_POLICY, SUBSCRIPTION_FILTER_POLICY, FIELD_INDEX_POLICY, TRANSFORMER_POLICY, METRIC_EXTRACTION_POLICY", policyType), 400)
 	}
@@ -91,9 +88,8 @@ func (s *LogsService) DescribeAccountPolicies(ctx context.Context, reqCtx *reque
 	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 
-	if ids, ok := req.Parameters["accountIdentifiers"]; ok {
-		_ = ids
-	}
+	// accountIdentifiers is a multi-account feature and is scope-out for this
+	// edge/on-premises platform. The parameter is intentionally not processed.
 
 	store, err := s.store(reqCtx)
 	if err != nil {

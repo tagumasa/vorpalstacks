@@ -22,8 +22,11 @@ func (s *LogsService) CreateExportTask(ctx context.Context, reqCtx *request.Requ
 	fromTime := request.GetIntParam(req.Parameters, "From")
 	toTime := request.GetIntParam(req.Parameters, "To")
 
-	if logGroupName == "" || destination == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
+	}
+	if err := validateExportDestinationBucket(destination); err != nil {
+		return nil, err
 	}
 
 	if fromTime <= 0 || toTime <= 0 || fromTime >= toTime {
@@ -150,7 +153,12 @@ func (s *LogsService) updateExportTaskStatus(region, taskId, status, message str
 		}
 		task.ExecutionInfo["completionTime"] = time.Now().UTC().UnixMilli()
 	}
-	_ = store.PutExportTask(task)
+	if err := store.PutExportTask(task); err != nil {
+		logs.Error("Failed to persist export task status update",
+			logs.String("taskId", task.TaskId),
+			logs.String("status", status),
+			logs.Err(err))
+	}
 }
 
 // DescribeExportTasks lists export tasks.
@@ -158,9 +166,9 @@ func (s *LogsService) DescribeExportTasks(ctx context.Context, reqCtx *request.R
 	taskId := request.GetParamLowerFirst(req.Parameters, "TaskId")
 	statusCode := request.GetParamLowerFirst(req.Parameters, "StatusCode")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -217,6 +225,11 @@ func (s *LogsService) CancelExportTask(ctx context.Context, reqCtx *request.Requ
 	task, err := store.GetExportTask(taskId)
 	if err != nil {
 		return nil, mapStoreError(err)
+	}
+
+	if task.Status == "COMPLETED" || task.Status == "FAILED" || task.Status == "CANCELLED" {
+		return nil, NewLogsError("InvalidOperationException",
+			fmt.Sprintf("Cannot cancel export task in %s state", task.Status), 400)
 	}
 
 	task.Status = "CANCELLED"

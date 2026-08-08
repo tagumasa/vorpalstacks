@@ -8,64 +8,27 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateLogGroup creates a new CloudWatch Logs log group.
 func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
-	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
-	lg := logsstore.NewLogGroup(logGroupName, reqCtx.GetRegion(), s.accountID)
-	lg.KmsKeyId = request.GetParamLowerFirst(req.Parameters, "KmsKeyId")
-	lg.LogGroupClass = request.GetParamLowerFirst(req.Parameters, "LogGroupClass")
-	if lg.LogGroupClass == "" {
-		lg.LogGroupClass = "STANDARD"
+	input := CreateLogGroupInput{
+		LogGroupName:              logGroupName,
+		KmsKeyId:                  request.GetParamLowerFirst(req.Parameters, "KmsKeyId"),
+		LogGroupClass:             request.GetParamLowerFirst(req.Parameters, "LogGroupClass"),
+		Tags:                      tags,
+		DeletionProtectionEnabled: request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled"),
+		Region:                    reqCtx.GetRegion(),
 	}
 
-	if lg.LogGroupClass != "STANDARD" && lg.LogGroupClass != "INFREQUENT_ACCESS" && lg.LogGroupClass != "DELIVERY" {
-		return nil, NewLogsError("InvalidParameterException",
-			fmt.Sprintf("Invalid log group class: %s. Valid values: STANDARD, INFREQUENT_ACCESS, DELIVERY", lg.LogGroupClass), 400)
-	}
-
-	if lg.KmsKeyId != "" {
-		parsed, err := arn.ParseARN(lg.KmsKeyId)
-		if err != nil || parsed.Service != "kms" {
-			return nil, NewLogsError("InvalidParameterException",
-				"kmsKeyId must be a valid KMS key ARN", 400)
-		}
-		if !strings.HasPrefix(parsed.Resource, "key/") && !strings.HasPrefix(parsed.Resource, "alias/") {
-			return nil, NewLogsError("InvalidParameterException",
-				"kmsKeyId resource must be a key UUID (key/...) or alias (alias/...)", 400)
-		}
-	}
-
-	lg.DeletionProtectionEnabled = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if _, err := s.createLogGroupCore(input); err != nil {
 		return nil, err
-	}
-
-	if err := store.CreateLogGroup(lg); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if len(tags) > 0 {
-		if err := store.Tags().Tag(lg.ARN, tags); err != nil {
-			if delErr := store.DeleteLogGroup(lg.Name); delErr != nil {
-				logs.Error("Failed to rollback log group after tag failure",
-					logs.String("logGroup", lg.Name), logs.Err(delErr))
-			}
-			return nil, mapStoreError(err)
-		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -73,27 +36,13 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 
 // DeleteLogGroup deletes a CloudWatch Logs log group.
 func (s *LogsService) DeleteLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
+	input := DeleteLogGroupInput{
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		Region:       reqCtx.GetRegion(),
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteLogGroupCore(input); err != nil {
 		return nil, err
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if lg.DeletionProtectionEnabled {
-		return nil, ErrOperationAborted
-	}
-
-	if err := store.DeleteLogGroup(logGroupName); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -104,22 +53,28 @@ func (s *LogsService) DescribeLogGroups(ctx context.Context, reqCtx *request.Req
 	prefix := request.GetParamLowerFirst(req.Parameters, "LogGroupNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
-	}
+	logGroupClass := request.GetParamLowerFirst(req.Parameters, "LogGroupClass")
 
-	store, err := s.store(reqCtx)
+	limit, err := validateListLimit(limit, 50, 50)
 	if err != nil {
 		return nil, err
 	}
 
-	groups, nextMarker, err := store.ListLogGroups(prefix, nextToken, int(limit))
+	input := ListLogGroupsInput{
+		LogGroupNamePrefix: prefix,
+		LogGroupClass:      logGroupClass,
+		NextToken:          nextToken,
+		Limit:              limit,
+		Region:             reqCtx.GetRegion(),
+	}
+
+	result, err := s.listLogGroupsCore(input)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	logGroups := make([]map[string]interface{}, 0)
-	for _, lg := range groups {
+	for _, lg := range result.LogGroups {
 		entry := map[string]interface{}{
 			"logGroupName":      lg.Name,
 			"arn":               lg.ARN + ":*",
@@ -144,8 +99,8 @@ func (s *LogsService) DescribeLogGroups(ctx context.Context, reqCtx *request.Req
 	resp := map[string]interface{}{
 		"logGroups": logGroups,
 	}
-	if nextMarker != "" {
-		resp["nextToken"] = nextMarker
+	if result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -169,22 +124,26 @@ func (s *LogsService) ListLogGroups(ctx context.Context, reqCtx *request.Request
 
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 50
-	}
 
-	store, err := s.store(reqCtx)
+	limit, err := validateListLimit(limit, 50, 1000)
 	if err != nil {
 		return nil, err
 	}
 
-	groups, nextMarker, err := store.ListLogGroups(prefix, nextToken, int(limit))
+	input := ListLogGroupsInput{
+		LogGroupNamePrefix: prefix,
+		NextToken:          nextToken,
+		Limit:              limit,
+		Region:             reqCtx.GetRegion(),
+	}
+
+	result, err := s.listLogGroupsCore(input)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	logGroups := make([]map[string]interface{}, 0)
-	for _, lg := range groups {
+	for _, lg := range result.LogGroups {
 		entry := map[string]interface{}{
 			"logGroupName": lg.Name,
 			"logGroupArn":  lg.ARN,
@@ -195,8 +154,8 @@ func (s *LogsService) ListLogGroups(ctx context.Context, reqCtx *request.Request
 	resp := map[string]interface{}{
 		"logGroups": logGroups,
 	}
-	if nextMarker != "" {
-		resp["nextToken"] = nextMarker
+	if result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
 	}
 
 	return resp, nil
@@ -205,8 +164,8 @@ func (s *LogsService) ListLogGroups(ctx context.Context, reqCtx *request.Request
 // PutRetentionPolicy sets the retention policy for a CloudWatch Logs log group.
 func (s *LogsService) PutRetentionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
 	}
 
 	retentionInDays := int32(request.GetIntParam(req.Parameters, "retentionInDays"))
@@ -241,8 +200,8 @@ func (s *LogsService) PutRetentionPolicy(ctx context.Context, reqCtx *request.Re
 // DeleteRetentionPolicy deletes the retention policy for a CloudWatch Logs log group.
 func (s *LogsService) DeleteRetentionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
