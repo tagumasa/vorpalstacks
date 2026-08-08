@@ -2,18 +2,15 @@ package cloudtrail
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
-	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the CloudTrail admin console gRPC-Web handler.
@@ -31,12 +28,10 @@ var _ cloudtrailconnect.CloudTrailServiceHandler = (*AdminHandler)(nil)
 // service instance, ensuring the same per-region cached stores are used as
 // the HTTP API handlers.
 func NewAdminHandler(svc *CloudTrailService) *AdminHandler {
-	return &AdminHandler{
-		service: svc,
-	}
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStoreFromHeader(header http.Header) (cloudtrailstore.CloudTrailStoreInterface, error) {
+func (h *AdminHandler) getStoreFromHeader(header http.Header) (StoreInterface, error) {
 	region := svccommon.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
@@ -45,95 +40,98 @@ func (h *AdminHandler) getStoreFromHeader(header http.Header) (cloudtrailstore.C
 func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.ListTrailsRequest]) (*connect.Response[pb.ListTrailsResponse], error) {
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	result, err := store.ListTrails(storecommon.ListOptions{
-		Marker:   req.Msg.Nexttoken,
-		MaxItems: 100,
+	result, err := h.service.listTrailsCore(store, ListTrailsInput{
+		NextToken: req.Msg.GetNexttoken(),
+		MaxItems:  100,
 	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	var trailInfos []*pb.TrailInfo
-	for _, trail := range result.Items {
+	for _, t := range result.Items {
 		trailInfos = append(trailInfos, &pb.TrailInfo{
-			Name:       trail.Name,
-			Trailarn:   trail.TrailARN,
-			Homeregion: trail.HomeRegion,
+			Name:       t.Name,
+			Trailarn:   t.TrailARN,
+			Homeregion: t.HomeRegion,
 		})
 	}
 
 	return connect.NewResponse(&pb.ListTrailsResponse{
 		Trails:    trailInfos,
-		Nexttoken: result.NextMarker,
+		Nexttoken: result.NextToken,
 	}), nil
 }
 
 // CreateTrail creates a new CloudTrail trail via the admin console.
 func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.CreateTrailRequest]) (*connect.Response[pb.CreateTrailResponse], error) {
-	if req.Msg.GetName() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
-	if req.Msg.GetS3Bucketname() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("S3BucketName is required"))
-	}
-
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	trail := &cloudtrailstore.Trail{
-		Name:                       req.Msg.GetName(),
-		S3BucketName:               req.Msg.GetS3Bucketname(),
-		S3KeyPrefix:                req.Msg.GetS3Keyprefix(),
-		SnsTopicName:               req.Msg.GetSnstopicname(),
-		IncludeGlobalServiceEvents: req.Msg.GetIncludeglobalserviceevents(),
-		IsMultiRegionTrail:         req.Msg.GetIsmultiregiontrail(),
-		IsOrganizationTrail:        req.Msg.GetIsorganizationtrail(),
-		LogFileValidationEnabled:   req.Msg.GetEnablelogfilevalidation(),
-		CloudWatchLogsLogGroupARN:  req.Msg.GetCloudwatchlogsloggrouparn(),
-		CloudWatchLogsRoleARN:      req.Msg.GetCloudwatchlogsrolearn(),
-		KMSKeyID:                   req.Msg.GetKmskeyid(),
+	in := CreateTrailInput{
+		Name:                      req.Msg.GetName(),
+		S3BucketName:              req.Msg.GetS3Bucketname(),
+		S3KeyPrefix:               req.Msg.GetS3Keyprefix(),
+		SnsTopicName:              req.Msg.GetSnstopicname(),
+		CloudWatchLogsLogGroupARN: req.Msg.GetCloudwatchlogsloggrouparn(),
+		CloudWatchLogsRoleARN:     req.Msg.GetCloudwatchlogsrolearn(),
+		KMSKeyID:                  req.Msg.GetKmskeyid(),
+		Region:                    svccommon.GetRegionFromHeader(req.Header()),
+	}
+	if v := req.Msg.Includeglobalserviceevents; v != nil {
+		in.IncludeGlobalServiceEvents = v
+	}
+	if v := req.Msg.Ismultiregiontrail; v != nil {
+		in.IsMultiRegionTrail = v
+	}
+	if v := req.Msg.Isorganizationtrail; v != nil {
+		in.IsOrganizationTrail = v
+	}
+	if v := req.Msg.Enablelogfilevalidation; v != nil {
+		in.EnableLogFileValidation = v
 	}
 
-	result, err := store.CreateTrail(trail)
+	created, err := h.service.createTrailCore(store, in)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateTrailResponse{
-		Name:                       result.Name,
-		Trailarn:                   result.TrailARN,
-		S3Bucketname:               result.S3BucketName,
-		S3Keyprefix:                result.S3KeyPrefix,
-		Snstopicname:               result.SnsTopicName,
-		Snstopicarn:                result.SnsTopicARN,
-		Includeglobalserviceevents: proto.Bool(result.IncludeGlobalServiceEvents),
-		Ismultiregiontrail:         proto.Bool(result.IsMultiRegionTrail),
-		Isorganizationtrail:        proto.Bool(result.IsOrganizationTrail),
-		Logfilevalidationenabled:   proto.Bool(result.LogFileValidationEnabled),
-		Cloudwatchlogsloggrouparn:  result.CloudWatchLogsLogGroupARN,
-		Cloudwatchlogsrolearn:      result.CloudWatchLogsRoleARN,
-		Kmskeyid:                   result.KMSKeyID,
+		Name:                       created.Name,
+		Trailarn:                   created.TrailARN,
+		S3Bucketname:               created.S3BucketName,
+		S3Keyprefix:                created.S3KeyPrefix,
+		Snstopicname:               created.SnsTopicName,
+		Snstopicarn:                created.SnsTopicARN,
+		Includeglobalserviceevents: proto.Bool(created.IncludeGlobalServiceEvents),
+		Ismultiregiontrail:         proto.Bool(created.IsMultiRegionTrail),
+		Isorganizationtrail:        proto.Bool(created.IsOrganizationTrail),
+		Logfilevalidationenabled:   proto.Bool(created.LogFileValidationEnabled),
+		Cloudwatchlogsloggrouparn:  created.CloudWatchLogsLogGroupARN,
+		Cloudwatchlogsrolearn:      created.CloudWatchLogsRoleARN,
+		Kmskeyid:                   created.KMSKeyID,
 	}), nil
 }
 
 // DeleteTrail deletes a CloudTrail trail via the admin console.
 func (h *AdminHandler) DeleteTrail(ctx context.Context, req *connect.Request[pb.DeleteTrailRequest]) (*connect.Response[pb.DeleteTrailResponse], error) {
 	if req.Msg.GetName() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			svcerrors.NewAWSError("InvalidParameterException", "Name is required", 400))
 	}
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := store.DeleteTrail(req.Msg.GetName()); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteTrailCore(store, DeleteTrailInput{NameOrARN: req.Msg.GetName()}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteTrailResponse{}), nil

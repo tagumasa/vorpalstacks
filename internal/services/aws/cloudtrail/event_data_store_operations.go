@@ -3,7 +3,6 @@ package cloudtrail
 import (
 	"context"
 	"encoding/json"
-	"regexp"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -129,9 +128,8 @@ func (s *CloudTrailService) CreateEventDataStore(ctx context.Context, reqCtx *re
 		eds.KMSKeyID = v
 	}
 	if v := request.GetStringParam(req.Parameters, "BillingMode"); v != "" {
-		if v != "EXTENDABLE_RETENTION_PRICING" && v != "FIXED_RETENTION_PRICING" {
-			return nil, awserrors.NewAWSError("InvalidParameterException",
-				"BillingMode must be EXTENDABLE_RETENTION_PRICING or FIXED_RETENTION_PRICING", 400)
+		if err := validateBillingMode(v); err != nil {
+			return nil, err
 		}
 		eds.BillingMode = v
 	}
@@ -265,9 +263,8 @@ func (s *CloudTrailService) UpdateEventDataStore(ctx context.Context, reqCtx *re
 		eds.KMSKeyID = v
 	}
 	if v := request.GetStringParam(req.Parameters, "BillingMode"); v != "" {
-		if v != "EXTENDABLE_RETENTION_PRICING" && v != "FIXED_RETENTION_PRICING" {
-			return nil, awserrors.NewAWSError("InvalidParameterException",
-				"BillingMode must be EXTENDABLE_RETENTION_PRICING or FIXED_RETENTION_PRICING", 400)
+		if err := validateBillingMode(v); err != nil {
+			return nil, err
 		}
 		eds.BillingMode = v
 	}
@@ -303,12 +300,35 @@ func (s *CloudTrailService) DeleteEventDataStore(ctx context.Context, reqCtx *re
 	}
 
 	if eds.TerminationProtectionEnabled {
-		return nil, awserrors.NewAWSError("EventDataStoreHasTerminationProtectionEnabled", "Cannot delete event data store with termination protection enabled", 400)
+		return nil, awserrors.NewAWSError("EventDataStoreTerminationProtectedException",
+			"The event data store cannot be deleted because termination protection is enabled", 400)
 	}
 
 	if eds.FederationStatus == "ENABLED" {
-		return nil, awserrors.NewAWSError("OperationNotPermittedException",
+		return nil, awserrors.NewAWSError("EventDataStoreFederationEnabledException",
 			"Cannot delete event data store with federation enabled. Disable federation first.", 400)
+	}
+
+	// Check for ongoing imports referencing this EDS.  The destinations
+	// list stores the ARN values provided by the SDK, so we compare against
+	// the EDS ARN (not the short ID).
+	imports, err := store.ListImports(storecommon.ListOptions{MaxItems: 1}, eds.EventDataStoreARN, "IN_PROGRESS")
+	if err == nil && len(imports.Items) > 0 {
+		return nil, awserrors.NewAWSError("EventDataStoreHasOngoingImportException",
+			"Cannot delete event data store with an ongoing import. Stop the import first.", 400)
+	}
+
+	// Check for channels referencing this EDS as a destination.
+	channelResult, err := store.ListChannels(storecommon.ListOptions{MaxItems: 1000})
+	if err == nil {
+		for _, ch := range channelResult.Items {
+			for _, dest := range ch.Destinations {
+				if dest.EDSARN == eds.EventDataStoreARN || dest.EDSARN == eds.EventDataStoreID {
+					return nil, awserrors.NewAWSError("ChannelExistsForEDSException",
+						"Cannot delete event data store because a channel is associated with it", 400)
+				}
+			}
+		}
 	}
 
 	if err := store.DeleteEventDataStore(eds.EventDataStoreID); err != nil {
@@ -429,24 +449,6 @@ func applyEventDataStoreTags(eds *ctstore.EventDataStore, raw interface{}) {
 	}
 }
 
-// edsNamePattern matches the Smithy model constraint for EventDataStoreName:
-// ^[a-zA-Z0-9._\-]+$, length 3-128.
-var edsNamePattern = regexp.MustCompile(`^[a-zA-Z0-9._\-]+$`)
-
-// validateEventDataStoreName validates the EDS name against AWS spec
-// (Smithy model: length 3-128, pattern ^[a-zA-Z0-9._\-]+$).
-func validateEventDataStoreName(name string) error {
-	if len(name) < 3 || len(name) > 128 {
-		return awserrors.NewAWSError("InvalidParameterException",
-			"Event data store name must be between 3 and 128 characters", 400)
-	}
-	if !edsNamePattern.MatchString(name) {
-		return awserrors.NewAWSError("InvalidParameterException",
-			"Event data store name contains invalid characters", 400)
-	}
-	return nil
-}
-
 // StartEventDataStoreIngestion enables ingestion on the specified event data
 // store.
 func (s *CloudTrailService) StartEventDataStoreIngestion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -468,9 +470,12 @@ func (s *CloudTrailService) StartEventDataStoreIngestion(ctx context.Context, re
 		return nil, err
 	}
 
+	if err := validateEventDataStoreStatus(eds.Status); err != nil {
+		return nil, err
+	}
 	if eds.Status != "ENABLED" {
-		return nil, awserrors.NewAWSError("OperationNotPermittedException",
-			"Event data store must be in ENABLED state", 400)
+		return nil, awserrors.NewAWSError("InvalidEventDataStoreStatusException",
+			"Event data store must be in ENABLED state to start ingestion", 400)
 	}
 
 	eds.IngestionEnabled = true
@@ -502,9 +507,12 @@ func (s *CloudTrailService) StopEventDataStoreIngestion(ctx context.Context, req
 		return nil, err
 	}
 
+	if err := validateEventDataStoreStatus(eds.Status); err != nil {
+		return nil, err
+	}
 	if eds.Status != "ENABLED" {
-		return nil, awserrors.NewAWSError("OperationNotPermittedException",
-			"Event data store must be in ENABLED state", 400)
+		return nil, awserrors.NewAWSError("InvalidEventDataStoreStatusException",
+			"Event data store must be in ENABLED state to stop ingestion", 400)
 	}
 
 	eds.IngestionEnabled = false

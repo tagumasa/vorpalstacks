@@ -95,6 +95,33 @@ func (s *CloudTrailService) DeleteResourcePolicy(ctx context.Context, reqCtx *re
 		return nil, s.mapStoreError(err)
 	}
 
+	// Verify the resource exists before deleting its policy.
+	switch {
+	case strings.Contains(resourceARN, ":trail/"):
+		if _, err := store.GetTrailByARN(resourceARN); err != nil {
+			return nil, s.mapStoreError(err)
+		}
+	case strings.Contains(resourceARN, ":eventdata-store/"):
+		if _, err := store.GetEventDataStore(resourceARN); err != nil {
+			return nil, awserrors.NewAWSError("EventDataStoreNotFoundException",
+				"Event data store not found", 404)
+		}
+	case strings.Contains(resourceARN, ":channel/"):
+		if _, err := store.GetChannel(resourceARN); err != nil {
+			return nil, awserrors.NewAWSError("ChannelNotFoundException",
+				"Channel not found", 404)
+		}
+	default:
+		return nil, awserrors.NewAWSError("ResourceARNNotValidException",
+			"The resource ARN is not valid", 400)
+	}
+
+	// Verify the policy exists before deleting.
+	if _, err := store.GetResourcePolicy(resourceARN); err != nil {
+		return nil, awserrors.NewAWSError("ResourcePolicyNotFoundException",
+			"Resource policy not found", 404)
+	}
+
 	if err := store.DeleteResourcePolicy(resourceARN); err != nil {
 		return nil, s.mapStoreError(err)
 	}

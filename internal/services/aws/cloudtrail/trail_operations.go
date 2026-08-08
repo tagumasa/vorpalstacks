@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	tags "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -112,54 +111,48 @@ func applyTrailUpdates(trail *cloudtrailstore.Trail, req *request.ParsedRequest)
 
 // CreateTrail creates a new CloudTrail trail.
 func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	s3Bucket := req.GetParam("S3BucketName")
-	if s3Bucket == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	trail := cloudtrailstore.NewTrail(name, s3Bucket, reqCtx.GetRegion())
-
-	if cwRoleARN := req.GetParam("CloudWatchLogsRoleArn"); cwRoleARN != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, cwRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
-			return nil, err
-		}
-	}
-
-	applyTrailUpdates(trail, req)
-
-	// Validate tags BEFORE creation to ensure atomicity.
-	tagList := tags.ParseTags(req.Parameters, "TagsList")
-	if len(tagList) > 0 {
-		if err := validateCloudTrailTags(tagList); err != nil {
-			return nil, err
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	created, err := store.CreateTrail(trail)
-	if err != nil {
-		return nil, s.mapStoreError(err)
+	in := CreateTrailInput{
+		Name:         req.GetParam("Name"),
+		S3BucketName: req.GetParam("S3BucketName"),
+		Region:       reqCtx.GetRegion(),
+		Tags:         parseTagsFromParams(req.Parameters),
+	}
+	if v, ok := req.Parameters["S3KeyPrefix"]; ok {
+		in.S3KeyPrefix = fmt.Sprintf("%v", v)
+	}
+	if v, ok := req.Parameters["SnsTopicName"]; ok {
+		in.SnsTopicName = fmt.Sprintf("%v", v)
+	}
+	in.IncludeGlobalServiceEvents = resolveBool(req.Parameters, "IncludeGlobalServiceEvents")
+	in.IsMultiRegionTrail = resolveBool(req.Parameters, "IsMultiRegionTrail")
+	in.IsOrganizationTrail = resolveBool(req.Parameters, "IsOrganizationTrail")
+	in.EnableLogFileValidation = resolveBool(req.Parameters, "EnableLogFileValidation")
+	if v, ok := req.Parameters["CloudWatchLogsLogGroupArn"]; ok {
+		in.CloudWatchLogsLogGroupARN = fmt.Sprintf("%v", v)
+	}
+	if v, ok := req.Parameters["CloudWatchLogsRoleArn"]; ok {
+		in.CloudWatchLogsRoleARN = fmt.Sprintf("%v", v)
+	}
+	if v, ok := req.Parameters["KmsKeyId"]; ok {
+		in.KMSKeyID = fmt.Sprintf("%v", v)
 	}
 
-	// Apply tags after creation (validation already passed).
-	if len(tagList) > 0 {
-		tagMap := make(map[string]string)
-		for _, t := range tagList {
-			tagMap[t.Key] = t.Value
+	// IAM role validation (HTTP API only — requires request context).
+	if in.CloudWatchLogsRoleARN != "" {
+		validator := reqCtx.GetIAMValidator()
+		if err := validator.ValidateRoleForService(ctx, in.CloudWatchLogsRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
+			return nil, err
 		}
-		if err := store.Tag(created.Name, tagMap); err != nil {
-			return nil, s.mapStoreError(err)
-		}
+	}
+
+	created, err := s.createTrailCore(store, in)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.formatTrail(created), nil
@@ -177,14 +170,8 @@ func (s *CloudTrailService) DeleteTrail(ctx context.Context, reqCtx *request.Req
 		return nil, s.mapStoreError(err)
 	}
 
-	// Resolve the trail to support both name and ARN input.
-	trail, err := store.ResolveTrail(name)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	if err := store.DeleteTrail(trail.Name); err != nil {
-		return nil, s.mapStoreError(err)
+	if err := s.deleteTrailCore(store, DeleteTrailInput{NameOrARN: name}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

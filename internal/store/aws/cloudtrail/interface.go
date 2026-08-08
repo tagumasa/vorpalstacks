@@ -39,6 +39,7 @@ type CloudTrailStoreInterface interface {
 	ListAsSlice(trailName string) ([]types.Tag, error)
 	ListPublicKeys(startTime, endTime *time.Time) ([]*PublicKey, error)
 	GenerateAndStorePublicKey(trailName string) (*PublicKey, error)
+	DeletePublicKeysByTrail(trailName string) error
 	CreateEventDataStore(eds *EventDataStore) (*EventDataStore, error)
 	GetEventDataStore(idOrARN string) (*EventDataStore, error)
 	ListEventDataStores(opts common.ListOptions) (*common.ListResult[EventDataStore], error)

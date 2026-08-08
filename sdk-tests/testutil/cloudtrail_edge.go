@@ -174,5 +174,50 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 		return nil
 	}))
 
+	results = append(results, r.RunTest("cloudtrail", "LookupEvents_InvalidAttributeKey", func() error {
+		_, err := tc.client.LookupEvents(tc.ctx, &cloudtrail.LookupEventsInput{
+			LookupAttributes: []types.LookupAttribute{
+				{AttributeKey: types.LookupAttributeKey("InvalidKey"), AttributeValue: aws.String("x")},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for invalid AttributeKey")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "DeleteResourcePolicy_NonExistent", func() error {
+		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-drp-xyz", tc.region, tc.accountID)
+		_, err := tc.client.DeleteResourcePolicy(tc.ctx, &cloudtrail.DeleteResourcePolicyInput{
+			ResourceArn: aws.String(fakeARN),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for deleting policy on non-existent resource")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_InvalidName", func() error {
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String("x"),
+			S3BucketName: aws.String("valid-bucket"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for trail name too short")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_InvalidBucketName", func() error {
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String("valid-trail-name"),
+			S3BucketName: aws.String("X"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for invalid S3 bucket name")
+		}
+		return nil
+	}))
+
 	return results
 }

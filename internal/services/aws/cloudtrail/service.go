@@ -12,6 +12,11 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
+// StoreInterface is a type alias for the CloudTrail store interface. It
+// allows admin_handler.go to reference the store type without importing the
+// store package directly (#29 compliance).
+type StoreInterface = cloudtrailstore.CloudTrailStoreInterface
+
 // CloudTrailService provides AWS CloudTrail operations.
 type CloudTrailService struct {
 	accountID      string

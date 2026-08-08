@@ -152,8 +152,23 @@ func (s *CloudTrailService) DeleteChannel(ctx context.Context, reqCtx *request.R
 		return nil, awserrors.NewAWSError("InvalidParameter", "Channel is required", 400)
 	}
 
-	if _, err := store.GetChannel(arn); err != nil {
+	ch, err := store.GetChannel(arn)
+	if err != nil {
 		return nil, awserrors.NewAWSError("ChannelNotFoundException", "Channel not found", 404)
+	}
+
+	// Check if any event data store depends on this channel. Per Smithy,
+	// DeleteChannel returns OperationNotPermittedException when the channel
+	// is referenced by an active EDS.
+	for _, dest := range ch.Destinations {
+		if dest.EDSARN != "" {
+			if eds, err := store.GetEventDataStore(dest.EDSARN); err == nil {
+				if eds.Status == "ENABLED" {
+					return nil, awserrors.NewAWSError("OperationNotPermittedException",
+						"Cannot delete channel because it is associated with an active event data store", 400)
+				}
+			}
+		}
 	}
 
 	if err := store.DeleteChannel(arn); err != nil {

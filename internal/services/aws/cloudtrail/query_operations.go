@@ -3,6 +3,7 @@ package cloudtrail
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,7 +13,9 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/resilience"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	"vorpalstacks/pkg/sqlparser"
 )
 
 // queryFieldsPattern extracts the SELECT and FROM portions of a CloudTrail
@@ -23,12 +26,11 @@ var (
 	wherePattern  = regexp.MustCompile(`(?i)WHERE\s+(.+)$`)
 )
 
-// parseQueryStatement extracts the EDS ID, selected columns, and WHERE
-// conditions from a CloudTrail Lake QueryStatement.
+// parsedQuery holds the structured representation of a CloudTrail Lake query.
 type parsedQuery struct {
-	edsID    string
-	columns  []string
-	whereRaw string
+	edsID     string
+	columns   []string
+	whereExpr sqlparser.Expr
 }
 
 func parseQueryStatement(stmt string) (*parsedQuery, error) {
@@ -65,15 +67,28 @@ func parseQueryStatement(stmt string) (*parsedQuery, error) {
 		}
 	}
 
-	whereRaw := ""
+	// Parse WHERE clause using pkg/sqlparser PartiQL dialect for full
+	// operator support (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN, IS NULL,
+	// NOT, AND, OR). Previously only `=` was supported via a single regex.
+	var whereExpr sqlparser.Expr
 	if wm := wherePattern.FindStringSubmatch(stmt); wm != nil {
-		whereRaw = strings.TrimSpace(wm[1])
+		whereRaw := strings.TrimSpace(wm[1])
+		// Wrap in a minimal SELECT so the parser has a complete statement.
+		parsed, err := sqlparser.ParseWithOptions(
+			"SELECT * FROM t WHERE "+whereRaw,
+			sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL},
+		)
+		if err == nil {
+			if sel, ok := parsed.(*sqlparser.Select); ok && sel.Where != nil {
+				whereExpr = sel.Where.Expr
+			}
+		}
 	}
 
 	return &parsedQuery{
-		edsID:    edsID,
-		columns:  columns,
-		whereRaw: whereRaw,
+		edsID:     edsID,
+		columns:   columns,
+		whereExpr: whereExpr,
 	}, nil
 }
 
@@ -83,18 +98,34 @@ func (s *CloudTrailService) executeQuery(store cloudtrailstore.CloudTrailStoreIn
 	query := cloudtrailstore.NewEventQuery()
 	query.MaxResults = 1000
 
-	if pq.whereRaw != "" {
-		parseWhereClause(pq.whereRaw, &query)
+	// Extract index-friendly conditions from the AST to pre-filter via the
+	// store index where possible.  This narrows the candidate set before
+	// the full per-event WHERE evaluation runs.
+	if pq.whereExpr != nil {
+		extractQueryConditions(pq.whereExpr, &query)
 	}
 
 	events, _, err := store.LookupEvents(query)
 	if err != nil {
 		return nil, err
 	}
-
 	rows := make([][]map[string]string, 0, len(events))
 	for _, e := range events {
 		formatted := s.formatEvent(e)
+
+		// Evaluate the full WHERE expression against the formatted event.
+		// This supports all SQL operators (=, !=, >, <, LIKE, IN, BETWEEN,
+		// IS NULL, NOT, AND, OR) and all event fields.
+		if pq.whereExpr != nil {
+			matched, err := evaluateWhere(pq.whereExpr, formatted)
+			if err != nil {
+				continue
+			}
+			if !matched {
+				continue
+			}
+		}
+
 		var row []map[string]string
 		for _, col := range pq.columns {
 			val := ""
@@ -115,47 +146,330 @@ func (s *CloudTrailService) executeQuery(store cloudtrailstore.CloudTrailStoreIn
 	return rows, nil
 }
 
-// parseWhereClause extracts simple WHERE conditions from the query string.
-// Supports: eventName = 'x', eventSource = 'x', username = 'x',
-// accessKeyId = 'x', readOnly = 'true'.
-var (
-	whereEqualPattern = regexp.MustCompile(`(?i)(\w+)\s*=\s*'([^']*)'`)
-)
+// extractEqualityConditions walks the top level of a WHERE expression and
+// populates EventQuery fields for simple column = 'value' conditions. This
+// enables the store's index-based pre-filter. Complex conditions (>, <, LIKE,
+// IN, BETWEEN, OR) are left for per-event evaluation in executeQuery.
+func extractQueryConditions(expr sqlparser.Expr, query *cloudtrailstore.EventQuery) {
+	switch e := expr.(type) {
+	case *sqlparser.AndExpr:
+		extractQueryConditions(e.Left, query)
+		extractQueryConditions(e.Right, query)
+	case *sqlparser.ComparisonExpr:
+		colName := strings.ToLower(getColName(e.Left))
+		if colName == "" {
+			return
+		}
+		switch e.Operator {
+		case sqlparser.EqualStr:
+			valStr := getExprString(e.Right)
+			if valStr == "" {
+				return
+			}
+			switch colName {
+			case "eventname":
+				query.EventNames = append(query.EventNames, valStr)
+			case "username":
+				query.Username = valStr
+			case "eventsource":
+				query.EventSource = valStr
+			case "resourcename":
+				query.ResourceNames = append(query.ResourceNames, valStr)
+			case "resourcetype":
+				query.ResourceType = valStr
+			case "accesskeyid":
+				query.AccessKeyID = valStr
+			case "eventid":
+				query.EventID = valStr
+			case "readonly":
+				query.ReadOnly = valStr
+			}
+		case sqlparser.GreaterEqualStr, sqlparser.GreaterThanStr:
+			if colName == "eventtime" {
+				if t := parseEpochFromExpr(e.Right); t != nil {
+					query.StartTime = t
+				}
+			}
+		case sqlparser.LessEqualStr, sqlparser.LessThanStr:
+			if colName == "eventtime" {
+				if t := parseEpochFromExpr(e.Right); t != nil {
+					query.EndTime = t
+				}
+			}
+		case sqlparser.InStr:
+			if colName == "eventname" {
+				tuple, ok := e.Right.(sqlparser.ValTuple)
+				if !ok {
+					return
+				}
+				for _, item := range tuple {
+					if v := getExprString(item); v != "" {
+						query.EventNames = append(query.EventNames, v)
+					}
+				}
+			}
+		}
+	case *sqlparser.ParenExpr:
+		extractQueryConditions(e.Expr, query)
+	}
+}
 
-func parseWhereClause(whereRaw string, query *cloudtrailstore.EventQuery) {
-	matches := whereEqualPattern.FindAllStringSubmatch(whereRaw, -1)
-	for _, m := range matches {
-		field := strings.ToLower(m[1])
-		value := m[2]
-		switch field {
-		case "eventname":
-			query.EventNames = append(query.EventNames, value)
-		case "eventsource":
-			query.EventSource = value
-		case "username":
-			query.Username = value
-		case "accesskeyid":
-			query.AccessKeyID = value
-		case "readonly":
-			query.ReadOnly = value
-		case "eventid":
-			query.EventID = value
+func parseEpochFromExpr(expr sqlparser.Expr) *time.Time {
+	v, ok := expr.(*sqlparser.SQLVal)
+	if !ok {
+		return nil
+	}
+	epoch, err := strconv.ParseInt(string(v.Val), 10, 64)
+	if err != nil || epoch <= 0 {
+		return nil
+	}
+	t := time.Unix(epoch, 0).UTC()
+	return &t
+}
+
+// evaluateWhere evaluates a WHERE expression against a formatted event row.
+// Returns (matched, error). An error indicates an unsupported expression
+// type, which causes the event to be skipped (fail-closed).
+func evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) (bool, error) {
+	switch e := expr.(type) {
+	case *sqlparser.ComparisonExpr:
+		return evaluateComparison(e, row), nil
+	case *sqlparser.AndExpr:
+		left, err := evaluateWhere(e.Left, row)
+		if err != nil {
+			return false, err
+		}
+		if !left {
+			return false, nil
+		}
+		return evaluateWhere(e.Right, row)
+	case *sqlparser.OrExpr:
+		left, err := evaluateWhere(e.Left, row)
+		if err != nil {
+			return false, err
+		}
+		if left {
+			return true, nil
+		}
+		return evaluateWhere(e.Right, row)
+	case *sqlparser.ParenExpr:
+		return evaluateWhere(e.Expr, row)
+	case *sqlparser.IsExpr:
+		return evaluateIs(e, row), nil
+	case *sqlparser.NotExpr:
+		result, err := evaluateWhere(e.Expr, row)
+		if err != nil {
+			return false, err
+		}
+		return !result, nil
+	case *sqlparser.RangeCond:
+		return evaluateRangeCond(e, row), nil
+	default:
+		return false, fmt.Errorf("unsupported WHERE expression type: %T", expr)
+	}
+}
+
+func evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
+	leftVal := getExprValue(expr.Left, row)
+
+	switch expr.Operator {
+	case sqlparser.EqualStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) == 0
+	case sqlparser.NotEqualStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) != 0
+	case sqlparser.LessThanStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) < 0
+	case sqlparser.LessEqualStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) <= 0
+	case sqlparser.GreaterThanStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) > 0
+	case sqlparser.GreaterEqualStr:
+		return compareValues(leftVal, getExprValue(expr.Right, row)) >= 0
+	case sqlparser.LikeStr:
+		return matchLike(fmt.Sprintf("%v", leftVal), fmt.Sprintf("%v", getExprValue(expr.Right, row)))
+	case sqlparser.NotLikeStr:
+		return !matchLike(fmt.Sprintf("%v", leftVal), fmt.Sprintf("%v", getExprValue(expr.Right, row)))
+	case sqlparser.InStr:
+		tuple, ok := expr.Right.(sqlparser.ValTuple)
+		if !ok {
+			return false
+		}
+		for _, item := range tuple {
+			if compareValues(leftVal, getExprValue(item, row)) == 0 {
+				return true
+			}
+		}
+		return false
+	case sqlparser.NotInStr:
+		tuple, ok := expr.Right.(sqlparser.ValTuple)
+		if !ok {
+			return true
+		}
+		for _, item := range tuple {
+			if compareValues(leftVal, getExprValue(item, row)) == 0 {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func evaluateRangeCond(expr *sqlparser.RangeCond, row map[string]interface{}) bool {
+	val := getExprValue(expr.Left, row)
+	fromVal := getExprValue(expr.From, row)
+	toVal := getExprValue(expr.To, row)
+
+	inRange := compareValues(val, fromVal) >= 0 && compareValues(val, toVal) <= 0
+
+	switch expr.Operator {
+	case sqlparser.BetweenStr:
+		return inRange
+	case sqlparser.NotBetweenStr:
+		return !inRange
+	}
+	return false
+}
+
+func evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
+	val := getExprValue(expr.Expr, row)
+	isNull := val == nil
+	switch expr.Operator {
+	case sqlparser.IsNullStr:
+		return isNull
+	case sqlparser.IsNotNullStr:
+		return !isNull
+	}
+	return false
+}
+
+func getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
+	switch e := expr.(type) {
+	case *sqlparser.ColName:
+		colName := e.Name.String()
+		if !e.Qualifier.IsEmpty() {
+			qualifiedKey := e.Qualifier.Name.String() + "." + colName
+			if val, exists := row[qualifiedKey]; exists {
+				return val
+			}
+		}
+		return row[colName]
+	case *sqlparser.SQLVal:
+		if e.Type == sqlparser.StrVal {
+			return string(e.Val)
+		} else if e.Type == sqlparser.IntVal {
+			if val, err := strconv.ParseInt(string(e.Val), 10, 64); err == nil {
+				return val
+			}
+		} else if e.Type == sqlparser.FloatVal {
+			if val, err := strconv.ParseFloat(string(e.Val), 64); err == nil {
+				return val
+			}
+		}
+		return string(e.Val)
+	case *sqlparser.NullVal:
+		return nil
+	}
+	return nil
+}
+
+func getColName(expr sqlparser.Expr) string {
+	if cn, ok := expr.(*sqlparser.ColName); ok {
+		return cn.Name.String()
+	}
+	return ""
+}
+
+func getExprString(expr sqlparser.Expr) string {
+	if v, ok := expr.(*sqlparser.SQLVal); ok {
+		return string(v.Val)
+	}
+	return ""
+}
+
+func compareValues(left, right interface{}) int {
+	leftFloat, leftErr := toFloat(left)
+	rightFloat, rightErr := toFloat(right)
+
+	if leftErr == nil && rightErr == nil {
+		if leftFloat < rightFloat {
+			return -1
+		} else if leftFloat > rightFloat {
+			return 1
+		}
+		return 0
+	}
+
+	leftStr := fmt.Sprintf("%v", left)
+	rightStr := fmt.Sprintf("%v", right)
+	if leftStr < rightStr {
+		return -1
+	} else if leftStr > rightStr {
+		return 1
+	}
+	return 0
+}
+
+func toFloat(v interface{}) (float64, error) {
+	switch val := v.(type) {
+	case float64:
+		return val, nil
+	case int64:
+		return float64(val), nil
+	case int:
+		return float64(val), nil
+	case string:
+		return strconv.ParseFloat(val, 64)
+	}
+	return 0, fmt.Errorf("cannot convert %T to float", v)
+}
+
+func matchLike(value, pattern string) bool {
+	pattern = strings.Trim(pattern, "'")
+	pattern = strings.ToLower(pattern)
+	value = strings.ToLower(value)
+	regexPattern := likePatternToRegex(pattern)
+	matched, _ := regexp.MatchString("^"+regexPattern+"$", value)
+	return matched
+}
+
+func likePatternToRegex(pattern string) string {
+	var result strings.Builder
+	escaped := false
+
+	for _, ch := range pattern {
+		if escaped {
+			switch ch {
+			case '%', '_', '\\':
+				result.WriteRune(ch)
+			default:
+				result.WriteRune('\\')
+				result.WriteRune(ch)
+			}
+			escaped = false
+			continue
+		}
+
+		switch ch {
+		case '\\':
+			escaped = true
+		case '%':
+			result.WriteString(".*")
+		case '_':
+			result.WriteString(".")
+		case '.', '^', '$', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|':
+			result.WriteRune('\\')
+			result.WriteRune(ch)
+		default:
+			result.WriteRune(ch)
 		}
 	}
 
-	// Extract time range conditions (eventTime > epoch_seconds).
-	if m := regexp.MustCompile(`(?i)eventTime\s*>=?\s*(\d+)`).FindStringSubmatch(whereRaw); m != nil {
-		if epoch, err := strconv.ParseInt(m[1], 10, 64); err == nil && epoch > 0 {
-			t := time.Unix(epoch, 0).UTC()
-			query.StartTime = &t
-		}
+	if escaped {
+		result.WriteRune('\\')
 	}
-	if m := regexp.MustCompile(`(?i)eventTime\s*<=?\s*(\d+)`).FindStringSubmatch(whereRaw); m != nil {
-		if epoch, err := strconv.ParseInt(m[1], 10, 64); err == nil && epoch > 0 {
-			t := time.Unix(epoch, 0).UTC()
-			query.EndTime = &t
-		}
-	}
+
+	return result.String()
 }
 
 // StartQuery starts a CloudTrail Lake query.
@@ -205,6 +519,16 @@ func (s *CloudTrailService) StartQuery(ctx context.Context, reqCtx *request.Requ
 
 	// Execute the query asynchronously.
 	go func() {
+		defer func() {
+			if r := resilience.RecoverPanic("cloudtrail.StartQuery"); r != nil {
+				endTime := time.Now().UTC()
+				qr.EndTime = &endTime
+				qr.QueryStatus = "FAILED"
+				qr.ErrorMessage = fmt.Sprintf("internal error: panic recovered: %v", r)
+				_ = store.SaveQuery(qr)
+			}
+		}()
+
 		results, execErr := s.executeQuery(store, pq)
 		endTime := time.Now().UTC()
 		qr.EndTime = &endTime
@@ -217,7 +541,9 @@ func (s *CloudTrailService) StartQuery(ctx context.Context, reqCtx *request.Requ
 			qr.ResultsCount = int32(len(results))
 			qr.BytesScanned = int64(len(results) * 500)
 		}
-		_ = store.SaveQuery(qr)
+		if err := store.SaveQuery(qr); err != nil {
+			slog.Error("Failed to save query result", "queryId", queryID, "error", err)
+		}
 	}()
 
 	return map[string]interface{}{
@@ -266,8 +592,6 @@ func (s *CloudTrailService) GetQueryResults(ctx context.Context, reqCtx *request
 	rows := make([]interface{}, 0)
 	if offset < len(qr.QueryResultRows) {
 		for i := offset; i < end; i++ {
-			// qr.QueryResultRows[i] is []map[string]string, already in
-			// the correct SDK format ([][]map[string]string).
 			rows = append(rows, qr.QueryResultRows[i])
 		}
 	}
@@ -331,7 +655,7 @@ func (s *CloudTrailService) DescribeQuery(ctx context.Context, reqCtx *request.R
 	return result, nil
 }
 
-// CancelQuery cancels a running or finished CloudTrail Lake query.
+// CancelQuery cancels a running CloudTrail Lake query.
 func (s *CloudTrailService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -350,9 +674,10 @@ func (s *CloudTrailService) CancelQuery(ctx context.Context, reqCtx *request.Req
 			"Query not found", 404)
 	}
 
-	if qr.QueryStatus == "FINISHED" || qr.QueryStatus == "FAILED" || qr.QueryStatus == "CANCELLED" {
+	if qr.QueryStatus == "FINISHED" || qr.QueryStatus == "FAILED" ||
+		qr.QueryStatus == "CANCELLED" || qr.QueryStatus == "TIMED_OUT" {
 		return nil, awserrors.NewAWSError("OperationNotPermittedException",
-			"Cannot cancel a query that has already finished or been cancelled", 400)
+			"Cannot cancel a query that has already finished, been cancelled, or timed out", 400)
 	}
 
 	qr.QueryStatus = "CANCELLED"
@@ -393,6 +718,11 @@ func (s *CloudTrailService) ListQueries(ctx context.Context, reqCtx *request.Req
 
 	// Optional filters.
 	statusFilter := request.GetStringParam(req.Parameters, "QueryStatus")
+	if statusFilter != "" {
+		if err := validateQueryStatus(statusFilter); err != nil {
+			return nil, err
+		}
+	}
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 {
 		maxResults = 50

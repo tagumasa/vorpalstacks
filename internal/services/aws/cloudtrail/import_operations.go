@@ -2,11 +2,13 @@ package cloudtrail
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/resilience"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -227,14 +229,33 @@ func (s *CloudTrailService) StartImport(ctx context.Context, reqCtx *request.Req
 // actual S3 bucket to read from, it transitions the import through
 // IN_PROGRESS to COMPLETED with simulated statistics.
 func (s *CloudTrailService) runImport(store cloudtrailstore.CloudTrailStoreInterface, importID string) {
+	defer func() {
+		if r := resilience.RecoverPanic("cloudtrail.runImport"); r != nil {
+			imp, err := store.GetImport(importID)
+			if err == nil {
+				imp.ImportStatus = "FAILED"
+				imp.UpdatedTimestamp = time.Now().UTC()
+				_ = store.UpdateImport(imp)
+			}
+			slog.Error("Panic recovered in runImport",
+				"importId", importID, "panic", r)
+		}
+	}()
+
 	imp, err := store.GetImport(importID)
 	if err != nil {
+		slog.Error("Failed to get import for processing",
+			"importId", importID, "error", err)
 		return
 	}
 
 	imp.ImportStatus = "IN_PROGRESS"
 	imp.UpdatedTimestamp = time.Now().UTC()
-	_ = store.UpdateImport(imp)
+	if err := store.UpdateImport(imp); err != nil {
+		slog.Error("Failed to update import status to IN_PROGRESS",
+			"importId", importID, "error", err)
+		return
+	}
 
 	// Simulate processing completion.
 	imp.ImportStatus = "COMPLETED"
@@ -245,7 +266,10 @@ func (s *CloudTrailService) runImport(store cloudtrailstore.CloudTrailStoreInter
 		FilesCompleted:    1,
 		EventsCompleted:   0,
 	}
-	_ = store.UpdateImport(imp)
+	if err := store.UpdateImport(imp); err != nil {
+		slog.Error("Failed to update import status to COMPLETED",
+			"importId", importID, "error", err)
+	}
 }
 
 // StopImport stops a specified import.

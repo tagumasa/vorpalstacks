@@ -3,7 +3,6 @@ package cloudtrail
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -101,6 +100,17 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 				if attrMap, ok := attr.(map[string]interface{}); ok {
 					key, _ := attrMap["AttributeKey"].(string)
 					value, _ := attrMap["AttributeValue"].(string)
+					if key == "" {
+						return nil, awserrors.NewAWSError("InvalidLookupAttributesException",
+							"AttributeKey is required", 400)
+					}
+					if err := validateLookupAttributeKey(key); err != nil {
+						return nil, err
+					}
+					if value == "" {
+						return nil, awserrors.NewAWSError("InvalidLookupAttributesException",
+							"AttributeValue is required for key: "+key, 400)
+					}
 					switch key {
 					case "EventName":
 						query.EventNames = append(query.EventNames, value)
@@ -325,6 +335,9 @@ func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *reque
 				if sm, ok := sel.(map[string]interface{}); ok {
 					es := cloudtrailstore.EventSelector{}
 					if rwt, ok := sm["ReadWriteType"].(string); ok {
+						if err := validateReadWriteType(rwt); err != nil {
+							return nil, err
+						}
 						es.ReadWriteType = rwt
 					}
 					if ime, ok := sm["IncludeManagementEvents"].(bool); ok {
@@ -462,6 +475,9 @@ func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *req
 			if sm, ok := sel.(map[string]interface{}); ok {
 				is := cloudtrailstore.InsightSelector{}
 				if it, ok := sm["InsightType"].(string); ok {
+					if err := validateInsightType(it); err != nil {
+						return nil, err
+					}
 					is.InsightType = it
 				}
 				selectors = append(selectors, is)
@@ -517,12 +533,6 @@ func (s *CloudTrailService) formatEvent(e *cloudtrailstore.Event) map[string]int
 	}
 	if e.CloudTrailEvent != "" {
 		result["CloudTrailEvent"] = e.CloudTrailEvent
-		var parsed map[string]interface{}
-		if json.Unmarshal([]byte(e.CloudTrailEvent), &parsed) == nil {
-			if ec, ok := parsed["eventCategory"].(string); ok && ec != "" {
-				result["EventCategory"] = ec
-			}
-		}
 	}
 
 	if len(e.Resources) > 0 {

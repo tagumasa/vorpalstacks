@@ -789,6 +789,32 @@ func (s *CloudTrailStore) GenerateAndStorePublicKey(trailName string) (*PublicKe
 	return pk, nil
 }
 
+// DeletePublicKeysByTrail removes all public keys associated with the
+// given trail name.  This is called during trail deletion to prevent
+// orphaned key material from lingering after the trail is gone.
+func (s *CloudTrailStore) DeletePublicKeysByTrail(trailName string) error {
+	var toDelete []string
+	err := s.publicKeyStore.ForEach(func(key string, value []byte) error {
+		var p pb.PublicKey
+		if err := proto.Unmarshal(value, &p); err != nil {
+			return err
+		}
+		if p.TrailName == trailName {
+			toDelete = append(toDelete, key)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, key := range toDelete {
+		if err := s.publicKeyStore.Delete(key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // --- Event Data Store operations ---
 
 // CreateEventDataStore persists a new event data store.
