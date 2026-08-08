@@ -112,41 +112,12 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
-// matchesResourceType checks whether a resource ARN matches the given
-// AWS ResourceType enum value.
-func matchesResourceType(resourceArn, resourceType string) bool {
-	switch resourceType {
-	case "APPLICATION_LOAD_BALANCER":
-		return strings.Contains(resourceArn, ":elasticloadbalancing:")
-	case "API_GATEWAY":
-		return strings.Contains(resourceArn, ":apigateway:")
-	case "APPSYNC":
-		return strings.Contains(resourceArn, ":appsync:")
-	case "COGNITIO_USER_POOL":
-		return strings.Contains(resourceArn, ":cognito-idp:")
-	case "APP_RUNNER_SERVICE":
-		return strings.Contains(resourceArn, ":runner:")
-	case "VERIFIED_ACCESS_INSTANCE":
-		return strings.Contains(resourceArn, ":ec2:") && strings.Contains(resourceArn, "verified-access")
-	case "AMPLIFY":
-		return strings.Contains(resourceArn, ":amplify:")
-	case "AGENTCORE_GATEWAY":
-		return strings.Contains(resourceArn, ":agentcore:")
-	default:
-		return true
-	}
-}
-
-// GetWebACLForResource returns the WebACL associated with the specified resource ARN.
+// GetWebACLForResource retrieves the WebACL associated with the specified
+// resource ARN.
 func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
 		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
 	}
 
 	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
@@ -159,6 +130,11 @@ func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("WebACL association for the specified resource")
 		}
+		return nil, err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -184,4 +160,30 @@ func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request
 			"LockToken":        webACL.LockToken,
 		},
 	}, nil
+}
+
+// matchesResourceType checks whether a resource ARN matches the given
+// AWS ResourceType enum value. Returns false for unrecognised types
+// (fail-closed: unknown types do not match any resource).
+func matchesResourceType(resourceArn, resourceType string) bool {
+	switch resourceType {
+	case "APPLICATION_LOAD_BALANCER":
+		return strings.Contains(resourceArn, ":elasticloadbalancing:")
+	case "API_GATEWAY":
+		return strings.Contains(resourceArn, ":apigateway:")
+	case "APPSYNC":
+		return strings.Contains(resourceArn, ":appsync:")
+	case "COGNITO_USER_POOL":
+		return strings.Contains(resourceArn, ":cognito-idp:")
+	case "APP_RUNNER_SERVICE":
+		return strings.Contains(resourceArn, ":runner:")
+	case "VERIFIED_ACCESS_INSTANCE":
+		return strings.Contains(resourceArn, ":ec2:") && strings.Contains(resourceArn, "verified-access")
+	case "AMPLIFY":
+		return strings.Contains(resourceArn, ":amplify:")
+	case "AGENTCORE_GATEWAY":
+		return strings.Contains(resourceArn, ":agentcore:")
+	default:
+		return false
+	}
 }

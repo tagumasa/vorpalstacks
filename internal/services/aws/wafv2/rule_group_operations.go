@@ -19,8 +19,8 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, invalidParamError("Name is required")
+	if err := validateEntityName(name); err != nil {
+		return nil, err
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -29,6 +29,9 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
+	if err := validateEntityDescription(description); err != nil {
+		return nil, err
+	}
 	capacity := int64(request.GetIntParam(req.Parameters, "Capacity"))
 	if capacity <= 0 {
 		return nil, invalidParamError("Capacity is required and must be greater than 0")
@@ -244,7 +247,11 @@ func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(deleted.ARN)
+	if deleted.ARN != "" {
+		if err := stores.tags.Delete(deleted.ARN); err != nil {
+			logs.Warn("failed to clean up tags for deleted RuleGroup", logs.String("id", id), logs.Err(err))
+		}
+	}
 
 	return response.EmptyResponse(), nil
 }

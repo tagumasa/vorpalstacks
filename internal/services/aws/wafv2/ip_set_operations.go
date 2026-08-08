@@ -11,18 +11,26 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
-func parseAddressList(params map[string]interface{}) []string {
+// parseAddressList extracts the Addresses parameter from the raw request
+// and validates each entry as a well-formed CIDR notation matching the
+// specified IPAddressVersion.
+func parseAddressList(params map[string]interface{}, ipAddressVersion string) ([]string, error) {
 	var addresses []string
 	if addrRaw := params["Addresses"]; addrRaw != nil {
 		if arr, ok := addrRaw.([]interface{}); ok {
 			for _, a := range arr {
-				if s, ok := a.(string); ok {
-					addresses = append(addresses, s)
+				s, ok := a.(string)
+				if !ok {
+					return nil, invalidParamError("Addresses entries must be strings")
 				}
+				if err := validateIPAddress(s, ipAddressVersion); err != nil {
+					return nil, err
+				}
+				addresses = append(addresses, s)
 			}
 		}
 	}
-	return addresses
+	return addresses, nil
 }
 
 // CreateIPSet creates a new IP set containing the specified IP addresses.
@@ -32,8 +40,8 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, invalidParamError("Name is required")
+	if err := validateEntityName(name); err != nil {
+		return nil, err
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -42,12 +50,19 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	ipAddressVersion := request.GetStringParam(req.Parameters, "IPAddressVersion")
-	if ipAddressVersion == "" {
-		ipAddressVersion = "IPV4"
+	if err := validateIPAddressVersion(ipAddressVersion); err != nil {
+		return nil, err
 	}
 
-	addresses := parseAddressList(req.Parameters)
+	addresses, err := parseAddressList(req.Parameters, ipAddressVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	description := request.GetStringParam(req.Parameters, "Description")
+	if err := validateEntityDescription(description); err != nil {
+		return nil, err
+	}
 
 	id, err := generateID()
 	if err != nil {
@@ -151,9 +166,25 @@ func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, invalidParamError("LockToken is required")
 	}
 
-	addresses := parseAddressList(req.Parameters)
+	ipSet, err := stores.ipSets.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("IPSet")
+		}
+		return nil, err
+	}
 
-	ipSet, err := stores.ipSets.Update(id, lockToken, addresses, request.GetStringParam(req.Parameters, "Description"))
+	addresses, err := parseAddressList(req.Parameters, ipSet.IPAddressVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	description := request.GetStringParam(req.Parameters, "Description")
+	if err := validateEntityDescription(description); err != nil {
+		return nil, err
+	}
+
+	ipSet, err = stores.ipSets.Update(id, lockToken, addresses, description)
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
@@ -196,7 +227,11 @@ func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(deleted.ARN)
+	if deleted.ARN != "" {
+		if err := stores.tags.Delete(deleted.ARN); err != nil {
+			logs.Warn("failed to clean up tags for deleted IPSet", logs.String("id", id), logs.Err(err))
+		}
+	}
 
 	return response.EmptyResponse(), nil
 }

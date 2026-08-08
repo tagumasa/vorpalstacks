@@ -39,8 +39,8 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, invalidParamError("Name is required")
+	if err := validateEntityName(name); err != nil {
+		return nil, err
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -49,6 +49,9 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
+	if err := validateEntityDescription(description); err != nil {
+		return nil, err
+	}
 	regularPatterns, err := parseRegularExpressionList(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -210,7 +213,11 @@ func (s *WAFv2Service) DeleteRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(deleted.ARN)
+	if deleted.ARN != "" {
+		if err := stores.tags.Delete(deleted.ARN); err != nil {
+			logs.Warn("failed to clean up tags for deleted RegexPatternSet", logs.String("id", id), logs.Err(err))
+		}
+	}
 
 	return response.EmptyResponse(), nil
 }

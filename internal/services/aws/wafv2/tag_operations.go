@@ -2,6 +2,7 @@ package wafv2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -19,6 +20,9 @@ func wafv2MapError(err error) error {
 		return invalidParamError("Tags are required")
 	case *tagutil.MissingTagKeysError:
 		return invalidParamError("TagKeys are required")
+	}
+	if errors.Is(err, tagutil.ErrReservedTagKey) || errors.Is(err, tagutil.ErrTooManyTags) || errors.Is(err, tagutil.ErrInvalidTagKey) || errors.Is(err, tagutil.ErrInvalidTagValue) {
+		return invalidParamError(err.Error())
 	}
 	return err
 }
@@ -58,6 +62,7 @@ func wafv2TagConfig(stores *wafv2Stores) tagutil.TagHandlerConfig {
 		ValidateResource: func(_ context.Context, resourceArn string) error {
 			return validateWAFv2Resource(stores, resourceArn)
 		},
+		ValidateTagsFunc: tagutil.ValidateTags,
 	}
 }
 

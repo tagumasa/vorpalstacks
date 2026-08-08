@@ -15,8 +15,8 @@ import (
 // CreateWebACL creates a new web ACL with the specified default action, rules, and visibility configuration.
 func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, invalidParamError("Name is required")
+	if err := validateEntityName(name); err != nil {
+		return nil, err
 	}
 
 	scope := request.GetStringParam(req.Parameters, "Scope")
@@ -25,6 +25,16 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
+	if err := validateEntityDescription(description); err != nil {
+		return nil, err
+	}
+
+	if err := validateTokenDomains(req.Parameters["TokenDomains"]); err != nil {
+		return nil, err
+	}
+	if err := validateCustomResponseBodies(req.Parameters["CustomResponseBodies"]); err != nil {
+		return nil, err
+	}
 
 	// WebACL capacity is a read-only computed value in AWS (ConsumedCapacity).
 	// It is NOT a parameter of CreateWebACLRequest. We store a default until
@@ -249,6 +259,17 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
+	if v := req.Parameters["TokenDomains"]; v != nil {
+		if err := validateTokenDomains(v); err != nil {
+			return nil, err
+		}
+	}
+	if v := req.Parameters["CustomResponseBodies"]; v != nil {
+		if err := validateCustomResponseBodies(v); err != nil {
+			return nil, err
+		}
+	}
+
 	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig, request.GetStringParam(req.Parameters, "Description"), func(webACL *wafstore.WebACL) {
 		if v := req.Parameters["CustomResponseBodies"]; v != nil {
 			webACL.CustomResponseBodies = v
@@ -318,7 +339,11 @@ func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	_ = stores.tags.Delete(deleted.ARN)
+	if deleted.ARN != "" {
+		if err := stores.tags.Delete(deleted.ARN); err != nil {
+			logs.Warn("failed to clean up tags for deleted WebACL", logs.String("id", id), logs.Err(err))
+		}
+	}
 
 	return response.EmptyResponse(), nil
 }

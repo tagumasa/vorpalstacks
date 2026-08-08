@@ -26,34 +26,49 @@ func validateLogType(logType string) error {
 	}
 }
 
-func parseLoggingFilter(raw interface{}) *wafstore.LoggingFilter {
+func parseLoggingFilter(raw interface{}) (*wafstore.LoggingFilter, error) {
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	m, ok := raw.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, invalidParamError("LoggingFilter must be an object")
 	}
 	lf := &wafstore.LoggingFilter{
 		DefaultBehavior: request.GetStringParam(m, "DefaultBehavior"),
+	}
+	if lf.DefaultBehavior != "" {
+		if err := validateFilterBehavior(lf.DefaultBehavior); err != nil {
+			return nil, err
+		}
 	}
 	if filtersRaw, ok := m["Filters"]; ok {
 		if arr, ok := filtersRaw.([]interface{}); ok {
 			for _, fRaw := range arr {
 				fMap, ok := fRaw.(map[string]interface{})
 				if !ok {
-					continue
+					return nil, invalidParamError("LoggingFilter Filters entries must be objects")
 				}
 				f := wafstore.Filter{
 					Behavior:    request.GetStringParam(fMap, "Behavior"),
 					Requirement: request.GetStringParam(fMap, "Requirement"),
+				}
+				if f.Behavior != "" {
+					if err := validateFilterBehavior(f.Behavior); err != nil {
+						return nil, err
+					}
+				}
+				if f.Requirement != "" {
+					if err := validateFilterRequirement(f.Requirement); err != nil {
+						return nil, err
+					}
 				}
 				if condsRaw, ok := fMap["Conditions"]; ok {
 					if condArr, ok := condsRaw.([]interface{}); ok {
 						for _, cRaw := range condArr {
 							cMap, ok := cRaw.(map[string]interface{})
 							if !ok {
-								continue
+								return nil, invalidParamError("LoggingFilter Conditions entries must be objects")
 							}
 							fc := wafstore.FilterCondition{}
 							if acRaw, ok := cMap["ActionCondition"]; ok {
@@ -79,9 +94,9 @@ func parseLoggingFilter(raw interface{}) *wafstore.LoggingFilter {
 		}
 	}
 	if lf.DefaultBehavior == "" && len(lf.Filters) == 0 {
-		return nil
+		return nil, nil
 	}
-	return lf
+	return lf, nil
 }
 
 // PutLoggingConfiguration creates or updates the logging configuration for the specified web ACL.
@@ -101,6 +116,12 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 		return nil, invalidParamError("LogDestinationConfigs is required")
 	}
 
+	for _, arn := range logDestinationConfigs {
+		if err := validateLogDestinationARN(arn); err != nil {
+			return nil, err
+		}
+	}
+
 	logScope := request.GetStringParam(loggingConfigMap, "LogScope")
 	if err := validateLogScope(logScope); err != nil {
 		return nil, err
@@ -118,7 +139,10 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 		}
 	}
 
-	loggingFilter := parseLoggingFilter(loggingConfigMap["LoggingFilter"])
+	loggingFilter, err := parseLoggingFilter(loggingConfigMap["LoggingFilter"])
+	if err != nil {
+		return nil, err
+	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
