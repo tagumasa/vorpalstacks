@@ -20,8 +20,9 @@ import (
 // requests to service-layer Input structs, delegates to the Core methods,
 // and converts results back to protobuf responses.
 //
-// This file has ZERO store package imports (AGENTS.md #29). All store
-// type conversions are in admin_handler_convert.go.
+// This file has ZERO store package imports (store-import prohibition). Store type
+// conversions live in schedule_admin_core.go (proto→store) and
+// admin_handler_convert.go (store→proto, getStore).
 type AdminHandler struct {
 	schedulerconnect.UnimplementedSchedulerServiceHandler
 	service *SchedulerService
@@ -93,7 +94,13 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	spec := &ScheduleSpec{
+	var iamValidator *iam.IAMValidator
+	rp := h.service.RoleProvider()
+	if rp != nil {
+		iamValidator = iam.NewIAMValidator(rp, h.service.AccountID())
+	}
+
+	result, err := h.service.createScheduleFromAdmin(ctx, store, AdminCreateScheduleInput{
 		Name:                       req.Msg.Name,
 		GroupName:                  req.Msg.Groupname,
 		ScheduleExpression:         req.Msg.Scheduleexpression,
@@ -104,21 +111,11 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 		StartDate:                  req.Msg.Startdate,
 		EndDate:                    req.Msg.Enddate,
 		ActionAfterCompletion:      req.Msg.Actionaftercompletion,
-		Target:                     protoTargetToStore(req.Msg.Target),
-		FlexibleTimeWindow:         protoFTWToStore(req.Msg.Flexibletimewindow),
-	}
-
-	var iamValidator *iam.IAMValidator
-	rp := h.service.RoleProvider()
-	if rp != nil {
-		iamValidator = iam.NewIAMValidator(rp, h.service.AccountID())
-	}
-
-	result, err := h.service.createScheduleCore(ctx, store, &CreateScheduleInput{
-		Spec:         spec,
-		ClientToken:  req.Msg.Clienttoken,
-		Region:       store.GetRegion(),
-		IAMValidator: iamValidator,
+		Target:                     req.Msg.Target,
+		FlexibleTimeWindow:         req.Msg.Flexibletimewindow,
+		ClientToken:                req.Msg.Clienttoken,
+		Region:                     store.GetRegion(),
+		IAMValidator:               iamValidator,
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

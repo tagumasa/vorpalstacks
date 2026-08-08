@@ -2,7 +2,7 @@
 // RPCs for both Neptune and MySQL database engines via the gRPC-Web admin
 // interface. The handler is a thin gRPC-Web wrapper that delegates all
 // business logic to *Core methods on RDSService, keeping this file free of
-// store-package imports per AGENTS.md #29.
+// store-package imports per the store-import prohibition.
 package rds
 
 import (

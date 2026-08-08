@@ -11,9 +11,10 @@ import (
 )
 
 // runIoTReadonlyListTests covers List/Describe operations that require no
-// prior resource setup. Each List test paginates through ALL pages (per
-// AGENTS.md requirement) and verifies the response structure. Describe tests
-// verify the response contains the expected top-level field.
+// prior resource setup. Each List test paginates through ALL pages
+// (pagination is mandatory for list operations) and verifies the response
+// structure. Describe tests verify the response contains the expected
+// top-level field.
 func (r *TestRunner) runIoTReadonlyListTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 

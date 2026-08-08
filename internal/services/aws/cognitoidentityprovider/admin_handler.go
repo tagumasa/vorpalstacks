@@ -73,12 +73,36 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[pb.CreateUserPoolRequest]) (*connect.Response[pb.CreateUserPoolResponse], error) {
 	region := h.getRegionFromHeaders(req.Header())
 
-	pool := userPoolFromCreateProto(req.Msg, region)
+	autoVerifiedAttrs := make([]string, 0, len(req.Msg.GetAutoverifiedattributes()))
+	for _, attr := range req.Msg.GetAutoverifiedattributes() {
+		switch attr {
+		case pb.VerifiedAttributeType_VERIFIED_ATTRIBUTE_TYPE_EMAIL:
+			autoVerifiedAttrs = append(autoVerifiedAttrs, "email")
+		case pb.VerifiedAttributeType_VERIFIED_ATTRIBUTE_TYPE_PHONE_NUMBER:
+			autoVerifiedAttrs = append(autoVerifiedAttrs, "phone_number")
+		}
+	}
 
-	created, err := h.service.createUserPoolCore(CreateUserPoolInput{
-		Pool:   pool,
-		Region: region,
-		Tags:   req.Msg.GetUserpooltags(),
+	var pp *AdminPasswordPolicy
+	if req.Msg.GetPolicies() != nil && req.Msg.GetPolicies().GetPasswordpolicy() != nil {
+		protoPP := req.Msg.GetPolicies().GetPasswordpolicy()
+		pp = &AdminPasswordPolicy{
+			MinimumLength:                 int(protoPP.GetMinimumlength()),
+			RequireUppercase:              protoPP.GetRequireuppercase(),
+			RequireLowercase:              protoPP.GetRequirelowercase(),
+			RequireNumbers:                protoPP.GetRequirenumbers(),
+			RequireSymbols:                protoPP.GetRequiresymbols(),
+			TemporaryPasswordValidityDays: int(protoPP.GetTemporarypasswordvaliditydays()),
+			PasswordHistorySize:           int(protoPP.GetPasswordhistorysize()),
+		}
+	}
+
+	created, err := h.service.createUserPoolFromAdmin(AdminCreateUserPoolInput{
+		PoolName:          req.Msg.GetPoolname(),
+		Region:            region,
+		AutoVerifiedAttrs: autoVerifiedAttrs,
+		PasswordPolicy:    pp,
+		Tags:              req.Msg.GetUserpooltags(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

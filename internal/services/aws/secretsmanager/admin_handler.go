@@ -14,7 +14,7 @@ import (
 // AdminHandler implements the Secrets Manager admin console gRPC-Web handler.
 // It is a thin adapter that converts proto requests to transport-agnostic
 // Input structs, delegates to core functions, and converts results back to
-// proto responses. No store package is imported directly (AGENTS.md #29).
+// proto responses. No store package is imported directly (store-import prohibition).
 type AdminHandler struct {
 	secretsmanagerconnect.UnimplementedSecretsManagerServiceHandler
 	service *SecretsManagerService

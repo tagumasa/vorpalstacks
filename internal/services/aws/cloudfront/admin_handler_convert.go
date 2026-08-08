@@ -9,7 +9,7 @@ import (
 	pb "vorpalstacks/internal/pb/aws/cloudfront"
 )
 
-// This file is the sole exception to AGENTS.md #29: it is the only admin
+// This file is the sole exception to the store-import prohibition: it is the only admin
 // handler file that imports the store package. It contains only pure proto
 // conversion helpers (toPb* functions) that translate store types to proto
 // types for response marshalling.

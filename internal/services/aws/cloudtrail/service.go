@@ -14,7 +14,7 @@ import (
 
 // StoreInterface is a type alias for the CloudTrail store interface. It
 // allows admin_handler.go to reference the store type without importing the
-// store package directly (#29 compliance).
+// store package directly (store-import prohibition).
 type StoreInterface = cloudtrailstore.CloudTrailStoreInterface
 
 // CloudTrailService provides AWS CloudTrail operations.

@@ -14,8 +14,8 @@ import (
 
 // AdminHandler implements the SQS gRPC-Web admin console handler. It delegates
 // to the shared SQSService core methods to ensure the same validation and
-// per-region cached stores are used as the HTTP API handlers. Per AGENTS.md
-// rule #29, this file has ZERO store package imports — all store access is
+// per-region cached stores are used as the HTTP API handlers. Per the
+// store-import prohibition, this file has ZERO store package imports — all store access is
 // through the Core methods in queue_core.go.
 type AdminHandler struct {
 	sqsconnect.UnimplementedSQSServiceHandler

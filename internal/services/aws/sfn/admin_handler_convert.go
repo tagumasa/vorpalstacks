@@ -10,7 +10,7 @@ import (
 )
 
 // This file is the sole admin handler file permitted to import store packages
-// (AGENTS.md #29). It provides store retrieval and proto conversion helpers
+// (sole exception to the store-import prohibition). It provides store retrieval and proto conversion helpers
 // that admin_handler.go uses without directly importing any store package.
 
 // getStore resolves the per-region StepFunctionStore from request headers.

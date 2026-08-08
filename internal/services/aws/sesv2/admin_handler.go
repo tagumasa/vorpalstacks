@@ -14,7 +14,7 @@ import (
 // AdminHandler implements the SESv2 gRPC-Web admin console handler. It is
 // a thin adapter: every operation delegates to the service-layer Core
 // methods, ensuring identical validation to the HTTP API. No store
-// packages are imported directly (AGENTS.md rule #29).
+// packages are imported directly (store-import prohibition).
 type AdminHandler struct {
 	sesv2connect.UnimplementedSESv2ServiceHandler
 	service *SESv2Service

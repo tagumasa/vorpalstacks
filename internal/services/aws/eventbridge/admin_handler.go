@@ -15,7 +15,7 @@ import (
 // AdminHandler implements the EventBridge (CloudWatch Events) gRPC-Web admin
 // console handler. It is a thin adapter that delegates to service-layer core
 // functions, converting between proto messages and transport-agnostic Input
-// structs. No store package is imported directly (AGENTS.md #29).
+// structs. No store package is imported directly (store-import prohibition).
 type AdminHandler struct {
 	cloudwatcheventsconnect.UnimplementedCloudWatchEventsServiceHandler
 	service *EventsService

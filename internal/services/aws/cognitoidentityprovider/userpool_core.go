@@ -37,14 +37,39 @@ type ListUserPoolsResult struct {
 
 // CreateUserPoolInput carries the pre-built store-level UserPool, the region
 // for store resolution, and optional tags. Both the HTTP handler (via
-// applyUserPoolUpdates) and the admin handler (via userPoolFromCreateProto in
-// admin_handler_convert.go) construct the UserPool and delegate to
-// createUserPoolCore so that validation, persistence, and tagging share a
-// single code path.
+// applyUserPoolUpdates) and the admin handler (via createUserPoolFromAdmin)
+// construct the UserPool and delegate to createUserPoolCore so that
+// validation, persistence, and tagging share a single code path.
 type CreateUserPoolInput struct {
 	Pool   *cognitostore.UserPool
 	Region string
 	Tags   map[string]string
+}
+
+// AdminCreateUserPoolInput carries the simplified parameters that the admin
+// console provides when creating a user pool. Unlike the HTTP API which
+// constructs a full store UserPool from query parameters, the admin console
+// sends proto-derived primitives and relies on the Core to build the store
+// type.
+type AdminCreateUserPoolInput struct {
+	PoolName          string
+	Region            string
+	AutoVerifiedAttrs []string
+	PasswordPolicy    *AdminPasswordPolicy
+	Tags              map[string]string
+}
+
+// AdminPasswordPolicy is the service-layer representation of the Cognito
+// password policy, decoupled from the store type so that admin handler DTOs
+// never reference store packages.
+type AdminPasswordPolicy struct {
+	MinimumLength                 int
+	RequireUppercase              bool
+	RequireLowercase              bool
+	RequireNumbers                bool
+	RequireSymbols                bool
+	TemporaryPasswordValidityDays int
+	PasswordHistorySize           int
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +153,31 @@ func (s *CognitoService) createUserPoolCore(in CreateUserPoolInput) (*cognitosto
 	}
 
 	return created, nil
+}
+
+// createUserPoolFromAdmin is the Core entry point for the admin console.
+// It builds a store-level UserPool from the simplified admin parameters
+// and delegates to createUserPoolCore, ensuring that validation, password
+// policy enforcement, and persistence follow the single code path.
+func (s *CognitoService) createUserPoolFromAdmin(in AdminCreateUserPoolInput) (*cognitostore.UserPool, error) {
+	pool := cognitostore.NewUserPool(in.PoolName, in.Region)
+	pool.AutoVerifiedAttributes = in.AutoVerifiedAttrs
+	if in.PasswordPolicy != nil {
+		pool.PasswordPolicy = &cognitostore.PasswordPolicy{
+			MinimumLength:                 in.PasswordPolicy.MinimumLength,
+			RequireUppercase:              in.PasswordPolicy.RequireUppercase,
+			RequireLowercase:              in.PasswordPolicy.RequireLowercase,
+			RequireNumbers:                in.PasswordPolicy.RequireNumbers,
+			RequireSymbols:                in.PasswordPolicy.RequireSymbols,
+			TemporaryPasswordValidityDays: in.PasswordPolicy.TemporaryPasswordValidityDays,
+			PasswordHistorySize:           in.PasswordPolicy.PasswordHistorySize,
+		}
+	}
+	return s.createUserPoolCore(CreateUserPoolInput{
+		Pool:   pool,
+		Region: in.Region,
+		Tags:   in.Tags,
+	})
 }
 
 // deleteUserPoolCore deletes a Cognito user pool by ID.

@@ -9,7 +9,7 @@ import (
 )
 
 // This file is the sole location where admin handler proto-conversion helpers
-// may import store packages (AGENTS.md #29 exception clause).
+// may import store packages (the sole exception to the store-import prohibition).
 
 // ---------------------------------------------------------------------------
 // Enum / scalar helpers
@@ -151,41 +151,6 @@ func userPoolToProto(pool *cognitostore.UserPool) *pb.UserPoolType {
 	}
 
 	return result
-}
-
-// userPoolFromCreateProto converts a proto CreateUserPoolRequest into a
-// store-level UserPool ready for createUserPoolCore. Only the fields relevant
-// to the admin console are mapped; complex nested configurations that the
-// console does not expose are left at their NewUserPool defaults.
-func userPoolFromCreateProto(msg *pb.CreateUserPoolRequest, region string) *cognitostore.UserPool {
-	pool := cognitostore.NewUserPool(msg.GetPoolname(), region)
-
-	// AutoVerifiedAttributes (proto enum → string).
-	for _, attr := range msg.GetAutoverifiedattributes() {
-		switch attr {
-		case pb.VerifiedAttributeType_VERIFIED_ATTRIBUTE_TYPE_EMAIL:
-			pool.AutoVerifiedAttributes = append(pool.AutoVerifiedAttributes, "email")
-		case pb.VerifiedAttributeType_VERIFIED_ATTRIBUTE_TYPE_PHONE_NUMBER:
-			pool.AutoVerifiedAttributes = append(pool.AutoVerifiedAttributes, "phone_number")
-		}
-	}
-
-	// PasswordPolicy (including PasswordHistorySize per Smithy
-	// PasswordHistorySizeType [0, 24], validated in createUserPoolCore).
-	if msg.GetPolicies() != nil && msg.GetPolicies().GetPasswordpolicy() != nil {
-		pp := msg.GetPolicies().GetPasswordpolicy()
-		pool.PasswordPolicy = &cognitostore.PasswordPolicy{
-			MinimumLength:                 int(pp.GetMinimumlength()),
-			RequireUppercase:              pp.GetRequireuppercase(),
-			RequireLowercase:              pp.GetRequirelowercase(),
-			RequireNumbers:                pp.GetRequirenumbers(),
-			RequireSymbols:                pp.GetRequiresymbols(),
-			TemporaryPasswordValidityDays: int(pp.GetTemporarypasswordvaliditydays()),
-			PasswordHistorySize:           int(pp.GetPasswordhistorysize()),
-		}
-	}
-
-	return pool
 }
 
 // ---------------------------------------------------------------------------

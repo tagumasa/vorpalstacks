@@ -16,7 +16,9 @@ import (
 // policy_store.go / thing_principal_store.go / thing_group_store.go append
 // the region suffix ("-{region}") to the SAME constant, so a rename can
 // never diverge between the read path (BaseStore) and the write path
-// (txn.Bucket). See AGENTS.md事故12 (DRY store instance discipline).
+// (txn.Bucket). A single shared store instance ensures all access goes
+// through one initialised handle, preventing the subtle bugs that arise
+// when separate instances race on uninitialised state.
 const (
 	bucketThings             = "iot-things"
 	bucketThingTypes         = "iot-thing-types"

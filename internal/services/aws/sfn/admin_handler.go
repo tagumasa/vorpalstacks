@@ -15,7 +15,7 @@ import (
 // AdminHandler implements the Step Functions gRPC-Web admin console handler.
 // It delegates all operations to the shared service-layer Core functions,
 // ensuring that validation and persistence follow the same single code path
-// as the HTTP API (AGENTS.md #29: zero store imports).
+// as the HTTP API (zero store imports in admin handler files).
 type AdminHandler struct {
 	sfnconnect.UnimplementedSFNServiceHandler
 	service *StepFunctionService

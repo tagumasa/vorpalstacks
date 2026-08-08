@@ -14,7 +14,7 @@ import (
 // AdminHandler implements the SNS gRPC-Web admin console handler. It is a
 // thin adapter: every operation delegates to the service-layer Core methods,
 // ensuring identical validation to the HTTP API. No store packages are
-// imported directly (AGENTS.md rule #29).
+// imported directly (store-import prohibition).
 type AdminHandler struct {
 	snsconnect.UnimplementedSNSServiceHandler
 	service *SNSService

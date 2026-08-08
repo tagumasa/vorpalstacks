@@ -12,7 +12,7 @@ import (
 // rdsStores holds the common RDS store and the resolved region for a
 // single admin-handler request. It is the analogue of ACM's acmStores:
 // a local wrapper type that lets admin_handler.go avoid importing the
-// store package directly (AGENTS.md #29).
+// store package directly (store-import prohibition).
 type rdsStores struct {
 	store  storerds.StoreInterface
 	region string
@@ -32,7 +32,7 @@ type EngineProvider func(engineType string) (Engine, error)
 // owns the store provider, engine provider, account ID, and optional
 // snapshot operator. Admin handler RPC methods delegate to *Core methods
 // on this type, keeping admin_handler.go free of store-package imports
-// per AGENTS.md #29.
+// per the store-import prohibition.
 type RDSService struct {
 	stores    StoreProvider
 	engines   EngineProvider

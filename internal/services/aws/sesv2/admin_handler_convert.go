@@ -11,7 +11,7 @@ import (
 // ---------------------------------------------------------------------------
 // admin_handler_convert.go — the sole file in the SESv2 service package
 // that imports store packages and performs proto↔DTO conversion. This
-// enforces AGENTS.md rule #29: admin handlers must not import store
+// enforces the store-import prohibition: admin handlers must not import store
 // packages directly.
 // ---------------------------------------------------------------------------
 

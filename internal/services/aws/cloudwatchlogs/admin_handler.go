@@ -17,7 +17,7 @@ import (
 // AdminHandler provides CloudWatch Logs service administration functionality.
 // It delegates to the shared LogsService Core methods to ensure the same
 // validation, business logic, and per-region cached stores are used as the
-// HTTP API handlers. Per architecture rule #29, this handler does NOT import
+// HTTP API handlers. Per the store-import prohibition, this handler does NOT import
 // any store package directly — all data access flows through Core methods
 // and conversion helpers in admin_handler_convert.go.
 type AdminHandler struct {
