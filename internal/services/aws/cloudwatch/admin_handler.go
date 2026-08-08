@@ -1,5 +1,3 @@
-// Package cloudwatch implements AWS CloudWatch API operations including
-// alarms, metrics, dashboards, log groups, and metric widget image rendering.
 package cloudwatch
 
 import (
@@ -9,20 +7,17 @@ import (
 
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
 	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
 // AdminHandler implements the CloudWatch gRPC-Web admin console handler. It
 // exposes list and describe operations for alarms and metrics for the Flutter
-// management UI. It delegates to the shared CloudWatchService store cache.
+// management UI. It delegates to the shared CloudWatchService Core methods.
 type AdminHandler struct {
 	cloudwatchconnect.UnimplementedCloudWatchServiceHandler
 	service *CloudWatchService
@@ -45,40 +40,20 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*cloudwatchStor
 func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.ListMetricsInput]) (*connect.Response[pb.ListMetricsOutput], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	var dimensions []cloudwatchstore.Dimension
-	for _, d := range req.Msg.Dimensions {
-		dimensions = append(dimensions, cloudwatchstore.Dimension{
-			Name:  d.Name,
-			Value: d.Value,
-		})
-	}
-
-	metrics, err := stores.metrics.ListMetrics(req.Msg.Namespace, req.Msg.Metricname, dimensions)
+	result, err := h.service.listMetricsCore(stores, &ListMetricsInput{
+		Namespace:  req.Msg.Namespace,
+		MetricName: req.Msg.Metricname,
+		Dimensions: dimensionFiltersToStore(req.Msg.Dimensions),
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	pbMetrics := make([]*pb.Metric, len(metrics))
-	for i, m := range metrics {
-		pbDims := make([]*pb.Dimension, len(m.Dimensions))
-		for j, d := range m.Dimensions {
-			pbDims[j] = &pb.Dimension{
-				Name:  d.Name,
-				Value: d.Value,
-			}
-		}
-		pbMetrics[i] = &pb.Metric{
-			Namespace:  m.Namespace,
-			Metricname: m.MetricName,
-			Dimensions: pbDims,
-		}
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.ListMetricsOutput{
-		Metrics: pbMetrics,
+		Metrics: metricsToPb(result.Metrics),
 	}), nil
 }
 
@@ -86,12 +61,14 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[pb.DescribeAlarmsInput]) (*connect.Response[pb.DescribeAlarmsOutput], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	alarms, err := stores.alarms.ListAlarms(req.Msg.Alarmnameprefix)
+	alarms, _, err := h.service.describeAlarmsCore(stores, &DescribeAlarmsInput{
+		AlarmNamePrefix: req.Msg.Alarmnameprefix,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	pbAlarms := make([]*pb.MetricAlarm, 0, len(alarms))
@@ -104,140 +81,56 @@ func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
-func toPbMetricAlarm(alarm *cloudwatchstore.Alarm) *pb.MetricAlarm {
-	pbDims := make([]*pb.Dimension, len(alarm.Dimensions))
-	for i, d := range alarm.Dimensions {
-		pbDims[i] = &pb.Dimension{
-			Name:  d.Name,
-			Value: d.Value,
-		}
-	}
-
-	return &pb.MetricAlarm{
-		Alarmname:                          alarm.Name,
-		Alarmarn:                           alarm.ARN,
-		Namespace:                          alarm.Namespace,
-		Metricname:                         alarm.MetricName,
-		Dimensions:                         pbDims,
-		Comparisonoperator:                 toPbComparisonOperator(alarm.ComparisonOperator),
-		Threshold:                          alarm.Threshold,
-		Evaluationperiods:                  proto.Int32(alarm.EvaluationPeriods),
-		Period:                             proto.Int32(alarm.Period),
-		Statistic:                          toPbStatistic(alarm.Statistic),
-		Treatmissingdata:                   alarm.TreatMissingData,
-		Statevalue:                         toPbStateValue(alarm.State),
-		Stateupdatedtimestamp:              alarm.StateUpdatedTimestamp.Format(timeutils.ISO8601UTCFormat),
-		Alarmconfigurationupdatedtimestamp: alarm.CreatedAt.Format(timeutils.ISO8601UTCFormat),
-	}
-}
-
-func toPbComparisonOperator(op string) pb.ComparisonOperator {
-	switch op {
-	case "GreaterThanOrEqualToThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANOREQUALTOTHRESHOLD
-	case "GreaterThanThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANTHRESHOLD
-	case "LessThanThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANTHRESHOLD
-	case "LessThanOrEqualToThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANOREQUALTOTHRESHOLD
-	case "LessThanLowerOrGreaterThanUpperThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERORGREATERTHANUPPERTHRESHOLD
-	case "LessThanLowerThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERTHRESHOLD
-	case "GreaterThanUpperThreshold":
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANUPPERTHRESHOLD
-	default:
-		return pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANOREQUALTOTHRESHOLD
-	}
-}
-
-func toPbStatistic(stat string) pb.Statistic {
-	switch stat {
-	case "Average":
-		return pb.Statistic_STATISTIC_AVERAGE
-	case "Sum":
-		return pb.Statistic_STATISTIC_SUM
-	case "SampleCount":
-		return pb.Statistic_STATISTIC_SAMPLECOUNT
-	case "Maximum":
-		return pb.Statistic_STATISTIC_MAXIMUM
-	case "Minimum":
-		return pb.Statistic_STATISTIC_MINIMUM
-	default:
-		return pb.Statistic_STATISTIC_AVERAGE
-	}
-}
-
-func toPbStateValue(state string) pb.StateValue {
-	switch state {
-	case "OK":
-		return pb.StateValue_STATE_VALUE_OK
-	case "ALARM":
-		return pb.StateValue_STATE_VALUE_ALARM
-	case "INSUFFICIENT_DATA":
-		return pb.StateValue_STATE_VALUE_INSUFFICIENT_DATA
-	default:
-		return pb.StateValue_STATE_VALUE_INSUFFICIENT_DATA
-	}
-}
-
 // PutMetricAlarm creates or updates a CloudWatch metric alarm via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[pb.PutMetricAlarmInput]) (*connect.Response[pbcommon.Empty], error) {
-	stores, err := h.getStoreFromHeaders(req.Header())
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
 	if req.Msg.Alarmname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmName is required"))
 	}
 
-	alarm := cloudwatchstore.NewAlarm(req.Msg.Alarmname, req.Msg.Namespace, req.Msg.Metricname)
-
-	var dims []cloudwatchstore.Dimension
-	for _, d := range req.Msg.Dimensions {
-		dims = append(dims, cloudwatchstore.Dimension{Name: d.Name, Value: d.Value})
-	}
-	alarm.Dimensions = dims
-	alarm.ComparisonOperator = fromPbComparisonOperator(req.Msg.Comparisonoperator)
-	alarm.Threshold = req.Msg.Threshold
-	alarm.EvaluationPeriods = req.Msg.GetEvaluationperiods()
-	if alarm.EvaluationPeriods == 0 {
-		alarm.EvaluationPeriods = 1
-	}
-	alarm.Period = req.Msg.GetPeriod()
-	if alarm.Period == 0 {
-		alarm.Period = 60
-	}
-	alarm.Statistic = fromPbStatistic(req.Msg.Statistic)
-	alarm.TreatMissingData = req.Msg.Treatmissingdata
-	if alarm.TreatMissingData == "" {
-		alarm.TreatMissingData = "missing"
-	}
-	alarm.AlarmDescription = req.Msg.Alarmdescription
-	if req.Msg.Actionsenabled != nil {
-		alarm.ActionsEnabled = *req.Msg.Actionsenabled
-	} else {
-		alarm.ActionsEnabled = true
-	}
-	alarm.DatapointsToAlarm = req.Msg.GetDatapointstoalarm()
-	if alarm.DatapointsToAlarm == 0 {
-		alarm.DatapointsToAlarm = alarm.EvaluationPeriods
-	}
-	alarm.AlarmActions = req.Msg.Alarmactions
-	alarm.OKActions = req.Msg.Okactions
-	alarm.InsufficientDataActions = req.Msg.Insufficientdataactions
-
-	created, err := stores.alarms.CreateAlarm(alarm)
+	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if len(created.Tags) > 0 {
-		if err := stores.alarms.Tag(created.ARN, created.Tags); err != nil {
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
+	input := &PutMetricAlarmInput{
+		AlarmName:               req.Msg.Alarmname,
+		Namespace:               req.Msg.Namespace,
+		MetricName:              req.Msg.Metricname,
+		Dimensions:              dimensionsToStore(req.Msg.Dimensions),
+		ComparisonOperator:      fromPbComparisonOperator(req.Msg.Comparisonoperator),
+		Threshold:               req.Msg.Threshold,
+		EvaluationPeriods:       req.Msg.GetEvaluationperiods(),
+		Period:                  req.Msg.GetPeriod(),
+		Statistic:               fromPbStatistic(req.Msg.Statistic),
+		TreatMissingData:        req.Msg.Treatmissingdata,
+		AlarmDescription:        req.Msg.Alarmdescription,
+		ActionsEnabled:          true,
+		ActionsEnabledProvided:  req.Msg.Actionsenabled != nil,
+		AlarmActions:            req.Msg.Alarmactions,
+		OKActions:               req.Msg.Okactions,
+		InsufficientDataActions: req.Msg.Insufficientdataactions,
+	}
+	if input.ActionsEnabledProvided {
+		input.ActionsEnabled = *req.Msg.Actionsenabled
+	}
+	if input.EvaluationPeriods == 0 {
+		input.EvaluationPeriods = 1
+	}
+	if input.Period == 0 {
+		input.Period = 60
+	}
+	input.DatapointsToAlarm = req.Msg.GetDatapointstoalarm()
+	if input.DatapointsToAlarm == 0 {
+		input.DatapointsToAlarm = input.EvaluationPeriods
+	}
+	if input.TreatMissingData == "" {
+		input.TreatMissingData = "missing"
+	}
+
+	_, err = h.service.putMetricAlarmCore(stores, input)
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -246,60 +139,20 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 // DeleteAlarms deletes one or more CloudWatch alarms via the admin console
 // gRPC-Web interface.
 func (h *AdminHandler) DeleteAlarms(ctx context.Context, req *connect.Request[pb.DeleteAlarmsInput]) (*connect.Response[pbcommon.Empty], error) {
-	stores, err := h.getStoreFromHeaders(req.Header())
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
 	if len(req.Msg.Alarmnames) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmNames is required"))
 	}
 
-	for _, name := range req.Msg.Alarmnames {
-		if err := stores.alarms.DeleteAlarm(name); err != nil {
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	if err := h.service.deleteAlarmsCore(stores, &DeleteAlarmsInput{AlarmNames: req.Msg.Alarmnames}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
-}
-
-func fromPbComparisonOperator(op pb.ComparisonOperator) string {
-	switch op {
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANOREQUALTOTHRESHOLD:
-		return "GreaterThanOrEqualToThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANTHRESHOLD:
-		return "GreaterThanThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANTHRESHOLD:
-		return "LessThanThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANOREQUALTOTHRESHOLD:
-		return "LessThanOrEqualToThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERORGREATERTHANUPPERTHRESHOLD:
-		return "LessThanLowerOrGreaterThanUpperThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERTHRESHOLD:
-		return "LessThanLowerThreshold"
-	case pb.ComparisonOperator_COMPARISON_OPERATOR_GREATERTHANUPPERTHRESHOLD:
-		return "GreaterThanUpperThreshold"
-	default:
-		return "GreaterThanOrEqualToThreshold"
-	}
-}
-
-func fromPbStatistic(stat pb.Statistic) string {
-	switch stat {
-	case pb.Statistic_STATISTIC_AVERAGE:
-		return "Average"
-	case pb.Statistic_STATISTIC_SUM:
-		return "Sum"
-	case pb.Statistic_STATISTIC_SAMPLECOUNT:
-		return "SampleCount"
-	case pb.Statistic_STATISTIC_MAXIMUM:
-		return "Maximum"
-	case pb.Statistic_STATISTIC_MINIMUM:
-		return "Minimum"
-	default:
-		return "Average"
-	}
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the CloudWatch admin console.

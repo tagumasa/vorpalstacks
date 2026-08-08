@@ -30,6 +30,10 @@ type ActionConfig struct {
 	// QueueURL is the SQS queue URL (for SQS actions).
 	QueueURL string
 
+	// Region is the AWS region for the action target, used for
+	// region-aware SQS delivery when QueueURL is provided without ARN.
+	Region string
+
 	// TopicARN is the SNS topic ARN (for SNS actions).
 	TopicARN string
 
@@ -211,15 +215,21 @@ func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, p *A
 	}
 
 	var queueURL string
+	var sqsRegion string
 	var err error
 
 	if config.QueueURL != "" {
 		queueURL = config.QueueURL
+		sqsRegion = config.Region
 	} else if config.TargetARN != "" {
-		// Extract queue name from ARN and resolve URL.
+		// Extract queue name and region from ARN and resolve URL.
 		parts := strings.Split(config.TargetARN, ":")
+		if len(parts) < 6 {
+			return fmt.Errorf("sqs: malformed queue ARN: %s", config.TargetARN)
+		}
 		queueName := parts[len(parts)-1]
-		queueURL, err = invoker.GetQueueByName(ctx, queueName)
+		sqsRegion = parts[3]
+		queueURL, err = invoker.GetQueueByName(ctx, sqsRegion, queueName)
 		if err != nil {
 			return fmt.Errorf("failed to resolve SQS queue URL: %w", err)
 		}
@@ -227,7 +237,7 @@ func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, p *A
 		return fmt.Errorf("sqs: no queueUrl or queueArn specified")
 	}
 
-	_, _, err = invoker.SendMessage(ctx, queueURL, p.JSONString, eventbus.SQSSendOptions{})
+	_, _, err = invoker.SendMessage(ctx, sqsRegion, queueURL, p.JSONString, eventbus.SQSSendOptions{})
 	if err != nil {
 		return fmt.Errorf("sqs send failed: %w", err)
 	}

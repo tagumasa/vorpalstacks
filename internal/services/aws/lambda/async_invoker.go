@@ -194,12 +194,12 @@ func deliverToSQS(ctx context.Context, s *LambdaService, arn, payload, region st
 	if queueName == "" {
 		return
 	}
-	queueURL, err := sqsInvoker.GetQueueByName(ctx, queueName)
+	queueURL, err := sqsInvoker.GetQueueByName(ctx, region, queueName)
 	if err != nil {
 		logs.Warn("destination: failed to resolve SQS queue URL", logs.String("arn", arn), logs.Err(err))
 		return
 	}
-	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, payload, eventbus.SQSSendOptions{}); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, region, queueURL, payload, eventbus.SQSSendOptions{}); err != nil {
 		logs.Warn("destination: failed to send to SQS", logs.String("arn", arn), logs.Err(err))
 	}
 }

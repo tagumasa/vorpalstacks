@@ -862,68 +862,118 @@ func (s *MetricChunkStore) metricRecentlyActive(m MetricDatum) bool {
 }
 
 // ListMetricsPaginated returns a paginated list of metrics matching the specified criteria.
-// Since metrics are stored in filesystem chunks (not Pebble), pagination is applied
-// after collecting and deduplicating unique metrics. When recentlyActive is true,
-// only metrics with data points in the last 3 hours are returned.
+// Pagination is server-side: directories are scanned in sorted order and
+// collection stops as soon as maxItems unique metrics (after the cursor
+// position) have been gathered. The result page is bounded to
+// O(maxItems); the deduplication map tracks all unique metric keys
+// encountered during the scan, so per-call memory is proportional to
+// unique metrics scanned up to the cursor position. When
+// recentlyActive is true, only metrics with data points in the last 3
+// hours are returned. maxItems is capped at 500 per AWS ListMetrics
+// specification.
 func (s *MetricChunkStore) ListMetricsPaginated(namespace, metricName string, dimensions []Dimension, marker string, maxItems int, recentlyActive bool) ([]MetricDatum, string, bool, error) {
-	allMetrics, err := s.ListMetrics(namespace, metricName, dimensions)
+	if maxItems <= 0 || maxItems > 500 {
+		maxItems = 500
+	}
+
+	chunkBase := fmt.Sprintf("%s/%s/cw_metric_chunks", s.dataPath, s.region)
+	nsEntries, err := os.ReadDir(chunkBase)
 	if err != nil {
-		return nil, "", false, err
+		return nil, "", false, nil
 	}
+	sort.Slice(nsEntries, func(i, j int) bool { return nsEntries[i].Name() < nsEntries[j].Name() })
 
-	if recentlyActive {
-		filtered := allMetrics[:0]
-		for _, m := range allMetrics {
-			if s.metricRecentlyActive(m) {
-				filtered = append(filtered, m)
-			}
-		}
-		allMetrics = filtered
-	}
-
-	type metricWithKey struct {
-		datum MetricDatum
-		key   string
-	}
-	entries := make([]metricWithKey, len(allMetrics))
-	for i, m := range allMetrics {
-		dimsKey := ""
-		for _, d := range m.Dimensions {
-			dimsKey += d.Name + "=" + d.Value + ","
-		}
-		entries[i] = metricWithKey{
-			datum: m,
-			key:   m.Namespace + "#" + m.MetricName + "#" + dimsKey,
-		}
-	}
-
-	startIdx := 0
-	if marker != "" {
-		for i, e := range entries {
-			if e.key == marker {
-				startIdx = i + 1
-				break
-			}
-		}
-	}
-
-	endIdx := len(entries)
-	if maxItems > 0 && startIdx+maxItems < endIdx {
-		endIdx = startIdx + maxItems
-	}
-
-	result := make([]MetricDatum, endIdx-startIdx)
-	for i := startIdx; i < endIdx; i++ {
-		result[i-startIdx] = entries[i].datum
-	}
-
-	isTruncated := endIdx < len(entries)
+	seen := make(map[string]bool)
+	var result []MetricDatum
+	truncated := false
 	nextToken := ""
-	if isTruncated {
-		nextToken = entries[endIdx-1].key
+
+	for _, nsEntry := range nsEntries {
+		if !nsEntry.IsDir() {
+			continue
+		}
+		ns := strings.ReplaceAll(nsEntry.Name(), "_", "/")
+		if namespace != "" && ns != namespace {
+			continue
+		}
+
+		metricDir := filepath.Join(chunkBase, nsEntry.Name())
+		metricEntries, err := os.ReadDir(metricDir)
+		if err != nil {
+			continue
+		}
+		sort.Slice(metricEntries, func(i, j int) bool { return metricEntries[i].Name() < metricEntries[j].Name() })
+
+		for _, metricEntry := range metricEntries {
+			if !metricEntry.IsDir() {
+				continue
+			}
+			mn := strings.ReplaceAll(metricEntry.Name(), "_", "/")
+			if metricName != "" && mn != metricName {
+				continue
+			}
+
+			hourDir := filepath.Join(metricDir, metricEntry.Name())
+			hourEntries, err := os.ReadDir(hourDir)
+			if err != nil {
+				continue
+			}
+
+			for _, hourEntry := range hourEntries {
+				if hourEntry.IsDir() {
+					continue
+				}
+
+				chunkPath := filepath.Join(hourDir, hourEntry.Name())
+				entries, err := s.readChunk(chunkPath)
+				if err != nil {
+					continue
+				}
+
+				for _, entry := range entries {
+					if namespace != "" && entry.Namespace != namespace {
+						continue
+					}
+					if metricName != "" && entry.MetricName != metricName {
+						continue
+					}
+					if len(dimensions) > 0 && !matchDimensions(convertFromChunkDimensions(entry.Dimensions), dimensions) {
+						continue
+					}
+
+					metricKey := entry.Namespace + "#" + entry.MetricName + "#" + entry.BuildDimensionsKey()
+					if seen[metricKey] {
+						continue
+					}
+					seen[metricKey] = true
+
+					if marker != "" && metricKey <= marker {
+						continue
+					}
+
+					datum := MetricDatum{
+						Namespace:  entry.Namespace,
+						MetricName: entry.MetricName,
+						Dimensions: convertFromChunkDimensions(entry.Dimensions),
+					}
+
+					if recentlyActive && !s.metricRecentlyActive(datum) {
+						continue
+					}
+
+					result = append(result, datum)
+
+					if len(result) >= maxItems {
+						truncated = true
+						nextToken = metricKey
+						return result, nextToken, truncated, nil
+					}
+				}
+			}
+		}
 	}
 
-	return result, nextToken, isTruncated, nil
+	return result, "", false, nil
 }
 
 func (s *MetricChunkStore) listMetricsFromDir(chunkDir, namespace, metricName string, dimensions []Dimension, seen map[string]bool, metrics *[]MetricDatum) {
@@ -993,6 +1043,10 @@ func matchDimensions(dataDims, queryDims []Dimension) bool {
 	for _, qd := range queryDims {
 		found := false
 		for _, dd := range dataDims {
+			// DimensionFilter.Value is optional in the Smithy model
+			// (no required trait). When omitted (empty string), it
+			// matches any metric that has that dimension name,
+			// per AWS ListMetrics documentation.
 			if dd.Name == qd.Name && (qd.Value == "" || dd.Value == qd.Value) {
 				found = true
 				break

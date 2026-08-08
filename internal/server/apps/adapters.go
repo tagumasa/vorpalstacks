@@ -24,33 +24,73 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
-// sqsInvokerAdapter adapts the SQS concrete store to the eventbus.SQSInvoker
-// interface, so that cross-service consumers send messages through the bus
-// instead of holding a direct store reference.
+// sqsInvokerAdapter adapts the SQS store to the eventbus.SQSInvoker
+// interface using per-region store caching via RegionStorageManager.
+// This enables cross-region SQS delivery (e.g. alarm actions targeting
+// queues in a different region than the source service).
 type sqsInvokerAdapter struct {
-	store storesqs.SQSStoreInterface
+	storageMgr *storage.RegionStorageManager
+	accountID  string
+	baseURL    string
+	stores     sync.Map
 }
 
-// GetQueueByName looks up a queue by name and returns its URL.
-func (a *sqsInvokerAdapter) GetQueueByName(_ context.Context, queueName string) (string, error) {
-	q, err := a.store.GetQueueByName(queueName)
+func (a *sqsInvokerAdapter) getOrCreateStore(region string) (*storesqs.SQSStore, error) {
+	if region == "" {
+		region = defaults.DefaultRegion
+	}
+	if cached, ok := a.stores.Load(region); ok {
+		if typed, ok := cached.(*storesqs.SQSStore); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := a.storageMgr.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := storesqs.NewSQSStore(regionStorage, a.accountID, region, a.baseURL)
+	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
+		typed, ok := actual.(*storesqs.SQSStore)
+		if !ok {
+			return nil, fmt.Errorf("sqs: unexpected store type for region %s", region)
+		}
+		return typed, nil
+	}
+	return store, nil
+}
+
+// GetQueueByName looks up a queue by name in the specified region and returns its URL.
+func (a *sqsInvokerAdapter) GetQueueByName(_ context.Context, region, queueName string) (string, error) {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return "", err
+	}
+	q, err := store.GetQueueByName(queueName)
 	if err != nil {
 		return "", err
 	}
 	return q.URL, nil
 }
 
-// GetQueueARN looks up a queue by URL and returns its ARN.
-func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, queueURL string) (string, error) {
-	q, err := a.store.GetQueue(queueURL)
+// GetQueueARN looks up a queue by URL in the specified region and returns its ARN.
+func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, region, queueURL string) (string, error) {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return "", err
+	}
+	q, err := store.GetQueue(queueURL)
 	if err != nil {
 		return "", err
 	}
 	return q.ARN, nil
 }
 
-// SendMessage sends a message to the specified queue, returning the message ID and MD5.
-func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body string, opts eventbus.SQSSendOptions) (string, string, error) {
+// SendMessage sends a message to the specified queue in the given region.
+func (a *sqsInvokerAdapter) SendMessage(_ context.Context, region, queueURL, body string, opts eventbus.SQSSendOptions) (string, string, error) {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return "", "", err
+	}
 	msg := &storesqs.Message{
 		Body:                   body,
 		DelaySeconds:           int32(opts.DelaySeconds),
@@ -58,7 +98,7 @@ func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body
 		MessageGroupID:         opts.MessageGroupID,
 		MessageDeduplicationID: opts.MessageDeduplicationID,
 	}
-	result, err := a.store.SendMessage(queueURL, msg)
+	result, err := store.SendMessage(queueURL, msg)
 	if err != nil {
 		return "", "", err
 	}
@@ -85,9 +125,13 @@ func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesq
 	return convertToSQSMessageAttributes(opts.MessageAttributes)
 }
 
-// ReceiveMessage retrieves messages from the specified queue.
-func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]eventbus.ReceivedSQSMessage, error) {
-	msgs, err := a.store.ReceiveMessage(queueURL, maxMessages, visibilityTimeout, waitTimeSeconds, "")
+// ReceiveMessage retrieves messages from the specified queue in the given region.
+func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]eventbus.ReceivedSQSMessage, error) {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return nil, err
+	}
+	msgs, err := store.ReceiveMessage(queueURL, maxMessages, visibilityTimeout, waitTimeSeconds, "")
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +157,13 @@ func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, queueURL string, m
 	return out, nil
 }
 
-// DeleteMessage deletes a message from the specified queue.
-func (a *sqsInvokerAdapter) DeleteMessage(_ context.Context, queueURL string, receiptHandle string) error {
-	return a.store.DeleteMessage(queueURL, receiptHandle)
+// DeleteMessage deletes a message from the specified queue in the given region.
+func (a *sqsInvokerAdapter) DeleteMessage(_ context.Context, region, queueURL, receiptHandle string) error {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return err
+	}
+	return store.DeleteMessage(queueURL, receiptHandle)
 }
 
 // snsStoreForInvoker is the minimal store interface needed by the SNS invoker

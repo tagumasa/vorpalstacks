@@ -254,6 +254,7 @@ func (s *IoTService) makeActionDispatcher(region string, d *actions.Dispatcher) 
 				} else {
 					ac = &actions.ActionConfig{Type: actionType}
 				}
+				ac.Region = region
 				if err := d.Dispatch(ctx, ac, topic, payload); err != nil {
 					slog.Warn("rule action dispatch failed", "rule", ruleName, "region", region, "type", actionType, "error", err)
 					hadError = true
@@ -266,6 +267,7 @@ func (s *IoTService) makeActionDispatcher(region string, d *actions.Dispatcher) 
 			for eaType, eaCfg := range errorAction {
 				if m, ok := eaCfg.(map[string]interface{}); ok {
 					eaConfig := actions.NewActionConfigFromMap(eaType, m)
+					eaConfig.Region = region
 					if err := d.Dispatch(ctx, eaConfig, topic, payload); err != nil {
 						slog.Warn("rule error action dispatch failed", "rule", ruleName, "region", region, "type", eaType, "error", err)
 					}

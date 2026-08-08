@@ -8,11 +8,12 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	"vorpalstacks/internal/store/aws/common"
 )
 
-// PutAnomalyDetector creates or updates a CloudWatch anomaly detection
+// PutAnomalyDetector creates or updates an anomaly detection
 // model for a metric. The model can be a single-metric detector
 // (identified by Namespace, MetricName, Dimensions, Stat) or a
 // metric-math detector (identified by MetricDataQueries).
@@ -366,6 +367,9 @@ func anomalyDetectorToResponse(d *cwstore.AnomalyDetector) map[string]interface{
 func parseAnomalyDetectorConfiguration(raw interface{}) *cwstore.AnomalyDetectorConfiguration {
 	m, ok := raw.(map[string]interface{})
 	if !ok {
+		if raw != nil {
+			logs.Warn("Configuration type mismatch: expected map", logs.String("actualType", fmt.Sprintf("%T", raw)))
+		}
 		return nil
 	}
 
@@ -376,6 +380,7 @@ func parseAnomalyDetectorConfiguration(raw interface{}) *cwstore.AnomalyDetector
 			for _, r := range ranges {
 				rm, ok := r.(map[string]interface{})
 				if !ok {
+					logs.Warn("ExcludedTimeRanges entry type mismatch: expected map", logs.String("actualType", fmt.Sprintf("%T", r)))
 					continue
 				}
 				timeRange := cwstore.Range{}
@@ -387,12 +392,16 @@ func parseAnomalyDetectorConfiguration(raw interface{}) *cwstore.AnomalyDetector
 				}
 				cfg.ExcludedTimeRanges = append(cfg.ExcludedTimeRanges, timeRange)
 			}
+		} else {
+			logs.Warn("ExcludedTimeRanges type mismatch: expected list", logs.String("actualType", fmt.Sprintf("%T", etr)))
 		}
 	}
 
 	if tz, ok := m["MetricTimezone"]; ok {
 		if tzStr, ok := tz.(string); ok {
 			cfg.MetricTimezone = tzStr
+		} else {
+			logs.Warn("MetricTimezone type mismatch: expected string", logs.String("actualType", fmt.Sprintf("%T", tz)))
 		}
 	}
 
@@ -403,12 +412,17 @@ func parseAnomalyDetectorConfiguration(raw interface{}) *cwstore.AnomalyDetector
 func parseMetricCharacteristics(raw interface{}) *cwstore.MetricCharacteristics {
 	m, ok := raw.(map[string]interface{})
 	if !ok {
+		if raw != nil {
+			logs.Warn("MetricCharacteristics type mismatch: expected map", logs.String("actualType", fmt.Sprintf("%T", raw)))
+		}
 		return nil
 	}
 	mc := &cwstore.MetricCharacteristics{}
 	if ps, ok := m["PeriodicSpikes"]; ok {
 		if b, ok := ps.(bool); ok {
 			mc.PeriodicSpikes = b
+		} else {
+			logs.Warn("PeriodicSpikes type mismatch: expected bool", logs.String("actualType", fmt.Sprintf("%T", ps)))
 		}
 	}
 	return mc

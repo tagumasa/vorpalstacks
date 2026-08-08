@@ -371,7 +371,7 @@ func (s *S3Service) validateNotificationTarget(ctx context.Context, arn, service
 		if len(parts) < 6 {
 			return nil
 		}
-		if _, err := sqsInvoker.GetQueueByName(ctx, parts[5]); err != nil {
+		if _, err := sqsInvoker.GetQueueByName(ctx, parts[3], parts[5]); err != nil {
 			return NewInvalidArgumentError(fmt.Sprintf("SQS queue does not exist: %s", arn))
 		}
 	case "lambda":

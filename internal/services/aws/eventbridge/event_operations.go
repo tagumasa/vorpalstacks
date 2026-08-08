@@ -1021,12 +1021,14 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, target 
 		return fmt.Errorf("failed to extract queue name from ARN %s", arnStr)
 	}
 
-	queueURL, qErr := s.bus.SQSInvoker().GetQueueByName(ctx, queueName)
+	_, _, sqsRegion, _, _ := arnutil.SplitARN(arnStr)
+
+	queueURL, qErr := s.bus.SQSInvoker().GetQueueByName(ctx, sqsRegion, queueName)
 	if qErr != nil {
 		return fmt.Errorf("queue not found for SQS delivery %s: %w", queueName, qErr)
 	}
 
-	queueARN, arnErr := s.bus.SQSInvoker().GetQueueARN(ctx, queueURL)
+	queueARN, arnErr := s.bus.SQSInvoker().GetQueueARN(ctx, sqsRegion, queueURL)
 	if arnErr != nil {
 		return fmt.Errorf("failed to get queue ARN: %w", arnErr)
 	}
@@ -1044,7 +1046,7 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, target 
 		opts.MessageGroupID = target.SqsParameters.MessageGroupId
 	}
 
-	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, queueURL, string(payload), opts); err != nil {
+	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(payload), opts); err != nil {
 		return fmt.Errorf("failed to deliver event to SQS %s: %w", queueName, err)
 	}
 

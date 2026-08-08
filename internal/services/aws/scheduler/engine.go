@@ -1429,7 +1429,8 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 		return
 	}
 	queueName := svcarn.ExtractQueueNameFromARN(dlqArn)
-	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
+	_, _, dlqRegion, _, _ := svcarn.SplitARN(dlqArn)
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, dlqRegion, queueName)
 	if qErr != nil {
 		logs.Error("Failed to resolve DLQ queue URL",
 			logs.String("dlqArn", dlqArn),
@@ -1447,7 +1448,7 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 	} else if strings.HasSuffix(queueName, ".fifo") {
 		sendOpts.MessageGroupID = schedule.Name
 	}
-	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, message, sendOpts); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, dlqRegion, queueURL, message, sendOpts); err != nil {
 		logs.Error("Failed to send to DLQ",
 			logs.String("dlqArn", dlqArn),
 			logs.Err(err))
@@ -1515,7 +1516,9 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		return fmt.Errorf("invalid SQS ARN: %s", target.Arn)
 	}
 
-	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
+	_, _, sqsRegion, _, _ := svcarn.SplitARN(target.Arn)
+
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, sqsRegion, queueName)
 	if qErr != nil {
 		logs.Debug("SQS queue not found", logs.String("queue", queueName), logs.Err(qErr))
 		return qErr
@@ -1537,7 +1540,7 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		logs.String("schedule", schedule.Name),
 		logs.String("queue", queueName))
 
-	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, messageBody, sendOpts); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, sqsRegion, queueURL, messageBody, sendOpts); err != nil {
 		logs.Debug("Failed to send to SQS",
 			logs.String("schedule", schedule.Name),
 			logs.String("queue", queueName),

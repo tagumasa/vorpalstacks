@@ -120,29 +120,18 @@ func (s *CloudWatchService) DescribeAlarmContributors(ctx context.Context, reqCt
 
 	alarm, err := store.alarms.GetAlarm(alarmName)
 	if err != nil || alarm == nil {
-		return map[string]interface{}{
-			"AlarmName":        alarmName,
-			"Contributors":     []interface{}{},
-			"RoughResultCount": 0,
-		}, nil
+		return nil, awserrors.NewResourceNotFoundException("Alarm", alarmName)
 	}
 
-	// Only anomaly detection alarms have contributors.
 	if len(alarm.Metrics) == 0 || !hasAnomalyDetectionBand(alarm.Metrics) {
-		return map[string]interface{}{
-			"AlarmName":        alarmName,
-			"Contributors":     []interface{}{},
-			"RoughResultCount": 0,
-		}, nil
+		return nil, awserrors.NewInvalidParameterValueException(
+			"The specified alarm does not use anomaly detection")
 	}
 
 	contributors, err := computeAlarmContributors(alarm, store.metrics)
 	if err != nil {
-		return map[string]interface{}{
-			"AlarmName":        alarmName,
-			"Contributors":     []interface{}{},
-			"RoughResultCount": 0,
-		}, nil
+		return nil, awserrors.NewInternalFailureException(
+			fmt.Sprintf("failed to compute alarm contributors: %v", err))
 	}
 
 	return map[string]interface{}{

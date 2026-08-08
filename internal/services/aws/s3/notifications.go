@@ -237,7 +237,9 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
-	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
+	_, _, sqsRegion, _, _ := svcarn.SplitARN(queueArn)
+
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, sqsRegion, queueName)
 	if qErr != nil {
 		return
 	}
@@ -247,7 +249,7 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, string(payload), eventbus.SQSSendOptions{
+	if _, _, err := sqsInvoker.SendMessage(ctx, sqsRegion, queueURL, string(payload), eventbus.SQSSendOptions{
 		MessageAttributes: attrs,
 	}); err != nil {
 		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queueURL), logs.Err(err))

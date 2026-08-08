@@ -54,9 +54,17 @@ func (s *CloudWatchService) PutAlarmMuteRule(ctx context.Context, reqCtx *reques
 		}
 	}
 
+	if scheduleExpr == "" {
+		return nil, awserrors.NewInvalidParameterValueException(
+			"Rule.Schedule.Expression is required")
+	}
+
 	startDate := parseTimestampFromMap(req.Parameters, "StartDate")
 	expireDate := parseTimestampFromMap(req.Parameters, "ExpireDate")
-	tags := parseAlarmTags(req.Parameters)
+	tags, tagErr := parseAndValidateAlarmTags(req.Parameters)
+	if tagErr != nil {
+		return nil, tagErr
+	}
 
 	rule := &cwstore.AlarmMuteRule{
 		Name:            name,

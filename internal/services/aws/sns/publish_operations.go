@@ -248,8 +248,9 @@ func (s *SNSService) deliverToDLQ(msg *snsstore.Message, sub *snsstore.Subscript
 
 	queueURL := dlqArn
 	queueName := arnutil.ExtractQueueNameFromARN(dlqArn)
+	_, _, dlqRegion, _, _ := arnutil.SplitARN(dlqArn)
 	if queueName != "" {
-		if resolvedURL, err := sqsInvoker.GetQueueByName(context.Background(), queueName); err == nil {
+		if resolvedURL, err := sqsInvoker.GetQueueByName(context.Background(), dlqRegion, queueName); err == nil {
 			queueURL = resolvedURL
 		}
 	}
@@ -301,7 +302,7 @@ func (s *SNSService) deliverToDLQ(msg *snsstore.Message, sub *snsstore.Subscript
 		MessageDeduplicationID: msg.MessageDeduplicationId,
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(context.Background(), queueURL, string(body), opts); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(context.Background(), dlqRegion, queueURL, string(body), opts); err != nil {
 		return fmt.Errorf("send to DLQ %s: %w", dlqArn, err)
 	}
 
@@ -319,16 +320,18 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 	}
 
 	queueURL := sub.Endpoint
+	sqsRegion := ""
 	if strings.HasPrefix(queueURL, "arn:") {
 		queueName := arnutil.ExtractQueueNameFromARN(queueURL)
+		_, _, sqsRegion, _, _ = arnutil.SplitARN(queueURL)
 		if queueName != "" {
-			if resolvedURL, err := sqsInvoker.GetQueueByName(context.Background(), queueName); err == nil {
+			if resolvedURL, err := sqsInvoker.GetQueueByName(context.Background(), sqsRegion, queueName); err == nil {
 				queueURL = resolvedURL
 			}
 		}
 	}
 
-	queueARN, qErr := sqsInvoker.GetQueueARN(context.Background(), queueURL)
+	queueARN, qErr := sqsInvoker.GetQueueARN(context.Background(), sqsRegion, queueURL)
 	if qErr == nil && queueARN != "" {
 		allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), queueARN, "sqs", "sns.amazonaws.com", "sqs:SendMessage", queueARN)
 		if evalErr != nil {
@@ -397,7 +400,7 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		MessageDeduplicationID: msg.MessageDeduplicationId,
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(context.Background(), queueURL, body, opts); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(context.Background(), sqsRegion, queueURL, body, opts); err != nil {
 		return fmt.Errorf("send to queue %s: %w", queueURL, err)
 	}
 

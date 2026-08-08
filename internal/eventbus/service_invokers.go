@@ -15,14 +15,15 @@ type LambdaInvoker interface {
 }
 
 // SQSInvoker provides SQS operations for cross-service consumers.
-// Consumers call these methods instead of holding a direct reference to the
-// SQS store.
+// All methods require a region parameter to target the correct regional
+// SQS store, enabling cross-region delivery (e.g. alarm actions targeting
+// queues in a different region than the source service).
 type SQSInvoker interface {
-	GetQueueByName(ctx context.Context, queueName string) (queueURL string, err error)
-	GetQueueARN(ctx context.Context, queueURL string) (queueARN string, err error)
-	SendMessage(ctx context.Context, queueURL string, body string, opts SQSSendOptions) (messageID string, md5OfBody string, err error)
-	ReceiveMessage(ctx context.Context, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]ReceivedSQSMessage, error)
-	DeleteMessage(ctx context.Context, queueURL string, receiptHandle string) error
+	GetQueueByName(ctx context.Context, region, queueName string) (queueURL string, err error)
+	GetQueueARN(ctx context.Context, region, queueURL string) (queueARN string, err error)
+	SendMessage(ctx context.Context, region, queueURL, body string, opts SQSSendOptions) (messageID string, md5OfBody string, err error)
+	ReceiveMessage(ctx context.Context, region, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]ReceivedSQSMessage, error)
+	DeleteMessage(ctx context.Context, region, queueURL, receiptHandle string) error
 }
 
 // SQSSendOptions carries optional parameters for cross-service SQS SendMessage

@@ -77,7 +77,7 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 		messageBody = req.Headers["MessageBody"]
 	}
 
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, eventbus.SQSSendOptions{
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, e.region, queueURL, messageBody, eventbus.SQSSendOptions{
 		MessageAttributes: convertToSQSInvokerAttrs(extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body)),
 	})
 	if err != nil {
@@ -144,7 +144,7 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 		visibilityTimeout = 43200
 	}
 
-	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, maxMessages, &visibilityTimeout, waitTime)
+	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, e.region, queueURL, maxMessages, &visibilityTimeout, waitTime)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to receive SQS messages: %v", err),

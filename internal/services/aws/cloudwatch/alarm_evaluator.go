@@ -306,9 +306,21 @@ func evaluateCompositeAlarm(alarm *cwstore.Alarm, rule alarmRuleNode, alarmState
 	oldState := alarm.State
 	var newState string
 	var reason string
+
+	allInsufficientData := true
+	for _, name := range childNames {
+		if alarmStateMap[name] != "INSUFFICIENT_DATA" {
+			allInsufficientData = false
+			break
+		}
+	}
+
 	if isBreaching {
 		newState = "ALARM"
 		reason = fmt.Sprintf("Composite alarm rule evaluated to ALARM (was %s).", oldState)
+	} else if allInsufficientData && len(childNames) > 0 {
+		newState = "INSUFFICIENT_DATA"
+		reason = fmt.Sprintf("All referenced alarms are in INSUFFICIENT_DATA state (was %s).", oldState)
 	} else {
 		newState = "OK"
 		reason = fmt.Sprintf("Composite alarm rule evaluated to OK (was %s).", oldState)
@@ -881,6 +893,8 @@ func (s *CloudWatchService) dispatchAlarmActions(ctx context.Context, result *al
 			s.dispatchAlarmToLambda(ctx, actionArn, result)
 		case "states":
 			s.dispatchAlarmToStepFunctions(ctx, actionArn, result)
+		case "sqs":
+			s.dispatchAlarmToSQS(ctx, actionArn, result)
 		}
 	}
 }
@@ -983,6 +997,42 @@ func (s *CloudWatchService) dispatchAlarmToStepFunctions(ctx context.Context, st
 	}
 }
 
+// dispatchAlarmToSQS delivers the alarm notification to an SQS queue
+// via the SQS invoker. The queue name is extracted from the queue ARN.
+func (s *CloudWatchService) dispatchAlarmToSQS(ctx context.Context, queueArn string, result *alarmEvalResult) {
+	if s.bus == nil || s.bus.SQSInvoker() == nil {
+		return
+	}
+
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueArn, "sqs", "cloudwatch.amazonaws.com", "sqs:SendMessage", queueArn)
+	if evalErr != nil {
+		s.log("resource policy evaluation failed for alarm SQS delivery, dropping notification", "queueArn", queueArn, "error", evalErr)
+		return
+	}
+	if !allowed {
+		return
+	}
+
+	_, _, sqsRegion, _, queueName := svcarn.SplitARN(queueArn)
+	if queueName == "" {
+		return
+	}
+
+	queueURL, err := s.bus.SQSInvoker().GetQueueByName(ctx, sqsRegion, queueName)
+	if err != nil {
+		s.log("failed to resolve SQS queue for alarm action", "queueArn", queueArn, "error", err)
+		return
+	}
+
+	payload := buildAlarmNotificationPayload(result)
+	messageBytes, _ := json.Marshal(payload)
+
+	_, _, err = s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(messageBytes), eventbus.SQSSendOptions{})
+	if err != nil {
+		s.log("SQS dispatch failed for alarm action", "alarm", result.alarm.Name, "queue", queueName, "error", err)
+	}
+}
+
 // operatorPhrase returns a human-readable phrase describing the comparison
 // direction, suitable for inclusion in alarm state change reason strings.
 func operatorPhrase(operator string) string {
@@ -1070,7 +1120,7 @@ func buildAlarmConfiguration(alarm *cwstore.Alarm) map[string]interface{} {
 	if len(alarm.Dimensions) > 0 {
 		dims := make([]map[string]string, len(alarm.Dimensions))
 		for i, d := range alarm.Dimensions {
-			dims[i] = map[string]string{"name": d.Name, "value": d.Value}
+			dims[i] = map[string]string{"Name": d.Name, "Value": d.Value}
 		}
 		config["Dimensions"] = dims
 	}

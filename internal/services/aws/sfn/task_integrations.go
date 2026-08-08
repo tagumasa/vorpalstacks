@@ -45,15 +45,17 @@ func (e *Executor) executeSQSTask(ctx context.Context, execCtx *ExecutionContext
 		return "", fmt.Errorf("invalid SQS resource ARN: %s", state.Resource)
 	}
 
+	sqsRegion := resourceParts[3]
+
 	action := resourceParts[6]
 	if action == "sendMessage" || strings.HasSuffix(action, ".sendMessage") {
-		return e.executeSQSSendMessage(ctx, execCtx, state, input)
+		return e.executeSQSSendMessage(ctx, execCtx, state, input, sqsRegion)
 	}
 
 	return "", fmt.Errorf("unsupported SQS action: %s", action)
 }
 
-func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
+func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input, sqsRegion string) (string, error) {
 	var inputData map[string]interface{}
 	if err := json.Unmarshal([]byte(input), &inputData); err != nil {
 		inputData = map[string]interface{}{"MessageBody": input}
@@ -78,7 +80,7 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 			return "", fmt.Errorf("SQS SendMessage requires QueueUrl or QueueName")
 		}
 
-		qURL, qErr := e.bus.SQSInvoker().GetQueueByName(ctx, queueName)
+		qURL, qErr := e.bus.SQSInvoker().GetQueueByName(ctx, sqsRegion, queueName)
 		if qErr != nil {
 			return "", fmt.Errorf("SQS queue not found: %s: %w", queueName, qErr)
 		}
@@ -96,7 +98,7 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		}
 	}
 
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, eventbus.SQSSendOptions{
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, messageBody, eventbus.SQSSendOptions{
 		DelaySeconds:           getInt64FromInput(inputData, "DelaySeconds"),
 		MessageGroupID:         getStr(inputData, "MessageGroupId"),
 		MessageDeduplicationID: getStr(inputData, "MessageDeduplicationId"),

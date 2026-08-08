@@ -132,6 +132,7 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 	// Phase 1: Evaluate all MetricStat queries and store results by ID
 	// for use by Expression queries that reference them.
 	queryResults := make(map[string][]metricmath.DataPoint, len(metricDataQueries))
+	queryErrors := make(map[string]string)
 	queryOrder := make([]string, 0, len(metricDataQueries))
 	queryLookup := make(map[string]*cwstore.MetricDataQuery, len(metricDataQueries))
 
@@ -160,6 +161,8 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 
 			stats, err := store.metrics.GetMetricStatistics(mq)
 			if err != nil {
+				queryResults[query.Id] = nil
+				queryErrors[query.Id] = fmt.Sprintf("failed to query metric statistics: %v", err)
 				continue
 			}
 
@@ -211,6 +214,7 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 			ast, err := metricmath.Parse(expr)
 			if err != nil {
 				delete(exprPending, id)
+				queryErrors[id] = fmt.Sprintf("failed to parse expression: %v", err)
 				continue
 			}
 
@@ -230,7 +234,9 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 			}
 
 			result, err := ast.Eval(queryResults)
-			if err == nil {
+			if err != nil {
+				queryErrors[id] = fmt.Sprintf("failed to evaluate expression: %v", err)
+			} else {
 				queryResults[id] = result
 			}
 			delete(exprPending, id)
@@ -249,6 +255,15 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 	for _, id := range queryOrder {
 		query := queryLookup[id]
 		if !query.ReturnData {
+			continue
+		}
+		if errMsg, hasErr := queryErrors[id]; hasErr {
+			results = append(results, map[string]interface{}{
+				"Id":         id,
+				"Label":      query.Label,
+				"StatusCode": "InternalError",
+				"Messages":   []map[string]string{{"Code": "InternalError", "Value": errMsg}},
+			})
 			continue
 		}
 		if query.Expression != "" && query.MetricStat == nil {
@@ -955,7 +970,9 @@ func (s *CloudWatchService) GetMetricWidgetImage(ctx context.Context, reqCtx *re
 	if format == "" {
 		format = "png"
 	}
-	_ = format
+	if !validateOutputFormat(format) {
+		return nil, ErrInvalidParameter
+	}
 
 	def, err := parseWidgetDefinition(widgetDefinition)
 	if err != nil {

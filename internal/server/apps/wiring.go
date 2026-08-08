@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	"vorpalstacks/internal/services/aws/dynamodb"
@@ -47,9 +48,6 @@ func (a *App) wireCrossServiceDeps() {
 	if st.lambdaService != nil {
 		eb.SetLambdaInvoker(st.lambdaService)
 	}
-	if st.sqsStoreInstance != nil {
-		eb.SetSQSInvoker(&sqsInvokerAdapter{store: st.sqsStoreInstance})
-	}
 	if st.snsStoreInstance != nil {
 		var pub snsPublisher
 		if st.snsService != nil {
@@ -76,6 +74,14 @@ func (a *App) wireCrossServiceDeps() {
 		})
 	} else {
 		logs.Warn("WAFInvoker not initialised: failed to get global storage", logs.Err(err))
+	}
+
+	if st.sqsStoreInstance != nil {
+		eb.SetSQSInvoker(&sqsInvokerAdapter{
+			storageMgr: sm,
+			accountID:  st.accountID,
+			baseURL:    appconfig.BaseURL(),
+		})
 	}
 	eb.SetCloudWatchMetricInvoker(&cloudWatchMetricInvokerAdapter{
 		storageMgr: sm,

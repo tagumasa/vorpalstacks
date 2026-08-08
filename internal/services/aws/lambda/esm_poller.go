@@ -580,7 +580,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
-	queueURL, err := p.bus.SQSInvoker().GetQueueByName(ctx, queueName)
+	queueURL, err := p.bus.SQSInvoker().GetQueueByName(ctx, region, queueName)
 	if err != nil {
 		p.log("sqs queue not found by name", "queue", queueName, "mapping", mapping.UUID, "error", err)
 		return
@@ -612,7 +612,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 			fetchCount = remaining
 		}
 
-		msgs, err := p.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, fetchCount, nil, waitTime)
+		msgs, err := p.bus.SQSInvoker().ReceiveMessage(ctx, region, queueURL, fetchCount, nil, waitTime)
 		if err != nil {
 			p.log("sqs receive failed", "queue", queueName, "mapping", mapping.UUID, "error", err)
 			break
@@ -649,7 +649,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		// queue to prevent infinite re-polling after visibility
 		// timeout expires.
 		for _, handle := range receiptHandles {
-			if err := p.bus.SQSInvoker().DeleteMessage(ctx, queueURL, handle); err != nil {
+			if err := p.bus.SQSInvoker().DeleteMessage(ctx, region, queueURL, handle); err != nil {
 				p.log("failed to delete filtered-out message", "queue", queueName, "error", err)
 			}
 		}
@@ -685,7 +685,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 
 	deleteFailures := 0
 	for _, handle := range receiptHandles {
-		if err := p.bus.SQSInvoker().DeleteMessage(ctx, queueURL, handle); err != nil {
+		if err := p.bus.SQSInvoker().DeleteMessage(ctx, region, queueURL, handle); err != nil {
 			p.log("failed to delete message", "queue", queueName, "error", err)
 			deleteFailures++
 		}

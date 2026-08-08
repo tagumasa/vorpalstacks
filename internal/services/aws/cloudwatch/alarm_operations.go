@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -20,23 +19,13 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-// CloudWatch alarm limits per AWS spec.
-const (
-	maxAlarmTags        = 50
-	maxAlarmTagKeyLen   = 128
-	maxAlarmTagValueLen = 256
-	maxAlarmNameLen     = 255
-	maxActionsPerType   = 5
-	maxDimensions       = 30
-	maxEvaluationWindow = 604800 // 7 days in seconds (Period * EvaluationPeriods)
-)
-
 func getAlarmStringParam(params map[string]interface{}, keys ...string) string {
 	for _, key := range keys {
 		if v, ok := params[key]; ok {
 			if s, ok := v.(string); ok {
 				return s
 			}
+			logs.Warn("parameter type mismatch: expected string", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", v)))
 		}
 	}
 	return ""
@@ -54,6 +43,8 @@ func getAlarmFloatParam(params map[string]interface{}, keys ...string) float64 {
 				return float64(val)
 			case int64:
 				return float64(val)
+			default:
+				logs.Warn("parameter type mismatch: expected numeric", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", v)))
 			}
 		}
 	}
@@ -75,8 +66,13 @@ func getAlarmIntParam(params map[string]interface{}, keys ...string) int {
 			case float64:
 				return int(val)
 			case string:
-				n, _ := strconv.Atoi(val)
+				n, err := strconv.Atoi(val)
+				if err != nil {
+					logs.Warn("parameter parse error: invalid integer string", logs.String("key", key), logs.String("value", val))
+				}
 				return n
+			default:
+				logs.Warn("parameter type mismatch: expected numeric", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", v)))
 			}
 		}
 	}
@@ -93,6 +89,12 @@ func getAlarmBoolParam(params map[string]interface{}, keys []string, defaultVal 
 				if val == "false" {
 					return false
 				}
+				if val == "true" {
+					return true
+				}
+				logs.Warn("parameter parse error: invalid bool string", logs.String("key", key), logs.String("value", val))
+			default:
+				logs.Warn("parameter type mismatch: expected bool", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", v)))
 			}
 		}
 	}
@@ -108,11 +110,15 @@ func getAlarmStringListParam(params map[string]interface{}, keys ...string) []st
 				for _, item := range val {
 					if s, ok := item.(string); ok {
 						result = append(result, s)
+					} else {
+						logs.Warn("list item type mismatch: expected string", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", item)))
 					}
 				}
 				return result
 			case []string:
 				return val
+			default:
+				logs.Warn("parameter type mismatch: expected list", logs.String("key", key), logs.String("actualType", fmt.Sprintf("%T", v)))
 			}
 		}
 	}
@@ -125,71 +131,6 @@ func parseAlarmTags(params map[string]interface{}) map[string]string {
 		tagList = tagutil.ParseTags(params, "tags")
 	}
 	return tagutil.ToMap(tagList)
-}
-
-// parseAndValidateAlarmTags parses tags from request parameters and validates
-// them against AWS CloudWatch tag limits (max 50 tags, key 1-128 chars,
-// value 0-256 chars, no "aws:" prefix on keys).
-func parseAndValidateAlarmTags(params map[string]interface{}) (map[string]string, error) {
-	tagList := tagutil.ParseTags(params, "Tags")
-	if len(tagList) == 0 {
-		tagList = tagutil.ParseTags(params, "tags")
-	}
-	if err := validateAlarmTagList(tagList); err != nil {
-		return nil, err
-	}
-	return tagutil.ToMap(tagList), nil
-}
-
-func validateAlarmTagList(tags []types.Tag) error {
-	if len(tags) > maxAlarmTags {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of tags must not exceed %d", maxAlarmTags))
-	}
-	for _, t := range tags {
-		if len(t.Key) == 0 || len(t.Key) > maxAlarmTagKeyLen {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag key length must be between 1 and 128 characters")
-		}
-		if len(t.Value) > maxAlarmTagValueLen {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag value length must not exceed 256 characters")
-		}
-		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag keys cannot start with 'aws:'")
-		}
-	}
-	return nil
-}
-
-// validStatistics is the set of statistic values accepted by PutMetricAlarm.
-var validStatistics = map[string]bool{
-	"SampleCount": true,
-	"Average":     true,
-	"Sum":         true,
-	"Minimum":     true,
-	"Maximum":     true,
-}
-
-// validTreatMissingData is the set of TreatMissingData values accepted by AWS.
-var validTreatMissingData = map[string]bool{
-	"breaching":    true,
-	"notBreaching": true,
-	"ignore":       true,
-	"missing":      true,
-}
-
-// validComparisonOperators includes all AWS-supported comparison operators,
-// including those for anomaly detection alarms.
-var validComparisonOperators = map[string]bool{
-	"GreaterThanOrEqualToThreshold":            true,
-	"GreaterThanThreshold":                     true,
-	"LessThanThreshold":                        true,
-	"LessThanOrEqualToThreshold":               true,
-	"LessThanLowerOrGreaterThanUpperThreshold": true,
-	"LessThanLowerThreshold":                   true,
-	"GreaterThanUpperThreshold":                true,
 }
 
 // parseEvaluationCriteria extracts the EvaluationCriteria parameter
@@ -263,70 +204,6 @@ func evaluationCriteriaToResponse(ec *cwstore.EvaluationCriteria) map[string]int
 		result["PromQLCriteria"] = promql
 	}
 	return result
-}
-
-func validateAlarmActions(alarmActions, okActions, insufficientDataActions []string) error {
-	if len(alarmActions) > maxActionsPerType {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of AlarmActions must not exceed %d", maxActionsPerType))
-	}
-	if len(okActions) > maxActionsPerType {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of OKActions must not exceed %d", maxActionsPerType))
-	}
-	if len(insufficientDataActions) > maxActionsPerType {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of InsufficientDataActions must not exceed %d", maxActionsPerType))
-	}
-	return nil
-}
-
-func validatePeriod(period int32) error {
-	if period == 0 {
-		return nil
-	}
-	if period == 10 || period == 20 || period == 30 {
-		return nil
-	}
-	if period >= 60 && period%60 == 0 {
-		return nil
-	}
-	return awserrors.NewInvalidParameterValueException(
-		"Period must be 10, 20, 30, or a multiple of 60")
-}
-
-// validateExtendedStatistic checks that an extended statistic string matches
-// one of the patterns supported by CloudWatch: p{n}, tm{n}, wm{n} (0 ≤ n,
-// n < 50 for tm/wm), tc{n}, ts{n} (n ≥ 0), or IQM.
-func validateExtendedStatistic(stat string) error {
-	if stat == "IQM" {
-		return nil
-	}
-	lower := strings.ToLower(stat)
-	switch {
-	case strings.HasPrefix(lower, "p"):
-		n, err := strconv.ParseFloat(stat[1:], 64)
-		if err != nil || n < 0 || n > 100 {
-			return awserrors.NewInvalidParameterValueException(
-				fmt.Sprintf("Invalid ExtendedStatistic: %s. Percentile must be 0-100", stat))
-		}
-	case strings.HasPrefix(lower, "tm") || strings.HasPrefix(lower, "wm"):
-		n, err := strconv.ParseFloat(stat[2:], 64)
-		if err != nil || n < 0 || n >= 50 {
-			return awserrors.NewInvalidParameterValueException(
-				fmt.Sprintf("Invalid ExtendedStatistic: %s. Value must be 0 to less than 50", stat))
-		}
-	case strings.HasPrefix(lower, "tc") || strings.HasPrefix(lower, "ts"):
-		n, err := strconv.Atoi(stat[2:])
-		if err != nil || n < 0 {
-			return awserrors.NewInvalidParameterValueException(
-				fmt.Sprintf("Invalid ExtendedStatistic: %s. Value must be a non-negative integer", stat))
-		}
-	default:
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Invalid ExtendedStatistic: %s. Must be p{n}, tm{n}, tc{n}, ts{n}, wm{n}, or IQM", stat))
-	}
-	return nil
 }
 
 func alarmToResponse(alarm *cwstore.Alarm) map[string]interface{} {
@@ -452,6 +329,7 @@ func (s *CloudWatchService) upsertAlarm(store *cwstore.AlarmStore, alarm *cwstor
 		alarm.CreatedAt = existing.CreatedAt
 		alarm.State = existing.State
 		alarm.StateUpdatedTimestamp = existing.StateUpdatedTimestamp
+		// AWS: PutMetricAlarm Tags are only applied on creation, not update.
 		if err := store.UpdateAlarm(alarm); err != nil {
 			return nil, err
 		}
@@ -461,11 +339,11 @@ func (s *CloudWatchService) upsertAlarm(store *cwstore.AlarmStore, alarm *cwstor
 			return nil, err
 		}
 		alarm = created
-	}
 
-	if len(alarm.Tags) > 0 {
-		if err := store.Tag(alarm.ARN, alarm.Tags); err != nil {
-			return nil, err
+		if len(alarm.Tags) > 0 {
+			if err := store.Tag(alarm.ARN, alarm.Tags); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -484,103 +362,38 @@ func (s *CloudWatchService) upsertAlarm(store *cwstore.AlarmStore, alarm *cwstor
 
 // PutMetricAlarm creates or updates a CloudWatch alarm.
 func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
-	if alarmName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if len(alarmName) > maxAlarmNameLen {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"AlarmName must not exceed 255 characters")
+	input := &PutMetricAlarmInput{
+		AlarmName:               getAlarmStringParam(req.Parameters, "AlarmName", "alarmName"),
+		Namespace:               getAlarmStringParam(req.Parameters, "Namespace", "namespace"),
+		MetricName:              getAlarmStringParam(req.Parameters, "MetricName", "metricName"),
+		Dimensions:              parseAlarmDimensions(req.Parameters),
+		ComparisonOperator:      getAlarmStringParam(req.Parameters, "ComparisonOperator", "comparisonOperator"),
+		Threshold:               getAlarmFloatParam(req.Parameters, "Threshold", "threshold"),
+		EvaluationPeriods:       int32(getAlarmIntParam(req.Parameters, "EvaluationPeriods", "evaluationPeriods")),
+		Period:                  int32(getAlarmIntParam(req.Parameters, "Period", "period")),
+		Statistic:               getAlarmStringParam(req.Parameters, "Statistic", "statistic"),
+		ExtendedStatistic:       getAlarmStringParam(req.Parameters, "ExtendedStatistic", "extendedStatistic"),
+		TreatMissingData:        getAlarmStringParam(req.Parameters, "TreatMissingData", "treatMissingData"),
+		AlarmDescription:        getAlarmStringParam(req.Parameters, "AlarmDescription", "alarmDescription"),
+		ActionsEnabled:          getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true),
+		ActionsEnabledProvided:  true,
+		DatapointsToAlarm:       int32(getAlarmIntParam(req.Parameters, "DatapointsToAlarm", "datapointsToAlarm")),
+		AlarmActions:            getAlarmStringListParam(req.Parameters, "AlarmActions", "alarmActions"),
+		OKActions:               getAlarmStringListParam(req.Parameters, "OKActions", "okActions"),
+		InsufficientDataActions: getAlarmStringListParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions"),
+		Unit:                    getAlarmStringParam(req.Parameters, "Unit", "unit"),
+		ThresholdMetricID:       getAlarmStringParam(req.Parameters, "ThresholdMetricId", "thresholdMetricId"),
+		EvaluationCriteria:      parseEvaluationCriteria(req.Parameters),
 	}
 
-	namespace := getAlarmStringParam(req.Parameters, "Namespace", "namespace")
-	metricName := getAlarmStringParam(req.Parameters, "MetricName", "metricName")
-
-	alarm := cwstore.NewAlarm(alarmName, namespace, metricName)
-	alarm.Dimensions = parseAlarmDimensions(req.Parameters)
-	alarm.ComparisonOperator = getAlarmStringParam(req.Parameters, "ComparisonOperator", "comparisonOperator")
-	alarm.Threshold = getAlarmFloatParam(req.Parameters, "Threshold", "threshold")
-	alarm.EvaluationPeriods = int32(getAlarmIntParam(req.Parameters, "EvaluationPeriods", "evaluationPeriods"))
-	alarm.Period = int32(getAlarmIntParam(req.Parameters, "Period", "period"))
-	alarm.Statistic = getAlarmStringParam(req.Parameters, "Statistic", "statistic")
-	alarm.ExtendedStatistic = getAlarmStringParam(req.Parameters, "ExtendedStatistic", "extendedStatistic")
-	alarm.TreatMissingData = getAlarmStringParam(req.Parameters, "TreatMissingData", "treatMissingData")
-	alarm.AlarmDescription = getAlarmStringParam(req.Parameters, "AlarmDescription", "alarmDescription")
-	alarm.ActionsEnabled = getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true)
-	alarm.DatapointsToAlarm = int32(getAlarmIntParam(req.Parameters, "DatapointsToAlarm", "datapointsToAlarm"))
-	if alarm.DatapointsToAlarm == 0 {
-		alarm.DatapointsToAlarm = alarm.EvaluationPeriods
-	}
-	alarm.AlarmActions = getAlarmStringListParam(req.Parameters, "AlarmActions", "alarmActions")
-	alarm.OKActions = getAlarmStringListParam(req.Parameters, "OKActions", "okActions")
-	alarm.InsufficientDataActions = getAlarmStringListParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions")
-	alarm.Unit = cwstore.StandardUnit(getAlarmStringParam(req.Parameters, "Unit", "unit"))
-	alarm.ThresholdMetricID = getAlarmStringParam(req.Parameters, "ThresholdMetricId", "thresholdMetricId")
 	if metricsRaw, ok := req.Parameters["Metrics"]; ok {
-		alarm.Metrics = parseMetricDataQueries(metricsRaw)
+		input.Metrics = parseMetricDataQueries(metricsRaw)
 	} else if metricsRaw, ok := req.Parameters["metrics"]; ok {
-		alarm.Metrics = parseMetricDataQueries(metricsRaw)
+		input.Metrics = parseMetricDataQueries(metricsRaw)
 	}
-
-	if alarm.ComparisonOperator == "" {
-		alarm.ComparisonOperator = "GreaterThanOrEqualToThreshold"
-	}
-	if !validComparisonOperators[alarm.ComparisonOperator] {
-		return nil, awserrors.NewInvalidParameterValueException(fmt.Sprintf("Invalid ComparisonOperator: %s", alarm.ComparisonOperator))
-	}
-	if alarm.EvaluationPeriods == 0 {
-		alarm.EvaluationPeriods = 1
-	}
-	if alarm.Period == 0 {
-		alarm.Period = 60
-	}
-	if err := validatePeriod(alarm.Period); err != nil {
-		return nil, err
-	}
-	if int64(alarm.Period)*int64(alarm.EvaluationPeriods) > maxEvaluationWindow {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Period * EvaluationPeriods must not exceed %d seconds (7 days)", maxEvaluationWindow))
-	}
-	if alarm.DatapointsToAlarm > alarm.EvaluationPeriods {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"DatapointsToAlarm must be less than or equal to EvaluationPeriods")
-	}
-	if alarm.Statistic == "" && alarm.ExtendedStatistic == "" && len(alarm.Metrics) == 0 {
-		alarm.Statistic = "Average"
-	}
-	if alarm.Statistic != "" && !validStatistics[alarm.Statistic] {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Invalid Statistic: %s. Must be one of SampleCount, Average, Sum, Minimum, Maximum", alarm.Statistic))
-	}
-	if alarm.Statistic != "" && alarm.ExtendedStatistic != "" {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"Statistic and ExtendedStatistic are mutually exclusive")
-	}
-	if alarm.ExtendedStatistic != "" {
-		if err := validateExtendedStatistic(alarm.ExtendedStatistic); err != nil {
-			return nil, err
-		}
-	}
-	if alarm.TreatMissingData == "" {
-		alarm.TreatMissingData = "missing"
-	}
-	if !validTreatMissingData[alarm.TreatMissingData] {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Invalid TreatMissingData: %s. Must be one of breaching, notBreaching, ignore, missing", alarm.TreatMissingData))
-	}
-	if len(alarm.Dimensions) > maxDimensions {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of Dimensions must not exceed %d", maxDimensions))
-	}
-	if err := validateAlarmActions(alarm.AlarmActions, alarm.OKActions, alarm.InsufficientDataActions); err != nil {
-		return nil, err
-	}
-
-	// Parse EvaluationCriteria (PromQL support).
-	alarm.EvaluationCriteria = parseEvaluationCriteria(req.Parameters)
 
 	var tagErr error
-	alarm.Tags, tagErr = parseAndValidateAlarmTags(req.Parameters)
+	input.Tags, tagErr = parseAndValidateAlarmTags(req.Parameters)
 	if tagErr != nil {
 		return nil, tagErr
 	}
@@ -590,13 +403,13 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	alarm, err = s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeMetricAlarm)
+	arn, err := s.putMetricAlarmCore(store, input)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"AlarmArn": alarm.ARN,
+		"AlarmArn": arn,
 	}, nil
 }
 
@@ -643,117 +456,24 @@ func (s *CloudWatchService) DescribeAlarms(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// Build the combined filter function for StateValue, ActionPrefix
-	// and AlarmTypes. This must be constructed before the
-	// ChildrenOfAlarmName and ParentsOfAlarmName branches so that all
-	// filters are consistently applied.
-	var typeFilter func(*cwstore.Alarm) bool
-	if len(alarmTypes) > 0 {
-		typeSet := make(map[string]bool)
-		for _, t := range alarmTypes {
-			typeSet[t] = true
-		}
-		typeFilter = func(a *cwstore.Alarm) bool {
-			at := a.AlarmType
-			if at == "" {
-				at = cwstore.AlarmTypeMetricAlarm
-			}
-			return typeSet[at]
-		}
-	}
-	if stateValueFilter != "" {
-		svf := typeFilter
-		typeFilter = func(a *cwstore.Alarm) bool {
-			if svf != nil && !svf(a) {
-				return false
-			}
-			return a.State == stateValueFilter
-		}
-	}
-	if actionPrefix != "" {
-		apf := typeFilter
-		typeFilter = func(a *cwstore.Alarm) bool {
-			if apf != nil && !apf(a) {
-				return false
-			}
-			return alarmMatchesActionPrefix(a, actionPrefix)
-		}
+	input := &DescribeAlarmsInput{
+		AlarmNamePrefix:     alarmNamePrefix,
+		AlarmNames:          alarmNames,
+		StateValueFilter:    stateValueFilter,
+		ActionPrefix:        actionPrefix,
+		AlarmTypes:          alarmTypes,
+		ChildrenOfAlarmName: childrenOfAlarmName,
+		ParentsOfAlarmName:  parentsOfAlarmName,
+		NextToken:           pagination.GetMarker(req.Parameters, "NextToken"),
+		MaxRecords:          pagination.GetMaxItems(req.Parameters, 100, "MaxRecords"),
 	}
 
-	// ChildrenOfAlarmName: resolve the composite alarm's rule to find
-	// child alarm names, then filter to only those children.
-	if childrenOfAlarmName != "" {
-		parent, err := store.alarms.GetAlarm(childrenOfAlarmName)
-		if err != nil {
-			return s.buildDescribeAlarmsResponse(nil, alarmTypes, ""), nil
-		}
-		rule, err := parseAlarmRule(parent.AlarmRule)
-		if err != nil {
-			return s.buildDescribeAlarmsResponse(nil, alarmTypes, ""), nil
-		}
-		childNames := rule.childAlarmNames()
-		var children []*cwstore.Alarm
-		for _, name := range childNames {
-			if a, err := store.alarms.GetAlarm(name); err == nil {
-				if typeFilter == nil || typeFilter(a) {
-					children = append(children, a)
-				}
-			}
-		}
-		return s.buildDescribeAlarmsResponse(children, alarmTypes, ""), nil
-	}
-
-	// ParentsOfAlarmName: find all composite alarms whose AlarmRule
-	// references the specified alarm name.
-	if parentsOfAlarmName != "" {
-		allAlarms, err := store.alarms.ListAlarms("")
-		if err != nil {
-			return nil, err
-		}
-		var parents []*cwstore.Alarm
-		for _, a := range allAlarms {
-			if a.AlarmType != cwstore.AlarmTypeCompositeAlarm || a.AlarmRule == "" {
-				continue
-			}
-			rule, err := parseAlarmRule(a.AlarmRule)
-			if err != nil {
-				continue
-			}
-			for _, childName := range rule.childAlarmNames() {
-				if childName == parentsOfAlarmName {
-					if typeFilter == nil || typeFilter(a) {
-						parents = append(parents, a)
-					}
-					break
-				}
-			}
-		}
-		return s.buildDescribeAlarmsResponse(parents, alarmTypes, ""), nil
-	}
-
-	var alarms []*cwstore.Alarm
-	if len(alarmNames) > 0 {
-		for _, name := range alarmNames {
-			alarm, err := store.alarms.GetAlarm(name)
-			if err == nil {
-				if typeFilter == nil || typeFilter(alarm) {
-					alarms = append(alarms, alarm)
-				}
-			}
-		}
-		return s.buildDescribeAlarmsResponse(alarms, alarmTypes, ""), nil
-	}
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	maxRecords := pagination.GetMaxItems(req.Parameters, 100, "MaxRecords")
-
-	opts := common.ListOptions{Marker: marker, MaxItems: maxRecords}
-	result, err := store.alarms.ListAlarmsPaginated(alarmNamePrefix, opts, typeFilter)
+	alarms, nextToken, err := s.describeAlarmsCore(store, input)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildDescribeAlarmsResponse(result.Items, alarmTypes, result.NextMarker), nil
+	return s.buildDescribeAlarmsResponse(alarms, alarmTypes, nextToken), nil
 }
 
 // scheduledQueryConfigToResponse serialises a ScheduledQueryConfig to
@@ -976,27 +696,9 @@ func dimensionsMatch(a, b []cwstore.Dimension) bool {
 	return true
 }
 
-// DeleteAlarms deletes one or more alarms.
+// DeleteAlarms deletes one or more CloudWatch alarms.
 func (s *CloudWatchService) DeleteAlarms(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	var alarmNames []string
-	if namesRaw, ok := req.Parameters["AlarmNames"]; ok {
-		if namesList, ok := namesRaw.([]interface{}); ok {
-			for _, n := range namesList {
-				if ns, ok := n.(string); ok {
-					alarmNames = append(alarmNames, ns)
-				}
-			}
-		}
-	} else if namesRaw, ok := req.Parameters["alarmNames"]; ok {
-		if namesList, ok := namesRaw.([]interface{}); ok {
-			for _, n := range namesList {
-				if ns, ok := n.(string); ok {
-					alarmNames = append(alarmNames, ns)
-				}
-			}
-		}
-	}
-
+	alarmNames := getAlarmStringListParam(req.Parameters, "AlarmNames", "alarmNames")
 	if len(alarmNames) == 0 {
 		return nil, ErrInvalidParameter
 	}
@@ -1006,40 +708,8 @@ func (s *CloudWatchService) DeleteAlarms(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	// Check for ResourceConflict: any composite alarm referencing the
-	// alarms being deleted would break its AlarmRule.
-	allAlarms, err := store.alarms.ListAlarms("")
-	if err != nil {
+	if err := s.deleteAlarmsCore(store, &DeleteAlarmsInput{AlarmNames: alarmNames}); err != nil {
 		return nil, err
-	}
-	deleteSet := make(map[string]bool, len(alarmNames))
-	for _, n := range alarmNames {
-		deleteSet[n] = true
-	}
-	for _, a := range allAlarms {
-		if a.AlarmType != cwstore.AlarmTypeCompositeAlarm || a.AlarmRule == "" {
-			continue
-		}
-		rule, err := parseAlarmRule(a.AlarmRule)
-		if err != nil {
-			continue
-		}
-		for _, childName := range rule.childAlarmNames() {
-			if deleteSet[childName] {
-				return nil, awserrors.NewAWSError("ResourceConflict",
-					fmt.Sprintf("Alarm %s is referenced by composite alarm %s", childName, a.Name),
-					http.StatusConflict)
-			}
-		}
-	}
-
-	for _, name := range alarmNames {
-		if err := store.alarms.DeleteAlarm(name); err != nil {
-			if errors.Is(err, cwstore.ErrAlarmNotFound) {
-				return nil, ErrAlarmNotFound
-			}
-			return nil, err
-		}
 	}
 
 	return response.EmptyResponse(), nil

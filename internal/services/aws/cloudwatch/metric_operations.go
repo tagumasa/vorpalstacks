@@ -1,4 +1,3 @@
-// Package cloudwatch provides CloudWatch service operations for vorpalstacks.
 package cloudwatch
 
 import (
@@ -9,13 +8,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-)
-
-// CloudWatch PutMetricData limits per AWS spec.
-const (
-	maxMetricDataPerRequest = 1000
-	maxValuesPerDatum       = 150
-	maxMetricDimensions     = 30
 )
 
 func getMetricStringParam(params map[string]interface{}, keys ...string) string {
@@ -75,50 +67,6 @@ func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.R
 	return response.EmptyResponse(), nil
 }
 
-// validateMetricDatum checks that a single MetricDatum adheres to AWS
-// constraints: at most one of Value, Values+Counts, or StatisticValues
-// is provided; Values and Counts must have matching lengths; Values
-// must not exceed 150 entries; and Dimensions must not exceed 30.
-func validateMetricDatum(datum cwstore.MetricDatum) error {
-	if len(datum.Dimensions) > maxMetricDimensions {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("A MetricDatum can have at most %d Dimensions", maxMetricDimensions))
-	}
-
-	hasValue := datum.HasValue
-	hasValues := len(datum.Values) > 0
-	hasStatSet := datum.StatisticValues != nil
-
-	// AWS rejects requests that specify more than one of Value, Values,
-	// or StatisticValues simultaneously.
-	modeCount := 0
-	if hasValue {
-		modeCount++
-	}
-	if hasValues {
-		modeCount++
-	}
-	if hasStatSet {
-		modeCount++
-	}
-	if modeCount > 1 {
-		return awserrors.NewInvalidParameterValueException(
-			"A MetricDatum must not specify more than one of Value, Values, or StatisticValues")
-	}
-
-	if len(datum.Values) > maxValuesPerDatum {
-		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("A MetricDatum Values array must not exceed %d entries", maxValuesPerDatum))
-	}
-
-	if hasValues && len(datum.Counts) > 0 && len(datum.Values) != len(datum.Counts) {
-		return awserrors.NewInvalidParameterValueException(
-			"Values and Counts arrays must have the same length")
-	}
-
-	return nil
-}
-
 // GetMetricStatistics retrieves statistics for a metric.
 func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namespace := request.GetStringParam(req.Parameters, "Namespace")
@@ -142,6 +90,11 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 		return nil, ErrInvalidParameter
 	}
 
+	// AWS requires Period to be a positive integer.
+	if period <= 0 {
+		return nil, awserrors.NewInvalidParameterValueException("Period must be a positive integer")
+	}
+
 	var statistics []string
 	if statsRaw, ok := req.Parameters["Statistics"]; ok {
 		statistics = parseStatistics(statsRaw)
@@ -157,6 +110,11 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 	}
 
 	dimensions := parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"])
+
+	// AWS requires at least one of Statistics or ExtendedStatistics.
+	if len(statistics) == 0 && len(extendedStats) == 0 {
+		return nil, awserrors.NewMissingParameter("Must specify either Statistics or ExtendedStatistics")
+	}
 
 	query := cwstore.MetricQuery{
 		Namespace:          namespace,
@@ -191,36 +149,28 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 
 // ListMetrics returns a list of available metrics.
 func (s *CloudWatchService) ListMetrics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namespace := getMetricStringParam(req.Parameters, "Namespace", "namespace")
-	metricName := getMetricStringParam(req.Parameters, "MetricName", "metricName")
-
-	dimensions := parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"])
-	nextToken := getMetricStringParam(req.Parameters, "NextToken", "nextToken")
-	recentlyActive := getMetricStringParam(req.Parameters, "RecentlyActive", "recentlyActive")
-	if recentlyActive != "" && recentlyActive != "PT3H" {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"RecentlyActive must be PT3H")
-	}
-	// IncludeLinkedAccounts and OwningAccount are cross-account params
-	// accepted but not used — vorpalstacks is single-account.
-	maxResults := 500
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
-		maxResults = mr
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	metrics, nextMarker, isTruncated, err := store.metrics.ListMetricsPaginated(namespace, metricName, dimensions, nextToken, maxResults, recentlyActive == "PT3H")
+	input := &ListMetricsInput{
+		Namespace:      getMetricStringParam(req.Parameters, "Namespace", "namespace"),
+		MetricName:     getMetricStringParam(req.Parameters, "MetricName", "metricName"),
+		Dimensions:     parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"]),
+		NextToken:      getMetricStringParam(req.Parameters, "NextToken", "nextToken"),
+		RecentlyActive: getMetricStringParam(req.Parameters, "RecentlyActive", "recentlyActive"),
+		MaxResults:     request.GetIntParam(req.Parameters, "MaxResults"),
+	}
+
+	result, err := s.listMetricsCore(store, input)
 	if err != nil {
 		return nil, err
 	}
 
-	result := buildListMetricsResponse(namespace, metrics)
-	if isTruncated {
-		result["NextToken"] = nextMarker
+	resp := buildListMetricsResponse(input.Namespace, result.Metrics)
+	if result.IsTruncated {
+		resp["NextToken"] = result.NextToken
 	}
-	return result, nil
+	return resp, nil
 }
