@@ -189,7 +189,7 @@ func (a *App) initAppSync(st *serviceState) error {
 
 func (a *App) initCloudFront(st *serviceState) error {
 	st.cloudFrontService = svccloudfront.NewCloudFrontService(st.accountID)
-	st.cloudFrontService.SetRegionAndStorage(st.region, a.server.StorageManager())
+	st.cloudFrontService.SetStorageManager(a.server.StorageManager())
 	if eb := a.server.EventBus(); eb != nil {
 		st.cloudFrontService.SetWAFInvoker(eb.WAFInvoker())
 	}

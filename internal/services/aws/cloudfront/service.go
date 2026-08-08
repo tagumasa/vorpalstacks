@@ -31,7 +31,6 @@ type cloudfrontStores struct {
 // CloudFrontService provides AWS CloudFront operations.
 type CloudFrontService struct {
 	accountID           string
-	region              string
 	storageManager      *storage.RegionStorageManager
 	stores              sync.Map // global (no region) — single cached instance
 	seedManagedPolicies sync.Once
@@ -47,18 +46,20 @@ func NewCloudFrontService(accountID string) *CloudFrontService {
 	}
 }
 
-// SetRegionAndStorage injects the region and storage manager needed for
-// creating the distribution server with a shared store.
-func (s *CloudFrontService) SetRegionAndStorage(region string, sm *storage.RegionStorageManager) {
-	s.region = region
+// SetStorageManager injects the storage manager needed for lazy store
+// creation and the distribution server. CloudFront is a global service,
+// so no region parameter is required.
+func (s *CloudFrontService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
 }
 
 // InitDistributionServer creates the DistributionServer owned by this service.
-// The distribution store is populated lazily on first management API call;
-// until then the server uses its own fallback store backed by the same Pebble.
+// CloudFront is a global service, so the distribution server reads from the
+// global Pebble DB. After the management API creates the global store
+// instance, SetDistributionStore is called to share it with the server,
+// eliminating any second store backed by a different DB.
 func (s *CloudFrontService) InitDistributionServer() *DistributionServer {
-	s.distributionServer = NewDistributionServer(s.storageManager, s.accountID, s.region)
+	s.distributionServer = NewDistributionServer(s.storageManager, s.accountID)
 	return s.distributionServer
 }
 
@@ -71,30 +72,41 @@ func (s *CloudFrontService) DistributionHandler() http.Handler {
 	return http.HandlerFunc(s.distributionServer.HandleRequest)
 }
 
+// createStores builds a complete cloudfrontStores from the given global
+// storage. Called by both store() and GetStoreForRegion() to ensure a
+// single code path for store construction.
+func (s *CloudFrontService) createStores(st storage.BasicStorage) *cloudfrontStores {
+	arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
+	cacheStore := cloudfrontstore.NewCachePolicyStore(st, s.accountID)
+	orpStore := cloudfrontstore.NewOriginRequestPolicyStore(st, s.accountID)
+	s.seedManagedPolicies.Do(func() {
+		cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
+	})
+	stores := &cloudfrontStores{
+		distributions:           cloudfrontstore.NewDistributionStore(st, s.accountID),
+		cachePolicies:           cacheStore,
+		originRequestPolicies:   orpStore,
+		originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(st, s.accountID),
+		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(st, s.accountID),
+		publicKeys:              cloudfrontstore.NewPublicKeyStore(st, s.accountID),
+		keyGroups:               cloudfrontstore.NewKeyGroupStore(st, s.accountID),
+		tags:                    cloudfrontstore.NewTagStore(st),
+		invalidations:           cloudfrontstore.NewInvalidationStore(st),
+		arnBuilder:              arnBuilder,
+	}
+	if s.distributionServer != nil {
+		s.distributionServer.SetDistributionStore(stores.distributions)
+	}
+	return stores
+}
+
 func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (*cloudfrontStores, error) {
-		storage, err := reqCtx.GetGlobalStorage()
+		st, err := reqCtx.GetGlobalStorage()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get global storage: %w", err)
 		}
-		arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
-		cacheStore := cloudfrontstore.NewCachePolicyStore(storage, s.accountID)
-		orpStore := cloudfrontstore.NewOriginRequestPolicyStore(storage, s.accountID)
-		s.seedManagedPolicies.Do(func() {
-			cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
-		})
-		return &cloudfrontStores{
-			distributions:           cloudfrontstore.NewDistributionStore(storage, s.accountID),
-			cachePolicies:           cacheStore,
-			originRequestPolicies:   orpStore,
-			originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(storage, s.accountID),
-			responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(storage, s.accountID),
-			publicKeys:              cloudfrontstore.NewPublicKeyStore(storage, s.accountID),
-			keyGroups:               cloudfrontstore.NewKeyGroupStore(storage, s.accountID),
-			tags:                    cloudfrontstore.NewTagStore(storage),
-			invalidations:           cloudfrontstore.NewInvalidationStore(storage),
-			arnBuilder:              arnBuilder,
-		}, nil
+		return s.createStores(st), nil
 	})
 }
 
@@ -112,22 +124,7 @@ func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, erro
 	if err != nil {
 		return nil, err
 	}
-	arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
-	cacheStore := cloudfrontstore.NewCachePolicyStore(st, s.accountID)
-	orpStore := cloudfrontstore.NewOriginRequestPolicyStore(st, s.accountID)
-	s.seedManagedPolicies.Do(func() {
-		cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
-	})
-	stores := &cloudfrontStores{
-		distributions:           cloudfrontstore.NewDistributionStore(st, s.accountID),
-		cachePolicies:           cacheStore,
-		originRequestPolicies:   orpStore,
-		originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(st, s.accountID),
-		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(st, s.accountID),
-		tags:                    cloudfrontstore.NewTagStore(st),
-		invalidations:           cloudfrontstore.NewInvalidationStore(st),
-		arnBuilder:              arnBuilder,
-	}
+	stores := s.createStores(st)
 	actual, _ := s.stores.LoadOrStore("global", stores)
 	return actual.(*cloudfrontStores), nil
 }

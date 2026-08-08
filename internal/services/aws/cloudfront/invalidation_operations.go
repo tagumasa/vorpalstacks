@@ -3,11 +3,13 @@ package cloudfront
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/resilience"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
@@ -63,7 +65,7 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 			}
 		}
 		quantity := int(request.GetIntParam(pathsMap, "Quantity"))
-		if quantity > 0 && quantity != len(paths) {
+		if quantity != len(paths) {
 			return nil, errors.NewAWSError("InconsistentQuantities",
 				fmt.Sprintf("The Quantity value (%d) does not match the number of path items (%d)", quantity, len(paths)), 400)
 		}
@@ -92,11 +94,19 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 // transitionInvalidation asynchronously transitions an invalidation from
 // InProgress to Completed, simulating the real CloudFront edge propagation.
 func (s *CloudFrontService) transitionInvalidation(stores *cloudfrontStores, inv *cloudfrontstore.Invalidation) {
+	defer func() {
+		if r := resilience.RecoverPanic("cloudfront invalidation status transition"); r != nil {
+			slog.Error("panic during invalidation status transition",
+				"invalidationId", inv.ID, "distributionId", inv.DistributionID, "panic", r)
+		}
+	}()
+
 	time.Sleep(2 * time.Second)
 
 	inv.Status = "Completed"
 	if err := stores.invalidations.Update(inv); err != nil {
-		inv.Status = "InProgress"
+		slog.Error("failed to persist invalidation status transition",
+			"invalidationId", inv.ID, "distributionId", inv.DistributionID, "error", err)
 	}
 }
 
@@ -138,7 +148,7 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 || maxItems > 200 {
+	if maxItems <= 0 || maxItems > 100 {
 		maxItems = 100
 	}
 

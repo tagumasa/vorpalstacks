@@ -119,3 +119,23 @@ func (s *InvalidationStore) DeleteByDistribution(distID string) error {
 	prefix := distID + "/"
 	return s.BaseStore.DeleteByPrefix(prefix)
 }
+
+// CountInProgress returns the number of invalidation batches in the
+// InProgress state for a given distribution.
+func (s *InvalidationStore) CountInProgress(distID string) (int, error) {
+	prefix := distID + "/"
+	result, err := common.List[Invalidation](s.BaseStore, common.ListOptions{
+		Prefix:   prefix,
+		MaxItems: 10000,
+	}, nil)
+	if err != nil {
+		return 0, NewStoreError("count_in_progress", err)
+	}
+	count := 0
+	for _, inv := range result.Items {
+		if inv.Status == "InProgress" {
+			count++
+		}
+	}
+	return count, nil
+}

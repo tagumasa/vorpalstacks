@@ -6,23 +6,22 @@ import (
 	"net/http"
 	"time"
 
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
+
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/timeutils"
-
-	"connectrpc.com/connect"
 
 	pb "vorpalstacks/internal/pb/aws/cloudfront"
 	cloudfrontconnect "vorpalstacks/internal/pb/aws/cloudfront/cloudfrontconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
-	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
 // AdminHandler implements the CloudFront admin console gRPC-Web handler.
-// It delegates to the shared CloudFrontService store cache so that the same
-// global store instance is used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// It delegates to the shared CloudFrontService store cache and core
+// functions so that the same global store instance and validation logic
+// are used by both the HTTP API handlers and the admin console gRPC-Web
+// handlers.
 type AdminHandler struct {
 	cloudfrontconnect.UnimplementedCloudFrontServiceHandler
 	service *CloudFrontService
@@ -36,24 +35,23 @@ func NewAdminHandler(svc *CloudFrontService) *AdminHandler {
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*cloudfrontStores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
+	return h.service.GetStoreForRegion("")
 }
 
-// CreateDistribution creates a new CloudFront distribution with minimal required configuration.
+// CreateDistribution creates a new CloudFront distribution via the admin
+// console. It delegates to createDistributionCore so that certificate
+// checking, WAF association, and tag application follow the same code path
+// as the HTTP API.
 func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Request[pb.CreateDistributionRequest]) (*connect.Response[pb.CreateDistributionResult], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	cfg := req.Msg.GetDistributionconfig()
 	if cfg == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("distributionconfig is required"))
 	}
-
-	comment := cfg.GetComment()
-	enabled := cfg.GetEnabled()
 
 	originDomain := ""
 	originID := "default-origin"
@@ -70,102 +68,47 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 
 	callerRef := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	storeConfig := &cloudfrontstore.DistributionConfig{
+	result, err := h.service.createDistributionFromAdmin(ctx, stores, AdminCreateDistributionInput{
 		CallerReference: callerRef,
-		Comment:         comment,
-		Enabled:         enabled,
-		Origins: cloudfrontstore.Origins{
-			Quantity: 1,
-			Items: []*cloudfrontstore.Origin{
-				{
-					ID:         originID,
-					DomainName: originDomain,
-					CustomOriginConfig: &cloudfrontstore.CustomOriginConfig{
-						HTTPPort:             80,
-						HTTPSPort:            443,
-						OriginProtocolPolicy: "https-only",
-					},
-					ConnectionAttempts: 3,
-					ConnectionTimeout:  10,
-				},
-			},
-		},
-		DefaultCacheBehavior: &cloudfrontstore.CacheBehavior{
-			TargetOriginId:       originID,
-			ViewerProtocolPolicy: "allow-all",
-			AllowedMethods: &cloudfrontstore.AllowedMethods{
-				Quantity: 2,
-				Items:    []string{"GET", "HEAD"},
-			},
-			ForwardedValues: &cloudfrontstore.ForwardedValues{
-				QueryString: false,
-				Cookies:     &cloudfrontstore.CookiePreferences{Forward: "none"},
-			},
-			MinTTL: 0,
-		},
-		PriceClass:    "PriceClass_All",
-		HttpVersion:   "http2and3",
-		IsIPV6Enabled: true,
-		ViewerCertificate: &cloudfrontstore.ViewerCertificate{
-			CloudFrontDefaultCertificate: true,
-			CertificateSource:            "cloudfront",
-		},
-		Restrictions: &cloudfrontstore.Restrictions{
-			GeoRestriction: cloudfrontstore.GeoRestriction{
-				RestrictionType: "none",
-			},
-		},
-	}
-
-	dist, err := stores.distributions.Create(callerRef, storeConfig)
+		Comment:         cfg.GetComment(),
+		Enabled:         cfg.GetEnabled(),
+		OriginID:        originID,
+		OriginDomain:    originDomain,
+		ACMRegion:       svccommon.GetRegionFromHeader(req.Header()),
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateDistributionResult{
-		Distribution: &pb.Distribution{
-			Id:               dist.ID,
-			Arn:              dist.ARN,
-			Status:           dist.Status,
-			Domainname:       dist.DomainName,
-			Lastmodifiedtime: dist.LastModifiedAt.Format(timeutils.ISO8601UTCFormat),
-		},
+		Distribution: toPbDistribution(result.Distribution),
 	}), nil
 }
 
-// ListDistributions returns all CloudFront distributions visible to the admin console.
+// ListDistributions returns all CloudFront distributions visible to the
+// admin console. It delegates to listDistributionsCore.
 func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Request[pb.ListDistributionsRequest]) (*connect.Response[pb.ListDistributionsResult], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	maxItems := int(req.Msg.GetMaxitems())
-	if maxItems <= 0 {
-		maxItems = 100
+	maxItems := 100
+	if req.Msg.Maxitems != nil {
+		maxItems = int(*req.Msg.Maxitems)
 	}
 
-	result, err := stores.distributions.List(req.Msg.Marker, maxItems)
+	result, err := h.service.listDistributionsCore(stores, ListDistributionsInput{
+		Marker:   req.Msg.Marker,
+		MaxItems: maxItems,
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	var items []*pb.DistributionSummary
+	items := make([]*pb.DistributionSummary, 0, len(result.Distributions))
 	for _, d := range result.Distributions {
-		summary := &pb.DistributionSummary{
-			Id:         d.ID,
-			Arn:        d.ARN,
-			Status:     d.Status,
-			Enabled:    proto.Bool(d.Enabled),
-			Staging:    proto.Bool(d.Staging),
-			Etag:       d.ETag,
-			Comment:    d.DistributionConfig.Comment,
-			Domainname: d.DomainName,
-		}
-		if !d.LastModifiedAt.IsZero() {
-			summary.Lastmodifiedtime = d.LastModifiedAt.Format(timeutils.ISO8601UTCFormat)
-		}
-		items = append(items, summary)
+		items = append(items, toPbDistributionSummary(d))
 	}
 
 	return connect.NewResponse(&pb.ListDistributionsResult{
@@ -180,34 +123,32 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 	}), nil
 }
 
-// DeleteDistribution deletes a CloudFront distribution via the admin console.
+// DeleteDistribution deletes a CloudFront distribution via the admin
+// console. It delegates to deleteDistributionCore so that ETag check,
+// DistributionNotDisabled enforcement, WAF cleanup, tag cleanup, and
+// invalidation cleanup all follow the same code path as the HTTP API.
 func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Request[pb.DeleteDistributionRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	if req.Msg.Id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
-	dist, err := stores.distributions.Get(req.Msg.Id)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	if dist.ARN != "" {
-		_ = stores.tags.TagStore.Delete(dist.ARN)
-	}
-
-	if err := stores.distributions.Delete(req.Msg.Id); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteDistributionCore(ctx, stores, DeleteDistributionInput{
+		Id:        req.Msg.Id,
+		IfMatch:   "*",
+		ACMRegion: svccommon.GetRegionFromHeader(req.Header()),
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Cloudfront admin console.
+// NewConnectHandler creates a gRPC-Web connect handler for the CloudFront admin console.
 func NewConnectHandler(svc *CloudFrontService) (string, http.Handler) {
 	return cloudfrontconnect.NewCloudFrontServiceHandler(NewAdminHandler(svc))
 }

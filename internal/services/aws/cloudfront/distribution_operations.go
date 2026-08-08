@@ -3,7 +3,6 @@ package cloudfront
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -31,7 +30,7 @@ func getDistributionConfigMap(req *request.ParsedRequest) map[string]interface{}
 	return req.Parameters
 }
 
-func formatDistributionResponse(d *cloudfrontstore.Distribution) map[string]interface{} {
+func formatDistributionResponse(d *cloudfrontstore.Distribution, inProgressInvalidations int, activeSigners, activeKeyGroups map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		"Id":                            d.ID,
 		"ARN":                           d.ARN,
@@ -41,10 +40,120 @@ func formatDistributionResponse(d *cloudfrontstore.Distribution) map[string]inte
 		"DistributionConfig":            formatDistributionConfig(d.DistributionConfig),
 		"CallerReference":               d.CallerReference,
 		"LastModifiedTime":              d.LastModifiedAt.Format(time.RFC3339),
-		"InProgressInvalidationBatches": 0,
-		"ActiveTrustedSigners":          map[string]interface{}{"Enabled": false, "Quantity": 0},
-		"ActiveTrustedKeyGroups":        map[string]interface{}{"Enabled": false, "Quantity": 0},
+		"InProgressInvalidationBatches": inProgressInvalidations,
+		"ActiveTrustedSigners":          activeSigners,
+		"ActiveTrustedKeyGroups":        activeKeyGroups,
 	}
+}
+
+// computeActiveTrustedSigners inspects all cache behaviours in the
+// distribution config for TrustedSigners with Enabled=true and produces
+// the ActiveTrustedSigners output shape. KeyPairIds are empty because the
+// legacy CloudFront key-pair system (account-level key pairs uploaded via
+// the AWS credentials page) is not implemented on this platform.
+func computeActiveTrustedSigners(d *cloudfrontstore.Distribution) map[string]interface{} {
+	accounts := collectTrustedSignerAccounts(d)
+	if len(accounts) == 0 {
+		return map[string]interface{}{"Enabled": false, "Quantity": 0}
+	}
+	items := make([]interface{}, 0, len(accounts))
+	for acct := range accounts {
+		items = append(items, map[string]interface{}{
+			"AwsAccountNumber": acct,
+			"KeyPairIds":       map[string]interface{}{"Quantity": 0},
+		})
+	}
+	return map[string]interface{}{
+		"Enabled":  true,
+		"Quantity": len(accounts),
+		"Items":    protocol.XMLElements{ElementName: "Signer", Items: items},
+	}
+}
+
+// computeActiveTrustedKeyGroups inspects all cache behaviours for
+// TrustedKeyGroups with Enabled=true and produces the
+// ActiveTrustedKeyGroups output shape. Each key group's PublicKey IDs are
+// resolved from the KeyGroup store to populate KeyPairIds.
+func computeActiveTrustedKeyGroups(d *cloudfrontstore.Distribution, stores *cloudfrontStores) map[string]interface{} {
+	kgIDs := collectTrustedKeyGroupIDs(d)
+	if len(kgIDs) == 0 {
+		return map[string]interface{}{"Enabled": false, "Quantity": 0}
+	}
+	items := make([]interface{}, 0, len(kgIDs))
+	for kgID := range kgIDs {
+		keyPairIds := map[string]interface{}{"Quantity": 0}
+		if stores != nil {
+			if kg, err := stores.keyGroups.Get(kgID); err == nil && len(kg.KeyGroupConfig.Items) > 0 {
+				kpItems := make([]interface{}, len(kg.KeyGroupConfig.Items))
+				for i, kp := range kg.KeyGroupConfig.Items {
+					kpItems[i] = kp
+				}
+				keyPairIds = map[string]interface{}{
+					"Quantity": len(kg.KeyGroupConfig.Items),
+					"Items":    protocol.XMLElements{ElementName: "KeyPairId", Items: kpItems},
+				}
+			}
+		}
+		items = append(items, map[string]interface{}{
+			"KeyGroupId": kgID,
+			"KeyPairIds": keyPairIds,
+		})
+	}
+	return map[string]interface{}{
+		"Enabled":  true,
+		"Quantity": len(kgIDs),
+		"Items":    protocol.XMLElements{ElementName: "KGKeyPairIds", Items: items},
+	}
+}
+
+// collectTrustedSignerAccounts returns the set of unique AwsAccountNumbers
+// from TrustedSigners across all cache behaviours where Enabled=true.
+func collectTrustedSignerAccounts(d *cloudfrontstore.Distribution) map[string]bool {
+	accounts := make(map[string]bool)
+	if d.DistributionConfig == nil {
+		return accounts
+	}
+	cfg := d.DistributionConfig
+	if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.TrustedSigners != nil && cfg.DefaultCacheBehavior.TrustedSigners.Enabled {
+		for _, acct := range cfg.DefaultCacheBehavior.TrustedSigners.Items {
+			accounts[acct] = true
+		}
+	}
+	if cfg.CacheBehaviors != nil {
+		for _, cb := range cfg.CacheBehaviors.Items {
+			if cb != nil && cb.TrustedSigners != nil && cb.TrustedSigners.Enabled {
+				for _, acct := range cb.TrustedSigners.Items {
+					accounts[acct] = true
+				}
+			}
+		}
+	}
+	return accounts
+}
+
+// collectTrustedKeyGroupIDs returns the set of unique KeyGroupId values
+// from TrustedKeyGroups across all cache behaviours where Enabled=true.
+func collectTrustedKeyGroupIDs(d *cloudfrontstore.Distribution) map[string]bool {
+	kgIDs := make(map[string]bool)
+	if d.DistributionConfig == nil {
+		return kgIDs
+	}
+	cfg := d.DistributionConfig
+	if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.TrustedKeyGroups != nil && cfg.DefaultCacheBehavior.TrustedKeyGroups.Enabled {
+		for _, kgID := range cfg.DefaultCacheBehavior.TrustedKeyGroups.Items {
+			kgIDs[kgID] = true
+		}
+	}
+	if cfg.CacheBehaviors != nil {
+		for _, cb := range cfg.CacheBehaviors.Items {
+			if cb != nil && cb.TrustedKeyGroups != nil && cb.TrustedKeyGroups.Enabled {
+				for _, kgID := range cb.TrustedKeyGroups.Items {
+					kgIDs[kgID] = true
+				}
+			}
+		}
+	}
+	return kgIDs
 }
 
 func formatDistributionSummary(d *cloudfrontstore.Distribution) map[string]interface{} {
@@ -1042,65 +1151,28 @@ func parseCacheBehaviors(cbsMap map[string]interface{}) *cloudfrontstore.CacheBe
 // CreateDistribution creates a new CloudFront distribution.
 func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	configMap := getDistributionConfigMap(req)
-
-	callerRef := request.GetStringParam(configMap, "CallerReference")
-	if callerRef == "" {
-		callerRef = fmt.Sprintf("ref-%d", time.Now().UnixNano())
-	}
-
 	config := parseDistributionConfig(configMap)
-	config.CallerReference = callerRef
-
-	certArn := ""
-	if config.ViewerCertificate != nil {
-		certArn = config.ViewerCertificate.ACMCertificateArn
-	}
-	if certArn != "" && s.acmInvoker != nil {
-		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
-			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+certArn, 404)
-		}
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	distribution, err := store.distributions.Create(callerRef, config)
+
+	result, err := s.createDistributionCore(ctx, store, CreateDistributionInput{
+		CallerReference: request.GetStringParam(configMap, "CallerReference"),
+		Config:          config,
+		ACMRegion:       reqCtx.GetRegion(),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if config.WebACLId != "" && s.wafInvoker != nil {
-		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
-			_ = store.distributions.Delete(distribution.ID)
-			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
-		}
-	}
-
-	if certArn != "" && s.acmInvoker != nil {
-		if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), certArn, distribution.ARN); err != nil {
-			_ = store.distributions.Delete(distribution.ID)
-			return nil, fmt.Errorf("failed to register certificate usage: %w", err)
-		}
-	}
-
-	go s.transitionDistributionDeployed(store, distribution.ID)
-
+	inProgressCount, _ := store.invalidations.CountInProgress(result.Distribution.ID)
+	activeSigners := computeActiveTrustedSigners(result.Distribution)
+	activeKeyGroups := computeActiveTrustedKeyGroups(result.Distribution, store)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution),
+		"Distribution": formatDistributionResponse(result.Distribution, inProgressCount, activeSigners, activeKeyGroups),
 	}, nil
-}
-
-// transitionDistributionDeployed asynchronously transitions a distribution
-// from InProgress to Deployed, simulating real CloudFront deployment.
-func (s *CloudFrontService) transitionDistributionDeployed(stores *cloudfrontStores, distID string) {
-	time.Sleep(3 * time.Second)
-	dist, err := stores.distributions.Get(distID)
-	if err != nil {
-		return
-	}
-	dist.Status = "Deployed"
-	_ = stores.distributions.UpdateWithLastModified(distID, dist)
 }
 
 // CreateDistributionWithTags creates a new CloudFront distribution with the specified tags.
@@ -1109,63 +1181,34 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 	if configMap == nil {
 		configMap = req.Parameters
 	}
-
-	callerRef := request.GetStringParam(configMap, "CallerReference")
-	if callerRef == "" {
-		callerRef = fmt.Sprintf("ref-%d", time.Now().UnixNano())
-	}
-
 	config := parseDistributionConfig(configMap)
-	config.CallerReference = callerRef
-
-	certArn := ""
-	if config.ViewerCertificate != nil {
-		certArn = config.ViewerCertificate.ACMCertificateArn
-	}
-	if certArn != "" && s.acmInvoker != nil {
-		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), certArn) {
-			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+certArn, 404)
-		}
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	distribution, err := store.distributions.Create(callerRef, config)
-	if err != nil {
-		return nil, err
-	}
-
-	if config.WebACLId != "" && s.wafInvoker != nil {
-		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
-			_ = store.distributions.Delete(distribution.ID)
-			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
-		}
-	}
-
-	if certArn != "" && s.acmInvoker != nil {
-		if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), certArn, distribution.ARN); err != nil {
-			_ = store.distributions.Delete(distribution.ID)
-			return nil, fmt.Errorf("failed to register certificate usage: %w", err)
-		}
-	}
 
 	var tags []types.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
 		tags = parseXMLTags(tagsMap)
 	}
-	if len(tags) > 0 && distribution.ARN != "" {
-		if err := store.tags.Tag(distribution.ARN, tags); err != nil {
-			return nil, fmt.Errorf("failed to tag distribution: %w", err)
-		}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	go s.transitionDistributionDeployed(store, distribution.ID)
-
+	result, err := s.createDistributionCore(ctx, store, CreateDistributionInput{
+		CallerReference: request.GetStringParam(configMap, "CallerReference"),
+		Config:          config,
+		Tags:            tags,
+		TagsProvided:    len(tags) > 0,
+		ACMRegion:       reqCtx.GetRegion(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	inProgressCount, _ := store.invalidations.CountInProgress(result.Distribution.ID)
+	activeSigners := computeActiveTrustedSigners(result.Distribution)
+	activeKeyGroups := computeActiveTrustedKeyGroups(result.Distribution, store)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution),
+		"Distribution": formatDistributionResponse(result.Distribution, inProgressCount, activeSigners, activeKeyGroups),
 	}, nil
 }
 
@@ -1187,9 +1230,11 @@ func (s *CloudFrontService) GetDistribution(ctx context.Context, reqCtx *request
 		}
 		return nil, err
 	}
-
+	inProgressCount, _ := store.invalidations.CountInProgress(distribution.ID)
+	activeSigners := computeActiveTrustedSigners(distribution)
+	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, store)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution),
+		"Distribution": formatDistributionResponse(distribution, inProgressCount, activeSigners, activeKeyGroups),
 	}, nil
 }
 
@@ -1220,17 +1265,19 @@ func (s *CloudFrontService) GetDistributionConfig(ctx context.Context, reqCtx *r
 
 // ListDistributions lists all CloudFront distributions.
 func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.distributions.List(marker, maxItems)
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
+	if maxItems <= 0 || maxItems > 100 {
+		maxItems = 100
+	}
+	result, err := s.listDistributionsCore(store, ListDistributionsInput{
+		Marker:   marker,
+		MaxItems: maxItems,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1301,6 +1348,19 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 		newConfig.CallerReference = distribution.CallerReference
 	}
 
+	for _, origin := range newConfig.Origins.Items {
+		if origin.CustomOriginConfig != nil {
+			opp := origin.CustomOriginConfig.OriginProtocolPolicy
+			if opp == "" {
+				return nil, awserrors.NewAWSError("InvalidArgument",
+					"OriginProtocolPolicy is required when CustomOriginConfig is specified", 400)
+			}
+			if !isValidOriginProtocolPolicy(opp) {
+				return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginProtocolPolicy: "+opp, 400)
+			}
+		}
+	}
+
 	// Pre-validate new cert ARN before saving.
 	newCertArn := ""
 	if newConfig.ViewerCertificate != nil {
@@ -1364,84 +1424,27 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 			}
 		}
 	}
-
+	inProgressCount, _ := store.invalidations.CountInProgress(distribution.ID)
+	activeSigners := computeActiveTrustedSigners(distribution)
+	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, store)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution),
+		"Distribution": formatDistributionResponse(distribution, inProgressCount, activeSigners, activeKeyGroups),
 	}, nil
 }
 
 // DeleteDistribution deletes a CloudFront distribution. The distribution must be disabled first.
 func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	distribution, err := store.distributions.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
+	if err := s.deleteDistributionCore(ctx, store, DeleteDistributionInput{
+		Id:        request.GetStringParam(req.Parameters, "Id"),
+		IfMatch:   getIfMatch(req),
+		ACMRegion: reqCtx.GetRegion(),
+	}); err != nil {
 		return nil, err
 	}
-
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-	if ifMatch != "*" && distribution.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if distribution.Enabled {
-		return nil, awserrors.NewAWSError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
-	}
-
-	// Capture cert ARN before deletion for best-effort unregister after.
-	certArnForCleanup := ""
-	if distribution.DistributionConfig != nil && distribution.DistributionConfig.ViewerCertificate != nil {
-		certArnForCleanup = distribution.DistributionConfig.ViewerCertificate.ACMCertificateArn
-	}
-
-	if distribution.DistributionConfig != nil && s.wafInvoker != nil {
-		webACLId := distribution.DistributionConfig.WebACLId
-		if webACLId != "" {
-			if err := s.wafInvoker.DisassociateWebACL(webACLId, distribution.ARN); err != nil {
-				return nil, fmt.Errorf("failed to remove WAF association: %w", err)
-			}
-		}
-	}
-
-	if distribution.ARN != "" {
-		_ = store.tags.TagStore.Delete(distribution.ARN)
-	}
-
-	_ = store.invalidations.DeleteByDistribution(id)
-
-	err = store.distributions.Delete(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
-		return nil, err
-	}
-
-	// Best-effort ACM unregister after successful deletion. A stale InUseBy
-	// reference is harmless (only over-blocks certificate deletion), whereas
-	// unregistering before deletion risks leaving a live resource unprotected.
-	if certArnForCleanup != "" && s.acmInvoker != nil {
-		if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), certArnForCleanup, distribution.ARN); err != nil {
-			log.Printf("warning: failed to unregister certificate usage for deleted distribution %s: %v", id, err)
-		}
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -1452,7 +1455,7 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 	webACLId := request.GetStringParam(req.Parameters, "WebACLId")
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
+	if maxItems <= 0 || maxItems > 100 {
 		maxItems = 100
 	}
 

@@ -35,13 +35,13 @@ func (s *CloudFrontService) CreateOriginAccessControl(ctx context.Context, reqCt
 	}
 
 	if !isValidOriginAccessControlOriginType(originType) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: s3, mediastore, mediapackagev2, lambda", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: "+originAccessControlOriginTypeValues(), 400)
 	}
 	if !isValidSigningBehavior(signingBehavior) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: always, never, no-override", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: "+signingBehaviorValues(), 400)
 	}
 	if signingProtocol != "sigv4" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: sigv4", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: "+signingProtocolValues(), 400)
 	}
 
 	config := &cloudfrontstore.OriginAccessControlConfig{
@@ -173,13 +173,13 @@ func (s *CloudFrontService) UpdateOriginAccessControl(ctx context.Context, reqCt
 	}
 
 	if !isValidOriginAccessControlOriginType(originType) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: s3, mediastore, mediapackagev2, lambda", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: "+originAccessControlOriginTypeValues(), 400)
 	}
 	if !isValidSigningBehavior(signingBehavior) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: always, never, no-override", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: "+signingBehaviorValues(), 400)
 	}
 	if signingProtocol != "sigv4" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: sigv4", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: "+signingProtocolValues(), 400)
 	}
 
 	config := &cloudfrontstore.OriginAccessControlConfig{
@@ -265,6 +265,11 @@ func (s *CloudFrontService) DeleteOriginAccessControl(ctx context.Context, reqCt
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
+	if isOriginAccessControlAttached(store, id) {
+		return nil, awserrors.NewAWSError("OriginAccessControlInUse",
+			"Cannot delete this origin access control because it is attached to one or more distributions", 409)
+	}
+
 	err = store.originAccessControls.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -326,22 +331,5 @@ func buildOACConfigResponse(oac *cloudfrontstore.OriginAccessControl) map[string
 		"OriginAccessControlOriginType": oac.OriginAccessControlOriginType,
 		"SigningBehavior":               oac.SigningBehavior,
 		"SigningProtocol":               oac.SigningProtocol,
-	}
-}
-func isValidOriginAccessControlOriginType(t string) bool {
-	switch t {
-	case "s3", "mediastore", "mediapackagev2", "lambda":
-		return true
-	default:
-		return false
-	}
-}
-
-func isValidSigningBehavior(b string) bool {
-	switch b {
-	case "always", "never", "no-override":
-		return true
-	default:
-		return false
 	}
 }

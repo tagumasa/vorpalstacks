@@ -231,6 +231,11 @@ func (s *CloudFrontService) DeleteResponseHeadersPolicy(ctx context.Context, req
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
+	if isResponseHeadersPolicyAttached(store, id) {
+		return nil, awserrors.NewAWSError("ResponseHeadersPolicyInUse",
+			"Cannot delete this response headers policy because it is attached to one or more distributions", 409)
+	}
+
 	err = store.responseHeadersPolicies.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {

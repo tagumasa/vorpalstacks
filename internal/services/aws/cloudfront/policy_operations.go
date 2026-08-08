@@ -29,13 +29,18 @@ func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *reque
 		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
 	}
 
+	params, err := parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin"))
+	if err != nil {
+		return nil, err
+	}
+
 	config := &cloudfrontstore.CachePolicyConfig{
 		Name:                                     name,
 		Comment:                                  request.GetStringParam(configMap, "Comment"),
 		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
 		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
 		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
-		ParametersInCacheKeyParametersInCacheKey: parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin")),
+		ParametersInCacheKeyParametersInCacheKey: params,
 	}
 
 	store, err := s.store(reqCtx)
@@ -202,13 +207,18 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 		configMap = req.Parameters
 	}
 
+	params, err := parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin"))
+	if err != nil {
+		return nil, err
+	}
+
 	config := &cloudfrontstore.CachePolicyConfig{
 		Name:                                     request.GetStringParam(configMap, "Name"),
 		Comment:                                  request.GetStringParam(configMap, "Comment"),
 		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
 		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
 		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
-		ParametersInCacheKeyParametersInCacheKey: parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin")),
+		ParametersInCacheKeyParametersInCacheKey: params,
 	}
 
 	if config.Name != existing.Name {
@@ -266,6 +276,11 @@ func (s *CloudFrontService) DeleteCachePolicy(ctx context.Context, reqCtx *reque
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
 	}
 
+	if isCachePolicyAttached(store, id) {
+		return nil, awserrors.NewAWSError("CachePolicyInUse",
+			"Cannot delete this cache policy because it is attached to one or more distributions", 409)
+	}
+
 	err = store.cachePolicies.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
@@ -290,12 +305,25 @@ func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
 	}
 
+	cookiesCfg, err := parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig"))
+	if err != nil {
+		return nil, err
+	}
+	headersCfg, err := parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig"))
+	if err != nil {
+		return nil, err
+	}
+	queryStringsCfg, err := parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig"))
+	if err != nil {
+		return nil, err
+	}
+
 	config := &cloudfrontstore.OriginRequestPolicyConfig{
 		Name:               name,
 		Comment:            request.GetStringParam(configMap, "Comment"),
-		CookiesConfig:      parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig")),
-		HeadersConfig:      parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig")),
-		QueryStringsConfig: parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig")),
+		CookiesConfig:      cookiesCfg,
+		HeadersConfig:      headersCfg,
+		QueryStringsConfig: queryStringsCfg,
 	}
 
 	store, err := s.store(reqCtx)
@@ -462,12 +490,25 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 		configMap = req.Parameters
 	}
 
+	cookiesCfg, err := parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig"))
+	if err != nil {
+		return nil, err
+	}
+	headersCfg, err := parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig"))
+	if err != nil {
+		return nil, err
+	}
+	queryStringsCfg, err := parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig"))
+	if err != nil {
+		return nil, err
+	}
+
 	config := &cloudfrontstore.OriginRequestPolicyConfig{
 		Name:               request.GetStringParam(configMap, "Name"),
 		Comment:            request.GetStringParam(configMap, "Comment"),
-		CookiesConfig:      parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig")),
-		HeadersConfig:      parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig")),
-		QueryStringsConfig: parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig")),
+		CookiesConfig:      cookiesCfg,
+		HeadersConfig:      headersCfg,
+		QueryStringsConfig: queryStringsCfg,
 	}
 
 	if config.Name != existing.Name {
@@ -523,6 +564,11 @@ func (s *CloudFrontService) DeleteOriginRequestPolicy(ctx context.Context, reqCt
 
 	if ifMatch != "*" && existing.ETag != ifMatch {
 		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
+	}
+
+	if isOriginRequestPolicyAttached(store, id) {
+		return nil, awserrors.NewAWSError("OriginRequestPolicyInUse",
+			"Cannot delete this origin request policy because it is attached to one or more distributions", 409)
 	}
 
 	err = store.originRequestPolicies.Delete(id)
@@ -699,25 +745,41 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	return response.EmptyResponse(), nil
 }
 
-func parseParametersInCacheKey(m map[string]interface{}) *cloudfrontstore.ParametersInCacheKey {
+func parseParametersInCacheKey(m map[string]interface{}) (*cloudfrontstore.ParametersInCacheKey, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	qsCfg, err := parseCachePolicyQueryStringConfig(request.GetMapParam(m, "QueryStringsConfig"))
+	if err != nil {
+		return nil, err
+	}
+	cookieCfg, err := parseCachePolicyCookieConfig(request.GetMapParam(m, "CookiesConfig"))
+	if err != nil {
+		return nil, err
+	}
+	headerCfg, err := parseCachePolicyHeaderConfig(request.GetMapParam(m, "HeadersConfig"))
+	if err != nil {
+		return nil, err
 	}
 	return &cloudfrontstore.ParametersInCacheKey{
 		EnableAcceptEncodingGzip:   request.GetBoolParam(m, "EnableAcceptEncodingGzip"),
 		EnableAcceptEncodingBrotli: request.GetBoolParam(m, "EnableAcceptEncodingBrotli"),
-		QueryStringsConfig:         parseCachePolicyQueryStringConfig(request.GetMapParam(m, "QueryStringsConfig")),
-		CookiesConfig:              parseCachePolicyCookieConfig(request.GetMapParam(m, "CookiesConfig")),
-		HeadersConfig:              parseCachePolicyHeaderConfig(request.GetMapParam(m, "HeadersConfig")),
-	}
+		QueryStringsConfig:         qsCfg,
+		CookiesConfig:              cookieCfg,
+		HeadersConfig:              headerCfg,
+	}, nil
 }
 
-func parseCachePolicyQueryStringConfig(m map[string]interface{}) *cloudfrontstore.QueryStringConfig {
+func parseCachePolicyQueryStringConfig(m map[string]interface{}) (*cloudfrontstore.QueryStringConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "QueryStringBehavior")
+	if err := validateBehavior("QueryStringBehavior", behavior, isValidCachePolicyQueryStringBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.QueryStringConfig{
-		QueryStringBehavior: request.GetStringParam(m, "QueryStringBehavior"),
+		QueryStringBehavior: behavior,
 	}
 	if qsMap := request.GetMapParam(m, "QueryStrings"); qsMap != nil {
 		cfg.QueryStrings = &cloudfrontstore.QueryStrings{
@@ -725,15 +787,19 @@ func parseCachePolicyQueryStringConfig(m map[string]interface{}) *cloudfrontstor
 		}
 		parseStringItems(qsMap, "Items", &cfg.QueryStrings.Items)
 	}
-	return cfg
+	return cfg, nil
 }
 
-func parseCachePolicyCookieConfig(m map[string]interface{}) *cloudfrontstore.CookieConfig {
+func parseCachePolicyCookieConfig(m map[string]interface{}) (*cloudfrontstore.CookieConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "CookieBehavior")
+	if err := validateBehavior("CookieBehavior", behavior, isValidCachePolicyCookieBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.CookieConfig{
-		CookieBehavior: request.GetStringParam(m, "CookieBehavior"),
+		CookieBehavior: behavior,
 	}
 	if cMap := request.GetMapParam(m, "Cookies"); cMap != nil {
 		cfg.Cookies = &cloudfrontstore.Cookies{
@@ -741,15 +807,19 @@ func parseCachePolicyCookieConfig(m map[string]interface{}) *cloudfrontstore.Coo
 		}
 		parseStringItems(cMap, "Items", &cfg.Cookies.Items)
 	}
-	return cfg
+	return cfg, nil
 }
 
-func parseCachePolicyHeaderConfig(m map[string]interface{}) *cloudfrontstore.HeaderConfig {
+func parseCachePolicyHeaderConfig(m map[string]interface{}) (*cloudfrontstore.HeaderConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "HeaderBehavior")
+	if err := validateBehavior("HeaderBehavior", behavior, isValidCachePolicyHeaderBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.HeaderConfig{
-		HeaderBehavior: request.GetStringParam(m, "HeaderBehavior"),
+		HeaderBehavior: behavior,
 	}
 	if hMap := request.GetMapParam(m, "Headers"); hMap != nil {
 		cfg.Headers = &cloudfrontstore.Headers{
@@ -757,15 +827,18 @@ func parseCachePolicyHeaderConfig(m map[string]interface{}) *cloudfrontstore.Hea
 		}
 		parseStringItems(hMap, "Items", &cfg.Headers.Items)
 	}
-	return cfg
+	return cfg, nil
 }
-
-func parseCookiesConfig(m map[string]interface{}) *cloudfrontstore.CookiesConfig {
+func parseCookiesConfig(m map[string]interface{}) (*cloudfrontstore.CookiesConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "CookieBehavior")
+	if err := validateBehavior("CookieBehavior", behavior, isValidORPCookieBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.CookiesConfig{
-		CookieBehavior: request.GetStringParam(m, "CookieBehavior"),
+		CookieBehavior: behavior,
 	}
 	if cMap := request.GetMapParam(m, "Cookies"); cMap != nil {
 		cfg.Cookies = &cloudfrontstore.Cookies{
@@ -773,15 +846,19 @@ func parseCookiesConfig(m map[string]interface{}) *cloudfrontstore.CookiesConfig
 		}
 		parseStringItems(cMap, "Items", &cfg.Cookies.Items)
 	}
-	return cfg
+	return cfg, nil
 }
 
-func parseORPHeadersConfig(m map[string]interface{}) *cloudfrontstore.HeadersConfig {
+func parseORPHeadersConfig(m map[string]interface{}) (*cloudfrontstore.HeadersConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "HeaderBehavior")
+	if err := validateBehavior("HeaderBehavior", behavior, isValidORPHeaderBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.HeadersConfig{
-		HeaderBehavior: request.GetStringParam(m, "HeaderBehavior"),
+		HeaderBehavior: behavior,
 	}
 	if hMap := request.GetMapParam(m, "Headers"); hMap != nil {
 		cfg.Headers = &cloudfrontstore.Headers{
@@ -789,15 +866,19 @@ func parseORPHeadersConfig(m map[string]interface{}) *cloudfrontstore.HeadersCon
 		}
 		parseStringItems(hMap, "Items", &cfg.Headers.Items)
 	}
-	return cfg
+	return cfg, nil
 }
 
-func parseORPQueryStringsConfig(m map[string]interface{}) *cloudfrontstore.QueryStringsConfig {
+func parseORPQueryStringsConfig(m map[string]interface{}) (*cloudfrontstore.QueryStringsConfig, error) {
 	if m == nil {
-		return nil
+		return nil, nil
+	}
+	behavior := request.GetStringParam(m, "QueryStringBehavior")
+	if err := validateBehavior("QueryStringBehavior", behavior, isValidORPQueryStringBehavior); err != nil {
+		return nil, err
 	}
 	cfg := &cloudfrontstore.QueryStringsConfig{
-		QueryStringBehavior: request.GetStringParam(m, "QueryStringBehavior"),
+		QueryStringBehavior: behavior,
 	}
 	if qsMap := request.GetMapParam(m, "QueryStrings"); qsMap != nil {
 		cfg.QueryStrings = &cloudfrontstore.QueryStrings{
@@ -805,28 +886,128 @@ func parseORPQueryStringsConfig(m map[string]interface{}) *cloudfrontstore.Query
 		}
 		parseStringItems(qsMap, "Items", &cfg.QueryStrings.Items)
 	}
-	return cfg
+	return cfg, nil
 }
 
 func parseStringItems(m map[string]interface{}, key string, out *[]string) {
-	switch v := m[key].(type) {
-	case []interface{}:
-		for _, item := range v {
-			if s, ok := item.(string); ok {
-				*out = append(*out, s)
-			}
-		}
-	case map[string]interface{}:
-		for _, val := range v {
-			if arr, ok := val.([]interface{}); ok {
-				for _, item := range arr {
-					if s, ok := item.(string); ok {
-						*out = append(*out, s)
-					}
+	if items, ok := m[key]; ok {
+		switch v := items.(type) {
+		case []interface{}:
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					*out = append(*out, s)
 				}
-			} else if s, ok := val.(string); ok {
-				*out = append(*out, s)
+			}
+		case map[string]interface{}:
+			for _, val := range v {
+				if arr, ok := val.([]interface{}); ok {
+					for _, item := range arr {
+						if s, ok := item.(string); ok {
+							*out = append(*out, s)
+						}
+					}
+				} else if s, ok := val.(string); ok {
+					*out = append(*out, s)
+				}
 			}
 		}
 	}
+}
+
+// isCachePolicyAttached checks whether any distribution references the cache
+// policy ID in its DefaultCacheBehaviour or additional CacheBehaviours.
+func isCachePolicyAttached(store *cloudfrontStores, policyID string) bool {
+	result, err := store.distributions.List("", 10000)
+	if err != nil {
+		return false
+	}
+	for _, dist := range result.Distributions {
+		if dist.DistributionConfig == nil {
+			continue
+		}
+		cfg := dist.DistributionConfig
+		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.CachePolicyId == policyID {
+			return true
+		}
+		if cfg.CacheBehaviors != nil {
+			for _, cb := range cfg.CacheBehaviors.Items {
+				if cb != nil && cb.CachePolicyId == policyID {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// isOriginRequestPolicyAttached checks whether any distribution references
+// the origin request policy ID in its cache behaviours.
+func isOriginRequestPolicyAttached(store *cloudfrontStores, policyID string) bool {
+	result, err := store.distributions.List("", 10000)
+	if err != nil {
+		return false
+	}
+	for _, dist := range result.Distributions {
+		if dist.DistributionConfig == nil {
+			continue
+		}
+		cfg := dist.DistributionConfig
+		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.OriginRequestPolicyId == policyID {
+			return true
+		}
+		if cfg.CacheBehaviors != nil {
+			for _, cb := range cfg.CacheBehaviors.Items {
+				if cb != nil && cb.OriginRequestPolicyId == policyID {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// isResponseHeadersPolicyAttached checks whether any distribution references
+// the response headers policy ID in its cache behaviours.
+func isResponseHeadersPolicyAttached(store *cloudfrontStores, policyID string) bool {
+	result, err := store.distributions.List("", 10000)
+	if err != nil {
+		return false
+	}
+	for _, dist := range result.Distributions {
+		if dist.DistributionConfig == nil {
+			continue
+		}
+		cfg := dist.DistributionConfig
+		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.ResponseHeadersPolicyId == policyID {
+			return true
+		}
+		if cfg.CacheBehaviors != nil {
+			for _, cb := range cfg.CacheBehaviors.Items {
+				if cb != nil && cb.ResponseHeadersPolicyId == policyID {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// isOriginAccessControlAttached checks whether any distribution references
+// the origin access control ID in its origins.
+func isOriginAccessControlAttached(store *cloudfrontStores, oacID string) bool {
+	result, err := store.distributions.List("", 10000)
+	if err != nil {
+		return false
+	}
+	for _, dist := range result.Distributions {
+		if dist.DistributionConfig == nil {
+			continue
+		}
+		for _, origin := range dist.DistributionConfig.Origins.Items {
+			if origin != nil && origin.OriginAccessControlId == oacID {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -21,18 +21,17 @@ import (
 type DistributionServer struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
-	region         string
 	client         *http.Client
 	distributionMu sync.RWMutex
 	distribution   *cfstore.DistributionStore
 }
 
-// NewDistributionServer creates a new DistributionServer with the given storage, account, and region.
-func NewDistributionServer(storageManager *storage.RegionStorageManager, accountID, region string) *DistributionServer {
+// NewDistributionServer creates a new DistributionServer. CloudFront is a
+// global service, so the server always reads from the global Pebble DB.
+func NewDistributionServer(storageManager *storage.RegionStorageManager, accountID string) *DistributionServer {
 	return &DistributionServer{
 		storageManager: storageManager,
 		accountID:      accountID,
-		region:         region,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -229,9 +228,9 @@ func (s *DistributionServer) getDistributionStore() *cfstore.DistributionStore {
 	if s.distribution != nil {
 		return s.distribution
 	}
-	store, err := s.storageManager.GetStorage(s.region)
+	store, err := s.storageManager.GetGlobalStorage()
 	if err != nil {
-		logs.Error("CloudFront distribution server: failed to get storage, returning empty store", logs.Err(err))
+		logs.Error("CloudFront distribution server: failed to get global storage, returning empty store", logs.Err(err))
 		return s.distribution
 	}
 	s.distribution = cfstore.NewDistributionStore(store, s.accountID)
