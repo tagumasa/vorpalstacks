@@ -2,28 +2,12 @@ package kinesis
 
 import (
 	"context"
-	"encoding/base64"
 	"strconv"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
-
-// validateRecordDataSize decodes the base64-encoded Data and checks the
-// decoded byte length against the stream's max record size. AWS measures
-// record size on the raw payload, not the base64-encoded representation.
-func validateRecordDataSize(b64Data string, maxKiB int32) bool {
-	decoded, err := base64.StdEncoding.DecodeString(b64Data)
-	if err != nil {
-		return false
-	}
-	maxBytes := int(maxKiB) * 1024
-	if maxBytes <= 0 {
-		maxBytes = 1048576 // 1 MiB default
-	}
-	return len(decoded) <= maxBytes
-}
 
 // PutRecord writes a single data record into a Kinesis stream.
 func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -35,7 +19,7 @@ func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestC
 	data := request.GetParamLowerFirst(req.Parameters, "Data")
 	partitionKey := request.GetParamLowerFirst(req.Parameters, "PartitionKey")
 	explicitHashKey := request.GetParamLowerFirst(req.Parameters, "ExplicitHashKey")
-	if partitionKey == "" {
+	if !validatePartitionKey(partitionKey) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -88,10 +72,7 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 			data, _ := rm["Data"].(string)
 			pk, _ := rm["PartitionKey"].(string)
 			ehk, _ := rm["ExplicitHashKey"].(string)
-			if pk == "" {
-				return nil, ErrValidation
-			}
-			if len(pk) > 256 {
+			if !validatePartitionKey(pk) {
 				return nil, ErrValidation
 			}
 			if !validateRecordDataSize(data, stream.MaxRecordSizeInKiB) {
@@ -150,7 +131,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 	if val := request.GetParamLowerFirst(req.Parameters, "Limit"); val != "" {
 		limit = int32(request.GetIntParam(req.Parameters, "Limit"))
 	}
-	if limit < 1 || limit > 10000 {
+	if !validateGetRecordsLimit(limit) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -161,7 +142,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 
 	iterator, err := store.GetShardIterator(iteratorID)
 	if err != nil {
-		return nil, ErrExpiredIterator
+		return nil, s.mapStoreError(err)
 	}
 
 	includeStart := iterator.IteratorType == "AT_SEQUENCE_NUMBER"
@@ -292,7 +273,7 @@ func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.R
 		streamName = stream.StreamName
 	}
 
-	if streamName == "" || shardID == "" || iteratorType == "" {
+	if streamName == "" || shardID == "" || !validateIteratorType(iteratorType) {
 		return nil, ErrInvalidArgument
 	}
 

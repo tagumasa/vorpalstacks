@@ -155,7 +155,7 @@ func (s *KinesisService) UpdateShardCount(ctx context.Context, reqCtx *request.R
 	}
 
 	targetCount := int32(request.GetIntParam(req.Parameters, "TargetShardCount"))
-	if targetCount <= 0 {
+	if !validateShardCount(targetCount) {
 		return nil, ErrInvalidArgument
 	}
 

@@ -2,28 +2,22 @@ package kinesis
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 
-	"google.golang.org/protobuf/proto"
-	svcerrors "vorpalstacks/internal/common/errors"
-	storecommon "vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/timeutils"
-
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
 // AdminHandler implements the Kinesis admin console gRPC-Web handler.
-// It delegates to the shared KinesisService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers
-// and the admin console gRPC-Web handlers.
+// It is a thin adapter that delegates all operations to service-layer
+// Core methods and converts results to proto types via the helpers in
+// admin_handler_convert.go. This file does not import any store package.
 type AdminHandler struct {
 	kinesisconnect.UnimplementedKinesisServiceHandler
 	service *KinesisService
@@ -35,50 +29,30 @@ var _ kinesisconnect.KinesisServiceHandler = (*AdminHandler)(nil)
 // service instance, ensuring the same per-region cached stores are used as
 // the HTTP API handlers.
 func NewAdminHandler(svc *KinesisService) *AdminHandler {
-	return &AdminHandler{
-		service: svc,
-	}
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getKinesisStoreByRegion(region string) (*kinesisstore.KinesisStore, error) {
-	return h.service.getStoreForRegion(region)
-}
-
-// ListStreams returns a list of Kinesis streams via the admin console gRPC-Web interface.
+// ListStreams returns a list of Kinesis streams via the admin console
+// gRPC-Web interface.
 func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.ListStreamsInput]) (*connect.Response[pb.ListStreamsOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getKinesisStoreByRegion(region)
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetLimit())
-	if limit <= 0 {
-		limit = 100
-	}
-	result, err := store.ListStreams(storecommon.ListOptions{
-		Marker:   req.Msg.Exclusivestartstreamname,
-		MaxItems: limit,
+	result, err := h.service.listStreamsCore(stores, AdminListStreamsInput{
+		ExclusiveStartStreamName: req.Msg.Exclusivestartstreamname,
+		Limit:                    int(req.Msg.GetLimit()),
 	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	streamNames := make([]string, len(result.Items))
-	summaries := make([]*pb.StreamSummary, len(result.Items))
-	for i, s := range result.Items {
+	streamNames := make([]string, len(result.Streams))
+	summaries := make([]*pb.StreamSummary, len(result.Streams))
+	for i, s := range result.Streams {
 		streamNames[i] = s.StreamName
-		summaries[i] = &pb.StreamSummary{
-			Streamname:              s.StreamName,
-			Streamarn:               s.StreamARN,
-			Streamstatus:            toPbStreamStatus(s.StreamStatus),
-			Streamcreationtimestamp: s.CreatedAt.Format(timeutils.ISO8601UTCFormat),
-		}
-		if s.StreamModeDetails != nil {
-			summaries[i].Streammodedetails = &pb.StreamModeDetails{
-				Streammode: toPbStreamMode(s.StreamModeDetails.StreamMode),
-			}
-		}
+		summaries[i] = toPbStreamSummary(s)
 	}
 
 	return connect.NewResponse(&pb.ListStreamsOutput{
@@ -89,195 +63,39 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
-// DescribeStream returns detailed information about a Kinesis stream via the admin console gRPC-Web interface.
+// DescribeStream returns detailed information about a Kinesis stream via
+// the admin console gRPC-Web interface.
 func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[pb.DescribeStreamInput]) (*connect.Response[pb.DescribeStreamOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getKinesisStoreByRegion(region)
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	streamName := req.Msg.Streamname
-	if streamName == "" && req.Msg.Streamarn != "" {
-		stream, err := store.GetStreamByARN(req.Msg.Streamarn)
-		if err != nil {
-			if errors.Is(err, kinesisstore.ErrStreamNotFound) {
-				return nil, connect.NewError(connect.CodeNotFound, err)
-			}
-			return nil, svcerrors.StoreErrorToGRPC(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("StreamName or StreamARN is required"))
-	}
-
-	stream, err := store.GetStream(streamName)
+	result, err := h.service.describeStreamCore(stores, AdminDescribeStreamInput{
+		StreamName: req.Msg.Streamname,
+		StreamARN:  req.Msg.Streamarn,
+	})
 	if err != nil {
-		if errors.Is(err, kinesisstore.ErrStreamNotFound) {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	shards, err := store.ListShards(streamName, nil, "", 0)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DescribeStreamOutput{
-		Streamdescription: toPbStreamDescription(stream, shards),
+		Streamdescription: toPbStreamDescription(result.Stream, result.Shards),
 	}), nil
-}
-
-func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.Shard) *pb.StreamDescription {
-	sd := &pb.StreamDescription{
-		Streamname:              stream.StreamName,
-		Streamarn:               stream.StreamARN,
-		Streamstatus:            toPbStreamStatus(stream.StreamStatus),
-		Retentionperiodhours:    stream.RetentionPeriodHours,
-		Streamcreationtimestamp: stream.CreatedAt.Format(timeutils.ISO8601UTCFormat),
-		Hasmoreshards:           proto.Bool(false),
-	}
-
-	if stream.StreamModeDetails != nil {
-		sd.Streammodedetails = &pb.StreamModeDetails{
-			Streammode: toPbStreamMode(stream.StreamModeDetails.StreamMode),
-		}
-	}
-
-	sd.Shards = make([]*pb.Shard, len(shards))
-	for i, shard := range shards {
-		sd.Shards[i] = toPbShard(shard)
-	}
-
-	if len(stream.EnhancedMonitoring) > 0 {
-		sd.Enhancedmonitoring = make([]*pb.EnhancedMetrics, len(stream.EnhancedMonitoring))
-		for i, em := range stream.EnhancedMonitoring {
-			sd.Enhancedmonitoring[i] = &pb.EnhancedMetrics{
-				Shardlevelmetrics: toPbMetricsNames(em.ShardLevelMetrics),
-			}
-		}
-	}
-
-	if stream.EncryptionType != "" {
-		sd.Encryptiontype = toPbEncryptionType(stream.EncryptionType)
-		sd.Keyid = stream.KeyID
-	}
-
-	return sd
-}
-
-func toPbShard(shard *kinesisstore.Shard) *pb.Shard {
-	s := &pb.Shard{
-		Shardid:       shard.ShardID,
-		Parentshardid: shard.ParentShardID,
-	}
-
-	if shard.HashKeyRange != nil {
-		s.Hashkeyrange = &pb.HashKeyRange{
-			Startinghashkey: shard.HashKeyRange.StartingHashKey,
-			Endinghashkey:   shard.HashKeyRange.EndingHashKey,
-		}
-	}
-
-	if shard.SequenceNumberRange != nil {
-		s.Sequencenumberrange = &pb.SequenceNumberRange{
-			Startingsequencenumber: shard.SequenceNumberRange.StartingSequenceNumber,
-			Endingsequencenumber:   shard.SequenceNumberRange.EndingSequenceNumber,
-		}
-	}
-
-	if shard.AdjacentParentShardID != "" {
-		s.Adjacentparentshardid = shard.AdjacentParentShardID
-	}
-
-	return s
-}
-
-func toPbStreamStatus(status kinesisstore.StreamStatus) pb.StreamStatus {
-	switch status {
-	case kinesisstore.StreamStatusCreating:
-		return pb.StreamStatus_STREAM_STATUS_CREATING
-	case kinesisstore.StreamStatusActive:
-		return pb.StreamStatus_STREAM_STATUS_ACTIVE
-	case kinesisstore.StreamStatusDeleting:
-		return pb.StreamStatus_STREAM_STATUS_DELETING
-	case kinesisstore.StreamStatusUpdating:
-		return pb.StreamStatus_STREAM_STATUS_UPDATING
-	default:
-		return pb.StreamStatus_STREAM_STATUS_ACTIVE
-	}
-}
-
-func toPbStreamMode(mode kinesisstore.StreamMode) pb.StreamMode {
-	switch mode {
-	case kinesisstore.StreamModeProvisioned:
-		return pb.StreamMode_STREAM_MODE_PROVISIONED
-	case kinesisstore.StreamModeOnDemand:
-		return pb.StreamMode_STREAM_MODE_ON_DEMAND
-	default:
-		return pb.StreamMode_STREAM_MODE_PROVISIONED
-	}
-}
-
-func toPbEncryptionType(encryptionType string) pb.EncryptionType {
-	if encryptionType == "KMS" {
-		return pb.EncryptionType_ENCRYPTION_TYPE_KMS
-	}
-	return pb.EncryptionType_ENCRYPTION_TYPE_NONE
-}
-
-func toPbMetricsNames(metrics []string) []pb.MetricsName {
-	result := make([]pb.MetricsName, 0, len(metrics))
-	for _, m := range metrics {
-		result = append(result, toPbMetricsName(m))
-	}
-	return result
-}
-
-func toPbMetricsName(metric string) pb.MetricsName {
-	switch metric {
-	case "IncomingBytes":
-		return pb.MetricsName_METRICS_NAME_INCOMING_BYTES
-	case "IncomingRecords":
-		return pb.MetricsName_METRICS_NAME_INCOMING_RECORDS
-	case "OutgoingBytes":
-		return pb.MetricsName_METRICS_NAME_OUTGOING_BYTES
-	case "OutgoingRecords":
-		return pb.MetricsName_METRICS_NAME_OUTGOING_RECORDS
-	case "WriteProvisionedThroughputExceeded":
-		return pb.MetricsName_METRICS_NAME_WRITE_PROVISIONED_THROUGHPUT_EXCEEDED
-	case "ReadProvisionedThroughputExceeded":
-		return pb.MetricsName_METRICS_NAME_READ_PROVISIONED_THROUGHPUT_EXCEEDED
-	case "IteratorAgeMilliseconds":
-		return pb.MetricsName_METRICS_NAME_ITERATOR_AGE_MILLISECONDS
-	default:
-		return pb.MetricsName_METRICS_NAME_INCOMING_BYTES
-	}
 }
 
 // CreateStream creates a new Kinesis stream via the admin console.
 func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb.CreateStreamInput]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.GetStreamname() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("StreamName is required"))
-	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getKinesisStoreByRegion(region)
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	shardCount := req.Msg.GetShardcount()
-	if shardCount <= 0 {
-		shardCount = 1
-	}
-
-	_, err = store.CreateStream(req.Msg.GetStreamname(), shardCount, kinesisstore.StreamModeProvisioned, 0, 0)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.createStreamCore(stores, AdminCreateStreamInput{
+		StreamName: req.Msg.GetStreamname(),
+		ShardCount: req.Msg.GetShardcount(),
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -285,24 +103,22 @@ func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb
 
 // DeleteStream deletes a Kinesis stream via the admin console.
 func (h *AdminHandler) DeleteStream(ctx context.Context, req *connect.Request[pb.DeleteStreamInput]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.GetStreamname() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("StreamName is required"))
-	}
-
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getKinesisStoreByRegion(region)
+	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := store.DeleteStream(req.Msg.GetStreamname()); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteStreamCore(stores, AdminDeleteStreamInput{
+		StreamName: req.Msg.GetStreamname(),
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Kinesis admin console.
+// NewConnectHandler creates a gRPC-Web connect handler for the Kinesis
+// admin console.
 func NewConnectHandler(svc *KinesisService) (string, http.Handler) {
 	return kinesisconnect.NewKinesisServiceHandler(NewAdminHandler(svc))
 }

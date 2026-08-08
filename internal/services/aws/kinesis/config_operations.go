@@ -3,32 +3,12 @@ package kinesis
 import (
 	"context"
 	"encoding/json"
-	"regexp"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
-
-// resourceARNPattern validates Kinesis resource ARNs per Smithy model:
-// ^arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+$
-var resourceARNPattern = regexp.MustCompile(`^arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+$`)
-
-// validShardLevelMetrics is the set of valid ShardLevelMetrics enum values.
-// Values match the enumValue traits in the Smithy model (camelCase, not
-// the SCREAMING_SNAKE_CASE member names).
-var validShardLevelMetrics = map[string]bool{
-	"IncomingBytes":                      true,
-	"IncomingRecords":                    true,
-	"OutgoingBytes":                      true,
-	"OutgoingRecords":                    true,
-	"WriteProvisionedThroughputExceeded": true,
-	"ReadProvisionedThroughputExceeded":  true,
-	"IteratorAgeMilliseconds":            true,
-	"ALL":                                true,
-}
 
 // IncreaseStreamRetentionPeriod increases the retention period of a Kinesis stream.
 func (s *KinesisService) IncreaseStreamRetentionPeriod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -44,7 +24,7 @@ func (s *KinesisService) IncreaseStreamRetentionPeriod(ctx context.Context, reqC
 		return nil, s.mapStoreError(err)
 	}
 
-	if retentionHours < stream.RetentionPeriodHours || retentionHours < 24 || retentionHours > 8760 {
+	if !validateRetentionPeriod(retentionHours) || retentionHours < stream.RetentionPeriodHours {
 		return nil, ErrInvalidArgument
 	}
 
@@ -74,7 +54,7 @@ func (s *KinesisService) DecreaseStreamRetentionPeriod(ctx context.Context, reqC
 		return nil, s.mapStoreError(err)
 	}
 
-	if retentionHours > stream.RetentionPeriodHours || retentionHours < 24 || retentionHours > 8760 {
+	if !validateRetentionPeriod(retentionHours) || retentionHours > stream.RetentionPeriodHours {
 		return nil, ErrInvalidArgument
 	}
 
@@ -162,7 +142,7 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 
 	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
 	for _, m := range requestedMetrics {
-		if !validShardLevelMetrics[m] {
+		if !validateShardLevelMetric(m) {
 			return nil, ErrInvalidArgument
 		}
 	}
@@ -206,7 +186,7 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 
 	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
 	for _, m := range requestedMetrics {
-		if !validShardLevelMetrics[m] {
+		if !validateShardLevelMetric(m) {
 			return nil, ErrInvalidArgument
 		}
 	}
@@ -249,9 +229,7 @@ func (s *KinesisService) StartStreamEncryption(ctx context.Context, reqCtx *requ
 	if encryptionType != "KMS" {
 		return nil, ErrInvalidArgument
 	}
-	// KeyId: Smithy shape has length trait (1-2048) but no pattern trait.
-	// AWS accepts UUID, key ARN, alias name (alias/my-key), and alias ARN.
-	if keyID == "" || len(keyID) > 2048 {
+	if !validateKeyId(keyID) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -298,7 +276,7 @@ func (s *KinesisService) StopStreamEncryption(ctx context.Context, reqCtx *reque
 func (s *KinesisService) GetResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 
-	if resourceARN == "" {
+	if !validateResourceARN(resourceARN) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -322,18 +300,12 @@ func (s *KinesisService) PutResourcePolicy(ctx context.Context, reqCtx *request.
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 	policy := request.GetParamLowerFirst(req.Parameters, "Policy")
 
-	if resourceARN == "" || policy == "" {
+	if policy == "" {
 		return nil, ErrInvalidArgument
 	}
-	// ResourceARN has Smithy length trait (1-2048); Policy is a bare string
-	// with no length trait — AWS allows policies up to ~20000 chars.
-	if len(resourceARN) > 2048 {
-		return nil, ErrLimitExceeded
-	}
-	if !resourceARNPattern.MatchString(resourceARN) {
+	if !validateResourceARN(resourceARN) {
 		return nil, ErrInvalidArgument
 	}
-	// Validate that Policy is valid JSON
 	if !json.Valid([]byte(policy)) {
 		return nil, ErrInvalidArgument
 	}
@@ -354,7 +326,7 @@ func (s *KinesisService) PutResourcePolicy(ctx context.Context, reqCtx *request.
 func (s *KinesisService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 
-	if resourceARN == "" {
+	if !validateResourceARN(resourceARN) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -364,7 +336,7 @@ func (s *KinesisService) DeleteResourcePolicy(ctx context.Context, reqCtx *reque
 	}
 
 	if err := store.DeleteResourcePolicy(resourceARN); err != nil {
-		logs.Warn("Failed to delete resource policy", logs.Err(err))
+		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -388,7 +360,7 @@ func (s *KinesisService) UpdateMaxRecordSize(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	if maxRecordSizeInKiB < 1 || maxRecordSizeInKiB > 10240 {
+	if !validateMaxRecordSizeInKiB(maxRecordSizeInKiB) {
 		return nil, ErrInvalidArgument
 	}
 

@@ -37,7 +37,7 @@ func (s *KinesisService) RegisterStreamConsumer(ctx context.Context, reqCtx *req
 	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
 	consumerName := request.GetParamLowerFirst(req.Parameters, "ConsumerName")
 
-	if streamARN == "" || consumerName == "" {
+	if streamARN == "" || !validateConsumerName(consumerName) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -171,7 +171,7 @@ func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *reques
 	}
 	// MaxResults: Smithy range 1-10000. Reject out-of-range values.
 	if _, ok := req.Parameters["MaxResults"]; ok {
-		if maxResults < 1 || maxResults > 10000 {
+		if !validateListStreamConsumersLimit(maxResults) {
 			return nil, ErrInvalidArgument
 		}
 	} else {
@@ -281,8 +281,16 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 
 		includeStart := startingPosition == "AT_SEQUENCE_NUMBER"
 		lastSeqNum := iterator.SequenceNumber
+		lastEventTime := time.Now()
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
+
+		// heartbeatInterval is the maximum gap between events before a
+		// heartbeat event is sent to keep the connection alive. AWS does
+		// not document the exact interval; 15 seconds is a provisional
+		// value that stays well within typical LB/proxy idle timeouts
+		// (60 s) while minimising idle traffic.
+		const heartbeatInterval = 15 * time.Second
 
 		for {
 			records, newSeqNum, err := store.GetRecords(stream.StreamName, shardID, lastSeqNum, 1000, includeStart)
@@ -326,10 +334,21 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 					return
 				}
 				lastSeqNum = newSeqNum
+				lastEventTime = time.Now()
 			} else if shardClosed && len(childShards) > 0 {
 				if err := writer.WriteSubscribeToShardEvent(nil, lastSeqNum, 0, childShards); err != nil {
 					return
 				}
+				lastEventTime = time.Now()
+			} else if time.Since(lastEventTime) >= heartbeatInterval {
+				// Heartbeat: send an event with no records to keep the
+				// connection alive during idle periods. AWS Kinesis Data
+				// Streams sends periodic heartbeat events for the same
+				// purpose; the exact interval is undocumented.
+				if err := writer.WriteSubscribeToShardEvent(nil, lastSeqNum, millisBehindLatest, nil); err != nil {
+					return
+				}
+				lastEventTime = time.Now()
 			}
 
 			// Shard closed — send End event and stop

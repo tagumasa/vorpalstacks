@@ -15,7 +15,7 @@ import (
 // CreateStream creates a new Kinesis stream.
 func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	if streamName == "" || !validateStreamName(streamName) {
+	if !validateStreamName(streamName) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -23,7 +23,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 	if shardCount == 0 {
 		shardCount = 1
 	}
-	if shardCount < 1 {
+	if !validateShardCount(shardCount) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -33,7 +33,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 	maxRecordSizeInKiB := int32(0)
 	if _, ok := req.Parameters["MaxRecordSizeInKiB"]; ok {
 		maxRecordSizeInKiB = int32(request.GetIntParam(req.Parameters, "MaxRecordSizeInKiB"))
-		if maxRecordSizeInKiB < 1024 || maxRecordSizeInKiB > 10240 {
+		if !validateMaxRecordSizeInKiB(maxRecordSizeInKiB) {
 			return nil, ErrInvalidArgument
 		}
 	}
@@ -42,7 +42,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 	warmThroughputMiBps := int32(0)
 	if _, ok := req.Parameters["WarmThroughputMiBps"]; ok {
 		warmThroughputMiBps = int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
-		if warmThroughputMiBps < 1 {
+		if !validateWarmThroughputMiBps(warmThroughputMiBps) {
 			return nil, ErrInvalidArgument
 		}
 	}
@@ -167,8 +167,11 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		}
 	}
 	limit := request.GetIntParam(req.Parameters, "Limit")
-	if limit <= 0 || limit > 10000 {
+	if limit <= 0 {
 		limit = 100
+	}
+	if !validateListStreamsLimit(limit) {
+		return nil, ErrInvalidArgument
 	}
 
 	result, err := store.ListStreams(storecommon.ListOptions{
@@ -216,7 +219,7 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
 	streamMode := parseStreamModeDetails(req.Parameters)
 
-	if streamARN == "" || streamMode == "" {
+	if streamARN == "" || !validateStreamMode(string(streamMode)) {
 		return nil, ErrInvalidArgument
 	}
 
@@ -235,7 +238,7 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 	// Parse optional WarmThroughputMiBps
 	if _, ok := req.Parameters["WarmThroughputMiBps"]; ok {
 		warm := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
-		if warm < 1 {
+		if !validateWarmThroughputMiBps(warm) {
 			return nil, ErrInvalidArgument
 		}
 		stream.WarmThroughputMiBps = warm
