@@ -14,11 +14,15 @@ import (
 type DescribeDBClusterParameterGroupsInput struct {
 	DBClusterParameterGroupName string
 	Filters                     []*pb.Filter
+	Marker                      string
+	MaxRecords                  int32
 }
 
 type DescribeDBParameterGroupsInput struct {
 	DBParameterGroupName string
 	Filters              []*pb.Filter
+	Marker               string
+	MaxRecords           int32
 }
 
 type DescribeDBParametersInput struct {
@@ -46,7 +50,10 @@ func (s *RDSService) describeDBClusterParameterGroupsCore(stores *rdsStores, in 
 		pbGroups = append(pbGroups, clusterParamGroupToPb(g))
 	}
 
-	return &pb.DBClusterParameterGroupsMessage{Dbclusterparametergroups: pbGroups}, nil
+	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBClusterParameterGroup) string {
+		return g.Dbclusterparametergroupname
+	})
+	return &pb.DBClusterParameterGroupsMessage{Dbclusterparametergroups: pbGroups, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeDBParameterGroupsCore(stores *rdsStores, in DescribeDBParameterGroupsInput) (*pb.DBParameterGroupsMessage, error) {
@@ -66,7 +73,10 @@ func (s *RDSService) describeDBParameterGroupsCore(stores *rdsStores, in Describ
 		pbGroups = append(pbGroups, paramGroupToPb(g))
 	}
 
-	return &pb.DBParameterGroupsMessage{Dbparametergroups: pbGroups}, nil
+	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBParameterGroup) string {
+		return g.Dbparametergroupname
+	})
+	return &pb.DBParameterGroupsMessage{Dbparametergroups: pbGroups, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeDBParametersCore(stores *rdsStores, in DescribeDBParametersInput) (*pb.DBParameterGroupDetails, error) {

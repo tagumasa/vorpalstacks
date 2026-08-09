@@ -20,6 +20,8 @@ import (
 type DescribeDBClustersInput struct {
 	DBClusterIdentifier string
 	Filters             []*pb.Filter
+	Marker              string
+	MaxRecords          int32
 }
 
 type CreateDBClusterInput struct {
@@ -51,12 +53,16 @@ type DescribeDBClusterSnapshotsInput struct {
 	DBClusterIdentifier         string
 	SnapshotType                string
 	Filters                     []*pb.Filter
+	Marker                      string
+	MaxRecords                  int32
 }
 
 type DescribeDBClusterEndpointsInput struct {
 	DBClusterIdentifier         string
 	DBClusterEndpointIdentifier string
 	Filters                     []*pb.Filter
+	Marker                      string
+	MaxRecords                  int32
 }
 
 type DescribeDBClusterParametersInput struct {
@@ -84,7 +90,10 @@ func (s *RDSService) describeDBClustersCore(stores *rdsStores, in DescribeDBClus
 		pbClusters = append(pbClusters, clusterToPb(c, s.accountId))
 	}
 
-	return &pb.DBClusterMessage{Dbclusters: pbClusters}, nil
+	pbClusters, nextMarker := paginateRDSItems(pbClusters, in.Marker, in.MaxRecords, func(c *pb.DBCluster) string {
+		return c.Dbclusteridentifier
+	})
+	return &pb.DBClusterMessage{Dbclusters: pbClusters, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) createDBClusterCore(stores *rdsStores, in CreateDBClusterInput) (*pb.CreateDBClusterResult, error) {
@@ -116,6 +125,12 @@ func (s *RDSService) createDBClusterCore(stores *rdsStores, in CreateDBClusterIn
 	}
 	if _, err := s.engines(engine); err != nil {
 		return nil, newValidationError("engine %q is not supported on this platform: %v", engine, err)
+	}
+	if err := ValidatePort(in.Port); err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	if err := ValidateBackupRetentionPeriod(in.BackupRetentionPeriod); err != nil {
+		return nil, newValidationError("%v", err)
 	}
 
 	if name := in.DBSubnetGroupName; name != "" {
@@ -300,7 +315,10 @@ func (s *RDSService) describeDBClusterSnapshotsCore(stores *rdsStores, in Descri
 		pbSnapshots = append(pbSnapshots, snapshotToPb(snap, s.accountId))
 	}
 
-	return &pb.DBClusterSnapshotMessage{Dbclustersnapshots: pbSnapshots}, nil
+	pbSnapshots, nextMarker := paginateRDSItems(pbSnapshots, in.Marker, in.MaxRecords, func(s *pb.DBClusterSnapshot) string {
+		return s.Dbclustersnapshotidentifier
+	})
+	return &pb.DBClusterSnapshotMessage{Dbclustersnapshots: pbSnapshots, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeDBClusterEndpointsCore(stores *rdsStores, in DescribeDBClusterEndpointsInput) (*pb.DBClusterEndpointMessage, error) {
@@ -329,7 +347,10 @@ func (s *RDSService) describeDBClusterEndpointsCore(stores *rdsStores, in Descri
 		})
 	}
 
-	return &pb.DBClusterEndpointMessage{Dbclusterendpoints: pbEndpoints}, nil
+	pbEndpoints, nextMarker := paginateRDSItems(pbEndpoints, in.Marker, in.MaxRecords, func(e *pb.DBClusterEndpoint) string {
+		return e.Dbclusterendpointidentifier
+	})
+	return &pb.DBClusterEndpointMessage{Dbclusterendpoints: pbEndpoints, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeDBClusterParametersCore(stores *rdsStores, in DescribeDBClusterParametersInput) (*pb.DBClusterParameterGroupDetails, error) {

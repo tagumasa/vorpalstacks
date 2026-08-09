@@ -62,6 +62,8 @@ func (h *AdminHandler) DescribeDBClusters(ctx context.Context, req *connect.Requ
 	result, err := h.service.describeDBClustersCore(stores, DescribeDBClustersInput{
 		DBClusterIdentifier: req.Msg.Dbclusteridentifier,
 		Filters:             req.Msg.Filters,
+		Marker:              req.Msg.Marker,
+		MaxRecords:          req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -123,6 +125,8 @@ func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *conn
 		DBClusterIdentifier:         req.Msg.Dbclusteridentifier,
 		SnapshotType:                req.Msg.Snapshottype,
 		Filters:                     req.Msg.Filters,
+		Marker:                      req.Msg.Marker,
+		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -147,6 +151,8 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 		DBClusterIdentifier:         req.Msg.Dbclusteridentifier,
 		DBClusterEndpointIdentifier: req.Msg.Dbclusterendpointidentifier,
 		Filters:                     req.Msg.Filters,
+		Marker:                      req.Msg.Marker,
+		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -204,6 +210,8 @@ func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Req
 	result, err := h.service.describeDBInstancesCore(stores, DescribeDBInstancesInput{
 		DBInstanceIdentifier: req.Msg.Dbinstanceidentifier,
 		Filters:              req.Msg.Filters,
+		Marker:               req.Msg.Marker,
+		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -310,6 +318,8 @@ func (h *AdminHandler) DescribeDBSnapshots(ctx context.Context, req *connect.Req
 		DBInstanceIdentifier: req.Msg.Dbinstanceidentifier,
 		SnapshotType:         req.Msg.Snapshottype,
 		Filters:              req.Msg.Filters,
+		Marker:               req.Msg.Marker,
+		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -329,6 +339,8 @@ func (h *AdminHandler) DescribeDBClusterParameterGroups(ctx context.Context, req
 	result, err := h.service.describeDBClusterParameterGroupsCore(stores, DescribeDBClusterParameterGroupsInput{
 		DBClusterParameterGroupName: req.Msg.Dbclusterparametergroupname,
 		Filters:                     req.Msg.Filters,
+		Marker:                      req.Msg.Marker,
+		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -344,6 +356,8 @@ func (h *AdminHandler) DescribeDBParameterGroups(ctx context.Context, req *conne
 	result, err := h.service.describeDBParameterGroupsCore(stores, DescribeDBParameterGroupsInput{
 		DBParameterGroupName: req.Msg.Dbparametergroupname,
 		Filters:              req.Msg.Filters,
+		Marker:               req.Msg.Marker,
+		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -401,6 +415,8 @@ func (h *AdminHandler) DescribeDBSubnetGroups(ctx context.Context, req *connect.
 	result, err := h.service.describeDBSubnetGroupsCore(stores, DescribeDBSubnetGroupsInput{
 		DBSubnetGroupName: req.Msg.Dbsubnetgroupname,
 		Filters:           req.Msg.Filters,
+		Marker:            req.Msg.Marker,
+		MaxRecords:        req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -416,6 +432,8 @@ func (h *AdminHandler) DescribeGlobalClusters(ctx context.Context, req *connect.
 	result, err := h.service.describeGlobalClustersCore(stores, DescribeGlobalClustersInput{
 		GlobalClusterIdentifier: req.Msg.Globalclusteridentifier,
 		Filters:                 req.Msg.Filters,
+		Marker:                  req.Msg.Marker,
+		MaxRecords:              req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -431,6 +449,8 @@ func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *conn
 	result, err := h.service.describeEventSubscriptionsCore(stores, DescribeEventSubscriptionsInput{
 		SubscriptionName: req.Msg.Subscriptionname,
 		Filters:          req.Msg.Filters,
+		Marker:           req.Msg.Marker,
+		MaxRecords:       req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

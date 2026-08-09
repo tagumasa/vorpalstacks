@@ -46,6 +46,32 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
+	if port := int32(request.GetIntParam(params, "Port")); port > 0 {
+		if err := rdssvc.ValidatePort(port); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+	if mi := int32(request.GetIntParam(params, "MonitoringInterval")); mi > 0 {
+		if err := rdssvc.ValidateMonitoringInterval(mi); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+	if st := request.GetStringParam(params, "StorageType"); st != "" {
+		if err := rdssvc.ValidateStorageType(st, engineType); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+	if brp := int32(request.GetIntParam(params, "BackupRetentionPeriod")); brp > 0 {
+		if err := rdssvc.ValidateBackupRetentionPeriod(brp); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+	if as := int32(request.GetIntParam(params, "AllocatedStorage")); as > 0 {
+		if err := rdssvc.ValidateAllocatedStorage(as, engineType); err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -184,6 +210,9 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	instance.DBInstanceStatus = "deleting"
+	if err := store.UpdateInstance(instance); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	// Close the engine for standalone instances (cluster-based instances
 	// are cleaned up when the cluster's engine is closed).

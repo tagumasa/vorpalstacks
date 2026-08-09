@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/logs"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/rds"
@@ -20,19 +21,44 @@ import (
 // Input DTOs
 // ---------------------------------------------------------------------------
 
+// paginateRDSItems applies Marker/MaxRecords pagination to a sorted slice.
+// Delegates to the shared pagination.PaginateSlice so that marker-not-found
+// returns an empty page (not the first page) — the same behaviour Neptune's
+// paginateItems relies on. maxRecords is clamped to 20-100 with a default
+// of 100 when zero.
+func paginateRDSItems[T any](items []T, marker string, maxRecords int32, idFunc func(T) string) ([]T, string) {
+	if maxRecords == 0 {
+		maxRecords = 100
+	}
+	if maxRecords < 20 {
+		maxRecords = 20
+	}
+	if maxRecords > 100 {
+		maxRecords = 100
+	}
+	result := pagination.PaginateSlice(items, marker, int(maxRecords), pagination.KeyExtractor[T](idFunc))
+	return result.Items, result.NextMarker
+}
+
 type DescribeDBSubnetGroupsInput struct {
 	DBSubnetGroupName string
 	Filters           []*pb.Filter
+	Marker            string
+	MaxRecords        int32
 }
 
 type DescribeGlobalClustersInput struct {
 	GlobalClusterIdentifier string
 	Filters                 []*pb.Filter
+	Marker                  string
+	MaxRecords              int32
 }
 
 type DescribeEventSubscriptionsInput struct {
 	SubscriptionName string
 	Filters          []*pb.Filter
+	Marker           string
+	MaxRecords       int32
 }
 
 type DescribeEventsInput struct {
@@ -82,7 +108,10 @@ func (s *RDSService) describeDBSubnetGroupsCore(stores *rdsStores, in DescribeDB
 		pbGroups = append(pbGroups, subnetGroupToPb(g))
 	}
 
-	return &pb.DBSubnetGroupMessage{Dbsubnetgroups: pbGroups}, nil
+	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBSubnetGroup) string {
+		return g.Dbsubnetgroupname
+	})
+	return &pb.DBSubnetGroupMessage{Dbsubnetgroups: pbGroups, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeGlobalClustersCore(stores *rdsStores, in DescribeGlobalClustersInput) (*pb.GlobalClustersMessage, error) {
@@ -102,7 +131,10 @@ func (s *RDSService) describeGlobalClustersCore(stores *rdsStores, in DescribeGl
 		pbClusters = append(pbClusters, globalClusterToPb(c))
 	}
 
-	return &pb.GlobalClustersMessage{Globalclusters: pbClusters}, nil
+	pbClusters, nextMarker := paginateRDSItems(pbClusters, in.Marker, in.MaxRecords, func(c *pb.GlobalCluster) string {
+		return c.Globalclusteridentifier
+	})
+	return &pb.GlobalClustersMessage{Globalclusters: pbClusters, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeEventSubscriptionsCore(stores *rdsStores, in DescribeEventSubscriptionsInput) (*pb.EventSubscriptionsMessage, error) {
@@ -122,7 +154,10 @@ func (s *RDSService) describeEventSubscriptionsCore(stores *rdsStores, in Descri
 		pbSubs = append(pbSubs, eventSubscriptionToPb(sub))
 	}
 
-	return &pb.EventSubscriptionsMessage{Eventsubscriptionslist: pbSubs}, nil
+	pbSubs, nextMarker := paginateRDSItems(pbSubs, in.Marker, in.MaxRecords, func(sub *pb.EventSubscription) string {
+		return sub.Custsubscriptionid
+	})
+	return &pb.EventSubscriptionsMessage{Eventsubscriptionslist: pbSubs, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInput) (*pb.EventsMessage, error) {

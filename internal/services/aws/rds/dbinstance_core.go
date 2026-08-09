@@ -22,6 +22,8 @@ import (
 type DescribeDBInstancesInput struct {
 	DBInstanceIdentifier string
 	Filters              []*pb.Filter
+	Marker               string
+	MaxRecords           int32
 }
 
 type CreateDBInstanceInput struct {
@@ -80,6 +82,8 @@ type DescribeDBSnapshotsInput struct {
 	DBInstanceIdentifier string
 	SnapshotType         string
 	Filters              []*pb.Filter
+	Marker               string
+	MaxRecords           int32
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +107,10 @@ func (s *RDSService) describeDBInstancesCore(stores *rdsStores, in DescribeDBIns
 		pbInstances = append(pbInstances, instanceToPb(i, s.accountId))
 	}
 
-	return &pb.DBInstanceMessage{Dbinstances: pbInstances}, nil
+	pbInstances, nextMarker := paginateRDSItems(pbInstances, in.Marker, in.MaxRecords, func(i *pb.DBInstance) string {
+		return i.Dbinstanceidentifier
+	})
+	return &pb.DBInstanceMessage{Dbinstances: pbInstances, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) createDBInstanceCore(stores *rdsStores, in CreateDBInstanceInput) (*pb.CreateDBInstanceResult, error) {
@@ -133,6 +140,21 @@ func (s *RDSService) createDBInstanceCore(stores *rdsStores, in CreateDBInstance
 	}
 	if _, err := s.engines(engine); err != nil {
 		return nil, newValidationError("engine %q is not supported on this platform: %v", engine, err)
+	}
+	if err := ValidatePort(in.Port); err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	if err := ValidateMonitoringInterval(in.MonitoringInterval); err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	if err := ValidateStorageType(in.StorageType, engine); err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	if err := ValidateBackupRetentionPeriod(in.BackupRetentionPeriod); err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	if err := ValidateAllocatedStorage(in.AllocatedStorage, engine); err != nil {
+		return nil, newValidationError("%v", err)
 	}
 
 	if name := in.DBSubnetGroupName; name != "" {
@@ -312,13 +334,18 @@ func (s *RDSService) deleteDBInstanceCore(stores *rdsStores, in DeleteDBInstance
 		}
 	}
 
+	instance.DBInstanceStatus = "deleting"
+	if err := stores.store.UpdateInstance(instance); err != nil {
+		return nil, translateStoreError(err)
+	}
+
 	if eng, engErr := s.engines(instance.Engine); engErr == nil {
 		if closeErr := eng.Close(id); closeErr != nil {
-			return nil, translateStoreError(fmt.Errorf("failed to stop engine for instance %q: %w", id, closeErr))
+			logs.Warn("rds-admin: engine.Close failed during DeleteDBInstance",
+				logs.String("instance", id), logs.Err(closeErr))
 		}
 	}
 
-	instance.DBInstanceStatus = "deleting"
 	if err := stores.store.DeleteInstance(id); err != nil {
 		return nil, translateStoreError(err)
 	}
@@ -428,7 +455,10 @@ func (s *RDSService) describeDBSnapshotsCore(stores *rdsStores, in DescribeDBSna
 		pbSnapshots = append(pbSnapshots, dbSnapshotToPb(snap, s.accountId))
 	}
 
-	return &pb.DBSnapshotMessage{Dbsnapshots: pbSnapshots}, nil
+	pbSnapshots, nextMarker := paginateRDSItems(pbSnapshots, in.Marker, in.MaxRecords, func(s *pb.DBSnapshot) string {
+		return s.Dbsnapshotidentifier
+	})
+	return &pb.DBSnapshotMessage{Dbsnapshots: pbSnapshots, Marker: nextMarker}, nil
 }
 
 // ---------------------------------------------------------------------------

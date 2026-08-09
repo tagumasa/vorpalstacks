@@ -32,22 +32,19 @@ func hashMasterPassword(plaintext string) (string, error) {
 	return string(hash), nil
 }
 
-// validateBackupRetentionPeriod checks that the retention period is within
-// the AWS-specified range of 1-35 days for Neptune.
-func validateBackupRetentionPeriod(v int) error {
-	if v < 1 || v > 35 {
-		return fmt.Errorf("BackupRetentionPeriod must be between 1 and 35")
-	}
-	return nil
+// validatePort checks that the port number is within the AWS-specified
+// valid range for Neptune DB clusters. Delegates to the shared
+// rdssvc.ValidatePort so there is a single source of truth.
+func validatePort(v int) error {
+	return rdssvc.ValidatePort(int32(v))
 }
 
-// validatePort checks that the port number is within the AWS-specified
-// valid range for Neptune DB clusters.
-func validatePort(v int) error {
-	if v < 1150 || v > 65535 {
-		return fmt.Errorf("Port must be between 1150 and 65535")
-	}
-	return nil
+// validateBackupRetentionPeriod checks that the retention period is within
+// the AWS-specified range of 1-35 days for Neptune. Delegates to the
+// shared rdssvc.ValidateBackupRetentionPeriod so there is a single source
+// of truth.
+func validateBackupRetentionPeriod(v int) error {
+	return rdssvc.ValidateBackupRetentionPeriod(int32(v))
 }
 
 // isValidIAMRoleArn validates that the given string is a well-formed IAM

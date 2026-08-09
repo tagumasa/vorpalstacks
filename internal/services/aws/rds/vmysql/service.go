@@ -320,7 +320,7 @@ func (s *Service) GetInstanceStore(instanceID string) *rdbengine.Store {
 // its own Pebble batch. A crash mid-snapshot leaves a partial snapshot
 // that will fail cleanly at restore time rather than silently producing
 // a database with half the tables.
-func (s *Service) SnapshotData(instanceID, snapshotID string) error {
+func (s *Service) SnapshotData(instanceID, snapshotID string) (err error) {
 	if snapshotID == "" {
 		return fmt.Errorf("vmysql: SnapshotData: snapshotID is empty")
 	}
@@ -347,6 +347,17 @@ func (s *Service) SnapshotData(instanceID, snapshotID string) error {
 	// is idempotent. Without this, a re-run after a partial failure
 	// would collide on ErrAlreadyExists at the first duplicate row.
 	_ = s.DeleteSnapshotData(snapshotID)
+
+	// If the copy fails partway through, clean up the partial snapshot
+	// data so the snap_<snapshotID> bucket does not leak.
+	defer func() {
+		if err != nil {
+			if cleanupErr := s.DeleteSnapshotData(snapshotID); cleanupErr != nil {
+				logs.Warn("vmysql: SnapshotData cleanup failed after error",
+					logs.String("snapshot", snapshotID), logs.Err(cleanupErr))
+			}
+		}
+	}()
 
 	snapStore, err := s.openSnapshotStore(snapshotID)
 	if err != nil {

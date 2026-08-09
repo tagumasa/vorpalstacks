@@ -306,6 +306,84 @@ func ValidateEngineVersion(engine, version string) error {
 	}
 }
 
+// ValidatePort enforces the AWS RDS Port constraint: 1150-65535.
+// A value of 0 means "unset" (the caller will choose a default) and
+// is therefore accepted.
+func ValidatePort(port int32) error {
+	if port == 0 {
+		return nil
+	}
+	if port < 1150 || port > 65535 {
+		return fmt.Errorf("Port must be between 1150 and 65535, got %d", port)
+	}
+	return nil
+}
+
+// ValidateMonitoringInterval enforces the AWS RDS MonitoringInterval
+// constraint: one of {0, 1, 5, 10, 15, 30, 60} seconds. A value of 0
+// disables Enhanced Monitoring.
+func ValidateMonitoringInterval(interval int32) error {
+	switch interval {
+	case 0, 1, 5, 10, 15, 30, 60:
+		return nil
+	}
+	return fmt.Errorf("MonitoringInterval must be one of 0, 1, 5, 10, 15, 30, 60, got %d", interval)
+}
+
+// ValidateStorageType enforces the AWS RDS StorageType constraint.
+// MySQL accepts gp2, gp3, io2, and standard. Neptune (Aurora) storage
+// is managed by the service and does not accept a StorageType parameter.
+// An empty string means "unset" and is accepted so callers that do not
+// supply the parameter are not penalised.
+func ValidateStorageType(storageType, engine string) error {
+	if storageType == "" {
+		return nil
+	}
+	switch engine {
+	case "mysql":
+		switch storageType {
+		case "gp2", "gp3", "io2", "standard":
+			return nil
+		}
+		return fmt.Errorf("StorageType %q is not valid for MySQL engine (allowed: gp2, gp3, io2, standard)", storageType)
+	case "neptune":
+		return fmt.Errorf("StorageType is not applicable for Neptune engine")
+	default:
+		switch storageType {
+		case "gp2", "gp3", "io2", "standard":
+			return nil
+		}
+		return fmt.Errorf("StorageType %q is not recognised (allowed: gp2, gp3, io2, standard)", storageType)
+	}
+}
+
+// ValidateBackupRetentionPeriod enforces the AWS RDS
+// BackupRetentionPeriod constraint: 0-35 days. A value of 0 disables
+// automated backups.
+func ValidateBackupRetentionPeriod(period int32) error {
+	if period < 0 || period > 35 {
+		return fmt.Errorf("BackupRetentionPeriod must be between 0 and 35, got %d", period)
+	}
+	return nil
+}
+
+// ValidateAllocatedStorage enforces the AWS RDS AllocatedStorage
+// constraint. For MySQL the valid range is 20-65536 GiB. Neptune
+// (Aurora) storage is automatically managed and the field is ignored,
+// so an empty/zero value is accepted for Neptune.
+func ValidateAllocatedStorage(storage int32, engine string) error {
+	if engine == "neptune" {
+		return nil
+	}
+	if storage == 0 {
+		return nil
+	}
+	if storage < 20 || storage > 65536 {
+		return fmt.Errorf("AllocatedStorage must be between 20 and 65536 GiB, got %d", storage)
+	}
+	return nil
+}
+
 func isASCIILetter(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
