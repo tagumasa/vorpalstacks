@@ -35,19 +35,44 @@ type VPC struct {
 
 // ResourceRecordSet represents a Route 53 resource record set.
 type ResourceRecordSet struct {
-	Name                    string            `json:"name"`
-	Type                    string            `json:"type"`
-	SetIdentifier           string            `json:"setIdentifier,omitempty"`
-	Weight                  int64             `json:"weight,omitempty"`
-	Region                  string            `json:"region,omitempty"`
-	GeoLocation             *GeoLocation      `json:"geoLocation,omitempty"`
-	Failover                string            `json:"failover,omitempty"`
-	MultiValueAnswer        bool              `json:"multiValueAnswer,omitempty"`
-	TTL                     int64             `json:"ttl,omitempty"`
-	ResourceRecords         []*ResourceRecord `json:"resourceRecords,omitempty"`
-	AliasTarget             *AliasTarget      `json:"aliasTarget,omitempty"`
-	HealthCheckID           string            `json:"healthCheckId,omitempty"`
-	TrafficPolicyInstanceID string            `json:"trafficPolicyInstanceId,omitempty"`
+	Name                    string                `json:"name"`
+	Type                    string                `json:"type"`
+	SetIdentifier           string                `json:"setIdentifier,omitempty"`
+	Weight                  int64                 `json:"weight,omitempty"`
+	Region                  string                `json:"region,omitempty"`
+	GeoLocation             *GeoLocation          `json:"geoLocation,omitempty"`
+	Failover                string                `json:"failover,omitempty"`
+	MultiValueAnswer        bool                  `json:"multiValueAnswer,omitempty"`
+	TTL                     int64                 `json:"ttl,omitempty"`
+	ResourceRecords         []*ResourceRecord     `json:"resourceRecords,omitempty"`
+	AliasTarget             *AliasTarget          `json:"aliasTarget,omitempty"`
+	HealthCheckID           string                `json:"healthCheckId,omitempty"`
+	TrafficPolicyInstanceID string                `json:"trafficPolicyInstanceId,omitempty"`
+	CidrRoutingConfig       *CidrRoutingConfig    `json:"cidrRoutingConfig,omitempty"`
+	GeoProximityLocation    *GeoProximityLocation `json:"geoProximityLocation,omitempty"`
+}
+
+// CidrRoutingConfig links a resource record set to a CIDR collection
+// location. Smithy: com.amazonaws.route53#CidrRoutingConfig.
+type CidrRoutingConfig struct {
+	CollectionId string `json:"collectionId"`
+	LocationName string `json:"locationName"`
+}
+
+// GeoProximityLocation specifies where resources are located for
+// geoproximity routing. Smithy: com.amazonaws.route53#GeoProximityLocation.
+type GeoProximityLocation struct {
+	AWSRegion      string       `json:"awsRegion,omitempty"`
+	LocalZoneGroup string       `json:"localZoneGroup,omitempty"`
+	Coordinates    *Coordinates `json:"coordinates,omitempty"`
+	Bias           int64        `json:"bias,omitempty"`
+}
+
+// Coordinates holds the latitude and longitude for a geographic point.
+// Smithy: com.amazonaws.route53#Coordinates.
+type Coordinates struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 // ResourceRecord represents a DNS resource record.
@@ -142,4 +167,22 @@ type HealthCheckListResult struct {
 	HealthChecks []*HealthCheck
 	IsTruncated  bool
 	Marker       string
+}
+
+// CidrCollection represents a Route 53 CIDR collection.
+type CidrCollection struct {
+	ID              string              `json:"id"`
+	Name            string              `json:"name"`
+	CallerReference string              `json:"callerReference"`
+	Version         int64               `json:"version"`
+	Locations       map[string][]string `json:"locations"` // LocationName -> []CIDR
+	AccountID       string              `json:"accountId"`
+	CreatedAt       time.Time           `json:"createdAt"`
+}
+
+// CidrCollectionListResult represents the result of listing CIDR collections.
+type CidrCollectionListResult struct {
+	Collections []*CidrCollection
+	IsTruncated bool
+	NextToken   string
 }

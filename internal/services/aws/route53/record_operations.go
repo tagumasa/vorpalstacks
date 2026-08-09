@@ -56,6 +56,30 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		return nil, awserrors.NewAWSError("InvalidInput", "Changes are required", 400)
 	}
 
+	// Pre-validate all changes before creating any persistent state so
+	// that an invalid change batch does not leave an orphaned PENDING
+	// ChangeInfo record.
+	type parsedChange struct {
+		action string
+		rrsRaw map[string]interface{}
+	}
+	parsed := make([]parsedChange, 0, len(changesList))
+	for _, c := range changesList {
+		changeMap, ok := c.(map[string]interface{})
+		if !ok {
+			return nil, awserrors.NewAWSError("InvalidChangeBatch", "Each element in Changes must be a map", 400)
+		}
+		action, _ := changeMap["Action"].(string)
+		if !validateChangeAction(action) {
+			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
+		}
+		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
+		if rrsRaw == nil {
+			return nil, awserrors.NewAWSError("InvalidChangeBatch", "ResourceRecordSet is required for each change", 400)
+		}
+		parsed = append(parsed, parsedChange{action: action, rrsRaw: rrsRaw})
+	}
+
 	changeId := generateChangeId()
 	change := &route53store.ChangeInfo{
 		ID:          changeId,
@@ -76,20 +100,9 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 
 	var appliedChanges []*route53store.ResourceRecordSet
 
-	for _, c := range changesList {
-		changeMap, ok := c.(map[string]interface{})
-		if !ok {
-			return nil, awserrors.NewAWSError("InvalidChangeBatch", "Each element in Changes must be a map", 400)
-		}
-
-		action, _ := changeMap["Action"].(string)
-		if action != "CREATE" && action != "UPSERT" && action != "DELETE" {
-			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
-		}
-		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
-		if rrsRaw == nil {
-			return nil, awserrors.NewAWSError("InvalidChangeBatch", "ResourceRecordSet is required for each change", 400)
-		}
+	for _, pc := range parsed {
+		action := pc.action
+		rrsRaw := pc.rrsRaw
 
 		name := request.GetStringParam(rrsRaw, "Name")
 		if name == "" {
@@ -105,6 +118,9 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		}
 		if rrs.Type == "" {
 			return nil, awserrors.NewAWSError("InvalidInput", "Type is required for resource record set", 400)
+		}
+		if !validateRecordType(rrs.Type) {
+			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid record type: %q. Must be a valid RRType enum value", rrs.Type), 400)
 		}
 		if rrs.TTL == 0 {
 			rrs.TTL = int64(request.GetIntParam(rrsRaw, "ttl"))
@@ -159,6 +175,28 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 				DNSName:              request.GetStringParam(aliasRaw, "DNSName"),
 				EvaluateTargetHealth: request.GetBoolParam(aliasRaw, "EvaluateTargetHealth"),
 			}
+		}
+
+		if cidrRaw, ok := rrsRaw["CidrRoutingConfig"].(map[string]interface{}); ok {
+			rrs.CidrRoutingConfig = &route53store.CidrRoutingConfig{
+				CollectionId: request.GetStringParam(cidrRaw, "CollectionId"),
+				LocationName: request.GetStringParam(cidrRaw, "LocationName"),
+			}
+		}
+
+		if gpRaw, ok := rrsRaw["GeoProximityLocation"].(map[string]interface{}); ok {
+			gp := &route53store.GeoProximityLocation{
+				AWSRegion:      request.GetStringParam(gpRaw, "AWSRegion"),
+				LocalZoneGroup: request.GetStringParam(gpRaw, "LocalZoneGroup"),
+				Bias:           int64(request.GetIntParam(gpRaw, "Bias")),
+			}
+			if coordsRaw, ok := gpRaw["Coordinates"].(map[string]interface{}); ok {
+				gp.Coordinates = &route53store.Coordinates{
+					Latitude:  request.GetFloatParam(coordsRaw, "Latitude"),
+					Longitude: request.GetFloatParam(coordsRaw, "Longitude"),
+				}
+			}
+			rrs.GeoProximityLocation = gp
 		}
 
 		// Validate TTL and HealthCheckId only for CREATE/UPSERT.
@@ -435,6 +473,33 @@ func (s *Route53Service) recordSetToResponse(rs *route53store.ResourceRecordSet)
 			"CountryCode":     rs.GeoLocation.CountryCode,
 			"SubdivisionCode": rs.GeoLocation.SubdivisionCode,
 		}
+	}
+
+	if rs.CidrRoutingConfig != nil {
+		result["CidrRoutingConfig"] = map[string]interface{}{
+			"CollectionId": rs.CidrRoutingConfig.CollectionId,
+			"LocationName": rs.CidrRoutingConfig.LocationName,
+		}
+	}
+
+	if rs.GeoProximityLocation != nil {
+		gp := map[string]interface{}{}
+		if rs.GeoProximityLocation.AWSRegion != "" {
+			gp["AWSRegion"] = rs.GeoProximityLocation.AWSRegion
+		}
+		if rs.GeoProximityLocation.LocalZoneGroup != "" {
+			gp["LocalZoneGroup"] = rs.GeoProximityLocation.LocalZoneGroup
+		}
+		if rs.GeoProximityLocation.Coordinates != nil {
+			gp["Coordinates"] = map[string]interface{}{
+				"Latitude":  rs.GeoProximityLocation.Coordinates.Latitude,
+				"Longitude": rs.GeoProximityLocation.Coordinates.Longitude,
+			}
+		}
+		if rs.GeoProximityLocation.Bias != 0 {
+			gp["Bias"] = rs.GeoProximityLocation.Bias
+		}
+		result["GeoProximityLocation"] = gp
 	}
 
 	return result

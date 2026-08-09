@@ -109,7 +109,9 @@ func (s *Route53Service) DeleteHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, NewHealthCheckInUseError(healthCheckId)
 	}
 
-	st.Tags().Raw().Delete("healthcheck/" + healthCheckId)
+	if err := st.Tags().Raw().Delete("healthcheck/" + healthCheckId); err != nil {
+		return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Failed to delete tags: %v", err), 500)
+	}
 
 	if err := st.HealthChecks().Delete(healthCheckId); err != nil {
 		if route53store.IsNotFound(err) {
@@ -147,6 +149,12 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, healthCheckConfig)
 	} else {
 		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, req.Parameters)
+	}
+
+	// Validate the updated configuration — the same constraints as
+	// CreateHealthCheck apply to updated field values.
+	if err := validateHealthCheckConfig(healthCheck.HealthCheckConfig); err != nil {
+		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
@@ -280,6 +288,9 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 
 	// Parse and include Comment in ChangeInfo response.
 	comment := request.GetStringParam(req.Parameters, "Comment")
+	if err := validateComment(comment); err != nil {
+		return nil, err
+	}
 	changeId := generateChangeId()
 	now := time.Now()
 	if err := st.Changes().Create(&route53store.ChangeInfo{
@@ -349,6 +360,9 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 
 	// Parse and include Comment in ChangeInfo response.
 	comment := request.GetStringParam(req.Parameters, "Comment")
+	if err := validateComment(comment); err != nil {
+		return nil, err
+	}
 	changeId := generateChangeId()
 	now := time.Now()
 	if err := st.Changes().Create(&route53store.ChangeInfo{

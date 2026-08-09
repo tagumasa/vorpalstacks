@@ -71,12 +71,13 @@ type Route53StoresInterface interface {
 
 // Route53Stores provides access to all Route 53 stores.
 type Route53Stores struct {
-	hostedZones  *HostedZoneStore
-	healthChecks *HealthCheckStore
-	recordSets   *RecordSetStore
-	changes      *ChangeStore
-	tags         *TagStore
-	arnBuilder   *ARNBuilder
+	hostedZones     *HostedZoneStore
+	healthChecks    *HealthCheckStore
+	recordSets      *RecordSetStore
+	changes         *ChangeStore
+	tags            *TagStore
+	arnBuilder      *ARNBuilder
+	cidrCollections *CidrCollectionStore
 }
 
 // NewRoute53Stores creates a new Route53Stores with the given stores.
@@ -96,6 +97,11 @@ func NewRoute53Stores(
 		tags:         tags,
 		arnBuilder:   arnBuilder,
 	}
+}
+
+// SetCidrCollectionStore attaches a CIDR collection store.
+func (s *Route53Stores) SetCidrCollectionStore(store *CidrCollectionStore) {
+	s.cidrCollections = store
 }
 
 // HostedZones returns the hosted zone store.
@@ -126,6 +132,11 @@ func (s *Route53Stores) Tags() TagStoreInterface {
 // ARNBuilder returns the ARN builder.
 func (s *Route53Stores) ARNBuilder() *ARNBuilder {
 	return s.arnBuilder
+}
+
+// CidrCollections returns the CIDR collection store.
+func (s *Route53Stores) CidrCollections() *CidrCollectionStore {
+	return s.cidrCollections
 }
 
 // Raw returns the Route 53 stores.

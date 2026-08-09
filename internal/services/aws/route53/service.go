@@ -17,6 +17,10 @@ import (
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 
+// route53Stores is a type alias so that admin_handler.go can reference
+// the store type without importing the store package directly (#29).
+type route53Stores = route53store.Route53Stores
+
 // Route53Service provides AWS Route 53 DNS operations.
 type Route53Service struct {
 	accountID     string
@@ -29,15 +33,17 @@ type Route53Service struct {
 
 // NewRoute53Service creates a new Route 53 service instance.
 func NewRoute53Service(store storage.BasicStorage, accountID string) *Route53Service {
+	stores := route53store.NewRoute53Stores(
+		route53store.NewHostedZoneStore(store, accountID),
+		route53store.NewHealthCheckStore(store, accountID),
+		route53store.NewRecordSetStore(store),
+		route53store.NewChangeStore(store),
+		route53store.NewTagStore(store),
+		route53store.NewARNBuilder(accountID),
+	)
+	stores.SetCidrCollectionStore(route53store.NewCidrCollectionStore(store))
 	return &Route53Service{
-		dnsStores: route53store.NewRoute53Stores(
-			route53store.NewHostedZoneStore(store, accountID),
-			route53store.NewHealthCheckStore(store, accountID),
-			route53store.NewRecordSetStore(store),
-			route53store.NewChangeStore(store),
-			route53store.NewTagStore(store),
-			route53store.NewARNBuilder(accountID),
-		),
+		dnsStores:     stores,
 		accountID:     accountID,
 		defaultHCPort: serviceports.Route53HC,
 	}
@@ -48,7 +54,7 @@ func NewRoute53ServiceWithDNS(store storage.BasicStorage, accountID, bindAddr st
 	svc := NewRoute53Service(store, accountID)
 
 	if enableDNS {
-		dnsServer := dnsserver.NewDNSServer(svc.dnsStores.HostedZones().Raw(), svc.dnsStores.RecordSets().Raw(), bindAddr, dnsPort)
+		dnsServer := dnsserver.NewDNSServer(svc.dnsStores.HostedZones().Raw(), svc.dnsStores.RecordSets().Raw(), svc.dnsStores.CidrCollections(), bindAddr, dnsPort)
 		if err := dnsServer.Start(); err != nil {
 			return nil, fmt.Errorf("failed to start DNS server: %w", err)
 		}
@@ -93,14 +99,16 @@ func (s *Route53Service) store(reqCtx *request.RequestContext) (*route53store.Ro
 		if err != nil {
 			return nil, fmt.Errorf("failed to get global storage: %w", err)
 		}
-		return route53store.NewRoute53Stores(
+		stores := route53store.NewRoute53Stores(
 			route53store.NewHostedZoneStore(storage, s.accountID),
 			route53store.NewHealthCheckStore(storage, s.accountID),
 			route53store.NewRecordSetStore(storage),
 			route53store.NewChangeStore(storage),
 			route53store.NewTagStore(storage),
 			route53store.NewARNBuilder(s.accountID),
-		), nil
+		)
+		stores.SetCidrCollectionStore(route53store.NewCidrCollectionStore(storage))
+		return stores, nil
 	})
 }
 
@@ -179,4 +187,10 @@ func (s *Route53Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("route53", "ListTagsForResource", s.ListTagsForResource)
 	d.RegisterHandlerForService("route53", "ListReusableDelegationSets", s.ListReusableDelegationSets)
 	d.RegisterHandlerForService("route53", "GetDNSSEC", s.GetDNSSEC)
+	d.RegisterHandlerForService("route53", "CreateCidrCollection", s.CreateCidrCollection)
+	d.RegisterHandlerForService("route53", "DeleteCidrCollection", s.DeleteCidrCollection)
+	d.RegisterHandlerForService("route53", "ListCidrCollections", s.ListCidrCollections)
+	d.RegisterHandlerForService("route53", "ListCidrLocations", s.ListCidrLocations)
+	d.RegisterHandlerForService("route53", "ListCidrBlocks", s.ListCidrBlocks)
+	d.RegisterHandlerForService("route53", "ChangeCidrCollection", s.ChangeCidrCollection)
 }

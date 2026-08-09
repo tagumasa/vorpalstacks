@@ -17,25 +17,27 @@ import (
 
 // DNSServer handles DNS queries for Route 53 hosted zones.
 type DNSServer struct {
-	store      *route53store.HostedZoneStore
-	recordSets *route53store.RecordSetStore
-	udpServer  *dns.Server
-	tcpServer  *dns.Server
-	bindAddr   string
-	port       int
-	started    bool
-	mu         sync.RWMutex
-	shutdownCh chan struct{}
+	store           *route53store.HostedZoneStore
+	recordSets      *route53store.RecordSetStore
+	cidrCollections *route53store.CidrCollectionStore
+	udpServer       *dns.Server
+	tcpServer       *dns.Server
+	bindAddr        string
+	port            int
+	started         bool
+	mu              sync.RWMutex
+	shutdownCh      chan struct{}
 }
 
 // NewDNSServer creates a new DNSServer with the given stores and bind address.
-func NewDNSServer(hostedZoneStore *route53store.HostedZoneStore, recordSetStore *route53store.RecordSetStore, bindAddr string, port int) *DNSServer {
+func NewDNSServer(hostedZoneStore *route53store.HostedZoneStore, recordSetStore *route53store.RecordSetStore, cidrCollectionStore *route53store.CidrCollectionStore, bindAddr string, port int) *DNSServer {
 	return &DNSServer{
-		store:      hostedZoneStore,
-		recordSets: recordSetStore,
-		bindAddr:   bindAddr,
-		port:       port,
-		shutdownCh: make(chan struct{}),
+		store:           hostedZoneStore,
+		recordSets:      recordSetStore,
+		cidrCollections: cidrCollectionStore,
+		bindAddr:        bindAddr,
+		port:            port,
+		shutdownCh:      make(chan struct{}),
 	}
 }
 
@@ -143,6 +145,192 @@ func (s *DNSServer) Shutdown() error {
 	return nil
 }
 
+// applyRoutingPolicy selects which records to return when multiple records
+// share the same name+type. If no routing policy is detected (no
+// SetIdentifier on any record), all records are returned (simple routing).
+func (s *DNSServer) applyRoutingPolicy(matched []*route53store.ResourceRecordSet, w dns.ResponseWriter) []*route53store.ResourceRecordSet {
+	if len(matched) <= 1 {
+		return matched
+	}
+
+	// Check if any record uses a routing policy (has SetIdentifier).
+	hasRoutingPolicy := false
+	for _, rs := range matched {
+		if rs.SetIdentifier != "" {
+			hasRoutingPolicy = true
+			break
+		}
+	}
+	if !hasRoutingPolicy {
+		return matched
+	}
+
+	// Group records by routing type to select the appropriate one.
+	// Priority: CIDR > GeoProximity > GeoLocation > Weighted > Failover > MultiValue.
+	querierIP := extractQuerierIP(w)
+
+	// Try CIDR routing first.
+	if s.cidrCollections != nil && querierIP != "" {
+		if selected := s.selectByCidrRouting(matched, querierIP); selected != nil {
+			return []*route53store.ResourceRecordSet{selected}
+		}
+	}
+
+	// Try GeoProximity routing.
+	if selected := s.selectByGeoProximity(matched, querierIP); selected != nil {
+		return []*route53store.ResourceRecordSet{selected}
+	}
+
+	// Try GeoLocation routing by querier IP region.
+	if selected := selectByGeoLocation(matched, querierIP); selected != nil {
+		return []*route53store.ResourceRecordSet{selected}
+	}
+
+	// Try Weighted routing.
+	if selected := selectByWeight(matched); selected != nil {
+		return []*route53store.ResourceRecordSet{selected}
+	}
+
+	// Try Failover routing.
+	if selected := selectByFailover(matched); selected != nil {
+		return []*route53store.ResourceRecordSet{selected}
+	}
+
+	// MultiValueAnswer: return all (up to 8).
+	return matched
+}
+
+// extractQuerierIP returns the querier's IP address from EDNS Client Subnet
+// if present, otherwise from the RemoteAddr.
+func extractQuerierIP(w dns.ResponseWriter) string {
+	host, _, err := net.SplitHostPort(w.RemoteAddr().String())
+	if err != nil {
+		return w.RemoteAddr().String()
+	}
+	return host
+}
+
+// selectByCidrRouting matches the querier's IP against CIDR collections
+// referenced by CidrRoutingConfig on the records.
+func (s *DNSServer) selectByCidrRouting(matched []*route53store.ResourceRecordSet, querierIP string) *route53store.ResourceRecordSet {
+	for _, rs := range matched {
+		if rs.CidrRoutingConfig == nil || rs.CidrRoutingConfig.CollectionId == "" {
+			continue
+		}
+		loc, err := s.cidrCollections.FindLocationForIP(rs.CidrRoutingConfig.CollectionId, querierIP)
+		if err != nil {
+			continue
+		}
+		if loc == rs.CidrRoutingConfig.LocationName {
+			return rs
+		}
+	}
+	return nil
+}
+
+// selectByGeoProximity selects the record with the nearest GeoProximityLocation
+// to the querier's IP address. Uses AWS region coordinates as approximation.
+func (s *DNSServer) selectByGeoProximity(matched []*route53store.ResourceRecordSet, querierIP string) *route53store.ResourceRecordSet {
+	var best *route53store.ResourceRecordSet
+	bestDist := -1.0
+
+	querierLat, querierLon := lookupIPCoordinates(querierIP)
+
+	for _, rs := range matched {
+		if rs.GeoProximityLocation == nil {
+			continue
+		}
+		targetLat, targetLon := 0.0, 0.0
+		if rs.GeoProximityLocation.Coordinates != nil {
+			targetLat = rs.GeoProximityLocation.Coordinates.Latitude
+			targetLon = rs.GeoProximityLocation.Coordinates.Longitude
+		} else if rs.GeoProximityLocation.AWSRegion != "" {
+			lat, lon, ok := awsRegionCoordinates(rs.GeoProximityLocation.AWSRegion)
+			if !ok {
+				continue
+			}
+			targetLat, targetLon = lat, lon
+		} else {
+			continue
+		}
+
+		dist := haversine(querierLat, querierLon, targetLat, targetLon)
+		// Apply Bias: positive bias shrinks the effective distance
+		// (expanding the region), negative bias increases it.
+		bias := float64(rs.GeoProximityLocation.Bias)
+		effectiveDist := dist * (1.0 - bias/100.0)
+
+		if best == nil || effectiveDist < bestDist {
+			best = rs
+			bestDist = effectiveDist
+		}
+	}
+	return best
+}
+
+// selectByGeoLocation selects a record based on GeoLocation matching the
+// querier's IP-derived region.
+func selectByGeoLocation(matched []*route53store.ResourceRecordSet, querierIP string) *route53store.ResourceRecordSet {
+	querierRegion := ipToAWSRegion(querierIP)
+	if querierRegion == "" {
+		return nil
+	}
+	for _, rs := range matched {
+		if rs.GeoLocation == nil {
+			continue
+		}
+		if rs.GeoLocation.CountryCode != "" {
+			country := ipToCountry(querierIP)
+			if country != "" && country == rs.GeoLocation.CountryCode {
+				return rs
+			}
+		}
+	}
+	return nil
+}
+
+// selectByWeight performs weighted random selection among records that
+// have Weight > 0.
+func selectByWeight(matched []*route53store.ResourceRecordSet) *route53store.ResourceRecordSet {
+	var candidates []*route53store.ResourceRecordSet
+	totalWeight := int64(0)
+	for _, rs := range matched {
+		if rs.Weight > 0 {
+			candidates = append(candidates, rs)
+			totalWeight += rs.Weight
+		}
+	}
+	if totalWeight == 0 || len(candidates) == 0 {
+		return nil
+	}
+	r := cryptoRandInt63n(totalWeight)
+	for _, rs := range candidates {
+		r -= rs.Weight
+		if r < 0 {
+			return rs
+		}
+	}
+	return candidates[0]
+}
+
+// selectByFailover returns the PRIMARY record (failover=PRIMARY).
+// If no PRIMARY found, returns SECONDARY.
+func selectByFailover(matched []*route53store.ResourceRecordSet) *route53store.ResourceRecordSet {
+	var primary, secondary *route53store.ResourceRecordSet
+	for _, rs := range matched {
+		switch strings.ToUpper(rs.Failover) {
+		case "PRIMARY":
+			primary = rs
+		case "SECONDARY":
+			secondary = rs
+		}
+	}
+	if primary != nil {
+		return primary
+	}
+	return secondary
+}
+
 func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
@@ -180,11 +368,22 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 		return
 	}
 
+	var matched []*route53store.ResourceRecordSet
+
 	for _, rs := range recordSets {
 		rsName := strings.ToLower(dns.CanonicalName(rs.Name))
 		if rsName == qname || rsName == qname+"." {
-			m.Answer = append(m.Answer, s.recordToRR(rs, qname, qtype)...)
+			matched = append(matched, rs)
 		}
+	}
+
+	// Apply routing policy selection when multiple records share the
+	// same name+type (indicated by SetIdentifier presence).
+	selected := s.applyRoutingPolicy(matched, w)
+
+	for _, rs := range selected {
+		rsName := strings.ToLower(dns.CanonicalName(rs.Name))
+		m.Answer = append(m.Answer, s.recordToRR(rs, rsName, qtype)...)
 	}
 
 	if len(m.Answer) == 0 {

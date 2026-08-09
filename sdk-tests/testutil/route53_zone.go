@@ -381,5 +381,75 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("route53", "ListHostedZones_PrivateHostedZoneFilter", func() error {
+		pvtVPCID, err := tc.createTestVPC("10.220.0.0/16")
+		if err != nil {
+			return fmt.Errorf("vpc setup: %v", err)
+		}
+		defer tc.deleteTestVPC(pvtVPCID)
+
+		pvtDomain := tc.domain("pvt-filter")
+		pvtResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(pvtDomain),
+			CallerReference: aws.String(tc.callerRef("pvtfilter")),
+			HostedZoneConfig: &types.HostedZoneConfig{
+				PrivateZone: true,
+			},
+			VPC: &types.VPC{
+				VPCId:     aws.String(pvtVPCID),
+				VPCRegion: types.VPCRegion(r.region),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create private zone: %v", err)
+		}
+		pvtZoneID := aws.ToString(pvtResp.HostedZone.Id)
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pvtZoneID)})
+
+		pubDomain := tc.domain("pub-filter")
+		pubResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(pubDomain),
+			CallerReference: aws.String(tc.callerRef("pubfilter")),
+		})
+		if err != nil {
+			return fmt.Errorf("create public zone: %v", err)
+		}
+		pubZoneID := aws.ToString(pubResp.HostedZone.Id)
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pubZoneID)})
+
+		var marker *string
+		pvtFound := false
+		pubFound := false
+		for {
+			resp, err := tc.client.ListHostedZones(tc.ctx, &route53.ListHostedZonesInput{
+				HostedZoneType: types.HostedZoneTypePrivateHostedZone,
+				Marker:         marker,
+				MaxItems:       aws.Int32(100),
+			})
+			if err != nil {
+				return fmt.Errorf("list with HostedZoneType filter: %v", err)
+			}
+			for _, hz := range resp.HostedZones {
+				if aws.ToString(hz.Id) == pvtZoneID {
+					pvtFound = true
+				}
+				if aws.ToString(hz.Id) == pubZoneID {
+					pubFound = true
+				}
+			}
+			if !resp.IsTruncated || resp.NextMarker == nil {
+				break
+			}
+			marker = resp.NextMarker
+		}
+		if !pvtFound {
+			return fmt.Errorf("private zone %s not found in PrivateHostedZone-filtered list", pvtZoneID)
+		}
+		if pubFound {
+			return fmt.Errorf("public zone %s must not appear in PrivateHostedZone-filtered list", pubZoneID)
+		}
+		return nil
+	}))
+
 	return results
 }

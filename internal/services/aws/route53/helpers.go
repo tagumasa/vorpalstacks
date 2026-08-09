@@ -144,9 +144,13 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	}
 	if v := request.GetIntParam(configMap, "RequestInterval"); v > 0 {
 		config.RequestInterval = int64(v)
+	} else if hcType != "RECOVERY_CONTROL" {
+		config.RequestInterval = 30
 	}
 	if v := request.GetIntParam(configMap, "FailureThreshold"); v > 0 {
 		config.FailureThreshold = int64(v)
+	} else if hcType != "RECOVERY_CONTROL" {
+		config.FailureThreshold = 3
 	}
 	config.MeasureLatency = request.GetBoolParam(configMap, "MeasureLatency")
 	config.Inverted = request.GetBoolParam(configMap, "Inverted")
@@ -189,59 +193,6 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	}
 
 	return config
-}
-
-// validateHealthCheckConfig validates the parsed HealthCheckConfig against
-// AWS constraints: Type enum, numeric ranges, and string length limits.
-func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
-	if config == nil {
-		return awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
-	}
-
-	// Type must be one of the 8 valid values.
-	validTypes := map[string]bool{
-		"HTTP": true, "HTTPS": true, "HTTP_STR_MATCH": true,
-		"HTTPS_STR_MATCH": true, "TCP": true,
-		"CALCULATED": true, "CLOUDWATCH_METRIC": true,
-		"RECOVERY_CONTROL": true,
-	}
-	if !validTypes[config.Type] {
-		return awserrors.NewAWSError("InvalidInput",
-			fmt.Sprintf("Invalid or missing health check type: %q. Must be one of: HTTP, HTTPS, HTTP_STR_MATCH, HTTPS_STR_MATCH, TCP, CALCULATED, CLOUDWATCH_METRIC, RECOVERY_CONTROL", config.Type), 400)
-	}
-
-	// Numeric range validation (only validates when the field is set).
-	if config.Port > 65535 {
-		return awserrors.NewAWSError("InvalidInput", "Port must be between 1 and 65535", 400)
-	}
-	if config.FailureThreshold > 10 {
-		return awserrors.NewAWSError("InvalidInput", "FailureThreshold must be between 1 and 10", 400)
-	}
-	if config.RequestInterval > 0 && (config.RequestInterval < 10 || config.RequestInterval > 30) {
-		return awserrors.NewAWSError("InvalidInput", "RequestInterval must be between 10 and 30", 400)
-	}
-	if config.HealthThreshold > 256 {
-		return awserrors.NewAWSError("InvalidInput", "HealthThreshold must be between 0 and 256", 400)
-	}
-
-	// String length validation (AWS docs constraints).
-	if len(config.ResourcePath) > 255 {
-		return awserrors.NewAWSError("InvalidInput", "ResourcePath must not exceed 255 characters", 400)
-	}
-	if len(config.SearchString) > 255 {
-		return awserrors.NewAWSError("InvalidInput", "SearchString must not exceed 255 characters", 400)
-	}
-	if len(config.FullyQualifiedDomainName) > 255 {
-		return awserrors.NewAWSError("InvalidInput", "FullyQualifiedDomainName must not exceed 255 characters", 400)
-	}
-	if len(config.IPAddress) > 45 {
-		return awserrors.NewAWSError("InvalidInput", "IPAddress must not exceed 45 characters", 400)
-	}
-	if len(config.RoutingControlArn) > 255 {
-		return awserrors.NewAWSError("InvalidInput", "RoutingControlArn must not exceed 255 characters", 400)
-	}
-
-	return nil
 }
 
 func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updates map[string]interface{}) {

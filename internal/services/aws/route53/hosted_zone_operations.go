@@ -238,10 +238,7 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 			if delegationSetId != "" && z.DelegationSetID != delegationSetId {
 				continue
 			}
-			if hostedZoneType == "private" && !z.Private {
-				continue
-			}
-			if hostedZoneType == "public" && z.Private {
+			if isPrivateHostedZoneFilter(hostedZoneType) && !z.Private {
 				continue
 			}
 			filtered = append(filtered, z)
@@ -383,7 +380,24 @@ func (s *Route53Service) DeleteHostedZone(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	st.Tags().Raw().Delete("hostedzone/" + id)
+	// Clean up the default NS and SOA records created during
+	// CreateHostedZone before deleting the zone itself, preventing
+	// orphaned records in the record_sets bucket.
+	zoneName := ""
+	if zone, zErr := st.HostedZones().Get(id); zErr == nil && zone != nil {
+		zoneName = zone.Name
+	}
+	if zoneName != "" {
+		for _, rs := range recordSets {
+			if rs.Type == "NS" || rs.Type == "SOA" {
+				_ = st.RecordSets().Delete(id, rs.Name, rs.Type, rs.SetIdentifier)
+			}
+		}
+	}
+
+	if err := st.Tags().Raw().Delete("hostedzone/" + id); err != nil {
+		return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Failed to delete tags: %v", err), 500)
+	}
 
 	if err := st.HostedZones().Delete(id); err != nil {
 		if route53store.IsNotFound(err) {
@@ -481,42 +495,4 @@ func (s *Route53Service) GetDNSSEC(ctx context.Context, reqCtx *request.RequestC
 		},
 		"KeySigningKeys": []interface{}{},
 	}, nil
-}
-
-// validateDomainName validates a DNS domain name per RFC 1035.
-func validateDomainName(name string) error {
-	// Remove trailing dot for validation.
-	n := strings.TrimSuffix(name, ".")
-	if n == "" {
-		return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name is required", 400)
-	}
-	if len(n) > 253 {
-		return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name must not exceed 253 characters", 400)
-	}
-	labels := strings.Split(n, ".")
-	for _, label := range labels {
-		if label == "" {
-			return awserrors.NewAWSError("InvalidDomainName", "Hosted zone name contains an empty label", 400)
-		}
-		if len(label) > 63 {
-			return awserrors.NewAWSError("InvalidDomainName", "DNS label must not exceed 63 characters", 400)
-		}
-		for i, c := range label {
-			isAlnum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-			isHyphen := c == '-'
-			if !isAlnum && !isHyphen {
-				return awserrors.NewAWSError("InvalidDomainName",
-					fmt.Sprintf("Invalid character in DNS label %q", label), 400)
-			}
-			if i == 0 && isHyphen {
-				return awserrors.NewAWSError("InvalidDomainName",
-					fmt.Sprintf("DNS label %q must not start with a hyphen", label), 400)
-			}
-			if i == len(label)-1 && isHyphen {
-				return awserrors.NewAWSError("InvalidDomainName",
-					fmt.Sprintf("DNS label %q must not end with a hyphen", label), 400)
-			}
-		}
-	}
-	return nil
 }
