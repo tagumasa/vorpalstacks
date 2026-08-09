@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -111,18 +110,33 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 	}
 
 	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if graphName == "" || strings.HasPrefix(graphName, "g-") || !graphNameRegex.MatchString(graphName) || len(graphName) > 63 {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphName")
+	if err := validateGraphName(graphName); err != nil {
+		return nil, err
 	}
 
 	roleArn := request.GetStringParam(req.Parameters, "roleArn")
-	if roleArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "roleArn")
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
 	}
 
 	source := request.GetStringParam(req.Parameters, "source")
 	if source == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "source")
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "source is required")
+	}
+
+	format := strings.ToUpper(request.GetStringParam(req.Parameters, "format"))
+	if err := validateImportFormat(format); err != nil {
+		return nil, err
+	}
+
+	parquetType := strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType"))
+	if err := validateParquetType(parquetType); err != nil {
+		return nil, err
+	}
+
+	blankNodeHandling := request.GetStringParam(req.Parameters, "blankNodeHandling")
+	if err := validateBlankNodeHandling(blankNodeHandling); err != nil {
+		return nil, err
 	}
 
 	region := reqCtx.GetRegion()
@@ -140,21 +154,24 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
 		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
-		BuildNumber:        "1.0.20250313",
+		BuildNumber:        neptuneGraphBuildNumber,
 		CreateTime:         &now,
 		AccountID:          s.accountID,
 		Region:             region,
 	}
 
-	if vsc := parseVectorSearchConfig(req.Parameters); vsc != nil {
+	if vsc, err := parseVectorSearchConfig(req.Parameters); err != nil {
+		return nil, err
+	} else if vsc != nil {
 		graph.VectorSearchConfiguration = vsc
 	}
 
 	if request.HasParam(req.Parameters, "replicaCount") {
 		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		if rc >= 0 && rc <= maxReplicaCount {
-			graph.ReplicaCount = proto.Int32(int32(rc))
+		if err := validateReplicaCount(rc); err != nil {
+			return nil, err
 		}
+		graph.ReplicaCount = proto.Int32(int32(rc))
 	}
 
 	if err := store.CreateGraph(graph); err != nil {
@@ -187,9 +204,9 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		Format:             request.GetStringParam(req.Parameters, "format"),
-		ParquetType:        request.GetStringParam(req.Parameters, "parquetType"),
-		BlankNodeHandling:  request.GetStringParam(req.Parameters, "blankNodeHandling"),
+		Format:             format,
+		ParquetType:        parquetType,
+		BlankNodeHandling:  blankNodeHandling,
 		FailOnError:        request.GetBoolParam(req.Parameters, "failOnError"),
 		StartTime:          &now,
 	}
@@ -199,13 +216,25 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		task.ReplicaCount = proto.Int32(int32(rc))
 	}
 	if request.HasParam(req.Parameters, "minProvisionedMemory") {
-		task.MinProvisionedMemory = proto.Int32(int32(request.GetIntParam(req.Parameters, "minProvisionedMemory")))
+		mem := request.GetIntParam(req.Parameters, "minProvisionedMemory")
+		if err := validateProvisionedMemory(mem, false); err != nil {
+			return nil, err
+		}
+		task.MinProvisionedMemory = proto.Int32(int32(mem))
 	}
 	if request.HasParam(req.Parameters, "maxProvisionedMemory") {
-		task.MaxProvisionedMemory = proto.Int32(int32(request.GetIntParam(req.Parameters, "maxProvisionedMemory")))
+		mem := request.GetIntParam(req.Parameters, "maxProvisionedMemory")
+		if err := validateProvisionedMemory(mem, false); err != nil {
+			return nil, err
+		}
+		task.MaxProvisionedMemory = proto.Int32(int32(mem))
 	}
 	if request.HasParam(req.Parameters, "importOptions") {
-		task.ImportOptions = parseImportOptions(req.Parameters)
+		opts := parseImportOptions(req.Parameters)
+		if err := validateImportOptions(opts); err != nil {
+			return nil, err
+		}
+		task.ImportOptions = opts
 	}
 	if graph.VectorSearchConfiguration != nil {
 		task.VectorSearchConfiguration = graph.VectorSearchConfiguration
@@ -333,13 +362,28 @@ func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *reque
 	}
 
 	roleArn := request.GetStringParam(req.Parameters, "roleArn")
-	if roleArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "roleArn")
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
 	}
 
 	source := request.GetStringParam(req.Parameters, "source")
 	if source == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "source")
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "source is required")
+	}
+
+	format := strings.ToUpper(request.GetStringParam(req.Parameters, "format"))
+	if err := validateImportFormat(format); err != nil {
+		return nil, err
+	}
+
+	parquetType := strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType"))
+	if err := validateParquetType(parquetType); err != nil {
+		return nil, err
+	}
+
+	blankNodeHandling := request.GetStringParam(req.Parameters, "blankNodeHandling")
+	if err := validateBlankNodeHandling(blankNodeHandling); err != nil {
+		return nil, err
 	}
 
 	taskID := generateID("t-")
@@ -351,15 +395,19 @@ func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *reque
 		Status:            "INITIALIZING",
 		Source:            source,
 		RoleArn:           roleArn,
-		Format:            request.GetStringParam(req.Parameters, "format"),
-		ParquetType:       request.GetStringParam(req.Parameters, "parquetType"),
-		BlankNodeHandling: request.GetStringParam(req.Parameters, "blankNodeHandling"),
+		Format:            format,
+		ParquetType:       parquetType,
+		BlankNodeHandling: blankNodeHandling,
 		FailOnError:       request.GetBoolParam(req.Parameters, "failOnError"),
 		StartTime:         &now,
 	}
 
 	if request.HasParam(req.Parameters, "importOptions") {
-		task.ImportOptions = parseImportOptions(req.Parameters)
+		opts := parseImportOptions(req.Parameters)
+		if err := validateImportOptions(opts); err != nil {
+			return nil, err
+		}
+		task.ImportOptions = opts
 	}
 
 	if err := store.CreateImportTask(task); err != nil {
@@ -464,10 +512,13 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 	switch {
 	case format == "" || format == "csv":
 		statementCount, dictionaryCount, errorCount = s.importCSV(entry.db, filePath)
-	case format == "json":
-		statementCount, dictionaryCount, errorCount = s.importJSON(entry.db, filePath)
-	case format == "ntriples" || format == "nquad":
+	case format == "open_cypher":
+		statementCount, dictionaryCount, errorCount = s.importCSV(entry.db, filePath)
+	case format == "ntriples":
 		statementCount, dictionaryCount, errorCount = s.importRDF(entry.db, filePath)
+	case format == "parquet":
+		errorCount = 1
+		logs.Warn("parquet import not supported in standalone mode", logs.String("format", format), logs.String("taskId", taskID))
 	default:
 		errorCount = 1
 		logs.Warn("unsupported import format", logs.String("format", format), logs.String("taskId", taskID))
@@ -673,94 +724,6 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 				if idx < len(record) && record[idx] != "" {
 					props[k] = strings.TrimSpace(record[idx])
 				}
-			}
-
-			b.queueNode(labels, props)
-		}
-	}
-
-	b.flush()
-	return statementCount, b.dictCount, errorCount + b.errCount
-}
-
-func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (statementCount, dictionaryCount, errorCount int64) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		errorCount++
-		logs.Warn("failed to open import file", logs.String("path", filePath), logs.Err(err))
-		return
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 1024*1024), 10*1024*1024)
-
-	b := newImportBatcher(db)
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		var doc map[string]interface{}
-		if err := json.Unmarshal([]byte(line), &doc); err != nil {
-			errorCount++
-			continue
-		}
-
-		statementCount++
-
-		if fromVal, hasFrom := doc["~from"]; hasFrom {
-			fromExt := fmt.Sprintf("%v", fromVal)
-			toExt := fmt.Sprintf("%v", doc["~to"])
-			label := fmt.Sprintf("%v", doc["~type"])
-
-			fromID, ok := b.extToInternal[fromExt]
-			if !ok {
-				errorCount++
-				continue
-			}
-			toID, ok := b.extToInternal[toExt]
-			if !ok {
-				errorCount++
-				continue
-			}
-
-			props := make(graphengine.Props)
-			for k, v := range doc {
-				if strings.HasPrefix(k, "~") {
-					continue
-				}
-				props[k] = v
-			}
-
-			b.queueEdge(fromID, toID, label, props)
-		} else {
-			var labels []string
-			if lbl, ok := doc["~label"]; ok {
-				switch l := lbl.(type) {
-				case string:
-					for _, part := range strings.Split(l, ":") {
-						if part != "" {
-							labels = append(labels, part)
-						}
-					}
-				case []interface{}:
-					for _, item := range l {
-						if s, ok := item.(string); ok {
-							labels = append(labels, s)
-						}
-					}
-				}
-			}
-
-			props := make(graphengine.Props)
-			for k, v := range doc {
-				if strings.HasPrefix(k, "~") {
-					continue
-				}
-				props[k] = v
 			}
 
 			b.queueNode(labels, props)

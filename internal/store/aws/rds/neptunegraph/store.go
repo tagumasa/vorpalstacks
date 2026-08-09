@@ -112,10 +112,58 @@ func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 	if err := s.queries.DeleteByPrefix(id + "/"); err != nil {
 		logs.Warn("Failed to delete queries for graph", logs.String("graphId", id), logs.Err(err))
 	}
-	if err := s.exportTasksByGraph.DeleteByPrefix(id + "/"); err != nil {
-		logs.Warn("Failed to delete export tasks for graph", logs.String("graphId", id), logs.Err(err))
-	}
+	s.deleteExportTasksByGraph(id)
+	s.deleteImportTasksByGraph(id)
 	return nil
+}
+
+// deleteExportTasksByGraph removes all export tasks belonging to the given
+// graph, including both the exportTasksByGraph index and the export task
+// records themselves.
+func (s *NeptuneGraphStore) deleteExportTasksByGraph(graphID string) {
+	var taskIDs []string
+	err := s.exportTasksByGraph.ScanPrefix(graphID+"/", func(key string, value []byte) error {
+		parts := strings.SplitN(key, "/", 2)
+		if len(parts) == 2 {
+			taskIDs = append(taskIDs, parts[1])
+		}
+		return nil
+	})
+	if err != nil {
+		logs.Warn("Failed to scan export task index for graph", logs.String("graphId", graphID), logs.Err(err))
+		return
+	}
+	for _, tid := range taskIDs {
+		if err := s.exportTasks.Store().Delete(tid); err != nil {
+			logs.Warn("Failed to delete export task for graph", logs.String("graphId", graphID), logs.String("taskId", tid), logs.Err(err))
+		}
+	}
+	if err := s.exportTasksByGraph.DeleteByPrefix(graphID + "/"); err != nil {
+		logs.Warn("Failed to delete export task index for graph", logs.String("graphId", graphID), logs.Err(err))
+	}
+}
+
+// deleteImportTasksByGraph removes all import tasks belonging to the given
+// graph. Import tasks are keyed by TaskId; we scan all tasks and filter by
+// GraphId field.
+func (s *NeptuneGraphStore) deleteImportTasksByGraph(graphID string) {
+	var taskIDs []string
+	err := s.importTasks.Store().ScanPrefix("", func(key string, value []byte) error {
+		var p pb.ImportTaskRecord
+		if err := proto.Unmarshal(value, &p); err == nil && p.GetGraphId() == graphID {
+			taskIDs = append(taskIDs, p.GetTaskId())
+		}
+		return nil
+	})
+	if err != nil {
+		logs.Warn("Failed to scan import tasks for graph", logs.String("graphId", graphID), logs.Err(err))
+		return
+	}
+	for _, tid := range taskIDs {
+		if err := s.importTasks.Store().Delete(tid); err != nil {
+			logs.Warn("Failed to delete import task for graph", logs.String("graphId", graphID), logs.String("taskId", tid), logs.Err(err))
+		}
+	}
 }
 
 // ListGraphs returns a paginated list of graphs.

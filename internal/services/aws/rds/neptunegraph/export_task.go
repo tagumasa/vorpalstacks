@@ -40,24 +40,29 @@ func (s *NeptuneGraphService) StartExportTask(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	destination := request.GetStringParam(req.Parameters, "destination")
-	if destination == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "destination")
-	}
-
-	format := request.GetStringParam(req.Parameters, "format")
-	if format == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "format")
+	format := strings.ToUpper(request.GetStringParam(req.Parameters, "format"))
+	if err := validateExportFormat(format); err != nil {
+		return nil, err
 	}
 
 	kmsKeyID := request.GetStringParam(req.Parameters, "kmsKeyIdentifier")
-	if kmsKeyID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "kmsKeyIdentifier")
+	if err := validateKmsKeyArn(kmsKeyID, true); err != nil {
+		return nil, err
 	}
 
 	roleArn := request.GetStringParam(req.Parameters, "roleArn")
-	if roleArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "roleArn")
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
+	}
+
+	destination := request.GetStringParam(req.Parameters, "destination")
+	if err := validateDestination(destination); err != nil {
+		return nil, err
+	}
+
+	parquetType := strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType"))
+	if err := validateParquetType(parquetType); err != nil {
+		return nil, err
 	}
 
 	taskID := generateID("t-")
@@ -68,7 +73,7 @@ func (s *NeptuneGraphService) StartExportTask(ctx context.Context, reqCtx *reque
 		GraphId:          graph.Id,
 		Status:           "INITIALIZING",
 		Format:           format,
-		ParquetType:      request.GetStringParam(req.Parameters, "parquetType"),
+		ParquetType:      parquetType,
 		Destination:      destination,
 		RoleArn:          roleArn,
 		KmsKeyIdentifier: kmsKeyID,
@@ -258,7 +263,7 @@ func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore
 	}
 
 	var nodeCount, edgeCount int64
-	if format == "CSV" || format == "CSV+BINARY" {
+	if format == "CSV" {
 		nodeCount, edgeCount, err = exportGraphCSV(entry.db, filePath, task.ExportFilter)
 	} else {
 		failExportTask(store, taskID, task, "unsupported export format: "+task.Format)

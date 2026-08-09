@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
@@ -131,14 +132,25 @@ func (s *NeptuneGraphService) ListPrivateGraphEndpoints(ctx context.Context, req
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(endpoints))
-	for _, ep := range endpoints {
+	maxResults := clampMaxResults(request.GetIntParam(req.Parameters, "maxResults"))
+	nextToken := request.GetStringParam(req.Parameters, "nextToken")
+
+	result := pagination.PaginateSlice(endpoints, nextToken, maxResults, func(ep *ngstore.PrivateGraphEndpoint) string {
+		return ep.GraphId + ":" + ep.VpcId
+	})
+
+	items := make([]interface{}, 0, len(result.Items))
+	for _, ep := range result.Items {
 		items = append(items, endpointToResponse(ep))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"privateGraphEndpoints": items,
-	}, nil
+	}
+	if result.IsTruncated {
+		resp["nextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // DeletePrivateGraphEndpoint removes a private graph endpoint identified by graph and VPC identifiers.

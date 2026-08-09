@@ -200,6 +200,9 @@ func importTaskToResponse(t *ngstore.ImportTask) map[string]interface{} {
 	if t.ImportOptions != nil {
 		r["importOptions"] = importOptionsToResponse(t.ImportOptions)
 	}
+	if t.AttemptNumber > 0 {
+		r["attemptNumber"] = t.AttemptNumber
+	}
 	return r
 }
 

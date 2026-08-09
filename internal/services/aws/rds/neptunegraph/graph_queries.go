@@ -259,12 +259,12 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "maxResults")
-	if maxResults < 1 || maxResults > 100 {
-		maxResults = 100
-	}
+	maxResults := clampMaxResults(request.GetIntParam(req.Parameters, "maxResults"))
 
-	stateFilter := request.GetStringParam(req.Parameters, "state")
+	stateFilter := strings.ToUpper(request.GetStringParam(req.Parameters, "state"))
+	if err := validateQueryStateInput(stateFilter); err != nil {
+		return nil, err
+	}
 	if stateFilter != "" && stateFilter != "ALL" {
 		allQueries, err := store.ListQueries(graphID, 0)
 		if err != nil {
@@ -406,8 +406,11 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 
 	// DETAILED mode: compute property statistics by iterating all nodes
 	// and edges. This is O(n) but GetGraphSummary is not a hot path.
-	mode := request.GetStringParam(req.Parameters, "mode")
-	if strings.ToUpper(mode) == "DETAILED" {
+	mode := strings.ToUpper(request.GetStringParam(req.Parameters, "mode"))
+	if err := validateGraphSummaryMode(mode); err != nil {
+		return nil, err
+	}
+	if mode == "DETAILED" {
 		populateDetailedStats(entry.db, summary)
 	}
 

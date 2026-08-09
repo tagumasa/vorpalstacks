@@ -680,18 +680,24 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "query is required")
 	}
 
-	// QUERY_TOO_LARGE: AWS Neptune Analytics limits query strings to 1 MB.
 	const maxQueryBytes = 1 << 20
 	if len(params.Query) > maxQueryBytes {
 		return nil, newValidationException("QUERY_TOO_LARGE", fmt.Sprintf("query exceeds %d byte limit", maxQueryBytes))
 	}
 
 	lang := strings.ToUpper(params.Language)
-	if lang == "" {
-		lang = "CYPHER"
+	if err := validateQueryLanguage(lang); err != nil {
+		return nil, err
 	}
-	if lang != "CYPHER" && lang != "OPENCYPHER" && lang != "OPEN_CYPHER" && lang != "GREMLIN" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("unsupported language: %s", lang))
+
+	if err := validatePlanCache(strings.ToUpper(params.PlanCache)); err != nil {
+		return nil, err
+	}
+
+	if params.ExplainMode != "" {
+		if err := validateExplainMode(strings.ToUpper(params.ExplainMode)); err != nil {
+			return nil, err
+		}
 	}
 
 	var cypherParams map[string]any
@@ -731,15 +737,33 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 		}
 	}
 
-	if lang == "GREMLIN" {
-		finaliseQuery()
-		return nil, newValidationException("UNSUPPORTED_OPERATION", "Gremlin queries are not supported")
-	}
+	usePlanCache := params.PlanCache == "" ||
+		strings.ToUpper(params.PlanCache) == "ENABLED" ||
+		strings.ToUpper(params.PlanCache) == "AUTO"
 
-	parsed, err := cypherparser.Parse(params.Query)
-	if err != nil {
-		finaliseQuery()
-		return nil, newValidationException("MALFORMED_QUERY", err.Error())
+	var parsed *cypherparser.ParsedCypher
+	var err error
+	if usePlanCache {
+		cacheKey := planCacheKey(graphID, params.Query, cypherParams)
+		if cached, ok := s.planCache.get(cacheKey); ok {
+			if ast, ok := cached.(*cypherparser.ParsedCypher); ok {
+				parsed = ast
+			}
+		}
+		if parsed == nil {
+			parsed, err = cypherparser.Parse(params.Query)
+			if err != nil {
+				finaliseQuery()
+				return nil, newValidationException("MALFORMED_QUERY", err.Error())
+			}
+			s.planCache.put(cacheKey, parsed)
+		}
+	} else {
+		parsed, err = cypherparser.Parse(params.Query)
+		if err != nil {
+			finaliseQuery()
+			return nil, newValidationException("MALFORMED_QUERY", err.Error())
+		}
 	}
 
 	// Apply query timeout if specified. When the deadline is exceeded,

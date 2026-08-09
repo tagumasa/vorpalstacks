@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,24 +24,16 @@ import (
 )
 
 const (
-	graphNamePattern     = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
-	snapshotNamePattern  = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
-	graphDataDirPrefix   = "neptunegraph/graphs"
-	minProvisionedMemory = 16
-	maxProvisionedMemory = 24576
-	maxReplicaCount      = 2
-	maxTags              = 50
-	tagKeyPattern        = `^[a-zA-Z+\-=._:/]+$`
-	taskCleanupInterval  = 24 * time.Hour
-	taskTTL              = 24 * time.Hour
-	taskTTLTestMode      = 30 * time.Minute
-	taskCleanupTestMode  = 5 * time.Minute
-)
+	graphDataDirPrefix  = "neptunegraph/graphs"
+	taskCleanupInterval = 24 * time.Hour
+	taskTTL             = 24 * time.Hour
+	taskTTLTestMode     = 30 * time.Minute
+	taskCleanupTestMode = 5 * time.Minute
 
-var (
-	graphNameRegex    = regexp.MustCompile(graphNamePattern)
-	snapshotNameRegex = regexp.MustCompile(snapshotNamePattern)
-	tagKeyRegex       = regexp.MustCompile(tagKeyPattern)
+	// neptuneGraphBuildNumber is returned in graph responses. AWS Neptune
+	// Analytics returns a dynamically determined build number; in this
+	// implementation a constant is used since there are no software updates.
+	neptuneGraphBuildNumber = "1.0.20250313"
 )
 
 // NeptuneGraphService implements NeptuneGraph API operations, managing graphs, snapshots, endpoints, and tasks.
@@ -61,6 +51,7 @@ type NeptuneGraphService struct {
 	eventBus       *eventbus.EventBus
 	regionCleanups sync.Map
 	testMode       bool
+	planCache      *queryPlanCache
 }
 
 type engineEntry struct {
@@ -70,7 +61,7 @@ type engineEntry struct {
 	wg      sync.WaitGroup
 }
 
-// NewNeptuneGraphService creates a new NeptuneGraphService for the given account, region, and data path.
+// NewNeptuneGraphService creates a new NeptuneGraphService instance.
 func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphService {
 	return &NeptuneGraphService{
 		accountID:     accountID,
@@ -79,6 +70,7 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 		activeEngines: make(map[string]*engineEntry),
 		arnBuilder:    arn.NewARNBuilder(accountID, region),
 		testMode:      os.Getenv("TEST_MODE") == "true",
+		planCache:     newQueryPlanCache(planCacheCapacity, planCacheTTLSeconds*time.Second),
 	}
 }
 
@@ -339,24 +331,26 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if graphName == "" || strings.HasPrefix(graphName, "g-") || !graphNameRegex.MatchString(graphName) || len(graphName) > 63 {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphName")
+	if err := validateGraphName(graphName); err != nil {
+		return nil, err
 	}
 
-	mem := 128
-	if request.HasParam(req.Parameters, "provisionedMemory") {
-		mem = request.GetIntParam(req.Parameters, "provisionedMemory")
-		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-			return nil, newValidationException("CONSTRAINT_VIOLATION", fmt.Sprintf("provisionedMemory must be between %d and %d", minProvisionedMemory, maxProvisionedMemory))
-		}
+	mem := request.GetIntParam(req.Parameters, "provisionedMemory")
+	if err := validateProvisionedMemory(mem, true); err != nil {
+		return nil, err
 	}
 
 	replicaCount := 1
 	if request.HasParam(req.Parameters, "replicaCount") {
 		replicaCount = request.GetIntParam(req.Parameters, "replicaCount")
-		if replicaCount < 0 || replicaCount > maxReplicaCount {
-			return nil, newValidationException("CONSTRAINT_VIOLATION", "replicaCount must be between 0 and 2")
+		if err := validateReplicaCount(replicaCount); err != nil {
+			return nil, err
 		}
+	}
+
+	kmsKey := request.GetStringParam(req.Parameters, "kmsKeyIdentifier")
+	if err := validateKmsKeyArn(kmsKey, false); err != nil {
+		return nil, err
 	}
 
 	region := reqCtx.GetRegion()
@@ -373,13 +367,15 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
 		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
-		BuildNumber:        "1.0.20250313",
+		BuildNumber:        neptuneGraphBuildNumber,
 		CreateTime:         &now,
 		AccountID:          s.accountID,
 		Region:             region,
 	}
 
-	if vsc := parseVectorSearchConfig(req.Parameters); vsc != nil {
+	if vsc, err := parseVectorSearchConfig(req.Parameters); err != nil {
+		return nil, err
+	} else if vsc != nil {
 		graph.VectorSearchConfiguration = vsc
 	}
 
@@ -412,8 +408,16 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
 		logs.Error("failed to update graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
-		graph.Status = "CREATING"
+		s.enginesMu.Lock()
+		delete(s.activeEngines, graphID)
+		s.enginesMu.Unlock()
+		db.Close()
+		graph.Status = "FAILED"
+		graph.StatusReason = "failed to persist graph status"
 		graph.Endpoint = ""
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to update graph status to FAILED after AVAILABLE failure", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
 		return nil, newInternalServerException(fmt.Errorf("failed to update graph status: %w", err))
 	}
 
@@ -598,6 +602,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		delete(s.activeEngines, graphID)
 	}
 	s.enginesMu.Unlock()
+	s.planCache.purgeByGraph(graphID)
 
 	if engineEntry != nil {
 		engineEntry.wg.Wait()
@@ -668,11 +673,17 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 
 	graph.Status = "STARTING"
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("failed to update graph status to STARTING", logs.String("graphId", graphID), logs.Err(err))
+		graph.Status = "STOPPED"
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STARTING: %w", err))
 	}
 
 	bucket, err := s.graphBucket(graphID)
 	if err != nil {
+		graph.Status = "STOPPED"
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to restore graph status to STOPPED after graphBucket failure",
+				logs.String("graphId", graphID), logs.Err(updateErr))
+		}
 		return nil, newInternalServerException(err)
 	}
 	db, err := graphengine.New(bucket, s.engineOptions())
@@ -692,7 +703,17 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	graph.Status = "AVAILABLE"
 	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+		logs.Error("failed to update graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
+		s.enginesMu.Lock()
+		delete(s.activeEngines, graphID)
+		s.enginesMu.Unlock()
+		db.Close()
+		graph.Status = "STOPPED"
+		graph.Endpoint = ""
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to restore graph status to STOPPED", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to AVAILABLE: %w", err))
 	}
 
 	return graphToResponse(graph), nil
@@ -725,7 +746,8 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 
 	graph.Status = "STOPPING"
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update graph status to STOPPING", logs.Err(err))
+		graph.Status = "AVAILABLE"
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STOPPING: %w", err))
 	}
 
 	s.enginesMu.Lock()
@@ -745,7 +767,8 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	graph.Status = "STOPPED"
 	graph.Endpoint = ""
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update graph status to STOPPED", logs.Err(err))
+		logs.Error("failed to update graph status to STOPPED", logs.String("graphId", graphID), logs.Err(err))
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STOPPED: %w", err))
 	}
 
 	return graphToResponse(graph), nil
@@ -778,7 +801,8 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 
 	graph.Status = "RESETTING"
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update graph status to RESETTING", logs.Err(err))
+		graph.Status = "AVAILABLE"
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to RESETTING: %w", err))
 	}
 
 	s.enginesMu.RLock()
@@ -804,7 +828,8 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 
 	graph.Status = "AVAILABLE"
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+		logs.Error("failed to update graph status to AVAILABLE after reset", logs.String("graphId", graphID), logs.Err(err))
+		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to AVAILABLE: %w", err))
 	}
 
 	return graphToResponse(graph), nil
@@ -823,8 +848,8 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	}
 
 	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if graphName == "" || strings.HasPrefix(graphName, "g-") || !graphNameRegex.MatchString(graphName) || len(graphName) > 63 {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphName")
+	if err := validateGraphName(graphName); err != nil {
+		return nil, err
 	}
 
 	_, err = store.GetSnapshot(snapshotID)
@@ -848,7 +873,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		ReplicaCount:       proto.Int32(1),
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		BuildNumber:        "1.0.20250313",
+		BuildNumber:        neptuneGraphBuildNumber,
 		SourceSnapshotId:   snapshotID,
 		CreateTime:         &now,
 		AccountID:          s.accountID,
@@ -857,16 +882,20 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
-		if mem >= minProvisionedMemory && mem <= maxProvisionedMemory {
+		if err := validateProvisionedMemory(mem, false); err != nil {
+			return nil, err
+		}
+		if mem > 0 {
 			graph.ProvisionedMemory = proto.Int32(int32(mem))
 		}
 	}
 
 	if request.HasParam(req.Parameters, "replicaCount") {
 		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		if rc >= 0 && rc <= maxReplicaCount {
-			graph.ReplicaCount = proto.Int32(int32(rc))
+		if err := validateReplicaCount(rc); err != nil {
+			return nil, err
 		}
+		graph.ReplicaCount = proto.Int32(int32(rc))
 	}
 
 	if err := store.CreateGraph(graph); err != nil {
@@ -910,7 +939,18 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	graph.Status = "AVAILABLE"
 	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("Failed to update restored graph status", logs.Err(err))
+		logs.Error("failed to update restored graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
+		s.enginesMu.Lock()
+		delete(s.activeEngines, graphID)
+		s.enginesMu.Unlock()
+		db.Close()
+		graph.Status = "FAILED"
+		graph.StatusReason = "failed to persist graph status"
+		graph.Endpoint = ""
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to update graph status to FAILED after restore AVAILABLE failure", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
+		return nil, newInternalServerException(fmt.Errorf("failed to update restored graph status: %w", err))
 	}
 
 	return graphToResponse(graph), nil
@@ -922,14 +962,14 @@ func copyGraphBucket(src, dst storage.BatchBucket) error {
 	})
 }
 
-func parseVectorSearchConfig(params map[string]interface{}) *ngstore.VectorSearchConfig {
+func parseVectorSearchConfig(params map[string]interface{}) (*ngstore.VectorSearchConfig, error) {
 	v, ok := params["vectorSearchConfiguration"]
 	if !ok || v == nil {
-		return nil
+		return nil, nil
 	}
 	m, ok := v.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	dim := 0
 	if d, ok := m["dimension"]; ok {
@@ -940,18 +980,8 @@ func parseVectorSearchConfig(params map[string]interface{}) *ngstore.VectorSearc
 			dim = v
 		}
 	}
-	if dim < 1 || dim > 65535 {
-		return nil
+	if err := validateVectorSearchDimension(dim); err != nil {
+		return nil, err
 	}
-	return &ngstore.VectorSearchConfig{Dimension: int32(dim)}
-}
-
-func clampMaxResults(v int) int {
-	if v < 1 {
-		return 100
-	}
-	if v > 100 {
-		return 100
-	}
-	return v
+	return &ngstore.VectorSearchConfig{Dimension: int32(dim)}, nil
 }
