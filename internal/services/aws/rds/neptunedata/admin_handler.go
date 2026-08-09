@@ -10,19 +10,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
-	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/pb/aws/common"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
 	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
-	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 // AdminHandler implements the Neptune Data API gRPC-Web admin console handler.
@@ -41,14 +37,16 @@ func NewAdminHandler(svc *NeptuneDataService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStore(header http.Header) (*neptunestore.NeptuneStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
-	return h.service.GetStoreForRegion(region)
+// errUnsupportedAdmin returns a gRPC error wrapping the AWS-compatible
+// UnsupportedOperationException (HTTP 400), matching the HTTP API behaviour
+// for unsupported operations such as SPARQL, ML, and streaming.
+func errUnsupportedAdmin(category string) error {
+	return svcerrors.AWSErrorToGRPC(unsupported(fmt.Sprintf("%s operations are not supported by vorpalstacks", category)))
 }
 
 // GetEngineStatus returns the health status and engine version information
 // for the Neptune-compatible graph engine.
-func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[pb.GetEngineStatusOutput], error) {
+func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request[pbcommon.Empty]) (*connect.Response[pb.GetEngineStatusOutput], error) {
 	s := h.service
 	s.mu.RLock()
 	startTime := s.startTime.UTC().Format(timeutils.ISO8601UTCFormat)
@@ -76,9 +74,9 @@ func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request
 
 // GetGremlinQueryStatus returns the status and timing of a Gremlin query.
 func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.Request[pb.GetGremlinQueryStatusInput]) (*connect.Response[pb.GetGremlinQueryStatusOutput], error) {
-	out, err := h.buildQueryStatus(ctx, req.Msg.Queryid, req.Header())
+	out, err := h.queryStatusPb(req.Header(), req.Msg.Queryid)
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pb.GetGremlinQueryStatusOutput{
 		Queryid:        out.Queryid,
@@ -89,291 +87,146 @@ func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.R
 
 // GetOpenCypherQueryStatus returns the status and timing of an openCypher query.
 func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connect.Request[pb.GetOpenCypherQueryStatusInput]) (*connect.Response[pb.GetOpenCypherQueryStatusOutput], error) {
-	out, err := h.buildQueryStatus(ctx, req.Msg.Queryid, req.Header())
+	out, err := h.queryStatusPb(req.Header(), req.Msg.Queryid)
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	return connect.NewResponse(&pb.GetOpenCypherQueryStatusOutput{
-		Queryid:        out.Queryid,
-		Querystring:    out.Querystring,
-		Queryevalstats: out.Queryevalstats,
-	}), nil
-}
-
-func (h *AdminHandler) buildQueryStatus(ctx context.Context, queryId string, header http.Header) (*pb.GetOpenCypherQueryStatusOutput, error) {
-	store, err := h.getStore(header)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("query not found: %s", queryId))
-	}
-
-	output := &pb.GetOpenCypherQueryStatusOutput{
-		Queryid:     qr.GetQueryId(),
-		Querystring: qr.GetQueryString(),
-	}
-
-	if qr.EndTime != nil && qr.StartTime != nil {
-		elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-		output.Queryevalstats = &pb.QueryEvalStats{
-			Elapsed: fmt.Sprintf("%d", elapsed),
-		}
-	}
-
-	return output, nil
+	return connect.NewResponse(out), nil
 }
 
 // ListGremlinQueries returns the status of all accepted and running Gremlin queries.
 func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Request[pb.ListGremlinQueriesInput]) (*connect.Response[pb.ListGremlinQueriesOutput], error) {
-	queries, accepted, running, err := h.buildQueryList(ctx, "gremlin", req.Header())
+	queries, accepted, running, err := h.queryListPb(req.Header(), "gremlin")
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pb.ListGremlinQueriesOutput{
 		Queries:            queries,
-		Acceptedquerycount: strconv.Itoa(accepted),
-		Runningquerycount:  strconv.Itoa(running),
+		Acceptedquerycount: fmt.Sprintf("%d", accepted),
+		Runningquerycount:  fmt.Sprintf("%d", running),
 	}), nil
 }
 
 // ListOpenCypherQueries returns the status of all accepted and running openCypher queries.
 func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.Request[pb.ListOpenCypherQueriesInput]) (*connect.Response[pb.ListOpenCypherQueriesOutput], error) {
-	queries, accepted, running, err := h.buildQueryList(ctx, "opencypher", req.Header())
+	queries, accepted, running, err := h.queryListPb(req.Header(), "opencypher")
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pb.ListOpenCypherQueriesOutput{
 		Queries:            queries,
-		Acceptedquerycount: strconv.Itoa(accepted),
-		Runningquerycount:  strconv.Itoa(running),
+		Acceptedquerycount: fmt.Sprintf("%d", accepted),
+		Runningquerycount:  fmt.Sprintf("%d", running),
 	}), nil
-}
-
-func (h *AdminHandler) buildQueryList(ctx context.Context, queryType string, header http.Header) ([]*pb.GremlinQueryStatus, int, int, error) {
-	store, err := h.getStore(header)
-	if err != nil {
-		return nil, 0, 0, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, 0, 0, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	pbQueries := make([]*pb.GremlinQueryStatus, 0)
-	accepted := 0
-	running := 0
-	for _, qr := range queries {
-		if qr.GetQueryType() != queryType {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		accepted++
-		if st == "running" {
-			running++
-		}
-		status := &pb.GremlinQueryStatus{
-			Queryid:     qr.GetQueryId(),
-			Querystring: qr.GetQueryString(),
-		}
-		if qr.EndTime != nil && qr.StartTime != nil {
-			elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-			status.Queryevalstats = &pb.QueryEvalStats{
-				Elapsed: fmt.Sprintf("%d", elapsed),
-			}
-		}
-		pbQueries = append(pbQueries, status)
-	}
-
-	return pbQueries, accepted, running, nil
 }
 
 // GetLoaderJobStatus returns the status of a bulk loader job.
 func (h *AdminHandler) GetLoaderJobStatus(ctx context.Context, req *connect.Request[pb.GetLoaderJobStatusInput]) (*connect.Response[pb.GetLoaderJobStatusOutput], error) {
-	loadId := req.Msg.Loadid
-
-	store, err := h.getStore(req.Header())
+	out, err := h.loaderJobStatusPb(req.Header(), req.Msg.Loadid)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-
-	job, err := store.GetLoaderJob(loadId)
-	if err != nil || job == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("loader job not found: %s", loadId))
-	}
-
-	return connect.NewResponse(&pb.GetLoaderJobStatusOutput{
-		Status:  job.GetStatus(),
-		Payload: fmt.Sprintf(`{"loadId":"%s","status":"%s"}`, job.GetLoadId(), job.GetStatus()),
-	}), nil
+	return connect.NewResponse(out), nil
 }
 
 // ListLoaderJobs returns the IDs of all known bulk loader jobs.
 func (h *AdminHandler) ListLoaderJobs(ctx context.Context, req *connect.Request[pb.ListLoaderJobsInput]) (*connect.Response[pb.ListLoaderJobsOutput], error) {
-	store, err := h.getStore(req.Header())
+	out, err := h.loaderJobListPb(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-
-	jobs, err := store.ListLoaderJobs()
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	loadIds := make([]string, 0, len(jobs))
-	for _, job := range jobs {
-		loadIds = append(loadIds, job.GetLoadId())
-	}
-
-	return connect.NewResponse(&pb.ListLoaderJobsOutput{
-		Status: "200 OK",
-		Payload: &pb.LoaderIdResult{
-			Loadids: loadIds,
-		},
-	}), nil
+	return connect.NewResponse(out), nil
 }
 
 // GetPropertygraphStatistics returns node and edge counts for the property graph.
-func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[pb.GetPropertygraphStatisticsOutput], error) {
-	s := h.service
-	region := svccommon.GetRegionFromHeader(req.Header())
-
-	s.mu.RLock()
-	statsDisabled := s.statsDisabled
-	autoCompute := s.autoComputeEnabled
-	s.mu.RUnlock()
-
-	if !statsDisabled {
-		s.refreshStatisticsForRegion(region)
+func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *connect.Request[pbcommon.Empty]) (*connect.Response[pb.GetPropertygraphStatisticsOutput], error) {
+	out, err := h.propertygraphStatisticsPb(req.Header())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	st := s.getStats(region)
-	nodeCount, _, labelCounts, relCounts := st.snapshot()
-	sigCount := int64(len(labelCounts))
-	predCount := int64(len(relCounts))
-
-	stats := &pb.Statistics{
-		Active:       fmt.Sprintf("%t", !statsDisabled),
-		Autocompute:  fmt.Sprintf("%t", autoCompute),
-		Date:         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
-		Note:         "Automatically computed",
-		Statisticsid: "auto-statistics",
-		Signatureinfo: &pb.StatisticsSummary{
-			Signaturecount: fmt.Sprintf("%d", sigCount),
-			Instancecount:  fmt.Sprintf("%d", nodeCount),
-			Predicatecount: fmt.Sprintf("%d", predCount),
-		},
-	}
-
-	return connect.NewResponse(&pb.GetPropertygraphStatisticsOutput{
-		Status:  "200 OK",
-		Payload: stats,
-	}), nil
+	return connect.NewResponse(out), nil
 }
 
 // GetPropertygraphSummary returns a summary of the property graph metadata.
 func (h *AdminHandler) GetPropertygraphSummary(ctx context.Context, req *connect.Request[pb.GetPropertygraphSummaryInput]) (*connect.Response[pb.GetPropertygraphSummaryOutput], error) {
-	s := h.service
-	region := svccommon.GetRegionFromHeader(req.Header())
-
-	s.mu.RLock()
-	statsDisabled := s.statsDisabled
-	s.mu.RUnlock()
-
-	if !statsDisabled {
-		s.refreshStatisticsForRegion(region)
+	out, err := h.propertygraphSummaryPb(req.Header())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	st := s.getStats(region)
-	nodeCount, edgeCount, _, _ := st.snapshot()
-
-	summaryMap := &pb.PropertygraphSummaryValueMap{
-		Graphsummary: &pb.PropertygraphSummary{
-			Numnodes: fmt.Sprintf("%d", nodeCount),
-			Numedges: fmt.Sprintf("%d", edgeCount),
-		},
-	}
-
-	return connect.NewResponse(&pb.GetPropertygraphSummaryOutput{
-		Statuscode: "200 OK",
-		Payload:    summaryMap,
-	}), nil
+	return connect.NewResponse(out), nil
 }
 
 // GetMLDataProcessingJob returns the status of an ML data processing job.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetMLDataProcessingJob(ctx context.Context, req *connect.Request[pb.GetMLDataProcessingJobInput]) (*connect.Response[pb.GetMLDataProcessingJobOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML data processing")
 }
 
 // ListMLDataProcessingJobs lists all ML data processing job IDs.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) ListMLDataProcessingJobs(ctx context.Context, req *connect.Request[pb.ListMLDataProcessingJobsInput]) (*connect.Response[pb.ListMLDataProcessingJobsOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML data processing")
 }
 
 // GetMLModelTrainingJob returns the status of an ML model training job.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetMLModelTrainingJob(ctx context.Context, req *connect.Request[pb.GetMLModelTrainingJobInput]) (*connect.Response[pb.GetMLModelTrainingJobOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML model training")
 }
 
 // ListMLModelTrainingJobs lists all ML model training job IDs.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) ListMLModelTrainingJobs(ctx context.Context, req *connect.Request[pb.ListMLModelTrainingJobsInput]) (*connect.Response[pb.ListMLModelTrainingJobsOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML model training")
 }
 
 // GetMLModelTransformJob returns the status of an ML model transform job.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetMLModelTransformJob(ctx context.Context, req *connect.Request[pb.GetMLModelTransformJobInput]) (*connect.Response[pb.GetMLModelTransformJobOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML model transform")
 }
 
 // ListMLModelTransformJobs lists all ML model transform job IDs.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) ListMLModelTransformJobs(ctx context.Context, req *connect.Request[pb.ListMLModelTransformJobsInput]) (*connect.Response[pb.ListMLModelTransformJobsOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML model transform")
 }
 
 // GetMLEndpoint returns the status of an ML endpoint.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetMLEndpoint(ctx context.Context, req *connect.Request[pb.GetMLEndpointInput]) (*connect.Response[pb.GetMLEndpointOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML endpoint")
 }
 
 // ListMLEndpoints lists all ML endpoint IDs.
-// Not yet implemented; returns HTTP 501.
+// ML operations are not supported by vorpalstacks.
 func (h *AdminHandler) ListMLEndpoints(ctx context.Context, req *connect.Request[pb.ListMLEndpointsInput]) (*connect.Response[pb.ListMLEndpointsOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("ML operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("ML endpoint")
 }
 
 // GetSparqlStatistics returns SPARQL graph statistics.
-// Not yet implemented; returns HTTP 501.
-func (h *AdminHandler) GetSparqlStatistics(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[pb.GetSparqlStatisticsOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("SPARQL operations return HTTP 501"))
+// SPARQL operations are not supported by vorpalstacks.
+func (h *AdminHandler) GetSparqlStatistics(ctx context.Context, req *connect.Request[pbcommon.Empty]) (*connect.Response[pb.GetSparqlStatisticsOutput], error) {
+	return nil, errUnsupportedAdmin("SPARQL")
 }
 
 // GetRDFGraphSummary returns an RDF graph summary.
-// Not yet implemented; returns HTTP 501.
+// SPARQL operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetRDFGraphSummary(ctx context.Context, req *connect.Request[pb.GetRDFGraphSummaryInput]) (*connect.Response[pb.GetRDFGraphSummaryOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("SPARQL operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("SPARQL")
 }
 
 // GetSparqlStream returns an RDF change data stream.
-// Not yet implemented; returns HTTP 501.
+// SPARQL operations are not supported by vorpalstacks.
 func (h *AdminHandler) GetSparqlStream(ctx context.Context, req *connect.Request[pb.GetSparqlStreamInput]) (*connect.Response[pb.GetSparqlStreamOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("SPARQL operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("SPARQL")
 }
 
 // GetPropertygraphStream returns a property graph change data stream.
-// Not yet implemented; returns HTTP 501.
+// Streaming operations are not supported via the admin console; use the
+// HTTP API endpoint directly.
 func (h *AdminHandler) GetPropertygraphStream(ctx context.Context, req *connect.Request[pb.GetPropertygraphStreamInput]) (*connect.Response[pb.GetPropertygraphStreamOutput], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("streaming operations return HTTP 501"))
+	return nil, errUnsupportedAdmin("streaming")
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the NeptuneData admin console.

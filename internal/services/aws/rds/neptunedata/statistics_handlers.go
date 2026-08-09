@@ -33,7 +33,7 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 		s.refreshStatistics(reqCtx)
 	}
 	stats := s.getStats(reqCtx.GetRegion())
-	nodeCount, edgeCount, labelCounts, relCounts := stats.snapshot()
+	nodeCount, edgeCount, labelCounts, relCounts, _, _ := stats.snapshot()
 
 	sigCount := int64(len(labelCounts))
 	predCount := int64(len(relCounts))
@@ -87,25 +87,20 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 		s.mu.Lock()
 		s.statsDisabled = false
 		s.mu.Unlock()
-		// Use a timeout to prevent indefinite blocking on refresh.
-		// The statistics refresh scans all nodes and edges; on very large
-		// graphs this can take significant time. A 30s timeout prevents
-		// the handler from hanging indefinitely.
-		refreshCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
-		done := make(chan struct{})
+		// Fire-and-forget: AWS Neptune handles statistics refresh
+		// asynchronously. The caller receives a statisticsId immediately
+		// and can poll GetPropertygraphStatistics to check the result.
 		go func() {
+			defer func() {
+				if re := recover(); re != nil {
+					logs.Error("ManagePropertygraphStatistics: refresh panic recovered", logs.Any("panic", re))
+				}
+			}()
 			s.refreshStatistics(reqCtx)
-			close(done)
 		}()
-		select {
-		case <-done:
-		case <-refreshCtx.Done():
-			logs.Warn("ManagePropertygraphStatistics: refresh timed out after 30s")
-		}
 		return map[string]interface{}{
 			"status":  "200",
-			"payload": map[string]interface{}{"statisticsId": generateQueryID()},
+			"payload": map[string]interface{}{"statisticsId": generateStatisticsID()},
 		}, nil
 	default:
 		return nil, invalidParameter(fmt.Sprintf("unknown mode: %s", params.Mode))
@@ -141,7 +136,7 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 		s.refreshStatistics(reqCtx)
 	}
 	stats := s.getStats(reqCtx.GetRegion())
-	nodeCount, edgeCount, labelCounts, relCounts := stats.snapshot()
+	nodeCount, edgeCount, labelCounts, relCounts, nodePropCounts, edgePropCounts := stats.snapshot()
 
 	nodeLabels := make([]string, 0, len(labelCounts))
 	for label := range labelCounts {
@@ -161,14 +156,34 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 	}
 
 	if mode == "detailed" {
-		summary["numNodeProperties"] = 0
-		summary["numEdgeProperties"] = 0
-		summary["totalNodePropertyValues"] = 0
-		summary["totalEdgePropertyValues"] = 0
+		var totalNodePropVals int64
+		nodeProps := make([]interface{}, 0, len(nodePropCounts))
+		for prop, count := range nodePropCounts {
+			totalNodePropVals += count
+			nodeProps = append(nodeProps, map[string]interface{}{
+				"property": prop,
+				"count":    count,
+			})
+		}
+
+		var totalEdgePropVals int64
+		edgeProps := make([]interface{}, 0, len(edgePropCounts))
+		for prop, count := range edgePropCounts {
+			totalEdgePropVals += count
+			edgeProps = append(edgeProps, map[string]interface{}{
+				"property": prop,
+				"count":    count,
+			})
+		}
+
+		summary["numNodeProperties"] = int64(len(nodePropCounts))
+		summary["numEdgeProperties"] = int64(len(edgePropCounts))
+		summary["totalNodePropertyValues"] = totalNodePropVals
+		summary["totalEdgePropertyValues"] = totalEdgePropVals
 		summary["nodeLabels"] = nodeLabels
 		summary["edgeLabels"] = edgeLabels
-		summary["nodeProperties"] = []interface{}{}
-		summary["edgeProperties"] = []interface{}{}
+		summary["nodeProperties"] = nodeProps
+		summary["edgeProperties"] = edgeProps
 		nodeStructures := make([]interface{}, 0, len(nodeLabels))
 		for _, label := range nodeLabels {
 			nodeStructures = append(nodeStructures, map[string]interface{}{

@@ -39,12 +39,41 @@ func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, d
 	return nil
 }
 
+// maxListAllKeys is the safety cap when listing all objects (maxKeys <= 0).
+// This prevents unbounded memory consumption on extremely large buckets
+// while accommodating legitimate bulk-load workloads that list every file
+// under a prefix.
+const maxListAllKeys = 100000
+
 // ListObjects lists objects in an S3 bucket via the cross-service invoker.
+// When maxKeys <= 0, all objects are returned by paginating through the
+// full result set, up to maxListAllKeys. When maxKeys > 0, at most maxKeys
+// objects are returned from a single page.
 func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error) {
 	objs := s.s3Store.Objects(region)
+
 	if maxKeys <= 0 {
-		maxKeys = 1000
+		var allKeys []string
+		marker := ""
+		for {
+			result, err := objs.List(bucket, prefix, "", marker, 1000)
+			if err != nil {
+				return nil, fmt.Errorf("s3 ListObjects %s/%s: %w", bucket, prefix, err)
+			}
+			for _, o := range result.Objects {
+				allKeys = append(allKeys, o.Key)
+				if len(allKeys) >= maxListAllKeys {
+					return nil, fmt.Errorf("s3 ListObjects %s/%s: exceeded safety cap of %d keys", bucket, prefix, maxListAllKeys)
+				}
+			}
+			if !result.IsTruncated {
+				break
+			}
+			marker = result.NextMarker
+		}
+		return allKeys, nil
 	}
+
 	result, err := objs.List(bucket, prefix, "", "", maxKeys)
 	if err != nil {
 		return nil, fmt.Errorf("s3 ListObjects %s/%s: %w", bucket, prefix, err)

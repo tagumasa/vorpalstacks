@@ -34,32 +34,6 @@ type loaderStats struct {
 	insertErrors           int64
 }
 
-// validLoaderFormats are the Smithy enum values for the Format type
-// (case-sensitive lowercase only).
-var validLoaderFormats = map[string]bool{
-	"csv":        true,
-	"opencypher": true,
-	"ntriples":   true,
-	"nquads":     true,
-	"rdfxml":     true,
-	"turtle":     true,
-}
-
-// validLoaderModes are the Smithy enum values for the Mode type.
-var validLoaderModes = map[string]bool{
-	"RESUME": true,
-	"NEW":    true,
-	"AUTO":   true,
-}
-
-// validLoaderParallelism are the Smithy enum values for the Parallelism type.
-var validLoaderParallelism = map[string]bool{
-	"LOW":           true,
-	"MEDIUM":        true,
-	"HIGH":          true,
-	"OVERSUBSCRIBE": true,
-}
-
 // StartLoaderJob initiates a bulk load job for loading data into the Neptune
 // graph from the specified source location.
 func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -90,7 +64,7 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	if params.Format == "" {
 		return nil, missingParameter("format")
 	}
-	if !validLoaderFormats[params.Format] {
+	if !validateLoaderFormat(params.Format) {
 		return nil, invalidParameter(fmt.Sprintf("invalid format: %s (valid values: csv, opencypher, ntriples, nquads, rdfxml, turtle)", params.Format))
 	}
 	if params.Region == "" {
@@ -99,19 +73,30 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	if params.IamRoleArn == "" {
 		return nil, missingParameter("iamRoleArn")
 	}
-	if !strings.HasPrefix(params.IamRoleArn, "arn:aws:iam::") {
+	if !validateIamRoleArn(params.IamRoleArn) {
 		return nil, invalidParameter(fmt.Sprintf("iamRoleArn must be a valid IAM role ARN (arn:aws:iam::<account>:role/<name>): %s", params.IamRoleArn))
 	}
-	if params.Mode != "" && !validLoaderModes[params.Mode] {
+	if !validateLoaderMode(params.Mode) {
 		return nil, invalidParameter(fmt.Sprintf("invalid mode: %s (valid values: RESUME, NEW, AUTO)", params.Mode))
 	}
-	if params.Parallelism != "" && !validLoaderParallelism[params.Parallelism] {
+	if !validateLoaderParallelism(params.Parallelism) {
 		return nil, invalidParameter(fmt.Sprintf("invalid parallelism: %s (valid values: LOW, MEDIUM, HIGH, OVERSUBSCRIBE)", params.Parallelism))
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, internalFailure(err.Error())
+	}
+
+	// Validate that all dependencies exist and do not form a cycle.
+	if len(params.Dependencies) > 0 {
+		visited := make(map[string]bool)
+		done := make(map[string]bool)
+		for _, depID := range params.Dependencies {
+			if err := validateDependencyChain(store, depID, visited, done); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	loadId := generateQueryID()
@@ -219,6 +204,14 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 	// Smithy query params: details, errors, page, errorsPerPage
 	detailsFlag := request.GetBoolParam(req.Parameters, "details")
 	errorsFlag := request.GetBoolParam(req.Parameters, "errors")
+	page := request.GetIntParam(req.Parameters, "page")
+	if page <= 0 {
+		page = 1
+	}
+	errorsPerPage := request.GetIntParam(req.Parameters, "errorsPerPage")
+	if errorsPerPage <= 0 {
+		errorsPerPage = 10
+	}
 
 	failed := job.GetTotalErrors()
 	total := job.GetTotalRecords()
@@ -256,35 +249,56 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 		"insertErrors":           job.GetInsertErrors(),
 	}
 
-	// Build error structure when errors flag is set and errors exist
+	// Build error structure when errors flag is set and errors exist.
+	// Split the error log by newlines into individual entries and paginate
+	// using the page and errorsPerPage query parameters.
 	if errorsFlag && job.GetErrorLog() != "" {
+		errorLines := strings.Split(strings.TrimSpace(job.GetErrorLog()), "\n")
+		totalErrors := len(errorLines)
+		startIdx := (page - 1) * errorsPerPage
+		endIdx := startIdx + errorsPerPage
+		if startIdx > totalErrors {
+			startIdx = totalErrors
+		}
+		if endIdx > totalErrors {
+			endIdx = totalErrors
+		}
+
+		logs := make([]map[string]interface{}, 0, endIdx-startIdx)
+		for _, line := range errorLines[startIdx:endIdx] {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			logs = append(logs, map[string]interface{}{
+				"errorCode":    "LoaderError",
+				"errorMessage": line,
+			})
+		}
+
 		errorEntry := map[string]interface{}{
-			"startIndex": 1,
-			"endIndex":   1,
+			"startIndex": startIdx + 1,
+			"endIndex":   endIdx,
 			"loadId":     loadId,
-			"errorLogs": []map[string]interface{}{
-				{
-					"errorCode":    "LoaderError",
-					"errorMessage": job.GetErrorLog(),
-				},
-			},
+			"errorLogs":  logs,
 		}
 		overallStatus["errors"] = []map[string]interface{}{errorEntry}
 	}
 
 	payload := map[string]interface{}{
-		"loadId":        job.GetLoadId(),
-		"status":        job.GetStatus(),
-		"feedCount":     feedCount,
-		"overallStatus": overallStatus,
+		"loadId":    job.GetLoadId(),
+		"status":    job.GetStatus(),
+		"feedCount": feedCount,
 	}
 
-	// Include detailed status when requested
-	if detailsFlag {
-		payload["overallStatus"] = overallStatus
-	}
+	// overallStatus is always included per AWS Neptune specification.
+	// See: https://docs.aws.amazon.com/neptune/latest/userguide/load-api-reference-status-examples.html
+	payload["overallStatus"] = overallStatus
 
-	if len(job.GetFailedFeeds()) > 0 {
+	// failedFeeds is only included when details=true, per AWS Neptune
+	// specification. Without details, the response contains feedCount and
+	// overallStatus only.
+	if detailsFlag && len(job.GetFailedFeeds()) > 0 {
 		failedFeeds := make([]map[string]interface{}, 0, len(job.GetFailedFeeds()))
 		for _, feed := range job.GetFailedFeeds() {
 			failedFeeds = append(failedFeeds, map[string]interface{}{
@@ -1073,4 +1087,38 @@ func parseCSVValue(val string) interface{} {
 		return n
 	}
 	return val
+}
+
+// validateDependencyChain performs a DFS traversal of the dependency graph
+// starting from depID. It verifies that each dependency exists and detects
+// cycles that would cause the dispatcher to loop indefinitely.
+//
+// The visited map tracks nodes on the current recursion stack for cycle
+// detection. The done map memoises nodes that have been fully explored so
+// that diamond dependencies (A→B→C, A→C) do not re-traverse C. This keeps
+// the algorithm O(V+E) instead of O(2^V) for pathological DAGs.
+func validateDependencyChain(store *neptunestore.NeptuneStore, depID string, visited, done map[string]bool) error {
+	if done[depID] {
+		return nil
+	}
+	if visited[depID] {
+		return invalidParameter(fmt.Sprintf("circular dependency detected involving load: %s", depID))
+	}
+	visited[depID] = true
+	defer delete(visited, depID)
+
+	dep, err := store.GetLoaderJob(depID)
+	if err != nil {
+		return internalFailure(fmt.Sprintf("failed to check dependency %s: %v", depID, err))
+	}
+	if dep == nil {
+		return bulkLoadNotFound(depID)
+	}
+	for _, transitiveDep := range dep.GetDependencies() {
+		if err := validateDependencyChain(store, transitiveDep, visited, done); err != nil {
+			return err
+		}
+	}
+	done[depID] = true
+	return nil
 }

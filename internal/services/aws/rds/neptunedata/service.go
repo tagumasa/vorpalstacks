@@ -2,6 +2,8 @@ package neptunedata
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -79,13 +81,15 @@ type clusterEngineEntry struct {
 // GraphStatistics holds cached graph-level statistics for the property graph.
 // Refreshed on demand when statistics or summary endpoints are called.
 type GraphStatistics struct {
-	mu          sync.Mutex
-	NodeCount   int64            `json:"numNodes"`
-	EdgeCount   int64            `json:"numEdges"`
-	LabelCounts map[string]int64 `json:"-"`
-	RelCounts   map[string]int64 `json:"-"`
-	LastRefresh time.Time        `json:"-"`
-	LastAccess  time.Time        `json:"-"`
+	mu             sync.Mutex
+	NodeCount      int64            `json:"numNodes"`
+	EdgeCount      int64            `json:"numEdges"`
+	LabelCounts    map[string]int64 `json:"-"`
+	RelCounts      map[string]int64 `json:"-"`
+	NodePropCounts map[string]int64 `json:"-"`
+	EdgePropCounts map[string]int64 `json:"-"`
+	LastRefresh    time.Time        `json:"-"`
+	LastAccess     time.Time        `json:"-"`
 }
 
 // NewNeptuneDataService creates a new service instance. Per-region stores are
@@ -582,7 +586,7 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 		"status":    "healthy",
 		"startTime": s.startTime.UTC().Format(timeutils.ISO8601UTCFormat),
 		// Engine version string used by clients for feature detection (Neptune 1.x series).
-		"dbEngineVersion": "1.3.3.0",
+		"dbEngineVersion": engineVersion,
 		"role":            "writer",
 		// DFE (Distributed Forwarding Engine) state. "Disabled" indicates
 		// TinkerPop-only execution (no DFE).
@@ -673,7 +677,8 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 
 		if gs, ok := reqCtx.GraphWriter().(graphengine.GraphStore); ok {
 			if err := gs.Clear(); err != nil {
-				logs.Warn("failed to clear graph store during fast reset", logs.Err(err))
+				logs.Error("failed to clear graph store during fast reset", logs.Err(err))
+				return nil, internalFailure(fmt.Sprintf("fast reset failed: graph clear error: %v", err))
 			}
 		}
 		region := reqCtx.GetRegion()
@@ -773,8 +778,12 @@ func (s *NeptuneDataService) getQueryStatus(reqCtx *request.RequestContext, req 
 	}
 
 	var elapsed int64
-	if qr.EndTime != nil && qr.StartTime != nil {
-		elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
+	if qr.StartTime != nil {
+		if qr.EndTime != nil {
+			elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
+		} else {
+			elapsed = time.Since(qr.StartTime.AsTime()).Milliseconds()
+		}
 	}
 
 	return map[string]interface{}{
@@ -926,28 +935,55 @@ func (s *NeptuneDataService) refreshStatisticsForRegion(region string) {
 
 func refreshStatisticsWithReader(reader graphengine.GraphReader, region string, s *NeptuneDataService) {
 	if reader == nil {
-		// Log when no graph reader is available so silent failures
-		// are diagnosable.
 		logs.Warn("refreshStatistics: no graph reader available",
 			logs.String("region", region))
 		return
 	}
 
+	// Skip the full graph scan if the statistics were refreshed recently.
+	// This prevents repeated O(N) traversals when the statistics or summary
+	// endpoints are called in rapid succession.
 	stats := s.getStats(region)
+	stats.mu.Lock()
+	if !stats.LastRefresh.IsZero() && time.Since(stats.LastRefresh) < statsCacheTTL {
+		stats.mu.Unlock()
+		return
+	}
+	stats.mu.Unlock()
+
 	nodeCount := reader.CountNodes()
 	edgeCount := reader.CountEdges()
 	labelCounts, _ := reader.GetLabelCounts()
 	relCounts, _ := reader.GetRelCounts()
+
+	nodePropCounts := make(map[string]int64)
+	edgePropCounts := make(map[string]int64)
+
+	reader.ForEachNode(func(node *graphengine.Node) error {
+		for k := range node.Props {
+			nodePropCounts[k]++
+		}
+		return nil
+	})
+	reader.ForEachEdge(func(edge *graphengine.Edge) error {
+		for k := range edge.Props {
+			edgePropCounts[k]++
+		}
+		return nil
+	})
+
 	stats.mu.Lock()
 	stats.NodeCount = nodeCount
 	stats.EdgeCount = edgeCount
 	stats.LabelCounts = labelCounts
 	stats.RelCounts = relCounts
+	stats.NodePropCounts = nodePropCounts
+	stats.EdgePropCounts = edgePropCounts
 	stats.LastRefresh = time.Now()
 	stats.mu.Unlock()
 }
 
-func (st *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, relCounts map[string]int64) {
+func (st *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, relCounts, nodePropCounts, edgePropCounts map[string]int64) {
 	st.mu.Lock()
 	nodeCount = st.NodeCount
 	edgeCount = st.EdgeCount
@@ -958,6 +994,14 @@ func (st *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, 
 	relCounts = make(map[string]int64, len(st.RelCounts))
 	for k, v := range st.RelCounts {
 		relCounts[k] = v
+	}
+	nodePropCounts = make(map[string]int64, len(st.NodePropCounts))
+	for k, v := range st.NodePropCounts {
+		nodePropCounts[k] = v
+	}
+	edgePropCounts = make(map[string]int64, len(st.EdgePropCounts))
+	for k, v := range st.EdgePropCounts {
+		edgePropCounts[k] = v
 	}
 	st.mu.Unlock()
 	return
@@ -973,8 +1017,19 @@ func generateQueryID() string {
 var tokenCounter int64
 
 func generateFastResetToken() string {
-	id := atomic.AddInt64(&tokenCounter, 1)
-	return fmt.Sprintf("frt-%d-%d", time.Now().UnixNano(), id)
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		id := atomic.AddInt64(&tokenCounter, 1)
+		return fmt.Sprintf("frt-%d-%d", time.Now().UnixNano(), id)
+	}
+	return "frt-" + hex.EncodeToString(b)
+}
+
+var statsCounter int64
+
+func generateStatisticsID() string {
+	id := atomic.AddInt64(&statsCounter, 1)
+	return fmt.Sprintf("stats-%d-%d", time.Now().UnixMilli(), id)
 }
 
 // startLoaderDispatcher launches the loader job dispatcher if it is not

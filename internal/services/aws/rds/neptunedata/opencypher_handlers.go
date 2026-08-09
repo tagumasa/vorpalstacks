@@ -1,10 +1,10 @@
 package neptunedata
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage/graphengine"
@@ -27,18 +27,18 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 	}
 
 	var cypherParams map[string]any
-	if len(params.Parameters) > 0 && string(params.Parameters) != "" {
-		trimmed := strings.TrimSpace(string(params.Parameters))
-		if len(trimmed) > 0 && trimmed[0] == '"' {
+	if len(params.Parameters) > 0 {
+		raw := bytes.TrimSpace(params.Parameters)
+		if len(raw) > 0 && raw[0] == '"' {
 			var paramStr string
-			if err := json.Unmarshal(params.Parameters, &paramStr); err != nil {
+			if err := json.Unmarshal(raw, &paramStr); err != nil {
 				return nil, invalidParameter(fmt.Sprintf("invalid parameters: %v", err))
 			}
 			if err := json.Unmarshal([]byte(paramStr), &cypherParams); err != nil {
 				return nil, invalidParameter(fmt.Sprintf("invalid parameters: %v", err))
 			}
 		} else {
-			if err := json.Unmarshal(params.Parameters, &cypherParams); err != nil {
+			if err := json.Unmarshal(raw, &cypherParams); err != nil {
 				return nil, invalidParameter(fmt.Sprintf("invalid parameters: %v", err))
 			}
 		}
@@ -85,13 +85,13 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 	default:
 		if parsed.Read == nil {
 			s.resolveQuery(store, qid, nil, fmt.Errorf("unsupported query type"))
-			return nil, malformedQuery("unsupported query type")
+			return nil, badRequest("unsupported query type")
 		}
 		result, err = cypherparser.Execute(ctx, reader, parsed.Read, cypherParams)
 	}
 	s.resolveQuery(store, qid, result, err)
 	if err != nil {
-		return nil, malformedQuery(err.Error())
+		return nil, failureByQuery(err.Error())
 	}
 
 	return map[string]interface{}{
@@ -114,6 +114,9 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 	}
 	if params.Query == "" {
 		return nil, missingParameter("query")
+	}
+	if !validateExplainMode(params.Explain) {
+		return nil, invalidParameter(fmt.Sprintf("invalid explain mode: %s (valid values: static, details, dynamic)", params.Explain))
 	}
 
 	parsed, err := cypherparser.Parse(params.Query)
