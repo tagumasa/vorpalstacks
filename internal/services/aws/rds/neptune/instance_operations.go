@@ -26,14 +26,16 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	if err := rdssvc.ValidateDBInstanceIdentifier(id); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
-	if class := request.GetStringParam(params, "DBInstanceClass"); class != "" {
-		if err := rdssvc.ValidateDBInstanceClass(class); err != nil {
-			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-		}
+	class := request.GetStringParam(params, "DBInstanceClass")
+	if class == "" {
+		return nil, awserrors.NewMissingParameter("DBInstanceClass is required")
+	}
+	if err := rdssvc.ValidateDBInstanceClass(class); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 	engineType := request.GetStringParam(params, "Engine")
 	if engineType == "" {
-		engineType = "neptune"
+		return nil, awserrors.NewMissingParameter("Engine is required")
 	}
 	if err := rdssvc.ValidateEngine(engineType); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
@@ -182,7 +184,17 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 			}
 		}
 		if err := store.AddTags(instance.DBInstanceArn, storeTags); err != nil {
-			logs.Warn("failed to tag instance on create", logs.String("instance", id), logs.Err(err))
+			if instance.DBClusterIdentifier == "" {
+				engineType := instance.Engine
+				if engineType == "" {
+					engineType = "neptune"
+				}
+				if eng := s.engineFor(engineType); eng != nil {
+					eng.Close(id)
+				}
+			}
+			store.DeleteInstance(id)
+			return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Failed to tag instance: %v", err), http.StatusBadRequest)
 		}
 	}
 
@@ -342,99 +354,6 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
-// RestoreDBInstanceFromDBSnapshot creates a new DB instance from a DB instance
-// snapshot.
-func (s *NeptuneService) RestoreDBInstanceFromDBSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
-	if instanceID == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-	snapshotID := request.GetStringParam(params, "DBSnapshotIdentifier")
-	if snapshotID == "" {
-		return nil, awserrors.NewMissingParameter("DBSnapshotIdentifier is required")
-	}
-	if err := rdssvc.ValidateDBSnapshotIdentifier(snapshotID); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	snapshot, err := store.GetInstanceSnapshot(snapshotID)
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	now := time.Now()
-	instance := &neptunestore.DBInstance{
-		DBInstanceIdentifier:             instanceID,
-		Engine:                           snapshot.Engine,
-		EngineVersion:                    snapshot.EngineVersion,
-		DBInstanceClass:                  request.GetStringParam(params, "DBInstanceClass"),
-		DBInstanceStatus:                 "available",
-		AvailabilityZone:                 request.GetStringParam(params, "AvailabilityZone"),
-		DBParameterGroupName:             request.GetStringParam(params, "DBParameterGroupName"),
-		DBSubnetGroupName:                request.GetStringParam(params, "DBSubnetGroupName"),
-		IAMDatabaseAuthenticationEnabled: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
-		PubliclyAccessible:               request.GetBoolParam(params, "PubliclyAccessible"),
-		AutoMinorVersionUpgrade:          request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
-		CopyTagsToSnapshot:               request.GetBoolParam(params, "CopyTagsToSnapshot"),
-		InstanceCreateTime:               &now,
-		AccountID:                        reqCtx.GetAccountID(),
-		Region:                           reqCtx.GetRegion(),
-		DBInstanceArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(instanceID),
-	}
-
-	if instance.DBInstanceClass == "" {
-		instance.DBInstanceClass = "db.r5.large"
-	}
-
-	if err := store.CreateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	// Open the engine for the restored instance and restore row-level
-	// data from the snapshot when the snapshot was taken from a MySQL
-	// instance. Without this, the restored instance would have no
-	// running engine and no user data.
-	engineType := snapshot.Engine
-	if engineType == "" {
-		engineType = "neptune"
-	}
-	if eng := s.engineFor(engineType); eng != nil {
-		if port, err := eng.Open(reqCtx.GetRegion(), instanceID); err != nil {
-			logs.Warn("failed to open engine for restored instance",
-				logs.String("instance", instanceID),
-				logs.Err(err))
-		} else {
-			instance.Endpoint = &neptunestore.Endpoint{
-				Address: s.endpointAddressFor(instanceID, engineType),
-				Port:    port,
-			}
-			if err := store.UpdateInstance(instance); err != nil {
-				logs.Warn("failed to persist restored instance endpoint",
-					logs.String("instance", instanceID),
-					logs.Err(err))
-			}
-		}
-	}
-	if s.snapOp != nil && snapshot.Engine == "mysql" {
-		if err := s.snapOp.RestoreData(snapshotID, instanceID); err != nil {
-			logs.Warn("neptune: RestoreData failed",
-				logs.String("snapshot", snapshotID),
-				logs.String("instance", instanceID),
-				logs.Err(err))
-		}
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
-}
-
 // DescribeDBInstances returns information about the specified DB instance or lists
 // all instances when no identifier is provided.
 func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -478,178 +397,6 @@ func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *reques
 		result["Marker"] = nextMarker
 	}
 	return result, nil
-}
-
-// RestoreDBInstanceToPointInTime restores a DB instance to a specified point
-// in time from a source instance.
-func (s *NeptuneService) RestoreDBInstanceToPointInTime(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	targetID := request.GetStringParam(params, "TargetDBInstanceIdentifier")
-	if targetID == "" {
-		return nil, awserrors.NewMissingParameter("TargetDBInstanceIdentifier is required")
-	}
-	sourceID := request.GetStringParam(params, "SourceDBInstanceIdentifier")
-	if sourceID == "" {
-		return nil, awserrors.NewMissingParameter("SourceDBInstanceIdentifier is required")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	source, err := store.GetInstance(sourceID)
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	now := time.Now()
-	instance := &neptunestore.DBInstance{
-		DBInstanceIdentifier:             targetID,
-		Engine:                           source.Engine,
-		EngineVersion:                    source.EngineVersion,
-		DBInstanceClass:                  source.DBInstanceClass,
-		DBInstanceStatus:                 "available",
-		AvailabilityZone:                 source.AvailabilityZone,
-		DBParameterGroupName:             source.DBParameterGroupName,
-		DBSubnetGroupName:                source.DBSubnetGroupName,
-		IAMDatabaseAuthenticationEnabled: source.IAMDatabaseAuthenticationEnabled,
-		PubliclyAccessible:               source.PubliclyAccessible,
-		AutoMinorVersionUpgrade:          source.AutoMinorVersionUpgrade,
-		InstanceCreateTime:               &now,
-		AccountID:                        reqCtx.GetAccountID(),
-		Region:                           reqCtx.GetRegion(),
-		DBInstanceArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(targetID),
-	}
-
-	if v := request.GetStringParam(params, "DBInstanceClass"); v != "" {
-		instance.DBInstanceClass = v
-	}
-	if v := request.GetStringParam(params, "AvailabilityZone"); v != "" {
-		instance.AvailabilityZone = v
-	}
-	if v := request.GetStringParam(params, "DBSubnetGroupName"); v != "" {
-		instance.DBSubnetGroupName = v
-	}
-
-	if err := store.CreateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	// Open the engine for the restored instance so it can serve
-	// queries. Without this, the restored instance exists in metadata
-	// only and has no running engine — the same gap that would exist
-	// if RestoreDBInstanceFromDBSnapshot omitted the engine open.
-	engineType := source.Engine
-	if engineType == "" {
-		engineType = "neptune"
-	}
-	if eng := s.engineFor(engineType); eng != nil {
-		if port, err := eng.Open(reqCtx.GetRegion(), targetID); err != nil {
-			logs.Warn("failed to open engine for PITR restored instance",
-				logs.String("instance", targetID),
-				logs.Err(err))
-		} else {
-			instance.Endpoint = &neptunestore.Endpoint{
-				Address: s.endpointAddressFor(targetID, engineType),
-				Port:    port,
-			}
-			if err := store.UpdateInstance(instance); err != nil {
-				logs.Warn("failed to persist PITR restored instance endpoint",
-					logs.String("instance", targetID),
-					logs.Err(err))
-			}
-		}
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
-}
-
-// CreateDBInstanceReadReplica creates a read replica of an existing DB
-// instance.
-func (s *NeptuneService) CreateDBInstanceReadReplica(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	replicaID := request.GetStringParam(params, "DBInstanceIdentifier")
-	if replicaID == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-	sourceID := request.GetStringParam(params, "SourceDBInstanceIdentifier")
-	if sourceID == "" {
-		return nil, awserrors.NewMissingParameter("SourceDBInstanceIdentifier is required")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	source, err := store.GetInstance(sourceID)
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	now := time.Now()
-	instance := &neptunestore.DBInstance{
-		DBInstanceIdentifier:             replicaID,
-		DBClusterIdentifier:              source.DBClusterIdentifier,
-		Engine:                           source.Engine,
-		EngineVersion:                    source.EngineVersion,
-		DBInstanceClass:                  source.DBInstanceClass,
-		DBInstanceStatus:                 "available",
-		AvailabilityZone:                 request.GetStringParam(params, "AvailabilityZone"),
-		DBParameterGroupName:             source.DBParameterGroupName,
-		DBSubnetGroupName:                source.DBSubnetGroupName,
-		IAMDatabaseAuthenticationEnabled: source.IAMDatabaseAuthenticationEnabled,
-		PubliclyAccessible:               source.PubliclyAccessible,
-		AutoMinorVersionUpgrade:          source.AutoMinorVersionUpgrade,
-		InstanceCreateTime:               &now,
-		AccountID:                        reqCtx.GetAccountID(),
-		Region:                           reqCtx.GetRegion(),
-		DBInstanceArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(replicaID),
-	}
-
-	if v := request.GetStringParam(params, "DBInstanceClass"); v != "" {
-		instance.DBInstanceClass = v
-	}
-
-	if err := store.CreateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
-}
-
-// PromoteReadReplica promotes a read replica DB instance to a standalone
-// primary instance.
-func (s *NeptuneService) PromoteReadReplica(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	id := request.GetStringParam(params, "DBInstanceIdentifier")
-	if id == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	instance, err := store.GetInstance(id)
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	instance.DBInstanceStatus = "available"
-	if err := store.UpdateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
 }
 
 // RebootDBInstance reboots the specified DB instance.

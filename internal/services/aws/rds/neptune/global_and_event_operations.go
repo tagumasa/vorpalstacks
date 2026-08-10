@@ -59,7 +59,7 @@ func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *reques
 	}
 	engine := request.GetStringParam(params, "Engine")
 	if engine == "" {
-		engine = "neptune"
+		return nil, awserrors.NewMissingParameter("Engine is required")
 	}
 	if err := rdssvc.ValidateEngine(engine); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)

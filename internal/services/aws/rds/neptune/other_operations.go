@@ -406,9 +406,15 @@ func (s *NeptuneService) ApplyPendingMaintenanceAction(ctx context.Context, reqC
 	if action == "" {
 		return nil, awserrors.NewMissingParameter("ApplyAction is required")
 	}
+	if err := validateApplyAction(action); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+	}
 	optIn := request.GetStringParam(params, "OptInType")
 	if optIn == "" {
 		return nil, awserrors.NewMissingParameter("OptInType is required")
+	}
+	if err := validateOptInType(optIn); err != nil {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
 	// Validate that the resource exists.
@@ -547,114 +553,6 @@ func (s *NeptuneService) DescribeValidDBInstanceModifications(ctx context.Contex
 	return map[string]interface{}{
 		"ValidDBInstanceModificationsMessage": map[string]interface{}{
 			"Storage": protocol.XMLElements{ElementName: "ValidStorageOptions", Items: []interface{}{}},
-		},
-	}, nil
-}
-
-// DescribeDBLogFiles returns a list of DB log files for the specified DB
-// instance. Neptune does not produce file-based logs, so this always returns
-// an empty list.
-func (s *NeptuneService) DescribeDBLogFiles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
-	if instanceID == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := store.GetInstance(instanceID); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DescribeDBLogFiles": protocol.XMLElements{ElementName: "DescribeDBLogFilesDetails", Items: []interface{}{}},
-	}, nil
-}
-
-// DownloadDBLogFilePortion returns the contents of a DB log file. Neptune does
-// not produce file-based logs, so this returns an empty LogFileData string.
-func (s *NeptuneService) DownloadDBLogFilePortion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
-	if instanceID == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := store.GetInstance(instanceID); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"LogFileData":    "",
-		"Marker":         "",
-		"AdditionalData": false,
-	}, nil
-}
-
-// DescribeOptionGroups returns information about option groups. Neptune does not
-// use option groups, so this always returns an empty list.
-func (s *NeptuneService) DescribeOptionGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"OptionGroupsList": protocol.XMLElements{ElementName: "OptionGroup", Items: []interface{}{}},
-	}, nil
-}
-
-// CreateOptionGroup creates a new option group. Neptune does not use option
-// groups, so this returns a minimal in-memory representation without
-// persistence.
-func (s *NeptuneService) CreateOptionGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	name := request.GetStringParam(params, "OptionGroupName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("OptionGroupName is required")
-	}
-	engineName := request.GetStringParam(params, "EngineName")
-	majorEngineVersion := request.GetStringParam(params, "MajorEngineVersion")
-
-	accountID := reqCtx.GetAccountID()
-	region := reqCtx.GetRegion()
-	arn := fmt.Sprintf("arn:aws:rds:%s:%s:og:%s", region, accountID, name)
-
-	return map[string]interface{}{
-		"OptionGroup": map[string]interface{}{
-			"OptionGroupName":        name,
-			"OptionGroupDescription": request.GetStringParam(params, "OptionGroupDescription"),
-			"EngineName":             engineName,
-			"MajorEngineVersion":     majorEngineVersion,
-			"OptionGroupArn":         arn,
-			"Options":                protocol.XMLElements{ElementName: "Option", Items: []interface{}{}},
-		},
-	}, nil
-}
-
-// DeleteOptionGroup deletes the specified option group. Neptune does not use
-// option groups, so this is a no-op.
-func (s *NeptuneService) DeleteOptionGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{}, nil
-}
-
-// ModifyOptionGroup modifies the specified option group. Neptune does not use
-// option groups, so this is a no-op.
-func (s *NeptuneService) ModifyOptionGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	name := request.GetStringParam(params, "OptionGroupName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("OptionGroupName is required")
-	}
-
-	return map[string]interface{}{
-		"OptionGroup": map[string]interface{}{
-			"OptionGroupName": name,
-			"Options":         protocol.XMLElements{ElementName: "Option", Items: []interface{}{}},
 		},
 	}, nil
 }

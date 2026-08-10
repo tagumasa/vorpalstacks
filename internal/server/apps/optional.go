@@ -126,12 +126,9 @@ func (a *App) initOptionalServices() error {
 	// Wire the MySQL (vmysql) engine and snapshot operator into the
 	// Neptune SDK handler so it can serve RDS SDK clients that create
 	// MySQL instances/clusters. The Neptune handler dispatches to the
-	// MySQL engine when Engine is "mysql" (see NeptuneService.engineFor),
-	// and captures / restores row-level snapshot data through the
-	// snapshot operator.
+	// MySQL engine when Engine is "mysql" (see NeptuneService.engineFor).
 	if st.neptuneService != nil && st.vmysqlService != nil {
 		st.neptuneService.SetMysqlEngine(st.vmysqlService)
-		st.neptuneService.SetSnapshotOperator(&vmysqlSnapshotOperatorAdapter{svc: st.vmysqlService})
 	}
 
 	if st.kmsService != nil {

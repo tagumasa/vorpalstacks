@@ -32,21 +32,6 @@ func hashMasterPassword(plaintext string) (string, error) {
 	return string(hash), nil
 }
 
-// validatePort checks that the port number is within the AWS-specified
-// valid range for Neptune DB clusters. Delegates to the shared
-// rdssvc.ValidatePort so there is a single source of truth.
-func validatePort(v int) error {
-	return rdssvc.ValidatePort(int32(v))
-}
-
-// validateBackupRetentionPeriod checks that the retention period is within
-// the AWS-specified range of 1-35 days for Neptune. Delegates to the
-// shared rdssvc.ValidateBackupRetentionPeriod so there is a single source
-// of truth.
-func validateBackupRetentionPeriod(v int) error {
-	return rdssvc.ValidateBackupRetentionPeriod(int32(v))
-}
-
 // isValidIAMRoleArn validates that the given string is a well-formed IAM
 // role ARN (arn:aws:iam::<account>:role/<name>).
 func isValidIAMRoleArn(arn string) bool {
@@ -257,7 +242,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 
 	engine := request.GetStringParam(params, "Engine")
 	if engine == "" {
-		engine = "neptune"
+		return nil, awserrors.NewMissingParameter("Engine is required")
 	}
 	if err := rdssvc.ValidateEngine(engine); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
@@ -391,6 +376,18 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	if cluster.GlobalClusterIdentifier != "" {
 		if gc, err := store.GetGlobalCluster(cluster.GlobalClusterIdentifier); err == nil {
 			isWriter := len(gc.GlobalClusterMembers) == 0
+			if !isWriter {
+				hasWriter := false
+				for _, m := range gc.GlobalClusterMembers {
+					if m.IsWriter {
+						hasWriter = true
+						break
+					}
+				}
+				if !hasWriter {
+					isWriter = true
+				}
+			}
 			gc.GlobalClusterMembers = append(gc.GlobalClusterMembers, neptunestore.GlobalClusterMember{
 				DBClusterArn:            cluster.DBClusterArn,
 				IsWriter:                isWriter,
@@ -423,7 +420,12 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 			}
 		}
 		if err := store.AddTags(cluster.DBClusterArn, storeTags); err != nil {
-			logs.Warn("failed to tag cluster on create", logs.String("cluster", id), logs.Err(err))
+			if eng := s.engineFor(engine); eng != nil {
+				eng.Close(id)
+			}
+			removeClusterFromGlobal(store, cluster)
+			store.DeleteCluster(id)
+			return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Failed to tag cluster: %v", err), http.StatusBadRequest)
 		}
 	}
 
@@ -531,20 +533,7 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 
 	cascadeDeleteClusterResources(store, cluster)
 
-	if cluster.GlobalClusterIdentifier != "" {
-		if gc, err := store.GetGlobalCluster(cluster.GlobalClusterIdentifier); err == nil {
-			filtered := make([]neptunestore.GlobalClusterMember, 0, len(gc.GlobalClusterMembers))
-			for _, m := range gc.GlobalClusterMembers {
-				if m.DBClusterArn != cluster.DBClusterArn {
-					filtered = append(filtered, m)
-				}
-			}
-			gc.GlobalClusterMembers = filtered
-			if err := store.UpdateGlobalCluster(gc); err != nil {
-				logs.Warn("failed to remove cluster from global cluster members", logs.String("cluster", id), logs.Err(err))
-			}
-		}
-	}
+	removeClusterFromGlobal(store, cluster)
 
 	if eng := s.engineFor(cluster.Engine); eng != nil {
 		if err := eng.Close(id); err != nil {
@@ -678,7 +667,13 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 		reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID)
 		if err := store.DeleteCluster(oldID); err != nil {
-			logs.Warn("failed to delete old cluster after rename", logs.String("oldID", oldID), logs.Err(err))
+			// The rename has effectively succeeded: the new cluster
+			// exists and all sub-resources have been reparented.
+			// Deleting the old record is best-effort cleanup; returning
+			// an error here would mislead the client into thinking the
+			// rename failed when the new cluster is fully functional.
+			logs.Warn("failed to delete old cluster record after rename",
+				logs.String("oldID", oldID), logs.String("newID", newID), logs.Err(err))
 		}
 	}
 
@@ -1042,4 +1037,28 @@ func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, clu
 	}
 
 	removeTagsForResource(store, cluster.DBClusterArn)
+}
+
+// removeClusterFromGlobal removes the cluster's membership entry from its
+// parent global cluster, if any. Used by DeleteDBCluster and by the
+// CreateDBCluster tag-failure rollback path.
+func removeClusterFromGlobal(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) {
+	if cluster.GlobalClusterIdentifier == "" {
+		return
+	}
+	gc, err := store.GetGlobalCluster(cluster.GlobalClusterIdentifier)
+	if err != nil {
+		return
+	}
+	filtered := make([]neptunestore.GlobalClusterMember, 0, len(gc.GlobalClusterMembers))
+	for _, m := range gc.GlobalClusterMembers {
+		if m.DBClusterArn != cluster.DBClusterArn {
+			filtered = append(filtered, m)
+		}
+	}
+	gc.GlobalClusterMembers = filtered
+	if err := store.UpdateGlobalCluster(gc); err != nil {
+		logs.Warn("failed to remove cluster from global cluster members",
+			logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
+	}
 }

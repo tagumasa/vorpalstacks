@@ -310,8 +310,7 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 
 // RestoreDBClusterFromSnapshot creates a new DB cluster from a DB cluster
 // snapshot. Cluster snapshots are metadata-only — they do not capture
-// row-level data. Only instance snapshots (DBSnapshot) capture row data
-// via the vmysql SnapshotOperator.
+// row-level data.
 func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	clusterID := request.GetStringParam(params, "DBClusterIdentifier")

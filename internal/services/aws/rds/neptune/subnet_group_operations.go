@@ -77,11 +77,11 @@ func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Param
 // slice and the common VPC ID (all subnets must belong to the same VPC).
 func (s *NeptuneService) resolveSubnets(ctx context.Context, region string, subnetIds []string) ([]neptunestore.Subnet, string, error) {
 	if s.eventBus == nil {
-		return nil, "", fmt.Errorf("neptune: event bus not available for EC2 subnet lookup")
+		return nil, "", awserrors.NewAWSError("InvalidSubnet", "EC2 event bus not available for subnet lookup", http.StatusBadRequest)
 	}
 	ec2 := s.eventBus.EC2Invoker()
 	if ec2 == nil {
-		return nil, "", fmt.Errorf("neptune: EC2 service not available for subnet lookup")
+		return nil, "", awserrors.NewAWSError("InvalidSubnet", "EC2 service not available for subnet lookup", http.StatusBadRequest)
 	}
 
 	subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
@@ -90,7 +90,7 @@ func (s *NeptuneService) resolveSubnets(ctx context.Context, region string, subn
 	for _, subnetId := range subnetIds {
 		subnetVpcId, az, err := ec2.LookupSubnet(ctx, region, subnetId)
 		if err != nil {
-			return nil, "", fmt.Errorf("neptune: failed to resolve subnet %s: %w", subnetId, err)
+			return nil, "", awserrors.NewAWSError("InvalidSubnet", fmt.Sprintf("Failed to resolve subnet %s: %v", subnetId, err), http.StatusBadRequest)
 		}
 		if vpcId == "" {
 			vpcId = subnetVpcId
@@ -111,18 +111,18 @@ func (s *NeptuneService) resolveSubnets(ctx context.Context, region string, subn
 // to the same VPC.
 func (s *NeptuneService) resolveSecurityGroups(ctx context.Context, region string, sgIds []string) (string, error) {
 	if s.eventBus == nil {
-		return "", fmt.Errorf("neptune: event bus not available for EC2 security group lookup")
+		return "", awserrors.NewAWSError("InvalidParameterValue", "EC2 event bus not available for security group lookup", http.StatusBadRequest)
 	}
 	ec2 := s.eventBus.EC2Invoker()
 	if ec2 == nil {
-		return "", fmt.Errorf("neptune: EC2 service not available for security group lookup")
+		return "", awserrors.NewAWSError("InvalidParameterValue", "EC2 service not available for security group lookup", http.StatusBadRequest)
 	}
 
 	var vpcId string
 	for _, sgId := range sgIds {
 		sgVpcId, err := ec2.LookupSecurityGroup(ctx, region, sgId)
 		if err != nil {
-			return "", fmt.Errorf("neptune: failed to resolve security group %s: %w", sgId, err)
+			return "", awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Failed to resolve security group %s: %v", sgId, err), http.StatusBadRequest)
 		}
 		if vpcId == "" {
 			vpcId = sgVpcId
@@ -151,8 +151,8 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	if len(subnetIds) > 26 {
-		return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", "Cannot assign more than 26 subnets to a DB subnet group", http.StatusBadRequest)
+	if err := validateSubnetCount(len(subnetIds)); err != nil {
+		return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", err.Error(), http.StatusBadRequest)
 	}
 
 	region := reqCtx.GetRegion()

@@ -32,7 +32,6 @@ type NeptuneService struct {
 	engine           rdssvc.Engine
 	mysqlEngine      rdssvc.Engine
 	porter           rdssvc.GetPorter
-	snapOp           rdssvc.SnapshotOperator
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
@@ -137,14 +136,6 @@ func (s *NeptuneService) SetMysqlEngine(e rdssvc.Engine) {
 	s.mysqlEngine = e
 }
 
-// SetSnapshotOperator wires the row-level snapshot operator (vmysql).
-// When set, CreateDBSnapshot captures actual row data, and
-// RestoreDBInstanceFromDBSnapshot / DeleteDBSnapshot recover / clean up
-// that data. When nil, snapshots are metadata-only.
-func (s *NeptuneService) SetSnapshotOperator(op rdssvc.SnapshotOperator) {
-	s.snapOp = op
-}
-
 // engineFor returns the appropriate engine for the given engine type.
 // Recognised values: "neptune" and "" (the default) map to the Neptune
 // engine; "mysql" maps to the MySQL engine. All other values return nil
@@ -230,6 +221,10 @@ func recordEvent(store neptunestore.NeptuneStoreInterface, sourceType, sourceID,
 // state machine (creating → available, creating → active) for Create
 // operations so that clients observe a brief 'creating' state before the
 // resource transitions to its final state.
+//
+// If fn fails, the goroutine retries up to 3 times with exponential backoff
+// before giving up. The caller's fn should set the resource status to a
+// terminal failure state (e.g. "failed") when all retries are exhausted.
 func (s *NeptuneService) scheduleTransition(region string, delay time.Duration, fn func(store neptunestore.NeptuneStoreInterface) error) {
 	go func() {
 		defer func() { resilience.RecoverPanic("Neptune state transition") }()
@@ -240,11 +235,27 @@ func (s *NeptuneService) scheduleTransition(region string, delay time.Duration, 
 		}
 		store, err := s.GetStoreForRegion(region)
 		if err != nil {
-			logs.Warn("state transition: failed to get store", logs.String("region", region), logs.Err(err))
+			logs.Error("state transition: failed to get store", logs.String("region", region), logs.Err(err))
 			return
 		}
-		if err := fn(store); err != nil {
-			logs.Warn("state transition: failed to update", logs.String("region", region), logs.Err(err))
+		maxRetries := 3
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			if err := fn(store); err != nil {
+				logs.Warn("state transition: attempt failed",
+					logs.String("region", region),
+					logs.Int("attempt", attempt),
+					logs.Err(err))
+				if attempt < maxRetries {
+					select {
+					case <-s.transitionCtx.Done():
+						return
+					case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
+					}
+					continue
+				}
+				logs.Error("state transition: all retries exhausted", logs.String("region", region), logs.Err(err))
+			}
+			return
 		}
 	}()
 }
@@ -268,18 +279,6 @@ func (s *NeptuneService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptune", "ModifyDBInstance", s.ModifyDBInstance)
 	d.RegisterHandlerForService("neptune", "DescribeDBInstances", s.DescribeDBInstances)
 	d.RegisterHandlerForService("neptune", "RebootDBInstance", s.RebootDBInstance)
-	d.RegisterHandlerForService("neptune", "RestoreDBInstanceFromDBSnapshot", s.RestoreDBInstanceFromDBSnapshot)
-	d.RegisterHandlerForService("neptune", "RestoreDBInstanceToPointInTime", s.RestoreDBInstanceToPointInTime)
-	d.RegisterHandlerForService("neptune", "CreateDBInstanceReadReplica", s.CreateDBInstanceReadReplica)
-	d.RegisterHandlerForService("neptune", "PromoteReadReplica", s.PromoteReadReplica)
-	d.RegisterHandlerForService("neptune", "ModifyDBSnapshot", s.ModifyDBSnapshot)
-	d.RegisterHandlerForService("neptune", "DownloadDBLogFilePortion", s.DownloadDBLogFilePortion)
-	d.RegisterHandlerForService("neptune", "CreateDBSnapshot", s.CreateDBSnapshot)
-	d.RegisterHandlerForService("neptune", "DescribeDBSnapshots", s.DescribeDBSnapshots)
-	d.RegisterHandlerForService("neptune", "DeleteDBSnapshot", s.DeleteDBSnapshot)
-	d.RegisterHandlerForService("neptune", "CopyDBSnapshot", s.CopyDBSnapshot)
-	d.RegisterHandlerForService("neptune", "DescribeDBSnapshotAttributes", s.DescribeDBSnapshotAttributes)
-	d.RegisterHandlerForService("neptune", "ModifyDBSnapshotAttribute", s.ModifyDBSnapshotAttribute)
 	d.RegisterHandlerForService("neptune", "CreateDBClusterSnapshot", s.CreateDBClusterSnapshot)
 	d.RegisterHandlerForService("neptune", "DeleteDBClusterSnapshot", s.DeleteDBClusterSnapshot)
 	d.RegisterHandlerForService("neptune", "DescribeDBClusterSnapshots", s.DescribeDBClusterSnapshots)
@@ -329,11 +328,6 @@ func (s *NeptuneService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptune", "DescribeDBEngineVersions", s.DescribeDBEngineVersions)
 	d.RegisterHandlerForService("neptune", "DescribeOrderableDBInstanceOptions", s.DescribeOrderableDBInstanceOptions)
 	d.RegisterHandlerForService("neptune", "DescribeValidDBInstanceModifications", s.DescribeValidDBInstanceModifications)
-	d.RegisterHandlerForService("neptune", "DescribeDBLogFiles", s.DescribeDBLogFiles)
-	d.RegisterHandlerForService("neptune", "DescribeOptionGroups", s.DescribeOptionGroups)
-	d.RegisterHandlerForService("neptune", "CreateOptionGroup", s.CreateOptionGroup)
-	d.RegisterHandlerForService("neptune", "DeleteOptionGroup", s.DeleteOptionGroup)
-	d.RegisterHandlerForService("neptune", "ModifyOptionGroup", s.ModifyOptionGroup)
 	d.RegisterHandlerForService("neptune", "RestoreDBClusterFromSnapshot", s.RestoreDBClusterFromSnapshot)
 	d.RegisterHandlerForService("neptune", "RestoreDBClusterToPointInTime", s.RestoreDBClusterToPointInTime)
 	d.RegisterHandlerForService("neptune", "PromoteReadReplicaDBCluster", s.PromoteReadReplicaDBCluster)

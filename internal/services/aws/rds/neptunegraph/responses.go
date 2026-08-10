@@ -96,18 +96,13 @@ func endpointToResponse(ep *ngstore.PrivateGraphEndpoint) map[string]interface{}
 }
 
 func queryToResponse(q *ngstore.QueryRecord) map[string]interface{} {
-	r := map[string]interface{}{
+	return map[string]interface{}{
 		"id":          q.Id,
 		"queryString": q.QueryString,
 		"state":       q.State,
+		"elapsed":     q.Elapsed,
+		"waited":      q.Waited,
 	}
-	if q.Elapsed > 0 {
-		r["elapsed"] = q.Elapsed
-	}
-	if q.Waited > 0 {
-		r["waited"] = q.Waited
-	}
-	return r
 }
 
 func graphDataSummaryToResponse(s *ngstore.GraphDataSummary) map[string]interface{} {
