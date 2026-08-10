@@ -34,6 +34,7 @@ import (
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
 	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcec2 "vorpalstacks/internal/services/aws/ec2"
 	svcevents "vorpalstacks/internal/services/aws/eventbridge"
 	svciam "vorpalstacks/internal/services/aws/iam"
 	svciot "vorpalstacks/internal/services/aws/iot"
@@ -764,6 +765,8 @@ func (a *App) initGRPCWebAdmin() {
 	p, h = svcrds.NewConnectHandler(rdsSvc)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcappsync.NewConnectHandler(st.appSyncService)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcec2.NewConnectHandler(st.ec2Service)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 
 	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers, a.server.TriggerShutdown)

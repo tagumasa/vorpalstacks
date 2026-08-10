@@ -4,18 +4,31 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
+// VpcCidrBlockAssociationState describes the state of a VPC CIDR association.
+type VpcCidrBlockAssociationState struct {
+	State string `json:"State"`
+}
+
+// VpcCidrBlockAssociation represents a CIDR block associated with a VPC.
+type VpcCidrBlockAssociation struct {
+	AssociationId  string                       `json:"AssociationId"`
+	CidrBlock      string                       `json:"CidrBlock"`
+	CidrBlockState VpcCidrBlockAssociationState `json:"CidrBlockState"`
+}
+
 // VPC represents an Amazon VPC.
 type VPC struct {
-	VpcId              string      `json:"VpcId"`
-	CidrBlock          string      `json:"CidrBlock"`
-	State              string      `json:"State"`
-	OwnerId            string      `json:"OwnerId"`
-	InstanceTenancy    string      `json:"InstanceTenancy"`
-	DhcpOptionsId      string      `json:"DhcpOptionsId"`
-	IsDefault          bool        `json:"IsDefault"`
-	EnableDnsSupport   bool        `json:"EnableDnsSupport"`
-	EnableDnsHostnames bool        `json:"EnableDnsHostnames"`
-	Tags               []types.Tag `json:"Tags"`
+	VpcId                   string                    `json:"VpcId"`
+	CidrBlock               string                    `json:"CidrBlock"`
+	State                   string                    `json:"State"`
+	OwnerId                 string                    `json:"OwnerId"`
+	InstanceTenancy         string                    `json:"InstanceTenancy"`
+	DhcpOptionsId           string                    `json:"DhcpOptionsId"`
+	IsDefault               bool                      `json:"IsDefault"`
+	EnableDnsSupport        bool                      `json:"EnableDnsSupport"`
+	EnableDnsHostnames      bool                      `json:"EnableDnsHostnames"`
+	CidrBlockAssociationSet []VpcCidrBlockAssociation `json:"CidrBlockAssociationSet"`
+	Tags                    []types.Tag               `json:"Tags"`
 }
 
 // Subnet represents a VPC subnet.
@@ -45,32 +58,45 @@ type SecurityGroup struct {
 	Description         string      `json:"Description"`
 	VpcId               string      `json:"VpcId"`
 	OwnerId             string      `json:"OwnerId"`
+	SecurityGroupArn    string      `json:"SecurityGroupArn"`
 	Tags                []types.Tag `json:"Tags"`
 	IpPermissions       []IPRule    `json:"IpPermissions"`
 	IpPermissionsEgress []IPRule    `json:"IpPermissionsEgress"`
 }
 
+// PrefixListId represents a reference to a prefix list in a security group rule.
+type PrefixListId struct {
+	RuleId       string `json:"RuleId,omitempty"`
+	PrefixListId string `json:"PrefixListId,omitempty"`
+	Description  string `json:"Description,omitempty"`
+}
+
 // IPRule represents an IP permission rule for a security group.
 type IPRule struct {
-	IpProtocol       string      `json:"IpProtocol"`
-	FromPort         int64       `json:"FromPort"`
-	ToPort           int64       `json:"ToPort"`
-	UserIdGroupPairs []GroupPair `json:"UserIdGroupPairs"`
-	IpRanges         []IPRange   `json:"IpRanges"`
-	Ipv6Ranges       []IPRange   `json:"Ipv6Ranges"`
+	IpProtocol       string         `json:"IpProtocol"`
+	FromPort         int64          `json:"FromPort"`
+	ToPort           int64          `json:"ToPort"`
+	UserIdGroupPairs []GroupPair    `json:"UserIdGroupPairs"`
+	IpRanges         []IPRange      `json:"IpRanges"`
+	Ipv6Ranges       []IPRange      `json:"Ipv6Ranges"`
+	PrefixListIds    []PrefixListId `json:"PrefixListIds"`
 }
 
 // GroupPair represents a user ID/group pair reference in a security group rule.
 type GroupPair struct {
-	GroupId       string `json:"GroupId,omitempty"`
-	GroupName     string `json:"GroupName,omitempty"`
-	UserId        string `json:"UserId,omitempty"`
-	VpcId         string `json:"VpcId,omitempty"`
-	PeeringStatus string `json:"PeeringStatus,omitempty"`
+	GroupId                string `json:"GroupId,omitempty"`
+	GroupName              string `json:"GroupName,omitempty"`
+	UserId                 string `json:"UserId,omitempty"`
+	VpcId                  string `json:"VpcId,omitempty"`
+	PeeringStatus          string `json:"PeeringStatus,omitempty"`
+	Description            string `json:"Description,omitempty"`
+	VpcPeeringConnectionId string `json:"VpcPeeringConnectionId,omitempty"`
+	RuleId                 string `json:"RuleId,omitempty"`
 }
 
 // IPRange represents a CIDR IP range in a security group rule.
 type IPRange struct {
+	RuleId      string `json:"RuleId,omitempty"`
 	CidrIp      string `json:"CidrIp,omitempty"`
 	Description string `json:"Description,omitempty"`
 }

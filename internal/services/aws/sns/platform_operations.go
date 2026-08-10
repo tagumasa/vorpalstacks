@@ -131,7 +131,7 @@ func (s *SNSService) SetPlatformApplicationAttributes(ctx context.Context, reqCt
 		return nil, awserrors.NewInvalidParameterException("Attributes is required")
 	}
 
-	// M10: enforce value length cap for DoS protection.
+	// Enforce value length cap for DoS protection.
 	for name, value := range attrs {
 		if err := validatePlatformAttributeValue(name, value); err != nil {
 			return nil, err
@@ -186,7 +186,7 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 	token := request.GetStringParam(req.Parameters, "Token")
 	customUserData := request.GetStringParam(req.Parameters, "CustomUserData")
 
-	// M11: validate PlatformApplicationArn format before proceeding.
+	// Validate PlatformApplicationArn format before proceeding.
 	if err := validatePlatformApplicationArn(platformApplicationArn); err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (s *SNSService) SetEndpointAttributes(ctx context.Context, reqCtx *request.
 		return nil, awserrors.NewInvalidParameterException("Attributes is required")
 	}
 
-	// M12: enforce value length cap for DoS protection.
+	// Enforce value length cap for DoS protection.
 	for name, value := range attrs {
 		if err := validatePlatformAttributeValue(name, value); err != nil {
 			return nil, err
@@ -322,7 +322,7 @@ func (s *SNSService) ListEndpointsByPlatformApplication(ctx context.Context, req
 		return nil, err
 	}
 
-	// H4: verify platform application existence before listing endpoints.
+	// Verify platform application existence before listing endpoints.
 	// Without this check, a non-existent ARN returns an empty result instead
 	// of NotFoundException.
 	if _, err := store.GetPlatformApplication(platformApplicationArn); err != nil {

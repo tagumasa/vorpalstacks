@@ -38,9 +38,10 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	messageGroupId := request.GetParamLowerFirst(req.Parameters, "MessageGroupId")
 	messageDeduplicationId := request.GetParamLowerFirst(req.Parameters, "MessageDeduplicationId")
 
-	// M14: TargetArn is an AWS-supported alternative to TopicArn. L4:
-	// PhoneNumber is silently accepted but SMS is out-of-scope — reject
-	// explicitly so callers get a clear error instead of silent success.
+	// TargetArn is an AWS-supported alternative to TopicArn. PhoneNumber
+	// is silently accepted by AWS but SMS sending is out-of-scope here —
+	// reject it explicitly so callers get a clear error instead of silent
+	// success.
 	targetArn := request.GetParamLowerFirst(req.Parameters, "TargetArn")
 	phoneNumber := request.GetParamLowerFirst(req.Parameters, "PhoneNumber")
 
@@ -186,9 +187,9 @@ func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions
 		case "lambda":
 			deliveryErr = s.deliverToLambda(msg, sub, region)
 		default:
-			// H3: previously this was `logs.Warn + continue` (silent drop).
 			// Return a delivery error so the message routes to the DLQ when
-			// a RedrivePolicy is configured, rather than being silently lost.
+			// a RedrivePolicy is configured, rather than being silently lost
+			// by an earlier `logs.Warn + continue` path.
 			deliveryErr = fmt.Errorf("unsupported protocol %q: no delivery handler available", sub.Protocol)
 		}
 

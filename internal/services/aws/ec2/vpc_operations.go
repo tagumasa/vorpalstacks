@@ -2,12 +2,11 @@ package ec2
 
 import (
 	"context"
-	"net/http"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateVpc creates a VPC with the specified CIDR block.
@@ -15,23 +14,6 @@ func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestConte
 	params := req.Parameters
 	if err := checkDryRun(params); err != nil {
 		return nil, err
-	}
-	cidrBlock := request.GetStringParam(params, "CidrBlock")
-	if cidrBlock == "" {
-		cidrBlock = "172.31.0.0/16"
-	}
-	if err := validateCIDRBlock(cidrBlock); err != nil {
-		return nil, err
-	}
-
-	vpcID, err := GenerateVpcID()
-	if err != nil {
-		return nil, err
-	}
-
-	instanceTenancy := request.GetStringParam(params, "InstanceTenancy")
-	if instanceTenancy == "" {
-		instanceTenancy = "default"
 	}
 
 	enableDnsSupport := true
@@ -43,34 +25,26 @@ func (s *EC2Service) CreateVpc(ctx context.Context, reqCtx *request.RequestConte
 		enableDnsHostnames = true
 	}
 
-	vpc := &ec2store.VPC{
-		VpcId:              vpcID,
-		CidrBlock:          cidrBlock,
-		State:              "available",
-		OwnerId:            s.accountID,
-		InstanceTenancy:    instanceTenancy,
-		DhcpOptionsId:      "dopt-default",
-		IsDefault:          false,
-		EnableDnsSupport:   enableDnsSupport,
-		EnableDnsHostnames: enableDnsHostnames,
-		Tags:               parseEC2Tags(params),
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.CreateVPC(vpc); err != nil {
-		return nil, translateStoreError(err)
+
+	result, err := s.createVpcCore(store, CreateVpcInput{
+		CidrBlock:          request.GetStringParam(params, "CidrBlock"),
+		InstanceTenancy:    request.GetStringParam(params, "InstanceTenancy"),
+		EnableDnsSupport:   &enableDnsSupport,
+		EnableDnsHostnames: &enableDnsHostnames,
+		Tags:               parseTagsToCore(parseEC2Tags(params)),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Vpc": vpc,
-	}, nil
+	return map[string]interface{}{"Vpc": result.Vpc}, nil
 }
 
-// DescribeVpcs describes one or more VPCs. Supports VpcId for single lookup
-// and Filter.N for filtering by vpc-id, cidr, state, tag, etc.
+// DescribeVpcs describes one or more VPCs.
 func (s *EC2Service) DescribeVpcs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	if err := checkDryRun(params); err != nil {
@@ -82,81 +56,50 @@ func (s *EC2Service) DescribeVpcs(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	vpcIDs := request.GetStringList(params, "VpcId")
-	if len(vpcIDs) > 0 {
-		items := make([]interface{}, 0, len(vpcIDs))
-		for _, id := range vpcIDs {
-			vpc, err := store.GetVPC(id)
-			if err != nil {
-				return nil, translateStoreError(err)
-			}
-			items = append(items, vpc)
+	filters, err := parseFilters(params)
+	if err != nil {
+		return nil, err
+	}
+	nextToken := request.GetStringParam(params, "NextToken")
+	maxResults := 0
+	if mr := request.GetStringParam(params, "MaxResults"); mr != "" {
+		if v, e := parseInt64Param(mr); e == nil {
+			maxResults = int(v)
 		}
-		return map[string]interface{}{
-			"VpcSet": protocol.XMLElements{ElementName: "item", Items: items},
-		}, nil
 	}
 
-	vpcs, err := store.ListVPCs()
+	result, err := s.describeVpcsCore(store, vpcIDs, filters, nextToken, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	filters := parseFilters(params)
-	items := make([]interface{}, 0, len(vpcs))
-	for _, v := range vpcs {
-		if matchesVPCFilters(v, filters) {
-			items = append(items, v)
-		}
+	items := make([]interface{}, 0, len(result.Vpcs))
+	for _, v := range result.Vpcs {
+		items = append(items, v)
 	}
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"VpcSet": protocol.XMLElements{ElementName: "item", Items: items},
-	}, nil
+	}
+	if result.IsTruncated && result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
+	}
+	return resp, nil
 }
 
-// DeleteVpc deletes the specified VPC. Returns DependencyViolation if the VPC
-// still has dependent resources (subnets or security groups).
+// DeleteVpc deletes the specified VPC.
 func (s *EC2Service) DeleteVpc(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	if err := checkDryRun(params); err != nil {
 		return nil, err
 	}
-	vpcID := request.GetStringParam(params, "VpcId")
-	if vpcID == "" {
-		return nil, awserrors.NewMissingParameter("VpcId is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	subnets, err := store.ListSubnetsByVPC(vpcID)
-	if err != nil {
+	if err := s.deleteVpcCore(store, request.GetStringParam(params, "VpcId")); err != nil {
 		return nil, err
 	}
-	if len(subnets) > 0 {
-		return nil, awserrors.NewAWSError("DependencyViolation",
-			"The vpc '"+vpcID+"' has dependencies and cannot be deleted",
-			http.StatusBadRequest)
-	}
-
-	sgs, err := store.ListSecurityGroupsByVPC(vpcID)
-	if err != nil {
-		return nil, err
-	}
-	if len(sgs) > 0 {
-		return nil, awserrors.NewAWSError("DependencyViolation",
-			"The vpc '"+vpcID+"' has dependencies and cannot be deleted",
-			http.StatusBadRequest)
-	}
-
-	if err := store.DeleteVPC(vpcID); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"return": true,
-	}, nil
+	return map[string]interface{}{"return": true}, nil
 }
 
 // matchesVPCFilters checks if a VPC matches all the given filters.
@@ -190,4 +133,16 @@ func matchesVPCFilters(vpc *ec2store.VPC, filters []ec2Filter) bool {
 		}
 	}
 	return true
+}
+
+// parseTagsToCore converts store tags to core ec2Tag slice.
+func parseTagsToCore(tags []types.Tag) []ec2Tag {
+	if len(tags) == 0 {
+		return nil
+	}
+	result := make([]ec2Tag, len(tags))
+	for i, t := range tags {
+		result[i] = ec2Tag{Key: t.Key, Value: t.Value}
+	}
+	return result
 }

@@ -79,7 +79,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 
 	// --- New validation edge tests ---
 
-	// H1: invalid protocol must be rejected at Subscribe time.
+	// Invalid protocol must be rejected at Subscribe time.
 	results = append(results, r.RunTest("sns", "Subscribe_InvalidProtocol", func() error {
 		_, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:any-topic", reg, acct)),
@@ -89,7 +89,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		return AssertErrorContains(err, "InvalidParameter")
 	}))
 
-	// H2: endpoint format must be validated per protocol.
+	// Endpoint format must be validated per protocol.
 	results = append(results, r.RunTest("sns", "Subscribe_InvalidEndpoint", func() error {
 		_, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:any-topic", reg, acct)),
@@ -99,7 +99,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		return AssertErrorContains(err, "InvalidParameter")
 	}))
 
-	// M2: reserved AWS prefix must be rejected.
+	// Reserved AWS prefix must be rejected.
 	results = append(results, r.RunTest("sns", "CreateTopic_ReservedPrefix", func() error {
 		_, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
 			Name: aws.String("aws-reserved-test-topic"),
@@ -107,7 +107,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		return AssertErrorContains(err, "InvalidParameter")
 	}))
 
-	// M1: FifoTopic=true with non-.fifo name must be rejected.
+	// FifoTopic=true with non-.fifo name must be rejected.
 	results = append(results, r.RunTest("sns", "CreateTopic_FifoConsistencyMismatch", func() error {
 		_, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
 			Name: aws.String(tc.uniqueName("no-suffix-fifo-test")),
@@ -118,7 +118,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		return AssertErrorContains(err, "InvalidParameter")
 	}))
 
-	// M7: more than 10 message attributes must be rejected.
+	// More than 10 message attributes must be rejected.
 	results = append(results, r.RunTest("sns", "Publish_TooManyMessageAttributes", func() error {
 		topicArn, err := tc.createTopic(tc.uniqueName("too-many-attrs-test"))
 		if err != nil {

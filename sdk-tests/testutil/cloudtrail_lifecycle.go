@@ -449,7 +449,7 @@ func (r *TestRunner) runCloudTrailConfigTests(tc *cloudTrailTestContext) []TestR
 	return results
 }
 
-func (r *TestRunner) runCloudTrailBugFixTests(tc *cloudTrailTestContext) []TestResult {
+func (r *TestRunner) runCloudTrailValidationTests(tc *cloudTrailTestContext) []TestResult {
 	var results []TestResult
 
 	// CreateTrail without S3BucketName should fail.

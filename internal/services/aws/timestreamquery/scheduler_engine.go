@@ -197,7 +197,7 @@ func (e *ScheduledQueryEngine) checkScheduledQueries() {
 }
 
 // cleanupOldRuns removes scheduled-query run records older than 48 hours
-// to prevent unbounded accumulation (M1).
+// to prevent unbounded accumulation.
 func (e *ScheduledQueryEngine) cleanupOldRuns() {
 	if e.service.storageManager == nil {
 		return

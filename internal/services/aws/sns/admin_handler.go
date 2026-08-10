@@ -44,9 +44,9 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 }
 
 // CreateTopic creates a new SNS topic via the admin console.
-// L6: FifoTopic, Tags, and KmsMasterKeyId attributes are now fully
-// supported because the handler delegates to createTopicCore, which
-// performs the same validation and attribute processing as the HTTP API.
+// FifoTopic, Tags, and KmsMasterKeyId attributes are fully supported
+// because the handler delegates to createTopicCore, which performs the
+// same validation and attribute processing as the HTTP API.
 func (h *AdminHandler) CreateTopic(ctx context.Context, req *connect.Request[pb.CreateTopicInput]) (*connect.Response[pb.CreateTopicResponse], error) {
 	store, err := h.getSNSStore(req.Header())
 	if err != nil {

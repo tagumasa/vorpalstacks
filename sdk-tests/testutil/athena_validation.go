@@ -309,7 +309,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 		return nil
 	}))
 
-	// --- P1: ListTagsForResource accepts MaxResults ---
+	// --- ListTagsForResource accepts MaxResults ---
 	// AWS spec: ListTagsForResource MaxResults minimum is 75 (confirmed via
 	// Smithy model MaxTagsCount range and AWS docs). The per-resource tag
 	// limit is 50, so 50 < 75 means NextToken is never produced in practice.

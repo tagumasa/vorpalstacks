@@ -33,9 +33,10 @@ func messageEntrySize(message, subject string, attrs map[string]*snsstore.Messag
 // (fail-closed) when an attribute entry is malformed or has an invalid
 // DataType instead of silently skipping it.
 //
-// M7: enforces max 10 attributes, String value max 256 chars, Binary value
-// max 256 bytes.
-// M8: enforces attribute name format [a-zA-Z0-9_.-]{1,256}.
+// The function enforces the AWS-documented message-attribute limits:
+// maximum 10 attributes per message, String values up to 256 characters,
+// Binary values up to 256 bytes, and attribute names matching
+// [a-zA-Z0-9_.-]{1,256}.
 func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message) error {
 	var attrs map[string]interface{}
 	for _, key := range []string{"MessageAttributes", "messageAttributes"} {
@@ -74,14 +75,14 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 		return nil
 	}
 
-	// M7: maximum 10 message attributes.
+	// Maximum 10 message attributes per AWS spec.
 	if len(attrs) > maxMessageAttributes {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), maxMessageAttributes))
 	}
 
 	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
 	for k, v := range attrs {
-		// M8: validate attribute name format.
+		// Validate attribute name format per AWS spec.
 		if err := validateMessageAttributeName(k); err != nil {
 			return err
 		}
@@ -111,7 +112,7 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 			attr.BinaryValue = decoded
 		}
 
-		// M7: validate attribute value sizes.
+		// Validate attribute value sizes per AWS spec.
 		if err := validateMessageAttributeLimits(k, attr.StringValue, attr.BinaryValue); err != nil {
 			return err
 		}

@@ -94,7 +94,8 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	}
 
 	if _, hasPolicy := attrs["Policy"]; !hasPolicy {
-		// L7: default policy version updated from legacy 2008-10-17 to 2012-10-17.
+		// Default policy uses version 2012-10-17 (the current AWS standard),
+		// replacing the legacy 2008-10-17 default.
 		attrs["Policy"] = formatDefaultPolicy(topic.Arn, topic.Owner)
 	}
 

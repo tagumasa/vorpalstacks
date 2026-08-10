@@ -857,7 +857,7 @@ func (s *NeptuneService) AddRoleToDBCluster(ctx context.Context, reqCtx *request
 	if roleArn == "" {
 		return nil, awserrors.NewMissingParameter("RoleArn is required")
 	}
-	// H_orig_H5: Validate IAM role ARN format.
+	// Validate IAM role ARN format.
 	if !isValidIAMRoleArn(roleArn) {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Invalid IAM role ARN: %s", roleArn), http.StatusBadRequest)
 	}

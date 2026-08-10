@@ -194,7 +194,7 @@ func (s *SNSStore) CreateTopic(topic *Topic) (*Topic, error) {
 		topic.Attributes = make(map[string]string)
 	}
 
-	// M3: TagStore is the single source of truth for tags. Extract tags
+	// TagStore is the single source of truth for tags. Extract tags
 	// before persistence so they are not duplicated in the Topic JSON.
 	tags := topic.Tags
 	topic.Tags = nil

@@ -39,14 +39,14 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 	if topicArn == "" {
 		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
-	// H1: validate protocol value against the nine AWS-supported protocols.
+	// Validate protocol value against the nine AWS-supported protocols.
 	if err := validateProtocol(protocol); err != nil {
 		return nil, err
 	}
 	if endpoint == "" {
 		return nil, awserrors.NewInvalidParameterException("Endpoint is required")
 	}
-	// H2: validate endpoint format per protocol to catch grossly invalid
+	// Validate endpoint format per protocol to catch grossly invalid
 	// endpoints at Subscribe time rather than silently failing at delivery.
 	if err := validateEndpointForProtocol(protocol, endpoint); err != nil {
 		return nil, err

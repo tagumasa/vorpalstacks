@@ -437,7 +437,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 		return nil
 	}))
 
-	// --- M17: CreateContact with non-existent list ---
+	// --- CreateContact with non-existent list ---
 
 	results = append(results, r.RunTest("sesv2", "CreateContact_NonExistentList", func() error {
 		_, err := tc.client.CreateContact(tc.ctx, &sesv2.CreateContactInput{
@@ -450,7 +450,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 		return nil
 	}))
 
-	// --- M19: Invalid FilteredStatus ---
+	// --- Invalid FilteredStatus ---
 
 	results = append(results, r.RunTest("sesv2", "ListContacts_InvalidFilteredStatus", func() error {
 		clName := fmt.Sprintf("filter-status-%d", tc.uid)
@@ -478,7 +478,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 		return nil
 	}))
 
-	// --- M23: Non-existent ConfigurationSet on SendEmail ---
+	// --- Non-existent ConfigurationSet on SendEmail ---
 
 	results = append(results, r.RunTest("sesv2", "SendEmail_NonExistentConfigSet", func() error {
 		_, err := tc.client.SendEmail(tc.ctx, &sesv2.SendEmailInput{

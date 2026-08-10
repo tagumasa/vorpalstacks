@@ -80,7 +80,7 @@ var validMessageAttributeDataTypes = map[string]bool{
 }
 
 // ---------------------------------------------------------------------------
-// Protocol validators (H1 / H2)
+// Protocol validators
 // ---------------------------------------------------------------------------
 
 // validateProtocol returns an error when the protocol is not one of the nine
@@ -172,7 +172,7 @@ func validateTopicName(name string) error {
 		return awserrors.NewInvalidParameterException("Topic name must not exceed 256 characters")
 	}
 
-	// M2: reject AWS-reserved prefixes (case-insensitive).
+	// Reject AWS-reserved prefixes (case-insensitive).
 	lower := strings.ToLower(name)
 	if strings.HasPrefix(lower, "aws") || strings.HasPrefix(lower, "amazon") {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Topic name %q starts with a reserved prefix (aws/amazon)", name))
@@ -195,9 +195,9 @@ func validateTopicName(name string) error {
 // validateTopicAttribute validates well-known topic attributes that have
 // structured values. Unknown attributes pass through without validation
 // (forward-compatible with future AWS additions). All attribute values are
-// capped at maxTopicAttributeValueLength for DoS protection (M6).
+// capped at maxTopicAttributeValueLength for DoS protection.
 func validateTopicAttribute(name, value string) error {
-	// M6: general DoS cap for all topic attribute values.
+	// General DoS cap for all topic attribute values.
 	if len(value) > maxTopicAttributeValueLength {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxTopicAttributeValueLength))
 	}
@@ -398,7 +398,7 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 }
 
 // validateMessageAttributeName validates the name of a message attribute per
-// AWS docs: alphanumeric, underscore, hyphen, and period; 1-256 characters (M8).
+// AWS docs: alphanumeric, underscore, hyphen, and period; 1-256 characters.
 func validateMessageAttributeName(name string) error {
 	if !messageAttrNamePattern.MatchString(name) {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute name %q: must match [a-zA-Z0-9_.-] and be 1-256 characters", name))
@@ -408,7 +408,7 @@ func validateMessageAttributeName(name string) error {
 
 // validateMessageAttributeLimits enforces the AWS-documented limits on message
 // attributes: maximum 10 attributes, String values up to 256 chars, Binary
-// values up to 256 bytes (M7).
+// values up to 256 bytes.
 func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte) error {
 	if len(stringValue) > maxMessageAttrStringValue {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Message attribute %q StringValue too long: %d characters (maximum %d)", name, len(stringValue), maxMessageAttrStringValue))
@@ -424,8 +424,8 @@ func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte
 // ---------------------------------------------------------------------------
 
 // validatePlatformApplicationArn validates the structure of a platform
-// application ARN (M11). The ARN must start with "arn:", use the "sns"
-// service, and have at least six colon-separated parts.
+// application ARN. The ARN must start with "arn:", use the "sns" service,
+// and have at least six colon-separated parts.
 func validatePlatformApplicationArn(arn string) error {
 	if arn == "" {
 		return awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
@@ -444,7 +444,7 @@ func validatePlatformApplicationArn(arn string) error {
 }
 
 // validatePlatformAttributeValue enforces a length cap on platform application
-// and endpoint attribute values for DoS protection (M10 / M12).
+// and endpoint attribute values for DoS protection.
 func validatePlatformAttributeValue(name, value string) error {
 	if len(value) > maxPlatformAttributeValueLength {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxPlatformAttributeValueLength))

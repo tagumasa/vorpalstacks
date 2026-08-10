@@ -2,8 +2,10 @@ package ec2
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/types"
 )
@@ -15,7 +17,8 @@ type ec2Filter struct {
 }
 
 // parseFilters extracts EC2 Filter.N.Name/Filter.N.Value.M from request params.
-func parseFilters(params map[string]interface{}) []ec2Filter {
+// Returns an error when a filter has a Name but no Values (AWS InvalidFilter).
+func parseFilters(params map[string]interface{}) ([]ec2Filter, error) {
 	var filters []ec2Filter
 	for i := 1; ; i++ {
 		name := request.GetStringParam(params, fmt.Sprintf("Filter.%d.Name", i))
@@ -30,11 +33,14 @@ func parseFilters(params map[string]interface{}) []ec2Filter {
 			}
 			values = append(values, v)
 		}
-		if len(values) > 0 {
-			filters = append(filters, ec2Filter{Name: name, Values: values})
+		if len(values) == 0 {
+			return nil, awserrors.NewAWSError("InvalidFilter",
+				fmt.Sprintf("Filter %d ('%s') requires at least one value.", i, name),
+				http.StatusBadRequest)
 		}
+		filters = append(filters, ec2Filter{Name: name, Values: values})
 	}
-	return filters
+	return filters, nil
 }
 
 // anyMatch returns true if target matches any of the values (case-insensitive).

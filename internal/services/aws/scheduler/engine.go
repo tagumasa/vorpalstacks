@@ -40,7 +40,7 @@ type Engine struct {
 
 	// retryStores holds per-region RetryStores for persisted retry records.
 	// Records survive server restarts so the at-least-once delivery
-	// guarantee is maintained (S-B10).
+	// guarantee is maintained.
 	retryStores sync.Map // region → *schedulerstore.RetryStore
 
 	// lastFired tracks the last execution time per schedule (key: groupName/name)
@@ -129,7 +129,7 @@ func (e *Engine) run() {
 			return
 		case <-ticker.C:
 			e.checkSchedules()
-			// Process pending retries from previous failed deliveries (S-B10).
+			// Process pending retries from previous failed deliveries.
 			e.checkRetries()
 		}
 	}
@@ -274,13 +274,13 @@ func resolveScheduleLocation(schedule *schedulerstore.Schedule) *time.Location {
 
 func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time) bool {
 	// Convert "now" to the schedule's evaluation timezone so that rate/cron/at
-	// expressions are evaluated in the timezone the user configured (S-B3).
+	// expressions are evaluated in the timezone the user configured.
 	loc := resolveScheduleLocation(schedule)
 	nowLocal := now.In(loc)
 
 	// AWS: "When you configure a one-time schedule, EventBridge Scheduler
 	// ignores the StartDate and EndDate you specify for the schedule."
-	// Only rate()/cron() honour StartDate/EndDate (S-B4).
+	// Only rate()/cron() honour StartDate/EndDate.
 	isAtExpression := strings.HasPrefix(schedule.ScheduleExpression, "at(")
 	if !isAtExpression {
 		if schedule.StartDate != nil && nowLocal.Before(schedule.StartDate.In(loc)) {
@@ -388,7 +388,9 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 			return err
 		}
 	} else {
-		// Direct delivery path: attempt delivery with retry (S-B10/S-B11).
+		// Direct delivery path: attempt delivery with retry. The retry
+		// chain covers immediate retries, persisted background retries,
+		// and DLQ routing on permanent failure.
 		e.deliverWithRetry(ctx, schedule, target)
 	}
 
@@ -548,7 +550,7 @@ func computeRetryBackoff(attemptCount int) time.Duration {
 // deliverWithRetry attempts delivery with an immediate retry, then persists a
 // RetryRecord for background retries if the second attempt also fails.
 // The RetryRecord survives server restarts so that at-least-once delivery
-// is maintained (S-B10).
+// is maintained.
 //
 // ActionAfterCompletion=DELETE is handled at lifecycle completion:
 //   - success on attempt 1 or 2 → maybeAutoDelete here
@@ -1135,7 +1137,7 @@ func (e *Engine) sendToEventBridge(ctx context.Context, schedule *schedulerstore
 		Input:        input,
 	}
 	// Populate DetailType and Source from EventBridgeParameters so that
-	// EventBridge rules can match on them (S-B5).
+	// EventBridge rules can match on them.
 	if target.EventBridgeParameters != nil {
 		evt.DetailType = target.EventBridgeParameters.DetailType
 		evt.Source = target.EventBridgeParameters.Source

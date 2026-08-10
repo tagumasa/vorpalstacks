@@ -162,7 +162,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 
 	// BYODKIM via PutEmailIdentityDkimSigningAttributes: the selector and
 	// private key travel inside the nested SigningAttributes structure, not
-	// at the top level. This test catches the nesting bug (B1) where the
+	// at the top level. This test catches the nesting defect where the
 	// handler read BYODKIM fields from req.Parameters directly.
 	results = append(results, r.RunTest("sesv2", "PutEmailIdentityDkimSigningAttributes_BYODKIM", func() error {
 		_, err := tc.client.PutEmailIdentityDkimSigningAttributes(tc.ctx, &sesv2.PutEmailIdentityDkimSigningAttributesInput{

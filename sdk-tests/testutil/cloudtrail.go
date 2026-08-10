@@ -47,7 +47,7 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 	results = append(results, r.runCloudTrailChannelTests(tc)...)
 	results = append(results, r.runCloudTrailQueryTests(tc)...)
 	results = append(results, r.runCloudTrailConfigTests(tc)...)
-	results = append(results, r.runCloudTrailBugFixTests(tc)...)
+	results = append(results, r.runCloudTrailValidationTests(tc)...)
 	results = append(results, r.runCloudTrailImportTests(tc)...)
 	results = append(results, r.runCloudTrailQueryAITests(tc)...)
 

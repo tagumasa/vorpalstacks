@@ -81,9 +81,9 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 		ActionAfterCompletion: schedulerstore.ActionAfterCompletion(evt.ActionAfterCompletion),
 	}
 
-	// Unified delivery with retry (S-B10) and DLQ routing (S-B11).
-	// deliverWithRetry handles immediate retry, persisted background retries,
-	// and DLQ routing on permanent failure.
+	// Unified delivery with retry and DLQ routing. deliverWithRetry handles
+	// immediate retry, persisted background retries, and DLQ routing on
+	// permanent failure.
 	s.engine.deliverWithRetry(ctx, schedule, target)
 
 	return eventbus.HandlerResult{}

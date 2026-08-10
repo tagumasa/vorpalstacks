@@ -54,8 +54,8 @@ type ListTopicsResult struct {
 
 // createTopicCore is the single entry point for topic creation logic shared
 // by the HTTP API and the admin gRPC handler. It performs all name
-// validation (including reserved-prefix rejection), FIFO consistency checks
-// (M1), attribute validation (including value length caps), and persistence.
+// validation (including reserved-prefix rejection), FIFO consistency checks,
+// attribute validation (including value length caps), and persistence.
 func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in CreateTopicInput) (*TopicResult, error) {
 	if err := validateTopicName(in.Name); err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 		in.Attributes = make(map[string]string)
 	}
 
-	// M1: FIFO consistency — respect the user-provided FifoTopic attribute
+	// FIFO consistency: respect the user-provided FifoTopic attribute
 	// rather than silently overriding it. If the name has a .fifo suffix,
 	// FifoTopic must be "true" (either explicitly or by default injection).
 	// If the name lacks the suffix, FifoTopic must not be "true".
@@ -90,7 +90,7 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 		}
 	}
 
-	// Validate all attribute values (M6: includes DoS length cap).
+	// Validate all attribute values, including the DoS length cap.
 	for attrName, attrValue := range in.Attributes {
 		if err := validateTopicAttribute(attrName, attrValue); err != nil {
 			return nil, err
@@ -159,8 +159,8 @@ func (s *SNSService) listTopicsCore(store snsstore.SNSStoreInterface, in ListTop
 // ---------------------------------------------------------------------------
 
 // formatDefaultPolicy returns the default SNS topic policy JSON with the
-// given topic ARN and owner. The policy version is 2012-10-17 (L7: updated
-// from the legacy 2008-10-17).
+// given topic ARN and owner. The policy version is 2012-10-17 (the
+// current AWS standard, replacing the legacy 2008-10-17 default).
 func formatDefaultPolicy(topicArn, owner string) string {
 	return fmt.Sprintf(
 		`{"Version":"2012-10-17","Id":"__default_policy_ID","Statement":[{"Sid":"__default_statement_ID","Effect":"Allow","Principal":{"AWS":"*"},"Action":["SNS:GetTopicAttributes","SNS:SetTopicAttributes","SNS:AddPermission","SNS:RemovePermission","SNS:DeleteTopic","SNS:Subscribe","SNS:ListSubscriptionsByTopic","SNS:Publish","SNS:Receive"],"Resource":%q,"Condition":{"StringEquals":{"AWS:SourceOwner":%q}}}]}`,

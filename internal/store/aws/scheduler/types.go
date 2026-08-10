@@ -221,7 +221,7 @@ type ScheduleListResult struct {
 
 // RetryRecord represents a persisted schedule delivery that is pending retry.
 // It survives server restarts so that the at-least-once delivery guarantee
-// is maintained across crashes (S-B10).
+// is maintained across crashes.
 type RetryRecord struct {
 	// ID is a unique identifier for this retry record.
 	ID string `json:"id"`

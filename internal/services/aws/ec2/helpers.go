@@ -36,74 +36,6 @@ func GenerateSecurityGroupID() (string, error) {
 	return generators.GenerateIDWithPrefix(securityGroupPrefix, ec2IDSuffixLen)
 }
 
-// validateCIDRBlock validates that the given string is a valid IPv4 CIDR block.
-func validateCIDRBlock(cidr string) error {
-	ip, _, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return awserrors.NewAWSError("InvalidParameterValue",
-			fmt.Sprintf("Value (%s) for parameter cidrBlock is invalid. This is not a valid CIDR block.", cidr),
-			http.StatusBadRequest)
-	}
-	if ip.To4() == nil {
-		return awserrors.NewAWSError("InvalidParameterValue",
-			fmt.Sprintf("Value (%s) for parameter cidrBlock is invalid. This is not a valid IPv4 CIDR block.", cidr),
-			http.StatusBadRequest)
-	}
-	return nil
-}
-
-// validateSubnetInVPC checks that the subnet CIDR falls within the VPC CIDR range.
-func validateSubnetInVPC(subnetCIDR, vpcCIDR string) error {
-	_, subnetNet, err := net.ParseCIDR(subnetCIDR)
-	if err != nil {
-		return validateCIDRBlock(subnetCIDR)
-	}
-	_, vpcNet, err := net.ParseCIDR(vpcCIDR)
-	if err != nil {
-		return validateCIDRBlock(vpcCIDR)
-	}
-
-	// Subnet prefix must be longer than or equal to VPC prefix.
-	onesSubnet, _ := subnetNet.Mask.Size()
-	onesVPC, _ := vpcNet.Mask.Size()
-	if onesSubnet < onesVPC {
-		return awserrors.NewAWSError("InvalidSubnet.Range",
-			fmt.Sprintf("The CIDR '%s' does not fall within the VPC CIDR range '%s'.", subnetCIDR, vpcCIDR),
-			http.StatusBadRequest)
-	}
-
-	// Subnet network address must be within the VPC network.
-	if !vpcNet.Contains(subnetNet.IP) {
-		return awserrors.NewAWSError("InvalidSubnet.Range",
-			fmt.Sprintf("The CIDR '%s' does not fall within the VPC CIDR range '%s'.", subnetCIDR, vpcCIDR),
-			http.StatusBadRequest)
-	}
-
-	return nil
-}
-
-// validateSubnetCIDROverlap checks if the new CIDR overlaps with any existing
-// subnet in the same VPC. AWS rejects overlapping subnets with
-// InvalidSubnet.Conflict error.
-func validateSubnetCIDROverlap(newCIDR string, existingSubnets []*ec2store.Subnet) error {
-	_, newNet, err := net.ParseCIDR(newCIDR)
-	if err != nil {
-		return validateCIDRBlock(newCIDR)
-	}
-	for _, sub := range existingSubnets {
-		_, existingNet, err := net.ParseCIDR(sub.CidrBlock)
-		if err != nil {
-			continue
-		}
-		if newNet.Contains(existingNet.IP) || existingNet.Contains(newNet.IP) {
-			return awserrors.NewAWSError("InvalidSubnet.Conflict",
-				"The CIDR '"+newCIDR+"' conflicts with another subnet",
-				http.StatusBadRequest)
-		}
-	}
-	return nil
-}
-
 // calculateAvailableIPs returns the number of usable IP addresses in a subnet
 // with the given CIDR block. AWS reserves 5 IPs per subnet.
 func calculateAvailableIPs(cidrBlock string) int64 {
@@ -134,8 +66,7 @@ func parseEC2Tags(params map[string]interface{}) []types.Tag {
 }
 
 // checkDryRun returns a DryRunOperation error (HTTP 412) when the DryRun
-// query parameter is set to true. AWS EC2 supports DryRun on all operations;
-// the SDK treats 412 + DryRunOperation code as a successful dry-run.
+// query parameter is set to true.
 func checkDryRun(params map[string]interface{}) error {
 	if v := request.GetStringParam(params, "DryRun"); v == "true" {
 		return awserrors.NewAWSError("DryRunOperation",
@@ -172,27 +103,9 @@ func parseTagSpecification(params map[string]interface{}) []types.Tag {
 	return result
 }
 
-// parseInt64Port parses a port string to int64, returning -1 for empty/invalid.
-// EC2 uses -1 to mean "all ports" (with protocol -1 meaning all protocols).
-func parseInt64Port(s string) int64 {
-	if s == "" {
-		return -1
-	}
-	n, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return -1
-	}
-	return n
-}
-
 // parseIPRules extracts IP permission rules from request parameters.
-// AWS SDK sends nested format:
-//   - IpPermissions.N.IpRanges.M.CidrIp
-//   - IpPermissions.N.IpRanges.M.Description
-//   - IpPermissions.N.Groups.M.GroupId
-//   - IpPermissions.N.Groups.M.UserId
-//   - IpPermissions.N.Ipv6Ranges.M.CidrIpv6
-func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRule {
+// Returns an error if any port value or CIDR is malformed.
+func parseIPRules(params map[string]interface{}, prefix string) ([]ec2store.IPRule, error) {
 	var rules []ec2store.IPRule
 
 	for i := 1; ; i++ {
@@ -201,10 +114,19 @@ func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRul
 			break
 		}
 
+		fromPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i)))
+		if err != nil {
+			return nil, err
+		}
+		toPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i)))
+		if err != nil {
+			return nil, err
+		}
+
 		rule := ec2store.IPRule{
 			IpProtocol: ipProtocol,
-			FromPort:   parseInt64Port(request.GetStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i))),
-			ToPort:     parseInt64Port(request.GetStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i))),
+			FromPort:   fromPort,
+			ToPort:     toPort,
 		}
 
 		ipPrefix := fmt.Sprintf("%s.%d.IpRanges", prefix, i)
@@ -212,6 +134,9 @@ func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRul
 			cidr := request.GetStringParam(params, fmt.Sprintf("%s.%d.CidrIp", ipPrefix, j))
 			if cidr == "" {
 				break
+			}
+			if err := validateIPv4CIDRInRule(cidr); err != nil {
+				return nil, err
 			}
 			ipRange := ec2store.IPRange{CidrIp: cidr}
 			if desc := request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", ipPrefix, j)); desc != "" {
@@ -226,6 +151,9 @@ func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRul
 			if cidr == "" {
 				break
 			}
+			if err := validateIPv6CIDRInRule(cidr); err != nil {
+				return nil, err
+			}
 			ipRange := ec2store.IPRange{CidrIp: cidr}
 			if desc := request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", ipv6Prefix, j)); desc != "" {
 				ipRange.Description = desc
@@ -236,25 +164,38 @@ func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRul
 		groupPrefix := fmt.Sprintf("%s.%d.Groups", prefix, i)
 		for j := 1; ; j++ {
 			groupId := request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupId", groupPrefix, j))
-			if groupId == "" {
-				groupName := request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupName", groupPrefix, j))
-				if groupName == "" {
-					break
-				}
+			groupName := request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupName", groupPrefix, j))
+			if groupId == "" && groupName == "" {
+				break
 			}
 			pair := ec2store.GroupPair{
-				GroupId:   groupId,
-				GroupName: request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupName", groupPrefix, j)),
-				UserId:    request.GetStringParam(params, fmt.Sprintf("%s.%d.UserId", groupPrefix, j)),
-				VpcId:     request.GetStringParam(params, fmt.Sprintf("%s.%d.VpcId", groupPrefix, j)),
+				GroupId:                groupId,
+				GroupName:              groupName,
+				UserId:                 request.GetStringParam(params, fmt.Sprintf("%s.%d.UserId", groupPrefix, j)),
+				VpcId:                  request.GetStringParam(params, fmt.Sprintf("%s.%d.VpcId", groupPrefix, j)),
+				Description:            request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", groupPrefix, j)),
+				VpcPeeringConnectionId: request.GetStringParam(params, fmt.Sprintf("%s.%d.VpcPeeringConnectionId", groupPrefix, j)),
 			}
 			rule.UserIdGroupPairs = append(rule.UserIdGroupPairs, pair)
+		}
+
+		plPrefix := fmt.Sprintf("%s.%d.PrefixListIds", prefix, i)
+		for j := 1; ; j++ {
+			plId := request.GetStringParam(params, fmt.Sprintf("%s.%d.PrefixListId", plPrefix, j))
+			if plId == "" {
+				break
+			}
+			pl := ec2store.PrefixListId{PrefixListId: plId}
+			if desc := request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", plPrefix, j)); desc != "" {
+				pl.Description = desc
+			}
+			rule.PrefixListIds = append(rule.PrefixListIds, pl)
 		}
 
 		rules = append(rules, rule)
 	}
 
-	return rules
+	return rules, nil
 }
 
 // rulesMatch checks if two rules share the same protocol and port range.
@@ -262,9 +203,7 @@ func rulesMatch(a, b ec2store.IPRule) bool {
 	return a.IpProtocol == b.IpProtocol && a.FromPort == b.FromPort && a.ToPort == b.ToPort
 }
 
-// mergeIPRules merges new rules into the existing set. Rules with matching
-// protocol/port have their IP ranges consolidated — duplicate CIDRs update
-// the Description rather than being silently dropped.
+// mergeIPRules merges new rules into the existing set.
 func mergeIPRules(existing []ec2store.IPRule, newRules ...ec2store.IPRule) []ec2store.IPRule {
 	for _, nr := range newRules {
 		merged := false
@@ -284,8 +223,6 @@ func mergeIPRules(existing []ec2store.IPRule, newRules ...ec2store.IPRule) []ec2
 	return existing
 }
 
-// mergeIPRanges merges IP ranges. If a CIDR already exists, the Description
-// is updated when the incoming Description is non-empty (AWS idempotent behaviour).
 func mergeIPRanges(existing []ec2store.IPRange, newRanges []ec2store.IPRange) []ec2store.IPRange {
 	for _, nr := range newRanges {
 		found := false
@@ -305,7 +242,6 @@ func mergeIPRanges(existing []ec2store.IPRange, newRanges []ec2store.IPRange) []
 	return existing
 }
 
-// mergeGroupPairs merges user ID group pairs, avoiding duplicates by GroupId+UserId.
 func mergeGroupPairs(existing []ec2store.GroupPair, newPairs []ec2store.GroupPair) []ec2store.GroupPair {
 	for _, np := range newPairs {
 		found := false
@@ -322,27 +258,32 @@ func mergeGroupPairs(existing []ec2store.GroupPair, newPairs []ec2store.GroupPai
 	return existing
 }
 
-// removeIPRules removes specific ranges/pairs from matching rules. If all
-// ranges are removed from a rule, the rule itself is removed.
-func removeIPRules(existing []ec2store.IPRule, toRemove ...ec2store.IPRule) []ec2store.IPRule {
+// removeIPRules removes specific ranges/pairs from matching rules.
+// Returns the filtered result and the count of rules actually removed.
+func removeIPRules(existing []ec2store.IPRule, toRemove ...ec2store.IPRule) ([]ec2store.IPRule, int) {
 	result := make([]ec2store.IPRule, 0, len(existing))
+	removedCount := 0
 	for _, er := range existing {
+		beforeRanges := len(er.IpRanges) + len(er.Ipv6Ranges) + len(er.UserIdGroupPairs) + len(er.PrefixListIds)
 		for _, nr := range toRemove {
 			if rulesMatch(er, nr) {
 				er.IpRanges = removeIPRanges(er.IpRanges, nr.IpRanges)
 				er.Ipv6Ranges = removeIPRanges(er.Ipv6Ranges, nr.Ipv6Ranges)
 				er.UserIdGroupPairs = removeGroupPairs(er.UserIdGroupPairs, nr.UserIdGroupPairs)
+				er.PrefixListIds = removePrefixListIds(er.PrefixListIds, nr.PrefixListIds)
 			}
 		}
-		// Keep the rule only if it still has sources.
-		if len(er.IpRanges) > 0 || len(er.Ipv6Ranges) > 0 || len(er.UserIdGroupPairs) > 0 {
+		afterRanges := len(er.IpRanges) + len(er.Ipv6Ranges) + len(er.UserIdGroupPairs) + len(er.PrefixListIds)
+		if afterRanges < beforeRanges {
+			removedCount += beforeRanges - afterRanges
+		}
+		if afterRanges > 0 {
 			result = append(result, er)
 		}
 	}
-	return result
+	return result, removedCount
 }
 
-// removeIPRanges removes IP ranges matching the given CIDRs.
 func removeIPRanges(existing []ec2store.IPRange, toRemove []ec2store.IPRange) []ec2store.IPRange {
 	result := make([]ec2store.IPRange, 0, len(existing))
 	for _, er := range existing {
@@ -360,7 +301,6 @@ func removeIPRanges(existing []ec2store.IPRange, toRemove []ec2store.IPRange) []
 	return result
 }
 
-// removeGroupPairs removes user ID group pairs matching by GroupId+UserId.
 func removeGroupPairs(existing []ec2store.GroupPair, toRemove []ec2store.GroupPair) []ec2store.GroupPair {
 	result := make([]ec2store.GroupPair, 0, len(existing))
 	for _, er := range existing {
@@ -378,61 +318,19 @@ func removeGroupPairs(existing []ec2store.GroupPair, toRemove []ec2store.GroupPa
 	return result
 }
 
-// validateIPRule validates the protocol/port combination for a security group rule.
-// EC2 rules: tcp/udp accept ports 0-65535 or -1 (all); icmp/icmpv6 accept type/code
-// 0-255 or -1; protocol "-1" or numeric protocols must have ports -1.
-func validateIPRule(rule ec2store.IPRule) error {
-	proto := rule.IpProtocol
-	from := rule.FromPort
-	to := rule.ToPort
-
-	switch proto {
-	case "-1":
-		if from != -1 || to != -1 {
-			return awserrors.NewAWSError("InvalidParameterValue",
-				"Ports are not allowed for protocol '-1'", http.StatusBadRequest)
+func removePrefixListIds(existing []ec2store.PrefixListId, toRemove []ec2store.PrefixListId) []ec2store.PrefixListId {
+	result := make([]ec2store.PrefixListId, 0, len(existing))
+	for _, er := range existing {
+		found := false
+		for _, nr := range toRemove {
+			if er.PrefixListId == nr.PrefixListId {
+				found = true
+				break
+			}
 		}
-	case "tcp", "udp":
-		if !validPortRange(from, to) {
-			return awserrors.NewAWSError("InvalidParameterValue",
-				fmt.Sprintf("Invalid port range %d-%d for protocol %s", from, to, proto),
-				http.StatusBadRequest)
-		}
-	case "icmp", "icmpv6":
-		if !validICMPRange(from, to) {
-			return awserrors.NewAWSError("InvalidParameterValue",
-				fmt.Sprintf("Invalid ICMP type/code %d-%d for protocol %s", from, to, proto),
-				http.StatusBadRequest)
-		}
-	default:
-		// Numeric protocols (e.g. "50" ESP, "51" AH, "89" OSPF) must not specify ports.
-		if from != -1 || to != -1 {
-			return awserrors.NewAWSError("InvalidParameterValue",
-				fmt.Sprintf("Ports are not allowed for protocol '%s'", proto),
-				http.StatusBadRequest)
+		if !found {
+			result = append(result, er)
 		}
 	}
-	return nil
-}
-
-// validPortRange checks that from/to form a valid TCP/UDP port range (-1 means all).
-func validPortRange(from, to int64) bool {
-	if from == -1 && to == -1 {
-		return true
-	}
-	if from < 0 || from > 65535 || to < 0 || to > 65535 {
-		return false
-	}
-	return from <= to
-}
-
-// validICMPRange checks that from/to form a valid ICMP type/code pair (-1 means all).
-func validICMPRange(from, to int64) bool {
-	if from == -1 && to == -1 {
-		return true
-	}
-	if from < -1 || from > 255 || to < -1 || to > 255 {
-		return false
-	}
-	return true
+	return result
 }

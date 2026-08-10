@@ -222,12 +222,12 @@ func validateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 
 // validateTarget validates the Target structure comprehensively:
 //   - ARN format for Target, RoleArn, and DeadLetterConfig
-//   - Target ARN service must be a supported delivery type (H1/H4)
-//   - DeadLetterConfig ARN must be SQS only (M3)
+//   - Target ARN service must be a supported delivery type
+//   - DeadLetterConfig ARN must be SQS only
 //   - RetryPolicy ranges (Smithy)
 //   - Sub-parameter / service cross-check (sub-parameters must match
 //     the target ARN service — e.g. EcsParameters only on ECS targets)
-//   - Sub-parameter detailed validation (M8)
+//   - Sub-parameter detailed validation against Smithy ranges and patterns
 func validateTarget(target *schedulerstore.Target) error {
 	if target.Arn == "" {
 		return ErrInvalidTarget
@@ -310,7 +310,7 @@ func validateTarget(target *schedulerstore.Target) error {
 
 // validateTargetService rejects target ARNs whose service segment is not
 // in the supported set. This prevents schedules being created for
-// delivery types that have no implementation (H1/H4).
+// delivery types that have no implementation.
 func validateTargetService(service string) error {
 	if !supportedTargetServices[service] {
 		return awserrors.NewValidationException(
@@ -321,7 +321,7 @@ func validateTargetService(service string) error {
 }
 
 // validateDLQService enforces the AWS specification that DeadLetterConfig
-// ARN must reference an SQS queue (M3).
+// ARN must reference an SQS queue.
 func validateDLQService(arn string) error {
 	_, service, _, _, _ := svcarn.SplitARN(arn)
 	if service == "" {
@@ -400,7 +400,7 @@ func validateSageMakerPipelineParameters(sg *schedulerstore.SageMakerPipelinePar
 }
 
 // validateEcsParameters validates all EcsParameters fields per Smithy
-// traits and AWS documentation (M8).
+// traits and AWS documentation.
 func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 	if ecs.TaskDefinitionArn == "" {
 		return awserrors.NewValidationException("EcsParameters.TaskDefinitionArn is required")
@@ -446,7 +446,7 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 }
 
 // validateEventBridgeParameters validates EventBridgeParameters per
-// Smithy traits and AWS documentation (M8). The Source field is checked
+// Smithy traits and AWS documentation. The Source field is checked
 // against the full Smithy pattern (decomposed for RE2 compatibility).
 func validateEventBridgeParameters(eb *schedulerstore.EventBridgeParameters) error {
 	if l := len(eb.DetailType); l < 1 || l > 128 {

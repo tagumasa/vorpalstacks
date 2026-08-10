@@ -161,6 +161,8 @@ make tidy
 - AWS API endpoints: port 50080 (`PORT`)
 - Admin console: `http://localhost:50090/webconsole/` (`GRPC_WEB_PORT`)
 
+> **WARNING (Linux) — gopls OOM**: gopls (the Go language server) running concurrently with `go build` / `go vet` / `go test` can exhaust memory and crash the machine. **Always kill gopls before running any go command**: `pkill gopls || true`. Go telemetry should also be disabled: run `go telemetry off` once, or set `GOTELEMETRY=off` in the environment.
+
 ### vstacks CLI
 
 The `vstacks` binary (`cmd/vstacks/`) provides server control, IAM management, configuration, service mode control, and backup operations. It communicates via gRPC-Web (server control) or reads PebbleDB directly (IAM, config, backup).
