@@ -34,75 +34,43 @@ func validatePolicyDocument(doc string) error {
 }
 
 func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	policyDoc := request.GetParamCaseInsensitive(req.Parameters, "policyDocument")
-	if policyName == "" || policyDoc == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-	if !policyNamePattern.MatchString(policyName) {
-		return nil, iotstore.ErrValidation
-	}
-
-	// Validate the policy document is well-formed JSON with required fields.
-	if err := validatePolicyDocument(policyDoc); err != nil {
-		return nil, iotstore.ErrMalformedPolicy
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	p := &iotstore.Policy{
-		PolicyName:       policyName,
-		PolicyDocument:   policyDoc,
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-		Version:          1,
-	}
-
-	created, err := store.CreatePolicy(p)
+	result, err := s.createPolicyCore(store, CreatePolicyInput{
+		PolicyName:     request.GetParamCaseInsensitive(req.Parameters, "policyName"),
+		PolicyDocument: request.GetParamCaseInsensitive(req.Parameters, "policyDocument"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return policyResponse(created), nil
+	return policyResponse(result.Policy), nil
 }
 
 func (s *IoTService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	if policyName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	p, err := store.GetPolicy(policyName)
+	result, err := s.getPolicyCore(store, request.GetParamCaseInsensitive(req.Parameters, "policyName"))
 	if err != nil {
 		return nil, err
 	}
 
-	return policyResponse(p), nil
+	return policyResponse(result.Policy), nil
 }
 
 func (s *IoTService) DeletePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	if policyName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildPolicyARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), policyName)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeletePolicy(policyName); err != nil {
+	if err := s.deletePolicyCore(store, request.GetParamCaseInsensitive(req.Parameters, "policyName"), reqCtx.GetAccountID(), reqCtx.GetRegion()); err != nil {
 		return nil, err
 	}
 
@@ -115,19 +83,20 @@ func (s *IoTService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	policies, err := store.ListPolicies(parseListOptions(req.Parameters))
+	opts := parseListOptions(req.Parameters)
+	result, err := s.listPoliciesCore(store, opts.Marker, opts.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(policies.Items))
-	for _, p := range policies.Items {
+	items := make([]map[string]interface{}, 0, len(result.Policies))
+	for _, p := range result.Policies {
 		resp := policyResponse(p)
 		delete(resp, "policyDocument")
 		items = append(items, resp)
 	}
 
-	return listResponse("policies", items, policies.NextMarker), nil
+	return listResponse("policies", items, result.NextToken), nil
 }
 
 func (s *IoTService) AttachPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

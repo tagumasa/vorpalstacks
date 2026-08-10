@@ -200,13 +200,13 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 
 	case strings.HasPrefix(path, "/target-policies/") && len(parts) >= 2:
 		switch {
-		case method == http.MethodGet:
-			return "ListPolicyPrincipals"
 		case method == http.MethodPut:
 			return "AttachPolicy"
 		case method == http.MethodPost:
 			return "DetachPolicy"
 		}
+	case path == "/policy-principals" && method == http.MethodGet:
+		return "ListPolicyPrincipals"
 	case strings.HasPrefix(path, "/attached-policies/") && method == http.MethodPost:
 		return "ListAttachedPolicies"
 	case path == "/principal-policies" && method == http.MethodGet:
@@ -919,6 +919,18 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 	case path == "/principals/things-v2":
 		if p := r.Header.Get("X-Amzn-Principal"); p != "" {
 			params["principal"] = p
+		}
+	case path == "/principals/things":
+		if p := r.Header.Get("X-Amzn-Principal"); p != "" {
+			params["principal"] = p
+		}
+	case path == "/principal-policies":
+		if p := r.Header.Get("X-Amzn-Iot-Principal"); p != "" {
+			params["principal"] = p
+		}
+	case path == "/policy-principals":
+		if p := r.Header.Get("X-Amzn-Iot-Policy"); p != "" {
+			params["policyName"] = p
 		}
 	case strings.HasPrefix(path, "/streams/") && len(parts) >= 2:
 		params["streamId"] = parts[1]

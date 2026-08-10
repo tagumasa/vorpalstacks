@@ -37,13 +37,47 @@ func fnTimestamp(e *Evaluator, _ []Expr) (interface{}, error) { return e.Timesta
 func fnClientID(e *Evaluator, _ []Expr) (interface{}, error)  { return e.ClientID, nil }
 
 func fnConcat(e *Evaluator, args []Expr) (interface{}, error) {
-	parts := make([]string, 0, len(args))
+	// AWS IoT SQL concat semantics:
+	//   0 args       → Undefined
+	//   1 arg        → the argument itself (passthrough)
+	//   2+ args      → if any arg is an array, merge all into a single
+	//                  array; otherwise join as strings
+	if len(args) == 0 {
+		return unknownValue{}, nil
+	}
+	if len(args) == 1 {
+		return e.Eval(args[0])
+	}
+
+	// Evaluate all arguments first.
+	vals := make([]interface{}, 0, len(args))
+	hasArray := false
 	for _, arg := range args {
 		val, err := e.Eval(arg)
 		if err != nil {
 			return nil, err
 		}
-		parts = append(parts, toString(val))
+		if _, ok := val.([]interface{}); ok {
+			hasArray = true
+		}
+		vals = append(vals, val)
+	}
+
+	if hasArray {
+		merged := make([]interface{}, 0, len(vals))
+		for _, v := range vals {
+			if arr, ok := v.([]interface{}); ok {
+				merged = append(merged, arr...)
+			} else {
+				merged = append(merged, v)
+			}
+		}
+		return merged, nil
+	}
+
+	parts := make([]string, 0, len(vals))
+	for _, v := range vals {
+		parts = append(parts, toString(v))
 	}
 	return strings.Join(parts, ""), nil
 }
@@ -103,32 +137,43 @@ func fnTrim(e *Evaluator, args []Expr) (interface{}, error) {
 
 func fnReplace(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 3 {
-		return nil, nil
+		return unknownValue{}, nil
 	}
-	// Argument evaluation errors are intentionally ignored so fnReplace
-	// behaves consistently with the other rule builtins (fnUpper,
-	// fnLower, fnAbs, fnCeil, fnFloor all use the same
-	// val, _ := e.Eval(...) pattern). A propagating variant would
-	// create an inconsistent error contract across builtins.
-	str, _ := e.Eval(args[0])
-	old, _ := e.Eval(args[1])
-	repl, _ := e.Eval(args[2])
+	str, err := e.Eval(args[0])
+	if err != nil || isUnknown(str) {
+		return unknownValue{}, nil
+	}
+	old, err := e.Eval(args[1])
+	if err != nil || isUnknown(old) {
+		return unknownValue{}, nil
+	}
+	repl, err := e.Eval(args[2])
+	if err != nil || isUnknown(repl) {
+		return unknownValue{}, nil
+	}
 	return strings.ReplaceAll(toString(str), toString(old), toString(repl)), nil
 }
 
 func fnSubstring(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 2 {
-		return nil, nil
+		return unknownValue{}, nil
 	}
-	// Argument evaluation errors are ignored for consistency with the
-	// other rule builtins; see fnReplace for the rationale.
-	str, _ := e.Eval(args[0])
-	startVal, _ := e.Eval(args[1])
+	str, err := e.Eval(args[0])
+	if err != nil || isUnknown(str) {
+		return unknownValue{}, nil
+	}
+	startVal, err := e.Eval(args[1])
+	if err != nil || isUnknown(startVal) {
+		return unknownValue{}, nil
+	}
 	start := int(toFloat(startVal)) - 1
 	s := toString(str)
 	length := len(s) - start
 	if len(args) >= 3 {
-		lenVal, _ := e.Eval(args[2])
+		lenVal, err := e.Eval(args[2])
+		if err != nil || isUnknown(lenVal) {
+			return unknownValue{}, nil
+		}
 		length = int(toFloat(lenVal))
 	}
 	if start < 0 || start >= len(s) {

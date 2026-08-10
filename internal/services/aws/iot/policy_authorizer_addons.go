@@ -169,13 +169,9 @@ func (s *IoTService) ListTargetsForPolicy(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	targets := make([]map[string]interface{}, 0, len(principals))
-	for _, p := range principals {
-		targets = append(targets, map[string]interface{}{
-			"targetArn": p,
-		})
-	}
-	return paginatedMaps("targets", targets, req.Parameters), nil
+	// AWS SDK v2 expects Targets as a flat []string (PolicyTarget is a
+	// string shape in the Smithy model), not an array of objects.
+	return paginatedStrings("targets", principals, req.Parameters), nil
 }
 
 // AttachPrincipalPolicy is the legacy alias of AttachPolicy. AWS accepts a

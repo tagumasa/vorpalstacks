@@ -768,6 +768,10 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcec2.NewConnectHandler(st.ec2Service)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	if st.iotService != nil {
+		p, h = svciot.NewConnectHandler(st.iotService)
+		handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	}
 
 	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers, a.server.TriggerShutdown)
 	grpcWebServer.ServeConsole(a.consoleAssets)

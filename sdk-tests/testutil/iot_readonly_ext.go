@@ -66,8 +66,14 @@ func (r *TestRunner) runIoTReadonlyExtTests(tc *iotTestContext) []TestResult {
 		return err
 	}))
 	results = append(results, r.RunTest("iot", "ListPrincipalPolicies_Validation", func() error {
-		_, err := tc.client.ListPrincipalPolicies(tc.ctx, &iot.ListPrincipalPoliciesInput{Principal: aws.String("nonexistent")})
-		return expectValidationError(err)
+		resp, err := tc.client.ListPrincipalPolicies(tc.ctx, &iot.ListPrincipalPoliciesInput{Principal: aws.String("nonexistent")})
+		if err != nil {
+			return fmt.Errorf("ListPrincipalPolicies failed: %w", err)
+		}
+		if resp == nil || len(resp.Policies) != 0 {
+			return fmt.Errorf("expected empty policy list for nonexistent principal")
+		}
+		return nil
 	}))
 	results = append(results, r.RunTest("iot", "ListPrincipalThings", func() error {
 		_, err := tc.client.ListPrincipalThings(tc.ctx, &iot.ListPrincipalThingsInput{Principal: aws.String("nonexistent")})

@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -81,37 +80,75 @@ func opLike(left, right interface{}) (interface{}, error) {
 }
 
 func opAdd(left, right interface{}) (interface{}, error) {
+	if isUnknown(left) || isUnknown(right) {
+		return unknownValue{}, nil
+	}
+	// AWS IoT SQL overloads + for string concatenation when either
+	// operand is a string.  Only when both operands are numeric does
+	// the operator perform arithmetic addition.
+	if isStringOperand(left) || isStringOperand(right) {
+		return toString(left) + toString(right), nil
+	}
 	return toFloat(left) + toFloat(right), nil
 }
 
 func opSub(left, right interface{}) (interface{}, error) {
+	if isUnknown(left) || isUnknown(right) {
+		return unknownValue{}, nil
+	}
 	return toFloat(left) - toFloat(right), nil
 }
 
 func opMul(left, right interface{}) (interface{}, error) {
+	if isUnknown(left) || isUnknown(right) {
+		return unknownValue{}, nil
+	}
 	return toFloat(left) * toFloat(right), nil
 }
 
 func opDiv(left, right interface{}) (interface{}, error) {
+	if isUnknown(left) || isUnknown(right) {
+		return unknownValue{}, nil
+	}
 	if toFloat(right) == 0 {
-		return nil, fmt.Errorf("evaluator: division by zero")
+		// AWS IoT SQL returns Undefined for division by zero so the
+		// rule continues with a non-matching WHERE clause rather than
+		// causing the entire rule to error.
+		return unknownValue{}, nil
 	}
 	return toFloat(left) / toFloat(right), nil
 }
 
 func opMod(left, right interface{}) (interface{}, error) {
+	if isUnknown(left) || isUnknown(right) {
+		return unknownValue{}, nil
+	}
 	if toFloat(right) == 0 {
-		return nil, fmt.Errorf("evaluator: modulo by zero")
+		return unknownValue{}, nil
 	}
 	return math.Mod(toFloat(left), toFloat(right)), nil
 }
 
 func opIsNull(left, right interface{}) (interface{}, error) {
-	// A field that does not exist in the payload resolves to unknownValue,
-	// which should be treated as NULL (missing).
-	return left == nil || isUnknown(left), nil
+	// AWS IoT SQL distinguishes Null (JSON null) from Undefined (field
+	// absent).  IS NULL returns true only for an actual Null value.
+	return left == nil, nil
 }
 
 func opIsNotNull(left, right interface{}) (interface{}, error) {
-	return left != nil && !isUnknown(left), nil
+	// IS NOT NULL is the logical complement of IS NULL: returns true
+	// for any value that is not JSON null, including Undefined.
+	return left != nil, nil
+}
+
+// isStringOperand reports whether the value is a Go string.  This is
+// used to decide whether the + operator performs string concatenation
+// (AWS IoT SQL overloads + for strings) or numeric addition.
+func isStringOperand(v interface{}) bool {
+	switch v.(type) {
+	case string:
+		return true
+	default:
+		return false
+	}
 }

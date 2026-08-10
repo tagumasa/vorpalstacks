@@ -204,12 +204,27 @@ func (e *Evaluator) evalIn(expr *InExpr) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Build a flat list of candidates.  When a single expression
+	// evaluates to a slice, expand it as the candidate set (AWS IoT SQL
+	// allows IN against an array-valued field or literal).
+	var candidates []interface{}
 	for _, v := range expr.Values {
 		candidate, err := e.Eval(v)
 		if err != nil {
 			return nil, err
 		}
-		if compareEqual(val, candidate) {
+		if len(expr.Values) == 1 {
+			if arr, ok := candidate.([]interface{}); ok {
+				candidates = arr
+				break
+			}
+		}
+		candidates = append(candidates, candidate)
+	}
+
+	for _, c := range candidates {
+		if compareEqual(val, c) {
 			if expr.Not {
 				return false, nil
 			}
@@ -407,22 +422,12 @@ func evalExprName(expr Expr) string {
 
 func (e *Evaluator) castValue(val interface{}, typeName string) (interface{}, error) {
 	switch typeName {
-	case "STRING":
+	case "STRING", "NVARCHAR", "TEXT", "NTEXT", "VARCHAR":
 		return toString(val), nil
-	case "NUMERIC", "NUMBER", "DOUBLE", "FLOAT":
+	case "NUMERIC", "NUMBER", "DOUBLE", "FLOAT", "DECIMAL":
 		return toFloat(val), nil
 	case "BOOLEAN", "BOOL":
 		return toBool(val), nil
-	case "TIMESTAMP", "DATETIME":
-		s := toString(val)
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			t, err = time.Parse("2006-01-02T15:04:05", s)
-			if err != nil {
-				return nil, fmt.Errorf("cast to TIMESTAMP: cannot parse %q", s)
-			}
-		}
-		return t, nil
 	case "INT", "INTEGER":
 		return int64(toFloat(val)), nil
 	default:

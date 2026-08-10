@@ -51,44 +51,30 @@ func (s *IoTService) CreateKeysAndCertificate(ctx context.Context, reqCtx *reque
 
 // DescribeCertificate retrieves the details of a certificate by its ID.
 func (s *IoTService) DescribeCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	certID := request.GetParamCaseInsensitive(req.Parameters, "certificateId")
-	if certID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	cert, err := store.GetCertificate(certID)
+	result, err := s.describeCertificateCore(store, request.GetParamCaseInsensitive(req.Parameters, "certificateId"))
 	if err != nil {
 		return nil, err
 	}
 
-	return certificateDetailResponse(cert), nil
+	return certificateDetailResponse(result.Certificate), nil
 }
 
 // UpdateCertificate changes the status of a certificate (ACTIVE, INACTIVE, REVOKED).
 func (s *IoTService) UpdateCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	certID := request.GetParamCaseInsensitive(req.Parameters, "certificateId")
-	newStatus := request.GetParamCaseInsensitive(req.Parameters, "newStatus")
-	if certID == "" || newStatus == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
-	if !isValidCertStatus(newStatus) {
-		return nil, iotstore.ErrInvalidCertStatus
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	opts := iotstore.CertificateUpdateOpts{NewStatus: newStatus}
-	_, err = store.UpdateCertificate(certID, opts)
-	if err != nil {
+	if err := s.updateCertificateCore(store, UpdateCertificateInput{
+		CertificateID: request.GetParamCaseInsensitive(req.Parameters, "certificateId"),
+		NewStatus:     request.GetParamCaseInsensitive(req.Parameters, "newStatus"),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -97,20 +83,12 @@ func (s *IoTService) UpdateCertificate(ctx context.Context, reqCtx *request.Requ
 
 // DeleteCertificate removes a certificate that has no attached entities.
 func (s *IoTService) DeleteCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	certID := request.GetParamCaseInsensitive(req.Parameters, "certificateId")
-	if certID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildCertificateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), certID)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteCertificate(certID); err != nil {
+	if err := s.deleteCertificateCore(store, request.GetParamCaseInsensitive(req.Parameters, "certificateId"), reqCtx.GetAccountID(), reqCtx.GetRegion()); err != nil {
 		return nil, err
 	}
 
@@ -124,17 +102,18 @@ func (s *IoTService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	certs, err := store.ListCertificates(parseListOptions(req.Parameters))
+	opts := parseListOptions(req.Parameters)
+	result, err := s.listCertificatesCore(store, opts.Marker, opts.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(certs.Items))
-	for _, c := range certs.Items {
+	items := make([]map[string]interface{}, 0, len(result.Certificates))
+	for _, c := range result.Certificates {
 		items = append(items, certificateResponse(c))
 	}
 
-	return listResponse("certificates", items, certs.NextMarker), nil
+	return listResponse("certificates", items, result.NextToken), nil
 }
 
 // RegisterCertificate registers an existing PEM certificate without CA signing.
@@ -216,14 +195,6 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 		"certificateId":  created.CertificateID,
 		"certificatePem": certPEM,
 	}, nil
-}
-
-func isValidCertStatus(status string) bool {
-	switch status {
-	case "ACTIVE", "INACTIVE", "REVOKED", "PENDING_TRANSFER", "REGISTER_INACTIVE", "PENDING_ACTIVATION":
-		return true
-	}
-	return false
 }
 
 func buildCertificateRecord(certPEM, certID string, setActive bool) *iotstore.Certificate {

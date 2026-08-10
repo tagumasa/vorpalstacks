@@ -2,7 +2,6 @@ package iot
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -12,61 +11,41 @@ import (
 // and thing type. Returns ResourceAlreadyExistsException if the thing name is
 // already taken.
 func (s *IoTService) CreateThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	attributes, _, _ := parseAttributePayload(req.Parameters)
-	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-
-	thing := &iotstore.Thing{
-		ThingName:        thingName,
-		ThingTypeName:    thingTypeName,
+	result, err := s.createThingCore(store, CreateThingInput{
+		ThingName:        request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		ThingTypeName:    request.GetParamCaseInsensitive(req.Parameters, "thingTypeName"),
+		BillingGroupName: request.GetParamCaseInsensitive(req.Parameters, "billingGroupName"),
 		Attributes:       attributes,
-		DefaultClientId:  thingName,
-		Version:          1,
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-	}
-
-	created, err := store.CreateThing(thing)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// If billingGroupName is supplied, add the thing to the billing group.
-	if bgName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName"); bgName != "" {
-		_ = store.AddThingToBillingGroup(thingName, bgName)
-	}
-
-	return thingResponse(created), nil
+	return thingResponse(result.Thing), nil
 }
 
 // DescribeThing retrieves the details of an existing IoT thing including
 // attributes, version, and metadata.
 func (s *IoTService) DescribeThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	thing, err := store.GetThing(thingName)
+	result, err := s.describeThingCore(store, thingName)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := thingDescribeResponse(thing)
+	resp := thingDescribeResponse(result.Thing)
 
 	// AWS: DescribeThing returns billingGroupName when the thing belongs to
 	// a billing group (at most one per AWS constraints).
@@ -80,50 +59,38 @@ func (s *IoTService) DescribeThing(ctx context.Context, reqCtx *request.RequestC
 // UpdateThing modifies the attributes and thing type of an existing thing.
 // Supports attribute merging and removal. Increments the version counter.
 func (s *IoTService) UpdateThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	attributes, merge, payloadProvided := parseAttributePayload(req.Parameters)
-	opts := iotstore.ThingUpdateOpts{
+	result, err := s.updateThingCore(store, UpdateThingInput{
+		ThingName:       request.GetParamCaseInsensitive(req.Parameters, "thingName"),
 		Attributes:      attributes,
 		MergeAttributes: merge,
 		PayloadProvided: payloadProvided,
 		ThingTypeName:   request.GetParamCaseInsensitive(req.Parameters, "thingTypeName"),
 		RemoveThingType: request.GetBoolParam(req.Parameters, "removeThingType"),
-	}
-
-	updated, err := store.UpdateThing(thingName, opts)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return thingResponse(updated), nil
+	return thingResponse(result.Thing), nil
 }
 
 // DeleteThing removes a thing from the registry. Returns ResourceNotFoundException
 // if the thing does not exist.
 func (s *IoTService) DeleteThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildThingARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), thingName)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteThing(thingName); err != nil {
+	if err := s.deleteThingCore(store, thingName, reqCtx.GetAccountID(), reqCtx.GetRegion()); err != nil {
 		return nil, err
 	}
 
@@ -139,20 +106,22 @@ func (s *IoTService) ListThings(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	opts := parseListOptions(req.Parameters)
-	attributeName := request.GetParamCaseInsensitive(req.Parameters, "attributeName")
-	attributeValue := request.GetParamCaseInsensitive(req.Parameters, "attributeValue")
-
-	result, err := store.ListThings(opts, attributeName, attributeValue)
+	result, err := s.listThingsCore(store, ListThingsInput{
+		AttributeName:  request.GetParamCaseInsensitive(req.Parameters, "attributeName"),
+		AttributeValue: request.GetParamCaseInsensitive(req.Parameters, "attributeValue"),
+		NextToken:      opts.Marker,
+		MaxItems:       opts.MaxItems,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	things := make([]map[string]interface{}, 0, len(result.Items))
-	for _, t := range result.Items {
+	things := make([]map[string]interface{}, 0, len(result.Things))
+	for _, t := range result.Things {
 		things = append(things, thingResponse(t))
 	}
 
-	return listResponse("things", things, result.NextMarker), nil
+	return listResponse("things", things, result.NextToken), nil
 }
 
 // ListThingsForThingType returns things that belong to the specified thing type.
@@ -163,22 +132,22 @@ func (s *IoTService) ListThingsForThingType(ctx context.Context, reqCtx *request
 	}
 
 	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	opts := parseListOptions(req.Parameters)
-	result, err := store.ListThingsForThingType(thingTypeName, opts)
+	result, err := s.listThingsCore(store, ListThingsInput{
+		ThingTypeName: thingTypeName,
+		NextToken:     opts.Marker,
+		MaxItems:      opts.MaxItems,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	things := make([]map[string]interface{}, 0, len(result.Items))
-	for _, t := range result.Items {
+	things := make([]map[string]interface{}, 0, len(result.Things))
+	for _, t := range result.Things {
 		things = append(things, thingResponse(t))
 	}
 
-	return listResponse("things", things, result.NextMarker), nil
+	return listResponse("things", things, result.NextToken), nil
 }
 
 // store returns the singleton IotStore for the request region, shared with

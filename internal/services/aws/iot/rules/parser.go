@@ -569,9 +569,18 @@ func (p *Parser) parseComparison() (Expr, error) {
 
 func (p *Parser) parseInExpr(left Expr, negated bool) (Expr, error) {
 	p.next()
+
+	// AWS IoT SQL supports two IN syntaxes:
+	//   1. IN (expr, expr, ...) — comma-separated list
+	//   2. IN expr              — single expression evaluating to an array
 	if p.peek.Kind != TokenLParen {
-		return nil, fmt.Errorf("parser: expected '(' after IN")
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &InExpr{Expr: left, Not: negated, Values: []Expr{val}}, nil
 	}
+
 	p.next()
 	var values []Expr
 	for p.peek.Kind != TokenRParen && p.peek.Kind != TokenEOF {

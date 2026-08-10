@@ -203,6 +203,21 @@ func (s *IoTService) Shutdown() {
 	}
 }
 
+// GetStoreForRegion returns the cached IoT store for the given region,
+// creating one via the shared iotstore.GetOrCreateStore if not already
+// cached. This is the admin-handler entry point that parallels the
+// ACMService.GetStoreForRegion pattern.
+func (s *IoTService) GetStoreForRegion(region string) (iotstore.IotStoreInterface, error) {
+	if s.deps.StorageManager == nil {
+		return nil, fmt.Errorf("iot: storage manager not initialised")
+	}
+	st, err := s.deps.StorageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("iot: failed to get storage for region %s: %w", region, err)
+	}
+	return iotstore.GetOrCreateStore(st, s.accountID, region), nil
+}
+
 // ExecutorForRegion returns the rule executor for the given region, or nil.
 func (s *IoTService) ExecutorForRegion(region string) *rules.Executor {
 	return s.executors[region]
