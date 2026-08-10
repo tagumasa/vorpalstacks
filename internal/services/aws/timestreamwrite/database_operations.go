@@ -2,34 +2,13 @@ package timestreamwrite
 
 import (
 	"context"
-	"regexp"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/store/aws/common"
-	tsstore "vorpalstacks/internal/store/aws/timestream"
+	"vorpalstacks/internal/utils/aws/types"
 )
-
-var timestreamNameRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_.-]{2,255}$`)
-
-// batchLoadTaskIdRegex validates BatchLoadTaskId per Smithy: ^[A-Z0-9]+$ (3-32 chars).
-var batchLoadTaskIdRegex = regexp.MustCompile(`^[A-Z0-9]{3,32}$`)
-
-// validateKmsKeyId checks that KmsKeyId is within Smithy StringValue2048 bounds (1-2048).
-func validateKmsKeyId(kmsKeyId string) bool {
-	return len(kmsKeyId) >= 1 && len(kmsKeyId) <= 2048
-}
-
-// validateClientToken checks that ClientToken is within Smithy ClientRequestToken bounds (1-64).
-func validateClientToken(token string) bool {
-	return len(token) >= 1 && len(token) <= 64
-}
-
-func isValidTimestreamName(name string) bool {
-	return timestreamNameRegex.MatchString(name)
-}
 
 // DescribeEndpoints returns information about the Timestream Write endpoints.
 func (s *TimestreamWriteService) DescribeEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -46,166 +25,131 @@ func (s *TimestreamWriteService) DescribeEndpoints(ctx context.Context, reqCtx *
 // CreateDatabase creates a new Timestream database.
 func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
-	if !isValidTimestreamName(databaseName) {
-		return nil, ErrValidationException
-	}
-
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	// Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
-	if kmsKeyID != "" && !validateKmsKeyId(kmsKeyID) {
-		return nil, ErrValidationException
+
+	var tags []types.Tag
+	tagsProvided := false
+	if parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(parsedTags) > 0 {
+		tags = parsedTags
+		tagsProvided = true
 	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	db, err := st.store.CreateDatabase(databaseName, kmsKeyID)
+
+	result, err := s.createDatabaseCore(ctx, stores, CreateDatabaseInput{
+		DatabaseName: databaseName,
+		KmsKeyId:     kmsKeyID,
+		Tags:         tags,
+		TagsProvided: tagsProvided,
+	})
 	if err != nil {
-		if err == tsstore.ErrDatabaseAlreadyExists {
-			return nil, ErrConflictException
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
-
-	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := st.store.Tag(db.ARN, tagutil.ToMap(tags)); err != nil {
-			return nil, s.mapStoreError(err)
-		}
-	}
-
-	tags, _ := st.store.List(db.ARN)
 
 	return map[string]interface{}{
-		"Database": s.formatDatabaseResponse(db, tags),
+		"Database": formatDatabaseResponse(result),
 	}, nil
 }
 
 // DescribeDatabase returns information about a Timestream database.
 func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	db, err := st.store.GetDatabase(databaseName)
+
+	result, err := s.describeDatabaseCore(ctx, stores, DescribeDatabaseInput{
+		DatabaseName: databaseName,
+	})
 	if err != nil {
-		if err == tsstore.ErrDatabaseNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	tags, _ := st.store.List(db.ARN)
-
 	return map[string]interface{}{
-		"Database": s.formatDatabaseResponse(db, tags),
+		"Database": formatDatabaseResponse(result),
 	}, nil
 }
 
 // ListDatabases returns a list of Timestream databases.
 func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
-	if maxResults > maxListDatabasesResults {
-		maxResults = maxListDatabasesResults
-	}
+	maxResults := pagination.GetMaxItems(req.Parameters, maxListDatabasesResults, "MaxResults")
 
-	opts := common.ListOptions{MaxItems: maxResults}
-	if nextToken != "" {
-		opts.Marker = nextToken
-	}
-
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := st.store.ListDatabases(opts)
+
+	result, err := s.listDatabasesCore(ctx, stores, ListDatabasesInput{
+		NextToken: nextToken,
+		MaxItems:  maxResults,
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	dbList := make([]map[string]interface{}, 0)
-	for _, db := range result.Items {
-		tags, _ := st.store.List(db.ARN)
-		dbList = append(dbList, s.formatDatabaseResponse(db, tags))
+	dbList := make([]map[string]interface{}, 0, len(result.Databases))
+	for i := range result.Databases {
+		dbList = append(dbList, formatDatabaseResponse(&result.Databases[i]))
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"Databases": dbList,
 	}
-	pagination.SetNextToken(response, "NextToken", result.NextMarker)
-	return response, nil
+	pagination.SetNextToken(resp, "NextToken", result.NextToken)
+	return resp, nil
 }
 
 // UpdateDatabase modifies the KMS key for a Timestream database.
 func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	if kmsKeyID == "" {
-		return nil, ErrValidationException
-	}
-	// Validate KmsKeyId length (Smithy StringValue2048: 1-2048).
-	if !validateKmsKeyId(kmsKeyID) {
-		return nil, ErrValidationException
-	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	db, err := st.store.UpdateDatabase(databaseName, kmsKeyID)
+
+	result, err := s.updateDatabaseCore(ctx, stores, UpdateDatabaseInput{
+		DatabaseName: databaseName,
+		KmsKeyId:     kmsKeyID,
+	})
 	if err != nil {
-		if err == tsstore.ErrDatabaseNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	tags, _ := st.store.List(db.ARN)
-
 	return map[string]interface{}{
-		"Database": s.formatDatabaseResponse(db, tags),
+		"Database": formatDatabaseResponse(result),
 	}, nil
 }
 
 // DeleteDatabase deletes a Timestream database.
 func (s *TimestreamWriteService) DeleteDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	err = st.store.DeleteDatabase(databaseName)
-	if err != nil {
-		if err == tsstore.ErrDatabaseNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+
+	if err := s.deleteDatabaseCore(ctx, stores, DeleteDatabaseInput{
+		DatabaseName: databaseName,
+	}); err != nil {
+		return nil, err
 	}
-	st.recordStore.DeleteDatabaseChunks(databaseName)
 
 	return response.EmptyResponse(), nil
 }
 
-func (s *TimestreamWriteService) formatDatabaseResponse(db *tsstore.Database, tags map[string]string) map[string]interface{} {
-	response := map[string]interface{}{
+// formatDatabaseResponse converts a DatabaseResult to the HTTP API JSON
+// response format (epoch float64 timestamps).
+func formatDatabaseResponse(db *DatabaseResult) map[string]interface{} {
+	resp := map[string]interface{}{
 		"Arn":             db.ARN,
 		"DatabaseName":    db.DatabaseName,
 		"TableCount":      db.TableCount,
@@ -214,12 +158,12 @@ func (s *TimestreamWriteService) formatDatabaseResponse(db *tsstore.Database, ta
 	}
 
 	if db.KmsKeyId != "" {
-		response["KmsKeyId"] = db.KmsKeyId
+		resp["KmsKeyId"] = db.KmsKeyId
 	}
 
-	if len(tags) > 0 {
-		response["Tags"] = tagutil.MapToResponse(tags)
+	if len(db.Tags) > 0 {
+		resp["Tags"] = tagutil.MapToResponse(tagutil.ToMap(db.Tags))
 	}
 
-	return response
+	return resp
 }

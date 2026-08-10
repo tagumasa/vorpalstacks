@@ -2,29 +2,22 @@ package timestreamwrite
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
-	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/timeutils"
-
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/aws/types"
+
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
 	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
-	storecommon "vorpalstacks/internal/store/aws/common"
-	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
 
 // AdminHandler implements the Timestream Write gRPC-Web admin console handler.
-// It exposes list operations for databases and tables for the Flutter
-// management UI.
-// It delegates to the shared TimestreamWriteService store cache so that the same
-// per-region store instances are used by both the HTTP API handlers and the
-// admin console gRPC-Web handlers.
+// It is a thin adapter: proto request → transport-agnostic Input struct →
+// service-layer Core function → proto response conversion. Store packages
+// are never imported directly (AGENTS.md #29 compliance).
 type AdminHandler struct {
 	timestreamwriteconnect.UnimplementedTimestreamWriteServiceHandler
 	service *TimestreamWriteService
@@ -35,184 +28,106 @@ var _ timestreamwriteconnect.TimestreamWriteServiceHandler = (*AdminHandler)(nil
 // NewAdminHandler creates a new Timestream Write admin console handler backed
 // by the given service instance.
 func NewAdminHandler(svc *TimestreamWriteService) *AdminHandler {
-	return &AdminHandler{
-		service: svc,
-	}
-}
-
-func (h *AdminHandler) getStoreFromHeader(header http.Header) (*timestreamstore.Store, error) {
-	region := svccommon.GetRegionFromHeader(header)
-	return h.service.GetDatabaseStoreForRegion(region)
-}
-
-func (h *AdminHandler) getTableStoreFromHeader(header http.Header) (*timestreamstore.TableStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
-	return h.service.GetTableStoreForRegion(region)
+	return &AdminHandler{service: svc}
 }
 
 // ListDatabases returns a paginated list of Timestream databases in the
 // requested region.
 func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[pb.ListDatabasesRequest]) (*connect.Response[pb.ListDatabasesResponse], error) {
-	store, err := h.getStoreFromHeader(req.Header())
+	stores, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetMaxresults())
-	if limit <= 0 {
-		limit = 100
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: limit,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	result, err := store.ListDatabases(opts)
+	result, err := h.service.listDatabasesCore(ctx, stores, ListDatabasesInput{
+		NextToken: req.Msg.Nexttoken,
+		MaxItems:  int(req.Msg.GetMaxresults()),
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	var databases []*pb.Database
-	for _, db := range result.Items {
-		databases = append(databases, &pb.Database{
-			Arn:             db.ARN,
-			Databasename:    db.DatabaseName,
-			Tablecount:      proto.Int64(db.TableCount),
-			Kmskeyid:        db.KmsKeyId,
-			Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
-			Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
-		})
+	databases := make([]*pb.Database, 0, len(result.Databases))
+	for _, db := range result.Databases {
+		databases = append(databases, toPbDatabase(&db))
 	}
 
 	return connect.NewResponse(&pb.ListDatabasesResponse{
 		Databases: databases,
-		Nexttoken: result.NextMarker,
+		Nexttoken: result.NextToken,
 	}), nil
 }
 
 // ListTables returns a paginated list of Timestream tables in the specified
 // database.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesRequest]) (*connect.Response[pb.ListTablesResponse], error) {
-	store, err := h.getTableStoreFromHeader(req.Header())
+	stores, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetMaxresults())
-	if limit <= 0 {
-		limit = 100
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: limit,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	result, err := store.ListTables(req.Msg.Databasename, opts)
+	result, err := h.service.listTablesCore(ctx, stores, ListTablesInput{
+		DatabaseName: req.Msg.Databasename,
+		NextToken:    req.Msg.Nexttoken,
+		MaxItems:     int(req.Msg.GetMaxresults()),
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	var tables []*pb.Table
-	for _, t := range result.Items {
-		table := &pb.Table{
-			Arn:             t.ARN,
-			Tablename:       t.TableName,
-			Databasename:    t.DatabaseName,
-			Creationtime:    t.CreationTime.Format(timeutils.ISO8601UTCFormat),
-			Lastupdatedtime: t.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
-		}
-
-		switch t.TableStatus {
-		case timestreamstore.TableStatusActive:
-			table.Tablestatus = pb.TableStatus_TABLE_STATUS_ACTIVE
-		case timestreamstore.TableStatusDeleting:
-			table.Tablestatus = pb.TableStatus_TABLE_STATUS_DELETING
-		case timestreamstore.TableStatusRestoring:
-			table.Tablestatus = pb.TableStatus_TABLE_STATUS_RESTORING
-		}
-
-		if t.RetentionProperties != nil {
-			table.Retentionproperties = &pb.RetentionProperties{
-				Memorystoreretentionperiodinhours:  t.RetentionProperties.MemoryStoreRetentionPeriodInHours,
-				Magneticstoreretentionperiodindays: t.RetentionProperties.MagneticStoreRetentionPeriodInDays,
-			}
-		}
-
-		if t.Schema != nil && len(t.Schema.CompositePartitionKey) > 0 {
-			schema := &pb.Schema{}
-			for _, pk := range t.Schema.CompositePartitionKey {
-				cpk := &pb.PartitionKey{}
-				switch pk.Type {
-				case "MEASURE":
-					cpk.Type = pb.PartitionKeyType_PARTITION_KEY_TYPE_MEASURE
-				default:
-					cpk.Type = pb.PartitionKeyType_PARTITION_KEY_TYPE_DIMENSION
-				}
-				if pk.Name != "" {
-					cpk.Name = pk.Name
-				}
-				switch pk.EnforcementInRecord {
-				case "REQUIRED":
-					cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_REQUIRED
-				default:
-					cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_OPTIONAL
-				}
-				schema.Compositepartitionkey = append(schema.Compositepartitionkey, cpk)
-			}
-			table.Schema = schema
-		}
-
-		tables = append(tables, table)
+	tables := make([]*pb.Table, 0, len(result.Tables))
+	for _, t := range result.Tables {
+		tables = append(tables, toPbTable(&t))
 	}
 
 	return connect.NewResponse(&pb.ListTablesResponse{
 		Tables:    tables,
-		Nexttoken: result.NextMarker,
+		Nexttoken: result.NextToken,
 	}), nil
 }
 
 // CreateDatabase creates a new Timestream database via the admin console.
 func (h *AdminHandler) CreateDatabase(ctx context.Context, req *connect.Request[pb.CreateDatabaseRequest]) (*connect.Response[pb.CreateDatabaseResponse], error) {
-	if req.Msg.GetDatabasename() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DatabaseName is required"))
+	stores, err := h.getStoreFromHeader(req.Header())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	store, err := h.getStoreFromHeader(req.Header())
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	input := CreateDatabaseInput{
+		DatabaseName: req.Msg.GetDatabasename(),
+		KmsKeyId:     req.Msg.GetKmskeyid(),
 	}
 
-	db, err := store.CreateDatabase(req.Msg.GetDatabasename(), req.Msg.GetKmskeyid())
+	if len(req.Msg.Tags) > 0 {
+		input.TagsProvided = true
+		tags := make([]types.Tag, 0, len(req.Msg.Tags))
+		for _, t := range req.Msg.Tags {
+			tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
+		}
+		input.Tags = tags
+	}
+
+	result, err := h.service.createDatabaseCore(ctx, stores, input)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateDatabaseResponse{
-		Database: &pb.Database{
-			Arn:             db.ARN,
-			Databasename:    db.DatabaseName,
-			Kmskeyid:        db.KmsKeyId,
-			Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
-			Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
-		},
+		Database: toPbDatabase(result),
 	}), nil
 }
 
 // DeleteDatabase deletes a Timestream database via the admin console.
 func (h *AdminHandler) DeleteDatabase(ctx context.Context, req *connect.Request[pb.DeleteDatabaseRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.GetDatabasename() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DatabaseName is required"))
-	}
-
-	store, err := h.getStoreFromHeader(req.Header())
+	stores, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := store.DeleteDatabase(req.Msg.GetDatabasename()); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteDatabaseCore(ctx, stores, DeleteDatabaseInput{
+		DatabaseName: req.Msg.GetDatabasename(),
+	}); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

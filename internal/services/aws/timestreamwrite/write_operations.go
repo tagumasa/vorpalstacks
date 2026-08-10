@@ -3,6 +3,7 @@ package timestreamwrite
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -22,13 +23,19 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 		return nil, ErrValidationException
 	}
 
-	records := s.parseRecords(req.Parameters["Records"])
+	records, err := s.parseRecords(req.Parameters["Records"])
+	if err != nil {
+		return nil, err
+	}
 
 	if len(records) < 1 || len(records) > 100 {
 		return nil, ErrValidationException
 	}
 
-	commonAttributes := s.parseCommonAttributes(req.Parameters["CommonAttributes"])
+	commonAttributes, err := s.parseCommonAttributes(req.Parameters["CommonAttributes"])
+	if err != nil {
+		return nil, err
+	}
 	if commonAttributes != nil {
 		merged, err := s.mergeCommonAttributes(records, commonAttributes)
 		if err != nil {
@@ -65,7 +72,7 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 		}
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"RecordsIngested": map[string]interface{}{
 			"Total":         ingestedCount,
 			"MemoryStore":   ingestedCount,
@@ -74,18 +81,18 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 	}
 
 	if len(rejectedRecords) > 0 {
-		response["RejectedRecords"] = s.formatRejectedRecords(rejectedRecords)
+		resp["RejectedRecords"] = s.formatRejectedRecords(rejectedRecords)
 	}
 
-	return response, nil
+	return resp, nil
 }
 
-func (s *TimestreamWriteService) parseRecords(data interface{}) []tsstore.Record {
+func (s *TimestreamWriteService) parseRecords(data interface{}) ([]tsstore.Record, error) {
 	var records []tsstore.Record
 
 	recordsList, ok := data.([]interface{})
 	if !ok {
-		return records
+		return records, nil
 	}
 
 	for _, item := range recordsList {
@@ -93,16 +100,25 @@ func (s *TimestreamWriteService) parseRecords(data interface{}) []tsstore.Record
 		if !ok {
 			continue
 		}
-		records = append(records, s.parseSingleRecord(itemMap))
+		rec, err := s.parseSingleRecord(itemMap)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, rec)
 	}
 
-	return records
+	return records, nil
 }
 
 // parseSingleRecord parses a single record from a map[string]interface{}.
-func (s *TimestreamWriteService) parseSingleRecord(itemMap map[string]interface{}) tsstore.Record {
+func (s *TimestreamWriteService) parseSingleRecord(itemMap map[string]interface{}) (tsstore.Record, error) {
+	dimensions, err := s.parseDimensions(itemMap["Dimensions"])
+	if err != nil {
+		return tsstore.Record{}, err
+	}
+
 	record := tsstore.Record{
-		Dimensions:       s.parseDimensions(itemMap["Dimensions"]),
+		Dimensions:       dimensions,
 		MeasureName:      request.GetStringParam(itemMap, "MeasureName"),
 		MeasureValue:     request.GetStringParam(itemMap, "MeasureValue"),
 		MeasureValueType: tsstore.MeasureValueType(request.GetStringParam(itemMap, "MeasureValueType")),
@@ -113,15 +129,18 @@ func (s *TimestreamWriteService) parseSingleRecord(itemMap map[string]interface{
 
 	record.MeasureValues = s.parseMeasureValues(itemMap["MeasureValues"])
 
-	return record
+	return record, nil
 }
 
-func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dimension {
+// parseDimensions parses dimension list from request data.
+// Dimension.Name and Dimension.Value are both REQUIRED per Smithy. Reject
+// empty values rather than silently persisting corrupted data.
+func (s *TimestreamWriteService) parseDimensions(data interface{}) ([]tsstore.Dimension, error) {
 	var dimensions []tsstore.Dimension
 
 	dimsList, ok := data.([]interface{})
 	if !ok {
-		return dimensions
+		return dimensions, nil
 	}
 
 	for _, item := range dimsList {
@@ -135,6 +154,14 @@ func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dim
 			Value:              request.GetStringParam(itemMap, "Value"),
 			DimensionValueType: tsstore.DimensionValueType(request.GetStringParam(itemMap, "DimensionValueType")),
 		}
+
+		if dim.Name == "" {
+			return nil, awserrors.NewValidationException("Dimension.Name is required")
+		}
+		if dim.Value == "" {
+			return nil, awserrors.NewValidationException("Dimension.Value is required")
+		}
+
 		if dim.DimensionValueType == "" {
 			dim.DimensionValueType = tsstore.DimensionValueTypeVarchar
 		}
@@ -142,22 +169,23 @@ func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dim
 		dimensions = append(dimensions, dim)
 	}
 
-	return dimensions
+	return dimensions, nil
 }
 
 // parseCommonAttributes parses the CommonAttributes record from the request.
-// CommonAttributes contains measure, dimension, time, and version attributes
-// shared across all records in the WriteRecords request.
-func (s *TimestreamWriteService) parseCommonAttributes(data interface{}) *tsstore.Record {
+func (s *TimestreamWriteService) parseCommonAttributes(data interface{}) (*tsstore.Record, error) {
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 	itemMap, ok := data.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	rec := s.parseSingleRecord(itemMap)
-	return &rec
+	rec, err := s.parseSingleRecord(itemMap)
+	if err != nil {
+		return nil, err
+	}
+	return &rec, nil
 }
 
 // mergeCommonAttributes merges CommonAttributes into each individual record.

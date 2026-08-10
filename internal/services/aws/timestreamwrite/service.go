@@ -18,15 +18,6 @@ import (
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
-// Smithy model pagination limits (timestream-write-2018-11-01.json):
-// PaginationLimit range {min:1, max:20} for ListDatabases/ListTables.
-// PageLimit range {min:1, max:100} for ListBatchLoadTasks.
-const (
-	maxListDatabasesResults      = 20
-	maxListTablesResults         = 20
-	maxListBatchLoadTasksResults = 100
-)
-
 // tsWriteStores holds the various Timestream Write stores.
 type tsWriteStores struct {
 	store          *tsstore.Store
@@ -99,11 +90,12 @@ func (s *TimestreamWriteService) createStoreGroup(region string) (*tsWriteStores
 	}, nil
 }
 
-// GetDatabaseStoreForRegion returns the cached Store (database-level) for the given region,
-// creating a new store group if not already cached.
-func (s *TimestreamWriteService) GetDatabaseStoreForRegion(region string) (*tsstore.Store, error) {
+// GetStoresForRegion returns the cached tsWriteStores for the given region,
+// creating a new store group if not already cached. This is the primary
+// accessor used by admin handler Core methods.
+func (s *TimestreamWriteService) GetStoresForRegion(region string) (*tsWriteStores, error) {
 	if v, ok := s.stores.Load(region); ok {
-		return v.(*tsWriteStores).store, nil
+		return v.(*tsWriteStores), nil
 	}
 	stores, err := s.createStoreGroup(region)
 	if err != nil {
@@ -113,24 +105,7 @@ func (s *TimestreamWriteService) GetDatabaseStoreForRegion(region string) (*tsst
 	if loaded {
 		stores.Close()
 	}
-	return actual.(*tsWriteStores).store, nil
-}
-
-// GetTableStoreForRegion returns the cached TableStore for the given region,
-// creating a new store group if not already cached.
-func (s *TimestreamWriteService) GetTableStoreForRegion(region string) (*tsstore.TableStore, error) {
-	if v, ok := s.stores.Load(region); ok {
-		return v.(*tsWriteStores).tableStore, nil
-	}
-	stores, err := s.createStoreGroup(region)
-	if err != nil {
-		return nil, err
-	}
-	actual, loaded := s.stores.LoadOrStore(region, stores)
-	if loaded {
-		stores.Close()
-	}
-	return actual.(*tsWriteStores).tableStore, nil
+	return actual.(*tsWriteStores), nil
 }
 
 func (s *TimestreamWriteService) store(ctx *request.RequestContext) (*tsWriteStores, error) {

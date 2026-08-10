@@ -177,7 +177,7 @@ func (s *RecordStore) parseTimestamp(timeStr string, timeUnit TimeUnit) (time.Ti
 	case TimeUnitNanoseconds:
 		return time.Unix(0, ts).UTC(), nil
 	default:
-		return time.UnixMilli(ts).UTC(), nil
+		return time.Time{}, ErrInvalidParameter
 	}
 }
 
@@ -249,9 +249,15 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 			version = 1
 		}
 
+		// MeasureValueType is REQUIRED when MeasureValue is provided.
+		// Reject empty/invalid values rather than silently defaulting.
 		measureValueType := record.MeasureValueType
-		if measureValueType == "" {
-			measureValueType = MeasureValueTypeDouble
+		if measureValueType == "" && record.MeasureValue != "" {
+			rejectedRecords = append(rejectedRecords, RejectedRecord{
+				RecordIndex: int64(i),
+				Reason:      "MeasureValueType is required when MeasureValue is provided",
+			})
+			continue
 		}
 
 		entry := &chunk.TimestreamEntry{

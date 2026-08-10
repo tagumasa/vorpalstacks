@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/chunk"
 	pb "vorpalstacks/internal/pb/storage/storage_timestream"
@@ -137,7 +138,9 @@ func (s *Store) DeleteDatabase(name string) error {
 		return ErrDatabaseNotEmpty
 	}
 
-	_ = s.TagStore.Delete(s.arnBuilder.Timestream().Database(name))
+	if err := s.TagStore.Delete(s.arnBuilder.Timestream().Database(name)); err != nil {
+		logs.Warn("Failed to delete tags for database", logs.String("database", name), logs.Err(err))
+	}
 
 	return s.BaseStore.Delete(name)
 }

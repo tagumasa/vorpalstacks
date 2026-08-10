@@ -33,7 +33,10 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 		return nil, ErrValidationException
 	}
 
-	dataSourceConfig := parseDataSourceConfiguration(req.Parameters["DataSourceConfiguration"])
+	dataSourceConfig, err := parseDataSourceConfiguration(req.Parameters["DataSourceConfiguration"])
+	if err != nil {
+		return nil, err
+	}
 	if dataSourceConfig == nil {
 		return nil, ErrValidationException
 	}
@@ -42,12 +45,18 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 		return nil, ErrValidationException
 	}
 
-	reportConfig := parseReportConfiguration(req.Parameters["ReportConfiguration"])
+	reportConfig, err := parseReportConfiguration(req.Parameters["ReportConfiguration"])
+	if err != nil {
+		return nil, err
+	}
 	if reportConfig == nil {
 		return nil, ErrValidationException
 	}
 
-	dataModelConfig := parseDataModelConfiguration(req.Parameters["DataModelConfiguration"])
+	dataModelConfig, err := parseDataModelConfiguration(req.Parameters["DataModelConfiguration"])
+	if err != nil {
+		return nil, err
+	}
 	// DimensionMappings is REQUIRED when DataModel is provided (Smithy).
 	if dataModelConfig != nil && dataModelConfig.DataModel != nil && len(dataModelConfig.DataModel.DimensionMappings) == 0 {
 		return nil, ErrValidationException
@@ -76,11 +85,18 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 	// auto-generates a UUID for the ClientToken (Smithy idempotencyToken
 	// trait), but the TaskId is always server-generated (uppercase
 	// alphanumeric, matching BatchLoadTaskId pattern ^[A-Z0-9]+$).
+	// Properly propagate storage errors. Only ErrBatchLoadTaskNotFound
+	// is an acceptable fallback (no match found); any other error must be
+	// returned rather than silently creating a duplicate task.
 	if clientToken != "" {
-		if existingTask, gerr := st.batchLoadStore.FindByClientToken(clientToken); gerr == nil {
+		existingTask, gerr := st.batchLoadStore.FindByClientToken(clientToken)
+		if gerr == nil {
 			return map[string]interface{}{
 				"TaskId": existingTask.TaskId,
 			}, nil
+		}
+		if gerr != tsstore.ErrBatchLoadTaskNotFound {
+			return nil, ErrInternalServer
 		}
 	}
 
@@ -294,7 +310,7 @@ func (s *TimestreamWriteService) executeBatchLoad(ctx context.Context, st *tsWri
 			continue
 		}
 
-		data, err := s.s3Invoker.GetObject(ctx, region, s3Config.BucketName, key, 0)
+		data, err := s.s3Invoker.GetObject(ctx, region, s3Config.BucketName, key, maxBatchLoadObjectSize)
 		if err != nil {
 			progress.FileFailures++
 			logs.Warn("Failed to get S3 object, continuing",
@@ -307,8 +323,8 @@ func (s *TimestreamWriteService) executeBatchLoad(ctx context.Context, st *tsWri
 
 		progress.BytesMetered += int64(len(data))
 
-		records, parseFailures := parseCSVToRecords(data, csvConfig, dataModel)
-		progress.ParseFailures += int64(parseFailures)
+		records, rejectedFromParse := parseCSVToRecords(data, csvConfig, dataModel)
+		progress.ParseFailures += int64(len(rejectedFromParse))
 		progress.RecordsProcessed += int64(len(records))
 
 		for i := 0; i < len(records); i += 100 {
@@ -410,14 +426,14 @@ func (s *TimestreamWriteService) formatBatchLoadTaskDescription(task *tsstore.Ba
 	return response
 }
 
-func parseDataSourceConfiguration(config interface{}) *tsstore.DataSourceConfiguration {
+func parseDataSourceConfiguration(config interface{}) (*tsstore.DataSourceConfiguration, error) {
 	if config == nil {
-		return nil
+		return nil, nil
 	}
 
 	configMap, ok := config.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, ErrValidationException
 	}
 
 	result := &tsstore.DataSourceConfiguration{
@@ -428,14 +444,27 @@ func parseDataSourceConfiguration(config interface{}) *tsstore.DataSourceConfigu
 		result.DataFormat = tsstore.BatchLoadDataFormat(format)
 	}
 
-	if s3Config, ok := configMap["DataSourceS3Configuration"].(map[string]interface{}); ok {
-		result.DataSourceS3Configuration = &tsstore.DataSourceS3Configuration{}
-		if bucket, ok := s3Config["BucketName"].(string); ok {
-			result.DataSourceS3Configuration.BucketName = bucket
+	// DataSourceS3Configuration is REQUIRED per Smithy.
+	s3Config, hasS3 := configMap["DataSourceS3Configuration"].(map[string]interface{})
+	if !hasS3 {
+		return nil, ErrValidationException
+	}
+	// BucketName is REQUIRED per Smithy when DataSourceS3Configuration is provided.
+	bucket, hasBucket := s3Config["BucketName"].(string)
+	if !hasBucket || bucket == "" {
+		return nil, ErrValidationException
+	}
+	if !validateS3BucketName(bucket) {
+		return nil, ErrValidationException
+	}
+	result.DataSourceS3Configuration = &tsstore.DataSourceS3Configuration{
+		BucketName: bucket,
+	}
+	if prefix, ok := s3Config["ObjectKeyPrefix"].(string); ok {
+		if !validateS3ObjectKeyPrefix(prefix) {
+			return nil, ErrValidationException
 		}
-		if prefix, ok := s3Config["ObjectKeyPrefix"].(string); ok {
-			result.DataSourceS3Configuration.ObjectKeyPrefix = prefix
-		}
+		result.DataSourceS3Configuration.ObjectKeyPrefix = prefix
 	}
 
 	if csvConfig, ok := configMap["CsvConfiguration"].(map[string]interface{}); ok {
@@ -457,54 +486,75 @@ func parseDataSourceConfiguration(config interface{}) *tsstore.DataSourceConfigu
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func parseReportConfiguration(config interface{}) *tsstore.ReportConfiguration {
+func parseReportConfiguration(config interface{}) (*tsstore.ReportConfiguration, error) {
 	if config == nil {
-		return nil
+		return nil, nil
 	}
 
 	configMap, ok := config.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, ErrValidationException
 	}
 
 	result := &tsstore.ReportConfiguration{}
 
 	if s3Config, ok := configMap["ReportS3Configuration"].(map[string]interface{}); ok {
-		result.ReportS3Configuration = &tsstore.ReportS3Configuration{}
-		if bucket, ok := s3Config["BucketName"].(string); ok {
-			result.ReportS3Configuration.BucketName = bucket
+		// ReportS3Configuration is optional per Smithy, but when provided,
+		// BucketName is REQUIRED.
+		bucket, hasBucket := s3Config["BucketName"].(string)
+		if !hasBucket || bucket == "" {
+			return nil, ErrValidationException
+		}
+		if !validateS3BucketName(bucket) {
+			return nil, ErrValidationException
+		}
+		result.ReportS3Configuration = &tsstore.ReportS3Configuration{
+			BucketName: bucket,
 		}
 		if enc, ok := s3Config["EncryptionOption"].(string); ok {
+			if !validateEncryptionOption(enc) {
+				return nil, ErrValidationException
+			}
 			result.ReportS3Configuration.EncryptionOption = tsstore.S3EncryptionOption(enc)
 		}
 		if kms, ok := s3Config["KmsKeyId"].(string); ok {
+			if kms != "" && !validateKmsKeyId(kms) {
+				return nil, ErrValidationException
+			}
 			result.ReportS3Configuration.KmsKeyId = kms
 		}
 		if prefix, ok := s3Config["ObjectKeyPrefix"].(string); ok {
+			if !validateS3ObjectKeyPrefix(prefix) {
+				return nil, ErrValidationException
+			}
 			result.ReportS3Configuration.ObjectKeyPrefix = prefix
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func parseDataModelConfiguration(config interface{}) *tsstore.DataModelConfiguration {
+func parseDataModelConfiguration(config interface{}) (*tsstore.DataModelConfiguration, error) {
 	if config == nil {
-		return nil
+		return nil, nil
 	}
 
 	configMap, ok := config.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, ErrValidationException
 	}
 
 	result := &tsstore.DataModelConfiguration{}
 
 	if dataModel, ok := configMap["DataModel"].(map[string]interface{}); ok {
-		result.DataModel = parseDataModel(dataModel)
+		dm, err := parseDataModel(dataModel)
+		if err != nil {
+			return nil, err
+		}
+		result.DataModel = dm
 	}
 
 	if s3Config, ok := configMap["DataModelS3Configuration"].(map[string]interface{}); ok {
@@ -517,10 +567,10 @@ func parseDataModelConfiguration(config interface{}) *tsstore.DataModelConfigura
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func parseDataModel(dataModel map[string]interface{}) *tsstore.DataModel {
+func parseDataModel(dataModel map[string]interface{}) (*tsstore.DataModel, error) {
 	result := &tsstore.DataModel{}
 
 	if mappings, ok := dataModel["DimensionMappings"].([]interface{}); ok {
@@ -590,12 +640,16 @@ func parseDataModel(dataModel map[string]interface{}) *tsstore.DataModel {
 		if attrs, ok := mmmMap["MultiMeasureAttributeMappings"].([]interface{}); ok {
 			mmm.MultiMeasureAttributeMappings = parseMultiMeasureAttributeMappings(attrs)
 		}
-		if len(mmm.MultiMeasureAttributeMappings) > 0 || mmm.TargetMultiMeasureName != "" {
-			result.MultiMeasureMappings = mmm
+		// MultiMeasureAttributeMappings is REQUIRED per Smithy when
+		// MultiMeasureMappings is provided. Reject empty mappings rather
+		// than silently discarding the entire DataModel.
+		if len(mmm.MultiMeasureAttributeMappings) == 0 {
+			return nil, ErrValidationException
 		}
+		result.MultiMeasureMappings = mmm
 	}
 
-	return result
+	return result, nil
 }
 
 // parseMultiMeasureAttributeMappings parses a list of MultiMeasureAttributeMapping
@@ -777,8 +831,9 @@ func generateTaskId() string {
 }
 
 // parseCSVToRecords parses CSV data into Timestream records using the DataModel
-// configuration. Returns the parsed records and the number of parse failures.
-func parseCSVToRecords(data []byte, csvConfig *tsstore.CsvConfiguration, dataModelConfig *tsstore.DataModelConfiguration) ([]tsstore.Record, int) {
+// configuration. Returns the parsed records along with per-record rejection
+// details so callers can report which rows failed and why.
+func parseCSVToRecords(data []byte, csvConfig *tsstore.CsvConfiguration, dataModelConfig *tsstore.DataModelConfiguration) ([]tsstore.Record, []tsstore.RejectedRecord) {
 	reader := csv.NewReader(bytes.NewReader(data))
 
 	if csvConfig != nil {
@@ -795,10 +850,10 @@ func parseCSVToRecords(data []byte, csvConfig *tsstore.CsvConfiguration, dataMod
 
 	rows, err := reader.ReadAll()
 	if err != nil {
-		return nil, 0
+		return nil, nil
 	}
 	if len(rows) == 0 {
-		return nil, 0
+		return nil, nil
 	}
 
 	header := rows[0]
@@ -831,7 +886,7 @@ func parseCSVToRecords(data []byte, csvConfig *tsstore.CsvConfiguration, dataMod
 	}
 
 	records := make([]tsstore.Record, 0, len(rows)-1)
-	parseFailures := 0
+	var rejectedRecords []tsstore.RejectedRecord
 
 	for rowIdx := 1; rowIdx < len(rows); rowIdx++ {
 		row := rows[rowIdx]
@@ -963,14 +1018,17 @@ func parseCSVToRecords(data []byte, csvConfig *tsstore.CsvConfiguration, dataMod
 		}
 
 		if record.Time == "" && len(record.Dimensions) == 0 {
-			parseFailures++
+			rejectedRecords = append(rejectedRecords, tsstore.RejectedRecord{
+				RecordIndex: int64(rowIdx),
+				Reason:      "record has no Time and no Dimensions",
+			})
 			continue
 		}
 
 		records = append(records, record)
 	}
 
-	return records, parseFailures
+	return records, rejectedRecords
 }
 
 func parseint64(s string) (int64, bool) {

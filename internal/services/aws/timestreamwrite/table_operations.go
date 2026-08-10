@@ -8,30 +8,13 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
 // CreateTable creates a new Timestream table.
 func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
-	if !isValidTimestreamName(databaseName) {
-		return nil, ErrValidationException
-	}
-
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrValidationException
-	}
-
-	if !isValidTimestreamName(tableName) {
-		return nil, ErrValidationException
-	}
 
 	retentionProperties, err := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
 	if err != nil {
@@ -43,115 +26,90 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
+	tagsParsed := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := st.tableStore.CreateTable(databaseName, tableName, retentionProperties, schema, magneticStoreWriteProperties)
+
+	result, err := s.createTableCore(ctx, st, CreateTableInput{
+		DatabaseName:                 databaseName,
+		TableName:                    tableName,
+		RetentionProperties:          retentionProperties,
+		Schema:                       schema,
+		MagneticStoreWriteProperties: magneticStoreWriteProperties,
+		Tags:                         tagsParsed,
+		TagsProvided:                 len(tagsParsed) > 0,
+	})
 	if err != nil {
-		if err == tsstore.ErrTableAlreadyExists {
-			return nil, ErrConflictException
-		}
-		if err == tsstore.ErrDatabaseNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
-
-	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := st.store.Tag(table.ARN, tagutil.ToMap(tags)); err != nil {
-			logs.Warn("Failed to tag newly created table", logs.String("tableArn", table.ARN), logs.Err(err))
-		}
-	}
-
-	tags, _ := st.store.List(table.ARN)
 
 	return map[string]interface{}{
-		"Table": s.formatTableResponse(table, tags),
+		"Table": formatTableResponse(result),
 	}, nil
 }
 
 // DescribeTable returns information about a Timestream table.
 func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrValidationException
-	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := st.tableStore.GetTable(databaseName, tableName)
+
+	result, err := s.describeTableCore(ctx, stores, DescribeTableInput{
+		DatabaseName: databaseName,
+		TableName:    tableName,
+	})
 	if err != nil {
-		if err == tsstore.ErrTableNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	tags, _ := st.store.List(table.ARN)
-
 	return map[string]interface{}{
-		"Table": s.formatTableResponse(table, tags),
+		"Table": formatTableResponse(result),
 	}, nil
 }
 
 // ListTables returns a list of Timestream tables in a database.
 func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
-	if maxResults > maxListTablesResults {
-		maxResults = maxListTablesResults
-	}
+	maxResults := pagination.GetMaxItems(req.Parameters, maxListTablesResults, "MaxResults")
 
-	opts := common.ListOptions{MaxItems: maxResults}
-	if nextToken != "" {
-		opts.Marker = nextToken
-	}
-
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := st.tableStore.ListTables(databaseName, opts)
+
+	result, err := s.listTablesCore(ctx, stores, ListTablesInput{
+		DatabaseName: databaseName,
+		NextToken:    nextToken,
+		MaxItems:     maxResults,
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	tableList := make([]map[string]interface{}, 0)
-	for _, table := range result.Items {
-		tags, _ := st.store.List(table.ARN)
-		tableList = append(tableList, s.formatTableResponse(table, tags))
+	tableList := make([]map[string]interface{}, 0, len(result.Tables))
+	for i := range result.Tables {
+		tableList = append(tableList, formatTableResponse(&result.Tables[i]))
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"Tables": tableList,
 	}
-	pagination.SetNextToken(response, "NextToken", result.NextMarker)
-	return response, nil
+	pagination.SetNextToken(resp, "NextToken", result.NextToken)
+	return resp, nil
 }
 
 // UpdateTable modifies the retention properties or schema of a Timestream table.
 func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrValidationException
-	}
 
 	retentionProperties, err := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
 	if err != nil {
@@ -163,49 +121,43 @@ func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	table, err := st.tableStore.UpdateTable(databaseName, tableName, retentionProperties, schema, magneticStoreWriteProperties)
+
+	result, err := s.updateTableCore(ctx, stores, UpdateTableInput{
+		DatabaseName:                 databaseName,
+		TableName:                    tableName,
+		RetentionProperties:          retentionProperties,
+		Schema:                       schema,
+		MagneticStoreWriteProperties: magneticStoreWriteProperties,
+	})
 	if err != nil {
-		if err == tsstore.ErrTableNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	tags, _ := st.store.List(table.ARN)
-
 	return map[string]interface{}{
-		"Table": s.formatTableResponse(table, tags),
+		"Table": formatTableResponse(result),
 	}, nil
 }
 
 // DeleteTable deletes a Timestream table.
 func (s *TimestreamWriteService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrValidationException
-	}
-
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrValidationException
-	}
 
-	st, err := s.store(reqCtx)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	err = st.tableStore.DeleteTable(databaseName, tableName)
-	if err != nil {
-		if err == tsstore.ErrTableNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, s.mapStoreError(err)
+
+	if err := s.deleteTableCore(ctx, stores, DeleteTableInput{
+		DatabaseName: databaseName,
+		TableName:    tableName,
+	}); err != nil {
+		return nil, err
 	}
-	st.recordStore.DeleteTableChunks(databaseName, tableName)
 
 	return response.EmptyResponse(), nil
 }
@@ -357,18 +309,20 @@ func (s *TimestreamWriteService) parseMagneticStoreWriteProperties(data interfac
 	return result, nil
 }
 
-func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags map[string]string) map[string]interface{} {
-	response := map[string]interface{}{
+// formatTableResponse converts a TableResult to the HTTP API JSON response
+// format (epoch float64 timestamps).
+func formatTableResponse(table *TableResult) map[string]interface{} {
+	resp := map[string]interface{}{
 		"Arn":             table.ARN,
 		"TableName":       table.TableName,
 		"DatabaseName":    table.DatabaseName,
-		"TableStatus":     table.TableStatus,
+		"TableStatus":     string(table.TableStatus),
 		"CreationTime":    float64(table.CreationTime.Unix()) + float64(table.CreationTime.Nanosecond())/1e9,
 		"LastUpdatedTime": float64(table.LastUpdatedTime.Unix()) + float64(table.LastUpdatedTime.Nanosecond())/1e9,
 	}
 
 	if table.RetentionProperties != nil {
-		response["RetentionProperties"] = map[string]interface{}{
+		resp["RetentionProperties"] = map[string]interface{}{
 			"MemoryStoreRetentionPeriodInHours":  table.RetentionProperties.MemoryStoreRetentionPeriodInHours,
 			"MagneticStoreRetentionPeriodInDays": table.RetentionProperties.MagneticStoreRetentionPeriodInDays,
 		}
@@ -388,7 +342,7 @@ func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags 
 			}
 			cpk = append(cpk, pkMap)
 		}
-		response["Schema"] = map[string]interface{}{
+		resp["Schema"] = map[string]interface{}{
 			"CompositePartitionKey": cpk,
 		}
 	}
@@ -417,12 +371,12 @@ func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags 
 			}
 			mswp["MagneticStoreRejectedDataLocation"] = rdlMap
 		}
-		response["MagneticStoreWriteProperties"] = mswp
+		resp["MagneticStoreWriteProperties"] = mswp
 	}
 
-	if len(tags) > 0 {
-		response["Tags"] = tagutil.MapToResponse(tags)
+	if len(table.Tags) > 0 {
+		resp["Tags"] = tagutil.MapToResponse(tagutil.ToMap(table.Tags))
 	}
 
-	return response
+	return resp
 }

@@ -189,7 +189,10 @@ func (s *BatchLoadTaskStore) SaveProcessedKeys(taskId string, keys []string) err
 	return s.PutProto(taskId, BatchLoadTaskDescriptionToProto(task))
 }
 
-// ListBatchLoadTasks lists batch load tasks with optional status filter and pagination.
+// ListBatchLoadTasks lists batch load tasks with optional status filter and
+// pagination. A full scan is performed first (necessary because the status
+// filter is applied after reading from Pebble), then the filtered results
+// are paginated using opts.Marker and opts.MaxItems.
 func (s *BatchLoadTaskStore) ListBatchLoadTasks(taskStatus BatchLoadStatus, opts common.ListOptions) (*common.ListResult[BatchLoadTask], error) {
 	result, err := common.ListProto[*pb.BatchLoadTaskDescription](s.BaseStore, common.ListOptions{MaxItems: common.AbsoluteMaxItems}, func() *pb.BatchLoadTaskDescription { return &pb.BatchLoadTaskDescription{} }, nil)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_timestream"
 	"vorpalstacks/internal/store/aws/common"
@@ -99,7 +100,9 @@ func (s *ScheduledQueryStore) DeleteScheduledQuery(name string) error {
 	if !s.Exists(name) {
 		return ErrScheduledQueryNotFound
 	}
-	_ = s.TagStore.Delete(s.arnBuilder.Timestream().ScheduledQuery(name))
+	if err := s.TagStore.Delete(s.arnBuilder.Timestream().ScheduledQuery(name)); err != nil {
+		logs.Warn("Failed to delete tags for scheduled query", logs.String("query", name), logs.Err(err))
+	}
 	return s.BaseStore.Delete(name)
 }
 

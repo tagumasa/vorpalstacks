@@ -130,7 +130,9 @@ func (s *TableStore) DeleteTable(databaseName, tableName string) error {
 		return ErrTableNotFound
 	}
 
-	_ = s.databaseStore.TagStore.Delete(s.arnBuilder.Timestream().Table(databaseName, tableName))
+	if err := s.databaseStore.TagStore.Delete(s.arnBuilder.Timestream().Table(databaseName, tableName)); err != nil {
+		logs.Warn("Failed to delete tags for table", logs.String("table", tableName), logs.Err(err))
+	}
 
 	if err := s.BaseStore.Delete(key); err != nil {
 		return err
