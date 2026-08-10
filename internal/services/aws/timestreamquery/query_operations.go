@@ -2,7 +2,6 @@ package timestreamquery
 
 import (
 	"context"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,9 +12,6 @@ import (
 
 	"github.com/google/uuid"
 )
-
-// queryIDPattern matches the Smithy QueryId trait: ^[a-zA-Z0-9]+$, length 1-64.
-var queryIDPattern = regexp.MustCompile(`^[a-zA-Z0-9]{1,64}$`)
 
 // QueryStatus represents the status of a query execution.
 type QueryStatus string
@@ -83,6 +79,9 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 	if queryString == "" {
 		return nil, ErrValidationException
 	}
+	if err := validateQueryString(queryString); err != nil {
+		return nil, err
+	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -91,6 +90,13 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 
 	queryID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	now := time.Now().UTC()
+
+	queryCtx, queryCancel := context.WithCancel(ctx)
+	s.cancelFuncs.Store(queryID, queryCancel)
+	defer func() {
+		s.cancelFuncs.Delete(queryID)
+		queryCancel()
+	}()
 
 	queryInfo := &QueryInfo{
 		QueryID:     queryID,
@@ -104,7 +110,7 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 		logs.Warn("Failed to store query info", logs.Err(err))
 	}
 
-	result, execErr := s.executeSQLQuery(ctx, reqCtx, queryString)
+	result, execErr := s.executeSQLQuery(queryCtx, stores, queryString)
 
 	var latestInfo QueryInfo
 	if getErr := stores.queryInfoStore.Get(queryID, &latestInfo); getErr == nil {
@@ -133,19 +139,21 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 
 	maxRows := maxQueryRows
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
+		if val, err := strconv.Atoi(maxStr); err == nil {
+			if err := validateMaxResultsQuery(val); err != nil {
+				return nil, err
+			}
 			maxRows = val
 		}
-	}
-	if maxRows > maxQueryRows {
-		maxRows = maxQueryRows
 	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil && val >= 0 {
-			offset = val
+		val, err := strconv.Atoi(nextToken)
+		if err != nil || val < 0 {
+			return nil, ErrValidationException
 		}
+		offset = val
 	}
 
 	totalRows := len(result.Rows)
@@ -177,8 +185,11 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 // CancelQuery cancels a running query.
 func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryID := request.GetParamCaseInsensitive(req.Parameters, "QueryId")
-	if queryID == "" || !queryIDPattern.MatchString(queryID) {
+	if queryID == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateQueryID(queryID); err != nil {
+		return nil, err
 	}
 
 	stores, err := s.store(reqCtx)
@@ -189,6 +200,12 @@ func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *reques
 	var queryInfo QueryInfo
 	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
 		return nil, ErrResourceNotFound
+	}
+
+	if cancelFn, ok := s.cancelFuncs.LoadAndDelete(queryID); ok {
+		if fn, ok := cancelFn.(context.CancelFunc); ok {
+			fn()
+		}
 	}
 
 	queryInfo.Cancelled = true
@@ -208,6 +225,9 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 	if queryString == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateQueryString(queryString); err != nil {
+		return nil, err
 	}
 
 	// Parse ValidateOnly. When true, AWS validates syntax only and
@@ -337,8 +357,20 @@ func (s *TimestreamQueryService) buildColumnInfoForPrepare(selectStmt *sqlparser
 				colName = aliased.As.String()
 			}
 			scalarType := "VARCHAR"
-			if strings.Contains(strings.ToLower(colName), "time") {
+			if colName == "time" {
 				scalarType = "TIMESTAMP"
+			} else if strings.HasPrefix(colName, "measure_value::") {
+				if strings.Contains(colName, "double") {
+					scalarType = "DOUBLE"
+				} else if strings.Contains(colName, "bigint") {
+					scalarType = "BIGINT"
+				} else if strings.Contains(colName, "boolean") {
+					scalarType = "BOOLEAN"
+				} else if strings.Contains(colName, "timestamp") {
+					scalarType = "TIMESTAMP"
+				}
+			} else if colName == "measure_name" {
+				scalarType = "VARCHAR"
 			}
 			if _, isFunc := aliased.Expr.(*sqlparser.FuncExpr); isFunc {
 				if fn, ok := aliased.Expr.(*sqlparser.FuncExpr); ok && fn.IsAggregate() {

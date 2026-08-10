@@ -93,7 +93,7 @@ var (
 	ErrInvalidAttributeValue = errors.New("invalid attribute value")
 
 	// ErrBatchRequestTooLong is returned when a batch request payload exceeds
-	// the maximum allowed size (262144 bytes).
+	// the maximum allowed total payload size (MaxMaximumMessageSize).
 	ErrBatchRequestTooLong = errors.New("batch request too long")
 
 	// ErrInvalidDataType is returned when a message attribute DataType is invalid.

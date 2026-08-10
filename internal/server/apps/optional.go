@@ -270,6 +270,7 @@ func (a *App) initTimestreamQuery(st *serviceState) error {
 	timestreamQueryService.SetStorageManager(a.server.StorageManager())
 	st.timestreamQueryService = timestreamQueryService
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
+	timestreamQueryService.StartSchedulerEngine()
 	a.addShutdown("timestreamquery", func(ctx context.Context) error {
 		st.timestreamQueryService.Close()
 		return nil

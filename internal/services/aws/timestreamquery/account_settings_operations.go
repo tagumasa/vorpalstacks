@@ -7,18 +7,6 @@ import (
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
-// validQueryPricingModels enumerates the Smithy QueryPricingModel enum.
-var validQueryPricingModels = map[string]bool{
-	"BYTES_SCANNED": true,
-	"COMPUTE_UNITS": true,
-}
-
-// validComputeModes enumerates the Smithy ComputeMode enum.
-var validComputeModes = map[string]bool{
-	"ON_DEMAND":   true,
-	"PROVISIONED": true,
-}
-
 // DescribeAccountSettings returns the account settings for Timestream Query.
 func (s *TimestreamQueryService) DescribeAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)

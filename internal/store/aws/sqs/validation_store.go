@@ -94,7 +94,7 @@ func validateMessageRetentionPeriod(value int32) error {
 }
 
 func validateMaximumMessageSize(value int32) error {
-	if value < minMaximumMessageSize || value > maxMaximumMessageSize {
+	if value < MinMaximumMessageSize || value > MaxMaximumMessageSize {
 		return ErrInvalidParameterValue
 	}
 	return nil

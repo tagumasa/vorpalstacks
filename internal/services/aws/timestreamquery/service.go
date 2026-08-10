@@ -47,12 +47,14 @@ func (s *tsQueryStores) Close() {
 
 // Service represents the Timestream Query service.
 type TimestreamQueryService struct {
-	accountID      string
-	serverHost     string
-	dataPath       string
-	preprocessor   *sqlparser.Preprocessor
-	stores         sync.Map // region → *tsQueryStores
-	storageManager *storage.RegionStorageManager
+	accountID       string
+	serverHost      string
+	dataPath        string
+	preprocessor    *sqlparser.Preprocessor
+	stores          sync.Map // region → *tsQueryStores
+	storageManager  *storage.RegionStorageManager
+	schedulerEngine *ScheduledQueryEngine
+	cancelFuncs     sync.Map // queryID → context.CancelFunc
 }
 
 // NewService creates a new Timestream Query service.
@@ -72,12 +74,29 @@ func (s *TimestreamQueryService) SetStorageManager(sm *storage.RegionStorageMana
 
 // Close stops background goroutines in all cached stores.
 func (s *TimestreamQueryService) Close() {
+	if s.schedulerEngine != nil {
+		s.schedulerEngine.Stop()
+	}
 	s.stores.Range(func(_, v any) bool {
 		if c, ok := v.(interface{ Close() }); ok {
 			c.Close()
 		}
 		return true
 	})
+}
+
+// StartSchedulerEngine launches the background scheduled-query auto-trigger
+// engine. Must be called after SetStorageManager.
+func (s *TimestreamQueryService) StartSchedulerEngine() {
+	s.schedulerEngine = NewScheduledQueryEngine(s)
+	s.schedulerEngine.Start()
+}
+
+// StopSchedulerEngine stops the background engine.
+func (s *TimestreamQueryService) StopSchedulerEngine() {
+	if s.schedulerEngine != nil {
+		s.schedulerEngine.Stop()
+	}
 }
 
 func (s *TimestreamQueryService) createStoreGroup(region string) (*tsQueryStores, error) {
@@ -109,8 +128,22 @@ func (s *TimestreamQueryService) createStoreGroup(region string) (*tsQueryStores
 // GetScheduledQueryStoreForRegion returns the cached ScheduledQueryStore for the
 // given region, creating a new store group if not already cached.
 func (s *TimestreamQueryService) GetScheduledQueryStoreForRegion(region string) (*tsstore.ScheduledQueryStore, error) {
+	st, err := s.getStoresForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return st.scheduledQueryStore, nil
+}
+
+// GetScheduledQueryStoreForRegionStores returns the cached full store group
+// for the given region. Used by the admin handler convert layer.
+func (s *TimestreamQueryService) GetScheduledQueryStoreForRegionStores(region string) (*tsQueryStores, error) {
+	return s.getStoresForRegion(region)
+}
+
+func (s *TimestreamQueryService) getStoresForRegion(region string) (*tsQueryStores, error) {
 	if v, ok := s.stores.Load(region); ok {
-		return v.(*tsQueryStores).scheduledQueryStore, nil
+		return v.(*tsQueryStores), nil
 	}
 	stores, err := s.createStoreGroup(region)
 	if err != nil {
@@ -120,7 +153,7 @@ func (s *TimestreamQueryService) GetScheduledQueryStoreForRegion(region string) 
 	if loaded {
 		stores.Close()
 	}
-	return actual.(*tsQueryStores).scheduledQueryStore, nil
+	return actual.(*tsQueryStores), nil
 }
 
 func (s *TimestreamQueryService) store(ctx *request.RequestContext) (*tsQueryStores, error) {

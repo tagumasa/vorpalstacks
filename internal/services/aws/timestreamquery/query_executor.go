@@ -6,13 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *request.RequestContext, queryString string) (*QueryResult, error) {
+func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, stores *tsQueryStores, queryString string) (*QueryResult, error) {
 	processedSQL := queryString
 
 	if strings.Contains(queryString, "::") {
@@ -43,19 +42,19 @@ func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *re
 		return s.executeExpressionQuery(selectStmt)
 	}
 
-	st, err := s.store(reqCtx)
-	if err != nil {
-		logs.Error("Failed to get Timestream store", logs.Err(err))
+	if stores == nil {
 		return nil, ErrInternalServer
 	}
-	records, err := st.recordStore.QueryRecords(databaseName, tableName, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now().Add(24*time.Hour))
+
+	startTime, endTime := extractTimeRange(selectStmt.Where)
+	records, err := stores.recordStore.QueryRecords(databaseName, tableName, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
 
 	columnInfo := s.buildColumnInfo(selectStmt, records)
 
-	rows := s.applyQuery(selectStmt, records)
+	rows := s.applyQuery(ctx, selectStmt, records)
 
 	return &QueryResult{
 		QueryID:    "",
@@ -229,17 +228,7 @@ func (s *TimestreamQueryService) buildColumnInfo(selectStmt *sqlparser.Select, r
 			if !aliased.As.IsEmpty() {
 				colName = aliased.As.String()
 			}
-			scalarType := "VARCHAR"
-			if strings.Contains(strings.ToLower(colName), "time") {
-				scalarType = "TIMESTAMP"
-			} else if strings.Contains(colName, "measure_value") {
-				scalarType = "DOUBLE"
-			}
-			if _, isFunc := aliased.Expr.(*sqlparser.FuncExpr); isFunc {
-				if fn, ok := aliased.Expr.(*sqlparser.FuncExpr); ok && fn.IsAggregate() {
-					scalarType = "DOUBLE"
-				}
-			}
+			scalarType := inferScalarType(colName, aliased.Expr, records)
 			columns = append(columns, ColumnInfo{
 				Name: colName,
 				Type: ColumnTypeInfo{ScalarType: scalarType},
@@ -269,10 +258,189 @@ func (s *TimestreamQueryService) extractColumnName(expr sqlparser.Expr) string {
 	}
 }
 
-func (s *TimestreamQueryService) applyQuery(selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []map[string]interface{} {
+// extractTimeRange inspects the WHERE clause for time predicates
+// (e.g. "time > '2024-01-01'") and returns the narrowest time range
+// that satisfies all conditions. If no time predicate is found,
+// returns a wide default range.
+func extractTimeRange(where *sqlparser.Where) (time.Time, time.Time) {
+	defaultStart := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	defaultEnd := time.Now().Add(24 * time.Hour)
+
+	if where == nil || where.Expr == nil {
+		return defaultStart, defaultEnd
+	}
+
+	start := defaultStart
+	end := defaultEnd
+
+	walkTimePredicates(where.Expr, &start, &end)
+
+	return start, end
+}
+
+func walkTimePredicates(expr sqlparser.Expr, start, end *time.Time) {
+	switch e := expr.(type) {
+	case *sqlparser.AndExpr:
+		walkTimePredicates(e.Left, start, end)
+		walkTimePredicates(e.Right, start, end)
+	case *sqlparser.ParenExpr:
+		walkTimePredicates(e.Expr, start, end)
+	case *sqlparser.ComparisonExpr:
+		_, isTimeCol := getTimeColumnName(e.Left)
+		if !isTimeCol {
+			_, isTimeCol = getTimeColumnName(e.Right)
+			if !isTimeCol {
+				return
+			}
+		}
+		ts, tsOk := getComparisonTimestamp(e)
+		if !tsOk {
+			return
+		}
+		switch e.Operator {
+		case sqlparser.GreaterThanStr:
+			if ts.After(*start) {
+				*start = ts.Add(time.Nanosecond)
+			}
+		case sqlparser.GreaterEqualStr:
+			if ts.After(*start) {
+				*start = ts
+			}
+		case sqlparser.LessThanStr:
+			if ts.Before(*end) {
+				*end = ts.Add(-time.Nanosecond)
+			}
+		case sqlparser.LessEqualStr:
+			if ts.Before(*end) {
+				*end = ts
+			}
+		case sqlparser.EqualStr:
+			if ts.After(*start) {
+				*start = ts
+			}
+			if ts.Before(*end) {
+				*end = ts
+			}
+		}
+	}
+}
+
+func getTimeColumnName(expr sqlparser.Expr) (string, bool) {
+	colName, ok := expr.(*sqlparser.ColName)
+	if !ok {
+		return "", false
+	}
+	name := colName.Name.String()
+	if name == "time" {
+		return name, true
+	}
+	return "", false
+}
+
+func getComparisonTimestamp(expr *sqlparser.ComparisonExpr) (time.Time, bool) {
+	for _, val := range []sqlparser.Expr{expr.Left, expr.Right} {
+		if sqlVal, ok := val.(*sqlparser.SQLVal); ok {
+			s := string(sqlVal.Val)
+			if sqlVal.Type == sqlparser.StrVal {
+				if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
+					return t, true
+				}
+				if t, err := time.Parse(time.RFC3339, s); err == nil {
+					return t, true
+				}
+				if t, err := time.Parse("2006-01-02 15:04:05.000000", s); err == nil {
+					return t, true
+				}
+				if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+					return t, true
+				}
+				if t, err := time.Parse("2006-01-02", s); err == nil {
+					return t, true
+				}
+			} else if sqlVal.Type == sqlparser.IntVal {
+				if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+					if n > 1e12 {
+						return time.UnixMilli(n), true
+					}
+					return time.Unix(n, 0), true
+				}
+			}
+		}
+	}
+	return time.Time{}, false
+}
+
+// inferScalarType determines the ScalarType for a column by examining the
+// actual record data first, then falling back to expression type analysis.
+func inferScalarType(colName string, expr sqlparser.Expr, records []*tsstore.StoredRecord) string {
+	switch colName {
+	case "time":
+		return "TIMESTAMP"
+	case "measure_name":
+		return "VARCHAR"
+	case "measure_value::double":
+		return "DOUBLE"
+	case "measure_value::bigint":
+		return "BIGINT"
+	case "measure_value::boolean":
+		return "BOOLEAN"
+	case "measure_value::timestamp":
+		return "TIMESTAMP"
+	case "measure_value::varchar":
+		return "VARCHAR"
+	case "measure_value":
+		if len(records) > 0 {
+			switch records[0].MeasureValueType {
+			case tsstore.MeasureValueTypeDouble:
+				return "DOUBLE"
+			case tsstore.MeasureValueTypeBigint:
+				return "BIGINT"
+			case tsstore.MeasureValueTypeBoolean:
+				return "BOOLEAN"
+			case tsstore.MeasureValueTypeTimestamp:
+				return "TIMESTAMP"
+			}
+		}
+		return "VARCHAR"
+	}
+
+	if len(records) > 0 {
+		for _, dim := range records[0].Dimensions {
+			if dim.Name == colName {
+				return "VARCHAR"
+			}
+		}
+	}
+
+	if fn, ok := expr.(*sqlparser.FuncExpr); ok && fn.IsAggregate() {
+		return "DOUBLE"
+	}
+
+	if sqlVal, ok := expr.(*sqlparser.SQLVal); ok {
+		switch sqlVal.Type {
+		case sqlparser.IntVal:
+			return "INTEGER"
+		case sqlparser.FloatVal:
+			return "DOUBLE"
+		case sqlparser.StrVal:
+			return "VARCHAR"
+		}
+	}
+
+	return "VARCHAR"
+}
+
+func (s *TimestreamQueryService) applyQuery(ctx context.Context, selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []map[string]interface{} {
 	var rows []map[string]interface{}
 
-	for _, record := range records {
+	for i, record := range records {
+		if i&0xFF == 0 {
+			select {
+			case <-ctx.Done():
+				return rows
+			default:
+			}
+		}
 		row := s.recordToRow(record)
 		if selectStmt.Where != nil {
 			if !s.evaluateWhere(selectStmt.Where.Expr, row) {

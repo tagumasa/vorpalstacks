@@ -20,8 +20,8 @@ func TestNewQueue(t *testing.T) {
 	if q.VisibilityTimeout != 30 {
 		t.Errorf("VisibilityTimeout = %v, want 30", q.VisibilityTimeout)
 	}
-	if q.MaximumMessageSize != 262144 {
-		t.Errorf("MaximumMessageSize = %v, want 262144", q.MaximumMessageSize)
+	if q.MaximumMessageSize != MaxMaximumMessageSize {
+		t.Errorf("MaximumMessageSize = %v, want %d", q.MaximumMessageSize, MaxMaximumMessageSize)
 	}
 	if q.MessageRetentionPeriod != 345600 {
 		t.Errorf("MessageRetentionPeriod = %v, want 345600", q.MessageRetentionPeriod)

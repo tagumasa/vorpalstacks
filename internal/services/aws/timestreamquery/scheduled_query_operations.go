@@ -2,11 +2,9 @@ package timestreamquery
 
 import (
 	"context"
-	"regexp"
 	"strconv"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -17,36 +15,6 @@ import (
 
 	"github.com/google/uuid"
 )
-
-// scheduledQueryNamePattern implements the Smithy ScheduledQueryName pattern:
-// ^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$
-var scheduledQueryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$`)
-
-// validateScheduledQueryName validates the Name parameter against the Smithy
-// ScheduledQueryName shape: length {min:1, max:64} and the pattern above.
-func validateScheduledQueryName(name string) error {
-	if len(name) < 1 || len(name) > 64 {
-		return awserrors.NewAWSError("ValidationException",
-			"ScheduledQueryName must be between 1 and 64 characters.", 400)
-	}
-	if !scheduledQueryNamePattern.MatchString(name) {
-		return awserrors.NewAWSError("ValidationException",
-			"ScheduledQueryName does not match the required pattern.", 400)
-	}
-	return nil
-}
-
-// validateClientToken validates a ClientToken against the Smithy
-// ClientToken shape: length {min:32, max:128}. Only called when the
-// client explicitly provides a token (empty tokens are replaced with a
-// generated UUID by the handler).
-func validateClientToken(token string) error {
-	if len(token) < 32 || len(token) > 128 {
-		return awserrors.NewAWSError("ValidationException",
-			"ClientToken must be between 32 and 128 characters.", 400)
-	}
-	return nil
-}
 
 // CreateScheduledQuery creates a new scheduled query.
 func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -62,21 +30,35 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 	if queryString == "" {
 		return nil, ErrValidationException
 	}
+	if err := validateQueryString(queryString); err != nil {
+		return nil, err
+	}
 
 	scheduleConfig := s.parseScheduleConfiguration(req.Parameters)
 	if scheduleConfig == nil {
 		return nil, ErrValidationException
 	}
+	if err := validateScheduleExpression(scheduleConfig.ScheduleExpression); err != nil {
+		return nil, err
+	}
 
 	notificationConfig := s.parseNotificationConfiguration(req.Parameters)
 	roleARN := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryExecutionRoleArn")
-	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	// KmsKeyId targets Smithy StringValue2048 — length 1-2048.
-	if kmsKeyID != "" && len(kmsKeyID) > 2048 {
+	if roleARN == "" {
 		return nil, ErrValidationException
 	}
-	errorReportConfig := s.parseErrorReportConfiguration(req.Parameters)
-	targetConfig := s.parseTargetConfiguration(req.Parameters)
+	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
+	if kmsKeyID != "" && len(kmsKeyID) > maxAmazonResourceName {
+		return nil, ErrValidationException
+	}
+	errorReportConfig, err := s.parseErrorReportConfiguration(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	targetConfig, err := s.parseTargetConfiguration(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	clientToken := request.GetParamCaseInsensitive(req.Parameters, "ClientToken")
 
 	if roleARN != "" {
@@ -229,6 +211,9 @@ func (s *TimestreamQueryService) DeleteScheduledQuery(ctx context.Context, reqCt
 	if arn == "" {
 		return nil, ErrValidationException
 	}
+	if err := validateAmazonResourceName(arn); err != nil {
+		return nil, err
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
@@ -237,6 +222,21 @@ func (s *TimestreamQueryService) DeleteScheduledQuery(ctx context.Context, reqCt
 	name := st.arnBuilder.Timestream().ParseScheduledQueryName(arn)
 	if name == "" {
 		return nil, ErrValidationException
+	}
+
+	sq, err := st.scheduledQueryStore.GetScheduledQuery(name)
+	if err != nil {
+		if err == tsstore.ErrScheduledQueryNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalServer
+	}
+
+	runs, runErr := st.scheduledQueryRunStore.ListRuns(sq.ARN)
+	if runErr == nil {
+		for _, run := range runs {
+			_ = st.scheduledQueryRunStore.DeleteRun(run.ARN)
+		}
 	}
 
 	err = st.scheduledQueryStore.DeleteScheduledQuery(name)
@@ -255,6 +255,9 @@ func (s *TimestreamQueryService) DescribeScheduledQuery(ctx context.Context, req
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateAmazonResourceName(arn); err != nil {
+		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
@@ -306,21 +309,26 @@ func (s *TimestreamQueryService) ListScheduledQueries(ctx context.Context, reqCt
 		return nil, ErrInternalServer
 	}
 
-	maxResults := 50
+	maxResults := 0
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
+		if val, err := strconv.Atoi(maxStr); err == nil {
+			if err := validateMaxResultsScheduledQueries(val); err != nil {
+				return nil, err
+			}
 			maxResults = val
 		}
 	}
-	if maxResults > maxListScheduledQueries {
+	if maxResults == 0 {
 		maxResults = maxListScheduledQueries
 	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil && val >= 0 {
-			offset = val
+		val, err := strconv.Atoi(nextToken)
+		if err != nil || val < 0 {
+			return nil, ErrValidationException
 		}
+		offset = val
 	}
 
 	var scheduledQueries []map[string]interface{}
@@ -350,6 +358,9 @@ func (s *TimestreamQueryService) UpdateScheduledQuery(ctx context.Context, reqCt
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateAmazonResourceName(arn); err != nil {
+		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
@@ -383,6 +394,9 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 	if arn == "" {
 		return nil, ErrValidationException
 	}
+	if err := validateAmazonResourceName(arn); err != nil {
+		return nil, err
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
@@ -411,29 +425,65 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 	// but currently not applied to the query execution (would require
 	// extending the query executor to collect per-query insights).
 	now := time.Now().UTC()
-	if invocationTimeStr := request.GetParamCaseInsensitive(req.Parameters, "InvocationTime"); invocationTimeStr != "" {
-		if parsed, err := time.Parse(time.RFC3339Nano, invocationTimeStr); err == nil {
+	invocationTimeRaw := request.GetParamCaseInsensitive(req.Parameters, "InvocationTime")
+	if invocationTimeRaw == "" {
+		if raw, exists := req.Parameters["InvocationTime"]; exists && raw != nil {
+			switch v := raw.(type) {
+			case float64:
+				if v > 1e12 {
+					now = time.UnixMilli(int64(v)).UTC()
+				} else {
+					now = time.Unix(int64(v), 0).UTC()
+				}
+			case int64:
+				now = time.Unix(v, 0).UTC()
+			case int:
+				now = time.Unix(int64(v), 0).UTC()
+			}
+		} else {
+			return nil, ErrValidationException
+		}
+	} else {
+		if parsed, err := time.Parse(time.RFC3339Nano, invocationTimeRaw); err == nil {
 			now = parsed.UTC()
-		} else if parsed, err := time.Parse(time.RFC3339, invocationTimeStr); err == nil {
+		} else if parsed, err := time.Parse(time.RFC3339, invocationTimeRaw); err == nil {
 			now = parsed.UTC()
 		}
 	}
-	run, err := st.scheduledQueryRunStore.CreateRun(sq.ARN, now, now, tsstore.TriggerTypeManual)
+
+	run, err := s.executeScheduledQueryInternal(ctx, st, sq, now, tsstore.TriggerTypeManual)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"ScheduledQueryRunArn": run.ARN,
+	}, nil
+}
+
+// executeScheduledQueryInternal executes a scheduled query and records the
+// run lifecycle (PENDING → RUNNING → SUCCEEDED/FAILED). Shared by the manual
+// ExecuteScheduledQuery handler and the background auto-trigger engine.
+func (s *TimestreamQueryService) executeScheduledQueryInternal(ctx context.Context, st *tsQueryStores, sq *tsstore.ScheduledQuery, invocationTime time.Time, triggerType string) (*tsstore.ScheduledQueryRun, error) {
+	name := sq.Name
+
+	run, err := st.scheduledQueryRunStore.CreateRun(sq.ARN, invocationTime, invocationTime, triggerType)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
 
 	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusRunning, "", nil); err != nil {
 		logs.Error("Failed to update scheduled query run to RUNNING", logs.String("arn", run.ARN), logs.Err(err))
+		return nil, ErrInternalServer
 	}
 
-	result, execErr := s.executeSQLQuery(ctx, reqCtx, sq.QueryString)
+	result, execErr := s.executeSQLQuery(ctx, st, sq.QueryString)
 
 	if execErr != nil {
 		if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusFailed, execErr.Error(), nil); err != nil {
 			logs.Error("Failed to update scheduled query run to FAILED", logs.String("arn", run.ARN), logs.Err(err))
 		}
-		if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusManualTriggerFailure, now); err != nil {
+		if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusFromTrigger(triggerType, tsstore.ScheduleRunStatusFailed), invocationTime); err != nil {
 			logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 		}
 		return nil, ErrQueryExecutionError
@@ -445,13 +495,11 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusSucceeded, "", stats); err != nil {
 		logs.Error("Failed to update scheduled query run to SUCCEEDED", logs.String("arn", run.ARN), logs.Err(err))
 	}
-	if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusManualTriggerSuccess, now); err != nil {
+	if err := st.scheduledQueryStore.UpdateLastRun(name, tsstore.ScheduledQueryRunStatusFromTrigger(triggerType, tsstore.ScheduleRunStatusSucceeded), invocationTime); err != nil {
 		logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 	}
 
-	return map[string]interface{}{
-		"ScheduledQueryRunArn": run.ARN,
-	}, nil
+	return run, nil
 }
 
 func (s *TimestreamQueryService) parseScheduleConfiguration(params map[string]interface{}) *tsstore.ScheduleConfiguration {
@@ -490,50 +538,60 @@ func (s *TimestreamQueryService) parseNotificationConfiguration(params map[strin
 	}
 }
 
-func (s *TimestreamQueryService) parseErrorReportConfiguration(params map[string]interface{}) *tsstore.ErrorReportConfiguration {
+func (s *TimestreamQueryService) parseErrorReportConfiguration(params map[string]interface{}) (*tsstore.ErrorReportConfiguration, error) {
 	errorReportRaw := request.GetMapParamCaseInsensitive(params, "ErrorReportConfiguration")
 	if errorReportRaw == nil {
-		return nil
+		return nil, nil
 	}
 
 	s3ConfigRaw, ok := errorReportRaw["S3Configuration"].(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, ErrValidationException
 	}
 	bucketName, _ := s3ConfigRaw["BucketName"].(string)
 	if bucketName == "" {
-		return nil
+		return nil, ErrValidationException
+	}
+	if err := validateS3BucketName(bucketName); err != nil {
+		return nil, err
 	}
 	objectKeyPrefix, _ := s3ConfigRaw["ObjectKeyPrefix"].(string)
+	if objectKeyPrefix != "" {
+		if err := validateS3ObjectKeyPrefix(objectKeyPrefix); err != nil {
+			return nil, err
+		}
+	}
 	encryptionOption, _ := s3ConfigRaw["EncryptionOption"].(string)
+	if encryptionOption != "" && !validateS3EncryptionOption(encryptionOption) {
+		return nil, ErrValidationException
+	}
 	return &tsstore.ErrorReportConfiguration{
 		S3Configuration: &tsstore.S3ErrorReportConfiguration{
 			BucketName:       bucketName,
 			ObjectKeyPrefix:  objectKeyPrefix,
 			EncryptionOption: encryptionOption,
 		},
-	}
+	}, nil
 }
 
-func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]interface{}) *tsstore.TargetConfiguration {
+func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]interface{}) (*tsstore.TargetConfiguration, error) {
 	targetConfigRaw := request.GetMapParamCaseInsensitive(params, "TargetConfiguration")
 	if targetConfigRaw == nil {
-		return nil
+		return nil, nil
 	}
 
 	tsConfigRaw, ok := targetConfigRaw["TimestreamConfiguration"].(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, ErrValidationException
 	}
 	databaseName, _ := tsConfigRaw["DatabaseName"].(string)
 	tableName, _ := tsConfigRaw["TableName"].(string)
 	if databaseName == "" || tableName == "" {
-		return nil
+		return nil, ErrValidationException
 	}
 	timeColumn, _ := tsConfigRaw["TimeColumn"].(string)
 	measureNameColumn, _ := tsConfigRaw["MeasureNameColumn"].(string)
 
-	// DimensionMappings (Smithy: [{Name, DimensionValueType}]).
 	var dimensionMappings []tsstore.QueryDimensionMapping
 	if dmList, ok := tsConfigRaw["DimensionMappings"].([]interface{}); ok {
 		for _, dm := range dmList {
@@ -544,6 +602,9 @@ func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]inte
 			name, _ := dmMap["Name"].(string)
 			dvt, _ := dmMap["DimensionValueType"].(string)
 			if name != "" {
+				if dvt != "" && !validateDimensionValueType(dvt) {
+					return nil, ErrValidationException
+				}
 				dimensionMappings = append(dimensionMappings, tsstore.QueryDimensionMapping{
 					Name:               name,
 					DimensionValueType: dvt,
@@ -552,18 +613,24 @@ func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]inte
 		}
 	}
 
-	// MultiMeasureMappings (Smithy: {TargetMultiMeasureName, MultiMeasureAttributeMappings}).
 	var multiMeasureMappings *tsstore.MultiMeasureMappings
 	if mmm, ok := tsConfigRaw["MultiMeasureMappings"].(map[string]interface{}); ok {
-		multiMeasureMappings = parseMultiMeasureMappings(mmm)
+		mmmResult, err := parseMultiMeasureMappings(mmm)
+		if err != nil {
+			return nil, err
+		}
+		multiMeasureMappings = mmmResult
 	}
 
-	// MixedMeasureMappings (Smithy: list of MixedMeasureMapping).
 	var mixedMeasureMappings []tsstore.MixedMeasureMapping
 	if mmmList, ok := tsConfigRaw["MixedMeasureMappings"].([]interface{}); ok {
 		for _, m := range mmmList {
 			if mmmMap, ok := m.(map[string]interface{}); ok {
-				if mapping := parseMixedMeasureMapping(mmmMap); mapping != nil {
+				mapping, err := parseMixedMeasureMapping(mmmMap)
+				if err != nil {
+					return nil, err
+				}
+				if mapping != nil {
 					mixedMeasureMappings = append(mixedMeasureMappings, *mapping)
 				}
 			}
@@ -580,12 +647,10 @@ func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]inte
 			MixedMeasureMappings: mixedMeasureMappings,
 			MeasureNameColumn:    measureNameColumn,
 		},
-	}
+	}, nil
 }
 
-// parseMultiMeasureMappings parses MultiMeasureMappings from a raw map
-// (Smithy: {TargetMultiMeasureName, MultiMeasureAttributeMappings}).
-func parseMultiMeasureMappings(raw map[string]interface{}) *tsstore.MultiMeasureMappings {
+func parseMultiMeasureMappings(raw map[string]interface{}) (*tsstore.MultiMeasureMappings, error) {
 	mmm := &tsstore.MultiMeasureMappings{}
 	if v, ok := raw["TargetMultiMeasureName"].(string); ok {
 		mmm.TargetMultiMeasureName = v
@@ -599,6 +664,9 @@ func parseMultiMeasureMappings(raw map[string]interface{}) *tsstore.MultiMeasure
 			srcCol, _ := itemMap["SourceColumn"].(string)
 			targetName, _ := itemMap["TargetMultiMeasureAttributeName"].(string)
 			measureType, _ := itemMap["MeasureValueType"].(string)
+			if measureType != "" && !validateMeasureValueType(measureType) {
+				return nil, ErrValidationException
+			}
 			if srcCol != "" {
 				mmm.MultiMeasureAttributeMappings = append(mmm.MultiMeasureAttributeMappings, tsstore.MultiMeasureAttributeMapping{
 					SourceColumn:                    &tsstore.SourceColumn{Name: srcCol},
@@ -609,13 +677,13 @@ func parseMultiMeasureMappings(raw map[string]interface{}) *tsstore.MultiMeasure
 		}
 	}
 	if len(mmm.MultiMeasureAttributeMappings) == 0 {
-		return nil
+		return nil, nil
 	}
-	return mmm
+	return mmm, nil
 }
 
 // parseMixedMeasureMapping parses a single MixedMeasureMapping from a raw map.
-func parseMixedMeasureMapping(raw map[string]interface{}) *tsstore.MixedMeasureMapping {
+func parseMixedMeasureMapping(raw map[string]interface{}) (*tsstore.MixedMeasureMapping, error) {
 	mapping := &tsstore.MixedMeasureMapping{}
 	if v, ok := raw["MeasureName"].(string); ok {
 		mapping.MeasureName = v
@@ -627,6 +695,9 @@ func parseMixedMeasureMapping(raw map[string]interface{}) *tsstore.MixedMeasureM
 		mapping.TargetMeasureName = v
 	}
 	if v, ok := raw["MeasureValueType"].(string); ok {
+		if v != "" && !validateMeasureValueType(v) {
+			return nil, ErrValidationException
+		}
 		mapping.MeasureValueMeasureValueType = tsstore.MeasureValueType(v)
 	}
 	if list, ok := raw["MultiMeasureAttributeMappings"].([]interface{}); ok {
@@ -638,6 +709,9 @@ func parseMixedMeasureMapping(raw map[string]interface{}) *tsstore.MixedMeasureM
 			srcCol, _ := itemMap["SourceColumn"].(string)
 			targetName, _ := itemMap["TargetMultiMeasureAttributeName"].(string)
 			measureType, _ := itemMap["MeasureValueType"].(string)
+			if measureType != "" && !validateMeasureValueType(measureType) {
+				return nil, ErrValidationException
+			}
 			if srcCol != "" {
 				mapping.MultiMeasureAttributeMappings = append(mapping.MultiMeasureAttributeMappings, tsstore.MultiMeasureAttributeMapping{
 					SourceColumn:                    &tsstore.SourceColumn{Name: srcCol},
@@ -648,9 +722,9 @@ func parseMixedMeasureMapping(raw map[string]interface{}) *tsstore.MixedMeasureM
 		}
 	}
 	if mapping.SourceColumn == "" && mapping.MeasureName == "" && len(mapping.MultiMeasureAttributeMappings) == 0 {
-		return nil
+		return nil, nil
 	}
-	return mapping
+	return mapping, nil
 }
 
 // ListTagsForResource returns the tags for a scheduled query.
@@ -667,6 +741,9 @@ func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx
 	rawKey := tagutil.GetResourceKey(req.Parameters, cfg.Param)
 	if rawKey == "" {
 		return nil, ErrValidationException
+	}
+	if err := validateAmazonResourceName(rawKey); err != nil {
+		return nil, err
 	}
 	resourceKey := rawKey
 	if cfg.ResourceKey != nil {
@@ -685,18 +762,22 @@ func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx
 	maxResults := 0
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
 		val, atoiErr := strconv.Atoi(maxStr)
-		if atoiErr != nil || val < 1 || val > maxListTagsForResource {
-			return nil, awserrors.NewAWSError("ValidationException",
-				"MaxResults must be between 1 and 200.", 400)
+		if atoiErr != nil {
+			return nil, ErrValidationException
+		}
+		if err := validateMaxResultsTags(val); err != nil {
+			return nil, err
 		}
 		maxResults = val
 	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, atoiErr := strconv.Atoi(nextToken); atoiErr == nil && val >= 0 {
-			offset = val
+		val, atoiErr := strconv.Atoi(nextToken)
+		if atoiErr != nil || val < 0 {
+			return nil, ErrValidationException
 		}
+		offset = val
 	}
 
 	totalTags := len(tags)

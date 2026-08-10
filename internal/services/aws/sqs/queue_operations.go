@@ -84,7 +84,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			}
 		case "MaximumMessageSize":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 1024 || val > 1048576 {
+				if val < int64(sqsstore.MinMaximumMessageSize) || val > int64(sqsstore.MaxMaximumMessageSize) {
 					return ErrInvalidParameterValue
 				}
 				queue.MaximumMessageSize = int32(val)

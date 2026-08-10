@@ -45,8 +45,8 @@ const (
 	maxDelaySeconds           = 900
 	minMessageRetentionPeriod = 60
 	maxMessageRetentionPeriod = 1209600
-	minMaximumMessageSize     = 1024
-	maxMaximumMessageSize     = 1048576
+	MinMaximumMessageSize     = 1024
+	MaxMaximumMessageSize     = 1048576
 	minReceiveMessageWaitTime = 0
 	maxReceiveMessageWaitTime = 20
 	minMaxNumberOfMessages    = 1

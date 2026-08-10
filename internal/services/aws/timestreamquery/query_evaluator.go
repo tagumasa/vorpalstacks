@@ -24,7 +24,7 @@ func (s *TimestreamQueryService) evaluateWhere(expr sqlparser.Expr, row map[stri
 	case *sqlparser.IsExpr:
 		return s.evaluateIs(e, row)
 	}
-	return true
+	return false
 }
 
 func (s *TimestreamQueryService) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {

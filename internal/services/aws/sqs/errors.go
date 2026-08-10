@@ -1,7 +1,10 @@
 package sqs
 
 import (
+	"fmt"
+
 	awserrors "vorpalstacks/internal/common/errors"
+	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 var (
@@ -49,8 +52,9 @@ var (
 	ErrOverLimit = awserrors.NewAWSError("OverLimit", "The specified request exceeds the limit.", 403).SetQueryErrorCode("AWS.SimpleQueueService.RequestThrottled;Sender")
 	// ErrInvalidAttributeValue is returned when an attribute value is invalid or immutable.
 	ErrInvalidAttributeValue = awserrors.NewAWSError("InvalidAttributeValue", "The attribute value is invalid.", 400)
-	// ErrBatchRequestTooLong is returned when a batch request payload exceeds 262144 bytes.
-	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", "Batch requests cannot be longer than 262144 bytes.", 400).SetQueryErrorCode("AWS.SimpleQueueService.BatchRequestTooLong;Sender")
+	// ErrBatchRequestTooLong is returned when a batch request payload exceeds
+	// the maximum allowed total payload size.
+	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Batch requests cannot be longer than %d bytes.", sqsstore.MaxMaximumMessageSize), 400).SetQueryErrorCode("AWS.SimpleQueueService.BatchRequestTooLong;Sender")
 	// KMS-related errors — granular mapping matching the AWS SQS API.
 	ErrKmsAccessDenied    = awserrors.NewAWSError("KmsAccessDenied", "Request was denied due to KMS access denied.", 400)
 	ErrKmsDisabled        = awserrors.NewAWSError("KmsDisabled", "The KMS key is disabled.", 400)

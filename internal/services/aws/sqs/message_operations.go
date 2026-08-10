@@ -11,8 +11,6 @@ import (
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
-const maxBatchPayloadSize = 262144
-
 // messageEntrySize calculates the total byte size of a batch entry for the
 // BatchRequestTooLong check. Includes message body and all attribute data.
 func messageEntrySize(body string, attrs map[string]*sqsstore.MessageAttributeValue) int {
@@ -435,7 +433,7 @@ func parseBatchEntriesJSON(jsonEntries []interface{}) ([]*batchSendEntry, error)
 		}
 
 		batchTotalSize += messageEntrySize(messageBody, message.MessageAttributes)
-		if batchTotalSize > maxBatchPayloadSize {
+		if batchTotalSize > sqsstore.MaxMaximumMessageSize {
 			return nil, ErrBatchRequestTooLong
 		}
 
@@ -535,7 +533,7 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 		}
 
 		batchTotalSize += messageEntrySize(messageBody, msgAttrs)
-		if batchTotalSize > maxBatchPayloadSize {
+		if batchTotalSize > sqsstore.MaxMaximumMessageSize {
 			return nil, ErrBatchRequestTooLong
 		}
 

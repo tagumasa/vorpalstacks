@@ -202,6 +202,11 @@ func (s *ScheduledQueryRunStore) UpdateRunStatus(arn string, status ScheduleRunS
 	return s.PutProto(arn, ScheduledQueryRunToProto(run))
 }
 
+// DeleteRun deletes a scheduled query run by ARN.
+func (s *ScheduledQueryRunStore) DeleteRun(arn string) error {
+	return s.BaseStore.Delete(arn)
+}
+
 // ListRuns lists scheduled query runs for a given scheduled query ARN.
 func (s *ScheduledQueryRunStore) ListRuns(scheduledQueryARN string) ([]*ScheduledQueryRun, error) {
 	prefix := ""

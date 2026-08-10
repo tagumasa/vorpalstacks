@@ -48,7 +48,7 @@ func (s *TimestreamQueryService) applyLimit(rows []map[string]interface{}, limit
 	}
 
 	if count <= 0 {
-		return rows
+		return []map[string]interface{}{}
 	}
 
 	end := offset + count
