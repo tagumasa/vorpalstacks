@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/store/aws/apigateway"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -15,7 +15,7 @@ import (
 func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.PutMethodRequest]) (*connect.Response[pb.Method], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	in := &MethodInput{
@@ -33,7 +33,7 @@ func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.Pu
 
 	created, err := h.service.putMethodCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbMethod(created)), nil
 }
@@ -42,11 +42,11 @@ func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.Pu
 func (h *AdminHandler) GetMethod(ctx context.Context, req *connect.Request[pb.GetMethodRequest]) (*connect.Response[pb.Method], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	m, err := h.service.getMethodCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbMethod(m)), nil
 }
@@ -55,10 +55,10 @@ func (h *AdminHandler) GetMethod(ctx context.Context, req *connect.Request[pb.Ge
 func (h *AdminHandler) DeleteMethod(ctx context.Context, req *connect.Request[pb.DeleteMethodRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteMethodCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
@@ -67,7 +67,7 @@ func (h *AdminHandler) DeleteMethod(ctx context.Context, req *connect.Request[pb
 func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[pb.PutIntegrationRequest]) (*connect.Response[pb.Integration], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	in := &IntegrationInput{
@@ -88,14 +88,12 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 		IntegrationTarget:     req.Msg.Integrationtarget,
 	}
 	if req.Msg.Tlsconfig != nil {
-		in.TlsConfig = &apigateway.TlsConfig{
-			InsecureSkipVerification: req.Msg.Tlsconfig.GetInsecureskipverification(),
-		}
+		in.TlsConfig = fromPbTlsConfig(req.Msg.Tlsconfig)
 	}
 
 	created, err := h.service.putIntegrationCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbIntegration(created)), nil
 }
@@ -104,11 +102,11 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 func (h *AdminHandler) GetIntegration(ctx context.Context, req *connect.Request[pb.GetIntegrationRequest]) (*connect.Response[pb.Integration], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	i, err := h.service.getIntegrationCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbIntegration(i)), nil
 }
@@ -117,10 +115,10 @@ func (h *AdminHandler) GetIntegration(ctx context.Context, req *connect.Request[
 func (h *AdminHandler) DeleteIntegration(ctx context.Context, req *connect.Request[pb.DeleteIntegrationRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteIntegrationCore(stores, req.Msg.Restapiid, req.Msg.Resourceid, req.Msg.Httpmethod); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }

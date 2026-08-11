@@ -77,16 +77,20 @@ func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	marker, err := stores.objects.DeleteWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	coreResult, err := o.svc.deleteObjectCore(ctx, stores.objects, AdminDeleteObjectInput{
+		Bucket:    input.Bucket,
+		Key:       input.Key,
+		VersionID: input.VersionId,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	output := &DeleteObjectOutput{}
-	if marker != nil {
+	if coreResult.IsDeleteMarker {
 		output.DeleteMarker = true
-		output.VersionId = marker.VersionID
-		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, marker.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
+		output.VersionId = coreResult.VersionID
+		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
 		if bucket.ReplicationConfiguration != nil {
 			dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			go func() {
@@ -173,7 +177,11 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 			continue
 		}
 
-		marker, err := stores.objects.DeleteWithVersion(ctx, input.Bucket, obj.Key, obj.VersionId)
+		coreResult, err := o.svc.deleteObjectCore(ctx, stores.objects, AdminDeleteObjectInput{
+			Bucket:    input.Bucket,
+			Key:       obj.Key,
+			VersionID: obj.VersionId,
+		})
 		if err != nil {
 			errors = append(errors, DeleteError{
 				Key:     obj.Key,
@@ -184,11 +192,11 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 			deletedObj := DeletedObject{
 				Key: obj.Key,
 			}
-			if marker != nil {
+			if coreResult.IsDeleteMarker {
 				deletedObj.DeleteMarker = true
-				deletedObj.DeleteMarkerId = marker.VersionID
-				deletedObj.VersionId = marker.VersionID
-				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, marker.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
+				deletedObj.DeleteMarkerId = coreResult.VersionID
+				deletedObj.VersionId = coreResult.VersionID
+				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
 				if bucket.ReplicationConfiguration != nil {
 					dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
 					keyVal := obj.Key

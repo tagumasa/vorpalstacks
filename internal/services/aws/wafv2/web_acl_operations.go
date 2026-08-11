@@ -8,62 +8,31 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // CreateWebACL creates a new web ACL with the specified default action, rules, and visibility configuration.
 func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if err := validateEntityName(name); err != nil {
-		return nil, err
-	}
-
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if err := validateScope(scope); err != nil {
-		return nil, err
-	}
-
 	description := request.GetStringParam(req.Parameters, "Description")
-	if err := validateEntityDescription(description); err != nil {
-		return nil, err
-	}
-
-	if err := validateTokenDomains(req.Parameters["TokenDomains"]); err != nil {
-		return nil, err
-	}
-	if err := validateCustomResponseBodies(req.Parameters["CustomResponseBodies"]); err != nil {
-		return nil, err
-	}
-
-	// WebACL capacity is a read-only computed value in AWS (ConsumedCapacity).
-	// It is NOT a parameter of CreateWebACLRequest. We store a default until
-	// a WCU calculator is implemented.
-	capacity := int64(1500)
-
 	defaultAction := convertAction(request.GetMapParam(req.Parameters, "DefaultAction"))
-	if err := validateDefaultAction(defaultAction); err != nil {
-		return nil, err
-	}
 	rules, err := parseRules(req.Parameters["Rules"])
 	if err != nil {
 		return nil, err
 	}
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
 
-	id, err := generateID()
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	webACL := &wafstore.WebACL{
-		ID:                     id,
-		Name:                   name,
+	webACL, err := s.createWebACLCore(stores, CreateWebACLInput{
+		Name:                   request.GetStringParam(req.Parameters, "Name"),
 		Description:            description,
 		Scope:                  scope,
-		Capacity:               capacity,
-		Rules:                  rules,
 		DefaultAction:          defaultAction,
+		Rules:                  rules,
 		VisibilityConfig:       visibilityConfig,
 		CustomResponseBodies:   req.Parameters["CustomResponseBodies"],
 		CaptchaConfig:          req.Parameters["CaptchaConfig"],
@@ -74,25 +43,10 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 		MonetizationConfig:     req.Parameters["MonetizationConfig"],
 		DataProtectionConfig:   req.Parameters["DataProtectionConfig"],
 		OnSourceDDoSProtection: req.Parameters["OnSourceDDoSProtectionConfig"],
-	}
-
-	stores, err := s.store(reqCtx)
+		Tags:                   tagutil.ParseTags(req.Parameters, "Tags"),
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	webACL, err = stores.webACLs.Create(webACL)
-	if err != nil {
-		if wafstore.IsAlreadyExists(err) {
-			return nil, newAPIError("WAFDuplicateItemException", fmt.Sprintf("AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one: %s", name), 400)
-		}
-		return nil, err
-	}
-
-	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := stores.tags.TagFromSlice(webACL.ARN, tags); err != nil {
-			logs.Warn("failed to persist tags for WebACL", logs.String("id", webACL.ID), logs.Err(err))
-		}
 	}
 
 	return map[string]interface{}{
@@ -177,9 +131,6 @@ func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestCon
 // ListWebACLs returns a paginated list of all web ACLs filtered by scope.
 func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if err := validateScope(scope); err != nil {
-		return nil, err
-	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
@@ -187,7 +138,12 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.webACLs.List(nextMarker, maxItems, scope)
+
+	result, err := s.listWebACLsCore(stores, ListWebACLsInput{
+		Scope:      scope,
+		Limit:      maxItems,
+		NextMarker: nextMarker,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -314,35 +270,15 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 // DeleteWebACL permanently deletes the specified web ACL.
 func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
-
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
-	if lockToken == "" {
-		return nil, invalidParamError("LockToken is required")
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	deleted, err := stores.webACLs.Delete(id, lockToken)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
+	if _, err := s.deleteWebACLCore(stores, id, lockToken); err != nil {
 		return nil, err
-	}
-
-	if deleted.ARN != "" {
-		if err := stores.tags.Delete(deleted.ARN); err != nil {
-			logs.Warn("failed to clean up tags for deleted WebACL", logs.String("id", id), logs.Err(err))
-		}
 	}
 
 	return response.EmptyResponse(), nil

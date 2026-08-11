@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -26,89 +25,33 @@ func bytesEqual(a, b []byte) bool {
 // CreateSecret creates a new secret in AWS Secrets Manager.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_CreateSecret.html
 func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if err := validateSecretName(name); err != nil {
-		return nil, err
-	}
-
-	secretString := request.GetStringParam(req.Parameters, "SecretString")
-	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
-	if err := validateSecretValueMutex(secretString, secretBinaryStr); err != nil {
-		return nil, err
-	}
-	if err := validateSecretStringLength(secretString); err != nil {
-		return nil, err
-	}
-
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := validateDescription(description); err != nil {
-		return nil, err
-	}
-	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
-	secretType := request.GetStringParam(req.Parameters, "Type")
-	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if err := validateClientRequestToken(clientRequestToken); err != nil {
-		return nil, err
-	}
-	parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if err := validateSecretTags(parsedTags); err != nil {
-		return nil, err
-	}
-	tags := tagutil.ToMap(parsedTags)
-
-	secretBinary, err := decodeAndValidateSecretBinary(secretBinaryStr)
-	if err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// ClientRequestToken idempotency: if the token is provided and a
-	// version with that ID already exists for a secret with this name,
-	// check whether the values match (idempotent success) or differ
-	// (error). This mirrors the AWS CreateSecret idempotency rules.
-	if clientRequestToken != "" {
-		existing, metaErr := store.GetSecretForMetadata(name)
-		if metaErr == nil && len(existing.VersionIDs) > 0 {
-			for _, vid := range existing.VersionIDs {
-				if vid == clientRequestToken {
-					existingVer, verErr := store.GetSecretVersion(name, clientRequestToken)
-					if verErr != nil {
-						break
-					}
-					if existingVer.SecretString == secretString &&
-						bytesEqual(existingVer.SecretBinary, secretBinary) {
-						return map[string]interface{}{
-							"ARN":       existing.ARN,
-							"Name":      existing.Name,
-							"VersionId": clientRequestToken,
-						}, nil
-					}
-					return nil, errors.NewAWSError("InvalidRequestException",
-						fmt.Sprintf("You can't modify an existing secret version. The ClientRequestToken %s is already associated with a different version value.", clientRequestToken),
-						http.StatusBadRequest)
-				}
-			}
-		}
+	name := request.GetStringParam(req.Parameters, "Name")
+	if err := validateSecretName(name); err != nil {
+		return nil, err
 	}
 
-	secret := secretsmanagerstore.NewSecret(name)
-	secret.SecretString = secretString
-	secret.SecretBinary = secretBinary
-	secret.Description = description
-	secret.KmsKeyId = kmsKeyId
-	secret.Type = secretType
-	secret.InitialVersionId = clientRequestToken
-	if len(tags) > 0 {
-		secret.Tags = tags
-	}
-
-	created, err := store.CreateSecret(secret)
+	secretBinary, err := decodeAndValidateSecretBinary(request.GetStringParam(req.Parameters, "SecretBinary"))
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
+	}
+
+	result, err := s.createSecretCore(ctx, store, CreateSecretInput{
+		Name:               name,
+		SecretString:       request.GetStringParam(req.Parameters, "SecretString"),
+		SecretBinary:       secretBinary,
+		Description:        request.GetStringParam(req.Parameters, "Description"),
+		KmsKeyId:           request.GetStringParam(req.Parameters, "KmsKeyId"),
+		Type:               request.GetStringParam(req.Parameters, "Type"),
+		ClientRequestToken: request.GetStringParam(req.Parameters, "ClientRequestToken"),
+		Tags:               tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// AddReplicaRegions — when provided, replicate the secret to
@@ -118,29 +61,33 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+
+	response := map[string]interface{}{
+		"ARN":       result.ARN,
+		"Name":      result.Name,
+		"VersionId": result.VersionID,
+	}
+
 	if len(addReplicaRegions) > 0 {
 		if s.storageManager == nil {
 			return nil, errors.NewAWSError("InvalidRequestException",
 				"Replication is not configured for this service.", http.StatusBadRequest)
+		}
+		created, metaErr := store.GetSecretForMetadata(result.Name)
+		if metaErr != nil {
+			return nil, mapStoreError(metaErr)
 		}
 		forceOverwrite := request.GetBoolParam(req.Parameters, "ForceOverwriteReplicaSecret")
 		s.replicateSecretToRegions(store, created, addReplicaRegions, forceOverwrite, reqCtx.GetRegion())
 		if err := store.UpdateSecretMetadata(created); err != nil {
 			return nil, mapStoreError(err)
 		}
+		if len(created.ReplicationStatus) > 0 {
+			response["ReplicationStatus"] = buildReplicationStatusResponse(created.ReplicationStatus)
+		}
 	}
 
-	// Include ReplicationStatus in the response when replication was
-	// requested.
-	result := map[string]interface{}{
-		"ARN":       created.ARN,
-		"Name":      created.Name,
-		"VersionId": created.CurrentVersion,
-	}
-	if len(created.ReplicationStatus) > 0 {
-		result["ReplicationStatus"] = buildReplicationStatusResponse(created.ReplicationStatus)
-	}
-	return result, nil
+	return response, nil
 }
 
 // GetSecretValue returns the secret value for a secret.
@@ -315,54 +262,25 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 // DeleteSecret deletes a secret.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_DeleteSecret.html
 func (s *SecretsManagerService) DeleteSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
-	}
-
-	recoveryWindowInDays := request.GetIntParam(req.Parameters, "RecoveryWindowInDays")
-	forceDeleteWithoutRecovery := request.GetBoolParam(req.Parameters, "ForceDeleteWithoutRecovery")
-	hasRecoveryWindow := request.HasParam(req.Parameters, "RecoveryWindowInDays")
-	if err := validateRecoveryWindow(recoveryWindowInDays, hasRecoveryWindow, forceDeleteWithoutRecovery); err != nil {
-		return nil, err
-	}
-
-	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
-	if err != nil {
-		return nil, err
-	}
-
-	// You can't delete a primary secret that is replicated to other Regions.
-	if len(secret.ReplicationStatus) > 0 {
-		return nil, errors.NewAWSError("InvalidRequestException",
-			"You can't delete a primary secret that is replicated to other Regions. Remove the replicas first.", http.StatusBadRequest)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var deletionDate time.Time
-	if forceDeleteWithoutRecovery {
-		if err := store.DeleteSecret(secret.Name); err != nil {
-			return nil, mapStoreError(err)
-		}
-		deletionDate = time.Now().UTC()
-	} else {
-		if !hasRecoveryWindow {
-			recoveryWindowInDays = 30
-		}
-		deletionDate = time.Now().UTC().AddDate(0, 0, recoveryWindowInDays)
-		if err := store.ScheduleDeletion(secret.Name, deletionDate); err != nil {
-			return nil, mapStoreError(err)
-		}
+	result, err := s.deleteSecretCore(ctx, store, DeleteSecretInput{
+		SecretId:                   request.GetStringParam(req.Parameters, "SecretId"),
+		ForceDeleteWithoutRecovery: request.GetBoolParam(req.Parameters, "ForceDeleteWithoutRecovery"),
+		RecoveryWindowInDays:       request.GetIntParam(req.Parameters, "RecoveryWindowInDays"),
+		HasRecoveryWindow:          request.HasParam(req.Parameters, "RecoveryWindowInDays"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"ARN":          secret.ARN,
-		"Name":         secret.Name,
-		"DeletionDate": deletionDate.Unix(),
+		"ARN":          result.ARN,
+		"Name":         result.Name,
+		"DeletionDate": result.DeletionDate.Unix(),
 	}, nil
 }
 

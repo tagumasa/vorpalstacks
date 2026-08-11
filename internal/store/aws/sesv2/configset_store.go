@@ -75,7 +75,7 @@ type VdmOptions struct {
 // Per Smithy `com.amazonaws.sesv2#ArchivingOptions`, the only member is
 // `ArchiveArn` — the ARN of the MailManager archive that SES v2 sends email
 // to. There is no Enabled/RetentionPeriod/TargetArn in the AWS spec; the
-// previous fields were a typed-field/spec desync (SNS-B2 pattern).
+// previous fields were a typed-field/spec desync and have been removed.
 type ArchivingOptions struct {
 	ArchiveArn string `json:"archiveArn,omitempty"`
 }

@@ -27,13 +27,7 @@ import (
 // paginateItems relies on. maxRecords is clamped to 20-100 with a default
 // of 100 when zero.
 func paginateRDSItems[T any](items []T, marker string, maxRecords int32, idFunc func(T) string) ([]T, string) {
-	if maxRecords == 0 {
-		maxRecords = 100
-	}
-	if maxRecords < 20 {
-		maxRecords = 20
-	}
-	if maxRecords > 100 {
+	if maxRecords <= 0 || maxRecords > 100 {
 		maxRecords = 100
 	}
 	result := pagination.PaginateSlice(items, marker, int(maxRecords), pagination.KeyExtractor[T](idFunc))
@@ -92,71 +86,38 @@ type RemoveTagsFromResourceInput struct {
 // ---------------------------------------------------------------------------
 
 func (s *RDSService) describeDBSubnetGroupsCore(stores *rdsStores, in DescribeDBSubnetGroupsInput) (*pb.DBSubnetGroupMessage, error) {
-	groups, err := stores.store.ListSubnetGroups()
+	groups, nextMarker, err := QuerySubnetGroups(stores.store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
-
 	pbGroups := make([]*pb.DBSubnetGroup, 0, len(groups))
 	for _, g := range groups {
-		if in.DBSubnetGroupName != "" && g.DBSubnetGroupName != in.DBSubnetGroupName {
-			continue
-		}
-		if !applyRDSFilters(in.Filters, subnetGroupFilterGetter(g)) {
-			continue
-		}
 		pbGroups = append(pbGroups, subnetGroupToPb(g))
 	}
-
-	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBSubnetGroup) string {
-		return g.Dbsubnetgroupname
-	})
 	return &pb.DBSubnetGroupMessage{Dbsubnetgroups: pbGroups, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeGlobalClustersCore(stores *rdsStores, in DescribeGlobalClustersInput) (*pb.GlobalClustersMessage, error) {
-	clusters, err := stores.store.ListGlobalClusters()
+	clusters, nextMarker, err := QueryGlobalClusters(stores.store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
-
 	pbClusters := make([]*pb.GlobalCluster, 0, len(clusters))
 	for _, c := range clusters {
-		if in.GlobalClusterIdentifier != "" && c.GlobalClusterIdentifier != in.GlobalClusterIdentifier {
-			continue
-		}
-		if !applyRDSFilters(in.Filters, globalClusterFilterGetter(c)) {
-			continue
-		}
 		pbClusters = append(pbClusters, globalClusterToPb(c))
 	}
-
-	pbClusters, nextMarker := paginateRDSItems(pbClusters, in.Marker, in.MaxRecords, func(c *pb.GlobalCluster) string {
-		return c.Globalclusteridentifier
-	})
 	return &pb.GlobalClustersMessage{Globalclusters: pbClusters, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeEventSubscriptionsCore(stores *rdsStores, in DescribeEventSubscriptionsInput) (*pb.EventSubscriptionsMessage, error) {
-	subs, err := stores.store.ListEventSubscriptions()
+	subs, nextMarker, err := QueryEventSubscriptions(stores.store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
-
 	pbSubs := make([]*pb.EventSubscription, 0, len(subs))
 	for _, sub := range subs {
-		if in.SubscriptionName != "" && sub.CustSubscriptionId != in.SubscriptionName {
-			continue
-		}
-		if !applyRDSFilters(in.Filters, eventSubscriptionFilterGetter(sub)) {
-			continue
-		}
 		pbSubs = append(pbSubs, eventSubscriptionToPb(sub))
 	}
-
-	pbSubs, nextMarker := paginateRDSItems(pbSubs, in.Marker, in.MaxRecords, func(sub *pb.EventSubscription) string {
-		return sub.Custsubscriptionid
-	})
 	return &pb.EventSubscriptionsMessage{Eventsubscriptionslist: pbSubs, Marker: nextMarker}, nil
 }
 

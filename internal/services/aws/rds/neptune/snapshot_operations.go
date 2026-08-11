@@ -125,41 +125,27 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	snapshotID := request.GetStringParam(params, "DBClusterSnapshotIdentifier")
-	if snapshotID != "" {
-		snapshot, err := store.GetSnapshot(snapshotID)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: []interface{}{snapshot}},
-		}, nil
-	}
-
-	snapshots, err := store.ListSnapshots()
+	snapshots, nextMarker, err := rdssvc.QueryClusterSnapshots(store, rdssvc.DescribeDBClusterSnapshotsInput{
+		DBClusterSnapshotIdentifier: request.GetStringParam(params, "DBClusterSnapshotIdentifier"),
+		DBClusterIdentifier:         request.GetStringParam(params, "DBClusterIdentifier"),
+		SnapshotType:                request.GetStringParam(params, "SnapshotType"),
+		Filters:                     nil,
+		Marker:                      request.GetStringParam(params, "Marker"),
+		MaxRecords:                  int32(request.GetIntParam(params, "MaxRecords")),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
 
-	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
 	items := make([]interface{}, 0, len(snapshots))
 	for _, snap := range snapshots {
-		if clusterID != "" && snap.DBClusterIdentifier != clusterID {
-			continue
-		}
 		items = append(items, snap)
 	}
 
-	marker := request.GetStringParam(params, "Marker")
-	maxRecords := request.GetIntParam(params, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.DBClusterSnapshot).DBClusterSnapshotIdentifier
-	})
-
 	result := map[string]interface{}{
-		"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: resultItems},
+		"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: items},
 	}
-	if isTruncated {
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil

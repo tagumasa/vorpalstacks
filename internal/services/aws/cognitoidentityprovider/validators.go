@@ -318,7 +318,7 @@ func validateRegionName(name string) error {
 }
 
 // ---------------------------------------------------------------------------
-// Smithy enum validators (Round 3 additions).
+// Smithy enum validators.
 // All maps derived from cognito-identity-provider-2016-04-18.json enum shapes.
 // ---------------------------------------------------------------------------
 

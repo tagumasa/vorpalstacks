@@ -124,26 +124,32 @@ func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.Requ
 		input.MaxKeys = 1000
 	}
 
-	result, err := stores.objects.List(input.Bucket, input.Prefix, input.Delimiter, input.Marker, input.MaxKeys)
+	coreResult, err := o.svc.listObjectsCore(stores.objects, AdminListObjectsInput{
+		Bucket:    input.Bucket,
+		Prefix:    input.Prefix,
+		Delimiter: input.Delimiter,
+		Marker:    input.Marker,
+		MaxKeys:   input.MaxKeys,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	var commonPrefixes []CommonPrefix
-	for _, prefix := range result.CommonPrefixes {
+	for _, prefix := range coreResult.CommonPrefixes {
 		commonPrefixes = append(commonPrefixes, CommonPrefix{Prefix: prefix})
 	}
 
 	return &ListObjectsOutput{
-		Contents:       buildObjectContents(result.Objects),
+		Contents:       buildObjectContents(coreResult.Objects),
 		CommonPrefixes: commonPrefixes,
 		Delimiter:      input.Delimiter,
 		EncodingType:   input.EncodingType,
-		IsTruncated:    result.IsTruncated,
+		IsTruncated:    coreResult.IsTruncated,
 		Marker:         input.Marker,
 		MaxKeys:        input.MaxKeys,
 		Name:           input.Bucket,
-		NextMarker:     result.NextMarker,
+		NextMarker:     coreResult.NextMarker,
 		Prefix:         input.Prefix,
 	}, nil
 }
@@ -242,31 +248,37 @@ func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.Re
 		input.MaxKeys = 1000
 	}
 
-	result, err := stores.objects.List(input.Bucket, input.Prefix, input.Delimiter, marker, input.MaxKeys)
+	coreResult, err := o.svc.listObjectsCore(stores.objects, AdminListObjectsInput{
+		Bucket:    input.Bucket,
+		Prefix:    input.Prefix,
+		Delimiter: input.Delimiter,
+		Marker:    marker,
+		MaxKeys:   input.MaxKeys,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	var commonPrefixes []CommonPrefix
-	for _, prefix := range result.CommonPrefixes {
+	for _, prefix := range coreResult.CommonPrefixes {
 		commonPrefixes = append(commonPrefixes, CommonPrefix{Prefix: prefix})
 	}
 
-	contents := buildObjectContents(result.Objects)
+	contents := buildObjectContents(coreResult.Objects)
 	output := &ListObjectsV2Output{
 		Contents:       contents,
 		CommonPrefixes: commonPrefixes,
 		Delimiter:      input.Delimiter,
 		EncodingType:   input.EncodingType,
-		IsTruncated:    result.IsTruncated,
+		IsTruncated:    coreResult.IsTruncated,
 		KeyCount:       len(contents) + len(commonPrefixes),
 		MaxKeys:        input.MaxKeys,
 		Name:           input.Bucket,
 		Prefix:         input.Prefix,
 	}
 
-	if result.IsTruncated && result.NextMarker != "" {
-		output.NextContinuationToken = result.NextMarker
+	if coreResult.IsTruncated && coreResult.NextMarker != "" {
+		output.NextContinuationToken = coreResult.NextMarker
 	}
 
 	if input.StartAfter != "" {

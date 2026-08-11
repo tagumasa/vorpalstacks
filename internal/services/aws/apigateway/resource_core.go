@@ -107,5 +107,9 @@ func (s *APIGatewayService) listResourcesCore(stores *apiGatewayStores, apiId st
 	if apiId == "" {
 		return nil, NewBadRequestException("restApiId is required")
 	}
-	return stores.restApis.ListResources(apiId)
+	resources, err := stores.restApis.ListResources(apiId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	return resources, nil
 }

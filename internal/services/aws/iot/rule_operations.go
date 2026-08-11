@@ -178,17 +178,26 @@ func (s *IoTService) ListTopicRules(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	rules, err := store.ListRules(parseListOptions(req.Parameters))
+	nextToken := request.GetParamCaseInsensitive(req.Parameters, "nextToken")
+	if nextToken == "" {
+		nextToken = request.GetParamCaseInsensitive(req.Parameters, "marker")
+	}
+	maxResults := request.GetIntParam(req.Parameters, "maxResults")
+	if maxResults <= 0 {
+		maxResults = request.GetIntParam(req.Parameters, "pageSize")
+	}
+
+	result, err := s.listTopicRulesCore(store, nextToken, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(rules.Items))
-	for _, r := range rules.Items {
+	items := make([]map[string]interface{}, 0, len(result.Rules))
+	for _, r := range result.Rules {
 		items = append(items, ruleToResponse(r))
 	}
 
-	return listResponse("rules", items, rules.NextMarker), nil
+	return listResponse("rules", items, result.NextToken), nil
 }
 
 func (s *IoTService) EnableTopicRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

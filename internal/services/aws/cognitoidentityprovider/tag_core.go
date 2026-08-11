@@ -24,7 +24,10 @@ func (s *CognitoService) tagResourceCore(region, resourceArn string, tags map[st
 	if err != nil {
 		return err
 	}
-	return store.Tag(resourceArn, tags)
+	if err := store.Tag(resourceArn, tags); err != nil {
+		return ErrInternalError
+	}
+	return nil
 }
 
 // untagResourceCore removes tags from a Cognito resource. Validates the ARN
@@ -43,7 +46,10 @@ func (s *CognitoService) untagResourceCore(region, resourceArn string, tagKeys [
 	if err != nil {
 		return err
 	}
-	return store.Untag(resourceArn, tagKeys)
+	if err := store.Untag(resourceArn, tagKeys); err != nil {
+		return ErrInternalError
+	}
+	return nil
 }
 
 // listTagsForResourceCore retrieves all tags for a Cognito resource. Validates

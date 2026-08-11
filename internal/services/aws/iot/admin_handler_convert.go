@@ -1,16 +1,26 @@
 package iot
 
 import (
+	"net/http"
+
 	"google.golang.org/protobuf/proto"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/pb/aws/iot"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
 // This file is the sole location permitted to import the iotstore package
-// directly (AGENTS.md #29 exception). It converts between store-level
-// structs and proto response messages.
+// directly. It converts between store-level structs and proto response
+// messages.
+
+// getStoreFromHeaders resolves the region from gRPC-Web request headers and
+// returns the IoT store for that region.
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (iotstore.IotStoreInterface, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
+}
 
 func toPbThingAttribute(t *iotstore.Thing) *iot.ThingAttribute {
 	ta := &iot.ThingAttribute{

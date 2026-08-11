@@ -5,6 +5,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	tagutil "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -14,12 +16,12 @@ import (
 func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.GetRestApisRequest]) (*connect.Response[pb.RestApis], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	result, err := h.service.listRestApisCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	items := make([]*pb.RestApi, 0, len(result.Items))
@@ -38,11 +40,11 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.GetRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	api, err := h.service.getRestApiCore(stores, req.Msg.Restapiid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbRestApi(api)), nil
 }
@@ -51,7 +53,7 @@ func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.G
 func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[pb.CreateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	input := CreateRestApiInput{
@@ -83,7 +85,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 
 	created, err := h.service.createRestApiCore(stores, input)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(toPbRestApi(created)), nil
@@ -93,10 +95,10 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[pb.DeleteRestApiRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteRestApiCore(stores, req.Msg.Restapiid); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
@@ -105,7 +107,7 @@ func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[pb.UpdateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	patches := make([]PatchOperation, 0, len(req.Msg.Patchoperations))
@@ -119,7 +121,7 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 
 	api, err := h.service.updateRestApiCore(stores, req.Msg.Restapiid, patches)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbRestApi(api)), nil
 }

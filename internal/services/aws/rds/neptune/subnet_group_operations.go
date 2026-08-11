@@ -8,6 +8,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
@@ -210,20 +211,14 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	name := request.GetStringParam(params, "DBSubnetGroupName")
-	if name != "" {
-		sg, err := store.GetSubnetGroup(name)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: []interface{}{sg}},
-		}, nil
-	}
-
-	groups, err := store.ListSubnetGroups()
+	groups, nextMarker, err := rdssvc.QuerySubnetGroups(store, rdssvc.DescribeDBSubnetGroupsInput{
+		DBSubnetGroupName: request.GetStringParam(params, "DBSubnetGroupName"),
+		Filters:           nil,
+		Marker:            request.GetStringParam(params, "Marker"),
+		MaxRecords:        int32(request.GetIntParam(params, "MaxRecords")),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(groups))
@@ -231,16 +226,10 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 		items = append(items, g)
 	}
 
-	marker := request.GetStringParam(params, "Marker")
-	maxRecords := request.GetIntParam(params, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.DBSubnetGroup).DBSubnetGroupName
-	})
-
 	result := map[string]interface{}{
-		"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: resultItems},
+		"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: items},
 	}
-	if isTruncated {
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil

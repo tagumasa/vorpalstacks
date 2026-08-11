@@ -304,50 +304,45 @@ func (s *TimestreamQueryService) ListScheduledQueries(ctx context.Context, reqCt
 	if err != nil {
 		return nil, err
 	}
-	queries, err := st.scheduledQueryStore.ListScheduledQueries()
-	if err != nil {
-		return nil, ErrInternalServer
-	}
 
 	maxResults := 0
+	hasMaxResults := false
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil {
-			if err := validateMaxResultsScheduledQueries(val); err != nil {
-				return nil, err
-			}
+		if val, atoiErr := strconv.Atoi(maxStr); atoiErr == nil {
 			maxResults = val
+			hasMaxResults = true
 		}
-	}
-	if maxResults == 0 {
-		maxResults = maxListScheduledQueries
 	}
 
 	offset := 0
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		val, err := strconv.Atoi(nextToken)
-		if err != nil || val < 0 {
+		val, atoiErr := strconv.Atoi(nextToken)
+		if atoiErr != nil || val < 0 {
 			return nil, ErrValidationException
 		}
 		offset = val
 	}
 
+	result, err := s.ListScheduledQueriesCore(st, ListScheduledQueriesInput{
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var scheduledQueries []map[string]interface{}
-	for i, sq := range queries {
-		if i < offset {
-			continue
-		}
-		if len(scheduledQueries) >= maxResults {
-			break
-		}
-		scheduledQueries = append(scheduledQueries, s.formatScheduledQueryResponse(sq))
+	for _, summary := range result.Summaries {
+		scheduledQueries = append(scheduledQueries, formatScheduledQuerySummaryResponse(summary))
 	}
 
 	response := map[string]interface{}{
 		"ScheduledQueries": scheduledQueries,
 	}
 
-	if offset+maxResults < len(queries) {
-		response["NextToken"] = strconv.Itoa(offset + maxResults)
+	if result.NextToken != "" {
+		response["NextToken"] = result.NextToken
 	}
 
 	return response, nil
@@ -852,6 +847,51 @@ func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.Schedu
 
 	if sq.LastRunStatus != "" {
 		response["LastRunStatus"] = sq.LastRunStatus
+	}
+
+	return response
+}
+
+// formatScheduledQuerySummaryResponse converts a ScheduledQuerySummary DTO
+// (returned by ListScheduledQueriesCore) into the JSON map representation
+// expected by the HTTP API response.
+func formatScheduledQuerySummaryResponse(summary *ScheduledQuerySummary) map[string]interface{} {
+	response := map[string]interface{}{
+		"Arn":          summary.ARN,
+		"Name":         summary.Name,
+		"State":        summary.State,
+		"CreationTime": epochFloat(summary.CreationTime),
+	}
+
+	if summary.ErrorReportConfiguration != nil && summary.ErrorReportConfiguration.S3Configuration != nil {
+		response["ErrorReportConfiguration"] = map[string]interface{}{
+			"S3Configuration": map[string]interface{}{
+				"BucketName":      summary.ErrorReportConfiguration.S3Configuration.BucketName,
+				"ObjectKeyPrefix": summary.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix,
+			},
+		}
+	}
+
+	if !summary.NextRunTime.IsZero() {
+		response["NextInvocationTime"] = epochFloat(summary.NextRunTime)
+	}
+
+	if !summary.PreviousRunTime.IsZero() {
+		response["PreviousInvocationTime"] = epochFloat(summary.PreviousRunTime)
+	}
+
+	if summary.TargetConfiguration != nil && summary.TargetConfiguration.TimestreamConfiguration != nil {
+		tsConfig := summary.TargetConfiguration.TimestreamConfiguration
+		response["TargetDestination"] = map[string]interface{}{
+			"TimestreamDestination": map[string]interface{}{
+				"DatabaseName": tsConfig.DatabaseName,
+				"TableName":    tsConfig.TableName,
+			},
+		}
+	}
+
+	if summary.LastRunStatus != "" {
+		response["LastRunStatus"] = summary.LastRunStatus
 	}
 
 	return response

@@ -83,7 +83,7 @@ func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKe
 
 	created, err := stores.usage.CreateApiKey(apiKey)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return created, nil
 }
@@ -115,7 +115,7 @@ func (s *APIGatewayService) deleteApiKeyCore(stores *apiGatewayStores, apiKeyId 
 func (s *APIGatewayService) listApiKeysCore(stores *apiGatewayStores, limit int, marker string) (*common.ListResult[apigateway.ApiKey], error) {
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return stores.usage.ListApiKeys(common.ListOptions{
 		Marker:   marker,
@@ -170,7 +170,7 @@ func (s *APIGatewayService) updateApiKeyCore(
 		}
 	}
 	if err := stores.usage.UpdateApiKey(apiKey); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	if s.runtimeServer != nil {
@@ -229,7 +229,7 @@ func (s *APIGatewayService) createUsagePlanCore(stores *apiGatewayStores, in *Us
 
 	created, err := stores.usage.CreateUsagePlan(plan)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return created, nil
 }
@@ -261,7 +261,7 @@ func (s *APIGatewayService) deleteUsagePlanCore(stores *apiGatewayStores, usageP
 func (s *APIGatewayService) listUsagePlansCore(stores *apiGatewayStores, limit int, marker string) (*common.ListResult[apigateway.UsagePlan], error) {
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return stores.usage.ListUsagePlans(common.ListOptions{
 		Marker:   marker,
@@ -389,7 +389,7 @@ func (s *APIGatewayService) updateUsagePlanCore(
 	}
 
 	if err := stores.usage.UpdateUsagePlan(usagePlan); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return usagePlan, nil
 }
@@ -429,7 +429,7 @@ func (s *APIGatewayService) createUsagePlanKeyCore(
 
 	created, err := stores.usage.CreateUsagePlanKey(usagePlanId, key)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return created, nil
 }
@@ -470,7 +470,7 @@ func (s *APIGatewayService) listUsagePlanKeysCore(stores *apiGatewayStores, usag
 	}
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{
 		Marker:   marker,
@@ -514,7 +514,7 @@ func (s *APIGatewayService) getUsageCore(
 	} else {
 		allKeys, err := common.ListMatching[apigateway.UsagePlanKey](stores.usage.BaseStore, "usageplankey#"+usagePlanId+"#", nil)
 		if err != nil {
-			return nil, err
+			return nil, toApiGatewayError(err)
 		}
 		for _, key := range allKeys {
 			apiKeys = append(apiKeys, key.Id)

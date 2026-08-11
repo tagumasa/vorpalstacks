@@ -618,3 +618,15 @@ func fromPbEndpointType(t pb.EndpointType) string {
 		return ""
 	}
 }
+
+// fromPbTlsConfig converts a proto TlsConfig message to the store-layer
+// TlsConfig struct. Defined here so that admin handler files do not need
+// to import store packages.
+func fromPbTlsConfig(tls *pb.TlsConfig) *apigatewaystore.TlsConfig {
+	if tls == nil {
+		return nil
+	}
+	return &apigatewaystore.TlsConfig{
+		InsecureSkipVerification: tls.GetInsecureskipverification(),
+	}
+}

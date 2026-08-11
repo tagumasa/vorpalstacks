@@ -29,55 +29,6 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	authType := request.GetStringParam(req.Parameters, "authenticationType")
-	if authType == "" {
-		return nil, NewBadRequestException("authenticationType is required")
-	}
-
-	if !validateAuthenticationType(authType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType: %s", authType))
-	}
-
-	apiType := request.GetStringParam(req.Parameters, "apiType")
-	if apiType != "" && !validateApiType(apiType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid apiType: %s", apiType))
-	}
-
-	visibility := request.GetStringParam(req.Parameters, "visibility")
-	if visibility != "" && !validateVisibility(visibility) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid visibility: %s", visibility))
-	}
-
-	introspectionConfig := request.GetStringParam(req.Parameters, "introspectionConfig")
-	if introspectionConfig != "" && !validateIntrospectionConfig(introspectionConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid introspectionConfig: %s", introspectionConfig))
-	}
-
-	logCfg := parseLogConfig(req.Parameters)
-	if logCfg != nil && logCfg.FieldLogLevel != "" && !validateFieldLogLevel(logCfg.FieldLogLevel) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid logConfig.fieldLogLevel: %s", logCfg.FieldLogLevel))
-	}
-
-	// Check combined API count quota (GraphQL + Event APIs per region).
-	graphqlCount, _ := store.CountGraphqlApis()
-	eventCount, _ := store.CountApis()
-	if graphqlCount+eventCount >= maxApisPerRegion {
-		return nil, ErrApiLimitExceededException
-	}
-
-	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
-	if _, ok := req.Parameters["queryDepthLimit"]; ok {
-		if err := validateQueryDepthLimit(queryDepthLimit); err != nil {
-			return nil, err
-		}
-	}
-	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
-	if _, ok := req.Parameters["resolverCountLimit"]; ok {
-		if err := validateResolverCountLimit(resolverCountLimit); err != nil {
-			return nil, err
-		}
-	}
-
 	additionalAuthProviders, err := parseAdditionalAuthProviders(req.Parameters)
 	if err != nil {
 		return nil, err
@@ -91,40 +42,35 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	api := &appsyncstore.GraphqlApi{
+	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
+	_, hasQueryDepthLimit := req.Parameters["queryDepthLimit"]
+	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
+	_, hasResolverCountLimit := req.Parameters["resolverCountLimit"]
+
+	created, err := s.createGraphqlApiCore(store, createGraphqlApiInput{
 		Name:                              name,
-		AuthenticationType:                authType,
+		AuthenticationType:                request.GetStringParam(req.Parameters, "authenticationType"),
 		AdditionalAuthenticationProviders: additionalAuthProviders,
-		ApiType:                           apiType,
+		ApiType:                           request.GetStringParam(req.Parameters, "apiType"),
 		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
-		IntrospectionConfig:               introspectionConfig,
+		IntrospectionConfig:               request.GetStringParam(req.Parameters, "introspectionConfig"),
 		LambdaAuthorizerConfig:            lambdaAuthConfig,
-		LogConfig:                         logCfg,
+		LogConfig:                         parseLogConfig(req.Parameters),
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
 		QueryDepthLimit:                   queryDepthLimit,
+		HasQueryDepthLimit:                hasQueryDepthLimit,
 		ResolverCountLimit:                resolverCountLimit,
+		HasResolverCountLimit:             hasResolverCountLimit,
 		Tags:                              tagMap,
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
-		Visibility:                        visibility,
+		Visibility:                        request.GetStringParam(req.Parameters, "visibility"),
 		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
 		XrayEnabled:                       request.GetBoolParam(req.Parameters, "xrayEnabled"),
-	}
-
-	created, err := store.CreateGraphqlApi(api)
+	})
 	if err != nil {
-		return mapStoreError(err)
-	}
-
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	result := graphqlApiToMap(created)
@@ -287,19 +233,9 @@ func (s *AppSyncService) DeleteGraphqlApi(ctx context.Context, reqCtx *request.R
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
+	if err := s.deleteGraphqlApiCore(store, apiId); err != nil {
+		return nil, err
 	}
-
-	if _, err := store.GetGraphqlApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	if err := store.DeleteGraphqlApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{}, nil
 }
@@ -317,7 +253,7 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
-	apis, nextToken, err := store.ListGraphqlApis(opts, apiTypeFilter)
+	apis, nextToken, err := s.listGraphqlApisCore(store, int(opts.MaxItems), opts.Marker, apiTypeFilter)
 	if err != nil {
 		return mapStoreError(err)
 	}

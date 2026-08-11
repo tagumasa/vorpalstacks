@@ -2,7 +2,6 @@ package route53
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
 	"strings"
 	"time"
@@ -22,22 +21,8 @@ type delegationSetResponse struct {
 // CreateHostedZone creates a new hosted zone in Route 53.
 func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "Name is required", 400)
-	}
-	name = strings.ToLower(name)
-	if !strings.HasSuffix(name, ".") {
-		name = name + "."
-	}
-	// Validate domain name format per RFC 1035.
-	if err := validateDomainName(name); err != nil {
-		return nil, err
-	}
 
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
-	if callerRef == "" {
-		callerRef = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%d", name, time.Now().UnixNano()))))
-	}
 
 	var comment string
 	privateZone := request.GetBoolParam(req.Parameters, "PrivateZone")
@@ -46,45 +31,22 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		privateZone = request.GetBoolParam(hzConfig, "PrivateZone")
 	}
 
+	vpcID, vpcRegion := "", ""
 	vpcMap := request.GetMapParam(req.Parameters, "VPC")
-	var vpcs []*route53store.VPC
 	if vpcMap != nil {
 		if vpc := parseVPC(vpcMap); vpc != nil {
-			vpcs = append(vpcs, vpc)
+			vpcID = vpc.VPCID
+			vpcRegion = vpc.VPCRegion
+			if err := s.validateVPC(ctx, reqCtx.GetRegion(), vpc.VPCID, vpc.VPCRegion); err != nil {
+				return nil, awserrors.NewAWSError("InvalidVPCId",
+					fmt.Sprintf("The VPC %s in region %s does not exist", vpc.VPCID, vpc.VPCRegion), 400)
+			}
 		}
 	}
-
-	if privateZone && len(vpcs) == 0 {
-		return nil, awserrors.NewAWSError("InvalidInput", "A VPC is required when creating a private hosted zone", 400)
-	}
-
-	for _, vpc := range vpcs {
-		if err := s.validateVPC(ctx, reqCtx.GetRegion(), vpc.VPCID, vpc.VPCRegion); err != nil {
-			return nil, awserrors.NewAWSError("InvalidVPCId",
-				fmt.Sprintf("The VPC %s in region %s does not exist", vpc.VPCID, vpc.VPCRegion), 400)
-		}
-	}
-
-	nameServers := generateNameServers(4)
 
 	delegationSetID := ""
 	if dsID := request.GetStringParam(req.Parameters, "DelegationSetId"); dsID != "" {
 		delegationSetID = strings.TrimPrefix(dsID, "/delegationset/")
-	}
-
-	zone := &route53store.HostedZone{
-		ID:                     generateHostedZoneId(),
-		Name:                   route53store.NormalizeZoneName(name),
-		CallerReference:        callerRef,
-		Config:                 &route53store.HostedZoneConfig{Comment: comment, PrivateZone: privateZone},
-		ResourceRecordSetCount: 0,
-		Private:                privateZone,
-		VPCs:                   vpcs,
-		DelegationSetID:        delegationSetID,
-		NameServers:            nameServers,
-		Region:                 reqCtx.GetRegion(),
-		AccountID:              s.accountID,
-		CreatedAt:              time.Now(),
 	}
 
 	st, err := s.store(reqCtx)
@@ -92,88 +54,34 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	// Idempotent: if same CallerReference already exists, return existing zone
-	if existing, err := st.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
-		// Include ChangeInfo in idempotent return — AWS spec requires
-		// {HostedZone, ChangeInfo, DelegationSet} and the SDK parser fails
-		// on null ChangeInfo.
-		result := map[string]interface{}{
-			"HostedZone":    s.hostedZoneToResponse(existing),
-			"DelegationSet": buildDelegationSetResponse(existing.NameServers, existing.DelegationSetID),
-		}
-		if existing.ChangeID != "" {
-			result["ChangeInfo"] = map[string]interface{}{
-				"Id":          "/change/" + existing.ChangeID,
-				"Status":      "INSYNC",
-				"SubmittedAt": existing.CreatedAt.Format(time.RFC3339),
-			}
-		}
-		return result, nil
+	result, err := s.createHostedZoneCore(st, CreateHostedZoneInput{
+		Name:            name,
+		CallerReference: callerRef,
+		Comment:         comment,
+		PrivateZone:     privateZone,
+		VPCID:           vpcID,
+		VPCRegion:       vpcRegion,
+		DelegationSetID: delegationSetID,
+		Region:          reqCtx.GetRegion(),
+		Tags:            tagutil.ParseTags(req.Parameters, "HostedZoneTags"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	if err := st.HostedZones().Create(zone); err != nil {
-		if route53store.IsAlreadyExists(err) {
-			return nil, awserrors.NewAWSError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)
-		}
-		return nil, mapStoreError(err)
+	zone := result.Zone
+	resp := map[string]interface{}{
+		"HostedZone":    s.hostedZoneToResponse(zone),
+		"DelegationSet": buildDelegationSetResponse(zone.NameServers, zone.DelegationSetID),
 	}
-
-	nsRecords := make([]*route53store.ResourceRecord, len(nameServers))
-	for i, ns := range nameServers {
-		nsRecords[i] = &route53store.ResourceRecord{Value: ns}
-	}
-	if err := st.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
-		Name:            zone.Name,
-		Type:            "NS",
-		TTL:             172800,
-		ResourceRecords: nsRecords,
-	}); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if err := st.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
-		Name: zone.Name,
-		Type: "SOA",
-		TTL:  900,
-		ResourceRecords: []*route53store.ResourceRecord{
-			{Value: fmt.Sprintf("%s %s 1 7200 900 1209600 86400", zone.Name, nameServers[0])},
-		},
-	}); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	zone.ResourceRecordSetCount = 2
-	zone.ChangeID = generateChangeId()
-	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if tags := tagutil.ParseTags(req.Parameters, "HostedZoneTags"); len(tags) > 0 {
-		resourceKey := "hostedzone/" + zone.ID
-		if err := st.Tags().Tag(resourceKey, tags); err != nil {
-			return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
-		}
-	}
-
-	now := zone.CreatedAt
-	if err := st.Changes().Create(&route53store.ChangeInfo{
-		ID:          zone.ChangeID,
-		Status:      "INSYNC",
-		SubmittedAt: now,
-		Comment:     comment,
-	}); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"HostedZone": s.hostedZoneToResponse(zone),
-		"ChangeInfo": map[string]interface{}{
+	if zone.ChangeID != "" {
+		resp["ChangeInfo"] = map[string]interface{}{
 			"Id":          "/change/" + zone.ChangeID,
 			"Status":      "INSYNC",
-			"SubmittedAt": now.Format(time.RFC3339),
-		},
-		"DelegationSet": buildDelegationSetResponse(nameServers, zone.DelegationSetID),
-	}, nil
+			"SubmittedAt": zone.CreatedAt.Format(time.RFC3339),
+		}
+	}
+	return resp, nil
 }
 
 // GetHostedZone returns details about a hosted zone by its ID.
@@ -218,7 +126,6 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 	if delegationSetId != "" {
 		delegationSetId = strings.TrimPrefix(delegationSetId, "/delegationset/")
 	}
-	// HostedZoneType filter (private/public).
 	hostedZoneType := request.GetStringParam(req.Parameters, "HostedZoneType")
 
 	st, err := s.store(reqCtx)
@@ -226,45 +133,17 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	// When any server-side filter is specified, list all zones and
-	// filter in memory before paginating.
-	if delegationSetId != "" || hostedZoneType != "" {
-		allZones, err := st.HostedZones().ListByName()
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		var filtered []*route53store.HostedZone
-		for _, z := range allZones {
-			if delegationSetId != "" && z.DelegationSetID != delegationSetId {
-				continue
-			}
-			if isPrivateHostedZoneFilter(hostedZoneType) && !z.Private {
-				continue
-			}
-			filtered = append(filtered, z)
-		}
-
-		effectiveMax := maxItems
-		if effectiveMax <= 0 {
-			effectiveMax = 100
-		}
-		isTruncated := len(filtered) > effectiveMax
-		nextMarker := ""
-		if isTruncated {
-			filtered = filtered[:effectiveMax]
-			if len(filtered) > 0 {
-				nextMarker = filtered[effectiveMax-1].ID
-			}
-		}
-		return s.buildHostedZonesListResponse(filtered, isTruncated, marker, nextMarker, effectiveMax), nil
-	}
-
-	result, err := st.HostedZones().List(marker, maxItems)
+	result, err := s.listHostedZonesCore(st, ListHostedZonesInput{
+		Marker:          marker,
+		MaxItems:        maxItems,
+		DelegationSetID: delegationSetId,
+		HostedZoneType:  hostedZoneType,
+	})
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
-	return s.buildHostedZonesListResponse(result.HostedZones, result.IsTruncated, marker, result.Marker, maxItems), nil
+	return s.buildHostedZonesListResponse(result.HostedZones, result.IsTruncated, marker, result.NextMarker, maxItems), nil
 }
 
 // ListHostedZonesByName returns hosted zones sorted by name with optional DNS name filter.
@@ -363,64 +242,17 @@ func (s *Route53Service) DeleteHostedZone(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	recordSets, err := st.RecordSets().List(id)
+
+	result, err := s.deleteHostedZoneCore(st, DeleteHostedZoneInput{Id: id})
 	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if len(recordSets) > 0 {
-		userRecords := 0
-		for _, rs := range recordSets {
-			if rs.Type != "NS" && rs.Type != "SOA" {
-				userRecords++
-			}
-		}
-		if userRecords > 0 {
-			return nil, awserrors.NewAWSError("HostedZoneNotEmpty", "The hosted zone must be empty before it can be deleted.", 400)
-		}
-	}
-
-	// Clean up the default NS and SOA records created during
-	// CreateHostedZone before deleting the zone itself, preventing
-	// orphaned records in the record_sets bucket.
-	zoneName := ""
-	if zone, zErr := st.HostedZones().Get(id); zErr == nil && zone != nil {
-		zoneName = zone.Name
-	}
-	if zoneName != "" {
-		for _, rs := range recordSets {
-			if rs.Type == "NS" || rs.Type == "SOA" {
-				_ = st.RecordSets().Delete(id, rs.Name, rs.Type, rs.SetIdentifier)
-			}
-		}
-	}
-
-	if err := st.Tags().Raw().Delete("hostedzone/" + id); err != nil {
-		return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Failed to delete tags: %v", err), 500)
-	}
-
-	if err := st.HostedZones().Delete(id); err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, NewNoSuchHostedZoneError(id)
-		}
-		return nil, mapStoreError(err)
-	}
-
-	changeId := generateChangeId()
-	now := time.Now()
-	if err := st.Changes().Create(&route53store.ChangeInfo{
-		ID:          changeId,
-		Status:      "INSYNC",
-		SubmittedAt: now,
-	}); err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + changeId,
-			"Status":      "INSYNC",
-			"SubmittedAt": now.Format(time.RFC3339),
+			"Id":          "/change/" + result.ChangeId,
+			"Status":      result.Status,
+			"SubmittedAt": result.SubmittedAt.Format(time.RFC3339),
 		},
 	}, nil
 }

@@ -176,16 +176,11 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	sortBy := request.GetStringParam(req.Parameters, "SortBy")
 	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
 	filters := request.GetListParam(req.Parameters, "Filters")
-	if err := validateMaxFilters(len(filters)); err != nil {
-		return nil, err
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	secretFilter := buildSecretFilter(includePlannedDeletion, filters)
 
 	// When SortBy is not specified, AWS defaults to sorting by name
 	// in ascending order.
@@ -198,11 +193,16 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	var isTruncated bool
 
 	if sortBy != "" {
-		result, err := store.ListSecrets(common.ListOptions{}, secretFilter)
+		// Fetch all items for client-side sorting.
+		coreResult, err := s.listSecretsCore(ctx, store, ListSecretsInput{
+			MaxResults:             -1,
+			Filters:                filters,
+			IncludePlannedDeletion: includePlannedDeletion,
+		})
 		if err != nil {
 			return nil, err
 		}
-		sortSecrets(result.Items, sortBy, sortOrder)
+		sortSecrets(coreResult.Secrets, sortBy, sortOrder)
 
 		skipCount := 0
 		if nextToken != "" {
@@ -210,7 +210,7 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 				skipCount = 0
 			}
 		}
-		paged := result.Items[skipCount:]
+		paged := coreResult.Secrets[skipCount:]
 		isTruncated = maxResults < len(paged)
 		if isTruncated {
 			paged = paged[:maxResults]
@@ -220,16 +220,18 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 			nextMarker = fmt.Sprintf("%d", skipCount+maxResults)
 		}
 	} else {
-		result, err := store.ListSecrets(common.ListOptions{
-			Marker:   nextToken,
-			MaxItems: maxResults,
-		}, secretFilter)
+		coreResult, err := s.listSecretsCore(ctx, store, ListSecretsInput{
+			MaxResults:             maxResults,
+			NextToken:              nextToken,
+			Filters:                filters,
+			IncludePlannedDeletion: includePlannedDeletion,
+		})
 		if err != nil {
 			return nil, err
 		}
-		secrets = result.Items
-		nextMarker = result.NextMarker
-		isTruncated = result.IsTruncated
+		secrets = coreResult.Secrets
+		nextMarker = coreResult.NextToken
+		isTruncated = nextMarker != ""
 	}
 
 	secretList := make([]interface{}, 0, len(secrets))

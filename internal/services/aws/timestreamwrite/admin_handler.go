@@ -17,7 +17,7 @@ import (
 // AdminHandler implements the Timestream Write gRPC-Web admin console handler.
 // It is a thin adapter: proto request → transport-agnostic Input struct →
 // service-layer Core function → proto response conversion. Store packages
-// are never imported directly (AGENTS.md #29 compliance).
+// are accessed only through the service layer.
 type AdminHandler struct {
 	timestreamwriteconnect.UnimplementedTimestreamWriteServiceHandler
 	service *TimestreamWriteService

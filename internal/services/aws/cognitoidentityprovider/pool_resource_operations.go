@@ -399,20 +399,6 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 	userPoolID := getUserPoolID(req)
 	providerName := req.GetParam("ProviderName")
 	providerType := req.GetParam("ProviderType")
-	if userPoolID == "" || providerName == "" || providerType == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateProviderType(providerType) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
 
 	var providerDetails map[string]string
 	if pd, ok := req.Parameters["ProviderDetails"].(map[string]interface{}); ok {
@@ -424,27 +410,25 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 		}
 	}
 
-	ip := &cognitostore.IdentityProvider{
-		UserPoolID:      userPoolID,
-		ProviderName:    providerName,
-		ProviderType:    providerType,
-		ProviderDetails: providerDetails,
-	}
-
-	// Parse AttributeMapping and IdpIdentifiers.
+	var attributeMapping map[string]string
 	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
-		ip.AttributeMapping = make(map[string]string)
+		attributeMapping = make(map[string]string)
 		for k, v := range am {
 			if vs, ok := v.(string); ok {
-				ip.AttributeMapping[k] = vs
+				attributeMapping[k] = vs
 			}
 		}
 	}
-	if ids := getStringSliceParam(req, "IdpIdentifiers"); len(ids) > 0 {
-		ip.IdpIdentifiers = ids
-	}
 
-	if err := store.CreateIdentityProvider(ip); err != nil {
+	ip, err := s.createIdentityProviderFromInputCore(reqCtx.GetRegion(), CreateIdentityProviderInput{
+		UserPoolID:       userPoolID,
+		ProviderName:     providerName,
+		ProviderType:     providerType,
+		ProviderDetails:  providerDetails,
+		AttributeMapping: attributeMapping,
+		IdpIdentifiers:   getStringSliceParam(req, "IdpIdentifiers"),
+	})
+	if err != nil {
 		return nil, err
 	}
 

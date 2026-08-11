@@ -297,18 +297,15 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 		return nil, s.mapStoreError(err)
 	}
 
-	opts := storecommon.ListOptions{MaxItems: 1000}
-	if nextToken := req.GetParam("NextToken"); nextToken != "" {
-		opts.Marker = nextToken
-	}
-
-	ctResult, err := store.ListTrails(opts)
+	coreResult, err := s.listTrailsCore(store, ListTrailsInput{
+		NextToken: req.GetParam("NextToken"),
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
-	formattedTrails := make([]map[string]interface{}, 0, len(ctResult.Items))
-	for _, t := range ctResult.Items {
+	formattedTrails := make([]map[string]interface{}, 0, len(coreResult.Items))
+	for _, t := range coreResult.Items {
 		formattedTrails = append(formattedTrails, map[string]interface{}{
 			"TrailARN":   t.TrailARN,
 			"Name":       t.Name,
@@ -319,8 +316,8 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 	result := map[string]interface{}{
 		"Trails": formattedTrails,
 	}
-	if ctResult.NextMarker != "" {
-		result["NextToken"] = ctResult.NextMarker
+	if coreResult.NextToken != "" {
+		result["NextToken"] = coreResult.NextToken
 	}
 
 	return result, nil

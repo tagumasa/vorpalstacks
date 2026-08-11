@@ -36,7 +36,7 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	result, err := h.service.listBucketsCore(bucketStore)
+	result, err := h.service.listBucketsCore(bucketStore, AdminListBucketsInput{})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

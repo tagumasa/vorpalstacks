@@ -163,7 +163,7 @@ func rdsDataOperationFromPath(path string) string {
 // 41 prefixes were added here to restore routing for the operations that
 // were previously falling back to mock generation.
 var iotPathPrefixes = []string{
-	// Original prefixes (pre-R18)
+	// Original prefixes from the initial IoT implementation
 	"/things", "/thing-groups", "/thing-types", "/billing-groups",
 	"/api/things/shadow",
 	"/certificates", "/certificate", "/keys-and-certificate",

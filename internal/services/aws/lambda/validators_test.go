@@ -134,7 +134,7 @@ func TestValidateAuthType(t *testing.T) {
 		assert.NoError(t, validateAuthType("AWS_IAM"))
 	})
 
-	t.Run("empty is rejected (H3 fix)", func(t *testing.T) {
+	t.Run("empty is rejected", func(t *testing.T) {
 		err := validateAuthType("")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "AuthType is required")
@@ -198,11 +198,11 @@ func TestIsValidPrincipal(t *testing.T) {
 		assert.True(t, isValidPrincipal("events.amazonaws.com"))
 	})
 
-	t.Run("typo rejected (M5 fix)", func(t *testing.T) {
+	t.Run("typo rejected", func(t *testing.T) {
 		assert.False(t, isValidPrincipal("lamda.amazonaws.com"))
 	})
 
-	t.Run("spoof rejected (M5 fix)", func(t *testing.T) {
+	t.Run("spoof rejected", func(t *testing.T) {
 		assert.False(t, isValidPrincipal("evil.amazonaws.com"))
 	})
 

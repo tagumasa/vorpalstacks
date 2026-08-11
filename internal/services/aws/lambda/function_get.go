@@ -4,7 +4,6 @@ package lambda
 import (
 	"context"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // GetFunction retrieves information about the specified Lambda function.
@@ -57,27 +56,21 @@ func (s *LambdaService) GetFunctionConfiguration(ctx context.Context, reqCtx *re
 
 // ListFunctions lists all Lambda functions in the current account.
 func (s *LambdaService) ListFunctions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
-	marker := request.GetStringParam(req.Parameters, "Marker")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Functions.List(common.ListOptions{
-		Prefix:   "",
-		Marker:   marker,
-		MaxItems: maxItems,
+
+	items, nextMarker, err := s.listFunctionsCore(store, &ListFunctionsInput{
+		Marker:   request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems: request.GetIntParam(req.Parameters, "MaxItems"),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	functions := make([]interface{}, 0, len(result.Items))
-	for _, fn := range result.Items {
+	functions := make([]interface{}, 0, len(items))
+	for _, fn := range items {
 		functions = append(functions, s.toFunctionConfiguration(fn))
 	}
 
@@ -85,8 +78,8 @@ func (s *LambdaService) ListFunctions(ctx context.Context, reqCtx *request.Reque
 		"Functions": functions,
 	}
 
-	if result.IsTruncated {
-		response["NextMarker"] = result.NextMarker
+	if nextMarker != "" {
+		response["NextMarker"] = nextMarker
 	}
 
 	return response, nil

@@ -34,48 +34,26 @@ type DescribeDBParametersInput struct {
 // ---------------------------------------------------------------------------
 
 func (s *RDSService) describeDBClusterParameterGroupsCore(stores *rdsStores, in DescribeDBClusterParameterGroupsInput) (*pb.DBClusterParameterGroupsMessage, error) {
-	groups, err := stores.store.ListClusterParameterGroups()
+	groups, nextMarker, err := QueryClusterParameterGroups(stores.store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
-
 	pbGroups := make([]*pb.DBClusterParameterGroup, 0, len(groups))
 	for _, g := range groups {
-		if in.DBClusterParameterGroupName != "" && g.DBClusterParameterGroupName != in.DBClusterParameterGroupName {
-			continue
-		}
-		if !applyRDSFilters(in.Filters, clusterParamGroupFilterGetter(g)) {
-			continue
-		}
 		pbGroups = append(pbGroups, clusterParamGroupToPb(g))
 	}
-
-	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBClusterParameterGroup) string {
-		return g.Dbclusterparametergroupname
-	})
 	return &pb.DBClusterParameterGroupsMessage{Dbclusterparametergroups: pbGroups, Marker: nextMarker}, nil
 }
 
 func (s *RDSService) describeDBParameterGroupsCore(stores *rdsStores, in DescribeDBParameterGroupsInput) (*pb.DBParameterGroupsMessage, error) {
-	groups, err := stores.store.ListParameterGroups()
+	groups, nextMarker, err := QueryParameterGroups(stores.store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
-
 	pbGroups := make([]*pb.DBParameterGroup, 0, len(groups))
 	for _, g := range groups {
-		if in.DBParameterGroupName != "" && g.DBParameterGroupName != in.DBParameterGroupName {
-			continue
-		}
-		if !applyRDSFilters(in.Filters, paramGroupFilterGetter(g)) {
-			continue
-		}
 		pbGroups = append(pbGroups, paramGroupToPb(g))
 	}
-
-	pbGroups, nextMarker := paginateRDSItems(pbGroups, in.Marker, in.MaxRecords, func(g *pb.DBParameterGroup) string {
-		return g.Dbparametergroupname
-	})
 	return &pb.DBParameterGroupsMessage{Dbparametergroups: pbGroups, Marker: nextMarker}, nil
 }
 

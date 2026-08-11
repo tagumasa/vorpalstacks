@@ -116,7 +116,11 @@ func (s *APIGatewayService) listAuthorizersCore(stores *apiGatewayStores, apiId 
 	if apiId == "" {
 		return nil, NewBadRequestException("restApiId is required")
 	}
-	return stores.restApis.ListAuthorizers(apiId)
+	authorizers, err := stores.restApis.ListAuthorizers(apiId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	return authorizers, nil
 }
 
 // updateAuthorizerCore applies patch operations to an authorizer under

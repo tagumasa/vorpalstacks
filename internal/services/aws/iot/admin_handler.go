@@ -7,7 +7,6 @@ import (
 	"connectrpc.com/connect"
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/iot"
@@ -28,11 +27,6 @@ var _ iotconnect.IoTServiceHandler = (*AdminHandler)(nil)
 // NewAdminHandler creates a new IoT admin handler.
 func NewAdminHandler(svc *IoTService) *AdminHandler {
 	return &AdminHandler{service: svc}
-}
-
-func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (iotstore.IotStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
 }
 
 // --- Thing operations ---

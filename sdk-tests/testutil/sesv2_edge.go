@@ -482,7 +482,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "SendEmail_NonExistentConfigSet", func() error {
 		_, err := tc.client.SendEmail(tc.ctx, &sesv2.SendEmailInput{
-			FromEmailAddress:    aws.String("sender@example.com"),
+			FromEmailAddress:     aws.String("sender@example.com"),
 			ConfigurationSetName: aws.String("nonexistent-config-set-" + fmt.Sprintf("%d", tc.uid)),
 			Destination: &types.Destination{
 				ToAddresses: []string{"recipient@example.com"},

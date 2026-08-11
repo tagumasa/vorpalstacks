@@ -144,7 +144,11 @@ func (s *APIGatewayService) listDeploymentsCore(stores *apiGatewayStores, apiId 
 	if apiId == "" {
 		return nil, NewBadRequestException("restApiId is required")
 	}
-	return stores.restApis.ListDeployments(apiId)
+	deployments, err := stores.restApis.ListDeployments(apiId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	return deployments, nil
 }
 
 // createStageCore persists a stage.
@@ -296,17 +300,17 @@ func (s *APIGatewayService) updateStageCore(
 			}
 		case strings.HasPrefix(po.Path, "/methodSettings/"):
 			if err := applyMethodSettingsPatch(stage, po); err != nil {
-				return nil, err
+				return nil, toApiGatewayError(err)
 			}
 		case strings.HasPrefix(po.Path, "/canarySettings/"):
 			if err := applyCanarySettingsPatch(stage, po); err != nil {
-				return nil, err
+				return nil, toApiGatewayError(err)
 			}
 		}
 	}
 
 	if err := stores.restApis.UpdateStage(apiId, stage); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return stage, nil
 }

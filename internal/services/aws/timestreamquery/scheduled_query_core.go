@@ -30,9 +30,10 @@ type ScheduledQuerySummary struct {
 // ListScheduledQueriesInput is the DTO input for the ListScheduledQueries
 // admin console operation.
 type ListScheduledQueriesInput struct {
-	Region     string
-	MaxResults int
-	NextToken  int
+	Region        string
+	MaxResults    int
+	HasMaxResults bool
+	NextToken     int
 }
 
 // ListScheduledQueriesResult is the DTO result for the ListScheduledQueries
@@ -57,10 +58,11 @@ func (s *TimestreamQueryService) ListScheduledQueriesCore(stores *tsQueryStores,
 	}
 
 	maxResults := input.MaxResults
-	if maxResults <= 0 {
-		maxResults = maxListScheduledQueries
-	}
-	if maxResults > maxListScheduledQueries {
+	if input.HasMaxResults {
+		if err := validateMaxResultsScheduledQueries(maxResults); err != nil {
+			return nil, err
+		}
+	} else {
 		maxResults = maxListScheduledQueries
 	}
 

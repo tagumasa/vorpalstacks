@@ -12,11 +12,10 @@ import (
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
-// This file is the sole exception to the store-import prohibition (AGENTS.md
-// #29): it is the only admin handler file that imports the store package. It
-// contains getStore helpers and pure proto conversion helpers (toPb*
-// functions) that translate store types to proto types for response
-// marshalling.
+// This file is the sole location permitted to import the tsstore package
+// directly: it contains the getStore helpers and pure proto conversion
+// helpers (toPb* functions) that translate store types to proto types for
+// response marshalling.
 
 // getStoreFromHeader resolves the per-region tsWriteStores for the given
 // gRPC-Web request headers.

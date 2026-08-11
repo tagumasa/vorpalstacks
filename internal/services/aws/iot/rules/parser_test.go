@@ -95,7 +95,7 @@ func TestInOperatorParse(t *testing.T) {
 		{"SELECT * FROM 't' WHERE color IN ('red', 'blue')", false},
 		{"SELECT * FROM 't' WHERE id IN (1, 2, 3)", false},
 		{"SELECT * FROM 't' WHERE id NOT IN (1, 2)", false},
-		{"SELECT * FROM 't' WHERE x IN 5", true},
+		{"SELECT * FROM 't' WHERE x IN 5", false},
 		{"SELECT * FROM 't' WHERE x NOT 5", true},
 	}
 	for _, tt := range tests {

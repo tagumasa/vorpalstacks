@@ -1,13 +1,11 @@
 package s3
 
 import (
-	"sort"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -36,14 +34,6 @@ type CreateBucketOutput struct {
 
 // CreateBucket creates a new bucket.
 func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *CreateBucketInput) (*CreateBucketOutput, error) {
-	if input.Bucket == "" {
-		return nil, NewInvalidArgumentError("bucket name is required")
-	}
-
-	if err := validateBucketName(input.Bucket); err != nil {
-		return nil, err
-	}
-
 	region := ctx.GetRegion()
 	if input.LocationConstraint != "" && input.LocationConstraint != defaults.DefaultRegion {
 		region = input.LocationConstraint
@@ -54,32 +44,17 @@ func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *Crea
 		return nil, err
 	}
 
-	bucket, err := store.buckets.Create(input.Bucket, region)
+	result, err := o.svc.createBucketCore(store.buckets, AdminCreateBucketInput{
+		Bucket:                     input.Bucket,
+		Region:                     region,
+		ACL:                        input.ACL,
+		ObjectLockEnabledForBucket: input.ObjectLockEnabledForBucket,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if input.ACL != "" {
-		acp, err := CannedACLToPolicy(input.ACL, &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID})
-		if err != nil {
-			return nil, err
-		}
-		bucket.ACL = acp
-	}
-
-	if input.ObjectLockEnabledForBucket {
-		bucket.ObjectLockEnabled = true
-	}
-
-	if input.ACL != "" || input.ObjectLockEnabledForBucket {
-		if err := store.buckets.Put(bucket); err != nil {
-			return nil, err
-		}
-	}
-
-	return &CreateBucketOutput{
-		Location: "/" + input.Bucket,
-	}, nil
+	return &CreateBucketOutput{Location: result.Location}, nil
 }
 
 // DeleteBucketInput contains the input parameters for the DeleteBucket operation.
@@ -94,34 +69,10 @@ func (o *BucketOperations) DeleteBucket(ctx *request.RequestContext, input *Dele
 		return err
 	}
 
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return err
-	}
-
-	if bucket.ObjectLockEnabled {
-		logs.Warn("s3: deleting bucket with Object Lock enabled", logs.String("bucket", input.Bucket))
-	}
-
-	count, err := store.objects.CountByBucket(input.Bucket)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return ErrBucketNotEmpty
-	}
-
-	multipartCount, err := store.objects.CountMultipartUploadsByBucket(input.Bucket)
-	if err != nil {
-		return err
-	}
-	if multipartCount > 0 {
-		return ErrBucketNotEmpty
-	}
-
-	o.svc.encryptionManager.DeleteBucketKey(input.Bucket)
-
-	return store.buckets.Delete(input.Bucket)
+	_, err = o.svc.deleteBucketCore(store.buckets, store.objects, AdminDeleteBucketInput{
+		Bucket: input.Bucket,
+	})
+	return err
 }
 
 // GetBucketInput contains the input parameters for the GetBucket operation.
@@ -261,71 +212,33 @@ func (o *BucketOperations) ListBuckets(ctx *request.RequestContext, input *ListB
 	if err != nil {
 		return nil, err
 	}
-	buckets, err := store.buckets.List()
+
+	result, err := o.svc.listBucketsCore(store.buckets, AdminListBucketsInput{
+		Prefix:            input.Prefix,
+		BucketRegion:      input.BucketRegion,
+		MaxBuckets:        input.MaxBuckets,
+		ContinuationToken: input.ContinuationToken,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	bucketInfos := make([]*BucketInfo, 0, len(buckets))
-	for _, b := range buckets {
-		if input.Prefix != "" && !strings.HasPrefix(b.Name, input.Prefix) {
-			continue
-		}
-		if input.BucketRegion != "" && b.Region != input.BucketRegion {
-			continue
-		}
+	bucketInfos := make([]*BucketInfo, 0, len(result.Buckets))
+	for _, b := range result.Buckets {
 		bucketInfos = append(bucketInfos, &BucketInfo{
 			Name:         b.Name,
 			CreationDate: b.CreationDate,
 		})
 	}
 
-	sort.Slice(bucketInfos, func(i, j int) bool {
-		return bucketInfos[i].Name < bucketInfos[j].Name
-	})
-
-	// Apply ContinuationToken (offset by name).
-	startIdx := 0
-	if input.ContinuationToken != "" {
-		for i, b := range bucketInfos {
-			if b.Name > input.ContinuationToken {
-				startIdx = i
-				break
-			}
-			// If we reach the end, no more results.
-			if i == len(bucketInfos)-1 {
-				startIdx = len(bucketInfos)
-			}
-		}
-	}
-
-	// Default page size is 10000 per AWS spec when no pagination params given.
-	// Smithy range for MaxBuckets is 1-10000.
-	maxBuckets := input.MaxBuckets
-	if maxBuckets <= 0 || maxBuckets > 10000 {
-		maxBuckets = 10000
-	}
-
-	endIdx := startIdx + maxBuckets
-	var nextToken string
-	isTruncated := false
-	if endIdx < len(bucketInfos) {
-		nextToken = bucketInfos[endIdx-1].Name
-		isTruncated = true
-	} else {
-		endIdx = len(bucketInfos)
-	}
-
-	paged := bucketInfos[startIdx:endIdx]
-
 	return &ListBucketsOutput{
 		Owner: &Owner{
 			ID:          o.svc.accountID,
 			DisplayName: o.svc.accountID,
 		},
-		Buckets:           paged,
+		Buckets:           bucketInfos,
 		Prefix:            input.Prefix,
-		ContinuationToken: nextToken,
-		IsTruncated:       isTruncated,
+		ContinuationToken: result.ContinuationToken,
+		IsTruncated:       result.IsTruncated,
 	}, nil
 }

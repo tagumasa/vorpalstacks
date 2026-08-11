@@ -6,6 +6,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 )
@@ -14,11 +16,11 @@ import (
 func (h *AdminHandler) GetResources(ctx context.Context, req *connect.Request[pb.GetResourcesRequest]) (*connect.Response[pb.Resources], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	resources, err := h.service.listResourcesCore(stores, req.Msg.Restapiid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.GetLimit())
@@ -42,11 +44,11 @@ func (h *AdminHandler) GetResources(ctx context.Context, req *connect.Request[pb
 func (h *AdminHandler) GetResource(ctx context.Context, req *connect.Request[pb.GetResourceRequest]) (*connect.Response[pb.Resource], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	r, err := h.service.getResourceCore(stores, req.Msg.Restapiid, req.Msg.Resourceid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbResource(r)), nil
 }
@@ -55,11 +57,11 @@ func (h *AdminHandler) GetResource(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) CreateResource(ctx context.Context, req *connect.Request[pb.CreateResourceRequest]) (*connect.Response[pb.Resource], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	created, err := h.service.createResourceCore(stores, req.Msg.Restapiid, req.Msg.Parentid, req.Msg.Pathpart)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbResource(created)), nil
 }
@@ -68,10 +70,10 @@ func (h *AdminHandler) CreateResource(ctx context.Context, req *connect.Request[
 func (h *AdminHandler) DeleteResource(ctx context.Context, req *connect.Request[pb.DeleteResourceRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteResourceCore(stores, req.Msg.Restapiid, req.Msg.Resourceid); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }

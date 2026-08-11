@@ -213,7 +213,7 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	apis, nextToken, err := store.ListApis(opts)
+	apis, nextToken, err := s.listApisCore(store, int(opts.MaxItems), opts.Marker)
 	if err != nil {
 		return mapStoreError(err)
 	}

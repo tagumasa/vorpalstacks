@@ -1,12 +1,14 @@
 package route53
 
 import (
+	"crypto/md5"
 	"fmt"
 	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	route53store "vorpalstacks/internal/store/aws/route53"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -23,17 +25,23 @@ type CreateHostedZoneInput struct {
 	PrivateZone     bool
 	VPCID           string
 	VPCRegion       string
+	DelegationSetID string
+	Region          string
+	Tags            []types.Tag
 }
 
 // CreateHostedZoneResult holds the outcome of createHostedZoneCore.
 type CreateHostedZoneResult struct {
-	Zone *route53store.HostedZone
+	Zone       *route53store.HostedZone
+	Idempotent bool
 }
 
 // ListHostedZonesInput carries the parameters for ListHostedZones.
 type ListHostedZonesInput struct {
-	Marker   string
-	MaxItems int
+	Marker          string
+	MaxItems        int
+	DelegationSetID string
+	HostedZoneType  string
 }
 
 // ListHostedZonesResult holds the outcome of listHostedZonesCore.
@@ -60,10 +68,13 @@ type DeleteHostedZoneResult struct {
 // Core methods — shared by both HTTP API and admin gRPC handlers
 // ---------------------------------------------------------------------------
 
-// createHostedZoneCore contains the shared creation logic for a hosted zone.
-// It validates input, generates default NS/SOA records, and persists the zone.
+// createHostedZoneCore is the single entry point for creating a hosted zone,
+// shared by the HTTP API and the admin gRPC-Web handler.
 func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores, input CreateHostedZoneInput) (*CreateHostedZoneResult, error) {
 	name := strings.ToLower(input.Name)
+	if name == "" {
+		return nil, awserrors.NewAWSError("InvalidInput", "Name is required", 400)
+	}
 	if !strings.HasSuffix(name, ".") {
 		name = name + "."
 	}
@@ -73,7 +84,7 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 
 	callerRef := input.CallerReference
 	if callerRef == "" {
-		callerRef = fmt.Sprintf("%x", fmt.Sprintf("%s-%d", name, time.Now().UnixNano()))
+		callerRef = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%d", name, time.Now().UnixNano()))))
 	}
 
 	privateZone := input.PrivateZone
@@ -94,8 +105,9 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 		Config:                 &route53store.HostedZoneConfig{Comment: input.Comment, PrivateZone: privateZone},
 		ResourceRecordSetCount: 0,
 		Private:                privateZone,
-		DelegationSetID:        "",
+		DelegationSetID:        input.DelegationSetID,
 		NameServers:            nameServers,
+		Region:                 input.Region,
 		AccountID:              s.accountID,
 		CreatedAt:              time.Now(),
 	}
@@ -108,7 +120,7 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 	}
 
 	if existing, err := stores.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
-		return &CreateHostedZoneResult{Zone: existing}, nil
+		return &CreateHostedZoneResult{Zone: existing, Idempotent: true}, nil
 	}
 
 	if err := stores.HostedZones().Create(zone); err != nil {
@@ -148,6 +160,13 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 		return nil, mapStoreError(err)
 	}
 
+	if len(input.Tags) > 0 {
+		resourceKey := "hostedzone/" + zone.ID
+		if err := stores.Tags().Tag(resourceKey, input.Tags); err != nil {
+			return nil, mapStoreError(err)
+		}
+	}
+
 	if err := stores.Changes().Create(&route53store.ChangeInfo{
 		ID:          zone.ChangeID,
 		Status:      "INSYNC",
@@ -160,11 +179,44 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 	return &CreateHostedZoneResult{Zone: zone}, nil
 }
 
-// listHostedZonesCore contains the shared listing logic for hosted zones.
+// listHostedZonesCore is the single entry point for listing hosted zones,
+// shared by the HTTP API and the admin gRPC-Web handler.
 func (s *Route53Service) listHostedZonesCore(stores *route53store.Route53Stores, input ListHostedZonesInput) (*ListHostedZonesResult, error) {
 	maxItems := input.MaxItems
 	if maxItems <= 0 {
 		maxItems = 100
+	}
+
+	if input.DelegationSetID != "" || input.HostedZoneType != "" {
+		allZones, err := stores.HostedZones().ListByName()
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+		var filtered []*route53store.HostedZone
+		for _, z := range allZones {
+			if input.DelegationSetID != "" && z.DelegationSetID != input.DelegationSetID {
+				continue
+			}
+			if isPrivateHostedZoneFilter(input.HostedZoneType) && !z.Private {
+				continue
+			}
+			filtered = append(filtered, z)
+		}
+
+		isTruncated := len(filtered) > maxItems
+		nextMarker := ""
+		if isTruncated {
+			filtered = filtered[:maxItems]
+			if len(filtered) > 0 {
+				nextMarker = filtered[maxItems-1].ID
+			}
+		}
+		return &ListHostedZonesResult{
+			HostedZones: filtered,
+			IsTruncated: isTruncated,
+			Marker:      input.Marker,
+			NextMarker:  nextMarker,
+		}, nil
 	}
 
 	result, err := stores.HostedZones().List(input.Marker, maxItems)
@@ -180,10 +232,13 @@ func (s *Route53Service) listHostedZonesCore(stores *route53store.Route53Stores,
 	}, nil
 }
 
-// deleteHostedZoneCore contains the shared deletion logic for a hosted zone.
-// It verifies the zone is empty, cleans up NS/SOA records and tags, deletes
-// the zone, and creates a ChangeInfo record.
+// deleteHostedZoneCore is the single entry point for deleting a hosted zone,
+// shared by the HTTP API and the admin gRPC-Web handler.
 func (s *Route53Service) deleteHostedZoneCore(stores *route53store.Route53Stores, input DeleteHostedZoneInput) (*DeleteHostedZoneResult, error) {
+	if input.Id == "" {
+		return nil, awserrors.NewAWSError("InvalidInput", "Id is required", 400)
+	}
+
 	id := strings.TrimPrefix(input.Id, "/hostedzone/")
 
 	recordSets, err := stores.RecordSets().List(id)
@@ -203,7 +258,6 @@ func (s *Route53Service) deleteHostedZoneCore(stores *route53store.Route53Stores
 		}
 	}
 
-	// Clean up default NS and SOA records.
 	for _, rs := range recordSets {
 		if rs.Type == "NS" || rs.Type == "SOA" {
 			_ = stores.RecordSets().Delete(id, rs.Name, rs.Type, rs.SetIdentifier)

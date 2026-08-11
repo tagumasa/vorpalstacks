@@ -4,7 +4,38 @@ import (
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
+
+// storeErrorMappings maps store-level sentinel errors to SSM AWS errors.
+var storeErrorMappings = []awserrors.StoreErrorMapping{
+	{Store: ssmstore.ErrParameterNotFound, AWS: ErrParameterNotFound},
+	{Store: ssmstore.ErrParameterAlreadyExists, AWS: ErrParameterAlreadyExists},
+	{Store: ssmstore.ErrInvalidParameterName, AWS: ErrInvalidParameterName},
+	{Store: ssmstore.ErrInvalidParameterValue, AWS: ErrInvalidParameterValue},
+	{Store: ssmstore.ErrInvalidParameterType, AWS: ErrInvalidParameterType},
+	{Store: ssmstore.ErrInvalidParameterVersion, AWS: ErrInvalidParameterVersion},
+	{Store: ssmstore.ErrParameterVersionNotFound, AWS: ErrParameterVersionNotFound},
+	{Store: ssmstore.ErrParameterPatternMismatch, AWS: ErrParameterPatternMismatch},
+	{Store: ssmstore.ErrInvalidAllowedPattern, AWS: ErrInvalidAllowedPattern},
+	{Store: ssmstore.ErrReservedParameterName, AWS: ErrParameterPatternMismatch},
+}
+
+// toSSMError converts a generic error to an *awserrors.AWSError,
+// mapping store-level sentinels via storeErrorMappings.
+func toSSMError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if awsErr, ok := err.(*awserrors.AWSError); ok {
+		return awsErr
+	}
+	mapped := awserrors.MapStoreError(err, storeErrorMappings)
+	if mapped != nil {
+		return mapped
+	}
+	return err
+}
 
 var (
 	// ErrParameterNotFound is returned when the specified parameter does not exist.

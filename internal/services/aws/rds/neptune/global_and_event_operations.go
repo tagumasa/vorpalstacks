@@ -157,37 +157,25 @@ func (s *NeptuneService) DescribeGlobalClusters(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	id := request.GetStringParam(params, "GlobalClusterIdentifier")
-	if id != "" {
-		gc, err := store.GetGlobalCluster(id)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"GlobalClusters": protocol.XMLElements{ElementName: "GlobalClusterMember", Items: []interface{}{gc}},
-		}, nil
-	}
-
-	clusters, err := store.ListGlobalClusters()
+	clusters, nextMarker, err := rdssvc.QueryGlobalClusters(store, rdssvc.DescribeGlobalClustersInput{
+		GlobalClusterIdentifier: request.GetStringParam(params, "GlobalClusterIdentifier"),
+		Filters:                 nil,
+		Marker:                  request.GetStringParam(params, "Marker"),
+		MaxRecords:              int32(request.GetIntParam(params, "MaxRecords")),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(clusters))
-	for _, c := range clusters {
-		items = append(items, c)
+	for _, gc := range clusters {
+		items = append(items, gc)
 	}
-
-	marker := request.GetStringParam(params, "Marker")
-	maxRecords := request.GetIntParam(params, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.GlobalCluster).GlobalClusterIdentifier
-	})
 
 	result := map[string]interface{}{
-		"GlobalClusters": protocol.XMLElements{ElementName: "GlobalClusterMember", Items: resultItems},
+		"GlobalClusters": protocol.XMLElements{ElementName: "GlobalClusterMember", Items: items},
 	}
-	if isTruncated {
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil
@@ -518,20 +506,14 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	name := request.GetStringParam(params, "SubscriptionName")
-	if name != "" {
-		sub, err := store.GetEventSubscription(name)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: []interface{}{enrichEventSubscription(sub)}},
-		}, nil
-	}
-
-	subs, err := store.ListEventSubscriptions()
+	subs, nextMarker, err := rdssvc.QueryEventSubscriptions(store, rdssvc.DescribeEventSubscriptionsInput{
+		SubscriptionName: request.GetStringParam(params, "SubscriptionName"),
+		Filters:          nil,
+		Marker:           request.GetStringParam(params, "Marker"),
+		MaxRecords:       int32(request.GetIntParam(params, "MaxRecords")),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(subs))
@@ -539,20 +521,10 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 		items = append(items, enrichEventSubscription(sub))
 	}
 
-	marker := request.GetStringParam(params, "Marker")
-	maxRecords := request.GetIntParam(params, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		m := item.(map[string]interface{})
-		if v, ok := m["CustSubscriptionId"]; ok {
-			return v.(string)
-		}
-		return ""
-	})
-
 	result := map[string]interface{}{
-		"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: resultItems},
+		"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: items},
 	}
-	if isTruncated {
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil

@@ -7,6 +7,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
@@ -177,33 +178,23 @@ func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	name := request.GetStringParam(req.Parameters, "DBClusterParameterGroupName")
-	if name != "" {
-		pg, err := store.GetClusterParameterGroup(name)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: []interface{}{pg}},
-		}, nil
-	}
-	groups, err := store.ListClusterParameterGroups()
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-	items := make([]interface{}, len(groups))
-	for i, g := range groups {
-		items[i] = g
-	}
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxRecords := request.GetIntParam(req.Parameters, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.DBClusterParameterGroup).DBClusterParameterGroupName
+	groups, nextMarker, err := rdssvc.QueryClusterParameterGroups(store, rdssvc.DescribeDBClusterParameterGroupsInput{
+		DBClusterParameterGroupName: request.GetStringParam(req.Parameters, "DBClusterParameterGroupName"),
+		Filters:                     nil,
+		Marker:                      request.GetStringParam(req.Parameters, "Marker"),
+		MaxRecords:                  int32(request.GetIntParam(req.Parameters, "MaxRecords")),
 	})
-	result := map[string]interface{}{
-		"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: resultItems},
+	if err != nil {
+		return nil, err
 	}
-	if isTruncated {
+	items := make([]interface{}, 0, len(groups))
+	for _, g := range groups {
+		items = append(items, g)
+	}
+	result := map[string]interface{}{
+		"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: items},
+	}
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil
@@ -369,33 +360,23 @@ func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
-	name := request.GetStringParam(req.Parameters, "DBParameterGroupName")
-	if name != "" {
-		pg, err := store.GetParameterGroup(name)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: []interface{}{pg}},
-		}, nil
-	}
-	groups, err := store.ListParameterGroups()
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-	items := make([]interface{}, len(groups))
-	for i, g := range groups {
-		items[i] = g
-	}
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxRecords := request.GetIntParam(req.Parameters, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.DBParameterGroup).DBParameterGroupName
+	groups, nextMarker, err := rdssvc.QueryParameterGroups(store, rdssvc.DescribeDBParameterGroupsInput{
+		DBParameterGroupName: request.GetStringParam(req.Parameters, "DBParameterGroupName"),
+		Filters:              nil,
+		Marker:               request.GetStringParam(req.Parameters, "Marker"),
+		MaxRecords:           int32(request.GetIntParam(req.Parameters, "MaxRecords")),
 	})
-	result := map[string]interface{}{
-		"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: resultItems},
+	if err != nil {
+		return nil, err
 	}
-	if isTruncated {
+	items := make([]interface{}, 0, len(groups))
+	for _, g := range groups {
+		items = append(items, g)
+	}
+	result := map[string]interface{}{
+		"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: items},
+	}
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil

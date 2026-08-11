@@ -1,10 +1,9 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
-	"fmt"
+
 	"io"
 	"net/http"
 	"strconv"
@@ -65,213 +64,45 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	if input.IfMatch != "" || input.IfNoneMatch != "" || input.IfModifiedSince != nil || input.IfUnmodifiedSince != nil {
-		obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
-		if err != nil {
-			return nil, err
-		}
-
-		if input.IfMatch != "" {
-			if input.IfMatch == "*" {
-				// Wildcard: object must exist. HeadWithVersion succeeded, so it does.
-			} else if strings.Trim(obj.ETag, "\"") != strings.Trim(input.IfMatch, "\"") {
-				return nil, ErrPreconditionFailed
-			}
-		}
-		if input.IfNoneMatch != "" {
-			if input.IfNoneMatch == "*" {
-				// Wildcard: object must not exist. Since it exists, return NotModified.
-				return nil, ErrNotModified
-			} else if strings.Trim(obj.ETag, "\"") == strings.Trim(input.IfNoneMatch, "\"") {
-				return nil, ErrNotModified
-			}
-		}
-		if input.IfUnmodifiedSince != nil {
-			if obj.LastModified.After(*input.IfUnmodifiedSince) {
-				return nil, ErrPreconditionFailed
-			}
-		}
-		if input.IfModifiedSince != nil {
-			if !obj.LastModified.After(*input.IfModifiedSince) {
-				return nil, ErrNotModified
-			}
-		}
-	}
-
-	reader, obj, err := stores.objects.GetWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	coreResult, err := o.svc.getObjectStreamCore(ctx, stores.objects, GetObjectStreamInput{
+		Bucket:               input.Bucket,
+		Key:                  input.Key,
+		VersionID:            input.VersionId,
+		IfMatch:              input.IfMatch,
+		IfNoneMatch:          input.IfNoneMatch,
+		IfModifiedSince:      input.IfModifiedSince,
+		IfUnmodifiedSince:    input.IfUnmodifiedSince,
+		Range:                input.Range,
+		SSECustomerAlgorithm: input.SSECustomerAlgorithm,
+		SSECustomerKey:       input.SSECustomerKey,
+		SSECustomerKeyMD5:    input.SSECustomerKeyMD5,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	output := &GetObjectOutput{
-		Body:               reader,
-		ContentLength:      obj.Size,
-		ContentType:        obj.ContentType,
-		ContentEncoding:    obj.ContentEncoding,
-		ContentLanguage:    obj.ContentLanguage,
-		ContentDisposition: obj.ContentDisposition,
-		CacheControl:       obj.CacheControl,
-		ETag:               formatETag(obj.ETag),
-		LastModified:       obj.LastModified,
-		Metadata:           obj.Metadata,
-		StorageClass:       string(obj.StorageClass),
-		VersionId:          obj.VersionID,
-		ReplicationStatus:  obj.ReplicationStatus,
-	}
-
-	var decryptedData []byte
-	var unencryptedSize int64
-
-	// Streaming decryption path: for full-object GET (no Range) of chunked
-	// encrypted objects, decrypt on-the-fly without loading the entire
-	// encrypted blob into memory. Range requests and non-chunked encryption
-	// fall through to the materialise-then-decrypt path below.
-	if obj.SSEMetadata != nil && input.Range == "" && len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
-		var customerKey []byte
-		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
-			if input.SSECustomerKey == "" {
-				reader.Close()
-				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
-			}
-			var parseErr error
-			customerKey, parseErr = o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-			if parseErr != nil {
-				reader.Close()
-				return nil, ErrInvalidSSECustomerKey
-			}
-			output.SSECustomerAlgorithm = "AES256"
-			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
-		} else {
-			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
-			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
-		}
-
-		streamReader, streamErr := o.svc.encryptionManager.NewChunkDecryptReader(reader, obj.SSEMetadata, input.Bucket, input.Key, customerKey)
-		if streamErr != nil {
-			reader.Close()
-			return nil, streamErr
-		}
-
-		output.Body = streamReader
-		output.ContentLength = obj.SSEMetadata.UnencryptedSize
-		return output, nil
-	}
-
-	if obj.SSEMetadata != nil {
-		encryptedData, err := io.ReadAll(reader)
-		reader.Close()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read encrypted data: %w", err)
-		}
-
-		decryptedData, unencryptedSize, err = o.decryptObjectData(encryptedData, obj.SSEMetadata, input)
-		if err != nil {
-			return nil, err
-		}
-
-		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
-			output.SSECustomerAlgorithm = "AES256"
-			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
-		} else {
-			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
-			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
-		}
-	}
-
-	if input.Range != "" {
-		ranges, err := parseRangeHeader(input.Range)
-		if err != nil {
-			if obj.SSEMetadata == nil {
-				reader.Close()
-			}
-			return nil, err
-		}
-
-		firstRange := ranges[0]
-		var offset, length int64
-		totalSize := obj.Size
-		if obj.SSEMetadata != nil {
-			totalSize = unencryptedSize
-		}
-
-		if firstRange.Start == -1 {
-			length = firstRange.Length
-			offset = totalSize - length
-			if offset < 0 {
-				offset = 0
-				length = totalSize
-			}
-		} else {
-			offset = firstRange.Start
-			if firstRange.Length == -1 {
-				length = totalSize - offset
-				if length < 0 {
-					length = 0
-				}
-			} else {
-				length = firstRange.Length
-			}
-		}
-
-		if offset >= totalSize {
-			if obj.SSEMetadata == nil {
-				reader.Close()
-			}
-			return nil, ErrInvalidRange
-		}
-
-		actualEnd := offset + length - 1
-		if actualEnd >= totalSize {
-			actualEnd = totalSize - 1
-			length = totalSize - offset
-		}
-
-		var rangeReader io.ReadCloser
-		if obj.SSEMetadata != nil {
-			start := offset
-			end := start + length
-			if end > int64(len(decryptedData)) {
-				end = int64(len(decryptedData))
-			}
-			rangeReader = io.NopCloser(bytes.NewReader(decryptedData[start:end]))
-		} else {
-			reader.Close()
-			var getErr error
-			rangeReader, _, getErr = stores.objects.GetRangeWithVersion(ctx, input.Bucket, input.Key, input.VersionId, offset, length)
-			if getErr != nil {
-				return nil, getErr
-			}
-		}
-
-		return &GetObjectOutput{
-			Body:                 rangeReader,
-			ContentLength:        length,
-			ContentType:          obj.ContentType,
-			ETag:                 formatETag(obj.ETag),
-			LastModified:         obj.LastModified,
-			Metadata:             obj.Metadata,
-			ContentRange:         fmt.Sprintf("bytes %d-%d/%d", offset, actualEnd, totalSize),
-			IsPartial:            true,
-			AcceptRanges:         "bytes",
-			VersionId:            obj.VersionID,
-			ServerSideEncryption: output.ServerSideEncryption,
-			SSEKMSKeyId:          output.SSEKMSKeyId,
-			SSECustomerAlgorithm: output.SSECustomerAlgorithm,
-			SSECustomerKeyMD5:    output.SSECustomerKeyMD5,
-			ContentEncoding:      obj.ContentEncoding,
-			ContentLanguage:      obj.ContentLanguage,
-			ContentDisposition:   obj.ContentDisposition,
-			CacheControl:         obj.CacheControl,
-			StorageClass:         string(obj.StorageClass),
-		}, nil
-	}
-
-	if obj.SSEMetadata != nil {
-		output.Body = io.NopCloser(bytes.NewReader(decryptedData))
-		output.ContentLength = unencryptedSize
-	}
-
-	return output, nil
+	return &GetObjectOutput{
+		Body:                 coreResult.Body,
+		ContentLength:        coreResult.ContentLength,
+		ContentType:          coreResult.ContentType,
+		ContentEncoding:      coreResult.ContentEncoding,
+		ContentLanguage:      coreResult.ContentLanguage,
+		ContentDisposition:   coreResult.ContentDisposition,
+		CacheControl:         coreResult.CacheControl,
+		ETag:                 coreResult.ETag,
+		LastModified:         coreResult.LastModified,
+		Metadata:             coreResult.Metadata,
+		StorageClass:         coreResult.StorageClass,
+		VersionId:            coreResult.VersionID,
+		ContentRange:         coreResult.ContentRange,
+		IsPartial:            coreResult.IsPartial,
+		AcceptRanges:         coreResult.AcceptRanges,
+		ServerSideEncryption: coreResult.ServerSideEncryption,
+		SSEKMSKeyId:          coreResult.SSEKMSKeyId,
+		SSECustomerAlgorithm: coreResult.SSECustomerAlgorithm,
+		SSECustomerKeyMD5:    coreResult.SSECustomerKeyMD5,
+		ReplicationStatus:    coreResult.ReplicationStatus,
+	}, nil
 }
 
 // HeadObjectInput contains the input parameters for the HeadObject operation.
@@ -314,10 +145,15 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	coreResult, err := o.svc.headObjectCore(ctx, stores.objects, AdminHeadObjectInput{
+		Bucket:    input.Bucket,
+		Key:       input.Key,
+		VersionID: input.VersionId,
+	})
 	if err != nil {
 		return nil, err
 	}
+	obj := coreResult.Object
 
 	contentLength := obj.Size
 	if obj.SSEMetadata != nil {
@@ -503,49 +339,4 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	return output, nil
-}
-
-func (o *ObjectOperations) decryptObjectData(encryptedData []byte, sseMeta *s3store.SSEObjectMetadata, input *GetObjectInput) ([]byte, int64, error) {
-	unencryptedSize := sseMeta.UnencryptedSize
-
-	if sseMeta.EncryptionType == s3store.SSETypeCustomer {
-		if input.SSECustomerKey == "" {
-			return nil, 0, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
-		}
-		customerKey, err := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-		if err != nil {
-			return nil, 0, ErrInvalidSSECustomerKey
-		}
-
-		var plainData []byte
-		if len(sseMeta.PartEncryptionInfos) > 0 {
-			plainData, err = o.svc.encryptionManager.DecryptChunked(encryptedData, sseMeta, input.Bucket, input.Key, customerKey)
-			if err != nil {
-				return nil, 0, ErrInvalidSSECustomerKey
-			}
-		} else {
-			decResult, decErr := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, sseMeta, input.Bucket, input.Key, customerKey)
-			if decErr != nil {
-				return nil, 0, ErrInvalidSSECustomerKey
-			}
-			plainData = decResult.DecryptedData
-		}
-		return plainData, unencryptedSize, nil
-	}
-
-	var plainData []byte
-	var err error
-	if len(sseMeta.PartEncryptionInfos) > 0 {
-		plainData, err = o.svc.encryptionManager.DecryptChunked(encryptedData, sseMeta, input.Bucket, input.Key, nil)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to decrypt chunked data: %w", err)
-		}
-	} else {
-		decResult, decErr := o.svc.encryptionManager.Decrypt(encryptedData, sseMeta, input.Bucket, input.Key)
-		if decErr != nil {
-			return nil, 0, fmt.Errorf("failed to decrypt data: %w", decErr)
-		}
-		plainData = decResult.DecryptedData
-	}
-	return plainData, unencryptedSize, nil
 }

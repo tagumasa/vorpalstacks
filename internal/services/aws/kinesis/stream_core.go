@@ -3,38 +3,41 @@ package kinesis
 import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// AdminCreateStreamInput is the transport-agnostic input for the admin
-// console CreateStream operation.
-type AdminCreateStreamInput struct {
-	StreamName string
-	ShardCount int32
+// CreateStreamInput is the transport-agnostic input for CreateStream.
+type CreateStreamInput struct {
+	StreamName             string
+	ShardCount             int32
+	StreamMode             kinesisstore.StreamMode
+	MaxRecordSizeInKiB     int32
+	HasMaxRecordSizeInKiB  bool
+	WarmThroughputMiBps    int32
+	HasWarmThroughputMiBps bool
+	Tags                   []types.Tag
 }
 
-// AdminListStreamsInput is the transport-agnostic input for the admin
-// console ListStreams operation.
-type AdminListStreamsInput struct {
-	ExclusiveStartStreamName string
-	Limit                    int
-}
-
-// AdminDescribeStreamInput is the transport-agnostic input for the admin
-// console DescribeStream operation.
-type AdminDescribeStreamInput struct {
+// DeleteStreamInput is the transport-agnostic input for DeleteStream.
+type DeleteStreamInput struct {
 	StreamName string
 	StreamARN  string
 }
 
-// AdminDeleteStreamInput is the transport-agnostic input for the admin
-// console DeleteStream operation.
-type AdminDeleteStreamInput struct {
+// ListStreamsInput is the transport-agnostic input for ListStreams.
+type ListStreamsInput struct {
+	ExclusiveStartStreamName string
+	Limit                    int
+	NextToken                string
+}
+
+// DescribeStreamInput is the transport-agnostic input for DescribeStream.
+type DescribeStreamInput struct {
 	StreamName string
+	StreamARN  string
 }
 
 // ListStreamsResult contains the result of a listStreamsCore call.
-// Store types are used directly so that the admin handler convert file
-// can translate them to proto types.
 type ListStreamsResult struct {
 	Streams     []*kinesisstore.Stream
 	NextMarker  string
@@ -47,11 +50,11 @@ type DescribeStreamResult struct {
 	Shards []*kinesisstore.Shard
 }
 
-// createStreamCore creates a new Kinesis stream. Used by the admin console
-// gRPC-Web handler.
-func (s *KinesisService) createStreamCore(store *kinesisstore.KinesisStore, input AdminCreateStreamInput) error {
+// createStreamCore is the single entry point for creating a Kinesis stream,
+// shared by the HTTP API and the admin gRPC-Web handler.
+func (s *KinesisService) createStreamCore(store *kinesisstore.KinesisStore, input CreateStreamInput) (*kinesisstore.Stream, error) {
 	if !validateStreamName(input.StreamName) {
-		return ErrInvalidArgument
+		return nil, ErrInvalidArgument
 	}
 
 	shardCount := input.ShardCount
@@ -59,34 +62,72 @@ func (s *KinesisService) createStreamCore(store *kinesisstore.KinesisStore, inpu
 		shardCount = 1
 	}
 	if !validateShardCount(shardCount) {
-		return ErrInvalidArgument
+		return nil, ErrInvalidArgument
 	}
 
-	_, err := store.CreateStream(input.StreamName, shardCount, kinesisstore.StreamModeProvisioned, 0, 0)
+	streamMode := input.StreamMode
+	if streamMode == "" {
+		streamMode = kinesisstore.StreamModeProvisioned
+	}
+
+	if input.HasMaxRecordSizeInKiB && !validateMaxRecordSizeInKiB(input.MaxRecordSizeInKiB) {
+		return nil, ErrInvalidArgument
+	}
+
+	if input.HasWarmThroughputMiBps && !validateWarmThroughputMiBps(input.WarmThroughputMiBps) {
+		return nil, ErrInvalidArgument
+	}
+
+	stream, err := store.CreateStream(input.StreamName, shardCount, streamMode, input.MaxRecordSizeInKiB, input.WarmThroughputMiBps)
 	if err != nil {
-		return s.mapStoreError(err)
+		return nil, s.mapStoreError(err)
 	}
 
-	return nil
+	if len(input.Tags) > 0 {
+		tagMap := make(map[string]string, len(input.Tags))
+		for _, t := range input.Tags {
+			tagMap[t.Key] = t.Value
+		}
+		if err := store.Tag(input.StreamName, tagMap); err != nil {
+			return nil, s.mapStoreError(err)
+		}
+	}
+
+	return stream, nil
 }
 
-// deleteStreamCore deletes a Kinesis stream. Used by the admin console
-// gRPC-Web handler.
-func (s *KinesisService) deleteStreamCore(store *kinesisstore.KinesisStore, input AdminDeleteStreamInput) error {
-	if !validateStreamName(input.StreamName) {
+// deleteStreamCore is the single entry point for deleting a Kinesis stream,
+// shared by the HTTP API and the admin gRPC-Web handler.
+func (s *KinesisService) deleteStreamCore(store *kinesisstore.KinesisStore, input DeleteStreamInput) error {
+	streamName := input.StreamName
+
+	if input.StreamARN != "" {
+		stream, err := store.GetStreamByARN(input.StreamARN)
+		if err != nil {
+			return s.mapStoreError(err)
+		}
+		streamName = stream.StreamName
+	}
+
+	if !validateStreamName(streamName) {
 		return ErrInvalidArgument
 	}
 
-	if err := store.DeleteStream(input.StreamName); err != nil {
+	if err := store.DeleteStream(streamName); err != nil {
 		return s.mapStoreError(err)
 	}
 
 	return nil
 }
 
-// listStreamsCore lists Kinesis streams with pagination. Used by the admin
-// console gRPC-Web handler.
-func (s *KinesisService) listStreamsCore(store *kinesisstore.KinesisStore, input AdminListStreamsInput) (ListStreamsResult, error) {
+// listStreamsCore is the single entry point for listing Kinesis streams,
+// shared by the HTTP API and the admin gRPC-Web handler.
+func (s *KinesisService) listStreamsCore(store *kinesisstore.KinesisStore, input ListStreamsInput) (ListStreamsResult, error) {
+	exclusiveStartName := input.ExclusiveStartStreamName
+	if exclusiveStartName == "" && input.NextToken != "" {
+		exclusiveStartName = input.NextToken
+	}
+
 	limit := input.Limit
 	if limit <= 0 {
 		limit = 100
@@ -96,26 +137,36 @@ func (s *KinesisService) listStreamsCore(store *kinesisstore.KinesisStore, input
 	}
 
 	result, err := store.ListStreams(storecommon.ListOptions{
-		Marker:   input.ExclusiveStartStreamName,
-		MaxItems: limit,
+		Marker:   exclusiveStartName,
+		MaxItems: limit + 1,
 	})
 	if err != nil {
 		return ListStreamsResult{}, s.mapStoreError(err)
 	}
 
+	hasMore := len(result.Items) > limit
+	if hasMore {
+		result.Items = result.Items[:limit]
+	}
+
+	nextMarker := ""
+	if hasMore && len(result.Items) > 0 {
+		nextMarker = result.Items[len(result.Items)-1].StreamName
+	}
+
 	return ListStreamsResult{
 		Streams:     result.Items,
-		NextMarker:  result.NextMarker,
-		IsTruncated: result.IsTruncated,
+		NextMarker:  nextMarker,
+		IsTruncated: hasMore,
 	}, nil
 }
 
-// describeStreamCore describes a Kinesis stream. Used by the admin console
-// gRPC-Web handler.
-func (s *KinesisService) describeStreamCore(store *kinesisstore.KinesisStore, input AdminDescribeStreamInput) (DescribeStreamResult, error) {
+// describeStreamCore is the single entry point for describing a Kinesis
+// stream, shared by the HTTP API and the admin gRPC-Web handler.
+func (s *KinesisService) describeStreamCore(store *kinesisstore.KinesisStore, input DescribeStreamInput) (DescribeStreamResult, error) {
 	streamName := input.StreamName
 
-	if streamName == "" && input.StreamARN != "" {
+	if input.StreamARN != "" {
 		stream, err := store.GetStreamByARN(input.StreamARN)
 		if err != nil {
 			return DescribeStreamResult{}, s.mapStoreError(err)

@@ -39,7 +39,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 		scope = "CLOUDFRONT"
 	}
 
-	result, err := h.service.listWebACLsCore(stores, AdminListWebACLsInput{
+	result, err := h.service.listWebACLsCore(stores, ListWebACLsInput{
 		Scope:      scope,
 		Limit:      int(req.Msg.GetLimit()),
 		NextMarker: req.Msg.Nextmarker,
@@ -72,7 +72,7 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 		scope = "CLOUDFRONT"
 	}
 
-	webACL, err := h.service.createWebACLCore(stores, AdminCreateWebACLInput{
+	webACL, err := h.service.createWebACLCore(stores, CreateWebACLInput{
 		Name:        req.Msg.GetName(),
 		Description: req.Msg.GetDescription(),
 		Scope:       scope,

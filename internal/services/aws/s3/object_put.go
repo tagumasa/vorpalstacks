@@ -52,146 +52,56 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
-
 	if err := validateObjectKey(input.Key); err != nil {
 		return nil, err
 	}
 
-	if input.ContentLength > maxSingleUploadSize {
-		return nil, ErrEntityTooLarge
-	}
-
-	if input.IfNoneMatch != "" || input.IfMatch != "" {
-		existingObj, err := stores.objects.Head(ctx, input.Bucket, input.Key)
-		objectExists := err == nil && existingObj != nil
-
-		if input.IfNoneMatch == "*" {
-			if objectExists {
-				return nil, ErrPreconditionFailed
-			}
-		} else if input.IfNoneMatch != "" {
-			if objectExists && strings.Trim(existingObj.ETag, "\"") == strings.Trim(input.IfNoneMatch, "\"") {
-				return nil, ErrPreconditionFailed
-			}
-		}
-
-		if input.IfMatch != "" {
-			if !objectExists {
-				return nil, ErrPreconditionFailed
-			}
-			if strings.Trim(existingObj.ETag, "\"") != strings.Trim(input.IfMatch, "\"") {
-				return nil, ErrPreconditionFailed
-			}
-		}
-	}
-
-	bucket, err := stores.buckets.Get(input.Bucket)
+	coreResult, err := o.svc.putObjectStreamCore(ctx, stores.buckets, stores.objects, PutObjectStreamInput{
+		Body:                 input.Body,
+		ContentLength:        input.ContentLength,
+		Bucket:               input.Bucket,
+		Key:                  input.Key,
+		ContentType:          input.ContentType,
+		ContentEncoding:      input.ContentEncoding,
+		ContentLanguage:      input.ContentLanguage,
+		ContentDisposition:   input.ContentDisposition,
+		CacheControl:         input.CacheControl,
+		Metadata:             input.Metadata,
+		StorageClass:         input.StorageClass,
+		IfMatch:              input.IfMatch,
+		IfNoneMatch:          input.IfNoneMatch,
+		ServerSideEncryption: input.ServerSideEncryption,
+		SSEKMSKeyId:          input.SSEKMSKeyId,
+		SSECustomerAlgorithm: input.SSECustomerAlgorithm,
+		SSECustomerKey:       input.SSECustomerKey,
+		SSECustomerKeyMD5:    input.SSECustomerKeyMD5,
+		Tagging:              input.Tagging,
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	var encryptionType EncryptionType
-	var customerKey []byte
-	if input.SSECustomerAlgorithm != "" {
-		encryptionType = EncryptionTypeSSE_C
-		var err error
-		customerKey, err = o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-		if err != nil {
-			return nil, NewInvalidArgumentError(fmt.Sprintf("invalid SSE-C customer key: %v", err))
-		}
-	} else {
-		encryptionType = o.svc.encryptionManager.DetermineEncryptionType(
-			EncryptionType(input.ServerSideEncryption),
-			bucket.EncryptionConfig,
-		)
-	}
-
-	var obj *s3store.Object
-	storageClass := s3store.ObjectStorageClass(input.StorageClass)
-	if storageClass == "" {
-		storageClass = s3store.StorageClassStandard
-	}
-
-	sysMeta := &s3store.SystemMetadata{
-		ContentEncoding:    input.ContentEncoding,
-		ContentLanguage:    input.ContentLanguage,
-		ContentDisposition: input.ContentDisposition,
-		CacheControl:       input.CacheControl,
-	}
-
-	if o.svc.encryptionManager.ShouldEncrypt(encryptionType, bucket.EncryptionConfig) {
-		encResult, err := o.svc.encryptionManager.EncryptStream(input.Body, encryptionType, bucket.EncryptionConfig, input.Bucket, input.Key, input.SSEKMSKeyId, customerKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to encrypt data: %w", err)
-		}
-
-		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, encResult.SSEMetadata, storageClass, sysMeta)
-		if err != nil {
-			return nil, err
-		}
-
-		if input.Tagging != "" {
-			parsedTags := parseTaggingHeader(input.Tagging)
-			if len(parsedTags) > 0 {
-				obj.Tags = parsedTags
-				_ = stores.objects.SetTags(input.Bucket, input.Key, parsedTags)
-			}
-		}
-
-		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
-		repCtx, repCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		go func() {
-			defer repCancel()
-			defer func() {
-				if r := recover(); r != nil {
-					logs.Error("s3: replication goroutine panic",
-						logs.String("bucket", bucket.Name),
-						logs.String("key", input.Key),
-						logs.Any("panic", r))
-				}
-			}()
-			o.svc.replicateObject(repCtx, reqCtx, stores, bucket, input.Key, obj)
-		}()
-
-		return &PutObjectOutput{
-			ETag:                 formatETag(obj.ETag),
-			VersionId:            obj.VersionID,
-			ServerSideEncryption: string(encResult.SSEMetadata.EncryptionType),
-			SSEKMSKeyId:          encResult.SSEMetadata.KMSKeyID,
-		}, nil
-	}
-
-	obj, err = stores.objects.PutWithVersioning(ctx, input.Bucket, input.Key, input.Body, input.ContentType, input.Metadata, false, storageClass, sysMeta)
-	if err != nil {
-		return nil, err
-	}
-
-	if input.Tagging != "" {
-		parsedTags := parseTaggingHeader(input.Tagging)
-		if len(parsedTags) > 0 {
-			obj.Tags = parsedTags
-			_ = stores.objects.SetTags(input.Bucket, input.Key, parsedTags)
-		}
-	}
+	obj := coreResult.Object
 
 	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
-	repCtx2, repCancel2 := context.WithTimeout(context.Background(), 30*time.Second)
+	repCtx, repCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	go func() {
-		defer repCancel2()
+		defer repCancel()
 		defer func() {
 			if r := recover(); r != nil {
 				logs.Error("s3: replication goroutine panic",
-					logs.String("bucket", bucket.Name),
+					logs.String("bucket", coreResult.Bucket.Name),
 					logs.String("key", input.Key),
 					logs.Any("panic", r))
 			}
 		}()
-		o.svc.replicateObject(repCtx2, reqCtx, stores, bucket, input.Key, obj)
+		o.svc.replicateObject(repCtx, reqCtx, stores, coreResult.Bucket, input.Key, obj)
 	}()
 
 	return &PutObjectOutput{
-		ETag:      formatETag(obj.ETag),
-		VersionId: obj.VersionID,
+		ETag:                 formatETag(obj.ETag),
+		VersionId:            obj.VersionID,
+		ServerSideEncryption: coreResult.ServerSideEncryption,
+		SSEKMSKeyId:          coreResult.SSEKMSKeyId,
 	}, nil
 }
 
@@ -227,7 +137,6 @@ type CopyObjectResult struct {
 	LastModified time.Time `xml:"LastModified"`
 }
 
-// CopyObject copies an object to another location in S3.
 func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *CopyObjectInput) (*CopyObjectOutput, error) {
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
@@ -237,155 +146,47 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	srcBucket, srcKey, srcVersionId, err := parseCopySource(input.CopySource)
+	srcBucket, _, _, err := parseCopySource(input.CopySource)
 	if err != nil {
 		return nil, err
-	}
-
-	if input.CopySourceVersionId != "" {
-		srcVersionId = input.CopySourceVersionId
 	}
 
 	if err := o.validateBucketExists(stores, srcBucket); err != nil {
 		return nil, ErrInvalidCopySource
 	}
 
-	var srcObj *s3store.Object
-	if srcVersionId != "" {
-		srcObj, err = stores.objects.HeadWithVersion(ctx, srcBucket, srcKey, srcVersionId)
-	} else {
-		srcObj, err = stores.objects.GetMetadata(srcBucket, srcKey)
-	}
-	if err != nil {
-		return nil, ErrInvalidCopySource
-	}
-
-	if srcObj.Size > maxCopyObjectSize {
-		return nil, ErrEntityTooLarge
-	}
-
-	var srcReader io.Reader
-	if srcObj.SSEMetadata != nil || input.CopySourceSSECustomerKey != "" {
-		getInput := &GetObjectInput{
-			Bucket:               srcBucket,
-			Key:                  srcKey,
-			VersionId:            srcVersionId,
-			SSECustomerAlgorithm: input.CopySourceSSECustomerAlgo,
-			SSECustomerKey:       input.CopySourceSSECustomerKey,
-			SSECustomerKeyMD5:    input.CopySourceSSECustomerMD5,
-		}
-		getOutput, err := o.GetObject(ctx, reqCtx, stores, getInput)
-		if err != nil {
-			return nil, err
-		}
-		defer getOutput.Body.Close()
-		srcReader = getOutput.Body
-	} else {
-		var reader io.ReadCloser
-		if srcVersionId != "" {
-			reader, _, err = stores.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
-		} else {
-			reader, srcObj, err = stores.objects.Get(ctx, srcBucket, srcKey)
-		}
-		if err != nil {
-			return nil, err
-		}
-		defer reader.Close()
-		srcReader = reader
-	}
-
-	bucketEncryption, err := stores.buckets.GetEncryptionConfiguration(input.Bucket)
+	coreResult, err := o.svc.copyObjectStreamCore(ctx, stores.buckets, stores.objects, CopyObjectStreamInput{
+		Bucket:                    input.Bucket,
+		Key:                       input.Key,
+		CopySource:                input.CopySource,
+		CopySourceVersionId:       input.CopySourceVersionId,
+		MetadataDirective:         input.MetadataDirective,
+		ContentType:               input.ContentType,
+		Metadata:                  input.Metadata,
+		ServerSideEncryption:      input.ServerSideEncryption,
+		SSEKMSKeyId:               input.SSEKMSKeyId,
+		SSECustomerAlgorithm:      input.SSECustomerAlgorithm,
+		SSECustomerKey:            input.SSECustomerKey,
+		SSECustomerKeyMD5:         input.SSECustomerKeyMD5,
+		CopySourceSSECustomerAlgo: input.CopySourceSSECustomerAlgo,
+		CopySourceSSECustomerKey:  input.CopySourceSSECustomerKey,
+		CopySourceSSECustomerMD5:  input.CopySourceSSECustomerMD5,
+	})
 	if err != nil {
 		return nil, err
 	}
+	obj := coreResult.Object
 
-	var targetEncryptionType EncryptionType
-	var targetKMSKeyID string
+	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCopy)
 
-	if input.ServerSideEncryption != "" {
-		targetEncryptionType = EncryptionType(input.ServerSideEncryption)
-		targetKMSKeyID = input.SSEKMSKeyId
-	} else if input.SSECustomerAlgorithm != "" {
-		targetEncryptionType = EncryptionTypeSSE_C
-	} else {
-		targetEncryptionType = o.svc.encryptionManager.DetermineEncryptionType(EncryptionTypeNone, bucketEncryption)
-		if targetEncryptionType == EncryptionTypeSSE_KMS && bucketEncryption != nil {
-			targetKMSKeyID = bucketEncryption.KMSMasterKeyID
-		}
-	}
-
-	var obj *s3store.Object
-	contentType := input.ContentType
-	if contentType == "" {
-		contentType = srcObj.ContentType
-	}
-	metadata := input.Metadata
-	if input.MetadataDirective != "" && input.MetadataDirective != "COPY" && input.MetadataDirective != "REPLACE" {
-		return nil, NewInvalidArgumentError(fmt.Sprintf("invalid MetadataDirective: %s (must be COPY or REPLACE)", input.MetadataDirective))
-	}
-	if input.MetadataDirective != "REPLACE" {
-		metadata = srcObj.Metadata
-	}
-
-	if targetEncryptionType != EncryptionTypeNone {
-		var customerKey []byte
-		if input.SSECustomerKey != "" {
-			var err error
-			customerKey, err = o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		encResult, err := o.svc.encryptionManager.EncryptStream(srcReader, targetEncryptionType, bucketEncryption, input.Bucket, input.Key, targetKMSKeyID, customerKey)
-		if err != nil {
-			return nil, err
-		}
-
-		targetStorageClass := srcObj.StorageClass
-		if targetStorageClass == "" {
-			targetStorageClass = s3store.StorageClassStandard
-		}
-		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, encResult.SSEMetadata, targetStorageClass, nil)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		if srcVersionId != "" {
-			if input.MetadataDirective == "REPLACE" {
-				obj, err = stores.objects.CopyWithVersionAndMetadata(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key, contentType, metadata)
-			} else {
-				obj, err = stores.objects.CopyWithVersion(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key)
-			}
-		} else {
-			if input.MetadataDirective == "REPLACE" {
-				obj, err = stores.objects.CopyWithMetadata(ctx, srcBucket, srcKey, input.Bucket, input.Key, contentType, metadata)
-			} else {
-				obj, err = stores.objects.Copy(ctx, srcBucket, srcKey, input.Bucket, input.Key)
-			}
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	output := &CopyObjectOutput{
+	return &CopyObjectOutput{
 		CopyObjectResult: &CopyObjectResult{
 			ETag:         formatETag(obj.ETag),
 			LastModified: obj.LastModified,
 		},
-	}
-
-	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCopy)
-
-	if obj.SSEMetadata != nil {
-		output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
-		if obj.SSEMetadata.KMSKeyID != "" {
-			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
-		}
-	}
-
-	return output, nil
+		ServerSideEncryption: coreResult.ServerSideEncryption,
+		SSEKMSKeyId:          coreResult.SSEKMSKeyId,
+	}, nil
 }
 
 // RestoreObjectInput contains the parameters for restoring an archived object.

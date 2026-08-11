@@ -2,6 +2,7 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -36,10 +37,12 @@ type DeleteSecretInput struct {
 	HasRecoveryWindow          bool
 }
 
-// ListSecretsInput carries pagination parameters for ListSecrets.
+// ListSecretsInput carries pagination and filter parameters for ListSecrets.
 type ListSecretsInput struct {
-	MaxResults int
-	NextToken  string
+	MaxResults             int
+	NextToken              string
+	Filters                []map[string]interface{}
+	IncludePlannedDeletion bool
 }
 
 // CreateSecretResult holds the transport-agnostic result of CreateSecret.
@@ -99,6 +102,35 @@ func (s *SecretsManagerService) createSecretCore(ctx context.Context, store secr
 		}
 		if err := validateSecretTags(tagList); err != nil {
 			return nil, err
+		}
+	}
+
+	// ClientRequestToken idempotency: if the token is provided and a
+	// version with that ID already exists for a secret with this name,
+	// check whether the values match (idempotent success) or differ
+	// (error). This mirrors the AWS CreateSecret idempotency rules.
+	if in.ClientRequestToken != "" {
+		existing, metaErr := store.GetSecretForMetadata(in.Name)
+		if metaErr == nil && len(existing.VersionIDs) > 0 {
+			for _, vid := range existing.VersionIDs {
+				if vid == in.ClientRequestToken {
+					existingVer, verErr := store.GetSecretVersion(in.Name, in.ClientRequestToken)
+					if verErr != nil {
+						break
+					}
+					if existingVer.SecretString == in.SecretString &&
+						bytesEqual(existingVer.SecretBinary, in.SecretBinary) {
+						return &CreateSecretResult{
+							ARN:       existing.ARN,
+							Name:      existing.Name,
+							VersionID: in.ClientRequestToken,
+						}, nil
+					}
+					return nil, awserrors.NewAWSError("InvalidRequestException",
+						fmt.Sprintf("You can't modify an existing secret version. The ClientRequestToken %s is already associated with a different version value.", in.ClientRequestToken),
+						http.StatusBadRequest)
+				}
+			}
 		}
 	}
 
@@ -188,15 +220,27 @@ func (s *SecretsManagerService) deleteSecretCore(ctx context.Context, store secr
 // listSecretsCore is the single entry point for listing secrets,
 // shared by the HTTP API and the admin gRPC handler.
 func (s *SecretsManagerService) listSecretsCore(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, in ListSecretsInput) (*ListSecretsResult, error) {
-	maxResults := in.MaxResults
-	if maxResults <= 0 {
-		maxResults = 100
+	if err := validateMaxFilters(len(in.Filters)); err != nil {
+		return nil, err
 	}
 
-	result, err := store.ListSecrets(common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   in.NextToken,
-	}, nil)
+	secretFilter := buildSecretFilter(in.IncludePlannedDeletion, in.Filters)
+
+	opts := common.ListOptions{
+		Marker: in.NextToken,
+	}
+	if in.MaxResults < 0 {
+		// Sentinel: caller wants all items for client-side sorting.
+		opts.MaxItems = 0
+	} else {
+		maxResults := in.MaxResults
+		if maxResults <= 0 {
+			maxResults = 100
+		}
+		opts.MaxItems = maxResults
+	}
+
+	result, err := store.ListSecrets(opts, secretFilter)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}

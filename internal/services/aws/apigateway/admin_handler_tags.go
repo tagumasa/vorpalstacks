@@ -6,6 +6,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	tagutil "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -22,11 +24,11 @@ func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.
 
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	if err := h.service.tagResource(stores, req.Msg.Resourcearn, req.Msg.Tags); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -43,11 +45,11 @@ func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[p
 
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	if err := h.service.untagResource(stores, req.Msg.Resourcearn, req.Msg.Tagkeys); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -61,12 +63,12 @@ func (h *AdminHandler) GetTags(ctx context.Context, req *connect.Request[pb.GetT
 
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	tagsList, err := h.service.getResourceTags(stores, req.Msg.Resourcearn)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.Tags{

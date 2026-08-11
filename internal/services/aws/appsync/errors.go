@@ -110,3 +110,16 @@ func mapStoreError(err error) (interface{}, error) {
 	}
 	return nil, mapped
 }
+
+// mapStoreErrorE maps a store error to an AppSync error, returning only the
+// error (for use in Core methods that return typed results).
+func mapStoreErrorE(err error) error {
+	if err == nil {
+		return nil
+	}
+	mapped := awserrors.MapStoreError(err, storeErrorMappings)
+	if mapped == err {
+		return ErrInternalFailureException
+	}
+	return mapped
+}

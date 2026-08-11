@@ -97,7 +97,7 @@ func (s *APIGatewayService) createRestApiCore(
 
 	created, err := stores.restApis.Create(api)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	if cloneFrom != "" {
@@ -105,7 +105,7 @@ func (s *APIGatewayService) createRestApiCore(
 			// Roll back the just-persisted target so that a clone failure
 			// does not leave an empty API lingering in Pebble.
 			_ = stores.restApis.Delete(created.Id)
-			return nil, err
+			return nil, toApiGatewayError(err)
 		}
 	}
 
@@ -131,7 +131,7 @@ func (s *APIGatewayService) deleteRestApiCore(stores *apiGatewayStores, apiId st
 		return NewBadRequestException("restApiId is required")
 	}
 	if err := stores.restApis.Delete(apiId); err != nil {
-		return err
+		return toApiGatewayError(err)
 	}
 	_ = stores.domains.RemoveBasePathMappingsForApi(apiId)
 	return nil
@@ -155,13 +155,13 @@ func (s *APIGatewayService) updateRestApiCore(
 
 	api, err := stores.restApis.Get(apiId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range patches {
 		handled, err := applyRestApiPatch(api, po)
 		if err != nil {
-			return nil, err
+			return nil, toApiGatewayError(err)
 		}
 		if !handled {
 			return nil, NewBadRequestException("unknown patch path: " + po.Path)
@@ -169,7 +169,7 @@ func (s *APIGatewayService) updateRestApiCore(
 	}
 
 	if err := stores.restApis.Update(api); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return api, nil
 }
@@ -265,7 +265,7 @@ func (s *APIGatewayService) listRestApisCore(
 ) (*storecommon.ListResult[apigateway.RestApi], error) {
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return stores.restApis.List(storecommon.ListOptions{
 		Marker:   marker,

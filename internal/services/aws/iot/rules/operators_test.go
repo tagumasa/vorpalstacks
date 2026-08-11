@@ -3,9 +3,12 @@ package rules
 import "testing"
 
 func TestOpMod_ZeroDivision(t *testing.T) {
-	_, err := opMod(float64(10), float64(0))
-	if err == nil {
-		t.Fatal("expected error for modulo by zero, got nil")
+	result, err := opMod(float64(10), float64(0))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := result.(unknownValue); !ok {
+		t.Fatalf("expected unknownValue for modulo by zero, got %T", result)
 	}
 }
 
@@ -20,9 +23,12 @@ func TestOpMod_Normal(t *testing.T) {
 }
 
 func TestOpDiv_ZeroDivision(t *testing.T) {
-	_, err := opDiv(float64(10), float64(0))
-	if err == nil {
-		t.Fatal("expected error for division by zero, got nil")
+	result, err := opDiv(float64(10), float64(0))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := result.(unknownValue); !ok {
+		t.Fatalf("expected unknownValue for division by zero, got %T", result)
 	}
 }
 

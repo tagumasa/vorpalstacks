@@ -226,7 +226,7 @@ func (r *TestRunner) runCloudTrailChannelTests(tc *cloudTrailTestContext) []Test
 		return nil
 	}))
 
-	// CreateChannel with tags (B1 regression: CreateChannel uses "Tags" not "TagsList").
+	// CreateChannel with tags (regression: CreateChannel uses "Tags" not "TagsList").
 	results = append(results, r.RunTest("cloudtrail", "CreateChannel_WithTags", func() error {
 		tagCh := fmt.Sprintf("ct-channel-tags-%d", time.Now().UnixNano())
 		resp, err := tc.client.CreateChannel(tc.ctx, &cloudtrail.CreateChannelInput{

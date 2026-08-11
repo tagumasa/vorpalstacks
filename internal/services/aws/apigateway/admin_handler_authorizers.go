@@ -6,6 +6,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 )
@@ -14,7 +16,7 @@ import (
 func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Request[pb.CreateAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	in := &AuthorizerInput{
@@ -34,7 +36,7 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 
 	created, err := h.service.createAuthorizerCore(stores, req.Msg.Restapiid, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbAuthorizer(created)), nil
 }
@@ -43,11 +45,11 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[pb.GetAuthorizersRequest]) (*connect.Response[pb.Authorizers], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	authorizers, err := h.service.listAuthorizersCore(stores, req.Msg.Restapiid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.GetLimit())
@@ -71,11 +73,11 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[pb.GetAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	a, err := h.service.getAuthorizerCore(stores, req.Msg.Restapiid, req.Msg.Authorizerid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbAuthorizer(a)), nil
 }
@@ -84,10 +86,10 @@ func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) DeleteAuthorizer(ctx context.Context, req *connect.Request[pb.DeleteAuthorizerRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteAuthorizerCore(stores, req.Msg.Restapiid, req.Msg.Authorizerid); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }

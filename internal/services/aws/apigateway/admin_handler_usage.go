@@ -7,6 +7,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 )
@@ -18,7 +20,7 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	in := &ApiKeyInput{
@@ -60,7 +62,7 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 
 	created, err := h.service.createApiKeyCore(stores, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbApiKey(created, true)), nil
 }
@@ -69,11 +71,11 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.GetApiKeysRequest]) (*connect.Response[pb.ApiKeys], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	items := make([]*pb.ApiKey, 0, len(result.Items))
@@ -91,11 +93,11 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.GetApiKeyRequest]) (*connect.Response[pb.ApiKey], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	k, err := h.service.getApiKeyCore(stores, req.Msg.Apikey)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbApiKey(k, req.Msg.GetIncludevalue())), nil
 }
@@ -104,10 +106,10 @@ func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.Ge
 func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb.DeleteApiKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteApiKeyCore(stores, req.Msg.Apikey); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
@@ -116,7 +118,7 @@ func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb
 func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request[pb.CreateUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	in := &UsagePlanInput{
@@ -148,7 +150,7 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 
 	created, err := h.service.createUsagePlanCore(stores, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbUsagePlan(created)), nil
 }
@@ -157,11 +159,11 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[pb.GetUsagePlansRequest]) (*connect.Response[pb.UsagePlans], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	items := make([]*pb.UsagePlan, 0, len(result.Items))
@@ -179,11 +181,11 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb.GetUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	p, err := h.service.getUsagePlanCore(stores, req.Msg.Usageplanid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbUsagePlan(p)), nil
 }
@@ -192,10 +194,10 @@ func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb
 func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteUsagePlanCore(stores, req.Msg.Usageplanid); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
@@ -204,7 +206,7 @@ func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request
 func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Request[pb.CreateUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	in := &UsagePlanKeyInput{
 		KeyId:   req.Msg.Keyid,
@@ -212,7 +214,7 @@ func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Requ
 	}
 	created, err := h.service.createUsagePlanKeyCore(stores, req.Msg.Usageplanid, in)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbUsagePlanKey(created)), nil
 }
@@ -221,11 +223,11 @@ func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Requ
 func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeysRequest]) (*connect.Response[pb.UsagePlanKeys], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.listUsagePlanKeysCore(stores, req.Msg.Usageplanid, int(req.Msg.GetLimit()), req.Msg.Position)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	items := make([]*pb.UsagePlanKey, 0, len(result.Items))
@@ -243,11 +245,11 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	k, err := h.service.getUsagePlanKeyCore(stores, req.Msg.Usageplanid, req.Msg.Keyid)
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(toPbUsagePlanKey(k)), nil
 }
@@ -256,10 +258,10 @@ func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request
 func (h *AdminHandler) DeleteUsagePlanKey(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if err := h.service.deleteUsagePlanKeyCore(stores, req.Msg.Usageplanid, req.Msg.Keyid); err != nil {
-		return nil, storeErr(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }

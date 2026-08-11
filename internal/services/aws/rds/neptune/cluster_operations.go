@@ -232,131 +232,78 @@ func (s *NeptuneService) setClusterEndpoint(store neptunestore.NeptuneStoreInter
 // CreateDBCluster creates a new Neptune DB cluster with the specified configuration.
 func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	id := request.GetStringParam(params, "DBClusterIdentifier")
-	if id == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterIdentifier is required")
-	}
-	if err := rdssvc.ValidateDBClusterIdentifier(id); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-
-	engine := request.GetStringParam(params, "Engine")
-	if engine == "" {
-		return nil, awserrors.NewMissingParameter("Engine is required")
-	}
-	if err := rdssvc.ValidateEngine(engine); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-	engineVersion := request.GetStringParam(params, "EngineVersion")
-	if engineVersion == "" {
-		engineVersion = rdssvc.DefaultEngineVersion(engine)
-	}
-	if err := rdssvc.ValidateEngineVersion(engine, engineVersion); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-	if dbName := request.GetStringParam(params, "DatabaseName"); dbName != "" {
-		if err := rdssvc.ValidateDatabaseName(dbName); err != nil {
-			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	replicationSource := request.GetStringParam(params, "ReplicationSourceIdentifier")
+	engineVersion := rdssvc.ResolveEngineVersion(request.GetStringParam(params, "Engine"), request.GetStringParam(params, "EngineVersion"))
 
+	createParams := rdssvc.CreateClusterParams{
+		DBClusterIdentifier:          request.GetStringParam(params, "DBClusterIdentifier"),
+		Engine:                       request.GetStringParam(params, "Engine"),
+		EngineVersion:                engineVersion,
+		DatabaseName:                 request.GetStringParam(params, "DatabaseName"),
+		MasterUsername:               request.GetStringParam(params, "MasterUsername"),
+		Port:                         request.GetIntParam(params, "Port"),
+		BackupRetentionPeriod:        request.GetIntParam(params, "BackupRetentionPeriod"),
+		AvailabilityZones:            request.GetStringList(params, "AvailabilityZones"),
+		DBSubnetGroupName:            request.GetStringParam(params, "DBSubnetGroupName"),
+		DBClusterParameterGroupName:  request.GetStringParam(params, "DBClusterParameterGroupName"),
+		StorageEncrypted:             request.GetBoolParam(params, "StorageEncrypted"),
+		CopyTagsToSnapshot:           request.GetBoolParam(params, "CopyTagsToSnapshot"),
+		DeletionProtection:           request.GetBoolParam(params, "DeletionProtection"),
+		IAMDatabaseAuthentication:    request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
+		EnabledCloudwatchLogsExports: request.GetStringList(params, "EnableCloudwatchLogsExports"),
+		AccountID:                    reqCtx.GetAccountID(),
+		Region:                       reqCtx.GetRegion(),
+	}
+
+	if err := rdssvc.ValidateCreateClusterParams(store, createParams); err != nil {
+		return nil, neptuneTranslateError(err)
+	}
+
+	replicationSource := request.GetStringParam(params, "ReplicationSourceIdentifier")
 	if replicationSource != "" {
-		_, err := store.GetCluster(replicationSource)
-		if err != nil {
+		if _, err := store.GetCluster(replicationSource); err != nil {
 			return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("replication source cluster %s not found", replicationSource), http.StatusBadRequest)
 		}
 	}
 
-	// Validate that referenced DBClusterParameterGroupName exists.
-	if pgName := request.GetStringParam(params, "DBClusterParameterGroupName"); pgName != "" {
-		if _, err := store.GetClusterParameterGroup(pgName); err != nil {
-			return nil, awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", fmt.Sprintf("DB Cluster Parameter Group not found: %s", pgName), http.StatusNotFound)
-		}
-	}
-	// Validate that referenced DBSubnetGroupName exists.
-	if sgName := request.GetStringParam(params, "DBSubnetGroupName"); sgName != "" {
-		if _, err := store.GetSubnetGroup(sgName); err != nil {
-			return nil, awserrors.NewAWSError("DBSubnetGroupNotFoundFault", fmt.Sprintf("DB Subnet Group not found: %s", sgName), http.StatusNotFound)
-		}
-	}
-
-	now := time.Now()
-	port := request.GetIntParam(params, "Port")
-	// Validate Port range when explicitly provided.
-	if request.HasParam(params, "Port") && port > 0 {
-		if err := validatePort(port); err != nil {
-			return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-		}
-	}
-	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
+	backupRetention := createParams.BackupRetentionPeriod
 	if backupRetention == 0 {
 		backupRetention = 1
 	}
-	// Validate BackupRetentionPeriod range (1-35).
 	if err := validateBackupRetentionPeriod(backupRetention); err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
-	// Accept MasterUserPassword and store as bcrypt hash.
-	// Write-only: never surfaced in API responses.
 	masterPassword := request.GetStringParam(params, "MasterUserPassword")
 	masterPasswordHash, err := hashMasterPassword(masterPassword)
 	if err != nil {
 		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
 	}
 
-	cluster := &neptunestore.DBCluster{
-		DBClusterIdentifier:              id,
-		Engine:                           engine,
-		EngineVersion:                    engineVersion,
-		Status:                           "creating",
-		Port:                             port,
-		BackupRetentionPeriod:            backupRetention,
-		PreferredBackupWindow:            request.GetStringParam(params, "PreferredBackupWindow"),
-		PreferredMaintenanceWindow:       request.GetStringParam(params, "PreferredMaintenanceWindow"),
-		MasterUsername:                   request.GetStringParam(params, "MasterUsername"),
-		DatabaseName:                     request.GetStringParam(params, "DatabaseName"),
-		DBClusterParameterGroupName:      request.GetStringParam(params, "DBClusterParameterGroupName"),
-		DBSubnetGroupName:                request.GetStringParam(params, "DBSubnetGroupName"),
-		StorageEncrypted:                 request.GetBoolParam(params, "StorageEncrypted"),
-		KmsKeyId:                         request.GetStringParam(params, "KmsKeyId"),
-		CopyTagsToSnapshot:               request.GetBoolParam(params, "CopyTagsToSnapshot"),
-		DeletionProtection:               request.GetBoolParam(params, "DeletionProtection"),
-		IAMDatabaseAuthenticationEnabled: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
-		ClusterCreateTime:                &now,
-		EarliestRestorableTime:           &now,
-		LatestRestorableTime:             &now,
-		ReplicationSourceIdentifier:      replicationSource,
-		GlobalClusterIdentifier:          request.GetStringParam(params, "GlobalClusterIdentifier"),
-		StorageType:                      request.GetStringParam(params, "StorageType"),
-		MasterUserPasswordHash:           masterPasswordHash,
-		DbClusterResourceId:              fmt.Sprintf("cluster-%s", id),
-		NetworkType:                      "IPV4",
-		AccountID:                        reqCtx.GetAccountID(),
-		Region:                           reqCtx.GetRegion(),
-		DBClusterArn:                     arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(id),
-	}
+	cluster := rdssvc.BuildCluster(createParams)
+	cluster.BackupRetentionPeriod = backupRetention
+	cluster.PreferredBackupWindow = request.GetStringParam(params, "PreferredBackupWindow")
+	cluster.PreferredMaintenanceWindow = request.GetStringParam(params, "PreferredMaintenanceWindow")
+	cluster.KmsKeyId = request.GetStringParam(params, "KmsKeyId")
+	cluster.ReplicationSourceIdentifier = replicationSource
+	cluster.GlobalClusterIdentifier = request.GetStringParam(params, "GlobalClusterIdentifier")
+	cluster.StorageType = request.GetStringParam(params, "StorageType")
+	cluster.MasterUserPasswordHash = masterPasswordHash
+	cluster.DbClusterResourceId = fmt.Sprintf("cluster-%s", cluster.DBClusterIdentifier)
+	cluster.NetworkType = "IPV4"
+	cluster.EarliestRestorableTime = cluster.ClusterCreateTime
+	cluster.LatestRestorableTime = cluster.ClusterCreateTime
 
-	if azList := request.GetStringList(params, "AvailabilityZones"); len(azList) > 0 {
-		cluster.AvailabilityZones = azList
-	}
 	if sgList := request.GetStringList(params, "VpcSecurityGroupIds"); len(sgList) > 0 {
 		if _, err := s.resolveSecurityGroups(ctx, reqCtx.GetRegion(), sgList); err != nil {
 			return nil, translateStoreError(err)
 		}
 		cluster.VpcSecurityGroupIds = sgList
 	}
-	if logExports := request.GetStringList(params, "EnableCloudwatchLogsExports"); len(logExports) > 0 {
-		cluster.EnabledCloudwatchLogsExports = logExports
-	}
-	// Parse ServerlessV2ScalingConfiguration from input (previously dropped).
 	if svsc := request.GetMapParam(params, "ServerlessV2ScalingConfiguration"); svsc != nil {
 		minCap := request.GetFloatParam(svsc, "MinCapacity")
 		maxCap := request.GetFloatParam(svsc, "MaxCapacity")
@@ -394,15 +341,15 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 				GlobalClusterIdentifier: gc.GlobalClusterIdentifier,
 			})
 			if err := store.UpdateGlobalCluster(gc); err != nil {
-				logs.Warn("failed to register cluster as global cluster member", logs.String("cluster", id), logs.Err(err))
+				logs.Warn("failed to register cluster as global cluster member", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
 			}
 		}
 	}
 
 	var enginePort int
-	if eng := s.engineFor(engine); eng != nil {
-		if port, err := eng.Open(reqCtx.GetRegion(), id); err != nil {
-			logs.Warn("failed to open cluster engine", logs.String("cluster", id), logs.Err(err))
+	if eng := s.engineFor(cluster.Engine); eng != nil {
+		if port, err := eng.Open(reqCtx.GetRegion(), cluster.DBClusterIdentifier); err != nil {
+			logs.Warn("failed to open cluster engine", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
 		} else {
 			enginePort = port
 		}
@@ -420,31 +367,26 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 			}
 		}
 		if err := store.AddTags(cluster.DBClusterArn, storeTags); err != nil {
-			if eng := s.engineFor(engine); eng != nil {
-				eng.Close(id)
+			if eng := s.engineFor(cluster.Engine); eng != nil {
+				eng.Close(cluster.DBClusterIdentifier)
 			}
 			removeClusterFromGlobal(store, cluster)
-			store.DeleteCluster(id)
+			store.DeleteCluster(cluster.DBClusterIdentifier)
 			return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Failed to tag cluster: %v", err), http.StatusBadRequest)
 		}
 	}
 
-	recordEvent(store, "db-cluster", id, cluster.DBClusterArn,
-		fmt.Sprintf("DB cluster %s created", id), []string{"creation"})
+	recordEvent(store, "db-cluster", cluster.DBClusterIdentifier, cluster.DBClusterArn,
+		fmt.Sprintf("DB cluster %s created", cluster.DBClusterIdentifier), []string{"creation"})
 
-	// State machine: transition from 'creating' to 'available'.
-	// Done synchronously so the response reflects the final state and
-	// subsequent operations (StopDBCluster, etc.) see 'available'.
-	// The background goroutine acts as a safety net for the rare case
-	// where the synchronous update was skipped (e.g. store error).
 	cluster.Status = "available"
 	if err := store.UpdateCluster(cluster); err != nil {
-		logs.Warn("failed to transition cluster to available", logs.String("cluster", id), logs.Err(err))
+		logs.Warn("failed to transition cluster to available", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
 	}
 	s.scheduleTransition(reqCtx.GetRegion(), 500*time.Millisecond, func(st neptunestore.NeptuneStoreInterface) error {
-		c, err := st.GetCluster(id)
+		c, err := st.GetCluster(cluster.DBClusterIdentifier)
 		if err != nil || c.Status != "creating" {
-			return nil // cluster deleted or already transitioned
+			return nil
 		}
 		c.Status = "available"
 		return st.UpdateCluster(c)
@@ -458,23 +400,20 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 // DeleteDBCluster deletes the specified Neptune DB cluster.
 func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	id := request.GetStringParam(params, "DBClusterIdentifier")
-	if id == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterIdentifier is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	cluster, err := store.GetCluster(id)
+	cluster, err := rdssvc.ValidateDeleteClusterParams(store, rdssvc.DeleteClusterParams{
+		DBClusterIdentifier:       request.GetStringParam(params, "DBClusterIdentifier"),
+		SkipFinalSnapshot:         request.GetBoolParam(params, "SkipFinalSnapshot"),
+		FinalDBSnapshotIdentifier: request.GetStringParam(params, "FinalDBSnapshotIdentifier"),
+		AccountID:                 reqCtx.GetAccountID(),
+		Region:                    reqCtx.GetRegion(),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	if cluster.DeletionProtection {
-		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", "Cannot delete cluster when DeletionProtection is enabled", http.StatusBadRequest)
+		return nil, neptuneTranslateError(err)
 	}
 
 	skipFinal := request.GetBoolParam(params, "SkipFinalSnapshot")
@@ -492,36 +431,18 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	if !skipFinal {
-		now := time.Now()
-		snapshot := &neptunestore.DBClusterSnapshot{
-			DBClusterSnapshotIdentifier: finalSnapshotID,
-			DBClusterIdentifier:         id,
-			SnapshotCreateTime:          &now,
-			Engine:                      cluster.Engine,
-			EngineVersion:               cluster.EngineVersion,
-			Status:                      "available",
-			Port:                        cluster.Port,
-			StorageEncrypted:            cluster.StorageEncrypted,
-			KmsKeyId:                    cluster.KmsKeyId,
-			DBSnapshotArn:               arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().ClusterSnapshot(finalSnapshotID),
-			AccountID:                   reqCtx.GetAccountID(),
-			Region:                      reqCtx.GetRegion(),
-		}
+		snapshot := rdssvc.BuildFinalSnapshot(cluster, finalSnapshotID, reqCtx.GetAccountID(), reqCtx.GetRegion())
 		if err := store.CreateSnapshot(snapshot); err != nil {
-			// Roll back cluster status if snapshot creation fails.
 			cluster.Status = "available"
 			store.UpdateCluster(cluster)
 			return nil, translateStoreError(err)
 		}
 	}
 
-	// Delete the cluster before cascading cleanup so that a
-	// DeleteCluster failure leaves the snapshot and cascade untouched.
-	// On failure we roll back the status and remove the orphaned snapshot.
-	if err := store.DeleteCluster(id); err != nil {
+	if err := store.DeleteCluster(cluster.DBClusterIdentifier); err != nil {
 		cluster.Status = "available"
 		if rbErr := store.UpdateCluster(cluster); rbErr != nil {
-			logs.Warn("failed to roll back cluster status after delete failure", logs.String("cluster", id), logs.Err(rbErr))
+			logs.Warn("failed to roll back cluster status after delete failure", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(rbErr))
 		}
 		if !skipFinal {
 			if delErr := store.DeleteSnapshot(finalSnapshotID); delErr != nil {
@@ -532,17 +453,16 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	cascadeDeleteClusterResources(store, cluster)
-
 	removeClusterFromGlobal(store, cluster)
 
 	if eng := s.engineFor(cluster.Engine); eng != nil {
-		if err := eng.Close(id); err != nil {
-			logs.Warn("failed to close cluster engine", logs.String("cluster", id), logs.Err(err))
+		if err := eng.Close(cluster.DBClusterIdentifier); err != nil {
+			logs.Warn("failed to close cluster engine", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
 		}
 	}
 
-	recordEvent(store, "db-cluster", id, cluster.DBClusterArn,
-		fmt.Sprintf("DB cluster %s deleted", id), []string{"deletion"})
+	recordEvent(store, "db-cluster", cluster.DBClusterIdentifier, cluster.DBClusterArn,
+		fmt.Sprintf("DB cluster %s deleted", cluster.DBClusterIdentifier), []string{"deletion"})
 
 	return map[string]interface{}{
 		"DBCluster": enrichClusterWithTags(store, cluster),
@@ -691,20 +611,14 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
-	if clusterID != "" {
-		cluster, err := store.GetCluster(clusterID)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTags(store, cluster)}},
-		}, nil
-	}
-
-	clusters, err := store.ListClusters()
+	clusters, nextMarker, err := rdssvc.QueryClusters(store, rdssvc.DescribeDBClustersInput{
+		DBClusterIdentifier: request.GetStringParam(params, "DBClusterIdentifier"),
+		Filters:             nil,
+		Marker:              request.GetStringParam(params, "Marker"),
+		MaxRecords:          int32(request.GetIntParam(params, "MaxRecords")),
+	})
 	if err != nil {
-		return nil, translateStoreError(err)
+		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(clusters))
@@ -712,21 +626,10 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 		items = append(items, enrichClusterWithTags(store, c))
 	}
 
-	marker := request.GetStringParam(params, "Marker")
-	maxRecords := request.GetIntParam(params, "MaxRecords")
-	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		if m, ok := item.(map[string]interface{}); ok {
-			if v, ok := m["DBClusterIdentifier"].(string); ok {
-				return v
-			}
-		}
-		return ""
-	})
-
 	result := map[string]interface{}{
-		"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: resultItems},
+		"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: items},
 	}
-	if isTruncated {
+	if nextMarker != "" {
 		result["Marker"] = nextMarker
 	}
 	return result, nil

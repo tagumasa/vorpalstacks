@@ -40,7 +40,7 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	result, err := h.service.listStreamsCore(stores, AdminListStreamsInput{
+	result, err := h.service.listStreamsCore(stores, ListStreamsInput{
 		ExclusiveStartStreamName: req.Msg.Exclusivestartstreamname,
 		Limit:                    int(req.Msg.GetLimit()),
 	})
@@ -71,7 +71,7 @@ func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	result, err := h.service.describeStreamCore(stores, AdminDescribeStreamInput{
+	result, err := h.service.describeStreamCore(stores, DescribeStreamInput{
 		StreamName: req.Msg.Streamname,
 		StreamARN:  req.Msg.Streamarn,
 	})
@@ -91,7 +91,7 @@ func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := h.service.createStreamCore(stores, AdminCreateStreamInput{
+	if _, err := h.service.createStreamCore(stores, CreateStreamInput{
 		StreamName: req.Msg.GetStreamname(),
 		ShardCount: req.Msg.GetShardcount(),
 	}); err != nil {
@@ -108,7 +108,7 @@ func (h *AdminHandler) DeleteStream(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := h.service.deleteStreamCore(stores, AdminDeleteStreamInput{
+	if err := h.service.deleteStreamCore(stores, DeleteStreamInput{
 		StreamName: req.Msg.GetStreamname(),
 	}); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

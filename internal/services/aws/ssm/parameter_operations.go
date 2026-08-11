@@ -106,7 +106,7 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	version, err := s.putParameterWithEncryption(ctx, store, param, overwrite, reqCtx.Principal)
+	version, err := s.putParameterCore(ctx, store, param, overwrite, reqCtx.Principal)
 	if err != nil {
 		if errors.Is(err, ssmstore.ErrParameterAlreadyExists) {
 			return nil, ErrParameterAlreadyExists
@@ -314,7 +314,7 @@ func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteParameter(name); err != nil {
+	if err := s.deleteParameterCore(store, name); err != nil {
 		if errors.Is(err, ssmstore.ErrParameterNotFound) {
 			return nil, ErrParameterNotFound
 		}
@@ -351,24 +351,29 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	filters, err := parseParameterFilters(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	metadata, nextMarker, err := store.DescribeParameters(filters, maxResults, nextToken)
+	result, err := s.describeParametersCore(store, DescribeParametersInput{
+		Filters:    filters,
+		MaxResults: maxResults,
+		NextToken:  nextToken,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	params := make([]map[string]interface{}, 0, len(metadata))
-	for _, m := range metadata {
+	params := make([]map[string]interface{}, 0, len(result.Parameters))
+	for _, m := range result.Parameters {
 		params = append(params, map[string]interface{}{
 			"Name":             m.Name,
 			"Type":             string(m.Type),
@@ -387,7 +392,7 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 	response := map[string]interface{}{
 		"Parameters": params,
 	}
-	pagination.SetNextToken(response, "NextToken", nextMarker)
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }

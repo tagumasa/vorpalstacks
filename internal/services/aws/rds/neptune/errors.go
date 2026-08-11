@@ -65,6 +65,27 @@ func translateStoreError(err error) error {
 	return err
 }
 
+// neptuneTranslateError is the top-level error translator for Neptune
+// HTTP handlers.  It preserves *AWSError values returned by shared
+// validation functions in the rds package, maps known store sentinels
+// via translateStoreError, and falls back to InvalidParameterValue for
+// any remaining unmapped error so the client sees a 400 rather than an
+// opaque InternalFailure 500.
+func neptuneTranslateError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var awsErr *awserrors.AWSError
+	if errors.As(err, &awsErr) {
+		return awsErr
+	}
+	mapped := translateStoreError(err)
+	if errors.As(mapped, &awsErr) {
+		return awsErr
+	}
+	return awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
+}
+
 // extractStoreMsg returns the error message string, handling both plain
 // sentinel errors and wrapped errors from neptune.NewStoreError.
 func extractStoreMsg(err error) string {

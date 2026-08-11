@@ -9,14 +9,10 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/appsync"
 	appsyncconnect "vorpalstacks/internal/pb/aws/appsync/appsyncconnect"
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the AppSync gRPC-Web admin console handler.
@@ -32,44 +28,21 @@ func NewAdminHandler(svc *AppSyncService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStoreByHeader(header http.Header) (*appsyncstore.AppSyncStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
-	return h.service.GetStoreForRegion(region)
-}
-
 // ListApis returns a paginated list of AppSync APIs in the requested region.
 func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.ListApisRequest]) (*connect.Response[pb.ListApisResponse], error) {
-	store, err := h.getStoreByHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetMaxresults())
-	if limit <= 0 {
-		limit = 25
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: limit,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	apis, nextToken, err := store.ListApis(opts)
+	apis, nextToken, err := h.service.listApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	pbApis := make([]*pb.Api, len(apis))
 	for i, a := range apis {
-		pbApis[i] = &pb.Api{
-			Apiid:        a.ApiId,
-			Name:         a.Name,
-			Apiarn:       a.Arn,
-			Dns:          a.Dns,
-			Tags:         a.Tags,
-			Xrayenabled:  proto.Bool(a.XrayEnabled),
-			Wafwebaclarn: a.WafWebAclArn,
-		}
+		pbApis[i] = toPbApi(a)
 	}
 
 	return connect.NewResponse(&pb.ListApisResponse{
@@ -80,24 +53,14 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 
 // ListGraphqlApis returns a paginated list of GraphQL APIs in the requested region.
 func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request[pb.ListGraphqlApisRequest]) (*connect.Response[pb.ListGraphqlApisResponse], error) {
-	store, err := h.getStoreByHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	limit := int(req.Msg.GetMaxresults())
-	if limit <= 0 {
-		limit = 25
-	}
-
-	opts := storecommon.ListOptions{
-		MaxItems: limit,
-		Marker:   req.Msg.Nexttoken,
-	}
-
-	graphqlApis, nextToken, err := store.ListGraphqlApis(opts, "")
+	graphqlApis, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken, "")
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	pbApis := make([]*pb.GraphqlApi, len(graphqlApis))
@@ -111,56 +74,30 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 	}), nil
 }
 
-func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
-	return &pb.GraphqlApi{
-		Name:         a.Name,
-		Apiid:        a.ApiId,
-		Arn:          a.Arn,
-		Uris:         a.Uris,
-		Tags:         a.Tags,
-		Xrayenabled:  proto.Bool(a.XrayEnabled),
-		Wafwebaclarn: a.WafWebAclArn,
-	}
-}
-
 // CreateGraphqlApi creates a new AppSync GraphQL API via the admin console.
 func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Request[pb.CreateGraphqlApiRequest]) (*connect.Response[pb.CreateGraphqlApiResponse], error) {
 	if req.Msg.GetName() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
 	}
 
-	store, err := h.getStoreByHeader(req.Header())
+	authType, err := pbAuthTypeToString(req.Msg.GetAuthenticationtype())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	var authType string
-	switch req.Msg.GetAuthenticationtype() {
-	case pb.AuthenticationType_AUTHENTICATION_TYPE_API_KEY:
-		authType = "API_KEY"
-	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_IAM:
-		authType = "AWS_IAM"
-	case pb.AuthenticationType_AUTHENTICATION_TYPE_OPENID_CONNECT:
-		authType = "OPENID_CONNECT"
-	case pb.AuthenticationType_AUTHENTICATION_TYPE_AMAZON_COGNITO_USER_POOLS:
-		authType = "AMAZON_COGNITO_USER_POOLS"
-	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_LAMBDA:
-		authType = "AWS_LAMBDA"
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument,
-			fmt.Errorf("unsupported authentication type: %v", req.Msg.GetAuthenticationtype()))
-	}
-
-	api := &appsyncstore.GraphqlApi{
+	result, err := h.service.createGraphqlApiCore(store, createGraphqlApiInput{
 		Name:               req.Msg.GetName(),
 		AuthenticationType: authType,
 		Tags:               req.Msg.GetTags(),
 		XrayEnabled:        req.Msg.GetXrayenabled(),
-	}
-
-	result, err := store.CreateGraphqlApi(api)
+	})
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateGraphqlApiResponse{
@@ -174,17 +111,14 @@ func (h *AdminHandler) DeleteGraphqlApi(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ApiId is required"))
 	}
 
-	store, err := h.getStoreByHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	// Tags are cleaned up automatically by DeleteGraphqlApiById.
-	if err := store.DeleteGraphqlApiById(req.Msg.GetApiid()); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+	if err := h.service.deleteGraphqlApiCore(store, req.Msg.GetApiid()); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-
-	h.service.schemaCache.Delete(req.Msg.GetApiid())
 
 	return connect.NewResponse(&pb.DeleteGraphqlApiResponse{}), nil
 }

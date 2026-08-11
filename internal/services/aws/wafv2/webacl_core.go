@@ -5,30 +5,46 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// AdminCreateWebACLInput is the transport-agnostic input for creating a
-// WebACL from the admin console. It contains only primitive fields so
-// that the admin handler does not need to import store packages.
-type AdminCreateWebACLInput struct {
+// CreateWebACLInput is the transport-agnostic input for creating a
+// WebACL. The admin console sets only Name/Description/Scope; the HTTP
+// API additionally provides DefaultAction, Rules, VisibilityConfig and
+// other rich fields. Store-typed fields are safe because the admin
+// handler constructs the struct by field name and never references
+// the store packages.
+type CreateWebACLInput struct {
 	Name        string
 	Description string
 	Scope       string
+
+	// Rich fields used by the HTTP API; left nil by the admin console.
+	DefaultAction          *wafstore.Action
+	Rules                  []*wafstore.Rule
+	VisibilityConfig       *wafstore.VisibilityConfig
+	CustomResponseBodies   interface{}
+	CaptchaConfig          interface{}
+	ChallengeConfig        interface{}
+	TokenDomains           interface{}
+	AssociationConfig      interface{}
+	ApplicationConfig      interface{}
+	MonetizationConfig     interface{}
+	DataProtectionConfig   interface{}
+	OnSourceDDoSProtection interface{}
+	Tags                   []types.Tag
 }
 
-// AdminListWebACLsInput is the transport-agnostic input for listing
-// WebACLs from the admin console.
-type AdminListWebACLsInput struct {
+// ListWebACLsInput is the transport-agnostic input for listing WebACLs.
+type ListWebACLsInput struct {
 	Scope      string
 	Limit      int
 	NextMarker string
 }
 
-// createWebACLCore creates a WebACL using a service-layer DTO. It is
-// used by the admin console gRPC-Web handler. The HTTP API handler
-// (CreateWebACL in web_acl_operations.go) has its own richer path that
-// accepts DefaultAction, Rules, VisibilityConfig, and other fields.
-func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input AdminCreateWebACLInput) (*wafstore.WebACL, error) {
+// createWebACLCore is the single entry point for creating a WebACL,
+// shared by the HTTP API and the admin gRPC-Web handler.
+func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input CreateWebACLInput) (*wafstore.WebACL, error) {
 	if err := validateEntityName(input.Name); err != nil {
 		return nil, err
 	}
@@ -38,6 +54,19 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input AdminCreateWe
 	if err := validateEntityDescription(input.Description); err != nil {
 		return nil, err
 	}
+	if err := validateTokenDomains(input.TokenDomains); err != nil {
+		return nil, err
+	}
+	if err := validateCustomResponseBodies(input.CustomResponseBodies); err != nil {
+		return nil, err
+	}
+	if input.DefaultAction != nil {
+		if err := validateDefaultAction(input.DefaultAction); err != nil {
+			return nil, err
+		}
+	}
+
+	capacity := int64(1500)
 
 	id, err := generateID()
 	if err != nil {
@@ -45,11 +74,23 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input AdminCreateWe
 	}
 
 	webACL := &wafstore.WebACL{
-		ID:          id,
-		Name:        input.Name,
-		Description: input.Description,
-		Scope:       input.Scope,
-		Capacity:    1500,
+		ID:                     id,
+		Name:                   input.Name,
+		Description:            input.Description,
+		Scope:                  input.Scope,
+		Capacity:               capacity,
+		Rules:                  input.Rules,
+		DefaultAction:          input.DefaultAction,
+		VisibilityConfig:       input.VisibilityConfig,
+		CustomResponseBodies:   input.CustomResponseBodies,
+		CaptchaConfig:          input.CaptchaConfig,
+		ChallengeConfig:        input.ChallengeConfig,
+		TokenDomains:           input.TokenDomains,
+		AssociationConfig:      input.AssociationConfig,
+		ApplicationConfig:      input.ApplicationConfig,
+		MonetizationConfig:     input.MonetizationConfig,
+		DataProtectionConfig:   input.DataProtectionConfig,
+		OnSourceDDoSProtection: input.OnSourceDDoSProtection,
 	}
 
 	webACL, err = stores.webACLs.Create(webACL)
@@ -60,11 +101,17 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input AdminCreateWe
 		return nil, err
 	}
 
+	if len(input.Tags) > 0 {
+		if err := stores.tags.TagFromSlice(webACL.ARN, input.Tags); err != nil {
+			logs.Warn("failed to persist tags for WebACL", logs.String("id", webACL.ID), logs.Err(err))
+		}
+	}
+
 	return webACL, nil
 }
 
-// deleteWebACLCore deletes a WebACL and cleans up associated tags. It is
-// used by the admin console gRPC-Web handler.
+// deleteWebACLCore is the single entry point for deleting a WebACL,
+// shared by the HTTP API and the admin gRPC-Web handler.
 func (s *WAFv2Service) deleteWebACLCore(stores *wafv2Stores, id, lockToken string) (*wafstore.WebACL, error) {
 	if id == "" {
 		return nil, invalidParamError("Id is required")
@@ -93,9 +140,9 @@ func (s *WAFv2Service) deleteWebACLCore(stores *wafv2Stores, id, lockToken strin
 	return deleted, nil
 }
 
-// listWebACLsCore lists WebACLs using a service-layer DTO. It is used
-// by the admin console gRPC-Web handler.
-func (s *WAFv2Service) listWebACLsCore(stores *wafv2Stores, input AdminListWebACLsInput) (*wafstore.WebACLListResult, error) {
+// listWebACLsCore is the single entry point for listing WebACLs,
+// shared by the HTTP API and the admin gRPC-Web handler.
+func (s *WAFv2Service) listWebACLsCore(stores *wafv2Stores, input ListWebACLsInput) (*wafstore.WebACLListResult, error) {
 	if err := validateScope(input.Scope); err != nil {
 		return nil, err
 	}

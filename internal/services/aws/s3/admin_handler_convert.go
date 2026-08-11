@@ -198,7 +198,7 @@ func listBucketsResultToPb(result *AdminListBucketsResult) *pb.ListBucketsOutput
 	for _, b := range result.Buckets {
 		buckets = append(buckets, &pb.Bucket{
 			Name:         b.Name,
-			Creationdate: b.CreationDate,
+			Creationdate: b.CreationDate.Format(timeutils.ISO8601UTCFormat),
 			Bucketregion: b.Region,
 		})
 	}
