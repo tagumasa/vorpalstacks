@@ -13,7 +13,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution, bytesScannedCutoff int64) {
+func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx context.Context, qe *athenastore.QueryExecution, bytesScannedCutoff int64) {
 	defer func() {
 		if r := resilience.RecoverPanic("executeQueryAsync"); r != nil {
 			qe.Status.State = athenastore.QueryExecutionStateFailed
@@ -25,10 +25,6 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 			}
 		}
 	}()
-	ctx, cancel := context.WithCancel(context.Background())
-	s.setCancelFunc(qe.QueryExecutionId, cancel)
-	defer cancel()
-	defer s.getAndRemoveCancelFunc(qe.QueryExecutionId)
 	startTime := time.Now().UTC()
 
 	st, err := s.store(reqCtx)
@@ -49,6 +45,15 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 		logs.Error("Failed to get store in executeQueryAsync", logs.Err(err))
 		return
 	}
+	// Check if StopQueryExecution already cancelled the query while it
+	// was in QUEUED state (before this goroutine reached RUNNING).
+	current, err := st.queryExecutionStore.GetQueryExecution(qe.QueryExecutionId)
+	if err != nil {
+		logs.Error("Failed to re-read query execution before RUNNING transition", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+	} else if current.Status.State == athenastore.QueryExecutionStateCancelled {
+		return
+	}
+
 	qe.Status.State = athenastore.QueryExecutionStateRunning
 	qe.Status.StateChangeReason = ""
 	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {

@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -28,6 +30,8 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 			return nil, err
 		}
 	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	returnValuesOnConditionCheckFailure := request.GetStringParam(req.Parameters, "ReturnValuesOnConditionCheckFailure")
 
 	upperStmt := strings.ToUpper(strings.TrimSpace(statement))
 	var result interface{}
@@ -35,13 +39,13 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 
 	switch {
 	case strings.HasPrefix(upperStmt, "SELECT"):
-		result, err = s.executePartiQLSelectEnhanced(ctx, reqCtx, statement, params, consistentRead, limit)
+		result, err = s.executePartiQLSelectEnhanced(ctx, reqCtx, statement, params, consistentRead, limit, nextToken)
 	case strings.HasPrefix(upperStmt, "INSERT"):
 		result, err = s.executePartiQLInsert(ctx, reqCtx, statement, params)
 	case strings.HasPrefix(upperStmt, "UPDATE"):
-		result, err = s.executePartiQLUpdate(ctx, reqCtx, statement, params)
+		result, err = s.executePartiQLUpdate(ctx, reqCtx, statement, params, returnValuesOnConditionCheckFailure)
 	case strings.HasPrefix(upperStmt, "DELETE"):
-		result, err = s.executePartiQLDelete(ctx, reqCtx, statement, params)
+		result, err = s.executePartiQLDelete(ctx, reqCtx, statement, params, returnValuesOnConditionCheckFailure)
 	default:
 		return nil, ErrInvalidParameter
 	}
@@ -65,7 +69,7 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 	return result, nil
 }
 
-func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, consistentRead bool, limit int) (interface{}, error) {
+func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, consistentRead bool, limit int, nextToken string) (interface{}, error) {
 	tableName, whereExpr, orderBy, selectCols := parseSelectStatementWithOrderBy(statement)
 	if tableName == "" {
 		return nil, ErrInvalidParameter
@@ -118,8 +122,22 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 		items = sortItemsByOrderBy(items, orderBy)
 	}
 
+	startOffset := 0
+	if nextToken != "" {
+		if decoded, decErr := base64.StdEncoding.DecodeString(nextToken); decErr == nil {
+			var offset int
+			if json.Unmarshal(decoded, &offset) == nil && offset > 0 && offset <= len(items) {
+				startOffset = offset
+			}
+		}
+	}
+	items = items[startOffset:]
+
+	var newNextToken string
 	if limit > 0 && len(items) > limit {
 		items = items[:limit]
+		offsetBytes, _ := json.Marshal(startOffset + limit)
+		newNextToken = base64.StdEncoding.EncodeToString(offsetBytes)
 	}
 
 	result := make([]map[string]interface{}, 0, len(items))
@@ -137,15 +155,17 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 		result = append(result, buildItemResponse(attrs))
 	}
 
-	// Single-instance Pebble provides strong consistency by default.
-	// ConsistentRead is accepted for API compatibility.
 	_ = consistentRead
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"Items":        result,
 		"Count":        len(result),
 		"ScannedCount": scannedCount,
-	}, nil
+	}
+	if newNextToken != "" {
+		resp["NextToken"] = newNextToken
+	}
+	return resp, nil
 }
 
 func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
@@ -220,7 +240,7 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 	return response.EmptyResponse(), nil
 }
 
-func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (ret interface{}, err error) {
+func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in executePartiQLUpdate: %v", r)
@@ -262,8 +282,23 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 	}
 
 	scannedCount := len(items)
+	var preFilterItems []*dbstore.Item
+	if whereExpr != nil && returnValuesOnConditionCheckFailure == "ALL_OLD" {
+		preFilterItems = make([]*dbstore.Item, len(items))
+		copy(preFilterItems, items)
+	}
 	if whereExpr != nil {
 		items = filterItemsByExpr(items, whereExpr, params)
+	}
+
+	if len(items) == 0 && preFilterItems != nil && len(preFilterItems) > 0 {
+		return map[string]interface{}{
+			"Items": []map[string]interface{}{
+				buildItemResponse(preFilterItems[0].Attributes),
+			},
+			"Count":        0,
+			"ScannedCount": scannedCount,
+		}, nil
 	}
 
 	updatedCount := 0
@@ -329,7 +364,7 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 	}, nil
 }
 
-func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (ret interface{}, err error) {
+func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in executePartiQLDelete: %v", r)
@@ -365,8 +400,23 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 	}
 
 	scannedCount := len(items)
+	var preFilterItems []*dbstore.Item
+	if whereExpr != nil && returnValuesOnConditionCheckFailure == "ALL_OLD" {
+		preFilterItems = make([]*dbstore.Item, len(items))
+		copy(preFilterItems, items)
+	}
 	if whereExpr != nil {
 		items = filterItemsByExpr(items, whereExpr, params)
+	}
+
+	if len(items) == 0 && preFilterItems != nil && len(preFilterItems) > 0 {
+		return map[string]interface{}{
+			"Items": []map[string]interface{}{
+				buildItemResponse(preFilterItems[0].Attributes),
+			},
+			"Count":        0,
+			"ScannedCount": scannedCount,
+		}, nil
 	}
 
 	deletedCount := 0
@@ -630,11 +680,12 @@ func applyAddAssignments(attrs map[string]*dbstore.AttributeValue, assignments [
 
 		// Numeric ADD.
 		if existing.N != nil && addValue.N != nil {
-			result := addNumbers(*existing.N, *addValue.N)
-			if result != "" {
-				r := result
-				attrs[asgn.attrName] = &dbstore.AttributeValue{N: &r}
+			result, addErr := addNumbers(*existing.N, *addValue.N)
+			if addErr != nil {
+				return addErr
 			}
+			r := result
+			attrs[asgn.attrName] = &dbstore.AttributeValue{N: &r}
 			continue
 		}
 

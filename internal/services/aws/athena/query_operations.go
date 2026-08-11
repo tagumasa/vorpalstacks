@@ -146,11 +146,16 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	s.setCancelFunc(queryExecution.QueryExecutionId, cancel)
+
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
 		defer func() { resilience.RecoverPanic("athena async query") }()
-		s.executeQueryAsync(reqCtx, queryExecution, bytesScannedCutoff)
+		defer cancel()
+		defer s.getAndRemoveCancelFunc(queryExecution.QueryExecutionId)
+		s.executeQueryAsync(reqCtx, ctx, queryExecution, bytesScannedCutoff)
 	}()
 
 	return map[string]interface{}{

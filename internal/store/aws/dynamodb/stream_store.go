@@ -1,6 +1,8 @@
 package dynamodb
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,10 +18,16 @@ import (
 // errStopScan is a sentinel to stop prefix scans early.
 var errStopScan = errors.New("stop scan")
 
-// ShardID is the single shard identifier used for all streams. Real AWS
-// DynamoDB Streams uses multiple shards derived from partitions, but our
-// single-node deployment uses a single shard per stream.
-const ShardID = "shardId-00000000000000000000000000"
+// ShardIDForStream generates a deterministic shard identifier for a given
+// stream ARN. Real AWS DynamoDB Streams uses multiple shards derived from
+// partitions, but our single-node deployment uses a single shard per stream.
+// The shard ID is derived from the stream ARN via SHA-256, ensuring each
+// stream has a unique, deterministic identifier that persists across restarts.
+func ShardIDForStream(streamArn string) string {
+	h := sha256.Sum256([]byte(streamArn))
+	seq := binary.BigEndian.Uint64(h[:8]) % 1000000000000000000
+	return fmt.Sprintf("shardId-%020d-%012x", seq, h[8:14])
+}
 
 // StreamEventName enumerates the DynamoDB Streams event types.
 type StreamEventName string

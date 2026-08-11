@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 )
@@ -346,32 +347,54 @@ func attributeValueToString(av *AttributeValue) string {
 
 func formatNumberForSort(numStr string) string {
 	if numStr == "" {
-		return "+"
+		return "1" + strings.Repeat("0", 80)
 	}
 	rat := new(big.Rat)
 	if _, ok := rat.SetString(numStr); !ok {
-		return "+" + numStr
+		return "1" + numStr
 	}
 	sign := rat.Sign()
 	if sign == 0 {
-		return "+00000000000000000000"
+		return "1" + strings.Repeat("0", 80)
 	}
+
 	absRat := new(big.Rat).Abs(rat)
 	numerator := absRat.Num()
 	denominator := absRat.Denom()
 	floatVal := new(big.Float).SetRat(new(big.Rat).SetFrac(numerator, denominator))
-	floatStr := floatVal.Text('f', 20)
-	floatStr = strings.TrimRight(strings.TrimRight(floatStr, "0"), ".")
+	floatStr := floatVal.Text('f', 38)
+	floatStr = strings.TrimRight(floatStr, "0")
+	if strings.HasSuffix(floatStr, ".") {
+		floatStr = floatStr[:len(floatStr)-1]
+	}
+
 	intPart, fracPart := floatStr, ""
 	if dotIdx := strings.Index(floatStr, "."); dotIdx >= 0 {
 		intPart = floatStr[:dotIdx]
 		fracPart = floatStr[dotIdx+1:]
 	}
-	if sign > 0 {
-		return fmt.Sprintf("+%020d.%s", len(intPart), intPart+fracPart)
+
+	intPadded := intPart
+	if len(intPadded) < 40 {
+		intPadded = strings.Repeat("0", 40-len(intPadded)) + intPadded
 	}
-	inverted := new(big.Int).Sub(new(big.Int).Exp(big.NewInt(10), big.NewInt(100), nil), numerator)
-	return fmt.Sprintf("-%020d.%s", len(intPart), inverted.String()+fracPart)
+	fracPadded := fracPart
+	if len(fracPadded) < 40 {
+		fracPadded = fracPadded + strings.Repeat("0", 40-len(fracPadded))
+	} else if len(fracPadded) > 40 {
+		fracPadded = fracPadded[:40]
+	}
+	digits := intPadded + fracPadded
+
+	if sign > 0 {
+		return "1" + digits
+	}
+
+	complemented := make([]byte, len(digits))
+	for i := 0; i < len(digits); i++ {
+		complemented[i] = '9' - digits[i] + '0'
+	}
+	return "0" + string(complemented)
 }
 
 // PutIndexEntries stores index entries for an item in the transaction.
@@ -759,6 +782,8 @@ func (t *DynamoDBTxn) deleteBackupsForTable(tableName string) error {
 	for iter.Next() {
 		var backup Backup
 		if err := json.Unmarshal(iter.Value(), &backup); err != nil {
+			logs.Warn("cascade delete: corrupted backup record, will delete", logs.String("key", string(iter.Key())), logs.Err(err))
+			keysToDelete = append(keysToDelete, string(iter.Key()))
 			continue
 		}
 		if backup.SourceTableName == tableName {
@@ -787,6 +812,8 @@ func (t *DynamoDBTxn) deleteExportsForTable(tableName string) error {
 	for iter.Next() {
 		var export pb.ExportDescription
 		if err := proto.Unmarshal(iter.Value(), &export); err != nil {
+			logs.Warn("cascade delete: corrupted export record, will delete", logs.String("key", string(iter.Key())), logs.Err(err))
+			keysToDelete = append(keysToDelete, string(iter.Key()))
 			continue
 		}
 		if strings.HasSuffix(export.TableArn, "/table/"+tableName) {
@@ -815,6 +842,8 @@ func (t *DynamoDBTxn) deleteImportsForTable(tableName string) error {
 	for iter.Next() {
 		var imp pb.ImportTableDescription
 		if err := proto.Unmarshal(iter.Value(), &imp); err != nil {
+			logs.Warn("cascade delete: corrupted import record, will delete", logs.String("key", string(iter.Key())), logs.Err(err))
+			keysToDelete = append(keysToDelete, string(iter.Key()))
 			continue
 		}
 		if strings.HasSuffix(imp.TableArn, "/table/"+tableName) {

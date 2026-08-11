@@ -59,6 +59,17 @@ func (r *TestRunner) runCloudTrailKeysTests(tc *cloudTrailTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "ListPublicKeys_TimeFilter", func() error {
+		trailName := fmt.Sprintf("pk-time-%d", time.Now().UnixNano())
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:                    aws.String(trailName),
+			S3BucketName:            aws.String("pk-time-bucket"),
+			EnableLogFileValidation: aws.Bool(true),
+		})
+		if err != nil {
+			return fmt.Errorf("create trail for time filter test: %v", err)
+		}
+		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(trailName)})
+
 		now := time.Now().UTC()
 		past := now.Add(-1 * time.Hour)
 		future := now.Add(1 * time.Hour)

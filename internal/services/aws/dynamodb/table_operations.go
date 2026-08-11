@@ -3,7 +3,6 @@ package dynamodb
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -186,119 +185,44 @@ func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.Reques
 }
 
 // UpdateTable updates a DynamoDB table.
+// UpdateTable updates a DynamoDB table.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html
 func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// TableName must pass the same length and character checks as CreateTable.
-	if err := validateTableName(request.GetStringParam(req.Parameters, "TableName")); err != nil {
-		return nil, err
-	}
-
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
-	}
-
-	table = deepCopyTable(table)
-
-	if billingMode := request.GetStringParam(req.Parameters, "BillingMode"); billingMode != "" {
-		table.BillingMode = dbstore.BillingMode(billingMode)
-	}
-
-	if provThroughput := parseProvisionedThroughput(req.Parameters); provThroughput != nil {
-		table.ProvisionedThroughput = provThroughput
-	}
-
-	// PROVISIONED billing mode requires ProvisionedThroughput.
-	if err := validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput); err != nil {
-		return nil, err
-	}
-
-	if attrDefs := parseAttributeDefinitions(req.Parameters); len(attrDefs) > 0 {
-		// New attribute definitions must cover all key attributes.
-		if err := validateAttributeDefinitions(table.KeySchema, attrDefs); err != nil {
-			return nil, err
-		}
-		table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, attrDefs)
-	}
-
-	// Record existing GSI names before applying updates so we can
-	// backfill newly created GSIs with existing items.
-	existingGSINames := make(map[string]bool)
-	for _, g := range table.GlobalSecondaryIndexes {
-		existingGSINames[g.IndexName] = true
-	}
-
-	if gsiUpdates, ok := req.Parameters["GlobalSecondaryIndexUpdates"].([]interface{}); ok {
-		updatedGSIs, err := applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, gsiUpdates)
-		if err != nil {
-			return nil, err
-		}
-		table.GlobalSecondaryIndexes = updatedGSIs
-	}
-
-	// Validate that all key attributes across table + GSIs + LSIs are
-	// present in AttributeDefinitions, and that index names are unique.
-	// These checks run on the merged post-update table state.
-	if err := validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions); err != nil {
-		return nil, err
-	}
-	if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes); err != nil {
-		return nil, err
-	}
-
-	streamSpec, err := parseStreamSpecification(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	if streamSpec != nil {
-		table.StreamSpecification = streamSpec
-		if streamSpec.StreamEnabled {
-			now := time.Now().UTC()
-			table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
-			table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
-		} else {
-			table.StreamArn = ""
-			table.LatestStreamLabel = ""
-		}
-	}
-
-	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
-		sseDesc, err := parseSSESpecification(sseSpec)
-		if err != nil {
-			return nil, err
-		}
-		table.SSEDescription = sseDesc
-	}
-
-	if _, ok := req.Parameters["DeletionProtectionEnabled"]; ok {
-		table.DeletionProtectionEnabled = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
-	}
-
-	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
-		table.TableClass = tableClass
-	}
-
-	table.LastUpdatedDateTime = time.Now().UTC()
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Tables().Put(table); err != nil {
-		return nil, err
+
+	in := UpdateTableInput{
+		TableName:             request.GetStringParam(req.Parameters, "TableName"),
+		BillingMode:           request.GetStringParam(req.Parameters, "BillingMode"),
+		ProvisionedThroughput: parseProvisionedThroughput(req.Parameters),
+		AttributeDefinitions:  parseAttributeDefinitions(req.Parameters),
+		TableClass:            request.GetStringParam(req.Parameters, "TableClass"),
+	}
+	if gsiUpdates, ok := req.Parameters["GlobalSecondaryIndexUpdates"].([]interface{}); ok {
+		in.GSIUpdates = gsiUpdates
+	}
+	streamSpec, streamErr := parseStreamSpecification(req.Parameters)
+	if streamErr != nil {
+		return nil, streamErr
+	}
+	in.StreamSpecification = streamSpec
+	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
+		sseDesc, sseErr := parseSSESpecification(sseSpec)
+		if sseErr != nil {
+			return nil, sseErr
+		}
+		in.SSESpecification = sseDesc
+	}
+	if _, ok := req.Parameters["DeletionProtectionEnabled"]; ok {
+		in.DeletionProtectionSet = true
+		in.DeletionProtection = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 	}
 
-	// Backfill: when new GSIs are created via UpdateTable, AWS automatically
-	// populates index entries for all existing items. We must do the same
-	// so that Query on the new GSI returns pre-existing items.
-	for _, g := range table.GlobalSecondaryIndexes {
-		if existingGSINames[g.IndexName] {
-			continue
-		}
-		s.backfillGSI(ctx, store, table.Name, g.IndexName)
+	table, err := s.updateTableCore(ctx, store, in)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

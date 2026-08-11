@@ -3,11 +3,13 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateBackup creates a backup of a DynamoDB table.
@@ -169,6 +171,22 @@ func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.Re
 				"TableArn":              backup.SourceTableArn,
 				"TableSizeBytes":        backup.SourceTableSizeBytes,
 				"TableCreationDateTime": backup.SourceTableCreationTime.Unix(),
+				"ItemCount":             backup.SourceTableItemCount,
+				"KeySchema":             buildKeySchemaResponse(backup.KeySchema),
+				"ProvisionedThroughput": func() map[string]interface{} {
+					if backup.ProvisionedThroughput != nil {
+						return map[string]interface{}{
+							"ReadCapacityUnits":      backup.ProvisionedThroughput.ReadCapacityUnits,
+							"WriteCapacityUnits":     backup.ProvisionedThroughput.WriteCapacityUnits,
+							"NumberOfDecreasesToday": backup.ProvisionedThroughput.NumberOfDecreasesToday,
+						}
+					}
+					return map[string]interface{}{
+						"ReadCapacityUnits":      int64(0),
+						"WriteCapacityUnits":     int64(0),
+						"NumberOfDecreasesToday": int64(0),
+					}
+				}(),
 			},
 		},
 	}, nil
@@ -308,18 +326,15 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 		lsi = backup.LocalSecondaryIndexes
 	} else {
 		sourceTable, err := store.Tables().Get(backup.SourceTableName)
-		if err == nil {
-			keySchema = sourceTable.KeySchema
-			attrDefs = sourceTable.AttributeDefinitions
-			billingMode = sourceTable.BillingMode
-			provThroughput = sourceTable.ProvisionedThroughput
-			gsi = sourceTable.GlobalSecondaryIndexes
-			lsi = sourceTable.LocalSecondaryIndexes
-		} else {
-			keySchema = []*dbstore.KeySchemaElement{{AttributeName: "id", KeyType: dbstore.KeyTypeHash}}
-			attrDefs = []*dbstore.AttributeDefinition{{AttributeName: "id", AttributeType: dbstore.ScalarAttributeTypeS}}
-			billingMode = dbstore.BillingModePayPerRequest
+		if err != nil {
+			return nil, fmt.Errorf("backup %s has no key schema and source table %q not found: %w", backupArn, backup.SourceTableName, err)
 		}
+		keySchema = sourceTable.KeySchema
+		attrDefs = sourceTable.AttributeDefinitions
+		billingMode = sourceTable.BillingMode
+		provThroughput = sourceTable.ProvisionedThroughput
+		gsi = sourceTable.GlobalSecondaryIndexes
+		lsi = sourceTable.LocalSecondaryIndexes
 	}
 
 	table, err := store.Tables().Create(
@@ -373,8 +388,20 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 // RestoreTableToPointInTime restores a table to a point in time.
 func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	sourceTableName := request.GetStringParam(req.Parameters, "SourceTableName")
-	if sourceTableName == "" {
+	sourceTableArn := request.GetStringParam(req.Parameters, "SourceTableArn")
+
+	if sourceTableName == "" && sourceTableArn == "" {
 		return nil, ErrInvalidParameter
+	}
+	if sourceTableName != "" && sourceTableArn != "" {
+		return nil, ErrInvalidParameter
+	}
+
+	if sourceTableArn != "" {
+		sourceTableName = svcarn.ParseTableARN(sourceTableArn)
+		if sourceTableName == "" {
+			return nil, ErrResourceNotFound
+		}
 	}
 
 	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")
@@ -395,20 +422,58 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		return nil, ErrTableAlreadyExists
 	}
 
+	keySchema := sourceTable.KeySchema
+	attrDefs := sourceTable.AttributeDefinitions
+	billingMode := sourceTable.BillingMode
+	provThroughput := sourceTable.ProvisionedThroughput
+	gsi := sourceTable.GlobalSecondaryIndexes
+	lsi := sourceTable.LocalSecondaryIndexes
+	var sseDesc *dbstore.SSEDescription
+
+	if billingModeOverride := request.GetStringParam(req.Parameters, "BillingModeOverride"); billingModeOverride != "" {
+		billingMode = dbstore.BillingMode(billingModeOverride)
+	}
+
+	if provOverride := parseProvisionedThroughputOverride(req.Parameters); provOverride != nil {
+		provThroughput = provOverride
+	}
+
+	if sseSpec, ok := req.Parameters["SSESpecificationOverride"].(map[string]interface{}); ok {
+		sseDesc, err = parseSSESpecification(sseSpec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if gsiOverrides := parseGSIOverrideList(req.Parameters); len(gsiOverrides) > 0 {
+		gsi = applyGSIOverrides(gsi, gsiOverrides)
+	}
+
+	if lsiOverrideList := parseLSIOverrideList(req.Parameters); len(lsiOverrideList) > 0 {
+		lsi = lsiOverrideList
+	}
+
+	if err := validateBillingModeConsistency(billingMode, provThroughput); err != nil {
+		return nil, err
+	}
+
 	table, err := store.Tables().Create(
 		targetTableName,
-		sourceTable.KeySchema,
-		sourceTable.AttributeDefinitions,
-		sourceTable.BillingMode,
-		sourceTable.ProvisionedThroughput,
-		sourceTable.GlobalSecondaryIndexes,
-		sourceTable.LocalSecondaryIndexes,
+		keySchema,
+		attrDefs,
+		billingMode,
+		provThroughput,
+		gsi,
+		lsi,
 		nil,
 		nil,
 		false,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if sseDesc != nil {
+		table.SSEDescription = sseDesc
 	}
 
 	var itemsToCopy []*dbstore.Item
@@ -452,4 +517,150 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 	return map[string]interface{}{
 		"TableDescription": s.buildTableDescription(table),
 	}, nil
+}
+
+func parseProvisionedThroughputOverride(params map[string]interface{}) *dbstore.ProvisionedThroughput {
+	ptMap, ok := params["ProvisionedThroughputOverride"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	rcu := int64(0)
+	if v, ok := ptMap["ReadCapacityUnits"]; ok {
+		if f, ok := v.(float64); ok {
+			rcu = int64(f)
+		}
+	}
+	wcu := int64(0)
+	if v, ok := ptMap["WriteCapacityUnits"]; ok {
+		if f, ok := v.(float64); ok {
+			wcu = int64(f)
+		}
+	}
+	if rcu == 0 && wcu == 0 {
+		return nil
+	}
+	return &dbstore.ProvisionedThroughput{
+		ReadCapacityUnits:  rcu,
+		WriteCapacityUnits: wcu,
+	}
+}
+
+func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecondaryIndex {
+	rawList, ok := params["GlobalSecondaryIndexOverride"].([]interface{})
+	if !ok {
+		return nil
+	}
+	var result []*dbstore.GlobalSecondaryIndex
+	for _, raw := range rawList {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		idx := &dbstore.GlobalSecondaryIndex{}
+		if name, ok := m["IndexName"].(string); ok {
+			idx.IndexName = name
+		}
+		if ksList, ok := m["KeySchema"].([]interface{}); ok {
+			for _, ksRaw := range ksList {
+				ksMap, ok := ksRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				ks := &dbstore.KeySchemaElement{}
+				if n, ok := ksMap["AttributeName"].(string); ok {
+					ks.AttributeName = n
+				}
+				if t, ok := ksMap["KeyType"].(string); ok {
+					ks.KeyType = dbstore.KeyType(t)
+				}
+				idx.KeySchema = append(idx.KeySchema, ks)
+			}
+		}
+		if proj, ok := m["Projection"].(map[string]interface{}); ok {
+			idx.Projection = &dbstore.Projection{}
+			if pt, ok := proj["ProjectionType"].(string); ok {
+				idx.Projection.ProjectionType = pt
+			}
+		}
+		if pt, ok := m["ProvisionedThroughput"].(map[string]interface{}); ok {
+			idx.ProvisionedThroughput = &dbstore.ProvisionedThroughput{}
+			if v, ok := pt["ReadCapacityUnits"].(float64); ok {
+				idx.ProvisionedThroughput.ReadCapacityUnits = int64(v)
+			}
+			if v, ok := pt["WriteCapacityUnits"].(float64); ok {
+				idx.ProvisionedThroughput.WriteCapacityUnits = int64(v)
+			}
+		}
+		result = append(result, idx)
+	}
+	return result
+}
+
+func parseLSIOverrideList(params map[string]interface{}) []*dbstore.LocalSecondaryIndex {
+	rawList, ok := params["LocalSecondaryIndexOverride"].([]interface{})
+	if !ok {
+		return nil
+	}
+	var result []*dbstore.LocalSecondaryIndex
+	for _, raw := range rawList {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		idx := &dbstore.LocalSecondaryIndex{}
+		if name, ok := m["IndexName"].(string); ok {
+			idx.IndexName = name
+		}
+		if ksList, ok := m["KeySchema"].([]interface{}); ok {
+			for _, ksRaw := range ksList {
+				ksMap, ok := ksRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				ks := &dbstore.KeySchemaElement{}
+				if n, ok := ksMap["AttributeName"].(string); ok {
+					ks.AttributeName = n
+				}
+				if t, ok := ksMap["KeyType"].(string); ok {
+					ks.KeyType = dbstore.KeyType(t)
+				}
+				idx.KeySchema = append(idx.KeySchema, ks)
+			}
+		}
+		if proj, ok := m["Projection"].(map[string]interface{}); ok {
+			idx.Projection = &dbstore.Projection{}
+			if pt, ok := proj["ProjectionType"].(string); ok {
+				idx.Projection.ProjectionType = pt
+			}
+		}
+		result = append(result, idx)
+	}
+	return result
+}
+
+func applyGSIOverrides(existing []*dbstore.GlobalSecondaryIndex, overrides []*dbstore.GlobalSecondaryIndex) []*dbstore.GlobalSecondaryIndex {
+	byName := make(map[string]*dbstore.GlobalSecondaryIndex)
+	for _, g := range existing {
+		byName[g.IndexName] = g
+	}
+	for _, ov := range overrides {
+		if existingGSI, ok := byName[ov.IndexName]; ok {
+			if len(ov.KeySchema) > 0 {
+				existingGSI.KeySchema = ov.KeySchema
+			}
+			if ov.Projection != nil {
+				existingGSI.Projection = ov.Projection
+			}
+			if ov.ProvisionedThroughput != nil {
+				existingGSI.ProvisionedThroughput = ov.ProvisionedThroughput
+			}
+		} else {
+			byName[ov.IndexName] = ov
+		}
+	}
+	result := make([]*dbstore.GlobalSecondaryIndex, 0, len(byName))
+	for _, g := range byName {
+		result = append(result, g)
+	}
+	return result
 }

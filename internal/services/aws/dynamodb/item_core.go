@@ -267,3 +267,249 @@ func (s *DynamoDBService) deleteItemCore(
 
 	return oldItem, nil
 }
+
+// ---------------------------------------------------------------------------
+// Transport-agnostic DTO for UpdateItem
+// ---------------------------------------------------------------------------
+
+// UpdateItemInput carries every field that UpdateItem needs. Both the HTTP
+// API handler and admin gRPC handler build this struct and delegate to
+// updateItemCore.
+type UpdateItemInput struct {
+	Key            map[string]*dbstore.AttributeValue
+	UpdateExpr     string
+	AttrUpdates    interface{} // legacy AttributeUpdates map (mutually exclusive with UpdateExpr)
+	ConditionExpr  string
+	ExprAttrNames  map[string]string
+	ExprAttrValues map[string]*dbstore.AttributeValue
+	ReturnValues   string
+}
+
+// UpdateItemResult holds the output of updateItemCore for response formatting.
+type UpdateItemResult struct {
+	StoredItem       *dbstore.Item
+	OldItem          *dbstore.Item
+	UpdatedAttrNames []string
+	WasNewItem       bool
+}
+
+// updateItemCore is the single entry point for item updates shared by the
+// HTTP API and admin gRPC handler. It evaluates conditions, applies update
+// expressions, persists within a transaction, and fires all side effects
+// (Streams, Kinesis, global table replication).
+func (s *DynamoDBService) updateItemCore(
+	ctx context.Context,
+	store dbstore.DynamoDBStoreInterface,
+	region string,
+	table *dbstore.Table,
+	in UpdateItemInput,
+) (*UpdateItemResult, error) {
+	tableName := table.Name
+
+	var oldItem *dbstore.Item
+	var storedItem *dbstore.Item
+	var updatedAttrNames []string
+	var oldItemSize int64
+	var wasNewItem bool
+
+	err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		existingItem, err := txn.GetItem(tableName, in.Key)
+		isNewItem := false
+		var item *dbstore.Item
+
+		if err != nil {
+			if dbstore.IsItemNotFound(err) {
+				isNewItem = true
+				if in.ConditionExpr != "" {
+					syntheticItem := &dbstore.Item{
+						TableName:  tableName,
+						Key:        in.Key,
+						Attributes: make(map[string]*dbstore.AttributeValue),
+					}
+					conditionMet, evalErr := evaluateConditionExpression(syntheticItem, in.ConditionExpr, in.ExprAttrNames, in.ExprAttrValues)
+					if evalErr != nil {
+						return evalErr
+					}
+					if !conditionMet {
+						return ErrConditionalCheckFailed
+					}
+				}
+				item = &dbstore.Item{
+					TableName:  tableName,
+					Key:        in.Key,
+					Attributes: make(map[string]*dbstore.AttributeValue),
+				}
+				for k, v := range in.Key {
+					item.Attributes[k] = v
+				}
+			} else {
+				return err
+			}
+		} else {
+			item = existingItem
+			oldItemSize = calculateItemSize(item.Attributes)
+			if in.ConditionExpr != "" {
+				conditionMet, err := evaluateConditionExpression(item, in.ConditionExpr, in.ExprAttrNames, in.ExprAttrValues)
+				if err != nil {
+					return err
+				}
+				if !conditionMet {
+					return ErrConditionalCheckFailed
+				}
+			}
+
+			streamNeedsOld := table.StreamSpecification != nil &&
+				table.StreamSpecification.StreamEnabled &&
+				(table.StreamSpecification.StreamViewType == dbstore.StreamViewTypeOldImage ||
+					table.StreamSpecification.StreamViewType == dbstore.StreamViewTypeNewAndOldImages)
+			if in.ReturnValues == "ALL_OLD" || in.ReturnValues == "UPDATED_OLD" || streamNeedsOld {
+				oldItem = &dbstore.Item{
+					Attributes: make(map[string]*dbstore.AttributeValue),
+				}
+				for k, v := range item.Attributes {
+					oldItem.Attributes[k] = deepCopyAttributeValue(v)
+				}
+			}
+
+			if err := txn.DeleteIndexEntries(tableName, item); err != nil {
+				return err
+			}
+		}
+
+		if in.UpdateExpr != "" {
+			paths := extractUpdatedPaths(in.UpdateExpr, in.ExprAttrNames)
+			if err := validateNotKeyAttributes(table, paths); err != nil {
+				return err
+			}
+			var err error
+			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, in.UpdateExpr, in.ExprAttrNames, in.ExprAttrValues)
+			if err != nil {
+				if err.Error() == "TYPE_MISMATCH: Type mismatch for attribute to update" {
+					return ErrInvalidParameter
+				}
+				return err
+			}
+		} else if in.AttrUpdates != nil {
+			var attrNames []string
+			if attrMap, ok := in.AttrUpdates.(map[string]interface{}); ok {
+				for k := range attrMap {
+					attrNames = append(attrNames, k)
+				}
+			}
+			if err := validateNotKeyAttributes(table, attrNames); err != nil {
+				return err
+			}
+			updatedAttrNames, err = applyAttributeUpdatesWithTracking(item.Attributes, in.AttrUpdates)
+			if err != nil {
+				return err
+			}
+		}
+
+		if itemSize := calculateItemSize(item.Attributes); itemSize > maxItemSizeBytes {
+			return ErrInvalidParameter
+		}
+
+		if err := txn.PutItem(tableName, in.Key, item.Attributes); err != nil {
+			return err
+		}
+
+		storedItem = &dbstore.Item{
+			TableName:  tableName,
+			Key:        in.Key,
+			Attributes: item.Attributes,
+		}
+		if err := txn.PutIndexEntries(tableName, storedItem); err != nil {
+			return err
+		}
+
+		newItemSize := calculateItemSize(item.Attributes)
+		wasNewItem = isNewItem
+		if isNewItem {
+			if err := txn.UpdateItemCount(tableName, 1); err != nil {
+				return err
+			}
+			if err := txn.UpdateTableSize(tableName, newItemSize); err != nil {
+				return err
+			}
+		} else {
+			if newItemSize != oldItemSize {
+				if err := txn.UpdateTableSize(tableName, newItemSize-oldItemSize); err != nil {
+					return err
+				}
+			}
+		}
+
+		eventName := dbstore.StreamEventModify
+		if wasNewItem {
+			eventName = dbstore.StreamEventInsert
+		}
+		s.captureStreamChangeTxn(txn, store, table, eventName, in.Key, storedItem.Attributes, oldItemAttributes(oldItem))
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	{
+		eventName := dbstore.StreamEventModify
+		if wasNewItem {
+			eventName = dbstore.StreamEventInsert
+		}
+		s.sendToKinesisDestinations(table, eventName, in.Key, storedItem.Attributes, oldItemAttributes(oldItem))
+	}
+
+	repKey := in.Key
+	repAttrs := storedItem.Attributes
+	repItemSize := calculateItemSize(repAttrs)
+	s.replicateToGlobalTableReplicas(store, region, tableName, func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
+		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+			existing, getErr := txn.GetItem(tableName, repKey)
+			isNew := false
+			if getErr != nil {
+				if dbstore.IsItemNotFound(getErr) {
+					isNew = true
+				} else {
+					return getErr
+				}
+			}
+			if !isNew && existing != nil {
+				if err := txn.DeleteIndexEntries(tableName, existing); err != nil {
+					return err
+				}
+			}
+			if err := txn.PutItem(tableName, repKey, repAttrs); err != nil {
+				return err
+			}
+			repItem := &dbstore.Item{
+				TableName:  tableName,
+				Key:        repKey,
+				Attributes: repAttrs,
+			}
+			if err := txn.PutIndexEntries(tableName, repItem); err != nil {
+				return err
+			}
+			if isNew {
+				if err := txn.UpdateItemCount(tableName, 1); err != nil {
+					return err
+				}
+				if err := txn.UpdateTableSize(tableName, repItemSize); err != nil {
+					return err
+				}
+			} else {
+				oldSize := calculateItemSize(existing.Attributes)
+				if err := txn.UpdateTableSize(tableName, repItemSize-oldSize); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	})
+
+	return &UpdateItemResult{
+		StoredItem:       storedItem,
+		OldItem:          oldItem,
+		UpdatedAttrNames: updatedAttrNames,
+		WasNewItem:       wasNewItem,
+	}, nil
+}

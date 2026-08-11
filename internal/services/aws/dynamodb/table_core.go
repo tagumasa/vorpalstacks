@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"time"
 
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/aws/types"
@@ -201,4 +202,122 @@ func (s *DynamoDBService) describeTableCore(store dbstore.DynamoDBStoreInterface
 // validating the limit range.
 func (s *DynamoDBService) listTablesCore(store dbstore.DynamoDBStoreInterface, marker string, limit int) ([]*dbstore.Table, string, error) {
 	return store.Tables().List(marker, limit)
+}
+
+// ---------------------------------------------------------------------------
+// Transport-agnostic DTO for UpdateTable
+// ---------------------------------------------------------------------------
+
+// UpdateTableInput carries every field that UpdateTable can modify, in a
+// format independent of the wire protocol. Fields with zero values are
+// treated as "no change". Both the HTTP API handler and the admin gRPC
+// handler build this struct and delegate to updateTableCore.
+type UpdateTableInput struct {
+	TableName             string
+	BillingMode           string                         // "" = no change
+	ProvisionedThroughput *dbstore.ProvisionedThroughput // nil = no change
+	AttributeDefinitions  []*dbstore.AttributeDefinition // nil = no change
+	GSIUpdates            []interface{}                  // nil = no change
+	StreamSpecification   *dbstore.StreamSpecification   // nil = no change
+	SSESpecification      *dbstore.SSEDescription        // nil = no change
+	DeletionProtectionSet bool                           // whether DeletionProtectionEnabled was provided
+	DeletionProtection    bool                           // value (only if DeletionProtectionSet is true)
+	TableClass            string                         // "" = no change
+}
+
+// updateTableCore is the single entry point for table updates shared by the
+// HTTP API and the admin gRPC handler. It validates all update parameters,
+// applies the changes to the table, persists them, and backfills any newly
+// created GSIs.
+func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in UpdateTableInput) (*dbstore.Table, error) {
+	if err := validateTableName(in.TableName); err != nil {
+		return nil, err
+	}
+
+	table, err := store.Tables().Get(in.TableName)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
+	}
+
+	table = deepCopyTable(table)
+
+	if in.BillingMode != "" {
+		table.BillingMode = dbstore.BillingMode(in.BillingMode)
+	}
+
+	if in.ProvisionedThroughput != nil {
+		table.ProvisionedThroughput = in.ProvisionedThroughput
+	}
+
+	if err := validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput); err != nil {
+		return nil, err
+	}
+
+	if len(in.AttributeDefinitions) > 0 {
+		if err := validateAttributeDefinitions(table.KeySchema, in.AttributeDefinitions); err != nil {
+			return nil, err
+		}
+		table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, in.AttributeDefinitions)
+	}
+
+	existingGSINames := make(map[string]bool)
+	for _, g := range table.GlobalSecondaryIndexes {
+		existingGSINames[g.IndexName] = true
+	}
+
+	if len(in.GSIUpdates) > 0 {
+		updatedGSIs, err := applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, in.GSIUpdates)
+		if err != nil {
+			return nil, err
+		}
+		table.GlobalSecondaryIndexes = updatedGSIs
+	}
+
+	if err := validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions); err != nil {
+		return nil, err
+	}
+	if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes); err != nil {
+		return nil, err
+	}
+
+	if in.StreamSpecification != nil {
+		table.StreamSpecification = in.StreamSpecification
+		if in.StreamSpecification.StreamEnabled {
+			now := time.Now().UTC()
+			table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
+			table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
+		} else {
+			table.StreamArn = ""
+			table.LatestStreamLabel = ""
+		}
+	}
+
+	if in.SSESpecification != nil {
+		table.SSEDescription = in.SSESpecification
+	}
+
+	if in.DeletionProtectionSet {
+		table.DeletionProtectionEnabled = in.DeletionProtection
+	}
+
+	if in.TableClass != "" {
+		table.TableClass = in.TableClass
+	}
+
+	table.LastUpdatedDateTime = time.Now().UTC()
+	if err := store.Tables().Put(table); err != nil {
+		return nil, err
+	}
+
+	for _, g := range table.GlobalSecondaryIndexes {
+		if existingGSINames[g.IndexName] {
+			continue
+		}
+		s.backfillGSI(ctx, store, table.Name, g.IndexName)
+	}
+
+	return table, nil
 }

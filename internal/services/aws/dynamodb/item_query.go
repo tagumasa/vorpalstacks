@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/binary"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -55,7 +57,10 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	exprAttrValues := parseExpressionAttributeValues(req.Parameters)
+	exprAttrValues, eavErr := parseExpressionAttributeValues(req.Parameters)
+	if eavErr != nil {
+		return nil, eavErr
+	}
 
 	if keyCondExpr == "" {
 		return nil, ErrInvalidParameter
@@ -141,7 +146,7 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 
 	if !scanIndexForward {
 		skName := getSortKeyName(table, indexName)
-		if alreadySortedAscending && skName != "" && getSortKeyType(table, skName) == "S" {
+		if alreadySortedAscending && skName != "" {
 			for i, j := 0, len(allItems)-1; i < j; i, j = i+1, j-1 {
 				allItems[i], allItems[j] = allItems[j], allItems[i]
 			}
@@ -252,14 +257,28 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 
 	// Validate parallel Scan parameters (Smithy ScanSegment: range 0-999999,
 	// ScanTotalSegments: range 1-1000000).
+	segment := -1
+	totalSegments := 0
 	if _, ok := req.Parameters["Segment"]; ok {
-		if err := validateScanSegment(request.GetIntParam(req.Parameters, "Segment")); err != nil {
+		segment = request.GetIntParam(req.Parameters, "Segment")
+		if err := validateScanSegment(segment); err != nil {
 			return nil, err
 		}
 	}
 	if _, ok := req.Parameters["TotalSegments"]; ok {
-		if err := validateScanTotalSegments(request.GetIntParam(req.Parameters, "TotalSegments")); err != nil {
+		totalSegments = request.GetIntParam(req.Parameters, "TotalSegments")
+		if err := validateScanTotalSegments(totalSegments); err != nil {
 			return nil, err
+		}
+	}
+	parallelScan := segment >= 0 && totalSegments > 0
+	pkName := ""
+	if parallelScan {
+		for _, ks := range table.KeySchema {
+			if ks.KeyType == dbstore.KeyTypeHash {
+				pkName = ks.AttributeName
+				break
+			}
 		}
 	}
 
@@ -269,10 +288,23 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	}
 	var allItems []*dbstore.Item
 	scanLimit := limit + 1
-	if exclusiveStartKey != nil {
+	if exclusiveStartKey != nil || parallelScan {
 		scanLimit = 0
 	}
 	_, err = store.Items().ScanWithOptions(tableName, dbstore.ScanOptions{Limit: scanLimit}, func(item *dbstore.Item) error {
+		if parallelScan {
+			pkAttr := item.Key[pkName]
+			if pkAttr == nil {
+				pkAttr = item.Attributes[pkName]
+			}
+			if pkAttr == nil {
+				return nil
+			}
+			h := md5SegmentHash(pkAttr)
+			if int(h%uint32(totalSegments)) != segment {
+				return nil
+			}
+		}
 		allItems = append(allItems, item)
 		return nil
 	})
@@ -304,7 +336,11 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 		if namesErr != nil {
 			return nil, namesErr
 		}
-		items = filterByExpression(scannedItems, filterExpr, scanNames, parseExpressionAttributeValues(req.Parameters))
+		scanValues, scanValsErr := parseExpressionAttributeValues(req.Parameters)
+		if scanValsErr != nil {
+			return nil, scanValsErr
+		}
+		items = filterByExpression(scannedItems, filterExpr, scanNames, scanValues)
 	} else {
 		items = scannedItems
 	}
@@ -407,4 +443,22 @@ func filterItemsByIndexMembership(items []*dbstore.Item, table *dbstore.Table, i
 		}
 	}
 	return result
+}
+
+// md5SegmentHash computes the MD5 hash of an AttributeValue for parallel
+// scan segment assignment, matching DynamoDB's internal partition key
+// hash function. The hash is computed over the raw value bytes (S string,
+// N number string, or B binary) and the first 4 bytes are interpreted as
+// a big-endian uint32.
+func md5SegmentHash(av *dbstore.AttributeValue) uint32 {
+	h := md5.New()
+	if av.S != nil {
+		h.Write([]byte(*av.S))
+	} else if av.N != nil {
+		h.Write([]byte(*av.N))
+	} else if av.B != nil {
+		h.Write(av.B)
+	}
+	sum := h.Sum(nil)
+	return binary.BigEndian.Uint32(sum[:4])
 }

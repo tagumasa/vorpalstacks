@@ -105,8 +105,14 @@ func (s *DynamoDBService) GetResourcePolicy(ctx context.Context, reqCtx *request
 		return nil, ErrPolicyNotFound
 	}
 
+	rev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
+	if revErr != nil {
+		return nil, revErr
+	}
+
 	return map[string]interface{}{
-		"Policy": policy,
+		"Policy":     policy,
+		"RevisionId": fmt.Sprintf("v%d", rev),
 	}, nil
 }
 

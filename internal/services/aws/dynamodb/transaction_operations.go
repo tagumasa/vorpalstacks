@@ -286,6 +286,12 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 		}
 
+		opValues, opValsErr := parseExpressionAttributeValues(opMap)
+		if opValsErr != nil {
+			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+		}
+
 		op := &writeOperation{
 			idx:                          idx,
 			opType:                       opType,
@@ -293,7 +299,7 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 			key:                          key,
 			conditionExpr:                request.GetStringParam(opMap, "ConditionExpression"),
 			exprAttrNames:                opNames,
-			exprAttrValues:               parseExpressionAttributeValues(opMap),
+			exprAttrValues:               opValues,
 			returnValuesOnConditionCheck: request.GetStringParam(opMap, "ReturnValuesOnConditionCheckFailure"),
 		}
 

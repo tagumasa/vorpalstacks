@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"encoding/base64"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -286,14 +287,18 @@ func parseExpressionAttributeNames(params map[string]interface{}) (map[string]st
 	return names, nil
 }
 
-func parseExpressionAttributeValues(params map[string]interface{}) map[string]*dbstore.AttributeValue {
+func parseExpressionAttributeValues(params map[string]interface{}) (map[string]*dbstore.AttributeValue, error) {
 	values := make(map[string]*dbstore.AttributeValue)
 	if eav, ok := params["ExpressionAttributeValues"].(map[string]interface{}); ok {
 		for k, v := range eav {
-			values[k] = parseAttributeValue(v)
+			parsed := parseAttributeValue(v)
+			if parsed == nil {
+				return nil, fmt.Errorf("invalid value for expression attribute %q", k)
+			}
+			values[k] = parsed
 		}
 	}
-	return values
+	return values, nil
 }
 
 func parseProjectionExpression(params map[string]interface{}) ([]string, error) {
@@ -561,9 +566,11 @@ func getExpressionAttributes(params map[string]interface{}) (map[string]string, 
 
 	if valuesMap, ok := params["ExpressionAttributeValues"].(map[string]interface{}); ok {
 		for k, v := range valuesMap {
-			if attrVal := parseAttributeValue(v); attrVal != nil {
-				values[k] = attrVal
+			parsed := parseAttributeValue(v)
+			if parsed == nil {
+				return nil, nil, fmt.Errorf("invalid value for expression attribute %q", k)
 			}
+			values[k] = parsed
 		}
 	}
 

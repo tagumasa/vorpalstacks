@@ -365,14 +365,14 @@ func parsePathParts(path string) ([]pathPart, error) {
 	return parts, nil
 }
 
-func addNumbers(a, b string) string {
+func addNumbers(a, b string) (string, error) {
 	numA, okA := new(big.Rat).SetString(a)
 	numB, okB := new(big.Rat).SetString(b)
 	if !okA || !okB {
-		return ""
+		return "", fmt.Errorf("invalid number operand: %q, %q", a, b)
 	}
 	numA.Add(numA, numB)
-	return normalizeNumber(numA)
+	return normalizeNumber(numA), nil
 }
 
 func normalizeNumber(r *big.Rat) string {
@@ -414,12 +414,12 @@ func applyAddActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrNa
 	}
 
 	if value.N != nil && existing.N != nil {
-		result := addNumbers(*existing.N, *value.N)
-		if result != "" {
-			attrs[attrName] = &dbstore.AttributeValue{N: &result}
-			return true, nil
+		result, addErr := addNumbers(*existing.N, *value.N)
+		if addErr != nil {
+			return false, addErr
 		}
-		return false, nil
+		attrs[attrName] = &dbstore.AttributeValue{N: &result}
+		return true, nil
 	}
 
 	if value.SS != nil && existing.SS != nil {
@@ -639,7 +639,9 @@ func resolveValue(token string, values map[string]*dbstore.AttributeValue, names
 }
 
 func resolveValueWithIfNotExists(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
-	if result := evaluateArithmeticExpression(token, values, names, attrs); result != nil {
+	if result, arithErr := evaluateArithmeticExpression(token, values, names, attrs); arithErr != nil {
+		return nil, arithErr
+	} else if result != nil {
 		return result, nil
 	}
 
@@ -666,8 +668,14 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 			inner := token[12:closeParen]
 			parts := splitListAppendArgs(inner)
 			if len(parts) == 2 {
-				list1 := resolveValueOrPath(strings.TrimSpace(parts[0]), values, names, attrs)
-				list2 := resolveValueOrPath(strings.TrimSpace(parts[1]), values, names, attrs)
+				list1, err1 := resolveValueOrPath(strings.TrimSpace(parts[0]), values, names, attrs)
+				if err1 != nil {
+					return nil, err1
+				}
+				list2, err2 := resolveValueOrPath(strings.TrimSpace(parts[1]), values, names, attrs)
+				if err2 != nil {
+					return nil, err2
+				}
 				if list1 != nil && list1.L != nil && list2 != nil && list2.L != nil {
 					combined := make([]*dbstore.AttributeValue, 0, len(list1.L)+len(list2.L))
 					combined = append(combined, list1.L...)
@@ -690,12 +698,12 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 	return resolveValue(token, values, names), nil
 }
 
-func evaluateArithmeticExpression(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
+func evaluateArithmeticExpression(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
 	token = strings.TrimSpace(token)
 
 	parts := splitArithmeticExpression(token)
 	if len(parts) == 1 {
-		return nil
+		return nil, nil
 	}
 
 	var result *big.Rat
@@ -726,14 +734,18 @@ func evaluateArithmeticExpression(token string, values map[string]*dbstore.Attri
 		}
 
 		var val *big.Rat
-		if valAttr := resolveValueOrPath(operand, values, names, attrs); valAttr != nil && valAttr.N != nil {
+		valAttr, vErr := resolveValueOrPath(operand, values, names, attrs)
+		if vErr != nil {
+			return nil, vErr
+		}
+		if valAttr != nil && valAttr.N != nil {
 			if r, ok := new(big.Rat).SetString(*valAttr.N); ok {
 				val = r
 			}
 		}
 
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		if result == nil {
@@ -752,9 +764,9 @@ func evaluateArithmeticExpression(token string, values map[string]*dbstore.Attri
 
 	if result != nil {
 		str := normalizeNumber(result)
-		return dbstore.NumberValue(str)
+		return dbstore.NumberValue(str), nil
 	}
-	return nil
+	return nil, nil
 }
 
 func splitArithmeticExpression(expr string) []string {
@@ -834,17 +846,16 @@ func splitListAppendArgs(s string) []string {
 	return []string{s}
 }
 
-func resolveValueOrPath(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
+func resolveValueOrPath(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
 	if strings.HasPrefix(token, "if_not_exists(") {
-		val, _ := resolveValueWithIfNotExists(token, values, names, attrs)
-		return val
+		return resolveValueWithIfNotExists(token, values, names, attrs)
 	}
 	if strings.HasPrefix(token, ":") {
-		return resolveValue(token, values, names)
+		return resolveValue(token, values, names), nil
 	}
 	attrName := resolveName(token, names)
 	if existing, ok := attrs[attrName]; ok {
-		return existing
+		return existing, nil
 	}
-	return nil
+	return nil, nil
 }

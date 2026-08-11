@@ -96,9 +96,25 @@ func (s *DynamoDBService) DescribeGlobalTableSettings(ctx context.Context, reqCt
 		return nil, ErrGlobalTableNotFound
 	}
 
+	replicaSettings := make([]map[string]interface{}, 0, len(globalTable.ReplicationGroup))
+	for _, replica := range globalTable.ReplicationGroup {
+		settings := map[string]interface{}{
+			"RegionName":                           replica.RegionName,
+			"ReplicaStatus":                        replica.ReplicaStatus,
+			"ReplicaProvisionedReadCapacityUnits":  replica.ProvisionedReadCapacityUnits,
+			"ReplicaProvisionedWriteCapacityUnits": replica.ProvisionedWriteCapacityUnits,
+		}
+		if replica.BillingMode != "" {
+			settings["ReplicaBillingModeSummary"] = map[string]interface{}{
+				"BillingMode": replica.BillingMode,
+			}
+		}
+		replicaSettings = append(replicaSettings, settings)
+	}
+
 	return map[string]interface{}{
 		"GlobalTableName": globalTable.GlobalTableName,
-		"ReplicaSettings": []map[string]interface{}{},
+		"ReplicaSettings": replicaSettings,
 	}, nil
 }
 

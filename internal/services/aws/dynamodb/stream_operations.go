@@ -58,7 +58,7 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 	}
 
 	shard := map[string]interface{}{
-		"ShardId":             dbstore.ShardID,
+		"ShardId":             dbstore.ShardIDForStream(streamArn),
 		"SequenceNumberRange": seqRange,
 	}
 
@@ -339,7 +339,8 @@ func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	if limit > 0 && len(streams) > limit {
+	hasMore := limit > 0 && len(streams) > limit
+	if hasMore {
 		streams = streams[:limit]
 	}
 
@@ -356,7 +357,7 @@ func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.Reque
 		"Streams": streamList,
 	}
 
-	if len(streams) == limit && len(streamList) > 0 {
+	if hasMore && len(streamList) > 0 {
 		result["LastEvaluatedStreamArn"] = streams[len(streams)-1].StreamArn
 	}
 
