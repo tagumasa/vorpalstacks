@@ -42,6 +42,11 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	syncCfg, err := parseSyncConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	f := &appsyncstore.FunctionConfiguration{
 		ApiId:                   apiId,
 		Name:                    name,
@@ -53,13 +58,10 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 		Runtime:                 parseAppSyncRuntime(req.Parameters),
 		Code:                    request.GetStringParam(req.Parameters, "code"),
 		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
-		SyncConfig:              parseSyncConfig(req.Parameters),
+		SyncConfig:              syncCfg,
 	}
 
 	if err := validateAppSyncRuntime(f.Runtime); err != nil {
-		return nil, err
-	}
-	if err := validateSyncConfig(f.SyncConfig); err != nil {
 		return nil, err
 	}
 	if _, ok := req.Parameters["maxBatchSize"]; ok {
@@ -149,6 +151,11 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	syncCfg, err := parseSyncConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	f := &appsyncstore.FunctionConfiguration{
 		ApiId:                   apiId,
 		FunctionId:              functionId,
@@ -161,13 +168,10 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 		Runtime:                 parseAppSyncRuntime(req.Parameters),
 		Code:                    request.GetStringParam(req.Parameters, "code"),
 		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
-		SyncConfig:              parseSyncConfig(req.Parameters),
+		SyncConfig:              syncCfg,
 	}
 
 	if err := validateAppSyncRuntime(f.Runtime); err != nil {
-		return nil, err
-	}
-	if err := validateSyncConfig(f.SyncConfig); err != nil {
 		return nil, err
 	}
 	if _, ok := req.Parameters["maxBatchSize"]; ok {

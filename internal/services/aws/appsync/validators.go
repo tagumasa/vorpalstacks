@@ -3,6 +3,7 @@ package appsync
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -458,6 +459,103 @@ func validateMaxBatchSize(v int32) error {
 func validateLambdaAuthorizerTtl(v int32) error {
 	if v < 0 || v > 3600 {
 		return NewBadRequestException("authorizerResultTtlInSeconds must be between 0 and 3600")
+	}
+	return nil
+}
+
+// validateEnhancedMetricsConfig validates the EnhancedMetricsConfig enum fields.
+// All three fields use the ENABLED/DISABLED enum per Smithy model.
+func validateEnhancedMetricsConfig(ec *appsyncstore.EnhancedMetricsConfig) error {
+	if ec == nil {
+		return nil
+	}
+	if ec.DataSourceLevelMetricsBehavior != "" && !validateEnabledDisabled(ec.DataSourceLevelMetricsBehavior) {
+		return NewBadRequestException(fmt.Sprintf("Invalid dataSourceLevelMetricsBehavior: %s. Valid values: ENABLED, DISABLED", ec.DataSourceLevelMetricsBehavior))
+	}
+	if ec.OperationLevelMetricsConfig != "" && !validateEnabledDisabled(ec.OperationLevelMetricsConfig) {
+		return NewBadRequestException(fmt.Sprintf("Invalid operationLevelMetricsConfig: %s. Valid values: ENABLED, DISABLED", ec.OperationLevelMetricsConfig))
+	}
+	if ec.ResolverLevelMetricsBehavior != "" && !validateEnabledDisabled(ec.ResolverLevelMetricsBehavior) {
+		return NewBadRequestException(fmt.Sprintf("Invalid resolverLevelMetricsBehavior: %s. Valid values: ENABLED, DISABLED", ec.ResolverLevelMetricsBehavior))
+	}
+	return nil
+}
+
+// validateAuthorizationType validates the HTTP data source AuthorizationType
+// enum. Per Smithy, the only valid value is AWS_IAM.
+func validateAuthorizationType(t string) bool {
+	return t == "AWS_IAM"
+}
+
+// validateHandlerBehavior validates the Event API handler Behavior enum.
+// Per Smithy, valid values are CODE and DIRECT.
+var validHandlerBehaviors = map[string]bool{
+	"CODE":   true,
+	"DIRECT": true,
+}
+
+func validateHandlerBehavior(b string) bool {
+	return validHandlerBehaviors[b]
+}
+
+// validateOpenIDConnectTTL validates the AuthTTL and IatTTL fields of the
+// OpenIDConnectConfig shape. Smithy range: min 0, max 3600.
+func validateOpenIDConnectTTL(ttl int64) error {
+	if ttl < 0 || ttl > 3600 {
+		return NewBadRequestException("OpenIDConnect TTL values must be between 0 and 3600")
+	}
+	return nil
+}
+
+// validateDeltaSyncTtl validates the DeltaSyncConfig TTL fields.
+// Smithy range: BaseTableTTL 1-43200, DeltaSyncTableTTL 1-43200.
+func validateDeltaSyncTtl(baseTTL, deltaTTL int64) error {
+	if baseTTL < 1 || baseTTL > 43200 {
+		return NewBadRequestException("deltaSyncConfig.baseTableTTL must be between 1 and 43200")
+	}
+	if deltaTTL < 1 || deltaTTL > 43200 {
+		return NewBadRequestException("deltaSyncConfig.deltaSyncTableTTL must be between 1 and 43200")
+	}
+	return nil
+}
+
+// validateLambdaArn validates that the string is a well-formed Lambda ARN.
+func validateLambdaArn(arn string) error {
+	if arn == "" {
+		return nil
+	}
+	if !strings.HasPrefix(arn, "arn:aws:lambda:") && !strings.HasPrefix(arn, "arn:aws-cn:lambda:") && !strings.HasPrefix(arn, "arn:aws-us-gov:lambda:") {
+		return NewBadRequestException(fmt.Sprintf("Invalid Lambda ARN: %s", arn))
+	}
+	parts := strings.Split(arn, ":")
+	if len(parts) < 7 {
+		return NewBadRequestException(fmt.Sprintf("Invalid Lambda ARN format: %s", arn))
+	}
+	return nil
+}
+
+// validateRdsIdentifier validates the RDS HTTP endpoint config identifiers.
+func validateRdsIdentifier(cfg *appsyncstore.RdsHttpEndpointConfig) error {
+	if cfg == nil {
+		return nil
+	}
+	if cfg.DatabaseName != "" && len(cfg.DatabaseName) > 100 {
+		return NewBadRequestException("databaseName must not exceed 100 characters")
+	}
+	if cfg.DbClusterIdentifier != "" && len(cfg.DbClusterIdentifier) > 255 {
+		return NewBadRequestException("dbClusterIdentifier must not exceed 255 characters")
+	}
+	if cfg.Schema != "" && len(cfg.Schema) > 100 {
+		return NewBadRequestException("schema must not exceed 100 characters")
+	}
+	return nil
+}
+
+// validateEnvironmentVariableMapSize validates the EnvironmentVariableMap
+// shape length constraint: min 0, max 50.
+func validateEnvironmentVariableMapSize(m map[string]string) error {
+	if len(m) > 50 {
+		return NewBadRequestException("environmentVariables must not contain more than 50 entries")
 	}
 	return nil
 }

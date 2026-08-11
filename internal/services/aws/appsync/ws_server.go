@@ -181,7 +181,8 @@ func (cm *channelManager) matchSubscriptions(publishedChannel string) []struct {
 }
 
 // channelMatches checks whether a subscriber's channel pattern matches
-// a published channel path. Supports trailing wildcard segments.
+// a published channel path. Supports wildcard segments where * matches
+// one or more path segments.
 func channelMatches(subscriberChannel, publishedChannel string) bool {
 	subscriberChannel = strings.TrimSuffix(subscriberChannel, "/")
 	publishedChannel = strings.TrimSuffix(publishedChannel, "/")
@@ -190,9 +191,37 @@ func channelMatches(subscriberChannel, publishedChannel string) bool {
 		return true
 	}
 
-	if strings.HasSuffix(subscriberChannel, "/*") {
-		prefix := strings.TrimSuffix(subscriberChannel, "/*")
-		return publishedChannel == prefix || strings.HasPrefix(publishedChannel, prefix+"/")
+	subParts := strings.Split(subscriberChannel, "/")
+	pubParts := strings.Split(publishedChannel, "/")
+
+	return matchSegments(subParts, pubParts)
+}
+
+// matchSegments performs recursive wildcard matching of path segments.
+// "*" matches one or more segments. Literal segments must match exactly.
+func matchSegments(pattern, path []string) bool {
+	if len(pattern) == 0 {
+		return len(path) == 0
+	}
+
+	if pattern[0] == "*" {
+		if len(pattern) == 1 {
+			return len(path) > 0
+		}
+		for i := 1; i <= len(path); i++ {
+			if matchSegments(pattern[1:], path[i:]) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if len(path) == 0 {
+		return false
+	}
+
+	if pattern[0] == path[0] {
+		return matchSegments(pattern[1:], path[1:])
 	}
 
 	return false
@@ -253,21 +282,21 @@ func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
 //     AMAZON_COGNITO_USER_POOLS (JWT via CognitoTokenValidator),
 //     AWS_LAMBDA (Lambda authorizer invocation),
 //     OPENID_CONNECT (fail-closed — out of scope per docs/services.md).
-//
-// Returns nil when authorised; a non-nil error string when denied.
 func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channel string, auth map[string]interface{}, isSubscribe bool, iamVerified bool) *string {
+	deniedMsg := "Unauthorized: valid authentication required for this operation"
+
 	if s.storeLookup == nil || apiId == "" {
-		return nil
+		return &deniedMsg
 	}
 
 	store, err := s.storeLookup(apiId)
 	if err != nil || store == nil {
-		return nil
+		return &deniedMsg
 	}
 
 	api, apiErr := store.GetApiById(apiId)
 	if apiErr != nil || api == nil || api.EventConfig == nil {
-		return nil
+		return &deniedMsg
 	}
 
 	// Determine the effective auth modes. If the channel falls under a
@@ -276,7 +305,7 @@ func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channe
 	authModes := resolveEffectiveAuthModes(store, apiId, channel, api.EventConfig, isSubscribe)
 
 	if len(authModes) == 0 {
-		return nil
+		return &deniedMsg
 	}
 
 	for _, mode := range authModes {
@@ -304,8 +333,7 @@ func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channe
 		}
 	}
 
-	msg := "Unauthorized: valid authentication required for this operation"
-	return &msg
+	return &deniedMsg
 }
 
 // resolveEffectiveAuthModes returns the auth modes that apply to the given
@@ -366,7 +394,7 @@ func (s *EventServer) verifyAPIKey(store *appsyncstore.AppSyncStore, apiId strin
 	if err != nil {
 		return false
 	}
-	if apiKey.Expires > 0 && time.Now().Unix() > apiKey.Expires {
+	if apiKey.Expires == 0 || time.Now().Unix() > apiKey.Expires {
 		return false
 	}
 	return true
@@ -438,9 +466,19 @@ func extractBearerToken(auth map[string]interface{}) string {
 
 // extractFunctionNameFromAuthorizerUri extracts the Lambda function name
 // from an AppSync LambdaAuthorizerConfig AuthorizerUri.
-// Format: arn:aws:appsync:<region>:<account>:aws-lambda:<functionName>
-// or: arn:aws:lambda:<region>:<account>:function:<functionName>
+// Supports both arn:aws:lambda:<region>:<account>:function:<name>[:<alias>]
+// and arn:aws:appsync:<region>:<account>:aws-lambda:<name> formats.
 func extractFunctionNameFromAuthorizerUri(uri string) string {
+	if idx := strings.Index(uri, ":function:"); idx >= 0 {
+		rest := uri[idx+len(":function:"):]
+		if colonIdx := strings.Index(rest, ":"); colonIdx >= 0 {
+			return rest[:colonIdx]
+		}
+		return rest
+	}
+	if idx := strings.Index(uri, ":aws-lambda:"); idx >= 0 {
+		return uri[idx+len(":aws-lambda:"):]
+	}
 	parts := strings.Split(uri, ":")
 	if len(parts) == 0 {
 		return ""
@@ -701,6 +739,13 @@ func (s *EventServer) extractApiId(r *http.Request) string {
 				}
 			}
 		}
+	}
+
+	// Fall back to the "apiId" query parameter. This is used in non-FQDN
+	// environments (e.g. testing against a bare IP address) where the host
+	// header does not carry the API identifier.
+	if q := r.URL.Query().Get("apiId"); q != "" {
+		return q
 	}
 
 	return ""

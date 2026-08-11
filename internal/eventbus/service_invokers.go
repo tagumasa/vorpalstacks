@@ -157,6 +157,8 @@ type DynamoDBInvoker interface {
 	Scan(ctx context.Context, region, tableName string, limit int) ([]map[string]interface{}, error)
 	Query(ctx context.Context, region, tableName, partitionKeyValue string, limit int) ([]map[string]interface{}, error)
 	UpdateItem(ctx context.Context, region, tableName string, key map[string]interface{}, attributes map[string]interface{}) error
+	ScanWithPagination(ctx context.Context, region, tableName string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error)
+	QueryWithPagination(ctx context.Context, region, tableName, partitionKeyValue string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error)
 }
 
 // DynamoDBStreamsInvoker provides DynamoDB Streams operations for

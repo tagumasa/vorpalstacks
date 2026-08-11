@@ -14,35 +14,7 @@ import (
 	"vorpalstacks/pkg/vtl"
 
 	"github.com/dop251/goja"
-	"github.com/google/uuid"
 )
-
-// StartDataSourceIntrospection initiates an introspection of a data source.
-// In the local environment external RDS is unavailable, so the introspection
-// is immediately marked as FAILED with a descriptive status detail.
-// POST /v1/datasources/introspections
-func (s *AppSyncService) StartDataSourceIntrospection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	introspectionId := uuid.New().String()
-	return map[string]interface{}{
-		"introspectionId":           introspectionId,
-		"introspectionStatus":       "FAILED",
-		"introspectionStatusDetail": "Data source introspection is not supported in the local environment",
-	}, nil
-}
-
-// GetDataSourceIntrospection retrieves the result of a data source introspection.
-// GET /v1/datasources/introspections/{introspectionId}
-func (s *AppSyncService) GetDataSourceIntrospection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	introspectionId := request.GetStringParam(req.Parameters, "introspectionId")
-	if introspectionId == "" {
-		return nil, NewBadRequestException("introspectionId is required")
-	}
-	return map[string]interface{}{
-		"introspectionId":           introspectionId,
-		"introspectionStatus":       "FAILED",
-		"introspectionStatusDetail": "Data source introspection is not supported in the local environment",
-	}, nil
-}
 
 // ListTypesByAssociation returns types from the source API of a merged API association.
 // GET /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}/types
@@ -70,6 +42,9 @@ func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *req
 	format := request.GetStringParam(req.Parameters, "format")
 	if format == "" {
 		return nil, NewBadRequestException("format is required")
+	}
+	if !validateTypeFormat(format) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
 	}
 
 	opts, err := parsePaginationOptions(req)
@@ -136,6 +111,13 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 	}
 
 	vm := goja.New()
+	// Enforce a maximum execution time to prevent infinite loops in
+	// user-supplied JavaScript. The interrupt is delivered asynchronously
+	// and causes the VM to return an error on the next instruction boundary.
+	timer := time.AfterFunc(5*time.Second, func() {
+		vm.Interrupt(fmt.Errorf("evaluation timed out after 5 seconds"))
+	})
+	defer timer.Stop()
 	logs := []interface{}{}
 	hasError := false
 	errorResult := ""

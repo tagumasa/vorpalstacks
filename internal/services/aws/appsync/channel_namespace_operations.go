@@ -52,12 +52,16 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
+	handlerCfgs, err := parseHandlerConfigs(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	ns := &appsyncstore.ChannelNamespace{
 		ApiId:              apiId,
 		Name:               name,
 		CodeHandlers:       codeHandlers,
-		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
+		HandlerConfigs:     handlerCfgs,
 		PublishAuthModes:   publishAuthModes,
 		SubscribeAuthModes: subscribeAuthModes,
 		Tags:               tagMap,
@@ -143,21 +147,29 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
-	if codeHandlers != "" {
-		if err := validateCode(codeHandlers); err != nil {
-			return nil, err
-		}
-	}
-
 	ns := &appsyncstore.ChannelNamespace{
 		ApiId:              apiId,
 		Name:               name,
-		CodeHandlers:       codeHandlers,
-		HandlerConfigs:     parseHandlerConfigs(req.Parameters),
 		PublishAuthModes:   publishAuthModes,
 		SubscribeAuthModes: subscribeAuthModes,
 	}
+
+	if request.HasParam(req.Parameters, "codeHandlers") {
+		codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
+		if codeHandlers != "" {
+			if err := validateCode(codeHandlers); err != nil {
+				return nil, err
+			}
+		}
+		ns.CodeHandlers = codeHandlers
+		ns.CodeHandlersSet = true
+	}
+
+	handlerCfgs, err := parseHandlerConfigs(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	ns.HandlerConfigs = handlerCfgs
 
 	updated, err := store.UpdateChannelNamespace(ns)
 	if err != nil {

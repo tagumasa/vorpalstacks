@@ -34,6 +34,11 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	syncCfg, err := parseSyncConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &appsyncstore.Resolver{
 		ApiId:                   apiId,
 		TypeName:                typeName,
@@ -48,7 +53,7 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
 		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
 		PipelineConfig:          parsePipelineConfig(req.Parameters),
-		SyncConfig:              parseSyncConfig(req.Parameters),
+		SyncConfig:              syncCfg,
 	}
 
 	kind := request.GetStringParam(req.Parameters, "kind")
@@ -56,9 +61,6 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
 	}
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
-		return nil, err
-	}
-	if err := validateSyncConfig(r.SyncConfig); err != nil {
 		return nil, err
 	}
 	if err := validateAppSyncRuntime(r.Runtime); err != nil {
@@ -142,6 +144,11 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
 	}
 
+	syncCfg, err := parseSyncConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &appsyncstore.Resolver{
 		ApiId:                   apiId,
 		TypeName:                typeName,
@@ -156,7 +163,7 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
 		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
 		PipelineConfig:          parsePipelineConfig(req.Parameters),
-		SyncConfig:              parseSyncConfig(req.Parameters),
+		SyncConfig:              syncCfg,
 	}
 
 	kind := request.GetStringParam(req.Parameters, "kind")
@@ -164,9 +171,6 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
 	}
 	if err := validateCachingConfig(r.CachingConfig); err != nil {
-		return nil, err
-	}
-	if err := validateSyncConfig(r.SyncConfig); err != nil {
 		return nil, err
 	}
 	if err := validateAppSyncRuntime(r.Runtime); err != nil {

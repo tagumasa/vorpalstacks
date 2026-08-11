@@ -9,10 +9,6 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
-// maxApisPerRegion is the AWS service quota for AppSync APIs per region.
-// This limit applies to the combined count of GraphQL APIs and Event APIs.
-const maxApisPerRegion = 25
-
 // CreateGraphqlApi creates a new GraphQL API (v1).
 // POST /v1/apis
 func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -47,17 +43,26 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
 	_, hasResolverCountLimit := req.Parameters["resolverCountLimit"]
 
+	enhancedMetrics, err := parseEnhancedMetricsConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	oidcCfg, err := parseOpenIDConnectConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	created, err := s.createGraphqlApiCore(store, createGraphqlApiInput{
 		Name:                              name,
 		AuthenticationType:                request.GetStringParam(req.Parameters, "authenticationType"),
 		AdditionalAuthenticationProviders: additionalAuthProviders,
 		ApiType:                           request.GetStringParam(req.Parameters, "apiType"),
-		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
+		EnhancedMetricsConfig:             enhancedMetrics,
 		IntrospectionConfig:               request.GetStringParam(req.Parameters, "introspectionConfig"),
 		LambdaAuthorizerConfig:            lambdaAuthConfig,
 		LogConfig:                         parseLogConfig(req.Parameters),
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
-		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
+		OpenIDConnectConfig:               oidcCfg,
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
 		QueryDepthLimit:                   queryDepthLimit,
 		HasQueryDepthLimit:                hasQueryDepthLimit,
@@ -190,17 +195,25 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
+	enhancedMetrics, err := parseEnhancedMetricsConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	oidcCfg, err := parseOpenIDConnectConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	api := &appsyncstore.GraphqlApi{
 		Name:                              name,
 		AuthenticationType:                authType,
 		AdditionalAuthenticationProviders: additionalAuthProviders,
-		EnhancedMetricsConfig:             parseEnhancedMetricsConfig(req.Parameters),
+		EnhancedMetricsConfig:             enhancedMetrics,
 		IntrospectionConfig:               introspectionConfig,
 		LambdaAuthorizerConfig:            lambdaAuthConfig,
 		LogConfig:                         logCfg,
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
-		OpenIDConnectConfig:               parseOpenIDConnectConfig(req.Parameters),
+		OpenIDConnectConfig:               oidcCfg,
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
 		QueryDepthLimit:                   queryDepthLimit,
 		ResolverCountLimit:                resolverCountLimit,

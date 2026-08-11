@@ -84,6 +84,8 @@ type ChannelNamespace struct {
 	PublishAuthModes    []AuthMode        `json:"publishAuthModes,omitempty"`
 	SubscribeAuthModes  []AuthMode        `json:"subscribeAuthModes,omitempty"`
 	Tags                map[string]string `json:"tags,omitempty"`
+
+	CodeHandlersSet bool `json:"-"`
 }
 
 // HandlerConfigs defines optional handlers for publish and subscribe events
@@ -360,6 +362,9 @@ type Type struct {
 	Definition  string `json:"definition,omitempty"`
 	Description string `json:"description,omitempty"`
 	Format      string `json:"format"`
+
+	DefinitionSet  bool `json:"-"`
+	DescriptionSet bool `json:"-"`
 }
 
 // ApiKey represents an API key for GraphQL API authentication.
@@ -451,58 +456,5 @@ type SourceApiAssociationSummary struct {
 // SourceApiAssociationConfig controls merge behaviour (MANUAL_MERGE or AUTO_MERGE).
 type SourceApiAssociationConfig struct {
 	MergeType string `json:"mergeType"`
-}
-
-// DataSource introspection types.
-
-// DataSourceIntrospectionResult holds the status and output of an introspection run.
-type DataSourceIntrospectionResult struct {
-	IntrospectionId           string                              `json:"introspectionId,omitempty"`
-	IntrospectionStatus       string                              `json:"introspectionStatus,omitempty"`
-	IntrospectionStatusDetail string                              `json:"introspectionStatusDetail,omitempty"`
-	IntrospectionResult       *DataSourceIntrospectionModelResult `json:"introspectionResult,omitempty"`
-}
-
-// DataSourceIntrospectionModelResult contains the discovered models from introspection.
-type DataSourceIntrospectionModelResult struct {
-	Models    []DataSourceIntrospectionModel `json:"models,omitempty"`
-	NextToken string                         `json:"nextToken,omitempty"`
-}
-
-// DataSourceIntrospectionModel represents a single database table or view discovered by introspection.
-type DataSourceIntrospectionModel struct {
-	Name       string                              `json:"name,omitempty"`
-	Fields     []DataSourceIntrospectionModelField `json:"fields,omitempty"`
-	Indexes    []DataSourceIntrospectionModelIndex `json:"indexes,omitempty"`
-	PrimaryKey *DataSourceIntrospectionModelIndex  `json:"primaryKey,omitempty"`
-	Sdl        string                              `json:"sdl,omitempty"`
-}
-
-// DataSourceIntrospectionModelField describes a column within an introspected model.
-type DataSourceIntrospectionModelField struct {
-	Name   string                                 `json:"name,omitempty"`
-	Length int64                                  `json:"length,omitempty"`
-	Type   *DataSourceIntrospectionModelFieldType `json:"type,omitempty"`
-}
-
-// DataSourceIntrospectionModelFieldType describes the type of an introspected field.
-// Self-referential: Type field is present when Kind is NonNull or List.
-type DataSourceIntrospectionModelFieldType struct {
-	Kind   string                                 `json:"kind,omitempty"`
-	Name   string                                 `json:"name,omitempty"`
-	Type   *DataSourceIntrospectionModelFieldType `json:"type,omitempty"`
-	Values []string                               `json:"values,omitempty"`
-}
-
-// DataSourceIntrospectionModelIndex represents a database index discovered during introspection.
-type DataSourceIntrospectionModelIndex struct {
-	Name   string   `json:"name,omitempty"`
-	Fields []string `json:"fields,omitempty"`
-}
-
-// RdsDataApiConfig specifies the RDS Data API connection for a data source introspection request.
-type RdsDataApiConfig struct {
-	DatabaseName string `json:"databaseName"`
-	ResourceArn  string `json:"resourceArn"`
-	SecretArn    string `json:"secretArn"`
+	SecretArn string `json:"secretArn"`
 }

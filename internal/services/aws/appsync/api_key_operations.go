@@ -40,15 +40,6 @@ func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	// Enforce API key count limit (5000 per GraphQL API per AWS spec).
-	keyCount, err := store.CountApiKeys(apiId)
-	if err != nil {
-		return mapStoreError(err)
-	}
-	if keyCount >= 5000 {
-		return nil, ErrApiKeyLimitExceededException
-	}
-
 	apiKey := &appsyncstore.ApiKey{
 		Id:          uuid.New().String(),
 		Description: description,

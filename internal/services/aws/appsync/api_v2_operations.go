@@ -29,13 +29,6 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	// Check combined API count quota (GraphQL + Event APIs per region).
-	graphqlCount, _ := store.CountGraphqlApis()
-	eventCount, _ := store.CountApis()
-	if graphqlCount+eventCount >= maxApisPerRegion {
-		return nil, ErrApiLimitExceededException
-	}
-
 	tagMap, err := parseTags(req.Parameters)
 	if err != nil {
 		return nil, err

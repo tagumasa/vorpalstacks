@@ -95,6 +95,9 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: appsyncstore.ErrTypeAlreadyExists, AWS: NewConflictException("Type already exists")},
 	{Store: appsyncstore.ErrApiCacheAlreadyExists, AWS: NewConflictException("API cache already exists")},
 	{Store: appsyncstore.ErrDomainNameAlreadyExists, AWS: NewConflictException("Domain name already exists")},
+	// Quota errors
+	{Store: appsyncstore.ErrApiLimitExceeded, AWS: ErrApiLimitExceededException},
+	{Store: appsyncstore.ErrApiKeyLimitExceeded, AWS: ErrApiKeyLimitExceededException},
 }
 
 // mapStoreError converts a store-level error to the corresponding AppSync

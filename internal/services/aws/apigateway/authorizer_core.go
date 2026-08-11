@@ -53,8 +53,9 @@ func (s *APIGatewayService) createAuthorizerCore(
 	}
 
 	// Distinguish "unset" (nil → default 300) from "explicitly 0"
-	// (cache disabled), which the previous int32 representation could
-	// not express — a regression of commit 1b4f8bc5.
+	// (cache disabled): AuthorizerResultTtlInSeconds is *int32 in the
+	// Smithy model so the optional TTL field can express the AWS
+	// "cache disabled" state, which an int32 zero value could not.
 	ttl := int32(300)
 	if in.AuthorizerResultTtlInSeconds != nil {
 		ttl = *in.AuthorizerResultTtlInSeconds

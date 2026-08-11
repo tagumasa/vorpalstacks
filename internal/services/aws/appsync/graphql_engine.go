@@ -47,6 +47,28 @@ type schemaCacheEntry struct {
 	resolverMap map[string]map[string]*appsyncstore.Resolver
 }
 
+// execState tracks runtime execution limits during a single GraphQL operation.
+// QueryDepthLimit caps the nesting depth of selection sets.
+// ResolverCountLimit caps the total number of resolver invocations.
+type execState struct {
+	depth           int
+	queryDepthLimit int32
+	resolverCount   int
+	resolverLimit   int32
+}
+
+// depthExceeded reports whether the current selection-set depth has exceeded
+// the configured QueryDepthLimit. A limit of 0 means unlimited.
+func (s *execState) depthExceeded() bool {
+	return s.queryDepthLimit > 0 && s.depth > int(s.queryDepthLimit)
+}
+
+// resolverLimitExceeded reports whether the resolver invocation count has
+// reached the configured ResolverCountLimit. A limit of 0 means unlimited.
+func (s *execState) resolverLimitReached() bool {
+	return s.resolverLimit > 0 && s.resolverCount >= int(s.resolverLimit)
+}
+
 func schemaHash(sdl string) [32]byte {
 	return sha256.Sum256([]byte(sdl))
 }
@@ -131,7 +153,13 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
-	data, execErrs := e.executeOperation(ctx, reqCtx, apiId, schema, op, gqlReq.Variables, entry.resolverMap, doc.Fragments)
+	state := &execState{}
+	if api, err := e.store.GetGraphqlApiById(apiId); err == nil {
+		state.queryDepthLimit = api.QueryDepthLimit
+		state.resolverLimit = api.ResolverCountLimit
+	}
+
+	data, execErrs := e.executeOperation(ctx, reqCtx, apiId, schema, op, gqlReq.Variables, entry.resolverMap, doc.Fragments, state)
 
 	result := &graphqlExecutionResult{Data: data}
 	if len(execErrs) > 0 {
@@ -208,18 +236,19 @@ func (e *graphQLEngine) executeOperation(
 	variables map[string]interface{},
 	resolverMap map[string]map[string]*appsyncstore.Resolver,
 	fragments ast.FragmentDefinitionList,
+	state *execState,
 ) (interface{}, []graphqlError) {
 	switch op.Operation {
 	case ast.Query:
 		if op.SelectionSet == nil {
 			return nil, nil
 		}
-		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Query", nil, op.SelectionSet, variables, resolverMap, fragments)
+		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Query", nil, op.SelectionSet, variables, resolverMap, fragments, state)
 	case ast.Mutation:
 		if op.SelectionSet == nil {
 			return nil, nil
 		}
-		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Mutation", nil, op.SelectionSet, variables, resolverMap, fragments)
+		return e.resolveSelectionSet(ctx, reqCtx, apiId, schema, "Mutation", nil, op.SelectionSet, variables, resolverMap, fragments, state)
 	case ast.Subscription:
 		// AWS AppSync subscriptions require a WebSocket connection to the
 		// real-time endpoint (/graphql/realtime). The HTTP endpoint does not
@@ -247,9 +276,17 @@ func (e *graphQLEngine) resolveSelectionSet(
 	variables map[string]interface{},
 	resolverMap map[string]map[string]*appsyncstore.Resolver,
 	fragments ast.FragmentDefinitionList,
+	state *execState,
 ) (map[string]interface{}, []graphqlError) {
 	result := make(map[string]interface{})
 	var errs []graphqlError
+
+	if state.depthExceeded() {
+		return nil, []graphqlError{{
+			Message:   fmt.Sprintf("Query depth limit exceeded (limit: %d)", state.queryDepthLimit),
+			ErrorType: "BadRequestException",
+		}}
+	}
 
 	for _, sel := range selectionSet {
 		switch s := sel.(type) {
@@ -284,7 +321,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 			resolved, fieldErrs := e.resolveField(
 				ctx, reqCtx, apiId, schema,
 				parentTypeName, fieldName, parentSource,
-				s, variables, resolverMap,
+				s, variables, resolverMap, state,
 			)
 
 			if len(fieldErrs) > 0 {
@@ -295,7 +332,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 				resolved = e.completeValue(
 					ctx, reqCtx, apiId, schema,
 					fieldDef.Type, resolved,
-					s.SelectionSet, variables, resolverMap, fragments,
+					s.SelectionSet, variables, resolverMap, fragments, state,
 				)
 			}
 
@@ -307,7 +344,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 				fragResult, fragErrs := e.resolveSelectionSet(
 					ctx, reqCtx, apiId, schema,
 					parentTypeName, parentSource,
-					fragDef.SelectionSet, variables, resolverMap, fragments,
+					fragDef.SelectionSet, variables, resolverMap, fragments, state,
 				)
 				for k, v := range fragResult {
 					result[k] = v
@@ -327,7 +364,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 				fragResult, fragErrs := e.resolveSelectionSet(
 					ctx, reqCtx, apiId, schema,
 					s.TypeCondition, parentSource,
-					s.SelectionSet, variables, resolverMap, fragments,
+					s.SelectionSet, variables, resolverMap, fragments, state,
 				)
 				for k, v := range fragResult {
 					result[k] = v
@@ -337,7 +374,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 				fragResult, fragErrs := e.resolveSelectionSet(
 					ctx, reqCtx, apiId, schema,
 					parentTypeName, parentSource,
-					s.SelectionSet, variables, resolverMap, fragments,
+					s.SelectionSet, variables, resolverMap, fragments, state,
 				)
 				for k, v := range fragResult {
 					result[k] = v
@@ -364,6 +401,7 @@ func (e *graphQLEngine) resolveField(
 	field *ast.Field,
 	variables map[string]interface{},
 	resolverMap map[string]map[string]*appsyncstore.Resolver,
+	state *execState,
 ) (interface{}, []graphqlError) {
 
 	args, err := e.resolveArguments(field, variables)
@@ -383,6 +421,14 @@ func (e *graphQLEngine) resolveField(
 		}
 		return nil, nil
 	}
+
+	if state.resolverLimitReached() {
+		return nil, []graphqlError{{
+			Message:   fmt.Sprintf("Resolver count limit exceeded (limit: %d)", state.resolverLimit),
+			ErrorType: "BadRequestException",
+		}}
+	}
+	state.resolverCount++
 
 	fieldType := e.resolveFieldType(schema, field.Definition.Type)
 	isList := e.isListType(field.Definition.Type)
@@ -469,7 +515,7 @@ func (e *graphQLEngine) executeUnitResolver(
 		}
 	}
 
-	dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, resolver.DataSourceName, dsPayload)
+	dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, resolver.DataSourceName, dsPayload, resolver.MaxBatchSize)
 
 	if dsErr != nil {
 		return nil, []graphqlError{{Message: dsErr.Error(), ErrorType: "INTERNAL_FAILURE"}}
@@ -616,7 +662,7 @@ func (e *graphQLEngine) executePipelineResolver(
 			}
 		}
 
-		dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, fn.DataSourceName, fnPayload)
+		dsResult, dsErr := e.dispatchDataSource(ctx, reqCtx, apiId, fn.DataSourceName, fnPayload, fn.MaxBatchSize)
 		if dsErr != nil {
 			return nil, []graphqlError{{Message: dsErr.Error(), ErrorType: "INTERNAL_FAILURE"}}
 		}
@@ -777,6 +823,7 @@ func (e *graphQLEngine) completeValue(
 	variables map[string]interface{},
 	resolverMap map[string]map[string]*appsyncstore.Resolver,
 	fragments ast.FragmentDefinitionList,
+	state *execState,
 ) interface{} {
 	if fieldType == nil || value == nil {
 		return value
@@ -798,7 +845,7 @@ func (e *graphQLEngine) completeValue(
 		result := make([]interface{}, len(list))
 		for i, item := range list {
 			if item != nil {
-				result[i] = e.completeValue(ctx, reqCtx, apiId, schema, elemType, item, selectionSet, variables, resolverMap, fragments)
+				result[i] = e.completeValue(ctx, reqCtx, apiId, schema, elemType, item, selectionSet, variables, resolverMap, fragments, state)
 			}
 		}
 		return result
@@ -808,11 +855,13 @@ func (e *graphQLEngine) completeValue(
 		return value
 	}
 
+	state.depth++
 	childResult, _ := e.resolveSelectionSet(
 		ctx, reqCtx, apiId, schema,
 		namedType, value,
-		selectionSet, variables, resolverMap, fragments,
+		selectionSet, variables, resolverMap, fragments, state,
 	)
+	state.depth--
 	return childResult
 }
 

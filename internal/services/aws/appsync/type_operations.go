@@ -104,11 +104,18 @@ func (s *AppSyncService) UpdateType(ctx context.Context, reqCtx *request.Request
 	}
 
 	t := &appsyncstore.Type{
-		ApiId:       apiId,
-		Name:        typeName,
-		Definition:  request.GetStringParam(req.Parameters, "definition"),
-		Format:      format,
-		Description: request.GetStringParam(req.Parameters, "description"),
+		ApiId:  apiId,
+		Name:   typeName,
+		Format: format,
+	}
+
+	if request.HasParam(req.Parameters, "definition") {
+		t.Definition = request.GetStringParam(req.Parameters, "definition")
+		t.DefinitionSet = true
+	}
+	if request.HasParam(req.Parameters, "description") {
+		t.Description = request.GetStringParam(req.Parameters, "description")
+		t.DescriptionSet = true
 	}
 
 	updated, err := store.UpdateType(t)

@@ -177,10 +177,6 @@ func (s *AppSyncService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("appsync", "GetSchemaCreationStatus", s.GetSchemaCreationStatus)
 	d.RegisterHandlerForService("appsync", "GetIntrospectionSchema", s.GetIntrospectionSchema)
 
-	// Data source introspection (501)
-	d.RegisterHandlerForService("appsync", "StartDataSourceIntrospection", s.StartDataSourceIntrospection)
-	d.RegisterHandlerForService("appsync", "GetDataSourceIntrospection", s.GetDataSourceIntrospection)
-
 	// Merged API — ListTypesByAssociation (501)
 	d.RegisterHandlerForService("appsync", "ListTypesByAssociation", s.ListTypesByAssociation)
 

@@ -69,12 +69,6 @@ func (s *AppSyncService) createGraphqlApiCore(store *appsyncstore.AppSyncStore, 
 		}
 	}
 
-	graphqlCount, _ := store.CountGraphqlApis()
-	eventCount, _ := store.CountApis()
-	if graphqlCount+eventCount >= maxApisPerRegion {
-		return nil, ErrApiLimitExceededException
-	}
-
 	api := &appsyncstore.GraphqlApi{
 		Name:                              in.Name,
 		AuthenticationType:                in.AuthenticationType,
@@ -131,8 +125,14 @@ func (s *AppSyncService) deleteGraphqlApiCore(store *appsyncstore.AppSyncStore, 
 
 // listApisCore lists APIs with pagination.
 func (s *AppSyncService) listApisCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string) ([]*appsyncstore.Api, string, error) {
-	if maxResults <= 0 {
+	if maxResults < 0 {
+		maxResults = 0
+	}
+	if maxResults == 0 {
 		maxResults = 25
+	}
+	if maxResults > 25 {
+		return nil, "", NewBadRequestException("maxResults must be between 1 and 25")
 	}
 	return store.ListApis(storecommon.ListOptions{
 		MaxItems: maxResults,
@@ -142,8 +142,14 @@ func (s *AppSyncService) listApisCore(store *appsyncstore.AppSyncStore, maxResul
 
 // listGraphqlApisCore lists GraphQL APIs with pagination.
 func (s *AppSyncService) listGraphqlApisCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string, apiTypeFilter string) ([]*appsyncstore.GraphqlApi, string, error) {
-	if maxResults <= 0 {
+	if maxResults < 0 {
+		maxResults = 0
+	}
+	if maxResults == 0 {
 		maxResults = 25
+	}
+	if maxResults > 25 {
+		return nil, "", NewBadRequestException("maxResults must be between 1 and 25")
 	}
 	return store.ListGraphqlApis(storecommon.ListOptions{
 		MaxItems: maxResults,

@@ -210,6 +210,12 @@ func (s *AppSyncStore) CreateApi(api *Api) (*Api, error) {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
+	graphqlCount, _ := s.CountGraphqlApis()
+	eventCount, _ := s.CountApis()
+	if graphqlCount+eventCount >= MaxApisPerRegion {
+		return nil, ErrApiLimitExceeded
+	}
+
 	if s.apisStore.Exists(api.Name) {
 		return nil, ErrApiAlreadyExists
 	}
@@ -441,7 +447,7 @@ func (s *AppSyncStore) UpdateChannelNamespace(ns *ChannelNamespace) (*ChannelNam
 		return nil, err
 	}
 
-	if ns.CodeHandlers != "" {
+	if ns.CodeHandlersSet {
 		existing.CodeHandlers = ns.CodeHandlers
 	}
 	if ns.HandlerConfigs != nil {

@@ -51,9 +51,20 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
+	relDbCfg, err := parseRelationalDatabaseConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
+	}
+	dynamoCfg, err := parseDynamoDBConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	httpCfg, err := parseHttpConfig(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	ds := &appsyncstore.DataSource{
@@ -62,10 +73,10 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		Type:                     dsType,
 		Description:              description,
 		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
-		DynamodbConfig:           parseDynamoDBConfig(req.Parameters),
+		DynamodbConfig:           dynamoCfg,
 		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),
 		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
-		HttpConfig:               parseHttpConfig(req.Parameters),
+		HttpConfig:               httpCfg,
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
 		MetricsConfig:            metricsConfig,
 		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
@@ -142,9 +153,20 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	relDbCfg := parseRelationalDatabaseConfig(req.Parameters)
+	relDbCfg, err := parseRelationalDatabaseConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
 		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
+	}
+	dynamoCfg, err := parseDynamoDBConfig(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	httpCfg, err := parseHttpConfig(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	ds := &appsyncstore.DataSource{
@@ -153,10 +175,10 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		Type:                     dsType,
 		Description:              description,
 		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
-		DynamodbConfig:           parseDynamoDBConfig(req.Parameters),
+		DynamodbConfig:           dynamoCfg,
 		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),
 		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
-		HttpConfig:               parseHttpConfig(req.Parameters),
+		HttpConfig:               httpCfg,
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
 		MetricsConfig:            metricsConfig,
 		NeptuneConfig:            parseNeptuneConfig(req.Parameters),

@@ -28,6 +28,7 @@ func (e *graphQLEngine) dispatchDataSource(
 	apiId string,
 	dataSourceName string,
 	payload interface{},
+	maxBatchSize int32,
 ) (interface{}, error) {
 	if dataSourceName == "" {
 		return nil, nil
@@ -42,7 +43,7 @@ func (e *graphQLEngine) dispatchDataSource(
 	case "AWS_LAMBDA":
 		return e.dispatchLambda(ctx, reqCtx, ds, payload)
 	case "AMAZON_DYNAMODB":
-		return e.dispatchDynamoDB(ctx, reqCtx, ds, payload)
+		return e.dispatchDynamoDB(ctx, reqCtx, ds, payload, maxBatchSize)
 	case "HTTP":
 		return e.dispatchHTTP(ctx, reqCtx, ds, payload)
 	case "AMAZON_EVENTBRIDGE":
@@ -112,6 +113,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 	reqCtx *request.RequestContext,
 	ds *appsyncstore.DataSource,
 	payload interface{},
+	maxBatchSize int32,
 ) (interface{}, error) {
 	if e.bus == nil {
 		return nil, fmt.Errorf("event bus not configured for DynamoDB invocation")
@@ -184,13 +186,21 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return map[string]interface{}{}, nil
 
 	case "Scan":
-		// AWS AppSync DynamoDB data source returns up to 1000 items per Scan.
-		// Pagination via LastEvaluatedKey is not yet implemented.
-		items, err := invoker.Scan(ctx, region, tableName, 1000)
+		scanLimit := 1000
+		if maxBatchSize > 0 && int(maxBatchSize) < scanLimit {
+			scanLimit = int(maxBatchSize)
+		}
+		exclusiveStartKey := request.GetStringParam(payloadMap, "nextToken")
+		items, nextToken, err := invoker.ScanWithPagination(ctx, region, tableName, scanLimit, exclusiveStartKey)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Scan failed: %w", err)
 		}
-		return map[string]interface{}{"items": items}, nil
+		result := map[string]interface{}{"items": items}
+		if nextToken != "" {
+			result["scannedCount"] = len(items)
+			result["nextToken"] = nextToken
+		}
+		return result, nil
 
 	case "Query":
 		if keyMap == nil {
@@ -203,13 +213,21 @@ func (e *graphQLEngine) dispatchDynamoDB(
 				break
 			}
 		}
-		// AWS AppSync DynamoDB data source returns up to 1000 items per Query.
-		// Pagination via LastEvaluatedKey is not yet implemented.
-		items, err := invoker.Query(ctx, region, tableName, pkVal, 1000)
+		queryLimit := 1000
+		if maxBatchSize > 0 && int(maxBatchSize) < queryLimit {
+			queryLimit = int(maxBatchSize)
+		}
+		exclusiveStartKey := request.GetStringParam(payloadMap, "nextToken")
+		items, nextToken, err := invoker.QueryWithPagination(ctx, region, tableName, pkVal, queryLimit, exclusiveStartKey)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Query failed: %w", err)
 		}
-		return map[string]interface{}{"items": items}, nil
+		result := map[string]interface{}{"items": items}
+		if nextToken != "" {
+			result["scannedCount"] = len(items)
+			result["nextToken"] = nextToken
+		}
+		return result, nil
 
 	case "UpdateItem":
 		if keyMap == nil {

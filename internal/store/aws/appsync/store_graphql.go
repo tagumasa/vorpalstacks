@@ -58,6 +58,12 @@ func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
+	graphqlCount, _ := s.CountGraphqlApis()
+	eventCount, _ := s.CountApis()
+	if graphqlCount+eventCount >= MaxApisPerRegion {
+		return nil, ErrApiLimitExceeded
+	}
+
 	if s.graphqlApisStore.Exists(api.Name) {
 		return nil, ErrGraphqlApiAlreadyExists
 	}
@@ -405,6 +411,9 @@ func (s *AppSyncStore) UpdateDataSource(ds *DataSource) (*DataSource, error) {
 	}
 	if ds.MetricsConfig != "" {
 		existing.MetricsConfig = ds.MetricsConfig
+	}
+	if ds.NeptuneConfig != nil {
+		existing.NeptuneConfig = ds.NeptuneConfig
 	}
 	if ds.OpenSearchServiceConfig != nil {
 		existing.OpenSearchServiceConfig = ds.OpenSearchServiceConfig

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -20,7 +21,10 @@ import (
 // not exist or is not a GraphQL API.
 func validateGraphqlApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
 	if _, err := store.GetGraphqlApiById(apiId); err != nil {
-		return NewNotFoundException("Graphql API")
+		if errors.Is(err, appsyncstore.ErrGraphqlApiNotFound) || errors.Is(err, appsyncstore.ErrApiNotFound) {
+			return NewNotFoundException("Graphql API")
+		}
+		return err
 	}
 	return nil
 }
@@ -31,7 +35,10 @@ func validateGraphqlApiExists(store *appsyncstore.AppSyncStore, apiId string) er
 // Event API.
 func validateEventApiExists(store *appsyncstore.AppSyncStore, apiId string) error {
 	if _, err := store.GetApiById(apiId); err != nil {
-		return NewNotFoundException("Event API")
+		if errors.Is(err, appsyncstore.ErrApiNotFound) || errors.Is(err, appsyncstore.ErrGraphqlApiNotFound) {
+			return NewNotFoundException("Event API")
+		}
+		return err
 	}
 	return nil
 }
@@ -51,9 +58,13 @@ func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, err
 	if maxResults == 0 {
 		maxResults = 25
 	}
+	token := request.GetStringParam(req.Parameters, "nextToken")
+	if len(token) > 65536 {
+		return common.ListOptions{}, NewBadRequestException("nextToken exceeds maximum length of 65536")
+	}
 	return common.ListOptions{
 		MaxItems: maxResults,
-		Marker:   request.GetStringParam(req.Parameters, "nextToken"),
+		Marker:   token,
 	}, nil
 }
 
@@ -73,7 +84,7 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 				ap := appsyncstore.AuthProvider{
 					AuthType: request.GetStringParam(apMap, "authType"),
 				}
-				if ap.AuthType != "" && !validAuthenticationTypes[ap.AuthType] {
+				if !validAuthenticationTypes[ap.AuthType] {
 					return nil, NewBadRequestException(fmt.Sprintf("Invalid authType in eventConfig.authProviders: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", ap.AuthType))
 				}
 				if cognitoRaw := request.GetMapParam(apMap, "cognitoConfig"); cognitoRaw != nil {
@@ -95,12 +106,11 @@ func parseEventConfig(params map[string]interface{}) (*appsyncstore.EventConfig,
 					}
 				}
 				if oidcRaw := request.GetMapParam(apMap, "openIDConnectConfig"); oidcRaw != nil {
-					ap.OpenIDConnectConfig = &appsyncstore.OpenIDConnectConfig{
-						Issuer:   request.GetStringParam(oidcRaw, "issuer"),
-						AuthTTL:  request.GetInt64Param(oidcRaw, "authTTL"),
-						ClientId: request.GetStringParam(oidcRaw, "clientId"),
-						IatTTL:   request.GetInt64Param(oidcRaw, "iatTTL"),
+					oidcCfg, err := parseOpenIDConnectConfigFromMap(oidcRaw)
+					if err != nil {
+						return nil, err
 					}
+					ap.OpenIDConnectConfig = oidcCfg
 				}
 				ec.AuthProviders = append(ec.AuthProviders, ap)
 			}
@@ -154,7 +164,7 @@ func parseAuthModes(raw []interface{}) ([]appsyncstore.AuthMode, error) {
 	for _, m := range raw {
 		if mMap, ok := m.(map[string]interface{}); ok {
 			authType := request.GetStringParam(mMap, "authType")
-			if authType != "" && !validAuthenticationTypes[authType] {
+			if !validAuthenticationTypes[authType] {
 				return nil, NewBadRequestException(fmt.Sprintf("Invalid authType: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", authType))
 			}
 			modes = append(modes, appsyncstore.AuthMode{
@@ -220,26 +230,37 @@ func parseTags(params map[string]interface{}) (map[string]string, error) {
 }
 
 // parseHandlerConfigs parses HandlerConfigs from the request parameters.
-func parseHandlerConfigs(params map[string]interface{}) *appsyncstore.HandlerConfigs {
+func parseHandlerConfigs(params map[string]interface{}) (*appsyncstore.HandlerConfigs, error) {
 	hcRaw := request.GetMapParam(params, "handlerConfigs")
 	if hcRaw == nil {
-		return nil
+		return nil, nil
 	}
 	hc := &appsyncstore.HandlerConfigs{}
 
 	if pubRaw := request.GetMapParam(hcRaw, "onPublish"); pubRaw != nil {
-		hc.OnPublish = parseHandlerConfig(pubRaw)
+		cfg, err := parseHandlerConfig(pubRaw)
+		if err != nil {
+			return nil, err
+		}
+		hc.OnPublish = cfg
 	}
 	if subRaw := request.GetMapParam(hcRaw, "onSubscribe"); subRaw != nil {
-		hc.OnSubscribe = parseHandlerConfig(subRaw)
+		cfg, err := parseHandlerConfig(subRaw)
+		if err != nil {
+			return nil, err
+		}
+		hc.OnSubscribe = cfg
 	}
-	return hc
+	return hc, nil
 }
 
 // parseHandlerConfig parses a single HandlerConfig from a map.
-func parseHandlerConfig(raw map[string]interface{}) *appsyncstore.HandlerConfig {
+func parseHandlerConfig(raw map[string]interface{}) (*appsyncstore.HandlerConfig, error) {
 	hc := &appsyncstore.HandlerConfig{
 		Behavior: request.GetStringParam(raw, "behavior"),
+	}
+	if hc.Behavior != "" && !validateHandlerBehavior(hc.Behavior) {
+		return nil, NewBadRequestException(fmt.Sprintf("Invalid handlerConfig.behavior: %s. Valid values: CODE, DIRECT", hc.Behavior))
 	}
 	if intRaw := request.GetMapParam(raw, "integration"); intRaw != nil {
 		hc.Integration = &appsyncstore.Integration{
@@ -251,7 +272,7 @@ func parseHandlerConfig(raw map[string]interface{}) *appsyncstore.HandlerConfig 
 			}
 		}
 	}
-	return hc
+	return hc, nil
 }
 
 // --- GraphQL API parse helpers ---
@@ -263,7 +284,7 @@ func parseAdditionalAuthProviders(params map[string]interface{}) ([]appsyncstore
 	for _, p := range raw {
 		if pMap, ok := p.(map[string]interface{}); ok {
 			authType := request.GetStringParam(pMap, "authenticationType")
-			if authType != "" && !validAuthenticationTypes[authType] {
+			if !validAuthenticationTypes[authType] {
 				return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType in additionalAuthenticationProviders: %s. Valid values: API_KEY, AWS_IAM, AMAZON_COGNITO_USER_POOLS, OPENID_CONNECT, AWS_LAMBDA", authType))
 			}
 			ap := appsyncstore.AdditionalAuthenticationProvider{
@@ -277,7 +298,11 @@ func parseAdditionalAuthProviders(params map[string]interface{}) ([]appsyncstore
 				ap.LambdaAuthorizerConfig = cfg
 			}
 			if oidcRaw := request.GetMapParam(pMap, "openIDConnectConfig"); oidcRaw != nil {
-				ap.OpenIDConnectConfig = parseOpenIDConnectConfigFromMap(oidcRaw)
+				oidcCfg, err := parseOpenIDConnectConfigFromMap(oidcRaw)
+				if err != nil {
+					return nil, err
+				}
+				ap.OpenIDConnectConfig = oidcCfg
 			}
 			if cognitoRaw := request.GetMapParam(pMap, "userPoolConfig"); cognitoRaw != nil {
 				ap.UserPoolConfig = &appsyncstore.CognitoUserPoolConfig{
@@ -293,16 +318,20 @@ func parseAdditionalAuthProviders(params map[string]interface{}) ([]appsyncstore
 }
 
 // parseEnhancedMetricsConfig parses an EnhancedMetricsConfig from request parameters.
-func parseEnhancedMetricsConfig(params map[string]interface{}) *appsyncstore.EnhancedMetricsConfig {
+func parseEnhancedMetricsConfig(params map[string]interface{}) (*appsyncstore.EnhancedMetricsConfig, error) {
 	raw := request.GetMapParam(params, "enhancedMetricsConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
-	return &appsyncstore.EnhancedMetricsConfig{
+	ec := &appsyncstore.EnhancedMetricsConfig{
 		DataSourceLevelMetricsBehavior: request.GetStringParam(raw, "dataSourceLevelMetricsBehavior"),
 		OperationLevelMetricsConfig:    request.GetStringParam(raw, "operationLevelMetricsConfig"),
 		ResolverLevelMetricsBehavior:   request.GetStringParam(raw, "resolverLevelMetricsBehavior"),
 	}
+	if err := validateEnhancedMetricsConfig(ec); err != nil {
+		return nil, err
+	}
+	return ec, nil
 }
 
 // parseLambdaAuthorizerConfig parses a LambdaAuthorizerConfig from request parameters.
@@ -341,22 +370,30 @@ func parseLogConfig(params map[string]interface{}) *appsyncstore.LogConfig {
 }
 
 // parseOpenIDConnectConfig parses an OpenIDConnectConfig from request parameters.
-func parseOpenIDConnectConfig(params map[string]interface{}) *appsyncstore.OpenIDConnectConfig {
+func parseOpenIDConnectConfig(params map[string]interface{}) (*appsyncstore.OpenIDConnectConfig, error) {
 	raw := request.GetMapParam(params, "openIDConnectConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	return parseOpenIDConnectConfigFromMap(raw)
 }
 
 // parseOpenIDConnectConfigFromMap parses an OpenIDConnectConfig from a raw map.
-func parseOpenIDConnectConfigFromMap(raw map[string]interface{}) *appsyncstore.OpenIDConnectConfig {
+func parseOpenIDConnectConfigFromMap(raw map[string]interface{}) (*appsyncstore.OpenIDConnectConfig, error) {
+	authTTL := request.GetInt64Param(raw, "authTTL")
+	iatTTL := request.GetInt64Param(raw, "iatTTL")
+	if err := validateOpenIDConnectTTL(authTTL); err != nil {
+		return nil, err
+	}
+	if err := validateOpenIDConnectTTL(iatTTL); err != nil {
+		return nil, err
+	}
 	return &appsyncstore.OpenIDConnectConfig{
 		Issuer:   request.GetStringParam(raw, "issuer"),
-		AuthTTL:  request.GetInt64Param(raw, "authTTL"),
+		AuthTTL:  authTTL,
 		ClientId: request.GetStringParam(raw, "clientId"),
-		IatTTL:   request.GetInt64Param(raw, "iatTTL"),
-	}
+		IatTTL:   iatTTL,
+	}, nil
 }
 
 // parseUserPoolConfig parses a UserPoolConfig from request parameters.
@@ -376,10 +413,10 @@ func parseUserPoolConfig(params map[string]interface{}) *appsyncstore.UserPoolCo
 // --- Data Source parse helpers ---
 
 // parseDynamoDBConfig parses a DynamoDB data source config from request parameters.
-func parseDynamoDBConfig(params map[string]interface{}) *appsyncstore.DynamodbDataSourceConfig {
+func parseDynamoDBConfig(params map[string]interface{}) (*appsyncstore.DynamodbDataSourceConfig, error) {
 	raw := request.GetMapParam(params, "dynamodbConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	cfg := &appsyncstore.DynamodbDataSourceConfig{
 		AwsRegion:            request.GetStringParam(raw, "awsRegion"),
@@ -388,13 +425,18 @@ func parseDynamoDBConfig(params map[string]interface{}) *appsyncstore.DynamodbDa
 		Versioned:            request.GetBoolParam(raw, "versioned"),
 	}
 	if deltaRaw := request.GetMapParam(raw, "deltaSyncConfig"); deltaRaw != nil {
+		baseTTL := request.GetInt64Param(deltaRaw, "baseTableTTL")
+		deltaTTL := request.GetInt64Param(deltaRaw, "deltaSyncTableTTL")
+		if err := validateDeltaSyncTtl(baseTTL, deltaTTL); err != nil {
+			return nil, err
+		}
 		cfg.DeltaSyncConfig = &appsyncstore.DeltaSyncConfig{
-			BaseTableTTL:       request.GetInt64Param(deltaRaw, "baseTableTTL"),
+			BaseTableTTL:       baseTTL,
 			DeltaSyncTableName: request.GetStringParam(deltaRaw, "deltaSyncTableName"),
-			DeltaSyncTableTTL:  request.GetInt64Param(deltaRaw, "deltaSyncTableTTL"),
+			DeltaSyncTableTTL:  deltaTTL,
 		}
 	}
-	return cfg
+	return cfg, nil
 }
 
 // parseElasticsearchConfig parses an Elasticsearch data source config from request parameters.
@@ -421,17 +463,21 @@ func parseEventBridgeConfig(params map[string]interface{}) *appsyncstore.EventBr
 }
 
 // parseHttpConfig parses an HTTP data source config from request parameters.
-func parseHttpConfig(params map[string]interface{}) *appsyncstore.HttpDataSourceConfig {
+func parseHttpConfig(params map[string]interface{}) (*appsyncstore.HttpDataSourceConfig, error) {
 	raw := request.GetMapParam(params, "httpConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	cfg := &appsyncstore.HttpDataSourceConfig{
 		Endpoint: request.GetStringParam(raw, "endpoint"),
 	}
 	if authRaw := request.GetMapParam(raw, "authorizationConfig"); authRaw != nil {
+		authType := request.GetStringParam(authRaw, "authorizationType")
+		if authType != "" && !validateAuthorizationType(authType) {
+			return nil, NewBadRequestException(fmt.Sprintf("Invalid httpConfig.authorizationConfig.authorizationType: %s. Valid value: AWS_IAM", authType))
+		}
 		cfg.AuthorizationConfig = &appsyncstore.AuthorizationConfig{
-			AuthorizationType: request.GetStringParam(authRaw, "authorizationType"),
+			AuthorizationType: authType,
 		}
 		if iamRaw := request.GetMapParam(authRaw, "awsIamConfig"); iamRaw != nil {
 			cfg.AuthorizationConfig.AwsIamConfig = &appsyncstore.AwsIamConfig{
@@ -440,7 +486,7 @@ func parseHttpConfig(params map[string]interface{}) *appsyncstore.HttpDataSource
 			}
 		}
 	}
-	return cfg
+	return cfg, nil
 }
 
 // parseLambdaDataSourceConfig parses a Lambda data source config from request parameters.
@@ -467,10 +513,10 @@ func parseOpenSearchServiceConfig(params map[string]interface{}) *appsyncstore.O
 }
 
 // parseRelationalDatabaseConfig parses a relational database data source config from request parameters.
-func parseRelationalDatabaseConfig(params map[string]interface{}) *appsyncstore.RelationalDatabaseDataSourceConfig {
+func parseRelationalDatabaseConfig(params map[string]interface{}) (*appsyncstore.RelationalDatabaseDataSourceConfig, error) {
 	raw := request.GetMapParam(params, "relationalDatabaseConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	cfg := &appsyncstore.RelationalDatabaseDataSourceConfig{
 		RelationalDatabaseSourceType: request.GetStringParam(raw, "relationalDatabaseSourceType"),
@@ -483,8 +529,11 @@ func parseRelationalDatabaseConfig(params map[string]interface{}) *appsyncstore.
 			DbClusterIdentifier: request.GetStringParam(rdsRaw, "dbClusterIdentifier"),
 			Schema:              request.GetStringParam(rdsRaw, "schema"),
 		}
+		if err := validateRdsIdentifier(cfg.RdsHttpEndpointConfig); err != nil {
+			return nil, err
+		}
 	}
-	return cfg
+	return cfg, nil
 }
 
 // parseNeptuneConfig parses a Neptune data source config from request parameters.
@@ -561,21 +610,28 @@ func parseCachingConfig(params map[string]interface{}) *appsyncstore.CachingConf
 }
 
 // parseSyncConfig parses a SyncConfig from request parameters.
-func parseSyncConfig(params map[string]interface{}) *appsyncstore.SyncConfig {
+func parseSyncConfig(params map[string]interface{}) (*appsyncstore.SyncConfig, error) {
 	raw := request.GetMapParam(params, "syncConfig")
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	cfg := &appsyncstore.SyncConfig{
 		ConflictDetection: request.GetStringParam(raw, "conflictDetection"),
 		ConflictHandler:   request.GetStringParam(raw, "conflictHandler"),
 	}
+	if err := validateSyncConfig(cfg); err != nil {
+		return nil, err
+	}
 	if lambdaRaw := request.GetMapParam(raw, "lambdaConflictHandlerConfig"); lambdaRaw != nil {
+		arn := request.GetStringParam(lambdaRaw, "lambdaConflictHandlerArn")
+		if err := validateLambdaArn(arn); err != nil {
+			return nil, err
+		}
 		cfg.LambdaConflictHandlerConfig = &appsyncstore.LambdaConflictHandlerConfig{
-			LambdaConflictHandlerArn: request.GetStringParam(lambdaRaw, "lambdaConflictHandlerArn"),
+			LambdaConflictHandlerArn: arn,
 		}
 	}
-	return cfg
+	return cfg, nil
 }
 
 // computeResolverCacheKey generates a SHA-256 cache key from the resolver

@@ -27,4 +27,9 @@ var (
 	ErrDomainNameAlreadyExists      = errors.New("domain name already exists")
 	ErrApiAssociationNotFound       = errors.New("api association not found")
 	ErrMergedApiAssociationNotFound = errors.New("merged api association not found")
+	ErrApiLimitExceeded             = errors.New("api limit exceeded")
+	ErrApiKeyLimitExceeded          = errors.New("api key limit exceeded")
 )
+
+const MaxApisPerRegion = 25
+const MaxApiKeysPerApi = 5000

@@ -2,6 +2,7 @@ package apps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -497,6 +498,51 @@ func (a *dynamoDBInvokerAdapter) UpdateItem(ctx context.Context, region, tableNa
 	dynamoAttrs := dynamoMapToAttrs(attributes)
 	_, err = s.Items().Put(tableName, dynamoKey, dynamoAttrs)
 	return err
+}
+
+// ScanWithPagination performs a paginated scan of a DynamoDB table.
+// Returns items up to the given limit and a next-marker for subsequent calls.
+// An empty marker means no more items remain.
+func (a *dynamoDBInvokerAdapter) ScanWithPagination(ctx context.Context, region, tableName string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, "", err
+	}
+	if limit <= 0 {
+		limit = 1000
+	}
+	opts := dynamodbstore.ScanOptions{Limit: limit, Marker: exclusiveStartKey}
+	var results []map[string]interface{}
+	nextMarker, scanErr := s.Items().ScanWithOptions(tableName, opts, func(item *dynamodbstore.Item) error {
+		results = append(results, dynamoItemToPlainMap(item))
+		return nil
+	})
+	if scanErr != nil && !errors.Is(scanErr, errScanLimitReached) {
+		return nil, "", scanErr
+	}
+	return results, nextMarker, nil
+}
+
+// QueryWithPagination performs a paginated query of a DynamoDB table by partition key.
+// Returns items up to the given limit and a next-marker for subsequent calls.
+func (a *dynamoDBInvokerAdapter) QueryWithPagination(ctx context.Context, region, tableName, partitionKeyValue string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, "", err
+	}
+	if limit <= 0 {
+		limit = 1000
+	}
+	opts := dynamodbstore.ScanOptions{Limit: limit, Marker: exclusiveStartKey}
+	var results []map[string]interface{}
+	nextMarker, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, nil, partitionKeyValue, opts, func(item *dynamodbstore.Item) error {
+		results = append(results, dynamoItemToPlainMap(item))
+		return nil
+	})
+	if queryErr != nil && !errors.Is(queryErr, errScanLimitReached) {
+		return nil, "", queryErr
+	}
+	return results, nextMarker, nil
 }
 
 func dynamoMapToKey(m map[string]interface{}) map[string]*dynamodbstore.AttributeValue {

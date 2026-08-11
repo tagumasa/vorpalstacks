@@ -173,13 +173,13 @@ func (s *AppSyncStore) UpdateType(t *Type) (*Type, error) {
 		return nil, err
 	}
 
-	if t.Definition != "" {
+	if t.DefinitionSet {
 		existing.Definition = t.Definition
 	}
 	if t.Format != "" {
 		existing.Format = t.Format
 	}
-	if t.Description != "" {
+	if t.DescriptionSet {
 		existing.Description = t.Description
 	}
 
@@ -268,6 +268,17 @@ func (s *AppSyncStore) GetEnvironmentVariables(apiId string) (*EnvironmentVariab
 
 // CreateApiKey persists a new API key.
 func (s *AppSyncStore) CreateApiKey(apiId string, apiKey *ApiKey) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
+	keyCount, err := s.CountApiKeys(apiId)
+	if err != nil {
+		return err
+	}
+	if keyCount >= MaxApiKeysPerApi {
+		return ErrApiKeyLimitExceeded
+	}
+
 	return s.apiKeysStore.Put(apiId+"/"+apiKey.Id, apiKey)
 }
 

@@ -71,6 +71,10 @@ func (s *AppSyncService) PutGraphqlApiEnvironmentVariables(ctx context.Context, 
 		stringMap[k] = s
 	}
 
+	if err := validateEnvironmentVariableMapSize(stringMap); err != nil {
+		return nil, err
+	}
+
 	toSave := &appsyncstore.EnvironmentVariables{
 		EnvironmentVariables: stringMap,
 	}

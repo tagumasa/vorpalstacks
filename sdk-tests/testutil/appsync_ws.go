@@ -1,26 +1,106 @@
 package testutil
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/appsync"
 	"github.com/gorilla/websocket"
+
+	"vorpalstacks-sdk-tests/config"
 )
 
 // appsyncListenerPort mirrors internal/common/serviceports.AppSync.
 const appsyncListenerPort = 50106
 
-var wsTestEndpoint = fmt.Sprintf("ws://127.0.0.1:%d/event/realtime", appsyncListenerPort)
-var wsTestHTTPEndpoint = fmt.Sprintf("http://127.0.0.1:%d/event", appsyncListenerPort)
+// wsTestContext holds the Event API and API key created for the WS test
+// suite. Every dialWS call and HTTP publish must carry the API ID so the
+// server's fail-closed authoriser can resolve and verify the API.
+type wsTestContext struct {
+	apiId      string
+	apiKey     string
+	httpClient *http.Client
+}
 
 func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	var results []TestResult
 
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return []TestResult{{
+			Service:  "appsync-ws",
+			TestName: "Setup",
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("Failed to load config: %v", err),
+		}}
+	}
+
+	ctx := context.Background()
+	client := appsync.NewFromConfig(cfg)
+	uid := time.Now().UnixNano()
+
+	// Create a dedicated Event API for the WS tests.
+	apiResp, err := client.CreateApi(ctx, &appsync.CreateApiInput{
+		Name:        aws.String(fmt.Sprintf("ws-test-api-%d", uid)),
+		EventConfig: minEventConfig(),
+	})
+	if err != nil {
+		return []TestResult{{
+			Service:  "appsync-ws",
+			TestName: "Setup",
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("Failed to create Event API: %v", err),
+		}}
+	}
+	apiId := *apiResp.Api.ApiId
+
+	// Create an API key for authentication.
+	keyResp, err := client.CreateApiKey(ctx, &appsync.CreateApiKeyInput{
+		ApiId: aws.String(apiId),
+	})
+	if err != nil {
+		_, _ = client.DeleteApi(ctx, &appsync.DeleteApiInput{ApiId: aws.String(apiId)})
+		return []TestResult{{
+			Service:  "appsync-ws",
+			TestName: "Setup",
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("Failed to create API key: %v", err),
+		}}
+	}
+	apiKey := *keyResp.ApiKey.Id
+
+	// Ensure cleanup regardless of test results.
+	defer func() {
+		_, _ = client.DeleteApiKey(ctx, &appsync.DeleteApiKeyInput{
+			ApiId: aws.String(apiId),
+			Id:    aws.String(apiKey),
+		})
+		_, _ = client.DeleteApi(ctx, &appsync.DeleteApiInput{ApiId: aws.String(apiId)})
+	}()
+
+	wsCtx := &wsTestContext{
+		apiId:      apiId,
+		apiKey:     apiKey,
+		httpClient: r.client,
+	}
+
+	wsEndpoint := fmt.Sprintf("ws://127.0.0.1:%d/event/realtime?apiId=%s", appsyncListenerPort, apiId)
+	httpEndpoint := fmt.Sprintf("http://127.0.0.1:%d/event?apiId=%s", appsyncListenerPort, apiId)
+
+	authMap := func() map[string]interface{} {
+		return map[string]interface{}{"x-api-key": apiKey}
+	}
+
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_ConnectionAck", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return fmt.Errorf("dial failed: %w", err)
 		}
@@ -40,7 +120,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeSuccess", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -51,9 +131,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		subMsg := map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "sub-1",
-			"channel": "/default/test",
+			"type":          "subscribe",
+			"id":            "sub-1",
+			"channel":       "/default/test",
+			"authorization": authMap(),
 		}
 		if err := conn.WriteJSON(subMsg); err != nil {
 			return fmt.Errorf("write subscribe failed: %w", err)
@@ -73,7 +154,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_InvalidChannel", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -84,9 +165,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		subMsg := map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "sub-bad-ch",
-			"channel": "",
+			"type":          "subscribe",
+			"id":            "sub-bad-ch",
+			"channel":       "",
+			"authorization": authMap(),
 		}
 		if err := conn.WriteJSON(subMsg); err != nil {
 			return err
@@ -103,7 +185,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_DuplicateId", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -114,9 +196,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		subMsg := map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "sub-dup",
-			"channel": "/default/ch1",
+			"type":          "subscribe",
+			"id":            "sub-dup",
+			"channel":       "/default/ch1",
+			"authorization": authMap(),
 		}
 		if err := conn.WriteJSON(subMsg); err != nil {
 			return err
@@ -139,7 +222,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_InvalidSubId", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -150,9 +233,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		subMsg := map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "",
-			"channel": "/default/test",
+			"type":          "subscribe",
+			"id":            "",
+			"channel":       "/default/test",
+			"authorization": authMap(),
 		}
 		if err := conn.WriteJSON(subMsg); err != nil {
 			return err
@@ -169,7 +253,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_PublishAndReceiveData", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -182,9 +266,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		ch := fmt.Sprintf("/default/pubtest-%d", time.Now().UnixNano())
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "sub-pub",
-			"channel": ch,
+			"type":          "subscribe",
+			"id":            "sub-pub",
+			"channel":       ch,
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -193,10 +278,11 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "publish",
-			"id":      "pub-1",
-			"channel": ch,
-			"events":  []string{`{"msg":"hello"}`},
+			"type":          "publish",
+			"id":            "pub-1",
+			"channel":       ch,
+			"events":        []string{`{"msg":"hello"}`},
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -242,7 +328,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_PublishError_EmptyEvents", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -253,10 +339,11 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "publish",
-			"id":      "pub-empty",
-			"channel": "/default/test",
-			"events":  []string{},
+			"type":          "publish",
+			"id":            "pub-empty",
+			"channel":       "/default/test",
+			"events":        []string{},
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -272,7 +359,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeSuccess", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -283,9 +370,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "sub-unsub",
-			"channel": "/default/unsub-test",
+			"type":          "subscribe",
+			"id":            "sub-unsub",
+			"channel":       "/default/unsub-test",
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -314,7 +402,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeError_UnknownId", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -342,7 +430,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_ConnectionInit_Accepted", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -367,7 +455,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnknownMessageType", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -394,13 +482,13 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_MultiSubscriberFanOut", func() error {
-		conn1, err := dialWS()
+		conn1, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
 		defer conn1.Close()
 
-		conn2, err := dialWS()
+		conn2, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -416,9 +504,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		ch := fmt.Sprintf("/default/fanout-%d", time.Now().UnixNano())
 
 		if err := conn1.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "fan-sub-1",
-			"channel": ch,
+			"type":          "subscribe",
+			"id":            "fan-sub-1",
+			"channel":       ch,
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -427,9 +516,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn2.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "fan-sub-2",
-			"channel": ch,
+			"type":          "subscribe",
+			"id":            "fan-sub-2",
+			"channel":       ch,
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -438,10 +528,11 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn1.WriteJSON(map[string]interface{}{
-			"type":    "publish",
-			"id":      "fan-pub",
-			"channel": ch,
-			"events":  []string{`{"fan":"out"}`},
+			"type":          "publish",
+			"id":            "fan-pub",
+			"channel":       ch,
+			"events":        []string{`{"fan":"out"}`},
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -477,7 +568,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_WildcardChannel", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -490,9 +581,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		ns := fmt.Sprintf("wildns-%d", time.Now().UnixNano())
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "wild-sub",
-			"channel": "/" + ns + "/*",
+			"type":          "subscribe",
+			"id":            "wild-sub",
+			"channel":       "/" + ns + "/*",
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -501,10 +593,11 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "publish",
-			"id":      "wild-pub",
-			"channel": "/" + ns + "/topic1",
-			"events":  []string{`{"wildcard":true}`},
+			"type":          "publish",
+			"id":            "wild-pub",
+			"channel":       "/" + ns + "/topic1",
+			"events":        []string{`{"wildcard":true}`},
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -533,7 +626,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeStopsDelivery", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -546,9 +639,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		ch := fmt.Sprintf("/default/unsubstop-%d", time.Now().UnixNano())
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "stop-sub",
-			"channel": ch,
+			"type":          "subscribe",
+			"id":            "stop-sub",
+			"channel":       ch,
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -567,10 +661,11 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		}
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "publish",
-			"id":      "stop-pub",
-			"channel": ch,
-			"events":  []string{`{"after":"unsub"}`},
+			"type":          "publish",
+			"id":            "stop-pub",
+			"channel":       ch,
+			"events":        []string{`{"after":"unsub"}`},
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -588,7 +683,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "HTTP_Publish_Success", func() error {
-		conn, err := dialWS()
+		conn, err := dialWS(wsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -601,9 +696,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		ch := fmt.Sprintf("/default/httppub-%d", time.Now().UnixNano())
 
 		if err := conn.WriteJSON(map[string]interface{}{
-			"type":    "subscribe",
-			"id":      "http-sub",
-			"channel": ch,
+			"type":          "subscribe",
+			"id":            "http-sub",
+			"channel":       ch,
+			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
@@ -615,7 +711,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 			"channel": ch,
 			"events":  []string{`{"via":"http"}`},
 		})
-		httpResp, err := r.client.Post(wsTestHTTPEndpoint, "application/json", strings.NewReader(string(bodyBytes)))
+		req, _ := http.NewRequest("POST", httpEndpoint, strings.NewReader(string(bodyBytes)))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", wsCtx.apiKey)
+		httpResp, err := wsCtx.httpClient.Do(req)
 		if err != nil {
 			return fmt.Errorf("HTTP publish failed: %w", err)
 		}
@@ -645,7 +744,14 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "HTTP_Publish_Error_EmptyChannel", func() error {
-		httpResp, err := r.client.Post(wsTestHTTPEndpoint, "application/json", strings.NewReader(`{"channel":"","events":["{}"]}`))
+		bodyBytes, _ := json.Marshal(map[string]interface{}{
+			"channel": "",
+			"events":  []string{`{}`},
+		})
+		req, _ := http.NewRequest("POST", httpEndpoint, strings.NewReader(string(bodyBytes)))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", wsCtx.apiKey)
+		httpResp, err := wsCtx.httpClient.Do(req)
 		if err != nil {
 			return err
 		}
@@ -666,7 +772,10 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 			"channel": "/default/test",
 			"events":  evts,
 		})
-		httpResp, err := r.client.Post(wsTestHTTPEndpoint, "application/json", strings.NewReader(string(body)))
+		req, _ := http.NewRequest("POST", httpEndpoint, strings.NewReader(string(body)))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", wsCtx.apiKey)
+		httpResp, err := wsCtx.httpClient.Do(req)
 		if err != nil {
 			return err
 		}
@@ -681,8 +790,8 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	return results
 }
 
-func dialWS() (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(wsTestEndpoint, http.Header{
+func dialWS(endpoint string) (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(endpoint, http.Header{
 		"Sec-WebSocket-Protocol": []string{"aws-appsync-event-ws"},
 	})
 	return conn, err
