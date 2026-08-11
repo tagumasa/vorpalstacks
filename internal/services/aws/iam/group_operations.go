@@ -47,7 +47,6 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 	if err != nil {
 		return nil, err
 	}
-	_ = group // presence verified; response uses groupName + member list
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)

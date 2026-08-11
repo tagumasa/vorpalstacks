@@ -179,6 +179,9 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 		return nil, NewValidationError("SAMLProviderArn")
 	}
 	metadataDocument := request.GetStringParam(req.Parameters, "SAMLMetadataDocument")
+	if metadataDocument != "" && (len(metadataDocument) < 1000 || len(metadataDocument) > 10000000) {
+		return nil, NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
+	}
 
 	assertionEncryptionMode := request.GetStringParam(req.Parameters, "AssertionEncryptionMode")
 	if assertionEncryptionMode != "" && !validateAssertionEncryptionMode(assertionEncryptionMode) {
