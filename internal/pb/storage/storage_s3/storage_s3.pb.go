@@ -3846,6 +3846,7 @@ type Bucket struct {
 	RequestPayment            *RequestPaymentConfiguration `protobuf:"bytes,18,opt,name=request_payment,json=requestPayment,proto3" json:"request_payment,omitempty"`
 	AccelerateConfiguration   *AccelerateConfiguration     `protobuf:"bytes,19,opt,name=accelerate_configuration,json=accelerateConfiguration,proto3" json:"accelerate_configuration,omitempty"`
 	ReplicationConfiguration  *ReplicationConfiguration    `protobuf:"bytes,20,opt,name=replication_configuration,json=replicationConfiguration,proto3" json:"replication_configuration,omitempty"`
+	MfaDelete                 string                       `protobuf:"bytes,21,opt,name=mfa_delete,json=mfaDelete,proto3" json:"mfa_delete,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -4018,6 +4019,13 @@ func (x *Bucket) GetReplicationConfiguration() *ReplicationConfiguration {
 		return x.ReplicationConfiguration
 	}
 	return nil
+}
+
+func (x *Bucket) GetMfaDelete() string {
+	if x != nil {
+		return x.MfaDelete
+	}
+	return ""
 }
 
 var File_storage_s3_proto protoreflect.FileDescriptor
@@ -4288,8 +4296,7 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x06bucket\x18\x01 \x01(\tR\x06bucket\x12#\n" +
 	"\rstorage_class\x18\x02 \x01(\tR\fstorageClass\x12\x18\n" +
 	"\aaccount\x18\x03 \x01(\tR\aaccount\x12<\n" +
-	"\x1aaccess_control_translation\x18\x04 \x01(\tR\x18accessControlTranslation\"\xfb\n" +
-	"\n" +
+	"\x1aaccess_control_translation\x18\x04 \x01(\tR\x18accessControlTranslation\"\x9a\v\n" +
 	"\x06Bucket\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06region\x18\x02 \x01(\tR\x06region\x12?\n" +
@@ -4311,7 +4318,9 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x12ownership_controls\x18\x11 \x01(\v2\x1d.storage.s3.OwnershipControlsR\x11ownershipControls\x12P\n" +
 	"\x0frequest_payment\x18\x12 \x01(\v2'.storage.s3.RequestPaymentConfigurationR\x0erequestPayment\x12^\n" +
 	"\x18accelerate_configuration\x18\x13 \x01(\v2#.storage.s3.AccelerateConfigurationR\x17accelerateConfiguration\x12a\n" +
-	"\x19replication_configuration\x18\x14 \x01(\v2$.storage.s3.ReplicationConfigurationR\x18replicationConfiguration*\xa5\x02\n" +
+	"\x19replication_configuration\x18\x14 \x01(\v2$.storage.s3.ReplicationConfigurationR\x18replicationConfiguration\x12\x1d\n" +
+	"\n" +
+	"mfa_delete\x18\x15 \x01(\tR\tmfaDelete*\xa5\x02\n" +
 	"\x12ObjectStorageClass\x12$\n" +
 	" OBJECT_STORAGE_CLASS_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dOBJECT_STORAGE_CLASS_STANDARD\x10\x01\x12+\n" +

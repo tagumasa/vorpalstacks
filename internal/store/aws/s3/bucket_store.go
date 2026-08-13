@@ -133,13 +133,14 @@ func (s *BucketStore) List() ([]*Bucket, error) {
 }
 
 // SetVersioning sets the versioning status for a bucket.
-func (s *BucketStore) SetVersioning(name string, status BucketVersioningStatus) error {
+func (s *BucketStore) SetVersioning(name string, status BucketVersioningStatus, mfaDelete string) error {
 	return s.keyLocker.WithLock(name, func() error {
 		bucket, err := s.Get(name)
 		if err != nil {
 			return err
 		}
 		bucket.VersioningStatus = status
+		bucket.MFADelete = mfaDelete
 		if err := s.Put(bucket); err != nil {
 			return err
 		}

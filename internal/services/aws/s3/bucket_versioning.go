@@ -10,7 +10,6 @@ type PutBucketVersioningInput struct {
 	Bucket    string
 	Status    string
 	MFADelete string
-	MFA       string
 }
 
 // PutBucketVersioning sets the versioning state of a bucket.
@@ -29,7 +28,7 @@ func (o *BucketOperations) PutBucketVersioning(ctx *request.RequestContext, inpu
 	if !store.buckets.Exists(input.Bucket) {
 		return ErrNoSuchBucket
 	}
-	return store.buckets.SetVersioning(input.Bucket, status)
+	return store.buckets.SetVersioning(input.Bucket, status, input.MFADelete)
 }
 
 // GetBucketVersioningInput contains the request parameters for the GetBucketVersioning operation.
@@ -40,7 +39,7 @@ type GetBucketVersioningInput struct {
 // GetBucketVersioningOutput contains the result of the GetBucketVersioning operation.
 type GetBucketVersioningOutput struct {
 	Status    string `xml:"Status,omitempty"`
-	MFADelete string `xml:"MFADelete,omitempty"`
+	MFADelete string `xml:"MfaDelete,omitempty"`
 }
 
 // GetBucketVersioning retrieves the versioning configuration of a bucket.
@@ -54,11 +53,15 @@ func (o *BucketOperations) GetBucketVersioning(ctx *request.RequestContext, inpu
 		return nil, err
 	}
 
-	if bucket.VersioningStatus == "" {
+	if bucket.VersioningStatus == "" && bucket.MFADelete == "" {
 		return &GetBucketVersioningOutput{}, nil
 	}
 
-	return &GetBucketVersioningOutput{
+	result := &GetBucketVersioningOutput{
 		Status: string(bucket.VersioningStatus),
-	}, nil
+	}
+	if bucket.MFADelete != "" {
+		result.MFADelete = bucket.MFADelete
+	}
+	return result, nil
 }

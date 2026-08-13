@@ -19,7 +19,7 @@ type BucketStoreInterface interface {
 	Delete(name string) error
 	Exists(name string) bool
 	List() ([]*Bucket, error)
-	SetVersioning(name string, status BucketVersioningStatus) error
+	SetVersioning(name string, status BucketVersioningStatus, mfaDelete string) error
 	SetVersioningCallback(fn func(bucket string, enabled bool))
 	SetOnDeleteCallback(fn func(bucket string))
 	SetEncryption(name string, config *EncryptionConfig) error

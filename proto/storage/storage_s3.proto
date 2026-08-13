@@ -483,4 +483,5 @@ message Bucket {
   RequestPaymentConfiguration request_payment = 18;
   AccelerateConfiguration accelerate_configuration = 19;
   ReplicationConfiguration replication_configuration = 20;
+  string mfa_delete = 21;
 }

@@ -41,14 +41,16 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 			return nil, http.StatusForbidden, err
 		}
 		var config struct {
-			Status string `xml:"Status"`
+			Status    string `xml:"Status"`
+			MfaDelete string `xml:"MfaDelete"`
 		}
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
 		}
 		err := h.bucketOps.PutBucketVersioning(ctx, &PutBucketVersioningInput{
-			Bucket: bucket,
-			Status: config.Status,
+			Bucket:    bucket,
+			Status:    config.Status,
+			MFADelete: config.MfaDelete,
 		})
 		return nil, http.StatusOK, err
 	}

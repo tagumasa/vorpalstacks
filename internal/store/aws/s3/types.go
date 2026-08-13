@@ -122,6 +122,7 @@ type Bucket struct {
 	ObjectLockEnabled         bool                         `json:"object_lock_enabled,omitempty"`
 	ObjectLockConfig          *ObjectLockConfiguration     `json:"object_lock_config,omitempty"`
 	VersioningStatus          BucketVersioningStatus       `json:"versioning_status,omitempty"`
+	MFADelete                 string                       `json:"mfa_delete,omitempty"`
 	EncryptionConfig          *EncryptionConfig            `json:"encryption_config,omitempty"`
 	LifecycleConfiguration    *LifecycleConfiguration      `json:"lifecycle_configuration,omitempty"`
 	WebsiteConfiguration      *WebsiteConfiguration        `json:"website_configuration,omitempty"`
