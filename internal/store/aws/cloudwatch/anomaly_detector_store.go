@@ -125,7 +125,7 @@ func (s *AnomalyDetectorStore) DeleteAnomalyDetector(namespace, metricName strin
 
 	if detectorID != "" {
 		if !s.BaseStore.Exists(detectorID) {
-			return fmt.Errorf("ResourceNotFound: anomaly detector %s not found", detectorID)
+			return ErrResourceNotFound
 		}
 		return s.BaseStore.Delete(detectorID)
 	}
@@ -135,7 +135,7 @@ func (s *AnomalyDetectorStore) DeleteAnomalyDetector(namespace, metricName strin
 		return err
 	}
 	if !s.BaseStore.Exists(key) {
-		return fmt.Errorf("ResourceNotFound: anomaly detector not found for %s/%s/%s", namespace, metricName, stat)
+		return ErrResourceNotFound
 	}
 	return s.BaseStore.Delete(key)
 }

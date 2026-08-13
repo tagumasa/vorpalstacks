@@ -38,8 +38,9 @@ func (s *ObjectStore) openObjectReader(ctx context.Context, bucket, key, version
 }
 
 // Copy copies an object from one location to another, preserving the source
-// content type, metadata, and storage class.
-func (s *ObjectStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string) (*Object, error) {
+// content type, metadata, and storage class. When storageClass is non-empty
+// it overrides the source storage class; otherwise the source value is used.
+func (s *ObjectStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, storageClass ObjectStorageClass) (*Object, error) {
 	if err := validateS3Key(srcKey); err != nil {
 		return nil, err
 	}
@@ -50,11 +51,16 @@ func (s *ObjectStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket, ds
 	if err != nil {
 		return nil, err
 	}
-	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, srcObj.ContentType, srcObj.Metadata, srcObj.StorageClass)
+	sc := storageClass
+	if sc == "" {
+		sc = srcObj.StorageClass
+	}
+	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, srcObj.ContentType, srcObj.Metadata, sc)
 }
 
 // CopyWithMetadata copies an object with custom content type and metadata.
-func (s *ObjectStore) CopyWithMetadata(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, contentType string, metadata map[string]string) (*Object, error) {
+// When storageClass is non-empty it overrides the source storage class.
+func (s *ObjectStore) CopyWithMetadata(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, contentType string, metadata map[string]string, storageClass ObjectStorageClass) (*Object, error) {
 	if err := validateS3Key(srcKey); err != nil {
 		return nil, err
 	}
@@ -69,11 +75,16 @@ func (s *ObjectStore) CopyWithMetadata(ctx context.Context, srcBucket, srcKey, d
 	if ct == "" {
 		ct = srcObj.ContentType
 	}
-	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, ct, metadata, srcObj.StorageClass)
+	sc := storageClass
+	if sc == "" {
+		sc = srcObj.StorageClass
+	}
+	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, ct, metadata, sc)
 }
 
 // CopyWithVersion copies a specific version of an object.
-func (s *ObjectStore) CopyWithVersion(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string) (*Object, error) {
+// When storageClass is non-empty it overrides the source storage class.
+func (s *ObjectStore) CopyWithVersion(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string, storageClass ObjectStorageClass) (*Object, error) {
 	if err := validateS3Key(srcKey); err != nil {
 		return nil, err
 	}
@@ -84,11 +95,17 @@ func (s *ObjectStore) CopyWithVersion(ctx context.Context, srcBucket, srcKey, sr
 	if err != nil {
 		return nil, err
 	}
-	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, srcObj.ContentType, srcObj.Metadata, srcObj.StorageClass)
+	sc := storageClass
+	if sc == "" {
+		sc = srcObj.StorageClass
+	}
+	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, srcObj.ContentType, srcObj.Metadata, sc)
 }
 
-// CopyWithVersionAndMetadata copies a specific version of an object with custom content type and metadata.
-func (s *ObjectStore) CopyWithVersionAndMetadata(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string, contentType string, metadata map[string]string) (*Object, error) {
+// CopyWithVersionAndMetadata copies a specific version of an object with custom
+// content type and metadata. When storageClass is non-empty it overrides the
+// source storage class.
+func (s *ObjectStore) CopyWithVersionAndMetadata(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string, contentType string, metadata map[string]string, storageClass ObjectStorageClass) (*Object, error) {
 	if err := validateS3Key(srcKey); err != nil {
 		return nil, err
 	}
@@ -103,5 +120,9 @@ func (s *ObjectStore) CopyWithVersionAndMetadata(ctx context.Context, srcBucket,
 	if ct == "" {
 		ct = srcObj.ContentType
 	}
-	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, ct, metadata, srcObj.StorageClass)
+	sc := storageClass
+	if sc == "" {
+		sc = srcObj.StorageClass
+	}
+	return s.copyObjectReader(ctx, reader, dstBucket, dstKey, ct, metadata, sc)
 }

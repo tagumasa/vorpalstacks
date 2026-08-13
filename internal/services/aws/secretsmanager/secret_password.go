@@ -38,6 +38,9 @@ func (s *SecretsManagerService) GetRandomPassword(ctx context.Context, reqCtx *r
 	}
 
 	excludeCharacters := request.GetStringParam(req.Parameters, "ExcludeCharacters")
+	if err := validateExcludeCharacters(excludeCharacters); err != nil {
+		return nil, err
+	}
 	excludeNumbers := request.GetBoolParam(req.Parameters, "ExcludeNumbers")
 	excludePunctuation := request.GetBoolParam(req.Parameters, "ExcludePunctuation")
 	excludeUppercase := request.GetBoolParam(req.Parameters, "ExcludeUppercase")

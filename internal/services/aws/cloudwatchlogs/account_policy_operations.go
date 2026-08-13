@@ -9,26 +9,22 @@ import (
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
-// PutAccountPolicy creates or updates an account-level policy.
-func (s *LogsService) PutAccountPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
-	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
-	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
+// --- Core methods ---
 
+func (s *LogsService) putAccountPolicyCore(policyName, policyDocument, policyType, scope, selectionCriteria, region string) (*logsstore.AccountPolicy, error) {
 	if policyName == "" || policyType == "" {
 		return nil, ErrMissingParameter
 	}
-
-	if err := validatePolicyDocument(policyDocument); err != nil {
+	if err := validatePolicyNamePrefix(policyName); err != nil {
 		return nil, err
 	}
-
+	if err := validatePolicyDocumentJSON(policyDocument); err != nil {
+		return nil, err
+	}
 	if !validatePolicyType(policyType) {
 		return nil, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid policyType: %s. Allowed values: DATA_PROTECTION_POLICY, SUBSCRIPTION_FILTER_POLICY, FIELD_INDEX_POLICY, TRANSFORMER_POLICY, METRIC_EXTRACTION_POLICY", policyType), 400)
 	}
-
-	scope := request.GetParamLowerFirst(req.Parameters, "Scope")
 	if scope == "" {
 		scope = "ALL"
 	}
@@ -36,9 +32,11 @@ func (s *LogsService) PutAccountPolicy(ctx context.Context, reqCtx *request.Requ
 		return nil, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid scope: %s. Allowed values: ALL", scope), 400)
 	}
-	selectionCriteria := request.GetParamLowerFirst(req.Parameters, "SelectionCriteria")
+	if err := validateSelectionCriteria(selectionCriteria); err != nil {
+		return nil, err
+	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		return nil, err
 	}
@@ -55,66 +53,93 @@ func (s *LogsService) PutAccountPolicy(ctx context.Context, reqCtx *request.Requ
 	if err := store.PutAccountPolicy(ap); err != nil {
 		return nil, mapStoreError(err)
 	}
-
-	return map[string]interface{}{
-		"accountPolicy": formatAccountPolicy(ap),
-	}, nil
+	return ap, nil
 }
 
-// DeleteAccountPolicy deletes an account-level policy.
-func (s *LogsService) DeleteAccountPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
-	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
-
+func (s *LogsService) deleteAccountPolicyCore(policyName, policyType, region string) error {
 	if policyName == "" || policyType == "" {
-		return nil, ErrMissingParameter
+		return ErrMissingParameter
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := store.DeleteAccountPolicyEntry(policyType, policyName); err != nil {
-		return nil, mapStoreError(err)
+		return mapStoreError(err)
 	}
-
-	return map[string]interface{}{}, nil
+	return nil
 }
 
-// DescribeAccountPolicies lists account-level policies.
-func (s *LogsService) DescribeAccountPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
-	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-
-	// accountIdentifiers is a multi-account feature and is scope-out for this
-	// edge/on-premises platform. The parameter is intentionally not processed.
-
-	store, err := s.store(reqCtx)
+func (s *LogsService) describeAccountPoliciesCore(policyType, policyName, nextToken, region string) ([]*logsstore.AccountPolicy, string, error) {
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	allPolicies, err := store.ListAccountPolicies(policyType, policyName)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, "", mapStoreError(err)
 	}
 
 	result := pagination.PaginateSlice(allPolicies, nextToken, 50, func(p *logsstore.AccountPolicy) string {
 		return p.PolicyName
 	})
 
-	policies := make([]map[string]interface{}, len(result.Items))
-	for i, p := range result.Items {
-		policies[i] = formatAccountPolicy(p)
+	return result.Items, result.NextMarker, nil
+}
+
+// --- HTTP handlers ---
+
+func (s *LogsService) PutAccountPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
+	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
+	scope := request.GetParamLowerFirst(req.Parameters, "Scope")
+	selectionCriteria := request.GetParamLowerFirst(req.Parameters, "SelectionCriteria")
+
+	ap, err := s.putAccountPolicyCore(policyName, policyDocument, policyType, scope, selectionCriteria, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"accountPolicy": formatAccountPolicy(ap),
+	}, nil
+}
+
+func (s *LogsService) DeleteAccountPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
+
+	if err := s.deleteAccountPolicyCore(policyName, policyType, reqCtx.GetRegion()); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{}, nil
+}
+
+func (s *LogsService) DescribeAccountPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	policyType := request.GetParamLowerFirst(req.Parameters, "PolicyType")
+	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+
+	policies, nextMarker, err := s.describeAccountPoliciesCore(policyType, policyName, nextToken, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	formatted := make([]map[string]interface{}, len(policies))
+	for i, p := range policies {
+		formatted[i] = formatAccountPolicy(p)
 	}
 
 	resp := map[string]interface{}{
-		"accountPolicies": policies,
+		"accountPolicies": formatted,
 	}
-	if result.NextMarker != "" {
-		resp["nextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
 	}
 
 	return resp, nil

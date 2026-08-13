@@ -10,15 +10,9 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	"vorpalstacks/internal/store/aws/common"
 )
 
-// PutAnomalyDetector creates or updates an anomaly detection
-// model for a metric. The model can be a single-metric detector
-// (identified by Namespace, MetricName, Dimensions, Stat) or a
-// metric-math detector (identified by MetricDataQueries).
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutAnomalyDetector.html
+// PutAnomalyDetector creates or updates an anomaly detection model.
 func (s *CloudWatchService) PutAnomalyDetector(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -47,11 +41,6 @@ func (s *CloudWatchService) PutAnomalyDetector(ctx context.Context, reqCtx *requ
 	stat := getAlarmStringParam(req.Parameters, "Stat", "stat")
 	dimensions := parseAlarmDimensions(req.Parameters)
 
-	if namespace == "" || metricName == "" || stat == "" {
-		return nil, awserrors.NewMissingParameter(
-			"Namespace, MetricName, and Stat are required for single-metric anomaly detectors")
-	}
-
 	detector := &cwstore.AnomalyDetector{
 		Namespace:  namespace,
 		MetricName: metricName,
@@ -59,23 +48,27 @@ func (s *CloudWatchService) PutAnomalyDetector(ctx context.Context, reqCtx *requ
 		Dimensions: dimensions,
 	}
 
-	// Parse Configuration if present (top-level for legacy flat form).
 	if cfg, ok := req.Parameters["Configuration"]; ok {
 		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
 	} else if cfg, ok := req.Parameters["configuration"]; ok {
 		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
 	}
 
-	// Parse MetricCharacteristics if present (top-level for legacy flat form).
 	if mc, ok := req.Parameters["MetricCharacteristics"]; ok {
 		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
 	} else if mc, ok := req.Parameters["metricCharacteristics"]; ok {
 		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
 	}
 
-	saved, err := store.anomalyDetectors.PutAnomalyDetector(detector)
+	saved, err := s.putAnomalyDetectorCore(store, &PutAnomalyDetectorInput{
+		Namespace:  namespace,
+		MetricName: metricName,
+		Stat:       stat,
+		Dimensions: dimensions,
+		Detector:   detector,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to put anomaly detector: %w", err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -96,11 +89,6 @@ func (s *CloudWatchService) putSingleMetricAnomalyDetector(store *cloudwatchStor
 	accountID := getAlarmStringParam(smad, "AccountId", "accountId")
 	dimensions := parseAlarmDimensions(smad)
 
-	if namespace == "" || metricName == "" || stat == "" {
-		return nil, awserrors.NewMissingParameter(
-			"Namespace, MetricName, and Stat are required in SingleMetricAnomalyDetector")
-	}
-
 	detector := &cwstore.AnomalyDetector{
 		Namespace:  namespace,
 		MetricName: metricName,
@@ -109,23 +97,28 @@ func (s *CloudWatchService) putSingleMetricAnomalyDetector(store *cloudwatchStor
 		AccountID:  accountID,
 	}
 
-	// Parse Configuration if present.
 	if cfg, ok := smad["Configuration"]; ok {
 		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
 	} else if cfg, ok := smad["configuration"]; ok {
 		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
 	}
 
-	// Parse MetricCharacteristics if present (from top-level params).
 	if mc, ok := params["MetricCharacteristics"]; ok {
 		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
 	} else if mc, ok := params["metricCharacteristics"]; ok {
 		detector.MetricCharacteristics = parseMetricCharacteristics(mc)
 	}
 
-	saved, err := store.anomalyDetectors.PutAnomalyDetector(detector)
+	saved, err := s.putAnomalyDetectorCore(store, &PutAnomalyDetectorInput{
+		Namespace:  namespace,
+		MetricName: metricName,
+		Stat:       stat,
+		Dimensions: dimensions,
+		AccountID:  accountID,
+		Detector:   detector,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to put anomaly detector: %w", err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -170,24 +163,18 @@ func (s *CloudWatchService) putMetricMathAnomalyDetector(store *cloudwatchStores
 }
 
 // DeleteAnomalyDetector deletes the specified anomaly detection model.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DeleteAnomalyDetector.html
 func (s *CloudWatchService) DeleteAnomalyDetector(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Try AnomalyDetectorId first (for metric-math detectors).
 	detectorID := getAlarmStringParam(req.Parameters, "AnomalyDetectorId", "anomalyDetectorId")
-
-	// Legacy form: flat Namespace/MetricName/Dimensions/Stat.
 	namespace := getAlarmStringParam(req.Parameters, "Namespace", "namespace")
 	metricName := getAlarmStringParam(req.Parameters, "MetricName", "metricName")
 	stat := getAlarmStringParam(req.Parameters, "Stat", "stat")
 	dimensions := parseAlarmDimensions(req.Parameters)
 
-	// Check SingleMetricAnomalyDetector parameter.
 	if smad, ok := req.Parameters["SingleMetricAnomalyDetector"]; ok {
 		if m, ok := smad.(map[string]interface{}); ok {
 			if namespace == "" {
@@ -205,51 +192,32 @@ func (s *CloudWatchService) DeleteAnomalyDetector(ctx context.Context, reqCtx *r
 		}
 	}
 
-	if detectorID == "" && namespace == "" && metricName == "" && stat == "" {
-		return nil, awserrors.NewMissingParameter(
-			"Either AnomalyDetectorId or (Namespace, MetricName, Stat) must be specified")
-	}
-
-	if err := store.anomalyDetectors.DeleteAnomalyDetector(namespace, metricName, dimensions, stat, detectorID); err != nil {
-		return nil, awserrors.NewResourceNotFoundException("AnomalyDetector", err.Error())
+	if err := s.deleteAnomalyDetectorCore(store, &DeleteAnomalyDetectorInput{
+		DetectorID: detectorID,
+		Namespace:  namespace,
+		MetricName: metricName,
+		Stat:       stat,
+		Dimensions: dimensions,
+	}); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
 }
 
-// DescribeAnomalyDetectors lists the anomaly detection models in the
-// account. Results can be filtered by namespace, metric name, dimensions,
-// anomaly detector type, or anomaly detector IDs.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DescribeAnomalyDetectors.html
+// DescribeAnomalyDetectors lists anomaly detection models.
 func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	namespace := getAlarmStringParam(req.Parameters, "Namespace", "namespace")
-	metricName := getAlarmStringParam(req.Parameters, "MetricName", "metricName")
-
-	// Smithy input is AnomalyDetectorTypes (plural list), not
-	// AnomalyDetectorType (singular string). The SDK sends
-	// AnomalyDetectorTypes.1=…, AnomalyDetectorTypes.2=… etc.
 	var detectorTypes []string
 	if typesRaw, ok := req.Parameters["AnomalyDetectorTypes"]; ok {
 		detectorTypes = toStringSlice(typesRaw)
 	} else if typesRaw, ok := req.Parameters["anomalyDetectorTypes"]; ok {
 		detectorTypes = toStringSlice(typesRaw)
 	}
-	// Validate detector types if provided.
-	for _, dt := range detectorTypes {
-		if dt != cwstore.AnomalyDetectorTypeSingleMetric && dt != cwstore.AnomalyDetectorTypeMetricMath {
-			return nil, awserrors.NewInvalidParameterValueException(
-				fmt.Sprintf("AnomalyDetectorType must be %s or %s",
-					cwstore.AnomalyDetectorTypeSingleMetric, cwstore.AnomalyDetectorTypeMetricMath))
-		}
-	}
-
-	dimensions := parseAlarmDimensions(req.Parameters)
 
 	var detectorIDs []string
 	if ids, ok := req.Parameters["AnomalyDetectorIds"]; ok {
@@ -258,21 +226,17 @@ func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx
 		detectorIDs = toStringSlice(ids)
 	}
 
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
-
-	opts := cwstore.DescribeAnomalyDetectorsOpts{
-		AnomalyDetectorIDs:   detectorIDs,
-		AnomalyDetectorTypes: detectorTypes,
-		Namespace:            namespace,
-		MetricName:           metricName,
-		Dimensions:           dimensions,
-		ListOpts:             common.ListOptions{Marker: marker, MaxItems: maxResults},
-	}
-
-	detectors, nextToken, err := store.anomalyDetectors.DescribeAnomalyDetectors(opts)
+	detectors, nextToken, err := s.describeAnomalyDetectorsCore(store, &DescribeAnomalyDetectorsInput{
+		Namespace:     getAlarmStringParam(req.Parameters, "Namespace", "namespace"),
+		MetricName:    getAlarmStringParam(req.Parameters, "MetricName", "metricName"),
+		Dimensions:    parseAlarmDimensions(req.Parameters),
+		DetectorTypes: detectorTypes,
+		DetectorIDs:   detectorIDs,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
+		MaxResults:    pagination.GetMaxItems(req.Parameters, 100, "MaxResults"),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to describe anomaly detectors: %w", err)
+		return nil, err
 	}
 
 	results := make([]map[string]interface{}, 0, len(detectors))
@@ -290,9 +254,7 @@ func (s *CloudWatchService) DescribeAnomalyDetectors(ctx context.Context, reqCtx
 }
 
 // anomalyDetectorToResponse serialises an AnomalyDetector into the
-// AWS API response format.  Both the deprecated flat fields and the
-// current nested objects (SingleMetricAnomalyDetector /
-// MetricMathAnomalyDetector) are emitted for backwards compatibility.
+// AWS API response format.
 func anomalyDetectorToResponse(d *cwstore.AnomalyDetector) map[string]interface{} {
 	resp := map[string]interface{}{
 		"StateValue": d.State,
@@ -302,9 +264,6 @@ func anomalyDetectorToResponse(d *cwstore.AnomalyDetector) map[string]interface{
 		resp["AnomalyDetectorId"] = d.ID
 	}
 
-	// Build the SingleMetricAnomalyDetector nested object for
-	// single-metric detectors.  The flat fields below are deprecated
-	// in the Smithy model but still emitted for older SDK clients.
 	if d.AnomalyDetectorType != cwstore.AnomalyDetectorTypeMetricMath {
 		single := map[string]interface{}{}
 		if d.Namespace != "" {

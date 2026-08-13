@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/scheduleexpr"
 	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
@@ -28,9 +29,12 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 	if err := validateQueryString(queryString); err != nil {
 		return nil, err
 	}
+	if !scheduleexpr.ValidateExpression(scheduleExpression) {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid schedule expression: %s. Must be a valid rate(), cron(), or at() expression", scheduleExpression), 400)
+	}
 
 	id := fmt.Sprintf("sq-%d", time.Now().UnixNano())
-	region := reqCtx.GetRegion()
 
 	var logGroupIdentifiers []string
 	if idents, ok := req.Parameters["logGroupIdentifiers"]; ok {
@@ -42,13 +46,23 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 			}
 		}
 	}
+	if err := validateLogGroupIdentifierCount(logGroupIdentifiers); err != nil {
+		return nil, err
+	}
 
 	description := request.GetParamLowerFirst(req.Parameters, "Description")
 	queryLanguage := request.GetParamLowerFirst(req.Parameters, "QueryLanguage")
 	if queryLanguage == "" {
 		queryLanguage = "CWLI"
 	}
+	if !validateQueryLanguage(queryLanguage) {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid queryLanguage: %s. Allowed values: CWLI, SQL, PPL", queryLanguage), 400)
+	}
 	executionRoleArn := request.GetParamLowerFirst(req.Parameters, "ExecutionRoleArn")
+	if err := validateIAMRoleArn(executionRoleArn); err != nil {
+		return nil, err
+	}
 	timezone := request.GetParamLowerFirst(req.Parameters, "Timezone")
 	state := request.GetParamLowerFirst(req.Parameters, "State")
 	if state == "" {
@@ -112,7 +126,7 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 		return nil, mapStoreError(err)
 	}
 
-	arn := fmt.Sprintf("arn:aws:logs:%s:%s:scheduled-query:%s", region, s.accountID, id)
+	arn := fmt.Sprintf("arn:aws:logs:%s:%s:scheduled-query:%s", reqCtx.GetRegion(), s.accountID, id)
 	return map[string]interface{}{
 		"scheduledQueryArn": arn,
 		"state":             state,
@@ -122,10 +136,6 @@ func (s *LogsService) CreateScheduledQuery(ctx context.Context, reqCtx *request.
 // DeleteScheduledQuery deletes a scheduled query.
 func (s *LogsService) DeleteScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identifier := request.GetParamLowerFirst(req.Parameters, "Identifier")
-	if identifier == "" {
-		return nil, ErrMissingParameter
-	}
-
 	id := extractIdFromArnOrId(identifier)
 
 	store, err := s.store(reqCtx)
@@ -133,8 +143,8 @@ func (s *LogsService) DeleteScheduledQuery(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	if err := store.DeleteScheduledQuery(id); err != nil {
-		return nil, mapStoreError(err)
+	if err := s.deleteScheduledQueryCore(store, id); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -196,9 +206,9 @@ func (s *LogsService) GetScheduledQuery(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	sq, err := store.GetScheduledQuery(id)
+	sq, err := s.getScheduledQueryCore(store, id)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	return formatScheduledQuery(sq, reqCtx.GetRegion(), s.accountID), nil
@@ -472,6 +482,8 @@ func (s *LogsService) startScheduledQueryWorker() {
 }
 
 func (s *LogsService) tickScheduledQueries() {
+	now := time.Now().UTC()
+
 	s.logsStores.Range(func(key, value interface{}) bool {
 		store := value.(*logsstore.Store)
 		region := key.(string)
@@ -481,15 +493,19 @@ func (s *LogsService) tickScheduledQueries() {
 			return true
 		}
 
-		now := time.Now().UTC().UnixMilli()
 		for _, sq := range queries {
 			if sq.LastTriggeredTime == 0 {
 				s.triggerScheduledQuery(region, store, sq)
 				continue
 			}
 
-			nextTime := computeNextTriggerTime(sq.ScheduleExpression, sq.LastTriggeredTime)
-			if nextTime > 0 && nextTime <= now {
+			lastTriggered := time.UnixMilli(sq.LastTriggeredTime).UTC()
+			creationTime := time.UnixMilli(sq.CreationTime).UTC()
+			nextTime, err := scheduleexpr.NextExecutionTime(sq.ScheduleExpression, lastTriggered, creationTime, nil)
+			if err != nil {
+				continue
+			}
+			if !nextTime.After(now) {
 				s.triggerScheduledQuery(region, store, sq)
 			}
 		}
@@ -527,6 +543,12 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 
 	endTime := now
 	startTime := now - 60*60*1000
+	if sq.StartTimeOffset > 0 {
+		startTime = now - sq.StartTimeOffset
+	}
+	if sq.EndTimeOffset > 0 {
+		endTime = now - sq.EndTimeOffset
+	}
 
 	var allEvents []logEventWithContext
 	for _, lgName := range sq.LogGroupIdentifiers {
@@ -562,44 +584,4 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 			logs.String("scheduledQueryId", sq.Id),
 			logs.Err(err))
 	}
-}
-
-func computeNextTriggerTime(scheduleExpression string, lastTriggered int64) int64 {
-	expr := strings.TrimSpace(scheduleExpression)
-	exprLower := strings.ToLower(expr)
-
-	if strings.HasPrefix(exprLower, "rate(") {
-		closeParen := strings.LastIndex(expr, ")")
-		if closeParen < 0 {
-			return 0
-		}
-		inner := strings.TrimSpace(expr[5:closeParen])
-
-		parts := strings.Fields(inner)
-		if len(parts) != 2 {
-			return 0
-		}
-
-		n, err := strconv.Atoi(parts[0])
-		if err != nil || n <= 0 {
-			return 0
-		}
-
-		unit := strings.ToLower(parts[1])
-		var durationMs int64
-		switch {
-		case strings.HasPrefix(unit, "minute"):
-			durationMs = int64(n) * 60 * 1000
-		case strings.HasPrefix(unit, "hour"):
-			durationMs = int64(n) * 60 * 60 * 1000
-		case strings.HasPrefix(unit, "day"):
-			durationMs = int64(n) * 24 * 60 * 60 * 1000
-		default:
-			return 0
-		}
-
-		return lastTriggered + durationMs
-	}
-
-	return 0
 }

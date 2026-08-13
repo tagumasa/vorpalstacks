@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"fmt"
+
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -43,12 +45,26 @@ func (o *BucketOperations) PutBucketLogging(ctx *request.RequestContext, input *
 
 	var config *s3store.LoggingConfiguration
 	if input.LoggingConfiguration != nil {
+		if input.LoggingConfiguration.TargetBucket == "" {
+			return NewInvalidArgumentError("TargetBucket is required for logging configuration")
+		}
+		if len(input.LoggingConfiguration.TargetGrants) > maxLogTargetGrants {
+			return NewInvalidArgumentError(fmt.Sprintf("too many TargetGrants (maximum %d)", maxLogTargetGrants))
+		}
 		config = &s3store.LoggingConfiguration{
 			TargetBucket: input.LoggingConfiguration.TargetBucket,
 			TargetPrefix: input.LoggingConfiguration.TargetPrefix,
 		}
 
 		for _, tg := range input.LoggingConfiguration.TargetGrants {
+			if err := validateLogPermission(tg.Permission); err != nil {
+				return err
+			}
+			if tg.Grantee != nil {
+				if err := validateGranteeType(tg.Grantee.Type); err != nil {
+					return err
+				}
+			}
 			grant := s3store.TargetGrant{
 				Permission: s3store.Permission(tg.Permission),
 			}

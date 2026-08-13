@@ -43,6 +43,10 @@ func (o *BucketOperations) PutBucketEncryption(ctx *request.RequestContext, inpu
 		return fmt.Errorf("invalid SSE algorithm: %s (must be AES256, aws:kms, or aws:kms:dsse)", sseAlgorithm)
 	}
 
+	if err := validateKMSMasterKeyID(rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID, sseAlgorithm); err != nil {
+		return err
+	}
+
 	config := &s3store.EncryptionConfig{
 		SSEAlgorithm:   rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm,
 		KMSMasterKeyID: rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID,

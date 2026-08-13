@@ -8,22 +8,19 @@ import (
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
-// PutDataProtectionPolicy creates or updates a data protection policy for a log group.
-func (s *LogsService) PutDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
-	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
+// --- Core methods ---
 
+func (s *LogsService) putDataProtectionPolicyCore(logGroupIdentifier, policyDocument, region string) (*logsstore.DataProtectionPolicy, error) {
 	if logGroupIdentifier == "" {
 		return nil, ErrMissingParameter
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = store.GetLogGroup(logGroupIdentifier)
-	if err != nil {
+	if _, err = store.GetLogGroup(logGroupIdentifier); err != nil {
 		return nil, mapStoreError(err)
 	}
 
@@ -35,52 +32,76 @@ func (s *LogsService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reque
 	if err := store.PutDataProtectionPolicy(dpp); err != nil {
 		return nil, mapStoreError(err)
 	}
-
-	return map[string]interface{}{
-		"logGroupIdentifier": dpp.LogGroupIdentifier,
-		"policyDocument":     dpp.PolicyDocument,
-		"lastUpdatedTime":    dpp.LastUpdatedTime,
-	}, nil
+	return dpp, nil
 }
 
-// GetDataProtectionPolicy retrieves the data protection policy for a log group.
-func (s *LogsService) GetDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+func (s *LogsService) getDataProtectionPolicyCore(logGroupIdentifier, region string) (*logsstore.DataProtectionPolicy, error) {
 	if logGroupIdentifier == "" {
 		return nil, ErrMissingParameter
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		return nil, err
 	}
 
-	dpp, err := store.GetDataProtectionPolicy(logGroupIdentifier)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"logGroupIdentifier": dpp.LogGroupIdentifier,
-		"policyDocument":     dpp.PolicyDocument,
-		"lastUpdatedTime":    dpp.LastUpdatedTime,
-	}, nil
+	return store.GetDataProtectionPolicy(logGroupIdentifier)
 }
 
-// DeleteDataProtectionPolicy deletes the data protection policy for a log group.
-func (s *LogsService) DeleteDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+func (s *LogsService) deleteDataProtectionPolicyCore(logGroupIdentifier, region string) error {
 	if logGroupIdentifier == "" {
-		return nil, ErrMissingParameter
+		return ErrMissingParameter
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := store.DeleteDataProtectionPolicy(logGroupIdentifier); err != nil {
-		return nil, mapStoreError(err)
+		return mapStoreError(err)
+	}
+	return nil
+}
+
+// --- HTTP handlers ---
+
+func (s *LogsService) PutDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
+
+	dpp, err := s.putDataProtectionPolicyCore(logGroupIdentifier, policyDocument, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"logGroupIdentifier": dpp.LogGroupIdentifier,
+		"policyDocument":     dpp.PolicyDocument,
+		"lastUpdatedTime":    dpp.LastUpdatedTime,
+	}, nil
+}
+
+func (s *LogsService) GetDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+
+	dpp, err := s.getDataProtectionPolicyCore(logGroupIdentifier, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"logGroupIdentifier": dpp.LogGroupIdentifier,
+		"policyDocument":     dpp.PolicyDocument,
+		"lastUpdatedTime":    dpp.LastUpdatedTime,
+	}, nil
+}
+
+func (s *LogsService) DeleteDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	logGroupIdentifier := request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
+
+	if err := s.deleteDataProtectionPolicyCore(logGroupIdentifier, reqCtx.GetRegion()); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

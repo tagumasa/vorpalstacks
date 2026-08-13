@@ -19,6 +19,9 @@ func (o *BucketOperations) PutBucketVersioning(ctx *request.RequestContext, inpu
 	if status != s3store.BucketVersioningEnabled && status != s3store.BucketVersioningSuspended {
 		return NewInvalidArgumentError("invalid versioning status")
 	}
+	if err := validateMFADelete(input.MFADelete); err != nil {
+		return err
+	}
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err

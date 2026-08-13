@@ -184,11 +184,10 @@ func upsertReplicationStatus(statuses []secretsmanagerstore.ReplicationStatus, r
 }
 
 // ReplicateSecretToRegions replicates a secret to one or more regions.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ReplicateSecretToRegions.html
 func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	if s.storageManager == nil {
@@ -243,11 +242,10 @@ func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, re
 }
 
 // RemoveRegionsFromReplication removes replica regions from a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_RemoveRegionsFromReplication.html
 func (s *SecretsManagerService) RemoveRegionsFromReplication(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	if s.storageManager == nil {
@@ -267,6 +265,11 @@ func (s *SecretsManagerService) RemoveRegionsFromReplication(ctx context.Context
 	removeRegions := request.GetStringList(req.Parameters, "RemoveReplicaRegions")
 	if len(removeRegions) == 0 {
 		return nil, awserrors.NewAWSError("InvalidParameterException", "RemoveReplicaRegions must not be empty", http.StatusBadRequest)
+	}
+	for _, r := range removeRegions {
+		if err := validateRegion(r); err != nil {
+			return nil, err
+		}
 	}
 
 	remainingStatus := make([]secretsmanagerstore.ReplicationStatus, 0, len(secret.ReplicationStatus))
@@ -326,11 +329,10 @@ func (s *SecretsManagerService) RemoveRegionsFromReplication(ctx context.Context
 }
 
 // StopReplicationToReplica stops replication to a replica secret, promoting it to a standalone secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_StopReplicationToReplica.html
 func (s *SecretsManagerService) StopReplicationToReplica(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	if s.storageManager == nil {
@@ -401,6 +403,12 @@ func parseReplicaRegions(params map[string]interface{}, key string) ([]replicaRe
 		}
 		if region == "" {
 			return nil, ErrInvalidReplicationRegion
+		}
+		if err := validateRegion(region); err != nil {
+			return nil, err
+		}
+		if err := validateKmsKeyId(kmsKey); err != nil {
+			return nil, err
 		}
 		regions = append(regions, replicaRegion{Region: region, KmsKeyId: kmsKey})
 	}

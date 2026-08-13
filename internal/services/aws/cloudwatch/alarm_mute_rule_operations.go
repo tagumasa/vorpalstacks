@@ -10,13 +10,9 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	"vorpalstacks/internal/store/aws/common"
 )
 
-// PutAlarmMuteRule creates or updates an alarm mute rule that suppresses
-// alarm actions for specified alarms during a time window.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutAlarmMuteRule.html
+// PutAlarmMuteRule creates or updates an alarm mute rule.
 func (s *CloudWatchService) PutAlarmMuteRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -24,13 +20,8 @@ func (s *CloudWatchService) PutAlarmMuteRule(ctx context.Context, reqCtx *reques
 	}
 
 	name := getAlarmStringParam(req.Parameters, "Name", "name")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("Name is required")
-	}
-
 	description := getAlarmStringParam(req.Parameters, "Description", "description")
 
-	// Parse Rule.Schedule.Expression.
 	scheduleExpr := ""
 	if rule, ok := req.Parameters["Rule"]; ok {
 		if m, ok := rule.(map[string]interface{}); ok {
@@ -46,17 +37,11 @@ func (s *CloudWatchService) PutAlarmMuteRule(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	// Parse MuteTargets.AlarmNames.
 	var mutedNames []string
 	if mt, ok := req.Parameters["MuteTargets"]; ok {
 		if m, ok := mt.(map[string]interface{}); ok {
 			mutedNames = parseStringArrayParam(m, "AlarmNames", "alarmNames")
 		}
-	}
-
-	if scheduleExpr == "" {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"Rule.Schedule.Expression is required")
 	}
 
 	startDate := parseTimestampFromMap(req.Parameters, "StartDate")
@@ -66,28 +51,22 @@ func (s *CloudWatchService) PutAlarmMuteRule(ctx context.Context, reqCtx *reques
 		return nil, tagErr
 	}
 
-	rule := &cwstore.AlarmMuteRule{
-		Name:            name,
-		Description:     description,
-		ScheduleExpr:    scheduleExpr,
-		MutedAlarmNames: mutedNames,
-		StartDate:       startDate,
-		ExpireDate:      expireDate,
-		Tags:            tags,
+	if err := s.putAlarmMuteRuleCore(store, &PutAlarmMuteRuleInput{
+		Name:         name,
+		Description:  description,
+		ScheduleExpr: scheduleExpr,
+		MutedNames:   mutedNames,
+		StartDate:    startDate,
+		ExpireDate:   expireDate,
+		Tags:         tags,
+	}); err != nil {
+		return nil, err
 	}
 
-	result, err := store.alarmMuteRules.PutAlarmMuteRule(rule)
-	if err != nil {
-		return nil, fmt.Errorf("failed to put alarm mute rule: %w", err)
-	}
-
-	_ = result
 	return map[string]interface{}{}, nil
 }
 
 // DeleteAlarmMuteRule deletes an alarm mute rule.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DeleteAlarmMuteRule.html
 func (s *CloudWatchService) DeleteAlarmMuteRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -95,23 +74,18 @@ func (s *CloudWatchService) DeleteAlarmMuteRule(ctx context.Context, reqCtx *req
 	}
 
 	name := getAlarmStringParam(req.Parameters, "AlarmMuteRuleName", "alarmMuteRuleName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("AlarmMuteRuleName is required")
-	}
 
-	if err := store.alarmMuteRules.DeleteAlarmMuteRule(name); err != nil {
+	if err := s.deleteAlarmMuteRuleCore(store, &DeleteAlarmMuteRuleInput{Name: name}); err != nil {
 		if errors.Is(err, cwstore.ErrAlarmMuteRuleNotFound) {
 			return nil, awserrors.NewResourceNotFoundException("AlarmMuteRule", name)
 		}
-		return nil, fmt.Errorf("failed to delete alarm mute rule: %w", err)
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
 }
 
 // GetAlarmMuteRule returns details for a single alarm mute rule.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetAlarmMuteRule.html
 func (s *CloudWatchService) GetAlarmMuteRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -119,11 +93,8 @@ func (s *CloudWatchService) GetAlarmMuteRule(ctx context.Context, reqCtx *reques
 	}
 
 	name := getAlarmStringParam(req.Parameters, "AlarmMuteRuleName", "alarmMuteRuleName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("AlarmMuteRuleName is required")
-	}
 
-	rule, err := store.alarmMuteRules.GetAlarmMuteRule(name)
+	rule, err := s.getAlarmMuteRuleCore(store, &GetAlarmMuteRuleInput{Name: name})
 	if err != nil {
 		if errors.Is(err, cwstore.ErrAlarmMuteRuleNotFound) {
 			return nil, awserrors.NewResourceNotFoundException("AlarmMuteRule", name)
@@ -134,38 +105,33 @@ func (s *CloudWatchService) GetAlarmMuteRule(ctx context.Context, reqCtx *reques
 	return alarmMuteRuleToResponse(rule), nil
 }
 
-// ListAlarmMuteRules lists alarm mute rules, optionally filtered by
-// alarm name and statuses.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListAlarmMuteRules.html
+// ListAlarmMuteRules lists alarm mute rules.
 func (s *CloudWatchService) ListAlarmMuteRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
-	statuses := parseStringArrayParam(req.Parameters, "Statuses", "statuses")
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxRecords")
-
-	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
-	result, err := store.alarmMuteRules.ListAlarmMuteRulesPaginated(alarmName, statuses, opts)
+	items, nextMarker, err := s.listAlarmMuteRulesCore(store, &ListAlarmMuteRulesInput{
+		AlarmName:  getAlarmStringParam(req.Parameters, "AlarmName", "alarmName"),
+		Statuses:   parseStringArrayParam(req.Parameters, "Statuses", "statuses"),
+		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
+		MaxRecords: pagination.GetMaxItems(req.Parameters, 100, "MaxRecords"),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list alarm mute rules: %w", err)
+		return nil, err
 	}
 
-	summaries := make([]map[string]interface{}, 0, len(result.Items))
-	for _, r := range result.Items {
+	summaries := make([]map[string]interface{}, 0, len(items))
+	for _, r := range items {
 		summaries = append(summaries, alarmMuteRuleSummaryToResponse(r))
 	}
 
 	resp := map[string]interface{}{
 		"AlarmMuteRuleSummaries": summaries,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["NextToken"] = nextMarker
 	}
 	return resp, nil
 }
@@ -211,9 +177,7 @@ func alarmMuteRuleToResponse(r *cwstore.AlarmMuteRule) map[string]interface{} {
 }
 
 // alarmMuteRuleSummaryToResponse serialises an AlarmMuteRule into the
-// summary format for ListAlarmMuteRules.  The summary contains fewer
-// fields than the full GetAlarmMuteRule response — only Name, Status,
-// ARN, MuteType, and LastUpdatedTimestamp.
+// summary format for ListAlarmMuteRules.
 func alarmMuteRuleSummaryToResponse(r *cwstore.AlarmMuteRule) map[string]interface{} {
 	resp := map[string]interface{}{
 		"Name":   r.Name,

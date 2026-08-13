@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -16,58 +15,24 @@ import (
 
 // CreateExportTask creates a task to export log events to an S3 bucket.
 func (s *LogsService) CreateExportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskName := request.GetParamLowerFirst(req.Parameters, "TaskName")
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	destination := request.GetParamLowerFirst(req.Parameters, "Destination")
-	fromTime := request.GetIntParam(req.Parameters, "From")
-	toTime := request.GetIntParam(req.Parameters, "To")
-
-	if err := validateLogGroupName(logGroupName); err != nil {
-		return nil, err
-	}
-	if err := validateExportDestinationBucket(destination); err != nil {
-		return nil, err
-	}
-
-	if fromTime <= 0 || toTime <= 0 || fromTime >= toTime {
-		return nil, NewLogsError("InvalidParameterException",
-			"from and to must be positive timestamps with from < to", 400)
-	}
-
-	logStreamNamePrefix := request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix")
-	destinationPrefix := request.GetParamLowerFirst(req.Parameters, "DestinationPrefix")
-
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = store.GetLogGroup(logGroupName)
+	taskId, err := s.createExportTaskCore(store, &CreateExportTaskInput{
+		TaskName:            request.GetParamLowerFirst(req.Parameters, "TaskName"),
+		LogGroupName:        request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		Destination:         request.GetParamLowerFirst(req.Parameters, "Destination"),
+		From:                request.GetIntParam(req.Parameters, "From"),
+		To:                  request.GetIntParam(req.Parameters, "To"),
+		LogStreamNamePrefix: request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix"),
+		DestinationPrefix:   request.GetParamLowerFirst(req.Parameters, "DestinationPrefix"),
+		Region:              reqCtx.GetRegion(),
+	})
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
-
-	taskId := fmt.Sprintf("export-%d", time.Now().UnixNano())
-	region := reqCtx.GetRegion()
-
-	task := &logsstore.ExportTask{
-		TaskId:              taskId,
-		TaskName:            taskName,
-		LogGroupName:        logGroupName,
-		LogStreamNamePrefix: logStreamNamePrefix,
-		From:                int64(fromTime),
-		To:                  int64(toTime),
-		Destination:         destination,
-		DestinationPrefix:   destinationPrefix,
-		Status:              "RUNNING",
-		CreationTime:        time.Now().UTC().UnixMilli(),
-	}
-
-	if err := store.PutExportTask(task); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	go s.executeExportTask(region, logGroupName, logStreamNamePrefix, int64(fromTime), int64(toTime), destination, destinationPrefix, taskId)
 
 	return map[string]interface{}{
 		"taskId": taskId,
@@ -163,48 +128,36 @@ func (s *LogsService) updateExportTaskStatus(region, taskId, status, message str
 
 // DescribeExportTasks lists export tasks.
 func (s *LogsService) DescribeExportTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := request.GetParamLowerFirst(req.Parameters, "TaskId")
-	statusCode := request.GetParamLowerFirst(req.Parameters, "StatusCode")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
 	if err != nil {
 		return nil, err
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	if taskId != "" {
-		task, err := store.GetExportTask(taskId)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		return map[string]interface{}{
-			"exportTasks": []map[string]interface{}{formatExportTask(task)},
-		}, nil
-	}
-
-	allTasks, err := store.ListExportTasks(statusCode)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	result := pagination.PaginateSlice(allTasks, nextToken, int(limit), func(t *logsstore.ExportTask) string {
-		return t.TaskId
+	items, nextMarker, err := s.describeExportTasksCore(store, &DescribeExportTasksInput{
+		TaskId:     request.GetParamLowerFirst(req.Parameters, "TaskId"),
+		StatusCode: request.GetParamLowerFirst(req.Parameters, "StatusCode"),
+		NextToken:  request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		Limit:      limit,
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	tasks := make([]map[string]interface{}, len(result.Items))
-	for i, t := range result.Items {
+	tasks := make([]map[string]interface{}, len(items))
+	for i, t := range items {
 		tasks[i] = formatExportTask(t)
 	}
 
 	resp := map[string]interface{}{
 		"exportTasks": tasks,
 	}
-	if result.NextMarker != "" {
-		resp["nextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
 	}
 
 	return resp, nil
@@ -212,30 +165,13 @@ func (s *LogsService) DescribeExportTasks(ctx context.Context, reqCtx *request.R
 
 // CancelExportTask cancels a running export task.
 func (s *LogsService) CancelExportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := request.GetParamLowerFirst(req.Parameters, "TaskId")
-	if taskId == "" {
-		return nil, ErrMissingParameter
-	}
-
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	task, err := store.GetExportTask(taskId)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if task.Status == "COMPLETED" || task.Status == "FAILED" || task.Status == "CANCELLED" {
-		return nil, NewLogsError("InvalidOperationException",
-			fmt.Sprintf("Cannot cancel export task in %s state", task.Status), 400)
-	}
-
-	task.Status = "CANCELLED"
-	task.StatusMessage = "Cancelled by user"
-	if err := store.PutExportTask(task); err != nil {
-		return nil, mapStoreError(err)
+	if err := s.cancelExportTaskCore(store, request.GetParamLowerFirst(req.Parameters, "TaskId")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil

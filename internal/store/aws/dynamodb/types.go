@@ -197,6 +197,7 @@ type PointInTimeRecoveryDescription struct {
 	Status                     PointInTimeRecoveryStatus `json:"status"`
 	EarliestRestorableDateTime time.Time                 `json:"earliest_restorable_date_time,omitempty"`
 	LatestRestorableDateTime   time.Time                 `json:"latest_restorable_date_time,omitempty"`
+	RecoveryPeriodInDays       int                       `json:"recovery_period_in_days,omitempty"`
 }
 
 // Table represents a DynamoDB table.
@@ -227,6 +228,7 @@ type Table struct {
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `json:"contributor_insights_enabled,omitempty"`
 	ContributorInsightsAction     string                          `json:"contributor_insights_action,omitempty"`
+	ContributorInsightsMode       string                          `json:"contributor_insights_mode,omitempty"`
 	ContributorInsightsUpdatedAt  time.Time                       `json:"contributor_insights_updated_at,omitempty"`
 	WarmThroughput                *WarmThroughput                 `json:"warm_throughput,omitempty"`
 	OnDemandThroughput            *OnDemandThroughput             `json:"on_demand_throughput,omitempty"`

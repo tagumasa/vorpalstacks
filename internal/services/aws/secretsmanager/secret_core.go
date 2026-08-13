@@ -90,6 +90,9 @@ func (s *SecretsManagerService) createSecretCore(ctx context.Context, store secr
 	if err := validateDescription(in.Description); err != nil {
 		return nil, err
 	}
+	if err := validateKmsKeyId(in.KmsKeyId); err != nil {
+		return nil, err
+	}
 	if err := validateClientRequestToken(in.ClientRequestToken); err != nil {
 		return nil, err
 	}
@@ -160,8 +163,8 @@ func (s *SecretsManagerService) createSecretCore(ctx context.Context, store secr
 // deleteSecretCore is the single entry point for secret deletion logic
 // shared by the HTTP API and the admin gRPC handler.
 func (s *SecretsManagerService) deleteSecretCore(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, in DeleteSecretInput) (*DeleteSecretResult, error) {
-	if in.SecretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(in.SecretId); err != nil {
+		return nil, err
 	}
 	if err := validateRecoveryWindow(in.RecoveryWindowInDays, in.HasRecoveryWindow, in.ForceDeleteWithoutRecovery); err != nil {
 		return nil, err

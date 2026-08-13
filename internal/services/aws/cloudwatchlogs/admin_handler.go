@@ -2,7 +2,6 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -92,10 +91,6 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 
 // CreateLogGroup creates a new CloudWatch Logs log group via the admin console.
 func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[pb.CreateLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Loggroupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("LogGroupName is required"))
-	}
-
 	region := svccommon.GetRegionFromHeader(req.Header())
 
 	input := CreateLogGroupInput{
@@ -115,10 +110,6 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 
 // DeleteLogGroup deletes a CloudWatch Logs log group by name via the admin console.
 func (h *AdminHandler) DeleteLogGroup(ctx context.Context, req *connect.Request[pb.DeleteLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Loggroupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("LogGroupName is required"))
-	}
-
 	region := svccommon.GetRegionFromHeader(req.Header())
 
 	input := DeleteLogGroupInput{

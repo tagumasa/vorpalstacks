@@ -21,7 +21,7 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
-	if len(transactItems) > 100 {
+	if len(transactItems) > transactMaxItems {
 		return nil, ErrInvalidParameter
 	}
 
@@ -53,7 +53,7 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 		}
 
 		tableName := request.GetStringParam(getMap, "TableName")
-		if tableName == "" {
+		if !validateResourceName(tableName) {
 			return nil, ErrInvalidParameter
 		}
 
@@ -109,13 +109,16 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
+		// TransactGetItems is always strongly consistent; AWS charges
+		// 2x RCU (1.0 per read item) compared to eventually consistent.
+		const rcuPerItem = 1.0
 		tableNames := make(map[string]bool)
 		for _, gi := range getItems {
 			tableNames[gi.tableName] = true
 		}
 		var consumedCapacities []map[string]interface{}
 		for tableName := range tableNames {
-			consumedCapacities = append(consumedCapacities, buildConsumedCapacityResponse(tableName, float64(len(responses))*0.5))
+			consumedCapacities = append(consumedCapacities, buildConsumedCapacityResponse(tableName, float64(len(responses))*rcuPerItem))
 		}
 		if len(consumedCapacities) > 0 {
 			resp["ConsumedCapacity"] = consumedCapacities
@@ -152,7 +155,7 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 		return nil, ErrInvalidParameter
 	}
 
-	if len(transactItems) > 100 {
+	if len(transactItems) > transactMaxItems {
 		return nil, ErrInvalidParameter
 	}
 
@@ -161,8 +164,8 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 	}
 
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if err := validateClientRequestToken(clientRequestToken); err != nil {
-		return nil, err
+	if !validateClientRequestToken(clientRequestToken) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -244,7 +247,7 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		}
 
 		tableName := request.GetStringParam(opMap, "TableName")
-		if tableName == "" {
+		if !validateResourceName(tableName) {
 			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
 			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 		}

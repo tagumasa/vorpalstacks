@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 )
 
@@ -26,14 +25,10 @@ type queryState struct {
 
 // StartQuery initiates a CloudWatch Logs Insights query.
 func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
-	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
 	queryString := request.GetParamLowerFirst(req.Parameters, "QueryString")
 	queryLanguage := request.GetParamLowerFirst(req.Parameters, "QueryLanguage")
-
-	if queryString == "" || startTime <= 0 || endTime <= 0 {
-		return nil, ErrMissingParameter
-	}
+	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
+	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
 
 	var logGroupNames []string
 	if name := request.GetParamLowerFirst(req.Parameters, "LogGroupName"); name != "" {
@@ -64,32 +59,20 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	limit := int64(limit32)
 
-	if len(logGroupNames) == 0 && len(logGroupIdentifiers) == 0 {
-		return nil, ErrMissingParameter
+	queryId, err := s.startQueryCore(&StartQueryInput{
+		StartTime:           startTime,
+		EndTime:             endTime,
+		QueryString:         queryString,
+		QueryLanguage:       queryLanguage,
+		LogGroupNames:       logGroupNames,
+		LogGroupIdentifiers: logGroupIdentifiers,
+		Limit:               int64(limit32),
+		Region:              reqCtx.GetRegion(),
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	allGroups := logGroupNames
-	allGroups = append(allGroups, logGroupIdentifiers...)
-
-	queryId := fmt.Sprintf("query-%d", time.Now().UnixNano())
-	region := reqCtx.GetRegion()
-
-	qs := &queryState{
-		queryId:             queryId,
-		logGroupNames:       allGroups,
-		logGroupIdentifiers: logGroupIdentifiers,
-		startTime:           startTime,
-		endTime:             endTime,
-		queryString:         queryString,
-		queryLanguage:       queryLanguage,
-		status:              "Running",
-		createdAt:           time.Now(),
-	}
-	s.queries.Store(queryId, qs)
-
-	go s.executeQuery(region, queryId, queryString, allGroups, startTime, endTime, limit)
 
 	return map[string]interface{}{
 		"queryId": queryId,
@@ -151,18 +134,9 @@ func (s *LogsService) failQuery(queryId, message string) {
 // StopQuery stops a running query.
 func (s *LogsService) StopQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryId := request.GetParamLowerFirst(req.Parameters, "QueryId")
-	if queryId == "" {
-		return nil, ErrMissingParameter
+	if err := s.stopQueryCore(queryId); err != nil {
+		return nil, err
 	}
-
-	val, ok := s.queries.Load(queryId)
-	if !ok {
-		return nil, NewLogsError("ResourceNotFoundException",
-			fmt.Sprintf("Query %s not found", queryId), 404)
-	}
-
-	qs := val.(*queryState)
-	qs.status = "Cancelled"
 
 	return map[string]interface{}{
 		"success": true,
@@ -171,50 +145,31 @@ func (s *LogsService) StopQuery(ctx context.Context, reqCtx *request.RequestCont
 
 // DescribeQueries lists queries.
 func (s *LogsService) DescribeQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	statusFilter := request.GetParamLowerFirst(req.Parameters, "Status")
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 50, 1000)
 	if err != nil {
 		return nil, err
 	}
 
-	var allQueries []*queryState
-	s.queries.Range(func(key, value interface{}) bool {
-		qs := value.(*queryState)
-		if statusFilter != "" && qs.status != statusFilter {
-			return true
-		}
-		if logGroupName != "" {
-			found := false
-			for _, n := range qs.logGroupNames {
-				if n == logGroupName {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return true
-			}
-		}
-		allQueries = append(allQueries, qs)
-		return true
+	items, nextToken, err := s.describeQueriesCore(&DescribeQueriesInput{
+		StatusFilter: request.GetParamLowerFirst(req.Parameters, "Status"),
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		NextToken:    request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		MaxResults:   maxResults,
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	result := pagination.PaginateSlice(allQueries, nextToken, int(maxResults), func(qs *queryState) string {
-		return qs.queryId
-	})
-
-	queries := make([]map[string]interface{}, len(result.Items))
-	for i, qs := range result.Items {
+	queries := make([]map[string]interface{}, len(items))
+	for i, qs := range items {
 		queries[i] = formatQueryInfo(qs)
 	}
 
 	resp := map[string]interface{}{
 		"queries": queries,
 	}
-	if result.NextMarker != "" {
-		resp["nextToken"] = result.NextMarker
+	if nextToken != "" {
+		resp["nextToken"] = nextToken
 	}
 
 	return resp, nil
@@ -222,47 +177,22 @@ func (s *LogsService) DescribeQueries(ctx context.Context, reqCtx *request.Reque
 
 // GetQueryResults retrieves the results of a completed query.
 func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryId := request.GetParamLowerFirst(req.Parameters, "QueryId")
-	if queryId == "" {
-		return nil, ErrMissingParameter
-	}
-
-	val, ok := s.queries.Load(queryId)
-	if !ok {
-		return nil, NewLogsError("ResourceNotFoundException",
-			fmt.Sprintf("Query %s not found", queryId), 404)
-	}
-
-	qs := val.(*queryState)
-
 	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxItems")), 10000, 10000)
 	if err != nil {
 		return nil, err
 	}
-	limit := int(limit32)
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	offset := 0
-	if nextToken != "" {
-		n, err := parseInt(nextToken)
-		if err != nil {
-			return nil, NewLogsError("InvalidParameterException",
-				"Invalid nextToken", 400)
-		}
-		offset = n
+
+	result, err := s.getQueryResultsCore(&GetQueryResultsInput{
+		QueryId:   request.GetParamLowerFirst(req.Parameters, "QueryId"),
+		NextToken: request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		MaxItems:  limit32,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	endIdx := offset + limit
-	if endIdx > len(qs.results) {
-		endIdx = len(qs.results)
-	}
-	if offset > len(qs.results) {
-		offset = len(qs.results)
-	}
-
-	pageResults := qs.results[offset:endIdx]
-
-	resultRows := make([][]map[string]interface{}, len(pageResults))
-	for i, row := range pageResults {
+	resultRows := make([][]map[string]interface{}, len(result.Results))
+	for i, row := range result.Results {
 		fields := make([]map[string]interface{}, 0, len(row.fields))
 		for k, v := range row.fields {
 			fields = append(fields, map[string]interface{}{
@@ -274,26 +204,25 @@ func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.Reque
 	}
 
 	statsMap := map[string]interface{}{
-		"recordsMatched":          qs.stats.recordsMatched,
-		"recordsScanned":          qs.stats.recordsScanned,
-		"bytesScanned":            qs.stats.bytesScanned,
+		"recordsMatched":          result.Stats.recordsMatched,
+		"recordsScanned":          result.Stats.recordsScanned,
+		"bytesScanned":            result.Stats.bytesScanned,
 		"estimatedRecordsSkipped": 0,
 		"estimatedBytesSkipped":   0,
 		"logGroupsScanned":        0,
 	}
 
 	resp := map[string]interface{}{
-		"queryId":    queryId,
-		"status":     qs.status,
+		"queryId":    result.QueryId,
+		"status":     result.Status,
 		"results":    resultRows,
 		"statistics": statsMap,
 	}
-	if qs.queryLanguage != "" {
-		resp["queryLanguage"] = qs.queryLanguage
+	if result.QueryLanguage != "" {
+		resp["queryLanguage"] = result.QueryLanguage
 	}
-
-	if endIdx < len(qs.results) {
-		resp["nextToken"] = fmt.Sprintf("%d", endIdx)
+	if result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
 	}
 
 	return resp, nil

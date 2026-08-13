@@ -215,6 +215,272 @@ func validateMaximumRetryAttempts(v int32) error {
 }
 
 // ---------------------------------------------------------------------------
+// Invocation validation (Smithy InvocationType, LogType enums)
+// ---------------------------------------------------------------------------
+
+// validateInvocationType validates the InvocationType parameter per the
+// Smithy enum: "Event" (async), "RequestResponse" (sync), "DryRun".
+// An empty value defaults to RequestResponse (sync) at the handler level.
+func validateInvocationType(v string) error {
+	if v == "" {
+		return nil
+	}
+	switch v {
+	case "Event", "RequestResponse", "DryRun":
+		return nil
+	default:
+		return NewInvalidParameter("InvocationType",
+			fmt.Sprintf("InvocationType must be one of Event, RequestResponse, DryRun; got %q", v))
+	}
+}
+
+// validateLogType validates the LogType parameter per the Smithy enum:
+// "None" (no logs returned) or "Tail" (last 4 KB of logs returned).
+// An empty value defaults to None at the handler level.
+func validateLogType(v string) error {
+	if v == "" {
+		return nil
+	}
+	switch v {
+	case "None", "Tail":
+		return nil
+	default:
+		return NewInvalidParameter("LogType",
+			fmt.Sprintf("LogType must be None or Tail; got %q", v))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Alias and StatementId validation (Smithy pattern + length traits)
+// ---------------------------------------------------------------------------
+
+// aliasNamePattern enforces the Smithy Alias name pattern:
+// alphanumeric, hyphens, and underscores, NOT all-numeric.
+var aliasNamePattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
+
+// validateAliasName validates an alias name per the Smithy model:
+// length 1-128, pattern ^(?!^[0-9]+$)[a-zA-Z0-9-_]+$
+// (alphanumeric/hyphen/underscore, not purely numeric).
+func validateAliasName(name string) error {
+	if len(name) < 1 || len(name) > 128 {
+		return NewInvalidParameter("Name", "Alias name must be between 1 and 128 characters")
+	}
+	if !aliasNamePattern.MatchString(name) {
+		return NewInvalidParameter("Name", "Alias name can only contain alphanumeric characters, hyphens, and underscores")
+	}
+	// Reject purely numeric names per the negative lookahead in the Smithy pattern.
+	isNumeric := true
+	for _, c := range name {
+		if c < '0' || c > '9' {
+			isNumeric = false
+			break
+		}
+	}
+	if isNumeric {
+		return NewInvalidParameter("Name", "Alias name cannot be entirely numeric")
+	}
+	return nil
+}
+
+// statementIdPattern enforces the Smithy StatementId pattern:
+// ^([a-zA-Z0-9-_]+)$
+var statementIdPattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
+
+// validateStatementId validates a policy statement ID per the Smithy model:
+// length 1-100, pattern ^([a-zA-Z0-9-_]+)$.
+func validateStatementId(id string) error {
+	if len(id) < 1 || len(id) > 100 {
+		return NewInvalidParameter("StatementId", "StatementId must be between 1 and 100 characters")
+	}
+	if !statementIdPattern.MatchString(id) {
+		return NewInvalidParameter("StatementId", "StatementId can only contain alphanumeric characters, hyphens, and underscores")
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Package type, Architecture, EphemeralStorage, SnapStart validation
+// ---------------------------------------------------------------------------
+
+// validatePackageType validates the PackageType per the Smithy enum
+// (Zip, Image). An empty value defaults to Zip at the store layer.
+func validatePackageType(v string) error {
+	if v == "" {
+		return nil
+	}
+	switch v {
+	case "Zip", "Image":
+		return nil
+	default:
+		return NewInvalidParameter("PackageType",
+			fmt.Sprintf("PackageType must be Zip or Image; got %q", v))
+	}
+}
+
+// validateArchitecture validates a single architecture value per the
+// Smithy enum (x86_64, arm64).
+func validateArchitecture(arch string) error {
+	switch arch {
+	case "x86_64", "arm64":
+		return nil
+	default:
+		return NewInvalidParameter("Architectures",
+			fmt.Sprintf("Architecture must be x86_64 or arm64; got %q", arch))
+	}
+}
+
+// validateEphemeralStorageSize validates the EphemeralStorage.Size per
+// the Smithy range: min 512, max 10240 MB.
+func validateEphemeralStorageSize(size int32) error {
+	if size < 512 || size > 10240 {
+		return NewInvalidParameter("EphemeralStorage.Size",
+			"EphemeralStorage.Size must be between 512 and 10240 MB")
+	}
+	return nil
+}
+
+// validateSnapStartApplyOn validates the SnapStart.ApplyOn per the
+// Smithy enum (PublishedVersions, None).
+func validateSnapStartApplyOn(v string) error {
+	switch v {
+	case "PublishedVersions", "None":
+		return nil
+	default:
+		return NewInvalidParameter("SnapStart.ApplyOn",
+			fmt.Sprintf("SnapStart.ApplyOn must be PublishedVersions or None; got %q", v))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// KMS Key ARN validation
+// ---------------------------------------------------------------------------
+
+// validateKMSKeyArn validates that the KMSKeyArn is a well-formed KMS ARN
+// or empty (meaning the default service key is used).
+func validateKMSKeyArn(arn string) error {
+	if arn == "" {
+		return nil
+	}
+	if !strings.HasPrefix(arn, "arn:") {
+		return NewInvalidParameter("KMSKeyArn",
+			"KMSKeyArn must be a valid ARN")
+	}
+	_, service, _, _, resource := arnutil.SplitARN(arn)
+	if service != "kms" {
+		return NewInvalidParameter("KMSKeyArn",
+			fmt.Sprintf("KMSKeyArn must be a KMS ARN; got service %q", service))
+	}
+	if resource == "" || !strings.HasPrefix(resource, "key/") {
+		return NewInvalidParameter("KMSKeyArn",
+			"KMSKeyArn must reference a KMS key (arn:...:kms:...:key/<uuid>)")
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// MaxItems pagination validation (Smithy range: min 1, max 50)
+// ---------------------------------------------------------------------------
+
+// maxItemsCap is the Smithy-specified maximum for Lambda MaxItems.
+const maxItemsCap = 50
+
+// validateMaxItems validates and applies the Smithy range for MaxItems
+// (min 1, max 50). A value <= 0 returns the default (50).
+func validateMaxItems(v int) int {
+	if v <= 0 || v > maxItemsCap {
+		return maxItemsCap
+	}
+	return v
+}
+
+// ---------------------------------------------------------------------------
+// Event source mapping range validation (Smithy range traits)
+// ---------------------------------------------------------------------------
+
+// validateESMBatchSize enforces the Smithy range for BatchSize: min 1, max 10000.
+func validateESMBatchSize(v int32) error {
+	if v < 1 || v > 10000 {
+		return NewInvalidParameter("BatchSize", "BatchSize must be between 1 and 10000")
+	}
+	return nil
+}
+
+// validateESMBatchingWindow enforces the Smithy range for
+// MaximumBatchingWindowInSeconds: min 0, max 300.
+func validateESMBatchingWindow(v int32) error {
+	if v < 0 || v > 300 {
+		return NewInvalidParameter("MaximumBatchingWindowInSeconds",
+			"MaximumBatchingWindowInSeconds must be between 0 and 300")
+	}
+	return nil
+}
+
+// validateESMParallelFactor enforces the Smithy range for
+// ParallelizationFactor: min 1, max 10.
+func validateESMParallelFactor(v int32) error {
+	if v < 1 || v > 10 {
+		return NewInvalidParameter("ParallelizationFactor",
+			"ParallelizationFactor must be between 1 and 10")
+	}
+	return nil
+}
+
+// validateESMMaxRecordAge enforces the Smithy range for
+// MaximumRecordAgeInSeconds: min -1, max 604800.
+func validateESMMaxRecordAge(v int32) error {
+	if v < -1 || v > 604800 {
+		return NewInvalidParameter("MaximumRecordAgeInSeconds",
+			"MaximumRecordAgeInSeconds must be between -1 and 604800")
+	}
+	return nil
+}
+
+// validateESMMaxRetry enforces the Smithy range for
+// MaximumRetryAttemptsEventSourceMapping: min -1, max 10000.
+func validateESMMaxRetry(v int32) error {
+	if v < -1 || v > 10000 {
+		return NewInvalidParameter("MaximumRetryAttempts",
+			"MaximumRetryAttempts must be between -1 and 10000")
+	}
+	return nil
+}
+
+// validateESMTumblingWindow enforces the Smithy range for
+// TumblingWindowInSeconds: min 0, max 900.
+func validateESMTumblingWindow(v int32) error {
+	if v < 0 || v > 900 {
+		return NewInvalidParameter("TumblingWindowInSeconds",
+			"TumblingWindowInSeconds must be between 0 and 900")
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Layer permission validation
+// ---------------------------------------------------------------------------
+
+// validateLayerPermission validates the Principal and Action fields of a
+// layer version resource-based policy statement, applying the same rules
+// as validatePermission but for layer-version-scoped policies.
+func validateLayerPermission(p *lambdastore.LayerPolicy) error {
+	if p.Principal == "" {
+		return NewInvalidParameter("Principal", "Principal is required")
+	}
+	if !isValidPrincipal(p.Principal) {
+		return NewInvalidParameter("Principal",
+			fmt.Sprintf("Principal %q is not a valid IAM ARN, recognised service principal, or wildcard", p.Principal))
+	}
+	if p.Action == "" {
+		return NewInvalidParameter("Action", "Action is required")
+	}
+	if !strings.HasPrefix(p.Action, "lambda:") {
+		return NewInvalidParameter("Action",
+			fmt.Sprintf("Action %q must start with 'lambda:'", p.Action))
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // Code Signing Config validation
 // ---------------------------------------------------------------------------
 

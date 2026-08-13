@@ -3,8 +3,10 @@ package lambda
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -42,7 +44,14 @@ func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, req
 	// eliminates cold-start latency on the first invocation.
 	if s.dockerClient != nil {
 		go func() {
-			defer func() { recover() }()
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("Panic in provisioned concurrency pre-warm goroutine",
+						logs.String("function", functionName),
+						logs.String("qualifier", qualifier),
+						logs.Any("panic", r))
+				}
+			}()
 			fn, err := store.Functions.Get(functionName)
 			if err != nil {
 				return
@@ -139,14 +148,26 @@ func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, r
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(configs))
-	for _, c := range configs {
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
+	marker := request.GetStringParam(req.Parameters, "Marker")
+
+	pageResult := pagination.PaginateSlice(configs, marker, maxItems, func(c lambdastore.ProvisionedConcurrencyConfig) string {
+		return c.Qualifier
+	})
+
+	items := make([]map[string]interface{}, 0, len(pageResult.Items))
+	for _, c := range pageResult.Items {
 		items = append(items, s.toProvisionedConcurrencyConfig(&c))
 	}
 
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"ProvisionedConcurrencyConfigs": items,
-	}, nil
+	}
+	if pageResult.IsTruncated {
+		response["NextMarker"] = pageResult.NextMarker
+	}
+
+	return response, nil
 }
 
 func (s *LambdaService) toProvisionedConcurrencyConfig(c *lambdastore.ProvisionedConcurrencyConfig) map[string]interface{} {

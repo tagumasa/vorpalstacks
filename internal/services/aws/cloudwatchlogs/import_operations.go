@@ -10,41 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateImportTask creates a task to import log events from an S3 source.
 func (s *LogsService) CreateImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	importSourceArn := request.GetParamLowerFirst(req.Parameters, "ImportSourceArn")
-
-	if importSourceArn == "" {
-		return nil, ErrMissingParameter
-	}
-
-	parsedArn, err := arn.ParseARN(importSourceArn)
-	if err != nil || parsedArn.Service != "s3" {
-		return nil, NewLogsError("InvalidParameterException",
-			"importSourceArn must be a valid S3 ARN", 400)
-	}
-
-	bucket := parsedArn.AccountID
-	s3Key := parsedArn.Resource
-	if idx := strings.Index(s3Key, "/"); idx >= 0 {
-		bucket = s3Key[:idx]
-		s3Key = s3Key[idx+1:]
-	} else {
-		bucket = s3Key
-		s3Key = ""
-	}
-
-	if bucket == "" {
-		return nil, NewLogsError("InvalidParameterException",
-			"importSourceArn must contain an S3 bucket", 400)
-	}
 
 	var importFilter map[string]interface{}
 	if filter, ok := req.Parameters["importFilter"]; ok {
@@ -53,47 +26,25 @@ func (s *LogsService) CreateImportTask(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	managedLogGroupName := deriveManagedLogGroupName(importSourceArn)
-	region := reqCtx.GetRegion()
-	importDestinationArn := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", region, s.accountID, managedLogGroupName)
-
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetLogGroup(managedLogGroupName); err != nil {
-		lg := logsstore.NewLogGroup(managedLogGroupName, region, s.accountID)
-		if err := store.CreateLogGroup(lg); err != nil {
-			if existing, gErr := store.GetLogGroup(managedLogGroupName); gErr != nil || existing == nil {
-				return nil, mapStoreError(err)
-			}
-		}
+	task, err := s.createImportTaskCore(store, &CreateImportTaskInput{
+		ImportSourceArn: importSourceArn,
+		ImportRoleArn:   request.GetParamLowerFirst(req.Parameters, "ImportRoleArn"),
+		ImportFilter:    importFilter,
+		Region:          reqCtx.GetRegion(),
+		AccountID:       s.accountID,
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	importId := fmt.Sprintf("import-%d", time.Now().UnixNano())
-	roleArn := request.GetParamLowerFirst(req.Parameters, "ImportRoleArn")
-
-	task := &logsstore.ImportTask{
-		ImportId:             importId,
-		ImportSourceArn:      importSourceArn,
-		ImportRoleArn:        roleArn,
-		LogGroupName:         managedLogGroupName,
-		ImportStatus:         "IN_PROGRESS",
-		ImportDestinationArn: importDestinationArn,
-		ImportFilter:         importFilter,
-		CreationTime:         time.Now().UTC().UnixMilli(),
-	}
-
-	if err := store.PutImportTask(task); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	go s.executeImportTask(region, importId, bucket, s3Key, managedLogGroupName)
 
 	return map[string]interface{}{
-		"importId":             importId,
-		"importDestinationArn": importDestinationArn,
+		"importId":             task.ImportId,
+		"importDestinationArn": task.ImportDestinationArn,
 		"creationTime":         task.CreationTime,
 	}, nil
 }
@@ -276,39 +227,36 @@ func (s *LogsService) updateImportStats(region, importId string, bytesImported i
 
 // DescribeImportTasks lists import tasks.
 func (s *LogsService) DescribeImportTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	importId := request.GetParamLowerFirst(req.Parameters, "ImportId")
-	status := request.GetParamLowerFirst(req.Parameters, "ImportStatus")
-	sourceArn := request.GetParamLowerFirst(req.Parameters, "ImportSourceArn")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
 	if err != nil {
 		return nil, err
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	allTasks, err := store.ListImportTasks(importId, status, sourceArn)
+	items, nextMarker, err := s.describeImportTasksCore(store,
+		request.GetParamLowerFirst(req.Parameters, "ImportId"),
+		request.GetParamLowerFirst(req.Parameters, "ImportStatus"),
+		request.GetParamLowerFirst(req.Parameters, "ImportSourceArn"),
+		request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		limit)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
-	result := pagination.PaginateSlice(allTasks, nextToken, int(limit), func(t *logsstore.ImportTask) string {
-		return t.ImportId
-	})
-
-	tasks := make([]map[string]interface{}, len(result.Items))
-	for i, t := range result.Items {
+	tasks := make([]map[string]interface{}, len(items))
+	for i, t := range items {
 		tasks[i] = formatImportTask(t)
 	}
 
 	resp := map[string]interface{}{
 		"imports": tasks,
 	}
-	if result.NextMarker != "" {
-		resp["nextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
 	}
 
 	return resp, nil
@@ -317,39 +265,27 @@ func (s *LogsService) DescribeImportTasks(ctx context.Context, reqCtx *request.R
 // CancelImportTask cancels a running import task.
 func (s *LogsService) CancelImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	importId := request.GetParamLowerFirst(req.Parameters, "ImportId")
-	if importId == "" {
-		return nil, ErrMissingParameter
-	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	task, err := store.GetImportTask(importId)
-	if err != nil {
-		return nil, mapStoreError(err)
+	if err := s.cancelImportTaskCore(store, importId); err != nil {
+		return nil, err
 	}
 
-	if task.ImportStatus == "COMPLETED" || task.ImportStatus == "FAILED" || task.ImportStatus == "CANCELLED" {
-		return nil, NewLogsError("InvalidOperationException",
-			fmt.Sprintf("Cannot cancel import task in %s state", task.ImportStatus), 400)
-	}
-
-	task.ImportStatus = "CANCELLED"
-	task.LastUpdatedTime = time.Now().UTC().UnixMilli()
-	if err := store.PutImportTask(task); err != nil {
-		return nil, mapStoreError(err)
-	}
-
+	task, _ := store.GetImportTask(importId)
 	resp := map[string]interface{}{
-		"importId":        importId,
-		"importStatus":    "CANCELLED",
-		"creationTime":    task.CreationTime,
-		"lastUpdatedTime": task.LastUpdatedTime,
+		"importId":     importId,
+		"importStatus": "CANCELLED",
 	}
-	if task.ImportStatistics != nil {
-		resp["importStatistics"] = task.ImportStatistics
+	if task != nil {
+		resp["creationTime"] = task.CreationTime
+		resp["lastUpdatedTime"] = task.LastUpdatedTime
+		if task.ImportStatistics != nil {
+			resp["importStatistics"] = task.ImportStatistics
+		}
 	}
 	return resp, nil
 }
@@ -364,7 +300,7 @@ func (s *LogsService) DescribeImportTaskBatches(ctx context.Context, reqCtx *req
 	// batchImportStatus is accepted but batch-level status tracking is not
 	// implemented; the response always returns an empty importBatches list.
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
@@ -408,4 +344,18 @@ func deriveManagedLogGroupName(importSourceArn string) string {
 		edsId = edsId[idx+1:]
 	}
 	return "/aws/imported/cloudtrail-lake/" + edsId
+}
+
+// toInt64 attempts to convert an interface{} (float64 from JSON or json.Number)
+// to an int64 value, returning false if the conversion fails.
+func toInt64(v interface{}) (int64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int64(n), true
+	case int64:
+		return n, true
+	case int:
+		return int64(n), true
+	}
+	return 0, false
 }

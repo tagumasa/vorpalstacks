@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -29,7 +30,25 @@ const (
 	maxMetricDimensions     = 30
 )
 
-// validStatistics is the set of statistic values accepted by PutMetricAlarm.
+// String length limits derived from Smithy traits.
+const (
+	maxNamespaceLen          = 255
+	maxMetricNameLen         = 255
+	maxInsightRuleNameLen    = 128
+	maxInsightRuleDefLen     = 8192
+	maxAlarmDescLen          = 1024
+	maxStateReasonLen        = 1023
+	minKmsKeyArnLen          = 20
+	maxKmsKeyArnLen          = 2048
+	maxMetricIdLen           = 255
+	maxDashboardNameLen      = 255
+	maxDashboardNames        = 100
+	maxListMetricsDimensions = 10
+	maxDescribeAlarmsRecords = 100
+)
+
+// validStatistics is the set of statistic values accepted by
+// PutMetricAlarm and GetMetricStatistics (Smithy enum Statistic).
 var validStatistics = map[string]bool{
 	"SampleCount": true,
 	"Average":     true,
@@ -58,7 +77,8 @@ var validComparisonOperators = map[string]bool{
 	"GreaterThanUpperThreshold":                true,
 }
 
-// validRuleStates is the set of RuleState values accepted by PutInsightRule.
+// validRuleStates is the set of RuleState values accepted by PutInsightRule
+// (Smithy InsightRuleState).
 var validRuleStates = map[string]bool{
 	"ENABLED":  true,
 	"DISABLED": true,
@@ -70,6 +90,72 @@ var validOutputFormats = map[string]bool{
 	"png":  true,
 	"json": true,
 }
+
+// validStandardUnits is the set of Unit values accepted by PutMetricAlarm
+// and PutMetricData (Smithy enum StandardUnit, 27 values).
+var validStandardUnits = map[string]bool{
+	"Seconds":          true,
+	"Microseconds":     true,
+	"Milliseconds":     true,
+	"Bytes":            true,
+	"Kilobytes":        true,
+	"Megabytes":        true,
+	"Gigabytes":        true,
+	"Terabytes":        true,
+	"Bits":             true,
+	"Kilobits":         true,
+	"Megabits":         true,
+	"Gigabits":         true,
+	"Terabits":         true,
+	"Percent":          true,
+	"Count":            true,
+	"Bytes/Second":     true,
+	"Kilobytes/Second": true,
+	"Megabytes/Second": true,
+	"Gigabytes/Second": true,
+	"Terabytes/Second": true,
+	"Bits/Second":      true,
+	"Kilobits/Second":  true,
+	"Megabits/Second":  true,
+	"Gigabits/Second":  true,
+	"Terabits/Second":  true,
+	"Count/Second":     true,
+	"None":             true,
+}
+
+// validHistoryItemTypes is the set of HistoryItemType values accepted by
+// DescribeAlarmHistory (Smithy enum HistoryItemType).
+var validHistoryItemTypes = map[string]bool{
+	"Action":                      true,
+	"AlarmContributorAction":      true,
+	"AlarmContributorStateUpdate": true,
+	"ConfigurationUpdate":         true,
+	"StateUpdate":                 true,
+}
+
+// validStateValues is the set of StateValue values accepted by
+// DescribeAlarms and SetAlarmState (Smithy enum StateValue).
+var validStateValues = map[string]bool{
+	"OK":                true,
+	"ALARM":             true,
+	"INSUFFICIENT_DATA": true,
+}
+
+// validAlarmTypes is the set of AlarmType values accepted by
+// DescribeAlarms (Smithy enum AlarmType).
+var validAlarmTypes = map[string]bool{
+	"CompositeAlarm": true,
+	"LogAlarm":       true,
+	"MetricAlarm":    true,
+}
+
+// Compiled regex patterns for Smithy trait validation.
+var (
+	insightRuleNamePattern = regexp.MustCompile(`^[\x20-\x7E]+$`)
+	insightRuleDefPattern  = regexp.MustCompile(`^[\x00-\x7F]+$`)
+	kmsKeyArnPattern       = regexp.MustCompile(`^arn:[a-zA-Z0-9-]+:kms:[a-zA-Z0-9-]+:\d{12}:key/[a-f0-9-]+$`)
+	dashboardNamePattern   = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+)
 
 // validateAlarmTagList validates tags against AWS CloudWatch tag limits
 // (max 50 tags, key 1-128 chars, value 0-256 chars, no "aws:" prefix).
@@ -176,15 +262,219 @@ func validateExtendedStatistic(stat string) error {
 }
 
 // validateRuleState checks that the RuleState is one of the AWS-accepted
-// values: ENABLED or DISABLED.
-func validateRuleState(state string) bool {
-	return validRuleStates[state]
+// values: ENABLED or DISABLED (Smithy InsightRuleState).
+func validateRuleState(state string) error {
+	if !validRuleStates[state] {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Invalid RuleState: %s. Must be ENABLED or DISABLED", state))
+	}
+	return nil
 }
 
 // validateOutputFormat checks that the OutputFormat is one of the
-// AWS-accepted values for GetMetricWidgetImage.
-func validateOutputFormat(format string) bool {
-	return validOutputFormats[format]
+// AWS-accepted values for GetMetricWidgetImage: png or json.
+func validateOutputFormat(format string) error {
+	if !validOutputFormats[format] {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Invalid OutputFormat: %s. Must be png or json", format))
+	}
+	return nil
+}
+
+// validateNamespace validates a CloudWatch Namespace
+// (Smithy: length 1-255, pattern ^[^:]).
+func validateNamespace(ns string) error {
+	if len(ns) == 0 || len(ns) > maxNamespaceLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Namespace length must be between 1 and %d characters", maxNamespaceLen))
+	}
+	if ns[0] == ':' {
+		return awserrors.NewInvalidParameterValueException(
+			"Namespace must not start with ':'")
+	}
+	return nil
+}
+
+// validateMetricName validates a CloudWatch MetricName
+// (Smithy: length 1-255).
+func validateMetricName(name string) error {
+	if len(name) == 0 || len(name) > maxMetricNameLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("MetricName length must be between 1 and %d characters", maxMetricNameLen))
+	}
+	return nil
+}
+
+// validateInsightRuleName validates an InsightRuleName
+// (Smithy: length 1-128, pattern ^[\x20-\x7E]+$).
+func validateInsightRuleName(name string) error {
+	if len(name) == 0 || len(name) > maxInsightRuleNameLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("RuleName length must be between 1 and %d characters", maxInsightRuleNameLen))
+	}
+	if !insightRuleNamePattern.MatchString(name) {
+		return awserrors.NewInvalidParameterValueException(
+			"RuleName must contain only printable ASCII characters (0x20-0x7E)")
+	}
+	return nil
+}
+
+// validateInsightRuleDefinition validates an InsightRuleDefinition
+// (Smithy: length 1-8192, pattern ^[\x00-\x7F]+$).
+func validateInsightRuleDefinition(def string) error {
+	if len(def) == 0 || len(def) > maxInsightRuleDefLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("RuleDefinition length must be between 1 and %d characters", maxInsightRuleDefLen))
+	}
+	if !insightRuleDefPattern.MatchString(def) {
+		return awserrors.NewInvalidParameterValueException(
+			"RuleDefinition must contain only ASCII characters (0x00-0x7F)")
+	}
+	return nil
+}
+
+// validateAlarmDescription validates an AlarmDescription
+// (Smithy: length 0-1024).
+func validateAlarmDescription(desc string) error {
+	if len(desc) > maxAlarmDescLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("AlarmDescription must not exceed %d characters", maxAlarmDescLen))
+	}
+	return nil
+}
+
+// validateStateReason validates a StateReason
+// (Smithy: length 0-1023).
+func validateStateReason(reason string) error {
+	if len(reason) > maxStateReasonLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("StateReason must not exceed %d characters", maxStateReasonLen))
+	}
+	return nil
+}
+
+// validateKmsKeyArn validates a KmsKeyArn
+// (Smithy: length 20-2048, pattern ^arn:...kms:...key/...).
+func validateKmsKeyArn(arn string) error {
+	if len(arn) < minKmsKeyArnLen || len(arn) > maxKmsKeyArnLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("KmsKeyArn length must be between %d and %d characters", minKmsKeyArnLen, maxKmsKeyArnLen))
+	}
+	if !kmsKeyArnPattern.MatchString(arn) {
+		return awserrors.NewInvalidParameterValueException(
+			"KmsKeyArn must be a valid KMS key ARN (arn:aws:kms:region:accountId:key/keyId)")
+	}
+	return nil
+}
+
+// validateThresholdMetricId validates a ThresholdMetricId
+// (Smithy MetricId: length 1-255).
+func validateThresholdMetricId(id string) error {
+	if id == "" {
+		return nil
+	}
+	if len(id) > maxMetricIdLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("ThresholdMetricId must not exceed %d characters", maxMetricIdLen))
+	}
+	return nil
+}
+
+// validateDashboardName validates a DashboardName
+// (AWS docs: max 255, valid characters A-Z a-z 0-9 - _).
+func validateDashboardName(name string) error {
+	if len(name) == 0 || len(name) > maxDashboardNameLen {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("DashboardName length must be between 1 and %d characters", maxDashboardNameLen))
+	}
+	if !dashboardNamePattern.MatchString(name) {
+		return awserrors.NewInvalidParameterValueException(
+			"DashboardName must contain only alphanumeric characters, hyphens, and underscores")
+	}
+	return nil
+}
+
+// validateUnit validates a Unit value against the Smithy StandardUnit enum.
+func validateUnit(unit string) error {
+	if unit == "" {
+		return nil
+	}
+	if !validStandardUnits[unit] {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Invalid Unit: %s", unit))
+	}
+	return nil
+}
+
+// validateHistoryItemType validates a HistoryItemType value against the
+// Smithy HistoryItemType enum.
+func validateHistoryItemType(t string) error {
+	if t == "" {
+		return nil
+	}
+	if !validHistoryItemTypes[t] {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Invalid HistoryItemType: %s", t))
+	}
+	return nil
+}
+
+// validateStateValueFilter validates a StateValue filter against the
+// Smithy StateValue enum.
+func validateStateValueFilter(v string) error {
+	if v == "" {
+		return nil
+	}
+	if !validStateValues[v] {
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Invalid StateValue: %s. Must be OK, ALARM, or INSUFFICIENT_DATA", v))
+	}
+	return nil
+}
+
+// validateAlarmTypeFilters validates AlarmType filter values against the
+// Smithy AlarmType enum.
+func validateAlarmTypeFilters(types []string) error {
+	for _, t := range types {
+		if !validAlarmTypes[t] {
+			return awserrors.NewInvalidParameterValueException(
+				fmt.Sprintf("Invalid AlarmType: %s. Must be CompositeAlarm, LogAlarm, or MetricAlarm", t))
+		}
+	}
+	return nil
+}
+
+// validateDatapointsToAlarm validates a DatapointsToAlarm value
+// (Smithy: range min 1).
+func validateDatapointsToAlarm(v int32) error {
+	if v < 1 {
+		return awserrors.NewInvalidParameterValueException(
+			"DatapointsToAlarm must be at least 1")
+	}
+	return nil
+}
+
+// validateStorageResolution validates a StorageResolution value
+// (Smithy: range min 1).
+func validateStorageResolution(v int32) error {
+	if v < 1 {
+		return awserrors.NewInvalidParameterValueException(
+			"StorageResolution must be at least 1")
+	}
+	return nil
+}
+
+// capMaxRecords caps a MaxRecords value to the Smithy-specified maximum.
+// Values of 0 are replaced with the default. Values exceeding maxBound are
+// capped to maxBound.
+func capMaxRecords(v, defaultVal, maxBound int) int {
+	if v == 0 {
+		return defaultVal
+	}
+	if v > maxBound {
+		return maxBound
+	}
+	return v
 }
 
 // validateMetricDatum checks that a single MetricDatum adheres to AWS

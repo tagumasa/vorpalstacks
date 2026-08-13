@@ -689,7 +689,7 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 					return list1, nil
 				}
 				if (list1 != nil && list1.L == nil) || (list2 != nil && list2.L == nil) {
-					return nil, fmt.Errorf("TYPE_MISMATCH: Type mismatch for attribute to update")
+					return nil, ErrTypeMismatch
 				}
 			}
 		}

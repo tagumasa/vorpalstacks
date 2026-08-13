@@ -22,7 +22,7 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 			}
 		}
 	}
-	if totalKeys > 100 {
+	if totalKeys > batchGetMaxTotalItems {
 		return nil, ErrInvalidParameter
 	}
 
@@ -48,8 +48,8 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 			return nil, ErrInvalidParameter
 		}
 
-		// Single-instance Pebble provides strong consistency by default.
-		// ConsistentRead is accepted for API compatibility.
+		// ConsistentRead is accepted for API compatibility. Single-instance
+		// Pebble provides strong consistency for all reads.
 		_ = request.GetBoolParam(tr, "ConsistentRead")
 
 		var tableItems []map[string]interface{}
@@ -123,7 +123,7 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 			totalItems += len(writes)
 		}
 	}
-	if totalItems > 25 {
+	if totalItems > batchWriteMaxItems {
 		return nil, ErrInvalidParameter
 	}
 

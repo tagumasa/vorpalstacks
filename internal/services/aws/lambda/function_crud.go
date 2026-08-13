@@ -94,9 +94,6 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 			default:
 				return nil, NewInvalidParameter("EphemeralStorage.Size", "must be an integer")
 			}
-			if sizeValue < 512 || sizeValue > 10240 {
-				return nil, NewInvalidParameter("EphemeralStorage.Size", "must be between 512 and 10240 MB")
-			}
 			ephemeralStorage = &lambdastore.EphemeralStorage{Size: sizeValue}
 		}
 	}
@@ -137,10 +134,6 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 	var snapStart *lambdastore.SnapStart
 	if snapMap := request.GetMapParam(req.Parameters, "SnapStart"); snapMap != nil {
 		applyOn, _ := snapMap["ApplyOn"].(string)
-		if applyOn != "PublishedVersions" && applyOn != "None" {
-			return nil, NewInvalidParameter("SnapStart.ApplyOn",
-				"SnapStart.ApplyOn must be 'PublishedVersions' or 'None'")
-		}
 		snapStart = &lambdastore.SnapStart{ApplyOn: applyOn}
 	}
 
@@ -183,9 +176,6 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		architectures = make([]string, 0, len(archs))
 		for _, a := range archs {
 			if as, ok := a.(string); ok {
-				if as != "x86_64" && as != "arm64" {
-					return nil, NewInvalidParameter("Architectures", "must be x86_64 or arm64")
-				}
 				architectures = append(architectures, as)
 			}
 		}

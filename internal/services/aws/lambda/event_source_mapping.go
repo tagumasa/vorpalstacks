@@ -34,6 +34,9 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 	if batchSize <= 0 {
 		batchSize = 100
 	}
+	if err := validateESMBatchSize(batchSize); err != nil {
+		return nil, err
+	}
 
 	startingPosition := request.GetStringParam(req.Parameters, "StartingPosition")
 	if startingPosition != "" {
@@ -49,13 +52,28 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	// Validate MaximumBatchingWindowInSeconds if explicitly provided.
+	if _, ok := req.Parameters["MaximumBatchingWindowInSeconds"]; ok {
+		if err := validateESMBatchingWindow(int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))); err != nil {
+			return nil, err
+		}
+	}
+	// Validate ParallelizationFactor if explicitly provided.
+	parallelizationFactor := int32(1)
+	if _, ok := req.Parameters["ParallelizationFactor"]; ok {
+		parallelizationFactor = int32(request.GetIntParam(req.Parameters, "ParallelizationFactor"))
+		if err := validateESMParallelFactor(parallelizationFactor); err != nil {
+			return nil, err
+		}
+	}
+
 	mapping := &lambdastore.EventSourceMapping{
 		FunctionArn:                    function.FunctionArn,
 		FunctionName:                   function.FunctionName,
 		EventSourceArn:                 eventSourceArn,
 		BatchSize:                      batchSize,
 		MaximumBatchingWindowInSeconds: int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds")),
-		ParallelizationFactor:          int32(request.GetIntParam(req.Parameters, "ParallelizationFactor")),
+		ParallelizationFactor:          parallelizationFactor,
 		StartingPosition:               startingPosition,
 		State:                          "Enabled",
 	}
@@ -70,17 +88,29 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 		}
 	}
 	if _, ok := req.Parameters["MaximumRecordAgeInSeconds"]; ok {
-		mapping.MaximumRecordAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
+		if err := validateESMMaxRecordAge(val); err != nil {
+			return nil, err
+		}
+		mapping.MaximumRecordAgeInSeconds = val
 	} else {
 		mapping.MaximumRecordAgeInSeconds = -1
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		mapping.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		if err := validateESMMaxRetry(val); err != nil {
+			return nil, err
+		}
+		mapping.MaximumRetryAttempts = val
 	} else {
 		mapping.MaximumRetryAttempts = -1
 	}
 	if _, ok := req.Parameters["TumblingWindowInSeconds"]; ok {
-		mapping.TumblingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
+		if err := validateESMTumblingWindow(val); err != nil {
+			return nil, err
+		}
+		mapping.TumblingWindowInSeconds = val
 	}
 	if _, ok := req.Parameters["BisectBatchOnFunctionError"]; ok {
 		mapping.BisectBatchOnFunctionError = request.GetBoolParam(req.Parameters, "BisectBatchOnFunctionError")
@@ -163,6 +193,9 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 	}
 
 	if batchSize := request.GetIntParam(req.Parameters, "BatchSize"); batchSize > 0 {
+		if err := validateESMBatchSize(int32(batchSize)); err != nil {
+			return nil, err
+		}
 		mapping.BatchSize = int32(batchSize)
 	}
 	if _, ok := req.Parameters["Enabled"]; ok {
@@ -173,19 +206,38 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 		}
 	}
 	if _, ok := req.Parameters["MaximumBatchingWindowInSeconds"]; ok {
-		mapping.MaximumBatchingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))
+		if err := validateESMBatchingWindow(val); err != nil {
+			return nil, err
+		}
+		mapping.MaximumBatchingWindowInSeconds = val
 	}
 	if parallelFactor := request.GetIntParam(req.Parameters, "ParallelizationFactor"); parallelFactor > 0 {
+		if err := validateESMParallelFactor(int32(parallelFactor)); err != nil {
+			return nil, err
+		}
 		mapping.ParallelizationFactor = int32(parallelFactor)
 	}
 	if _, ok := req.Parameters["MaximumRecordAgeInSeconds"]; ok {
-		mapping.MaximumRecordAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
+		if err := validateESMMaxRecordAge(val); err != nil {
+			return nil, err
+		}
+		mapping.MaximumRecordAgeInSeconds = val
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		mapping.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+		if err := validateESMMaxRetry(val); err != nil {
+			return nil, err
+		}
+		mapping.MaximumRetryAttempts = val
 	}
 	if _, ok := req.Parameters["TumblingWindowInSeconds"]; ok {
-		mapping.TumblingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
+		val := int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
+		if err := validateESMTumblingWindow(val); err != nil {
+			return nil, err
+		}
+		mapping.TumblingWindowInSeconds = val
 	}
 	if _, ok := req.Parameters["BisectBatchOnFunctionError"]; ok {
 		mapping.BisectBatchOnFunctionError = request.GetBoolParam(req.Parameters, "BisectBatchOnFunctionError")
@@ -213,10 +265,7 @@ func (s *LambdaService) ListEventSourceMappings(ctx context.Context, reqCtx *req
 	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
 	marker := request.GetStringParam(req.Parameters, "Marker")
 
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
 	store, err := s.store(reqCtx)
 	if err != nil {

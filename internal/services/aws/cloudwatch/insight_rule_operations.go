@@ -13,35 +13,15 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutInsightRule creates or updates a CloudWatch Contributor Insights
-// rule. The rule analyses log data to find the top contributors (most
-// active sources) for a given metric.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutInsightRule.html
+// rule.
 func (s *CloudWatchService) PutInsightRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	ruleName := getAlarmStringParam(req.Parameters, "RuleName", "ruleName")
-	if ruleName == "" {
-		return nil, awserrors.NewMissingParameter("RuleName is required")
-	}
-
-	ruleState := getAlarmStringParam(req.Parameters, "RuleState", "ruleState")
-	if ruleState == "" {
-		ruleState = "ENABLED"
-	}
-	if !validateRuleState(ruleState) {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Invalid RuleState: %s. Must be ENABLED or DISABLED", ruleState))
-	}
-
-	ruleDefinition := getAlarmStringParam(req.Parameters, "RuleDefinition", "ruleDefinition")
 
 	applyOnTransformed := false
 	if v, ok := req.Parameters["ApplyOnTransformedLogs"]; ok {
@@ -59,161 +39,103 @@ func (s *CloudWatchService) PutInsightRule(ctx context.Context, reqCtx *request.
 		return nil, tagErr
 	}
 
-	rule := &cwstore.InsightRule{
-		Name:                   ruleName,
-		State:                  ruleState,
-		Definition:             ruleDefinition,
+	err = s.putInsightRuleCore(store, &PutInsightRuleInput{
+		RuleName:               getAlarmStringParam(req.Parameters, "RuleName", "ruleName"),
+		RuleState:              getAlarmStringParam(req.Parameters, "RuleState", "ruleState"),
+		RuleDefinition:         getAlarmStringParam(req.Parameters, "RuleDefinition", "ruleDefinition"),
 		ApplyOnTransformedLogs: applyOnTransformed,
 		Tags:                   tags,
-	}
-
-	result, err := store.insightRules.PutInsightRule(rule)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to put insight rule: %w", err)
+		return nil, err
 	}
 
-	_ = result
 	return map[string]interface{}{}, nil
 }
 
 // DeleteInsightRules deletes one or more Contributor Insights rules.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DeleteInsightRules.html
 func (s *CloudWatchService) DeleteInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	ruleNames := parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames")
-	if len(ruleNames) == 0 {
-		return nil, awserrors.NewMissingParameter("RuleNames is required")
-	}
-
-	_, notFound, err := store.insightRules.DeleteInsightRules(ruleNames)
+	notFound, err := s.deleteInsightRulesCore(store, &DeleteInsightRulesInput{
+		RuleNames: parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames"),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete insight rules: %w", err)
+		return nil, err
 	}
 
-	failures := make([]map[string]interface{}, 0, len(notFound))
-	for _, name := range notFound {
-		failures = append(failures, map[string]interface{}{
-			"FailureName":        name,
-			"ExceptionName":      "ResourceNotFoundException",
-			"FailureDescription": fmt.Sprintf("Rule %s does not exist", name),
-		})
-	}
-
-	return map[string]interface{}{
-		"Failures": failures,
-	}, nil
+	return buildInsightRuleFailures(notFound), nil
 }
 
-// DescribeInsightRules lists the Contributor Insights rules in the
-// account.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DescribeInsightRules.html
+// DescribeInsightRules lists the Contributor Insights rules.
 func (s *CloudWatchService) DescribeInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
-
-	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
-	result, err := store.insightRules.ListInsightRulesPaginated(false, opts)
+	items, nextMarker, err := s.describeInsightRulesCore(store, &DescribeInsightRulesInput{
+		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
+		MaxResults: pagination.GetMaxItems(req.Parameters, 100, "MaxResults"),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list insight rules: %w", err)
+		return nil, err
 	}
 
-	results := make([]map[string]interface{}, 0, len(result.Items))
-	for _, r := range result.Items {
+	results := make([]map[string]interface{}, 0, len(items))
+	for _, r := range items {
 		results = append(results, insightRuleToResponse(r))
 	}
 
 	resp := map[string]interface{}{
 		"InsightRules": results,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["NextToken"] = nextMarker
 	}
 	return resp, nil
 }
 
 // EnableInsightRules enables the specified Contributor Insights rules.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_EnableInsightRules.html
 func (s *CloudWatchService) EnableInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	ruleNames := parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames")
-	if len(ruleNames) == 0 {
-		return nil, awserrors.NewMissingParameter("RuleNames is required")
-	}
-
-	_, notFound, err := store.insightRules.SetRuleState(ruleNames, "ENABLED")
+	notFound, err := s.setInsightRuleStateCore(store, &SetInsightRuleStateInput{
+		RuleNames: parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames"),
+		State:     "ENABLED",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to enable insight rules: %w", err)
+		return nil, err
 	}
 
-	failures := make([]map[string]interface{}, 0, len(notFound))
-	for _, name := range notFound {
-		failures = append(failures, map[string]interface{}{
-			"FailureName":        name,
-			"ExceptionName":      "ResourceNotFoundException",
-			"FailureDescription": fmt.Sprintf("Rule %s does not exist", name),
-		})
-	}
-
-	return map[string]interface{}{
-		"Failures": failures,
-	}, nil
+	return buildInsightRuleFailures(notFound), nil
 }
 
 // DisableInsightRules disables the specified Contributor Insights rules.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DisableInsightRules.html
 func (s *CloudWatchService) DisableInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	ruleNames := parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames")
-	if len(ruleNames) == 0 {
-		return nil, awserrors.NewMissingParameter("RuleNames is required")
-	}
-
-	_, notFound, err := store.insightRules.SetRuleState(ruleNames, "DISABLED")
+	notFound, err := s.setInsightRuleStateCore(store, &SetInsightRuleStateInput{
+		RuleNames: parseStringArrayParam(req.Parameters, "RuleNames", "ruleNames"),
+		State:     "DISABLED",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to disable insight rules: %w", err)
+		return nil, err
 	}
 
-	failures := make([]map[string]interface{}, 0, len(notFound))
-	for _, name := range notFound {
-		failures = append(failures, map[string]interface{}{
-			"FailureName":        name,
-			"ExceptionName":      "ResourceNotFoundException",
-			"FailureDescription": fmt.Sprintf("Rule %s does not exist", name),
-		})
-	}
-
-	return map[string]interface{}{
-		"Failures": failures,
-	}, nil
+	return buildInsightRuleFailures(notFound), nil
 }
 
 // GetInsightRuleReport returns a report for a Contributor Insights rule.
-// The report includes aggregated contributor data and metric data points
-// for the specified time range. Data is sourced from CloudTrail events
-// queried via the event bus CloudTrailInvoker.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetInsightRuleReport.html
 func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -221,13 +143,9 @@ func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *re
 	}
 
 	ruleName := getAlarmStringParam(req.Parameters, "RuleName", "ruleName")
-	if ruleName == "" {
-		return nil, awserrors.NewMissingParameter("RuleName is required")
-	}
-
-	rule, err := store.insightRules.GetInsightRule(ruleName)
+	rule, err := s.getInsightRuleCore(store, ruleName)
 	if err != nil {
-		return nil, awserrors.NewResourceNotFoundException("InsightRule", ruleName)
+		return nil, err
 	}
 
 	startTime := parseTimestampFromMap(req.Parameters, "StartTime")
@@ -328,110 +246,83 @@ func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *re
 	}, nil
 }
 
-// PutManagedInsightRules creates or updates managed insight
-// rules for a specified resource.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutManagedInsightRules.html
+// PutManagedInsightRules creates or updates managed insight rules.
 func (s *CloudWatchService) PutManagedInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var managedRules []interface{}
+	var rawRules []interface{}
 	if v, ok := req.Parameters["ManagedRules"]; ok {
-		managedRules, _ = v.([]interface{})
+		rawRules, _ = v.([]interface{})
 	} else if v, ok := req.Parameters["managedRules"]; ok {
-		managedRules, _ = v.([]interface{})
+		rawRules, _ = v.([]interface{})
 	}
 
-	if len(managedRules) == 0 {
+	if len(rawRules) == 0 {
 		return nil, awserrors.NewMissingParameter("ManagedRules is required")
 	}
 
-	var failures []map[string]interface{}
-
-	for _, raw := range managedRules {
+	managedRules := make([]PutManagedInsightRuleItem, 0, len(rawRules))
+	for _, raw := range rawRules {
 		m, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
 		}
-
-		templateName := getAlarmStringParam(m, "TemplateName", "templateName")
-		resourceARN := getAlarmStringParam(m, "ResourceARN", "resourceArn")
-		tags := parseAlarmTags(m)
-
-		if templateName == "" || resourceARN == "" {
-			failures = append(failures, map[string]interface{}{
-				"FailureName":        templateName,
-				"ExceptionName":      "InvalidParameterValueException",
-				"FailureDescription": "TemplateName and ResourceARN are required",
-			})
-			continue
-		}
-
-		// Generate a deterministic rule name from template and resource.
-		ruleName := fmt.Sprintf("ManagedRule:%s:%s", templateName, resourceARN)
-
-		rule := &cwstore.InsightRule{
-			Name:         ruleName,
-			State:        "ENABLED",
-			ManagedRule:  true,
-			TemplateName: templateName,
-			ResourceARN:  resourceARN,
-			Tags:         tags,
-		}
-
-		_, err := store.insightRules.PutInsightRule(rule)
-		if err != nil {
-			failures = append(failures, map[string]interface{}{
-				"FailureName":        templateName,
-				"ExceptionName":      "InternalServiceFault",
-				"FailureDescription": err.Error(),
-			})
-		}
+		managedRules = append(managedRules, PutManagedInsightRuleItem{
+			TemplateName: getAlarmStringParam(m, "TemplateName", "templateName"),
+			ResourceARN:  getAlarmStringParam(m, "ResourceARN", "resourceArn"),
+			Tags:         parseAlarmTags(m),
+		})
 	}
-	return map[string]interface{}{
-		"Failures": failures,
-	}, nil
+
+	failures := s.putManagedInsightRulesCore(store, &PutManagedInsightRulesInput{ManagedRules: managedRules})
+	return map[string]interface{}{"Failures": failures}, nil
 }
 
-// ListManagedInsightRules lists the managed Contributor Insights rules
-// for a specified resource.
-//
-// AWS docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListManagedInsightRules.html
+// ListManagedInsightRules lists the managed Contributor Insights rules.
 func (s *CloudWatchService) ListManagedInsightRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	resourceARN := getAlarmStringParam(req.Parameters, "ResourceARN", "resourceArn")
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
-
-	opts := common.ListOptions{Marker: marker, MaxItems: maxResults}
-	result, err := store.insightRules.ListInsightRulesPaginated(true, opts)
+	items, nextMarker, err := s.listManagedInsightRulesCore(store, &ListManagedInsightRulesInput{
+		ResourceARN: getAlarmStringParam(req.Parameters, "ResourceARN", "resourceArn"),
+		NextToken:   pagination.GetMarker(req.Parameters, "NextToken"),
+		MaxResults:  pagination.GetMaxItems(req.Parameters, 100, "MaxResults"),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list managed insight rules: %w", err)
+		return nil, err
 	}
 
-	results := make([]map[string]interface{}, 0, len(result.Items))
-	for _, r := range result.Items {
-		if resourceARN != "" && r.ResourceARN != resourceARN {
-			continue
-		}
+	results := make([]map[string]interface{}, 0, len(items))
+	for _, r := range items {
 		results = append(results, managedInsightRuleToResponse(r))
 	}
 
 	resp := map[string]interface{}{
 		"ManagedRules": results,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["NextToken"] = nextMarker
 	}
 	return resp, nil
+}
+
+// buildInsightRuleFailures converts a list of not-found rule names into
+// the AWS API Failures response format.
+func buildInsightRuleFailures(notFound []string) map[string]interface{} {
+	failures := make([]map[string]interface{}, 0, len(notFound))
+	for _, name := range notFound {
+		failures = append(failures, map[string]interface{}{
+			"FailureName":        name,
+			"ExceptionName":      "ResourceNotFoundException",
+			"FailureDescription": fmt.Sprintf("Rule %s does not exist", name),
+		})
+	}
+	return map[string]interface{}{"Failures": failures}
 }
 
 // insightRuleToResponse serialises an InsightRule into the AWS API
@@ -471,8 +362,7 @@ func managedInsightRuleToResponse(r *cwstore.InsightRule) map[string]interface{}
 }
 
 // insightRuleDefinition holds the parsed fields from the JSON Definition
-// string stored in an InsightRule. The Definition follows the AWS
-// CloudWatchLogRule schema.
+// string stored in an InsightRule.
 type insightRuleDefinition struct {
 	ContributorValue string
 	AggregateOn      string
@@ -522,8 +412,7 @@ func fetchInsightEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker,
 }
 
 // buildInsightMetricDatapointsFromEvents aggregates CloudTrail events
-// into time buckets and computes per-bucket statistics for the
-// GetInsightRuleReport response.
+// into time buckets for the GetInsightRuleReport response.
 func buildInsightMetricDatapointsFromEvents(events []eventbus.CloudTrailEventInfo, startTime, endTime time.Time, period int, periodDuration time.Duration, contributorKeyField string) []map[string]interface{} {
 	if startTime.IsZero() || endTime.IsZero() || period <= 0 {
 		return []map[string]interface{}{}

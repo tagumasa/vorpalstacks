@@ -312,13 +312,17 @@ func (s *TableStore) SetKinesisStreamingDestination(name string, destinations []
 }
 
 // SetContributorInsights enables or disables contributor insights for a DynamoDB table.
-func (s *TableStore) SetContributorInsights(name string, enabled bool) error {
+// When mode is empty, the existing ContributorInsightsMode is preserved.
+func (s *TableStore) SetContributorInsights(name string, enabled bool, mode string) error {
 	return s.keyLocker.WithLock(name, func() error {
 		table, err := s.Get(name)
 		if err != nil {
 			return err
 		}
 		table.ContributorInsightsEnabled = enabled
+		if mode != "" {
+			table.ContributorInsightsMode = mode
+		}
 		table.ContributorInsightsUpdatedAt = time.Now().UTC()
 		return s.Put(table)
 	})

@@ -9,11 +9,10 @@ import (
 )
 
 // GetResourcePolicy returns the resource policy for a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_GetResourcePolicy.html
 func (s *SecretsManagerService) GetResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -42,11 +41,10 @@ func (s *SecretsManagerService) GetResourcePolicy(ctx context.Context, reqCtx *r
 }
 
 // PutResourcePolicy attaches a resource policy to a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_PutResourcePolicy.html
 func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	policyStr := request.GetStringParam(req.Parameters, "ResourcePolicy")
@@ -100,11 +98,10 @@ func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *r
 }
 
 // DeleteResourcePolicy deletes the resource policy from a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_DeleteResourcePolicy.html
 func (s *SecretsManagerService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -133,7 +130,6 @@ func (s *SecretsManagerService) DeleteResourcePolicy(ctx context.Context, reqCtx
 // Runs multiple validation checks (syntax, missing version, public access)
 // and returns all failures in ValidationErrors, matching the AWS behaviour
 // where a single call may report multiple issues.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ValidateResourcePolicy.html
 func (s *SecretsManagerService) ValidateResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
 	policyStr := request.GetStringParam(req.Parameters, "ResourcePolicy")

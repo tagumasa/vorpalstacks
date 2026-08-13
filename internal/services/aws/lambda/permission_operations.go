@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -22,6 +23,9 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 	statementId := request.GetStringParam(req.Parameters, "StatementId")
 	if statementId == "" {
 		return nil, NewInvalidParameter("StatementId", "Statement ID is required")
+	}
+	if err := validateStatementId(statementId); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -75,6 +79,11 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 
 	// Include RevisionId so clients can use conditional updates.
 	updated, getErr := store.Functions.Get(function.FunctionName)
+	if getErr != nil {
+		logs.Warn("Failed to fetch function for RevisionId after AddPermission",
+			logs.String("function", function.FunctionName),
+			logs.Err(getErr))
+	}
 	if getErr == nil && updated.RevisionId != "" {
 		result["RevisionId"] = updated.RevisionId
 	}

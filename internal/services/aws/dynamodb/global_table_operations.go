@@ -10,8 +10,8 @@ import (
 // CreateGlobalTable creates a new global table.
 func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if err := validateGlobalTableName(globalTableName); err != nil {
-		return nil, err
+	if !validateGlobalTableName(globalTableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	replicationGroupParams, ok := req.Parameters["ReplicationGroup"].([]interface{})
@@ -62,8 +62,8 @@ func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request
 // DescribeGlobalTable returns information about a global table.
 func (s *DynamoDBService) DescribeGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if err := validateGlobalTableName(globalTableName); err != nil {
-		return nil, err
+	if !validateGlobalTableName(globalTableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -83,8 +83,8 @@ func (s *DynamoDBService) DescribeGlobalTable(ctx context.Context, reqCtx *reque
 // DescribeGlobalTableSettings returns the settings of a global table.
 func (s *DynamoDBService) DescribeGlobalTableSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if err := validateGlobalTableName(globalTableName); err != nil {
-		return nil, err
+	if !validateGlobalTableName(globalTableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -123,16 +123,16 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 	regionName := request.GetStringParam(req.Parameters, "RegionName")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit == 0 {
-		limit = 100
+		limit = listGlobalTablesDefaultLimit
 	} else {
-		if err := validateListGlobalTablesLimit(limit); err != nil {
-			return nil, err
+		if !validateListGlobalTablesLimit(limit) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	exclusiveStartGlobalTableName := request.GetStringParam(req.Parameters, "ExclusiveStartGlobalTableName")
 	if exclusiveStartGlobalTableName != "" {
-		if err := validateGlobalTableName(exclusiveStartGlobalTableName); err != nil {
-			return nil, err
+		if !validateGlobalTableName(exclusiveStartGlobalTableName) {
+			return nil, ErrInvalidParameter
 		}
 	}
 
@@ -144,8 +144,8 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 	var filteredTables []*dbstore.GlobalTable
 	marker := exclusiveStartGlobalTableName
 	pageSize := limit
-	if pageSize < 10 {
-		pageSize = 10
+	if pageSize < listGlobalTablesMinPageSize {
+		pageSize = listGlobalTablesMinPageSize
 	}
 
 	for len(filteredTables) < limit {
@@ -205,8 +205,8 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 // UpdateGlobalTable updates a global table.
 func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if err := validateGlobalTableName(globalTableName); err != nil {
-		return nil, err
+	if !validateGlobalTableName(globalTableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -219,53 +219,54 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 	}
 
 	updates, ok := req.Parameters["ReplicaUpdates"].([]interface{})
-	if ok {
-		for _, update := range updates {
-			updateMap, ok := update.(map[string]interface{})
-			if !ok {
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	for _, update := range updates {
+		updateMap, ok := update.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+
+		if createMap, ok := updateMap["Create"].(map[string]interface{}); ok {
+			regionName, _ := createMap["RegionName"].(string)
+			if regionName == "" {
 				return nil, ErrInvalidParameter
 			}
-
-			if createMap, ok := updateMap["Create"].(map[string]interface{}); ok {
-				regionName, _ := createMap["RegionName"].(string)
-				if regionName == "" {
-					return nil, ErrInvalidParameter
+			for _, r := range globalTable.ReplicationGroup {
+				if r.RegionName == regionName {
+					return nil, ErrReplicaAlreadyExists
 				}
-				for _, r := range globalTable.ReplicationGroup {
-					if r.RegionName == regionName {
-						return nil, ErrReplicaAlreadyExists
-					}
-				}
-				globalTable.ReplicationGroup = append(globalTable.ReplicationGroup, &dbstore.Replica{
-					RegionName:    regionName,
-					ReplicaStatus: "ACTIVE",
-				})
 			}
-
-			if deleteMap, ok := updateMap["Delete"].(map[string]interface{}); ok {
-				regionName, _ := deleteMap["RegionName"].(string)
-				if regionName == "" {
-					return nil, ErrInvalidParameter
-				}
-				found := false
-				var newReplicas []*dbstore.Replica
-				for _, r := range globalTable.ReplicationGroup {
-					if r.RegionName == regionName {
-						found = true
-						continue
-					}
-					newReplicas = append(newReplicas, r)
-				}
-				if !found {
-					return nil, ErrReplicaNotFound
-				}
-				globalTable.ReplicationGroup = newReplicas
-			}
+			globalTable.ReplicationGroup = append(globalTable.ReplicationGroup, &dbstore.Replica{
+				RegionName:    regionName,
+				ReplicaStatus: "ACTIVE",
+			})
 		}
 
-		if err := store.GlobalTables().Put(globalTable); err != nil {
-			return nil, err
+		if deleteMap, ok := updateMap["Delete"].(map[string]interface{}); ok {
+			regionName, _ := deleteMap["RegionName"].(string)
+			if regionName == "" {
+				return nil, ErrInvalidParameter
+			}
+			found := false
+			var newReplicas []*dbstore.Replica
+			for _, r := range globalTable.ReplicationGroup {
+				if r.RegionName == regionName {
+					found = true
+					continue
+				}
+				newReplicas = append(newReplicas, r)
+			}
+			if !found {
+				return nil, ErrReplicaNotFound
+			}
+			globalTable.ReplicationGroup = newReplicas
 		}
+	}
+
+	if err := store.GlobalTables().Put(globalTable); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -276,8 +277,8 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 // UpdateGlobalTableSettings updates the settings of a global table.
 func (s *DynamoDBService) UpdateGlobalTableSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	globalTableName := request.GetStringParam(req.Parameters, "GlobalTableName")
-	if err := validateGlobalTableName(globalTableName); err != nil {
-		return nil, err
+	if !validateGlobalTableName(globalTableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)

@@ -18,6 +18,13 @@ type PutBucketRequestPaymentInput struct {
 
 // PutBucketRequestPayment configures request payment for an S3 bucket.
 func (o *BucketOperations) PutBucketRequestPayment(ctx *request.RequestContext, input *PutBucketRequestPaymentInput) error {
+	if input.RequestPaymentConfiguration == nil {
+		return NewInvalidArgumentError("RequestPaymentConfiguration is required")
+	}
+	if err := validatePayer(input.RequestPaymentConfiguration.Payer); err != nil {
+		return err
+	}
+
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err

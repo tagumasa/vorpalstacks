@@ -17,11 +17,10 @@ import (
 )
 
 // PutSecretValue stores a secret value in a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_PutSecretValue.html
 func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecret(reqCtx, secretId)
@@ -168,13 +167,21 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 }
 
 // ListSecrets lists the secrets in AWS Secrets Manager.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ListSecrets.html
 func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	if maxResults > 100 {
+		maxResults = 100
+	}
 	includePlannedDeletion := request.GetBoolParam(req.Parameters, "IncludePlannedDeletion")
 	sortBy := request.GetStringParam(req.Parameters, "SortBy")
 	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
+	if err := validateSortBy(sortBy); err != nil {
+		return nil, err
+	}
+	if err := validateSortOrder(sortOrder); err != nil {
+		return nil, err
+	}
 	filters := request.GetListParam(req.Parameters, "Filters")
 
 	store, err := s.store(reqCtx)
@@ -396,11 +403,10 @@ func sortSecrets(secrets []*secretsmanagerstore.Secret, sortBy, sortOrder string
 }
 
 // DescribeSecret returns the metadata for a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_DescribeSecret.html
 func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -453,11 +459,10 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 // ListSecretVersionIds lists the versions of a secret.
 // Supports MaxResults (1-100), NextToken pagination, and IncludeDeprecated
 // filtering.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ListSecretVersionIds.html
 func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -544,12 +549,10 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 //  1. Add a label to a version (MoveToVersionId only).
 //  2. Remove a label from a version (RemoveFromVersionId only).
 //  3. Move a label between versions (both MoveToVersionId and RemoveFromVersionId).
-//
-// https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_UpdateSecretVersionStage.html
 func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, awserrors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 	versionStage := request.GetStringParam(req.Parameters, "VersionStage")
 	if versionStage == "" {

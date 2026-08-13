@@ -1,43 +1,23 @@
-// Package dynamodb provides DynamoDB service operations for vorpalstacks.
 package dynamodb
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// revisionMatches compares an ExpectedRevisionId ("v<N>") against the
-// current revision number stored on the table. Returns true if they match,
-// or an error if the format is invalid.
-func revisionMatches(expected string, currentRev int) (bool, error) {
-	trimmed := strings.TrimPrefix(expected, "v")
-	if trimmed == "" || trimmed == expected {
-		// Either "v" alone, or no "v" prefix at all.
-		return false, ErrInvalidParameter
-	}
-	expectedNum, err := strconv.Atoi(trimmed)
-	if err != nil {
-		return false, ErrInvalidParameter
-	}
-	return expectedNum == currentRev, nil
-}
-
 // DeleteResourcePolicy deletes a resource policy from a DynamoDB table.
 func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
-	if err := validatePolicyRevisionId(expectedRevisionId); err != nil {
-		return nil, err
+	if !validatePolicyRevisionId(expectedRevisionId) {
+		return nil, ErrInvalidParameter
 	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
@@ -49,26 +29,11 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	_, err = store.Tables().Get(tableName)
-	if err != nil {
+	if _, err := store.Tables().Get(tableName); err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	if expectedRevisionId != "" {
-		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if revErr != nil {
-			return nil, revErr
-		}
-		matched, matchErr := revisionMatches(expectedRevisionId, currentRev)
-		if matchErr != nil {
-			return nil, matchErr
-		}
-		if !matched {
-			return nil, ErrPolicyNotFound
-		}
-	}
-
-	if err := store.Tables().DeleteResourcePolicy(tableName); err != nil {
+	if err := s.deleteResourcePolicyCore(store, tableName, expectedRevisionId); err != nil {
 		return nil, err
 	}
 
@@ -78,8 +43,8 @@ func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *requ
 // GetResourcePolicy returns the resource policy for a DynamoDB table.
 func (s *DynamoDBService) GetResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
@@ -91,36 +56,26 @@ func (s *DynamoDBService) GetResourcePolicy(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	_, err = store.Tables().Get(tableName)
-	if err != nil {
+	if _, err := store.Tables().Get(tableName); err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	policy, err := store.Tables().GetResourcePolicy(tableName)
+	result, err := s.getResourcePolicyCore(store, tableName)
 	if err != nil {
 		return nil, err
 	}
 
-	if policy == "" {
-		return nil, ErrPolicyNotFound
-	}
-
-	rev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-	if revErr != nil {
-		return nil, revErr
-	}
-
 	return map[string]interface{}{
-		"Policy":     policy,
-		"RevisionId": fmt.Sprintf("v%d", rev),
+		"Policy":     result.Policy,
+		"RevisionId": result.RevisionId,
 	}, nil
 }
 
 // PutResourcePolicy creates or updates a resource policy for a DynamoDB table.
 func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	policy, ok := req.Parameters["Policy"].(string)
@@ -129,8 +84,8 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 	}
 
 	expectedRevisionId := request.GetStringParam(req.Parameters, "ExpectedRevisionId")
-	if err := validatePolicyRevisionId(expectedRevisionId); err != nil {
-		return nil, err
+	if !validatePolicyRevisionId(expectedRevisionId) {
+		return nil, ErrInvalidParameter
 	}
 
 	tableName := svcarn.ParseTableARN(resourceArn)
@@ -142,36 +97,20 @@ func (s *DynamoDBService) PutResourcePolicy(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	_, err = store.Tables().Get(tableName)
-	if err != nil {
+	if _, err := store.Tables().Get(tableName); err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	if expectedRevisionId != "" {
-		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if revErr != nil {
-			return nil, revErr
-		}
-		matched, matchErr := revisionMatches(expectedRevisionId, currentRev)
-		if matchErr != nil {
-			return nil, matchErr
-		}
-		if !matched {
-			return nil, ErrPolicyNotFound
-		}
-	}
-
-	if err := store.Tables().SetResourcePolicy(tableName, policy); err != nil {
+	result, err := s.putResourcePolicyCore(store, PutResourcePolicyInput{
+		TableName:          tableName,
+		Policy:             policy,
+		ExpectedRevisionId: expectedRevisionId,
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	newRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-	if revErr != nil {
-		return nil, revErr
-	}
-	revisionId := fmt.Sprintf("v%d", newRev)
-
 	return map[string]interface{}{
-		"RevisionId": revisionId,
+		"RevisionId": result.RevisionId,
 	}, nil
 }

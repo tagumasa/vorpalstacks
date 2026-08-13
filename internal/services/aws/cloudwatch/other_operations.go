@@ -65,28 +65,23 @@ func (s *CloudWatchService) AssociateDatasetKmsKey(ctx context.Context, reqCtx *
 	identifier := getAlarmStringParam(req.Parameters, "DatasetIdentifier", "datasetIdentifier")
 	kmsKeyArn := getAlarmStringParam(req.Parameters, "KmsKeyArn", "kmsKeyArn")
 
-	if identifier == "" || kmsKeyArn == "" {
-		return nil, awserrors.NewMissingParameter("DatasetIdentifier and KmsKeyArn are required")
+	if err := s.associateDatasetKmsKeyCore(&AssociateDatasetKmsKeyInput{
+		DatasetIdentifier: identifier,
+		KmsKeyArn:         kmsKeyArn,
+	}); err != nil {
+		return nil, err
 	}
-
-	s.globalMu.Lock()
-	s.datasetKMS[identifier] = kmsKeyArn
-	s.globalMu.Unlock()
 
 	return map[string]interface{}{}, nil
 }
 
-// DisassociateDatasetKmsKey removes the KMS key association from a
-// dataset.
+// DisassociateDatasetKmsKey removes the KMS key association from a dataset.
 func (s *CloudWatchService) DisassociateDatasetKmsKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identifier := getAlarmStringParam(req.Parameters, "DatasetIdentifier", "datasetIdentifier")
-	if identifier == "" {
-		return nil, awserrors.NewMissingParameter("DatasetIdentifier is required")
-	}
 
-	s.globalMu.Lock()
-	delete(s.datasetKMS, identifier)
-	s.globalMu.Unlock()
+	if err := s.disassociateDatasetKmsKeyCore(identifier); err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{}, nil
 }
@@ -109,26 +104,18 @@ type alarmContributor struct {
 // that fall outside the band as contributors.
 func (s *CloudWatchService) DescribeAlarmContributors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
-	if alarmName == "" {
-		return nil, awserrors.NewMissingParameter("AlarmName is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	alarm, err := store.alarms.GetAlarm(alarmName)
-	if err != nil || alarm == nil {
-		return nil, awserrors.NewResourceNotFoundException("Alarm", alarmName)
+	alarm, metricStore, err := s.describeAlarmContributorsCore(store, alarmName)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(alarm.Metrics) == 0 || !hasAnomalyDetectionBand(alarm.Metrics) {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"The specified alarm does not use anomaly detection")
-	}
-
-	contributors, err := computeAlarmContributors(alarm, store.metrics)
+	contributors, err := computeAlarmContributors(alarm, metricStore)
 	if err != nil {
 		return nil, awserrors.NewInternalFailureException(
 			fmt.Sprintf("failed to compute alarm contributors: %v", err))
@@ -190,17 +177,7 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 	}
 
 	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
-	if alarmName == "" {
-		return nil, awserrors.NewMissingParameter("AlarmName is required")
-	}
 
-	description := getAlarmStringParam(req.Parameters, "AlarmDescription", "alarmDescription")
-	comparisonOperator := getAlarmStringParam(req.Parameters, "ComparisonOperator", "comparisonOperator")
-	threshold := getAlarmFloatParam(req.Parameters, "Threshold", "threshold")
-	treatMissingData := getAlarmStringParam(req.Parameters, "TreatMissingData", "treatMissingData")
-	actionsEnabled := getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true)
-
-	// Parse scheduled query configuration (Smithy ScheduledQueryConfiguration).
 	var sqc *cwstore.ScheduledQueryConfig
 	if v, ok := req.Parameters["ScheduledQueryConfiguration"]; ok {
 		if m, ok := v.(map[string]interface{}); ok {
@@ -212,41 +189,34 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	// Store as a metric alarm variant with the log alarm metadata.
-	alarm := cwstore.NewAlarm(alarmName, "AWS/Logs", "LogQueryResult")
-	alarm.AlarmDescription = description
-	alarm.ComparisonOperator = comparisonOperator
-	alarm.Threshold = threshold
-	alarm.TreatMissingData = treatMissingData
-	alarm.ActionsEnabled = actionsEnabled
-	alarm.AlarmActions = parseStringArrayParam(req.Parameters, "AlarmActions", "alarmActions")
-	alarm.OKActions = parseStringArrayParam(req.Parameters, "OKActions", "okActions")
-	alarm.InsufficientDataActions = parseStringArrayParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions")
-
-	// Store the scheduled query configuration on the alarm.
-	if sqc != nil {
-		alarm.ScheduledQueryConfiguration = sqc
-	}
-
-	// Parse log alarm-specific fields.
-	alarm.ActionLogLineCount = int32(getAlarmIntParam(req.Parameters, "ActionLogLineCount", "actionLogLineCount"))
-	alarm.ActionLogLineRoleArn = getAlarmStringParam(req.Parameters, "ActionLogLineRoleArn", "actionLogLineRoleArn")
-	alarm.QueryResultsToEvaluate = int32(getAlarmIntParam(req.Parameters, "QueryResultsToEvaluate", "queryResultsToEvaluate"))
-	alarm.QueryResultsToAlarm = int32(getAlarmIntParam(req.Parameters, "QueryResultsToAlarm", "queryResultsToAlarm"))
-
 	tags, tagErr := parseAndValidateAlarmTags(req.Parameters)
 	if tagErr != nil {
 		return nil, tagErr
 	}
-	alarm.Tags = tags
 
-	result, err := s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeLogAlarm)
+	arn, err := s.putLogAlarmCore(store, &PutLogAlarmInput{
+		AlarmName:               alarmName,
+		AlarmDescription:        getAlarmStringParam(req.Parameters, "AlarmDescription", "alarmDescription"),
+		ComparisonOperator:      getAlarmStringParam(req.Parameters, "ComparisonOperator", "comparisonOperator"),
+		Threshold:               getAlarmFloatParam(req.Parameters, "Threshold", "threshold"),
+		TreatMissingData:        getAlarmStringParam(req.Parameters, "TreatMissingData", "treatMissingData"),
+		ActionsEnabled:          getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true),
+		ScheduledQueryConfig:    sqc,
+		AlarmActions:            parseStringArrayParam(req.Parameters, "AlarmActions", "alarmActions"),
+		OKActions:               parseStringArrayParam(req.Parameters, "OKActions", "okActions"),
+		InsufficientDataActions: parseStringArrayParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions"),
+		ActionLogLineCount:      int32(getAlarmIntParam(req.Parameters, "ActionLogLineCount", "actionLogLineCount")),
+		ActionLogLineRoleArn:    getAlarmStringParam(req.Parameters, "ActionLogLineRoleArn", "actionLogLineRoleArn"),
+		QueryResultsToEvaluate:  int32(getAlarmIntParam(req.Parameters, "QueryResultsToEvaluate", "queryResultsToEvaluate")),
+		QueryResultsToAlarm:     int32(getAlarmIntParam(req.Parameters, "QueryResultsToAlarm", "queryResultsToAlarm")),
+		Tags:                    tags,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"AlarmArn": result.ARN,
+		"AlarmArn": arn,
 	}, nil
 }
 

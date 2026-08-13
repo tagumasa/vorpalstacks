@@ -101,6 +101,7 @@ func TableToProto(t *Table) *pb.Table {
 		ResourcePolicy:                t.ResourcePolicy,
 		KinesisDataStreamDestinations: kinesisDataStreamsToProto(t.KinesisDataStreamDestinations),
 		ContributorInsightsEnabled:    t.ContributorInsightsEnabled,
+		ContributorInsightsMode:       t.ContributorInsightsMode,
 		TableClass:                    t.TableClass,
 	}
 }
@@ -136,6 +137,7 @@ func ProtoToTable(p *pb.Table) *Table {
 		ResourcePolicy:                p.ResourcePolicy,
 		KinesisDataStreamDestinations: protoToKinesisDataStreams(p.KinesisDataStreamDestinations),
 		ContributorInsightsEnabled:    p.ContributorInsightsEnabled,
+		ContributorInsightsMode:       p.ContributorInsightsMode,
 		TableClass:                    p.GetTableClass(),
 	}
 }
@@ -701,22 +703,30 @@ func pointInTimeRecoveryToProto(p *PointInTimeRecoveryDescription) *pb.PointInTi
 	if p == nil {
 		return nil
 	}
-	return &pb.PointInTimeRecoveryDescription{
+	result := &pb.PointInTimeRecoveryDescription{
 		Status:                     pointInTimeRecoveryStatusToProto(p.Status),
 		EarliestRestorableDateTime: timestamppb.New(p.EarliestRestorableDateTime),
 		LatestRestorableDateTime:   timestamppb.New(p.LatestRestorableDateTime),
 	}
+	if p.RecoveryPeriodInDays > 0 {
+		result.RecoveryPeriodInDays = int32(p.RecoveryPeriodInDays)
+	}
+	return result
 }
 
 func protoToPointInTimeRecovery(p *pb.PointInTimeRecoveryDescription) *PointInTimeRecoveryDescription {
 	if p == nil {
 		return nil
 	}
-	return &PointInTimeRecoveryDescription{
+	result := &PointInTimeRecoveryDescription{
 		Status:                     protoToPointInTimeRecoveryStatus(p.Status),
 		EarliestRestorableDateTime: p.EarliestRestorableDateTime.AsTime(),
 		LatestRestorableDateTime:   p.LatestRestorableDateTime.AsTime(),
 	}
+	if p.RecoveryPeriodInDays > 0 {
+		result.RecoveryPeriodInDays = int(p.RecoveryPeriodInDays)
+	}
+	return result
 }
 
 func pointInTimeRecoveryStatusToProto(s PointInTimeRecoveryStatus) pb.PointInTimeRecoveryStatus {

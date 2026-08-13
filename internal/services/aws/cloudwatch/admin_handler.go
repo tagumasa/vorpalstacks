@@ -106,12 +106,11 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 		TreatMissingData:        req.Msg.Treatmissingdata,
 		AlarmDescription:        req.Msg.Alarmdescription,
 		ActionsEnabled:          true,
-		ActionsEnabledProvided:  req.Msg.Actionsenabled != nil,
 		AlarmActions:            req.Msg.Alarmactions,
 		OKActions:               req.Msg.Okactions,
 		InsufficientDataActions: req.Msg.Insufficientdataactions,
 	}
-	if input.ActionsEnabledProvided {
+	if req.Msg.Actionsenabled != nil {
 		input.ActionsEnabled = *req.Msg.Actionsenabled
 	}
 	if input.EvaluationPeriods == 0 {

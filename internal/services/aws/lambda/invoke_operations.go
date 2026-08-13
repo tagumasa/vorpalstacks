@@ -57,6 +57,9 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	invocationType := request.GetStringParam(req.Parameters, "InvocationType")
+	if err := validateInvocationType(invocationType); err != nil {
+		return nil, err
+	}
 
 	// DryRun: AWS returns 204 without invoking the function. The
 	// caller has already been authorised by this point, so we simply
@@ -106,6 +109,9 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	logType := request.GetStringParam(req.Parameters, "LogType")
+	if err := validateLogType(logType); err != nil {
+		return nil, err
+	}
 
 	result, err := s.invokeFunction(function, ver, store.Functions, reqCtx.GetRegion(), payload, logType)
 	if err != nil {
@@ -362,10 +368,7 @@ func (s *LambdaService) ListVersionsByFunction(ctx context.Context, reqCtx *requ
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
 	allVersions := make([]map[string]interface{}, 0)
 	latestConfig := s.toFunctionConfiguration(function)
@@ -409,6 +412,9 @@ func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.Request
 	aliasName := request.GetStringParam(req.Parameters, "Name")
 	if aliasName == "" {
 		return nil, NewInvalidParameter("Name", "Alias name is required")
+	}
+	if err := validateAliasName(aliasName); err != nil {
+		return nil, err
 	}
 
 	functionVersion := request.GetStringParam(req.Parameters, "FunctionVersion")
@@ -530,6 +536,9 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 	if aliasName == "" {
 		return nil, NewInvalidParameter("Name", "Alias name is required")
 	}
+	if err := validateAliasName(aliasName); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -607,15 +616,9 @@ func (s *LambdaService) ListAliases(ctx context.Context, reqCtx *request.Request
 		return nil, ErrResourceNotFound
 	}
 
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 	marker := request.GetStringParam(req.Parameters, "Marker")
 
-	// Apply pagination to the alias slice. Marker is the alias name to
-	// start after; we return MaxItems aliases and set NextMarker when
-	// truncated.
 	// AWS returns aliases sorted by name. Work on a sorted copy so that
 	// pagination (marker-based) is deterministic and matches AWS ordering.
 	allAliases := make([]lambdastore.Alias, len(function.Aliases))
@@ -623,31 +626,21 @@ func (s *LambdaService) ListAliases(ctx context.Context, reqCtx *request.Request
 	sort.Slice(allAliases, func(i, j int) bool {
 		return allAliases[i].Name < allAliases[j].Name
 	})
-	startIdx := 0
-	if marker != "" {
-		for i, a := range allAliases {
-			if a.Name == marker {
-				startIdx = i + 1
-				break
-			}
-		}
-	}
 
-	endIdx := startIdx + maxItems
-	if endIdx > len(allAliases) {
-		endIdx = len(allAliases)
-	}
+	pageResult := pagination.PaginateSlice(allAliases, marker, maxItems, func(a lambdastore.Alias) string {
+		return a.Name
+	})
 
-	aliases := make([]interface{}, 0, endIdx-startIdx)
-	for i := startIdx; i < endIdx; i++ {
-		aliases = append(aliases, s.toAliasResponse(&allAliases[i]))
+	aliases := make([]interface{}, 0, len(pageResult.Items))
+	for _, a := range pageResult.Items {
+		aliases = append(aliases, s.toAliasResponse(&a))
 	}
 
 	resp := map[string]interface{}{
 		"Aliases": aliases,
 	}
-	if endIdx < len(allAliases) {
-		resp["NextMarker"] = allAliases[endIdx-1].Name
+	if pageResult.IsTruncated {
+		resp["NextMarker"] = pageResult.NextMarker
 	}
 
 	return resp, nil

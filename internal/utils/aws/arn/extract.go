@@ -175,6 +175,8 @@ func IsEventBridgeARN(arn string) bool { return strings.Contains(arn, ":events:"
 func IsStateMachineARN(arn string) bool { return strings.Contains(arn, ":states:") }
 
 // ParseTableARN extracts the table name from a DynamoDB table ARN.
+// Also accepts stream ARNs (table/<name>/stream/<label>) and returns the
+// table name portion.
 func ParseTableARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)
 	if len(resource) > 6 && resource[:6] == "table/" {
@@ -183,6 +185,16 @@ func ParseTableARN(arn string) string {
 			return rest[:idx]
 		}
 		return rest
+	}
+	return ""
+}
+
+// ParseStreamARN extracts the table name from a DynamoDB stream ARN.
+// Returns "" for non-stream ARNs.
+func ParseStreamARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if strings.Contains(resource, "/stream/") {
+		return ParseTableARN(arn)
 	}
 	return ""
 }

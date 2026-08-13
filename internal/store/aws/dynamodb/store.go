@@ -22,6 +22,7 @@ const keySep = KeySep
 type DynamoDBStore struct {
 	tables       *TableStore
 	items        *ItemStore
+	indexes      *IndexStore
 	backups      *BackupStore
 	globalTables *GlobalTableStore
 	exports      *ExportStore
@@ -35,6 +36,7 @@ type DynamoDBStore struct {
 func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, region string) *DynamoDBStore {
 	tableStore := NewTableStore(store, accountID, region)
 	itemStore := NewItemStore(store, tableStore)
+	indexStore := NewIndexStore(region)
 	backupStore := NewBackupStore(store, accountID, region)
 	globalTableStore := NewGlobalTableStore(store, accountID, region)
 	exportStore := NewExportStore(store, accountID, region)
@@ -44,6 +46,7 @@ func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, regi
 	s := &DynamoDBStore{
 		tables:       tableStore,
 		items:        itemStore,
+		indexes:      indexStore,
 		backups:      backupStore,
 		globalTables: globalTableStore,
 		exports:      exportStore,
@@ -70,6 +73,11 @@ func (s *DynamoDBStore) Tables() TableStoreInterface {
 // Items returns the item store for managing DynamoDB items.
 func (s *DynamoDBStore) Items() ItemStoreInterface {
 	return s.items
+}
+
+// Indexes returns the index store for managing GSI and LSI index entries.
+func (s *DynamoDBStore) Indexes() *IndexStore {
+	return s.indexes
 }
 
 // Backups returns the backup store for managing DynamoDB backups.
@@ -105,14 +113,14 @@ func (s *DynamoDBStore) Storage() storage.TransactionalStorageWith2PC {
 // View executes a read-only transaction on the DynamoDB store.
 func (s *DynamoDBStore) View(ctx context.Context, fn func(txn *DynamoDBTxn) error) error {
 	return s.storage.View(ctx, func(txn storage.Transaction) error {
-		return fn(&DynamoDBTxn{txn: txn, tableStore: s.tables})
+		return fn(&DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes})
 	})
 }
 
 // Update executes a read-write transaction on the DynamoDB store.
 func (s *DynamoDBStore) Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error {
 	return s.storage.Update(ctx, func(txn storage.Transaction) error {
-		return fn(&DynamoDBTxn{txn: txn, tableStore: s.tables})
+		return fn(&DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes})
 	})
 }
 
@@ -123,18 +131,19 @@ func (s *DynamoDBStore) TwoPhaseTransaction() storage.TwoPhaseTransaction {
 
 // NewTxn creates a new DynamoDB transaction wrapper over the given storage transaction.
 func (s *DynamoDBStore) NewTxn(txn storage.Transaction) *DynamoDBTxn {
-	return &DynamoDBTxn{txn: txn, tableStore: s.tables}
+	return &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
 }
 
 // NewDynamoDBTxn creates a new DynamoDB transaction with the given storage transaction and table store.
 func NewDynamoDBTxn(txn storage.Transaction, tableStore *TableStore) *DynamoDBTxn {
-	return &DynamoDBTxn{txn: txn, tableStore: tableStore}
+	return &DynamoDBTxn{txn: txn, tableStore: tableStore, indexStore: NewIndexStore(tableStore.region)}
 }
 
 // DynamoDBTxn represents a DynamoDB transaction for atomic operations.
 type DynamoDBTxn struct {
 	txn        storage.Transaction
 	tableStore *TableStore
+	indexStore *IndexStore
 }
 
 func (t *DynamoDBTxn) region() string {
@@ -398,226 +407,44 @@ func formatNumberForSort(numStr string) string {
 }
 
 // PutIndexEntries stores index entries for an item in the transaction.
+// Delegates to IndexStore for the actual key construction and bucket
+// operations.
 func (t *DynamoDBTxn) PutIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return fmt.Errorf("get table %s for PutIndexEntries: %w", tableName, err)
 	}
-	return t.putIndexEntriesForTable(table, item)
+	return t.indexStore.PutIndexEntries(t.txn, table, item)
 }
 
-// DeleteIndexEntries removes index entries for an item from the transaction.
+// DeleteIndexEntries removes index entries for an item from the
+// transaction. Delegates to IndexStore.
 func (t *DynamoDBTxn) DeleteIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return fmt.Errorf("get table %s for DeleteIndexEntries: %w", tableName, err)
 	}
-	return t.deleteIndexEntriesForTable(table, item)
+	return t.indexStore.DeleteIndexEntries(t.txn, table, item)
 }
 
-func (t *DynamoDBTxn) putIndexEntriesForTable(table *Table, item *Item) error {
-	for _, gsi := range table.GlobalSecondaryIndexes {
-		if err := t.putGSIIndexEntry(table, gsi, item); err != nil {
-			return err
-		}
-	}
-	for _, lsi := range table.LocalSecondaryIndexes {
-		if err := t.putLSIIndexEntry(table, lsi, item); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (t *DynamoDBTxn) deleteIndexEntriesForTable(table *Table, item *Item) error {
-	for _, gsi := range table.GlobalSecondaryIndexes {
-		if err := t.deleteGSIIndexEntry(table, gsi, item); err != nil {
-			return err
-		}
-	}
-	for _, lsi := range table.LocalSecondaryIndexes {
-		if err := t.deleteLSIIndexEntry(table, lsi, item); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (t *DynamoDBTxn) putGSIIndexEntry(table *Table, gsi *GlobalSecondaryIndex, item *Item) error {
-	indexKey := t.buildGSIIndexKey(table, gsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
-	bucket := t.txn.Bucket(gsiIndexBucketName(t.region()))
-	return bucket.Put([]byte(indexKey), []byte(primaryKey))
-}
-
-func (t *DynamoDBTxn) deleteGSIIndexEntry(table *Table, gsi *GlobalSecondaryIndex, item *Item) error {
-	indexKey := t.buildGSIIndexKey(table, gsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	bucket := t.txn.Bucket(gsiIndexBucketName(t.region()))
-	return bucket.Delete([]byte(indexKey))
-}
-
-func (t *DynamoDBTxn) putLSIIndexEntry(table *Table, lsi *LocalSecondaryIndex, item *Item) error {
-	indexKey := t.buildLSIIndexKey(table, lsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
-	bucket := t.txn.Bucket(lsiIndexBucketName(t.region()))
-	return bucket.Put([]byte(indexKey), []byte(primaryKey))
-}
-
-func (t *DynamoDBTxn) deleteLSIIndexEntry(table *Table, lsi *LocalSecondaryIndex, item *Item) error {
-	indexKey := t.buildLSIIndexKey(table, lsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	bucket := t.txn.Bucket(lsiIndexBucketName(t.region()))
-	return bucket.Delete([]byte(indexKey))
-}
-
-func (t *DynamoDBTxn) buildGSIIndexKey(table *Table, gsi *GlobalSecondaryIndex, item *Item) string {
-	var hashKeyName, rangeKeyName string
-	for _, ks := range gsi.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			hashKeyName = ks.AttributeName
-		} else if ks.KeyType == KeyTypeRange {
-			rangeKeyName = ks.AttributeName
-		}
-	}
-
-	hashValue := t.getAttributeValueForIndex(item, hashKeyName)
-	if hashValue == "" {
-		return ""
-	}
-
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
-	if primaryKey == "" {
-		return ""
-	}
-
-	if rangeKeyName != "" {
-		rangeValue := t.getAttributeValueForIndex(item, rangeKeyName)
-		if rangeValue == "" {
-			return ""
-		}
-		return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
-	}
-	return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + primaryKey
-}
-
-func (t *DynamoDBTxn) buildLSIIndexKey(table *Table, lsi *LocalSecondaryIndex, item *Item) string {
-	var rangeKeyName string
-	for _, ks := range lsi.KeySchema {
-		if ks.KeyType == KeyTypeRange {
-			rangeKeyName = ks.AttributeName
-		}
-	}
-
-	var tableHashKeyName string
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			tableHashKeyName = ks.AttributeName
-			break
-		}
-	}
-
-	hashValue := attributeValueToString(item.Key[tableHashKeyName])
-	if hashValue == "" {
-		return ""
-	}
-
-	rangeValue := t.getAttributeValueForIndex(item, rangeKeyName)
-	if rangeValue == "" {
-		return ""
-	}
-
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
-	if primaryKey == "" {
-		return ""
-	}
-
-	return table.Name + keySep + lsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
-}
-
-func (t *DynamoDBTxn) getAttributeValueForIndex(item *Item, attrName string) string {
-	if item.Key != nil && item.Key[attrName] != nil {
-		return attributeValueToString(item.Key[attrName])
-	}
-	if item.Attributes != nil && item.Attributes[attrName] != nil {
-		return attributeValueToString(item.Attributes[attrName])
-	}
-	return ""
-}
-
-// QueryByGSI queries a global secondary index for items matching the hash key.
+// QueryByGSI queries a global secondary index for items matching the
+// hash key. Delegates to IndexStore.
 func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
 		return nil, fmt.Errorf("get table %s for GSI query: %w", tableName, err)
 	}
-	return t.queryByIndex(tableName, indexName, hashKeyValue, gsiIndexBucketName(t.region()), opts)
+	return t.indexStore.QueryGSI(t.txn, tableName, indexName, hashKeyValue, opts)
 }
 
-// QueryByLSI queries a local secondary index for items matching the hash key.
+// QueryByLSI queries a local secondary index for items matching the
+// hash key. Delegates to IndexStore.
 func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
 		return nil, fmt.Errorf("get table %s for LSI query: %w", tableName, err)
 	}
-	return t.queryByIndex(tableName, indexName, hashKeyValue, lsiIndexBucketName(t.region()), opts)
-}
-
-func (t *DynamoDBTxn) queryByIndex(tableName, indexName, hashKeyValue, bucketName string, opts IndexQueryOptions) ([]*Item, error) {
-	prefix := tableName + keySep + indexName + keySep + hashKeyValue + keySep
-	bucket := t.txn.Bucket(bucketName)
-	iter := bucket.ScanPrefix([]byte(prefix))
-	defer iter.Close()
-
-	var items []*Item
-
-	for iter.Next() {
-		if !opts.Reverse && opts.Limit > 0 && len(items) >= opts.Limit {
-			break
-		}
-
-		primaryKey := string(iter.Value())
-		itemBucket := t.txn.Bucket(itemBucketName(t.region()))
-		data, err := itemBucket.Get([]byte(primaryKey))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get item from index %s key %s: %w", indexName, primaryKey, err)
-		}
-		if data == nil {
-			continue
-		}
-
-		var pbItem pb.Item
-		if err := proto.Unmarshal(data, &pbItem); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal item from index %s key %s: %w", indexName, primaryKey, err)
-		}
-
-		items = append(items, &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		})
-	}
-
-	if opts.Reverse {
-		for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
-			items[i], items[j] = items[j], items[i]
-		}
-		if opts.Limit > 0 && len(items) > opts.Limit {
-			items = items[:opts.Limit]
-		}
-	}
-
-	return items, iter.Error()
+	return t.indexStore.QueryLSI(t.txn, tableName, indexName, hashKeyValue, opts)
 }
 
 // IndexQueryOptions defines options for querying indexes.

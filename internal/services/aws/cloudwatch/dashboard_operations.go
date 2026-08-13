@@ -5,17 +5,12 @@ import (
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutDashboard creates or updates a CloudWatch dashboard.
 func (s *CloudWatchService) PutDashboard(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DashboardName")
 	body := request.GetStringParam(req.Parameters, "DashboardBody")
-	if name == "" || body == "" {
-		return nil, ErrDashboardInvalidInput
-	}
-
 	tags := parseAlarmTags(req.Parameters)
 
 	stores, err := s.store(reqCtx)
@@ -23,31 +18,32 @@ func (s *CloudWatchService) PutDashboard(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	dashboard, err := stores.dashboards.PutDashboard(name, body, tags)
+	arn, err := s.putDashboardCore(stores, &PutDashboardInput{
+		DashboardName: name,
+		DashboardBody: body,
+		Tags:          tags,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"DashboardArn": dashboard.ARN,
+		"DashboardArn": arn,
 	}, nil
 }
 
 // GetDashboard retrieves a CloudWatch dashboard.
 func (s *CloudWatchService) GetDashboard(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DashboardName")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	dashboard, err := stores.dashboards.GetDashboard(name)
+	dashboard, err := s.getDashboardCore(stores, &GetDashboardInput{DashboardName: name})
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -67,15 +63,17 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 	}
 
 	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	opts := common.ListOptions{Marker: marker, MaxItems: 1000}
 
-	result, err := stores.dashboards.ListDashboardsPaginated(prefix, opts)
+	items, nextMarker, err := s.listDashboardsCore(stores, &ListDashboardsInput{
+		DashboardNamePrefix: prefix,
+		NextToken:           marker,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	entries := make([]map[string]interface{}, 0, len(result.Items))
-	for _, d := range result.Items {
+	entries := make([]map[string]interface{}, 0, len(items))
+	for _, d := range items {
 		entries = append(entries, map[string]interface{}{
 			"DashboardName": d.Name,
 			"DashboardArn":  d.ARN,
@@ -83,15 +81,12 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 			"Size":          len(d.Body),
 		})
 	}
-	if entries == nil {
-		entries = []map[string]interface{}{}
-	}
 
 	resp := map[string]interface{}{
 		"DashboardEntries": entries,
 	}
-	if result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["NextToken"] = nextMarker
 	}
 	return resp, nil
 }
@@ -108,16 +103,13 @@ func (s *CloudWatchService) DeleteDashboards(ctx context.Context, reqCtx *reques
 			}
 		}
 	}
-	if len(names) == 0 {
-		return nil, ErrInvalidParameter
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, notFound, err := stores.dashboards.DeleteDashboards(names)
+	notFound, err := s.deleteDashboardsCore(stores, &DeleteDashboardsInput{DashboardNames: names})
 	if err != nil {
 		return nil, err
 	}

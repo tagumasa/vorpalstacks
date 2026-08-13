@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
@@ -22,10 +21,6 @@ import (
 )
 
 const logEventIDSize = 16
-
-// jan012024Millis is Jan 1, 2024 00:00:00 UTC in epoch milliseconds. AWS
-// requires startTime on or after this date when startFromHead=false.
-const jan012024Millis = 1704067200000
 
 func logEventToResponse(e *logsstore.OutputLogEvent) map[string]interface{} {
 	resp := map[string]interface{}{
@@ -56,25 +51,14 @@ func compressJSON(v interface{}) ([]byte, error) {
 
 // CreateLogStream creates a new CloudWatch Logs log stream.
 func (s *LogsService) CreateLogStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
-
-	if err := validateLogGroupName(logGroupName); err != nil {
-		return nil, err
-	}
-	if err := validateLogStreamName(logStreamName); err != nil {
-		return nil, err
+	input := CreateLogStreamInput{
+		LogGroupName:  request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		LogStreamName: request.GetParamLowerFirst(req.Parameters, "LogStreamName"),
+		Region:        reqCtx.GetRegion(),
 	}
 
-	ls := logsstore.NewLogStream(logStreamName, logGroupName)
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.createLogStreamCore(input); err != nil {
 		return nil, err
-	}
-
-	if err := store.CreateLogStream(ls); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -82,23 +66,14 @@ func (s *LogsService) CreateLogStream(ctx context.Context, reqCtx *request.Reque
 
 // DeleteLogStream deletes a CloudWatch Logs log stream.
 func (s *LogsService) DeleteLogStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
-
-	if err := validateLogGroupName(logGroupName); err != nil {
-		return nil, err
-	}
-	if err := validateLogStreamName(logStreamName); err != nil {
-		return nil, err
+	input := DeleteLogStreamInput{
+		LogGroupName:  request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		LogStreamName: request.GetParamLowerFirst(req.Parameters, "LogStreamName"),
+		Region:        reqCtx.GetRegion(),
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteLogStreamCore(input); err != nil {
 		return nil, err
-	}
-
-	if err := store.DeleteLogStream(logGroupName, logStreamName); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -180,175 +155,27 @@ func (s *LogsService) ListLogStreams(ctx context.Context, reqCtx *request.Reques
 
 // --- PutLogEvents ---
 
-const (
-	// maxEventsTimeSpan is the maximum allowed time span (in milliseconds)
-	// for a single PutLogEvents batch. AWS rejects the entire batch if the
-	// span between the earliest and latest event exceeds 24 hours.
-	maxEventsTimeSpan int64 = 24 * 60 * 60 * 1000
-
-	// tooNewThreshold is the maximum future offset (in milliseconds) for
-	// an event timestamp. Events more than 2 hours in the future are
-	// rejected individually.
-	tooNewThreshold int64 = 2 * 60 * 60 * 1000
-
-	// tooOldThreshold is the maximum age (in milliseconds) for an event
-	// timestamp. Events older than 14 days are rejected individually.
-	tooOldThreshold int64 = 14 * 24 * 60 * 60 * 1000
-)
-
-// validateLogEvents checks that log events satisfy the PutLogEvents
-// constraints required by AWS CloudWatch Logs:
-//   - Events must be in chronological order (by timestamp).
-//   - The time span of the batch must not exceed 24 hours.
-//   - Events more than 2 hours in the future or older than 14 days are
-//     individually rejected.
-//
-// Returns the filtered valid events and, if any events were rejected, a map
-// suitable for inclusion in the response as rejectedLogEventsInfo.
-func validateLogEvents(events []logsstore.LogEntry) ([]logsstore.LogEntry, map[string]interface{}, error) {
-	now := time.Now().UnixMilli()
-
-	// Chronological order check must be performed on ALL events in the
-	// batch, not just the age-valid subset. AWS rejects the entire batch
-	// if any event is out of order, regardless of whether some events are
-	// later individually rejected for being too old or too new.
-	for i := 1; i < len(events); i++ {
-		if events[i].Timestamp < events[i-1].Timestamp {
-			return nil, nil, awserrors.NewAWSError("InvalidParameterException",
-				"log events in the batch must be in chronological order", 400)
-		}
-	}
-
-	var valid []logsstore.LogEntry
-	var tooOldEndIndex int
-	tooNewStartIndex := -1
-
-	for i, e := range events {
-		if e.Timestamp > now+tooNewThreshold {
-			if tooNewStartIndex == -1 || i < tooNewStartIndex {
-				tooNewStartIndex = i
-			}
-			continue
-		}
-		if e.Timestamp < now-tooOldThreshold {
-			tooOldEndIndex = i + 1
-			continue
-		}
-		valid = append(valid, e)
-	}
-
-	if len(valid) == 0 {
-		rejected := buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, len(events))
-		return nil, rejected, nil
-	}
-
-	span := valid[len(valid)-1].Timestamp - valid[0].Timestamp
-	if span > maxEventsTimeSpan {
-		return nil, nil, awserrors.NewAWSError("InvalidParameterException",
-			"Events span must not exceed 24 hours", 400)
-	}
-
-	rejected := buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, len(events))
-	return valid, rejected, nil
-}
-
-// buildRejectedInfo constructs the rejectedLogEventsInfo map from the
-// computed too-old and too-new indices. If no events were rejected an
-// empty map is returned.
-func buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, totalEvents int) map[string]interface{} {
-	if tooOldEndIndex == 0 && tooNewStartIndex == -1 {
-		return nil
-	}
-	info := make(map[string]interface{})
-	if tooOldEndIndex > 0 {
-		info["tooOldLogEventEndIndex"] = tooOldEndIndex
-	}
-	if tooNewStartIndex >= 0 {
-		info["tooNewLogEventStartIndex"] = tooNewStartIndex
-	}
-	return info
-}
-
 // PutLogEvents uploads log events to the specified CloudWatch Logs log stream.
 func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
-	sequenceToken := request.GetParamLowerFirst(req.Parameters, "SequenceToken")
+	events := parseLogEvents(req)
 
-	if logGroupName == "" || logStreamName == "" {
-		return nil, ErrMissingParameter
+	input := PutLogEventsInput{
+		LogGroupName:  request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		LogStreamName: request.GetParamLowerFirst(req.Parameters, "LogStreamName"),
+		Events:        events,
+		Region:        reqCtx.GetRegion(),
 	}
 
-	store, err := s.store(reqCtx)
+	result, err := s.putLogEventsCore(input)
 	if err != nil {
 		return nil, err
 	}
 
-	if sequenceToken != "" {
-		ls, err := store.GetLogStream(logGroupName, logStreamName)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		if ls.UploadSequenceToken != sequenceToken {
-			return nil, awserrors.NewAWSError("InvalidSequenceTokenException",
-				fmt.Sprintf("The sequence token is not valid. Expected: %s, Received: %s", ls.UploadSequenceToken, sequenceToken), 400)
-		}
-	}
-
-	events := parseLogEvents(req)
-	if len(events) == 0 {
-		return nil, ErrMissingParameter
-	}
-
-	if len(events) > logsstore.MaxChunkSize {
-		return nil, NewLogsError("InvalidParameterException",
-			fmt.Sprintf("Maximum number of log events in a single batch is %d", logsstore.MaxChunkSize), 400)
-	}
-
-	// Validate timestamp ordering, time span, and age constraints
-	// per AWS CloudWatch Logs PutLogEvents specification.
-	validEvents, rejectedInfo, valErr := validateLogEvents(events)
-	if valErr != nil {
-		return nil, valErr
-	}
-	if len(validEvents) == 0 {
-		// All events were rejected (too old or too new); nothing to write.
-		resp := map[string]interface{}{"nextSequenceToken": ""}
-		if len(rejectedInfo) > 0 {
-			resp["rejectedLogEventsInfo"] = rejectedInfo
-		}
-		return resp, nil
-	}
-
-	nextToken, err := store.PutLogEvents(logGroupName, logStreamName, validEvents)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	region := reqCtx.GetRegion()
-
-	// Evaluate metric filters and deliver subscription events asynchronously.
-	// These side-effects do not affect the PutLogEvents response and should
-	// not block it — AWS processes them in the background after ingestion.
-	eventsCopy := make([]logsstore.LogEntry, len(validEvents))
-	copy(eventsCopy, validEvents)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("Panic in async metric/subscription processing",
-					logs.String("logGroup", logGroupName),
-					logs.Any("panic", r))
-			}
-		}()
-		s.evaluateMetricFilters(store, region, logGroupName, eventsCopy)
-		s.deliverSubscriptionEvents(store, region, logGroupName, logStreamName, eventsCopy)
-	}()
-
 	resp := map[string]interface{}{
-		"nextSequenceToken": nextToken,
+		"nextSequenceToken": result.NextSequenceToken,
 	}
-	if len(rejectedInfo) > 0 {
-		resp["rejectedLogEventsInfo"] = rejectedInfo
+	if len(result.RejectedLogEvents) > 0 {
+		resp["rejectedLogEventsInfo"] = result.RejectedLogEvents
 	}
 	return resp, nil
 }
@@ -643,41 +470,32 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 	if logGroupName == "" {
 		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
 	}
-	logStreamName := request.GetParamLowerFirst(req.Parameters, "LogStreamName")
 
-	if logGroupName == "" || logStreamName == "" {
-		return nil, ErrMissingParameter
+	input := GetLogEventsInput{
+		LogGroupName:  logGroupName,
+		LogStreamName: request.GetParamLowerFirst(req.Parameters, "LogStreamName"),
+		StartTime:     int64(request.GetIntParam(req.Parameters, "StartTime")),
+		EndTime:       int64(request.GetIntParam(req.Parameters, "EndTime")),
+		Limit:         int32(request.GetIntParam(req.Parameters, "Limit")),
+		StartFromHead: request.GetBoolParam(req.Parameters, "StartFromHead"),
+		NextToken:     request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		Region:        reqCtx.GetRegion(),
 	}
 
-	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
-	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
-	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 10000)
-	if err != nil {
-		return nil, err
-	}
-	limit := int(limit32)
-	startFromHead := request.GetBoolParam(req.Parameters, "StartFromHead")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-
-	store, err := s.store(reqCtx)
+	result, err := s.getLogEventsCore(input)
 	if err != nil {
 		return nil, err
 	}
 
-	events, nextForwardToken, nextBackwardToken, err := store.GetLogEvents(logGroupName, logStreamName, startTime, endTime, limit, startFromHead, nextToken)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	outputEvents := make([]map[string]interface{}, 0, len(events))
-	for _, e := range events {
+	outputEvents := make([]map[string]interface{}, 0, len(result.Events))
+	for _, e := range result.Events {
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
 
 	return map[string]interface{}{
 		"events":            outputEvents,
-		"nextForwardToken":  nextForwardToken,
-		"nextBackwardToken": nextBackwardToken,
+		"nextForwardToken":  result.NextForwardToken,
+		"nextBackwardToken": result.NextBackwardToken,
 	}, nil
 }
 
@@ -687,64 +505,32 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 	if logGroupName == "" {
 		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
 	}
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
+
+	input := FilterLogEventsInput{
+		LogGroupName:      logGroupName,
+		LogStreamNames:    request.GetStringList(req.Parameters, "LogStreamNames"),
+		LogStreamNamePref: request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix"),
+		StartTime:         int64(request.GetIntParam(req.Parameters, "StartTime")),
+		EndTime:           int64(request.GetIntParam(req.Parameters, "EndTime")),
+		FilterPattern:     request.GetParamLowerFirst(req.Parameters, "FilterPattern"),
+		Limit:             int32(request.GetIntParam(req.Parameters, "Limit")),
+		StartFromHead:     request.GetBoolParamDefault(req.Parameters, "StartFromHead", true),
+		NextToken:         request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		Region:            reqCtx.GetRegion(),
 	}
 
-	logStreamNames := request.GetStringList(req.Parameters, "LogStreamNames")
-	logStreamNamePrefix := request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix")
-
-	if len(logStreamNames) > 0 && logStreamNamePrefix != "" {
-		return nil, NewLogsError("InvalidParameterException",
-			"Cannot specify both logStreamNames and logStreamNamePrefix", 400)
-	}
-
-	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
-	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
-	filterPattern := request.GetParamLowerFirst(req.Parameters, "FilterPattern")
-	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 10000)
-	if err != nil {
-		return nil, err
-	}
-	limit := int(limit32)
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	// AWS spec: startFromHead defaults to true (oldest first / ascending).
-	startFromHead := request.GetBoolParamDefault(req.Parameters, "StartFromHead", true)
-
-	// AWS spec: startFromHead=false is supported only when startTime is on or
-	// after Jan 1, 2024 00:00:00 UTC.
-	if !startFromHead && startTime > 0 && startTime < jan012024Millis {
-		return nil, NewLogsError("InvalidParameterException",
-			"Setting startFromHead to false is supported only when startTime is on or after Jan 1, 2024 00:00:00 UTC", 400)
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.filterLogEventsCore(input)
 	if err != nil {
 		return nil, err
 	}
 
-	if logStreamNamePrefix != "" {
-		prefixStreams, err := fetchAllLogStreams(store, logGroupName, logStreamNamePrefix)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		for _, ls := range prefixStreams {
-			logStreamNames = append(logStreamNames, ls.Name)
-		}
-	}
-
-	events, searchedStreams, nextMarker, err := store.FilterLogEvents(logGroupName, logStreamNames, startTime, endTime, filterPattern, limit, startFromHead, nextToken)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	outputEvents := make([]map[string]interface{}, 0, len(events))
-	for _, e := range events {
+	outputEvents := make([]map[string]interface{}, 0, len(result.Events))
+	for _, e := range result.Events {
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
 
-	searchedStreamNames := make([]map[string]interface{}, 0, len(searchedStreams))
-	for name := range searchedStreams {
+	searchedStreamNames := make([]map[string]interface{}, 0, len(result.SearchedStreams))
+	for name := range result.SearchedStreams {
 		searchedStreamNames = append(searchedStreamNames, map[string]interface{}{
 			"logStreamName":      name,
 			"searchedCompletely": true,
@@ -755,8 +541,8 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 		"events":             outputEvents,
 		"searchedLogStreams": searchedStreamNames,
 	}
-	if nextMarker != "" {
-		resp["nextToken"] = nextMarker
+	if result.NextToken != "" {
+		resp["nextToken"] = result.NextToken
 	}
 
 	return resp, nil

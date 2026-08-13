@@ -129,8 +129,8 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 		}
 
 		if create, ok := update["Create"].(map[string]interface{}); ok {
-			if err := validateGSICreateRequired(create); err != nil {
-				return nil, err
+			if !validateGSICreateRequired(create) {
+				return nil, ErrInvalidParameter
 			}
 			idxName := request.GetStringParam(create, "IndexName")
 			keySchema := parseKeySchema(create)
@@ -138,8 +138,8 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 			if err != nil {
 				return nil, err
 			}
-			if err := validateProjectionRequired(create["Projection"].(map[string]interface{})); err != nil {
-				return nil, err
+			if !validateProjectionRequired(create["Projection"].(map[string]interface{})) {
+				return nil, ErrInvalidParameter
 			}
 			gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
 				IndexName:             idxName,
@@ -156,8 +156,8 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 			if idxName == "" {
 				return nil, ErrInvalidParameter
 			}
-			if err := validateIndexName(idxName); err != nil {
-				return nil, err
+			if !validateIndexName(idxName) {
+				return nil, ErrInvalidParameter
 			}
 			if idx, exists := gsiMap[idxName]; exists {
 				if provThroughput := parseProvisionedThroughput(updateGSI); provThroughput != nil {

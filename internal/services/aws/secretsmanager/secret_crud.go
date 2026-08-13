@@ -23,7 +23,6 @@ func bytesEqual(a, b []byte) bool {
 }
 
 // CreateSecret creates a new secret in AWS Secrets Manager.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_CreateSecret.html
 func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -91,14 +90,13 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 }
 
 // GetSecretValue returns the secret value for a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_GetSecretValue.html
 func (s *SecretsManagerService) GetSecretValue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 	versionStage := request.GetStringParam(req.Parameters, "VersionStage")
 
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	if versionId != "" && versionStage != "" {
@@ -172,11 +170,10 @@ func (s *SecretsManagerService) GetSecretValue(ctx context.Context, reqCtx *requ
 }
 
 // UpdateSecret updates an existing secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_UpdateSecret.html
 func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecret(reqCtx, secretId)
@@ -197,6 +194,9 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
+	if err := validateKmsKeyId(kmsKeyId); err != nil {
+		return nil, err
+	}
 	secretType := request.GetStringParam(req.Parameters, "Type")
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
 	if err := validateClientRequestToken(clientRequestToken); err != nil {
@@ -260,7 +260,6 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 }
 
 // DeleteSecret deletes a secret.
-// https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_DeleteSecret.html
 func (s *SecretsManagerService) DeleteSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {

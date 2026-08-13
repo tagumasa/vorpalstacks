@@ -79,13 +79,15 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 		}
 	}
 
+	// Decode ZipFile once and reuse for hash/size computation and persistence.
+	var decodedZipFile []byte
 	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
+		decodedZipFile, err = base64.StdEncoding.DecodeString(zipFileStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ZipFile encoding: %w", err)
 		}
-		version.CodeSize = int64(len(zipFile))
-		version.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+		version.CodeSize = int64(len(decodedZipFile))
+		version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
 	}
 
 	created, err := layers.PublishVersion(layer, version)
@@ -93,9 +95,8 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
-		zipFile, _ := base64.StdEncoding.DecodeString(zipFileStr)
-		codePath, storeErr := s.storeLayerCode(layerName, created.Version, zipFile, reqCtx.GetRegion())
+	if decodedZipFile != nil {
+		codePath, storeErr := s.storeLayerCode(layerName, created.Version, decodedZipFile, reqCtx.GetRegion())
 		if storeErr != nil {
 			return nil, fmt.Errorf("failed to persist layer code: %w", storeErr)
 		}
@@ -195,10 +196,7 @@ func (s *LambdaService) GetLayerVersion(ctx context.Context, reqCtx *request.Req
 
 // ListLayers lists the Lambda layers in the account, with optional filtering by runtime.
 func (s *LambdaService) ListLayers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	compatibleRuntime := request.GetStringParam(req.Parameters, "CompatibleRuntime")
@@ -255,10 +253,7 @@ func (s *LambdaService) ListLayerVersions(ctx context.Context, reqCtx *request.R
 		return nil, NewInvalidParameter("LayerName", "Layer name is required")
 	}
 
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -267,9 +262,7 @@ func (s *LambdaService) ListLayerVersions(ctx context.Context, reqCtx *request.R
 	result, err := store.Layers.ListVersions(layerName, common.ListOptions{MaxItems: maxItems})
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrLayerNotFound) {
-			return map[string]interface{}{
-				"LayerVersions": make([]interface{}, 0),
-			}, nil
+			return nil, NewResourceNotFound("Layer", layerName)
 		}
 		return nil, err
 	}
@@ -357,6 +350,9 @@ func (s *LambdaService) AddLayerVersionPermission(ctx context.Context, reqCtx *r
 	if statementId == "" {
 		return nil, NewInvalidParameter("StatementId", "Statement ID is required")
 	}
+	if err := validateStatementId(statementId); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -371,6 +367,10 @@ func (s *LambdaService) AddLayerVersionPermission(ctx context.Context, reqCtx *r
 		Id:        statementId,
 		Action:    request.GetStringParam(req.Parameters, "Action"),
 		Principal: request.GetStringParam(req.Parameters, "Principal"),
+	}
+
+	if err := validateLayerPermission(policy); err != nil {
+		return nil, err
 	}
 
 	if err := store.Layers.AddPolicy(layer, versionNumber, policy); err != nil {

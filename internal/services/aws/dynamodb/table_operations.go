@@ -148,15 +148,15 @@ func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.Reques
 	limit := listTablesMaxLimit
 	if _, ok := req.Parameters["Limit"]; ok {
 		v := request.GetIntParam(req.Parameters, "Limit")
-		if err := validateListTablesLimit(v); err != nil {
-			return nil, err
+		if !validateListTablesLimit(v) {
+			return nil, ErrInvalidParameter
 		}
 		limit = v
 	}
 	marker := pagination.GetMarker(req.Parameters, "ExclusiveStartTableName")
 	if estn := request.GetStringParam(req.Parameters, "ExclusiveStartTableName"); estn != "" {
-		if err := validateResourceName(estn); err != nil {
-			return nil, err
+		if !validateResourceName(estn) {
+			return nil, ErrInvalidParameter
 		}
 	}
 

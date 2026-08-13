@@ -33,6 +33,13 @@ type DefaultRetentionInput struct {
 
 // PutObjectLockConfiguration applies an object lock configuration to a bucket.
 func (o *BucketOperations) PutObjectLockConfiguration(ctx *request.RequestContext, input *PutObjectLockConfigurationInput) error {
+	if input.ObjectLockConfiguration == nil {
+		return NewInvalidArgumentError("ObjectLockConfiguration is required")
+	}
+	if err := validateObjectLockEnabled(input.ObjectLockConfiguration.ObjectLockEnabled); err != nil {
+		return err
+	}
+
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err

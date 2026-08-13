@@ -2,6 +2,7 @@
 package dynamodb
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -20,17 +21,28 @@ type DynamoDBService struct {
 	storageManager  *storage.RegionStorageManager
 	busStoreFactory *dynamodbstore.DynamoDBStoreFactory
 	bus             eventbus.Bus
+	bgCtx           context.Context
+	bgCancel        context.CancelFunc
+	bgWg            sync.WaitGroup
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.
 func NewDynamoDBService(accountID string) *DynamoDBService {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &DynamoDBService{
 		accountID: accountID,
+		bgCtx:     ctx,
+		bgCancel:  cancel,
 	}
 }
 
-// Close stops background goroutines (TTL workers) in all cached stores.
+// Close stops background goroutines (TTL workers, state-transition
+// goroutines) in all cached stores and waits for them to finish.
 func (s *DynamoDBService) Close() {
+	if s.bgCancel != nil {
+		s.bgCancel()
+	}
+	s.bgWg.Wait()
 	s.stores.Range(func(_, v any) bool {
 		if c, ok := v.(interface{ Close() }); ok {
 			c.Close()

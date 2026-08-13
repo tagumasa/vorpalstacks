@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -41,8 +42,8 @@ func (s *DynamoDBService) EnableKinesisStreamingDestination(ctx context.Context,
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if err := validateStreamArn(streamArn); err != nil {
-		return nil, err
+	if !validateStreamArn(streamArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -60,15 +61,30 @@ func (s *DynamoDBService) EnableKinesisStreamingDestination(ctx context.Context,
 		StreamArn:         streamArn,
 		DestinationStatus: "ENABLING",
 	}
-	destinations := append(table.KinesisDataStreamDestinations, newDestination)
+
+	// Deep-copy destinations to avoid mutating shared pointer fields
+	// when the background goroutine later writes DestinationStatus.
+	destinations := make([]*dbstore.KinesisDataStreamDestination, len(table.KinesisDataStreamDestinations))
+	for i, d := range table.KinesisDataStreamDestinations {
+		cp := *d
+		destinations[i] = &cp
+	}
+	destinations = append(destinations, newDestination)
 
 	if err := store.Tables().SetKinesisStreamingDestination(tableName, destinations); err != nil {
 		return nil, err
 	}
 
 	// Background transition to ACTIVE.
+	s.bgWg.Add(1)
 	go func() {
-		time.Sleep(1 * time.Second)
+		defer func() { resilience.RecoverPanic("dynamodb Kinesis destination enable") }()
+		defer s.bgWg.Done()
+		select {
+		case <-time.After(1 * time.Second):
+		case <-s.bgCtx.Done():
+			return
+		}
 		for _, d := range destinations {
 			if d.StreamArn == streamArn {
 				d.DestinationStatus = "ACTIVE"
@@ -99,8 +115,8 @@ func (s *DynamoDBService) DisableKinesisStreamingDestination(ctx context.Context
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if err := validateStreamArn(streamArn); err != nil {
-		return nil, err
+	if !validateStreamArn(streamArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -124,8 +140,13 @@ func (s *DynamoDBService) DisableKinesisStreamingDestination(ctx context.Context
 
 	// Set DISABLING status first, then remove in background.
 
-	// Keep the destination with DISABLING status for the response.
-	disableDestinations := append(table.KinesisDataStreamDestinations[:0:0], table.KinesisDataStreamDestinations...)
+	// Deep-copy destinations to avoid mutating shared pointer fields
+	// when the background goroutine later writes remainingDestinations.
+	disableDestinations := make([]*dbstore.KinesisDataStreamDestination, len(table.KinesisDataStreamDestinations))
+	for i, d := range table.KinesisDataStreamDestinations {
+		cp := *d
+		disableDestinations[i] = &cp
+	}
 	for _, d := range disableDestinations {
 		if d.StreamArn == streamArn {
 			d.DestinationStatus = "DISABLING"
@@ -137,8 +158,15 @@ func (s *DynamoDBService) DisableKinesisStreamingDestination(ctx context.Context
 	}
 
 	// Background transition: remove destination after brief delay.
+	s.bgWg.Add(1)
 	go func() {
-		time.Sleep(1 * time.Second)
+		defer func() { resilience.RecoverPanic("dynamodb Kinesis destination disable") }()
+		defer s.bgWg.Done()
+		select {
+		case <-time.After(1 * time.Second):
+		case <-s.bgCtx.Done():
+			return
+		}
 		if err := store.Tables().SetKinesisStreamingDestination(tableName, remainingDestinations); err != nil {
 			logs.Error("Failed to remove Kinesis destination after DISABLING",
 				logs.Err(err),
@@ -163,8 +191,8 @@ func (s *DynamoDBService) UpdateKinesisStreamingDestination(ctx context.Context,
 	tableName := table.Name
 
 	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if err := validateStreamArn(streamArn); err != nil {
-		return nil, err
+	if !validateStreamArn(streamArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	var precision int

@@ -4070,7 +4070,7 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\x0e2%.storage.s3.ObjectLockLegalHoldStatusR\x06status\"\x96\x01\n" +
 	"\x13ObjectLockRetention\x127\n" +
 	"\x04mode\x18\x01 \x01(\x0e2#.storage.s3.ObjectLockRetentionModeR\x04mode\x12F\n" +
-	"\x11retain_until_date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0fretainUntilDate\"\x9b\t\n" +
+	"\x11retain_until_date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0fretainUntilDate\"\xca\t\n" +
 	"\x06Object\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1f\n" +
 	"\vbucket_name\x18\x02 \x01(\tR\n" +
@@ -4098,7 +4098,8 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x05owner\x18\x15 \x01(\v2\x14.storage.s3.ACLOwnerR\x05owner\x12T\n" +
 	"\x16object_lock_legal_hold\x18\x16 \x01(\v2\x1f.storage.s3.ObjectLockLegalHoldR\x13objectLockLegalHold\x12S\n" +
 	"\x15object_lock_retention\x18\x17 \x01(\v2\x1f.storage.s3.ObjectLockRetentionR\x13objectLockRetention\x12@\n" +
-	"\fsse_metadata\x18\x18 \x01(\v2\x1d.storage.s3.SSEObjectMetadataR\vsseMetadata\x1a;\n" +
+	"\fsse_metadata\x18\x18 \x01(\v2\x1d.storage.s3.SSEObjectMetadataR\vsseMetadata\x12-\n" +
+	"\x12replication_status\x18\x19 \x01(\tR\x11replicationStatus\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfd\x01\n" +

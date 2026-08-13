@@ -14,25 +14,34 @@ import (
 // Smithy-derived constraints (single source of truth).
 // Source: secrets-manager-2017-10-17.json Smithy model.
 const (
-	maxSecretNameLength       = 512   // NameType @length(min=1, max=512)
-	maxDescriptionLength      = 2048  // DescriptionType @length(min=0, max=2048)
-	minClientRequestTokenLen  = 32    // ClientRequestTokenType @length(min=32, max=64)
-	maxClientRequestTokenLen  = 64    // ClientRequestTokenType @length(max=64)
-	maxSecretValueBytes       = 65536 // SecretStringType / SecretBinaryType @length(min=1, max=65536)
-	minRotationTokenLen       = 36    // RotationTokenType @length(min=36, max=256)
-	maxRotationTokenLen       = 256   // RotationTokenType @length(max=256)
-	minAutomaticallyAfterDays = 1     // AutomaticallyRotateAfterDaysType @range(min=1, max=1000)
-	maxAutomaticallyAfterDays = 1000  // AutomaticallyRotateAfterDaysType @range(max=1000)
-	maxResourcePolicyBytes    = 20480 // NonEmptyResourcePolicyType @length(min=1, max=20480)
-	maxFilters                = 10    // FiltersListType @length(min=0, max=10)
-	maxSecretIdLength         = 2048  // SecretIdType @length(min=1, max=2048)
-	maxSecretIdListItems      = 20    // SecretIdListType @length(min=1, max=20)
-	maxTagsPerSecret          = 50    // AWS tag quota
-	maxTagKeyLength           = 128   // TagKeyType @length(min=1, max=128)
-	maxTagValueLength         = 256   // TagValueType @length(min=0, max=256)
+	maxSecretNameLength        = 512   // NameType @length(min=1, max=512)
+	maxDescriptionLength       = 2048  // DescriptionType @length(min=0, max=2048)
+	minClientRequestTokenLen   = 32    // ClientRequestTokenType @length(min=32, max=64)
+	maxClientRequestTokenLen   = 64    // ClientRequestTokenType @length(max=64)
+	maxSecretValueBytes        = 65536 // SecretStringType / SecretBinaryType @length(min=1, max=65536)
+	minRotationTokenLen        = 36    // RotationTokenType @length(min=36, max=256)
+	maxRotationTokenLen        = 256   // RotationTokenType @length(max=256)
+	minAutomaticallyAfterDays  = 1     // AutomaticallyRotateAfterDaysType @range(min=1, max=1000)
+	maxAutomaticallyAfterDays  = 1000  // AutomaticallyRotateAfterDaysType @range(max=1000)
+	maxResourcePolicyBytes     = 20480 // NonEmptyResourcePolicyType @length(min=1, max=20480)
+	maxFilters                 = 10    // FiltersListType @length(min=0, max=10)
+	maxSecretIdLength          = 2048  // SecretIdType @length(min=1, max=2048)
+	maxSecretIdListItems       = 20    // SecretIdListType @length(min=1, max=20)
+	maxTagsPerSecret           = 50    // AWS tag quota
+	maxTagKeyLength            = 128   // TagKeyType @length(min=1, max=128)
+	maxTagValueLength          = 256   // TagValueType @length(min=0, max=256)
+	maxKmsKeyIdLength          = 2048  // KmsKeyIdType @length(min=0, max=2048)
+	maxRotationLambdaARNLength = 2048  // RotationLambdaARNType @length(min=0, max=2048)
+	maxExcludeCharactersLength = 4096  // ExcludeCharactersType @length(min=0, max=4096)
 )
 
 var rotationTokenPattern = regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)
+
+var (
+	durationPattern     = regexp.MustCompile(`^[0-9]+h$`)
+	scheduleExprPattern = regexp.MustCompile(`^[0-9A-Za-z()#?*/, -]+$`)
+	regionPattern       = regexp.MustCompile(`^([a-z]+-)+[0-9]+$`)
+)
 
 // validateSecretName validates the secret name against the Smithy
 // NameType @length(1-512) constraint.
@@ -243,4 +252,143 @@ func decodeAndValidateSecretBinary(secretBinaryStr string) ([]byte, error) {
 		return nil, err
 	}
 	return decoded, nil
+}
+
+// validateKmsKeyId validates the KmsKeyId against the Smithy
+// KmsKeyIdType @length(max=2048) constraint.  KmsKeyId may be an ARN,
+// key ID, or alias — the Smithy model defines no pattern, only length.
+func validateKmsKeyId(id string) error {
+	if id == "" {
+		return nil
+	}
+	if len(id) > maxKmsKeyIdLength {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("KmsKeyId must not exceed %d characters.", maxKmsKeyIdLength), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateRotationLambdaARN validates the RotationLambdaARN against the
+// Smithy RotationLambdaARNType @length(max=2048) constraint.
+func validateRotationLambdaARN(arn string) error {
+	if arn == "" {
+		return nil
+	}
+	if len(arn) > maxRotationLambdaARNLength {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("RotationLambdaARN must not exceed %d characters.", maxRotationLambdaARNLength), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateExcludeCharacters validates ExcludeCharacters against the Smithy
+// ExcludeCharactersType @length(max=4096) constraint.
+func validateExcludeCharacters(s string) error {
+	if len(s) > maxExcludeCharactersLength {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("ExcludeCharacters must not exceed %d characters.", maxExcludeCharactersLength), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateSortOrder validates SortOrder against the Smithy SortOrderType
+// enum (asc, desc).  Empty string is valid (defaults to asc).
+func validateSortOrder(order string) error {
+	switch order {
+	case "", "asc", "desc":
+		return nil
+	default:
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("SortOrder must be 'asc' or 'desc', got '%s'.", order), http.StatusBadRequest)
+	}
+}
+
+// validateSortBy validates SortBy against the Smithy SortByType enum
+// (name, created-date, last-accessed-date, last-changed-date).  Empty
+// string is valid (defaults to name).
+func validateSortBy(by string) error {
+	switch by {
+	case "", "name", "created-date", "last-accessed-date", "last-changed-date":
+		return nil
+	default:
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("SortBy must be one of 'name', 'created-date', 'last-accessed-date', 'last-changed-date', got '%s'.", by), http.StatusBadRequest)
+	}
+}
+
+// validateUntagKeys validates each tag key against the Smithy
+// TagKeyType @length(min=1, max=128) constraint.
+func validateUntagKeys(keys []string) error {
+	for _, k := range keys {
+		if k == "" || len(k) > maxTagKeyLength {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("Tag key length must be between 1 and %d characters.", maxTagKeyLength), http.StatusBadRequest)
+		}
+	}
+	return nil
+}
+
+// validateDuration validates the RotationRules Duration against the Smithy
+// DurationType @length(min=2, max=3) and @pattern("^[0-9]+h$") constraints.
+func validateDuration(d string) error {
+	if d == "" {
+		return nil
+	}
+	if len(d) < 2 || len(d) > 3 {
+		return awserrors.NewAWSError("InvalidParameterException",
+			"Duration must be between 2 and 3 characters long (e.g. '24h').", http.StatusBadRequest)
+	}
+	if !durationPattern.MatchString(d) {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("Duration must match the format '<number>h' (e.g. '24h'), got '%s'.", d), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateScheduleExpression validates the RotationRules ScheduleExpression
+// against the Smithy ScheduleExpressionType @length(min=1, max=256) and
+// @pattern constraints.
+func validateScheduleExpression(expr string) error {
+	if expr == "" {
+		return nil
+	}
+	if len(expr) > 256 {
+		return awserrors.NewAWSError("InvalidParameterException",
+			"ScheduleExpression must not exceed 256 characters.", http.StatusBadRequest)
+	}
+	if !scheduleExprPattern.MatchString(expr) {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("ScheduleExpression contains invalid characters: '%s'.", expr), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateRegion validates a region code against the Smithy RegionType
+// @length(min=1, max=128) and @pattern("^([a-z]+-)+[0-9]+$") constraints.
+func validateRegion(region string) error {
+	if region == "" {
+		return nil
+	}
+	if len(region) > 128 {
+		return awserrors.NewAWSError("InvalidParameterException",
+			"Region must not exceed 128 characters.", http.StatusBadRequest)
+	}
+	if !regionPattern.MatchString(region) {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("Region '%s' does not match the expected format (e.g. 'us-east-1').", region), http.StatusBadRequest)
+	}
+	return nil
+}
+
+// validateSecretId validates the SecretId against the Smithy
+// SecretIdType @length(min=1, max=2048) constraint.
+func validateSecretId(id string) error {
+	if id == "" {
+		return awserrors.ErrMissingParameter
+	}
+	if len(id) > maxSecretIdLength {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("SecretId must not exceed %d characters.", maxSecretIdLength), http.StatusBadRequest)
+	}
+	return nil
 }

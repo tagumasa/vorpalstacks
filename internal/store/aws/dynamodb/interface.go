@@ -43,7 +43,7 @@ type TableStoreInterface interface {
 	GetResourcePolicy(name string) (string, error)
 	DeleteResourcePolicy(name string) error
 	SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error
-	SetContributorInsights(name string, enabled bool) error
+	SetContributorInsights(name string, enabled bool, mode string) error
 	SetAutoScalingSettings(name string, settings map[string]interface{}) error
 	GetAutoScalingSettings(name string) (map[string]interface{}, error)
 }
@@ -128,6 +128,7 @@ type DynamoDBTxnInterface interface {
 type DynamoDBStoreInterface interface {
 	Tables() TableStoreInterface
 	Items() ItemStoreInterface
+	Indexes() *IndexStore
 	Backups() BackupStoreInterface
 	GlobalTables() GlobalTableStoreInterface
 	Exports() ExportStoreInterface

@@ -87,6 +87,7 @@ type CreateMultipartUploadInput struct {
 	ContentDisposition   string
 	CacheControl         string
 	Metadata             map[string]string
+	StorageClass         string
 	ServerSideEncryption string
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
@@ -116,6 +117,10 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 	}
 
 	if err := validateObjectKey(input.Key); err != nil {
+		return nil, err
+	}
+
+	if err := validateStorageClass(input.StorageClass); err != nil {
 		return nil, err
 	}
 
@@ -178,7 +183,12 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 		}
 	}
 
-	upload, err := stores.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey)
+	sc := s3store.ObjectStorageClass(input.StorageClass)
+	if sc == "" {
+		sc = s3store.StorageClassStandard
+	}
+
+	upload, err := stores.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey, sc)
 	if err != nil {
 		return nil, err
 	}

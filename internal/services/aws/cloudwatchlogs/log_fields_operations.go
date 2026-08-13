@@ -18,61 +18,20 @@ func (s *LogsService) GetLogGroupFields(ctx context.Context, reqCtx *request.Req
 	if logGroupName == "" {
 		logGroupName = request.GetParamLowerFirst(req.Parameters, "LogGroupIdentifier")
 	}
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return nil, err
 	}
 
 	centerTime := int64(request.GetIntParam(req.Parameters, "Time"))
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = store.GetLogGroup(logGroupName)
+	fields, err := s.getLogGroupFieldsCore(store, logGroupName, centerTime)
 	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	standardFields := []string{"@timestamp", "@message", "@logStream", "@logGroup", "@ingestionTime"}
-
-	jsonFields := make(map[string]bool)
-	var startTime, endTime int64
-	if centerTime > 0 {
-		startTime = centerTime - 8*60*1000
-		endTime = centerTime + 8*60*1000
-	}
-	streams, _, _ := store.ListLogStreams(logGroupName, "", "", 50)
-	for _, ls := range streams {
-		events, _, _, _ := store.GetLogEvents(logGroupName, ls.Name, startTime, endTime, 50, true, "")
-		for _, evt := range events {
-			var data map[string]interface{}
-			if json.Unmarshal([]byte(evt.Message), &data) == nil {
-				for k := range data {
-					jsonFields[k] = true
-				}
-			}
-		}
-	}
-
-	fields := make([]map[string]interface{}, 0, len(standardFields)+len(jsonFields))
-	for _, f := range standardFields {
-		fields = append(fields, map[string]interface{}{
-			"name":    f,
-			"percent": 100,
-		})
-	}
-
-	jsonFieldNames := make([]string, 0, len(jsonFields))
-	for f := range jsonFields {
-		jsonFieldNames = append(jsonFieldNames, f)
-	}
-	sort.Strings(jsonFieldNames)
-	for _, f := range jsonFieldNames {
-		fields = append(fields, map[string]interface{}{
-			"name":    f,
-			"percent": 50,
-		})
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -186,31 +145,17 @@ func (s *LogsService) GetLogFields(ctx context.Context, reqCtx *request.RequestC
 		}, nil
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
 
-	jsonFields := make(map[string]bool)
-	streams, _, _ := store.ListLogStreams(dataSourceName, "", "", 20)
-	for _, ls := range streams {
-		events, _, _, _ := store.GetLogEvents(dataSourceName, ls.Name, 0, 0, 20, true, "")
-		for _, evt := range events {
-			var data map[string]interface{}
-			if json.Unmarshal([]byte(evt.Message), &data) == nil {
-				for k := range data {
-					jsonFields[k] = true
-				}
-			}
-		}
+	fieldNames, err := s.getLogFieldsCore(store, dataSourceName, dataSourceType)
+	if err != nil {
+		return nil, err
 	}
 
-	fieldNames := []string{"@timestamp", "@message", "@logStream"}
-	for f := range jsonFields {
-		fieldNames = append(fieldNames, f)
-	}
 	sort.Strings(fieldNames)
-
 	fields := make([]map[string]interface{}, len(fieldNames))
 	for i, f := range fieldNames {
 		fields[i] = map[string]interface{}{"name": f}

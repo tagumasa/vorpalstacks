@@ -17,8 +17,8 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
 	if indexName != "" {
-		if err := validateIndexName(indexName); err != nil {
-			return nil, err
+		if !validateIndexName(indexName) {
+			return nil, ErrInvalidParameter
 		}
 	}
 
@@ -34,6 +34,9 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 	if !table.ContributorInsightsUpdatedAt.IsZero() {
 		result["LastUpdateDateTime"] = table.ContributorInsightsUpdatedAt.Unix()
 	}
+	if table.ContributorInsightsMode != "" {
+		result["ContributorInsightsMode"] = table.ContributorInsightsMode
+	}
 	if indexName != "" {
 		result["IndexName"] = indexName
 	}
@@ -46,8 +49,8 @@ func (s *DynamoDBService) ListContributorInsights(ctx context.Context, reqCtx *r
 	maxResults := listContributorMaxLimit
 	if _, ok := req.Parameters["MaxResults"]; ok {
 		v := request.GetIntParam(req.Parameters, "MaxResults")
-		if err := validateListContributorInsightsLimit(v); err != nil {
-			return nil, err
+		if !validateListContributorInsightsLimit(v) {
+			return nil, ErrInvalidParameter
 		}
 		maxResults = v
 	}
@@ -84,10 +87,14 @@ func (s *DynamoDBService) ListContributorInsights(ctx context.Context, reqCtx *r
 		if t.ContributorInsightsEnabled {
 			status = "ENABLED"
 		}
-		summaries = append(summaries, map[string]interface{}{
+		summary := map[string]interface{}{
 			"TableName":                 tn,
 			"ContributorInsightsStatus": status,
-		})
+		}
+		if t.ContributorInsightsMode != "" {
+			summary["ContributorInsightsMode"] = t.ContributorInsightsMode
+		}
+		summaries = append(summaries, summary)
 	}
 
 	if len(summaries) > maxResults && maxResults > 0 {
@@ -113,17 +120,32 @@ func (s *DynamoDBService) UpdateContributorInsights(ctx context.Context, reqCtx 
 	}
 	enabled := action == "ENABLE"
 
+	mode := request.GetStringParam(req.Parameters, "ContributorInsightsMode")
+	if !validateContributorInsightsMode(mode) {
+		return nil, ErrInvalidParameter
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Tables().SetContributorInsights(tableName, enabled); err != nil {
+	if err := store.Tables().SetContributorInsights(tableName, enabled, mode); err != nil {
 		return nil, err
 	}
 
+	// Return the transition state when the requested value differs from
+	// the existing value; otherwise return the steady state.
+	alreadyEnabled := table.ContributorInsightsEnabled
 	status := "ENABLED"
 	if !enabled {
 		status = "DISABLED"
+	}
+	if enabled != alreadyEnabled {
+		if enabled {
+			status = "ENABLING"
+		} else {
+			status = "DISABLING"
+		}
 	}
 
 	return map[string]interface{}{

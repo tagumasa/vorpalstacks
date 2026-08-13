@@ -21,6 +21,76 @@ var (
 	cronExprPattern = regexp.MustCompile(`^cron\((.+)\)$`)
 )
 
+// ValidateExpression checks whether an AWS schedule expression is
+// syntactically valid. It accepts cron(), rate(), and at() expressions
+// following the AWS EventBridge / Scheduler format rules:
+//   - Overall length must not exceed 256 characters.
+//   - at(): ISO-8601 timestamp with a valid calendar date.
+//   - rate(): positive value with a unit that agrees with the value
+//     (singular for 1, plural for values greater than 1).
+//   - cron(): exactly 6 whitespace-delimited fields inside the parentheses.
+//
+// This is a format check only; it does not guarantee that the resulting
+// schedule will ever fire. Use NextExecutionTime to compute actual fire
+// times.
+func ValidateExpression(expr string) bool {
+	if len(expr) > 256 {
+		return false
+	}
+
+	if matches := atExprPattern.FindStringSubmatch(expr); len(matches) == 2 {
+		if _, err := time.Parse(timeutils.ISO8601NoZFormat, matches[1]); err != nil {
+			return false
+		}
+		return true
+	}
+
+	if validateRateFormat(expr) {
+		return true
+	}
+
+	if matches := cronExprPattern.FindStringSubmatch(expr); len(matches) == 2 {
+		fields := strings.Fields(matches[1])
+		if len(fields) != 6 {
+			return false
+		}
+		return true
+	}
+
+	return false
+}
+
+// validateRateFormat checks a rate() expression against the AWS rules:
+// the value must be a positive number (>= 1) and the unit must agree
+// with the value — singular for 1, plural for values greater than 1.
+func validateRateFormat(expr string) bool {
+	matches := rateExprPattern.FindStringSubmatch(expr)
+	if len(matches) != 3 {
+		return false
+	}
+	value, err := strconv.Atoi(matches[1])
+	if err != nil || value < 1 {
+		return false
+	}
+	unit := matches[2]
+	if value == 1 {
+		switch unit {
+		case "minute", "hour", "day":
+			return true
+		}
+		return false
+	}
+	switch unit {
+	case "minutes":
+		return value <= 525600
+	case "hours":
+		return value <= 8760
+	case "days":
+		return value <= 365
+	}
+	return false
+}
+
 // NextExecutionTime calculates the next execution time for an AWS schedule
 // expression (cron(...), rate(...), or at(...)) at or after the given
 // reference time. creationTime is the baseline for rate() calculations.

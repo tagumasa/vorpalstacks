@@ -79,6 +79,10 @@ func (o *BucketOperations) PutBucketReplication(ctx *request.RequestContext, inp
 		return NewInvalidArgumentError("replication configuration must contain at least one rule")
 	}
 
+	if err := validateIAMRoleARN(input.ReplicationConfiguration.Role); err != nil {
+		return err
+	}
+
 	config := &s3store.ReplicationConfiguration{
 		Role: input.ReplicationConfiguration.Role,
 	}
@@ -89,6 +93,38 @@ func (o *BucketOperations) PutBucketReplication(ctx *request.RequestContext, inp
 		}
 		if rule.Destination == nil || rule.Destination.Bucket == "" {
 			return NewInvalidArgumentError("rule Destination.Bucket is required")
+		}
+		if err := validateStorageClass(rule.Destination.StorageClass); err != nil {
+			return err
+		}
+		if len(rule.ID) > maxReplicationIDLength {
+			return NewInvalidArgumentError(fmt.Sprintf("rule ID exceeds maximum length of %d characters", maxReplicationIDLength))
+		}
+		if rule.Priority != nil && *rule.Priority < 0 {
+			return NewInvalidArgumentError("rule Priority must be non-negative")
+		}
+		if rule.DeleteMarkerReplication != nil {
+			if err := validateReplicationStatus(rule.DeleteMarkerReplication.Status); err != nil {
+				return err
+			}
+		}
+		if rule.Filter != nil {
+			filterCount := 0
+			if rule.Filter.Prefix != "" {
+				filterCount++
+			}
+			if rule.Filter.Tag != nil {
+				filterCount++
+			}
+			if rule.Filter.And != nil {
+				filterCount++
+			}
+			if filterCount > 1 {
+				return NewInvalidArgumentError("Filter must contain at most one of Prefix, Tag, or And")
+			}
+			if rule.Filter.And != nil && len(rule.Filter.And.Tags) == 0 && rule.Filter.And.Prefix == "" {
+				return NewInvalidArgumentError("Filter.And must contain at least one Prefix or Tag")
+			}
 		}
 
 		storeRule := s3store.ReplicationRule{

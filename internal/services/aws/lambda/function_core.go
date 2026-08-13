@@ -106,6 +106,32 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 		return nil, err
 	}
 
+	if err := validatePackageType(in.PackageType); err != nil {
+		return nil, err
+	}
+
+	if err := validateKMSKeyArn(in.KMSKeyArn); err != nil {
+		return nil, err
+	}
+
+	if in.EphemeralStorage != nil {
+		if err := validateEphemeralStorageSize(in.EphemeralStorage.Size); err != nil {
+			return nil, err
+		}
+	}
+
+	if in.SnapStart != nil {
+		if err := validateSnapStartApplyOn(in.SnapStart.ApplyOn); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, arch := range in.Architectures {
+		if err := validateArchitecture(arch); err != nil {
+			return nil, err
+		}
+	}
+
 	timeout := in.Timeout
 	if timeout == 0 {
 		timeout = 3
@@ -209,7 +235,10 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 	}
 
 	mappings, err := stores.EventSources.ListByFunction(function.FunctionArn)
-	if err == nil && len(mappings) > 0 {
+	if err != nil {
+		return err
+	}
+	if len(mappings) > 0 {
 		return ErrResourceInUse
 	}
 
@@ -239,10 +268,7 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 // converts the result to the appropriate response format (HTTP JSON or
 // proto).
 func (s *LambdaService) listFunctionsCore(stores *lambdaStore, in *ListFunctionsInput) ([]*lambdastore.Function, string, error) {
-	maxItems := in.MaxItems
-	if maxItems <= 0 {
-		maxItems = 50
-	}
+	maxItems := validateMaxItems(in.MaxItems)
 
 	opts := storecommon.ListOptions{
 		Marker:   in.Marker,

@@ -80,8 +80,8 @@ func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHa
 // TagResource adds or overwrites tags on a DynamoDB table.
 func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -93,11 +93,11 @@ func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidParameter
 	}
 	for _, tag := range tags {
-		if err := validateTagKey(tag.Key); err != nil {
-			return nil, err
+		if !validateTagKey(tag.Key) {
+			return nil, ErrInvalidParameter
 		}
-		if err := validateTagValue(tag.Value); err != nil {
-			return nil, err
+		if !validateTagValue(tag.Value) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	return tagutil.HandleTag(ctx, req, dynamodbTagConfig(store))
@@ -106,8 +106,8 @@ func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.Reque
 // UntagResource removes the specified tags from a DynamoDB table.
 func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -121,8 +121,8 @@ func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.Req
 // AWS paginates tags; the marker is the tag key of the last returned entry.
 func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if err := validateResourceArnString(resourceArn); err != nil {
-		return nil, err
+	if !validateResourceArnString(resourceArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -167,7 +167,7 @@ func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *reque
 		}
 	}
 
-	pageSize := 50
+	pageSize := listTagsForResourceDefaultPageSize
 	remaining := allTags[startIdx:]
 	hasMore := len(remaining) > pageSize
 	if hasMore {

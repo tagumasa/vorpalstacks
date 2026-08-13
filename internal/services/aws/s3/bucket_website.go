@@ -58,6 +58,10 @@ type RedirectInput struct {
 
 // PutBucketWebsite configures the website configuration for a bucket.
 func (o *BucketOperations) PutBucketWebsite(ctx *request.RequestContext, input *PutBucketWebsiteInput) error {
+	if err := validateWebsiteConfig(input.WebsiteConfiguration); err != nil {
+		return err
+	}
+
 	config := &s3store.WebsiteConfiguration{}
 
 	if input.WebsiteConfiguration.IndexDocument != nil {

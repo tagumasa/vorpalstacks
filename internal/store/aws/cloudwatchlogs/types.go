@@ -87,11 +87,14 @@ type ChunkMeta struct {
 
 // MetricFilter represents a CloudWatch Logs metric filter.
 type MetricFilter struct {
-	Name                  string                 `json:"name"`
-	LogGroupName          string                 `json:"logGroupName"`
-	FilterPattern         string                 `json:"filterPattern"`
-	MetricTransformations []MetricTransformation `json:"metricTransformations"`
-	CreatedAt             time.Time              `json:"createdAt"`
+	Name                      string                 `json:"name"`
+	LogGroupName              string                 `json:"logGroupName"`
+	FilterPattern             string                 `json:"filterPattern"`
+	MetricTransformations     []MetricTransformation `json:"metricTransformations"`
+	ApplyOnTransformedLogs    bool                   `json:"applyOnTransformedLogs,omitempty"`
+	FieldSelectionCriteria    string                 `json:"fieldSelectionCriteria,omitempty"`
+	EmitSystemFieldDimensions []string               `json:"emitSystemFieldDimensions,omitempty"`
+	CreatedAt                 time.Time              `json:"createdAt"`
 }
 
 // MetricTransformation represents a metric transformation for a metric filter.
@@ -105,13 +108,16 @@ type MetricTransformation struct {
 
 // SubscriptionFilter represents a CloudWatch Logs subscription filter.
 type SubscriptionFilter struct {
-	LogGroupName   string    `json:"logGroupName"`
-	FilterName     string    `json:"filterName"`
-	FilterPattern  string    `json:"filterPattern"`
-	DestinationArn string    `json:"destinationArn"`
-	RoleArn        string    `json:"roleArn"`
-	Distribution   string    `json:"distribution"`
-	CreationTime   time.Time `json:"creationTime"`
+	LogGroupName           string    `json:"logGroupName"`
+	FilterName             string    `json:"filterName"`
+	FilterPattern          string    `json:"filterPattern"`
+	DestinationArn         string    `json:"destinationArn"`
+	RoleArn                string    `json:"roleArn"`
+	Distribution           string    `json:"distribution"`
+	ApplyOnTransformedLogs bool      `json:"applyOnTransformedLogs,omitempty"`
+	FieldSelectionCriteria string    `json:"fieldSelectionCriteria,omitempty"`
+	EmitSystemFields       []string  `json:"emitSystemFields,omitempty"`
+	CreationTime           time.Time `json:"creationTime"`
 }
 
 // Destination represents a CloudWatch Logs destination (cross-account).

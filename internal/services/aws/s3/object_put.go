@@ -55,6 +55,9 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	if err := validateObjectKey(input.Key); err != nil {
 		return nil, err
 	}
+	if err := validateStorageClass(input.StorageClass); err != nil {
+		return nil, err
+	}
 
 	coreResult, err := o.svc.putObjectStreamCore(ctx, stores.buckets, stores.objects, PutObjectStreamInput{
 		Body:                 input.Body,
@@ -114,6 +117,7 @@ type CopyObjectInput struct {
 	MetadataDirective         string
 	ContentType               string
 	Metadata                  map[string]string
+	StorageClass              string
 	ServerSideEncryption      string
 	SSEKMSKeyId               string
 	SSECustomerAlgorithm      string
@@ -163,6 +167,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		MetadataDirective:         input.MetadataDirective,
 		ContentType:               input.ContentType,
 		Metadata:                  input.Metadata,
+		StorageClass:              input.StorageClass,
 		ServerSideEncryption:      input.ServerSideEncryption,
 		SSEKMSKeyId:               input.SSEKMSKeyId,
 		SSECustomerAlgorithm:      input.SSECustomerAlgorithm,

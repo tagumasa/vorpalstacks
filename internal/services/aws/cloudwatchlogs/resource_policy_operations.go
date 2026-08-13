@@ -9,27 +9,22 @@ import (
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
-// PutResourcePolicy creates or updates a resource policy.
-func (s *LogsService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
-	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
+// --- Core methods ---
 
+func (s *LogsService) putResourcePolicyCore(policyName, policyDocument, resourceArn, expectedRevisionId, region string) (*logsstore.ResourcePolicy, error) {
 	if policyName == "" {
 		return nil, ErrMissingParameter
 	}
-
-	if err := validatePolicyDocument(policyDocument); err != nil {
+	if err := validatePolicyDocumentJSON(policyDocument); err != nil {
 		return nil, err
 	}
 
-	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	expectedRevisionId := request.GetParamLowerFirst(req.Parameters, "ExpectedRevisionId")
 	policyScope := "ACCOUNT"
 	if resourceArn != "" {
 		policyScope = "RESOURCE"
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		return nil, err
 	}
@@ -52,63 +47,47 @@ func (s *LogsService) PutResourcePolicy(ctx context.Context, reqCtx *request.Req
 	if err := store.PutResourcePolicy(rp); err != nil {
 		return nil, mapStoreError(err)
 	}
-
-	return map[string]interface{}{
-		"resourcePolicy": formatResourcePolicy(rp),
-		"revisionId":     rp.RevisionId,
-	}, nil
+	return rp, nil
 }
 
-// DeleteResourcePolicy deletes a resource policy.
-func (s *LogsService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+func (s *LogsService) deleteResourcePolicyCore(policyName, expectedRevisionId, region string) error {
 	if policyName == "" {
-		return nil, ErrMissingParameter
+		return ErrMissingParameter
 	}
 
-	expectedRevisionId := request.GetParamLowerFirst(req.Parameters, "ExpectedRevisionId")
+	store, err := s.getLogsStoreByRegion(region)
+	if err != nil {
+		return err
+	}
+
 	if expectedRevisionId != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
 		existing, _ := store.GetResourcePolicy(policyName)
 		if existing != nil && existing.RevisionId != expectedRevisionId {
-			return nil, NewLogsError("InvalidParameterException",
+			return NewLogsError("InvalidParameterException",
 				"Revision ID mismatch: expected "+expectedRevisionId+", got "+existing.RevisionId, 400)
 		}
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := store.DeleteResourcePolicy(policyName); err != nil {
-		return nil, mapStoreError(err)
+		return mapStoreError(err)
 	}
-
-	return response.EmptyResponse(), nil
+	return nil
 }
 
-// DescribeResourcePolicies lists resource policies.
-func (s *LogsService) DescribeResourcePolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	policyScopeFilter := request.GetParamLowerFirst(req.Parameters, "PolicyScope")
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+func (s *LogsService) describeResourcePoliciesCore(resourceArn, policyScopeFilter, nextToken, region string, limit int32) ([]*logsstore.ResourcePolicy, string, error) {
+	l, err := validateListLimit(limit, 50, 50)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	store, err := s.store(reqCtx)
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	allPolicies, err := store.ListResourcePolicies(resourceArn)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, "", mapStoreError(err)
 	}
 
 	if policyScopeFilter != "" {
@@ -121,20 +100,64 @@ func (s *LogsService) DescribeResourcePolicies(ctx context.Context, reqCtx *requ
 		allPolicies = filtered
 	}
 
-	result := pagination.PaginateSlice(allPolicies, nextToken, int(limit), func(p *logsstore.ResourcePolicy) string {
+	result := pagination.PaginateSlice(allPolicies, nextToken, int(l), func(p *logsstore.ResourcePolicy) string {
 		return p.PolicyName
 	})
 
-	policies := make([]map[string]interface{}, len(result.Items))
-	for i, p := range result.Items {
-		policies[i] = formatResourcePolicy(p)
+	return result.Items, result.NextMarker, nil
+}
+
+// --- HTTP handlers ---
+
+func (s *LogsService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+	policyDocument := request.GetParamLowerFirst(req.Parameters, "PolicyDocument")
+	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
+	expectedRevisionId := request.GetParamLowerFirst(req.Parameters, "ExpectedRevisionId")
+
+	rp, err := s.putResourcePolicyCore(policyName, policyDocument, resourceArn, expectedRevisionId, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"resourcePolicy": formatResourcePolicy(rp),
+		"revisionId":     rp.RevisionId,
+	}, nil
+}
+
+func (s *LogsService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	policyName := request.GetParamLowerFirst(req.Parameters, "PolicyName")
+	expectedRevisionId := request.GetParamLowerFirst(req.Parameters, "ExpectedRevisionId")
+
+	if err := s.deleteResourcePolicyCore(policyName, expectedRevisionId, reqCtx.GetRegion()); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+func (s *LogsService) DescribeResourcePolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
+	policyScopeFilter := request.GetParamLowerFirst(req.Parameters, "PolicyScope")
+	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+
+	policies, nextMarker, err := s.describeResourcePoliciesCore(resourceArn, policyScopeFilter, nextToken, reqCtx.GetRegion(), limit)
+	if err != nil {
+		return nil, err
+	}
+
+	formatted := make([]map[string]interface{}, len(policies))
+	for i, p := range policies {
+		formatted[i] = formatResourcePolicy(p)
 	}
 
 	resp := map[string]interface{}{
-		"resourcePolicies": policies,
+		"resourcePolicies": formatted,
 	}
-	if result.NextMarker != "" {
-		resp["nextToken"] = result.NextMarker
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
 	}
 
 	return resp, nil

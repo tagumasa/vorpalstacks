@@ -53,39 +53,57 @@ func (s *LogsService) PutMetricFilter(ctx context.Context, reqCtx *request.Reque
 		transformations = parseMetricTransformationsFromMap(req)
 	}
 
-	if len(transformations) == 0 {
-		return nil, NewLogsError("InvalidParameterException",
-			"At least one metric transformation is required", 400)
-	}
+	fieldSelectionCriteria := request.GetParamLowerFirst(req.Parameters, "FieldSelectionCriteria")
 
-	for _, t := range transformations {
-		if err := validateMetricName(t.MetricName); err != nil {
-			return nil, err
-		}
-		if err := validateMetricNamespace(t.MetricNamespace); err != nil {
-			return nil, err
-		}
-		if err := validateMetricValue(t.MetricValue); err != nil {
-			return nil, err
-		}
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.putMetricFilterCore(logGroupName, filterName, filterPattern, transformations,
+		request.GetBoolParam(req.Parameters, "ApplyOnTransformedLogs"),
+		fieldSelectionCriteria,
+		request.GetStringList(req.Parameters, "EmitSystemFieldDimensions"),
+		reqCtx.GetRegion()); err != nil {
 		return nil, err
 	}
 
-	_, err = store.GetLogGroup(logGroupName)
+	return response.EmptyResponse(), nil
+}
+
+func (s *LogsService) putMetricFilterCore(logGroupName, filterName, filterPattern string, transformations []logsstore.MetricTransformation, applyOnTransformedLogs bool, fieldSelectionCriteria string, emitSystemFieldDimensions []string, region string) error {
+	if len(transformations) == 0 {
+		return NewLogsError("InvalidParameterException",
+			"At least one metric transformation is required", 400)
+	}
+	for _, t := range transformations {
+		if err := validateMetricName(t.MetricName); err != nil {
+			return err
+		}
+		if err := validateMetricNamespace(t.MetricNamespace); err != nil {
+			return err
+		}
+		if err := validateMetricValue(t.MetricValue); err != nil {
+			return err
+		}
+	}
+	if err := validateFieldSelectionCriteria(fieldSelectionCriteria); err != nil {
+		return err
+	}
+
+	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
-		return nil, mapStoreError(err)
+		return err
+	}
+
+	if _, err = store.GetLogGroup(logGroupName); err != nil {
+		return mapStoreError(err)
 	}
 
 	filter := logsstore.NewMetricFilter(logGroupName, filterName, filterPattern, transformations)
-	if err := store.PutMetricFilter(filter); err != nil {
-		return nil, mapStoreError(err)
-	}
+	filter.ApplyOnTransformedLogs = applyOnTransformedLogs
+	filter.FieldSelectionCriteria = fieldSelectionCriteria
+	filter.EmitSystemFieldDimensions = emitSystemFieldDimensions
 
-	return response.EmptyResponse(), nil
+	if err := store.PutMetricFilter(filter); err != nil {
+		return mapStoreError(err)
+	}
+	return nil
 }
 
 func parseMetricTransformationsFromMap(req *request.ParsedRequest) []logsstore.MetricTransformation {
@@ -139,23 +157,48 @@ func (s *LogsService) DeleteMetricFilter(ctx context.Context, reqCtx *request.Re
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterName := request.GetParamLowerFirst(req.Parameters, "FilterName")
 
-	if err := validateLogGroupName(logGroupName); err != nil {
+	if err := s.deleteMetricFilterCore(logGroupName, filterName, reqCtx.GetRegion()); err != nil {
 		return nil, err
-	}
-	if err := validateFilterName(filterName); err != nil {
-		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := store.DeleteMetricFilter(logGroupName, filterName); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+func (s *LogsService) deleteMetricFilterCore(logGroupName, filterName, region string) error {
+	if err := validateLogGroupName(logGroupName); err != nil {
+		return err
+	}
+	if err := validateFilterName(filterName); err != nil {
+		return err
+	}
+
+	store, err := s.getLogsStoreByRegion(region)
+	if err != nil {
+		return err
+	}
+
+	if err := store.DeleteMetricFilter(logGroupName, filterName); err != nil {
+		return mapStoreError(err)
+	}
+	return nil
+}
+
+func (s *LogsService) describeMetricFiltersCore(logGroupName, filterNamePrefix, nextToken, region string, limit int32) ([]*logsstore.MetricFilter, string, error) {
+	l, err := validateListLimit(limit, 50, 50)
+	if err != nil {
+		return nil, "", err
+	}
+
+	store, err := s.getLogsStoreByRegion(region)
+	if err != nil {
+		return nil, "", err
+	}
+
+	filters, nextMarker, err := store.ListMetricFilters(logGroupName, filterNamePrefix, nextToken, int(l))
+	if err != nil {
+		return nil, "", mapStoreError(err)
+	}
+	return filters, nextMarker, nil
 }
 
 // DescribeMetricFilters returns a list of metric filters for the specified CloudWatch Logs log group.
@@ -163,19 +206,11 @@ func (s *LogsService) DescribeMetricFilters(ctx context.Context, reqCtx *request
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	filterNamePrefix := request.GetParamLowerFirst(req.Parameters, "FilterNamePrefix")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
-	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
+	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+
+	filters, nextMarker, err := s.describeMetricFiltersCore(logGroupName, filterNamePrefix, nextToken, reqCtx.GetRegion(), limit)
 	if err != nil {
 		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	filters, nextMarker, err := store.ListMetricFilters(logGroupName, filterNamePrefix, nextToken, int(limit))
-	if err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	var metricFilters []map[string]interface{}
@@ -193,13 +228,23 @@ func (s *LogsService) DescribeMetricFilters(ctx context.Context, reqCtx *request
 			transformations = append(transformations, transformation)
 		}
 
-		metricFilters = append(metricFilters, map[string]interface{}{
+		entry := map[string]interface{}{
 			"filterName":            f.Name,
 			"logGroupName":          f.LogGroupName,
 			"filterPattern":         f.FilterPattern,
 			"metricTransformations": transformations,
 			"creationTime":          f.CreatedAt.UnixMilli(),
-		})
+		}
+		if f.ApplyOnTransformedLogs {
+			entry["applyOnTransformedLogs"] = f.ApplyOnTransformedLogs
+		}
+		if f.FieldSelectionCriteria != "" {
+			entry["fieldSelectionCriteria"] = f.FieldSelectionCriteria
+		}
+		if len(f.EmitSystemFieldDimensions) > 0 {
+			entry["emitSystemFieldDimensions"] = f.EmitSystemFieldDimensions
+		}
+		metricFilters = append(metricFilters, entry)
 	}
 
 	response := map[string]interface{}{

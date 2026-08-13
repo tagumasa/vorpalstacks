@@ -47,39 +47,39 @@ type CreateTableInput struct {
 // updates, tags the table, and returns the fully-created table.
 func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, in CreateTableInput) (*dbstore.Table, error) {
 	// 1. Table name validation (length 3-255, allowed characters).
-	if err := validateTableName(in.TableName); err != nil {
-		return nil, err
+	if !validateTableName(in.TableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	// 2. Key schema must be non-empty and well-formed.
 	if len(in.KeySchema) == 0 {
 		return nil, ErrInvalidParameter
 	}
-	if err := validateKeySchema(in.KeySchema); err != nil {
-		return nil, err
+	if !validateKeySchema(in.KeySchema) {
+		return nil, ErrInvalidParameter
 	}
 
 	// 3. Attribute definitions must cover every key attribute.
-	if err := validateAttributeDefinitions(in.KeySchema, in.AttributeDefinitions); err != nil {
-		return nil, err
+	if !validateAttributeDefinitions(in.KeySchema, in.AttributeDefinitions) {
+		return nil, ErrInvalidParameter
 	}
 
 	// 4. Billing mode default + consistency check.
 	if in.BillingMode == "" {
 		in.BillingMode = dbstore.BillingModeProvisioned
 	}
-	if err := validateBillingModeConsistency(in.BillingMode, in.ProvisionedThroughput); err != nil {
-		return nil, err
+	if !validateBillingModeConsistency(in.BillingMode, in.ProvisionedThroughput) {
+		return nil, ErrInvalidParameter
 	}
 
 	// 5. Cross-index validation: every key attribute across table + GSIs +
 	//    LSIs must appear in AttributeDefinitions; LSI partition key must
 	//    match the table partition key; index names must be unique.
-	if err := validateAllKeyAttributesInDefs(in.KeySchema, in.GlobalSecondaryIndexes, in.LocalSecondaryIndexes, in.AttributeDefinitions); err != nil {
-		return nil, err
+	if !validateAllKeyAttributesInDefs(in.KeySchema, in.GlobalSecondaryIndexes, in.LocalSecondaryIndexes, in.AttributeDefinitions) {
+		return nil, ErrInvalidParameter
 	}
-	if err := validateLSIPartitionKey(in.KeySchema, in.LocalSecondaryIndexes); err != nil {
-		return nil, err
+	if !validateLSIPartitionKey(in.KeySchema, in.LocalSecondaryIndexes) {
+		return nil, ErrInvalidParameter
 	}
 	if err := validateIndexNameUniqueness(in.GlobalSecondaryIndexes, in.LocalSecondaryIndexes); err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 // for deletion protection, performs the cascade delete, and returns the
 // archived table description.
 func (s *DynamoDBService) deleteTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string) (*dbstore.Table, error) {
-	if tableName == "" {
+	if !validateResourceName(tableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -183,7 +183,7 @@ func (s *DynamoDBService) deleteTableCore(ctx context.Context, store dbstore.Dyn
 // HTTP API and the admin gRPC handler. It validates the table name and maps
 // store errors to DynamoDB API errors.
 func (s *DynamoDBService) describeTableCore(store dbstore.DynamoDBStoreInterface, tableName string) (*dbstore.Table, error) {
-	if tableName == "" {
+	if !validateResourceName(tableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -230,8 +230,8 @@ type UpdateTableInput struct {
 // applies the changes to the table, persists them, and backfills any newly
 // created GSIs.
 func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in UpdateTableInput) (*dbstore.Table, error) {
-	if err := validateTableName(in.TableName); err != nil {
-		return nil, err
+	if !validateTableName(in.TableName) {
+		return nil, ErrInvalidParameter
 	}
 
 	table, err := store.Tables().Get(in.TableName)
@@ -252,13 +252,13 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 		table.ProvisionedThroughput = in.ProvisionedThroughput
 	}
 
-	if err := validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput); err != nil {
-		return nil, err
+	if !validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput) {
+		return nil, ErrInvalidParameter
 	}
 
 	if len(in.AttributeDefinitions) > 0 {
-		if err := validateAttributeDefinitions(table.KeySchema, in.AttributeDefinitions); err != nil {
-			return nil, err
+		if !validateAttributeDefinitions(table.KeySchema, in.AttributeDefinitions) {
+			return nil, ErrInvalidParameter
 		}
 		table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, in.AttributeDefinitions)
 	}
@@ -276,8 +276,8 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 		table.GlobalSecondaryIndexes = updatedGSIs
 	}
 
-	if err := validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions); err != nil {
-		return nil, err
+	if !validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions) {
+		return nil, ErrInvalidParameter
 	}
 	if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes); err != nil {
 		return nil, err

@@ -201,6 +201,9 @@ type adminScanResult struct {
 }
 
 // adminScan retrieves a paginated list of items for the admin console.
+// It delegates to scanItemsCore so that the limit-cap logic and store
+// access are shared with any other Core caller; no admin code path
+// touches the store layer directly.
 func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbStartKey map[string]*pb.AttributeValue) (*adminScanResult, error) {
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
@@ -212,26 +215,22 @@ func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbSta
 		return nil, err
 	}
 
-	lim := 100
-	if limit > 0 {
-		lim = int(limit)
-	}
-	if lim > 1000 {
-		lim = 1000
-	}
-
 	marker := ""
 	if len(pbStartKey) > 0 {
 		marker = s.buildItemMarkerFromKey(store, tableName, protoAVMapToStore(pbStartKey))
 	}
 
-	items, nextMarker, err := store.Items().List(tableName, marker, lim)
+	coreResult, err := s.scanItemsCore(store, ScanItemsInput{
+		TableName: tableName,
+		Limit:     int(limit),
+		Marker:    marker,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	pbItems := make([]*pb.ItemListEntry, len(items))
-	for i, item := range items {
+	pbItems := make([]*pb.ItemListEntry, len(coreResult.Items))
+	for i, item := range coreResult.Items {
 		pbItems[i] = &pb.ItemListEntry{
 			Value: storeAVMapToProto(item.Attributes),
 		}
@@ -239,10 +238,10 @@ func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbSta
 
 	result := &adminScanResult{
 		Items: pbItems,
-		Count: int32(len(items)),
+		Count: int32(len(coreResult.Items)),
 	}
-	if nextMarker != "" && len(items) > 0 {
-		lastItem := items[len(items)-1]
+	if coreResult.NextMarker != "" && len(coreResult.Items) > 0 {
+		lastItem := coreResult.Items[len(coreResult.Items)-1]
 		result.LastEvaluatedKey = storeAVMapToProto(lastItem.Key)
 	}
 

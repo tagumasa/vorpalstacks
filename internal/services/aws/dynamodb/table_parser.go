@@ -76,15 +76,15 @@ func parseGlobalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Glob
 			if idxName == "" {
 				return nil, ErrInvalidParameter
 			}
-			if err := validateIndexName(idxName); err != nil {
-				return nil, err
+			if !validateIndexName(idxName) {
+				return nil, ErrInvalidParameter
 			}
 			proj, err := parseProjection(gm)
 			if err != nil {
 				return nil, err
 			}
-			if err := validateProjectionRequired(gm["Projection"].(map[string]interface{})); err != nil {
-				return nil, err
+			if !validateProjectionRequired(gm["Projection"].(map[string]interface{})) {
+				return nil, ErrInvalidParameter
 			}
 			idx := &dbstore.GlobalSecondaryIndex{
 				IndexName:             idxName,
@@ -112,15 +112,15 @@ func parseLocalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Local
 			if idxName == "" {
 				return nil, ErrInvalidParameter
 			}
-			if err := validateIndexName(idxName); err != nil {
-				return nil, err
+			if !validateIndexName(idxName) {
+				return nil, ErrInvalidParameter
 			}
 			proj, err := parseProjection(lm)
 			if err != nil {
 				return nil, err
 			}
-			if err := validateProjectionRequired(lm["Projection"].(map[string]interface{})); err != nil {
-				return nil, err
+			if !validateProjectionRequired(lm["Projection"].(map[string]interface{})) {
+				return nil, ErrInvalidParameter
 			}
 			idx := &dbstore.LocalSecondaryIndex{
 				IndexName:  idxName,
@@ -147,8 +147,8 @@ func parseProjection(params map[string]interface{}) (*dbstore.Projection, error)
 		p.ProjectionType = ProjectionTypeAll
 	}
 	// Validate the ProjectionType enum (ALL, KEYS_ONLY, INCLUDE).
-	if err := validateProjectionType(p.ProjectionType); err != nil {
-		return nil, err
+	if !validateProjectionType(p.ProjectionType) {
+		return nil, ErrInvalidParameter
 	}
 
 	if nkAs, ok := proj["NonKeyAttributes"].([]interface{}); ok {

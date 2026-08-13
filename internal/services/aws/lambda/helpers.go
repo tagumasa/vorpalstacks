@@ -93,6 +93,9 @@ func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, para
 	}
 
 	functionName = extractFunctionName(functionName)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(ctx)
 	if err != nil {
@@ -112,6 +115,9 @@ func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.Request
 	}
 
 	functionName = extractFunctionName(functionName)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, nil, nil, err
+	}
 
 	qualifier := request.GetStringParam(params, "Qualifier")
 	store, err := s.store(ctx)

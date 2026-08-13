@@ -67,8 +67,8 @@ func secretsManagerTagConfig(store secretsmanagerstore.SecretStoreInterface, sec
 // TagResource adds or overwrites tags on a Secrets Manager secret.
 func (s *SecretsManagerService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 	// Enforce AWS Secrets Manager tag quotas.
 	newTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
@@ -102,11 +102,15 @@ func (s *SecretsManagerService) TagResource(ctx context.Context, reqCtx *request
 // UntagResource removes the specified tags from a Secrets Manager secret.
 func (s *SecretsManagerService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 	secret, err := s.resolveSecret(reqCtx, secretId)
 	if err != nil {
+		return nil, err
+	}
+	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
+	if err := validateUntagKeys(tagKeys); err != nil {
 		return nil, err
 	}
 	store, err := s.store(reqCtx)
@@ -119,8 +123,8 @@ func (s *SecretsManagerService) UntagResource(ctx context.Context, reqCtx *reque
 // ListTagsForResource lists all tags assigned to a Secrets Manager secret.
 func (s *SecretsManagerService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 	secret, err := s.resolveSecret(reqCtx, secretId)
 	if err != nil {

@@ -16,7 +16,7 @@ import (
 )
 
 // CreateMultipartUpload initiates a multipart upload for an object.
-func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key string, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte) (*MultipartUpload, error) {
+func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key string, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass) (*MultipartUpload, error) {
 	blobMeta := &storage.BlobMetadata{
 		ContentType:   contentType,
 		CustomHeaders: metadata,
@@ -32,6 +32,7 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 		Key:              key,
 		BucketName:       bucket,
 		Initiated:        time.Now().UTC(),
+		StorageClass:     storageClass,
 		ContentType:      contentType,
 		Metadata:         metadata,
 		SSEType:          sseType,
@@ -246,7 +247,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
 	}
 
-	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, StorageClassStandard, nil)
+	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, upload.StorageClass, nil)
 	obj.Size = blobMeta.Size
 	obj.ETag = blobMeta.ETag
 	obj.LastModified = blobMeta.LastModified

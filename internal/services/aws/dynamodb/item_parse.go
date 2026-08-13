@@ -35,8 +35,8 @@ func parseKey(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 	if parsed == nil {
 		return nil, nil
 	}
-	if err := validateKeyAttributeValue(parsed); err != nil {
-		return nil, err
+	if !validateKeyAttributeValue(parsed) {
+		return nil, ErrInvalidParameter
 	}
 	return parsed, nil
 }

@@ -19,23 +19,24 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
 	if indexName != "" {
-		if err := validateIndexName(indexName); err != nil {
-			return nil, err
+		if !validateIndexName(indexName) {
+			return nil, ErrInvalidParameter
 		}
 		if !validateIndexExists(table, indexName) {
 			return nil, ErrIndexNotFound
 		}
 	}
 
-	// Single-instance Pebble provides strong consistency by default.
-	// ConsistentRead is accepted for API compatibility.
+	// ConsistentRead is accepted for API compatibility. Single-instance
+	// Pebble provides strong consistency for all reads; the flag cannot
+	// relax consistency because there is no replica lag.
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 {
-		limit = 100
+		limit = dataPlaneQueryDefaultLimit
 	}
-	if limit > 1000 {
-		limit = 1000
+	if limit > dataPlaneQueryMaxLimit {
+		limit = dataPlaneQueryMaxLimit
 	}
 	exclusiveStartKey, eskErr := parseExclusiveStartKey(req.Parameters)
 	if eskErr != nil {
@@ -232,23 +233,24 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 
 	indexName := request.GetStringParam(req.Parameters, "IndexName")
 	if indexName != "" {
-		if err := validateIndexName(indexName); err != nil {
-			return nil, err
+		if !validateIndexName(indexName) {
+			return nil, ErrInvalidParameter
 		}
 		if !validateIndexExists(table, indexName) {
 			return nil, ErrIndexNotFound
 		}
 	}
 
-	// Single-instance Pebble provides strong consistency by default.
-	// ConsistentRead is accepted for API compatibility.
+	// ConsistentRead is accepted for API compatibility. Single-instance
+	// Pebble provides strong consistency for all reads; the flag cannot
+	// relax consistency because there is no replica lag.
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 {
-		limit = 100
+		limit = dataPlaneQueryDefaultLimit
 	}
-	if limit > 1000 {
-		limit = 1000
+	if limit > dataPlaneQueryMaxLimit {
+		limit = dataPlaneQueryMaxLimit
 	}
 	exclusiveStartKey, eskErr := parseExclusiveStartKey(req.Parameters)
 	if eskErr != nil {
@@ -261,14 +263,14 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	totalSegments := 0
 	if _, ok := req.Parameters["Segment"]; ok {
 		segment = request.GetIntParam(req.Parameters, "Segment")
-		if err := validateScanSegment(segment); err != nil {
-			return nil, err
+		if !validateScanSegment(segment) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	if _, ok := req.Parameters["TotalSegments"]; ok {
 		totalSegments = request.GetIntParam(req.Parameters, "TotalSegments")
-		if err := validateScanTotalSegments(totalSegments); err != nil {
-			return nil, err
+		if !validateScanTotalSegments(totalSegments) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	parallelScan := segment >= 0 && totalSegments > 0

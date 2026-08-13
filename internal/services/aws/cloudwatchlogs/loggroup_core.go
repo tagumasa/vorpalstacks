@@ -276,3 +276,89 @@ func (s *LogsService) describeLogStreamsCore(input DescribeLogStreamsInput) (*De
 		NextToken:  nextToken,
 	}, nil
 }
+
+// --- Legacy tag operations (TagLogGroup / UntagLogGroup / ListTagsLogGroup) ---
+
+// TagLogGroupInput is the transport-agnostic input for tagging a log group.
+type TagLogGroupInput struct {
+	LogGroupName string
+	Tags         map[string]string
+	Region       string
+}
+
+func (s *LogsService) tagLogGroupCore(input TagLogGroupInput) error {
+	if err := validateLogGroupName(input.LogGroupName); err != nil {
+		return err
+	}
+
+	store, err := s.getLogsStoreByRegion(input.Region)
+	if err != nil {
+		return err
+	}
+
+	lg, err := store.GetLogGroup(input.LogGroupName)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	if err := store.Tags().Tag(lg.ARN, input.Tags); err != nil {
+		return mapStoreError(err)
+	}
+	return nil
+}
+
+// UntagLogGroupInput is the transport-agnostic input for removing tags from a log group.
+type UntagLogGroupInput struct {
+	LogGroupName string
+	TagKeys      []string
+	Region       string
+}
+
+func (s *LogsService) untagLogGroupCore(input UntagLogGroupInput) error {
+	if err := validateLogGroupName(input.LogGroupName); err != nil {
+		return err
+	}
+
+	store, err := s.getLogsStoreByRegion(input.Region)
+	if err != nil {
+		return err
+	}
+
+	lg, err := store.GetLogGroup(input.LogGroupName)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	if err := store.Tags().Untag(lg.ARN, input.TagKeys); err != nil {
+		return mapStoreError(err)
+	}
+	return nil
+}
+
+// ListTagsLogGroupInput is the transport-agnostic input for listing tags on a log group.
+type ListTagsLogGroupInput struct {
+	LogGroupName string
+	Region       string
+}
+
+func (s *LogsService) listTagsLogGroupCore(input ListTagsLogGroupInput) (map[string]string, error) {
+	if err := validateLogGroupName(input.LogGroupName); err != nil {
+		return nil, err
+	}
+
+	store, err := s.getLogsStoreByRegion(input.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	lg, err := store.GetLogGroup(input.LogGroupName)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	tags, err := store.Tags().List(lg.ARN)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+	return tags, nil
+}

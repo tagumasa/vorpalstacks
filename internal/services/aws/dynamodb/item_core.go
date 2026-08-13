@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -30,6 +31,53 @@ type ConditionChecker func(existing *dbstore.Item, isNotFound bool) error
 // dbstore.ItemNotFound when the item does not exist.
 func (s *DynamoDBService) getItemCore(store dbstore.DynamoDBStoreInterface, tableName string, key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
 	return store.Items().Get(tableName, key)
+}
+
+// ---------------------------------------------------------------------------
+// Scan Core — paginated item listing
+// ---------------------------------------------------------------------------
+
+// ScanItemsInput is the service-layer DTO for a paginated item scan. It is
+// used by the admin Scan handler and any other caller that needs a simple
+// paginated listing without filter expressions, parallel segments, or
+// projection — features that the data-plane Scan handler applies on top.
+type ScanItemsInput struct {
+	TableName string
+	Limit     int
+	Marker    string // empty string means first page
+}
+
+// ScanItemsResult is the service-layer result of a paginated item scan.
+type ScanItemsResult struct {
+	Items      []*dbstore.Item
+	NextMarker string // empty string means no more pages
+}
+
+// scanItemsCore returns a single page of items for the specified table.
+// It applies the standard default-and-cap limit logic and delegates to
+// store.Items().List. The admin Scan handler calls this method so that
+// no admin code path touches the store layer directly.
+//
+// The data-plane Scan handler (item_query.go) uses a richer code path with
+// parallel-segment, filter-expression, and projection support; this Core
+// method covers the simpler paginated-listing case needed by the admin
+// console.
+func (s *DynamoDBService) scanItemsCore(store dbstore.DynamoDBStoreInterface, in ScanItemsInput) (*ScanItemsResult, error) {
+	lim := in.Limit
+	if lim <= 0 {
+		lim = dataPlaneQueryDefaultLimit
+	}
+	if lim > dataPlaneQueryMaxLimit {
+		lim = dataPlaneQueryMaxLimit
+	}
+	items, nextMarker, err := store.Items().List(in.TableName, in.Marker, lim)
+	if err != nil {
+		return nil, err
+	}
+	return &ScanItemsResult{
+		Items:      items,
+		NextMarker: nextMarker,
+	}, nil
 }
 
 // putItemCore creates or replaces an item, applying all side effects:
@@ -384,7 +432,7 @@ func (s *DynamoDBService) updateItemCore(
 			var err error
 			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, in.UpdateExpr, in.ExprAttrNames, in.ExprAttrValues)
 			if err != nil {
-				if err.Error() == "TYPE_MISMATCH: Type mismatch for attribute to update" {
+				if errors.Is(err, ErrTypeMismatch) {
 					return ErrInvalidParameter
 				}
 				return err

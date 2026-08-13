@@ -2,12 +2,9 @@ package cloudwatch
 
 import (
 	"context"
-	"fmt"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
 func getMetricStringParam(params map[string]interface{}, keys ...string) string {
@@ -27,9 +24,6 @@ func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.R
 	if namespace == "" {
 		namespace = request.GetStringParam(req.Parameters, "namespace")
 	}
-	if namespace == "" {
-		return nil, ErrInvalidParameter
-	}
 
 	var metricDataRaw interface{}
 	if md, ok := req.Parameters["MetricData"]; ok {
@@ -38,29 +32,17 @@ func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.R
 		metricDataRaw = md
 	}
 
-	// EntityMetricData (OTel) and StrictEntityValidation are accepted but
-	// not processed — OTel entity-based metrics require the OTel pipeline.
-	// The StrictEntityValidation flag is accepted as a no-op.
-
 	metricData := parseMetricData(metricDataRaw)
-	if len(metricData) == 0 {
-		return nil, ErrInvalidParameter
-	}
-	if len(metricData) > maxMetricDataPerRequest {
-		return nil, awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of MetricData entries must not exceed %d", maxMetricDataPerRequest))
-	}
-	for _, datum := range metricData {
-		if err := validateMetricDatum(datum); err != nil {
-			return nil, err
-		}
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.metrics.PutMetricData(namespace, metricData); err != nil {
+
+	if err := s.putMetricDataCore(store, &PutMetricDataInput{
+		Namespace:  namespace,
+		MetricData: metricData,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -78,21 +60,9 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 		metricName = request.GetStringParam(req.Parameters, "metricName")
 	}
 
-	startTime := parseTimestampFromMap(req.Parameters, "StartTime")
-	endTime := parseTimestampFromMap(req.Parameters, "EndTime")
-
 	period := int32(request.GetIntParam(req.Parameters, "Period"))
 	if period == 0 {
 		period = int32(request.GetIntParam(req.Parameters, "period"))
-	}
-
-	if namespace == "" || metricName == "" || startTime.IsZero() || endTime.IsZero() {
-		return nil, ErrInvalidParameter
-	}
-
-	// AWS requires Period to be a positive integer.
-	if period <= 0 {
-		return nil, awserrors.NewInvalidParameterValueException("Period must be a positive integer")
 	}
 
 	var statistics []string
@@ -111,27 +81,21 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 
 	dimensions := parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"])
 
-	// AWS requires at least one of Statistics or ExtendedStatistics.
-	if len(statistics) == 0 && len(extendedStats) == 0 {
-		return nil, awserrors.NewMissingParameter("Must specify either Statistics or ExtendedStatistics")
-	}
-
-	query := cwstore.MetricQuery{
-		Namespace:          namespace,
-		MetricName:         metricName,
-		Dimensions:         dimensions,
-		StartTime:          startTime,
-		EndTime:            endTime,
-		Period:             period,
-		Statistics:         statistics,
-		ExtendedStatistics: extendedStats,
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	stats, err := store.metrics.GetMetricStatistics(query)
+
+	stats, err := s.getMetricStatisticsCore(store, &GetMetricStatisticsInput{
+		Namespace:          namespace,
+		MetricName:         metricName,
+		StartTime:          parseTimestampFromMap(req.Parameters, "StartTime"),
+		EndTime:            parseTimestampFromMap(req.Parameters, "EndTime"),
+		Period:             period,
+		Statistics:         statistics,
+		ExtendedStatistics: extendedStats,
+		Dimensions:         dimensions,
+	})
 	if err != nil {
 		return nil, err
 	}

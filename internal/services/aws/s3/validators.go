@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -59,6 +60,7 @@ var validCORSMethods = map[string]bool{
 // validStorageClasses contains all S3 storage class enum values.
 var validStorageClasses = map[string]bool{
 	"STANDARD":            true,
+	"REDUCED_REDUNDANCY":  true,
 	"STANDARD_IA":         true,
 	"ONEZONE_IA":          true,
 	"INTELLIGENT_TIERING": true,
@@ -337,8 +339,10 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 			if hasDays && (*t.Days < 0 || *t.Days > maxLifecycleDays) {
 				return NewInvalidArgumentError(fmt.Sprintf("Transition Days must be between 0 and %d, got %d", maxLifecycleDays, *t.Days))
 			}
-			if t.StorageClass != "" && !validStorageClasses[t.StorageClass] {
-				return NewInvalidArgumentError(fmt.Sprintf("invalid StorageClass: %s", t.StorageClass))
+			if t.StorageClass != "" {
+				if err := validateStorageClass(t.StorageClass); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -349,8 +353,10 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 					return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionTransition NoncurrentDays must be between 1 and %d, got %d", maxLifecycleDays, nd))
 				}
 			}
-			if t.StorageClass != "" && !validStorageClasses[t.StorageClass] {
-				return NewInvalidArgumentError(fmt.Sprintf("invalid NoncurrentVersionTransition StorageClass: %s", t.StorageClass))
+			if t.StorageClass != "" {
+				if err := validateStorageClass(t.StorageClass); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -378,4 +384,183 @@ func validateRestoreDays(days int) error {
 		return NewInvalidArgumentError(fmt.Sprintf("Days must be between 1 and %d", maxRestoreDays))
 	}
 	return nil
+}
+
+// === Bucket configuration validators ===============================
+
+const (
+	// Replication constraints (AWS spec).
+	maxReplicationIDLength = 255
+	maxLogTargetGrants     = 100
+
+	// Ownership controls: AWS allows exactly one rule.
+	maxOwnershipRules = 1
+)
+
+// validateStorageClass checks that the value is either empty (defaults to
+// STANDARD) or a recognised S3 storage class enum.
+func validateStorageClass(sc string) error {
+	if sc == "" {
+		return nil
+	}
+	if !validStorageClasses[sc] {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid StorageClass: %s", sc))
+	}
+	return nil
+}
+
+// validatePayer checks that the Payer value is one of the two AWS-allowed
+// values for the RequestPaymentConfiguration.
+func validatePayer(payer string) error {
+	if payer != "BucketOwner" && payer != "Requester" {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid Payer: %s (must be BucketOwner or Requester)", payer))
+	}
+	return nil
+}
+
+// arnRegex matches the general AWS ARN format.
+var arnRegex = regexp.MustCompile(`^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/[\w+=,.@/-]+$`)
+
+// validateIAMRoleARN validates that the string is a well-formed IAM role
+// ARN. S3 replication requires an IAM role ARN in the Role field.
+func validateIAMRoleARN(role string) error {
+	if role == "" {
+		return NewInvalidArgumentError("Role is required for replication configuration")
+	}
+	if !arnRegex.MatchString(role) {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid Role ARN: %s (must be a valid IAM role ARN)", role))
+	}
+	return nil
+}
+
+// validateMFADelete checks the MFADelete value. Empty string is allowed
+// (not specified); non-empty must be "Enabled" or "Disabled".
+func validateMFADelete(mfa string) error {
+	if mfa == "" {
+		return nil
+	}
+	if mfa != "Enabled" && mfa != "Disabled" {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid MFADelete: %s (must be Enabled or Disabled)", mfa))
+	}
+	return nil
+}
+
+// KMS key identifier patterns.  AWS accepts four forms for KMSMasterKeyID:
+//  1. Key ID (UUID):            12345678-1234-1234-1234-123456789012
+//  2. Key ARN:                  arn:aws:kms:<region>:<account>:key/<uuid>
+//  3. Alias name:               alias/my-key
+//  4. Alias ARN:                arn:aws:kms:<region>:<account>:alias/my-key
+var (
+	kmsKeyUUIDPattern   = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	kmsKeyArnPattern    = regexp.MustCompile(`^arn:aws[a-zA-Z-]*:kms:[a-z0-9-]+:[0-9]{12}:key/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	kmsAliasNamePattern = regexp.MustCompile(`^alias/[a-zA-Z0-9/_-]{1,128}$`)
+	kmsAliasArnPattern  = regexp.MustCompile(`^arn:aws[a-zA-Z-]*:kms:[a-z0-9-]+:[0-9]{12}:alias/[a-zA-Z0-9/_-]{1,128}$`)
+)
+
+// validateKMSMasterKeyID validates that when the SSE algorithm is aws:kms
+// or aws:kms:dsse, the KMSMasterKeyID is a valid KMS key identifier in any
+// of the four accepted forms (key ID, key ARN, alias name, alias ARN),
+// or empty (meaning use the default KMS key).
+func validateKMSMasterKeyID(keyID, algorithm string) error {
+	if algorithm != "aws:kms" && algorithm != "aws:kms:dsse" {
+		return nil
+	}
+	if keyID == "" {
+		return nil
+	}
+	for _, re := range []*regexp.Regexp{kmsKeyUUIDPattern, kmsKeyArnPattern, kmsAliasNamePattern, kmsAliasArnPattern} {
+		if re.MatchString(keyID) {
+			return nil
+		}
+	}
+	return NewInvalidArgumentError(fmt.Sprintf("invalid KMSMasterKeyID: %s (must be a valid KMS key ID, key ARN, alias name, or alias ARN)", keyID))
+}
+
+// validateGranteeType checks the Grantee type for logging grants.
+func validateGranteeType(t string) error {
+	switch t {
+	case "CanonicalUser", "AmazonCustomerByEmail", "Group":
+		return nil
+	default:
+		return NewInvalidArgumentError(fmt.Sprintf("invalid Grantee type: %s (must be CanonicalUser, AmazonCustomerByEmail, or Group)", t))
+	}
+}
+
+// validateLogPermission checks the Permission value for logging target grants.
+func validateLogPermission(p string) error {
+	switch p {
+	case "FULL_CONTROL", "READ", "WRITE", "READ_ACP", "WRITE_ACP":
+		return nil
+	default:
+		return NewInvalidArgumentError(fmt.Sprintf("invalid logging Permission: %s (must be FULL_CONTROL, READ, WRITE, READ_ACP, or WRITE_ACP)", p))
+	}
+}
+
+// validateReplicationStatus checks the Status value used in DeleteMarkerReplication.
+func validateReplicationStatus(status string) error {
+	if status != "Enabled" && status != "Disabled" {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid replication Status: %s (must be Enabled or Disabled)", status))
+	}
+	return nil
+}
+
+// validateObjectLockEnabled checks that the ObjectLockEnabled value is "Enabled".
+func validateObjectLockEnabled(val string) error {
+	if val != "Enabled" {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid ObjectLockEnabled: %s (must be Enabled)", val))
+	}
+	return nil
+}
+
+// validateWebsiteConfig validates a website configuration: IndexDocument
+// and RedirectAllRequestsTo are mutually exclusive, and when IndexDocument
+// is present its Suffix must be non-empty.
+func validateWebsiteConfig(config *WebsiteConfigurationInput) error {
+	if config == nil {
+		return NewInvalidArgumentError("website configuration is required")
+	}
+	hasIndex := config.IndexDocument != nil
+	hasRedirect := config.RedirectAllRequestsTo != nil
+	if hasIndex && hasRedirect {
+		return NewInvalidArgumentError("IndexDocument and RedirectAllRequestsTo are mutually exclusive")
+	}
+	if hasRedirect {
+		if config.RedirectAllRequestsTo.HostName == "" {
+			return NewInvalidArgumentError("RedirectAllRequestsTo.HostName is required")
+		}
+	}
+	if hasIndex {
+		if config.IndexDocument.Suffix == "" {
+			return NewInvalidArgumentError("IndexDocument.Suffix is required")
+		}
+	}
+	for _, rule := range config.RoutingRules {
+		if rule.Redirect == nil {
+			return NewInvalidArgumentError("RoutingRule.Redirect is required")
+		}
+		if rule.Condition != nil {
+			if rule.Condition.HTTPErrorCodeReturnedEquals != nil {
+				code := *rule.Condition.HTTPErrorCodeReturnedEquals
+				n, err := strconv.Atoi(code)
+				if err != nil || n < 400 || n > 499 {
+					return NewInvalidArgumentError(fmt.Sprintf("HttpErrorCodeReturnedEquals must be a 4xx HTTP code, got: %s", code))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// validateOwnershipControls checks that exactly one rule is present and
+// the ObjectOwnership value is valid.
+func validateOwnershipControls(rules []OwnershipControlsRuleInput) error {
+	if len(rules) != maxOwnershipRules {
+		return NewInvalidArgumentError(fmt.Sprintf("exactly %d ownership rule is required, got %d", maxOwnershipRules, len(rules)))
+	}
+	switch rules[0].ObjectOwnership {
+	case "BucketOwnerEnforced", "BucketOwnerPreferred", "ObjectWriter":
+		return nil
+	default:
+		return NewInvalidArgumentError(fmt.Sprintf("invalid ObjectOwnership: %s (must be BucketOwnerEnforced, BucketOwnerPreferred, or ObjectWriter)", rules[0].ObjectOwnership))
+	}
 }

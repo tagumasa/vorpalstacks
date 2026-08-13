@@ -1,13 +1,9 @@
-// Package dynamodb provides DynamoDB service operations for vorpalstacks.
 package dynamodb
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
-	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // DescribeTimeToLive returns the Time to Live settings for a table.
@@ -16,13 +12,13 @@ func (s *DynamoDBService) DescribeTimeToLive(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	ttl, err := store.Tables().GetTimeToLive(tableName)
+
+	ttl, err := s.describeTimeToLiveCore(store, table.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +51,6 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
 	ttlSpec, ok := req.Parameters["TimeToLiveSpecification"].(map[string]interface{})
 	if !ok {
@@ -72,8 +67,8 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 	}
 
 	if attrName != "" {
-		if err := validateTimeToLiveAttributeName(attrName); err != nil {
-			return nil, err
+		if !validateTimeToLiveAttributeName(attrName) {
+			return nil, ErrInvalidParameter
 		}
 	}
 
@@ -81,50 +76,42 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
-	ttl := &dbstore.TimeToLiveSpecification{
-		Enabled:       enabled,
-		AttributeName: attrName,
-	}
-	if enabled {
-		ttl.Status = dbstore.TTLStatusEnabling
-	} else {
-		ttl.Status = dbstore.TTLStatusDisabling
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Tables().SetTimeToLive(tableName, ttl); err != nil {
+
+	// Read the existing TTL state to determine the correct response status.
+	existingTTL, _ := s.describeTimeToLiveCore(store, table.Name)
+
+	ttl, err := s.updateTimeToLiveCore(ctx, store, UpdateTimeToLiveInput{
+		TableName:     table.Name,
+		Enabled:       enabled,
+		AttributeName: attrName,
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	// Background transition to final state.
-	go func() {
-		time.Sleep(1 * time.Second)
-		if enabled {
-			ttl.Status = dbstore.TTLStatusEnabled
-		} else {
-			ttl.Status = dbstore.TTLStatusDisabled
-		}
-		if err := store.Tables().SetTimeToLive(tableName, ttl); err != nil {
-			logs.Error("Failed to transition TTL to final state",
-				logs.Err(err),
-				logs.String("tableName", tableName),
-			)
-		}
-	}()
-
-	// Response shows the transition state.
+	// If the requested state matches the existing state, the table is
+	// already in the desired state — return ENABLED/DISABLED instead of
+	// the transition state ENABLING/DISABLING.
 	status := "ENABLING"
-	if !enabled {
+	if !ttl.Enabled {
 		status = "DISABLING"
+	}
+	if existingTTL != nil && existingTTL.Enabled == ttl.Enabled {
+		if ttl.Enabled {
+			status = "ENABLED"
+		} else {
+			status = "DISABLED"
+		}
 	}
 
 	return map[string]interface{}{
 		"TimeToLiveSpecification": map[string]interface{}{
-			"Enabled":          enabled,
-			"AttributeName":    attrName,
+			"Enabled":          ttl.Enabled,
+			"AttributeName":    ttl.AttributeName,
 			"TimeToLiveStatus": status,
 		},
 	}, nil

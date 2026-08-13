@@ -5,11 +5,21 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 func (s *DynamoDBService) validateAndGetTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {
+	return s.validateAndGetTableWithErr(reqCtx, params, ErrTableNotFound)
+}
+
+// validateAndGetTableWithErr behaves like validateAndGetTable but lets the
+// caller pick the not-found error sentinel. Operations whose Smithy model
+// declares TableNotFoundException (rather than the general
+// ResourceNotFoundException) must pass ErrTableNotFoundException here so the
+// client receives the individual error code.
+func (s *DynamoDBService) validateAndGetTableWithErr(reqCtx *request.RequestContext, params map[string]interface{}, notFoundErr *APIError) (*dbstore.Table, error) {
 	tableName := request.GetStringParam(params, "TableName")
 	if tableName == "" {
 		return nil, ErrInvalidParameter
@@ -22,7 +32,7 @@ func (s *DynamoDBService) validateAndGetTable(reqCtx *request.RequestContext, pa
 	table, err := store.Tables().Get(tableName)
 	if err != nil {
 		if dbstore.IsTableNotFound(err) || commonstore.IsNotFound(err) {
-			return nil, ErrTableNotFound
+			return nil, notFoundErr
 		}
 		return nil, err
 	}
@@ -30,7 +40,13 @@ func (s *DynamoDBService) validateAndGetTable(reqCtx *request.RequestContext, pa
 }
 
 func (s *DynamoDBService) validateAndGetActiveTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {
-	table, err := s.validateAndGetTable(reqCtx, params)
+	return s.validateAndGetActiveTableWithErr(reqCtx, params, ErrTableNotFound)
+}
+
+// validateAndGetActiveTableWithErr is the not-found-configurable variant of
+// validateAndGetActiveTable. See validateAndGetTableWithErr for the rationale.
+func (s *DynamoDBService) validateAndGetActiveTableWithErr(reqCtx *request.RequestContext, params map[string]interface{}, notFoundErr *APIError) (*dbstore.Table, error) {
+	table, err := s.validateAndGetTableWithErr(reqCtx, params, notFoundErr)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +76,7 @@ func validateIndexExists(table *dbstore.Table, indexName string) bool {
 // UpdateTable, matching AWS behaviour where newly created GSIs are
 // automatically populated with existing items.
 func (s *DynamoDBService) backfillGSI(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, gsiName string) {
+	defer func() { resilience.RecoverPanic("dynamodb GSI backfill") }()
 	err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
 		return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			return txn.PutIndexEntries(tableName, item)

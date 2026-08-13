@@ -3,6 +3,7 @@ package s3
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 
@@ -181,11 +182,16 @@ func pbToDeleteObjectsInput(msg *pb.DeleteObjectsRequest) AdminDeleteObjectsInpu
 }
 
 func pbToCopyObjectInput(msg *pb.CopyObjectRequest) AdminCopyObjectInput {
+	storageClass := ""
+	if msg.Storageclass != 0 {
+		storageClass = strings.TrimPrefix(msg.Storageclass.String(), "STORAGE_CLASS_")
+	}
 	return AdminCopyObjectInput{
-		Bucket:      msg.Bucket,
-		Key:         msg.Key,
-		CopySource:  msg.Copysource,
-		ContentType: msg.Contenttype,
+		Bucket:       msg.Bucket,
+		Key:          msg.Key,
+		CopySource:   msg.Copysource,
+		ContentType:  msg.Contenttype,
+		StorageClass: storageClass,
 	}
 }
 

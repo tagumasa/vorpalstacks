@@ -1,29 +1,26 @@
-// Package dynamodb provides DynamoDB service operations for vorpalstacks.
 package dynamodb
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateBackup creates a backup of a DynamoDB table.
 func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// Table must be ACTIVE to create a backup.
-	table, err := s.validateAndGetActiveTable(reqCtx, req.Parameters)
+	// Table must be ACTIVE to create a backup. CreateBackup's Smithy model
+	// declares TableNotFoundException (not ResourceNotFoundException), so
+	// surface the individual error sentinel here.
+	table, err := s.validateAndGetActiveTableWithErr(reqCtx, req.Parameters, ErrTableNotFoundException)
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
 	backupName := request.GetStringParam(req.Parameters, "BackupName")
-	if err := validateResourceName(backupName); err != nil {
-		return nil, err
+	if !validateResourceName(backupName) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
@@ -34,61 +31,10 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrBackupAlreadyExists
 	}
 
-	backup, err := store.Backups().Create(backupName, tableName, table.ARN, table.TableSizeBytes)
+	backup, err := s.createBackupCore(ctx, store, table, backupName)
 	if err != nil {
 		return nil, err
 	}
-
-	backup.KeySchema = table.KeySchema
-	backup.AttributeDefinitions = table.AttributeDefinitions
-	backup.BillingMode = table.BillingMode
-	backup.ProvisionedThroughput = table.ProvisionedThroughput
-	backup.GlobalSecondaryIndexes = table.GlobalSecondaryIndexes
-	backup.LocalSecondaryIndexes = table.LocalSecondaryIndexes
-	backup.SourceTableCreationTime = table.CreationDateTime
-	backup.SourceTableSizeBytes = table.TableSizeBytes
-	backup.SourceTableItemCount = table.ItemCount
-	backup.BackupSizeBytes = table.TableSizeBytes
-
-	// Set CREATING status and persist immediately so DescribeBackup
-	// shows the correct state while the snapshot is being taken.
-	backup.BackupStatus = dbstore.BackupStatusCreating
-	if err := store.Backups().Put(backup); err != nil {
-		return nil, err
-	}
-
-	// Take the snapshot in the background and transition to AVAILABLE.
-	go func() {
-		var snapshotItems []*dbstore.Item
-		if err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
-			snapshotItems = append(snapshotItems, &dbstore.Item{
-				TableName:  tableName,
-				Key:        copyAttributes(item.Key),
-				Attributes: copyAttributes(item.Attributes),
-			})
-			return nil
-		}); err != nil {
-			logs.Error("Failed to scan items for backup",
-				logs.Err(err),
-				logs.String("tableName", tableName),
-			)
-			return
-		}
-		if err := store.Backups().SaveSnapshot(backupName, snapshotItems); err != nil {
-			logs.Error("Failed to save backup snapshot",
-				logs.Err(err),
-				logs.String("backupName", backupName),
-			)
-			return
-		}
-		backup.BackupStatus = dbstore.BackupStatusAvailable
-		if err := store.Backups().Put(backup); err != nil {
-			logs.Error("Failed to update backup status to AVAILABLE",
-				logs.Err(err),
-				logs.String("backupName", backupName),
-			)
-		}
-	}()
 
 	return map[string]interface{}{
 		"BackupDetails": map[string]interface{}{
@@ -107,20 +53,17 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 // DeleteBackup deletes a DynamoDB table backup.
 func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if err := validateBackupArn(backupArn); err != nil {
-		return nil, err
+	if !validateBackupArn(backupArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	backup, err := store.Backups().Get(backupArn)
-	if err != nil {
-		return nil, ErrBackupNotFound
-	}
 
-	if err := store.Backups().Delete(backup.BackupName); err != nil {
+	backup, err := s.deleteBackupCore(store, backupArn)
+	if err != nil {
 		return nil, err
 	}
 
@@ -143,17 +86,18 @@ func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.Requ
 // DescribeBackup returns information about a DynamoDB table backup.
 func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if err := validateBackupArn(backupArn); err != nil {
-		return nil, err
+	if !validateBackupArn(backupArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	backup, err := store.Backups().Get(backupArn)
+
+	backup, err := s.describeBackupCore(store, backupArn)
 	if err != nil {
-		return nil, ErrBackupNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -202,14 +146,14 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if limit == 0 {
 		limit = listBackupsMaxLimit
 	} else {
-		if err := validateListBackupsLimit(limit); err != nil {
-			return nil, err
+		if !validateListBackupsLimit(limit) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	exclusiveStartBackupArn := request.GetStringParam(req.Parameters, "ExclusiveStartBackupArn")
 	if exclusiveStartBackupArn != "" {
-		if err := validateBackupArn(exclusiveStartBackupArn); err != nil {
-			return nil, err
+		if !validateBackupArn(exclusiveStartBackupArn) {
+			return nil, ErrInvalidParameter
 		}
 	}
 
@@ -217,51 +161,21 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	// Convert ExclusiveStartBackupArn to backup name for the store marker
-	// (store keys are backup names, not ARNs).
-	marker := ""
-	if exclusiveStartBackupArn != "" {
-		parts := strings.Split(exclusiveStartBackupArn, "/")
-		if len(parts) > 0 {
-			marker = parts[len(parts)-1]
-		}
-	}
 
-	// Fetch with a larger window than limit so post-filter pagination works.
-	fetchLimit := limit
-	if fetchLimit < 100 {
-		fetchLimit = 100
-	}
-	backups, _, err := store.Backups().List(marker, fetchLimit, tableName)
+	coreResult, err := s.listBackupsCore(store, ListBackupsCoreInput{
+		TableName:               tableName,
+		BackupTypeFilter:        backupTypeFilter,
+		TimeRangeLowerBound:     timeRangeLowerBound,
+		TimeRangeUpperBound:     timeRangeUpperBound,
+		Limit:                   limit,
+		ExclusiveStartBackupArn: exclusiveStartBackupArn,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var filteredBackups []*dbstore.Backup
-	for _, b := range backups {
-		if backupTypeFilter != "" && string(b.BackupType) != backupTypeFilter {
-			continue
-		}
-
-		backupTime := b.BackupCreationDateTime.Unix()
-		if timeRangeLowerBound > 0 && backupTime < timeRangeLowerBound {
-			continue
-		}
-		if timeRangeUpperBound > 0 && backupTime > timeRangeUpperBound {
-			continue
-		}
-
-		filteredBackups = append(filteredBackups, b)
-	}
-
-	backupSummaries := make([]map[string]interface{}, 0)
-	hasMore := len(filteredBackups) > limit
-
-	if len(filteredBackups) > limit {
-		filteredBackups = filteredBackups[:limit]
-	}
-
-	for _, b := range filteredBackups {
+	backupSummaries := make([]map[string]interface{}, 0, len(coreResult.Backups))
+	for _, b := range coreResult.Backups {
 		backupSummaries = append(backupSummaries, map[string]interface{}{
 			"BackupArn":              b.BackupArn,
 			"BackupName":             b.BackupName,
@@ -277,9 +191,8 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	resp := map[string]interface{}{
 		"BackupSummaries": backupSummaries,
 	}
-
-	if hasMore && len(backupSummaries) > 0 {
-		resp["LastEvaluatedBackupArn"] = backupSummaries[len(backupSummaries)-1]["BackupArn"]
+	if coreResult.LastEvaluatedBackupArn != "" {
+		resp["LastEvaluatedBackupArn"] = coreResult.LastEvaluatedBackupArn
 	}
 
 	return resp, nil
@@ -288,12 +201,12 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 // RestoreTableFromBackup restores a table from a DynamoDB backup.
 func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if err := validateBackupArn(backupArn); err != nil {
-		return nil, err
+	if !validateBackupArn(backupArn) {
+		return nil, ErrInvalidParameter
 	}
 
 	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")
-	if targetTableName == "" {
+	if !validateResourceName(targetTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -301,83 +214,13 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	backup, err := store.Backups().Get(backupArn)
-	if err != nil {
-		return nil, ErrBackupNotFound
-	}
 
-	if store.Tables().Exists(targetTableName) {
-		return nil, ErrTableAlreadyExists
-	}
-
-	var keySchema []*dbstore.KeySchemaElement
-	var attrDefs []*dbstore.AttributeDefinition
-	var billingMode dbstore.BillingMode
-	var provThroughput *dbstore.ProvisionedThroughput
-	var gsi []*dbstore.GlobalSecondaryIndex
-	var lsi []*dbstore.LocalSecondaryIndex
-
-	if len(backup.KeySchema) > 0 {
-		keySchema = backup.KeySchema
-		attrDefs = backup.AttributeDefinitions
-		billingMode = backup.BillingMode
-		provThroughput = backup.ProvisionedThroughput
-		gsi = backup.GlobalSecondaryIndexes
-		lsi = backup.LocalSecondaryIndexes
-	} else {
-		sourceTable, err := store.Tables().Get(backup.SourceTableName)
-		if err != nil {
-			return nil, fmt.Errorf("backup %s has no key schema and source table %q not found: %w", backupArn, backup.SourceTableName, err)
-		}
-		keySchema = sourceTable.KeySchema
-		attrDefs = sourceTable.AttributeDefinitions
-		billingMode = sourceTable.BillingMode
-		provThroughput = sourceTable.ProvisionedThroughput
-		gsi = sourceTable.GlobalSecondaryIndexes
-		lsi = sourceTable.LocalSecondaryIndexes
-	}
-
-	table, err := store.Tables().Create(
-		targetTableName,
-		keySchema,
-		attrDefs,
-		billingMode,
-		provThroughput,
-		gsi,
-		lsi,
-		nil,
-		nil,
-		false,
-	)
+	table, err := s.restoreTableFromBackupCore(ctx, store, RestoreTableFromBackupCoreInput{
+		BackupArn:       backupArn,
+		TargetTableName: targetTableName,
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	// Restore items from the backup snapshot. This works even if the
-	// original source table has been deleted.
-	snapshotItems, snapErr := store.Backups().GetSnapshot(backup.BackupName)
-	if snapErr == nil && len(snapshotItems) > 0 {
-		for _, item := range snapshotItems {
-			itemSize := calculateItemSize(item.Attributes)
-			err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-				if err := txn.PutItem(targetTableName, item.Key, item.Attributes); err != nil {
-					return err
-				}
-				if err := txn.PutIndexEntries(targetTableName, item); err != nil {
-					return err
-				}
-				if err := txn.UpdateItemCount(targetTableName, 1); err != nil {
-					return err
-				}
-				if err := txn.UpdateTableSize(targetTableName, itemSize); err != nil {
-					return err
-				}
-				return nil
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return map[string]interface{}{
@@ -397,6 +240,12 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		return nil, ErrInvalidParameter
 	}
 
+	if sourceTableName != "" {
+		if !validateResourceName(sourceTableName) {
+			return nil, ErrInvalidParameter
+		}
+	}
+
 	if sourceTableArn != "" {
 		sourceTableName = svcarn.ParseTableARN(sourceTableArn)
 		if sourceTableName == "" {
@@ -405,11 +254,14 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 	}
 
 	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")
-	if targetTableName == "" {
+	if !validateResourceName(targetTableName) {
 		return nil, ErrInvalidParameter
 	}
 
-	sourceTable, err := s.validateAndGetTable(reqCtx, map[string]interface{}{"TableName": sourceTableName})
+	// RestoreTableToPointInTime declares TableNotFoundException (rather
+	// than the general ResourceNotFoundException) in the Smithy model, so
+	// use the individual error sentinel here.
+	sourceTable, err := s.validateAndGetTableWithErr(reqCtx, map[string]interface{}{"TableName": sourceTableName}, ErrTableNotFoundException)
 	if err != nil {
 		return nil, err
 	}
@@ -418,12 +270,8 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 	if err != nil {
 		return nil, err
 	}
-	if store.Tables().Exists(targetTableName) {
-		return nil, ErrTableAlreadyExists
-	}
 
-	keySchema := sourceTable.KeySchema
-	attrDefs := sourceTable.AttributeDefinitions
+	// Parse optional overrides.
 	billingMode := sourceTable.BillingMode
 	provThroughput := sourceTable.ProvisionedThroughput
 	gsi := sourceTable.GlobalSecondaryIndexes
@@ -433,85 +281,33 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 	if billingModeOverride := request.GetStringParam(req.Parameters, "BillingModeOverride"); billingModeOverride != "" {
 		billingMode = dbstore.BillingMode(billingModeOverride)
 	}
-
 	if provOverride := parseProvisionedThroughputOverride(req.Parameters); provOverride != nil {
 		provThroughput = provOverride
 	}
-
 	if sseSpec, ok := req.Parameters["SSESpecificationOverride"].(map[string]interface{}); ok {
 		sseDesc, err = parseSSESpecification(sseSpec)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	if gsiOverrides := parseGSIOverrideList(req.Parameters); len(gsiOverrides) > 0 {
 		gsi = applyGSIOverrides(gsi, gsiOverrides)
 	}
-
 	if lsiOverrideList := parseLSIOverrideList(req.Parameters); len(lsiOverrideList) > 0 {
 		lsi = lsiOverrideList
 	}
 
-	if err := validateBillingModeConsistency(billingMode, provThroughput); err != nil {
-		return nil, err
-	}
-
-	table, err := store.Tables().Create(
-		targetTableName,
-		keySchema,
-		attrDefs,
-		billingMode,
-		provThroughput,
-		gsi,
-		lsi,
-		nil,
-		nil,
-		false,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if sseDesc != nil {
-		table.SSEDescription = sseDesc
-	}
-
-	var itemsToCopy []*dbstore.Item
-	err = store.View(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		return store.Items().Scan(sourceTableName, func(item *dbstore.Item) error {
-			copiedItem := &dbstore.Item{
-				TableName:  targetTableName,
-				Key:        copyAttributes(item.Key),
-				Attributes: copyAttributes(item.Attributes),
-			}
-			itemsToCopy = append(itemsToCopy, copiedItem)
-			return nil
-		})
+	table, err := s.restoreTableToPointInTimeCore(ctx, store, RestoreTableToPointInTimeCoreInput{
+		SourceTable:     sourceTable,
+		TargetTableName: targetTableName,
+		BillingMode:     billingMode,
+		ProvThroughput:  provThroughput,
+		SSEDesc:         sseDesc,
+		GSI:             gsi,
+		LSI:             lsi,
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	for _, item := range itemsToCopy {
-		itemSize := calculateItemSize(item.Attributes)
-		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			if err := txn.PutItem(targetTableName, item.Key, item.Attributes); err != nil {
-				return err
-			}
-			if err := txn.PutIndexEntries(targetTableName, item); err != nil {
-				return err
-			}
-			if err := txn.UpdateItemCount(targetTableName, 1); err != nil {
-				return err
-			}
-			if err := txn.UpdateTableSize(targetTableName, itemSize); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return map[string]interface{}{
@@ -519,6 +315,8 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 	}, nil
 }
 
+// parseProvisionedThroughputOverride extracts the ProvisionedThroughputOverride
+// parameter from a RestoreTableToPointInTime request.
 func parseProvisionedThroughputOverride(params map[string]interface{}) *dbstore.ProvisionedThroughput {
 	ptMap, ok := params["ProvisionedThroughputOverride"].(map[string]interface{})
 	if !ok {
@@ -545,6 +343,8 @@ func parseProvisionedThroughputOverride(params map[string]interface{}) *dbstore.
 	}
 }
 
+// parseGSIOverrideList extracts the GlobalSecondaryIndexOverride parameter
+// from a RestoreTableToPointInTime request.
 func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecondaryIndex {
 	rawList, ok := params["GlobalSecondaryIndexOverride"].([]interface{})
 	if !ok {
@@ -596,6 +396,8 @@ func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecond
 	return result
 }
 
+// parseLSIOverrideList extracts the LocalSecondaryIndexOverride parameter
+// from a RestoreTableToPointInTime request.
 func parseLSIOverrideList(params map[string]interface{}) []*dbstore.LocalSecondaryIndex {
 	rawList, ok := params["LocalSecondaryIndexOverride"].([]interface{})
 	if !ok {
@@ -638,6 +440,8 @@ func parseLSIOverrideList(params map[string]interface{}) []*dbstore.LocalSeconda
 	return result
 }
 
+// applyGSIOverrides merges override GSI definitions into the existing set,
+// matching by IndexName.
 func applyGSIOverrides(existing []*dbstore.GlobalSecondaryIndex, overrides []*dbstore.GlobalSecondaryIndex) []*dbstore.GlobalSecondaryIndex {
 	byName := make(map[string]*dbstore.GlobalSecondaryIndex)
 	for _, g := range existing {

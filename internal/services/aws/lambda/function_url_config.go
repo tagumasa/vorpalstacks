@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -21,6 +22,11 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 	authType := request.GetStringParam(req.Parameters, "AuthType")
 	if err := validateAuthType(authType); err != nil {
 		return nil, err
+	}
+
+	// AWS returns ResourceConflictException when a URL config already exists.
+	if function.UrlConfig != nil {
+		return nil, NewResourceConflict(fmt.Sprintf("Function URL already exists for function: %s", function.FunctionName))
 	}
 
 	invokeMode := request.GetStringParam(req.Parameters, "InvokeMode")

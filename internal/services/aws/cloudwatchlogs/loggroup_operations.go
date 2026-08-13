@@ -2,7 +2,6 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -17,6 +16,9 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	if err := tagutil.ValidateTagMap(tags); err != nil {
+		return nil, NewLogsError("InvalidParameterException", err.Error(), 400)
+	}
 
 	input := CreateLogGroupInput{
 		LogGroupName:              logGroupName,
@@ -164,34 +166,20 @@ func (s *LogsService) ListLogGroups(ctx context.Context, reqCtx *request.Request
 // PutRetentionPolicy sets the retention policy for a CloudWatch Logs log group.
 func (s *LogsService) PutRetentionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if err := validateLogGroupName(logGroupName); err != nil {
-		return nil, err
-	}
 
 	retentionInDays := int32(request.GetIntParam(req.Parameters, "retentionInDays"))
 	if retentionInDays == 0 {
 		retentionInDays = int32(request.GetIntParam(req.Parameters, "RetentionInDays"))
 	}
 
-	if !logsstore.IsValidRetentionDays(retentionInDays) {
-		return nil, NewLogsError("InvalidParameterException",
-			fmt.Sprintf("%d is not a valid retention value. Allowed values: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653", retentionInDays),
-			400)
+	input := PutRetentionPolicyInput{
+		LogGroupName:    logGroupName,
+		RetentionInDays: retentionInDays,
+		Region:          reqCtx.GetRegion(),
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.putRetentionPolicyCore(input); err != nil {
 		return nil, err
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	lg.SetRetention(retentionInDays)
-	if err := store.PutLogGroup(lg); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -199,24 +187,13 @@ func (s *LogsService) PutRetentionPolicy(ctx context.Context, reqCtx *request.Re
 
 // DeleteRetentionPolicy deletes the retention policy for a CloudWatch Logs log group.
 func (s *LogsService) DeleteRetentionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if err := validateLogGroupName(logGroupName); err != nil {
+	input := DeleteRetentionPolicyInput{
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		Region:       reqCtx.GetRegion(),
+	}
+
+	if err := s.deleteRetentionPolicyCore(input); err != nil {
 		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	lg.SetRetention(0)
-	if err := store.PutLogGroup(lg); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -296,25 +273,14 @@ func (s *LogsService) ListTagsForResource(ctx context.Context, reqCtx *request.R
 
 // TagLogGroup adds tags to the specified CloudWatch Logs log group.
 func (s *LogsService) TagLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
-	}
-
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.tagLogGroupCore(TagLogGroupInput{
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		Tags:         tags,
+		Region:       reqCtx.GetRegion(),
+	}); err != nil {
 		return nil, err
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if err := store.Tags().Tag(lg.ARN, tags); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -323,25 +289,12 @@ func (s *LogsService) TagLogGroup(ctx context.Context, reqCtx *request.RequestCo
 // UntagLogGroup removes tags from the specified CloudWatch Logs log group.
 // Deprecated: use UntagResource instead.
 func (s *LogsService) UntagLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	tagKeys := request.GetStringList(req.Parameters, "Tags")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.untagLogGroupCore(UntagLogGroupInput{
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		TagKeys:      request.GetStringList(req.Parameters, "Tags"),
+		Region:       reqCtx.GetRegion(),
+	}); err != nil {
 		return nil, err
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if err := store.Tags().Untag(lg.ARN, tagKeys); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -349,25 +302,14 @@ func (s *LogsService) UntagLogGroup(ctx context.Context, reqCtx *request.Request
 
 // ListTagsLogGroup retrieves the tags for the specified CloudWatch Logs log group.
 func (s *LogsService) ListTagsLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
-	if logGroupName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	store, err := s.store(reqCtx)
+	tags, err := s.listTagsLogGroupCore(ListTagsLogGroupInput{
+		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+		Region:       reqCtx.GetRegion(),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	tags, err := store.Tags().List(lg.ARN)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
 	return map[string]interface{}{
 		"tags": tags,
 	}, nil

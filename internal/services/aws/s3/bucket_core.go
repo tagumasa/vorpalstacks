@@ -97,10 +97,11 @@ type AdminDeleteObjectsInput struct {
 
 // AdminCopyObjectInput carries the fields needed for CopyObject.
 type AdminCopyObjectInput struct {
-	Bucket      string
-	Key         string
-	CopySource  string
-	ContentType string
+	Bucket       string
+	Key          string
+	CopySource   string
+	ContentType  string
+	StorageClass string
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +190,7 @@ type CopyObjectStreamInput struct {
 	MetadataDirective         string
 	ContentType               string
 	Metadata                  map[string]string
+	StorageClass              string
 	ServerSideEncryption      string
 	SSEKMSKeyId               string
 	SSECustomerAlgorithm      string
@@ -960,10 +962,11 @@ func (s *S3Service) deleteObjectsCore(ctx context.Context, objectStore s3store.O
 // copyObjectCore copies an object, handling encryption for the destination.
 func (s *S3Service) copyObjectCore(ctx context.Context, bucketStore s3store.BucketStoreInterface, objectStore s3store.ObjectStoreInterface, in AdminCopyObjectInput) (*AdminCopyObjectResult, error) {
 	streamResult, err := s.copyObjectStreamCore(ctx, bucketStore, objectStore, CopyObjectStreamInput{
-		Bucket:      in.Bucket,
-		Key:         in.Key,
-		CopySource:  in.CopySource,
-		ContentType: in.ContentType,
+		Bucket:       in.Bucket,
+		Key:          in.Key,
+		CopySource:   in.CopySource,
+		ContentType:  in.ContentType,
+		StorageClass: in.StorageClass,
 	})
 	if err != nil {
 		return nil, err
@@ -981,6 +984,10 @@ func (s *S3Service) copyObjectCore(ctx context.Context, bucketStore s3store.Buck
 // store-level Copy, and metadata directive handling. HTTP and admin
 // handlers share this method.
 func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3store.BucketStoreInterface, objectStore s3store.ObjectStoreInterface, in CopyObjectStreamInput) (*CopyObjectStreamResult, error) {
+	if err := validateStorageClass(in.StorageClass); err != nil {
+		return nil, err
+	}
+
 	srcBucket, srcKey, srcVersionId, err := parseCopySource(in.CopySource)
 	if err != nil {
 		return nil, err
@@ -1089,7 +1096,10 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 			return nil, encErr
 		}
 
-		targetStorageClass := srcObj.StorageClass
+		targetStorageClass := s3store.ObjectStorageClass(in.StorageClass)
+		if targetStorageClass == "" {
+			targetStorageClass = srcObj.StorageClass
+		}
 		if targetStorageClass == "" {
 			targetStorageClass = s3store.StorageClassStandard
 		}
@@ -1102,17 +1112,18 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 			result.SSEKMSKeyId = encResult.SSEMetadata.KMSKeyID
 		}
 	} else {
+		dstStorageClass := s3store.ObjectStorageClass(in.StorageClass)
 		if srcVersionId != "" {
 			if in.MetadataDirective == "REPLACE" {
-				obj, err = objectStore.CopyWithVersionAndMetadata(ctx, srcBucket, srcKey, srcVersionId, in.Bucket, in.Key, contentType, metadata)
+				obj, err = objectStore.CopyWithVersionAndMetadata(ctx, srcBucket, srcKey, srcVersionId, in.Bucket, in.Key, contentType, metadata, dstStorageClass)
 			} else {
-				obj, err = objectStore.CopyWithVersion(ctx, srcBucket, srcKey, srcVersionId, in.Bucket, in.Key)
+				obj, err = objectStore.CopyWithVersion(ctx, srcBucket, srcKey, srcVersionId, in.Bucket, in.Key, dstStorageClass)
 			}
 		} else {
 			if in.MetadataDirective == "REPLACE" {
-				obj, err = objectStore.CopyWithMetadata(ctx, srcBucket, srcKey, in.Bucket, in.Key, contentType, metadata)
+				obj, err = objectStore.CopyWithMetadata(ctx, srcBucket, srcKey, in.Bucket, in.Key, contentType, metadata, dstStorageClass)
 			} else {
-				obj, err = objectStore.Copy(ctx, srcBucket, srcKey, in.Bucket, in.Key)
+				obj, err = objectStore.Copy(ctx, srcBucket, srcKey, in.Bucket, in.Key, dstStorageClass)
 			}
 		}
 		if err != nil {

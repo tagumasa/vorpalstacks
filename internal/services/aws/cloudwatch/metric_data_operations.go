@@ -100,10 +100,6 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 	startTime := parseTimestampFromMap(req.Parameters, "StartTime")
 	endTime := parseTimestampFromMap(req.Parameters, "EndTime")
 
-	if startTime.IsZero() || endTime.IsZero() {
-		return nil, ErrInvalidParameter
-	}
-
 	var metricDataQueries []cwstore.MetricDataQuery
 	if queriesRaw, ok := req.Parameters["MetricDataQueries"]; ok {
 		metricDataQueries = parseMetricDataQueries(queriesRaw)
@@ -111,7 +107,19 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 		metricDataQueries = parseMetricDataQueries(queriesRaw)
 	}
 
-	store, err := s.store(reqCtx)
+	scanBy := getAlarmStringParam(req.Parameters, "ScanBy", "scanBy")
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	metricStore, err := s.getMetricDataCore(stores, &GetMetricDataInput{
+		StartTime:         startTime,
+		EndTime:           endTime,
+		MetricDataQueries: metricDataQueries,
+		ScanBy:            scanBy,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +167,7 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 				mq.Statistics = []string{query.MetricStat.Stat}
 			}
 
-			stats, err := store.metrics.GetMetricStatistics(mq)
+			stats, err := metricStore.GetMetricStatistics(mq)
 			if err != nil {
 				queryResults[query.Id] = nil
 				queryErrors[query.Id] = fmt.Sprintf("failed to query metric statistics: %v", err)
@@ -959,24 +967,15 @@ func (s *CloudWatchService) GetMetricWidgetImage(ctx context.Context, reqCtx *re
 	if widgetDefinition == "" {
 		widgetDefinition = request.GetStringParam(req.Parameters, "MetricWidget")
 	}
-	if widgetDefinition == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !json.Valid([]byte(widgetDefinition)) {
-		return nil, ErrInvalidParameter
-	}
 
 	format := request.GetStringParam(req.Parameters, "outputFormat")
-	if format == "" {
-		format = "png"
-	}
-	if !validateOutputFormat(format) {
-		return nil, ErrInvalidParameter
-	}
 
-	def, err := parseWidgetDefinition(widgetDefinition)
+	def, _, err := s.getMetricWidgetImageCore(&GetMetricWidgetImageInput{
+		MetricWidget: widgetDefinition,
+		OutputFormat: format,
+	})
 	if err != nil {
-		return nil, ErrInvalidParameter
+		return nil, err
 	}
 
 	series, err := s.queryWidgetMetrics(ctx, reqCtx, def)

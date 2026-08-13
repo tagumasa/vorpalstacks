@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -164,6 +165,7 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 			continue
 		}
 		go func(sn, pk string, payload []byte) {
+			defer func() { resilience.RecoverPanic("dynamodb Kinesis destination emit") }()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			if _, err := kinesisInvoker.PutRecord(ctx, sn, pk, payload); err != nil {
@@ -219,6 +221,7 @@ func (s *DynamoDBService) replicateToGlobalTableReplicas(sourceStore dbstore.Dyn
 	}
 
 	go func() {
+		defer func() { resilience.RecoverPanic("dynamodb global table replication") }()
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		for _, replica := range globalTable.ReplicationGroup {

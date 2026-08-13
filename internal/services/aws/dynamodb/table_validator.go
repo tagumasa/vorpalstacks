@@ -1,10 +1,14 @@
-// Package dynamodb provides DynamoDB service operations for vorpalstacks.
 package dynamodb
 
 import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
+// validateIndexNameUniqueness reports whether all GSI and LSI index names
+// within a table definition are distinct. Returns the typed
+// ErrIndexAlreadyExists sentinel so the caller can surface
+// ResourceInUseException with a precise message rather than the generic
+// ValidationException.
 func validateIndexNameUniqueness(gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbstore.LocalSecondaryIndex) error {
 	indexNames := make(map[string]bool)
 	for _, idx := range gsi {
@@ -28,9 +32,11 @@ func validateIndexNameUniqueness(gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbs
 	return nil
 }
 
-func validateLSIPartitionKey(tableKeySchema []*dbstore.KeySchemaElement, lsi []*dbstore.LocalSecondaryIndex) error {
+// validateLSIPartitionKey reports whether every LSI shares the same hash
+// key as the base table. Returns true when no LSIs are defined.
+func validateLSIPartitionKey(tableKeySchema []*dbstore.KeySchemaElement, lsi []*dbstore.LocalSecondaryIndex) bool {
 	if len(lsi) == 0 {
-		return nil
+		return true
 	}
 
 	var tablePartitionKey string
@@ -50,63 +56,70 @@ func validateLSIPartitionKey(tableKeySchema []*dbstore.KeySchemaElement, lsi []*
 			}
 		}
 		if idxPartitionKey != tablePartitionKey {
-			return ErrInvalidParameter
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-func validateKeySchema(keySchema []*dbstore.KeySchemaElement) error {
+// validateKeySchema reports whether keySchema satisfies the DynamoDB
+// constraints: at most 2 elements, exactly one HASH, optional RANGE,
+// non-empty attribute names, and only HASH/RANGE key types.
+func validateKeySchema(keySchema []*dbstore.KeySchemaElement) bool {
 	if len(keySchema) > 2 {
-		return ErrInvalidParameter
+		return false
 	}
 
 	hasHash := false
 	for _, elem := range keySchema {
 		if elem.AttributeName == "" {
-			return ErrInvalidParameter
+			return false
 		}
 		switch elem.KeyType {
 		case dbstore.KeyTypeHash:
 			if hasHash {
-				return ErrInvalidParameter
+				return false
 			}
 			hasHash = true
 		case dbstore.KeyTypeRange:
 		default:
-			return ErrInvalidParameter
+			return false
 		}
 	}
 
-	if !hasHash {
-		return ErrInvalidParameter
-	}
-	return nil
+	return hasHash
 }
 
-func validateAttributeDefinitions(keySchema []*dbstore.KeySchemaElement, attrDefs []*dbstore.AttributeDefinition) error {
+// validateAttributeDefinitions reports whether every key-schema attribute
+// has a matching entry in attrDefs with a valid scalar type
+// (S, N, or B), and whether all attrDefs entries have non-empty names and
+// valid types.
+func validateAttributeDefinitions(keySchema []*dbstore.KeySchemaElement, attrDefs []*dbstore.AttributeDefinition) bool {
 	defMap := make(map[string]bool)
 	for _, def := range attrDefs {
 		if def.AttributeName == "" {
-			return ErrInvalidParameter
+			return false
 		}
 		switch def.AttributeType {
 		case dbstore.ScalarAttributeTypeS, dbstore.ScalarAttributeTypeN, dbstore.ScalarAttributeTypeB:
 		default:
-			return ErrInvalidParameter
+			return false
 		}
 		defMap[def.AttributeName] = true
 	}
 
 	for _, elem := range keySchema {
 		if !defMap[elem.AttributeName] {
-			return ErrInvalidParameter
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-func validateAllKeyAttributesInDefs(keySchema []*dbstore.KeySchemaElement, gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbstore.LocalSecondaryIndex, attrDefs []*dbstore.AttributeDefinition) error {
+// validateAllKeyAttributesInDefs reports whether every key attribute in the
+// base table key schema, GSI key schemas, and LSI key schemas has a matching
+// entry in attrDefs.
+func validateAllKeyAttributesInDefs(keySchema []*dbstore.KeySchemaElement, gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbstore.LocalSecondaryIndex, attrDefs []*dbstore.AttributeDefinition) bool {
 	defMap := make(map[string]bool)
 	for _, def := range attrDefs {
 		defMap[def.AttributeName] = true
@@ -114,14 +127,14 @@ func validateAllKeyAttributesInDefs(keySchema []*dbstore.KeySchemaElement, gsi [
 
 	for _, elem := range keySchema {
 		if !defMap[elem.AttributeName] {
-			return ErrInvalidParameter
+			return false
 		}
 	}
 
 	for _, idx := range gsi {
 		for _, elem := range idx.KeySchema {
 			if !defMap[elem.AttributeName] {
-				return ErrInvalidParameter
+				return false
 			}
 		}
 	}
@@ -129,10 +142,10 @@ func validateAllKeyAttributesInDefs(keySchema []*dbstore.KeySchemaElement, gsi [
 	for _, idx := range lsi {
 		for _, elem := range idx.KeySchema {
 			if !defMap[elem.AttributeName] {
-				return ErrInvalidParameter
+				return false
 			}
 		}
 	}
 
-	return nil
+	return true
 }

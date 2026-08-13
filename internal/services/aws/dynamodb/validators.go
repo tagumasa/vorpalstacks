@@ -71,7 +71,7 @@ const (
 	autoScalingRoleArnMinLen    = 1
 	autoScalingRoleArnMaxLen    = 1600
 	csvHeaderListMaxLen         = 255
-	batchGetMaxTables           = 100
+	batchGetMaxTotalItems       = 100
 	batchWriteMaxItems          = 25
 	transactMaxItems            = 100
 	listExportsMaxLimit         = 25
@@ -86,6 +86,32 @@ const (
 	scanSegmentMax              = 999999
 	scanTotalSegmentsMin        = 1
 	scanTotalSegmentsMax        = 1000000
+
+	// Pagination defaults and caps used by List operations that do not
+	// have an explicit Smithy Limit trait but follow AWS documented
+	// behaviour. Each value is referenced from exactly one call site.
+	listGlobalTablesDefaultLimit       = 100
+	listGlobalTablesMinPageSize        = 10
+	listStreamsDefaultLimit            = 100
+	listStreamsMaxLimit                = 100
+	getRecordsDefaultLimit             = 100
+	getRecordsMaxLimit                 = 1000
+	listTagsForResourceDefaultPageSize = 50
+
+	// Backup list minimum fetch size: the ListBackups implementation
+	// always fetches at least this many entries from the store before
+	// applying filters, to reduce round-trips for common queries.
+	listBackupsMinFetchSize = 100
+
+	// PITR default recovery window in days (AWS default: 35 days).
+	pitrDefaultRecoveryPeriodDays = 35
+
+	// Data-plane Query/Scan pagination defaults. AWS does not document a
+	// hard cap for these (the documented max is 1 MB per page), but the
+	// SDK tests and the existing implementation cap the item count at
+	// 1000 to bound work. The admin Scan handler shares the same cap.
+	dataPlaneQueryDefaultLimit = 100
+	dataPlaneQueryMaxLimit     = 1000
 )
 
 // Compiled regex patterns from Smithy @pattern traits.
@@ -98,7 +124,6 @@ var (
 	tableIdRegex               = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	clientTokenRegex           = regexp.MustCompile(`^[^\$]+$`)
 	importNextTokenRegex       = regexp.MustCompile(`^([0-9a-f]{16})+$`)
-	contributorRuleRegex       = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9\-_\.]{0,126}[A-Za-z0-9]$`)
 	autoScalingPolicyNameRegex = regexp.MustCompile(`[^[:cntrl:]]+`)
 	csvDelimiterRegex          = regexp.MustCompile(`^[,;:|\t ]$`)
 	csvHeaderRegex             = regexp.MustCompile(`^[\x20-\x21\x23-\x2B\x2D-\x7E]*$`)
@@ -111,54 +136,59 @@ var validProjectionTypes = map[string]bool{
 }
 
 // ---------------------------------------------------------------------------
+// Convention
+// ---------------------------------------------------------------------------
+//
+// Pure validators in this file return bool: true means the input satisfies the
+// Smithy constraint, false means it does not. Callers decide which sentinel
+// error to surface to the client (typically ErrInvalidParameter).
+//
+// The two error-returning functions kept here (validateGSIDeleteExists and
+// validateBoolParam/validateBracketIndex) carry information that cannot be
+// represented as a bool: a distinct Smithy error code or a parsed value that
+// the caller still needs on success. Their continued use of the error type is
+// deliberate, not an oversight.
+
+// ---------------------------------------------------------------------------
 // Generic helpers
 // ---------------------------------------------------------------------------
 
-// validateLength checks that a string's length falls within [min, max].
-func validateLength(val string, min, max int) error {
-	if len(val) < min || len(val) > max {
-		return ErrInvalidParameter
-	}
-	return nil
+// validateLength reports whether a string's length falls within [min, max].
+func validateLength(val string, min, max int) bool {
+	return len(val) >= min && len(val) <= max
 }
 
-// validateRange checks that an integer falls within [min, max].
-func validateRange(val, min, max int) error {
-	if val < min || val > max {
-		return ErrInvalidParameter
-	}
-	return nil
+// validateRange reports whether an integer falls within [min, max].
+func validateRange(val, min, max int) bool {
+	return val >= min && val <= max
 }
 
 // ---------------------------------------------------------------------------
 // Resource-name validators (shared: TableName, BackupName, IndexName, GlobalTableName)
 // ---------------------------------------------------------------------------
 
-// validateResourceName checks the DynamoDB resource-name constraints:
-// 3-255 characters, characters [a-zA-Z0-9_.-].
+// validateResourceName reports whether the input satisfies the DynamoDB
+// resource-name constraints: 3-255 characters, characters [a-zA-Z0-9_.-].
 // Applies to TableName, BackupName, IndexName, and GlobalTableName.
-func validateResourceName(name string) error {
+func validateResourceName(name string) bool {
 	if name == "" {
-		return ErrInvalidParameter
+		return false
 	}
 	if len(name) < resourceNameMinLength || len(name) > resourceNameMaxLength {
-		return ErrInvalidParameter
+		return false
 	}
-	if !resourceNameRegex.MatchString(name) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return resourceNameRegex.MatchString(name)
 }
 
 // validateTableName is an alias for validateResourceName, retained for
 // call-site clarity when validating a table name specifically.
-func validateTableName(name string) error {
+func validateTableName(name string) bool {
 	return validateResourceName(name)
 }
 
-// validateIndexName checks that a secondary-index name meets the same
+// validateIndexName reports whether a secondary-index name meets the same
 // constraints as table names (Smithy IndexName: len 3-255, pattern).
-func validateIndexName(name string) error {
+func validateIndexName(name string) bool {
 	return validateResourceName(name)
 }
 
@@ -166,40 +196,46 @@ func validateIndexName(name string) error {
 // ARN validators
 // ---------------------------------------------------------------------------
 
-// validateArnLength checks that an ARN's length falls within the Smithy
+// validateArnLength reports whether an ARN's length falls within the Smithy
 // constraints for the given ARN type.
-func validateArnLength(arn string, min, max int) error {
+func validateArnLength(arn string, min, max int) bool {
 	return validateLength(arn, min, max)
 }
 
-// validateBackupArn validates a BackupArn (Smithy: len 37-1024).
-func validateBackupArn(arn string) error {
+// validateBackupArn reports whether arn satisfies the BackupArn Smithy
+// constraints (len 37-1024).
+func validateBackupArn(arn string) bool {
 	return validateArnLength(arn, arnBackupMinLen, arnBackupMaxLen)
 }
 
-// validateStreamArn validates a StreamArn (Smithy: len 37-1024).
-func validateStreamArn(arn string) error {
+// validateStreamArn reports whether arn satisfies the StreamArn Smithy
+// constraints (len 37-1024).
+func validateStreamArn(arn string) bool {
 	return validateArnLength(arn, arnStreamMinLen, arnStreamMaxLen)
 }
 
-// validateExportArn validates an ExportArn (Smithy: len 37-1024).
-func validateExportArn(arn string) error {
+// validateExportArn reports whether arn satisfies the ExportArn Smithy
+// constraints (len 37-1024).
+func validateExportArn(arn string) bool {
 	return validateArnLength(arn, arnExportMinLen, arnExportMaxLen)
 }
 
-// validateImportArn validates an ImportArn (Smithy: len 37-1024).
-func validateImportArn(arn string) error {
+// validateImportArn reports whether arn satisfies the ImportArn Smithy
+// constraints (len 37-1024).
+func validateImportArn(arn string) bool {
 	return validateArnLength(arn, arnImportMinLen, arnImportMaxLen)
 }
 
-// validateTableArn validates a TableArn (Smithy: len 1-1024).
-func validateTableArn(arn string) error {
+// validateTableArn reports whether arn satisfies the TableArn Smithy
+// constraints (len 1-1024).
+func validateTableArn(arn string) bool {
 	return validateArnLength(arn, arnTableMinLen, arnTableMaxLen)
 }
 
-// validateResourceArnString validates a generic ResourceArnString used by
-// tag and resource-policy operations (Smithy: len 1-1283).
-func validateResourceArnString(arn string) error {
+// validateResourceArnString reports whether arn satisfies the generic
+// ResourceArnString constraints used by tag and resource-policy operations
+// (Smithy: len 1-1283).
+func validateResourceArnString(arn string) bool {
 	return validateArnLength(arn, arnResourceMinLen, arnResourceMaxLen)
 }
 
@@ -207,77 +243,75 @@ func validateResourceArnString(arn string) error {
 // Projection / index validators
 // ---------------------------------------------------------------------------
 
-// validateProjectionType checks the Smithy ProjectionType enum.
-func validateProjectionType(pt string) error {
+// validateProjectionType reports whether pt is a valid Smithy ProjectionType
+// enum value. An empty string is treated as valid (parameter omitted).
+func validateProjectionType(pt string) bool {
 	if pt == "" {
-		return nil
+		return true
 	}
-	if !validProjectionTypes[pt] {
-		return ErrInvalidParameter
-	}
-	return nil
+	return validProjectionTypes[pt]
 }
 
 // validateProjectionRequired validates the Projection sub-structure of a
-// GSI or LSI definition. It enforces:
+// GSI or LSI definition. It returns true when the structure satisfies:
 //   - NonKeyAttributes list size (Smithy NonKeyAttributeNameList: len 1-20).
 //   - Each NonKeyAttributeName length (Smithy: len 1-255).
 //   - NonKeyAttributes only valid when ProjectionType=INCLUDE.
-func validateProjectionRequired(projMap map[string]interface{}) error {
+func validateProjectionRequired(projMap map[string]interface{}) bool {
 	if projMap == nil {
-		return ErrInvalidParameter
+		return false
 	}
 	projectionType := request.GetStringParam(projMap, "ProjectionType")
 	if nkAs, ok := projMap["NonKeyAttributes"].([]interface{}); ok {
 		if len(nkAs) > nonKeyAttrListMaxLen {
-			return ErrInvalidParameter
+			return false
 		}
 		for _, nk := range nkAs {
 			nks, ok := nk.(string)
 			if !ok {
-				return ErrInvalidParameter
+				return false
 			}
-			if err := validateLength(nks, nonKeyAttrNameMinLen, nonKeyAttrNameMaxLen); err != nil {
-				return err
+			if !validateLength(nks, nonKeyAttrNameMinLen, nonKeyAttrNameMaxLen) {
+				return false
 			}
 		}
 		if projectionType != "" && projectionType != ProjectionTypeInclude {
-			return ErrInvalidParameter
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-// validateKeyAttributeValue ensures key attribute values use only the
-// types allowed for DynamoDB keys: S, N, or B (Smithy KeySchemaAttribute).
-// Also rejects empty values (N type empty check included).
-func validateKeyAttributeValue(key map[string]*dbstore.AttributeValue) error {
+// validateKeyAttributeValue reports whether every value in key uses one of
+// the types allowed for DynamoDB keys: S, N, or B (Smithy KeySchemaAttribute).
+// Empty values are also rejected.
+func validateKeyAttributeValue(key map[string]*dbstore.AttributeValue) bool {
 	for _, av := range key {
 		if av == nil {
-			return ErrInvalidParameter
+			return false
 		}
 		// Key attributes must be one of S, N, or B.
 		// BOOL, NULL, SS, NS, BS, M, L are not permitted.
 		if av.S == nil && av.N == nil && av.B == nil {
-			return ErrInvalidParameter
+			return false
 		}
 		// Reject empty values (extend to N type).
 		if av.S != nil && *av.S == "" {
-			return ErrInvalidParameter
+			return false
 		}
 		if av.N != nil && *av.N == "" {
-			return ErrInvalidParameter
+			return false
 		}
 		if av.B != nil && len(av.B) == 0 {
-			return ErrInvalidParameter
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-// validateGSIDeleteExists checks that a GSI to be deleted actually exists
-// before calling delete() on the map (Smithy: returns
-// GlobalSecondaryIndexNotFoundException on unknown GSI).
+// validateGSIDeleteExists reports whether the named GSI exists in gsiMap.
+// Returns the typed ErrIndexNotFound sentinel so the caller can surface
+// IndexNotFoundException rather than the generic ValidationException.
 func validateGSIDeleteExists(gsiMap map[string]*dbstore.GlobalSecondaryIndex, indexName string) error {
 	if _, exists := gsiMap[indexName]; !exists {
 		return ErrIndexNotFound
@@ -285,36 +319,32 @@ func validateGSIDeleteExists(gsiMap map[string]*dbstore.GlobalSecondaryIndex, in
 	return nil
 }
 
-// validateGSICreateRequired checks that a GSI Create request includes
-// the required IndexName and KeySchema (Smithy required traits), and
-// validates the IndexName format (len 3-255, pattern).
-func validateGSICreateRequired(create map[string]interface{}) error {
+// validateGSICreateRequired reports whether a GSI Create request includes
+// the required IndexName and KeySchema (Smithy required traits), and whether
+// the IndexName format satisfies the Smithy constraints (len 3-255, pattern).
+func validateGSICreateRequired(create map[string]interface{}) bool {
 	indexName := request.GetStringParam(create, "IndexName")
 	if indexName == "" {
-		return ErrInvalidParameter
+		return false
 	}
-	if err := validateIndexName(indexName); err != nil {
-		return err
+	if !validateIndexName(indexName) {
+		return false
 	}
 	keySchema := parseKeySchema(create)
 	if len(keySchema) == 0 {
-		return ErrInvalidParameter
+		return false
 	}
-	if err := validateKeySchema(keySchema); err != nil {
-		return err
-	}
-	return nil
+	return validateKeySchema(keySchema)
 }
 
-// validateBillingModeConsistency ensures that PROVISIONED billing mode
-// includes ProvisionedThroughput, and PAY_PER_REQUEST does not.
-func validateBillingModeConsistency(billingMode dbstore.BillingMode, provThroughput *dbstore.ProvisionedThroughput) error {
+// validateBillingModeConsistency reports whether PROVISIONED billing mode
+// is paired with a ProvisionedThroughput value. PAY_PER_REQUEST is always
+// consistent.
+func validateBillingModeConsistency(billingMode dbstore.BillingMode, provThroughput *dbstore.ProvisionedThroughput) bool {
 	if billingMode == dbstore.BillingModeProvisioned {
-		if provThroughput == nil {
-			return ErrInvalidParameter
-		}
+		return provThroughput != nil
 	}
-	return nil
+	return true
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +355,9 @@ func validateBillingModeConsistency(billingMode dbstore.BillingMode, provThrough
 // absent, the default value is returned. If the key is present but not a
 // bool, an error is returned (rejects malformed requests that would
 // otherwise be silently coerced to the default).
+//
+// Kept as (bool, error) because the parsed value is needed by the caller on
+// success; the bool alone is insufficient.
 func validateBoolParam(params map[string]interface{}, key string, defaultVal bool) (bool, error) {
 	v, ok := params[key]
 	if !ok {
@@ -340,6 +373,9 @@ func validateBoolParam(params map[string]interface{}, key string, defaultVal boo
 // validateBracketIndex parses a bracket-enclosed list index (e.g. "[3]")
 // and returns the integer index. Returns an error for empty, non-numeric,
 // or negative values (Smithy document path spec).
+//
+// Kept as (int, error) because the parsed index is needed by the caller on
+// success; the bool alone is insufficient.
 func validateBracketIndex(idxStr string) (int, error) {
 	idxStr = strings.TrimSpace(idxStr)
 	if idxStr == "" {
@@ -362,62 +398,59 @@ func validateBracketIndex(idxStr string) (int, error) {
 // Smithy HIGH-tier validators
 // ---------------------------------------------------------------------------
 
-// validatePartiQLStatement checks the PartiQL statement length
-// (Smithy PartiQLStatement: len 1-8192).
-func validatePartiQLStatement(stmt string) error {
+// validatePartiQLStatement reports whether stmt satisfies the PartiQL
+// statement length constraint (Smithy PartiQLStatement: len 1-8192).
+func validatePartiQLStatement(stmt string) bool {
 	return validateLength(stmt, 1, partiqlStatementMaxLen)
 }
 
-// validatePartiQLBatchCount checks the number of statements in a
-// BatchExecuteStatement request (Smithy PartiQLBatchRequest: len 1-25).
-func validatePartiQLBatchCount(count int) error {
+// validatePartiQLBatchCount reports whether count satisfies the
+// BatchExecuteStatement batch-size constraint (Smithy PartiQLBatchRequest:
+// len 1-25).
+func validatePartiQLBatchCount(count int) bool {
 	return validateRange(count, 1, partiqlBatchMaxLen)
 }
 
-// validateExecuteStatementLimit checks the Limit parameter on
-// ExecuteStatement (Smithy PositiveIntegerObject: range min 1).
-func validateExecuteStatementLimit(limit int) error {
-	if limit < 1 {
-		return ErrInvalidParameter
-	}
-	return nil
+// validateExecuteStatementLimit reports whether limit satisfies the
+// ExecuteStatement Limit constraint (Smithy PositiveIntegerObject: min 1).
+func validateExecuteStatementLimit(limit int) bool {
+	return limit >= 1
 }
 
-// validateS3Bucket checks the S3 bucket name format
+// validateS3Bucket reports whether bucket matches the S3 bucket name format
 // (Smithy S3Bucket: len 0-255, pattern ^[a-z0-9A-Z]+[.\-\w]*[a-z0-9A-Z]+$).
-func validateS3Bucket(bucket string) error {
-	if err := validateLength(bucket, 0, s3BucketMaxLen); err != nil {
-		return err
+func validateS3Bucket(bucket string) bool {
+	if !validateLength(bucket, 0, s3BucketMaxLen) {
+		return false
 	}
 	if bucket != "" && !s3BucketRegex.MatchString(bucket) {
-		return ErrInvalidParameter
+		return false
 	}
-	return nil
+	return true
 }
 
-// validateS3BucketOwner checks the S3 bucket owner account ID
-// (Smithy S3BucketOwner: pattern ^[0-9]{12}$).
-func validateS3BucketOwner(owner string) error {
+// validateS3BucketOwner reports whether owner matches the S3 bucket owner
+// account ID format (Smithy S3BucketOwner: pattern ^[0-9]{12}$). Empty is
+// treated as valid (parameter omitted).
+func validateS3BucketOwner(owner string) bool {
 	if owner == "" {
-		return nil
+		return true
 	}
-	if !s3BucketOwnerRegex.MatchString(owner) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return s3BucketOwnerRegex.MatchString(owner)
 }
 
-// validateS3Prefix checks the S3 key prefix length
-// (Smithy S3Prefix: len 0-1024).
-func validateS3Prefix(prefix string) error {
+// validateS3Prefix reports whether prefix satisfies the S3 key prefix length
+// constraint (Smithy S3Prefix: len 0-1024).
+func validateS3Prefix(prefix string) bool {
 	return validateLength(prefix, 0, s3PrefixMaxLen)
 }
 
-// validateS3SseKmsKeyId checks the KMS key ID length
-// (Smithy S3SseKmsKeyId: OPTIONAL, len 1-2048 when provided).
-func validateS3SseKmsKeyId(keyId string) error {
+// validateS3SseKmsKeyId reports whether keyId satisfies the KMS key ID
+// length constraint (Smithy S3SseKmsKeyId: OPTIONAL, len 1-2048 when
+// provided). Empty is treated as valid (parameter omitted).
+func validateS3SseKmsKeyId(keyId string) bool {
 	if keyId == "" {
-		return nil
+		return true
 	}
 	return validateLength(keyId, s3SseKmsKeyIdMinLen, s3SseKmsKeyIdMaxLen)
 }
@@ -428,221 +461,213 @@ func validateS3SseKmsKeyId(keyId string) error {
 
 // validateGlobalTableName is an alias for validateResourceName; retained
 // for call-site clarity (Smithy TableName: len 3-255, pattern).
-func validateGlobalTableName(name string) error {
+func validateGlobalTableName(name string) bool {
 	return validateResourceName(name)
 }
 
-// validateTagKey checks a tag key (Smithy TagKeyString: len 1-128).
-func validateTagKey(key string) error {
+// validateTagKey reports whether key satisfies the tag key length
+// constraint (Smithy TagKeyString: len 1-128).
+func validateTagKey(key string) bool {
 	return validateLength(key, 1, tagKeyMaxLen)
 }
 
-// validateTagValue checks a tag value (Smithy TagValueString: len 0-256).
-func validateTagValue(value string) error {
+// validateTagValue reports whether value satisfies the tag value length
+// constraint (Smithy TagValueString: len 0-256).
+func validateTagValue(value string) bool {
 	return validateLength(value, 0, tagValueMaxLen)
 }
 
-// validateRecoveryPeriodInDays checks the PITR recovery period
-// (Smithy RecoveryPeriodInDays: range 1-35).
-func validateRecoveryPeriodInDays(days int) error {
+// validateRecoveryPeriodInDays reports whether days falls within the PITR
+// recovery-period range (Smithy RecoveryPeriodInDays: range 1-35).
+func validateRecoveryPeriodInDays(days int) bool {
 	return validateRange(days, recoveryPeriodMin, recoveryPeriodMax)
 }
 
-// validateScanSegment checks the parallel Scan segment number
-// (Smithy ScanSegment: range 0-999999).
-func validateScanSegment(segment int) error {
+// validateScanSegment reports whether segment falls within the parallel
+// Scan segment range (Smithy ScanSegment: range 0-999999).
+func validateScanSegment(segment int) bool {
 	return validateRange(segment, scanSegmentMin, scanSegmentMax)
 }
 
-// validateScanTotalSegments checks the parallel Scan total-segments count
-// (Smithy ScanTotalSegments: range 1-1000000).
-func validateScanTotalSegments(total int) error {
+// validateScanTotalSegments reports whether total falls within the parallel
+// Scan total-segments range (Smithy ScanTotalSegments: range 1-1000000).
+func validateScanTotalSegments(total int) bool {
 	return validateRange(total, scanTotalSegmentsMin, scanTotalSegmentsMax)
 }
 
-// validateClientRequestToken checks the idempotency token length
-// (Smithy ClientRequestToken: len 1-36).
-func validateClientRequestToken(token string) error {
+// validateClientRequestToken reports whether token satisfies the idempotency
+// token length constraint (Smithy ClientRequestToken: len 1-36). Empty is
+// treated as valid (parameter omitted).
+func validateClientRequestToken(token string) bool {
 	if token == "" {
-		return nil
+		return true
 	}
 	return validateLength(token, clientRequestTokenMinLen, clientRequestTokenMaxLen)
 }
 
-// validateListExportsLimit checks ListExports MaxResults
-// (Smithy ListExportsMaxLimit: range 1-25).
-func validateListExportsLimit(limit int) error {
+// validateListExportsLimit reports whether limit falls within the ListExports
+// MaxResults range (Smithy ListExportsMaxLimit: range 1-25).
+func validateListExportsLimit(limit int) bool {
 	return validateRange(limit, 1, listExportsMaxLimit)
 }
 
-// validateListImportsLimit checks ListImports PageSize
-// (Smithy ListImportsMaxLimit: range 1-25).
-func validateListImportsLimit(limit int) error {
+// validateListImportsLimit reports whether limit falls within the ListImports
+// PageSize range (Smithy ListImportsMaxLimit: range 1-25).
+func validateListImportsLimit(limit int) bool {
 	return validateRange(limit, 1, listImportsMaxLimit)
 }
 
-// validateListBackupsLimit checks ListBackups Limit
-// (Smithy BackupsInputLimit: range 1-100).
-func validateListBackupsLimit(limit int) error {
+// validateListBackupsLimit reports whether limit falls within the ListBackups
+// Limit range (Smithy BackupsInputLimit: range 1-100).
+func validateListBackupsLimit(limit int) bool {
 	return validateRange(limit, 1, listBackupsMaxLimit)
 }
 
-// validateListContributorInsightsLimit checks ListContributorInsights MaxResults
-// (Smithy ListContributorInsightsLimit: range max 100).
-func validateListContributorInsightsLimit(limit int) error {
+// validateListContributorInsightsLimit reports whether limit falls within
+// the ListContributorInsights MaxResults range (Smithy
+// ListContributorInsightsLimit: range max 100).
+func validateListContributorInsightsLimit(limit int) bool {
 	return validateRange(limit, 0, listContributorMaxLimit)
 }
 
-// validateListTablesLimit checks ListTables Limit
-// (Smithy ListTablesInputLimit: range 1-100).
-func validateListTablesLimit(limit int) error {
+// validateListTablesLimit reports whether limit falls within the ListTables
+// Limit range (Smithy ListTablesInputLimit: range 1-100).
+func validateListTablesLimit(limit int) bool {
 	return validateRange(limit, 1, listTablesMaxLimit)
 }
 
-// validateListGlobalTablesLimit checks ListGlobalTables Limit
-// (Smithy PositiveIntegerObject: range min 1).
-func validateListGlobalTablesLimit(limit int) error {
-	if limit < listGlobalTablesMinLimit {
-		return ErrInvalidParameter
-	}
-	return nil
+// validateListGlobalTablesLimit reports whether limit satisfies the
+// ListGlobalTables Limit constraint (Smithy PositiveIntegerObject: min 1).
+func validateListGlobalTablesLimit(limit int) bool {
+	return limit >= listGlobalTablesMinLimit
 }
 
 // ---------------------------------------------------------------------------
 // Smithy LOW-tier validators
 // ---------------------------------------------------------------------------
 
-// validatePolicyRevisionId checks the resource-policy revision ID length
-// (Smithy PolicyRevisionId: len 1-255).
-func validatePolicyRevisionId(id string) error {
+// validatePolicyRevisionId reports whether id satisfies the resource-policy
+// revision ID length constraint (Smithy PolicyRevisionId: len 1-255). Empty
+// is treated as valid (parameter omitted).
+func validatePolicyRevisionId(id string) bool {
 	if id == "" {
-		return nil
+		return true
 	}
 	return validateLength(id, policyRevisionIdMinLen, policyRevisionIdMaxLen)
 }
 
-// validateTimeToLiveAttributeName checks the TTL attribute name length
-// (Smithy TimeToLiveAttributeName: len 1-255).
-func validateTimeToLiveAttributeName(name string) error {
+// validateTimeToLiveAttributeName reports whether name satisfies the TTL
+// attribute name length constraint (Smithy TimeToLiveAttributeName: len 1-255).
+func validateTimeToLiveAttributeName(name string) bool {
 	return validateLength(name, 1, ttlAttributeNameMaxLen)
 }
 
-// validateTableId checks the table UUID format
-// (Smithy TableId: pattern ^[0-9a-f]{8}-...$).
-func validateTableId(id string) error {
+// validateTableId reports whether id matches the table UUID format
+// (Smithy TableId: pattern ^[0-9a-f]{8}-...$). Empty is treated as valid
+// (parameter omitted).
+func validateTableId(id string) bool {
 	if id == "" {
-		return nil
+		return true
 	}
-	if !tableIdRegex.MatchString(id) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return tableIdRegex.MatchString(id)
 }
 
-// validateImportNextToken checks the ListImports next-token format
-// (Smithy ImportNextToken: len 112-1024, pattern ^([0-9a-f]{16})+$).
-func validateImportNextToken(token string) error {
+// validateImportNextToken reports whether token matches the ListImports
+// next-token format (Smithy ImportNextToken: len 112-1024, pattern
+// ^([0-9a-f]{16})+$). Empty is treated as valid (parameter omitted).
+func validateImportNextToken(token string) bool {
 	if token == "" {
-		return nil
+		return true
 	}
-	if err := validateLength(token, importNextTokenMinLen, importNextTokenMaxLen); err != nil {
-		return err
+	if !validateLength(token, importNextTokenMinLen, importNextTokenMaxLen) {
+		return false
 	}
-	if !importNextTokenRegex.MatchString(token) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return importNextTokenRegex.MatchString(token)
 }
 
-// validateClientToken checks the Export/Import client-token format
-// (Smithy ClientToken: pattern ^[^\$]+$).
-func validateClientToken(token string) error {
+// validateClientToken reports whether token matches the Export/Import
+// client-token format (Smithy ClientToken: pattern ^[^\$]+$). Empty is
+// treated as valid (parameter omitted).
+func validateClientToken(token string) bool {
 	if token == "" {
-		return nil
+		return true
 	}
-	if !clientTokenRegex.MatchString(token) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return clientTokenRegex.MatchString(token)
 }
 
-// validateAutoScalingPolicyName checks the auto-scaling policy name
-// (Smithy AutoScalingPolicyName: len 1-256, pattern ^\p{Print}+$).
-func validateAutoScalingPolicyName(name string) error {
-	if err := validateLength(name, autoScalingPolicyNameMinLen, autoScalingPolicyNameMaxLen); err != nil {
-		return err
+// validateAutoScalingPolicyName reports whether name satisfies the
+// auto-scaling policy name constraints (Smithy AutoScalingPolicyName:
+// len 1-256, pattern ^\p{Print}+$).
+func validateAutoScalingPolicyName(name string) bool {
+	if !validateLength(name, autoScalingPolicyNameMinLen, autoScalingPolicyNameMaxLen) {
+		return false
 	}
-	if !autoScalingPolicyNameRegex.MatchString(name) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return autoScalingPolicyNameRegex.MatchString(name)
 }
 
-// validateAutoScalingRoleArn checks the auto-scaling role ARN length
-// (Smithy AutoScalingRoleArn: len 1-1600). The Smithy pattern permits any
-// XML-compatible character and is extremely permissive, so only length is
-// enforced.
-func validateAutoScalingRoleArn(arn string) error {
+// validateAutoScalingRoleArn reports whether arn satisfies the auto-scaling
+// role ARN length constraint (Smithy AutoScalingRoleArn: len 1-1600). The
+// Smithy pattern permits any XML-compatible character and is extremely
+// permissive, so only length is enforced.
+func validateAutoScalingRoleArn(arn string) bool {
 	return validateLength(arn, autoScalingRoleArnMinLen, autoScalingRoleArnMaxLen)
 }
 
-// validateContributorInsightsRule checks the contributor-insights rule
-// pattern (Smithy ContributorInsightsRule:
-// ^[A-Za-z0-9][A-Za-z0-9\-_\.]{0,126}[A-Za-z0-9]$).
-func validateContributorInsightsRule(rule string) error {
-	if rule == "" {
-		return nil
+// validateContributorInsightsMode reports whether mode is a valid
+// contributor-insights mode value (Smithy ContributorInsightsMode enum:
+// ACCESSED_AND_THROTTLED_KEYS, THROTTLED_KEYS). Empty is treated as valid
+// (parameter omitted).
+func validateContributorInsightsMode(mode string) bool {
+	if mode == "" {
+		return true
 	}
-	if !contributorRuleRegex.MatchString(rule) {
-		return ErrInvalidParameter
+	switch mode {
+	case "ACCESSED_AND_THROTTLED_KEYS", "THROTTLED_KEYS":
+		return true
+	default:
+		return false
 	}
-	return nil
 }
 
-// validateCsvDelimiter checks the CSV import delimiter character
-// (Smithy CsvDelimiter: len 1-1, pattern ^[,;:|\t ]$).
-func validateCsvDelimiter(d string) error {
+// validateCsvDelimiter reports whether d is a valid CSV import delimiter
+// character (Smithy CsvDelimiter: len 1-1, pattern ^[,;:|\t ]$).
+func validateCsvDelimiter(d string) bool {
 	if len(d) != 1 {
-		return ErrInvalidParameter
+		return false
 	}
-	if !csvDelimiterRegex.MatchString(d) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return csvDelimiterRegex.MatchString(d)
 }
 
-// validateCsvHeader checks a single CSV import header value
-// (Smithy CsvHeader: len 1-65536, pattern ^[\x20-\x21\x23-\x2B\x2D-\x7E]*$).
-func validateCsvHeader(header string) error {
-	if err := validateLength(header, 1, 65536); err != nil {
-		return err
+// validateCsvHeader reports whether header satisfies a single CSV import
+// header value (Smithy CsvHeader: len 1-65536, pattern
+// ^[\x20-\x21\x23-\x2B\x2D-\x7E]*$).
+func validateCsvHeader(header string) bool {
+	if !validateLength(header, 1, 65536) {
+		return false
 	}
-	if !csvHeaderRegex.MatchString(header) {
-		return ErrInvalidParameter
-	}
-	return nil
+	return csvHeaderRegex.MatchString(header)
 }
 
-// validateCsvHeaderList checks the CSV import header list size
-// (Smithy CsvHeaderList: len 1-255).
-func validateCsvHeaderList(count int) error {
+// validateCsvHeaderList reports whether count falls within the CSV import
+// header list size constraint (Smithy CsvHeaderList: len 1-255).
+func validateCsvHeaderList(count int) bool {
 	return validateRange(count, 1, csvHeaderListMaxLen)
 }
 
-// validateAttributeName checks an attribute name length
-// (Smithy AttributeName: len 0-65535).
-func validateAttributeName(name string) error {
+// validateAttributeName reports whether name satisfies the attribute name
+// length constraint (Smithy AttributeName: len 0-65535).
+func validateAttributeName(name string) bool {
 	return validateLength(name, 0, attributeNameMaxLen)
 }
 
-// validateKeySchemaAttributeName checks a key-schema attribute name
-// (Smithy KeySchemaAttributeName: len 1-255).
-func validateKeySchemaAttributeName(name string) error {
+// validateKeySchemaAttributeName reports whether name satisfies a key-schema
+// attribute name length (Smithy KeySchemaAttributeName: len 1-255).
+func validateKeySchemaAttributeName(name string) bool {
 	return validateLength(name, keySchemaAttrNameMinLen, keySchemaAttrNameMaxLen)
 }
 
-// validateNonKeyAttributeName checks a single NonKeyAttributeName
-// (Smithy NonKeyAttributeName: len 1-255).
-func validateNonKeyAttributeName(name string) error {
+// validateNonKeyAttributeName reports whether name satisfies a single
+// NonKeyAttributeName length (Smithy NonKeyAttributeName: len 1-255).
+func validateNonKeyAttributeName(name string) bool {
 	return validateLength(name, nonKeyAttrNameMinLen, nonKeyAttrNameMaxLen)
 }

@@ -36,8 +36,8 @@ func nestedString(m map[string]interface{}, key string) string {
 // deleted secrets recoverable for a minimum of 30 days.
 func (s *SecretsManagerService) RestoreSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
@@ -76,8 +76,8 @@ func (s *SecretsManagerService) RestoreSecret(ctx context.Context, reqCtx *reque
 //     (metadata-only rotation, preserving backward compatibility).
 func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecret(reqCtx, secretId)
@@ -91,6 +91,9 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	}
 
 	rotationLambdaARN := request.GetStringParam(req.Parameters, "RotationLambdaARN")
+	if err := validateRotationLambdaARN(rotationLambdaARN); err != nil {
+		return nil, err
+	}
 	rotationRulesRaw, _ := req.Parameters["RotationRules"].(map[string]interface{})
 	if rotationRulesRaw == nil {
 		rotationRulesRaw = make(map[string]interface{})
@@ -103,16 +106,18 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 			return nil, err
 		}
 	}
+	if err := validateScheduleExpression(scheduleExpression); err != nil {
+		return nil, err
+	}
+	if err := validateDuration(duration); err != nil {
+		return nil, err
+	}
 
 	// ClientRequestToken — idempotency token for rotation. When
 	// provided, passed to executeRotation as the rotation cycle token.
-	// Smithy ClientRequestTokenType length 32-64.
 	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if clientRequestToken != "" {
-		if len(clientRequestToken) < 32 || len(clientRequestToken) > 64 {
-			return nil, errors.NewAWSError("InvalidParameterException",
-				"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
-		}
+	if err := validateClientRequestToken(clientRequestToken); err != nil {
+		return nil, err
 	}
 
 	// RotateImmediately defaults to true per AWS spec.
@@ -259,8 +264,8 @@ func (s *SecretsManagerService) executeMetadataOnlyRotation(store secretsmanager
 // rotation configuration is cleared.
 func (s *SecretsManagerService) CancelRotateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if secretId == "" {
-		return nil, errors.ErrMissingParameter
+	if err := validateSecretId(secretId); err != nil {
+		return nil, err
 	}
 
 	secret, err := s.resolveSecret(reqCtx, secretId)

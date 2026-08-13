@@ -3,12 +3,21 @@ package lambda
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 )
 
 // GetFunction retrieves information about the specified Lambda function.
 func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, version, _, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	function, version, _, tags, err := s.getFunctionCore(store, &GetFunctionInput{
+		FunctionName: request.GetStringParam(req.Parameters, "FunctionName"),
+		Qualifier:    request.GetStringParam(req.Parameters, "Qualifier"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -18,15 +27,6 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 		config = s.toVersionConfiguration(version)
 	} else {
 		config = s.toFunctionConfiguration(function)
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	tags, err := store.Functions.TagStore.List(function.FunctionName)
-	if err != nil {
-		tags = map[string]string{}
 	}
 
 	return map[string]interface{}{
@@ -42,7 +42,15 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 
 // GetFunctionConfiguration retrieves the configuration of the specified Lambda function.
 func (s *LambdaService) GetFunctionConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, version, _, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	function, version, _, err := s.getFunctionConfigurationCore(store, &GetFunctionInput{
+		FunctionName: request.GetStringParam(req.Parameters, "FunctionName"),
+		Qualifier:    request.GetStringParam(req.Parameters, "Qualifier"),
+	})
 	if err != nil {
 		return nil, err
 	}

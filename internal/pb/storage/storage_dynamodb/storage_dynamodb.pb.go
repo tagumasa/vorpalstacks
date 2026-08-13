@@ -1261,6 +1261,7 @@ type PointInTimeRecoveryDescription struct {
 	Status                     PointInTimeRecoveryStatus `protobuf:"varint,1,opt,name=status,proto3,enum=storage.dynamodb.PointInTimeRecoveryStatus" json:"status,omitempty"`
 	EarliestRestorableDateTime *timestamppb.Timestamp    `protobuf:"bytes,2,opt,name=earliest_restorable_date_time,json=earliestRestorableDateTime,proto3" json:"earliest_restorable_date_time,omitempty"`
 	LatestRestorableDateTime   *timestamppb.Timestamp    `protobuf:"bytes,3,opt,name=latest_restorable_date_time,json=latestRestorableDateTime,proto3" json:"latest_restorable_date_time,omitempty"`
+	RecoveryPeriodInDays       int32                     `protobuf:"varint,4,opt,name=recovery_period_in_days,json=recoveryPeriodInDays,proto3" json:"recovery_period_in_days,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1314,6 +1315,13 @@ func (x *PointInTimeRecoveryDescription) GetLatestRestorableDateTime() *timestam
 		return x.LatestRestorableDateTime
 	}
 	return nil
+}
+
+func (x *PointInTimeRecoveryDescription) GetRecoveryPeriodInDays() int32 {
+	if x != nil {
+		return x.RecoveryPeriodInDays
+	}
+	return 0
 }
 
 // KinesisDataStreamDestination represents a Kinesis data stream destination.
@@ -1404,6 +1412,7 @@ type Table struct {
 	ResourcePolicy                string                          `protobuf:"bytes,22,opt,name=resource_policy,json=resourcePolicy,proto3" json:"resource_policy,omitempty"`
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `protobuf:"bytes,23,rep,name=kinesis_data_stream_destinations,json=kinesisDataStreamDestinations,proto3" json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `protobuf:"varint,24,opt,name=contributor_insights_enabled,json=contributorInsightsEnabled,proto3" json:"contributor_insights_enabled,omitempty"`
+	ContributorInsightsMode       string                          `protobuf:"bytes,26,opt,name=contributor_insights_mode,json=contributorInsightsMode,proto3" json:"contributor_insights_mode,omitempty"`
 	TableClass                    string                          `protobuf:"bytes,25,opt,name=table_class,json=tableClass,proto3" json:"table_class,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -1605,6 +1614,13 @@ func (x *Table) GetContributorInsightsEnabled() bool {
 		return x.ContributorInsightsEnabled
 	}
 	return false
+}
+
+func (x *Table) GetContributorInsightsMode() string {
+	if x != nil {
+		return x.ContributorInsightsMode
+	}
+	return ""
 }
 
 func (x *Table) GetTableClass() string {
@@ -3053,16 +3069,17 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x17TimeToLiveSpecification\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12%\n" +
 	"\x0eattribute_name\x18\x02 \x01(\tR\rattributeName\x123\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1b.storage.dynamodb.TTLStatusR\x06status\"\x9f\x02\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1b.storage.dynamodb.TTLStatusR\x06status\"\xd6\x02\n" +
 	"\x1ePointInTimeRecoveryDescription\x12C\n" +
 	"\x06status\x18\x01 \x01(\x0e2+.storage.dynamodb.PointInTimeRecoveryStatusR\x06status\x12]\n" +
 	"\x1dearliest_restorable_date_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x1aearliestRestorableDateTime\x12Y\n" +
-	"\x1blatest_restorable_date_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x18latestRestorableDateTime\"\xb2\x01\n" +
+	"\x1blatest_restorable_date_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x18latestRestorableDateTime\x125\n" +
+	"\x17recovery_period_in_days\x18\x04 \x01(\x05R\x14recoveryPeriodInDays\"\xb2\x01\n" +
 	"\x1cKinesisDataStreamDestination\x12\x1d\n" +
 	"\n" +
 	"stream_arn\x18\x01 \x01(\tR\tstreamArn\x12-\n" +
 	"\x12destination_status\x18\x02 \x01(\tR\x11destinationStatus\x12D\n" +
-	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\"\xe2\f\n" +
+	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\"\x9e\r\n" +
 	"\x05Table\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x125\n" +
@@ -3092,7 +3109,8 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x16point_in_time_recovery\x18\x15 \x01(\v20.storage.dynamodb.PointInTimeRecoveryDescriptionR\x13pointInTimeRecovery\x12'\n" +
 	"\x0fresource_policy\x18\x16 \x01(\tR\x0eresourcePolicy\x12w\n" +
 	" kinesis_data_stream_destinations\x18\x17 \x03(\v2..storage.dynamodb.KinesisDataStreamDestinationR\x1dkinesisDataStreamDestinations\x12@\n" +
-	"\x1ccontributor_insights_enabled\x18\x18 \x01(\bR\x1acontributorInsightsEnabled\x12\x1f\n" +
+	"\x1ccontributor_insights_enabled\x18\x18 \x01(\bR\x1acontributorInsightsEnabled\x12:\n" +
+	"\x19contributor_insights_mode\x18\x1a \x01(\tR\x17contributorInsightsMode\x12\x1f\n" +
 	"\vtable_class\x18\x19 \x01(\tR\n" +
 	"tableClass\"\xfe\x02\n" +
 	"\x0eAttributeValue\x12\x0e\n" +

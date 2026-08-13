@@ -4,30 +4,37 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
 )
 
+// errScanSufficient is returned from a scan callback to signal that
+// enough items have been collected and the scan can stop early.
+var errScanSufficient = errors.New("scan sufficient items collected")
+
 // ExecuteStatement executes a PartiQL statement.
 func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statement := request.GetStringParam(req.Parameters, "Statement")
-	if err := validatePartiQLStatement(statement); err != nil {
-		return nil, err
+	if !validatePartiQLStatement(statement) {
+		return nil, ErrInvalidParameter
 	}
 
 	params := parsePartiQLParams(req.Parameters)
 	consistentRead := request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit > 0 {
-		if err := validateExecuteStatementLimit(limit); err != nil {
-			return nil, err
+		if !validateExecuteStatementLimit(limit) {
+			return nil, ErrInvalidParameter
 		}
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
@@ -89,47 +96,55 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 		return nil, err
 	}
 
-	var items []*dbstore.Item
-
 	pkName := getHashKeyName(table)
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
-	if pkValue != "" {
-		err = store.Items().ScanByPartitionKey(tableName, pkValue, func(item *dbstore.Item) error {
-			items = append(items, item)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
-			items = append(items, item)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	scannedCount := len(items)
-
-	if whereExpr != nil {
-		items = filterItemsByExpr(items, whereExpr, params)
-	}
-
-	if orderBy != nil {
-		items = sortItemsByOrderBy(items, orderBy)
-	}
-
+	// Decode pagination offset before scanning so we can calculate
+	// how many items to collect before early termination.
 	startOffset := 0
 	if nextToken != "" {
 		if decoded, decErr := base64.StdEncoding.DecodeString(nextToken); decErr == nil {
 			var offset int
-			if json.Unmarshal(decoded, &offset) == nil && offset > 0 && offset <= len(items) {
+			if json.Unmarshal(decoded, &offset) == nil && offset > 0 {
 				startOffset = offset
 			}
 		}
+	}
+
+	// When no ORDER BY is present, filter inside the scan callback and
+	// break early after collecting enough items. This reduces memory
+	// from O(N) to O(limit) for filtered queries on large tables.
+	needed := 0
+	if orderBy == nil && limit > 0 {
+		needed = startOffset + limit
+	}
+
+	var items []*dbstore.Item
+	scannedCount := 0
+
+	scanCallback := func(item *dbstore.Item) error {
+		scannedCount++
+		if whereExpr != nil && !evaluateExpr(item.Attributes, whereExpr, params) {
+			return nil
+		}
+		if needed > 0 && len(items) >= needed {
+			return errScanSufficient
+		}
+		items = append(items, item)
+		return nil
+	}
+
+	if pkValue != "" {
+		err = store.Items().ScanByPartitionKey(tableName, pkValue, scanCallback)
+	} else {
+		err = store.Items().Scan(tableName, scanCallback)
+	}
+	if err != nil && !errors.Is(err, errScanSufficient) {
+		return nil, err
+	}
+
+	if orderBy != nil {
+		items = sortItemsByOrderBy(items, orderBy)
 	}
 	items = items[startOffset:]
 
@@ -242,7 +257,7 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 
 func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
-		if r := recover(); r != nil {
+		if r := resilience.RecoverPanic("dynamodb partiql update"); r != nil {
 			err = fmt.Errorf("panic in executePartiQLUpdate: %v", r)
 		}
 	}()
@@ -272,30 +287,55 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	// AWS PartiQL requires UPDATE to target a single item via partition-key
+	// equality in the WHERE clause. Reject statements that lack this.
+	if whereExpr == nil {
+		return nil, ErrInvalidParameter
+	}
+	pkName := getHashKeyName(table)
+	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
+	if pkValue == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// Scan only items matching the partition key, then filter by the
+	// full WHERE clause in the callback. Collect at most 2 items to
+	// detect multi-item matches without loading the entire partition.
 	var items []*dbstore.Item
-	err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
+	var preFilterItems []*dbstore.Item
+	scannedCount := 0
+	scanCallback := func(item *dbstore.Item) error {
+		scannedCount++
+		if !evaluateExpr(item.Attributes, whereExpr, params) {
+			if returnValuesOnConditionCheckFailure == "ALL_OLD" {
+				preFilterItems = append(preFilterItems, item)
+			}
+			return nil
+		}
 		items = append(items, item)
+		if len(items) >= 2 {
+			return errScanSufficient
+		}
 		return nil
-	})
-	if err != nil {
+	}
+	err = store.Items().ScanByPartitionKey(tableName, pkValue, scanCallback)
+	if err != nil && !errors.Is(err, errScanSufficient) {
 		return nil, err
 	}
 
-	scannedCount := len(items)
-	var preFilterItems []*dbstore.Item
-	if whereExpr != nil && returnValuesOnConditionCheckFailure == "ALL_OLD" {
-		preFilterItems = make([]*dbstore.Item, len(items))
-		copy(preFilterItems, items)
-	}
-	if whereExpr != nil {
-		items = filterItemsByExpr(items, whereExpr, params)
+	// AWS rejects UPDATE statements that match more than one item.
+	if len(items) > 1 {
+		return nil, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
+			"UPDATE statement must match exactly one item", http.StatusBadRequest)
 	}
 
-	if len(items) == 0 && preFilterItems != nil && len(preFilterItems) > 0 {
+	if len(items) == 0 && len(preFilterItems) > 0 {
+		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
+		for _, pi := range preFilterItems {
+			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
+		}
 		return map[string]interface{}{
-			"Items": []map[string]interface{}{
-				buildItemResponse(preFilterItems[0].Attributes),
-			},
+			"Items":        oldItems,
 			"Count":        0,
 			"ScannedCount": scannedCount,
 		}, nil
@@ -366,7 +406,7 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 
 func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
-		if r := recover(); r != nil {
+		if r := resilience.RecoverPanic("dynamodb partiql delete"); r != nil {
 			err = fmt.Errorf("panic in executePartiQLDelete: %v", r)
 		}
 	}()
@@ -390,30 +430,55 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	// AWS PartiQL requires DELETE to target a single item via partition-key
+	// equality in the WHERE clause. Reject statements that lack this.
+	if whereExpr == nil {
+		return nil, ErrInvalidParameter
+	}
+	pkName := getHashKeyName(table)
+	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
+	if pkValue == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// Scan only items matching the partition key, then filter by the
+	// full WHERE clause in the callback. Collect at most 2 items to
+	// detect multi-item matches without loading the entire partition.
 	var items []*dbstore.Item
-	err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
+	var preFilterItems []*dbstore.Item
+	scannedCount := 0
+	scanCallback := func(item *dbstore.Item) error {
+		scannedCount++
+		if !evaluateExpr(item.Attributes, whereExpr, params) {
+			if returnValuesOnConditionCheckFailure == "ALL_OLD" {
+				preFilterItems = append(preFilterItems, item)
+			}
+			return nil
+		}
 		items = append(items, item)
+		if len(items) >= 2 {
+			return errScanSufficient
+		}
 		return nil
-	})
-	if err != nil {
+	}
+	err = store.Items().ScanByPartitionKey(tableName, pkValue, scanCallback)
+	if err != nil && !errors.Is(err, errScanSufficient) {
 		return nil, err
 	}
 
-	scannedCount := len(items)
-	var preFilterItems []*dbstore.Item
-	if whereExpr != nil && returnValuesOnConditionCheckFailure == "ALL_OLD" {
-		preFilterItems = make([]*dbstore.Item, len(items))
-		copy(preFilterItems, items)
-	}
-	if whereExpr != nil {
-		items = filterItemsByExpr(items, whereExpr, params)
+	// AWS rejects DELETE statements that match more than one item.
+	if len(items) > 1 {
+		return nil, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
+			"DELETE statement must match exactly one item", http.StatusBadRequest)
 	}
 
-	if len(items) == 0 && preFilterItems != nil && len(preFilterItems) > 0 {
+	if len(items) == 0 && len(preFilterItems) > 0 {
+		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
+		for _, pi := range preFilterItems {
+			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
+		}
 		return map[string]interface{}{
-			"Items": []map[string]interface{}{
-				buildItemResponse(preFilterItems[0].Attributes),
-			},
+			"Items":        oldItems,
 			"Count":        0,
 			"ScannedCount": scannedCount,
 		}, nil

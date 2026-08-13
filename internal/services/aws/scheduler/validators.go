@@ -3,11 +3,11 @@ package scheduler
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/scheduleexpr"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -16,12 +16,6 @@ import (
 // namePattern matches the AWS Scheduler Name/GroupName constraint:
 // 1-64 chars of alphanumeric, hyphen, underscore, and period.
 var namePattern = regexp.MustCompile(`^[0-9a-zA-Z-_.]{1,64}$`)
-
-var (
-	atExpressionRegex   = regexp.MustCompile(`^at\((\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\)$`)
-	rateExpressionRegex = regexp.MustCompile(`^rate\((\d+)\s+(minute|minutes|hour|hours|day|days)\)$`)
-	cronExpressionRegex = regexp.MustCompile(`^cron\((.+)\)$`)
-)
 
 // dateLayouts lists the timestamp formats accepted by the Scheduler API.
 var dateLayouts = []string{
@@ -486,63 +480,8 @@ func validateFlexibleTimeWindow(ftw *schedulerstore.FlexibleTimeWindow) error {
 	return nil
 }
 
-// isValidScheduleExpression validates the full schedule expression format:
-// at() semantic date correctness, rate() value/unit agreement, and cron()
-// 6-field count.
+// isValidScheduleExpression delegates to the shared schedule expression
+// validator in internal/common/scheduleexpr.
 func isValidScheduleExpression(expr string) bool {
-	if len(expr) > 256 {
-		return false
-	}
-
-	if matches := atExpressionRegex.FindStringSubmatch(expr); len(matches) == 2 {
-		if _, err := time.Parse(timeutils.ISO8601NoZFormat, matches[1]); err != nil {
-			return false
-		}
-		return true
-	}
-
-	if validateRateExpression(expr) {
-		return true
-	}
-
-	if matches := cronExpressionRegex.FindStringSubmatch(expr); len(matches) == 2 {
-		fields := strings.Fields(matches[1])
-		if len(fields) != 6 {
-			return false
-		}
-		return true
-	}
-
-	return false
-}
-
-// validateRateExpression checks a rate() expression against the AWS rules:
-// the value must be a positive number (>= 1) and the unit must agree with
-// the value — singular for 1, plural for values greater than 1.
-func validateRateExpression(expr string) bool {
-	matches := rateExpressionRegex.FindStringSubmatch(expr)
-	if len(matches) != 3 {
-		return false
-	}
-	value, err := strconv.Atoi(matches[1])
-	if err != nil || value < 1 {
-		return false
-	}
-	unit := matches[2]
-	if value == 1 {
-		switch unit {
-		case "minute", "hour", "day":
-			return true
-		}
-		return false
-	}
-	switch unit {
-	case "minutes":
-		return value <= 525600
-	case "hours":
-		return value <= 8760
-	case "days":
-		return value <= 365
-	}
-	return false
+	return scheduleexpr.ValidateExpression(expr)
 }
