@@ -46,16 +46,26 @@ func fnConcat(e *Evaluator, args []Expr) (interface{}, error) {
 		return unknownValue{}, nil
 	}
 	if len(args) == 1 {
-		return e.Eval(args[0])
+		val, unknown, err := e.evalArg(args[0])
+		if err != nil {
+			return nil, err
+		}
+		if unknown {
+			return unknownValue{}, nil
+		}
+		return val, nil
 	}
 
 	// Evaluate all arguments first.
 	vals := make([]interface{}, 0, len(args))
 	hasArray := false
 	for _, arg := range args {
-		val, err := e.Eval(arg)
+		val, unknown, err := e.evalArg(arg)
 		if err != nil {
 			return nil, err
+		}
+		if unknown {
+			return unknownValue{}, nil
 		}
 		if _, ok := val.([]interface{}); ok {
 			hasArray = true
@@ -86,9 +96,12 @@ func fnLength(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("evaluator: length() requires 1 argument")
 	}
-	val, err := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
 	if err != nil {
 		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
 	}
 	switch v := val.(type) {
 	case string:
@@ -106,9 +119,12 @@ func fnUpper(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("upper() requires at least 1 argument")
 	}
-	val, err := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
 	if err != nil {
 		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
 	}
 	return strings.ToUpper(toString(val)), nil
 }
@@ -117,9 +133,12 @@ func fnLower(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("lower() requires at least 1 argument")
 	}
-	val, err := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
 	if err != nil {
 		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
 	}
 	return strings.ToLower(toString(val)), nil
 }
@@ -128,9 +147,12 @@ func fnTrim(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
-	val, err := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
 	if err != nil {
 		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
 	}
 	return strings.TrimSpace(toString(val)), nil
 }
@@ -139,16 +161,16 @@ func fnReplace(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 3 {
 		return unknownValue{}, nil
 	}
-	str, err := e.Eval(args[0])
-	if err != nil || isUnknown(str) {
+	str, unknown, err := e.evalArg(args[0])
+	if err != nil || unknown {
 		return unknownValue{}, nil
 	}
-	old, err := e.Eval(args[1])
-	if err != nil || isUnknown(old) {
+	old, unknown, err := e.evalArg(args[1])
+	if err != nil || unknown {
 		return unknownValue{}, nil
 	}
-	repl, err := e.Eval(args[2])
-	if err != nil || isUnknown(repl) {
+	repl, unknown, err := e.evalArg(args[2])
+	if err != nil || unknown {
 		return unknownValue{}, nil
 	}
 	return strings.ReplaceAll(toString(str), toString(old), toString(repl)), nil
@@ -158,20 +180,20 @@ func fnSubstring(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 2 {
 		return unknownValue{}, nil
 	}
-	str, err := e.Eval(args[0])
-	if err != nil || isUnknown(str) {
+	str, unknown, err := e.evalArg(args[0])
+	if err != nil || unknown {
 		return unknownValue{}, nil
 	}
-	startVal, err := e.Eval(args[1])
-	if err != nil || isUnknown(startVal) {
+	startVal, unknown, err := e.evalArg(args[1])
+	if err != nil || unknown {
 		return unknownValue{}, nil
 	}
 	start := int(toFloat(startVal)) - 1
 	s := toString(str)
 	length := len(s) - start
 	if len(args) >= 3 {
-		lenVal, err := e.Eval(args[2])
-		if err != nil || isUnknown(lenVal) {
+		lenVal, unknown, err := e.evalArg(args[2])
+		if err != nil || unknown {
 			return unknownValue{}, nil
 		}
 		length = int(toFloat(lenVal))
@@ -192,7 +214,13 @@ func fnCast(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 2 {
 		return nil, nil
 	}
-	val, _ := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
+	}
 	typeName := strings.ToUpper(fmt.Sprintf("%v", evalExprName(args[1])))
 	return e.castValue(val, typeName)
 }
@@ -201,7 +229,13 @@ func fnAbs(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
-	val, _ := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
+	}
 	return math.Abs(toFloat(val)), nil
 }
 
@@ -209,7 +243,13 @@ func fnCeil(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
-	val, _ := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
+	}
 	return math.Ceil(toFloat(val)), nil
 }
 
@@ -217,6 +257,12 @@ func fnFloor(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
-	val, _ := e.Eval(args[0])
+	val, unknown, err := e.evalArg(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if unknown {
+		return unknownValue{}, nil
+	}
 	return math.Floor(toFloat(val)), nil
 }

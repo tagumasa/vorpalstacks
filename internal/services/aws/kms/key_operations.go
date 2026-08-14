@@ -44,12 +44,7 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	bypassLockoutCheck := false
-	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
-		if b, ok := v.(string); ok && b == "true" {
-			bypassLockoutCheck = true
-		}
-	}
+	bypassLockoutCheck := request.GetBoolParam(req.Parameters, "BypassPolicyLockoutSafetyCheck")
 
 	keyMeta, err := s.createKeyCore(stores, CreateKeyInput{
 		Description:        request.GetStringParam(req.Parameters, "Description"),
@@ -561,9 +556,38 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	replicaKey, err := stores.keys.ReplicateKey(keyID, replicaRegion, replicaKeyID)
+	// Obtain the replica region's stores so the replica key is persisted
+	// with the correct region's ARN and bucket. The previous
+	// implementation saved the replica to the local (primary) store with
+	// a local-region ARN, making it invisible to clients in the replica
+	// region.
+	replicaStores, err := s.GetStoreForRegion(replicaRegion)
 	if err != nil {
 		return nil, err
+	}
+
+	// Build the replica key using the replica region's ARN builder.
+	replicaArn := replicaStores.keys.ARNBuilder().KeyArn(replicaKeyID)
+	replicaKey := &kmsstore.Key{
+		KeyID:              replicaKeyID,
+		Arn:                replicaArn,
+		KeyState:           kmsstore.KeyStateEnabled,
+		KeyUsage:           primary.KeyUsage,
+		KeySpec:            primary.KeySpec,
+		Description:        primary.Description,
+		Enabled:            true,
+		CreationDate:       time.Now(),
+		Origin:             primary.Origin,
+		KeyManager:         primary.KeyManager,
+		KeyRotationEnabled: primary.KeyRotationEnabled,
+		MultiRegion:        true,
+		MultiRegionConfiguration: &kmsstore.MultiRegionConfiguration{
+			MultiRegionKeyType: "REPLICA",
+			PrimaryKey: &kmsstore.PrimaryKeyInfo{
+				Arn:    primary.Arn,
+				Region: reqCtx.GetRegion(),
+			},
+		},
 	}
 
 	// Apply optional caller-supplied parameters to the replica. Per the
@@ -579,20 +603,12 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 			replicaPolicy = kmsstore.DefaultKeyPolicy
 		}
 	}
-	bypassCheck := false
-	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
-		if b, ok := v.(string); ok && b == "true" {
-			bypassCheck = true
-		}
-	}
+	bypassCheck := request.GetBoolParam(req.Parameters, "BypassPolicyLockoutSafetyCheck")
 	if err := validatePolicySize(replicaPolicy); err != nil {
 		return nil, err
 	}
 	if !bypassCheck {
 		if err := validatePolicyDoesNotLockOutRoot(replicaPolicy, reqCtx.GetAccountID()); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-				logs.Error("Failed to cascade-delete replica after policy lockout check", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-			}
 			return nil, err
 		}
 	}
@@ -603,45 +619,71 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 		replicaKey.Description = desc
 	}
 	replicaKey.BypassPolicyLockoutSafetyCheck = bypassCheck
-	if err := stores.keys.Update(replicaKey); err != nil {
-		if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-			logs.Error("Failed to cascade-delete replica after Update", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-		}
+
+	// Step 1: Save the replica key to the replica region's store.
+	if err := replicaStores.keys.CreateReplica(replicaKey); err != nil {
 		return nil, err
 	}
 
-	// Apply tags from the request.
+	// cleanupReplica removes the replica from the replica region store,
+	// the primary's MultiRegionConfiguration, and the HSM. Used on any
+	// failure after step 1.
+	cleanupReplica := func() {
+		if delErr := replicaStores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
+			logs.Error("ReplicateKey: failed to cascade-delete replica from replica store",
+				logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
+		}
+		if rmErr := stores.keys.RemoveReplicaFromPrimary(primary.KeyID, replicaRegion); rmErr != nil {
+			logs.Error("ReplicateKey: failed to remove replica from primary config",
+				logs.Err(rmErr), logs.String("replicaRegion", replicaRegion))
+		}
+	}
+
+	// Step 2: Register the replica in the primary's MultiRegionConfiguration.
+	replicaInfo := kmsstore.ReplicaKeyInfo{
+		Arn:    replicaArn,
+		Region: replicaRegion,
+	}
+	if err := stores.keys.AddReplicaToPrimary(primary.KeyID, replicaInfo); err != nil {
+		cleanupReplica()
+		return nil, err
+	}
+
+	// Step 3: Copy tags from the primary to the replica (cross-region).
+	sourceTags, err := stores.keys.TagStore.ListAsSlice(primary.KeyID)
+	if err != nil {
+		cleanupReplica()
+		return nil, err
+	}
+	if len(sourceTags) > 0 {
+		if err := replicaStores.keys.TagStore.TagFromSlice(replicaKeyID, sourceTags); err != nil {
+			cleanupReplica()
+			return nil, err
+		}
+	}
+
+	// Step 4: Apply caller-supplied tags (in addition to inherited tags).
 	replicaTags := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
 	if len(replicaTags) > 0 {
 		if err := validateKMSTags(replicaTags); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-				logs.Error("Failed to cascade-delete replica after tag validation failure", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-			}
+			cleanupReplica()
 			return nil, err
 		}
-		if err := stores.keys.TagStore.Tag(replicaKeyID, tagutil.ToMap(replicaTags)); err != nil {
-			if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-				logs.Error("Failed to cascade-delete replica after Tag failure", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-			}
+		if err := replicaStores.keys.TagStore.Tag(replicaKeyID, tagutil.ToMap(replicaTags)); err != nil {
+			cleanupReplica()
 			return nil, err
 		}
 	}
 
-	// Store the replica's key policy.
-	if err := stores.keyPolicies.PutDefault(replicaKeyID, replicaPolicy); err != nil {
-		if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-			logs.Error("Failed to cascade-delete replica after PutDefault policy", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-		}
+	// Step 5: Store the replica's key policy in the replica region.
+	if err := replicaStores.keyPolicies.PutDefault(replicaKeyID, replicaPolicy); err != nil {
+		cleanupReplica()
 		return nil, err
 	}
 
-	// Provision the replica in the HSM with the primary's key material.
-	// Without this, crypto operations on the replica fail with
-	// ErrKeyNotFound because the HSM has no material for the new keyID.
+	// Step 6: Provision the replica in the HSM with the primary's key material.
 	if err := s.hsmBackend.ReplicateKey(primary.KeyID, replicaKeyID); err != nil {
-		if delErr := stores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-			logs.Error("Failed to cascade-delete replica after HSM ReplicateKey failure", logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-		}
+		cleanupReplica()
 		return nil, err
 	}
 

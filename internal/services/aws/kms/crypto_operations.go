@@ -310,6 +310,13 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
+	// AWS: GenerateDataKey requires an ENCRYPT_DECRYPT key. Using a
+	// SIGN_VERIFY or GENERATE_VERIFY_MAC key is rejected with
+	// InvalidKeyUsageException, consistent with Encrypt/Decrypt/ReEncrypt.
+	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
+	}
+
 	if err := validateDataKeySpecAndBytes(key, req.Parameters); err != nil {
 		return nil, err
 	}
@@ -353,6 +360,13 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 
 	if err := s.validateKeyState(key); err != nil {
 		return nil, err
+	}
+
+	// AWS: GenerateDataKeyWithoutPlaintext requires an ENCRYPT_DECRYPT key,
+	// same as GenerateDataKey. Using a non-encryption key is rejected with
+	// InvalidKeyUsageException.
+	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
 	}
 
 	if err := validateDataKeySpecAndBytes(key, req.Parameters); err != nil {

@@ -22,6 +22,11 @@ type unknownValue struct{}
 
 func (unknownValue) String() string { return "UNKNOWN" }
 
+// IsUnknown reports whether v represents the AWS IoT SQL Undefined value.
+// Exported so that external tests can assert Undefined results without
+// depending on the private unknownValue type.
+func IsUnknown(v interface{}) bool { return isUnknown(v) }
+
 func NewEvaluator(payload map[string]interface{}, topic, clientID string) *Evaluator {
 	return &Evaluator{
 		Payload:   payload,
@@ -193,6 +198,9 @@ func (e *Evaluator) evalUnary(expr *UnaryExpr) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		if isUnknown(val) {
+			return unknownValue{}, nil
+		}
 		return -toFloat(val), nil
 	default:
 		return nil, fmt.Errorf("evaluator: unknown unary operator %s", expr.Op)
@@ -244,6 +252,18 @@ func (e *Evaluator) evalFunction(call *FunctionCall) (interface{}, error) {
 		return nil, fmt.Errorf("evaluator: unknown function %s", name)
 	}
 	return handler(e, call.Args)
+}
+
+// evalArg evaluates a single function argument, reporting whether the
+// result is AWS IoT SQL Undefined.  All scalar function handlers should
+// use this instead of e.Eval directly so that Undefined propagation and
+// error handling are uniform and impossible to forget.
+func (e *Evaluator) evalArg(arg Expr) (val interface{}, unknown bool, err error) {
+	val, err = e.Eval(arg)
+	if err != nil {
+		return nil, false, err
+	}
+	return val, isUnknown(val), nil
 }
 
 func toBool(val interface{}) bool {

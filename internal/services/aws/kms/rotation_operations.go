@@ -234,6 +234,12 @@ func (s *KMSService) GetKeyLastUsage(ctx context.Context, reqCtx *request.Reques
 	}
 	if !key.CreationDate.IsZero() {
 		result["KeyCreationDate"] = key.CreationDate.Unix()
+		// Per the Smithy GetKeyLastUsageResponse shape,
+		// TrackingStartDate is the later of the key creation date or the
+		// date KMS began recording activity. For this platform, usage
+		// tracking starts at key creation, so TrackingStartDate equals
+		// KeyCreationDate.
+		result["TrackingStartDate"] = key.CreationDate.Unix()
 	}
 	if key.LastUsedAt != nil {
 		result["KeyLastUsage"] = map[string]interface{}{

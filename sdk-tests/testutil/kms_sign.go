@@ -1,11 +1,14 @@
 package testutil
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
@@ -102,20 +105,23 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 		for i := range badSig {
 			badSig[i] = 0xFF
 		}
-		resp, err := tc.client.Verify(tc.ctx, &kms.VerifyInput{
+		_, err := tc.client.Verify(tc.ctx, &kms.VerifyInput{
 			KeyId:            aws.String(tc.rsaKeyID),
 			Message:          message,
 			Signature:        badSig,
 			MessageType:      types.MessageTypeRaw,
 			SigningAlgorithm: types.SigningAlgorithmSpecRsassaPkcs1V15Sha256,
 		})
-		if err != nil {
-			return err
+		if err == nil {
+			return fmt.Errorf("expected KMSInvalidSignatureException for non-matching signature")
 		}
-		if resp.SignatureValid {
-			return fmt.Errorf("expected invalid signature")
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if strings.Contains(apiErr.ErrorCode(), "KMSInvalidSignatureException") {
+				return nil
+			}
 		}
-		return nil
+		return fmt.Errorf("expected KMSInvalidSignatureException, got: %v", err)
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateMac", func() error {
@@ -179,19 +185,22 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 		for i := range badMac {
 			badMac[i] = 0xFF
 		}
-		resp, err := tc.client.VerifyMac(tc.ctx, &kms.VerifyMacInput{
+		_, err := tc.client.VerifyMac(tc.ctx, &kms.VerifyMacInput{
 			KeyId:        aws.String(tc.hmacKeyID),
 			Message:      message,
 			Mac:          badMac,
 			MacAlgorithm: types.MacAlgorithmSpecHmacSha256,
 		})
-		if err != nil {
-			return err
+		if err == nil {
+			return fmt.Errorf("expected KMSInvalidMacException for non-matching MAC")
 		}
-		if resp.MacValid {
-			return fmt.Errorf("expected invalid MAC")
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if strings.Contains(apiErr.ErrorCode(), "KMSInvalidMacException") {
+				return nil
+			}
 		}
-		return nil
+		return fmt.Errorf("expected KMSInvalidMacException, got: %v", err)
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKeyPair", func() error {

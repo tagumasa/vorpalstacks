@@ -145,11 +145,17 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 		}
 		return nil, err
 	}
+	// AWS: when the signature does not match the message, Verify fails
+	// with KMSInvalidSignatureException. The operation never returns a
+	// success response with SignatureValid=false.
+	if !valid {
+		return nil, ErrKMSInvalidSignature
+	}
 	s.markKeyLastUsed(stores, key.KeyID, "Verify")
 
 	return map[string]interface{}{
 		"KeyId":            key.Arn,
-		"SignatureValid":   valid,
+		"SignatureValid":   true,
 		"SigningAlgorithm": algorithm,
 	}, nil
 }

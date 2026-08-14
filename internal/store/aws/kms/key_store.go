@@ -484,10 +484,13 @@ func (s *KeyStore) DeleteImportedKeyMaterial(keyID string) error {
 	})
 }
 
-// ReplicateKey replicates a multi-region KMS key to another region.
-func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID string) (*Key, error) {
-	var replicaKey *Key
-	err := s.kl.WithLock(keyID, func() error {
+// AddReplicaToPrimary validates that the primary key can accept a new
+// replica in the specified region and appends the replica info to the
+// primary's MultiRegionConfiguration. This updates the PRIMARY store only;
+// the replica key itself must be saved to the replica region's store
+// separately via CreateReplica.
+func (s *KeyStore) AddReplicaToPrimary(keyID string, replica ReplicaKeyInfo) error {
+	return s.kl.WithLock(keyID, func() error {
 		key, err := s.Get(keyID)
 		if err != nil {
 			return err
@@ -501,33 +504,10 @@ func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID
 		// when a replica already exists in the requested region.
 		if key.MultiRegionConfiguration != nil {
 			for _, r := range key.MultiRegionConfiguration.ReplicaKeys {
-				if r.Region == replicaRegion {
+				if r.Region == replica.Region {
 					return ErrInvalidKeyState
 				}
 			}
-		}
-
-		replicaKey = &Key{
-			KeyID:              replicaKeyID,
-			Arn:                s.arnBuilder.KeyArn(replicaKeyID),
-			KeyState:           KeyStateEnabled,
-			KeyUsage:           key.KeyUsage,
-			KeySpec:            key.KeySpec,
-			Description:        key.Description,
-			Enabled:            true,
-			CreationDate:       time.Now(),
-			Origin:             key.Origin,
-			KeyManager:         key.KeyManager,
-			KeyRotationEnabled: key.KeyRotationEnabled,
-			MultiRegion:        true,
-			MultiRegionConfiguration: &MultiRegionConfiguration{
-				MultiRegionKeyType: "REPLICA",
-				PrimaryKey: &PrimaryKeyInfo{
-					Arn:    key.Arn,
-					Region: s.arnBuilder.Region(),
-				},
-				ReplicaKeys: nil,
-			},
 		}
 
 		if key.MultiRegionConfiguration == nil {
@@ -540,35 +520,42 @@ func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID
 			}
 		}
 
-		key.MultiRegionConfiguration.ReplicaKeys = append(key.MultiRegionConfiguration.ReplicaKeys, ReplicaKeyInfo{
-			Arn:    replicaKey.Arn,
-			Region: replicaRegion,
-		})
+		key.MultiRegionConfiguration.ReplicaKeys = append(
+			key.MultiRegionConfiguration.ReplicaKeys, replica)
 
-		if err := s.Update(key); err != nil {
-			return err
-		}
+		return s.Update(key)
+	})
+}
 
-		if err := s.save(replicaKey); err != nil {
-			return err
-		}
-
-		sourceTags, err := s.TagStore.ListAsSlice(keyID)
+// RemoveReplicaFromPrimary removes a replica entry from the primary key's
+// MultiRegionConfiguration. Used for cleanup when replica creation fails
+// after the primary config has already been updated.
+func (s *KeyStore) RemoveReplicaFromPrimary(keyID string, replicaRegion string) error {
+	return s.kl.WithLock(keyID, func() error {
+		key, err := s.Get(keyID)
 		if err != nil {
 			return err
 		}
-		if len(sourceTags) > 0 {
-			if err := s.TagStore.TagFromSlice(replicaKeyID, sourceTags); err != nil {
-				return err
+		if key.MultiRegionConfiguration == nil {
+			return nil
+		}
+		filtered := key.MultiRegionConfiguration.ReplicaKeys[:0]
+		for _, r := range key.MultiRegionConfiguration.ReplicaKeys {
+			if r.Region != replicaRegion {
+				filtered = append(filtered, r)
 			}
 		}
-
-		return nil
+		key.MultiRegionConfiguration.ReplicaKeys = filtered
+		return s.Update(key)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return replicaKey, nil
+}
+
+// CreateReplica saves a pre-built replica Key to the store. Unlike Create,
+// it does not generate new key material — the HSM material is copied
+// separately via hsmBackend.ReplicateKey. The replica key's ARN must
+// already be set with the replica region's ARN builder.
+func (s *KeyStore) CreateReplica(key *Key) error {
+	return s.save(key)
 }
 
 // UpdatePrimaryRegion updates the primary region of a multi-region KMS key.

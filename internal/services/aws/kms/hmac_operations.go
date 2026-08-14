@@ -134,11 +134,17 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
+	// AWS: when the MAC does not match the message, VerifyMac fails
+	// with KMSInvalidMacException. The operation never returns a
+	// success response with MacValid=false.
+	if !valid {
+		return nil, ErrKMSInvalidMac
+	}
 	s.markKeyLastUsed(stores, key.KeyID, "VerifyMac")
 
 	return map[string]interface{}{
 		"KeyId":        key.Arn,
-		"MacValid":     valid,
+		"MacValid":     true,
 		"MacAlgorithm": algorithm,
 	}, nil
 }
