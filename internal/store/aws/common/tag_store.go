@@ -77,6 +77,18 @@ func (t *TagStore) ListAsSlice(resourceKey string) ([]types.Tag, error) {
 // Existing tag keys are overwritten; new tag keys are added.
 // For overwritten keys, stale index entries are removed before inserting new ones.
 //
+// ValidateTags performs the deterministic validation applied by Tag
+// without writing anything, so callers can reject invalid input before
+// mutating any persisted state.
+func (t *TagStore) ValidateTags(newTags map[string]string) error {
+	for k, v := range newTags {
+		if strings.ContainsRune(k, '\x00') || strings.ContainsRune(v, '\x00') {
+			return fmt.Errorf("tagstore: tag key or value contains forbidden NUL byte (key=%q)", k)
+		}
+	}
+	return nil
+}
+
 // Tag keys and values MUST NOT contain the NUL byte (\x00). The byte is
 // used as the index-segment separator and would corrupt resource-key
 // extraction in FindByTag. AWS itself rejects NUL in tag values, so
@@ -85,10 +97,8 @@ func (t *TagStore) Tag(resourceKey string, newTags map[string]string) error {
 	if len(newTags) == 0 {
 		return nil
 	}
-	for k, v := range newTags {
-		if strings.ContainsRune(k, '\x00') || strings.ContainsRune(v, '\x00') {
-			return fmt.Errorf("tagstore: tag key or value contains forbidden NUL byte (key=%q)", k)
-		}
+	if err := t.ValidateTags(newTags); err != nil {
+		return err
 	}
 
 	t.mu.Lock()

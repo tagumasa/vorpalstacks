@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -18,10 +19,12 @@ const maxParameterNameListLen = 10
 
 // validDataTypes is the AWS-documented DataType value set. Smithy declares
 // ParameterDataType as a free string with a length cap, but the public API
-// contract restricts it to these values.
+// contract restricts it to these values (the enum membership check also
+// subsumes the 128-character Smithy length cap).
 var validDataTypes = map[string]struct{}{
-	"text":          {},
-	"aws:ec2:image": {},
+	"text":                {},
+	"aws:ec2:image":       {},
+	"aws:ssm:integration": {},
 }
 
 // validTiers mirrors the Smithy ParameterTier enum members.
@@ -67,11 +70,14 @@ func validateTier(tier ssmstore.ParameterTier) error {
 	return nil
 }
 
-// validateKeyID enforces the Smithy ParameterKeyId pattern. Empty key is
-// allowed (uses the AWS-managed default key).
+// validateKeyID enforces the Smithy ParameterKeyId pattern and length.
+// Empty key is allowed (uses the AWS-managed default key).
 func validateKeyID(keyID string) error {
 	if keyID == "" {
 		return nil
+	}
+	if len(keyID) > ssmstore.MaxParameterKeyIdLength {
+		return ErrInvalidParameterValue
 	}
 	if !keyIDRegex.MatchString(keyID) {
 		return ErrInvalidParameterValue
@@ -80,10 +86,14 @@ func validateKeyID(keyID string) error {
 }
 
 // validateAllowedPattern compiles the AllowedPattern regex at PutParameter
-// time. AWS returns InvalidAllowedPatternException for invalid regex.
+// time and enforces the Smithy length cap. AWS returns
+// InvalidAllowedPatternException for an invalid regex.
 func validateAllowedPattern(pattern string) error {
 	if pattern == "" {
 		return nil
+	}
+	if len(pattern) > ssmstore.MaxAllowedPatternLength {
+		return ErrInvalidParameterValue
 	}
 	if _, err := regexp.Compile(pattern); err != nil {
 		return ErrInvalidAllowedPattern
@@ -126,8 +136,8 @@ func validateMaxResultsForPath(maxResults int32) (int32, error) {
 func validateMaxResultsForPage(maxResults int32) (int32, error) {
 	switch {
 	case maxResults == 0:
-		return 50, nil
-	case maxResults < 1 || maxResults > 50:
+		return ssmstore.MaxPageResults, nil
+	case maxResults < 1 || maxResults > ssmstore.MaxPageResults:
 		return 0, ErrInvalidParameterValue
 	default:
 		return maxResults, nil
@@ -212,6 +222,7 @@ type ParameterPutFields struct {
 	DataType       string
 	Tier           string
 	Policies       string
+	Tags           map[string]string
 }
 
 // normalisePutParameter validates every PutParameter input field and returns
@@ -222,6 +233,14 @@ type ParameterPutFields struct {
 func normalisePutParameter(in ParameterPutFields) (*ssmstore.Parameter, error) {
 	if in.Name == "" {
 		return nil, ErrInvalidParameterName
+	}
+	// Smithy marks Value as required; AWS rejects an empty value with
+	// ValidationException.
+	if in.Value == "" {
+		return nil, ErrInvalidParameterValue
+	}
+	if len(in.Description) > ssmstore.MaxParameterDescriptionLength {
+		return nil, ErrInvalidParameterValue
 	}
 
 	paramType := ssmstore.ParameterType(in.Type)
@@ -265,6 +284,7 @@ func normalisePutParameter(in ParameterPutFields) (*ssmstore.Parameter, error) {
 	param.KeyID = in.KeyID
 	param.AllowedPattern = in.AllowedPattern
 	param.DataType = dataType
+	param.Tags = in.Tags
 	param.Tier = tier
 	param.Policies = in.Policies
 
@@ -294,6 +314,10 @@ func policiesToResponse(policies string) []interface{} {
 	}
 	var entries []json.RawMessage
 	if err := json.Unmarshal([]byte(policies), &entries); err != nil {
+		// Stored policies are validated at write time; a parse failure here
+		// means the stored document no longer matches its validated shape.
+		// Surface the anomaly in the log rather than silently dropping it.
+		logs.Warn("Stored parameter policies failed to parse", logs.String("error", err.Error()))
 		return []interface{}{}
 	}
 	out := make([]interface{}, 0, len(entries))
@@ -302,6 +326,7 @@ func policiesToResponse(policies string) []interface{} {
 			Type string `json:"Type"`
 		}
 		if err := json.Unmarshal(raw, &meta); err != nil || meta.Type == "" {
+			logs.Warn("Stored parameter policy entry missing Type; skipping entry")
 			continue
 		}
 		out = append(out, map[string]interface{}{

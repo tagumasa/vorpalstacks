@@ -37,7 +37,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	}
 
 	if !isRedrivableStatus(exec.Status) {
-		return nil, NewInvalidExecutionType(
+		return nil, NewExecutionNotRedrivable(
 			fmt.Sprintf("Execution %s is in %s status and cannot be redriven", executionArn, exec.Status))
 	}
 
@@ -127,7 +127,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 		inspectionLevel = "INFO"
 	}
 	if inspectionLevel != "INFO" && inspectionLevel != "DEBUG" && inspectionLevel != "TRACE" {
-		return nil, NewInvalidParameterValue("inspectionLevel must be INFO, DEBUG, or TRACE, got " + inspectionLevel)
+		return nil, NewValidationException("inspectionLevel must be INFO, DEBUG, or TRACE, got " + inspectionLevel)
 	}
 
 	var def sfnstore.StateMachineDefinition

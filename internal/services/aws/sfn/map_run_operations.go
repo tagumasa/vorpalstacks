@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -55,7 +54,7 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 
 	if err := store.CreateExecution(ctx, exec); err != nil {
 		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
-			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+executionArn, 400)
+			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + executionArn)
 		}
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	mapRunArn := request.GetParamLowerFirst(req.Parameters, "mapRunArn")
 	if mapRunArn == "" {
-		return nil, NewInvalidName("mapRunArn is required")
+		return nil, NewInvalidArnException("mapRunArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -103,7 +102,7 @@ func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *reques
 
 	mr, err := store.GetMapRun(ctx, mapRunArn)
 	if err != nil {
-		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
+		return nil, NewResourceNotFound("Map Run does not exist: " + mapRunArn)
 	}
 
 	return describeMapRunToResponse(mr), nil

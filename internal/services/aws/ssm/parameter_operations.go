@@ -95,6 +95,7 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 		DataType:       req.GetParam("DataType"),
 		Tier:           req.GetParam("Tier"),
 		Policies:       req.GetParam("Policies"),
+		Tags:           tagutil.ToMap(tagutil.GetTags(req.Parameters, tagutil.StandardConfig)),
 	})
 	if err != nil {
 		return nil, err
@@ -106,6 +107,9 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
+	// Tags travel inside the parameter: store.PutParameter persists them
+	// alongside the new version and returns an error on failure, so a tag
+	// problem fails the call instead of being silently dropped.
 	version, err := s.putParameterCore(ctx, store, param, overwrite, reqCtx.Principal)
 	if err != nil {
 		if errors.Is(err, ssmstore.ErrParameterAlreadyExists) {
@@ -120,13 +124,10 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 		if errors.Is(err, ssmstore.ErrParameterPatternMismatch) {
 			return nil, ErrParameterPatternMismatch
 		}
-		return nil, err
-	}
-
-	if tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig); len(tags) > 0 {
-		if err := store.AddTagsToResource(name, tagutil.ToMap(tags)); err != nil {
-			logs.Warn("Failed to add tags to parameter", logs.String("name", name), logs.Err(err))
+		if errors.Is(err, ssmstore.ErrHierarchyLevelLimitExceeded) {
+			return nil, ErrHierarchyLevelLimitExceeded
 		}
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -420,6 +421,9 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		if errors.Is(err, ssmstore.ErrParameterNotFound) {
 			return nil, ErrParameterNotFound
 		}
+		if errors.Is(err, ssmstore.ErrInvalidNextToken) {
+			return nil, ErrInvalidNextToken
+		}
 		return nil, err
 	}
 
@@ -443,6 +447,7 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 			"AllowedPattern":   v.AllowedPattern,
 			"Version":          v.Version,
 			"Labels":           labels,
+			"Policies":         policiesToResponse(v.Policies),
 			"Tier":             string(v.Tier),
 			"Value":            value,
 			"DataType":         v.DataType,

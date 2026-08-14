@@ -19,6 +19,8 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: ssmstore.ErrParameterPatternMismatch, AWS: ErrParameterPatternMismatch},
 	{Store: ssmstore.ErrInvalidAllowedPattern, AWS: ErrInvalidAllowedPattern},
 	{Store: ssmstore.ErrReservedParameterName, AWS: ErrParameterPatternMismatch},
+	{Store: ssmstore.ErrHierarchyLevelLimitExceeded, AWS: ErrHierarchyLevelLimitExceeded},
+	{Store: ssmstore.ErrInvalidNextToken, AWS: ErrInvalidNextToken},
 }
 
 // toSSMError converts a generic error to an *awserrors.AWSError,
@@ -67,4 +69,12 @@ var (
 	// ErrInvalidFilterOption is returned when a filter Option is not one of
 	// Equals/BeginsWith/Contains.
 	ErrInvalidFilterOption = awserrors.NewAWSError("InvalidFilterOption", "The filter option is not valid", http.StatusBadRequest)
+	// ErrInvalidFilterValue is returned when a ParameterFilters value is
+	// malformed (not a list of objects, or an entry without Values).
+	ErrInvalidFilterValue = awserrors.NewAWSError("InvalidFilterValue", "The filter value is not valid", http.StatusBadRequest)
+	// ErrHierarchyLevelLimitExceeded is returned when a parameter name
+	// hierarchy exceeds the maximum depth of fifteen levels.
+	ErrHierarchyLevelLimitExceeded = awserrors.NewAWSError("HierarchyLevelLimitExceededException", "A parameter name hierarchy can have a maximum depth of fifteen levels", http.StatusBadRequest)
+	// ErrInvalidNextToken is returned when a pagination marker is not valid.
+	ErrInvalidNextToken = awserrors.NewAWSError("InvalidNextToken", "The specified token is not valid", http.StatusBadRequest)
 )

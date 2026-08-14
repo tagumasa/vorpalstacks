@@ -4,10 +4,13 @@ package ssm
 import (
 	"fmt"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -126,12 +129,48 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 		param.DataType = "text"
 	}
 
+	// Pre-validate the tags before any write so deterministic validation
+	// failures cannot leave a partially-written parameter behind.
+	if err := s.TagStore.ValidateTags(param.Tags); err != nil {
+		return 0, err
+	}
+
+	// Snapshot the prior tag state for rollback; a storage-level failure
+	// after the body is persisted must leave no partial state behind.
+	priorTags, tagErr := s.TagStore.List(param.Name)
+	if tagErr != nil {
+		return 0, tagErr
+	}
+	rollback := func() {
+		if len(param.Tags) > 0 {
+			if err := s.TagStore.Untag(param.Name, tagKeySlice(param.Tags)); err != nil {
+				logs.Warn("PutParameter rollback: failed to remove tags", logs.String("parameter", param.Name), logs.Err(err))
+			}
+			if len(priorTags) > 0 {
+				if err := s.TagStore.Tag(param.Name, priorTags); err != nil {
+					logs.Warn("PutParameter rollback: failed to restore prior tags", logs.String("parameter", param.Name), logs.Err(err))
+				}
+			}
+		}
+		if err == nil {
+			// The parameter existed before this call: restore the prior body.
+			if err := s.Put(key, &existingParam); err != nil {
+				logs.Warn("PutParameter rollback: failed to restore prior body", logs.String("parameter", param.Name), logs.Err(err))
+			}
+		} else {
+			if derr := s.BaseStore.Delete(key); derr != nil {
+				logs.Warn("PutParameter rollback: failed to delete new parameter", logs.String("parameter", param.Name), logs.Err(derr))
+			}
+		}
+	}
+
 	if err := s.Put(key, param); err != nil {
 		return 0, err
 	}
 
 	if len(param.Tags) > 0 {
 		if err := s.TagStore.Tag(param.Name, param.Tags); err != nil {
+			rollback()
 			return 0, err
 		}
 	}
@@ -148,13 +187,24 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 		Description:      param.Description,
 		KeyID:            param.KeyID,
 		AllowedPattern:   param.AllowedPattern,
+		Policies:         param.Policies,
 	}
 	hKey := s.historyKey(param.Name, param.Version)
 	if err := s.historyStore.Put(hKey, historyEntry); err != nil {
+		rollback()
 		return 0, fmt.Errorf("failed to store parameter history: %w", err)
 	}
 
 	return param.Version, nil
+}
+
+// tagKeySlice extracts the keys of a tag map.
+func tagKeySlice(tags map[string]string) []string {
+	keys := make([]string, 0, len(tags))
+	for k := range tags {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // GetParameter retrieves a parameter by name.
@@ -241,28 +291,66 @@ func (s *Store) GetParameters(names []string, withDecryption bool) ([]*Parameter
 }
 
 // GetParameterHistory retrieves the version history of a parameter.
-// Results are returned in reverse chronological order (newest first),
-// matching the AWS API behaviour.
-// Returns the history items along with pagination metadata (NextMarker, IsTruncated).
+// Results are returned newest version first, matching the AWS API behaviour.
+//
+// History keys encode the version in decimal ("name:v%d"), so lexicographic
+// key order does not match numeric version order (v10 sorts before v2) and
+// reversing an ascending page breaks ordering across page boundaries. The
+// full history for the parameter is therefore fetched, sorted numerically
+// and paginated in memory. The marker is the decimal version number of the
+// last entry returned; the next page contains entries with a strictly lower
+// version. Returns the history items along with pagination metadata
+// (NextMarker, IsTruncated); ErrInvalidNextToken is returned for markers
+// that do not parse as a positive version number.
 func (s *Store) GetParameterHistory(name string, maxResults int32, marker string) ([]*ParameterVersion, string, bool, error) {
 	param, err := s.GetParameter(name, false)
 	if err != nil {
 		return nil, "", false, err
 	}
 
-	opts := common.ListOptions{MaxItems: int(maxResults), Marker: marker}
 	if maxResults <= 0 {
-		opts.MaxItems = 50
+		maxResults = MaxPageResults
 	}
 
-	result, err := common.List[ParameterVersion](s.historyStore, opts, func(pv *ParameterVersion) bool {
+	var versions []*ParameterVersion
+	if err := common.ForEachAll[ParameterVersion](s.historyStore, name+":", func(pv *ParameterVersion) bool {
 		return pv.ParameterName == name
-	})
-	if err != nil {
+	}, func(pv *ParameterVersion) error {
+		versions = append(versions, pv)
+		return nil
+	}); err != nil {
 		return nil, "", false, err
 	}
 
-	for _, pv := range result.Items {
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].Version > versions[j].Version
+	})
+
+	start := 0
+	if marker != "" {
+		lastVersion, err := strconv.ParseInt(marker, 10, 64)
+		if err != nil || lastVersion <= 0 {
+			return nil, "", false, ErrInvalidNextToken
+		}
+		start = sort.Search(len(versions), func(i int) bool {
+			return versions[i].Version < lastVersion
+		})
+	}
+
+	end := start + int(maxResults)
+	if end > len(versions) {
+		end = len(versions)
+	}
+
+	page := versions[start:end]
+
+	isTruncated := end < len(versions)
+	nextMarker := ""
+	if isTruncated && len(page) > 0 {
+		nextMarker = strconv.FormatInt(page[len(page)-1].Version, 10)
+	}
+
+	for _, pv := range page {
 		if labels, ok := param.VersionLabels[pv.Version]; ok {
 			pv.Labels = labels
 		} else {
@@ -270,12 +358,7 @@ func (s *Store) GetParameterHistory(name string, maxResults int32, marker string
 		}
 	}
 
-	// Reverse results to return newest version first, matching AWS behaviour.
-	for i, j := 0, len(result.Items)-1; i < j; i, j = i+1, j-1 {
-		result.Items[i], result.Items[j] = result.Items[j], result.Items[i]
-	}
-
-	return result.Items, result.NextMarker, result.IsTruncated, nil
+	return page, nextMarker, isTruncated, nil
 }
 
 // DeleteParameter deletes a parameter.
@@ -397,16 +480,54 @@ var parameterNameRegex = regexp.MustCompile(`^/([a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]
 
 var reservedPrefixes = []string{"aws", "ssm"}
 
-// ValidateParameterName validates a parameter name.
+// AWS specification limits for Parameter Store. These are the single source
+// of truth; service handlers, validators and tests must reference them
+// instead of inlining numeric literals.
+const (
+	// MaxParameterNameLength is the user-specifiable portion of the Smithy
+	// PSParameterName length cap. The documented 2048-character maximum
+	// includes 1037 characters reserved for internal use, leaving 1011
+	// characters for the name a caller actually provides.
+	MaxParameterNameLength = 1011
+
+	// MaxHierarchyDepth is the maximum number of levels a parameter name
+	// hierarchy may have ("/Engineering/Dev/ConnectionString" has 3 levels).
+	MaxHierarchyDepth = 15
+
+	// MaxParameterKeyIdLength is the Smithy ParameterKeyId length cap.
+	MaxParameterKeyIdLength = 256
+
+	// MaxParameterDescriptionLength is the Smithy ParameterDescription
+	// length cap.
+	MaxParameterDescriptionLength = 1024
+
+	// MaxAllowedPatternLength is the Smithy AllowedPattern length cap.
+	MaxAllowedPatternLength = 1024
+
+	// MaxParameterDataTypeLength is the Smithy ParameterDataType length cap.
+	// The valid value set is far shorter; the cap documents the trait.
+	MaxParameterDataTypeLength = 128
+
+	// MaxPageResults is the Smithy MaxResults range maximum shared by
+	// DescribeParameters and GetParameterHistory (1-50, default 50).
+	MaxPageResults = 50
+)
+
+// ValidateParameterName validates a parameter name against the AWS contract:
+// regex shape, reserved top-level prefixes, the user-specifiable length cap
+// and the hierarchy depth cap.
 func ValidateParameterName(name string) error {
 	if name == "" {
 		return ErrInvalidParameterName
 	}
-	if len(name) > 2048 {
+	if len(name) > MaxParameterNameLength {
 		return ErrInvalidParameterName
 	}
 	if !parameterNameRegex.MatchString(name) {
 		return ErrInvalidParameterName
+	}
+	if strings.Count(name, "/") > MaxHierarchyDepth {
+		return ErrHierarchyLevelLimitExceeded
 	}
 	trimmed := strings.TrimPrefix(name, "/")
 	if idx := strings.Index(trimmed, "/"); idx != -1 {

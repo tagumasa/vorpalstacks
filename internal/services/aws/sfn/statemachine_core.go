@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -136,6 +136,11 @@ func (s *StepFunctionService) createStateMachineCore(ctx context.Context, store 
 		return nil, err
 	}
 
+	// 8. Tags (hard quota: fifty tags per resource).
+	if len(in.Tags) > sfnstore.MaxTagsPerResource {
+		return nil, NewTooManyTags(fmt.Sprintf("Too many tags: %d, maximum allowed %d", len(in.Tags), sfnstore.MaxTagsPerResource))
+	}
+
 	sm := &sfnstore.StateMachine{
 		Name:                    in.Name,
 		Definition:              in.Definition,
@@ -151,8 +156,7 @@ func (s *StepFunctionService) createStateMachineCore(ctx context.Context, store 
 
 	if err := store.CreateStateMachine(ctx, sm); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAlreadyExists) {
-			return nil, awserrors.NewAWSError("StateMachineAlreadyExists",
-				"A state machine with the same name already exists: "+in.Name, 400)
+			return nil, NewStateMachineAlreadyExists("A state machine with the same name already exists: " + in.Name)
 		}
 		return nil, err
 	}
@@ -199,7 +203,7 @@ func (s *StepFunctionService) updateStateMachineCore(ctx context.Context, store 
 
 	// Optimistic concurrency check.
 	if in.RevisionId != "" && sm.RevisionId != in.RevisionId {
-		return nil, NewInvalidParameterValue("revisionId mismatch: expected " + sm.RevisionId + ", got " + in.RevisionId)
+		return nil, NewValidationException("revisionId mismatch: expected " + sm.RevisionId + ", got " + in.RevisionId)
 	}
 
 	if in.DefinitionProvided {
@@ -306,13 +310,19 @@ func parseLoggingConfigurationFromJSON(raw interface{}) (*sfnstore.LoggingConfig
 	if raw == nil {
 		return nil, nil
 	}
+	// The configuration must be a JSON object; reject strings, arrays and
+	// scalars with the specific configuration error instead of an opaque
+	// marshal/unmarshal failure.
+	if _, ok := raw.(map[string]interface{}); !ok {
+		return nil, NewInvalidLoggingConfiguration("loggingConfiguration must be a JSON object")
+	}
 	bytes, err := json.Marshal(raw)
 	if err != nil {
-		return nil, NewInvalidParameterValue("loggingConfiguration is not serialisable: " + err.Error())
+		return nil, NewInvalidLoggingConfiguration("loggingConfiguration is not serialisable: " + err.Error())
 	}
 	var lc sfnstore.LoggingConfiguration
 	if err := json.Unmarshal(bytes, &lc); err != nil {
-		return nil, NewInvalidParameterValue("loggingConfiguration is not valid JSON: " + err.Error())
+		return nil, NewInvalidLoggingConfiguration("loggingConfiguration is not valid JSON: " + err.Error())
 	}
 	return &lc, nil
 }
@@ -323,13 +333,16 @@ func parseEncryptionConfigurationFromJSON(raw interface{}) (*sfnstore.Encryption
 	if raw == nil {
 		return nil, nil
 	}
+	if _, ok := raw.(map[string]interface{}); !ok {
+		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration must be a JSON object")
+	}
 	bytes, err := json.Marshal(raw)
 	if err != nil {
-		return nil, NewInvalidParameterValue("encryptionConfiguration is not serialisable: " + err.Error())
+		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration is not serialisable: " + err.Error())
 	}
 	var ec sfnstore.EncryptionConfiguration
 	if err := json.Unmarshal(bytes, &ec); err != nil {
-		return nil, NewInvalidParameterValue("encryptionConfiguration is not valid JSON: " + err.Error())
+		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration is not valid JSON: " + err.Error())
 	}
 	return &ec, nil
 }
@@ -340,13 +353,16 @@ func parseTracingConfigurationFromJSON(raw interface{}) (*sfnstore.TracingConfig
 	if raw == nil {
 		return nil, nil
 	}
+	if _, ok := raw.(map[string]interface{}); !ok {
+		return nil, NewInvalidTracingConfiguration("tracingConfiguration must be a JSON object")
+	}
 	bytes, err := json.Marshal(raw)
 	if err != nil {
-		return nil, NewInvalidParameterValue("tracingConfiguration is not serialisable: " + err.Error())
+		return nil, NewInvalidTracingConfiguration("tracingConfiguration is not serialisable: " + err.Error())
 	}
 	var tc sfnstore.TracingConfiguration
 	if err := json.Unmarshal(bytes, &tc); err != nil {
-		return nil, NewInvalidParameterValue("tracingConfiguration is not valid JSON: " + err.Error())
+		return nil, NewInvalidTracingConfiguration("tracingConfiguration is not valid JSON: " + err.Error())
 	}
 	return &tc, nil
 }

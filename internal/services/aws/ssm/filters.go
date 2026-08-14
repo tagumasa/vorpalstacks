@@ -51,8 +51,13 @@ func filtersFromQueryParams(params map[string]interface{}, field string) ([]ssms
 			}
 			values = append(values, v)
 		}
+		// Same fail-closed rule as the JSON body path (filtersFromList):
+		// an entry with a Key but no Values would apply no filtering at
+		// all if silently dropped, so it is rejected instead. The earlier
+		// "break" here also wrongly terminated the whole loop, silently
+		// discarding every subsequent filter entry.
 		if len(values) == 0 {
-			break
+			return nil, ErrInvalidFilterValue
 		}
 		filters = append(filters, ssmstore.ParameterFilter{
 			Key:    key,
@@ -60,29 +65,31 @@ func filtersFromQueryParams(params map[string]interface{}, field string) ([]ssms
 			Values: values,
 		})
 	}
-	return filters, nil
 }
 
 // filtersFromList extracts filters from a JSON-decoded list under the given
 // key. Returns (nil, nil) when the key is absent so callers can fall through
-// to other formats; returns (nil, err) on validation failures.
+// to other formats. Malformed input (a non-list value, a non-object entry,
+// or an entry without Values) is rejected with InvalidFilterValue — AWS does
+// not silently drop a malformed filter, and accepting it would apply no
+// filtering at all.
 func filtersFromList(raw interface{}) ([]ssmstore.ParameterFilter, error) {
 	if raw == nil {
 		return nil, nil
 	}
 	list, ok := raw.([]interface{})
 	if !ok {
-		return nil, nil
+		return nil, ErrInvalidFilterValue
 	}
 	var filters []ssmstore.ParameterFilter
 	for _, item := range list {
 		m, ok := item.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidFilterValue
 		}
 		key, _ := m["Key"].(string)
 		if key == "" {
-			continue
+			return nil, ErrInvalidFilterValue
 		}
 		if !ssmstore.ValidateParameterFilterKey(key) {
 			return nil, ErrInvalidFilterKey
@@ -98,6 +105,9 @@ func filtersFromList(raw interface{}) ([]ssmstore.ParameterFilter, error) {
 					values = append(values, s)
 				}
 			}
+		}
+		if len(values) == 0 {
+			return nil, ErrInvalidFilterValue
 		}
 		filters = append(filters, ssmstore.ParameterFilter{
 			Key:    key,

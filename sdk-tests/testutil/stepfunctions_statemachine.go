@@ -176,6 +176,47 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
+	// maxResults on this operation is bounded at 100 (distinct from the
+	// 0-1000 range of List-operation paging); 101 must be rejected.
+	results = append(results, r.RunTest("stepfunctions", "ValidateStateMachineDefinition_MaxResultsOverLimit_Rejected", func() error {
+		validDef := `{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`
+		_, err := tc.client.ValidateStateMachineDefinition(tc.ctx, &sfn.ValidateStateMachineDefinitionInput{
+			Definition: aws.String(validDef),
+			MaxResults: 101,
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for maxResults=101, got nil")
+		}
+		return nil
+	}))
+
+	// PENDING_REDRIVE requires mapRunArn; pairing it with a state machine
+	// ARN returns a validation exception per the documented contract.
+	results = append(results, r.RunTest("stepfunctions", "ListExecutions_PendingRedriveRequiresMapRunArn", func() error {
+		_, err := tc.client.ListExecutions(tc.ctx, &sfn.ListExecutionsInput{
+			StateMachineArn: aws.String(smARN),
+			StatusFilter:    types.ExecutionStatusPendingRedrive,
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// The rejection is unconditional: supplying both a state machine ARN
+	// and a map run ARN with PENDING_REDRIVE is still a validation error.
+	results = append(results, r.RunTest("stepfunctions", "ListExecutions_PendingRedriveWithBothArns_Rejected", func() error {
+		_, err := tc.client.ListExecutions(tc.ctx, &sfn.ListExecutionsInput{
+			StateMachineArn: aws.String(smARN),
+			MapRunArn:       aws.String(fmt.Sprintf("arn:aws:states:%s:%s:mapRun:fake/aaaa0000000000000:aaaa0000000000000", "us-east-1", "000000000000")),
+			StatusFilter:    types.ExecutionStatusPendingRedrive,
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachine", func() error {
 		resp, err := tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{
 			StateMachineArn: aws.String(smARN),

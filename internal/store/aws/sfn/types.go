@@ -5,6 +5,33 @@ import (
 	"time"
 )
 
+// AWS specification limits for Step Functions. These are the single source
+// of truth; service handlers, validators and tests must reference them
+// instead of inlining numeric literals.
+const (
+	// MaxResourceNameLength is the general quota for state machine,
+	// execution, activity and alias names (Smithy Name shape @length(1, 80)).
+	MaxResourceNameLength = 80
+
+	// DefaultPageSize is the page size applied when a List operation
+	// request omits maxResults.
+	DefaultPageSize = 100
+
+	// MaxPageSize is the Smithy @range(0, 1000) maximum for maxResults on
+	// List operations.
+	MaxPageSize = 1000
+
+	// MaxValidateDefinitionResults is the Smithy @range(0, 100) maximum for
+	// maxResults on ValidateStateMachineDefinition. The diagnostics paging
+	// shape is distinct from the List-operation PageSize shape and does not
+	// share its bound.
+	MaxValidateDefinitionResults = 100
+
+	// MaxTagsPerResource is the hard tagging quota: a maximum of fifty tags
+	// per resource, not modifiable.
+	MaxTagsPerResource = 50
+)
+
 // StateMachine represents an AWS Step Functions state machine definition and metadata.
 type StateMachine struct {
 	StateMachineArn         string                   `json:"stateMachineArn"`

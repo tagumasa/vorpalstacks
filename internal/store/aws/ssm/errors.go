@@ -45,4 +45,12 @@ var (
 	// ErrParameterPatternMismatch is returned when a value would violate the
 	// AllowedPattern constraint already attached to a parameter.
 	ErrParameterPatternMismatch = errors.New("parameter value does not match allowed pattern")
+
+	// ErrHierarchyLevelLimitExceeded is returned when a parameter name
+	// hierarchy exceeds the maximum depth of fifteen levels.
+	ErrHierarchyLevelLimitExceeded = errors.New("parameter name hierarchy exceeds the maximum depth")
+
+	// ErrInvalidNextToken is returned when a pagination marker does not
+	// parse as a valid version reference.
+	ErrInvalidNextToken = errors.New("invalid next token")
 )

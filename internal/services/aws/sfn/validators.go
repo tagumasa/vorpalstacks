@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -53,7 +52,7 @@ func validateResourceName(name string) error {
 	if name == "" {
 		return NewInvalidName("name is required")
 	}
-	if len(name) > 80 {
+	if len(name) > sfnstore.MaxResourceNameLength {
 		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
 	}
 	return nil
@@ -67,7 +66,7 @@ func validateStateMachineType(smType string) (string, error) {
 		return "STANDARD", nil
 	}
 	if !validStateMachineTypes[smType] {
-		return "", NewInvalidExecutionType(fmt.Sprintf("State Machine type must be STANDARD or EXPRESS, got: %s", smType))
+		return "", NewStateMachineTypeNotSupported(fmt.Sprintf("State Machine type must be STANDARD or EXPRESS, got: %s", smType))
 	}
 	return smType, nil
 }
@@ -79,7 +78,7 @@ func validateLogLevel(level string) error {
 		return nil
 	}
 	if !validLogLevels[level] {
-		return NewInvalidParameterValue(fmt.Sprintf("loggingConfiguration.level must be one of ALL, ERROR, FATAL, OFF, got: %s", level))
+		return NewInvalidLoggingConfiguration(fmt.Sprintf("loggingConfiguration.level must be one of ALL, ERROR, FATAL, OFF, got: %s", level))
 	}
 	return nil
 }
@@ -99,11 +98,11 @@ func validateLoggingConfiguration(lc *sfnstore.LoggingConfiguration) error {
 	}
 
 	if len(lc.Destinations) > 1 {
-		return NewInvalidParameterValue("loggingConfiguration.destinations is limited to size 1")
+		return NewInvalidLoggingConfiguration("loggingConfiguration.destinations is limited to size 1")
 	}
 
 	if lc.Level != "OFF" && len(lc.Destinations) == 0 {
-		return NewInvalidParameterValue("loggingConfiguration.destinations is required when level is not OFF")
+		return NewInvalidLoggingConfiguration("loggingConfiguration.destinations is required when level is not OFF")
 	}
 
 	return nil
@@ -118,14 +117,14 @@ func validateEncryptionConfiguration(ec *sfnstore.EncryptionConfiguration) error
 		ec.Type = "AWS_OWNED_KEY"
 	}
 	if !validEncryptionTypes[ec.Type] {
-		return NewInvalidParameterValue(fmt.Sprintf("encryptionConfiguration.type must be AWS_OWNED_KEY or CUSTOMER_MANAGED_KMS_KEY, got %s", ec.Type))
+		return NewInvalidEncryptionConfiguration(fmt.Sprintf("encryptionConfiguration.type must be AWS_OWNED_KEY or CUSTOMER_MANAGED_KMS_KEY, got %s", ec.Type))
 	}
 	if ec.Type == "CUSTOMER_MANAGED_KMS_KEY" && ec.KmsKeyId == "" {
-		return NewInvalidParameterValue("encryptionConfiguration.kmsKeyId is required when type is CUSTOMER_MANAGED_KMS_KEY")
+		return NewInvalidEncryptionConfiguration("encryptionConfiguration.kmsKeyId is required when type is CUSTOMER_MANAGED_KMS_KEY")
 	}
 	if ec.KmsDataKeyReusePeriod != 0 {
 		if ec.KmsDataKeyReusePeriod < 60 || ec.KmsDataKeyReusePeriod > 900 {
-			return NewInvalidParameterValue(fmt.Sprintf("encryptionConfiguration.kmsDataKeyReusePeriodSeconds must be in [60, 900], got %d", ec.KmsDataKeyReusePeriod))
+			return NewInvalidEncryptionConfiguration(fmt.Sprintf("encryptionConfiguration.kmsDataKeyReusePeriodSeconds must be in [60, 900], got %d", ec.KmsDataKeyReusePeriod))
 		}
 	}
 	return nil
@@ -138,13 +137,13 @@ func validateEncryptionConfiguration(ec *sfnstore.EncryptionConfiguration) error
 //   - toleratedFailurePercentage: @range(min=0, max=100)
 func validateMapRunUpdateParams(maxConcurrency int64, toleratedFailureCount int64, toleratedFailurePercentage float32) error {
 	if maxConcurrency < 0 {
-		return NewInvalidParameterValue(fmt.Sprintf("maxConcurrency must be >= 0, got %d", maxConcurrency))
+		return NewValidationException(fmt.Sprintf("maxConcurrency must be >= 0, got %d", maxConcurrency))
 	}
 	if toleratedFailureCount < 0 {
-		return NewInvalidParameterValue(fmt.Sprintf("toleratedFailureCount must be >= 0, got %d", toleratedFailureCount))
+		return NewValidationException(fmt.Sprintf("toleratedFailureCount must be >= 0, got %d", toleratedFailureCount))
 	}
 	if toleratedFailurePercentage < 0 || toleratedFailurePercentage > 100 {
-		return NewInvalidParameterValue(fmt.Sprintf("toleratedFailurePercentage must be in [0, 100], got %f", toleratedFailurePercentage))
+		return NewValidationException(fmt.Sprintf("toleratedFailurePercentage must be in [0, 100], got %f", toleratedFailurePercentage))
 	}
 	return nil
 }
@@ -157,7 +156,7 @@ func validateSeverity(severity string) (string, error) {
 		return "ERROR", nil
 	}
 	if severity != "ERROR" && severity != "WARNING" {
-		return "", NewInvalidParameterValue(fmt.Sprintf("severity must be ERROR or WARNING, got %s", severity))
+		return "", NewValidationException(fmt.Sprintf("severity must be ERROR or WARNING, got %s", severity))
 	}
 	return severity, nil
 }
@@ -184,15 +183,15 @@ func validateRoutingConfiguration(rc []sfnstore.RoutingConfiguration) error {
 	var totalWeight int32
 	for _, entry := range rc {
 		if entry.Weight < 0 || entry.Weight > 100 {
-			return NewInvalidParameterValue(fmt.Sprintf("routingConfiguration weight must be in [0, 100], got %d", entry.Weight))
+			return NewValidationException(fmt.Sprintf("routingConfiguration weight must be in [0, 100], got %d", entry.Weight))
 		}
 		if entry.StateMachineVersionArn == "" {
-			return NewInvalidParameterValue("routingConfiguration entry must include stateMachineVersionArn")
+			return NewValidationException("routingConfiguration entry must include stateMachineVersionArn")
 		}
 		totalWeight += entry.Weight
 	}
 	if totalWeight != 100 {
-		return NewInvalidParameterValue(fmt.Sprintf("routingConfiguration weights must sum to 100, got %d", totalWeight))
+		return NewValidationException(fmt.Sprintf("routingConfiguration weights must sum to 100, got %d", totalWeight))
 	}
 	return nil
 }
@@ -204,7 +203,7 @@ func validateMaxResults(maxResults int32, minVal, maxVal int32, paramName string
 		return nil
 	}
 	if maxResults < minVal || maxResults > maxVal {
-		return NewInvalidParameterValue(fmt.Sprintf("%s must be in [%d, %d], got %d", paramName, minVal, maxVal, maxResults))
+		return NewValidationException(fmt.Sprintf("%s must be in [%d, %d], got %d", paramName, minVal, maxVal, maxResults))
 	}
 	return nil
 }
@@ -224,8 +223,7 @@ func validateArnRequired(arn, paramName string) error {
 // The Smithy model marks roleArn as @required on CreateStateMachineInput.
 func validateRoleArnRequired(roleArn string) error {
 	if roleArn == "" {
-		return awserrors.NewAWSError("MissingRequiredParameter",
-			"roleArn is a required parameter", 400)
+		return NewMissingRequiredParameter("roleArn is a required parameter")
 	}
 	if len(roleArn) > 256 {
 		return NewInvalidArnException(fmt.Sprintf("roleArn must be 1-256 characters, got %d", len(roleArn)))
@@ -245,11 +243,16 @@ func validateRoleArnOptional(roleArn string) error {
 	return nil
 }
 
-// validateExecutionStatus checks whether a status string is a recognised
-// execution status.
+// isValidExecutionStatus checks whether a status string is a member of the
+// Smithy ExecutionStatus enum (RUNNING, SUCCEEDED, FAILED, TIMED_OUT,
+// ABORTED, PENDING_REDRIVE). The empty string means "no filter" and is
+// valid for the ListExecutions statusFilter parameter.
 func isValidExecutionStatus(status string) bool {
+	if status == "" {
+		return true
+	}
 	switch status {
-	case "RUNNING", "SUCCEEDED", "FAILED", "TIMED_OUT", "ABORTED":
+	case "RUNNING", "SUCCEEDED", "FAILED", "TIMED_OUT", "ABORTED", "PENDING_REDRIVE":
 		return true
 	}
 	return false

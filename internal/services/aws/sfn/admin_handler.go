@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
+	awstypes "vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/sfn"
@@ -103,6 +104,64 @@ func (h *AdminHandler) DeleteStateMachine(ctx context.Context, req *connect.Requ
 	}
 
 	return connect.NewResponse(&pb.DeleteStateMachineOutput{}), nil
+}
+
+// TagResource adds tags to an SFN resource via the admin console gRPC-Web
+// interface.
+func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.TagResourceInput]) (*connect.Response[pb.TagResourceOutput], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	tags := make([]awstypes.Tag, len(req.Msg.Tags))
+	for i, t := range req.Msg.Tags {
+		tags[i] = awstypes.Tag{Key: t.GetKey(), Value: t.GetValue()}
+	}
+
+	if err := h.service.tagResourceCore(ctx, store, req.Msg.GetResourcearn(), tags); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.TagResourceOutput{}), nil
+}
+
+// UntagResource removes tags from an SFN resource via the admin console
+// gRPC-Web interface.
+func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[pb.UntagResourceInput]) (*connect.Response[pb.UntagResourceOutput], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if err := h.service.untagResourceCore(ctx, store, req.Msg.GetResourcearn(), req.Msg.GetTagkeys()); err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.UntagResourceOutput{}), nil
+}
+
+// ListTagsForResource returns the tags for an SFN resource via the admin
+// console gRPC-Web interface.
+func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceInput]) (*connect.Response[pb.ListTagsForResourceOutput], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	tags, err := h.service.listTagsForResourceCore(ctx, store, req.Msg.GetResourcearn())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	pbTags := make([]*pb.Tag, len(tags))
+	for i, t := range tags {
+		pbTags[i] = &pb.Tag{Key: t.Key, Value: t.Value}
+	}
+
+	return connect.NewResponse(&pb.ListTagsForResourceOutput{
+		Tags: pbTags,
+	}), nil
 }
 
 // smTypeFromProto converts the proto enum to the Smithy string type.

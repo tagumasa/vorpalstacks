@@ -46,6 +46,7 @@ type Parameter struct {
 
 // ParameterVersion represents a specific version of a parameter,
 // storing all metadata needed to reconstruct historical parameter state.
+// The fields mirror the Smithy ParameterHistory shape.
 type ParameterVersion struct {
 	ParameterName    string        `json:"parameterName"`
 	Version          int64         `json:"version"`
@@ -59,6 +60,7 @@ type ParameterVersion struct {
 	Description      string        `json:"description,omitempty"`
 	KeyID            string        `json:"keyId,omitempty"`
 	AllowedPattern   string        `json:"allowedPattern,omitempty"`
+	Policies         string        `json:"policies,omitempty"`
 }
 
 // ParameterMetadata represents the metadata of a parameter without its value.

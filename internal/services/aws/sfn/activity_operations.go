@@ -13,6 +13,9 @@ import (
 func (s *StepFunctionService) GetActivityTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	activityArn := request.GetParamLowerFirst(req.Parameters, "activityArn")
 	workerName := request.GetParamLowerFirst(req.Parameters, "workerName")
+	if err := validateArnRequired(activityArn, "activityArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -49,6 +52,9 @@ func (s *StepFunctionService) GetActivityTask(ctx context.Context, reqCtx *reque
 func (s *StepFunctionService) SendTaskSuccess(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskToken := request.GetParamLowerFirst(req.Parameters, "taskToken")
 	output := request.GetParamLowerFirst(req.Parameters, "output")
+	if taskToken == "" {
+		return nil, NewInvalidToken("taskToken is required")
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -65,6 +71,9 @@ func (s *StepFunctionService) SendTaskSuccess(ctx context.Context, reqCtx *reque
 // SendTaskFailure reports that a task failed.
 func (s *StepFunctionService) SendTaskFailure(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskToken := request.GetParamLowerFirst(req.Parameters, "taskToken")
+	if taskToken == "" {
+		return nil, NewInvalidToken("taskToken is required")
+	}
 	errorMsg := request.GetParamLowerFirst(req.Parameters, "error")
 	cause := request.GetParamLowerFirst(req.Parameters, "cause")
 
@@ -86,6 +95,9 @@ func (s *StepFunctionService) SendTaskFailure(ctx context.Context, reqCtx *reque
 // SendTaskHeartbeat reports that a task is still running.
 func (s *StepFunctionService) SendTaskHeartbeat(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskToken := request.GetParamLowerFirst(req.Parameters, "taskToken")
+	if taskToken == "" {
+		return nil, NewInvalidToken("taskToken is required")
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

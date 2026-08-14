@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -147,6 +148,67 @@ func (r *TestRunner) runSSMEdge(tc *ssmTestContext) []TestResult {
 		}
 		if found != 5 {
 			return fmt.Errorf("expected 5 parameters, found %d", found)
+		}
+		return nil
+	}))
+
+	// The AWS-documented DataType value set includes aws:ssm:integration.
+	results = append(results, r.RunTest("ssm", "PutParameter_DataType_Integration", func() error {
+		name := tc.uniqueName("/dt-int")
+		resp, err := tc.putParam(name, "integration-val", types.ParameterTypeString, func(in *ssm.PutParameterInput) {
+			in.DataType = aws.String("aws:ssm:integration")
+		})
+		if err != nil {
+			return fmt.Errorf("put with aws:ssm:integration: %v", err)
+		}
+		defer tc.deleteParam(name)
+		if resp.Tier == "" {
+			return fmt.Errorf("empty tier in response")
+		}
+
+		gp, err := tc.client.GetParameter(tc.ctx, &ssm.GetParameterInput{Name: aws.String(name)})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if gp.Parameter.DataType == nil || *gp.Parameter.DataType != "aws:ssm:integration" {
+			return fmt.Errorf("DataType mismatch: %v", gp.Parameter.DataType)
+		}
+		return nil
+	}))
+
+	// Smithy marks PutParameter Value as required; empty values are rejected.
+	results = append(results, r.RunTest("ssm", "PutParameter_EmptyValue_Rejected", func() error {
+		name := tc.uniqueName("/empty-val")
+		defer tc.deleteParam(name)
+		_, err := tc.putParam(name, "", types.ParameterTypeString)
+		if err == nil {
+			return fmt.Errorf("expected error for empty Value")
+		}
+		return nil
+	}))
+
+	// The documented 2048-character maximum includes 1037 reserved
+	// characters; caller-specified names are capped at 1011.
+	results = append(results, r.RunTest("ssm", "PutParameter_NameTooLong_Rejected", func() error {
+		defer tc.deleteParam("long-name")
+		_, err := tc.putParam(strings.Repeat("a", 1012), "val", types.ParameterTypeString)
+		if err == nil {
+			return fmt.Errorf("expected error for 1012-character name")
+		}
+		return nil
+	}))
+
+	// Parameter hierarchies are limited to fifteen levels.
+	results = append(results, r.RunTest("ssm", "PutParameter_HierarchyTooDeep_Rejected", func() error {
+		segments := make([]string, 16)
+		for i := range segments {
+			segments[i] = "lvl"
+		}
+		name := "/" + strings.Join(segments, "/")
+		defer tc.deleteParam(name)
+		_, err := tc.putParam(name, "val", types.ParameterTypeString)
+		if err == nil {
+			return fmt.Errorf("expected error for 16-level hierarchy")
 		}
 		return nil
 	}))

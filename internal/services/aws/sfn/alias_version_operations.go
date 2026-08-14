@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -42,7 +41,7 @@ func (s *StepFunctionService) PublishStateMachineVersion(ctx context.Context, re
 	}
 
 	if revisionId != "" && sm.RevisionId != revisionId {
-		return nil, NewInvalidParameterValue("revisionId mismatch: expected " + sm.RevisionId + ", got " + revisionId)
+		return nil, NewValidationException("revisionId mismatch: expected " + sm.RevisionId + ", got " + revisionId)
 	}
 
 	version, err := store.PublishStateMachineVersion(ctx, smArn, description)
@@ -72,7 +71,7 @@ func (s *StepFunctionService) DescribeStateMachineVersion(ctx context.Context, r
 	version, err := store.GetStateMachineVersion(ctx, versionArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
-			return nil, awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)
+			return nil, NewResourceNotFound("State Machine Version Does not exist: " + versionArn)
 		}
 		return nil, err
 	}
@@ -101,7 +100,12 @@ func (s *StepFunctionService) DeleteStateMachineVersion(ctx context.Context, req
 
 	if err := store.DeleteStateMachineVersion(ctx, versionArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
-			return nil, awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)
+			// The documented error set for DeleteStateMachineVersion is
+			// ConflictException, InvalidArn and ValidationException only —
+			// a well-formed ARN referencing no version is a constraint
+			// failure, so the not-found sentinel maps to
+			// ValidationException.
+			return nil, NewValidationException("State Machine Version Does not exist: " + versionArn)
 		}
 		return nil, err
 	}
@@ -200,7 +204,7 @@ func (s *StepFunctionService) CreateStateMachineAlias(ctx context.Context, reqCt
 
 	if err := store.CreateStateMachineAlias(ctx, alias); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasAlreadyExists) {
-			return nil, awserrors.NewAWSError("StateMachineAliasAlreadyExists", fmt.Sprintf("State Machine Alias already exists: %s", name), 400)
+			return nil, NewConflictException(fmt.Sprintf("State Machine Alias already exists: %s", name))
 		}
 		return nil, err
 	}
@@ -228,7 +232,7 @@ func (s *StepFunctionService) DescribeStateMachineAlias(ctx context.Context, req
 	alias, err := store.GetStateMachineAlias(ctx, aliasArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
+			return nil, NewResourceNotFound("State Machine Alias Does not exist: " + aliasArn)
 		}
 		return nil, err
 	}
@@ -268,7 +272,7 @@ func (s *StepFunctionService) UpdateStateMachineAlias(ctx context.Context, reqCt
 	alias, err := store.GetStateMachineAlias(ctx, aliasArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
+			return nil, NewResourceNotFound("State Machine Alias Does not exist: " + aliasArn)
 		}
 		return nil, err
 	}
@@ -309,7 +313,7 @@ func (s *StepFunctionService) DeleteStateMachineAlias(ctx context.Context, reqCt
 
 	if err := store.DeleteStateMachineAlias(ctx, aliasArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
+			return nil, NewResourceNotFound("State Machine Alias Does not exist: " + aliasArn)
 		}
 		return nil, err
 	}
@@ -375,7 +379,7 @@ func (s *StepFunctionService) UpdateMapRun(ctx context.Context, reqCtx *request.
 
 	mr, err := store.GetMapRun(ctx, mapRunArn)
 	if err != nil {
-		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
+		return nil, NewResourceNotFound("Map Run does not exist: " + mapRunArn)
 	}
 
 	var maxConcurrency int64 = mr.MaxConcurrency
@@ -389,6 +393,9 @@ func (s *StepFunctionService) UpdateMapRun(ctx context.Context, reqCtx *request.
 		toleratedFailureCount = request.GetInt64Param(req.Parameters, "toleratedFailureCount")
 	}
 	if _, ok := req.Parameters["toleratedFailurePercentage"]; ok {
+		// The Smithy model types toleratedFailurePercentage as a
+		// single-precision float; the cast marks the mandated precision
+		// boundary between generic JSON numbers and the wire type.
 		toleratedFailurePercentage = float32(request.GetFloatParam(req.Parameters, "toleratedFailurePercentage"))
 	}
 

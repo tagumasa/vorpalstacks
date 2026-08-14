@@ -303,7 +303,9 @@ func (r *TestRunner) runSSMVersion(tc *ssmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("ssm", "GetParameterHistory_Pagination", func() error {
 		name := tc.uniqueName("/ver-pag")
-		for i := 0; i < 5; i++ {
+		// 12 versions force multiple pages and exercise the v10-before-v2
+		// lexicographic trap in decimal-encoded history keys.
+		for i := 0; i < 12; i++ {
 			_, err := tc.putParam(name, fmt.Sprintf("v%d", i), types.ParameterTypeString, func(in *ssm.PutParameterInput) {
 				in.Overwrite = aws.Bool(true)
 			})
@@ -332,8 +334,33 @@ func (r *TestRunner) runSSMVersion(tc *ssmTestContext) []TestResult {
 			}
 			nextToken = resp.NextToken
 		}
-		if len(allVersions) != 5 {
-			return fmt.Errorf("expected 5 history entries, got %d", len(allVersions))
+		if len(allVersions) != 12 {
+			return fmt.Errorf("expected 12 history entries, got %d", len(allVersions))
+		}
+		// AWS returns history newest-version-first; the order must hold
+		// across page boundaries.
+		for i := 0; i < len(allVersions); i++ {
+			if want := int64(12 - i); allVersions[i] != want {
+				return fmt.Errorf("history order broken at index %d: got %d, want %d (sequence %v)", i, allVersions[i], want, allVersions)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("ssm", "GetParameterHistory_InvalidNextToken", func() error {
+		name := tc.uniqueName("/ver-badtoken")
+		_, err := tc.putParam(name, "v1", types.ParameterTypeString)
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+		defer tc.deleteParam(name)
+
+		_, err = tc.client.GetParameterHistory(tc.ctx, &ssm.GetParameterHistoryInput{
+			Name:      aws.String(name),
+			NextToken: aws.String("not-a-valid-token"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected InvalidNextToken error, got nil")
 		}
 		return nil
 	}))

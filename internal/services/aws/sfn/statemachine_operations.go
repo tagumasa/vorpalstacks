@@ -129,11 +129,11 @@ func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context
 	_ = smType
 
 	maxResults := int32(request.GetIntParam(req.Parameters, "maxResults"))
-	if err := validateMaxResults(maxResults, 0, 100, "maxResults"); err != nil {
+	if err := validateMaxResults(maxResults, 0, sfnstore.MaxValidateDefinitionResults, "maxResults"); err != nil {
 		return nil, err
 	}
 	if maxResults == 0 {
-		maxResults = 100
+		maxResults = sfnstore.MaxValidateDefinitionResults
 	}
 
 	var def map[string]interface{}
@@ -234,6 +234,9 @@ func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context
 // DescribeStateMachine returns the details of a state machine.
 func (s *StepFunctionService) DescribeStateMachine(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
+	if err := validateArnRequired(arn, "stateMachineArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -263,6 +266,9 @@ func (s *StepFunctionService) DescribeStateMachine(ctx context.Context, reqCtx *
 // DescribeStateMachineForExecution retrieves the state machine associated with an execution.
 func (s *StepFunctionService) DescribeStateMachineForExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	executionArn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	if err := validateArnRequired(executionArn, "executionArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -437,6 +443,8 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 
 	if name == "" {
 		name = generateExecutionName()
+	} else if len(name) > sfnstore.MaxResourceNameLength {
+		return nil, NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
 	}
 
 	executionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
@@ -446,7 +454,7 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 
 	if err := store.CreateExecution(ctx, exec); err != nil {
 		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
-			return nil, awserrors.NewAWSError("ExecutionAlreadyExists", "An execution with the same name already exists: "+executionArn, 400)
+			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + executionArn)
 		}
 		return nil, err
 	}
@@ -483,6 +491,9 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 // StopExecution stops a running execution of a state machine.
 func (s *StepFunctionService) StopExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	if err := validateArnRequired(arn, "executionArn"); err != nil {
+		return nil, err
+	}
 	errorMsg := request.GetParamLowerFirst(req.Parameters, "error")
 	cause := request.GetParamLowerFirst(req.Parameters, "cause")
 
@@ -523,6 +534,9 @@ func (s *StepFunctionService) StopExecution(ctx context.Context, reqCtx *request
 // DescribeExecution returns the details of an execution.
 func (s *StepFunctionService) DescribeExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	if err := validateArnRequired(arn, "executionArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -546,7 +560,18 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 	mapRunArn := request.GetParamLowerFirst(req.Parameters, "mapRunArn")
 	redriveFilter := request.GetParamLowerFirst(req.Parameters, "redriveFilter")
 	if redriveFilter != "" && redriveFilter != "REDRIVEN" && redriveFilter != "NOT_REDRIVEN" {
-		return nil, NewInvalidParameterValue("redriveFilter must be REDRIVEN or NOT_REDRIVEN, got " + redriveFilter)
+		return nil, NewValidationException("redriveFilter must be REDRIVEN or NOT_REDRIVEN, got " + redriveFilter)
+	}
+	if !isValidExecutionStatus(statusFilter) {
+		return nil, NewValidationException("statusFilter must be one of RUNNING, SUCCEEDED, FAILED, TIMED_OUT, ABORTED, PENDING_REDRIVE, got " + statusFilter)
+	}
+	// PENDING_REDRIVE lists child workflow executions awaiting redrive;
+	// those only exist in the scope of a Map Run, so the documented
+	// contract requires mapRunArn and rejects a stateMachineArn pairing
+	// with a validation exception — unconditionally, even when a
+	// mapRunArn is also present.
+	if statusFilter == "PENDING_REDRIVE" && stateMachineArn != "" {
+		return nil, NewValidationException("statusFilter PENDING_REDRIVE requires mapRunArn; providing stateMachineArn with PENDING_REDRIVE is not supported")
 	}
 	limit, err := parsePageLimit(req)
 	if err != nil {
@@ -613,6 +638,9 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 // GetExecutionHistory returns the history of an execution.
 func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	if err := validateArnRequired(arn, "executionArn"); err != nil {
+		return nil, err
+	}
 	limit, err := parsePageLimit(req)
 	if err != nil {
 		return nil, err
@@ -728,6 +756,9 @@ func (s *StepFunctionService) DeleteActivity(ctx context.Context, reqCtx *reques
 // DescribeActivity returns the details of an activity.
 func (s *StepFunctionService) DescribeActivity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamLowerFirst(req.Parameters, "activityArn")
+	if err := validateArnRequired(arn, "activityArn"); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -794,16 +825,7 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 		},
 		ResourceKey: func(rawKey string) string { return rawKey },
 		ValidateResource: func(ctx context.Context, arn string) error {
-			if !strings.Contains(arn, ":stateMachine:") {
-				return nil
-			}
-			if _, err := store.GetStateMachine(ctx, arn); err != nil {
-				if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-					return NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-				}
-				return err
-			}
-			return nil
+			return validateTaggableResource(ctx, store, arn)
 		},
 		ParseTags: func(params map[string]interface{}) []types.Tag {
 			return tagutil.MapToTags(tagutil.ToMap(tagutil.ParseTags(params, "tags")))
@@ -811,7 +833,13 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return tagutil.ParseTagKeysAsSlice(params, "tagKeys")
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []types.Tag) error {
+			// Resource existence is verified by ValidateResource above;
+			// this closure applies quota enforcement and persistence via
+			// the shared tag Core path.
+			if err := enforceTagQuota(store, resourceKey, tagSlice); err != nil {
+				return err
+			}
 			return store.TagFromSlice(resourceKey, tagSlice)
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
@@ -829,6 +857,53 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 			return response.EmptyResponse(), nil
 		},
 	}
+}
+
+// validateTaggableResource probes the resource identified by an ARN for a
+// tag operation. SFN supports tagging on state machines, activities, state
+// machine aliases, state machine versions and map runs; each type is
+// resolved through its store getter and mapped to the documented
+// not-found error.
+func validateTaggableResource(ctx context.Context, store *sfnstore.StepFunctionStore, arn string) error {
+	switch {
+	case strings.Contains(arn, ":stateMachineAlias:"):
+		if _, err := store.GetStateMachineAlias(ctx, arn); err != nil {
+			if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
+				return NewResourceNotFound("State Machine Alias Does not exist: " + arn)
+			}
+			return err
+		}
+	case strings.Contains(arn, ":mapRun:"):
+		if _, err := store.GetMapRun(ctx, arn); err != nil {
+			if errors.Is(err, sfnstore.ErrMapRunNotFound) {
+				return NewResourceNotFound("Map Run does not exist: " + arn)
+			}
+			return err
+		}
+	case strings.Contains(arn, ":stateMachine:"):
+		// Version ARNs append ":<number>" to the state machine ARN and
+		// do not resolve through the plain state-machine getter; probe the
+		// version store when the state machine lookup misses.
+		if _, err := store.GetStateMachine(ctx, arn); err != nil {
+			if !errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+				return err
+			}
+			if _, verr := store.GetStateMachineVersion(ctx, arn); verr != nil {
+				if errors.Is(verr, sfnstore.ErrStateMachineVersionNotFound) {
+					return NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+				}
+				return verr
+			}
+		}
+	case strings.Contains(arn, ":activity:"):
+		if _, err := store.GetActivity(ctx, arn); err != nil {
+			if errors.Is(err, sfnstore.ErrActivityNotFound) {
+				return NewActivityDoesNotExist("Activity Does not exist: " + arn)
+			}
+			return err
+		}
+	}
+	return nil
 }
 
 // TagResource adds tags to a state machine.
@@ -872,15 +947,20 @@ func validateStateMachineRole(ctx context.Context, reqCtx *request.RequestContex
 }
 
 func sfnRoleNotFoundError(roleArn string) error {
-	return awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn), 400)
+	// The Smithy model has no InvalidParameterException for SFN; an
+	// unresolvable role is an input-constraint failure of the create call.
+	return NewValidationException(fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn))
 }
 
 func sfnRoleCannotBeAssumedError(roleArn string) error {
+	// AccessDeniedException is an AWS-common auth-class error rather than a
+	// Smithy-modelled SFN operation error; a role that exists but cannot be
+	// assumed is an authorisation failure, not an input-constraint failure.
 	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 403)
 }
 
 func sfnInvalidRoleArnError(roleArn string) error {
-	return awserrors.NewAWSError("InvalidArn", fmt.Sprintf("Invalid Role Arn: %s", roleArn), 400)
+	return NewInvalidArnException(fmt.Sprintf("Invalid Role Arn: %s", roleArn))
 }
 
 func validateDefinitionJSONataFields(definition string) error {

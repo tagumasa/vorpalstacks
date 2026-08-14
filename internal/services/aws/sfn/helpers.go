@@ -13,10 +13,10 @@ import (
 func parsePageLimit(req *request.ParsedRequest) (int32, error) {
 	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
 	if limit == 0 {
-		return 100, nil
+		return sfnstore.DefaultPageSize, nil
 	}
-	if limit < 0 || limit > 1000 {
-		return 0, NewInvalidParameterValue("maxResults must be in [0, 1000], got " + strconv.FormatInt(int64(limit), 10))
+	if limit < 0 || limit > sfnstore.MaxPageSize {
+		return 0, NewValidationException("maxResults must be in [0, 1000], got " + strconv.FormatInt(int64(limit), 10))
 	}
 	return limit, nil
 }
