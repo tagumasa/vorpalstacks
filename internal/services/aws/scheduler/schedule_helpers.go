@@ -70,34 +70,7 @@ func parseTargetFromMap(m map[string]interface{}) schedulerstore.Target {
 	if kinesis, ok := getMapField(m, "kinesisParameters", "KinesisParameters"); ok {
 		target.KinesisParameters = parseKinesisParameters(kinesis)
 	}
-	if sage, ok := getMapField(m, "sageMakerPipelineParameters", "SageMakerPipelineParameters"); ok {
-		target.SageMakerPipelineParameters = parseSageMakerPipelineParameters(sage)
-	}
 	return target
-}
-
-// parseSageMakerPipelineParameters extracts SageMaker Pipeline parameters
-// from the request map. Each PipelineParameter Name is 1-256 chars and
-// Value is 1-1024 chars per AWS specification.
-func parseSageMakerPipelineParameters(data map[string]interface{}) *schedulerstore.SageMakerPipelineParameters {
-	params := &schedulerstore.SageMakerPipelineParameters{}
-	if list, ok := getSliceField(data, "pipelineParameterList", "PipelineParameterList"); ok {
-		for _, item := range list {
-			m, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			name := getStringFromMap(m, "name", "Name")
-			value := getStringFromMap(m, "value", "Value")
-			params.PipelineParameterList = append(params.PipelineParameterList,
-				schedulerstore.SageMakerPipelineParameter{
-					Name:  name,
-					Value: value,
-				},
-			)
-		}
-	}
-	return params
 }
 
 func getMapField(m map[string]interface{}, keys ...string) (map[string]interface{}, bool) {

@@ -433,7 +433,20 @@ func (s *SchedulerStore) GetAllEnabledSchedules(ctx context.Context) ([]*Schedul
 	}
 
 	result, err := common.List[Schedule](s.schedulesStore, opts, func(sch *Schedule) bool {
-		return sch.State == ScheduleStateEnabled
+		if sch.State != ScheduleStateEnabled {
+			return false
+		}
+		// at() expressions ignore StartDate/EndDate (AWS spec).
+		// For rate()/cron() expressions, filter out permanently expired
+		// schedules as defence-in-depth alongside the engine's
+		// shouldExecute check. This avoids fetching and evaluating
+		// schedules whose EndDate has already passed.
+		if !strings.HasPrefix(sch.ScheduleExpression, "at(") {
+			if sch.EndDate != nil && time.Now().UTC().After(*sch.EndDate) {
+				return false
+			}
+		}
+		return true
 	})
 	if err != nil {
 		return nil, err

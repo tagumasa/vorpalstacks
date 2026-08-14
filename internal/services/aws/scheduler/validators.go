@@ -27,16 +27,47 @@ var dateLayouts = []string{
 }
 
 // supportedTargetServices maps an ARN service segment to the delivery
-// function that handles it in engine.go. Targets pointing to services
-// outside this set are rejected at validation time.
+// function that handles it in engine.go's deliverToTarget switch. Targets
+// pointing to services outside this set are rejected at validation time.
+//
+// The set of templated targets is defined by the AWS EventBridge Scheduler
+// User Guide ("Using templated targets in EventBridge Scheduler"). The full
+// AWS list is: CodeBuild, CodePipeline, ECS, EventBridge, Inspector, Kinesis,
+// Firehose, Lambda, SageMaker AI, SNS, SQS, Step Functions. Note that SSM and
+// AppSync are EventBridge Rules targets only; the Scheduler has no templated
+// target for them (they are reachable only via universal targets, which this
+// platform does not implement).
+//
+// Currently supported (delivery implemented):
+//
+//	lambda, sqs, sns, kinesis, states (Step Functions), events (EventBridge), logs (CloudWatch Logs)
+//
+// Accepted with stub delivery (accepted at validation, delivery fails until
+// the backing service is implemented on this platform, mirroring the
+// EventBridge accept-and-fail-at-delivery behaviour):
+//
+//	ecs — EcsParameters types/parsing/validation fully implemented. Delivery
+//	      returns "not available" until the ECS service exists on this platform.
+//	firehose — No sub-parameters (Smithy model has no FirehoseParameters).
+//	           Delivery returns "not available" until the Firehose service
+//	           exists on this platform.
+//
+// Out of scope (permanently unsupported on this edge/on-prem platform):
+//
+//	sagemaker — ML pipeline service (types stripped)
+//	codebuild — CI/CD build service
+//	codepipeline — CI/CD pipeline orchestration
+//	inspector — Security assessment service
 var supportedTargetServices = map[string]bool{
-	"lambda":  true,
-	"sqs":     true,
-	"sns":     true,
-	"kinesis": true,
-	"states":  true,
-	"events":  true,
-	"logs":    true,
+	"lambda":   true,
+	"sqs":      true,
+	"sns":      true,
+	"kinesis":  true,
+	"states":   true,
+	"events":   true,
+	"logs":     true,
+	"ecs":      true,
+	"firehose": true,
 }
 
 // validEcsLaunchTypes lists the Smithy enum values for EcsParameters.LaunchType.
@@ -65,10 +96,6 @@ var (
 	sourceFirstCharRe = regexp.MustCompile(`^[/.\-_A-Za-z0-9]`)
 	sourceJSONPathRe  = regexp.MustCompile(`^\$(\.[\w_-]+(\[(\d+|\*)\])*)*$`)
 )
-
-// sagemakerParamNamePattern matches the Smithy pattern for
-// SageMakerPipelineParameter.Name: ^[A-Za-z0-9\-_]*$.
-var sagemakerParamNamePattern = regexp.MustCompile(`^[A-Za-z0-9\-_]*$`)
 
 // ScheduleSpec is the common input structure for schedule creation and
 // update, used by both the HTTP API and the admin console to guarantee
@@ -293,11 +320,6 @@ func validateTarget(target *schedulerstore.Target) error {
 			return err
 		}
 	}
-	if target.SageMakerPipelineParameters != nil {
-		if err := validateSageMakerPipelineParameters(target.SageMakerPipelineParameters); err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
@@ -308,7 +330,7 @@ func validateTarget(target *schedulerstore.Target) error {
 func validateTargetService(service string) error {
 	if !supportedTargetServices[service] {
 		return awserrors.NewValidationException(
-			fmt.Sprintf("unsupported target service %q; supported services: lambda, sqs, sns, kinesis, states, events, logs", service),
+			fmt.Sprintf("unsupported target service %q; supported services: lambda, sqs, sns, kinesis, states, events, logs, ecs, firehose", service),
 		)
 	}
 	return nil
@@ -351,10 +373,6 @@ func validateSubParametersForService(service string, target *schedulerstore.Targ
 		return awserrors.NewValidationException(
 			"SqsParameters can only be specified for SQS targets")
 	}
-	if target.SageMakerPipelineParameters != nil && service != "sagemaker" {
-		return awserrors.NewValidationException(
-			"SageMakerPipelineParameters can only be specified for SageMaker targets")
-	}
 	return nil
 }
 
@@ -364,31 +382,6 @@ func validateSqsParameters(sqs *schedulerstore.SqsParameters) error {
 	if l := len(sqs.MessageGroupId); l < 1 || l > 128 {
 		return awserrors.NewValidationException(
 			"SqsParameters.MessageGroupId must be 1-128 characters")
-	}
-	return nil
-}
-
-// validateSageMakerPipelineParameters validates SageMakerPipelineParameters
-// per Smithy traits. PipelineParameterList: max 200 items; each Name
-// [1, 256] with pattern ^[A-Za-z0-9\-_]*$; each Value [1, 1024].
-func validateSageMakerPipelineParameters(sg *schedulerstore.SageMakerPipelineParameters) error {
-	if len(sg.PipelineParameterList) > 200 {
-		return awserrors.NewValidationException(
-			"SageMakerPipelineParameters.PipelineParameterList must have at most 200 items")
-	}
-	for _, p := range sg.PipelineParameterList {
-		if l := len(p.Name); l < 1 || l > 256 {
-			return awserrors.NewValidationException(
-				"SageMakerPipelineParameter.Name must be 1-256 characters")
-		}
-		if !sagemakerParamNamePattern.MatchString(p.Name) {
-			return awserrors.NewValidationException(
-				fmt.Sprintf("SageMakerPipelineParameter.Name %q contains invalid characters; allowed: alphanumeric, hyphen, underscore", p.Name))
-		}
-		if l := len(p.Value); l < 1 || l > 1024 {
-			return awserrors.NewValidationException(
-				"SageMakerPipelineParameter.Value must be 1-1024 characters")
-		}
 	}
 	return nil
 }

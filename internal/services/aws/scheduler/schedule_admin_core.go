@@ -128,10 +128,6 @@ func protoTargetToStore(pbTarget *pb.Target) *schedulerstore.Target {
 		}
 	}
 
-	if pbTarget.Sagemakerpipelineparameters != nil {
-		t.SageMakerPipelineParameters = protoSageMakerParamsToStore(pbTarget.Sagemakerpipelineparameters)
-	}
-
 	return t
 }
 
@@ -213,19 +209,4 @@ func protoNetworkConfigToStore(pbNet *pb.NetworkConfiguration) *schedulerstore.N
 		nc.AwsVpcConfiguration.AssignPublicIp = vpc.Assignpublicip
 	}
 	return nc
-}
-
-// protoSageMakerParamsToStore converts a protobuf SageMakerPipelineParameters
-// to the store type.
-func protoSageMakerParamsToStore(pbSM *pb.SageMakerPipelineParameters) *schedulerstore.SageMakerPipelineParameters {
-	sm := &schedulerstore.SageMakerPipelineParameters{}
-	for _, p := range pbSM.Pipelineparameterlist {
-		sm.PipelineParameterList = append(sm.PipelineParameterList,
-			schedulerstore.SageMakerPipelineParameter{
-				Name:  p.Name,
-				Value: p.Value,
-			},
-		)
-	}
-	return sm
 }

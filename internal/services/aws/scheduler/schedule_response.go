@@ -134,18 +134,6 @@ func targetToResponse(target *schedulerstore.Target) map[string]interface{} {
 			"PartitionKey": target.KinesisParameters.PartitionKey,
 		}
 	}
-	if target.SageMakerPipelineParameters != nil && len(target.SageMakerPipelineParameters.PipelineParameterList) > 0 {
-		params := make([]map[string]interface{}, len(target.SageMakerPipelineParameters.PipelineParameterList))
-		for i, p := range target.SageMakerPipelineParameters.PipelineParameterList {
-			params[i] = map[string]interface{}{
-				"Name":  p.Name,
-				"Value": p.Value,
-			}
-		}
-		resp["SageMakerPipelineParameters"] = map[string]interface{}{
-			"PipelineParameterList": params,
-		}
-	}
 	return resp
 }
 

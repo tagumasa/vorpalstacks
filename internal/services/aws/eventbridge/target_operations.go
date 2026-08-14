@@ -13,23 +13,55 @@ import (
 
 const maxTargetsPerRule = 5
 
+// isValidTargetARN validates target ARNs at PutTargets time. The service
+// segment of the ARN must match a supported delivery type in the
+// dispatchToTarget switch (event_operations.go).
+//
+// Currently supported (delivery implemented):
+//
+//	lambda, sqs, sns, events, states (Step Functions), logs, kinesis
+//
+// Future targets (infrastructure exists, delivery pending service implementation):
+//
+//	ecs — EcsParameters types/parsing/validation fully implemented. Delivery
+//	       stub exists. Enable by implementing deliverToECS when the ECS
+//	       service is available on this platform.
+//	firehose — Delivery stub exists, no sub-parameters required (Smithy model
+//	           has no FirehoseParameters). Enable by implementing
+//	           deliverToFirehose when the Firehose service is available.
+//
+// Platform-implemented, delivery not yet wired:
+//
+//	ssm — RunCommandParameters type exists, SSM service exists. Delivery
+//	       TODO: call SSM StartAutomationExecution.
+//	appsync — AppSyncParameters type exists, AppSync service exists. Delivery
+//	          TODO: call AppSync GraphQL API.
+//
+// Out of scope (permanently unsupported on this edge/on-prem platform):
+//
+//	sagemaker — ML pipeline service (types stripped)
+//	batch — Batch processing service (types stripped)
+//	redshift — Data warehouse service (types stripped)
+//	codebuild — CI/CD build service
+//	codepipeline — CI/CD pipeline orchestration
+//	inspector — Security assessment service
 func isValidTargetARN(arn string) bool {
 	if arn == "" {
 		return false
 	}
 	_, service, _, _, _ := svcarn.SplitARN(arn)
 	validServices := map[string]bool{
-		"lambda":        true,
-		"sqs":           true,
-		"sns":           true,
-		"events":        true,
-		"ecs":           true,
-		"kinesis":       true,
-		"stepfunctions": true,
-		"states":        true,
-		"logs":          true,
-		"ssm":           true,
-		"appsync":       true,
+		"lambda":   true,
+		"sqs":      true,
+		"sns":      true,
+		"events":   true,
+		"ecs":      true,
+		"firehose": true,
+		"kinesis":  true,
+		"states":   true,
+		"logs":     true,
+		"ssm":      true,
+		"appsync":  true,
 	}
 	return validServices[service]
 }
@@ -285,15 +317,6 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 		if rcp, ok := targetMap["RunCommandParameters"].(map[string]interface{}); ok {
 			target.RunCommandParameters = parseRunCommandParameters(rcp)
 		}
-		if bp, ok := targetMap["BatchParameters"].(map[string]interface{}); ok {
-			target.BatchParameters = parseBatchParameters(bp)
-		}
-		if rdp, ok := targetMap["RedshiftDataParameters"].(map[string]interface{}); ok {
-			target.RedshiftDataParameters = parseRedshiftDataParameters(rdp)
-		}
-		if smp, ok := targetMap["SageMakerPipelineParameters"].(map[string]interface{}); ok {
-			target.SageMakerPipelineParameters = parseSageMakerPipelineParameters(smp)
-		}
 		if asp, ok := targetMap["AppSyncParameters"].(map[string]interface{}); ok {
 			target.AppSyncParameters = &eventsstore.AppSyncParameters{}
 			if op, ok := asp["GraphQLOperation"].(string); ok {
@@ -493,53 +516,6 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 				"RunCommandTargets": rcTargets,
 			}
 		}
-		if t.BatchParameters != nil {
-			bp := map[string]interface{}{
-				"JobDefinition": t.BatchParameters.JobDefinition,
-				"JobName":       t.BatchParameters.JobName,
-			}
-			if t.BatchParameters.ArrayProperties != nil {
-				bp["ArrayProperties"] = map[string]interface{}{
-					"Size": t.BatchParameters.ArrayProperties.Size,
-				}
-			}
-			if t.BatchParameters.RetryStrategy != nil {
-				bp["RetryStrategy"] = map[string]interface{}{
-					"Attempts": t.BatchParameters.RetryStrategy.Attempts,
-				}
-			}
-			targets[i]["BatchParameters"] = bp
-		}
-		if t.RedshiftDataParameters != nil {
-			rdp := map[string]interface{}{
-				"Database":      t.RedshiftDataParameters.Database,
-				"Sql":           t.RedshiftDataParameters.Sql,
-				"StatementName": t.RedshiftDataParameters.StatementName,
-				"WithEvent":     t.RedshiftDataParameters.WithEvent,
-			}
-			if t.RedshiftDataParameters.SecretManagerArn != "" {
-				rdp["SecretManagerArn"] = t.RedshiftDataParameters.SecretManagerArn
-			}
-			if t.RedshiftDataParameters.DbUser != "" {
-				rdp["DbUser"] = t.RedshiftDataParameters.DbUser
-			}
-			if len(t.RedshiftDataParameters.Sqls) > 0 {
-				rdp["Sqls"] = t.RedshiftDataParameters.Sqls
-			}
-			targets[i]["RedshiftDataParameters"] = rdp
-		}
-		if t.SageMakerPipelineParameters != nil {
-			ppl := make([]map[string]interface{}, len(t.SageMakerPipelineParameters.PipelineParameterList))
-			for j, pp := range t.SageMakerPipelineParameters.PipelineParameterList {
-				ppl[j] = map[string]interface{}{
-					"Name":  pp.Name,
-					"Value": pp.Value,
-				}
-			}
-			targets[i]["SageMakerPipelineParameters"] = map[string]interface{}{
-				"PipelineParameterList": ppl,
-			}
-		}
 		if t.AppSyncParameters != nil {
 			targets[i]["AppSyncParameters"] = map[string]interface{}{
 				"GraphQLOperation": t.AppSyncParameters.GraphQLOperation,
@@ -622,71 +598,6 @@ func parseRunCommandParameters(m map[string]interface{}) *eventsstore.RunCommand
 				}
 			}
 			out.RunCommandTargets = append(out.RunCommandTargets, rct)
-		}
-	}
-	return out
-}
-
-// parseBatchParameters captures AWS Batch target invocation parameters.
-// Batch is not available on this platform; we persist for SDK parity.
-func parseBatchParameters(m map[string]interface{}) *eventsstore.BatchParameters {
-	out := &eventsstore.BatchParameters{
-		JobDefinition: getStringField(m, "JobDefinition"),
-		JobName:       getStringField(m, "JobName"),
-	}
-	if arr, ok := m["ArrayProperties"].(map[string]interface{}); ok {
-		out.ArrayProperties = &eventsstore.BatchArrayProperties{}
-		if v, ok := arr["Size"].(float64); ok {
-			out.ArrayProperties.Size = int32(v)
-		}
-	}
-	if rs, ok := m["RetryStrategy"].(map[string]interface{}); ok {
-		out.RetryStrategy = &eventsstore.BatchRetryStrategy{}
-		if v, ok := rs["Attempts"].(float64); ok {
-			out.RetryStrategy.Attempts = int32(v)
-		}
-	}
-	return out
-}
-
-// parseRedshiftDataParameters captures Redshift Data API target parameters.
-// Redshift is not available on this platform; we persist for SDK parity.
-func parseRedshiftDataParameters(m map[string]interface{}) *eventsstore.RedshiftDataParameters {
-	out := &eventsstore.RedshiftDataParameters{
-		SecretManagerArn: getStringField(m, "SecretManagerArn"),
-		Database:         getStringField(m, "Database"),
-		DbUser:           getStringField(m, "DbUser"),
-		Sql:              getStringField(m, "Sql"),
-		StatementName:    getStringField(m, "StatementName"),
-	}
-	if v, ok := m["WithEvent"].(bool); ok {
-		out.WithEvent = v
-	}
-	if sqls, ok := m["Sqls"].([]interface{}); ok {
-		for _, s := range sqls {
-			if ss, ok := s.(string); ok {
-				out.Sqls = append(out.Sqls, ss)
-			}
-		}
-	}
-	return out
-}
-
-// parseSageMakerPipelineParameters captures SageMaker pipeline target
-// parameters. SageMaker is not available on this platform; we persist for
-// SDK parity.
-func parseSageMakerPipelineParameters(m map[string]interface{}) *eventsstore.SageMakerPipelineParameters {
-	out := &eventsstore.SageMakerPipelineParameters{}
-	if ppl, ok := m["PipelineParameterList"].([]interface{}); ok {
-		for _, p := range ppl {
-			pm, ok := p.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			out.PipelineParameterList = append(out.PipelineParameterList, eventsstore.SageMakerPipelineParameter{
-				Name:  getStringField(pm, "Name"),
-				Value: getStringField(pm, "Value"),
-			})
 		}
 	}
 	return out

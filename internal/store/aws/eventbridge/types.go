@@ -117,26 +117,23 @@ type Rule struct {
 
 // Target represents an EventBridge target.
 type Target struct {
-	ID                          string                       `json:"id"`
-	RuleName                    string                       `json:"ruleName"`
-	EventBusName                string                       `json:"eventBusName"`
-	ARN                         string                       `json:"arn"`
-	Input                       string                       `json:"input,omitempty"`
-	InputPath                   string                       `json:"inputPath,omitempty"`
-	InputTransformer            *InputTransformer            `json:"inputTransformer,omitempty"`
-	RoleARN                     string                       `json:"roleArn,omitempty"`
-	DeadLetterConfig            *DeadLetterConfig            `json:"deadLetterConfig,omitempty"`
-	RetryPolicy                 *RetryPolicy                 `json:"retryPolicy,omitempty"`
-	SqsParameters               *SqsParameters               `json:"sqsParameters,omitempty"`
-	HttpParameters              *HttpParameters              `json:"httpParameters,omitempty"`
-	KinesisParameters           *KinesisParameters           `json:"kinesisParameters,omitempty"`
-	RunCommandParameters        *RunCommandParameters        `json:"runCommandParameters,omitempty"`
-	BatchParameters             *BatchParameters             `json:"batchParameters,omitempty"`
-	RedshiftDataParameters      *RedshiftDataParameters      `json:"redshiftDataParameters,omitempty"`
-	SageMakerPipelineParameters *SageMakerPipelineParameters `json:"sageMakerPipelineParameters,omitempty"`
-	AppSyncParameters           *AppSyncParameters           `json:"appSyncParameters,omitempty"`
-	EcsParameters               *EcsParameters               `json:"ecsParameters,omitempty"`
-	CreatedAt                   time.Time                    `json:"createdAt"`
+	ID                   string                `json:"id"`
+	RuleName             string                `json:"ruleName"`
+	EventBusName         string                `json:"eventBusName"`
+	ARN                  string                `json:"arn"`
+	Input                string                `json:"input,omitempty"`
+	InputPath            string                `json:"inputPath,omitempty"`
+	InputTransformer     *InputTransformer     `json:"inputTransformer,omitempty"`
+	RoleARN              string                `json:"roleArn,omitempty"`
+	DeadLetterConfig     *DeadLetterConfig     `json:"deadLetterConfig,omitempty"`
+	RetryPolicy          *RetryPolicy          `json:"retryPolicy,omitempty"`
+	SqsParameters        *SqsParameters        `json:"sqsParameters,omitempty"`
+	HttpParameters       *HttpParameters       `json:"httpParameters,omitempty"`
+	KinesisParameters    *KinesisParameters    `json:"kinesisParameters,omitempty"`
+	RunCommandParameters *RunCommandParameters `json:"runCommandParameters,omitempty"`
+	AppSyncParameters    *AppSyncParameters    `json:"appSyncParameters,omitempty"`
+	EcsParameters        *EcsParameters        `json:"ecsParameters,omitempty"`
+	CreatedAt            time.Time             `json:"createdAt"`
 }
 
 // KinesisParameters represents the Kinesis parameters for an EventBridge target.
@@ -153,52 +150,6 @@ type RunCommandTarget struct {
 // RunCommandParameters configures the SSM Run Command target.
 type RunCommandParameters struct {
 	RunCommandTargets []RunCommandTarget `json:"runCommandTargets"`
-}
-
-// BatchArrayProperties enables Batch array job sizing.
-type BatchArrayProperties struct {
-	Size int32 `json:"size,omitempty"`
-}
-
-// BatchRetryStrategy controls Batch job retry behaviour.
-type BatchRetryStrategy struct {
-	Attempts int32 `json:"attempts,omitempty"`
-}
-
-// BatchParameters configures an AWS Batch target per the Smithy shape:
-// JobDefinition, JobName, ArrayProperties, RetryStrategy only.
-type BatchParameters struct {
-	JobDefinition   string                `json:"jobDefinition"`
-	JobName         string                `json:"jobName"`
-	ArrayProperties *BatchArrayProperties `json:"arrayProperties,omitempty"`
-	RetryStrategy   *BatchRetryStrategy   `json:"retryStrategy,omitempty"`
-}
-
-// RedshiftDataParameters configures a Redshift Data API target. The backing
-// Redshift service is not available on this platform; parameters are accepted
-// for SDK parity.
-type RedshiftDataParameters struct {
-	SecretManagerArn string   `json:"secretManagerArn,omitempty"`
-	Database         string   `json:"database"`
-	DbUser           string   `json:"dbUser,omitempty"`
-	Sql              string   `json:"sql,omitempty"`
-	StatementName    string   `json:"statementName,omitempty"`
-	WithEvent        bool     `json:"withEvent,omitempty"`
-	Sqls             []string `json:"sqls,omitempty"`
-}
-
-// SageMakerPipelineParameter is a name/value pair passed to a SageMaker
-// pipeline execution.
-type SageMakerPipelineParameter struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// SageMakerPipelineParameters configures a SageMaker pipeline target. The
-// backing SageMaker service is not available on this platform; parameters are
-// accepted for SDK parity.
-type SageMakerPipelineParameters struct {
-	PipelineParameterList []SageMakerPipelineParameter `json:"pipelineParameterList,omitempty"`
 }
 
 // AppSyncParameters configures an AppSync GraphQL target.

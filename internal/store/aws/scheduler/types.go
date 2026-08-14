@@ -132,17 +132,6 @@ type KinesisParameters struct {
 	PartitionKey string `json:"partitionKey"`
 }
 
-// SageMakerPipelineParameter defines a parameter for SageMaker pipeline invocations.
-type SageMakerPipelineParameter struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// SageMakerPipelineParameters defines the parameters for SageMaker pipeline invocations.
-type SageMakerPipelineParameters struct {
-	PipelineParameterList []SageMakerPipelineParameter `json:"pipelineParameterList,omitempty"`
-}
-
 // SqsParameters defines the parameters for SQS target invocations.
 type SqsParameters struct {
 	MessageGroupId string `json:"messageGroupId,omitempty"`
@@ -150,16 +139,15 @@ type SqsParameters struct {
 
 // Target defines the target for a schedule invocation.
 type Target struct {
-	Arn                         string                       `json:"arn"`
-	RoleArn                     string                       `json:"roleArn"`
-	Input                       string                       `json:"input,omitempty"`
-	DeadLetterConfig            *DeadLetterConfig            `json:"deadLetterConfig,omitempty"`
-	RetryPolicy                 *RetryPolicy                 `json:"retryPolicy,omitempty"`
-	EcsParameters               *EcsParameters               `json:"ecsParameters,omitempty"`
-	EventBridgeParameters       *EventBridgeParameters       `json:"eventBridgeParameters,omitempty"`
-	KinesisParameters           *KinesisParameters           `json:"kinesisParameters,omitempty"`
-	SageMakerPipelineParameters *SageMakerPipelineParameters `json:"sageMakerPipelineParameters,omitempty"`
-	SqsParameters               *SqsParameters               `json:"sqsParameters,omitempty"`
+	Arn                   string                 `json:"arn"`
+	RoleArn               string                 `json:"roleArn"`
+	Input                 string                 `json:"input,omitempty"`
+	DeadLetterConfig      *DeadLetterConfig      `json:"deadLetterConfig,omitempty"`
+	RetryPolicy           *RetryPolicy           `json:"retryPolicy,omitempty"`
+	EcsParameters         *EcsParameters         `json:"ecsParameters,omitempty"`
+	EventBridgeParameters *EventBridgeParameters `json:"eventBridgeParameters,omitempty"`
+	KinesisParameters     *KinesisParameters     `json:"kinesisParameters,omitempty"`
+	SqsParameters         *SqsParameters         `json:"sqsParameters,omitempty"`
 }
 
 // Schedule represents a schedule in Amazon EventBridge Scheduler.

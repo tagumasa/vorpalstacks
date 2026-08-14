@@ -495,6 +495,21 @@ func (e *Engine) deliverToTarget(ctx context.Context, schedule *schedulerstore.S
 		return e.sendToEventBridge(ctx, schedule, target)
 	case "logs":
 		return e.sendToCloudWatchLogs(ctx, schedule, target)
+	case "ecs":
+		// ECS is an AWS templated target. The ECS service is not yet
+		// available on this platform, so delivery fails and the schedule
+		// engine's retry/DLQ path takes over. EcsParameters validation
+		// is fully implemented, so the schedule itself is valid.
+		logs.Error("ECS target delivery failed: ECS service is not available",
+			logs.String("targetArn", target.Arn))
+		return fmt.Errorf("ecs delivery target %s is not available in this deployment", target.Arn)
+	case "firehose":
+		// Firehose is an AWS templated target with no sub-parameters.
+		// The Firehose service is not yet available on this platform,
+		// so delivery fails and the retry/DLQ path takes over.
+		logs.Error("Firehose target delivery failed: Firehose service is not available",
+			logs.String("targetArn", target.Arn))
+		return fmt.Errorf("firehose delivery target %s is not available in this deployment", target.Arn)
 	default:
 		return fmt.Errorf("unsupported target type: %s", target.Arn)
 	}
