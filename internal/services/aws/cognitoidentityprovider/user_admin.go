@@ -24,6 +24,11 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	if !validateUsernamePattern(username) {
 		return nil, ErrInvalidParameter
 	}
+	if ma := req.GetParam("MessageAction"); ma != "" {
+		if !validateMessageAction(ma) {
+			return nil, ErrInvalidParameter
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

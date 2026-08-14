@@ -709,12 +709,27 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		pool.SmsAuthenticationMessage = v
 	}
 	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
+		for _, a := range v {
+			if !validateAliasAttribute(a) {
+				return fmt.Errorf("invalid AliasAttribute: %s", a)
+			}
+		}
 		pool.AliasAttributes = v
 	}
 	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
+		for _, a := range v {
+			if !validateUsernameAttribute(a) {
+				return fmt.Errorf("invalid UsernameAttribute: %s", a)
+			}
+		}
 		pool.UsernameAttributes = v
 	}
 	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
+		for _, a := range v {
+			if !validateVerifiedAttribute(a) {
+				return fmt.Errorf("invalid AutoVerifiedAttribute: %s", a)
+			}
+		}
 		pool.AutoVerifiedAttributes = v
 	}
 	if schemaAttrs := parseSchemaAttributes(req); len(schemaAttrs) > 0 {

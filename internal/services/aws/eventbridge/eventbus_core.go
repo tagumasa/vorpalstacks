@@ -211,9 +211,6 @@ func (s *EventsService) listEventBusesCore(ctx context.Context, store *eventssto
 // listRulesCore validates input and delegates to the store.
 func (s *EventsService) listRulesCore(ctx context.Context, store *eventsstore.EventsStore, input ListRulesInput) (*eventsstore.RuleListResult, error) {
 	eventBusName := input.EventBusName
-	if eventBusName == "" {
-		eventBusName = "default"
-	}
 	limit := input.Limit
 	if limit == 0 {
 		limit = 100

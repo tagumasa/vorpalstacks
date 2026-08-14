@@ -103,6 +103,9 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		input.Description = desc
 	}
 
@@ -192,10 +195,29 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 	return response.EmptyResponse(), nil
 }
 
+// resolveEventBusName returns the event bus name, defaulting to "default"
+// when the EventBusName parameter is absent. An explicitly empty value is
+// rejected per Smithy @length(min=1).
+func resolveEventBusName(req *request.ParsedRequest) (string, error) {
+	name := request.GetParamLowerFirst(req.Parameters, "EventBusName")
+	if name != "" {
+		return name, nil
+	}
+	_, hasUpper := req.Parameters["EventBusName"]
+	_, hasLower := req.Parameters["eventBusName"]
+	if !hasUpper && !hasLower {
+		return "default", nil
+	}
+	return "", awserrors.NewValidationException("EventBusName must not be empty")
+}
+
 // DescribeEventBus returns information about an event bus.
 func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
+		if _, ok := req.Parameters["Name"]; ok {
+			return nil, awserrors.NewValidationException("Name must not be empty")
+		}
 		name = "default"
 	}
 
@@ -271,6 +293,9 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		eventBus.Description = desc
 	}
 
@@ -315,9 +340,9 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 // (1) individual parameters (Principal, StatementId, Action, Condition) and
 // (2) a complete policy document via the Policy parameter.
 func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	busName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if busName == "" {
-		busName = "default"
+	busName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -425,9 +450,9 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 // RemovePermission removes a resource policy statement from the specified
 // event bus identified by its StatementId.
 func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	busName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if busName == "" {
-		busName = "default"
+	busName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	statementID := request.GetStringParam(req.Parameters, "StatementId")

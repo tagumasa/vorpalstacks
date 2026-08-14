@@ -64,8 +64,13 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	eventBusName := req.Msg.GetEventbusname()
+	if eventBusName == "" {
+		eventBusName = "default"
+	}
+
 	result, err := h.service.listRulesCore(ctx, store, ListRulesInput{
-		EventBusName: req.Msg.GetEventbusname(),
+		EventBusName: eventBusName,
 		NamePrefix:   req.Msg.GetNameprefix(),
 		Limit:        req.Msg.GetLimit(),
 		NextToken:    req.Msg.GetNexttoken(),

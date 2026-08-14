@@ -76,10 +76,6 @@ func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKe
 		StageKeys:   in.StageKeys,
 		Tags:        in.Tags,
 	}
-	if !apiKey.Enabled {
-		// Default to enabled unless caller explicitly disabled it.
-		apiKey.Enabled = true
-	}
 
 	created, err := stores.usage.CreateApiKey(apiKey)
 	if err != nil {

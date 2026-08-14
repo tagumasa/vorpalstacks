@@ -412,7 +412,11 @@ func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athe
 	}
 
 	if selectStmt.Limit != nil {
-		rows = s.applyLimit(rows, selectStmt.Limit)
+		limited, err := s.applyLimit(rows, selectStmt.Limit)
+		if err != nil {
+			return nil, err
+		}
+		rows = limited
 	}
 
 	return s.projectColumns(rows, selectStmt.SelectExprs), nil

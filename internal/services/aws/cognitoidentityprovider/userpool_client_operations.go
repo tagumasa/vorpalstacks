@@ -135,6 +135,9 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	client.AllowedOAuthFlowsUserPoolClient = getBoolParam(req, "AllowedOAuthFlowsUserPoolClient")
 	// Parse PreventUserExistenceErrors.
 	if v := req.GetParam("PreventUserExistenceErrors"); v != "" {
+		if !validatePreventUserExistenceErrors(v) {
+			return ErrInvalidParameter
+		}
 		client.PreventUserExistenceErrors = v
 	}
 	// Parse missing Smithy fields.

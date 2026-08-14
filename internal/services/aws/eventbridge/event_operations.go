@@ -74,9 +74,18 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 		detailType, _ := entryMap["DetailType"].(string)
 		detailStr, _ := entryMap["Detail"].(string)
 		traceHeader, _ := entryMap["TraceHeader"].(string)
-		eventBusName, _ := entryMap["EventBusName"].(string)
-		if eventBusName == "" {
-			eventBusName = "default"
+		eventBusName := "default"
+		if rawBus, busPresent := entryMap["EventBusName"]; busPresent {
+			busStr, ok := rawBus.(string)
+			if !ok || busStr == "" {
+				resultEntries = append(resultEntries, map[string]interface{}{
+					"ErrorCode":    "ValidationException",
+					"ErrorMessage": "EventBusName must not be empty",
+				})
+				failedCount++
+				continue
+			}
+			eventBusName = busStr
 		}
 
 		// DetailType max 128 chars per AWS EventBridge PutEvents API reference.
@@ -1247,6 +1256,9 @@ func (s *EventsService) TestEventPattern(ctx context.Context, reqCtx *request.Re
 
 	if patternStr == "" {
 		return nil, awserrors.NewValidationException("Parameter EventPattern is required")
+	}
+	if !validateEventPatternLength(patternStr) {
+		return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
 	}
 	if eventStr == "" {
 		return nil, awserrors.NewValidationException("Parameter Event is required")

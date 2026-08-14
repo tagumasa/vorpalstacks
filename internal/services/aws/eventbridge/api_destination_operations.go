@@ -71,12 +71,15 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		apiDest.Description = desc
 	}
 
 	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
-		if rateLimit > 300 {
-			rateLimit = 300
+		if !validateInvocationRateLimit(rateLimit) {
+			return nil, awserrors.NewValidationException("InvocationRateLimitPerSecond must be between 1 and 300")
 		}
 		apiDest.InvocationRateLimitPerSecond = rateLimit
 	}
@@ -154,6 +157,9 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		apiDest.Description = desc
 	}
 	if httpMethod, ok := req.Parameters["HttpMethod"].(string); ok && httpMethod != "" {
@@ -169,8 +175,8 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 		apiDest.ConnectionARN = connArn
 	}
 	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
-		if rateLimit > 300 {
-			rateLimit = 300
+		if !validateInvocationRateLimit(rateLimit) {
+			return nil, awserrors.NewValidationException("InvocationRateLimitPerSecond must be between 1 and 300")
 		}
 		apiDest.InvocationRateLimitPerSecond = rateLimit
 	}
@@ -195,11 +201,11 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 	connectionArn := request.GetStringParam(req.Parameters, "ConnectionArn")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	if limit < 0 || limit > 100 {
+		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	}
 	if limit == 0 {
 		limit = 50
-	}
-	if limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")

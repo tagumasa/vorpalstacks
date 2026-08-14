@@ -425,6 +425,70 @@ var validRecoveryOptionNames = map[string]bool{
 
 func validateRecoveryOptionName(v string) bool { return validRecoveryOptionNames[v] }
 
+// validEventFilters is the Smithy EventFilterType enum (uppercase wire format).
+var validEventFilters = map[string]bool{
+	"SIGN_IN":         true,
+	"PASSWORD_CHANGE": true,
+	"SIGN_UP":         true,
+}
+
+func validateEventFilter(v string) bool { return validEventFilters[v] }
+
+// validMessageActions is the Smithy MessageActionType enum.
+var validMessageActions = map[string]bool{
+	"RESEND":   true,
+	"SUPPRESS": true,
+}
+
+func validateMessageAction(v string) bool { return validMessageActions[v] }
+
+// validPasswordHashingAlgorithms is the Smithy PasswordHashingAlgorithmType enum.
+var validPasswordHashingAlgorithms = map[string]bool{
+	"BCRYPT":        true,
+	"SCRYPT":        true,
+	"ARGON2ID":      true,
+	"PBKDF2_SHA256": true,
+}
+
+func validatePasswordHashingAlgorithm(v string) bool {
+	return validPasswordHashingAlgorithms[v]
+}
+
+// validPreventUserExistenceErrors is the Smithy PreventUserExistenceErrorTypes enum.
+var validPreventUserExistenceErrors = map[string]bool{
+	"LEGACY":  true,
+	"ENABLED": true,
+}
+
+func validatePreventUserExistenceErrors(v string) bool {
+	return validPreventUserExistenceErrors[v]
+}
+
+// validAliasAttributes is the Smithy AliasAttributeType enum (lowercase wire format).
+var validAliasAttributes = map[string]bool{
+	"phone_number":       true,
+	"email":              true,
+	"preferred_username": true,
+}
+
+func validateAliasAttribute(v string) bool { return validAliasAttributes[v] }
+
+// validUsernameAttributes is the Smithy UsernameAttributeType enum (lowercase wire format).
+var validUsernameAttributes = map[string]bool{
+	"phone_number": true,
+	"email":        true,
+}
+
+func validateUsernameAttribute(v string) bool { return validUsernameAttributes[v] }
+
+// validVerifiedAttributes is the Smithy VerifiedAttributeType enum (lowercase wire format).
+var validVerifiedAttributes = map[string]bool{
+	"phone_number": true,
+	"email":        true,
+}
+
+func validateVerifiedAttribute(v string) bool { return validVerifiedAttributes[v] }
+
 // usernamePattern is the Smithy pattern for UsernameType and GroupNameType:
 // ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$ (length 1-128).
 var usernamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)

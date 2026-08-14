@@ -106,6 +106,9 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		replay.Description = desc
 	}
 
@@ -310,11 +313,11 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	if limit < 0 || limit > 100 {
+		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	}
 	if limit == 0 {
 		limit = 50
-	}
-	if limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")

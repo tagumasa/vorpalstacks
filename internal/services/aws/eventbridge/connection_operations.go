@@ -309,7 +309,12 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 	if !validateResourceName(name, "connection") {
-		return nil, awserrors.NewValidationException("Connection name must match the pattern and be 1-64 characters")
+		return nil, awserrors.NewValidationException("Connection name must match ^[.\\-_A-Za-z0-9]+$ and be 1-64 characters")
+	}
+
+	desc := request.GetStringParam(req.Parameters, "Description")
+	if desc != "" && !validateDescription(desc) {
+		return nil, awserrors.NewValidationException("Description must be at most 512 characters")
 	}
 
 	authType := request.GetParamLowerFirst(req.Parameters, "AuthorizationType")
@@ -333,6 +338,9 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		connection.Description = desc
 	}
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok && kms != "" {
@@ -383,11 +391,12 @@ func (s *EventsService) DeleteConnection(ctx context.Context, reqCtx *request.Re
 	}
 
 	allDests, err := store.ListApiDestinations(ctx, "", "", 1000, "")
-	if err == nil {
-		for _, d := range allDests.ApiDestinations {
-			if d.ConnectionARN == connection.ARN {
-				return nil, awserrors.NewValidationException("Connection '" + name + "' is in use by API destination '" + d.Name + "'")
-			}
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range allDests.ApiDestinations {
+		if d.ConnectionARN == connection.ARN {
+			return nil, awserrors.NewValidationException("Connection '" + name + "' is in use by API destination '" + d.Name + "'")
 		}
 	}
 
@@ -439,6 +448,9 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		connection.Description = desc
 	}
 	authChanged := false
@@ -508,27 +520,22 @@ func (s *EventsService) DeauthorizeConnection(ctx context.Context, reqCtx *reque
 		return nil, mapStoreError(err, name)
 	}
 
-	connection, _ := store.GetConnection(ctx, name)
-	connArn := ""
-	var createdAt, modifiedAt, authorizedAt int64
-	if connection != nil {
-		connArn = connection.ARN
-		createdAt = connection.CreatedAt.Unix()
-		modifiedAt = connection.LastModifiedAt.Unix()
-		authorizedAt = connection.LastAuthorizedAt.Unix()
+	connection, err := store.GetConnection(ctx, name)
+	if err != nil {
+		return nil, mapStoreError(err, name)
 	}
+	connArn := connection.ARN
+	createdAt := connection.CreatedAt.Unix()
+	modifiedAt := connection.LastModifiedAt.Unix()
+	authorizedAt := connection.LastAuthorizedAt.Unix()
 
 	resp := map[string]interface{}{
 		"ConnectionArn":   connArn,
 		"ConnectionState": string(eventsstore.ConnectionStateDeauthorized),
 	}
-	if createdAt > 0 {
-		resp["CreationTime"] = createdAt
-	}
-	if modifiedAt > 0 {
-		resp["LastModifiedTime"] = modifiedAt
-	}
-	if authorizedAt > 0 {
+	resp["CreationTime"] = createdAt
+	resp["LastModifiedTime"] = modifiedAt
+	if !connection.LastAuthorizedAt.IsZero() {
 		resp["LastAuthorizedTime"] = authorizedAt
 	}
 	return resp, nil
@@ -540,11 +547,11 @@ func (s *EventsService) ListConnections(ctx context.Context, reqCtx *request.Req
 	stateStr := request.GetParamLowerFirst(req.Parameters, "ConnectionState")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	if limit < 0 || limit > 100 {
+		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	}
 	if limit == 0 {
 		limit = 50
-	}
-	if limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")

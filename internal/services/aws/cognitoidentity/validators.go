@@ -103,7 +103,10 @@ func validateRoleKeys(authRole, unauthRole string) bool {
 }
 
 func validateRoleMappings(mappings map[string]RoleMappingInput) bool {
-	for _, rm := range mappings {
+	for key, rm := range mappings {
+		if len(key) < 1 || len(key) > 128 {
+			return false
+		}
 		if !validRoleMappingTypes[rm.Type] {
 			return false
 		}
@@ -246,6 +249,30 @@ func validateLoginsValues(logins map[string]string) bool {
 func validateTagValues(tags map[string]string) bool {
 	for _, v := range tags {
 		if len(v) > 256 {
+			return false
+		}
+	}
+	return true
+}
+
+// validateDeveloperUserIdentifier enforces the Smithy DeveloperUserIdentifier
+// @length(min=1, max=1024) constraint.
+func validateDeveloperUserIdentifier(id string) bool {
+	return len(id) >= 1 && len(id) <= 1024
+}
+
+// validateIdentityProviderNameLength enforces the Smithy
+// IdentityProviderName @length(min=1, max=128) constraint used by
+// GetPrincipalTagAttributeMap and SetPrincipalTagAttributeMap.
+func validateIdentityProviderNameLength(name string) bool {
+	return len(name) >= 1 && len(name) <= 128
+}
+
+// validateLoginsKeys checks that every key in a Logins map satisfies the
+// Smithy IdentityProviderName @length(min=1, max=128) constraint.
+func validateLoginsKeys(logins map[string]string) bool {
+	for k := range logins {
+		if len(k) < 1 || len(k) > 128 {
 			return false
 		}
 	}

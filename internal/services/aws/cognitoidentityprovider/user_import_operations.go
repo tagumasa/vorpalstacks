@@ -22,6 +22,11 @@ func (s *CognitoService) CreateUserImportJob(ctx context.Context, reqCtx *reques
 	if userPoolID == "" || jobName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if pha := req.GetParam("PasswordHashingAlgorithm"); pha != "" {
+		if !validatePasswordHashingAlgorithm(pha) {
+			return nil, ErrInvalidParameter
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

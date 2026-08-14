@@ -88,7 +88,11 @@ func (s *AthenaService) executeAdvancedSelect(reqCtx *request.RequestContext, se
 	}
 
 	if selectStmt.Limit != nil {
-		rows = s.applyLimit(rows, selectStmt.Limit)
+		limited, err := s.applyLimit(rows, selectStmt.Limit)
+		if err != nil {
+			return nil, err
+		}
+		rows = limited
 	}
 
 	var columns []athenastore.Column
@@ -651,10 +655,10 @@ func (s *AthenaService) computeAggregate(fn *sqlparser.FuncExpr, rows []*athenas
 		return s.aggregateNumeric(fn, rows, "avg")
 
 	case "MIN":
-		return s.aggregateNumeric(fn, rows, "min")
+		return s.aggregateMinMax(fn, rows, true)
 
 	case "MAX":
-		return s.aggregateNumeric(fn, rows, "max")
+		return s.aggregateMinMax(fn, rows, false)
 
 	default:
 		return nil
@@ -720,6 +724,39 @@ func (s *AthenaService) aggregateNumeric(fn *sqlparser.FuncExpr, rows []*athenas
 	}
 
 	return nil
+}
+
+// aggregateMinMax computes MIN or MAX over a column supporting numeric,
+// string, and mixed-type values. Numeric values are compared numerically;
+// non-numeric values fall back to lexicographic comparison via compareValues.
+func (s *AthenaService) aggregateMinMax(fn *sqlparser.FuncExpr, rows []*athenastore.StoredRow, isMin bool) interface{} {
+	if len(fn.Exprs) == 0 {
+		return nil
+	}
+	colName := ""
+	if aliased, ok := fn.Exprs[0].(*sqlparser.AliasedExpr); ok {
+		colName = s.extractColumnName(aliased.Expr)
+	}
+	if colName == "" {
+		return nil
+	}
+
+	var best interface{}
+	for _, row := range rows {
+		val, ok := row.Values[colName]
+		if !ok || val == nil {
+			continue
+		}
+		if best == nil {
+			best = val
+			continue
+		}
+		cmp := s.compareValues(val, best)
+		if (isMin && cmp < 0) || (!isMin && cmp > 0) {
+			best = val
+		}
+	}
+	return best
 }
 
 func (s *AthenaService) toFloat(val interface{}) (float64, error) {

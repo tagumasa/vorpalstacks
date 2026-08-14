@@ -188,8 +188,11 @@ func (s *CognitoService) handleUserAuth(ctx context.Context, reqCtx *request.Req
 
 	user, err := store.GetUser(userPool.ID, username)
 
-	available := make([]string, 0, 4)
+	available := make([]string, 0, 5)
 	available = append(available, "PASSWORD")
+	if userPool.WebAuthnConfiguration != nil && userPool.WebAuthnConfiguration.RelyingPartyId != "" {
+		available = append(available, "WEB_AUTHN")
+	}
 
 	if err == nil && user != nil {
 		if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Verified {

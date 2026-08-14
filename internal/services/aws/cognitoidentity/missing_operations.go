@@ -133,7 +133,7 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 	// perform external provider verification, so the parameter is accepted
 	// without side effects to prevent identity takeover via Logins injection.
 	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
-		if !validateMapSize(len(logins), 10) {
+		if !validateMapSize(len(logins), 10) || !validateLoginsKeys(logins) {
 			return nil, ErrInvalidParameter
 		}
 		if !validateLoginsValues(logins) {
@@ -265,7 +265,7 @@ func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("IdentityProviderName")
-	if providerName == "" {
+	if providerName == "" || !validateIdentityProviderNameLength(providerName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -306,7 +306,7 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("IdentityProviderName")
-	if providerName == "" {
+	if providerName == "" || !validateIdentityProviderNameLength(providerName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -320,6 +320,16 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 	}
 
 	principalTags := parseMapParam(req, "PrincipalTags")
+	if len(principalTags) > 0 {
+		if !validateMapSize(len(principalTags), 50) {
+			return nil, ErrInvalidParameter
+		}
+		for _, v := range principalTags {
+			if !validatePrincipalTagValue(v) {
+				return nil, ErrInvalidParameter
+			}
+		}
+	}
 	useDefaults := getBoolParam(req, "UseDefaults")
 
 	if err := store.SetPrincipalTagAttributeMap(poolID, providerName, principalTags, useDefaults); err != nil {
@@ -355,6 +365,12 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 		return nil, ErrInvalidParameter
 	}
 	devUserID := req.GetParam("DeveloperUserIdentifier")
+	if identityID == "" && devUserID == "" {
+		return nil, ErrInvalidParameter
+	}
+	if devUserID != "" && !validateDeveloperUserIdentifier(devUserID) {
+		return nil, ErrInvalidParameter
+	}
 	maxResults := 60
 	if _, ok := req.Parameters["MaxResults"]; ok {
 		n := request.GetIntParam(req.Parameters, "MaxResults")
@@ -393,16 +409,16 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 	if !validateIdentityPoolId(poolID) {
 		return nil, ErrInvalidParameter
 	}
+	providerName := req.GetParam("DeveloperProviderName")
+	if providerName == "" || !validateDeveloperProviderName(providerName) {
+		return nil, ErrInvalidParameter
+	}
 	sourceUserID := req.GetParam("SourceUserIdentifier")
-	if sourceUserID == "" {
+	if sourceUserID == "" || !validateDeveloperUserIdentifier(sourceUserID) {
 		return nil, ErrInvalidParameter
 	}
 	destUserID := req.GetParam("DestinationUserIdentifier")
-	if destUserID == "" {
-		return nil, ErrInvalidParameter
-	}
-	providerName := req.GetParam("DeveloperProviderName")
-	if providerName == "" {
+	if destUserID == "" || !validateDeveloperUserIdentifier(destUserID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -488,11 +504,11 @@ func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, re
 		return nil, ErrInvalidParameter
 	}
 	providerName := req.GetParam("DeveloperProviderName")
-	if providerName == "" {
+	if providerName == "" || !validateDeveloperProviderName(providerName) {
 		return nil, ErrInvalidParameter
 	}
 	devUserID := req.GetParam("DeveloperUserIdentifier")
-	if devUserID == "" {
+	if devUserID == "" || !validateDeveloperUserIdentifier(devUserID) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -527,7 +543,7 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 	if len(logins) == 0 {
 		return nil, ErrNotAuthorized
 	}
-	if !validateMapSize(len(logins), 10) {
+	if !validateMapSize(len(logins), 10) || !validateLoginsKeys(logins) {
 		return nil, ErrInvalidParameter
 	}
 	if !validateLoginsValues(logins) {

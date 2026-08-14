@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_athena"
 )
 
@@ -722,19 +721,20 @@ func StoredRowToProto(sr *StoredRow) (*pb.StoredRow, error) {
 }
 
 // ProtoToStoredRow converts a protobuf StoredRow to its internal representation.
-func ProtoToStoredRow(p *pb.StoredRow) *StoredRow {
+// Returns an error if the JSON payload cannot be deserialised.
+func ProtoToStoredRow(p *pb.StoredRow) (*StoredRow, error) {
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 	sr := &StoredRow{
 		Values: make(map[string]interface{}),
 	}
 	if len(p.ValuesJson) > 0 {
 		if err := json.Unmarshal(p.ValuesJson, &sr.Values); err != nil {
-			logs.Error("Failed to unmarshal ValuesJson", logs.Err(err))
+			return nil, fmt.Errorf("unmarshal stored row values: %w", err)
 		}
 	}
-	return sr
+	return sr, nil
 }
 
 // StoredTableToProto converts a StoredTable to its protobuf representation.
@@ -763,9 +763,10 @@ func StoredTableToProto(st *StoredTable) (*pb.StoredTable, error) {
 }
 
 // ProtoToStoredTable converts a protobuf StoredTable to its internal representation.
-func ProtoToStoredTable(p *pb.StoredTable) *StoredTable {
+// Returns an error if any row fails to deserialise.
+func ProtoToStoredTable(p *pb.StoredTable) (*StoredTable, error) {
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 	columns := make([]Column, len(p.Columns))
 	for i, c := range p.Columns {
@@ -773,12 +774,16 @@ func ProtoToStoredTable(p *pb.StoredTable) *StoredTable {
 	}
 	rows := make([]*StoredRow, len(p.Rows))
 	for i, r := range p.Rows {
-		rows[i] = ProtoToStoredRow(r)
+		row, err := ProtoToStoredRow(r)
+		if err != nil {
+			return nil, fmt.Errorf("row %d: %w", i, err)
+		}
+		rows[i] = row
 	}
 	return &StoredTable{
 		DatabaseName: p.DatabaseName,
 		TableName:    p.TableName,
 		Columns:      columns,
 		Rows:         rows,
-	}
+	}, nil
 }

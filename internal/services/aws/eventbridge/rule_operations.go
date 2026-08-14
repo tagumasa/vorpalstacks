@@ -228,9 +228,9 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 		return nil, awserrors.NewValidationException("Rule name must match the pattern and be 1-64 characters")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -260,10 +260,16 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		rule.Description = desc
 	}
 
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+		if !validateEventPatternLength(pattern) {
+			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
+		}
 		if !isValidEventPattern(pattern) {
 			return nil, awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
 		}
@@ -313,12 +319,24 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 
 	if err := store.CreateRule(ctx, rule); err != nil {
 		if err == eventsstore.ErrRuleAlreadyExists {
-			existingRule, _ := store.GetRule(ctx, eventBusName, name)
+			existingRule, err := store.GetRule(ctx, eventBusName, name)
+			if err != nil {
+				return nil, err
+			}
 			if existingRule != nil {
 				if desc, ok := req.Parameters["Description"].(string); ok {
+					if !validateDescription(desc) {
+						return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+					}
 					existingRule.Description = desc
 				}
 				if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+					if !validateEventPatternLength(pattern) {
+						return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
+					}
+					if !isValidEventPattern(pattern) {
+						return nil, awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
+					}
 					existingRule.EventPattern = pattern
 				}
 				if schedule, ok := req.Parameters["ScheduleExpression"].(string); ok {
@@ -366,9 +384,9 @@ func (s *EventsService) DeleteRule(ctx context.Context, reqCtx *request.RequestC
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -434,9 +452,9 @@ func (s *EventsService) DescribeRule(ctx context.Context, reqCtx *request.Reques
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -464,7 +482,10 @@ func (s *EventsService) DescribeRule(ctx context.Context, reqCtx *request.Reques
 // ListRules returns a list of rules for the specified event bus,
 // optionally filtered by name prefix with pagination support.
 func (s *EventsService) ListRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
+	}
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
@@ -504,9 +525,9 @@ func (s *EventsService) EnableRule(ctx context.Context, reqCtx *request.RequestC
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -533,9 +554,9 @@ func (s *EventsService) DisableRule(ctx context.Context, reqCtx *request.Request
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -564,9 +585,9 @@ func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *reque
 		return nil, awserrors.NewValidationException("TargetArn is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")

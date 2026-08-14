@@ -35,7 +35,7 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 	}
 
 	logins := parseMapParam(req, "Logins")
-	if !validateMapSize(len(logins), 10) {
+	if !validateMapSize(len(logins), 10) || !validateLoginsKeys(logins) {
 		return nil, ErrInvalidParameter
 	}
 	if !validateLoginsValues(logins) {
@@ -86,12 +86,15 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 	}
 
 	customRoleArn := req.GetParam("CustomRoleArn")
+	if customRoleArn != "" && !validateRoleARN(customRoleArn) {
+		return nil, ErrInvalidParameter
+	}
 
 	// When the caller provides fresh provider tokens via Logins, persist them
 	// onto the identity so that subsequent role selection and credential
 	// issuance reflect the current authentication state.
 	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
-		if !validateMapSize(len(logins), 10) {
+		if !validateMapSize(len(logins), 10) || !validateLoginsKeys(logins) {
 			return nil, ErrInvalidParameter
 		}
 		if !validateLoginsValues(logins) {

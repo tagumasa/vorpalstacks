@@ -103,7 +103,8 @@ func validateSource(s string) bool {
 }
 
 // validateTraceHeader enforces the Smithy TraceHeader @length(min=1,max=500).
-// An empty TraceHeader is allowed (parameter is optional).
+// An empty string is accepted because the parameter is optional; a non-empty
+// value must satisfy max=500.
 func validateTraceHeader(s string) bool {
 	return len(s) <= 500
 }
@@ -145,4 +146,27 @@ func validateKmsKeyIdentifier(arn string) bool {
 		return false
 	}
 	return parts[2] == "kms"
+}
+
+// ---------------------------------------------------------------------------
+// Additional length validators (Smithy @length traits)
+// ---------------------------------------------------------------------------
+
+// validateDescription enforces the Smithy @length(0,512) trait shared by
+// RuleDescription, EventBusDescription, ArchiveDescription,
+// ConnectionDescription, ApiDestinationDescription and ReplayDescription.
+func validateDescription(s string) bool {
+	return len(s) <= 512
+}
+
+// validateEventPatternLength enforces the Smithy EventPattern @length(0,4096).
+// The caller should additionally check JSON validity via isValidEventPattern.
+func validateEventPatternLength(pattern string) bool {
+	return len(pattern) <= 4096
+}
+
+// validateInvocationRateLimit enforces the AWS-documented maximum of 300
+// invocations per second for an API destination.
+func validateInvocationRateLimit(rate int32) bool {
+	return rate >= 1 && rate <= 300
 }

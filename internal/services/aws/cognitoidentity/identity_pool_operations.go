@@ -36,10 +36,12 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	input.SamlProviderARNs = getStringSliceParam(req, "SamlProviderARNs")
 
 	if allowClassic, ok := req.Parameters["AllowClassicFlow"]; ok {
-		if b, ok := allowClassic.(bool); ok {
-			input.AllowClassicFlow = b
-			input.AllowClassicFlowProvided = true
+		b, ok := allowClassic.(bool)
+		if !ok {
+			return nil, ErrInvalidParameter
 		}
+		input.AllowClassicFlow = b
+		input.AllowClassicFlowProvided = true
 	}
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
@@ -163,9 +165,11 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 	}
 
 	if allowClassic, ok := req.Parameters["AllowClassicFlow"]; ok {
-		if b, ok := allowClassic.(bool); ok {
-			pool.AllowClassicFlow = b
+		b, ok := allowClassic.(bool)
+		if !ok {
+			return nil, ErrInvalidParameter
 		}
+		pool.AllowClassicFlow = b
 	}
 	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
 		if !validateDeveloperProviderName(providerName) {

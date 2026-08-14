@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -438,6 +439,7 @@ func (s *PreparedStatementStore) DeletePreparedStatementsByWorkGroup(workGroup s
 // QueryExecutionStore provides Athena query execution storage operations.
 type QueryExecutionStore struct {
 	*common.BaseStore
+	crtMu sync.Mutex
 }
 
 // NewQueryExecutionStore creates a new Athena query execution store.
@@ -485,17 +487,43 @@ func (s *QueryExecutionStore) GetQueryExecutionIdByClientRequestToken(token stri
 	return entry.QueryExecutionID, true
 }
 
-// StoreClientRequestToken persists a ClientRequestToken → queryExecutionId
-// mapping for idempotency with a creation timestamp for TTL expiry.
-func (s *QueryExecutionStore) StoreClientRequestToken(token, queryExecutionId string) error {
+// StoreClientRequestTokenIfAbsent atomically stores a ClientRequestToken →
+// queryExecutionId mapping. If the token already maps to a non-expired
+// query execution, it returns the existing ID and stored=false. Otherwise
+// it stores the new mapping and returns stored=true. The crtMu mutex
+// ensures that concurrent requests with the same token cannot both
+// create separate query executions.
+func (s *QueryExecutionStore) StoreClientRequestTokenIfAbsent(token, queryExecutionId string) (existingId string, stored bool, err error) {
 	if token == "" {
-		return nil
+		return "", true, nil
 	}
+	s.crtMu.Lock()
+	defer s.crtMu.Unlock()
+
+	if id, found := s.GetQueryExecutionIdByClientRequestToken(token); found {
+		return id, false, nil
+	}
+
 	entry := clientRequestTokenEntry{
 		QueryExecutionID: queryExecutionId,
 		CreatedAt:        time.Now().UTC(),
 	}
-	return s.Put(s.clientRequestTokenKey(token), entry)
+	if err := s.Put(s.clientRequestTokenKey(token), entry); err != nil {
+		return "", false, err
+	}
+	return "", true, nil
+}
+
+// ReleaseClientRequestToken removes a ClientRequestToken mapping. This
+// rolls back a token reservation when query creation fails after the
+// token was reserved, preventing phantom ID mappings.
+func (s *QueryExecutionStore) ReleaseClientRequestToken(token string) {
+	if token == "" {
+		return
+	}
+	s.crtMu.Lock()
+	defer s.crtMu.Unlock()
+	_ = s.Delete(s.clientRequestTokenKey(token))
 }
 
 // extractIDFromIndexKey parses "#wg:<workGroup>:<id>" and returns the id portion.
@@ -962,7 +990,11 @@ func (s *TableDataStore) GetTableData(catalog, database, table string) (*StoredT
 		}
 		return nil, fmt.Errorf("get table data %s: %w", key, err)
 	}
-	return ProtoToStoredTable(&p), nil
+	st, err := ProtoToStoredTable(&p)
+	if err != nil {
+		return nil, fmt.Errorf("get table data %s: %w", key, err)
+	}
+	return st, nil
 }
 
 // DeleteTableData deletes data for an Athena table.
@@ -991,7 +1023,11 @@ func (s *TableDataStore) AppendRows(catalog, database, table string, newRows []*
 				TableName:    table,
 			}
 		} else {
-			storedTable = ProtoToStoredTable(&p)
+			st, err := ProtoToStoredTable(&p)
+			if err != nil {
+				return fmt.Errorf("append rows: corrupt table data %s: %w", key, err)
+			}
+			storedTable = st
 		}
 		storedTable.Rows = append(storedTable.Rows, newRows...)
 		proto, err := StoredTableToProto(storedTable)

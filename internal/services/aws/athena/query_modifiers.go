@@ -1,6 +1,7 @@
 package athena
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,23 +31,31 @@ func (s *AthenaService) applyOrderBy(rows []*athenastore.StoredRow, orderBy sqlp
 	})
 }
 
-func (s *AthenaService) applyLimit(rows []*athenastore.StoredRow, limit *sqlparser.Limit) []*athenastore.StoredRow {
+func (s *AthenaService) applyLimit(rows []*athenastore.StoredRow, limit *sqlparser.Limit) ([]*athenastore.StoredRow, error) {
 	count := 0
 	if rowcount := limit.Rowcount; rowcount != nil {
 		if sqlVal, ok := rowcount.(*sqlparser.SQLVal); ok {
-			count, _ = strconv.Atoi(string(sqlVal.Val))
+			n, err := strconv.Atoi(string(sqlVal.Val))
+			if err != nil {
+				return nil, fmt.Errorf("invalid LIMIT count %q: %w", string(sqlVal.Val), err)
+			}
+			count = n
 		}
 	}
 
 	offset := 0
 	if limit.Offset != nil {
 		if sqlVal, ok := limit.Offset.(*sqlparser.SQLVal); ok {
-			offset, _ = strconv.Atoi(string(sqlVal.Val))
+			n, err := strconv.Atoi(string(sqlVal.Val))
+			if err != nil {
+				return nil, fmt.Errorf("invalid LIMIT offset %q: %w", string(sqlVal.Val), err)
+			}
+			offset = n
 		}
 	}
 
 	if count <= 0 {
-		return rows
+		return rows, nil
 	}
 
 	end := offset + count
@@ -54,9 +63,9 @@ func (s *AthenaService) applyLimit(rows []*athenastore.StoredRow, limit *sqlpars
 		end = len(rows)
 	}
 	if offset >= len(rows) {
-		return []*athenastore.StoredRow{}
+		return []*athenastore.StoredRow{}, nil
 	}
-	return rows[offset:end]
+	return rows[offset:end], nil
 }
 
 func (s *AthenaService) projectColumns(rows []*athenastore.StoredRow, selectExprs sqlparser.SelectExprs) []*athenastore.StoredRow {

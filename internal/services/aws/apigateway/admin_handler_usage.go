@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	svcerrors "vorpalstacks/internal/common/errors"
+	tagutil "vorpalstacks/internal/common/tags"
 
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -23,12 +24,21 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
+	enabled := true
+	if req.Msg.Enabled != nil {
+		enabled = *req.Msg.Enabled
+	}
+
 	in := &ApiKeyInput{
 		Name:        req.Msg.Name,
 		Description: req.Msg.Description,
 		CustomerId:  req.Msg.Customerid,
 		Value:       req.Msg.Value,
-		Enabled:     true,
+		Enabled:     enabled,
+	}
+
+	if len(req.Msg.Tags) > 0 {
+		in.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
 	generateDistinctId := true

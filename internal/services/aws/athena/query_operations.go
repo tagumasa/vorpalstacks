@@ -55,16 +55,35 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	// Idempotency: if a ClientRequestToken was provided and a previous
-	// StartQueryExecution with the same token already succeeded, return
-	// the existing QueryExecutionId instead of creating a duplicate.
+	// Idempotency: reserve the ClientRequestToken atomically before any
+	// validation or creation. StoreClientRequestTokenIfAbsent uses crtMu
+	// internally, so concurrent requests with the same token are
+	// serialised — no TOCTOU window. If the token is already mapped to
+	// a successful query, return that query's ID. If the token is new,
+	// it is reserved and a deferred rollback releases it when any
+	// subsequent step fails, preventing phantom ID mappings.
+	queryExecutionId := uuid.New().String()
+	tokenReserved := false
+	queryCreated := false
+
 	if clientRequestToken != "" {
-		if existingId, found := st.queryExecutionStore.GetQueryExecutionIdByClientRequestToken(clientRequestToken); found {
+		existingId, stored, err := st.queryExecutionStore.StoreClientRequestTokenIfAbsent(clientRequestToken, queryExecutionId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to store ClientRequestToken: %w", err)
+		}
+		if !stored {
 			return map[string]interface{}{
 				"QueryExecutionId": existingId,
 			}, nil
 		}
+		tokenReserved = true
 	}
+
+	defer func() {
+		if tokenReserved && !queryCreated {
+			st.queryExecutionStore.ReleaseClientRequestToken(clientRequestToken)
+		}
+	}()
 
 	wg, err := st.workGroupStore.GetWorkGroup(workGroup)
 	if err != nil {
@@ -116,7 +135,7 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 
 	now := time.Now().UTC()
 	queryExecution := &athenastore.QueryExecution{
-		QueryExecutionId:      uuid.New().String(),
+		QueryExecutionId:      queryExecutionId,
 		Query:                 queryString,
 		StatementType:         statementType,
 		WorkGroup:             workGroup,
@@ -139,12 +158,7 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 	if err := st.queryExecutionStore.CreateQueryExecution(queryExecution); err != nil {
 		return nil, err
 	}
-
-	if clientRequestToken != "" {
-		if err := st.queryExecutionStore.StoreClientRequestToken(clientRequestToken, queryExecution.QueryExecutionId); err != nil {
-			logs.Warn("Failed to store ClientRequestToken mapping", logs.Err(err))
-		}
-	}
+	queryCreated = true
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.setCancelFunc(queryExecution.QueryExecutionId, cancel)
@@ -454,11 +468,11 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 				"TotalExecutionTimeInMillis":    queryExecution.Statistics.TotalExecutionTimeInMillis,
 			},
 			"Rows": map[string]interface{}{
-				// InputRows is approximate — our engine does not track source row
-				// counts separately from output rows. InputBytes equals
-				// DataScannedInBytes (the source data volume). OutputBytes is
-				// computed from the actual result set content.
-				"InputRows":   outputRows,
+				// InputRows: source row tracking is not implemented; 0 is the
+				// honest value until it is. InputBytes equals DataScannedInBytes
+				// (the source data volume). OutputBytes is computed from the
+				// actual result set content.
+				"InputRows":   int64(0),
 				"InputBytes":  dataScanned,
 				"OutputRows":  outputRows,
 				"OutputBytes": outputBytes,

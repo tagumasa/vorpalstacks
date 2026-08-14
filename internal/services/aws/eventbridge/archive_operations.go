@@ -100,10 +100,16 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		archive.Description = desc
 	}
 
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+		if !validateEventPatternLength(pattern) {
+			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
+		}
 		if !isValidEventPattern(pattern) {
 			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
 		}
@@ -115,6 +121,9 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		if !validateKmsKeyIdentifier(kms) {
+			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
+		}
 		archive.KmsKeyIdentifier = kms
 	}
 
@@ -179,11 +188,11 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
 
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	if limit < 0 || limit > 100 {
+		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	}
 	if limit == 0 {
 		limit = 50
-	}
-	if limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
@@ -229,9 +238,15 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
+		if !validateDescription(desc) {
+			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		}
 		archive.Description = desc
 	}
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+		if !validateEventPatternLength(pattern) {
+			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
+		}
 		if pattern != "" && !isValidEventPattern(pattern) {
 			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
 		}
@@ -241,6 +256,9 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
 	}
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		if !validateKmsKeyIdentifier(kms) {
+			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
+		}
 		archive.KmsKeyIdentifier = kms
 	}
 

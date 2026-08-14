@@ -41,6 +41,9 @@ func (s *CognitoService) SetRiskConfiguration(ctx context.Context, reqCtx *reque
 			if ef, ok := m["EventFilter"].([]interface{}); ok {
 				for _, v := range ef {
 					if s, ok := v.(string); ok {
+						if !validateEventFilter(s) {
+							return nil, ErrInvalidParameter
+						}
 						cfg.CompromisedCredentialsEventFilter = append(cfg.CompromisedCredentialsEventFilter, s)
 					}
 				}

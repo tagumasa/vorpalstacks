@@ -30,7 +30,9 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 	}
 
 	challenge := make([]byte, 32)
-	rand.Read(challenge)
+	if _, err := rand.Read(challenge); err != nil {
+		return nil, ErrInternalError
+	}
 	challengeB64 := base64.RawURLEncoding.EncodeToString(challenge)
 
 	// Store the challenge in a session for CompleteWebAuthnRegistration binding

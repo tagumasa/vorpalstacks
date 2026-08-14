@@ -41,9 +41,9 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -89,7 +89,7 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 	for {
 		existingResult, err := store.ListTargetsByRule(ctx, eventBusName, ruleName, 100, existToken)
 		if err != nil {
-			break
+			return nil, awserrors.NewInternalFailureException("Failed to list existing targets for rule '" + ruleName + "': " + err.Error())
 		}
 		for _, et := range existingResult.Targets {
 			existingTargets[et.ID] = true
@@ -337,9 +337,9 @@ func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.Reque
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 
 	var targetIDs []string
@@ -406,9 +406,9 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
-	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if eventBusName == "" {
-		eventBusName = "default"
+	eventBusName, err := resolveEventBusName(req)
+	if err != nil {
+		return nil, err
 	}
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")

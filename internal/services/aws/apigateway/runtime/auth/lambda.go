@@ -410,9 +410,9 @@ func (la *LambdaAuthorizer) resourceMatches(policyResource, methodArn string) bo
 		return true
 	}
 
-	// Without wildcard characters, use exact or prefix match.
+	// Without wildcard characters, IAM resources must match exactly.
 	if !strings.ContainsAny(policyResource, "*?") {
-		return methodArn == policyResource || strings.HasPrefix(methodArn, policyResource)
+		return methodArn == policyResource
 	}
 
 	// Convert IAM glob pattern (* and ?) to a regex for wildcard matching.

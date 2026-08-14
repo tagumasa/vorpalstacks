@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -212,7 +213,7 @@ func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceTyp
 	case "capacityreservation":
 		_, err := stores.capacityReservationStore.GetCapacityReservation(resourceName)
 		if err != nil {
-			return capacityReservationNotFound(resourceName)
+			return awserrors.NewResourceNotFoundException("CapacityReservation", resourceName)
 		}
 	default:
 		return ErrInvalidRequestException
