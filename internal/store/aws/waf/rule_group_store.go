@@ -53,10 +53,12 @@ func (s *RuleGroupStore) Create(ruleGroup *RuleGroup) (*RuleGroup, error) {
 	return ruleGroup, nil
 }
 
-// Update updates an existing Rule Group.
-func (s *RuleGroupStore) Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error) {
+// Update updates an existing Rule Group. Capacity is not a parameter:
+// UpdateRuleGroupRequest has no Capacity member in the Smithy model, so
+// a rule group's capacity is fixed at creation and only the rules and
+// visibility configuration are mutable.
+func (s *RuleGroupStore) Update(id, lockToken string, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error) {
 	return s.UpdateWithLockToken(id, lockToken, func(ruleGroup *RuleGroup) error {
-		ruleGroup.Capacity = capacity
 		ruleGroup.Rules = rules
 		ruleGroup.VisibilityConfig = visibilityConfig
 		return nil

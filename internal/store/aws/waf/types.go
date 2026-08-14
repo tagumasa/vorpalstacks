@@ -9,6 +9,17 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
+// MaxWebACLCapacity is the maximum capacity, in web ACL capacity units
+// (WCU), for a web ACL or rule group. AWS raised the quota from 1500 to
+// 5000 on 2023-04-11 (AWS WAF Developer Guide, "Web ACL capacity units
+// (WCUs)"). This is the single definition of the limit; every other
+// site must reference this constant.
+const MaxWebACLCapacity int64 = 5000
+
+// MinRuleGroupCapacity is the lower bound of the Smithy CapacityUnit
+// range (@range(min: 1)) on CreateRuleGroupRequest.Capacity.
+const MinRuleGroupCapacity int64 = 1
+
 // WebACL represents a WAF Web Access Control List.
 type WebACL struct {
 	ID                     string            `json:"id"`

@@ -33,14 +33,28 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 	capacity := int64(request.GetIntParam(req.Parameters, "Capacity"))
-	if capacity <= 0 {
-		return nil, invalidParamError("Capacity is required and must be greater than 0")
+	if capacity < wafstore.MinRuleGroupCapacity {
+		return nil, invalidParamError("Capacity is required and must be at least 1")
+	}
+	if capacity > wafstore.MaxWebACLCapacity {
+		return nil, limitsExceededError(capacity)
 	}
 
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
+	if err := validateVisibilityConfig(visibilityConfig); err != nil {
+		return nil, err
+	}
 	rules, err := parseRules(req.Parameters["Rules"])
 	if err != nil {
 		return nil, err
+	}
+	// Per the Smithy documentation for Capacity, WAF enforces the
+	// declared limit whenever rules are added or modified — including
+	// at creation. The capacity bound subsumes the global WCU quota
+	// check because capacity itself was already validated against
+	// MaxWebACLCapacity above.
+	if consumed := calculateRulesCapacity(rules); consumed > capacity {
+		return nil, limitsExceededError(consumed)
 	}
 
 	id, err := generateID()
@@ -177,7 +191,13 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, invalidParamError("LockToken is required")
 	}
 
-	ruleGroup, err := stores.ruleGroups.Get(id)
+	// UpdateRuleGroupRequest has no Capacity member in the Smithy
+	// model: a rule group's capacity is fixed at creation, and WAF
+	// enforces that declared limit whenever rules are added or
+	// modified, so the existing rule group is fetched for its declared
+	// capacity. VisibilityConfig is required on every call and Rules
+	// omitted means an empty rule list.
+	existing, err := stores.ruleGroups.Get(id)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("RuleGroup")
@@ -185,16 +205,19 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	capacity := ruleGroup.Capacity
-	if c := int64(request.GetIntParam(req.Parameters, "Capacity")); c > 0 {
-		capacity = c
+	vcRaw := req.Parameters["VisibilityConfig"]
+	if vcRaw == nil {
+		return nil, invalidParamError("VisibilityConfig is required")
 	}
-	visibilityConfig := ruleGroup.VisibilityConfig
-	if vcRaw := req.Parameters["VisibilityConfig"]; vcRaw != nil {
-		if vc, ok := vcRaw.(map[string]interface{}); ok {
-			visibilityConfig = convertVisibilityConfig(vc)
-		}
+	vcMap, ok := vcRaw.(map[string]interface{})
+	if !ok {
+		return nil, invalidParamError("VisibilityConfig must be an object")
 	}
+	visibilityConfig := convertVisibilityConfig(vcMap)
+	if err := validateVisibilityConfig(visibilityConfig); err != nil {
+		return nil, err
+	}
+
 	var rules []*wafstore.Rule
 	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
 		parsed, pErr := parseRules(rulesRaw)
@@ -204,7 +227,11 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		rules = parsed
 	}
 
-	ruleGroup, err = stores.ruleGroups.Update(id, lockToken, capacity, rules, visibilityConfig)
+	if consumed := calculateRulesCapacity(rules); consumed > existing.Capacity {
+		return nil, limitsExceededError(consumed)
+	}
+
+	ruleGroup, err := stores.ruleGroups.Update(id, lockToken, rules, visibilityConfig)
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()
@@ -234,6 +261,22 @@ func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.Requ
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 	if lockToken == "" {
 		return nil, invalidParamError("LockToken is required")
+	}
+
+	// AWS rejects deletion of a rule group that is still referenced by
+	// any web ACL rule (WAFAssociatedItemException). The check spans
+	// the request region; cross-region references are impossible
+	// because ARNs embed the creating region and resources are scoped
+	// per region.
+	existing, err := stores.ruleGroups.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("RuleGroup")
+		}
+		return nil, err
+	}
+	if err := ensureRuleGroupNotReferenced(stores, existing.ARN); err != nil {
+		return nil, err
 	}
 
 	deleted, err := stores.ruleGroups.Delete(id, lockToken)

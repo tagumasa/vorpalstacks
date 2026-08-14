@@ -16,7 +16,7 @@ type RuleGroupStoreInterface interface {
 	Get(id string) (*RuleGroup, error)
 	GetByARN(arn string) (*RuleGroup, error)
 	Create(ruleGroup *RuleGroup) (*RuleGroup, error)
-	Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error)
+	Update(id, lockToken string, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error)
 	Delete(id, lockToken string) (*RuleGroup, error)
 	List(marker string, maxItems int, scope string) (*RuleGroupListResult, error)
 	Raw() *RuleGroupStore

@@ -172,31 +172,39 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	webACL, err := stores.webACLs.Get(id)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
+	// UpdateWebACL is a full-replace operation per the Smithy model
+	// documentation ("This operation completely replaces the mutable
+	// specifications"): DefaultAction and VisibilityConfig are required
+	// on every call, Rules omitted means an empty rule list, and
+	// capacity is never accepted from the request — the model has no
+	// Capacity member on UpdateWebACLRequest — but is always recomputed
+	// from the resulting rule set.
+	vcRaw := req.Parameters["VisibilityConfig"]
+	if vcRaw == nil {
+		return nil, invalidParamError("VisibilityConfig is required")
+	}
+	vcMap, ok := vcRaw.(map[string]interface{})
+	if !ok {
+		return nil, invalidParamError("VisibilityConfig must be an object")
+	}
+	visibilityConfig := convertVisibilityConfig(vcMap)
+	if err := validateVisibilityConfig(visibilityConfig); err != nil {
 		return nil, err
 	}
 
-	capacity := webACL.Capacity
-	defaultAction := webACL.DefaultAction
-	visibilityConfig := webACL.VisibilityConfig
+	daRaw := req.Parameters["DefaultAction"]
+	if daRaw == nil {
+		return nil, invalidParamError("DefaultAction is required")
+	}
+	daMap, ok := daRaw.(map[string]interface{})
+	if !ok {
+		return nil, invalidParamError("DefaultAction must be an object")
+	}
+	daAction := convertAction(daMap)
+	if err := validateDefaultAction(daAction); err != nil {
+		return nil, err
+	}
 
-	if c := int64(request.GetIntParam(req.Parameters, "Capacity")); c > 0 {
-		capacity = c
-	}
-	if daRaw := req.Parameters["DefaultAction"]; daRaw != nil {
-		if da, ok := daRaw.(map[string]interface{}); ok {
-			defaultAction = convertAction(da)
-		}
-	}
-	if vcRaw := req.Parameters["VisibilityConfig"]; vcRaw != nil {
-		if vc, ok := vcRaw.(map[string]interface{}); ok {
-			visibilityConfig = convertVisibilityConfig(vc)
-		}
-	}
 	var rules []*wafstore.Rule
 	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
 		parsed, pErr := parseRules(rulesRaw)
@@ -206,13 +214,9 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		rules = parsed
 	}
 
-	daAction := convertAction(nil)
-	if defaultAction != nil {
-		if a, ok := defaultAction.(*wafstore.Action); ok {
-			daAction = a
-		} else if m, ok := defaultAction.(map[string]interface{}); ok {
-			daAction = convertAction(m)
-		}
+	capacity := calculateRulesCapacity(rules)
+	if capacity > wafstore.MaxWebACLCapacity {
+		return nil, limitsExceededError(capacity)
 	}
 
 	if v := req.Parameters["TokenDomains"]; v != nil {
@@ -277,7 +281,12 @@ func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	if _, err := s.deleteWebACLCore(stores, id, lockToken); err != nil {
+	assocStores, err := s.allAssociationStores(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.deleteWebACLCore(stores, assocStores, id, lockToken); err != nil {
 		return nil, err
 	}
 

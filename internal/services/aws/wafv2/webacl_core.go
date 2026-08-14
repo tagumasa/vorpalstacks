@@ -60,13 +60,24 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input CreateWebACLI
 	if err := validateCustomResponseBodies(input.CustomResponseBodies); err != nil {
 		return nil, err
 	}
-	if input.DefaultAction != nil {
-		if err := validateDefaultAction(input.DefaultAction); err != nil {
-			return nil, err
-		}
+	// DefaultAction and VisibilityConfig are @required on
+	// CreateWebACLRequest in the Smithy model; the admin console
+	// transport synthesises defaults before calling this core so the
+	// single contract stays identical for both transports.
+	if err := validateDefaultAction(input.DefaultAction); err != nil {
+		return nil, err
+	}
+	if err := validateVisibilityConfig(input.VisibilityConfig); err != nil {
+		return nil, err
 	}
 
-	capacity := int64(1500)
+	// Capacity is a read-only consumed-capacity value on the WebACL
+	// shape: compute it from the submitted rules and enforce the AWS
+	// WCU quota rather than persisting a placeholder.
+	capacity := calculateRulesCapacity(input.Rules)
+	if capacity > wafstore.MaxWebACLCapacity {
+		return nil, limitsExceededError(capacity)
+	}
 
 	id, err := generateID()
 	if err != nil {
@@ -111,13 +122,29 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input CreateWebACLI
 }
 
 // deleteWebACLCore is the single entry point for deleting a WebACL,
-// shared by the HTTP API and the admin gRPC-Web handler.
-func (s *WAFv2Service) deleteWebACLCore(stores *wafv2Stores, id, lockToken string) (*wafstore.WebACL, error) {
+// shared by the HTTP API and the admin gRPC-Web handler. A WebACL that
+// is still associated with a resource cannot be deleted (AWS returns
+// WAFAssociatedItemException); association stores are supplied by the
+// transport layer because the global-scope store needs the request
+// context.
+func (s *WAFv2Service) deleteWebACLCore(stores *wafv2Stores, assocStores []*wafstore.WebACLAssociationStore, id, lockToken string) (*wafstore.WebACL, error) {
 	if id == "" {
 		return nil, invalidParamError("Id is required")
 	}
 	if lockToken == "" {
 		return nil, invalidParamError("LockToken is required")
+	}
+
+	existing, err := stores.webACLs.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("WebACL")
+		}
+		return nil, err
+	}
+
+	if err := ensureNotAssociated(assocStores, existing.ARN); err != nil {
+		return nil, err
 	}
 
 	deleted, err := stores.webACLs.Delete(id, lockToken)

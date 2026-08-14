@@ -50,7 +50,11 @@ func (s *WebACLStore) Create(webACL *WebACL) (*WebACL, error) {
 	return webACL, nil
 }
 
-// Update updates an existing WAF Web ACL in the store.
+// Update updates an existing WAF Web ACL in the store. UpdateWebACL is
+// a full-replace operation ("completely replaces the mutable
+// specifications" per the Smithy model documentation): capacity is the
+// value recomputed by the service layer from the resulting rule set,
+// and an empty description clears the field.
 // Returns the updated Web ACL or an error if the Web ACL does not exist or lock token is invalid.
 func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string, extraFn ...func(*WebACL)) (*WebACL, error) {
 	return s.UpdateWithLockToken(id, lockToken, func(webACL *WebACL) error {
@@ -58,9 +62,7 @@ func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule
 		webACL.Rules = rules
 		webACL.DefaultAction = defaultAction
 		webACL.VisibilityConfig = visibilityConfig
-		if description != "" {
-			webACL.Description = description
-		}
+		webACL.Description = description
 		for _, fn := range extraFn {
 			if fn != nil {
 				fn(webACL)

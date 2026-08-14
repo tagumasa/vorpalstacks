@@ -72,11 +72,11 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 		scope = "CLOUDFRONT"
 	}
 
-	webACL, err := h.service.createWebACLCore(stores, CreateWebACLInput{
-		Name:        req.Msg.GetName(),
-		Description: req.Msg.GetDescription(),
-		Scope:       scope,
-	})
+	// The console-side defaults for the required DefaultAction and
+	// VisibilityConfig members are synthesised in the convert file,
+	// which is the only admin-layer file allowed to reference store
+	// types.
+	webACL, err := h.service.createWebACLCore(stores, defaultCreateWebACLInput(req.Msg.GetName(), req.Msg.GetDescription(), scope))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -103,7 +103,15 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if _, err := h.service.deleteWebACLCore(stores, req.Msg.GetId(), lockToken); err != nil {
+	// DeleteWebACL must fail while the ACL is still associated with a
+	// resource; the admin handler passes the request context so the
+	// global-scope association store is included in the check.
+	assocStores, err := h.service.allAssociationStoresForConnect(req.Header())
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
+	}
+
+	if _, err := h.service.deleteWebACLCore(stores, assocStores, req.Msg.GetId(), lockToken); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 

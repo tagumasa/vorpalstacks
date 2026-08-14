@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -239,6 +240,39 @@ func (s *WAFv2Service) allAssociationStores(reqCtx *request.RequestContext) ([]*
 	return result, nil
 }
 
+// allAssociationStoresForConnect is the admin-console counterpart of
+// allAssociationStores. The connect handler only carries a region
+// header, so the region association store is resolved through
+// GetStoresForRegion and the global-scope store through the storage
+// manager directly, with the same sync.Map caching as the HTTP path.
+func (s *WAFv2Service) allAssociationStoresForConnect(header http.Header) ([]*wafstore.WebACLAssociationStore, error) {
+	region := svccommon.GetRegionFromHeader(header)
+	stores, err := s.GetStoresForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	result := []*wafstore.WebACLAssociationStore{stores.associations}
+	if cached, ok := s.stores.Load(wafv2GlobalAssocKey); ok {
+		if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
+			return append(result, typed), nil
+		}
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("wafv2 storage manager not initialised")
+	}
+	globalStorage, err := s.storageManager.GetGlobalStorage()
+	if err != nil {
+		return nil, err
+	}
+	store := wafstore.NewWebACLAssociationStore(globalStorage)
+	if actual, loaded := s.stores.LoadOrStore(wafv2GlobalAssocKey, store); loaded {
+		if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
+			return append(result, typed), nil
+		}
+	}
+	return append(result, store), nil
+}
+
 func generateID() (string, error) {
 	return uuid.New().String(), nil
 }
@@ -257,4 +291,78 @@ func invalidParamError(msg string) error {
 
 func lockTokenError() error {
 	return awserrors.NewAWSError("WAFInvalidLockTokenException", "The provided lock token is not valid", http.StatusBadRequest)
+}
+
+func limitsExceededError(consumed int64) error {
+	return awserrors.NewAWSError("WAFLimitsExceededException",
+		fmt.Sprintf("AWS WAF couldn't perform the operation because your web ACL capacity would exceed the maximum of %d WCUs (requested rules consume %d WCUs)", wafstore.MaxWebACLCapacity, consumed),
+		http.StatusBadRequest)
+}
+
+func associatedItemError(msg string) error {
+	return awserrors.NewAWSError("WAFAssociatedItemException",
+		fmt.Sprintf("AWS WAF couldn't perform the operation because your resource is being used by another resource or it's associated with another resource. %s", msg),
+		http.StatusBadRequest)
+}
+
+// ensureNotAssociated checks every association store (regional and
+// global CloudFront scope) for associations referencing the given web
+// ACL ARN. Deleting an associated WebACL must fail with
+// WAFAssociatedItemException, mirroring the AWS behaviour.
+func ensureNotAssociated(assocStores []*wafstore.WebACLAssociationStore, webACLArn string) error {
+	if webACLArn == "" {
+		return nil
+	}
+	for _, store := range assocStores {
+		if store == nil {
+			continue
+		}
+		assocs, err := store.GetByWebACLArn(webACLArn)
+		if err != nil {
+			return err
+		}
+		if len(assocs) > 0 {
+			return associatedItemError(fmt.Sprintf("WebACL %s is still associated with %d resource(s).", webACLArn, len(assocs)))
+		}
+	}
+	return nil
+}
+
+// ensureRuleGroupNotReferenced scans every WebACL in the same region for
+// a RuleGroupReferenceStatement whose ARN matches the given rule group.
+// AWS rejects deletion of a rule group that any web ACL still uses,
+// returning WAFAssociatedItemException.
+func ensureRuleGroupNotReferenced(stores *wafv2Stores, ruleGroupArn string) error {
+	if ruleGroupArn == "" {
+		return nil
+	}
+	webACLs, err := storecommon.ListAll[wafstore.WebACL](stores.webACLs.BaseStore)
+	if err != nil {
+		return err
+	}
+	for _, acl := range webACLs {
+		if acl == nil {
+			continue
+		}
+		for _, rule := range acl.Rules {
+			if rule == nil || rule.Statement == nil {
+				continue
+			}
+			if ref := rule.Statement.RuleGroupReferenceStatement; ref != nil && ref.ARN == ruleGroupArn {
+				return associatedItemError(fmt.Sprintf("RuleGroup %s is still referenced by WebACL %s.", ruleGroupArn, acl.ARN))
+			}
+		}
+	}
+	return nil
+}
+
+// calculateRulesCapacity sums the WCU capacity of all rules.
+func calculateRulesCapacity(rules []*wafstore.Rule) int64 {
+	var total int64
+	for _, rule := range rules {
+		if rule != nil {
+			total += calculateStatementCapacity(rule.Statement)
+		}
+	}
+	return total
 }

@@ -2,6 +2,7 @@ package wafv2
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -74,6 +75,21 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 	return map[string]interface{}{}, nil
 }
 
+// validResourceTypes is the set of ResourceType enum values defined by
+// the Smithy model (com.amazonaws.wafv2#ResourceType). An unknown value
+// must be rejected with WAFInvalidParameterException rather than
+// silently filtering to an empty list.
+var validResourceTypes = map[string]bool{
+	"APPLICATION_LOAD_BALANCER": true,
+	"API_GATEWAY":               true,
+	"APPSYNC":                   true,
+	"COGNITO_USER_POOL":         true,
+	"APP_RUNNER_SERVICE":        true,
+	"VERIFIED_ACCESS_INSTANCE":  true,
+	"AMPLIFY":                   true,
+	"AGENTCORE_GATEWAY":         true,
+}
+
 // ListResourcesForWebACL returns all resource ARNs associated with the specified WebACL.
 // If ResourceType is provided, results are filtered to only include resources
 // of that type.
@@ -84,6 +100,9 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 	}
 
 	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
+	if resourceType != "" && !validResourceTypes[resourceType] {
+		return nil, invalidParamError(fmt.Sprintf("Unsupported ResourceType: %s", resourceType))
+	}
 
 	associationStores, err := s.allAssociationStores(reqCtx)
 	if err != nil {

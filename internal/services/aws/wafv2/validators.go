@@ -3,6 +3,7 @@ package wafv2
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/store/aws/waf"
@@ -17,12 +18,37 @@ func validateScope(scope string) error {
 	return nil
 }
 
+// metricNamePattern mirrors the Smithy @pattern trait on
+// com.amazonaws.wafv2#MetricName: ^[\w#:\.\-/]+$
+var metricNamePattern = regexp.MustCompile(`^[\w#:\.\-/]+$`)
+
+// validateVisibilityConfig validates a VisibilityConfig against the
+// Smithy model: VisibilityConfig itself is required on
+// Create/UpdateWebACL and Create/UpdateRuleGroup, and its MetricName is
+// required, 1-255 characters, and must match the MetricName pattern.
+// The two Boolean members default to false when omitted, which the
+// typed struct already represents. A nil VisibilityConfig is a
+// contract violation, not an omission to tolerate.
+func validateVisibilityConfig(vc *waf.VisibilityConfig) error {
+	if vc == nil {
+		return invalidParamError("VisibilityConfig is required")
+	}
+	if len(vc.MetricName) < 1 || len(vc.MetricName) > 255 {
+		return invalidParamError("VisibilityConfig MetricName must be between 1 and 255 characters")
+	}
+	if !metricNamePattern.MatchString(vc.MetricName) {
+		return invalidParamError(fmt.Sprintf("VisibilityConfig MetricName contains invalid characters: %s", vc.MetricName))
+	}
+	return nil
+}
+
 // validateDefaultAction checks that the DefaultAction only contains Allow
 // or Block. Per the Smithy model, DefaultAction is a separate shape from
-// RuleAction and only supports terminating actions (Allow, Block).
+// RuleAction, only supports terminating actions (Allow, Block), and is
+// required wherever it is validated (Create/UpdateWebACL).
 func validateDefaultAction(action *waf.Action) error {
 	if action == nil {
-		return nil
+		return invalidParamError("DefaultAction is required")
 	}
 	if action.Allow != nil {
 		return nil
