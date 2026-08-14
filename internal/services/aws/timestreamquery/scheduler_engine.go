@@ -179,7 +179,9 @@ func (e *ScheduledQueryEngine) checkScheduledQueries() {
 				} else {
 					nextRun, nextErr := scheduleexpr.NextExecutionTime(expr, nextTime.Add(time.Second), scheduledQuery.CreationTime, nil)
 					if nextErr == nil && nextRun.After(now) {
-						_ = st.scheduledQueryStore.UpdateNextRunTime(scheduledQuery.Name, nextRun)
+						if err := st.scheduledQueryStore.UpdateNextRunTime(scheduledQuery.Name, nextRun); err != nil {
+							logs.Warn("Failed to persist next run time for scheduled query", logs.String("name", scheduledQuery.Name), logs.Err(err))
+						}
 					}
 				}
 			}(sq, stores, region, dedupKey)
@@ -227,7 +229,9 @@ func (e *ScheduledQueryEngine) cleanupOldRuns() {
 					run.RunStatus == tsstore.ScheduleRunStatusFailed ||
 					run.RunStatus == tsstore.ScheduleRunStatusCancelled {
 					if !run.CompletionTime.IsZero() && run.CompletionTime.Before(cutoff) {
-						_ = stores.scheduledQueryRunStore.DeleteRun(run.ARN)
+						if err := stores.scheduledQueryRunStore.DeleteRun(run.ARN); err != nil {
+							logs.Warn("Failed to clean up old scheduled query run", logs.String("run", run.ARN), logs.Err(err))
+						}
 					}
 				}
 			}

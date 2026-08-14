@@ -232,10 +232,19 @@ func (s *TimestreamQueryService) DeleteScheduledQuery(ctx context.Context, reqCt
 		return nil, ErrInternalServer
 	}
 
+	// Delete all runs belonging to this scheduled query before deleting
+	// the query itself, so no orphaned run records can survive. A run
+	// deletion failure aborts the whole operation (fail-closed) rather
+	// than silently leaving orphans behind.
 	runs, runErr := st.scheduledQueryRunStore.ListRuns(sq.ARN)
-	if runErr == nil {
-		for _, run := range runs {
-			_ = st.scheduledQueryRunStore.DeleteRun(run.ARN)
+	if runErr != nil {
+		logs.Error("Failed to list scheduled query runs for deletion", logs.String("query", name), logs.Err(runErr))
+		return nil, ErrInternalServer
+	}
+	for _, run := range runs {
+		if err := st.scheduledQueryRunStore.DeleteRun(run.ARN); err != nil {
+			logs.Error("Failed to delete scheduled query run", logs.String("run", run.ARN), logs.Err(err))
+			return nil, ErrInternalServer
 		}
 	}
 
@@ -416,8 +425,11 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 		return nil, ErrInternalServer
 	}
 
-	// Parse InvocationTime (defaults to now). QueryInsights is accepted
-	// but currently not applied to the query execution (would require
+	// InvocationTime is REQUIRED per Smithy and must be present as a
+	// string in RFC3339 form or as an epoch number; a missing value or a
+	// present-but-malformed string is rejected rather than silently
+	// replaced with the current time. QueryInsights is accepted but
+	// currently not applied to the query execution (would require
 	// extending the query executor to collect per-query insights).
 	now := time.Now().UTC()
 	invocationTimeRaw := request.GetParamCaseInsensitive(req.Parameters, "InvocationTime")
@@ -443,6 +455,8 @@ func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqC
 			now = parsed.UTC()
 		} else if parsed, err := time.Parse(time.RFC3339, invocationTimeRaw); err == nil {
 			now = parsed.UTC()
+		} else {
+			return nil, ErrValidationException
 		}
 	}
 

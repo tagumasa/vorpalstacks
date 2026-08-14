@@ -65,8 +65,37 @@ func validateS3BucketName(bucket string) bool {
 	return s3BucketNameRegex.MatchString(bucket)
 }
 
+// s3ObjectKeyPattern is shared by the S3ObjectKey and S3ObjectKeyPrefix
+// Smithy shapes, which carry the identical pattern trait
+// ^[a-zA-Z0-9|!\-_*'\(\\)]([a-zA-Z0-9]|[!\-_*'\(\\)/.])+$; they differ
+// only in their length bounds (1-1024 vs 1-928).
+var s3ObjectKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'\(\\)]([a-zA-Z0-9]|[!\-_*'\(\\)/.])+$`)
+
+// maxS3ObjectKeyLen and maxS3ObjectKeyPrefixLen bound the two S3 key
+// shapes per the Smithy length traits (S3ObjectKey 1-1024,
+// S3ObjectKeyPrefix 1-928).
+const (
+	maxS3ObjectKeyLen       = 1024
+	maxS3ObjectKeyPrefixLen = 928
+)
+
+// validateS3ObjectKey validates a DataModelS3Configuration.ObjectKey value
+// against the Smithy S3ObjectKey shape (length 1-1024 plus pattern).
+func validateS3ObjectKey(key string) bool {
+	if len(key) < 1 || len(key) > maxS3ObjectKeyLen {
+		return false
+	}
+	return s3ObjectKeyRegex.MatchString(key)
+}
+
+// validateS3ObjectKeyPrefix validates an ObjectKeyPrefix value against the
+// Smithy S3ObjectKeyPrefix shape: the same pattern as S3ObjectKey with
+// length 1-928.
 func validateS3ObjectKeyPrefix(prefix string) bool {
-	return len(prefix) >= 1 && len(prefix) <= 896
+	if len(prefix) < 1 || len(prefix) > maxS3ObjectKeyPrefixLen {
+		return false
+	}
+	return s3ObjectKeyRegex.MatchString(prefix)
 }
 
 func validateEncryptionOption(option string) bool {

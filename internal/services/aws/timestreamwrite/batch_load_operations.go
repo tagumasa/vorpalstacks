@@ -559,10 +559,18 @@ func parseDataModelConfiguration(config interface{}) (*tsstore.DataModelConfigur
 
 	if s3Config, ok := configMap["DataModelS3Configuration"].(map[string]interface{}); ok {
 		result.DataModelS3Configuration = &tsstore.DataModelS3Configuration{}
-		if bucket, ok := s3Config["BucketName"].(string); ok {
-			result.DataModelS3Configuration.BucketName = bucket
+		bucket, hasBucket := s3Config["BucketName"].(string)
+		if !hasBucket || bucket == "" {
+			return nil, ErrValidationException
 		}
-		if key, ok := s3Config["ObjectKey"].(string); ok {
+		if !validateS3BucketName(bucket) {
+			return nil, ErrValidationException
+		}
+		result.DataModelS3Configuration.BucketName = bucket
+		if key, ok := s3Config["ObjectKey"].(string); ok && key != "" {
+			if !validateS3ObjectKey(key) {
+				return nil, ErrValidationException
+			}
 			result.DataModelS3Configuration.ObjectKey = key
 		}
 	}

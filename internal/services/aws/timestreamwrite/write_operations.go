@@ -2,6 +2,7 @@ package timestreamwrite
 
 import (
 	"context"
+	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -42,6 +43,13 @@ func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *reque
 			return nil, err
 		}
 		records = merged
+	}
+
+	// Validate the final (post-merge) enum values of every record: an
+	// enum member outside the Smithy enum is a malformed request and
+	// must fail the whole call, not be silently persisted.
+	if err := validateRecordEnums(records); err != nil {
+		return nil, err
 	}
 
 	st, err := s.store(reqCtx)
@@ -238,6 +246,48 @@ func (s *TimestreamWriteService) mergeCommonAttributes(records []tsstore.Record,
 	}
 
 	return records, nil
+}
+
+// validateRecordEnums validates the final enum values of every record
+// after CommonAttributes merging has produced the definitive field
+// values. MeasureValueType, TimeUnit, DimensionValueType and
+// MeasureValue.Type are Smithy enums; invalid values are rejected with
+// ValidationException rather than silently persisted or reinterpreted
+// by the store layer.
+func validateRecordEnums(records []tsstore.Record) error {
+	for i := range records {
+		rec := &records[i]
+		if rec.MeasureValueType != "" && !validateMeasureValueType(string(rec.MeasureValueType)) {
+			return awserrors.NewValidationException(fmt.Sprintf("Records[%d].MeasureValueType has invalid value %q", i, rec.MeasureValueType))
+		}
+		// Per the Smithy documentation for MeasureValues, the list is
+		// "only allowed for type MULTI. For scalar values, use the
+		// MeasureValue attribute of the record directly" — enforce the
+		// pairing in both directions.
+		if rec.MeasureValueType == tsstore.MeasureValueTypeMulti && len(rec.MeasureValues) == 0 {
+			return awserrors.NewValidationException(fmt.Sprintf("Records[%d].MeasureValues is required when MeasureValueType is MULTI", i))
+		}
+		if rec.MeasureValueType != tsstore.MeasureValueTypeMulti && len(rec.MeasureValues) > 0 {
+			return awserrors.NewValidationException(fmt.Sprintf("Records[%d].MeasureValues is only allowed when MeasureValueType is MULTI", i))
+		}
+		if rec.TimeUnit != "" && !validateTimeUnit(string(rec.TimeUnit)) {
+			return awserrors.NewValidationException(fmt.Sprintf("Records[%d].TimeUnit has invalid value %q", i, rec.TimeUnit))
+		}
+		for j, d := range rec.Dimensions {
+			if d.DimensionValueType != "" && !validateDimensionValueType(string(d.DimensionValueType)) {
+				return awserrors.NewValidationException(fmt.Sprintf("Records[%d].Dimensions[%d].DimensionValueType has invalid value %q", i, j, d.DimensionValueType))
+			}
+		}
+		for j, mv := range rec.MeasureValues {
+			if mv.Type == "" {
+				return awserrors.NewValidationException(fmt.Sprintf("Records[%d].MeasureValues[%d].Type is required", i, j))
+			}
+			if !validateMeasureValueType(string(mv.Type)) {
+				return awserrors.NewValidationException(fmt.Sprintf("Records[%d].MeasureValues[%d].Type has invalid value %q", i, j, mv.Type))
+			}
+		}
+	}
+	return nil
 }
 
 func (s *TimestreamWriteService) parseMeasureValues(data interface{}) []tsstore.MeasureValue {
