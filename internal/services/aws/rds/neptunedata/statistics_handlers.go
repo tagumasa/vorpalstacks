@@ -29,9 +29,11 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 	autoCompute := s.autoComputeEnabled
 	s.mu.RUnlock()
 
-	if !statsDisabled {
-		s.refreshStatistics(reqCtx)
+	if statsDisabled {
+		return nil, statisticsNotAvailable("Statistics are disabled. Call ManagePropertygraphStatistics with mode 'refresh' or 'enableAutoCompute' to generate statistics.")
 	}
+
+	s.refreshStatistics(reqCtx)
 	stats := s.getStats(reqCtx.GetRegion())
 	nodeCount, edgeCount, labelCounts, relCounts, _, _ := stats.snapshot()
 
@@ -41,7 +43,7 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 	result := map[string]interface{}{
 		"status": "200",
 		"payload": map[string]interface{}{
-			"active":       !statsDisabled,
+			"active":       true,
 			"autoCompute":  autoCompute,
 			"date":         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
 			"note":         "Automatically computed",
@@ -245,7 +247,7 @@ func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx 
 	remaining := limit
 
 	records, remaining = appendNodeRecords(reader, records, remaining)
-	records, _ = appendEdgeRecords(reader, records, remaining)
+	records, remaining = appendEdgeRecords(reader, records, remaining)
 
 	if records == nil {
 		records = []interface{}{}

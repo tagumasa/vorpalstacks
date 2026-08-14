@@ -35,14 +35,19 @@ func getNeptuneStringList(params map[string]interface{}, key string, memberNames
 
 func getNeptuneTagList(params map[string]interface{}) []map[string]interface{} {
 	var tags []map[string]interface{}
-	for i := 1; ; i++ {
-		prefix := fmt.Sprintf("Tags.Tag.%d", i)
-		key := request.GetStringParam(params, prefix+".Key")
-		if key == "" {
-			break
+	for _, memberName := range []string{"Tag", "member"} {
+		for i := 1; ; i++ {
+			prefix := fmt.Sprintf("Tags.%s.%d", memberName, i)
+			key := request.GetStringParam(params, prefix+".Key")
+			if key == "" {
+				break
+			}
+			value := request.GetStringParam(params, prefix+".Value")
+			tags = append(tags, map[string]interface{}{"Key": key, "Value": value})
 		}
-		value := request.GetStringParam(params, prefix+".Value")
-		tags = append(tags, map[string]interface{}{"Key": key, "Value": value})
+		if len(tags) > 0 {
+			return tags
+		}
 	}
 	return tags
 }
@@ -257,8 +262,8 @@ func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *reques
 		sg.DBSubnetGroupDescription = desc
 	}
 	if subnetIds := getNeptuneStringList(params, "SubnetIds"); len(subnetIds) > 0 {
-		if len(subnetIds) > 26 {
-			return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", "Cannot assign more than 26 subnets to a DB subnet group", http.StatusBadRequest)
+		if err := validateSubnetCount(len(subnetIds)); err != nil {
+			return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", err.Error(), http.StatusBadRequest)
 		}
 		region := reqCtx.GetRegion()
 		subnets, vpcId, err := s.resolveSubnets(ctx, region, subnetIds)

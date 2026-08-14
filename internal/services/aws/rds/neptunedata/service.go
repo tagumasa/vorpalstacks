@@ -586,7 +586,7 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 		"status":    "healthy",
 		"startTime": s.startTime.UTC().Format(timeutils.ISO8601UTCFormat),
 		// Engine version string used by clients for feature detection (Neptune 1.x series).
-		"dbEngineVersion": engineVersion,
+		"dbEngineVersion": neptuneEngineVersion(),
 		"role":            "writer",
 		// DFE (Distributed Forwarding Engine) state. "Disabled" indicates
 		// TinkerPop-only execution (no DFE).

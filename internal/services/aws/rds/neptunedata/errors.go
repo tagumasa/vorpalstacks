@@ -62,3 +62,10 @@ func internalFailure(msg string) *awserrors.AWSError {
 func failureByQuery(msg string) *awserrors.AWSError {
 	return awserrors.NewAWSError("FailureByQueryException", msg, http.StatusInternalServerError)
 }
+
+// statisticsNotAvailable returns a StatisticsNotAvailableException (400) when
+// statistics are requested but auto-compute is disabled and no manual
+// statistics have been generated.
+func statisticsNotAvailable(msg string) *awserrors.AWSError {
+	return awserrors.NewAWSError("StatisticsNotAvailableException", msg, http.StatusBadRequest)
+}

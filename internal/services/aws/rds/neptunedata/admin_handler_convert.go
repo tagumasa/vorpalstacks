@@ -184,16 +184,25 @@ func (h *AdminHandler) propertygraphStatisticsPb(header http.Header) (*pb.GetPro
 	autoCompute := s.autoComputeEnabled
 	s.mu.RUnlock()
 
-	if !statsDisabled {
-		s.refreshStatisticsForRegion(region)
+	if statsDisabled {
+		return &pb.GetPropertygraphStatisticsOutput{
+			Status: "200 OK",
+			Payload: &pb.Statistics{
+				Active:      "false",
+				Autocompute: fmt.Sprintf("%t", autoCompute),
+				Note:        "Statistics auto-compute is disabled. Call ManagePropertygraphStatistics with mode 'refresh' or 'enableAutoCompute' to generate statistics.",
+			},
+		}, nil
 	}
+
+	s.refreshStatisticsForRegion(region)
 	st := s.getStats(region)
 	nodeCount, _, labelCounts, relCounts, _, _ := st.snapshot()
 	sigCount := int64(len(labelCounts))
 	predCount := int64(len(relCounts))
 
 	stats := &pb.Statistics{
-		Active:       fmt.Sprintf("%t", !statsDisabled),
+		Active:       "true",
 		Autocompute:  fmt.Sprintf("%t", autoCompute),
 		Date:         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
 		Note:         "Automatically computed",

@@ -30,9 +30,12 @@ const (
 	taskTTLTestMode     = 30 * time.Minute
 	taskCleanupTestMode = 5 * time.Minute
 
-	// neptuneGraphBuildNumber is returned in graph responses. AWS Neptune
-	// Analytics returns a dynamically determined build number; in this
-	// implementation a constant is used since there are no software updates.
+	// neptuneGraphBuildNumber is the build identifier returned in graph
+	// responses. Neptune Analytics (neptunegraph) is a distinct AWS service
+	// from Neptune Database and maintains its own release pipeline; its
+	// build number has no relationship to the Neptune DB engine version
+	// (1.x.y.z). The value below mirrors the AWS Neptune Analytics build
+	// identifier format (major.minor.YYYYMMDD).
 	neptuneGraphBuildNumber = "1.0.20250313"
 )
 

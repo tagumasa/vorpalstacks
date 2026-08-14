@@ -585,14 +585,15 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 			cluster.DBClusterArn = oldArn
 			return nil, translateStoreError(err)
 		}
-		reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID)
+		if err := reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID); err != nil {
+			store.DeleteCluster(newID)
+			cluster.DBClusterIdentifier = oldID
+			cluster.DBClusterArn = oldArn
+			return nil, awserrors.NewAWSError("InvalidDBClusterStateFault",
+				fmt.Sprintf("cluster rename failed during resource reparenting: %v", err), http.StatusBadRequest)
+		}
 		if err := store.DeleteCluster(oldID); err != nil {
-			// The rename has effectively succeeded: the new cluster
-			// exists and all sub-resources have been reparented.
-			// Deleting the old record is best-effort cleanup; returning
-			// an error here would mislead the client into thinking the
-			// rename failed when the new cluster is fully functional.
-			logs.Warn("failed to delete old cluster record after rename",
+			logs.Error("failed to delete old cluster record after successful rename",
 				logs.String("oldID", oldID), logs.String("newID", newID), logs.Err(err))
 		}
 	}
@@ -862,37 +863,40 @@ func buildRestoredCluster(clusterID, engine, engineVersion string, params map[st
 }
 
 // reparentClusterResources migrates tags and updates instance references when
-// a cluster is renamed. Errors are logged but not propagated so the rename
-// itself always succeeds.
-func reparentClusterResources(store neptunestore.NeptuneStoreInterface, oldArn, newArn, oldID, newID string) {
+// a cluster is renamed. Tag-copy, instance-list, and instance-update failures
+// are propagated so the caller can roll back the rename. Old-tag removal is
+// best-effort because the tags have already been copied to the new ARN.
+func reparentClusterResources(store neptunestore.NeptuneStoreInterface, oldArn, newArn, oldID, newID string) error {
 	tags, err := store.GetTags(oldArn)
-	if err == nil && len(tags) > 0 {
+	if err != nil {
+		return fmt.Errorf("reparent: failed to get tags from %s: %w", oldArn, err)
+	}
+	if len(tags) > 0 {
 		if err := store.AddTags(newArn, tags); err != nil {
-			logs.Warn("reparent: failed to copy tags to new cluster ARN", logs.Err(err))
-		} else {
-			keys := make([]string, len(tags))
-			for i, t := range tags {
-				keys[i] = t.Key
-			}
-			if err := store.RemoveTags(oldArn, keys); err != nil {
-				logs.Warn("reparent: failed to remove old cluster tags", logs.Err(err))
-			}
+			return fmt.Errorf("reparent: failed to copy tags to %s: %w", newArn, err)
+		}
+		keys := make([]string, len(tags))
+		for i, t := range tags {
+			keys[i] = t.Key
+		}
+		if err := store.RemoveTags(oldArn, keys); err != nil {
+			logs.Warn("reparent: failed to remove old cluster tags after copy", logs.Err(err))
 		}
 	}
 
 	instances, err := store.ListInstances()
 	if err != nil {
-		logs.Warn("reparent: failed to list instances", logs.Err(err))
-	} else {
-		for _, inst := range instances {
-			if inst.DBClusterIdentifier == oldID {
-				inst.DBClusterIdentifier = newID
-				if err := store.UpdateInstance(inst); err != nil {
-					logs.Warn("reparent: failed to update instance cluster ref", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(err))
-				}
+		return fmt.Errorf("reparent: failed to list instances: %w", err)
+	}
+	for _, inst := range instances {
+		if inst.DBClusterIdentifier == oldID {
+			inst.DBClusterIdentifier = newID
+			if err := store.UpdateInstance(inst); err != nil {
+				return fmt.Errorf("reparent: failed to update instance %s cluster ref: %w", inst.DBInstanceIdentifier, err)
 			}
 		}
 	}
+	return nil
 }
 
 // removeTagsForResource removes all tags associated with the given resource ARN.

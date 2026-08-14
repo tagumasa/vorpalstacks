@@ -1,14 +1,25 @@
 package neptunedata
 
-import "regexp"
+import (
+	"regexp"
+
+	rdssvc "vorpalstacks/internal/services/aws/rds"
+)
 
 // ---------------------------------------------------------------------------
 // Smithy-derived constants
 // ---------------------------------------------------------------------------
 
-const (
-	engineVersion = "1.3.3.0"
-)
+// neptuneEngineVersion returns the latest supported Neptune engine version
+// from the shared RDS version registry, ensuring GetEngineStatus reports
+// a version consistent with CreateDBCluster / DescribeDBClusters.
+func neptuneEngineVersion() string {
+	v := rdssvc.DefaultEngineVersion("neptune")
+	if v == "" {
+		return "1.3.3.0"
+	}
+	return v
+}
 
 // ---------------------------------------------------------------------------
 // Smithy-derived patterns
