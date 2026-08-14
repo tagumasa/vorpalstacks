@@ -23,6 +23,12 @@ type CreateTopicInput struct {
 	Name       string
 	Attributes map[string]string
 	Tags       map[string]string
+
+	// DataProtectionPolicy is the optional inline data protection policy
+	// (CreateTopicInput.DataProtectionPolicy member). It is stored under the
+	// internal "DataProtectionPolicy" attribute key, retrievable only via
+	// GetDataProtectionPolicy, and excluded from GetTopicAttributes output.
+	DataProtectionPolicy string
 }
 
 // TopicResult is the transport-agnostic result of creating or looking up a
@@ -95,6 +101,19 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 		if err := validateTopicAttribute(attrName, attrValue); err != nil {
 			return nil, err
 		}
+	}
+
+	// The inline DataProtectionPolicy parameter is validated with the same
+	// rules as PutDataProtectionPolicy and persisted under its reserved
+	// attribute key so GetDataProtectionPolicy returns it from creation.
+	if in.DataProtectionPolicy != "" {
+		if err := validateDataProtectionPolicy(in.DataProtectionPolicy); err != nil {
+			return nil, err
+		}
+		if in.Attributes == nil {
+			in.Attributes = make(map[string]string)
+		}
+		in.Attributes["DataProtectionPolicy"] = in.DataProtectionPolicy
 	}
 
 	topic := &snsstore.Topic{

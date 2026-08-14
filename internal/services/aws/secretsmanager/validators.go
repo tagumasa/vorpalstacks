@@ -363,6 +363,30 @@ func validateScheduleExpression(expr string) error {
 	return nil
 }
 
+// validateRotationRules enforces the complete RotationRulesType contract.
+// Per the Smithy model documentation, the rotation schedule can be set with
+// AutomaticallyAfterDays or ScheduleExpression, but not both. Each field is
+// additionally validated against its own Smithy type constraints.
+func validateRotationRules(automaticallyAfterDays int, scheduleExpression, duration string) error {
+	if automaticallyAfterDays > 0 {
+		if err := validateAutomaticallyAfterDays(automaticallyAfterDays); err != nil {
+			return err
+		}
+	}
+	if err := validateScheduleExpression(scheduleExpression); err != nil {
+		return err
+	}
+	if err := validateDuration(duration); err != nil {
+		return err
+	}
+	if automaticallyAfterDays > 0 && scheduleExpression != "" {
+		return awserrors.NewAWSError("InvalidParameterException",
+			"You can set the rotation schedule with RotationRules.AutomaticallyAfterDays or RotationRules.ScheduleExpression, but not both.",
+			http.StatusBadRequest)
+	}
+	return nil
+}
+
 // validateRegion validates a region code against the Smithy RegionType
 // @length(min=1, max=128) and @pattern("^([a-z]+-)+[0-9]+$") constraints.
 func validateRegion(region string) error {

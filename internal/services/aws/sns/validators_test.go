@@ -99,3 +99,15 @@ func TestValidateSubscriptionAttribute_UnknownPassthrough(t *testing.T) {
 		t.Error("unknown attributes should pass through without validation")
 	}
 }
+
+func TestValidateTopicAttribute_DataProtectionPolicyReserved(t *testing.T) {
+	if err := validateTopicAttribute("DataProtectionPolicy", `{"Version":"2021-06-01"}`); err == nil {
+		t.Error("DataProtectionPolicy must be rejected via the generic attribute path")
+	}
+}
+
+func TestValidateSubscriptionAttribute_AuthenticateOnUnsubscribeReserved(t *testing.T) {
+	if err := validateSubscriptionAttribute("AuthenticateOnUnsubscribe", "true"); err == nil {
+		t.Error("AuthenticateOnUnsubscribe must be rejected via SetSubscriptionAttributes")
+	}
+}

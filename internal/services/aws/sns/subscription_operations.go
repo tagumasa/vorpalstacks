@@ -123,6 +123,37 @@ func (s *SNSService) Unsubscribe(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
+
+	subscription, err := store.GetSubscription(subscriptionArn)
+	if err != nil {
+		if err == snsstore.ErrSubscriptionNotFound {
+			return nil, NewNotFoundException("Subscription does not exist")
+		}
+		return nil, err
+	}
+
+	// When the subscription was confirmed with AuthenticateOnUnsubscribe,
+	// only the topic owner and the subscription owner may unsubscribe the
+	// endpoint, and the request must be AWS-authenticated.
+	if strings.EqualFold(subscription.Attributes["AuthenticateOnUnsubscribe"], "true") {
+		if reqCtx.PrincipalType == request.PrincipalTypeAnonymous {
+			return nil, ErrAuthorizationError
+		}
+		principalAccount := reqCtx.GetAccountID()
+		if principalAccount != subscription.Owner {
+			topic, err := store.GetTopic(subscription.TopicArn)
+			if err != nil {
+				if err == snsstore.ErrTopicNotFound {
+					return nil, ErrTopicNotFound
+				}
+				return nil, err
+			}
+			if principalAccount != topic.Owner {
+				return nil, ErrAuthorizationError
+			}
+		}
+	}
+
 	if err := store.DeleteSubscription(subscriptionArn); err != nil {
 		if err == snsstore.ErrSubscriptionNotFound {
 			return nil, NewNotFoundException("Subscription does not exist")
@@ -146,6 +177,26 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 		return nil, awserrors.NewInvalidParameterException("Token is required")
 	}
 
+	// AuthenticateOnUnsubscribe disallows unauthenticated unsubscribes of
+	// this subscription. The parameter accepts only the boolean literals
+	// "true" and "false"; nil means the parameter was not sent. A non-nil
+	// value is persisted as the AuthenticateOnUnsubscribe subscription
+	// attribute which Unsubscribe enforces.
+	var authenticateOnUnsubscribe *bool
+	if raw := request.GetParamLowerFirst(req.Parameters, "AuthenticateOnUnsubscribe"); raw != "" {
+		switch strings.ToLower(raw) {
+		case "true":
+			val := true
+			authenticateOnUnsubscribe = &val
+		case "false":
+			val := false
+			authenticateOnUnsubscribe = &val
+		default:
+			return nil, awserrors.NewInvalidParameterException(
+				fmt.Sprintf("Invalid AuthenticateOnUnsubscribe value %q: must be \"true\" or \"false\"", raw))
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -155,7 +206,7 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 		return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
 	}
 
-	confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token)
+	confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token, authenticateOnUnsubscribe)
 	if err != nil {
 		return nil, err
 	}

@@ -404,6 +404,13 @@ func (s *SQSService) SetQueueAttributes(ctx context.Context, reqCtx *request.Req
 	}
 
 	if len(attrs) > 0 {
+		// Validate at the HTTP boundary through the same attribute
+		// validation path as CreateQueue (applyQueueAttributes). The store
+		// re-validates on write as defence-in-depth for other callers.
+		if err := applyQueueAttributes(attrs, &sqsstore.Queue{}); err != nil {
+			return nil, err
+		}
+
 		store, err := s.store(reqCtx)
 		if err != nil {
 			return nil, err
@@ -452,19 +459,37 @@ func (s *SQSService) ListDeadLetterSourceQueues(ctx context.Context, reqCtx *req
 		return nil, convertStoreError(err)
 	}
 
-	queues, err := store.ListDeadLetterSourceQueues(dlq.ARN)
+	// MaxResults is 1-1000 per the AWS API reference; the default is 1000.
+	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
+	if maxResults == 0 {
+		maxResults = maxListDeadLetterSourceQueuesResults
+	}
+	if maxResults < 1 || maxResults > maxListDeadLetterSourceQueuesResults {
+		return nil, ErrInvalidParameterValue
+	}
+
+	opts := common.ListOptions{
+		MaxItems: int(maxResults),
+		Marker:   request.GetParamCaseInsensitive(req.Parameters, "NextToken"),
+	}
+
+	result, err := store.ListDeadLetterSourceQueues(dlq.ARN, opts)
 	if err != nil {
 		return nil, convertStoreError(err)
 	}
 
-	queueURLs := make([]string, 0, len(queues))
-	for _, q := range queues {
+	queueURLs := make([]string, 0, len(result.Items))
+	for _, q := range result.Items {
 		queueURLs = append(queueURLs, q.URL)
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"QueueUrls": queueURLs,
-	}, nil
+	}
+	if result.IsTruncated && result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // StartMessageMoveTask starts a message move task to move messages from one queue to another.

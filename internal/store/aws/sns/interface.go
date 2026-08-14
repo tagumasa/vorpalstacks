@@ -20,7 +20,7 @@ type SNSStoreInterface interface {
 	DeleteSubscription(subscriptionArn string) error
 	UpdateSubscription(subscription *Subscription) error
 	AutoConfirmSubscription(subscription *Subscription) error
-	ConfirmSubscription(subscriptionArn, token string) (*Subscription, error)
+	ConfirmSubscription(subscriptionArn, token string, authenticateOnUnsubscribe *bool) (*Subscription, error)
 	ListSubscriptions(opts common.ListOptions) (*common.ListResult[Subscription], error)
 	ListSubscriptionsByTopic(topicArn string, opts common.ListOptions) (*common.ListResult[Subscription], error)
 	FindSubscriptionByToken(topicArn, token string) (*Subscription, error)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, queueName string) []TestResult {
@@ -255,6 +256,78 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 		_, err := client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
 			SourceArn:                    aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:%s:nonexistent-dlq", r.accountID)),
 			MaxNumberOfMessagesPerSecond: aws.Int32(501),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// SendMessage with 11 message attributes must be rejected (AWS cap: 10).
+	results = append(results, r.RunTest("sqs", "SendMessage_TooManyMessageAttributes_Rejected", func() error {
+		qName := fmt.Sprintf("TooManyAttrs-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		attrs := make(map[string]types.MessageAttributeValue, 11)
+		for i := 0; i < 11; i++ {
+			attrs[fmt.Sprintf("Attr%d", i)] = types.MessageAttributeValue{
+				DataType:    aws.String("String"),
+				StringValue: aws.String("v"),
+			}
+		}
+		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:          createResp.QueueUrl,
+			MessageBody:       aws.String("body"),
+			MessageAttributes: attrs,
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// SendMessage attribute names starting with the reserved AWS. prefix
+	// must be rejected.
+	results = append(results, r.RunTest("sqs", "SendMessage_AttributeNameReservedPrefix_Rejected", func() error {
+		qName := fmt.Sprintf("ReservedAttr-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    createResp.QueueUrl,
+			MessageBody: aws.String("body"),
+			MessageAttributes: map[string]types.MessageAttributeValue{
+				"AWS.Reserved": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String("v"),
+				},
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// ListDeadLetterSourceQueues MaxResults above 1000 must be rejected.
+	results = append(results, r.RunTest("sqs", "ListDeadLetterSourceQueues_MaxResultsTooHigh_Rejected", func() error {
+		qName := fmt.Sprintf("DlqMax-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		_, err = client.ListDeadLetterSourceQueues(ctx, &sqs.ListDeadLetterSourceQueuesInput{
+			QueueUrl:   createResp.QueueUrl,
+			MaxResults: aws.Int32(1001),
 		})
 		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
 			return err

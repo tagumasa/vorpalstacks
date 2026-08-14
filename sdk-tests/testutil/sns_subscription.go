@@ -366,6 +366,13 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		if afterResp.Attributes["PendingConfirmation"] != "false" {
 			return fmt.Errorf("should be confirmed, got PendingConfirmation=%s", afterResp.Attributes["PendingConfirmation"])
 		}
+		if afterResp.Attributes["ConfirmationWasAuthenticated"] != "true" {
+			return fmt.Errorf("ConfirmationWasAuthenticated = %q, want true (signed ConfirmSubscription call)",
+				afterResp.Attributes["ConfirmationWasAuthenticated"])
+		}
+		if _, ok := afterResp.Attributes["AuthenticateOnUnsubscribe"]; ok {
+			return fmt.Errorf("AuthenticateOnUnsubscribe must not be exposed in GetSubscriptionAttributes")
+		}
 		return nil
 	}))
 
@@ -496,6 +503,106 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		}
 		if getResp.Attributes["RawMessageDelivery"] != "true" {
 			return fmt.Errorf("RawMessageDelivery mismatch: got %q, want \"true\"", getResp.Attributes["RawMessageDelivery"])
+		}
+		return nil
+	}))
+
+	// SetSubscriptionAttributes must reject the reserved
+	// AuthenticateOnUnsubscribe key (it is set via the ConfirmSubscription
+	// input parameter only).
+	results = append(results, r.RunTest("sns", "SetSubscriptionAttributes_AuthenticateOnUnsubscribe_Rejected", func() error {
+		sub, err := tc.createHTTPSubscription("AuthOnUnsub")
+		if err != nil {
+			return err
+		}
+		defer tc.deleteTopic(sub.TopicArn)
+
+		_, err = tc.client.SetSubscriptionAttributes(tc.ctx, &sns.SetSubscriptionAttributesInput{
+			SubscriptionArn: aws.String(sub.SubscriptionArn),
+			AttributeName:   aws.String("AuthenticateOnUnsubscribe"),
+			AttributeValue:  aws.String("true"),
+		})
+		return AssertErrorContains(err, "InvalidParameter")
+	}))
+
+	// Unsubscribe of a subscription confirmed without
+	// AuthenticateOnUnsubscribe must succeed normally (the flag is absent).
+	results = append(results, r.RunTest("sns", "Unsubscribe_AfterPlainConfirm_Succeeds", func() error {
+		sub, err := tc.createHTTPSubscription("PlainConfirm")
+		if err != nil {
+			return err
+		}
+		defer tc.deleteTopic(sub.TopicArn)
+
+		_, err = tc.client.Unsubscribe(tc.ctx, &sns.UnsubscribeInput{
+			SubscriptionArn: aws.String(sub.SubscriptionArn),
+		})
+		return err
+	}))
+
+	// ConfirmSubscription must reject a non-boolean
+	// AuthenticateOnUnsubscribe value instead of treating it as false.
+	results = append(results, r.RunTest("sns", "ConfirmSubscription_AuthenticateOnUnsubscribe_InvalidValue_Rejected", func() error {
+		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
+			Name: aws.String(tc.uniqueName("BadAuthOnUnsub")),
+		})
+		if err != nil {
+			return fmt.Errorf("create topic: %v", err)
+		}
+		defer tc.deleteTopic(*tResp.TopicArn)
+
+		tokenCh := make(chan string, 1)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]interface{}
+			if json.Unmarshal(body, &payload) == nil {
+				if t, ok := payload["Token"].(string); ok {
+					select {
+					case tokenCh <- t:
+					default:
+					}
+				}
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer srv.Close()
+
+		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
+			TopicArn:              tResp.TopicArn,
+			Protocol:              aws.String("http"),
+			Endpoint:              aws.String(srv.URL),
+			ReturnSubscriptionArn: true,
+		})
+		if err != nil {
+			return fmt.Errorf("subscribe: %v", err)
+		}
+
+		var token string
+		select {
+		case token = <-tokenCh:
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("timed out waiting for subscription confirmation")
+		}
+
+		_, err = tc.client.ConfirmSubscription(tc.ctx, &sns.ConfirmSubscriptionInput{
+			TopicArn:                  tResp.TopicArn,
+			Token:                     aws.String(token),
+			AuthenticateOnUnsubscribe: aws.String("xyz"),
+		})
+		if err := AssertErrorContains(err, "InvalidParameter"); err != nil {
+			return err
+		}
+
+		// The subscription must remain unconfirmed and carry no flag.
+		afterResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
+			SubscriptionArn: sResp.SubscriptionArn,
+		})
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		if afterResp.Attributes["PendingConfirmation"] != "true" {
+			return fmt.Errorf("subscription should remain pending after rejected confirm, got PendingConfirmation=%s",
+				afterResp.Attributes["PendingConfirmation"])
 		}
 		return nil
 	}))

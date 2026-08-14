@@ -308,6 +308,70 @@ func ValidateMessageAttributeDataType(dataType string) error {
 	return nil
 }
 
+// MaxMessageAttributes is the maximum number of message attributes per
+// message (Amazon SQS Developer Guide: message metadata).
+const MaxMessageAttributes = 10
+
+// MaxMessageAttributeNameLength is the maximum length of a message attribute
+// name in characters (Amazon SQS Developer Guide: message metadata).
+const MaxMessageAttributeNameLength = 256
+
+// MaxMessageAttributeDataTypeLength is the maximum length of a message
+// attribute data type in characters (Amazon SQS Developer Guide: message
+// metadata).
+const MaxMessageAttributeDataTypeLength = 256
+
+// messageAttributeNameRegex matches the allowed characters for a message
+// attribute name: A-Z, a-z, 0-9, underscore, hyphen, and period.
+var messageAttributeNameRegex = regexp.MustCompile(`^[A-Za-z0-9_\-.]+$`)
+
+// ValidateMessageAttributes validates the full set of message attributes of
+// an outbound message: the count cap, each attribute name (length, character
+// set, reserved AWS./Amazon. prefixes, period placement rules), and each
+// DataType (format plus length). Per the Developer Guide, all components of
+// a message attribute count towards the message size restriction, which is
+// enforced separately against the queue's MaximumMessageSize.
+func ValidateMessageAttributes(attrs map[string]*MessageAttributeValue) error {
+	if len(attrs) == 0 {
+		return nil
+	}
+	if len(attrs) > MaxMessageAttributes {
+		return ErrInvalidParameterValue
+	}
+	for name, attr := range attrs {
+		if name == "" {
+			return ErrInvalidParameterValue
+		}
+		// The charset check comes first so the length check below only ever
+		// sees single-byte names: the allowed charset is ASCII-only, which
+		// makes the byte-length check equivalent to the documented
+		// character count.
+		if !messageAttributeNameRegex.MatchString(name) {
+			return ErrInvalidParameterValue
+		}
+		// Reserved prefixes are rejected in any casing variation.
+		lower := strings.ToLower(name)
+		if strings.HasPrefix(lower, "aws.") || strings.HasPrefix(lower, "amazon.") {
+			return ErrInvalidParameterValue
+		}
+		// Names must not start or end with a period nor contain
+		// consecutive periods.
+		if strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".") || strings.Contains(name, "..") {
+			return ErrInvalidParameterValue
+		}
+		if len(name) > MaxMessageAttributeNameLength {
+			return ErrInvalidParameterValue
+		}
+		if attr == nil || attr.DataType == "" || len(attr.DataType) > MaxMessageAttributeDataTypeLength {
+			return ErrInvalidParameterValue
+		}
+		if err := ValidateMessageAttributeDataType(attr.DataType); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // validateKmsMasterKeyId validates a KMS key ID or alias. Accepted forms:
 //   - UUID format (36 chars, e.g. "12345678-1234-1234-1234-123456789012")
 //   - alias/ prefix (e.g. "alias/my-key")

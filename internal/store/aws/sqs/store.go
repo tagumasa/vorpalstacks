@@ -459,20 +459,27 @@ func EncodeBinaryValue(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data)
 }
 
-// ListDeadLetterSourceQueues returns all queues that have the specified dead letter queue as their target.
-func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string) ([]*Queue, error) {
-	items, err := common.ListMatchingProto[*pb.Queue](s.BaseStore, "", func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
+// ListDeadLetterSourceQueues returns the queues that have the specified dead
+// letter queue as their target, honouring the pagination options carried by
+// the ListDeadLetterSourceQueues API (MaxResults 1-1000, NextToken).
+func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string, opts common.ListOptions) (*common.ListResult[Queue], error) {
+	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
 		return q.GetRedrivePolicy() != nil && q.GetRedrivePolicy().GetDeadLetterTargetArn() == dlqARN
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	queues := make([]*Queue, 0, len(items))
-	for _, pbQueue := range items {
+	queues := make([]*Queue, 0, len(result.Items))
+	for _, pbQueue := range result.Items {
 		queues = append(queues, ProtoToQueue(pbQueue))
 	}
-	return queues, nil
+
+	return &common.ListResult[Queue]{
+		Items:       queues,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
 }
 
 // GetMessageCounts returns the count of visible, not visible, and delayed messages for a queue.

@@ -493,8 +493,17 @@ func (s *SNSStore) FindSubscriptionByToken(topicArn, token string) (*Subscriptio
 	return sub, nil
 }
 
-// ConfirmSubscription confirms an SNS subscription using the subscription ARN and confirmation token.
-func (s *SNSStore) ConfirmSubscription(subscriptionArn, token string) (*Subscription, error) {
+// ConfirmSubscription confirms an SNS subscription using the subscription ARN
+// and confirmation token. The ConfirmSubscription API call is an AWS-signed
+// request, so the confirmed subscription's ConfirmationWasAuthenticated
+// attribute is always true (it reports whether the confirmation request was
+// authenticated, per the GetSubscriptionAttributes documentation).
+// authenticateOnUnsubscribe carries the separate ConfirmSubscription input
+// flag of the same name: when non-nil it is persisted as the
+// "AuthenticateOnUnsubscribe" subscription attribute, which Unsubscribe
+// enforces by requiring an authenticated request from the topic or
+// subscription owner.
+func (s *SNSStore) ConfirmSubscription(subscriptionArn, token string, authenticateOnUnsubscribe *bool) (*Subscription, error) {
 	s.topicMu.Lock()
 	defer s.topicMu.Unlock()
 	s.subscriptionMu.Lock()
@@ -512,6 +521,17 @@ func (s *SNSStore) ConfirmSubscription(subscriptionArn, token string) (*Subscrip
 	subscription.PendingConfirmation = false
 	subscription.ConfirmationWasAuthenticated = true
 	subscription.ConfirmationToken = ""
+
+	if authenticateOnUnsubscribe != nil {
+		if subscription.Attributes == nil {
+			subscription.Attributes = make(map[string]string)
+		}
+		if *authenticateOnUnsubscribe {
+			subscription.Attributes["AuthenticateOnUnsubscribe"] = "true"
+		} else {
+			subscription.Attributes["AuthenticateOnUnsubscribe"] = "false"
+		}
+	}
 
 	if err := s.topicSubscriptionsStore.Put(subscriptionArn, &subscription); err != nil {
 		return nil, err
@@ -568,6 +588,12 @@ func (s *SNSStore) GetSubscriptionAttributes(subscriptionArn string) (map[string
 
 	attrs := make(map[string]string)
 	for k, v := range subscription.Attributes {
+		// AuthenticateOnUnsubscribe is an internal enforcement flag set
+		// through the ConfirmSubscription input parameter; it is not part
+		// of the documented GetSubscriptionAttributes response set.
+		if k == "AuthenticateOnUnsubscribe" {
+			continue
+		}
 		attrs[k] = v
 	}
 	attrs["SubscriptionArn"] = subscription.SubscriptionArn

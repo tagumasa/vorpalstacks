@@ -15,6 +15,11 @@ const (
 	maxReceiveAttemptIdLen = 128
 	maxMessageMoveRate     = 500
 	maxMessagesPerReceive  = 10
+
+	// maxListDeadLetterSourceQueuesResults is the maximum and default value
+	// of the ListDeadLetterSourceQueues MaxResults parameter (AWS SQS API
+	// Reference).
+	maxListDeadLetterSourceQueuesResults = 1000
 )
 
 var (

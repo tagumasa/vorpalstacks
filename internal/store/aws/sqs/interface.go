@@ -19,7 +19,7 @@ type SQSStoreInterface interface {
 	ListQueueTags(queueURL string) (map[string]string, error)
 	TagQueue(queueURL string, tags map[string]string) error
 	UntagQueue(queueURL string, tagKeys []string) error
-	ListDeadLetterSourceQueues(dlqARN string) ([]*Queue, error)
+	ListDeadLetterSourceQueues(dlqARN string, opts common.ListOptions) (*common.ListResult[Queue], error)
 	GetMessageCounts(queueURL string) (visible, notVisible, delayed int32)
 
 	SendMessage(queueURL string, message *Message) (*Message, error)

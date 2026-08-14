@@ -18,6 +18,33 @@ import (
 
 const deduplicationCacheMaxSize = 500
 
+// MessageSize returns the total size of a message in bytes: the body plus
+// every message attribute component (name, data type, and value). Per the
+// Amazon SQS Developer Guide, all components of a message attribute are
+// included in the message size restriction.
+func MessageSize(body string, attrs map[string]*MessageAttributeValue) int {
+	size := len(body)
+	for name, attr := range attrs {
+		size += len(name)
+		if attr == nil {
+			continue
+		}
+		size += len(attr.DataType)
+		if attr.StringValue != nil {
+			size += len(*attr.StringValue)
+		}
+		if attr.BinaryValue != nil {
+			size += len(attr.BinaryValue)
+		}
+	}
+	return size
+}
+
+// messageSize is the message-based convenience wrapper around MessageSize.
+func messageSize(message *Message) int {
+	return MessageSize(message.Body, message.MessageAttributes)
+}
+
 // SendMessage sends a message to the specified queue.
 func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, error) {
 	queue, err := s.GetQueue(queueURL)
@@ -25,8 +52,14 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 		return nil, err
 	}
 
-	if int32(len(message.Body)) > queue.MaximumMessageSize {
+	// All components of a message (body plus attribute names, data types,
+	// and values) count towards the queue's MaximumMessageSize.
+	if int32(messageSize(message)) > queue.MaximumMessageSize {
 		return nil, ErrMessageTooLarge
+	}
+
+	if err := ValidateMessageAttributes(message.MessageAttributes); err != nil {
+		return nil, err
 	}
 
 	if message.DelaySeconds < 0 || message.DelaySeconds > 900 {

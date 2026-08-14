@@ -13,19 +13,9 @@ import (
 
 // messageEntrySize calculates the total byte size of a batch entry for the
 // BatchRequestTooLong check. Includes message body and all attribute data.
+// Delegates to the store helper so the size definition stays singular.
 func messageEntrySize(body string, attrs map[string]*sqsstore.MessageAttributeValue) int {
-	size := len(body)
-	for name, attr := range attrs {
-		size += len(name)
-		size += len(attr.DataType)
-		if attr.StringValue != nil {
-			size += len(*attr.StringValue)
-		}
-		if attr.BinaryValue != nil {
-			size += len(attr.BinaryValue)
-		}
-	}
-	return size
+	return sqsstore.MessageSize(body, attrs)
 }
 
 func convertStoreError(err error) error {
@@ -231,11 +221,10 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 	}
 	message.MessageAttributes = messageAttributes
 
-	// Validate DataType for all message attributes
-	for _, attr := range messageAttributes {
-		if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
-			return nil, convertStoreError(err)
-		}
+	// Validate the complete message attribute set (count, names, data
+	// types) through the single store-layer validator.
+	if err := sqsstore.ValidateMessageAttributes(message.MessageAttributes); err != nil {
+		return nil, convertStoreError(err)
 	}
 
 	// Parse MessageSystemAttributes (only AWSTraceHeader is valid for sends)
@@ -426,10 +415,8 @@ func parseBatchEntriesJSON(jsonEntries []interface{}) ([]*batchSendEntry, error)
 			message.MessageAttributes = msgAttrs
 		}
 
-		for _, attr := range message.MessageAttributes {
-			if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
-				return nil, convertStoreError(err)
-			}
+		if err := sqsstore.ValidateMessageAttributes(message.MessageAttributes); err != nil {
+			return nil, convertStoreError(err)
 		}
 
 		batchTotalSize += messageEntrySize(messageBody, message.MessageAttributes)
@@ -526,10 +513,8 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 			message.MessageAttributes = msgAttrs
 		}
 
-		for _, attr := range msgAttrs {
-			if err := sqsstore.ValidateMessageAttributeDataType(attr.DataType); err != nil {
-				return nil, convertStoreError(err)
-			}
+		if err := sqsstore.ValidateMessageAttributes(msgAttrs); err != nil {
+			return nil, convertStoreError(err)
 		}
 
 		batchTotalSize += messageEntrySize(messageBody, msgAttrs)

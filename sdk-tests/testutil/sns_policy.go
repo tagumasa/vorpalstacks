@@ -127,5 +127,50 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		return AssertErrorContains(err, "NotFound")
 	}))
 
+	// CreateTopic accepts the inline DataProtectionPolicy parameter; the
+	// policy is retrievable via GetDataProtectionPolicy and excluded from
+	// GetTopicAttributes output.
+	results = append(results, r.RunTest("sns", "CreateTopic_InlineDataProtectionPolicy", func() error {
+		policy := `{"Name":"inline-policy","Version":"2021-06-01"}`
+		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
+			Name:                 aws.String(tc.uniqueName("InlineDppTopic")),
+			DataProtectionPolicy: aws.String(policy),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.deleteTopic(*tResp.TopicArn)
+
+		getResp, err := tc.client.GetDataProtectionPolicy(tc.ctx, &sns.GetDataProtectionPolicyInput{
+			ResourceArn: tResp.TopicArn,
+		})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if getResp.DataProtectionPolicy == nil || *getResp.DataProtectionPolicy != policy {
+			return fmt.Errorf("policy mismatch: got %v, want %q", getResp.DataProtectionPolicy, policy)
+		}
+
+		attrsResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
+			TopicArn: tResp.TopicArn,
+		})
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		if _, ok := attrsResp.Attributes["DataProtectionPolicy"]; ok {
+			return fmt.Errorf("DataProtectionPolicy must not appear in GetTopicAttributes")
+		}
+		return nil
+	}))
+
+	// CreateTopic with an invalid JSON DataProtectionPolicy must be rejected.
+	results = append(results, r.RunTest("sns", "CreateTopic_InlineDataProtectionPolicy_InvalidJSON_Rejected", func() error {
+		_, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
+			Name:                 aws.String(tc.uniqueName("BadDppTopic")),
+			DataProtectionPolicy: aws.String("not-json"),
+		})
+		return AssertErrorContains(err, "InvalidParameter")
+	}))
+
 	return results
 }

@@ -2,7 +2,6 @@ package sns
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -67,9 +66,8 @@ func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reques
 		return nil, awserrors.NewInvalidParameterException("DataProtectionPolicy is required")
 	}
 
-	var policyCheck interface{}
-	if err := json.Unmarshal([]byte(policy), &policyCheck); err != nil {
-		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid DataProtectionPolicy: not valid JSON: %s", err.Error()))
+	if err := validateDataProtectionPolicy(policy); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

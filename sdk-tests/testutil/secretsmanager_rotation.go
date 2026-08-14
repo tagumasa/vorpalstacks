@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 )
 
 func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContext) []TestResult {
@@ -88,6 +89,33 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 		}
 		if descResp.RotationEnabled != nil && *descResp.RotationEnabled {
 			return fmt.Errorf("rotation should be disabled after cancel")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "RotateSecret_RotationRules_BothScheduleFields_Rejected", func() error {
+		name := tc.uniqueName("RotBoth")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(name),
+			SecretString: aws.String("rotate-me"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(name)
+
+		_, err = tc.client.RotateSecret(tc.ctx, &secretsmanager.RotateSecretInput{
+			SecretId: aws.String(name),
+			RotationRules: &types.RotationRulesType{
+				AutomaticallyAfterDays: aws.Int64(30),
+				ScheduleExpression:     aws.String("rate(30 days)"),
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error when both AutomaticallyAfterDays and ScheduleExpression are set")
+		}
+		if assertErr := AssertErrorContains(err, "InvalidParameterException"); assertErr != nil {
+			return assertErr
 		}
 		return nil
 	}))

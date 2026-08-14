@@ -192,11 +192,34 @@ func validateTopicName(name string) error {
 	return nil
 }
 
+// validateDataProtectionPolicy validates the DataProtectionPolicy parameter
+// accepted by PutDataProtectionPolicy and inline by CreateTopic. AWS caps the
+// policy at 30,720 bytes and requires a valid JSON document.
+func validateDataProtectionPolicy(policy string) error {
+	if len(policy) > maxTopicAttributeValueLength {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("DataProtectionPolicy value too long: %d characters (maximum %d)", len(policy), maxTopicAttributeValueLength))
+	}
+	var policyCheck interface{}
+	if err := json.Unmarshal([]byte(policy), &policyCheck); err != nil {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid DataProtectionPolicy: not valid JSON: %s", err.Error()))
+	}
+	return nil
+}
+
 // validateTopicAttribute validates well-known topic attributes that have
 // structured values. Unknown attributes pass through without validation
 // (forward-compatible with future AWS additions). All attribute values are
 // capped at maxTopicAttributeValueLength for DoS protection.
 func validateTopicAttribute(name, value string) error {
+	// The DataProtectionPolicy attribute key is reserved: the policy is set
+	// through the CreateTopic input parameter or PutDataProtectionPolicy
+	// only, never through the generic attribute map (SetTopicAttributes or
+	// CreateTopic Attributes), matching the documented attribute sets of
+	// those APIs.
+	if name == "DataProtectionPolicy" {
+		return awserrors.NewInvalidParameterException("DataProtectionPolicy cannot be set via topic attributes; use the DataProtectionPolicy parameter of CreateTopic or the PutDataProtectionPolicy API")
+	}
+
 	// General DoS cap for all topic attribute values.
 	if len(value) > maxTopicAttributeValueLength {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxTopicAttributeValueLength))
@@ -237,9 +260,14 @@ func validateJSONAttribute(name, value string) error {
 
 // validateSubscriptionAttribute validates well-known subscription attributes
 // that have structured values. Unknown attributes pass through without
-// validation (forward-compatible with future AWS additions).
+// validation (forward-compatible with future AWS additions), except for the
+// reserved internal keys below.
 func validateSubscriptionAttribute(name, value string) error {
 	switch name {
+	// AuthenticateOnUnsubscribe is set exclusively through the
+	// ConfirmSubscription input parameter; it is not a writable attribute.
+	case "AuthenticateOnUnsubscribe":
+		return awserrors.NewInvalidParameterException("AuthenticateOnUnsubscribe cannot be set via SetSubscriptionAttributes; it is set when confirming the subscription")
 	case "FilterPolicy":
 		return validateFilterPolicy(value)
 	case "FilterPolicyScope":

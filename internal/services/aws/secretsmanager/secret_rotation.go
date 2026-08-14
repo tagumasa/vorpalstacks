@@ -101,15 +101,7 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	automaticallyAfterDays := nestedInt(rotationRulesRaw, "AutomaticallyAfterDays")
 	scheduleExpression := nestedString(rotationRulesRaw, "ScheduleExpression")
 	duration := nestedString(rotationRulesRaw, "Duration")
-	if automaticallyAfterDays > 0 {
-		if err := validateAutomaticallyAfterDays(automaticallyAfterDays); err != nil {
-			return nil, err
-		}
-	}
-	if err := validateScheduleExpression(scheduleExpression); err != nil {
-		return nil, err
-	}
-	if err := validateDuration(duration); err != nil {
+	if err := validateRotationRules(automaticallyAfterDays, scheduleExpression, duration); err != nil {
 		return nil, err
 	}
 

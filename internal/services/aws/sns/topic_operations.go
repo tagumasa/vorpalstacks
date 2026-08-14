@@ -27,6 +27,8 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 		Name:       request.GetParamLowerFirst(req.Parameters, "Name"),
 		Attributes: parseAttributes(req.Parameters),
 		Tags:       tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
+
+		DataProtectionPolicy: request.GetParamLowerFirst(req.Parameters, "DataProtectionPolicy"),
 	}
 
 	result, err := s.createTopicCore(store, in)
