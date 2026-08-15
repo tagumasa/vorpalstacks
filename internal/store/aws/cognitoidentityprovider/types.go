@@ -546,6 +546,10 @@ type ChallengeSession struct {
 	// WEB_AUTHN_REGISTRATION: the WebAuthn challenge that the client must sign
 	// with their authenticator).
 	ChallengeData string `json:"challengeData,omitempty"`
+	// FailedAttempts counts wrong verification answers accepted for this
+	// session. Sessions exceeding the attempt budget are invalidated so
+	// short numeric codes cannot be brute-forced within one session.
+	FailedAttempts int `json:"failedAttempts,omitempty"`
 }
 
 func generateToken() string {

@@ -51,6 +51,10 @@ type IoTService struct {
 	throttle    *throttleLimiter
 	once        sync.Once
 	initialised bool
+	// registrationCodeMu serialises the lazy creation of the per-account
+	// registration code so concurrent first callers cannot mint different
+	// codes when only the last write persists.
+	registrationCodeMu sync.Mutex
 }
 
 // throttleLimiter provides a simple sliding-window rate limiter for

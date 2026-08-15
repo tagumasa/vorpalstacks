@@ -2,9 +2,9 @@ package cloudwatch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -12,16 +12,14 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/pkg/metricmath"
 )
 
 const (
 	// defaultEvalInterval is the default tick interval for the alarm
-	// evaluator loop. One minute matches the minimum configurable alarm
-	// Period, ensuring no evaluation window is missed.
+	// evaluator loop. Alarms with a Period shorter than the tick are
+	// evaluated once per completed period boundary (see
+	// evaluateAlarmJob), so sub-minute periods do not miss windows.
 	defaultEvalInterval = 60 * time.Second
 
 	// testEvalInterval is the tick interval used when TEST_MODE is enabled.
@@ -59,6 +57,13 @@ type alarmEvaluator struct {
 	interval time.Duration
 	workers  int
 	logger   logs.Logger
+
+	// subMinuteMu guards lastEvaluated, the per-alarm watermark of the
+	// last completed period boundary already evaluated. It is only used
+	// for alarms whose Period is shorter than the tick interval, where a
+	// single window per tick would skip periods.
+	subMinuteMu   sync.Mutex
+	lastEvaluated map[string]time.Time
 }
 
 // newAlarmEvaluator creates a new alarm evaluator with the given tick
@@ -75,9 +80,10 @@ func newAlarmEvaluator(interval time.Duration, workers int, logger logs.Logger) 
 		workers = defaultEvalWorkers
 	}
 	return &alarmEvaluator{
-		interval: interval,
-		workers:  workers,
-		logger:   logger,
+		interval:      interval,
+		workers:       workers,
+		logger:        logger,
+		lastEvaluated: make(map[string]time.Time),
 	}
 }
 
@@ -156,6 +162,7 @@ func (e *alarmEvaluator) evaluateAllForRegion(ctx context.Context, s *CloudWatch
 		e.log("failed to list alarms for evaluation", "error", err)
 		return
 	}
+	e.pruneWatermarks(region, alarms)
 
 	metricAlarms := make([]*cwstore.Alarm, 0, len(alarms))
 	compositeAlarms := make([]*cwstore.Alarm, 0)
@@ -168,7 +175,7 @@ func (e *alarmEvaluator) evaluateAllForRegion(ctx context.Context, s *CloudWatch
 	}
 
 	if len(metricAlarms) > 0 {
-		e.evaluateMetricAlarms(ctx, s, metricAlarms, metricStore, alarmStore, muteRuleStore)
+		e.evaluateMetricAlarms(ctx, s, region, metricAlarms, metricStore, alarmStore, muteRuleStore)
 	}
 
 	if len(compositeAlarms) > 0 {
@@ -176,7 +183,7 @@ func (e *alarmEvaluator) evaluateAllForRegion(ctx context.Context, s *CloudWatch
 	}
 }
 
-func (e *alarmEvaluator) evaluateMetricAlarms(ctx context.Context, s *CloudWatchService, alarms []*cwstore.Alarm, metricStore *cwstore.MetricChunkStore, alarmStore *cwstore.AlarmStore, muteRuleStore *cwstore.AlarmMuteRuleStore) {
+func (e *alarmEvaluator) evaluateMetricAlarms(ctx context.Context, s *CloudWatchService, region string, alarms []*cwstore.Alarm, metricStore *cwstore.MetricChunkStore, alarmStore *cwstore.AlarmStore, muteRuleStore *cwstore.AlarmMuteRuleStore) {
 	type evalJob struct {
 		alarm *cwstore.Alarm
 	}
@@ -193,7 +200,7 @@ func (e *alarmEvaluator) evaluateMetricAlarms(ctx context.Context, s *CloudWatch
 			defer wg.Done()
 			defer func() { resilience.RecoverPanic("cloudwatch alarm evaluator worker") }()
 			for job := range jobs {
-				result := evaluateAlarm(job.alarm, metricStore)
+				result := e.evaluateAlarmJob(region, job.alarm, metricStore)
 				if result == nil {
 					continue
 				}
@@ -202,6 +209,81 @@ func (e *alarmEvaluator) evaluateMetricAlarms(ctx context.Context, s *CloudWatch
 		}()
 	}
 	wg.Wait()
+}
+
+// watermarkKey scopes a sub-minute evaluation watermark to the alarm's
+// region: alarm names are unique per region only, so a name-only key would
+// let same-named alarms in different regions starve each other.
+func watermarkKey(region, alarmName string) string {
+	return region + "/" + alarmName
+}
+
+// pruneWatermarks drops this region's sub-minute evaluation watermarks for
+// alarms that no longer exist, so the map stays bounded and a recreated
+// alarm does not resume from a stale boundary.
+func (e *alarmEvaluator) pruneWatermarks(region string, alarms []*cwstore.Alarm) {
+	live := make(map[string]bool, len(alarms))
+	for _, a := range alarms {
+		live[watermarkKey(region, a.Name)] = true
+	}
+	prefix := region + "/"
+	e.subMinuteMu.Lock()
+	for k := range e.lastEvaluated {
+		if strings.HasPrefix(k, prefix) && !live[k] {
+			delete(e.lastEvaluated, k)
+		}
+	}
+	e.subMinuteMu.Unlock()
+}
+
+// evaluateAlarmJob evaluates one alarm per tick. Alarms whose Period is at
+// least the tick interval evaluate the most recent completed window. Alarms
+// with a shorter Period (10, 20 or 30 seconds against the 60-second default
+// tick) get one evaluation per completed period boundary since their last
+// evaluation, mirroring AWS's per-period evaluation, so no period window is
+// skipped. It returns on the first state transition; the watermark advances
+// to the boundary that produced it.
+func (e *alarmEvaluator) evaluateAlarmJob(region string, alarm *cwstore.Alarm, metricStore *cwstore.MetricChunkStore) *alarmEvalResult {
+	if alarm.Period <= 0 || time.Duration(alarm.Period)*time.Second >= e.interval {
+		return evaluateAlarm(alarm, metricStore)
+	}
+
+	period := time.Duration(alarm.Period) * time.Second
+	now := time.Now().UTC()
+	endTime := now.Truncate(period)
+	key := watermarkKey(region, alarm.Name)
+
+	e.subMinuteMu.Lock()
+	last, tracked := e.lastEvaluated[key]
+	e.subMinuteMu.Unlock()
+
+	if tracked && !last.Before(endTime) {
+		// No new period boundary completed since the last tick.
+		return nil
+	}
+	if !tracked {
+		// First evaluation after startup: cover only the most recent
+		// window; older boundaries predate this process's watch.
+		result := evaluateAlarmWindow(alarm, metricStore, endTime)
+		e.setWatermark(key, endTime)
+		return result
+	}
+
+	for b := last.Add(period); !b.After(endTime); b = b.Add(period) {
+		result := evaluateAlarmWindow(alarm, metricStore, b)
+		if result != nil {
+			e.setWatermark(key, b)
+			return result
+		}
+	}
+	e.setWatermark(key, endTime)
+	return nil
+}
+
+func (e *alarmEvaluator) setWatermark(alarmName string, boundary time.Time) {
+	e.subMinuteMu.Lock()
+	e.lastEvaluated[alarmName] = boundary
+	e.subMinuteMu.Unlock()
 }
 
 func (e *alarmEvaluator) evaluateCompositeAlarms(ctx context.Context, s *CloudWatchService, composites []*cwstore.Alarm, alarmStore *cwstore.AlarmStore, muteRuleStore *cwstore.AlarmMuteRuleStore) {
@@ -248,11 +330,18 @@ func (e *alarmEvaluator) evaluateCompositeAlarms(ctx context.Context, s *CloudWa
 
 	// Topological sort using Kahn's algorithm. Process in levels so that
 	// all alarms at the same level (no inter-dependencies) can be
-	// evaluated in a single pass.
-	ordered, err := topologicalSortLevels(dependencies)
-	if err != nil {
-		e.log("failed to topologically sort composite alarms", "error", err)
-		return
+	// evaluated in a single pass. Nodes on (or downstream of) a cycle are
+	// returned separately: creation-time validation should keep cycles
+	// out, but a stray cycle must only skip its own alarms, not abort the
+	// whole region's composite evaluation.
+	ordered, cyclic := topologicalSortLevels(dependencies)
+	if len(cyclic) > 0 {
+		sort.Strings(cyclic)
+		e.log("skipping composite alarms in a dependency cycle", "alarms", cyclic)
+	}
+	cyclicSet := make(map[string]bool, len(cyclic))
+	for _, name := range cyclic {
+		cyclicSet[name] = true
 	}
 
 	// Fetch all alarm states once and build a lookup map. This avoids
@@ -269,6 +358,9 @@ func (e *alarmEvaluator) evaluateCompositeAlarms(ctx context.Context, s *CloudWa
 
 	for _, level := range ordered {
 		for _, name := range level {
+			if cyclicSet[name] {
+				continue
+			}
 			alarm := nameToComposite[name]
 			if alarm == nil {
 				continue
@@ -282,859 +374,13 @@ func (e *alarmEvaluator) evaluateCompositeAlarms(ctx context.Context, s *CloudWa
 				continue
 			}
 			s.handleAlarmStateTransition(ctx, result, alarmStore, muteRuleStore)
+			// Refresh the shared state map so composites on deeper
+			// levels evaluate against this level's fresh state instead
+			// of the pre-tick snapshot; otherwise a multi-level
+			// escalation always lags one tick behind.
+			alarmStateMap[name] = result.newState
 		}
 	}
-}
-
-// evaluateCompositeAlarm evaluates a composite alarm by parsing its
-// AlarmRule expression, looking up the current state of all referenced
-// child alarms, and evaluating the boolean expression. Returns nil when
-// no state transition is needed.
-func evaluateCompositeAlarm(alarm *cwstore.Alarm, rule alarmRuleNode, alarmStateMap map[string]string) *alarmEvalResult {
-	childNames := rule.childAlarmNames()
-
-	// Build a map of alarm name -> is-in-ALARM-state using the
-	// pre-fetched state map.
-	alarmStates := make(map[string]bool, len(childNames))
-	for _, name := range childNames {
-		state := alarmStateMap[name]
-		alarmStates[name] = state == "ALARM"
-	}
-
-	isBreaching := rule.evaluate(alarmStates)
-
-	oldState := alarm.State
-	var newState string
-	var reason string
-
-	allInsufficientData := true
-	for _, name := range childNames {
-		if alarmStateMap[name] != "INSUFFICIENT_DATA" {
-			allInsufficientData = false
-			break
-		}
-	}
-
-	if isBreaching {
-		newState = "ALARM"
-		reason = fmt.Sprintf("Composite alarm rule evaluated to ALARM (was %s).", oldState)
-	} else if allInsufficientData && len(childNames) > 0 {
-		newState = "INSUFFICIENT_DATA"
-		reason = fmt.Sprintf("All referenced alarms are in INSUFFICIENT_DATA state (was %s).", oldState)
-	} else {
-		newState = "OK"
-		reason = fmt.Sprintf("Composite alarm rule evaluated to OK (was %s).", oldState)
-	}
-
-	if newState == oldState {
-		return nil
-	}
-
-	var actionsToFire []string
-	switch newState {
-	case "ALARM":
-		actionsToFire = alarm.AlarmActions
-	case "OK":
-		actionsToFire = alarm.OKActions
-	case "INSUFFICIENT_DATA":
-		actionsToFire = alarm.InsufficientDataActions
-	}
-
-	return &alarmEvalResult{
-		alarm:         alarm,
-		oldState:      oldState,
-		newState:      newState,
-		breachCount:   0,
-		reason:        reason,
-		actionsToFire: actionsToFire,
-	}
-}
-
-// topologicalSortLevels performs a level-by-level topological sort using
-// Kahn's algorithm. The input is a map of node → nodes-it-depends-on
-// (i.e., nodes that must be evaluated before it). The output is a slice
-// of levels, where each level contains nodes that can be evaluated in
-// parallel. Returns an error if the graph contains a cycle.
-func topologicalSortLevels(dependencies map[string][]string) ([][]string, error) {
-	inDegree := make(map[string]int)
-	dependents := make(map[string][]string)
-
-	for node := range dependencies {
-		if _, exists := inDegree[node]; !exists {
-			inDegree[node] = 0
-		}
-		for _, dep := range dependencies[node] {
-			if _, exists := inDegree[dep]; !exists {
-				inDegree[dep] = 0
-			}
-			inDegree[node]++
-			dependents[dep] = append(dependents[dep], node)
-		}
-	}
-
-	var levels [][]string
-	for {
-		var level []string
-		for node, deg := range inDegree {
-			if deg == 0 {
-				level = append(level, node)
-			}
-		}
-		if len(level) == 0 {
-			break
-		}
-		for _, node := range level {
-			delete(inDegree, node)
-		}
-		for _, node := range level {
-			for _, dependent := range dependents[node] {
-				if _, exists := inDegree[dependent]; exists {
-					inDegree[dependent]--
-				}
-			}
-		}
-		levels = append(levels, level)
-	}
-
-	if len(inDegree) > 0 {
-		var cyclic []string
-		for node := range inDegree {
-			cyclic = append(cyclic, node)
-		}
-		return nil, fmt.Errorf("cyclic dependency detected among composite alarms: %v", cyclic)
-	}
-
-	return levels, nil
-}
-
-// statistics for the alarm's configured namespace, metric name, dimensions,
-// period, and statistic. It then compares the returned data points against
-// the alarm's threshold and comparison operator.
-//
-// Returns nil when no state transition is needed.
-// evaluateMetricMathAlarm evaluates an alarm that uses a Metrics array
-// (metric math). It executes all MetricDataQuery entries, resolves
-// Expression queries via the metricmath engine, and compares the
-// ThresholdMetricId result against the alarm threshold.
-func evaluateMetricMathAlarm(alarm *cwstore.Alarm, metricStore *cwstore.MetricChunkStore) *alarmEvalResult {
-	now := time.Now().UTC()
-	endTime := now.Truncate(time.Duration(alarm.Period) * time.Second)
-	if endTime.After(now) {
-		endTime = now
-	}
-	startTime := endTime.Add(-time.Duration(alarm.Period*alarm.EvaluationPeriods) * time.Second)
-
-	queryResults := make(map[string][]metricmath.DataPoint)
-	exprPending := make(map[string]*cwstore.MetricDataQuery)
-
-	for i := range alarm.Metrics {
-		q := &alarm.Metrics[i]
-		if q.MetricStat != nil {
-			statLower := strings.ToLower(q.MetricStat.Stat)
-			isExtended := !isBasicStatistic(statLower)
-
-			mq := cwstore.MetricQuery{
-				Namespace:  q.MetricStat.Metric.Namespace,
-				MetricName: q.MetricStat.Metric.MetricName,
-				Dimensions: q.MetricStat.Metric.Dimensions,
-				StartTime:  startTime,
-				EndTime:    endTime,
-				Period:     q.MetricStat.Period,
-			}
-			if isExtended {
-				mq.ExtendedStatistics = []string{q.MetricStat.Stat}
-			} else {
-				mq.Statistics = []string{q.MetricStat.Stat}
-			}
-			stats, err := metricStore.GetMetricStatistics(mq)
-			if err != nil {
-				continue
-			}
-			dataPoints := make([]metricmath.DataPoint, 0, len(stats))
-			for _, s := range stats {
-				val := extractStatValue(s, statLower, q.MetricStat.Stat, isExtended)
-				dataPoints = append(dataPoints, metricmath.DataPoint{Timestamp: s.Timestamp, Value: val})
-			}
-			queryResults[q.Id] = dataPoints
-		} else if q.Expression != "" {
-			exprPending[q.Id] = q
-		}
-	}
-
-	for len(exprPending) > 0 {
-		progress := false
-		for id, q := range exprPending {
-			ast, err := metricmath.Parse(q.Expression)
-			if err != nil {
-				delete(exprPending, id)
-				continue
-			}
-			refs := ast.References()
-			ready := true
-			for _, ref := range refs {
-				if _, ok := queryResults[ref]; !ok {
-					if _, isExpr := exprPending[ref]; isExpr {
-						ready = false
-						break
-					}
-				}
-			}
-			if !ready {
-				continue
-			}
-			result, err := ast.Eval(queryResults)
-			if err == nil {
-				queryResults[id] = result
-			}
-			delete(exprPending, id)
-			progress = true
-		}
-		if !progress {
-			break
-		}
-	}
-
-	thresholdData, ok := queryResults[alarm.ThresholdMetricID]
-	if !ok || len(thresholdData) == 0 {
-		return determineStateTransition(alarm, 0, 0)
-	}
-
-	breachCount := 0
-	for _, dp := range thresholdData {
-		if dp.Timestamp.Before(startTime) || dp.Timestamp.After(endTime) {
-			continue
-		}
-		if isBreaching(dp.Value, alarm.Threshold, alarm.ComparisonOperator) {
-			breachCount++
-		}
-	}
-	return determineStateTransition(alarm, breachCount, len(thresholdData))
-}
-
-// checkActionsSuppressor evaluates whether a composite alarm's actions
-// should be suppressed based on its ActionsSuppressor configuration. The
-// suppressor alarm must be in ALARM state for at least WaitPeriod seconds
-// before suppression begins. After the suppressor transitions out of ALARM,
-// suppression continues for ExtensionPeriod seconds.
-//
-// Returns (true, reason) if actions should be suppressed.
-func checkActionsSuppressor(alarm *cwstore.Alarm, alarmStore *cwstore.AlarmStore) (bool, string) {
-	suppressorName := extractAlarmNameFromARN(alarm.ActionsSuppressor)
-	if suppressorName == "" {
-		suppressorName = alarm.ActionsSuppressor
-	}
-
-	suppressor, err := alarmStore.GetAlarm(suppressorName)
-	if err != nil || suppressor == nil {
-		return false, ""
-	}
-
-	now := time.Now().UTC()
-	if suppressor.State == "ALARM" {
-		waitDuration := time.Duration(alarm.ActionsSuppressorWaitPeriod) * time.Second
-		if now.Sub(suppressor.StateUpdatedTimestamp) >= waitDuration {
-			return true, "WaitPeriod"
-		}
-	} else {
-		extDuration := time.Duration(alarm.ActionsSuppressorExtPeriod) * time.Second
-		if extDuration > 0 && now.Sub(suppressor.StateUpdatedTimestamp) < extDuration {
-			return true, "ExtensionPeriod"
-		}
-	}
-	return false, ""
-}
-
-// extractAlarmNameFromARN extracts the alarm name from a CloudWatch alarm
-// ARN. Returns empty string if the ARN format is not recognised.
-func extractAlarmNameFromARN(arn string) string {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
-		return ""
-	}
-	resource := parts[5]
-	if strings.HasPrefix(resource, "alarm:") {
-		return strings.TrimPrefix(resource, "alarm:")
-	}
-	return ""
-}
-
-// evaluateAlarm performs a single alarm evaluation by querying metric
-// statistics for the alarm's configured namespace, metric name, dimensions,
-// period, and statistic. It then compares the returned data points against
-// the alarm's threshold and comparison operator.
-//
-// When the alarm has a Metrics array (metric math alarm), the queries are
-// executed in dependency order and the ThresholdMetricId result is used.
-//
-// Returns nil when no state transition is needed.
-func evaluateAlarm(alarm *cwstore.Alarm, metricStore *cwstore.MetricChunkStore) *alarmEvalResult {
-	// Anomaly detection alarms: when the Metrics array contains an
-	// ANOMALY_DETECTION_BAND expression and the ComparisonOperator is
-	// one of the anomaly operators, use the band evaluation path.
-	if len(alarm.Metrics) > 0 && hasAnomalyDetectionBand(alarm.Metrics) {
-		breachCount, totalDataPoints := evaluateAnomalyBandAlarm(alarm, metricStore)
-		return determineStateTransition(alarm, breachCount, totalDataPoints)
-	}
-
-	if len(alarm.Metrics) > 0 && alarm.ThresholdMetricID != "" {
-		return evaluateMetricMathAlarm(alarm, metricStore)
-	}
-
-	now := time.Now().UTC()
-	endTime := now.Truncate(time.Duration(alarm.Period) * time.Second)
-	if endTime.After(now) {
-		endTime = now
-	}
-	startTime := endTime.Add(-time.Duration(alarm.Period*alarm.EvaluationPeriods) * time.Second)
-
-	query := cwstore.MetricQuery{
-		Namespace:  alarm.Namespace,
-		MetricName: alarm.MetricName,
-		Dimensions: alarm.Dimensions,
-		StartTime:  startTime,
-		EndTime:    endTime,
-		Period:     alarm.Period,
-		Statistics: []string{alarm.Statistic},
-	}
-
-	// When ExtendedStatistic is set (e.g. p90, p99), request it instead.
-	if alarm.ExtendedStatistic != "" {
-		query.Statistics = nil
-		query.ExtendedStatistics = []string{alarm.ExtendedStatistic}
-	}
-
-	stats, err := metricStore.GetMetricStatistics(query)
-	if err != nil {
-		return nil
-	}
-
-	breachCount := countBreaches(alarm, stats, startTime, endTime)
-
-	return determineStateTransition(alarm, breachCount, len(stats))
-}
-
-// countBreaches iterates over the aggregated statistics returned by
-// GetMetricStatistics and counts how many period buckets breach the
-// alarm's threshold. Each period bucket is expected to contain at most
-// one aggregated data point.
-func countBreaches(alarm *cwstore.Alarm, stats []*cwstore.MetricStatistics, startTime, endTime time.Time) int {
-	if len(stats) == 0 {
-		return 0
-	}
-
-	breaches := 0
-
-	for _, s := range stats {
-		if s.Timestamp.Before(startTime) || s.Timestamp.After(endTime) {
-			continue
-		}
-
-		var value float64
-		if alarm.ExtendedStatistic != "" {
-			value = statisticValue(s, alarm.ExtendedStatistic)
-		} else {
-			value = statisticValue(s, alarm.Statistic)
-		}
-		if isBreaching(value, alarm.Threshold, alarm.ComparisonOperator) {
-			breaches++
-		}
-	}
-
-	return breaches
-}
-
-// statisticValue extracts the requested statistic (e.g. "Average", "Sum")
-// from a MetricStatistics struct. For extended statistics (percentiles),
-// the value is looked up from ExtendedStats.
-func statisticValue(stats *cwstore.MetricStatistics, statistic string) float64 {
-	if stats.ExtendedStats != nil {
-		if v, ok := stats.ExtendedStats[statistic]; ok {
-			return v
-		}
-	}
-	switch strings.ToLower(statistic) {
-	case "sum":
-		return stats.Sum
-	case "average":
-		return stats.Average
-	case "minimum":
-		return stats.Minimum
-	case "maximum":
-		return stats.Maximum
-	case "samplecount":
-		return stats.SampleCount
-	}
-	return stats.Average
-}
-
-// isBreaching returns true when the given metric value satisfies the
-// alarm's comparison operator against the threshold.
-func isBreaching(value, threshold float64, operator string) bool {
-	switch operator {
-	case "GreaterThanOrEqualToThreshold":
-		return value >= threshold
-	case "GreaterThanThreshold":
-		return value > threshold
-	case "LessThanOrEqualToThreshold":
-		return value <= threshold
-	case "LessThanThreshold":
-		return value < threshold
-	case "LessThanLowerOrGreaterThanUpperThreshold":
-		// Anomaly detection: value is breaching if outside the band.
-		// Threshold represents the band boundary; without a full anomaly
-		// model this falls back to a simple less-than check.
-		return value < threshold
-	case "LessThanLowerThreshold":
-		return value < threshold
-	case "GreaterThanUpperThreshold":
-		return value > threshold
-	default:
-		return value >= threshold
-	}
-}
-
-// determineStateTransition computes the new alarm state based on the
-// number of breaching data points, the total number of evaluation periods,
-// and the alarm's TreatMissingData configuration. When fewer data points
-// than EvaluationPeriods are returned, the missing periods are handled
-// according to TreatMissingData: "missing" and "breaching" treat them as
-// breaching; "ignore" and "notBreaching" treat them as not breaching.
-// Returns nil when the state has not changed.
-func determineStateTransition(alarm *cwstore.Alarm, breachCount int, totalDataPoints int) *alarmEvalResult {
-	oldState := alarm.State
-	totalPeriods := int(alarm.EvaluationPeriods)
-	datapointsToAlarm := int(alarm.DatapointsToAlarm)
-	if datapointsToAlarm == 0 {
-		datapointsToAlarm = totalPeriods
-	}
-
-	missingPeriods := totalPeriods - totalDataPoints
-	if missingPeriods < 0 {
-		missingPeriods = 0
-	}
-
-	// Per AWS docs, TreatMissingData controls how missing data points are
-	// filled in when fewer real data points than EvaluationPeriods exist:
-	//   "breaching"  — missing periods count as breaching
-	//   "notBreaching" — missing periods count as not breaching
-	//   "ignore"     — missing periods don't affect evaluation; maintain state
-	//   "missing"    — missing periods don't count as breaching; if ALL data
-	//                  points are missing, transition to INSUFFICIENT_DATA
-	var effectiveBreaches int
-	switch alarm.TreatMissingData {
-	case "ignore", "notBreaching", "missing":
-		effectiveBreaches = breachCount
-	case "breaching":
-		effectiveBreaches = breachCount + missingPeriods
-	default:
-		effectiveBreaches = breachCount + missingPeriods
-	}
-
-	var newState string
-	var reason string
-
-	switch {
-	case effectiveBreaches >= datapointsToAlarm:
-		newState = "ALARM"
-		reason = fmt.Sprintf("Threshold Crossed: %d datapoints [%s] %s %v (threshold %v).",
-			effectiveBreaches, alarm.Statistic, operatorPhrase(alarm.ComparisonOperator), alarm.Threshold, alarm.Threshold)
-
-	case totalDataPoints == 0 && alarm.TreatMissingData == "missing":
-		newState = "INSUFFICIENT_DATA"
-		reason = fmt.Sprintf("Insufficient Metrics for %d datapoints. TreatMissingData=%s transitions to INSUFFICIENT_DATA.",
-			missingPeriods, alarm.TreatMissingData)
-
-	case alarm.TreatMissingData == "ignore" && totalDataPoints == 0:
-		// For "ignore", retain the current state when ALL data points
-		// are missing. If any real data points exist, evaluate normally.
-		return nil
-
-	default:
-		newState = "OK"
-		reason = fmt.Sprintf("Threshold Crossed: %d out of %d datapoints were not breaching.",
-			totalPeriods-effectiveBreaches, totalPeriods)
-	}
-
-	if newState == oldState {
-		return nil
-	}
-
-	var actionsToFire []string
-	switch newState {
-	case "ALARM":
-		actionsToFire = alarm.AlarmActions
-	case "OK":
-		actionsToFire = alarm.OKActions
-	case "INSUFFICIENT_DATA":
-		actionsToFire = alarm.InsufficientDataActions
-	}
-
-	return &alarmEvalResult{
-		alarm:         alarm,
-		oldState:      oldState,
-		newState:      newState,
-		breachCount:   effectiveBreaches,
-		reason:        reason,
-		actionsToFire: actionsToFire,
-	}
-}
-
-// isAlarmMuted checks if any ACTIVE alarm mute rule targets the given
-// alarm name using the per-region mute rule store. Returns false if the
-// mute rule store is unavailable.
-func isAlarmMuted(alarmName string, muteRuleStore *cwstore.AlarmMuteRuleStore) bool {
-	if muteRuleStore == nil {
-		return false
-	}
-	return muteRuleStore.IsAlarmMuted(alarmName)
-}
-
-// handleAlarmStateTransition is called when the evaluator detects an alarm
-// state change. It updates the alarm state in the store, records alarm
-// history, publishes a CloudWatchAlarmStateEvent via the event bus, and
-// dispatches alarm actions to SNS topics and Lambda functions.
-func (s *CloudWatchService) handleAlarmStateTransition(ctx context.Context, result *alarmEvalResult, alarmStore *cwstore.AlarmStore, muteRuleStore *cwstore.AlarmMuteRuleStore) {
-	alarm := result.alarm
-
-	if err := alarmStore.SetAlarmState(alarm.Name, result.newState, result.reason, ""); err != nil {
-		s.log("failed to set alarm state", "alarm", alarm.Name, "new_state", result.newState, "error", err)
-		return
-	}
-
-	historyType := cwstore.AlarmTypeMetricAlarm
-	if alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
-		historyType = cwstore.AlarmTypeCompositeAlarm
-	}
-
-	if err := alarmStore.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
-		AlarmName:       alarm.Name,
-		AlarmType:       historyType,
-		Timestamp:       time.Now().UTC().UnixMilli(),
-		HistoryItemType: cwstore.HistoryItemTypeStateUpdate,
-		HistorySummary:  result.reason,
-	}); err != nil {
-		s.log("failed to add alarm history", "alarm", alarm.Name, "error", err)
-	}
-
-	if !alarm.ActionsEnabled {
-		return
-	}
-
-	// Alarm Mute Rules: if any ACTIVE mute rule targets this alarm,
-	// suppress all alarm actions.
-	if isAlarmMuted(result.alarm.Name, muteRuleStore) {
-		return
-	}
-
-	// ActionsSuppressor: when the suppressor alarm is in ALARM state and
-	// has been so for at least ActionsSuppressorWaitPeriod seconds, the
-	// composite alarm's actions are suppressed. When the suppressor
-	// transitions out of ALARM, suppression continues for
-	// ActionsSuppressorExtensionPeriod seconds.
-	if alarm.ActionsSuppressor != "" {
-		if suppressed, reason := checkActionsSuppressor(alarm, alarmStore); suppressed {
-			if err := alarmStore.SetAlarmActionsSuppressed(alarm.Name, reason); err != nil {
-				s.log("failed to set actions suppressed", "alarm", alarm.Name, "error", err)
-			}
-			result.actionsToFire = nil
-		}
-	}
-
-	s.publishAlarmStateEvent(ctx, result)
-	s.dispatchAlarmActions(ctx, result)
-}
-
-// publishAlarmStateEvent publishes a CloudWatchAlarmStateEvent to the
-// event bus. The event carries the alarm ARN, previous state, new state,
-// and the reason for the transition.
-func (s *CloudWatchService) publishAlarmStateEvent(ctx context.Context, result *alarmEvalResult) {
-	if s.bus == nil {
-		return
-	}
-
-	_, _, alarmRegion, _, _ := svcarn.SplitARN(result.alarm.ARN)
-	if alarmRegion == "" {
-		alarmRegion = s.region
-	}
-
-	evt := &eventbus.CloudWatchAlarmStateEvent{
-		EventBase: eventbus.EventBase{
-			Timestamp: time.Now().UTC(),
-			Source:    "aws:cloudwatch",
-			Region:    alarmRegion,
-			AccountID: s.accountID,
-			Caller: eventbus.CallerContext{
-				ServicePrincipal: "cloudwatch.amazonaws.com",
-				AccountID:        s.accountID,
-			},
-		},
-		AlarmName:     result.alarm.Name,
-		AlarmARN:      result.alarm.ARN,
-		PreviousState: result.oldState,
-		NewState:      result.newState,
-		Reason:        result.reason,
-	}
-
-	if err := s.bus.Publish(ctx, evt); err != nil {
-		logs.Warn("failed to publish alarm state change event", logs.String("alarmName", result.alarm.Name), logs.Err(err))
-	}
-}
-
-// dispatchAlarmActions iterates over the action ARNs for the new state and
-// dispatches notifications to SNS topics (via the event bus) and Lambda
-// functions (via the direct invoker). Region and account ID are extracted
-// from each action ARN to support cross-region alarm actions.
-func (s *CloudWatchService) dispatchAlarmActions(ctx context.Context, result *alarmEvalResult) {
-	for _, actionArn := range result.actionsToFire {
-		switch svcarn.GetServiceFromARN(actionArn) {
-		case "sns":
-			s.dispatchAlarmToSNS(ctx, actionArn, result)
-		case "lambda":
-			s.dispatchAlarmToLambda(ctx, actionArn, result)
-		case "states":
-			s.dispatchAlarmToStepFunctions(ctx, actionArn, result)
-		case "sqs":
-			s.dispatchAlarmToSQS(ctx, actionArn, result)
-		}
-	}
-}
-
-// dispatchAlarmToSNS publishes the alarm state change notification to an
-// SNS topic via the event bus. Region and account ID are extracted from the
-// topic ARN.
-func (s *CloudWatchService) dispatchAlarmToSNS(ctx context.Context, topicArn string, result *alarmEvalResult) {
-	if s.bus == nil {
-		return
-	}
-
-	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, topicArn, "sns", "cloudwatch.amazonaws.com", "sns:Publish", topicArn)
-	if evalErr != nil {
-		s.log("resource policy evaluation failed for alarm SNS delivery, dropping notification", "topicArn", topicArn, "error", evalErr)
-		return
-	}
-	if !allowed {
-		return
-	}
-
-	_, _, region, accountID, _ := svcarn.SplitARN(topicArn)
-	messageID := fmt.Sprintf("%d", time.Now().UnixNano())
-
-	payload := buildAlarmNotificationPayload(result)
-	messageBytes, _ := json.Marshal(payload)
-
-	snsEvt := &eventbus.SNSDeliveryEvent{
-		EventBase: eventbus.EventBase{
-			Timestamp: time.Now().UTC(),
-			Source:    "aws:cloudwatch",
-			Region:    region,
-			AccountID: accountID,
-			Caller: eventbus.CallerContext{
-				ServicePrincipal: "cloudwatch.amazonaws.com",
-				AccountID:        accountID,
-			},
-		},
-		TopicARN:  topicArn,
-		MessageID: messageID,
-		Message:   string(messageBytes),
-		Subject:   fmt.Sprintf("ALARM: \"%s\" in %s", result.alarm.Name, result.newState),
-	}
-	snsEvt.Region = region
-
-	if err := s.bus.Publish(ctx, snsEvt); err != nil {
-		logs.Warn("failed to publish alarm SNS notification", logs.String("alarmName", result.alarm.Name), logs.Err(err))
-	}
-}
-
-// dispatchAlarmToLambda invokes a Lambda function with the alarm state
-// change notification payload. The function name is extracted from the
-// function ARN.
-func (s *CloudWatchService) dispatchAlarmToLambda(ctx context.Context, functionArn string, result *alarmEvalResult) {
-	if s.bus == nil {
-		return
-	}
-
-	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "cloudwatch.amazonaws.com", "lambda:InvokeFunction", functionArn)
-	if evalErr != nil {
-		s.log("resource policy evaluation failed for alarm Lambda delivery, dropping notification", "functionArn", functionArn, "error", evalErr)
-		return
-	}
-	if !allowed {
-		return
-	}
-
-	fnName := svcarn.ExtractFunctionNameFromARN(functionArn)
-	payload := buildAlarmNotificationPayload(result)
-	payloadBytes, _ := json.Marshal(payload)
-
-	_, _, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, functionArn, payloadBytes)
-	if err != nil {
-		s.log("lambda dispatch failed for alarm action", "alarm", result.alarm.Name, "function", fnName, "error", err)
-	}
-}
-
-func (s *CloudWatchService) dispatchAlarmToStepFunctions(ctx context.Context, stateMachineArn string, result *alarmEvalResult) {
-	if s.bus == nil {
-		return
-	}
-
-	_, _, smRegion, _, _ := svcarn.SplitARN(stateMachineArn)
-	if smRegion == "" {
-		smRegion = s.region
-	}
-
-	payload := buildAlarmNotificationPayload(result)
-	payloadBytes, _ := json.Marshal(payload)
-
-	evt := &eventbus.StepFunctionsStartExecutionEvent{
-		StateMachineArn: stateMachineArn,
-		Input:           string(payloadBytes),
-	}
-	evt.Region = smRegion
-	evt.AccountID = s.accountID
-
-	if err := s.bus.Publish(ctx, evt); err != nil {
-		logs.Warn("failed to publish alarm Step Function event", logs.String("alarmName", result.alarm.Name), logs.Err(err))
-	}
-}
-
-// dispatchAlarmToSQS delivers the alarm notification to an SQS queue
-// via the SQS invoker. The queue name is extracted from the queue ARN.
-func (s *CloudWatchService) dispatchAlarmToSQS(ctx context.Context, queueArn string, result *alarmEvalResult) {
-	if s.bus == nil || s.bus.SQSInvoker() == nil {
-		return
-	}
-
-	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueArn, "sqs", "cloudwatch.amazonaws.com", "sqs:SendMessage", queueArn)
-	if evalErr != nil {
-		s.log("resource policy evaluation failed for alarm SQS delivery, dropping notification", "queueArn", queueArn, "error", evalErr)
-		return
-	}
-	if !allowed {
-		return
-	}
-
-	_, _, sqsRegion, _, queueName := svcarn.SplitARN(queueArn)
-	if queueName == "" {
-		return
-	}
-
-	queueURL, err := s.bus.SQSInvoker().GetQueueByName(ctx, sqsRegion, queueName)
-	if err != nil {
-		s.log("failed to resolve SQS queue for alarm action", "queueArn", queueArn, "error", err)
-		return
-	}
-
-	payload := buildAlarmNotificationPayload(result)
-	messageBytes, _ := json.Marshal(payload)
-
-	_, _, err = s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(messageBytes), eventbus.SQSSendOptions{})
-	if err != nil {
-		s.log("SQS dispatch failed for alarm action", "alarm", result.alarm.Name, "queue", queueName, "error", err)
-	}
-}
-
-// operatorPhrase returns a human-readable phrase describing the comparison
-// direction, suitable for inclusion in alarm state change reason strings.
-func operatorPhrase(operator string) string {
-	switch operator {
-	case "GreaterThanOrEqualToThreshold":
-		return "were at or above"
-	case "GreaterThanThreshold":
-		return "were above"
-	case "LessThanOrEqualToThreshold":
-		return "were at or below"
-	case "LessThanThreshold":
-		return "were below"
-	case "LessThanLowerOrGreaterThanUpperThreshold":
-		return "were outside the anomaly band"
-	case "LessThanLowerThreshold":
-		return "were below the anomaly band lower bound"
-	case "GreaterThanUpperThreshold":
-		return "were above the anomaly band upper bound"
-	default:
-		return "crossed"
-	}
-}
-
-// buildAlarmNotificationPayload constructs the CloudWatch alarm
-// notification payload matching the format AWS sends to SNS topics and
-// Lambda functions. This includes the alarm description, metric details,
-// and state transition information.
-func buildAlarmNotificationPayload(result *alarmEvalResult) map[string]interface{} {
-	alarm := result.alarm
-	now := time.Now().UTC()
-
-	_, _, alarmRegion, _, _ := svcarn.SplitARN(alarm.ARN)
-
-	return map[string]interface{}{
-		"AlarmName":          alarm.Name,
-		"AlarmArn":           alarm.ARN,
-		"AlarmDescription":   alarm.AlarmDescription,
-		"AlarmConfiguration": buildAlarmConfiguration(alarm),
-		"PreviousState": map[string]interface{}{
-			"StateValue":      result.oldState,
-			"StateReason":     "",
-			"StateReasonData": "",
-		},
-		"NewState": map[string]interface{}{
-			"StateValue":      result.newState,
-			"StateReason":     result.reason,
-			"StateReasonData": "",
-			"TriggeredTime":   now.Format(time.RFC3339),
-		},
-		"NewStateReason":     result.reason,
-		"StateChangeTime":    now.Format(time.RFC3339),
-		"Region":             alarmRegion,
-		"MetricName":         alarm.MetricName,
-		"Namespace":          alarm.Namespace,
-		"Statistic":          alarm.Statistic,
-		"Period":             alarm.Period,
-		"EvaluationPeriods":  alarm.EvaluationPeriods,
-		"Threshold":          alarm.Threshold,
-		"ComparisonOperator": alarm.ComparisonOperator,
-		"TreatMissingData":   alarm.TreatMissingData,
-	}
-}
-
-// buildAlarmConfiguration serialises the alarm's key configuration fields
-// into a nested map for inclusion in the notification payload.
-func buildAlarmConfiguration(alarm *cwstore.Alarm) map[string]interface{} {
-	config := map[string]interface{}{
-		"AlarmName":          alarm.Name,
-		"AlarmArn":           alarm.ARN,
-		"AlarmType":          alarm.AlarmType,
-		"MetricName":         alarm.MetricName,
-		"Namespace":          alarm.Namespace,
-		"Statistic":          alarm.Statistic,
-		"Period":             alarm.Period,
-		"EvaluationPeriods":  alarm.EvaluationPeriods,
-		"Threshold":          alarm.Threshold,
-		"ComparisonOperator": alarm.ComparisonOperator,
-		"TreatMissingData":   alarm.TreatMissingData,
-		"ActionsEnabled":     alarm.ActionsEnabled,
-	}
-
-	if alarm.DatapointsToAlarm > 0 {
-		config["DatapointsToAlarm"] = alarm.DatapointsToAlarm
-	}
-	if len(alarm.Dimensions) > 0 {
-		dims := make([]map[string]string, len(alarm.Dimensions))
-		for i, d := range alarm.Dimensions {
-			dims[i] = map[string]string{"Name": d.Name, "Value": d.Value}
-		}
-		config["Dimensions"] = dims
-	}
-	if len(alarm.AlarmActions) > 0 {
-		config["AlarmActions"] = alarm.AlarmActions
-	}
-	if len(alarm.OKActions) > 0 {
-		config["OKActions"] = alarm.OKActions
-	}
-	if len(alarm.InsufficientDataActions) > 0 {
-		config["InsufficientDataActions"] = alarm.InsufficientDataActions
-	}
-
-	return config
 }
 
 // evaluatorStoresForRegion returns the alarm store, metric store, and

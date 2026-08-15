@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/services/aws/iot/policy"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -410,4 +411,120 @@ func loadPolicyVersions(store iotstore.IotStoreInterface, policyName string) []m
 		}
 	}
 	return out
+}
+
+func (s *IoTService) TestAuthorization(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
+	clientID := request.GetParamCaseInsensitive(req.Parameters, "clientId")
+	cognitoIdentityPoolId := request.GetParamCaseInsensitive(req.Parameters, "cognitoIdentityPoolId")
+	policyNamesToAdd := request.GetStringList(req.Parameters, "policyNamesToAdd")
+	policyNamesToSkip := request.GetStringList(req.Parameters, "policyNamesToSkip")
+	if principal == "" {
+		return map[string]interface{}{"authResults": []map[string]interface{}{}}, nil
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	// Resolve the policies attached to the principal and parse them for
+	// evaluation, mirroring the MQTT broker auth hook (auth_hooks.go).
+	policyNames, err := store.ListPoliciesForPrincipal(principal)
+	if err != nil {
+		return nil, err
+	}
+	// Merge additional policies supplied by the caller (policyNamesToAdd).
+	skipSet := make(map[string]bool, len(policyNamesToSkip))
+	for _, n := range policyNamesToSkip {
+		skipSet[n] = true
+	}
+	for _, n := range policyNamesToAdd {
+		if !skipSet[n] {
+			policyNames = append(policyNames, n)
+		}
+	}
+	// When cognitoIdentityPoolId is supplied, also include policies attached
+	// to the cognito identity pool principal.
+	if cognitoIdentityPoolId != "" {
+		cognitoPolicies, err := store.ListPoliciesForPrincipal(cognitoIdentityPoolId)
+		if err == nil {
+			for _, n := range cognitoPolicies {
+				if !skipSet[n] {
+					policyNames = append(policyNames, n)
+				}
+			}
+		}
+	}
+	var versions []*policy.PolicyVersion
+	matchedNames := make([]string, 0, len(policyNames))
+	for _, name := range policyNames {
+		if skipSet[name] {
+			continue
+		}
+		p, gErr := store.GetPolicy(name)
+		if gErr != nil {
+			continue
+		}
+		pv, pErr := policy.ParsePolicyVersion([]byte(p.PolicyDocument))
+		if pErr != nil {
+			continue
+		}
+		versions = append(versions, pv)
+		matchedNames = append(matchedNames, name)
+	}
+	// Evaluate each requested action/resource combination (authInfos). When no
+	// authInfos are supplied, return the matched policies with an empty result.
+	var authInfos []map[string]interface{}
+	if raw, ok := req.Parameters["authInfos"].([]interface{}); ok {
+		for _, item := range raw {
+			if m, ok := item.(map[string]interface{}); ok {
+				authInfos = append(authInfos, m)
+			}
+		}
+	}
+	policyEntries := make([]map[string]interface{}, 0, len(matchedNames))
+	for _, n := range matchedNames {
+		policyEntries = append(policyEntries, map[string]interface{}{
+			"policyName": n,
+			"policyArn":  iotstore.BuildPolicyARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), n),
+		})
+	}
+	results := make([]map[string]interface{}, 0, len(authInfos))
+	for _, info := range authInfos {
+		action, _ := info["actionType"].(string)
+		resources := request.GetStringList(info, "resources")
+		evalResource := "*"
+		if len(resources) > 0 {
+			evalResource = resources[0]
+		}
+		// Normalise the action to "iot:TitleCase" for policy evaluation.
+		// The CLI sends lowercase (e.g. "connect") but policies use "iot:Connect".
+		iotAction := action
+		if action != "" && !strings.HasPrefix(action, "iot:") {
+			iotAction = "iot:" + strings.ToUpper(action[:1]) + strings.ToLower(action[1:])
+		}
+		allowed, _ := policy.Evaluate(&policy.EvaluateRequest{
+			Policies: versions,
+			Action:   iotAction,
+			Resource: evalResource,
+			ClientID: clientID,
+		})
+		entry := map[string]interface{}{
+			"authInfo": map[string]interface{}{
+				"actionType": action,
+				"resources":  resources,
+			},
+			"matchedPolicies": matchedNames,
+		}
+		if allowed {
+			entry["allowed"] = map[string]interface{}{"policies": policyEntries}
+			entry["decision"] = "ALLOWED"
+		} else {
+			entry["denied"] = map[string]interface{}{
+				"implicitDeny": map[string]interface{}{"policies": policyEntries},
+			}
+			entry["decision"] = "IMPLICIT_DENY"
+		}
+		results = append(results, entry)
+	}
+	return map[string]interface{}{"authResults": results}, nil
 }

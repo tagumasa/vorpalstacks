@@ -189,3 +189,46 @@ func TestNewSignatureV4Verifier(t *testing.T) {
 	verifier := NewSignatureV4Verifier(provider)
 	assert.NotNil(t, verifier)
 }
+
+// signedTestRequest builds a SigV4-signed GET request for the given key
+// pair, using the verifier's own derivation so the signature is correct.
+func signedTestRequest(t *testing.T, verifier *SignatureV4Verifier, accessKeyID, secret, amzDate string) *http.Request {
+	t.Helper()
+	req, _ := http.NewRequest("GET", "http://example.com/test", nil)
+	req.Header.Set("X-Amz-Date", amzDate)
+	req.Header.Set("Host", "example.com")
+
+	canonicalRequest, err := verifier.buildCanonicalRequest(req, "host;x-amz-date", nil)
+	require.NoError(t, err)
+	credential := accessKeyID + "/20130524/us-east-1/s3/aws4_request"
+	_, stringToSign, err := verifier.buildStringToSign(amzDate, credential, canonicalRequest)
+	require.NoError(t, err)
+	signature, err := verifier.calculateSignature(amzDate, "us-east-1", "s3", stringToSign, secret)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "AWS4-HMAC-SHA256 Credential="+credential+", SignedHeaders=host;x-amz-date, Signature="+signature)
+	return req
+}
+
+// The Credential access key ID must match the key whose secret signed the
+// request: a valid signature computed with one secret must not authenticate
+// a different access key ID.
+func TestSignatureV4Verifier_VerifyRequest_BindsCredentialAccessKeyID(t *testing.T) {
+	provider := &mockCredentialsProvider{
+		creds: &Credentials{
+			AccessKeyID:     "AKIAVERIFIERKEYID",
+			SecretAccessKey: "verifier-secret",
+		},
+	}
+	verifier := NewSignatureV4Verifier(provider)
+
+	// Correctly signed as a foreign key ID: signature is valid for the
+	// secret but the credential names another access key.
+	req := signedTestRequest(t, verifier, "AKIAATTACKERKEYID", "verifier-secret", "20130524T000000Z")
+	err := verifier.VerifyRequest(req, "s3", "us-east-1")
+	assert.Equal(t, ErrSignatureMismatch, err)
+
+	// Correctly signed as the verifier's own key ID: accepted.
+	req = signedTestRequest(t, verifier, "AKIAVERIFIERKEYID", "verifier-secret", "20130524T000000Z")
+	err = verifier.VerifyRequest(req, "s3", "us-east-1")
+	assert.NoError(t, err)
+}

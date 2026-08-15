@@ -442,3 +442,153 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 	}
 	return resp
 }
+
+// ---- Security Profile attach ---------------------------------------
+// AWS persists profile<->target associations so that ListSecurityProfilesForTarget
+// and ListTargetsForSecurityProfile return real data. Attach/Detach enforce
+// ResourceNotFoundException when the association does not exist (Detach) and
+// return empty responses per the Smithy output shapes.
+
+func (s *IoTService) AttachSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
+	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
+	if profileName == "" || targetArn == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	// Forward mapping: profile -> target. Reverse mapping: target -> profile.
+	// Both are stored so that ListSecurityProfilesForTarget (target->profile)
+	// and ListTargetsForSecurityProfile (profile->target) can scan a single
+	// prefix.
+	forwardKey := "secProfileTarget/" + profileName + "/" + targetArn
+	reverseKey := "secTargetProfile/" + targetArn + "/" + profileName
+	assocValue := map[string]interface{}{
+		"securityProfileName":      profileName,
+		"securityProfileTargetArn": targetArn,
+	}
+	if err := store.PutGeneric(forwardKey, assocValue); err != nil {
+		return nil, err
+	}
+	if err := store.PutGeneric(reverseKey, assocValue); err != nil {
+		// Rollback forward write to maintain bidirectional consistency.
+		_ = store.DeleteGeneric(forwardKey)
+		return nil, err
+	}
+	return map[string]interface{}{}, nil
+}
+func (s *IoTService) DetachSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
+	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
+	if profileName == "" || targetArn == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	forwardKey := "secProfileTarget/" + profileName + "/" + targetArn
+	reverseKey := "secTargetProfile/" + targetArn + "/" + profileName
+	exists, err := store.GetGenericExists(forwardKey, &map[string]interface{}{})
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, iotstore.ErrSecurityProfileAttachmentNotFound
+	}
+	// Attempt both deletes so a partial failure does not leave stale mappings
+	// that block subsequent retries (the existence check above would reject
+	// a retry after a partial delete).
+	errForward := store.DeleteGeneric(forwardKey)
+	errReverse := store.DeleteGeneric(reverseKey)
+	if errForward != nil {
+		return nil, errForward
+	}
+	if errReverse != nil {
+		return nil, errReverse
+	}
+	return map[string]interface{}{}, nil
+}
+func (s *IoTService) ListSecurityProfilesForTarget(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
+	if targetArn == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := store.ListGeneric("secTargetProfile/" + targetArn + "/")
+	if err != nil {
+		return nil, err
+	}
+	mappings := make([]map[string]interface{}, 0, len(items))
+	for _, rec := range items {
+		profileName, _ := rec["securityProfileName"].(string)
+		mappings = append(mappings, map[string]interface{}{
+			"securityProfileIdentifier": map[string]interface{}{
+				"name": profileName,
+			},
+			"target": map[string]interface{}{
+				"arn": targetArn,
+			},
+		})
+	}
+	return paginatedMaps("securityProfileTargetMappings", mappings, req.Parameters), nil
+}
+func (s *IoTService) ListTargetsForSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
+	if profileName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := store.ListGeneric("secProfileTarget/" + profileName + "/")
+	if err != nil {
+		return nil, err
+	}
+	targets := make([]map[string]interface{}, 0, len(items))
+	for _, rec := range items {
+		targetArn, _ := rec["securityProfileTargetArn"].(string)
+		targets = append(targets, map[string]interface{}{
+			"arn": targetArn,
+		})
+	}
+	return paginatedMaps("securityProfileTargets", targets, req.Parameters), nil
+}
+func (s *IoTService) PutVerificationStateOnViolation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	violationId := request.GetParamCaseInsensitive(req.Parameters, "violationId")
+	verificationState := request.GetParamCaseInsensitive(req.Parameters, "verificationState")
+	if violationId == "" || verificationState == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	key := "violation/" + violationId
+	rec := map[string]interface{}{}
+	exists, err := store.GetGenericExists(key, &rec)
+	if err != nil {
+		return nil, err
+	}
+	// No Device Defender engine generates violations, so the record usually
+	// does not exist. AWS lists only InvalidRequestException in the Smithy
+	// errors trait (not ResourceNotFoundException), so return InvalidRequest
+	// for an unknown violation id rather than 404.
+	if !exists {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	rec["verificationState"] = verificationState
+	if desc := request.GetParamCaseInsensitive(req.Parameters, "verificationStateDescription"); desc != "" {
+		rec["verificationStateDescription"] = desc
+	}
+	if err := store.PutGeneric(key, rec); err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{}, nil
+}

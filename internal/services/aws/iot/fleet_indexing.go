@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -296,6 +297,12 @@ func (p *queryParser) parseTerm() (queryNode, error) {
 	for _, op := range []string{">=", "<=", "<>", ">", "<"} {
 		if strings.HasPrefix(rest, op) {
 			val := strings.TrimSpace(strings.TrimPrefix(rest, op))
+			if val == "" {
+				// A lone operator (e.g. "field:>" when the tokenizer
+				// split "field:> 20" on the space) must not silently
+				// match nothing.
+				return nil, fmt.Errorf("missing comparison value after %q in %q", op, term)
+			}
 			node := &fieldNode{field: field, op: op, value: val}
 			if num, err := strconv.ParseFloat(val, 64); err == nil {
 				node.numeric = num
@@ -421,7 +428,10 @@ func (s *IoTService) searchIndexImpl(ctx context.Context, reqCtx *request.Reques
 	}
 
 	// Apply pagination.
-	start, end := applyPagination(len(matched), req.Parameters)
+	start, end, err := applyPagination(len(matched), req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	page := matched[start:min(end, len(matched))]
 
 	things := make([]map[string]interface{}, 0, len(page))
@@ -663,28 +673,58 @@ func percentileValue(sorted []float64, pct float64) float64 {
 	return sorted[lower]*(1-frac) + sorted[upper]*frac
 }
 
-func applyPagination(total int, params map[string]interface{}) (int, int) {
+// defaultSearchIndexMaxResults is the page size applied when the request
+// omits maxResults. The AWS API documentation does not state a default, so
+// the local convention of fifty applies; an explicitly supplied maxResults
+// is always validated against the documented range instead.
+const defaultSearchIndexMaxResults = 50
+
+// applyPagination slices the matched set for one response page. A supplied
+// maxResults must be numeric and within the documented SearchIndex range
+// (SearchIndexMaxResultsMin..SearchIndexMaxResultsCap): a non-numeric or
+// out-of-range value is a malformed request and is rejected with
+// InvalidRequestException — silently paging at the default or accepting an
+// unbounded page would return results the caller never asked for.
+func applyPagination(total int, params map[string]interface{}) (int, int, error) {
 	limit := 0
-	if v, ok := params["maxResults"].(float64); ok {
-		limit = int(v)
+	if raw, ok := params["maxResults"]; ok && raw != nil {
+		switch v := raw.(type) {
+		case float64:
+			limit = int(v)
+		case int:
+			limit = v
+		case string:
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				return 0, 0, iotstore.ErrInvalidRequest
+			}
+			limit = n
+		default:
+			return 0, 0, iotstore.ErrInvalidRequest
+		}
+		if limit < iotstore.SearchIndexMaxResultsMin || limit > iotstore.SearchIndexMaxResultsCap {
+			return 0, 0, iotstore.ErrInvalidRequest
+		}
 	}
-	if limit <= 0 {
-		limit = 50
+	if limit == 0 {
+		limit = defaultSearchIndexMaxResults
 	}
 	start := 0
 	if token, ok := params["nextToken"].(string); ok && token != "" {
-		if n, err := strconv.Atoi(token); err == nil {
-			start = n
+		n, err := strconv.Atoi(token)
+		if err != nil {
+			return 0, 0, iotstore.ErrInvalidRequest
 		}
+		start = n
 	}
 	if start >= total {
-		return total, total
+		return total, total, nil
 	}
 	end := start + limit
 	if end > total {
 		end = total
 	}
-	return start, end
+	return start, end, nil
 }
 
 func nextPageToken(total, end int, params map[string]interface{}) string {
@@ -692,4 +732,107 @@ func nextPageToken(total, end int, params map[string]interface{}) string {
 		return ""
 	}
 	return strconv.Itoa(end)
+}
+
+// ---- Fleet Indexing / Metrics --------------------------------------
+
+func (s *IoTService) DescribeIndex(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	name := request.GetParamCaseInsensitive(req.Parameters, "indexName")
+	return map[string]interface{}{"indexName": name, "indexStatus": "ACTIVE"}, nil
+}
+func (s *IoTService) ListIndices(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy: ListIndicesResponse.indexNames is a list of IndexName (string).
+	return map[string]interface{}{"indexNames": []string{"AWS_Things"}}, nil
+}
+func (s *IoTService) SearchIndex(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.searchIndexImpl(ctx, reqCtx, req)
+}
+func (s *IoTService) GetBucketsAggregation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.getBucketsAggregationImpl(ctx, reqCtx, req)
+}
+func (s *IoTService) GetCardinality(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.getCardinalityImpl(ctx, reqCtx, req)
+}
+func (s *IoTService) GetPercentiles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.getPercentilesImpl(ctx, reqCtx, req)
+}
+func (s *IoTService) GetStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.getStatisticsImpl(ctx, reqCtx, req)
+}
+func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	metricName := request.GetParamCaseInsensitive(req.Parameters, "metricName")
+	if metricName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	rec, _, exists, err := s.bulkGet(reqCtx, "fleetMetric", req, "metricName")
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, iotstore.ErrFleetMetricNotFound
+	}
+
+	// Execute the fleet metric's query to compute the current value.
+	queryString, _ := rec["queryString"].(string)
+	aggField, _ := rec["aggregationField"].(string)
+	aggType, _ := rec["aggregationType"].(string)
+
+	matched, err := s.searchThings(reqCtx, queryString)
+	if err != nil {
+		return nil, err
+	}
+
+	var value float64
+	var count int64
+	if aggField != "" {
+		var values []float64
+		for _, t := range matched {
+			if v := getNumericAttribute(t, aggField); !math.IsNaN(v) {
+				values = append(values, v)
+			}
+		}
+		count = int64(len(values))
+		if count > 0 {
+			switch strings.ToUpper(aggType) {
+			case "AVERAGE":
+				sum := 0.0
+				for _, v := range values {
+					sum += v
+				}
+				value = sum / float64(count)
+			case "SUM":
+				for _, v := range values {
+					value += v
+				}
+			case "MINIMUM":
+				value = values[0]
+				for _, v := range values {
+					if v < value {
+						value = v
+					}
+				}
+			case "MAXIMUM":
+				value = values[0]
+				for _, v := range values {
+					if v > value {
+						value = v
+					}
+				}
+			default: // COUNT or unspecified
+				value = float64(count)
+			}
+		}
+	} else {
+		value = float64(len(matched))
+		count = int64(len(matched))
+	}
+
+	now := time.Now().UTC().Unix()
+	values := []map[string]interface{}{
+		{
+			"timestamp": now,
+			"value":     value,
+		},
+	}
+	return paginatedMaps("metricValues", values, req.Parameters), nil
 }

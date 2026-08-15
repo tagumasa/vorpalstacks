@@ -334,10 +334,11 @@ func (a *Authorizer) buildEvaluationContext(
 // surface as aws:PrincipalTag/<key> values and SourceIdentity as
 // sts:SourceIdentity in the policy evaluation context.
 //
-// The Root principal type bypasses policy evaluation, matching the
-// permanent-key root-user behaviour. Federated users (GetFederationToken)
-// resolve to the underlying IAM user via the session's stored principal
-// name when the caller was a permanent IAM user.
+// AssumeRoot sessions (Root principal type) are scoped by their task policy
+// instead of bypassing evaluation. Root-principal ARNs from other session
+// types (e.g. GetSessionToken with the root permanent key) and federated
+// users (GetFederationToken) resolve to the underlying IAM user via the
+// session's stored principal name when the caller was a permanent IAM user.
 func (a *Authorizer) authorizeSession(
 	ctx context.Context,
 	reqCtx *request.RequestContext,
@@ -353,8 +354,46 @@ func (a *Authorizer) authorizeSession(
 		return false, nil
 	}
 
-	// Root sessions bypass policy evaluation.
-	if sessionCreds.PrincipalType == "Root" || strings.HasSuffix(sessionCreds.PrincipalArn, ":root") {
+	// AssumeRoot sessions (PrincipalType "Root") are scoped by the task
+	// policy attached at session creation — per the AWS AssumeRoot
+	// contract, TaskPolicyArn restricts the credentials to the privileged
+	// task's action set, so every request must be allowed by that policy
+	// rather than bypassing evaluation. Sessions without a resolvable task
+	// policy are denied.
+	if sessionCreds.PrincipalType == "Root" {
+		reqCtx.Principal = iam.RootUserName
+		reqCtx.PrincipalID = iam.RootUserName
+		reqCtx.PrincipalType = request.PrincipalTypeUser
+
+		if sessionCreds.Policy == "" && len(sessionCreds.PolicyArns) == 0 {
+			logs.Warn("Root session without a task policy denied",
+				logs.String("principal", sessionCreds.PrincipalArn))
+			return false, nil
+		}
+		sessionDocs, ok := a.collectSessionPolicyDocuments(sessionCreds)
+		if !ok {
+			return false, nil
+		}
+		evalCtx := a.buildSessionEvaluationContext(reqCtx, parsedReq, serviceName, sessionCreds, r)
+		for _, doc := range sessionDocs {
+			decision := a.policyEvaluator.Evaluate(evalCtx, []*policy.Document{doc})
+			if decision.Effect != policy.DecisionEffectAllow {
+				logs.Info("Root task policy denied action",
+					logs.String("principal", sessionCreds.PrincipalArn),
+					logs.String("action", evalCtx.Action),
+					logs.String("reason", decision.Reason))
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+
+	// Root-principal sessions from GetSessionToken called with the root
+	// user's permanent key keep the permanent-key root behaviour and bypass
+	// policy evaluation. The principal name must be the root user so a
+	// session minted with a root ARN by any other path cannot ride this
+	// bypass.
+	if strings.HasSuffix(sessionCreds.PrincipalArn, ":root") && sessionCreds.PrincipalName == iam.RootUserName {
 		reqCtx.Principal = iam.RootUserName
 		reqCtx.PrincipalID = iam.RootUserName
 		reqCtx.PrincipalType = request.PrincipalTypeUser

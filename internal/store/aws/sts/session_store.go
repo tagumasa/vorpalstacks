@@ -252,6 +252,7 @@ func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredenti
 		SessionToken:    session.SessionToken,
 		PrincipalArn:    session.PrincipalArn,
 		PrincipalType:   session.PrincipalType,
+		PrincipalName:   session.PrincipalName,
 		Tags:            session.Tags,
 		SourceIdentity:  session.SourceIdentity,
 		Policy:          session.Policy,

@@ -30,7 +30,6 @@ type subscriptionEntry struct {
 	async          bool
 	priority       int
 	maxConcurrency int
-	maxRetries     int32
 	sem            chan struct{}
 	authorized     bool
 }
@@ -57,7 +56,6 @@ type subscribeConfig struct {
 	resourcePolicyFn ResourcePolicyFunc
 	authzMode        AuthzMode
 	maxConcurrency   int
-	maxRetries       int32
 }
 
 // SubscribeOption is a functional option used to configure a subscription.
@@ -119,14 +117,6 @@ func WithAuthzMode(mode AuthzMode) SubscribeOption {
 func WithMaxConcurrency(n int) SubscribeOption {
 	return func(c *subscribeConfig) {
 		c.maxConcurrency = n
-	}
-}
-
-// WithMaxRetries sets the maximum number of retry attempts for this
-// subscription's outbox entries.
-func WithMaxRetries(n int32) SubscribeOption {
-	return func(c *subscribeConfig) {
-		c.maxRetries = n
 	}
 }
 

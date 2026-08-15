@@ -3,6 +3,7 @@ package sfn
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -66,52 +67,69 @@ func getJSONPathValue(data map[string]interface{}, path string) (interface{}, er
 	return current, nil
 }
 
-func (e *Executor) getContextValue(path string) interface{} {
+// getContextValue resolves a $$. context-object path for the task whose
+// Parameters are being evaluated. taskToken carries the token minted for
+// the current attempt (empty everywhere else); threading it explicitly
+// keeps concurrent Map/Parallel branches and retry attempts independent.
+// Referencing $$.Task.Token without a backing token fails the evaluation:
+// a fabricated random token would match no stored task record and send the
+// worker an unanswerable token, whereas the runtime error surfaces the
+// definition mistake the way Step Functions reports an unavailable context
+// node.
+func (e *Executor) getContextValue(taskToken string, path string) (interface{}, error) {
 	path = strings.TrimPrefix(path, "$$.")
 	parts := strings.Split(path, ".")
 	if len(parts) < 2 {
-		return nil
+		return nil, nil
 	}
 
 	switch parts[0] {
 	case "Execution":
 		if len(parts) < 2 {
-			return nil
+			return nil, nil
 		}
 		switch parts[1] {
 		case "Id":
-			return e.extractExecutionId()
+			return e.extractExecutionId(), nil
 		case "Name":
-			return e.extractExecutionName()
+			return e.extractExecutionName(), nil
 		case "RoleArn":
-			return e.extractExecutionRoleArn()
+			return e.extractExecutionRoleArn(), nil
 		case "StartTime":
 			if e.currentExecution != nil {
-				return e.currentExecution.StartDate.Format(time.RFC3339)
+				return e.currentExecution.StartDate.Format(time.RFC3339), nil
 			}
-			return time.Now().UTC().Format(time.RFC3339)
+			return time.Now().UTC().Format(time.RFC3339), nil
 		}
 	case "StateMachine":
 		if len(parts) < 2 {
-			return nil
+			return nil, nil
 		}
 		switch parts[1] {
 		case "Id":
-			return e.extractStateMachineId()
+			return e.extractStateMachineId(), nil
 		case "Name":
-			return e.extractStateMachineName()
+			return e.extractStateMachineName(), nil
 		}
 	case "Task":
 		if len(parts) < 2 {
-			return nil
+			return nil, nil
 		}
 		switch parts[1] {
 		case "Token":
-			return fmt.Sprintf("task-token-%d", time.Now().UnixNano())
+			if taskToken == "" {
+				return nil, errTaskTokenUnavailable
+			}
+			return taskToken, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
+
+// errTaskTokenUnavailable marks a $$.Task.Token reference evaluated outside
+// a task attempt that carries a token (non-activity tasks, Pass or Map
+// states).
+var errTaskTokenUnavailable = errors.New("the Task.Token context object is not available in this state")
 
 func (e *Executor) extractExecutionId() string {
 	if e.currentExecution != nil {

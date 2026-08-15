@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -82,8 +83,12 @@ func (s *StepFunctionStore) buildActivityARN(name string) string {
 	return s.arnBuilder.StepFunctions().Activity(name)
 }
 
+// buildExecutionHistoryKey renders the storage key for one history event.
+// The event ID is zero-padded to the width of the largest int64 so the
+// lexicographic key order equals the numeric event-ID order; an unpadded
+// decimal would sort event 10 between 1 and 2.
 func (s *StepFunctionStore) buildExecutionHistoryKey(executionArn string, eventId int64) string {
-	return fmt.Sprintf("%s:%d", executionArn, eventId)
+	return fmt.Sprintf("%s:%019d", executionArn, eventId)
 }
 
 // CreateStateMachine creates a new state machine in the store.
@@ -372,21 +377,74 @@ func (s *StepFunctionStore) AddExecutionHistoryEvent(ctx context.Context, event 
 	return s.executionHistoryStore.Put(key, event)
 }
 
-// GetExecutionHistory retrieves the history events for an execution.
-func (s *StepFunctionStore) GetExecutionHistory(ctx context.Context, executionArn string, limit int32, nextToken string) ([]*ExecutionHistoryEvent, string, error) {
+// GetExecutionHistory retrieves the history events for an execution in
+// ascending event-ID order, or in descending order when reverseOrder is
+// set, paginating consistently in the requested direction.
+//
+// Forward order pages with the raw storage key as the marker (the keys
+// zero-pad the event ID, so marker order equals event order). Reverse
+// order collects the execution's events, sorts them numerically and pages
+// from the newest end; execution histories are bounded in size and the
+// shared BaseStore offers no descending iterator, so collecting is the
+// simplest direction-correct implementation. The reverse marker anchors
+// the next page to the lowest event ID already returned: a fixed anchor
+// keeps pages stable while new events are appended, whereas a count from
+// the newest end would shift under growth and duplicate the previous
+// page's tail.
+func (s *StepFunctionStore) GetExecutionHistory(ctx context.Context, executionArn string, limit int32, nextToken string, reverseOrder bool) ([]*ExecutionHistoryEvent, string, error) {
 	prefix := executionArn + ":"
-	opts := common.ListOptions{
-		Prefix:   prefix,
-		Marker:   nextToken,
-		MaxItems: int(limit),
+
+	if !reverseOrder {
+		opts := common.ListOptions{
+			Prefix:   prefix,
+			Marker:   nextToken,
+			MaxItems: int(limit),
+		}
+
+		result, err := common.List[ExecutionHistoryEvent](s.executionHistoryStore, opts, nil)
+		if err != nil {
+			return nil, "", err
+		}
+
+		return result.Items, result.NextMarker, nil
 	}
 
-	result, err := common.List[ExecutionHistoryEvent](s.executionHistoryStore, opts, nil)
+	events, err := common.ListMatching[ExecutionHistoryEvent](s.executionHistoryStore, prefix, nil)
 	if err != nil {
 		return nil, "", err
 	}
+	sort.Slice(events, func(i, j int) bool { return events[i].EventId < events[j].EventId })
 
-	return result.Items, result.NextMarker, nil
+	// above bounds the page at the first event at or past the anchor; the
+	// page then takes the events immediately below it.
+	above := len(events)
+	if nextToken != "" {
+		anchor, parseErr := strconv.ParseInt(nextToken, 10, 64)
+		if parseErr != nil || anchor < 0 {
+			return nil, "", ErrInvalidToken
+		}
+		above = sort.Search(len(events), func(i int) bool { return events[i].EventId >= anchor })
+	}
+	if above == 0 {
+		return nil, "", nil
+	}
+
+	start := above - int(limit)
+	if start < 0 {
+		start = 0
+	}
+	page := events[start:above]
+
+	reversed := make([]*ExecutionHistoryEvent, len(page))
+	for i, e := range page {
+		reversed[len(page)-1-i] = e
+	}
+
+	nextMarker := ""
+	if start > 0 {
+		nextMarker = strconv.FormatInt(events[start].EventId, 10)
+	}
+	return reversed, nextMarker, nil
 }
 
 // CreateActivity creates a new activity in the store.
@@ -474,9 +532,13 @@ func (s *StepFunctionStore) ListActivities(ctx context.Context, limit int32, nex
 	}, nil
 }
 
-// CreateActivityTask creates a new task for an activity.
+// CreateActivityTask creates a new task for an activity. A caller that
+// already minted the task token (so it could embed it in the task input
+// via $$.Task.Token) keeps its token; otherwise a fresh one is generated.
 func (s *StepFunctionStore) CreateActivityTask(task *ActivityTask) error {
-	task.TaskToken = uuid.New().String()
+	if task.TaskToken == "" {
+		task.TaskToken = uuid.New().String()
+	}
 	task.Status = "PENDING"
 	task.CreatedAt = time.Now().UTC()
 
@@ -502,7 +564,17 @@ func (s *StepFunctionStore) CreateActivityTask(task *ActivityTask) error {
 	}
 }
 
-// GetActivityTask retrieves a task from an activity queue.
+// ActivityTaskPollTimeout bounds how long GetActivityTask holds the
+// request open waiting for a task. The Step Functions API reference fixes
+// the maximum hold at 60 seconds: "The maximum time the service holds on
+// to the request before responding is 60 seconds. If no task is available
+// within 60 seconds, the poll returns a taskToken with an empty string."
+// It is a variable so tests can shorten the wait.
+var ActivityTaskPollTimeout = 60 * time.Second
+
+// GetActivityTask retrieves a task from an activity queue, blocking until
+// a task becomes available or the caller's context ends (the service
+// layer bounds the wait with ActivityTaskPollTimeout).
 func (s *StepFunctionStore) GetActivityTask(ctx context.Context, activityArn string, workerName string) (*ActivityTask, error) {
 	s.activityQueuesMu.Lock()
 	queue, exists := s.activityQueues[activityArn]
@@ -566,6 +638,13 @@ func (s *StepFunctionStore) CompleteActivityTask(taskToken string, output string
 		return ErrTaskNotFound
 	}
 
+	// A terminal task (already reported, or abandoned when its attempt
+	// timed out) must not be overwritten: a worker holding a stale token
+	// from an earlier attempt must not be able to complete the retry.
+	if isTerminalTaskStatus(task.Status) {
+		return ErrTaskNotRunning
+	}
+
 	task.Status = "SUCCEEDED"
 	task.Output = output
 	task.CompletedAt = time.Now().UTC()
@@ -596,6 +675,10 @@ func (s *StepFunctionStore) FailActivityTask(taskToken string, errorMsg string, 
 		return ErrTaskNotFound
 	}
 
+	if isTerminalTaskStatus(task.Status) {
+		return ErrTaskNotRunning
+	}
+
 	task.Status = "FAILED"
 	task.Error = errorMsg
 	task.Cause = cause
@@ -618,6 +701,35 @@ func (s *StepFunctionStore) FailActivityTask(taskToken string, errorMsg string, 
 }
 
 // WaitForTaskResult waits for the result of an activity task.
+// isTerminalTaskStatus reports whether an activity task record can no
+// longer accept a worker report. Once a task has succeeded, failed, or
+// been abandoned by a timeout, the token is spent.
+func isTerminalTaskStatus(status string) bool {
+	switch status {
+	case "SUCCEEDED", "FAILED", "TIMED_OUT":
+		return true
+	}
+	return false
+}
+
+// markTaskTimedOut flips a task record to TIMED_OUT when the executor
+// stops waiting for it, so a worker that later presents the token is
+// rejected instead of silently overwriting a dead record.
+func (s *StepFunctionStore) markTaskTimedOut(taskToken string) {
+	s.tasksMu.Lock()
+	defer s.tasksMu.Unlock()
+
+	var task ActivityTask
+	if err := s.tasksStore.Get(taskToken, &task); err != nil {
+		return
+	}
+	if isTerminalTaskStatus(task.Status) {
+		return
+	}
+	task.Status = "TIMED_OUT"
+	_ = s.tasksStore.Put(taskToken, &task)
+}
+
 func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration, heartbeatTimeout time.Duration) (*ActivityTaskResult, error) {
 	s.pendingTasksMu.Lock()
 	ch := make(chan *ActivityTaskResult, 1)
@@ -641,8 +753,10 @@ func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken str
 		case result := <-ch:
 			return result, nil
 		case <-timer.C:
+			s.markTaskTimedOut(taskToken)
 			return nil, ErrTaskTimeout
 		case <-ctx.Done():
+			s.markTaskTimedOut(taskToken)
 			return nil, ctx.Err()
 		}
 	}
@@ -655,6 +769,7 @@ func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken str
 		case result := <-ch:
 			return result, nil
 		case <-timer.C:
+			s.markTaskTimedOut(taskToken)
 			return nil, ErrTaskTimeout
 		case <-hbTimer.C:
 			var task ActivityTask
@@ -666,10 +781,12 @@ func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken str
 				lastHB = task.CreatedAt
 			}
 			if time.Since(lastHB) > heartbeatTimeout {
+				s.markTaskTimedOut(taskToken)
 				return nil, ErrHeartbeatTimeout
 			}
 			hbTimer.Reset(heartbeatTimeout)
 		case <-ctx.Done():
+			s.markTaskTimedOut(taskToken)
 			return nil, ctx.Err()
 		}
 	}

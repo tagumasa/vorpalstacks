@@ -2,7 +2,7 @@
 
 [English](README.md) | [中文](README.zh.md)
 
-> **注意：現在ベータ版です。** Vorpalstacksは現在アクティブに開発中です。33のAWSサービスを実装し、2,702件のSDKテスト、47件のサービス間統合テスト、17件のWebSocketテスト（計2,766件、他にPython 631件、TypeScript 2028件、C# 2019件）が通過していますが、すべてのエッジケースとAWSの動作が完全にカバーされているわけではありません。破壊的変更が発生する可能性があります。バグ報告とコントリビューションはもちろん歓迎しています。
+> **注意：現在ベータ版です。** Vorpalstacksは現在アクティブに開発中です。34のAWSサービスを実装し、2,865件のSDKテスト、47件のサービス間統合テスト、17件のWebSocketテスト（計2,929件、他にPython 631件、TypeScript 2028件、C# 2019件）が通過していますが、すべてのエッジケースとAWSの動作が完全にカバーされているわけではありません。破壊的変更が発生する可能性があります。バグ報告とコントリビューションはもちろん歓迎しています。
 
 AWS互換サービスを提供する軽量エッジ・オンプレミスクラウドプラットフォーム。
 
@@ -24,7 +24,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 > **本プロジェクトが提供しないもの**: すべてのAWS動作の完全な再現ではありません。一部のエッジケース、公式ドキュメントにない動作、高度な機能はAWSと異なる場合があります。各サービスの対応範囲については[docs/services.md](docs/services.md)を参照してください。
 
 - **AWS API互換**: 既存のAWS SDKおよびCLIで動作
-- **33のAWSサービス**: S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Coreなど
+- **34のAWSサービス**: S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Coreなど
 - **IAM認可**: ユーザー/グループ/ロールベースのアクセス制御による完全なIAMポリシー評価
 - **DynamoDB PartiQL**: WHERE関数（attribute_exists、begins_with、contains、size）を含むSQLライククエリ
 - **S3 SelectObjectContent**: イベントストリーミングによるCSV/JSONオブジェクトへのSQLクエリ
@@ -52,7 +52,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 | CloudWatch Metrics | Broad | メトリクスストリーム、異常検知なし |
 | Cognito IDP | Selective | 外部IdP、ホストUIなし |
 | Cognito Identity | Selective | 基本的なアイデンティティプールサポートのみ |
-| DynamoDB | Full | |
+| DynamoDB | Broad | IONインポート/エクスポート未対応 |
 | EventBridge | Broad | グローバルエンドポイント、パートナーイベントソースなし |
 | IAM | Broad | ポリシーシモュレータ、Organizations統合なし |
 | IoT Core | Broad | 272操作（モノ、証明書、ポリシー、ルールエンジン16アクション、ジョブ、シャドウ、デバイス管理）。ファームウェアプロビジョニング実行なし |
@@ -216,7 +216,7 @@ Lambda機能を使用する場合：
 - CloudFrontディストリビューションは実際のエッジトラフィックを配信しません
 - CognitoホストUIドメインは未対応（CloudFrontエッジが必要）
 - SQS FIFOキューのサポートは限定されています
-- DynamoDB StreamsとGlobal Tablesは未実装です
+- DynamoDBのIONインポート/エクスポート形式はvalidationで受理されますが、ランタイムでは未実装です
 
 ## ロードマップ
 
@@ -233,9 +233,9 @@ Lambda機能を使用する場合：
 
 ## パフォーマンス
 
-Vorpalstacksは全33サービスをPebbleDBをバックエンドとするネイティブGoバイナリとして実装しており、インタプリタ言語や外部プロセス依存のオーバーヘッドを回避しています。
+Vorpalstacksは全34サービスをPebbleDBをバックエンドとするネイティブGoバイナリとして実装しており、インタプリタ言語や外部プロセス依存のオーバーヘッドを回避しています。
 
-このアーキテクチャによりコア操作でサブミリ秒のレイテンシを実現し、CI/CDパイプライン内でコンテナ化のオーバーヘッドなしに大量のAPIテスト（Go SDK 2,702件 + 統合 47件 + WS 17件、Python 631件、TypeScript 2028件、C# 2019件）を直接実行可能です。
+このアーキテクチャによりコア操作でサブミリ秒のレイテンシを実現し、CI/CDパイプライン内でコンテナ化のオーバーヘッドなしに大量のAPIテスト（Go SDK 2,865件 + 統合 47件 + WS 17件、Python 631件、TypeScript 2028件、C# 2019件）を直接実行可能です。
 
 ### ベンチマーク結果（参考値）
 

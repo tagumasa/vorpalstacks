@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -182,7 +184,7 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 		subject = s
 	}
 
-	msgID := fmt.Sprintf("%x", time.Now().UnixNano())
+	msgID := uuid.New().String()
 	msgAttrs := extractStringAttrs(inputData["MessageAttributes"])
 	msg := map[string]interface{}{
 		"MessageId":         msgID,
@@ -310,7 +312,10 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		}
 
 		event := map[string]interface{}{
-			"ID":           fmt.Sprintf("%x", now.UnixNano()),
+			// EventBridge event IDs are UUIDs; entries published in the
+			// same tick must still receive distinct IDs (and storage
+			// keys), which a shared clock value cannot guarantee.
+			"ID":           uuid.New().String(),
 			"EventBusName": eventBusName,
 			"Source":       getStringOrEmpty(entry, "Source", "source"),
 			"DetailType":   getStringOrEmpty(entry, "DetailType", "detailType"),
@@ -358,7 +363,11 @@ func getStringOrEmpty(m map[string]interface{}, keys ...string) string {
 	return getStr(m, keys...)
 }
 
-func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string, timeoutSeconds, heartbeatSeconds int32) (string, string, error) {
+// executeActivityTask schedules the activity task for one attempt. The
+// token is minted by executeTask for this specific attempt and passed
+// explicitly, so concurrent Map/Parallel branches and retry attempts never
+// share or clobber each other's tokens.
+func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string, taskToken string, timeoutSeconds, heartbeatSeconds int32) (string, string, error) {
 	parts := strings.Split(state.Resource, ":")
 	if len(parts) < 7 {
 		return "", "", fmt.Errorf("invalid activity ARN: %s", state.Resource)
@@ -376,6 +385,10 @@ func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionCo
 		ActivityArn:  activityArn,
 		ExecutionArn: execCtx.Execution.ExecutionArn,
 		Input:        input,
+		// The attempt's token — the same value $$.Task.Token resolved to
+		// while building the input, so the worker can return it with
+		// SendTaskSuccess/SendTaskFailure.
+		TaskToken: taskToken,
 	}
 
 	if err := e.store.CreateActivityTask(task); err != nil {

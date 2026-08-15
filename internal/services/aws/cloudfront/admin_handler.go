@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
 	svccommon "vorpalstacks/internal/common"
@@ -66,7 +66,9 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("at least one origin with a domain name is required"))
 	}
 
-	callerRef := fmt.Sprintf("%d", time.Now().UnixNano())
+	// The caller reference is CloudFront's idempotency token; mint it from
+	// crypto/rand so concurrent creations cannot collide on a clock value.
+	callerRef := uuid.New().String()
 
 	result, err := h.service.createDistributionFromAdmin(ctx, stores, AdminCreateDistributionInput{
 		CallerReference: callerRef,

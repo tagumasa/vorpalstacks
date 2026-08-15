@@ -12,24 +12,57 @@ import (
 )
 
 func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState) (string, string, *ExecutionError) {
+	// The attempt token lives on the execution context so every evaluation
+	// dialect sees the same value; it is cleared on exit so later states'
+	// context objects carry no stale Task section.
+	defer func() { execCtx.TaskToken = "" }()
+
 	isJSONata := IsJSONataState(state, execCtx.QueryLanguage)
+	baseInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
 
-	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
+	// evaluateTaskInput applies Arguments/Parameters for a single attempt.
+	// It runs per attempt rather than once per state because the attempt's
+	// token and $$.State.RetryCount must reflect the attempt being
+	// dispatched, and each activity attempt is stored under its own token.
+	// The token reaches the payload through both dialects: JSONPath
+	// Parameters resolve $$.Task.Token from the taskToken parameter, and
+	// JSONata Arguments resolve $states.context.Task.Token from the context
+	// object built with that token. taskToken is empty for non-activity
+	// resources, where any Task.Token reference fails the evaluation.
+	evaluateTaskInput := func(taskToken string) (string, *ExecutionError) {
+		if isJSONata && state.Arguments != nil {
+			var inputData interface{}
+			if err := json.Unmarshal([]byte(baseInput), &inputData); err != nil {
+				return "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+			}
+			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+			argsInput, err := e.applyJSONataArguments(ctx, state.Arguments, statesVar, execCtx.VariableScope)
+			if err != nil {
+				return "", e.newQueryEvalError(ctx, execCtx, "Arguments", err.Error())
+			}
+			execCtx.AfterArguments = &argsInput
+			return argsInput, nil
+		}
+		if state.Parameters != nil {
+			applied, err := e.applyParameters(taskToken, baseInput, state.Parameters)
+			if err != nil {
+				return "", &ExecutionError{ErrorCode: "States.Runtime", Cause: err.Error()}
+			}
+			return applied, nil
+		}
+		return baseInput, nil
+	}
 
-	if isJSONata && state.Arguments != nil {
-		var inputData interface{}
-		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
-			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
-		}
-		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
-		argsInput, err := e.applyJSONataArguments(ctx, state.Arguments, statesVar, execCtx.VariableScope)
-		if err != nil {
-			return "", "", e.newQueryEvalError(ctx, execCtx, "Arguments", err.Error())
-		}
-		processedInput = argsInput
-		execCtx.AfterArguments = &processedInput
-	} else if state.Parameters != nil {
-		processedInput = e.applyParameters(processedInput, state.Parameters)
+	// The attempt-1 evaluation feeds the history events and the output
+	// processing below; retries re-evaluate inside the loop.
+	taskToken := ""
+	if e.isActivityResource(state.Resource) {
+		taskToken = generateTaskToken()
+	}
+	execCtx.TaskToken = taskToken
+	processedInput, evalErr := evaluateTaskInput(taskToken)
+	if evalErr != nil {
+		return "", "", evalErr
 	}
 
 	timeoutSeconds := state.GetTimeoutSeconds()
@@ -100,10 +133,30 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 	}
 
 	attempt := int32(0)
+	attemptInput := processedInput
+	attemptToken := taskToken
 
 	for {
 		attempt++
 		execCtx.RetryCount = attempt - 1
+
+		if attempt > 1 {
+			// Every retry schedules a fresh task: the activity record is
+			// keyed by token, so a new token keeps attempts as separate
+			// records and invalidates the previous attempt's token; the
+			// input is re-evaluated so the worker receives the new token
+			// wherever the token appears in the payload.
+			attemptToken = ""
+			if e.isActivityResource(state.Resource) {
+				attemptToken = generateTaskToken()
+			}
+			execCtx.TaskToken = attemptToken
+			var evalErr *ExecutionError
+			attemptInput, evalErr = evaluateTaskInput(attemptToken)
+			if evalErr != nil {
+				return "", "", evalErr
+			}
+		}
 
 		taskCtx := ctx
 		var cancel context.CancelFunc
@@ -112,17 +165,17 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 		}
 
 		if arnutil.IsLambdaARN(state.Resource) {
-			output, taskErr = e.executeLambdaTask(taskCtx, execCtx, state, processedInput)
+			output, taskErr = e.executeLambdaTask(taskCtx, execCtx, state, attemptInput)
 		} else if e.isActivityResource(state.Resource) {
-			output, _, taskErr = e.executeActivityTask(taskCtx, execCtx, state, processedInput, timeoutSeconds, heartbeatSeconds)
+			output, _, taskErr = e.executeActivityTask(taskCtx, execCtx, state, attemptInput, attemptToken, timeoutSeconds, heartbeatSeconds)
 		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::sqs:") {
-			output, taskErr = e.executeSQSTask(taskCtx, execCtx, state, processedInput)
+			output, taskErr = e.executeSQSTask(taskCtx, execCtx, state, attemptInput)
 		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::sns:") {
-			output, taskErr = e.executeSNSTask(taskCtx, execCtx, state, processedInput)
+			output, taskErr = e.executeSNSTask(taskCtx, execCtx, state, attemptInput)
 		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::events:") {
-			output, taskErr = e.executeEventsTask(taskCtx, execCtx, state, processedInput)
+			output, taskErr = e.executeEventsTask(taskCtx, execCtx, state, attemptInput)
 		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::dynamodb:") {
-			output, taskErr = e.executeDynamoDBTask(taskCtx, execCtx, state, processedInput)
+			output, taskErr = e.executeDynamoDBTask(taskCtx, execCtx, state, attemptInput)
 		} else {
 			taskErr = fmt.Errorf("unsupported resource type: %s", state.Resource)
 		}
@@ -257,7 +310,11 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 			output = string(outputJSON)
 		}
 	} else {
-		output = e.applyResultSelector(output, state.GetResultSelector())
+		selected, selErr := e.applyResultSelector(output, state.GetResultSelector(), attemptToken)
+		if selErr != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.Runtime", Cause: selErr.Error()}
+		}
+		output = selected
 		output = e.applyResultPath(processedInput, output, state.ResultPath)
 		output = e.applyOutputPath(output, state.GetOutputPath())
 	}

@@ -500,9 +500,13 @@ func (s *CloudWatchService) putCompositeAlarmCore(stores *cloudwatchStores, inpu
 	if input.AlarmRule == "" {
 		return "", ErrInvalidParameter
 	}
-	if _, err := parseAlarmRule(input.AlarmRule); err != nil {
+	rule, err := parseAlarmRule(input.AlarmRule)
+	if err != nil {
 		return "", awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("Invalid AlarmRule: %v", err))
+	}
+	if err := validateCompositeAcyclic(stores.alarms, input.AlarmName, rule); err != nil {
+		return "", err
 	}
 	if err := validateAlarmActions(input.AlarmActions, input.OKActions, input.InsufficientDataActions); err != nil {
 		return "", err

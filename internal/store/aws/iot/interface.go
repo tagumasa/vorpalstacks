@@ -104,6 +104,7 @@ type RoleAliasOps interface {
 
 type JobOps interface {
 	CreateJob(job *Job) (*Job, error)
+	AssociateJobTargets(jobID string, newTargets []string, comment string) (*Job, error)
 	GetJob(jobID string) (*Job, error)
 	UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error)
 	DeleteJob(jobID string) error
@@ -171,6 +172,7 @@ type IndexingConfigOps interface {
 
 type ProvisioningTemplateVersionOps interface {
 	CreateProvisioningTemplateVersion(name string, v *ProvisioningTemplateVersion) (*ProvisioningTemplateVersion, error)
+	SetDefaultProvisioningTemplateVersion(name string, versionID int64) error
 	GetProvisioningTemplateVersion(name, versionID string) (*ProvisioningTemplateVersion, error)
 	DeleteProvisioningTemplateVersion(name, versionID string) error
 	ListProvisioningTemplateVersions(name string, opts common.ListOptions) ([]*ProvisioningTemplateVersion, error)

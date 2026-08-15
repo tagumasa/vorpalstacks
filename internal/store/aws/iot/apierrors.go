@@ -61,6 +61,7 @@ var (
 	ErrDetectMitigationTaskNotFound      = awserrors.NewAWSError("ResourceNotFoundException", "The specified detect mitigation actions task does not exist.", 404)
 	ErrSecurityProfileAttachmentNotFound = awserrors.NewAWSError("ResourceNotFoundException", "The specified security profile attachment does not exist.", 404)
 	ErrStreamNotFound                    = awserrors.NewAWSError("ResourceNotFoundException", "The specified stream does not exist.", 404)
+	ErrStreamAlreadyExists               = awserrors.NewAWSError("ResourceAlreadyExistsException", "The specified stream already exists.", 409)
 	ErrPackageNotFound                   = awserrors.NewAWSError("ResourceNotFoundException", "The specified package does not exist.", 404)
 	ErrPackageVersionNotFound            = awserrors.NewAWSError("ResourceNotFoundException", "The specified package version does not exist.", 404)
 	ErrCommandNotFound                   = awserrors.NewAWSError("ResourceNotFoundException", "The specified command does not exist.", 404)

@@ -45,4 +45,7 @@ var (
 	ErrClientNotFound = awserrors.NewAWSError("ResourceNotFoundException", "Client not found", http.StatusNotFound)
 	// ErrClientAlreadyExists is returned when attempting to create a client that already exists.
 	ErrClientAlreadyExists = awserrors.NewAWSError("ResourceExistsException", "Client already exists", http.StatusConflict)
+	// ErrInvalidLambdaResponse is returned when a Lambda trigger returns a
+	// malformed response, for example an unknown challenge name.
+	ErrInvalidLambdaResponse = awserrors.NewAWSError("InvalidLambdaResponseException", "Invalid Lambda response", http.StatusBadRequest)
 )

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -197,7 +199,7 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 	}
 
 	_, _, region, accountID, _ := svcarn.SplitARN(topicArn)
-	messageID := fmt.Sprintf("%d", time.Now().UnixNano())
+	messageID := uuid.New().String()
 	snsEvt := &eventbus.SNSDeliveryEvent{
 		EventBase: eventbus.EventBase{
 			Timestamp: time.Now().UTC(),

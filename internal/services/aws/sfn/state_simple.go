@@ -17,7 +17,11 @@ func (e *Executor) executePass(ctx context.Context, execCtx *ExecutionContext, s
 	}
 
 	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
-	processedInput = e.applyParameters(processedInput, state.Parameters)
+	applied, err := e.applyParameters("", processedInput, state.Parameters)
+	if err != nil {
+		return "", "", fmt.Errorf("Parameters: %w", err)
+	}
+	processedInput = applied
 
 	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
@@ -41,7 +45,11 @@ func (e *Executor) executePass(ctx context.Context, execCtx *ExecutionContext, s
 		output = string(resultJSON)
 	}
 
-	output = e.applyResultSelector(output, state.GetResultSelector())
+	selected, selErr := e.applyResultSelector(output, state.GetResultSelector(), "")
+	if selErr != nil {
+		return "", "", fmt.Errorf("ResultSelector: %w", selErr)
+	}
+	output = selected
 	output = e.applyResultPath(processedInput, output, state.ResultPath)
 	output = e.applyOutputPath(output, state.GetOutputPath())
 

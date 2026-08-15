@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -192,5 +193,115 @@ func (s *IoTService) ListProvisioningTemplateVersions(ctx context.Context, reqCt
 		})
 	}
 
+	// The store iterates keys lexicographically ("1", "10", "11", "2");
+	// version IDs are numeric and must be listed in numeric order.
+	sort.Slice(items, func(i, j int) bool {
+		return items[i]["versionId"].(int32) < items[j]["versionId"].(int32)
+	})
+
 	return paginatedMaps("versions", items, req.Parameters), nil
+}
+
+// ---------------------------------------------------------------------------
+// ProvisioningTemplateVersion operations.
+// ---------------------------------------------------------------------------
+
+func (s *IoTService) CreateProvisioningTemplateVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	templateName := request.GetParamCaseInsensitive(req.Parameters, "templateName")
+	if templateName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if tmpl, err := store.GetProvisioningTemplate(templateName); err != nil {
+		return nil, err
+	} else if tmpl == nil || tmpl.TemplateName == "" {
+		return nil, iotstore.ErrTemplateNotFound
+	}
+	// Determine the next version ID by scanning existing versions.
+	existing, err := store.ListProvisioningTemplateVersions(templateName, parseListOptions(req.Parameters))
+	if err != nil {
+		return nil, err
+	}
+	maxVersion := 0
+	for _, v := range existing {
+		var n int
+		fmt.Sscanf(v.VersionID, "%d", &n)
+		if n > maxVersion {
+			maxVersion = n
+		}
+	}
+	versionID := fmt.Sprintf("%d", maxVersion+1)
+	v := &iotstore.ProvisioningTemplateVersion{
+		VersionID:        versionID,
+		TemplateBody:     request.GetParamCaseInsensitive(req.Parameters, "templateBody"),
+		IsDefaultVersion: request.GetBoolParam(req.Parameters, "setAsDefault"),
+		CreationDate:     time.Now().UTC(),
+	}
+	if _, err := store.CreateProvisioningTemplateVersion(templateName, v); err != nil {
+		return nil, err
+	}
+	if v.IsDefaultVersion {
+		// setAsDefault must repoint the template's default version and
+		// clear the sibling versions' flags in one step; otherwise the new
+		// version claims to be the default while the template still
+		// resolves to the previous one, and two versions would report
+		// themselves as the default at once.
+		if err := store.SetDefaultProvisioningTemplateVersion(templateName, int64(maxVersion+1)); err != nil {
+			return nil, err
+		}
+	}
+	versionIDInt := int32(maxVersion + 1)
+	return map[string]interface{}{
+		"templateArn":      iotstore.BuildProvisioningTemplateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), templateName),
+		"templateName":     templateName,
+		"versionId":        versionIDInt,
+		"isDefaultVersion": v.IsDefaultVersion,
+	}, nil
+}
+
+func (s *IoTService) DeleteProvisioningTemplateVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	templateName := request.GetParamCaseInsensitive(req.Parameters, "templateName")
+	versionID := request.GetParamCaseInsensitive(req.Parameters, "versionId")
+	if templateName == "" || versionID == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetProvisioningTemplateVersion(templateName, versionID); err != nil {
+		return nil, err
+	}
+	if err := store.DeleteProvisioningTemplateVersion(templateName, versionID); err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{}, nil
+}
+
+func (s *IoTService) DescribeProvisioningTemplateVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	templateName := request.GetParamCaseInsensitive(req.Parameters, "templateName")
+	versionID := request.GetParamCaseInsensitive(req.Parameters, "versionId")
+	if templateName == "" || versionID == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	v, err := store.GetProvisioningTemplateVersion(templateName, versionID)
+	if err != nil {
+		return nil, err
+	}
+	var versionIDInt int32
+	fmt.Sscanf(v.VersionID, "%d", &versionIDInt)
+	return map[string]interface{}{
+		"templateName":     templateName,
+		"versionId":        versionIDInt,
+		"templateBody":     v.TemplateBody,
+		"isDefaultVersion": v.IsDefaultVersion,
+		"creationDate":     v.CreationDate.UTC().Unix(),
+	}, nil
 }

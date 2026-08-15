@@ -39,14 +39,19 @@ func (e *Executor) applyOutputPath(output string, outputPath string) string {
 	return e.applyInputPath(output, outputPath)
 }
 
-func (e *Executor) applyParameters(input string, params *sfnstore.Parameters) string {
+// applyParameters applies a Parameters block to the state input. taskToken
+// is the token minted for the current activity-task attempt so
+// $$.Task.Token resolves to the exact token the worker must return; callers
+// outside task Parameters pass an empty string, and a $$.Task.Token
+// reference there fails the evaluation.
+func (e *Executor) applyParameters(taskToken string, input string, params *sfnstore.Parameters) (string, error) {
 	if params == nil || params.Values == nil {
-		return input
+		return input, nil
 	}
 
 	var inputData interface{}
 	if err := json.Unmarshal([]byte(input), &inputData); err != nil {
-		return input
+		return input, nil
 	}
 
 	dataMap, ok := inputData.(map[string]interface{})
@@ -60,38 +65,45 @@ func (e *Executor) applyParameters(input string, params *sfnstore.Parameters) st
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
 				if strings.HasPrefix(jsonPath, "$$.") {
-					result[cleanKey] = e.getContextValue(jsonPath)
+					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
+					if ctxErr != nil {
+						return "", ctxErr
+					}
+					result[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
 					result[cleanKey] = resolved
 				}
 			}
 		} else {
-			processedValue := e.processParameterValue(value, dataMap)
+			processedValue, procErr := e.processParameterValue(taskToken, value, dataMap)
+			if procErr != nil {
+				return "", procErr
+			}
 			result[key] = processedValue
 		}
 	}
 
 	resultJSON, err := json.Marshal(result)
 	if err != nil {
-		return input
+		return input, nil
 	}
-	return string(resultJSON)
+	return string(resultJSON), nil
 }
 
-func (e *Executor) processParameterValue(value interface{}, inputData map[string]interface{}) interface{} {
+func (e *Executor) processParameterValue(taskToken string, value interface{}, inputData map[string]interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
 		if strings.HasSuffix(v, ".$") {
 			jsonPath := strings.TrimSuffix(v, ".$")
 			if strings.HasPrefix(jsonPath, "$$.") {
-				return e.getContextValue(jsonPath)
+				return e.getContextValue(taskToken, jsonPath)
 			}
 			if val, exists := getJSONPathValueRaw(inputData, jsonPath); exists {
-				return val
+				return val, nil
 			}
-			return nil
+			return nil, nil
 		}
-		return v
+		return v, nil
 	case map[string]interface{}:
 		result := make(map[string]interface{})
 		for key, val := range v {
@@ -101,23 +113,35 @@ func (e *Executor) processParameterValue(value interface{}, inputData map[string
 					continue
 				}
 				if strings.HasPrefix(jsonPath, "$$.") {
-					result[strings.TrimSuffix(key, ".$")] = e.getContextValue(jsonPath)
+					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
+					if ctxErr != nil {
+						return nil, ctxErr
+					}
+					result[strings.TrimSuffix(key, ".$")] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(inputData, jsonPath); exists {
 					result[strings.TrimSuffix(key, ".$")] = resolved
 				}
 			} else {
-				result[key] = e.processParameterValue(val, inputData)
+				processed, procErr := e.processParameterValue(taskToken, val, inputData)
+				if procErr != nil {
+					return nil, procErr
+				}
+				result[key] = processed
 			}
 		}
-		return result
+		return result, nil
 	case []interface{}:
 		result := make([]interface{}, len(v))
 		for i, item := range v {
-			result[i] = e.processParameterValue(item, inputData)
+			processed, procErr := e.processParameterValue(taskToken, item, inputData)
+			if procErr != nil {
+				return nil, procErr
+			}
+			result[i] = processed
 		}
-		return result
+		return result, nil
 	default:
-		return value
+		return value, nil
 	}
 }
 
@@ -163,19 +187,25 @@ func setNestedPath(data map[string]interface{}, path string, value interface{}) 
 	}
 }
 
-func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultSelector) string {
+// applyResultSelector applies a ResultSelector block to a state's result.
+// taskToken is the token of the task attempt that produced the result
+// (activity tasks only): the context object exposes $$.Task.Token in
+// ResultSelector, and for an activity task it resolves to the token the
+// attempt actually ran under. States without a token pass an empty string;
+// a $$.Task.Token reference there fails the evaluation.
+func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultSelector, taskToken string) (string, error) {
 	if selector == nil || selector.Fields == nil {
-		return result
+		return result, nil
 	}
 
 	var resultData interface{}
 	if err := json.Unmarshal([]byte(result), &resultData); err != nil {
-		return result
+		return result, nil
 	}
 
 	dataMap, ok := resultData.(map[string]interface{})
 	if !ok {
-		return result
+		return result, nil
 	}
 
 	output := make(map[string]interface{})
@@ -184,22 +214,29 @@ func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultS
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
 				if strings.HasPrefix(jsonPath, "$$.") {
-					output[cleanKey] = e.getContextValue(jsonPath)
+					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
+					if ctxErr != nil {
+						return "", ctxErr
+					}
+					output[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
 					output[cleanKey] = resolved
 				}
 			}
 		} else {
-			processedValue := e.processParameterValue(value, dataMap)
+			processedValue, procErr := e.processParameterValue(taskToken, value, dataMap)
+			if procErr != nil {
+				return "", procErr
+			}
 			output[key] = processedValue
 		}
 	}
 
 	outputJSON, err := json.Marshal(output)
 	if err != nil {
-		return result
+		return result, nil
 	}
-	return string(outputJSON)
+	return string(outputJSON), nil
 }
 
 func buildVarsMap(statesVar interface{}, scope *VariableScope) map[string]interface{} {
@@ -300,7 +337,13 @@ func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue int
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
 				if strings.HasPrefix(jsonPath, "$$.") {
-					output[cleanKey] = e.getContextValue(jsonPath)
+					// A Map ItemSelector evaluates outside any task, so no
+					// attempt token exists; a $$.Task.Token reference fails.
+					ctxVal, ctxErr := e.getContextValue("", jsonPath)
+					if ctxErr != nil {
+						return nil, ctxErr
+					}
+					output[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(itemMap, jsonPath); exists {
 					output[cleanKey] = resolved
 				}

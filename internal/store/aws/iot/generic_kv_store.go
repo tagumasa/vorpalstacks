@@ -25,8 +25,7 @@ func (s *IotStore) GetGeneric(key string, dest interface{}) error {
 
 // GetGenericExists fetches a generic-KV record and reports whether it exists.
 // A missing key returns (false, nil) so callers can distinguish "not found"
-// from genuine store errors, fixing the previous bulkGet dead logic where a
-// missing record left a pre-allocated map in place and was reported as found.
+// from genuine store errors.
 func (s *IotStore) GetGenericExists(key string, dest interface{}) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

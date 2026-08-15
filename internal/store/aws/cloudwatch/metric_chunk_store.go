@@ -3,11 +3,9 @@ package cloudwatch
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -575,7 +573,7 @@ func (s *MetricChunkStore) aggregateStatistics(dataPoints []*MetricDataPoint, qu
 
 		var sum, min, max float64
 		var count float64
-		var allValues []float64
+		var samples sampleAccumulator
 		first := true
 
 		for _, dp := range points {
@@ -590,6 +588,17 @@ func (s *MetricChunkStore) aggregateStatistics(dataPoints []*MetricDataPoint, qu
 				sum += sv.Sum
 				count += sv.SampleCount
 				first = false
+				// AWS computes percentiles from raw data points only;
+				// a statistic set yields a percentile solely when
+				// Min == Max, i.e. every underlying sample equals that
+				// value. Record it as a single weighted sample instead
+				// of expanding by SampleCount, so the weight can be
+				// resolved analytically. Non-uniform statistic sets
+				// leave the accumulator without that set and percentiles
+				// come back absent, matching AWS's "not available".
+				if sv.Minimum == sv.Maximum {
+					samples.add(sv.Minimum, int(sv.SampleCount))
+				}
 			} else {
 				values := dp.Values
 				counts := dp.Counts
@@ -612,14 +621,16 @@ func (s *MetricChunkStore) aggregateStatistics(dataPoints []*MetricDataPoint, qu
 					sum += v * c
 					count += c
 					first = false
-					// Collect raw values for percentile computation.
-					// For multi-value entries, expand by count (rounded).
+					// Collect raw values for percentile computation as
+					// weighted samples rather than one element per
+					// count, keeping memory independent of the count
+					// magnitude.
 					ic := int(c)
-					for j := 0; j < ic; j++ {
-						allValues = append(allValues, v)
-					}
-					if ic == 0 && c > 0 {
-						allValues = append(allValues, v)
+					switch {
+					case ic > 0:
+						samples.add(v, ic)
+					case c > 0:
+						samples.add(v, 1)
 					}
 				}
 			}
@@ -646,8 +657,8 @@ func (s *MetricChunkStore) aggregateStatistics(dataPoints []*MetricDataPoint, qu
 			}
 		}
 
-		if len(query.ExtendedStatistics) > 0 && len(allValues) > 0 {
-			stats.ExtendedStats = computeExtendedStatistics(allValues, query.ExtendedStatistics)
+		if len(query.ExtendedStatistics) > 0 && samples.total > 0 {
+			stats.ExtendedStats = computeExtendedStatistics(samples.samples, query.ExtendedStatistics)
 		}
 
 		results = append(results, stats)
@@ -658,144 +669,6 @@ func (s *MetricChunkStore) aggregateStatistics(dataPoints []*MetricDataPoint, qu
 	})
 
 	return results
-}
-
-// computeExtendedStatistics calculates extended statistics (percentiles, IQM,
-// trimmed/winsorized means) from a flat slice of metric values.
-func computeExtendedStatistics(values []float64, stats []string) map[string]float64 {
-	sorted := make([]float64, len(values))
-	copy(sorted, values)
-	sort.Float64s(sorted)
-
-	result := make(map[string]float64, len(stats))
-	for _, stat := range stats {
-		stat = strings.TrimSpace(stat)
-		lower := strings.ToLower(stat)
-		val, ok := computeExtendedStatistic(sorted, stat, lower)
-		if ok {
-			result[stat] = val
-		}
-	}
-	return result
-}
-
-// computeExtendedStatistic computes a single extended statistic from a sorted
-// slice of values. Returns (value, true) on success.
-func computeExtendedStatistic(sorted []float64, stat, lower string) (float64, bool) {
-	if len(sorted) == 0 {
-		return 0, false
-	}
-	// Percentile: p{n} (e.g. p90, p99.9)
-	if strings.HasPrefix(lower, "p") {
-		percentile, err := strconv.ParseFloat(stat[1:], 64)
-		if err != nil || percentile < 0 || percentile > 100 {
-			return 0, false
-		}
-		return percentileValue(sorted, percentile/100.0), true
-	}
-	// Trimmed mean: tm{n}
-	if strings.HasPrefix(lower, "tm") {
-		percentile, err := strconv.ParseFloat(stat[2:], 64)
-		if err != nil || percentile < 0 || percentile >= 50 {
-			return 0, false
-		}
-		return trimmedMean(sorted, percentile/100.0), true
-	}
-	// Trimmed count: tc{n}
-	if strings.HasPrefix(lower, "tc") {
-		n, err := strconv.Atoi(stat[2:])
-		if err != nil || n < 0 || n*2 >= len(sorted) {
-			return 0, false
-		}
-		return meanValue(sorted[n : len(sorted)-n]), true
-	}
-	// Trimmed sum: ts{n}
-	if strings.HasPrefix(lower, "ts") {
-		n, err := strconv.Atoi(stat[2:])
-		if err != nil || n < 0 || n*2 >= len(sorted) {
-			return 0, false
-		}
-		return sumValue(sorted[n : len(sorted)-n]), true
-	}
-	// Winsorized mean: wm{n}
-	if strings.HasPrefix(lower, "wm") {
-		percentile, err := strconv.ParseFloat(stat[2:], 64)
-		if err != nil || percentile < 0 || percentile >= 50 {
-			return 0, false
-		}
-		return winsorizedMean(sorted, percentile/100.0), true
-	}
-	// Interquartile mean: IQM
-	if lower == "iqm" {
-		return interquartileMean(sorted), true
-	}
-	return 0, false
-}
-
-func percentileValue(sorted []float64, p float64) float64 {
-	n := len(sorted)
-	if n == 1 {
-		return sorted[0]
-	}
-	rank := p * float64(n-1)
-	lowerIdx := int(math.Floor(rank))
-	upperIdx := lowerIdx + 1
-	if upperIdx >= n {
-		return sorted[n-1]
-	}
-	frac := rank - float64(lowerIdx)
-	return sorted[lowerIdx] + frac*(sorted[upperIdx]-sorted[lowerIdx])
-}
-
-func trimmedMean(sorted []float64, trimFrac float64) float64 {
-	n := len(sorted)
-	trimCount := int(float64(n) * trimFrac)
-	if trimCount*2 >= n {
-		return 0
-	}
-	return meanValue(sorted[trimCount : n-trimCount])
-}
-
-func winsorizedMean(sorted []float64, trimFrac float64) float64 {
-	n := len(sorted)
-	trimCount := int(float64(n) * trimFrac)
-	if trimCount*2 >= n {
-		return meanValue(sorted)
-	}
-	winCopy := make([]float64, n)
-	copy(winCopy, sorted)
-	lowVal := sorted[trimCount]
-	highVal := sorted[n-1-trimCount]
-	for i := 0; i < trimCount; i++ {
-		winCopy[i] = lowVal
-		winCopy[n-1-i] = highVal
-	}
-	return meanValue(winCopy)
-}
-
-func interquartileMean(sorted []float64) float64 {
-	n := len(sorted)
-	q1Idx := int(0.25 * float64(n-1))
-	q3Idx := int(0.75 * float64(n-1))
-	if q3Idx <= q1Idx {
-		return meanValue(sorted)
-	}
-	return meanValue(sorted[q1Idx : q3Idx+1])
-}
-
-func meanValue(values []float64) float64 {
-	if len(values) == 0 {
-		return 0
-	}
-	return sumValue(values) / float64(len(values))
-}
-
-func sumValue(values []float64) float64 {
-	var s float64
-	for _, v := range values {
-		s += v
-	}
-	return s
 }
 
 func (s *MetricChunkStore) buildDimensionsKey(dimensions []Dimension) string {

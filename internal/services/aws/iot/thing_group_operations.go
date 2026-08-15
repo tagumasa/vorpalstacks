@@ -228,3 +228,31 @@ func (s *IoTService) ListThingGroupsForThing(ctx context.Context, reqCtx *reques
 
 	return paginatedMaps("thingGroups", result, req.Parameters), nil
 }
+
+// ---------------------------------------------------------------------------
+// UpdateThingGroupsForThing: atomically add/remove thing group memberships.
+// ---------------------------------------------------------------------------
+
+func (s *IoTService) UpdateThingGroupsForThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
+	if thingName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	add := request.GetStringList(req.Parameters, "thingGroupsToAdd")
+	remove := request.GetStringList(req.Parameters, "thingGroupsToRemove")
+	for _, g := range add {
+		if err := store.AddThingToThingGroup(thingName, g); err != nil {
+			return nil, err
+		}
+	}
+	for _, g := range remove {
+		if err := store.RemoveThingFromThingGroup(thingName, g); err != nil {
+			return nil, err
+		}
+	}
+	return map[string]interface{}{}, nil
+}

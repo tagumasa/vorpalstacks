@@ -1,0 +1,751 @@
+package sts
+
+import (
+	"context"
+	"encoding/base64"
+	"os"
+	"regexp"
+	"strings"
+
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/request"
+	stsstore "vorpalstacks/internal/store/aws/sts"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/timeutils"
+)
+
+func validateDurationSeconds(durationSeconds int) (int, error) {
+	if durationSeconds == 0 {
+		return DefaultDurationSeconds, nil
+	}
+	if durationSeconds < MinDurationSeconds || durationSeconds > MaxDurationSeconds {
+		return 0, ErrInvalidDuration
+	}
+	return durationSeconds, nil
+}
+
+// enforceRoleMaxSessionDuration rejects a DurationSeconds value that
+// exceeds the role's configured MaxSessionDuration. The caller must
+// already have normalised 0 → DefaultDurationSeconds via
+// validateDurationSeconds before calling. A roleMaxSessionDuration <= 0
+// means the role store defaulted it to 3600 already, so no enforcement
+// is needed.
+func enforceRoleMaxSessionDuration(durationSeconds, roleMaxSessionDuration int) error {
+	// The IAM role store normalises MaxSessionDuration to 3600 when it
+	// is zero or unset. A zero value here means the role data is
+	// malformed — fail-closed by treating it as the AWS default (3600)
+	// rather than silently skipping enforcement.
+	if roleMaxSessionDuration <= 0 {
+		roleMaxSessionDuration = 3600
+	}
+	if durationSeconds > roleMaxSessionDuration {
+		return ErrInvalidDuration
+	}
+	return nil
+}
+
+// validateRootDurationSeconds validates the DurationSeconds parameter for
+// AssumeRoot per the Smithy RootDurationSecondsType trait (range 0-900,
+// default 900). Duration 0 means "use the 900 s default", not
+// immediate expiry.
+func validateRootDurationSeconds(durationSeconds int) (int, error) {
+	if durationSeconds == 0 {
+		return DefaultRootDurationSeconds, nil
+	}
+	if durationSeconds < 0 || durationSeconds > MaxRootDurationSeconds {
+		return 0, ErrInvalidRootDuration
+	}
+	return durationSeconds, nil
+}
+
+// sessionNamePattern mirrors the Smithy roleSessionNameType and
+// sourceIdentityType traits: [\w+=,.@-]* with length 2-64.
+var sessionNamePattern = regexp.MustCompile(`^[\w+=,.@-]{2,64}$`)
+
+// validateRoleSessionName checks the RoleSessionName parameter against the
+// Smithy roleSessionNameType trait (pattern [\w+=,.@-]*, length 2-64).
+func validateRoleSessionName(name string) error {
+	if name == "" {
+		return ErrInvalidParameter
+	}
+	if !sessionNamePattern.MatchString(name) {
+		return ErrInvalidParameter
+	}
+	return nil
+}
+
+// validateSourceIdentity checks the SourceIdentity parameter against the
+// Smithy sourceIdentityType trait (pattern [\w+=,.@-]*, length 2-64) and
+// rejects values beginning with the reserved "aws:" prefix.
+func validateSourceIdentity(si string) error {
+	if si == "" {
+		return nil
+	}
+	if strings.HasPrefix(si, "aws:") {
+		return ErrInvalidSourceIdentity
+	}
+	if !sessionNamePattern.MatchString(si) {
+		return ErrInvalidSourceIdentity
+	}
+	return nil
+}
+
+// allowedRootTaskPolicyNames enumerates the AWS root-task managed policies
+// that AssumeRoot accepts as TaskPolicyArn. AWS docs reference:
+// https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoot.html
+var allowedRootTaskPolicyNames = map[string]bool{
+	"IAMAuditRootUserCredentials":  true,
+	"IAMCreateRootUserPassword":    true,
+	"IAMDeleteRootUserCredentials": true,
+	"S3UnlockBucketPolicy":         true,
+	"SQSUnlockQueuePolicy":         true,
+}
+
+// rootTaskPolicyDocuments maps each AWS root-task managed policy to the
+// policy document that scopes the AssumeRoot session. The action sets are
+// the ones AWS documents for each task policy ("Perform a privileged task on
+// an AWS Organizations member account", IAM User Guide): audit reads for
+// IAMAuditRootUserCredentials, credential deletion for
+// IAMDeleteRootUserCredentials, password recovery for
+// IAMCreateRootUserPassword, bucket-policy replacement for
+// S3UnlockBucketPolicy and queue-policy replacement for SQSUnlockQueuePolicy.
+// The document is attached as the session's inline policy so the authoriser
+// evaluates every request of the session against the task scope instead of
+// granting unrestricted root access.
+var rootTaskPolicyDocuments = map[string]string{
+	"IAMAuditRootUserCredentials": `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "iam:GetUser",
+      "iam:GetLoginProfile",
+      "iam:ListAccessKeys",
+      "iam:ListSigningCertificates",
+      "iam:ListMFADevices",
+      "iam:GetAccessKeyLastUsed"
+    ],
+    "Resource": "*"
+  }]
+}`,
+	"IAMCreateRootUserPassword": `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "iam:GetLoginProfile",
+      "iam:CreateLoginProfile"
+    ],
+    "Resource": "*"
+  }]
+}`,
+	"IAMDeleteRootUserCredentials": `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "iam:DeleteLoginProfile",
+      "iam:DeleteAccessKey",
+      "iam:DeleteSigningCertificate",
+      "iam:DeactivateMFADevice"
+    ],
+    "Resource": "*"
+  }]
+}`,
+	"S3UnlockBucketPolicy": `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:ListBuckets",
+      "s3:GetBucketPolicy",
+      "s3:PutBucketPolicy",
+      "s3:DeleteBucketPolicy"
+    ],
+    "Resource": "*"
+  }]
+}`,
+	"SQSUnlockQueuePolicy": `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "sqs:ListQueues",
+      "sqs:GetQueueUrl",
+      "sqs:GetQueueAttributes",
+      "sqs:SetQueueAttributes"
+    ],
+    "Resource": "*"
+  }]
+}`,
+}
+
+// extractPolicyNameFromArn returns the trailing path segment of a policy ARN
+// (e.g. "IAMAuditRootUserCredentials" from
+// "arn:aws:iam::aws:policy/root-task/IAMAuditRootUserCredentials"). Bare policy
+// names without an ARN prefix are returned as-is for compatibility with SDK
+// clients that send only the policy name.
+func extractPolicyNameFromArn(arn string) string {
+	if idx := strings.LastIndex(arn, "/"); idx >= 0 {
+		return arn[idx+1:]
+	}
+	return arn
+}
+
+// AssumeRole returns a set of temporary security credentials that you can use to access AWS resources.
+func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
+	externalId := request.GetStringParam(req.Parameters, "ExternalId")
+	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
+	tokenCode := request.GetStringParam(req.Parameters, "TokenCode")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
+	}
+
+	if err := validateRoleSessionName(roleSessionName); err != nil {
+		return nil, err
+	}
+
+	if err := validateSourceIdentity(sourceIdentity); err != nil {
+		return nil, err
+	}
+
+	if externalId != "" {
+		if len(externalId) < 2 || len(externalId) > 1224 || !externalIdPattern.MatchString(externalId) {
+			return nil, ErrInvalidExternalId
+		}
+	}
+
+	if err := validateMFACredentials(serialNumber, tokenCode); err != nil {
+		return nil, err
+	}
+
+	if err := validateUnrestrictedSessionPolicy(sessionPolicy); err != nil {
+		return nil, err
+	}
+
+	sessionTags, err := extractSessionTags(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	transitiveKeys, err := extractTransitiveTagKeys(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	callerArn, callerName, err := s.resolveCallerArnOrReject(reqCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Role chaining: when the caller uses temporary credentials, forward
+	// transitive session tags from the caller's session. Transitive tags
+	// take precedence over new tags with the same key to prevent privilege
+	// escalation.
+	callerSession := s.resolveCallerSession(reqCtx, req)
+	mergedTags := make(map[string]string)
+	for k, v := range sessionTags {
+		mergedTags[k] = v
+	}
+	mergedTransitiveKeys := make(map[string]bool)
+	for _, tk := range transitiveKeys {
+		mergedTransitiveKeys[tk] = true
+	}
+	if callerSession != nil {
+		for _, tk := range callerSession.TransitiveTagKeys {
+			if v, ok := callerSession.Tags[tk]; ok {
+				mergedTags[tk] = v
+				mergedTransitiveKeys[tk] = true
+			}
+		}
+	}
+	// Validate that every request-sent transitive tag key has a
+	// corresponding value in the merged tags (either from the current
+	// request's Tags or inherited from the caller session). A
+	// transitive key without a value creates an inconsistent session:
+	// TransitiveTagKeys references a key that Tags does not contain,
+	// making the transitive flag a no-op in subsequent role chains.
+	for _, tk := range transitiveKeys {
+		if _, ok := mergedTags[tk]; !ok {
+			return nil, ErrTransitiveKeyWithoutTag
+		}
+	}
+	finalTransitiveKeys := make([]string, 0, len(mergedTransitiveKeys))
+	for k := range mergedTransitiveKeys {
+		finalTransitiveKeys = append(finalTransitiveKeys, k)
+	}
+
+	providedContexts, err := extractProvidedContexts(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	actx := &assumeContext{
+		ExternalId:       externalId,
+		SerialNumber:     serialNumber,
+		TokenCode:        tokenCode,
+		CallerName:       callerName,
+		ProvidedContexts: providedContexts,
+	}
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, callerArn, "sts:AssumeRole", actx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enforce role.MaxSessionDuration after role resolution. Without this
+	// gate a caller could request DurationSeconds beyond the role's
+	// configured maximum (security control bypass).
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	policyArns, err := extractPolicyArns(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	packedPolicySize := computePackedPolicySize(sessionPolicy, policyArns, finalTransitiveKeys, mergedTags)
+	if packedPolicySize > 100 {
+		return nil, ErrPackedPolicyTooLarge
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create(stsstore.CreateSessionParams{
+		PrincipalType:          "AssumedRole",
+		PrincipalName:          roleSessionName,
+		PrincipalArn:           roleArn,
+		RoleArn:                roleArn,
+		RoleSessionName:        roleSessionName,
+		SourceIdentity:         sourceIdentity,
+		DurationSeconds:        validDuration,
+		Tags:                   mergedTags,
+		TransitiveTagKeys:      finalTransitiveKeys,
+		MultiFactorAuthPresent: actx.MFAPresent,
+		Policy:                 sessionPolicy,
+		PolicyArns:             policyArns,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	iamStore, err := s.iamStore(reqCtx)
+	if err == nil {
+		_ = iamStore.Roles().UpdateRoleLastUsed(role.RoleName, reqCtx.GetRegion())
+	}
+
+	return withSourceIdentity(map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"PackedPolicySize": packedPolicySize,
+	}, session.SourceIdentity), nil
+}
+
+// AssumeRoleWithSAML returns a set of temporary security credentials for users who have been authenticated via a SAML authentication response.
+// VorpalStacks cannot validate SAML assertions against external IdPs, so this is only available in TEST_MODE.
+func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	principalArn := request.GetStringParam(req.Parameters, "PrincipalArn")
+	samlAssertion := request.GetStringParam(req.Parameters, "SAMLAssertion")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+
+	if roleSessionName == "" {
+		roleSessionName = "SAML"
+	} else if err := validateRoleSessionName(roleSessionName); err != nil {
+		return nil, err
+	}
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
+	}
+
+	if principalArn == "" {
+		return nil, ErrInvalidPrincipalArn
+	}
+	if err := validatePrincipalArn(principalArn); err != nil {
+		return nil, err
+	}
+
+	if samlAssertion == "" {
+		return nil, ErrInvalidSAMLAssertion
+	}
+	if err := validateSAMLAssertion(samlAssertion); err != nil {
+		return nil, err
+	}
+
+	if err := validateSessionPolicy(sessionPolicy); err != nil {
+		return nil, err
+	}
+
+	if _, err := base64.StdEncoding.DecodeString(samlAssertion); err != nil {
+		if _, err := base64.URLEncoding.DecodeString(samlAssertion); err != nil {
+			return nil, ErrInvalidSAMLAssertion
+		}
+	}
+
+	// Soft SAML expiry check: when the assertion is parseable XML with a
+	// Conditions/NotOnOrAfter attribute, reject expired assertions with
+	// ExpiredTokenException per the Smithy error mapping. Dummy tokens
+	// used in SDK tests are not affected.
+	if isSAMLAssertionExpired(samlAssertion) {
+		return nil, ErrExpiredToken
+	}
+
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, principalArn, "sts:AssumeRoleWithSAML", nil)
+	if err != nil {
+		return nil, err
+	}
+	// Enforce role.MaxSessionDuration after role resolution.
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
+	if err != nil {
+		return nil, err
+	}
+	policyArns, err := extractPolicyArns(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	packedPolicySize := computePackedPolicySize(sessionPolicy, policyArns, nil, nil)
+	if packedPolicySize > 100 {
+		return nil, ErrPackedPolicyTooLarge
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create(stsstore.CreateSessionParams{
+		PrincipalType:   "SAML",
+		PrincipalName:   principalArn,
+		PrincipalArn:    roleArn,
+		RoleArn:         roleArn,
+		RoleSessionName: roleSessionName,
+		DurationSeconds: validDuration,
+		Policy:          sessionPolicy,
+		PolicyArns:      policyArns,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract Issuer / Subject (NameID) / Audience from the SAML assertion
+	// when it is parseable XML. Falls back to legacy placeholder values for
+	// non-XML tokens (the SDK test fixture is a base64 plain-text dummy).
+	samlIssuer, samlSubject, samlAudience, _ := decodeSAMLFields(samlAssertion)
+	if samlIssuer == "" {
+		samlIssuer = "VorpalStacks"
+	}
+	if samlSubject == "" {
+		samlSubject = principalArn
+	}
+	if samlAudience == "" {
+		samlAudience = "STS"
+	}
+
+	return withSourceIdentity(map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"Subject":          samlSubject,
+		"SubjectType":      "persistent",
+		"Issuer":           samlIssuer,
+		"NameQualifier":    "SAML",
+		"Audience":         samlAudience,
+		"PackedPolicySize": packedPolicySize,
+		// SourceIdentity is optional in the Smithy
+		// AssumeRoleWithSAMLResponse shape. AWS derives the value from the
+		// SAML assertion's saml:AttributeStatement, which VorpalStacks
+		// does not parse in TEST_MODE; withSourceIdentity omits the field
+		// until a real SAML parser is introduced.
+	}, ""), nil
+}
+
+// AssumeRoleWithWebIdentity returns a set of temporary security credentials for users who have been authenticated in a mobile or web application with a web identity provider.
+// VorpalStacks cannot validate web identity tokens against external IdPs, so this is only available in TEST_MODE.
+func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	webIdentityToken := request.GetStringParam(req.Parameters, "WebIdentityToken")
+	providerId := request.GetStringParam(req.Parameters, "ProviderId")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+	if err := validateRoleArn(roleArn); err != nil {
+		return nil, err
+	}
+
+	if roleSessionName == "" {
+		roleSessionName = "web-identity-session"
+	} else if err := validateRoleSessionName(roleSessionName); err != nil {
+		return nil, err
+	}
+
+	if err := validateSourceIdentity(sourceIdentity); err != nil {
+		return nil, err
+	}
+
+	if webIdentityToken == "" {
+		return nil, ErrInvalidWebIdentityToken
+	}
+	// clientTokenType Smithy trait: length 4-20000.
+	if len(webIdentityToken) < 4 || len(webIdentityToken) > 20000 {
+		return nil, ErrInvalidWebIdentityToken
+	}
+
+	if err := validateSessionPolicy(sessionPolicy); err != nil {
+		return nil, err
+	}
+	if err := validateProviderID(providerId); err != nil {
+		return nil, err
+	}
+
+	// Soft JWT expiry check: when the web identity token is a parseable
+	// JWT with an exp claim, reject expired tokens with
+	// ExpiredTokenException per the Smithy error mapping. Tokens that
+	// are not parseable JWTs (dummy tokens in TEST_MODE) are accepted.
+	if isJWTExpired(webIdentityToken) {
+		return nil, ErrExpiredToken
+	}
+
+	// ProviderId accepts a URL (e.g. "www.amazon.com") or a full ARN per
+	// the AWS spec. When it is already an ARN, use it verbatim; otherwise
+	// construct the OIDC provider ARN from the URL.
+	federatedPrincipal := ""
+	if providerId != "" {
+		if strings.HasPrefix(providerId, "arn:") {
+			federatedPrincipal = providerId
+		} else {
+			federatedPrincipal = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().OIDCProvider(providerId)
+		}
+	}
+
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, federatedPrincipal, "sts:AssumeRoleWithWebIdentity", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enforce role.MaxSessionDuration after role resolution.
+	err = enforceRoleMaxSessionDuration(validDuration, role.MaxSessionDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	policyArns, err := extractPolicyArns(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	packedPolicySize := computePackedPolicySize(sessionPolicy, policyArns, nil, nil)
+	if packedPolicySize > 100 {
+		return nil, ErrPackedPolicyTooLarge
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create(stsstore.CreateSessionParams{
+		PrincipalType:   "WebIdentity",
+		PrincipalName:   roleSessionName,
+		PrincipalArn:    roleArn,
+		RoleArn:         roleArn,
+		RoleSessionName: roleSessionName,
+		SourceIdentity:  sourceIdentity,
+		DurationSeconds: validDuration,
+		Policy:          sessionPolicy,
+		PolicyArns:      policyArns,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// SubjectFromWebIdentityToken should be the OIDC sub claim of the
+	// caller-supplied token.  Audience should be the aud claim.  Both
+	// fall back to legacy defaults when the token is not a parseable JWT
+	// (e.g. the SDK test dummy 'dummy-web-identity-token').
+	subject := extractJWTClaim(webIdentityToken, "sub")
+	// webIdentitySubjectType (Smithy) requires length 6-255.  When the
+	// JWT sub claim is absent and roleSessionName is used as a fallback,
+	// ensure it meets the minimum length by left-padding with
+	// underscores.  roleSessionName itself is validated at 2-64 chars
+	// (roleSessionNameType), so we only need to handle the 2-5 char
+	// range.
+	if subject == "" {
+		subject = roleSessionName
+	}
+	for len(subject) < 6 {
+		subject = "_" + subject
+	}
+	// Enforce the webIdentitySubjectType maximum (255 chars).  A JWT sub
+	// claim exceeding this length is truncated to stay within the Smithy
+	// constraint.
+	if len(subject) > 255 {
+		subject = subject[:255]
+	}
+	audience := extractJWTClaim(webIdentityToken, "aud")
+	if audience == "" {
+		audience = "sts.amazonaws.com"
+	}
+
+	// Per the Smithy AssumeRoleWithWebIdentityResponse.Provider
+	// documentation: "For OpenID Connect ID tokens, this contains the
+	// value of the iss field.  For OAuth 2.0 access tokens, this
+	// contains the value of the ProviderId parameter."  When the token
+	// is a parseable JWT with an iss claim, prefer it; otherwise fall
+	// back to the caller-supplied ProviderId.
+	provider := providerId
+	if iss := extractJWTClaim(webIdentityToken, "iss"); iss != "" {
+		provider = iss
+	}
+
+	return withSourceIdentity(map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"Provider":                    provider,
+		"SubjectFromWebIdentityToken": subject,
+		"Audience":                    audience,
+		"PackedPolicySize":            packedPolicySize,
+	}, session.SourceIdentity), nil
+}
+
+// AssumeRoot returns a set of temporary security credentials for performing
+// privileged tasks on a member account. AWS requires the caller to be an
+// IAM user or role in the Organizations management account (or an IAM
+// delegated administrator) with an explicit sts:AssumeRoot grant, and
+// explicitly forbids calling AssumeRoot with root user credentials. VorpalStacks
+// does not implement Organizations (see docs/services.md "No organisations
+// integration"), so the caller-side check reduces to the standard IAM policy
+// evaluation for sts:AssumeRoot plus the root-caller rejection below. The
+// session itself is scoped by the task policy: per the AWS AssumeRoot
+// contract, TaskPolicyArn restricts the temporary credentials to the
+// privileged task's action set instead of granting unrestricted root.
+func (s *STSService) AssumeRoot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// AWS: "You cannot use root user credentials to call sts:AssumeRoot."
+	if reqCtx.Principal == iam.RootUserName {
+		return nil, ErrAccessDenied
+	}
+
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	targetPrincipal := request.GetStringParam(req.Parameters, "TargetPrincipal")
+	taskPolicyArn := request.GetStringParam(req.Parameters, "TaskPolicyArn.arn")
+
+	validDuration, err := validateRootDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if targetPrincipal == "" {
+		return nil, ErrTargetPrincipalRequired
+	}
+	// TargetPrincipalType Smithy trait: length 12-2048. Accepts account ID
+	// (12 digits) or principal ARN.
+	if len(targetPrincipal) < 12 || len(targetPrincipal) > 2048 {
+		return nil, ErrInvalidTargetPrincipal
+	}
+
+	if taskPolicyArn == "" {
+		return nil, ErrTaskPolicyArnRequired
+	}
+	policyName := extractPolicyNameFromArn(taskPolicyArn)
+	if !allowedRootTaskPolicyNames[policyName] {
+		return nil, ErrInvalidTaskPolicyArn
+	}
+	taskPolicy, ok := rootTaskPolicyDocuments[policyName]
+	if !ok {
+		return nil, ErrInvalidTaskPolicyArn
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	// Store TargetPrincipal as PrincipalName (the member account being
+	// accessed) with an empty RoleSessionName — root sessions do not use
+	// the assumed-role session name slot. The task policy document rides
+	// along as the session's inline policy so the authoriser evaluates
+	// every request against the task scope.
+	session, err := store.Create(stsstore.CreateSessionParams{
+		PrincipalType:   "Root",
+		PrincipalName:   targetPrincipal,
+		PrincipalArn:    arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root(),
+		DurationSeconds: validDuration,
+		Policy:          taskPolicy,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+	}, nil
+}

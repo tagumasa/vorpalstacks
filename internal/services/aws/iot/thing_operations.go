@@ -2,6 +2,8 @@ package iot
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -158,4 +160,114 @@ func (s *IoTService) store(reqCtx *request.RequestContext) (iotstore.IotStoreInt
 		return nil, err
 	}
 	return iotstore.GetOrCreateStore(st, s.accountID, reqCtx.GetRegion()), nil
+}
+
+// ---------------------------------------------------------------------------
+// GetThingConnectivityData: returns MQTT connection status. Without a real
+// MQTT broker feeding connection state, we return connected=false which is
+// honest for a platform that has no active device connections.
+// ---------------------------------------------------------------------------
+
+func (s *IoTService) GetThingConnectivityData(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
+	if thingName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetThing(thingName); err != nil {
+		return nil, err
+	}
+
+	// Check if any certificate principal attached to this thing is currently
+	// connected to any MQTT broker (not just the request-region broker).
+	connected := false
+	connectedAt := int64(0)
+	principals, _ := store.ListPrincipalsForThing(thingName)
+	for _, principal := range principals {
+		certID := extractCertIDFromPrincipal(principal)
+		if certID == "" {
+			continue
+		}
+		for _, brk := range s.brokers {
+			if c, ts := brk.IsCertConnected(certID); c {
+				connected = true
+				connectedAt = ts
+				break
+			}
+		}
+		if connected {
+			break
+		}
+	}
+
+	return map[string]interface{}{
+		"thingName":        thingName,
+		"connected":        connected,
+		"timestamp":        time.Now().UTC().Unix(),
+		"connectTime":      connectedAt,
+		"disconnectReason": "",
+	}, nil
+}
+
+// ---------------------------------------------------------------------------
+// V2 principal/thing listing with richer output.
+// ---------------------------------------------------------------------------
+
+func (s *IoTService) ListPrincipalThingsV2(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
+	if principal == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	things, err := store.ListThingsForPrincipal(principal)
+	if err != nil {
+		return nil, err
+	}
+	objects := make([]map[string]interface{}, 0, len(things))
+	for _, t := range things {
+		objects = append(objects, map[string]interface{}{
+			"thingName":          t,
+			"thingPrincipalType": "EXCLUSIVE_THING",
+		})
+	}
+	return paginatedMaps("principalThingObjects", objects, req.Parameters), nil
+}
+
+// extractCertIDFromPrincipal extracts the certificate ID from an IoT
+// principal ARN (e.g. arn:aws:iot:us-east-1:123:cert/abcdef).
+func extractCertIDFromPrincipal(principal string) string {
+	idx := strings.LastIndex(principal, "cert/")
+	if idx < 0 {
+		return ""
+	}
+	return principal[idx+len("cert/"):]
+}
+
+func (s *IoTService) ListThingPrincipalsV2(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
+	if thingName == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	principals, err := store.ListPrincipalsForThing(thingName)
+	if err != nil {
+		return nil, err
+	}
+	objects := make([]map[string]interface{}, 0, len(principals))
+	for _, p := range principals {
+		objects = append(objects, map[string]interface{}{
+			"principal":          p,
+			"thingPrincipalType": "EXCLUSIVE_THING",
+		})
+	}
+	return paginatedMaps("thingPrincipalObjects", objects, req.Parameters), nil
 }

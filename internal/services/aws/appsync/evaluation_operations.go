@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dop251/goja"
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/timeutils"
 	"vorpalstacks/pkg/vtl"
-
-	"github.com/dop251/goja"
 )
 
 // ListTypesByAssociation returns types from the source API of a merged API association.
@@ -278,7 +279,10 @@ func buildUtilObject(vm *goja.Runtime, logs *[]interface{}, hasError *bool, erro
 			return goja.Undefined()
 		},
 		"autoId": func(call goja.FunctionCall) goja.Value {
-			return vm.ToValue(fmt.Sprintf("%08x", time.Now().UnixNano()))
+			// AppSync documents util.autoId() as a 128-bit random UUID;
+			// the VTL implementation already returns one, so the JS
+			// runtime must match it rather than minting a clock value.
+			return vm.ToValue(uuid.New().String())
 		},
 		"autoUlid": func(call goja.FunctionCall) goja.Value {
 			return vm.ToValue(generateULID())

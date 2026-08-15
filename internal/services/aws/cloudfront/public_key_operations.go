@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -31,7 +33,10 @@ func (s *CloudFrontService) CreatePublicKey(ctx context.Context, reqCtx *request
 
 	callerRef := request.GetStringParam(configMap, "CallerReference")
 	if callerRef == "" {
-		callerRef = fmt.Sprintf("ref-%d", time.Now().UnixNano())
+		// The caller reference is CloudFront's idempotency token; a
+		// default must be unique per creation, so it is minted from
+		// crypto/rand rather than the clock.
+		callerRef = fmt.Sprintf("ref-%s", uuid.New().String())
 	}
 
 	config := &cloudfrontstore.PublicKeyConfig{

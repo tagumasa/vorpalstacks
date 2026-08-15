@@ -65,28 +65,9 @@ func (s *IoTService) CreateJob(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	// Create a job-execution record for each target thing so that
-	// ListJobExecutionsForJob, ListJobExecutionsForThing and
-	// DescribeJobExecution return real data matching AWS behaviour.
-	now := time.Now().UTC().Unix()
-	for _, targetARN := range created.Targets {
-		thingName := iotstore.ThingNameFromARN(targetARN)
-		if thingName == "" {
-			continue
-		}
-		execKey := "jobExecution/" + jobID + "/" + thingName
-		execRec := map[string]interface{}{
-			"jobId":           jobID,
-			"thingName":       thingName,
-			"status":          "QUEUED",
-			"executionNumber": int64(1),
-			"queuedAt":        now,
-			"versionNumber":   int64(1),
-		}
-		if err := store.PutGeneric(execKey, execRec); err != nil {
-			return nil, err
-		}
-	}
+	// Per-target execution records are written by the store inside
+	// CreateJob, under the same lock and before the job record, so the
+	// job never becomes visible with missing executions.
 
 	return jobResponse(created), nil
 }
@@ -286,4 +267,30 @@ func parseTags(params map[string]interface{}) (map[string]string, error) {
 		}
 	}
 	return result, nil
+}
+
+func (s *IoTService) AssociateTargetsWithJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	jobId := request.GetParamCaseInsensitive(req.Parameters, "jobId")
+	if jobId == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	newTargets := request.GetStringList(req.Parameters, "targets")
+	comment := request.GetParamCaseInsensitive(req.Parameters, "comment")
+
+	// The store merges the targets and materialises a QUEUED execution
+	// record for each genuinely new thing under one lock, so the job's
+	// target list and its executions cannot drift apart.
+	job, err := store.AssociateJobTargets(jobId, newTargets, comment)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"jobArn":      job.JobARN,
+		"jobId":       job.JobID,
+		"description": job.Description,
+	}, nil
 }

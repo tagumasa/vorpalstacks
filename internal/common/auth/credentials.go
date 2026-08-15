@@ -44,6 +44,11 @@ type SessionCredentials struct {
 	// that consumers can distinguish role sessions from federated
 	// sessions without re-reading the underlying Session record.
 	PrincipalType string
+	// PrincipalName mirrors the session store's PrincipalName field. For
+	// GetSessionToken sessions created with the root user's permanent key
+	// it is the root user name, which lets the authoriser recognise
+	// legitimate root sessions instead of trusting the ARN suffix alone.
+	PrincipalName string
 	// Tags carries the caller-supplied session tags and any transitive
 	// tags forwarded from a previous role session. They populate the
 	// EvaluationContext.SessionContext map for policy evaluation.

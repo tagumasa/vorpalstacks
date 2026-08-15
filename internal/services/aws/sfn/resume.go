@@ -26,7 +26,7 @@ type resumePoint struct {
 // successfully, the execution resumes from the start state with the
 // original execution input.
 func determineResumePoint(ctx context.Context, store *sfnstore.StepFunctionStore, executionArn string, definition *sfnstore.StateMachineDefinition) (*resumePoint, error) {
-	events, _, err := store.GetExecutionHistory(ctx, executionArn, 100000, "")
+	events, _, err := store.GetExecutionHistory(ctx, executionArn, 100000, "", false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load execution history: %w", err)
 	}

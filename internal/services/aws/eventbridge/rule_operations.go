@@ -614,7 +614,10 @@ func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *reque
 		for _, rule := range rulesResult.Rules {
 			targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, "")
 			if err != nil {
-				continue
+				// Swallowing the error here would silently omit rules
+				// from the result, under-reporting which rules reference
+				// the target. Fail the whole listing instead.
+				return nil, err
 			}
 			for _, t := range targets.Targets {
 				if t.ARN == targetArn {

@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha1"
+	"crypto/subtle"
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
@@ -26,29 +27,35 @@ func generateTOTPSecret() (string, error) {
 	return base32.StdEncoding.EncodeToString(secret), nil
 }
 
+// totpCodeAt derives the six-digit TOTP code for the given 30-second step
+// from the decoded secret key.
+func totpCodeAt(key []byte, step int64) string {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(step))
+
+	mac := hmac.New(sha1.New, key)
+	mac.Write(buf)
+	hash := mac.Sum(nil)
+
+	off := hash[len(hash)-1] & 0x0f
+	truncated := binary.BigEndian.Uint32(hash[off : off+4])
+	truncated &= 0x7fffffff
+	return fmt.Sprintf("%06d", truncated%uint32(math.Pow10(6)))
+}
+
+// validateTOTPCode reports whether code matches the TOTP generated from
+// secret for the current 30-second step or one step either side (clock
+// drift tolerance). Comparison is constant-time so matching does not leak
+// timing information about how many digits were correct.
 func validateTOTPCode(secret, code string) bool {
 	key, err := base32.StdEncoding.DecodeString(strings.ToUpper(secret))
 	if err != nil {
 		return false
 	}
 
-	timestamp := time.Now().Unix() / 30
-
+	step := time.Now().Unix() / 30
 	for offset := int64(-1); offset <= 1; offset++ {
-		t := timestamp + offset
-		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, uint64(t))
-
-		mac := hmac.New(sha1.New, key)
-		mac.Write(buf)
-		hash := mac.Sum(nil)
-
-		off := hash[len(hash)-1] & 0x0f
-		truncated := binary.BigEndian.Uint32(hash[off : off+4])
-		truncated &= 0x7fffffff
-		digits := truncated % uint32(math.Pow10(6))
-
-		if fmt.Sprintf("%06d", digits) == code {
+		if subtle.ConstantTimeCompare([]byte(totpCodeAt(key, step+offset)), []byte(code)) == 1 {
 			return true
 		}
 	}
@@ -81,13 +88,17 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 			return nil, ErrNotAuthorized
 		}
 	} else if session != "" {
-		// Session-based flow: used during MFA_SETUP challenge when the user
-		// has not yet completed authentication but needs to enrol a TOTP secret.
-		challengeSession, err := store.GetChallengeSession(session)
+		// Session-based flow: the Amazon Cognito API accepts a Session in
+		// place of an AccessToken for the mid-sign-in MFA enrolment path. The
+		// session must carry the MFA_SETUP challenge type so a session minted
+		// for any other challenge cannot overwrite an existing (possibly
+		// verified) MFA configuration. The service currently issues no
+		// MFA_SETUP-typed sessions (the Lambda-facing designation path is
+		// closed, see customFlowChallengeNames), so a session reaching this
+		// branch cannot validate — the parameter handling remains because it
+		// is part of the API contract.
+		challengeSession, err := validateChallengeSession(store, session, "MFA_SETUP", "", "", "")
 		if err != nil {
-			return nil, ErrNotAuthorized
-		}
-		if time.Now().UTC().After(challengeSession.ExpiresAt) {
 			return nil, ErrNotAuthorized
 		}
 		user, err = store.GetUser(challengeSession.UserPoolID, challengeSession.Username)

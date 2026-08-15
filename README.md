@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 33 AWS services are implemented with 2,702 passing SDK tests, 47 cross-service integration tests, and 17 WebSocket tests (2,766 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 34 AWS services are implemented with 2,865 passing SDK tests, 47 cross-service integration tests, and 17 WebSocket tests (2,929 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -53,7 +53,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | Cognito IDP | Selective | No external IdP, no hosted UI |
 | Cognito Identity | Selective | Basic identity pool support |
-| DynamoDB | Full | |
+| DynamoDB | Broad | ION import/export not supported |
 | EventBridge | Broad | No global endpoints or partner event sources |
 | IAM | Broad | No policy simulator or organisations integration |
 | IoT Core | Broad | 272 operations incl. things, certificates, policies, rules engine (16 action types), jobs, shadows, device management. No firmware provisioning execution |
@@ -66,7 +66,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | S3 | Broad | No analytics, inventory, or S3 Express |
 | Scheduler | Full | |
 | Secrets Manager | Full | |
-| SESv2 | Broad | No deliverability testing or multi-tenancy |
+| SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
 | SNS | Broad | SMS sending not supported |
 | SQS | Full | |
 | SSM | Selective | Parameter Store only |
@@ -217,7 +217,7 @@ For Lambda functionality:
 - CloudFront distributions do not serve actual edge traffic
 - Cognito hosted UI domains are not supported (requires CloudFront edge)
 - SQS FIFO queues have limited support
-- DynamoDB Streams and Global Tables are not implemented
+- DynamoDB ION import/export format is accepted in validation but not implemented at runtime
 
 ## Roadmap
 
@@ -234,9 +234,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Performance
 
-Vorpalstacks implements all 33 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
+Vorpalstacks implements all 34 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (2,702 SDK + 47 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (2,865 SDK + 47 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 

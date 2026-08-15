@@ -20,7 +20,7 @@ type StepFunctionStoreInterface interface {
 	UpdateExecution(ctx context.Context, exec *Execution) error
 	ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, mapRunArn string, redriveFilter string, limit int32, nextToken string) (*ExecutionListResult, error)
 	AddExecutionHistoryEvent(ctx context.Context, event *ExecutionHistoryEvent) error
-	GetExecutionHistory(ctx context.Context, executionArn string, limit int32, nextToken string) ([]*ExecutionHistoryEvent, string, error)
+	GetExecutionHistory(ctx context.Context, executionArn string, limit int32, nextToken string, reverseOrder bool) ([]*ExecutionHistoryEvent, string, error)
 	CreateActivity(ctx context.Context, activity *Activity) error
 	GetActivity(ctx context.Context, arn string) (*Activity, error)
 	DeleteActivity(ctx context.Context, arn string) error

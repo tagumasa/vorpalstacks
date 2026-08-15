@@ -2,11 +2,15 @@ package sfn
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -23,6 +27,18 @@ type Executor struct {
 	currentRoleArn      string
 	currentExecution    *sfnstore.Execution
 	currentStateMachine *sfnstore.StateMachine
+}
+
+// generateTaskToken returns an unguessable task token. Anyone holding the
+// token can report a task result, so it must come from crypto/rand rather
+// than a clock, which is both guessable and collision-prone.
+func generateTaskToken() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		// Unreachable in practice; uuid v4 is also crypto/rand-backed.
+		return uuid.New().String()
+	}
+	return hex.EncodeToString(b)
 }
 
 // NewExecutor creates a new Step Functions executor with the given store and event bus.
@@ -304,6 +320,13 @@ type ExecutionContext struct {
 	AfterArguments    *string
 	AfterItemSelector *string
 	IsRedrive         bool
+	// TaskToken carries the token minted for the activity-task attempt
+	// being dispatched. Like RetryCount it is attempt-scoped state: it is
+	// set before each attempt's input evaluation and cleared when the task
+	// state finishes, so the context object only exposes a Task section
+	// while a token actually backs it. Map and Parallel branches each own
+	// their ExecutionContext, so concurrent branches never share a token.
+	TaskToken string
 }
 
 func (ctx *ExecutionContext) nextEventId() int64 {
@@ -474,6 +497,17 @@ func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]inte
 		"Name":        execCtx.CurrentState,
 		"EnteredTime": execCtx.StateEnteredTime.Format(time.RFC3339),
 		"RetryCount":  execCtx.RetryCount,
+	}
+
+	// The Task section exists in the context object only while a task
+	// attempt with a token is being processed; the AWS context object
+	// leaves it unpopulated elsewhere. JSONata Arguments reference the
+	// token as $states.context.Task.Token, JSONPath Parameters as
+	// $$.Task.Token.
+	if execCtx.TaskToken != "" {
+		ctx["Task"] = map[string]interface{}{
+			"Token": execCtx.TaskToken,
+		}
 	}
 
 	if execCtx.MapItemIndex >= 0 {

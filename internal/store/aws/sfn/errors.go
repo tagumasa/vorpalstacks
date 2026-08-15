@@ -45,6 +45,10 @@ var (
 	// ErrActivityQueueFull is returned when the activity task queue is full.
 	ErrActivityQueueFull = errors.New("activity task queue is full")
 
+	// ErrInvalidToken is returned when a pagination token supplied by the
+	// caller cannot be interpreted.
+	ErrInvalidToken = errors.New("invalid token")
+
 	// ErrTaskNotRunning is returned when the task is not running.
 	ErrTaskNotRunning = errors.New("task is not running")
 

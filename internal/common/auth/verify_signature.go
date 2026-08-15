@@ -92,6 +92,15 @@ func (v *SignatureV4Verifier) VerifyRequest(r *http.Request, service, region str
 		return ErrGetCredentialsFailed
 	}
 
+	// Bind the Authorization header's Credential access key ID to the key
+	// whose secret produced the signature. Without this check a holder of
+	// the shared static secret could sign requests as any access key ID
+	// (i.e. any principal). Report it as a signature mismatch so callers
+	// cannot probe which leg of the verification failed.
+	if subtle.ConstantTimeCompare([]byte(credentialScope.AccessKeyID), []byte(credentials.AccessKeyID)) != 1 {
+		return ErrSignatureMismatch
+	}
+
 	calculatedSignature, err := v.calculateSignature(amzDate, credentialScope.Region, credentialScope.Service, stringToSign, credentials.SecretAccessKey)
 	if err != nil {
 		return ErrCalculateSignatureFailed
@@ -106,9 +115,10 @@ func (v *SignatureV4Verifier) VerifyRequest(r *http.Request, service, region str
 
 // CredentialScope represents the scope of AWS credentials.
 type CredentialScope struct {
-	Date    string
-	Region  string
-	Service string
+	AccessKeyID string
+	Date        string
+	Region      string
+	Service     string
 }
 
 func (v *SignatureV4Verifier) buildCanonicalRequest(r *http.Request, signedHeaders string, body []byte) (string, error) {
@@ -218,9 +228,10 @@ func (v *SignatureV4Verifier) buildStringToSign(amzDate, credential, canonicalRe
 		return nil, "", ErrInvalidCredentialFormat
 	}
 	scope := &CredentialScope{
-		Date:    parts[1],
-		Region:  parts[2],
-		Service: parts[3],
+		AccessKeyID: parts[0],
+		Date:        parts[1],
+		Region:      parts[2],
+		Service:     parts[3],
 	}
 
 	canonicalRequestHash := v.sha256Hash(canonicalRequest)
