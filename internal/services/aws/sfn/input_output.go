@@ -43,8 +43,9 @@ func (e *Executor) applyOutputPath(output string, outputPath string) string {
 // is the token minted for the current activity-task attempt so
 // $$.Task.Token resolves to the exact token the worker must return; callers
 // outside task Parameters pass an empty string, and a $$.Task.Token
-// reference there fails the evaluation.
-func (e *Executor) applyParameters(taskToken string, input string, params *sfnstore.Parameters) (string, error) {
+// reference there fails the evaluation. Failures are classified here as
+// States.Runtime so every state type surfaces the same error code.
+func (e *Executor) applyParameters(taskToken string, input string, params *sfnstore.Parameters) (string, *ExecutionError) {
 	if params == nil || params.Values == nil {
 		return input, nil
 	}
@@ -67,7 +68,7 @@ func (e *Executor) applyParameters(taskToken string, input string, params *sfnst
 				if strings.HasPrefix(jsonPath, "$$.") {
 					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
 					if ctxErr != nil {
-						return "", ctxErr
+						return "", newJSONPathEvalError("Parameters", ctxErr)
 					}
 					result[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
@@ -77,7 +78,7 @@ func (e *Executor) applyParameters(taskToken string, input string, params *sfnst
 		} else {
 			processedValue, procErr := e.processParameterValue(taskToken, value, dataMap)
 			if procErr != nil {
-				return "", procErr
+				return "", newJSONPathEvalError("Parameters", procErr)
 			}
 			result[key] = processedValue
 		}
@@ -192,8 +193,9 @@ func setNestedPath(data map[string]interface{}, path string, value interface{}) 
 // (activity tasks only): the context object exposes $$.Task.Token in
 // ResultSelector, and for an activity task it resolves to the token the
 // attempt actually ran under. States without a token pass an empty string;
-// a $$.Task.Token reference there fails the evaluation.
-func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultSelector, taskToken string) (string, error) {
+// a $$.Task.Token reference there fails the evaluation, classified here as
+// States.Runtime so every state type surfaces the same error code.
+func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultSelector, taskToken string) (string, *ExecutionError) {
 	if selector == nil || selector.Fields == nil {
 		return result, nil
 	}
@@ -216,7 +218,7 @@ func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultS
 				if strings.HasPrefix(jsonPath, "$$.") {
 					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
 					if ctxErr != nil {
-						return "", ctxErr
+						return "", newJSONPathEvalError("ResultSelector", ctxErr)
 					}
 					output[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
@@ -226,7 +228,7 @@ func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultS
 		} else {
 			processedValue, procErr := e.processParameterValue(taskToken, value, dataMap)
 			if procErr != nil {
-				return "", procErr
+				return "", newJSONPathEvalError("ResultSelector", procErr)
 			}
 			output[key] = processedValue
 		}
@@ -306,21 +308,25 @@ func (e *Executor) applyJSONataArguments(ctx context.Context, arguments interfac
 	return string(resultJSON), nil
 }
 
-func (e *Executor) applyItemSelector(ctx context.Context, execCtx *ExecutionContext, selector interface{}, itemValue interface{}, isJSONata bool) (interface{}, error) {
+// applyItemSelector evaluates a JSONata ItemSelector template against a
+// single map item. JSONata failures stay classified as
+// States.QueryEvaluationError by the caller; the JSONPath dialect is
+// handled by applyItemSelectorJSONPath, which classifies as States.Runtime.
+func (e *Executor) applyItemSelector(ctx context.Context, execCtx *ExecutionContext, selector interface{}, itemValue interface{}) (interface{}, error) {
 	if selector == nil {
 		return itemValue, nil
 	}
 
-	if isJSONata {
-		statesVar := e.buildStatesVarWithContext(execCtx, itemValue, nil, nil)
-		vars := buildVarsMap(statesVar, execCtx.VariableScope)
-		return ResolveTemplate(ctx, selector, nil, vars)
-	}
-
-	return e.applyItemSelectorJSONPath(selector, itemValue)
+	statesVar := e.buildStatesVarWithContext(execCtx, itemValue, nil, nil)
+	vars := buildVarsMap(statesVar, execCtx.VariableScope)
+	return ResolveTemplate(ctx, selector, nil, vars)
 }
 
-func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue interface{}) (interface{}, error) {
+// applyItemSelectorJSONPath applies a JSONPath ItemSelector to a single map
+// item. A Map ItemSelector evaluates outside any task, so no attempt token
+// exists; a $$.Task.Token reference fails the evaluation, classified here
+// as States.Runtime so every state type surfaces the same error code.
+func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue interface{}) (interface{}, *ExecutionError) {
 	selectorMap, ok := selector.(map[string]interface{})
 	if !ok {
 		return itemValue, nil
@@ -337,11 +343,9 @@ func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue int
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
 				if strings.HasPrefix(jsonPath, "$$.") {
-					// A Map ItemSelector evaluates outside any task, so no
-					// attempt token exists; a $$.Task.Token reference fails.
 					ctxVal, ctxErr := e.getContextValue("", jsonPath)
 					if ctxErr != nil {
-						return nil, ctxErr
+						return nil, newJSONPathEvalError("ItemSelector", ctxErr)
 					}
 					output[cleanKey] = ctxVal
 				} else if resolved, exists := getJSONPathValueRaw(itemMap, jsonPath); exists {

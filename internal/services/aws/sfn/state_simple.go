@@ -19,7 +19,7 @@ func (e *Executor) executePass(ctx context.Context, execCtx *ExecutionContext, s
 	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
 	applied, err := e.applyParameters("", processedInput, state.Parameters)
 	if err != nil {
-		return "", "", fmt.Errorf("Parameters: %w", err)
+		return "", "", err
 	}
 	processedInput = applied
 
@@ -47,7 +47,7 @@ func (e *Executor) executePass(ctx context.Context, execCtx *ExecutionContext, s
 
 	selected, selErr := e.applyResultSelector(output, state.GetResultSelector(), "")
 	if selErr != nil {
-		return "", "", fmt.Errorf("ResultSelector: %w", selErr)
+		return "", "", selErr
 	}
 	output = selected
 	output = e.applyResultPath(processedInput, output, state.ResultPath)

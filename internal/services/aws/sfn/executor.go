@@ -545,6 +545,17 @@ func (e *Executor) newQueryEvalError(ctx context.Context, execCtx *ExecutionCont
 	return &ExecutionError{ErrorCode: "States.QueryEvaluationError", Cause: cause}
 }
 
+// newJSONPathEvalError classifies a JSONPath input/output processing
+// failure. Step Functions reports JSONPath evaluation failures as
+// States.Runtime — an unprocessable runtime exception that is not retriable
+// and cannot be caught by a States.ALL catcher. States.QueryEvaluationError
+// is reserved for JSONata expression failures, so a JSONPath state must
+// never surface it. Every JSONPath evaluator funnels its failures through
+// this classifier so the error code cannot diverge per state type.
+func newJSONPathEvalError(field string, err error) *ExecutionError {
+	return &ExecutionError{ErrorCode: "States.Runtime", Cause: fmt.Sprintf("%s: %s", field, err.Error())}
+}
+
 func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
 	if e.bus == nil || e.currentStateMachine == nil {
 		return

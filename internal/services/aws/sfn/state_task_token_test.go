@@ -3,6 +3,7 @@ package sfn
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -397,9 +398,37 @@ func TestActivityResultSelectorResolvesAttemptToken(t *testing.T) {
 
 // Referencing $$.Task.Token outside a task attempt that carries a token
 // must fail the evaluation instead of fabricating a random token no worker
-// could ever answer.
-func TestTaskTokenReferenceWithoutTokenFails(t *testing.T) {
+// could ever answer. The failure must classify identically no matter which
+// state type evaluated the reference: JSONPath processing failures are
+// States.Runtime everywhere, and States.QueryEvaluationError stays reserved
+// for JSONata expression failures.
+func TestUnbackedTaskTokenClassifiedAsRuntimeEverywhere(t *testing.T) {
 	e, _ := newTaskTokenTestHarness(t)
+
+	runtimeTokenErr := func(err *ExecutionError, site string) {
+		t.Helper()
+		if err == nil {
+			t.Fatalf("%s accepted an unbacked $$.Task.Token", site)
+		}
+		if err.ErrorCode != "States.Runtime" {
+			t.Fatalf("%s classified the reference as %s, want States.Runtime (cause: %s)", site, err.ErrorCode, err.Cause)
+		}
+		if !strings.Contains(err.Cause, "Task.Token") {
+			t.Fatalf("%s error cause does not mention Task.Token: %s", site, err.Cause)
+		}
+	}
+
+	// Parameters of a non-activity task: the evaluation fails before any
+	// dispatch, so no integration side effects occur.
+	_, _, execErr := e.executeTask(context.Background(), newTaskTokenExecCtx(`{}`), &sfnstore.TaskState{
+		Type:     "Task",
+		Resource: "arn:aws:lambda:us-east-1:000000000000:function:not-reached",
+		End:      true,
+		Parameters: &sfnstore.Parameters{Values: map[string]interface{}{
+			"tok.$": "$$.Task.Token",
+		}},
+	})
+	runtimeTokenErr(execErr, "task Parameters")
 
 	// Parameters of a Pass state have no task token.
 	_, _, err := e.executePass(context.Background(), newTaskTokenExecCtx(`{}`), &sfnstore.PassState{
@@ -409,9 +438,11 @@ func TestTaskTokenReferenceWithoutTokenFails(t *testing.T) {
 			"tok.$": "$$.Task.Token",
 		}},
 	})
-	if err == nil || !strings.Contains(err.Error(), "Task.Token") {
-		t.Fatalf("Pass Parameters accepted an unbacked $$.Task.Token: %v", err)
+	var passExecErr *ExecutionError
+	if !errors.As(err, &passExecErr) {
+		t.Fatalf("Pass Parameters returned an unclassified error: %v", err)
 	}
+	runtimeTokenErr(passExecErr, "Pass Parameters")
 
 	// ResultSelector of a Pass state likewise.
 	_, _, err = e.executePass(context.Background(), newTaskTokenExecCtx(`{}`), &sfnstore.PassState{
@@ -424,12 +455,89 @@ func TestTaskTokenReferenceWithoutTokenFails(t *testing.T) {
 			"tok.$": "$$.Task.Token",
 		}},
 	})
-	if err == nil || !strings.Contains(err.Error(), "Task.Token") {
-		t.Fatalf("Pass ResultSelector accepted an unbacked $$.Task.Token: %v", err)
+	if !errors.As(err, &passExecErr) {
+		t.Fatalf("Pass ResultSelector returned an unclassified error: %v", err)
 	}
+	runtimeTokenErr(passExecErr, "Pass ResultSelector")
 
-	// Direct context resolution mirrors the two paths above.
+	// ItemSelector of a JSONPath Map state evaluates outside any task.
+	_, _, mapErr := e.executeMap(context.Background(), newTaskTokenExecCtx(`{"orders":[{"id":"a"}]}`), &sfnstore.MapState{
+		Type:           "Map",
+		End:            true,
+		ItemsPath:      "$.orders",
+		MaxConcurrency: 2,
+		ItemSelector: map[string]interface{}{
+			"tok.$": "$$.Task.Token",
+		},
+		Iterator: &sfnstore.StateMachineDefinition{
+			StartAt: "Noop",
+			States: map[string]interface{}{
+				"Noop": map[string]interface{}{"Type": "Pass", "End": true},
+			},
+		},
+	})
+	runtimeTokenErr(mapErr, "Map ItemSelector")
+
+	// Direct context resolution mirrors the paths above.
 	if _, ctxErr := e.getContextValue("", "$$.Task.Token"); ctxErr == nil {
 		t.Fatal("getContextValue fabricated a token for an empty attempt token")
+	}
+}
+
+// The two query dialects handle a tokenless context differently, and both
+// behaviours are intentional: JSONPath fails hard with States.Runtime (see
+// TestUnbackedTaskTokenClassifiedAsRuntimeEverywhere) while JSONata treats
+// a missing context node as undefined, so the argument evaluates to null
+// instead of failing — the documented JSONata semantics for absent paths.
+func TestJSONataUnbackedTaskTokenIsUndefined(t *testing.T) {
+	e, _ := newTaskTokenTestHarness(t)
+	execCtx := newTaskTokenExecCtx(`{"orderId":"o-1"}`)
+
+	var inputData interface{}
+	if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+		t.Fatal(err)
+	}
+
+	// Without a token the context object carries no Task section at all.
+	if _, hasTask := e.buildContextObject(execCtx)["Task"]; hasTask {
+		t.Fatal("context object exposed a Task section without a token")
+	}
+
+	arguments := map[string]interface{}{
+		"token": "{% $states.context.Task.Token %}",
+		"order": "{% $states.input.orderId %}",
+	}
+
+	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+	out, err := e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
+	if err != nil {
+		t.Fatalf("JSONata evaluation failed on a tokenless context: %v", err)
+	}
+	var resolved map[string]interface{}
+	if err := json.Unmarshal([]byte(out), &resolved); err != nil {
+		t.Fatalf("arguments output is not JSON: %v (%s)", err, out)
+	}
+	if got := resolved["order"]; got != "o-1" {
+		t.Fatalf("order argument resolved to %v, want o-1", got)
+	}
+	if token := resolved["token"]; token != nil {
+		t.Fatalf("token argument resolved to %v, want undefined", token)
+	}
+
+	// Control: with a token minted the same expression resolves to it.
+	execCtx.TaskToken = "tok-1"
+	if _, hasTask := e.buildContextObject(execCtx)["Task"]; !hasTask {
+		t.Fatal("context object omitted the Task section for a token-backed attempt")
+	}
+	statesVar = e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+	out, err = e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(out), &resolved); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolved["token"]; got != "tok-1" {
+		t.Fatalf("token argument resolved to %v, want tok-1", got)
 	}
 }

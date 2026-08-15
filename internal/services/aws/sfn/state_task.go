@@ -44,9 +44,9 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 			return argsInput, nil
 		}
 		if state.Parameters != nil {
-			applied, err := e.applyParameters(taskToken, baseInput, state.Parameters)
-			if err != nil {
-				return "", &ExecutionError{ErrorCode: "States.Runtime", Cause: err.Error()}
+			applied, evalErr := e.applyParameters(taskToken, baseInput, state.Parameters)
+			if evalErr != nil {
+				return "", evalErr
 			}
 			return applied, nil
 		}
@@ -312,7 +312,7 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 	} else {
 		selected, selErr := e.applyResultSelector(output, state.GetResultSelector(), attemptToken)
 		if selErr != nil {
-			return "", "", &ExecutionError{ErrorCode: "States.Runtime", Cause: selErr.Error()}
+			return "", "", selErr
 		}
 		output = selected
 		output = e.applyResultPath(processedInput, output, state.ResultPath)

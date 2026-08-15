@@ -195,14 +195,21 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			execCtx.MapItemIndex = i
 			execCtx.MapItemValue = item
 			var selected interface{}
-			var err error
 			if isJSONata {
-				selected, err = e.applyItemSelector(ctx, execCtx, state.ItemSelector, item, true)
+				// JSONata template failures are query evaluation errors.
+				resolved, err := e.applyItemSelector(ctx, execCtx, state.ItemSelector, item)
+				if err != nil {
+					return "", "", e.newQueryEvalError(ctx, execCtx, "ItemSelector", err.Error())
+				}
+				selected = resolved
 			} else {
-				selected, err = e.applyItemSelectorJSONPath(state.ItemSelector, item)
-			}
-			if err != nil {
-				return "", "", e.newQueryEvalError(ctx, execCtx, "ItemSelector", err.Error())
+				// JSONPath context failures are runtime errors; the
+				// classifier lives in applyItemSelectorJSONPath.
+				resolved, evalErr := e.applyItemSelectorJSONPath(state.ItemSelector, item)
+				if evalErr != nil {
+					return "", "", evalErr
+				}
+				selected = resolved
 			}
 			processedItems[i] = selected
 		}
