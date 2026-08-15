@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/pagination"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 )
 
@@ -69,6 +69,10 @@ func (s *EC2Service) createSubnetCore(store *ec2store.EC2Store, input CreateSubn
 	az := input.AvailabilityZone
 	if az == "" {
 		az = input.Region + "a"
+	} else if !strings.HasPrefix(az, input.Region) {
+		return nil, awserrors.NewAWSError("InvalidParameterValue",
+			fmt.Sprintf("Value (%s) for parameter availabilityZone is invalid. Subnets can be created only in the region's availability zones (%s...)", az, input.Region),
+			http.StatusBadRequest)
 	}
 
 	subnet := &ec2store.Subnet{
@@ -121,12 +125,12 @@ func (s *EC2Service) describeSubnetsCore(store *ec2store.EC2Store, subnetIDs []s
 		allSubnets = filtered
 	}
 
-	if maxResults <= 0 {
-		maxResults = 100
-	}
-	page := pagination.PaginateSlice(allSubnets, nextToken, maxResults, func(sn *ec2store.Subnet) string {
+	page, err := paginateEC2(allSubnets, nextToken, maxResults, func(sn *ec2store.Subnet) string {
 		return sn.SubnetId
 	})
+	if err != nil {
+		return nil, err
+	}
 	return &SubnetListResult{
 		Subnets:     page.Items,
 		NextToken:   page.NextMarker,

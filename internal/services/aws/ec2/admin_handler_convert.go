@@ -14,6 +14,19 @@ type ec2Stores struct {
 	store *ec2store.EC2Store
 }
 
+// tagsFromPbSpecification extracts tags from proto TagSpecification
+// messages. The resource type is ignored because each admin operation
+// targets exactly one resource kind.
+func tagsFromPbSpecification(specs []*pb.TagSpecification) []ec2Tag {
+	var result []ec2Tag
+	for _, spec := range specs {
+		for _, t := range spec.GetTags() {
+			result = append(result, ec2Tag{Key: t.GetKey(), Value: t.GetValue()})
+		}
+	}
+	return result
+}
+
 // toPbVpc converts a store VPC to a proto Vpc message.
 func toPbVpc(v *ec2store.VPC) *pb.Vpc {
 	pbVpc := &pb.Vpc{

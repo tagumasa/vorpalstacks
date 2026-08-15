@@ -493,25 +493,25 @@ func encodeMapToXMLEC2(builder *strings.Builder, data map[string]interface{}) {
 			}
 		case []interface{}:
 			for _, item := range v {
-				builder.WriteString("<member>")
+				builder.WriteString("<item>")
 				if itemMap, ok := item.(map[string]interface{}); ok {
 					encodeMapToXMLEC2(builder, itemMap)
 				} else {
 					encodeValueToXMLEC2(builder, item)
 				}
-				builder.WriteString("</member>")
+				builder.WriteString("</item>")
 			}
 		case []map[string]interface{}:
 			for _, itemMap := range v {
-				builder.WriteString("<member>")
+				builder.WriteString("<item>")
 				encodeMapToXMLEC2(builder, itemMap)
-				builder.WriteString("</member>")
+				builder.WriteString("</item>")
 			}
 		case []string:
 			for _, item := range v {
-				builder.WriteString("<member>")
+				builder.WriteString("<item>")
 				builder.WriteString(escapeXML(item))
-				builder.WriteString("</member>")
+				builder.WriteString("</item>")
 			}
 		case time.Time:
 			builder.WriteString(escapeXML(v.UTC().Format(time.RFC3339)))
@@ -556,21 +556,21 @@ func encodeValueToXMLEC2(builder *strings.Builder, v interface{}) {
 		}
 	case []interface{}:
 		for _, item := range val {
-			builder.WriteString("<member>")
+			builder.WriteString("<item>")
 			encodeValueToXMLEC2(builder, item)
-			builder.WriteString("</member>")
+			builder.WriteString("</item>")
 		}
 	case []map[string]interface{}:
 		for _, itemMap := range val {
-			builder.WriteString("<member>")
+			builder.WriteString("<item>")
 			encodeMapToXMLEC2(builder, itemMap)
-			builder.WriteString("</member>")
+			builder.WriteString("</item>")
 		}
 	case []string:
 		for _, item := range val {
-			builder.WriteString("<member>")
+			builder.WriteString("<item>")
 			builder.WriteString(escapeXML(item))
-			builder.WriteString("</member>")
+			builder.WriteString("</item>")
 		}
 	case time.Time:
 		builder.WriteString(escapeXML(val.UTC().Format(time.RFC3339)))
@@ -589,10 +589,12 @@ func encodeValueToXMLEC2(builder *strings.Builder, v interface{}) {
 		case reflect.Map:
 			encodeReflectMapToXMLEC2(builder, rv)
 		case reflect.Slice:
+			// EC2 Query protocol list members are <item> elements; the AWS
+			// SDK ec2query deserialiser ignores any other child names.
 			for i := 0; i < rv.Len(); i++ {
-				builder.WriteString("<member>")
+				builder.WriteString("<item>")
 				encodeValueToXMLEC2(builder, rv.Index(i).Interface())
-				builder.WriteString("</member>")
+				builder.WriteString("</item>")
 			}
 		default:
 			encodeValueToXML(builder, v)

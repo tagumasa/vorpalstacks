@@ -122,18 +122,31 @@ func validateSubnetCIDROverlap(newCIDR string, existingSubnets []*ec2store.Subne
 
 // parseInt64Param parses a string parameter into an int64. An empty string
 // returns -1 (used as a sentinel for "not specified" in port and MaxResults
-// contexts). Invalid input yields an InvalidParameterValue error.
-func parseInt64Param(s string) (int64, error) {
+// contexts). Invalid input yields an InvalidParameterValue error naming the
+// offending parameter.
+func parseInt64Param(s string, paramName string) (int64, error) {
 	if s == "" {
 		return -1, nil
 	}
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return 0, awserrors.NewAWSError("InvalidParameterValue",
-			fmt.Sprintf("Invalid port value: %s", s),
+			fmt.Sprintf("Invalid value '%s' for parameter %s", s, paramName),
 			http.StatusBadRequest)
 	}
 	return n, nil
+}
+
+// validateInstanceTenancy checks the InstanceTenancy value against the
+// Smithy Tenancy enum (default, dedicated, host).
+func validateInstanceTenancy(tenancy string) error {
+	switch tenancy {
+	case "", "default", "dedicated", "host":
+		return nil
+	}
+	return awserrors.NewAWSError("InvalidParameterValue",
+		fmt.Sprintf("Value (%s) for parameter instanceTenancy is invalid. Valid values: default, dedicated, host", tenancy),
+		http.StatusBadRequest)
 }
 
 // validateGroupReferences checks that all UserIdGroupPair GroupId references

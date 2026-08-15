@@ -93,6 +93,7 @@ func init() {
 	RegisterService("integration", CategoryIntegration, (*TestRunner).RunIntegrationTests)
 	RegisterService("cloudtrail-audit", CategoryIntegration, (*TestRunner).RunCloudTrailAuditIntegrationTests)
 	RegisterService("iot", CategorySDK, (*TestRunner).RunIoTTests)
+	RegisterService("ec2", CategorySDK, (*TestRunner).RunEC2Tests)
 }
 
 func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {

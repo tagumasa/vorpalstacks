@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/pagination"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 	"vorpalstacks/internal/utils/aws/generators"
 	"vorpalstacks/internal/utils/aws/types"
@@ -54,6 +53,9 @@ func (s *EC2Service) createVpcCore(store *ec2store.EC2Store, input CreateVpcInpu
 		return nil, awserrors.NewAWSError("MissingParameter",
 			"CidrBlock is required",
 			http.StatusBadRequest)
+	}
+	if err := validateInstanceTenancy(input.InstanceTenancy); err != nil {
+		return nil, err
 	}
 	canonCIDR, err := canonicalizeCIDR(input.CidrBlock)
 	if err != nil {
@@ -141,12 +143,12 @@ func (s *EC2Service) describeVpcsCore(store *ec2store.EC2Store, vpcIDs []string,
 		allVpcs = filtered
 	}
 
-	if maxResults <= 0 {
-		maxResults = 100
-	}
-	page := pagination.PaginateSlice(allVpcs, nextToken, maxResults, func(v *ec2store.VPC) string {
+	page, err := paginateEC2(allVpcs, nextToken, maxResults, func(v *ec2store.VPC) string {
 		return v.VpcId
 	})
+	if err != nil {
+		return nil, err
+	}
 	return &VpcListResult{
 		Vpcs:        page.Items,
 		NextToken:   page.NextMarker,
@@ -162,7 +164,7 @@ func (s *EC2Service) deleteVpcCore(store *ec2store.EC2Store, vpcID string) error
 
 	subnets, err := store.ListSubnetsByVPC(vpcID)
 	if err != nil {
-		return err
+		return translateStoreError(err)
 	}
 	if len(subnets) > 0 {
 		return awserrors.NewAWSError("DependencyViolation",
@@ -172,7 +174,7 @@ func (s *EC2Service) deleteVpcCore(store *ec2store.EC2Store, vpcID string) error
 
 	sgs, err := store.ListSecurityGroupsByVPC(vpcID)
 	if err != nil {
-		return err
+		return translateStoreError(err)
 	}
 	if len(sgs) > 0 {
 		return awserrors.NewAWSError("DependencyViolation",

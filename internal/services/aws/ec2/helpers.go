@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
@@ -76,6 +77,74 @@ func checkDryRun(params map[string]interface{}) error {
 	return nil
 }
 
+// minDescribeMaxResults and maxDescribeMaxResults bound the MaxResults
+// parameter of the EC2 Describe operations (AWS: between 5 and 1000).
+const (
+	minDescribeMaxResults = 5
+	maxDescribeMaxResults = 1000
+)
+
+// parsePaginationParams validates the MaxResults/NextToken parameters shared
+// by the Describe operations. A zero maxResults return value means "no limit"
+// (AWS returns all items when MaxResults is not specified). An invalid
+// NextToken is not detected here; the pagination helper reports it via the
+// marker-existence pre-check in the describe cores. Specifying MaxResults
+// together with a list of resource IDs fails with InvalidParameterCombination
+// (see "Pagination" in the EC2 API Reference).
+func parsePaginationParams(params map[string]interface{}, idParamNames ...string) (nextToken string, maxResults int, err error) {
+	nextToken = request.GetStringParam(params, "NextToken")
+	if mr := request.GetStringParam(params, "MaxResults"); mr != "" {
+		v, e := parseInt64Param(mr, "MaxResults")
+		if e != nil {
+			return "", 0, e
+		}
+		if v < minDescribeMaxResults || v > maxDescribeMaxResults {
+			return "", 0, awserrors.NewAWSError("InvalidParameterValue",
+				fmt.Sprintf("Value (%d) for parameter MaxResults is invalid. Expected a value from %d to %d", v, minDescribeMaxResults, maxDescribeMaxResults),
+				http.StatusBadRequest)
+		}
+		maxResults = int(v)
+		for _, idParam := range idParamNames {
+			if maxResults > 0 && len(request.GetStringList(params, idParam)) > 0 {
+				return "", 0, awserrors.NewAWSError("InvalidParameterCombination",
+					fmt.Sprintf("The parameter MaxResults may not be specified together with %s", idParam),
+					http.StatusBadRequest)
+			}
+		}
+	}
+	return nextToken, maxResults, nil
+}
+
+// paginateEC2 paginates a filtered slice with EC2 semantics: maxResults <= 0
+// returns all items (AWS behaviour when MaxResults is omitted), and an
+// unrecognised NextToken yields InvalidNextToken.
+func paginateEC2[T any](items []T, nextToken string, maxResults int, keyExtractor pagination.KeyExtractor[T]) (pagination.SliceResult[T], error) {
+	if maxResults <= 0 {
+		if nextToken != "" {
+			found := false
+			for _, item := range items {
+				if keyExtractor(item) == nextToken {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return pagination.SliceResult[T]{}, awserrors.NewAWSError("InvalidNextToken",
+					fmt.Sprintf("The token '%s' is not valid", nextToken),
+					http.StatusBadRequest)
+			}
+		}
+		return pagination.SliceResult[T]{Items: items}, nil
+	}
+	result := pagination.PaginateSlice(items, nextToken, maxResults, keyExtractor)
+	if nextToken != "" && !result.IsTruncated && len(result.Items) == 0 {
+		return pagination.SliceResult[T]{}, awserrors.NewAWSError("InvalidNextToken",
+			fmt.Sprintf("The token '%s' is not valid", nextToken),
+			http.StatusBadRequest)
+	}
+	return result, nil
+}
+
 // parseTagSpecification parses the TagSpecification.N.Tag.N.Key/Value format
 // used by AWS SDK Go v2 for EC2 Query protocol requests.
 func parseTagSpecification(params map[string]interface{}) []types.Tag {
@@ -114,11 +183,11 @@ func parseIPRules(params map[string]interface{}, prefix string) ([]ec2store.IPRu
 			break
 		}
 
-		fromPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i)))
+		fromPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i)), "FromPort")
 		if err != nil {
 			return nil, err
 		}
-		toPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i)))
+		toPort, err := parseInt64Param(request.GetStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i)), "ToPort")
 		if err != nil {
 			return nil, err
 		}
@@ -256,81 +325,4 @@ func mergeGroupPairs(existing []ec2store.GroupPair, newPairs []ec2store.GroupPai
 		}
 	}
 	return existing
-}
-
-// removeIPRules removes specific ranges/pairs from matching rules.
-// Returns the filtered result and the count of rules actually removed.
-func removeIPRules(existing []ec2store.IPRule, toRemove ...ec2store.IPRule) ([]ec2store.IPRule, int) {
-	result := make([]ec2store.IPRule, 0, len(existing))
-	removedCount := 0
-	for _, er := range existing {
-		beforeRanges := len(er.IpRanges) + len(er.Ipv6Ranges) + len(er.UserIdGroupPairs) + len(er.PrefixListIds)
-		for _, nr := range toRemove {
-			if rulesMatch(er, nr) {
-				er.IpRanges = removeIPRanges(er.IpRanges, nr.IpRanges)
-				er.Ipv6Ranges = removeIPRanges(er.Ipv6Ranges, nr.Ipv6Ranges)
-				er.UserIdGroupPairs = removeGroupPairs(er.UserIdGroupPairs, nr.UserIdGroupPairs)
-				er.PrefixListIds = removePrefixListIds(er.PrefixListIds, nr.PrefixListIds)
-			}
-		}
-		afterRanges := len(er.IpRanges) + len(er.Ipv6Ranges) + len(er.UserIdGroupPairs) + len(er.PrefixListIds)
-		if afterRanges < beforeRanges {
-			removedCount += beforeRanges - afterRanges
-		}
-		if afterRanges > 0 {
-			result = append(result, er)
-		}
-	}
-	return result, removedCount
-}
-
-func removeIPRanges(existing []ec2store.IPRange, toRemove []ec2store.IPRange) []ec2store.IPRange {
-	result := make([]ec2store.IPRange, 0, len(existing))
-	for _, er := range existing {
-		found := false
-		for _, nr := range toRemove {
-			if er.CidrIp == nr.CidrIp {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, er)
-		}
-	}
-	return result
-}
-
-func removeGroupPairs(existing []ec2store.GroupPair, toRemove []ec2store.GroupPair) []ec2store.GroupPair {
-	result := make([]ec2store.GroupPair, 0, len(existing))
-	for _, er := range existing {
-		found := false
-		for _, nr := range toRemove {
-			if er.GroupId == nr.GroupId && er.UserId == nr.UserId {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, er)
-		}
-	}
-	return result
-}
-
-func removePrefixListIds(existing []ec2store.PrefixListId, toRemove []ec2store.PrefixListId) []ec2store.PrefixListId {
-	result := make([]ec2store.PrefixListId, 0, len(existing))
-	for _, er := range existing {
-		found := false
-		for _, nr := range toRemove {
-			if er.PrefixListId == nr.PrefixListId {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, er)
-		}
-	}
-	return result
 }

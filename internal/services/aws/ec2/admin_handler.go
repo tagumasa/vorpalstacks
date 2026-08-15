@@ -53,6 +53,7 @@ func (h *AdminHandler) CreateVpc(ctx context.Context, req *connect.Request[pb.Cr
 
 	input := CreateVpcInput{
 		CidrBlock: req.Msg.GetCidrblock(),
+		Tags:      tagsFromPbSpecification(req.Msg.GetTagspecifications()),
 	}
 	if t := req.Msg.GetInstancetenancy(); t > 0 {
 		input.InstanceTenancy = t.String()
@@ -126,6 +127,7 @@ func (h *AdminHandler) CreateSubnet(ctx context.Context, req *connect.Request[pb
 		VpcId:            req.Msg.GetVpcid(),
 		CidrBlock:        req.Msg.GetCidrblock(),
 		AvailabilityZone: req.Msg.GetAvailabilityzone(),
+		Tags:             tagsFromPbSpecification(req.Msg.GetTagspecifications()),
 		Region:           region,
 	})
 	if err != nil {
@@ -196,6 +198,7 @@ func (h *AdminHandler) CreateSecurityGroup(ctx context.Context, req *connect.Req
 		GroupName:   req.Msg.GetGroupname(),
 		Description: req.Msg.GetDescription(),
 		VpcId:       req.Msg.GetVpcid(),
+		Tags:        tagsFromPbSpecification(req.Msg.GetTagspecifications()),
 	}, region)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

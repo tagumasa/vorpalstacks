@@ -27,10 +27,6 @@ var (
 	ErrSGNotFound = errors.New("ec2: security group not found")
 	// ErrSGAlreadyExists is returned when creating a security group with a duplicate GroupId.
 	ErrSGAlreadyExists = errors.New("ec2: security group already exists")
-	// ErrInvalidVPCState is returned when an operation is attempted on a VPC in an invalid state.
-	ErrInvalidVPCState = errors.New("ec2: invalid VPC state")
-	// ErrInvalidSubnetState is returned when an operation is attempted on a subnet in an invalid state.
-	ErrInvalidSubnetState = errors.New("ec2: invalid subnet state")
 )
 
 // EC2Store provides persistent storage for EC2 VPC, Subnet, and SecurityGroup
@@ -52,6 +48,31 @@ func NewEC2Store(store storage.TransactionalStorageWith2PC, accountID, region st
 		accountID:      accountID,
 		region:         region,
 	}
+}
+
+// listAllPages iterates every page of a storecommon.List query so that
+// callers observe the complete collection. The default ListOptions page
+// limit (DefaultMaxItems) silently truncates large collections such as a
+// full regression suite's VPC/subnet/SG population, which broke Describe
+// filters and duplicate-name detection once more than 100 items existed.
+func listAllPages[T any](base *storecommon.BaseStore, filter storecommon.FilterFunc[T]) ([]*T, error) {
+	var out []*T
+	marker := ""
+	for {
+		res, err := storecommon.List[T](base, storecommon.ListOptions{
+			Marker:   marker,
+			MaxItems: storecommon.AbsoluteMaxItems,
+		}, filter)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, res.Items...)
+		if !res.IsTruncated || res.NextMarker == "" {
+			break
+		}
+		marker = res.NextMarker
+	}
+	return out, nil
 }
 
 // CreateVPC persists a new VPC. Returns ErrVPCAlreadyExists if the VpcId is already in use.
@@ -81,11 +102,7 @@ func (s *EC2Store) DeleteVPC(vpcId string) error {
 
 // ListVPCs returns all VPCs in this region.
 func (s *EC2Store) ListVPCs() ([]*VPC, error) {
-	result, err := storecommon.List[VPC](s.vpcs, storecommon.ListOptions{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
+	return listAllPages[VPC](s.vpcs, nil)
 }
 
 // CreateSubnet persists a new subnet. Returns ErrSubnetAlreadyExists if the SubnetId is already in use.
@@ -115,21 +132,12 @@ func (s *EC2Store) DeleteSubnet(subnetId string) error {
 
 // ListSubnets returns all subnets in this region.
 func (s *EC2Store) ListSubnets() ([]*Subnet, error) {
-	result, err := storecommon.List[Subnet](s.subnets, storecommon.ListOptions{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
+	return listAllPages[Subnet](s.subnets, nil)
 }
 
 // ListSubnetsByVPC returns all subnets belonging to the specified VPC.
 func (s *EC2Store) ListSubnetsByVPC(vpcId string) ([]*Subnet, error) {
-	result, err := storecommon.List(s.subnets, storecommon.ListOptions{},
-		func(subnet *Subnet) bool { return subnet.VpcId == vpcId })
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
+	return listAllPages(s.subnets, func(subnet *Subnet) bool { return subnet.VpcId == vpcId })
 }
 
 // CreateSecurityGroup persists a new security group. Returns ErrSGAlreadyExists if the GroupId is already in use.
@@ -164,19 +172,10 @@ func (s *EC2Store) DeleteSecurityGroup(groupId string) error {
 
 // ListSecurityGroups returns all security groups in this region.
 func (s *EC2Store) ListSecurityGroups() ([]*SecurityGroup, error) {
-	result, err := storecommon.List[SecurityGroup](s.securityGroups, storecommon.ListOptions{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
+	return listAllPages[SecurityGroup](s.securityGroups, nil)
 }
 
 // ListSecurityGroupsByVPC returns all security groups belonging to the specified VPC.
 func (s *EC2Store) ListSecurityGroupsByVPC(vpcId string) ([]*SecurityGroup, error) {
-	result, err := storecommon.List(s.securityGroups, storecommon.ListOptions{},
-		func(sg *SecurityGroup) bool { return sg.VpcId == vpcId })
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
+	return listAllPages(s.securityGroups, func(sg *SecurityGroup) bool { return sg.VpcId == vpcId })
 }
