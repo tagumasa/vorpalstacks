@@ -228,6 +228,10 @@ type S3Invoker interface {
 type WAFInvoker interface {
 	AssociateWebACL(webACLArn, resourceArn string) error
 	DisassociateWebACL(webACLArn, resourceArn string) error
+	// WebACLExists reports whether a Web ACL with the given ARN or ID
+	// exists, so cross-service consumers can reject references to
+	// non-existent Web ACLs before persisting them.
+	WebACLExists(ctx context.Context, webACLIdOrArn string) bool
 }
 
 // CloudWatchMetricInvoker provides CloudWatch metric data operations for

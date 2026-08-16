@@ -216,6 +216,25 @@ func isValidSigningProtocol(p string) bool {
 	return validSigningProtocols[p]
 }
 
+// isValidPolicyListType reports whether the value is one of the managed
+// and custom filters accepted by the policy list operations.
+func isValidPolicyListType(t string) bool {
+	return t == "managed" || t == "custom"
+}
+
+// policyMatchesListType reports whether a policy with the given managed
+// flag is included by the managed|custom list filter. An empty filter
+// includes every policy.
+func policyMatchesListType(isManaged bool, listType string) bool {
+	if listType == "managed" {
+		return isManaged
+	}
+	if listType == "custom" {
+		return !isManaged
+	}
+	return true
+}
+
 func signingProtocolValues() string {
 	keys := make([]string, 0, len(validSigningProtocols))
 	for k := range validSigningProtocols {

@@ -74,8 +74,8 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 	if len(paths) == 0 {
 		return nil, errors.NewAWSError("InvalidArgument", "At least one path is required.", 400)
 	}
-	if len(paths) > 3000 {
-		return nil, errors.NewAWSError("InvalidArgument", "Cannot invalidate more than 3000 paths in a single request.", 400)
+	if len(paths) > cloudfrontstore.MaxInvalidationPathsPerRequest {
+		return nil, errors.NewAWSError("BatchTooLarge", "Invalidation batch specified is too large.", 413)
 	}
 
 	inv, err := stores.invalidations.Create(distID, callerRef, paths)
@@ -147,10 +147,7 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 || maxItems > 100 {
-		maxItems = 100
-	}
+	maxItems := resolveListMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
 	result, err := stores.invalidations.List(distID, marker, maxItems)
 	if err != nil {
@@ -171,16 +168,17 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 		nextMarker = result.Invalidations[len(result.Invalidations)-1].ID
 	}
 
-	return map[string]interface{}{
-		"InvalidationList": map[string]interface{}{
-			"IsTruncated": result.IsTruncated,
-			"Quantity":    len(items),
-			"MaxItems":    maxItems,
-			"Marker":      marker,
-			"NextMarker":  nextMarker,
-			"Items":       protocol.XMLElements{ElementName: "InvalidationSummary", Items: items},
-		},
-	}, nil
+	invList := map[string]interface{}{
+		"IsTruncated": result.IsTruncated,
+		"Quantity":    len(items),
+		"MaxItems":    maxItems,
+		"Marker":      marker,
+		"Items":       protocol.XMLElements{ElementName: "InvalidationSummary", Items: items},
+	}
+	if nextMarker != "" {
+		invList["NextMarker"] = nextMarker
+	}
+	return map[string]interface{}{"InvalidationList": invList}, nil
 }
 
 // GetInvalidation retrieves the status and details of a CloudFront invalidation.

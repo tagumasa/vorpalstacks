@@ -2,7 +2,6 @@ package cloudfront
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -102,7 +101,7 @@ func computeActiveTrustedKeyGroups(d *cloudfrontstore.Distribution, stores *clou
 	return map[string]interface{}{
 		"Enabled":  true,
 		"Quantity": len(kgIDs),
-		"Items":    protocol.XMLElements{ElementName: "KGKeyPairIds", Items: items},
+		"Items":    protocol.XMLElements{ElementName: "KeyGroup", Items: items},
 	}
 }
 
@@ -518,7 +517,7 @@ func formatCacheBehavior(cb *cloudfrontstore.CacheBehavior) map[string]interface
 			for i, item := range cb.TrustedKeyGroups.Items {
 				items[i] = item
 			}
-			tkgm["Items"] = protocol.XMLElements{ElementName: "KeyGroupId", Items: items}
+			tkgm["Items"] = protocol.XMLElements{ElementName: "KeyGroup", Items: items}
 		}
 		m["TrustedKeyGroups"] = tkgm
 	} else {
@@ -1042,7 +1041,7 @@ func parseCacheBehavior(cbMap map[string]interface{}) *cloudfrontstore.CacheBeha
 		cb.TrustedKeyGroups = &cloudfrontstore.TrustedKeyGroups{
 			Enabled:  request.GetBoolParam(tkg, "Enabled"),
 			Quantity: request.GetIntParam(tkg, "Quantity"),
-			Items:    parseStringItemList(tkg, "Items", "KeyGroupId"),
+			Items:    parseStringItemList(tkg, "Items", "KeyGroup"),
 		}
 	}
 	if fv := request.GetMapParam(cbMap, "ForwardedValues"); fv != nil {
@@ -1270,10 +1269,7 @@ func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 || maxItems > 100 {
-		maxItems = 100
-	}
+	maxItems := resolveListMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 	result, err := s.listDistributionsCore(store, ListDistributionsInput{
 		Marker:   marker,
 		MaxItems: maxItems,
@@ -1287,143 +1283,37 @@ func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *reque
 		items = append(items, formatDistributionSummary(d))
 	}
 
-	return map[string]interface{}{
-		"DistributionList": map[string]interface{}{
-			"Marker":      marker,
-			"MaxItems":    maxItems,
-			"IsTruncated": result.IsTruncated,
-			"Quantity":    len(items),
-			"NextMarker":  result.NextMarker,
-			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
-		},
-	}, nil
+	distList := map[string]interface{}{
+		"Marker":      marker,
+		"MaxItems":    maxItems,
+		"IsTruncated": result.IsTruncated,
+		"Quantity":    len(items),
+		"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
+	}
+	if result.NextMarker != "" {
+		distList["NextMarker"] = result.NextMarker
+	}
+	return map[string]interface{}{"DistributionList": distList}, nil
 }
 
 // UpdateDistribution updates the configuration of a CloudFront distribution.
 func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-
-	configMap := getDistributionConfigMap(req)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	distribution, err := store.distributions.Get(id)
+	result, err := s.updateDistributionCore(ctx, store, UpdateDistributionInput{
+		Id:        request.GetStringParam(req.Parameters, "Id"),
+		IfMatch:   getIfMatch(req),
+		Config:    parseDistributionConfig(getDistributionConfigMap(req)),
+		ACMRegion: reqCtx.GetRegion(),
+	})
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
 		return nil, err
 	}
 
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-	if ifMatch != "*" && distribution.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	// Capture old state for compensation.
-	oldConfig := distribution.DistributionConfig
-	oldEnabled := distribution.Enabled
-	oldWebACLId := ""
-	oldCertArn := ""
-	if oldConfig != nil {
-		oldWebACLId = oldConfig.WebACLId
-		if oldConfig.ViewerCertificate != nil {
-			oldCertArn = oldConfig.ViewerCertificate.ACMCertificateArn
-		}
-	}
-
-	newConfig := parseDistributionConfig(configMap)
-	if newConfig.CallerReference == "" {
-		newConfig.CallerReference = distribution.CallerReference
-	}
-
-	for _, origin := range newConfig.Origins.Items {
-		if origin.CustomOriginConfig != nil {
-			opp := origin.CustomOriginConfig.OriginProtocolPolicy
-			if opp == "" {
-				return nil, awserrors.NewAWSError("InvalidArgument",
-					"OriginProtocolPolicy is required when CustomOriginConfig is specified", 400)
-			}
-			if !isValidOriginProtocolPolicy(opp) {
-				return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginProtocolPolicy: "+opp, 400)
-			}
-		}
-	}
-
-	// Pre-validate new cert ARN before saving.
-	newCertArn := ""
-	if newConfig.ViewerCertificate != nil {
-		newCertArn = newConfig.ViewerCertificate.ACMCertificateArn
-	}
-	if newCertArn != "" && s.acmInvoker != nil && newCertArn != oldCertArn {
-		if !s.acmInvoker.CertificateExists(ctx, reqCtx.GetRegion(), newCertArn) {
-			return nil, awserrors.NewAWSError("NoSuchCertificate", "The specified certificate ARN does not exist: "+newCertArn, 404)
-		}
-	}
-
-	distribution.DistributionConfig = newConfig
-	distribution.Enabled = newConfig.Enabled
-
-	if oldWebACLId != newConfig.WebACLId && s.wafInvoker != nil {
-		distArn := distribution.ARN
-		if oldWebACLId != "" {
-			if err := s.wafInvoker.DisassociateWebACL(oldWebACLId, distArn); err != nil {
-				return nil, fmt.Errorf("failed to remove old WAF association: %w", err)
-			}
-		}
-		if newConfig.WebACLId != "" {
-			if err := s.wafInvoker.AssociateWebACL(newConfig.WebACLId, distArn); err != nil {
-				return nil, fmt.Errorf("failed to sync WAF association: %w", err)
-			}
-		}
-	}
-
-	if err := store.distributions.UpdateWithLastModified(id, distribution); err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
-		return nil, err
-	}
-
-	// ACM cert operations with compensating transaction on failure.
-	if s.acmInvoker != nil && oldCertArn != newCertArn {
-		distArn := distribution.ARN
-		// Step 1: Unregister old cert.
-		if oldCertArn != "" {
-			if err := s.acmInvoker.UnregisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, distArn); err != nil {
-				// Compensate: revert distribution config to old state.
-				distribution.DistributionConfig = oldConfig
-				distribution.Enabled = oldEnabled
-				_ = store.distributions.UpdateWithLastModified(id, distribution)
-				return nil, fmt.Errorf("failed to unregister old certificate usage: %w", err)
-			}
-		}
-		// Step 2: Register new cert.
-		if newCertArn != "" {
-			if err := s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), newCertArn, distArn); err != nil {
-				// Compensate: re-register old cert (was unregistered in step 1).
-				if oldCertArn != "" {
-					_ = s.acmInvoker.RegisterCertificateUsage(ctx, reqCtx.GetRegion(), oldCertArn, distArn)
-				}
-				// Revert distribution config to old state.
-				distribution.DistributionConfig = oldConfig
-				distribution.Enabled = oldEnabled
-				_ = store.distributions.UpdateWithLastModified(id, distribution)
-				return nil, fmt.Errorf("failed to register new certificate usage: %w", err)
-			}
-		}
-	}
+	distribution := result.Distribution
 	inProgressCount, _ := store.invalidations.CountInProgress(distribution.ID)
 	activeSigners := computeActiveTrustedSigners(distribution)
 	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, store)
@@ -1454,14 +1344,23 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLId := request.GetStringParam(req.Parameters, "WebACLId")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems <= 0 || maxItems > 100 {
-		maxItems = 100
+	maxItems := resolveListMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
+	// This operation documents a maximum of 100 for MaxItems; larger
+	// requests are served with the maximum page size.
+	if maxItems > cloudfrontstore.MaxListDistributionsByWebACLIdItems {
+		maxItems = cloudfrontstore.MaxListDistributionsByWebACLIdItems
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// This operation models InvalidWebACLId, returned when the specified
+	// Web ACL does not exist; the listing must not silently succeed with
+	// an empty result for an unknown ACL.
+	if s.wafInvoker != nil && !s.wafInvoker.WebACLExists(ctx, webACLId) {
+		return nil, awserrors.NewAWSError("InvalidWebACLId", "The specified Web ACL does not exist: "+webACLId, 400)
 	}
 
 	allDistributions, err := store.distributions.List("", 0)
@@ -1511,16 +1410,17 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		}
 	}
 
-	return map[string]interface{}{
-		"DistributionList": map[string]interface{}{
-			"Marker":      marker,
-			"MaxItems":    maxItems,
-			"IsTruncated": isTruncated,
-			"NextMarker":  nextMarker,
-			"Quantity":    len(paged),
-			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: paged},
-		},
-	}, nil
+	distList := map[string]interface{}{
+		"Marker":      marker,
+		"MaxItems":    maxItems,
+		"IsTruncated": isTruncated,
+		"Quantity":    len(paged),
+		"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: paged},
+	}
+	if nextMarker != "" {
+		distList["NextMarker"] = nextMarker
+	}
+	return map[string]interface{}{"DistributionList": distList}, nil
 }
 
 // parseXMLTags extracts tags from an XML-style map, handling both array and

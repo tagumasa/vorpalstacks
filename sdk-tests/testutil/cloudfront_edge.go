@@ -82,5 +82,85 @@ func cfEdgeTests(tc *cfTestContext) []TestResult {
 		return AssertErrorContains(err, "NoSuchResponseHeadersPolicy")
 	}))
 
+	results = append(results, tc.runner.RunTest("cloudfront", "CreatePublicKey_MissingCallerReference_Rejected", func() error {
+		_, err := client.CreatePublicKey(ctx, &cloudfront.CreatePublicKeyInput{
+			PublicKeyConfig: &types.PublicKeyConfig{
+				Name:           aws.String(tc.uniquePrefix("pk-neg")),
+				EncodedKey:     aws.String("aGVsbG8="),
+				// An empty caller reference passes client-side
+				// validation but must be rejected by the server, which
+				// models the member as required.
+				CallerReference: aws.String(""),
+			},
+		})
+		return AssertErrorContains(err, "InvalidArgument")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "PublicKey_RoundTrip", func() error {
+		name := tc.uniquePrefix("pk-rt")
+		created, err := client.CreatePublicKey(ctx, &cloudfront.CreatePublicKeyInput{
+			PublicKeyConfig: &types.PublicKeyConfig{
+				Name:            aws.String(name),
+				EncodedKey:      aws.String("aGVsbG8="),
+				CallerReference: aws.String(tc.uniquePrefix("pkref")),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		pkID := aws.ToString(created.PublicKey.Id)
+		etag := aws.ToString(created.ETag)
+
+		got, err := client.GetPublicKey(ctx, &cloudfront.GetPublicKeyInput{Id: aws.String(pkID)})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(got.PublicKey.PublicKeyConfig.Name) != name {
+			return fmt.Errorf("public key name mismatch: got %q", aws.ToString(got.PublicKey.PublicKeyConfig.Name))
+		}
+
+		cfgResp, err := client.GetPublicKeyConfig(ctx, &cloudfront.GetPublicKeyConfigInput{Id: aws.String(pkID)})
+		if err != nil {
+			return err
+		}
+		cfgResp.PublicKeyConfig.Comment = aws.String("round-trip comment")
+
+		updated, err := client.UpdatePublicKey(ctx, &cloudfront.UpdatePublicKeyInput{
+			Id:              aws.String(pkID),
+			IfMatch:         aws.String(etag),
+			PublicKeyConfig: cfgResp.PublicKeyConfig,
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(updated.ETag) == etag {
+			return fmt.Errorf("ETag should change after update")
+		}
+
+		listResp, err := client.ListPublicKeys(ctx, &cloudfront.ListPublicKeysInput{MaxItems: aws.Int32(100)})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, item := range listResp.PublicKeyList.Items {
+			if aws.ToString(item.Id) == pkID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("public key %q not listed", pkID)
+		}
+
+		if _, err := client.DeletePublicKey(ctx, &cloudfront.DeletePublicKeyInput{
+			Id:      aws.String(pkID),
+			IfMatch: aws.String(aws.ToString(updated.ETag)),
+		}); err != nil {
+			return err
+		}
+		_, err = client.GetPublicKey(ctx, &cloudfront.GetPublicKeyInput{Id: aws.String(pkID)})
+		return AssertErrorContains(err, "NoSuchPublicKey")
+	}))
+
 	return results
 }

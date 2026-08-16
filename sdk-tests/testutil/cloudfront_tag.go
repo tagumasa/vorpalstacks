@@ -123,6 +123,36 @@ func cfTagTests(tc *cfTestContext) []TestResult {
 			}
 			return nil
 		}))
+
+		results = append(results, tc.runner.RunTest("cloudfront", "TagResource_BadResourceArn_Rejected", func() error {
+			_, err := client.TagResource(ctx, &cloudfront.TagResourceInput{
+				Resource: aws.String("not-an-arn"),
+				Tags: &types.Tags{
+					Items: []types.Tag{{Key: aws.String("K"), Value: aws.String("v")}},
+				},
+			})
+			return AssertErrorContains(err, "InvalidArgument")
+		}))
+
+		results = append(results, tc.runner.RunTest("cloudfront", "TagResource_BadTagKey_Rejected", func() error {
+			_, err := client.TagResource(ctx, &cloudfront.TagResourceInput{
+				Resource: aws.String(distARN),
+				Tags: &types.Tags{
+					Items: []types.Tag{{Key: aws.String("bad key!"), Value: aws.String("v")}},
+				},
+			})
+			return AssertErrorContains(err, "InvalidArgument")
+		}))
+
+		results = append(results, tc.runner.RunTest("cloudfront", "UntagResource_BadTagKey_Rejected", func() error {
+			_, err := client.UntagResource(ctx, &cloudfront.UntagResourceInput{
+				Resource: aws.String(distARN),
+				TagKeys: &types.TagKeys{
+					Items: []string{"bad key!"},
+				},
+			})
+			return AssertErrorContains(err, "InvalidArgument")
+		}))
 	}
 
 	results = append(results, tc.runner.RunTest("cloudfront", "Cleanup_TaggedDistribution", func() error {

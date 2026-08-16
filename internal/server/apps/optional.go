@@ -304,6 +304,13 @@ func (a *App) initWAFv2(st *serviceState) error {
 	st.wafv2Service = svcwafv2.NewWAFv2Service(st.accountID, st.region)
 	st.wafv2Service.SetStorageManager(a.server.StorageManager())
 	st.wafv2Service.RegisterHandlers(a.server.Dispatcher())
+	// Cross-service wiring ran before this service existed, so attach the
+	// Web ACL existence provider to the already-registered WAF invoker.
+	if eb := a.server.EventBus(); eb != nil {
+		if inv, ok := eb.WAFInvoker().(*wafInvokerAdapter); ok {
+			inv.SetWebACLProvider(st.wafv2Service)
+		}
+	}
 	return nil
 }
 

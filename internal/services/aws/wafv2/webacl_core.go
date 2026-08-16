@@ -1,7 +1,9 @@
 package wafv2
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -185,4 +187,42 @@ func (s *WAFv2Service) listWebACLsCore(stores *wafv2Stores, input ListWebACLsInp
 	}
 
 	return result, nil
+}
+
+// WebACLExistsForInvoker reports whether a Web ACL with the given ARN or
+// ID exists. It backs the cross-service WebACLExists invoker method
+// (e.g. CloudFront validating a distribution's WebACLId). A WAFv2 ARN
+// carries the owning region in its fourth field; a bare WAF Classic
+// style ID is looked up in the service's default region.
+func (s *WAFv2Service) WebACLExistsForInvoker(ctx context.Context, webACLIdOrArn string) bool {
+	_ = ctx
+	if webACLIdOrArn == "" {
+		return false
+	}
+	region := s.region
+	if strings.HasPrefix(webACLIdOrArn, "arn:") {
+		parts := strings.Split(webACLIdOrArn, ":")
+		if len(parts) >= 6 && parts[3] != "" {
+			region = parts[3]
+		}
+		stores, err := s.GetStoresForRegion(region)
+		if err != nil {
+			return false
+		}
+		webACL, err := stores.webACLs.GetByARN(webACLIdOrArn)
+		if err == nil && webACL != nil {
+			return true
+		}
+		// Fall back to the ID tail for ARNs whose stored form differs from
+		// the caller's rendering (for example a region-less ARN).
+		id := parts[len(parts)-1]
+		webACL, err = stores.webACLs.Get(id)
+		return err == nil && webACL != nil
+	}
+	stores, err := s.GetStoresForRegion(region)
+	if err != nil {
+		return false
+	}
+	webACL, err := stores.webACLs.Get(webACLIdOrArn)
+	return err == nil && webACL != nil
 }

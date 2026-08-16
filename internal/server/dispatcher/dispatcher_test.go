@@ -347,7 +347,9 @@ func TestCloudFrontPayloadOperations(t *testing.T) {
 		{"CreateDistribution", true, "Distribution"},
 		{"GetDistribution", true, "Distribution"},
 		{"ListDistributions", true, "DistributionList"},
-		{"UnknownOperation", false, "UnknownOperation"},
+		{"GetKeyGroupConfig", true, "KeyGroupConfig"},
+		{"DeleteKeyGroup", true, ""},
+		{"UnknownOperation", false, ""},
 	}
 
 	for _, tt := range tests {

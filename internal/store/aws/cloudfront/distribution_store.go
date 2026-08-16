@@ -78,6 +78,9 @@ func (s *DistributionStore) Create(callerReference string, config *DistributionC
 		CreatedAt:          now,
 		LastModifiedAt:     now,
 		Enabled:            config.Enabled,
+		// The top-level Staging flag mirrors the configuration so that
+		// distribution summaries and configuration views always agree.
+		Staging: config.Staging,
 	}
 
 	if err := s.BaseStore.Put(id, distribution); err != nil {
@@ -113,6 +116,11 @@ func (s *DistributionStore) Update(id string, config *DistributionConfig) (*Dist
 // UpdateWithLastModified updates an existing CloudFront distribution with last modified time.
 // Returns updated distribution or an error if distribution does not exist.
 func (s *DistributionStore) UpdateWithLastModified(id string, distribution *Distribution) error {
+	if distribution.DistributionConfig != nil {
+		// The top-level Staging flag mirrors the configuration so that
+		// distribution summaries and configuration views always agree.
+		distribution.Staging = distribution.DistributionConfig.Staging
+	}
 	distribution.LastModifiedAt = time.Now()
 	etag, err := generateETag()
 	if err != nil {

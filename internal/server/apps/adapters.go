@@ -13,6 +13,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/rds/rdsdata"
+	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -709,6 +710,12 @@ func (a *rdsDataInvokerAdapter) RollbackTransaction(ctx context.Context, resourc
 
 type wafInvokerAdapter struct {
 	store *wafstore.WebACLAssociationStore
+	// provider resolves Web ACL existence via the WAFv2 service. It is
+	// attached after the optional services initialise because cross-service
+	// wiring runs before the WAFv2 service exists. When nil (WAFv2 not
+	// initialised) existence cannot be verified and callers keep the
+	// historical accept-and-associate behaviour.
+	provider *svcwafv2.WAFv2Service
 }
 
 // AssociateWebACL links a WAF WebACL to a resource.
@@ -719,6 +726,21 @@ func (a *wafInvokerAdapter) AssociateWebACL(webACLArn, resourceArn string) error
 // DisassociateWebACL removes the WAF WebACL association from a resource.
 func (a *wafInvokerAdapter) DisassociateWebACL(webACLArn, resourceArn string) error {
 	return a.store.Disassociate(resourceArn)
+}
+
+// WebACLExists reports whether the referenced Web ACL exists.
+func (a *wafInvokerAdapter) WebACLExists(ctx context.Context, webACLIdOrArn string) bool {
+	if a.provider == nil {
+		return true
+	}
+	return a.provider.WebACLExistsForInvoker(ctx, webACLIdOrArn)
+}
+
+// SetWebACLProvider wires the WAFv2 service used for Web ACL existence
+// checks. Cross-service wiring runs before the optional WAFv2 service is
+// created, so the provider is attached when initWAFv2 completes.
+func (a *wafInvokerAdapter) SetWebACLProvider(p *svcwafv2.WAFv2Service) {
+	a.provider = p
 }
 
 type cloudWatchMetricInvokerAdapter struct {

@@ -140,6 +140,127 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 		return results
 	}
 
+	// Negative validation tests: the server must reject structurally
+	// invalid distribution configurations on both the create and update
+	// paths.
+	baseCfg := func() *types.DistributionConfig {
+		oid := tc.uniquePrefix("neg-origin")
+		return &types.DistributionConfig{
+			CallerReference: aws.String(tc.uniquePrefix("neg-cf")),
+			Enabled:         aws.Bool(true),
+			Comment:         aws.String("negative validation"),
+			Origins: &types.Origins{
+				Quantity: aws.Int32(1),
+				Items: []types.Origin{
+					{
+						Id:         aws.String(oid),
+						DomainName: aws.String("example.com"),
+						CustomOriginConfig: &types.CustomOriginConfig{
+							HTTPPort:             aws.Int32(80),
+							HTTPSPort:            aws.Int32(443),
+							OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
+						},
+					},
+				},
+			},
+			DefaultCacheBehavior: &types.DefaultCacheBehavior{
+				TargetOriginId:       aws.String(oid),
+				ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
+				ForwardedValues: &types.ForwardedValues{
+					QueryString: aws.Bool(false),
+					Cookies:     &types.CookiePreference{Forward: types.ItemSelectionNone},
+				},
+			},
+			ViewerCertificate: &types.ViewerCertificate{
+				CloudFrontDefaultCertificate: aws.Bool(true),
+			},
+		}
+	}
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_MissingOriginDomain_Rejected", func() error {
+		cfg := baseCfg()
+		cfg.Origins.Items[0].DomainName = aws.String("")
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
+		return AssertErrorContains(err, "InvalidArgument")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_DuplicateOriginId_Rejected", func() error {
+		cfg := baseCfg()
+		first := cfg.Origins.Items[0]
+		cfg.Origins.Quantity = aws.Int32(2)
+		cfg.Origins.Items = append(cfg.Origins.Items, types.Origin{
+			Id:         first.Id,
+			DomainName: aws.String("other.example.com"),
+			CustomOriginConfig: &types.CustomOriginConfig{
+				HTTPPort:             aws.Int32(80),
+				HTTPSPort:            aws.Int32(443),
+				OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
+			},
+		})
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
+		return AssertErrorContains(err, "InvalidArgument")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_AliasTooLong_Rejected", func() error {
+		cfg := baseCfg()
+		longAlias := fmt.Sprintf("%s.example.com", tc.uniquePrefix("a"))
+		for len(longAlias) < 260 {
+			longAlias = "a" + longAlias
+		}
+		cfg.Aliases = &types.Aliases{
+			Quantity: aws.Int32(1),
+			Items:    []string{longAlias},
+		}
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
+		return AssertErrorContains(err, "InvalidArgument")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_BogusWebACLId_Rejected", func() error {
+		cfg := baseCfg()
+		cfg.WebACLId = aws.String("arn:aws:wafv2:us-east-1:000000000000:global/webacl/nonexistent/11111111-1111-1111-1111-111111111111")
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
+		return AssertErrorContains(err, "InvalidWebACLId")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_UnknownCachePolicy_Rejected", func() error {
+		cfg := baseCfg()
+		cfg.DefaultCacheBehavior.CachePolicyId = aws.String("11111111-2222-3333-4444-555555555555")
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
+		return AssertErrorContains(err, "NoSuchCachePolicy")
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_CNAMEConflict_Rejected", func() error {
+		alias := fmt.Sprintf("conflict-%d.example.com", time.Now().UnixNano())
+		cfgA := baseCfg()
+		cfgA.Aliases = &types.Aliases{Quantity: aws.Int32(1), Items: []string{alias}}
+		respA, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfgA})
+		if err != nil {
+			return err
+		}
+		idA := aws.ToString(respA.Distribution.Id)
+		defer tc.disableAndDeleteDistribution(idA, aws.ToString(respA.ETag))
+
+		cfgB := baseCfg()
+		cfgB.Aliases = &types.Aliases{Quantity: aws.Int32(1), Items: []string{alias}}
+		_, err = client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfgB})
+		if err := AssertErrorContains(err, "CNAMEAlreadyExists"); err != nil {
+			return err
+		}
+
+		// Re-submitting the distribution's own configuration must not
+		// count as a conflict with itself.
+		getResp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{Id: aws.String(idA)})
+		if err != nil {
+			return err
+		}
+		_, err = client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
+			Id:                 aws.String(idA),
+			IfMatch:            aws.String(aws.ToString(getResp.ETag)),
+			DistributionConfig: getResp.DistributionConfig,
+		})
+		return err
+	}))
+
 	results = append(results, tc.runner.RunTest("cloudfront", "GetDistribution_VerifyFields", func() error {
 		resp, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
 			Id: aws.String(distID),
@@ -232,17 +353,11 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributionsByWebACLId", func() error {
-		resp, err := client.ListDistributionsByWebACLId(ctx, &cloudfront.ListDistributionsByWebACLIdInput{
+	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributionsByWebACLId_UnknownACL_Rejected", func() error {
+		_, err := client.ListDistributionsByWebACLId(ctx, &cloudfront.ListDistributionsByWebACLIdInput{
 			WebACLId: aws.String("12345678-1234-1234-1234-123456789012"),
 		})
-		if err != nil {
-			return err
-		}
-		if resp.DistributionList == nil {
-			return fmt.Errorf("distribution list is nil")
-		}
-		return nil
+		return AssertErrorContains(err, "InvalidWebACLId")
 	}))
 
 	var updateETag string
@@ -274,6 +389,35 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 		updateETag = aws.ToString(resp.ETag)
 		return nil
 	}))
+
+	if updateETag != "" {
+		results = append(results, tc.runner.RunTest("cloudfront", "UpdateDistribution_DuplicateOriginId_Rejected", func() error {
+			getResp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{
+				Id: aws.String(distID),
+			})
+			if err != nil {
+				return err
+			}
+			cfg := getResp.DistributionConfig
+			firstID := cfg.Origins.Items[0].Id
+			cfg.Origins.Quantity = aws.Int32(2)
+			cfg.Origins.Items = append(cfg.Origins.Items, types.Origin{
+				Id:         firstID,
+				DomainName: aws.String("duplicate.example.com"),
+				CustomOriginConfig: &types.CustomOriginConfig{
+					HTTPPort:             aws.Int32(80),
+					HTTPSPort:            aws.Int32(443),
+					OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
+				},
+			})
+			_, err = client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
+				Id:                 aws.String(distID),
+				IfMatch:            aws.String(updateETag),
+				DistributionConfig: cfg,
+			})
+			return AssertErrorContains(err, "InvalidArgument")
+		}))
+	}
 
 	if updateETag != "" {
 		results = append(results, tc.runner.RunTest("cloudfront", "DeleteDistribution", func() error {

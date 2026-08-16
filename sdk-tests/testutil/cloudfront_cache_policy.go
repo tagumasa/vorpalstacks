@@ -30,6 +30,44 @@ func cfCachePolicyTests(tc *cfTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.runner.RunTest("cloudfront", "ListCachePolicies_ManagedFilter", func() error {
+		resp, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
+			MaxItems: aws.Int32(100),
+			Type:     types.CachePolicyTypeManaged,
+		})
+		if err != nil {
+			return err
+		}
+		if resp.CachePolicyList == nil {
+			return fmt.Errorf("cache policy list is nil")
+		}
+		for _, item := range resp.CachePolicyList.Items {
+			if item.Type != types.CachePolicyTypeManaged {
+				return fmt.Errorf("managed filter returned a %q item", item.Type)
+			}
+		}
+		if len(resp.CachePolicyList.Items) == 0 {
+			return fmt.Errorf("managed filter returned no items")
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "ListCachePolicies_CustomFilter", func() error {
+		resp, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
+			MaxItems: aws.Int32(100),
+			Type:     types.CachePolicyTypeCustom,
+		})
+		if err != nil {
+			return err
+		}
+		for _, item := range resp.CachePolicyList.Items {
+			if item.Type != types.CachePolicyTypeCustom {
+				return fmt.Errorf("custom filter returned a %q item", item.Type)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("cloudfront", "GetCachePolicy_Managed", func() error {
 		resp, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
 			Id: aws.String("658327ea-f89d-4fab-a63d-7e88639e58f6"),
@@ -261,6 +299,107 @@ func cfCachePolicyTests(tc *cfTestContext) []TestResult {
 
 		if pageCount < 2 {
 			return fmt.Errorf("expected at least 2 pages, got %d (total items: %d)", pageCount, totalCount)
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributionsByX_RoundTrip", func() error {
+		byRefTs := time.Now().UnixNano()
+		cpResp, err := client.CreateCachePolicy(ctx, &cloudfront.CreateCachePolicyInput{
+			CachePolicyConfig: &types.CachePolicyConfig{
+				Name:       aws.String(fmt.Sprintf("byref-cp-%d", byRefTs)),
+				Comment:    aws.String("list-by-reference test"),
+				DefaultTTL: aws.Int64(3600),
+				MaxTTL:     aws.Int64(86400),
+				MinTTL:     aws.Int64(0),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		byRefCpID := aws.ToString(cpResp.CachePolicy.Id)
+		byRefCpETag := aws.ToString(cpResp.ETag)
+
+		distID, distETag, err := tc.createDistribution(tc.uniqueCallerRef("byref-dist"), "list-by-reference distribution", "example.net")
+		if err != nil {
+			client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{Id: aws.String(byRefCpID), IfMatch: aws.String(byRefCpETag)})
+			return err
+		}
+
+		// Attach the cache policy to the distribution's default behaviour.
+		getResp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{Id: aws.String(distID)})
+		if err == nil {
+			getResp.DistributionConfig.DefaultCacheBehavior.CachePolicyId = aws.String(byRefCpID)
+			updResp, err := client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
+				Id:                 aws.String(distID),
+				IfMatch:            aws.String(distETag),
+				DistributionConfig: getResp.DistributionConfig,
+			})
+			if err == nil && updResp.ETag != nil {
+				distETag = *updResp.ETag
+			}
+		}
+		if err != nil {
+			tc.disableAndDeleteDistribution(distID, distETag)
+			client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{Id: aws.String(byRefCpID), IfMatch: aws.String(byRefCpETag)})
+			return err
+		}
+
+		defer func() {
+			tc.disableAndDeleteDistribution(distID, distETag)
+			client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{Id: aws.String(byRefCpID), IfMatch: aws.String(byRefCpETag)})
+		}()
+
+		byCp, err := client.ListDistributionsByCachePolicyId(ctx, &cloudfront.ListDistributionsByCachePolicyIdInput{
+			CachePolicyId: aws.String(byRefCpID),
+		})
+		if err != nil {
+			return err
+		}
+		if byCp.DistributionIdList == nil {
+			return fmt.Errorf("distribution id list is nil")
+		}
+		found := false
+		for _, id := range byCp.DistributionIdList.Items {
+			if id == distID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("distribution %q not listed by cache policy %q", distID, byRefCpID)
+		}
+
+		// Unknown target IDs must produce the modelled 404 errors rather
+		// than an empty successful listing.
+		randomID := "22222222-2222-4222-8222-222222222222"
+
+		_, err = client.ListDistributionsByCachePolicyId(ctx, &cloudfront.ListDistributionsByCachePolicyIdInput{
+			CachePolicyId: aws.String(randomID),
+		})
+		if err := AssertErrorContains(err, "NoSuchCachePolicy"); err != nil {
+			return err
+		}
+
+		_, err = client.ListDistributionsByResponseHeadersPolicyId(ctx, &cloudfront.ListDistributionsByResponseHeadersPolicyIdInput{
+			ResponseHeadersPolicyId: aws.String(randomID),
+		})
+		if err := AssertErrorContains(err, "NoSuchResponseHeadersPolicy"); err != nil {
+			return err
+		}
+
+		_, err = client.ListDistributionsByOriginRequestPolicyId(ctx, &cloudfront.ListDistributionsByOriginRequestPolicyIdInput{
+			OriginRequestPolicyId: aws.String(randomID),
+		})
+		if err := AssertErrorContains(err, "NoSuchOriginRequestPolicy"); err != nil {
+			return err
+		}
+
+		_, err = client.ListDistributionsByKeyGroup(ctx, &cloudfront.ListDistributionsByKeyGroupInput{
+			KeyGroupId: aws.String(randomID),
+		})
+		if err := AssertErrorContains(err, "NoSuchResource"); err != nil {
+			return err
 		}
 		return nil
 	}))

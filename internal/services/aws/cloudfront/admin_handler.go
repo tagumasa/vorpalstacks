@@ -62,9 +62,6 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 			originID = firstOrigin.GetId()
 		}
 	}
-	if originDomain == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("at least one origin with a domain name is required"))
-	}
 
 	// The caller reference is CloudFront's idempotency token; mint it from
 	// crypto/rand so concurrent creations cannot collide on a clock value.
@@ -95,10 +92,11 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	maxItems := 100
+	maxItems := 0
 	if req.Msg.Maxitems != nil {
 		maxItems = int(*req.Msg.Maxitems)
 	}
+	maxItems = resolveListMaxItems(maxItems)
 
 	result, err := h.service.listDistributionsCore(stores, ListDistributionsInput{
 		Marker:   req.Msg.Marker,

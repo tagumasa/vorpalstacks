@@ -2,83 +2,29 @@ package dispatcher
 
 import (
 	"net/http"
+
+	"vorpalstacks/internal/common/request"
 )
 
-var cloudFrontPayloadOperations = map[string]string{
-	"CreateDistribution":                       "Distribution",
-	"GetDistribution":                          "Distribution",
-	"GetDistributionConfig":                    "DistributionConfig",
-	"UpdateDistribution":                       "Distribution",
-	"CreateDistributionWithTags":               "Distribution",
-	"ListDistributions":                        "DistributionList",
-	"ListDistributionsByCachePolicyId":         "DistributionIdList",
-	"ListDistributionsByKeyGroup":              "DistributionIdList",
-	"ListDistributionsByOriginRequestPolicyId": "DistributionIdList",
-	"ListDistributionsByRealtimeLogConfig":     "DistributionIdList",
-	"ListDistributionsByAnycastIpListId":       "DistributionList",
-	"CreateCachePolicy":                        "CachePolicy",
-	"GetCachePolicy":                           "CachePolicy",
-	"GetCachePolicyConfig":                     "CachePolicyConfig",
-	"UpdateCachePolicy":                        "CachePolicy",
-	"ListCachePolicies":                        "CachePolicyList",
-	"CreateOriginRequestPolicy":                "OriginRequestPolicy",
-	"GetOriginRequestPolicy":                   "OriginRequestPolicy",
-	"GetOriginRequestPolicyConfig":             "OriginRequestPolicyConfig",
-	"UpdateOriginRequestPolicy":                "OriginRequestPolicy",
-	"ListOriginRequestPolicies":                "OriginRequestPolicyList",
-	"CreateCloudFrontOriginAccessIdentity":     "CloudFrontOriginAccessIdentity",
-	"GetCloudFrontOriginAccessIdentity":        "CloudFrontOriginAccessIdentity",
-	"UpdateCloudFrontOriginAccessIdentity":     "CloudFrontOriginAccessIdentity",
-	"ListCloudFrontOriginAccessIdentities":     "CloudFrontOriginAccessIdentityList",
-	"CreateInvalidation":                       "Invalidation",
-	"GetInvalidation":                          "Invalidation",
-	"ListInvalidations":                        "InvalidationList",
-	"CreateFunction":                           "FunctionSummary",
-	"GetFunction":                              "FunctionSummary",
-	"UpdateFunction":                           "FunctionSummary",
-	"ListFunctions":                            "FunctionList",
-	"CreateKeyGroup":                           "KeyGroup",
-	"GetKeyGroup":                              "KeyGroup",
-	"UpdateKeyGroup":                           "KeyGroup",
-	"ListKeyGroups":                            "KeyGroupList",
-	"CreatePublicKey":                          "PublicKey",
-	"GetPublicKey":                             "PublicKey",
-	"UpdatePublicKey":                          "PublicKey",
-	"ListPublicKeys":                           "PublicKeyList",
-	"CreateRealtimeLogConfig":                  "RealtimeLogConfig",
-	"GetRealtimeLogConfig":                     "RealtimeLogConfig",
-	"UpdateRealtimeLogConfig":                  "RealtimeLogConfig",
-	"ListRealtimeLogConfigs":                   "RealtimeLogConfigList",
-	"CreateStreamingDistribution":              "StreamingDistribution",
-	"GetStreamingDistribution":                 "StreamingDistribution",
-	"UpdateStreamingDistribution":              "StreamingDistribution",
-	"ListStreamingDistributions":               "StreamingDistributionList",
-	"ListTagsForResource":                      "Tags",
-	"CreateResponseHeadersPolicy":              "ResponseHeadersPolicy",
-	"GetResponseHeadersPolicy":                 "ResponseHeadersPolicy",
-	"GetResponseHeadersPolicyConfig":           "ResponseHeadersPolicyConfig",
-	"UpdateResponseHeadersPolicy":              "ResponseHeadersPolicy",
-	"DeleteResponseHeadersPolicy":              "",
-	"ListResponseHeadersPolicies":              "ResponseHeadersPolicyList",
-	"CreateOriginAccessControl":                "OriginAccessControl",
-	"GetOriginAccessControl":                   "OriginAccessControl",
-	"GetOriginAccessControlConfig":             "OriginAccessControlConfig",
-	"UpdateOriginAccessControl":                "OriginAccessControl",
-	"ListOriginAccessControls":                 "OriginAccessControlList",
-}
-
+// isCloudFrontPayloadOperation reports whether the operation is part of the
+// CloudFront routing table and therefore encodes its response with the
+// table's payload root rather than the generic operation-named envelope.
 func isCloudFrontPayloadOperation(opName string) bool {
-	_, ok := cloudFrontPayloadOperations[opName]
+	_, ok := request.CloudFrontPayloadRoot(opName)
 	return ok
 }
 
+// getCloudFrontPayloadRoot returns the XML payload root element configured
+// for a CloudFront operation; empty for operations with no response body.
 func getCloudFrontPayloadRoot(opName string) string {
-	if root, ok := cloudFrontPayloadOperations[opName]; ok {
-		return root
-	}
-	return opName
+	root, _ := request.CloudFrontPayloadRoot(opName)
+	return root
 }
 
+// extractCloudFrontETag lifts the ETag and Location members of a CloudFront
+// handler response into response headers, removing them from the body. The
+// values may sit at the top level of the response map or inside the payload
+// root member.
 func extractCloudFrontETag(w http.ResponseWriter, response interface{}, payloadRoot string) {
 	m, ok := response.(map[string]interface{})
 	if !ok {

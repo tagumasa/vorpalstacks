@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
-
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -15,121 +13,50 @@ import (
 // CreateOriginAccessControl creates an origin access control.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CreateOriginAccessControl.html
 func (s *CloudFrontService) CreateOriginAccessControl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	originType := request.GetStringParam(req.Parameters, "OriginAccessControlOriginType")
-	signingBehavior := request.GetStringParam(req.Parameters, "SigningBehavior")
-	signingProtocol := request.GetStringParam(req.Parameters, "SigningProtocol")
-
-	if originType == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "OriginAccessControlOriginType is required", 400)
-	}
-	if signingBehavior == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "SigningBehavior is required", 400)
-	}
-	if signingProtocol == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "SigningProtocol is required", 400)
-	}
-
-	if !isValidOriginAccessControlOriginType(originType) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: "+originAccessControlOriginTypeValues(), 400)
-	}
-	if !isValidSigningBehavior(signingBehavior) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: "+signingBehaviorValues(), 400)
-	}
-	if signingProtocol != "sigv4" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: "+signingProtocolValues(), 400)
-	}
-
-	config := &cloudfrontstore.OriginAccessControlConfig{
-		Name:                          name,
-		Description:                   request.GetStringParam(req.Parameters, "Description"),
-		OriginAccessControlOriginType: originType,
-		SigningBehavior:               signingBehavior,
-		SigningProtocol:               signingProtocol,
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, _ := store.originAccessControls.GetByName(name)
-	if existing != nil {
-		return nil, awserrors.NewAWSError("OriginAccessControlAlreadyExists", "Origin access control with this name already exists", 409)
-	}
-
-	oac, err := store.originAccessControls.Create(config)
+	oac, err := s.createOriginAccessControlCore(store, CreateOriginAccessControlInput{
+		Config: parseOACConfig(req),
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"OriginAccessControl": map[string]interface{}{
-			"Id":                        oac.ID,
-			"ARN":                       oac.ARN,
-			"ETag":                      oac.ETag,
-			"OriginAccessControlConfig": buildOACConfigResponse(oac),
-			"CreatedTime":               oac.CreatedAt.Format(time.RFC3339),
-			"LastModifiedTime":          oac.LastModifiedAt.Format(time.RFC3339),
-		},
-		"Location": oac.ARN,
+		"OriginAccessControl": formatOACResponse(oac),
+		"Location":            oac.ARN,
 	}, nil
 }
 
 // GetOriginAccessControl returns an origin access control.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_GetOriginAccessControl.html
 func (s *CloudFrontService) GetOriginAccessControl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	oac, err := store.originAccessControls.Get(id)
+	oac, err := s.getOriginAccessControlCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"OriginAccessControl": map[string]interface{}{
-			"Id":                        oac.ID,
-			"ARN":                       oac.ARN,
-			"ETag":                      oac.ETag,
-			"OriginAccessControlConfig": buildOACConfigResponse(oac),
-			"CreatedTime":               oac.CreatedAt.Format(time.RFC3339),
-			"LastModifiedTime":          oac.LastModifiedAt.Format(time.RFC3339),
-		},
+		"OriginAccessControl": formatOACResponse(oac),
 	}, nil
 }
 
 // GetOriginAccessControlConfig returns the configuration of an origin access control.
+// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_GetOriginAccessControlConfig.html
 func (s *CloudFrontService) GetOriginAccessControlConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	oac, err := store.originAccessControls.Get(id)
+	oac, err := s.getOriginAccessControlCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
 		return nil, err
 	}
 
@@ -142,142 +69,36 @@ func (s *CloudFrontService) GetOriginAccessControlConfig(ctx context.Context, re
 // UpdateOriginAccessControl updates an origin access control.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_UpdateOriginAccessControl.html
 func (s *CloudFrontService) UpdateOriginAccessControl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	originType := request.GetStringParam(req.Parameters, "OriginAccessControlOriginType")
-	signingBehavior := request.GetStringParam(req.Parameters, "SigningBehavior")
-	signingProtocol := request.GetStringParam(req.Parameters, "SigningProtocol")
-
-	if originType == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "OriginAccessControlOriginType is required", 400)
-	}
-	if signingBehavior == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "SigningBehavior is required", 400)
-	}
-	if signingProtocol == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "SigningProtocol is required", 400)
-	}
-
-	if !isValidOriginAccessControlOriginType(originType) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid OriginAccessControlOriginType. Must be one of: "+originAccessControlOriginTypeValues(), 400)
-	}
-	if !isValidSigningBehavior(signingBehavior) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningBehavior. Must be one of: "+signingBehaviorValues(), 400)
-	}
-	if signingProtocol != "sigv4" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Invalid SigningProtocol. Must be: "+signingProtocolValues(), 400)
-	}
-
-	config := &cloudfrontstore.OriginAccessControlConfig{
-		Name:                          name,
-		Description:                   request.GetStringParam(req.Parameters, "Description"),
-		OriginAccessControlOriginType: originType,
-		SigningBehavior:               signingBehavior,
-		SigningProtocol:               signingProtocol,
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, err := store.originAccessControls.Get(id)
+	oac, err := s.updateOriginAccessControlCore(store, UpdateOriginAccessControlInput{
+		Id:      request.GetStringParam(req.Parameters, "Id"),
+		IfMatch: getIfMatch(req),
+		Config:  parseOACConfig(req),
+	})
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
-		return nil, err
-	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if config.Name != existing.Name {
-		dup, _ := store.originAccessControls.GetByName(config.Name)
-		if dup != nil {
-			return nil, awserrors.NewAWSError("OriginAccessControlAlreadyExists", "Origin access control with this name already exists", 409)
-		}
-	}
-
-	oac, err := store.originAccessControls.Update(id, config)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"OriginAccessControl": map[string]interface{}{
-			"Id":                        oac.ID,
-			"ARN":                       oac.ARN,
-			"ETag":                      oac.ETag,
-			"OriginAccessControlConfig": buildOACConfigResponse(oac),
-			"CreatedTime":               oac.CreatedAt.Format(time.RFC3339),
-			"LastModifiedTime":          oac.LastModifiedAt.Format(time.RFC3339),
-		},
+		"OriginAccessControl": formatOACResponse(oac),
 	}, nil
 }
 
 // DeleteOriginAccessControl deletes an origin access control.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_DeleteOriginAccessControl.html
 func (s *CloudFrontService) DeleteOriginAccessControl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	existing, err := store.originAccessControls.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
+	if err := s.deleteOriginAccessControlCore(store,
+		request.GetStringParam(req.Parameters, "Id"), getIfMatch(req)); err != nil {
 		return nil, err
 	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if isOriginAccessControlAttached(store, id) {
-		return nil, awserrors.NewAWSError("OriginAccessControlInUse",
-			"Cannot delete this origin access control because it is attached to one or more distributions", 409)
-	}
-
-	err = store.originAccessControls.Delete(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginAccessControl", "Origin access control not found", 404)
-		}
-		return nil, err
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -285,23 +106,17 @@ func (s *CloudFrontService) DeleteOriginAccessControl(ctx context.Context, reqCt
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListOriginAccessControls.html
 func (s *CloudFrontService) ListOriginAccessControls(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := store.originAccessControls.List(marker, maxItems)
+	result, err := s.listOriginAccessControlsCore(store, marker, request.GetIntParam(req.Parameters, "MaxItems"))
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(result.OriginAccessControls))
-	for _, oac := range result.OriginAccessControls {
+	items := make([]interface{}, 0, len(result.Controls))
+	for _, oac := range result.Controls {
 		items = append(items, map[string]interface{}{
 			"Id":                            oac.ID,
 			"Name":                          oac.Name,
@@ -312,16 +127,41 @@ func (s *CloudFrontService) ListOriginAccessControls(ctx context.Context, reqCtx
 		})
 	}
 
+	oacList := map[string]interface{}{
+		"Marker":      marker,
+		"MaxItems":    result.EffectiveMaxItems,
+		"IsTruncated": result.IsTruncated,
+		"Quantity":    len(items),
+		"Items":       protocol.XMLElements{ElementName: "OriginAccessControlSummary", Items: items},
+	}
+	if result.NextMarker != "" {
+		oacList["NextMarker"] = result.NextMarker
+	}
+	return map[string]interface{}{"OriginAccessControlList": oacList}, nil
+}
+
+// parseOACConfig parses the flat origin access control request payload
+// into the store configuration type.
+func parseOACConfig(req *request.ParsedRequest) *cloudfrontstore.OriginAccessControlConfig {
+	return &cloudfrontstore.OriginAccessControlConfig{
+		Name:                          request.GetStringParam(req.Parameters, "Name"),
+		Description:                   request.GetStringParam(req.Parameters, "Description"),
+		OriginAccessControlOriginType: request.GetStringParam(req.Parameters, "OriginAccessControlOriginType"),
+		SigningBehavior:               request.GetStringParam(req.Parameters, "SigningBehavior"),
+		SigningProtocol:               request.GetStringParam(req.Parameters, "SigningProtocol"),
+	}
+}
+
+// formatOACResponse renders an origin access control with its metadata.
+func formatOACResponse(oac *cloudfrontstore.OriginAccessControl) map[string]interface{} {
 	return map[string]interface{}{
-		"OriginAccessControlList": map[string]interface{}{
-			"Marker":      marker,
-			"MaxItems":    maxItems,
-			"IsTruncated": result.IsTruncated,
-			"Quantity":    len(items),
-			"NextMarker":  result.NextMarker,
-			"Items":       protocol.XMLElements{ElementName: "OriginAccessControlSummary", Items: items},
-		},
-	}, nil
+		"Id":                        oac.ID,
+		"ARN":                       oac.ARN,
+		"ETag":                      oac.ETag,
+		"OriginAccessControlConfig": buildOACConfigResponse(oac),
+		"CreatedTime":               oac.CreatedAt.Format(time.RFC3339),
+		"LastModifiedTime":          oac.LastModifiedAt.Format(time.RFC3339),
+	}
 }
 
 func buildOACConfigResponse(oac *cloudfrontstore.OriginAccessControl) map[string]interface{} {

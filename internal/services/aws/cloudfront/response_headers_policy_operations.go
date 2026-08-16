@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
-
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -14,35 +12,9 @@ import (
 
 // CreateResponseHeadersPolicy creates a new response headers policy.
 func (s *CloudFrontService) CreateResponseHeadersPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	if configMap := request.GetMapParam(params, "ResponseHeadersPolicyConfig"); configMap != nil {
-		params = configMap
-	}
-
-	name := request.GetStringParam(params, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	config := &cloudfrontstore.ResponseHeadersPolicyConfig{
-		Name:    name,
-		Comment: request.GetStringParam(params, "Comment"),
-	}
-
-	if corsMap := request.GetMapParam(params, "CorsConfig"); corsMap != nil {
-		config.CorsConfig = parseCorsConfig(corsMap)
-	}
-	if customMap := request.GetMapParam(params, "CustomHeadersConfig"); customMap != nil {
-		config.CustomHeadersConfig = parseCustomHeadersConfig(customMap)
-	}
-	if removeMap := request.GetMapParam(params, "RemoveHeadersConfig"); removeMap != nil {
-		config.RemoveHeadersConfig = parseRemoveHeadersConfig(removeMap)
-	}
-	if securityMap := request.GetMapParam(params, "SecurityHeadersConfig"); securityMap != nil {
-		config.SecurityHeadersConfig = parseSecurityHeadersConfig(securityMap)
-	}
-	if serverTimingMap := request.GetMapParam(params, "ServerTimingHeadersConfig"); serverTimingMap != nil {
-		config.ServerTimingHeadersConfig = parseServerTimingHeadersConfig(serverTimingMap)
+	config, err := parseResponseHeadersPolicyConfig(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -50,12 +22,7 @@ func (s *CloudFrontService) CreateResponseHeadersPolicy(ctx context.Context, req
 		return nil, err
 	}
 
-	existing, _ := store.responseHeadersPolicies.GetByName(name)
-	if existing != nil {
-		return nil, awserrors.NewAWSError("ResponseHeadersPolicyAlreadyExists", "Response headers policy with this name already exists", 409)
-	}
-
-	policy, err := store.responseHeadersPolicies.Create(config)
+	policy, err := s.createResponseHeadersPolicyCore(store, CreateResponseHeadersPolicyInput{Config: config})
 	if err != nil {
 		return nil, err
 	}
@@ -69,21 +36,12 @@ func (s *CloudFrontService) CreateResponseHeadersPolicy(ctx context.Context, req
 
 // GetResponseHeadersPolicy gets a response headers policy by ID.
 func (s *CloudFrontService) GetResponseHeadersPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	policy, err := store.responseHeadersPolicies.Get(id)
+	policy, err := s.getResponseHeadersPolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
 		return nil, err
 	}
 
@@ -95,21 +53,12 @@ func (s *CloudFrontService) GetResponseHeadersPolicy(ctx context.Context, reqCtx
 
 // GetResponseHeadersPolicyConfig gets the configuration for a response headers policy.
 func (s *CloudFrontService) GetResponseHeadersPolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	policy, err := store.responseHeadersPolicies.Get(id)
+	policy, err := s.getResponseHeadersPolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
 		return nil, err
 	}
 
@@ -121,46 +70,9 @@ func (s *CloudFrontService) GetResponseHeadersPolicyConfig(ctx context.Context, 
 
 // UpdateResponseHeadersPolicy updates an existing response headers policy.
 func (s *CloudFrontService) UpdateResponseHeadersPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
-	params := req.Parameters
-	if configMap := request.GetMapParam(params, "ResponseHeadersPolicyConfig"); configMap != nil {
-		params = configMap
-	}
-
-	name := request.GetStringParam(params, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	config := &cloudfrontstore.ResponseHeadersPolicyConfig{
-		Name:    name,
-		Comment: request.GetStringParam(params, "Comment"),
-	}
-
-	if corsMap := request.GetMapParam(params, "CorsConfig"); corsMap != nil {
-		config.CorsConfig = parseCorsConfig(corsMap)
-	}
-	if customMap := request.GetMapParam(params, "CustomHeadersConfig"); customMap != nil {
-		config.CustomHeadersConfig = parseCustomHeadersConfig(customMap)
-	}
-	if removeMap := request.GetMapParam(params, "RemoveHeadersConfig"); removeMap != nil {
-		config.RemoveHeadersConfig = parseRemoveHeadersConfig(removeMap)
-	}
-	if securityMap := request.GetMapParam(params, "SecurityHeadersConfig"); securityMap != nil {
-		config.SecurityHeadersConfig = parseSecurityHeadersConfig(securityMap)
-	}
-	if serverTimingMap := request.GetMapParam(params, "ServerTimingHeadersConfig"); serverTimingMap != nil {
-		config.ServerTimingHeadersConfig = parseServerTimingHeadersConfig(serverTimingMap)
+	config, err := parseResponseHeadersPolicyConfig(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -168,30 +80,12 @@ func (s *CloudFrontService) UpdateResponseHeadersPolicy(ctx context.Context, req
 		return nil, err
 	}
 
-	existing, err := store.responseHeadersPolicies.Get(id)
+	policy, err := s.updateResponseHeadersPolicyCore(store, UpdateResponseHeadersPolicyInput{
+		Id:      request.GetStringParam(req.Parameters, "Id"),
+		IfMatch: getIfMatch(req),
+		Config:  config,
+	})
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
-		return nil, err
-	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if config.Name != existing.Name {
-		dup, _ := store.responseHeadersPolicies.GetByName(config.Name)
-		if dup != nil {
-			return nil, awserrors.NewAWSError("ResponseHeadersPolicyAlreadyExists", "Response headers policy with this name already exists", 409)
-		}
-	}
-
-	policy, err := store.responseHeadersPolicies.Update(id, config)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
 		return nil, err
 	}
 
@@ -203,70 +97,34 @@ func (s *CloudFrontService) UpdateResponseHeadersPolicy(ctx context.Context, req
 
 // DeleteResponseHeadersPolicy deletes a response headers policy.
 func (s *CloudFrontService) DeleteResponseHeadersPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	existing, err := store.responseHeadersPolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
+	if err := s.deleteResponseHeadersPolicyCore(store,
+		request.GetStringParam(req.Parameters, "Id"), getIfMatch(req)); err != nil {
 		return nil, err
 	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if isResponseHeadersPolicyAttached(store, id) {
-		return nil, awserrors.NewAWSError("ResponseHeadersPolicyInUse",
-			"Cannot delete this response headers policy because it is attached to one or more distributions", 409)
-	}
-
-	err = store.responseHeadersPolicies.Delete(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchResponseHeadersPolicy", "Response headers policy not found", 404)
-		}
-		return nil, err
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // ListResponseHeadersPolicies lists all response headers policies.
 func (s *CloudFrontService) ListResponseHeadersPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := store.responseHeadersPolicies.List(marker, maxItems)
+	result, err := s.listResponseHeadersPoliciesCore(store, ListPoliciesInput{
+		Marker:     request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:   request.GetIntParam(req.Parameters, "MaxItems"),
+		TypeFilter: request.GetStringParam(req.Parameters, "Type"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(result.ResponseHeadersPolicies))
-	for _, policy := range result.ResponseHeadersPolicies {
+	items := make([]interface{}, 0, len(result.Policies))
+	for _, policy := range result.Policies {
 		policyType := "custom"
 		if policy.IsManaged {
 			policyType = "managed"
@@ -281,16 +139,46 @@ func (s *CloudFrontService) ListResponseHeadersPolicies(ctx context.Context, req
 		})
 	}
 
-	return map[string]interface{}{
-		"ResponseHeadersPolicyList": map[string]interface{}{
-			"Marker":      marker,
-			"MaxItems":    maxItems,
-			"IsTruncated": result.IsTruncated,
-			"Quantity":    len(items),
-			"NextMarker":  result.NextMarker,
-			"Items":       protocol.XMLElements{ElementName: "ResponseHeadersPolicySummary", Items: items},
-		},
-	}, nil
+	rhpList := map[string]interface{}{
+		"Quantity": len(items),
+		"MaxItems": result.EffectiveMaxItems,
+		"Items":    protocol.XMLElements{ElementName: "ResponseHeadersPolicySummary", Items: items},
+	}
+	if result.NextMarker != "" {
+		rhpList["NextMarker"] = result.NextMarker
+	}
+	return map[string]interface{}{"ResponseHeadersPolicyList": rhpList}, nil
+}
+
+// parseResponseHeadersPolicyConfig parses the response headers policy
+// request payload into the store configuration type.
+func parseResponseHeadersPolicyConfig(req *request.ParsedRequest) (*cloudfrontstore.ResponseHeadersPolicyConfig, error) {
+	params := req.Parameters
+	if configMap := request.GetMapParam(params, "ResponseHeadersPolicyConfig"); configMap != nil {
+		params = configMap
+	}
+
+	config := &cloudfrontstore.ResponseHeadersPolicyConfig{
+		Name:    request.GetStringParam(params, "Name"),
+		Comment: request.GetStringParam(params, "Comment"),
+	}
+
+	if corsMap := request.GetMapParam(params, "CorsConfig"); corsMap != nil {
+		config.CorsConfig = parseCorsConfig(corsMap)
+	}
+	if customMap := request.GetMapParam(params, "CustomHeadersConfig"); customMap != nil {
+		config.CustomHeadersConfig = parseCustomHeadersConfig(customMap)
+	}
+	if removeMap := request.GetMapParam(params, "RemoveHeadersConfig"); removeMap != nil {
+		config.RemoveHeadersConfig = parseRemoveHeadersConfig(removeMap)
+	}
+	if securityMap := request.GetMapParam(params, "SecurityHeadersConfig"); securityMap != nil {
+		config.SecurityHeadersConfig = parseSecurityHeadersConfig(securityMap)
+	}
+	if serverTimingMap := request.GetMapParam(params, "ServerTimingHeadersConfig"); serverTimingMap != nil {
+		config.ServerTimingHeadersConfig = parseServerTimingHeadersConfig(serverTimingMap)
+	}
+	return config, nil
 }
 
 func buildResponseHeadersPolicyResponse(policy *cloudfrontstore.ResponseHeadersPolicy) map[string]interface{} {

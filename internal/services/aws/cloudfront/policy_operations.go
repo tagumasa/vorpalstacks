@@ -2,11 +2,10 @@ package cloudfront
 
 import (
 	"context"
-	"strings"
+	"fmt"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -19,189 +18,6 @@ import (
 // CreateCachePolicy creates a cache policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CreateCachePolicy.html
 func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	configMap := request.GetMapParam(req.Parameters, "CachePolicyConfig")
-	if configMap == nil {
-		configMap = req.Parameters
-	}
-
-	name := request.GetStringParam(configMap, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	params, err := parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin"))
-	if err != nil {
-		return nil, err
-	}
-
-	config := &cloudfrontstore.CachePolicyConfig{
-		Name:                                     name,
-		Comment:                                  request.GetStringParam(configMap, "Comment"),
-		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
-		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
-		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
-		ParametersInCacheKeyParametersInCacheKey: params,
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	existing, _ := store.cachePolicies.GetByName(name)
-	if existing != nil {
-		return nil, awserrors.NewAWSError("CachePolicyAlreadyExists", "Cache policy with this name already exists", 409)
-	}
-
-	cachePolicy, err := store.cachePolicies.Create(name, "", config)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"ETag": cachePolicy.ETag,
-		"CachePolicy": map[string]interface{}{
-			"Id":                cachePolicy.ID,
-			"ARN":               cachePolicy.ARN,
-			"Name":              cachePolicy.Name,
-			"CachePolicyConfig": cachePolicy.CachePolicyConfig,
-			"LastModifiedTime":  cachePolicy.ModifiedAt.Format(time.RFC3339),
-		},
-	}, nil
-}
-
-// GetCachePolicy returns a cache policy.
-// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_GetCachePolicy.html
-func (s *CloudFrontService) GetCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	cachePolicy, err := store.cachePolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
-		}
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"ETag": cachePolicy.ETag,
-		"CachePolicy": map[string]interface{}{
-			"Id":                cachePolicy.ID,
-			"ARN":               cachePolicy.ARN,
-			"Name":              cachePolicy.Name,
-			"CachePolicyConfig": cachePolicy.CachePolicyConfig,
-			"LastModifiedTime":  cachePolicy.ModifiedAt.Format(time.RFC3339),
-		},
-	}, nil
-}
-
-// ListCachePolicies lists cache policies.
-// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListCachePolicies.html
-func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	result, err := store.cachePolicies.List(marker, maxItems)
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]interface{}, 0, len(result.CachePolicies))
-	for _, cp := range result.CachePolicies {
-		policyType := "custom"
-		if cp.IsManaged {
-			policyType = "managed"
-		}
-		items = append(items, map[string]interface{}{
-			"Type": policyType,
-			"CachePolicy": map[string]interface{}{
-				"Id":                cp.ID,
-				"LastModifiedTime":  cp.ModifiedAt.Format(time.RFC3339),
-				"CachePolicyConfig": cp.CachePolicyConfig,
-			},
-		})
-	}
-
-	return map[string]interface{}{
-		"CachePolicyList": map[string]interface{}{
-			"Items":       protocol.XMLElements{ElementName: "CachePolicySummary", Items: items},
-			"IsTruncated": result.IsTruncated,
-			"NextMarker":  result.NextMarker,
-			"Quantity":    len(result.CachePolicies),
-			"MaxItems":    maxItems,
-		},
-	}, nil
-}
-
-// GetCachePolicyConfig returns the configuration of a cache policy.
-func (s *CloudFrontService) GetCachePolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	cachePolicy, err := store.cachePolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
-		}
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"CachePolicyConfig": cachePolicy.CachePolicyConfig,
-		"ETag":              cachePolicy.ETag,
-	}, nil
-}
-
-// UpdateCachePolicy updates a cache policy.
-func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	existing, err := store.cachePolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
-		}
-		return nil, err
-	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
 	configMap := request.GetMapParam(req.Parameters, "CachePolicyConfig")
 	if configMap == nil {
 		configMap = req.Parameters
@@ -221,109 +37,157 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 		ParametersInCacheKeyParametersInCacheKey: params,
 	}
 
-	if config.Name != existing.Name {
-		dup, _ := store.cachePolicies.GetByName(config.Name)
-		if dup != nil {
-			return nil, awserrors.NewAWSError("CachePolicyAlreadyExists", "Cache policy with this name already exists", 409)
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	cachePolicy, err := store.cachePolicies.Update(id, config)
+	cachePolicy, err := s.createCachePolicyCore(store, CreateCachePolicyInput{Config: config})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"CachePolicy": map[string]interface{}{
-			"Id":                cachePolicy.ID,
-			"ARN":               cachePolicy.ARN,
-			"Name":              cachePolicy.Name,
-			"CachePolicyConfig": cachePolicy.CachePolicyConfig,
-			"LastModifiedTime":  cachePolicy.ModifiedAt.Format(time.RFC3339),
-		},
-		"ETag": cachePolicy.ETag,
+		"ETag":        cachePolicy.ETag,
+		"CachePolicy": formatCachePolicy(cachePolicy),
+	}, nil
+}
+
+// GetCachePolicy returns a cache policy.
+// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_GetCachePolicy.html
+func (s *CloudFrontService) GetCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	cachePolicy, err := s.getCachePolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"ETag":        cachePolicy.ETag,
+		"CachePolicy": formatCachePolicy(cachePolicy),
+	}, nil
+}
+
+// ListCachePolicies lists cache policies.
+// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListCachePolicies.html
+func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.listCachePoliciesCore(store, ListPoliciesInput{
+		Marker:     request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:   request.GetIntParam(req.Parameters, "MaxItems"),
+		TypeFilter: request.GetStringParam(req.Parameters, "Type"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]interface{}, 0, len(result.Policies))
+	for _, cp := range result.Policies {
+		policyType := "custom"
+		if cp.IsManaged {
+			policyType = "managed"
+		}
+		items = append(items, map[string]interface{}{
+			"Type":        policyType,
+			"CachePolicy": formatCachePolicySummary(cp),
+		})
+	}
+
+	cpList := map[string]interface{}{
+		"Items":    protocol.XMLElements{ElementName: "CachePolicySummary", Items: items},
+		"Quantity": len(items),
+		"MaxItems": result.EffectiveMaxItems,
+	}
+	if result.NextMarker != "" {
+		cpList["NextMarker"] = result.NextMarker
+	}
+	return map[string]interface{}{"CachePolicyList": cpList}, nil
+}
+
+// GetCachePolicyConfig returns the configuration of a cache policy.
+func (s *CloudFrontService) GetCachePolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	cachePolicy, err := s.getCachePolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CachePolicyConfig": cachePolicy.CachePolicyConfig,
+		"ETag":              cachePolicy.ETag,
+	}, nil
+}
+
+// UpdateCachePolicy updates a cache policy.
+func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	configMap := request.GetMapParam(req.Parameters, "CachePolicyConfig")
+	if configMap == nil {
+		configMap = req.Parameters
+	}
+
+	params, err := parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin"))
+	if err != nil {
+		return nil, err
+	}
+
+	config := &cloudfrontstore.CachePolicyConfig{
+		Name:                                     request.GetStringParam(configMap, "Name"),
+		Comment:                                  request.GetStringParam(configMap, "Comment"),
+		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
+		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
+		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
+		ParametersInCacheKeyParametersInCacheKey: params,
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	cachePolicy, err := s.updateCachePolicyCore(store, UpdateCachePolicyInput{
+		Id:      request.GetStringParam(req.Parameters, "Id"),
+		IfMatch: getIfMatch(req),
+		Config:  config,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CachePolicy": formatCachePolicy(cachePolicy),
+		"ETag":        cachePolicy.ETag,
 	}, nil
 }
 
 // DeleteCachePolicy deletes a cache policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_DeleteCachePolicy.html
 func (s *CloudFrontService) DeleteCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	existing, err := store.cachePolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
-		}
+	if err := s.deleteCachePolicyCore(store,
+		request.GetStringParam(req.Parameters, "Id"), getIfMatch(req)); err != nil {
 		return nil, err
 	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if isCachePolicyAttached(store, id) {
-		return nil, awserrors.NewAWSError("CachePolicyInUse",
-			"Cannot delete this cache policy because it is attached to one or more distributions", 409)
-	}
-
-	err = store.cachePolicies.Delete(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCachePolicy", "Cache policy not found", 404)
-		}
-		return nil, err
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // CreateOriginRequestPolicy creates an origin request policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CreateOriginRequestPolicy.html
 func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	configMap := request.GetMapParam(req.Parameters, "OriginRequestPolicyConfig")
-	if configMap == nil {
-		configMap = req.Parameters
-	}
-
-	name := request.GetStringParam(configMap, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Name is required", 400)
-	}
-
-	cookiesCfg, err := parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig"))
+	config, err := parseOriginRequestPolicyConfig(req)
 	if err != nil {
 		return nil, err
-	}
-	headersCfg, err := parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig"))
-	if err != nil {
-		return nil, err
-	}
-	queryStringsCfg, err := parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig"))
-	if err != nil {
-		return nil, err
-	}
-
-	config := &cloudfrontstore.OriginRequestPolicyConfig{
-		Name:               name,
-		Comment:            request.GetStringParam(configMap, "Comment"),
-		CookiesConfig:      cookiesCfg,
-		HeadersConfig:      headersCfg,
-		QueryStringsConfig: queryStringsCfg,
 	}
 
 	store, err := s.store(reqCtx)
@@ -331,121 +195,82 @@ func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	existing, _ := store.originRequestPolicies.GetByName(name)
-	if existing != nil {
-		return nil, awserrors.NewAWSError("OriginRequestPolicyAlreadyExists", "Origin request policy with this name already exists", 409)
-	}
-
-	policy, err := store.originRequestPolicies.Create(name, "", config)
+	policy, err := s.createOriginRequestPolicyCore(store, CreateOriginRequestPolicyInput{Config: config})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"ETag": policy.ETag,
-		"OriginRequestPolicy": map[string]interface{}{
-			"Id":                        policy.ID,
-			"ARN":                       policy.ARN,
-			"Name":                      policy.Name,
-			"OriginRequestPolicyConfig": policy.OriginRequestPolicyConfig,
-			"LastModifiedTime":          policy.ModifiedAt.Format(time.RFC3339),
-		},
+		"ETag":                policy.ETag,
+		"OriginRequestPolicy": formatOriginRequestPolicy(policy),
 	}, nil
 }
 
 // GetOriginRequestPolicy returns an origin request policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_GetOriginRequestPolicy.html
 func (s *CloudFrontService) GetOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := store.originRequestPolicies.Get(id)
+	policy, err := s.getOriginRequestPolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"ETag": policy.ETag,
-		"OriginRequestPolicy": map[string]interface{}{
-			"Id":                        policy.ID,
-			"ARN":                       policy.ARN,
-			"Name":                      policy.Name,
-			"OriginRequestPolicyConfig": policy.OriginRequestPolicyConfig,
-			"LastModifiedTime":          policy.ModifiedAt.Format(time.RFC3339),
-		},
+		"ETag":                policy.ETag,
+		"OriginRequestPolicy": formatOriginRequestPolicy(policy),
 	}, nil
 }
 
 // ListOriginRequestPolicies lists origin request policies.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListOriginRequestPolicies.html
 func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.originRequestPolicies.List(marker, maxItems)
+	result, err := s.listOriginRequestPoliciesCore(store, ListPoliciesInput{
+		Marker:     request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:   request.GetIntParam(req.Parameters, "MaxItems"),
+		TypeFilter: request.GetStringParam(req.Parameters, "Type"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(result.OriginRequestPolicies))
-	for _, p := range result.OriginRequestPolicies {
+	items := make([]interface{}, 0, len(result.Policies))
+	for _, p := range result.Policies {
 		policyType := "custom"
 		if p.IsManaged {
 			policyType = "managed"
 		}
 		items = append(items, map[string]interface{}{
-			"Type": policyType,
-			"OriginRequestPolicy": map[string]interface{}{
-				"Id":                        p.ID,
-				"LastModifiedTime":          p.ModifiedAt.Format(time.RFC3339),
-				"OriginRequestPolicyConfig": p.OriginRequestPolicyConfig,
-			},
+			"Type":                policyType,
+			"OriginRequestPolicy": formatOriginRequestPolicySummary(p),
 		})
 	}
 
-	return map[string]interface{}{
-		"OriginRequestPolicyList": map[string]interface{}{
-			"Items":       protocol.XMLElements{ElementName: "OriginRequestPolicySummary", Items: items},
-			"IsTruncated": result.IsTruncated,
-			"NextMarker":  result.NextMarker,
-			"Quantity":    len(result.OriginRequestPolicies),
-			"MaxItems":    maxItems,
-		},
-	}, nil
+	orpList := map[string]interface{}{
+		"Items":    protocol.XMLElements{ElementName: "OriginRequestPolicySummary", Items: items},
+		"Quantity": len(items),
+		"MaxItems": result.EffectiveMaxItems,
+	}
+	if result.NextMarker != "" {
+		orpList["NextMarker"] = result.NextMarker
+	}
+	return map[string]interface{}{"OriginRequestPolicyList": orpList}, nil
 }
 
 // GetOriginRequestPolicyConfig returns the configuration of an origin request policy.
 func (s *CloudFrontService) GetOriginRequestPolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := store.originRequestPolicies.Get(id)
+	policy, err := s.getOriginRequestPolicyCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
-		}
 		return nil, err
 	}
 
@@ -457,15 +282,9 @@ func (s *CloudFrontService) GetOriginRequestPolicyConfig(ctx context.Context, re
 
 // UpdateOriginRequestPolicy updates an origin request policy.
 func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
+	config, err := parseOriginRequestPolicyConfig(req)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -473,18 +292,38 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	existing, err := store.originRequestPolicies.Get(id)
+	policy, err := s.updateOriginRequestPolicyCore(store, UpdateOriginRequestPolicyInput{
+		Id:      request.GetStringParam(req.Parameters, "Id"),
+		IfMatch: getIfMatch(req),
+		Config:  config,
+	})
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
-		}
 		return nil, err
 	}
 
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
+	return map[string]interface{}{
+		"OriginRequestPolicy": formatOriginRequestPolicy(policy),
+		"ETag":                policy.ETag,
+	}, nil
+}
 
+// DeleteOriginRequestPolicy deletes an origin request policy.
+// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_DeleteOriginRequestPolicy.html
+func (s *CloudFrontService) DeleteOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.deleteOriginRequestPolicyCore(store,
+		request.GetStringParam(req.Parameters, "Id"), getIfMatch(req)); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
+}
+
+// parseOriginRequestPolicyConfig parses the OriginRequestPolicyConfig
+// request payload into the store configuration type.
+func parseOriginRequestPolicyConfig(req *request.ParsedRequest) (*cloudfrontstore.OriginRequestPolicyConfig, error) {
 	configMap := request.GetMapParam(req.Parameters, "OriginRequestPolicyConfig")
 	if configMap == nil {
 		configMap = req.Parameters
@@ -503,83 +342,55 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	config := &cloudfrontstore.OriginRequestPolicyConfig{
+	return &cloudfrontstore.OriginRequestPolicyConfig{
 		Name:               request.GetStringParam(configMap, "Name"),
 		Comment:            request.GetStringParam(configMap, "Comment"),
 		CookiesConfig:      cookiesCfg,
 		HeadersConfig:      headersCfg,
 		QueryStringsConfig: queryStringsCfg,
-	}
-
-	if config.Name != existing.Name {
-		dup, _ := store.originRequestPolicies.GetByName(config.Name)
-		if dup != nil {
-			return nil, awserrors.NewAWSError("OriginRequestPolicyAlreadyExists", "Origin request policy with this name already exists", 409)
-		}
-	}
-
-	policy, err := store.originRequestPolicies.Update(id, config)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"OriginRequestPolicy": map[string]interface{}{
-			"Id":                        policy.ID,
-			"ARN":                       policy.ARN,
-			"Name":                      policy.Name,
-			"OriginRequestPolicyConfig": policy.OriginRequestPolicyConfig,
-			"LastModifiedTime":          policy.ModifiedAt.Format(time.RFC3339),
-		},
-		"ETag": policy.ETag,
 	}, nil
 }
 
-// DeleteOriginRequestPolicy deletes an origin request policy.
-// https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_DeleteOriginRequestPolicy.html
-func (s *CloudFrontService) DeleteOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
+// formatCachePolicy renders a cache policy for Get/Create/Update responses.
+func formatCachePolicy(cp *cloudfrontstore.CachePolicy) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":                cp.ID,
+		"ARN":               cp.ARN,
+		"Name":              cp.Name,
+		"CachePolicyConfig": cp.CachePolicyConfig,
+		"LastModifiedTime":  cp.ModifiedAt.Format(time.RFC3339),
 	}
+}
 
-	ifMatch := getIfMatch(req)
-	if ifMatch == "" {
-		return nil, awserrors.NewAWSError("InvalidIfMatchVersion",
-			"The If-Match version is missing or not valid", 400)
+// formatCachePolicySummary renders a cache policy for list summaries.
+func formatCachePolicySummary(cp *cloudfrontstore.CachePolicy) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":                cp.ID,
+		"LastModifiedTime":  cp.ModifiedAt.Format(time.RFC3339),
+		"CachePolicyConfig": cp.CachePolicyConfig,
 	}
+}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+// formatOriginRequestPolicy renders an origin request policy for
+// Get/Create/Update responses.
+func formatOriginRequestPolicy(p *cloudfrontstore.OriginRequestPolicy) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":                        p.ID,
+		"ARN":                       p.ARN,
+		"Name":                      p.Name,
+		"OriginRequestPolicyConfig": p.OriginRequestPolicyConfig,
+		"LastModifiedTime":          p.ModifiedAt.Format(time.RFC3339),
 	}
+}
 
-	existing, err := store.originRequestPolicies.Get(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
-		}
-		return nil, err
+// formatOriginRequestPolicySummary renders an origin request policy for
+// list summaries.
+func formatOriginRequestPolicySummary(p *cloudfrontstore.OriginRequestPolicy) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":                        p.ID,
+		"LastModifiedTime":          p.ModifiedAt.Format(time.RFC3339),
+		"OriginRequestPolicyConfig": p.OriginRequestPolicyConfig,
 	}
-
-	if ifMatch != "*" && existing.ETag != ifMatch {
-		return nil, awserrors.NewAWSError("PreconditionFailed", preconditionFailedETagMsg, 412)
-	}
-
-	if isOriginRequestPolicyAttached(store, id) {
-		return nil, awserrors.NewAWSError("OriginRequestPolicyInUse",
-			"Cannot delete this origin request policy because it is attached to one or more distributions", 409)
-	}
-
-	err = store.originRequestPolicies.Delete(id)
-	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
-		}
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
 }
 
 // ListTagsForResource lists tags for a CloudFront resource.
@@ -592,10 +403,8 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 	if arn == "" {
 		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
 	}
-
-	resourceKey := arn
-	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
+	if !isValidResourceArn(arn) {
+		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
 	}
 
 	store, err := s.store(reqCtx)
@@ -603,7 +412,7 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	tags, err := store.tags.ListTagsForResource(resourceKey)
+	tags, err := store.tags.ListTagsForResource(arn)
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 	}
@@ -635,10 +444,8 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 	if arn == "" {
 		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
 	}
-
-	resourceKey := arn
-	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
+	if !isValidResourceArn(arn) {
+		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
 	}
 
 	var tags []types.Tag
@@ -652,13 +459,24 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 			tags = append(tags, types.Tag(t))
 		}
 	}
+	if len(tags) == 0 {
+		return nil, awserrors.NewAWSError("InvalidArgument", "At least one tag is required", 400)
+	}
+	for _, t := range tags {
+		if !isValidTagKey(t.Key) {
+			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", t.Key), 400)
+		}
+		if !isValidTagValue(t.Value) {
+			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag value for key %q", t.Key), 400)
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.tags.Tag(resourceKey, tags); err != nil {
+	if err := store.tags.Tag(arn, tags); err != nil {
 		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 	}
 
@@ -675,10 +493,8 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	if arn == "" {
 		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
 	}
-
-	resourceKey := arn
-	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
+	if !isValidResourceArn(arn) {
+		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
 	}
 
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
@@ -731,15 +547,22 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 		}
 	}
 
+	if len(tagKeys) == 0 {
+		return nil, awserrors.NewAWSError("InvalidArgument", "At least one tag key is required", 400)
+	}
+	for _, k := range tagKeys {
+		if !isValidTagKey(k) {
+			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", k), 400)
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(tagKeys) > 0 {
-		if err := store.tags.Untag(resourceKey, tagKeys); err != nil {
-			return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
-		}
+	if err := store.tags.Untag(arn, tagKeys); err != nil {
+		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
 	}
 
 	return response.EmptyResponse(), nil
@@ -916,14 +739,11 @@ func parseStringItems(m map[string]interface{}, key string, out *[]string) {
 
 // isCachePolicyAttached checks whether any distribution references the cache
 // policy ID in its DefaultCacheBehaviour or additional CacheBehaviours.
-func isCachePolicyAttached(store *cloudfrontStores, policyID string) bool {
-	result, err := store.distributions.List("", 10000)
-	if err != nil {
-		return false
-	}
-	for _, dist := range result.Distributions {
+// A store failure is reported as an error so deletion can fail closed.
+func isCachePolicyAttached(store *cloudfrontStores, policyID string) (bool, error) {
+	return scanDistributions(store, func(dist *cloudfrontstore.Distribution) bool {
 		if dist.DistributionConfig == nil {
-			continue
+			return false
 		}
 		cfg := dist.DistributionConfig
 		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.CachePolicyId == policyID {
@@ -936,20 +756,16 @@ func isCachePolicyAttached(store *cloudfrontStores, policyID string) bool {
 				}
 			}
 		}
-	}
-	return false
+		return false
+	})
 }
 
 // isOriginRequestPolicyAttached checks whether any distribution references
 // the origin request policy ID in its cache behaviours.
-func isOriginRequestPolicyAttached(store *cloudfrontStores, policyID string) bool {
-	result, err := store.distributions.List("", 10000)
-	if err != nil {
-		return false
-	}
-	for _, dist := range result.Distributions {
+func isOriginRequestPolicyAttached(store *cloudfrontStores, policyID string) (bool, error) {
+	return scanDistributions(store, func(dist *cloudfrontstore.Distribution) bool {
 		if dist.DistributionConfig == nil {
-			continue
+			return false
 		}
 		cfg := dist.DistributionConfig
 		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.OriginRequestPolicyId == policyID {
@@ -962,20 +778,16 @@ func isOriginRequestPolicyAttached(store *cloudfrontStores, policyID string) boo
 				}
 			}
 		}
-	}
-	return false
+		return false
+	})
 }
 
 // isResponseHeadersPolicyAttached checks whether any distribution references
 // the response headers policy ID in its cache behaviours.
-func isResponseHeadersPolicyAttached(store *cloudfrontStores, policyID string) bool {
-	result, err := store.distributions.List("", 10000)
-	if err != nil {
-		return false
-	}
-	for _, dist := range result.Distributions {
+func isResponseHeadersPolicyAttached(store *cloudfrontStores, policyID string) (bool, error) {
+	return scanDistributions(store, func(dist *cloudfrontstore.Distribution) bool {
 		if dist.DistributionConfig == nil {
-			continue
+			return false
 		}
 		cfg := dist.DistributionConfig
 		if cfg.DefaultCacheBehavior != nil && cfg.DefaultCacheBehavior.ResponseHeadersPolicyId == policyID {
@@ -988,26 +800,22 @@ func isResponseHeadersPolicyAttached(store *cloudfrontStores, policyID string) b
 				}
 			}
 		}
-	}
-	return false
+		return false
+	})
 }
 
 // isOriginAccessControlAttached checks whether any distribution references
 // the origin access control ID in its origins.
-func isOriginAccessControlAttached(store *cloudfrontStores, oacID string) bool {
-	result, err := store.distributions.List("", 10000)
-	if err != nil {
-		return false
-	}
-	for _, dist := range result.Distributions {
+func isOriginAccessControlAttached(store *cloudfrontStores, oacID string) (bool, error) {
+	return scanDistributions(store, func(dist *cloudfrontstore.Distribution) bool {
 		if dist.DistributionConfig == nil {
-			continue
+			return false
 		}
 		for _, origin := range dist.DistributionConfig.Origins.Items {
 			if origin != nil && origin.OriginAccessControlId == oacID {
 				return true
 			}
 		}
-	}
-	return false
+		return false
+	})
 }
