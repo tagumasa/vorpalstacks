@@ -26,6 +26,9 @@ func (s *LogsService) startQueryCore(input *StartQueryInput) (string, error) {
 	if len(input.LogGroupNames) == 0 && len(input.LogGroupIdentifiers) == 0 {
 		return "", ErrMissingParameter
 	}
+	if err := validateQueryPipeline(input.QueryString); err != nil {
+		return "", err
+	}
 
 	allGroups := input.LogGroupNames
 	allGroups = append(allGroups, input.LogGroupIdentifiers...)

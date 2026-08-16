@@ -137,6 +137,52 @@ func (r *TestRunner) runWAFv2EdgeTests(tc *wafv2TestContext) []TestResult {
 		return AssertErrorContains(err, "WAFLimitsExceededException")
 	}))
 
+	// A well-formed API Gateway stage ARN that does not resolve to an
+	// existing stage must be rejected with WAFUnavailableEntityException
+	// instead of being silently associated.
+	results = append(results, r.RunTest("wafv2", "AssociateWebACL_UnresolvableResource_Rejected", func() error {
+		name := tc.uniqueName("unres-res-acl")
+		_, arn, _, err := tc.createWebACL(name,
+			&types.DefaultAction{Allow: &types.AllowAction{}},
+			&types.VisibilityConfig{
+				SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+				MetricName: aws.String(tc.uniqueName("ur-metric")),
+			}, nil, nil)
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+
+		stageArn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/nonexistent-api-id/stages/prod", tc.region)
+		_, err = tc.client.AssociateWebACL(tc.ctx, &wafv2.AssociateWebACLInput{
+			WebACLArn: aws.String(arn), ResourceArn: aws.String(stageArn),
+		})
+		return AssertErrorContains(err, "WAFUnavailableEntityException")
+	}))
+
+	// The AppSync resource checker must be wired regardless of the relative
+	// order in which the WAFv2 and AppSync services are initialised; an
+	// AppSync API ARN that does not resolve to an existing API must be
+	// rejected with WAFUnavailableEntityException.
+	results = append(results, r.RunTest("wafv2", "AssociateWebACL_AppSyncUnresolvableResource_Rejected", func() error {
+		name := tc.uniqueName("unres-appsync-acl")
+		_, arn, _, err := tc.createWebACL(name,
+			&types.DefaultAction{Allow: &types.AllowAction{}},
+			&types.VisibilityConfig{
+				SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+				MetricName: aws.String(tc.uniqueName("ua-metric")),
+			}, nil, nil)
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+
+		apiArn := fmt.Sprintf("arn:aws:appsync:%s:%s:apis/nonexistent-api-id",
+			tc.region, tc.accountID)
+		_, err = tc.client.AssociateWebACL(tc.ctx, &wafv2.AssociateWebACLInput{
+			WebACLArn: aws.String(arn), ResourceArn: aws.String(apiArn),
+		})
+		return AssertErrorContains(err, "WAFUnavailableEntityException")
+	}))
+
 	// A WebACL that is still associated with a resource must not be
 	// deletable (WAFAssociatedItemException).
 	results = append(results, r.RunTest("wafv2", "DeleteWebACL_WhileAssociated_Rejected", func() error {

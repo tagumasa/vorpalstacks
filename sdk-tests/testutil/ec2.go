@@ -373,6 +373,39 @@ func (r *TestRunner) ec2SecurityGroupTests(ctx context.Context, client *ec2.Clie
 		return pass("AuthorizeIngress_DuplicateRejected")
 	}())
 
+	// A permission with no source at all (no IP range, prefix list or
+	// security group) must be rejected: AWS requires exactly one source.
+	results = append(results, func() TestResult {
+		_, err := client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
+			GroupId: aws.String(sgID),
+			IpPermissions: []ec2types.IpPermission{{
+				IpProtocol: aws.String("tcp"),
+				FromPort:   aws.Int32(443),
+				ToPort:     aws.Int32(443),
+			}},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return fail("AuthorizeIngress_SourcelessRejected", err)
+		}
+		return pass("AuthorizeIngress_SourcelessRejected")
+	}())
+
+	// The egress direction is symmetric: destinations are required.
+	results = append(results, func() TestResult {
+		_, err := client.AuthorizeSecurityGroupEgress(ctx, &ec2.AuthorizeSecurityGroupEgressInput{
+			GroupId: aws.String(sgID),
+			IpPermissions: []ec2types.IpPermission{{
+				IpProtocol: aws.String("tcp"),
+				FromPort:   aws.Int32(8443),
+				ToPort:     aws.Int32(8443),
+			}},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return fail("AuthorizeEgress_SourcelessRejected", err)
+		}
+		return pass("AuthorizeEgress_SourcelessRejected")
+	}())
+
 	// DescribeSecurityGroups must expose groupDescription, ipPermissions with
 	// item-wrapped ranges, and the default egress rule.
 	results = append(results, func() TestResult {

@@ -24,6 +24,7 @@ type LogsService struct {
 	logsStores      sync.Map // region → *logsstore.Store
 	cwMetricInvoker eventbus.CloudWatchMetricInvoker
 	bus             eventbus.Bus
+	kms             eventbus.KMSInvoker
 	ctx             context.Context
 	cancel          context.CancelFunc
 	wg              sync.WaitGroup
@@ -52,6 +53,9 @@ func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPat
 // ingestion from EventBridge/Scheduler targets.
 func (s *LogsService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
+	if bus != nil {
+		s.kms = bus.KMSInvoker()
+	}
 	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
 	_, _ = eventbus.SubscribeTyped[*eventbus.LambdaLogWriteEvent](bus, s.handleLambdaLogWrite, eventbus.WithAsync())
 	_, _ = eventbus.SubscribeTyped[*eventbus.APIGatewayAccessLogEvent](bus, s.handleAPIGatewayAccessLog, eventbus.WithAsync())
@@ -185,6 +189,12 @@ func (s *LogsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("logs", "GetScheduledQuery", s.GetScheduledQuery)
 	d.RegisterHandlerForService("logs", "GetScheduledQueryHistory", s.GetScheduledQueryHistory)
 	d.RegisterHandlerForService("logs", "ListScheduledQueries", s.ListScheduledQueries)
+
+	d.RegisterHandlerForService("logs", "CreateLookupTable", s.CreateLookupTable)
+	d.RegisterHandlerForService("logs", "DeleteLookupTable", s.DeleteLookupTable)
+	d.RegisterHandlerForService("logs", "GetLookupTable", s.GetLookupTable)
+	d.RegisterHandlerForService("logs", "UpdateLookupTable", s.UpdateLookupTable)
+	d.RegisterHandlerForService("logs", "DescribeLookupTables", s.DescribeLookupTables)
 }
 
 func (s *LogsService) startRetentionPurger() {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"sort"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -12,7 +13,7 @@ import (
 // GetLogGroupFields returns a list of fields found in the log events of
 // the specified log group. For JSON-structured logs, field names are
 // extracted from the JSON payload. Standard fields (@timestamp, @message,
-// @logStream, @logGroup) are always included.
+// @logStream, @log, @ingestionTime) are always included.
 func (s *LogsService) GetLogGroupFields(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
 	if logGroupName == "" {
@@ -75,7 +76,7 @@ func (s *LogsService) GetLogRecord(ctx context.Context, reqCtx *request.RequestC
 		"@timestamp": timestamp,
 		"@message":   message,
 		"@logStream": logStreamName,
-		"@logGroup":  logGroupName,
+		"@log":       reqCtx.GetAccountID() + ":" + logGroupName,
 	}
 
 	var jsonData map[string]interface{}
@@ -117,7 +118,7 @@ func (s *LogsService) GetLogObject(ctx context.Context, reqCtx *request.RequestC
 		"@timestamp": parts[2],
 		"@message":   parts[3],
 		"@logStream": parts[1],
-		"@logGroup":  parts[0],
+		"@log":       reqCtx.GetAccountID() + ":" + parts[0],
 	}
 
 	var jsonData map[string]interface{}
@@ -166,17 +167,11 @@ func (s *LogsService) GetLogFields(ctx context.Context, reqCtx *request.RequestC
 	}, nil
 }
 
+// splitPointer splits a decoded log record pointer into its
+// logGroup|logStream|timestamp|message parts. Log group and stream names
+// cannot contain the delimiter, so the first three splits are unambiguous;
+// the message is everything after the third delimiter, including any '|'
+// characters it contains.
 func splitPointer(s string) []string {
-	var parts []string
-	cur := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '|' {
-			parts = append(parts, s[cur:i])
-			cur = i + 1
-		}
-	}
-	if cur < len(s) {
-		parts = append(parts, s[cur:])
-	}
-	return parts
+	return strings.SplitN(s, "|", 4)
 }

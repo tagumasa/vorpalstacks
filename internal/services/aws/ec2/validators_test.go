@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	ec2store "vorpalstacks/internal/store/aws/ec2"
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 func TestParseInt64Param(t *testing.T) {
@@ -147,6 +148,37 @@ func TestParseLegacyFlatRule(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("invalid CIDR should be rejected")
+	}
+}
+
+func TestParseIPRulesRequiresSource(t *testing.T) {
+	// A permission with a protocol and ports but no source at all is
+	// rejected: AWS requires exactly one of an IP range, a prefix list or
+	// a security group.
+	_, err := parseIPRules(map[string]interface{}{
+		"IpPermissions.1.IpProtocol": "tcp",
+		"IpPermissions.1.FromPort":   "80",
+		"IpPermissions.1.ToPort":     "80",
+	}, "IpPermissions")
+	if err == nil {
+		t.Fatal("permission without any source should be rejected")
+	}
+	if apiErr, ok := err.(*awserrors.AWSError); !ok || apiErr.Code != "InvalidParameterValue" {
+		t.Errorf("expected InvalidParameterValue, got %v", err)
+	}
+
+	// The same permission with an IPv4 range parses.
+	rules, err := parseIPRules(map[string]interface{}{
+		"IpPermissions.1.IpProtocol":        "tcp",
+		"IpPermissions.1.FromPort":          "80",
+		"IpPermissions.1.ToPort":            "80",
+		"IpPermissions.1.IpRanges.1.CidrIp": "0.0.0.0/0",
+	}, "IpPermissions")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 1 || len(rules[0].IpRanges) != 1 {
+		t.Errorf("unexpected rules: %+v", rules)
 	}
 }
 

@@ -34,6 +34,10 @@ func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
+	if err := s.ensureAssociableResource(ctx, reqCtx.GetRegion(), resourceArn); err != nil {
+		return nil, err
+	}
+
 	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
 	if err != nil {
 		return nil, err

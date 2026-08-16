@@ -294,6 +294,9 @@ func (s *APIGatewayService) updateStageCore(
 			}
 			switch strings.TrimPrefix(po.Path, "/accessLogSettings/") {
 			case "destinationArn":
+				if po.Value != "" && !validateAccessLogDestinationArn(po.Value) {
+					return nil, NewBadRequestException("Invalid accessLogSettings destinationArn: must be a CloudWatch Logs log group ARN or a Kinesis Firehose delivery stream ARN whose name begins with amazon-apigateway-")
+				}
 				stage.AccessLogSettings.DestinationArn = po.Value
 			case "format":
 				stage.AccessLogSettings.Format = po.Value

@@ -84,7 +84,11 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	existing, err := s.updateAuthorizerCore(stores, apiId, authorizerId, parsePatchOperations(req.Parameters))
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	existing, err := s.updateAuthorizerCore(stores, apiId, authorizerId, ops)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

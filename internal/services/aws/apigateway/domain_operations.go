@@ -187,9 +187,14 @@ func (s *APIGatewayService) DeleteDomainName(ctx context.Context, reqCtx *reques
 	}
 
 	// AWS requires all BasePathMappings to be deleted before a domain name
-	// can be removed; otherwise it returns ConflictException.
+	// can be removed; otherwise it returns ConflictException. The listing is
+	// fail-closed: when the store cannot answer whether mappings exist, the
+	// deletion is refused rather than proceeding on an unknown state.
 	mappings, err := stores.domains.ListBasePathMappings(domainName, common.ListOptions{MaxItems: 1})
-	if err == nil && len(mappings.Items) > 0 {
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	if len(mappings.Items) > 0 {
 		return nil, NewConflictException("Domain name has active base path mappings; remove them first")
 	}
 
@@ -235,7 +240,11 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 	oldRegionalCertArnValue := domain.RegionalCertificateArn
 	oldCertificateName := domain.CertificateName
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch {
 		case po.Path == "/certificateArn":
 			if po.Value == "" {
@@ -601,7 +610,11 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	oldBasePath := ""
 	oldRestApiId := mapping.RestApiId
 	oldStage := mapping.Stage
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch po.Path {
 		case "/restApiId":
 			mapping.RestApiId = po.Value

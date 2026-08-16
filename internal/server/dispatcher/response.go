@@ -176,6 +176,13 @@ func (d *Dispatcher) writeResponseWithOpName(w http.ResponseWriter, r *http.Requ
 }
 
 func (d *Dispatcher) handleError(w http.ResponseWriter, r *http.Request, operation *api.Operation, err error) {
+	if operation != nil && operation.SmithyProtocol != nil && *operation.SmithyProtocol == "aws.protocols#ec2Query" {
+		if awsErr := d.extractAWSError(err); awsErr != nil {
+			awserrors.WriteEC2QueryAWSError(w, awsErr)
+			return
+		}
+	}
+
 	contentType := d.getErrorContentType(r, operation)
 
 	if customErr, ok := err.(awserrors.CustomJSONMarshaler); ok {
@@ -191,6 +198,22 @@ func (d *Dispatcher) handleError(w http.ResponseWriter, r *http.Request, operati
 
 	logs.Error("Unhandled error", logs.String("type", fmt.Sprintf("%T", err)), logs.Err(err))
 	awserrors.WriteAWSError(w, awserrors.ErrInternal, contentType)
+}
+
+// handleErrorForService writes an error response for a request dispatched to
+// the named service. EC2 uses the EC2 Query protocol error envelope, whose
+// shape differs from the standard ErrorResponse the AWS SDKs' EC2
+// deserialiser cannot read.
+func (d *Dispatcher) handleErrorForService(w http.ResponseWriter, r *http.Request, serviceName string, err error) {
+	if serviceName == "ec2" {
+		if awsErr := d.extractAWSError(err); awsErr != nil {
+			awserrors.WriteEC2QueryAWSError(w, awsErr)
+			return
+		}
+		awserrors.WriteEC2QueryAWSError(w, awserrors.ErrInternal)
+		return
+	}
+	d.handleErrorForRequest(w, r, err)
 }
 
 func (d *Dispatcher) handleErrorForRequest(w http.ResponseWriter, r *http.Request, err error) {
@@ -251,7 +274,10 @@ func (d *Dispatcher) getErrorContentType(r *http.Request, operation *api.Operati
 	}
 
 	if operation != nil && operation.SmithyProtocol != nil {
-		if *operation.SmithyProtocol == "aws.protocols#awsQuery" || *operation.SmithyProtocol == "aws.protocols#ec2Query" {
+		if *operation.SmithyProtocol == "aws.protocols#ec2Query" {
+			return "text/xml;charset=UTF-8"
+		}
+		if *operation.SmithyProtocol == "aws.protocols#awsQuery" {
 			return "text/xml"
 		}
 	}

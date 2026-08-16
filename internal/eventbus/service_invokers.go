@@ -314,6 +314,22 @@ type ACMInvoker interface {
 	CertificateExists(ctx context.Context, region, certArn string) bool
 }
 
+// WebACLResourceChecker verifies that a resource ARN presented to WAFv2
+// AssociateWebACL references an existing resource hosted by the implementing
+// service. WAF consults the registered checkers before creating an
+// association and rejects ARNs that a checker owns but cannot resolve, with
+// WAFUnavailableEntityException. ARNs whose service namespace no checker
+// owns (resource types this platform does not host) keep the
+// stub-association semantics.
+type WebACLResourceChecker interface {
+	// WebACLResourceService returns the ARN service namespace the checker
+	// owns (e.g. "apigateway", "appsync", "cognito-idp").
+	WebACLResourceService() string
+	// WebACLResourceExists reports whether the resource referenced by the
+	// ARN exists in the given region.
+	WebACLResourceExists(ctx context.Context, region, resourceArn string) bool
+}
+
 // CognitoTokenValidator validates Cognito JWT access tokens for cross-service
 // consumers (e.g. API Gateway COGNITO_USER_POOLS authorizer). The validator
 // resolves the user pool by ID, fetches its JWKS public key, and verifies the

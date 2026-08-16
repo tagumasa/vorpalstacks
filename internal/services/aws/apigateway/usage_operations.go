@@ -111,7 +111,11 @@ func (s *APIGatewayService) UpdateApiKey(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	apiKey, err := s.updateApiKeyCore(stores, apiKeyId, parsePatchOperations(req.Parameters))
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	apiKey, err := s.updateApiKeyCore(stores, apiKeyId, ops)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
@@ -329,7 +333,11 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	plan, err := s.updateUsagePlanCore(stores, usagePlanId, parsePatchOperations(req.Parameters))
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	plan, err := s.updateUsagePlanCore(stores, usagePlanId, ops)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

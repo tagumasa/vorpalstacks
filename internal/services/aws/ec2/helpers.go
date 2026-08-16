@@ -261,6 +261,17 @@ func parseIPRules(params map[string]interface{}, prefix string) ([]ec2store.IPRu
 			rule.PrefixListIds = append(rule.PrefixListIds, pl)
 		}
 
+		// AWS requires each permission to reference exactly one source
+		// family: an IPv4 or IPv6 address range, a prefix list, or a
+		// security group. A permission without any source is rejected
+		// instead of being stored as an empty rule.
+		if len(rule.IpRanges) == 0 && len(rule.Ipv6Ranges) == 0 &&
+			len(rule.UserIdGroupPairs) == 0 && len(rule.PrefixListIds) == 0 {
+			return nil, awserrors.NewAWSError("InvalidParameterValue",
+				fmt.Sprintf("Value (%s.%d) for parameter IpPermissions is invalid: exactly one source (IpRanges, Ipv6Ranges, PrefixListIds or UserIdGroupPairs) must be specified", prefix, i),
+				http.StatusBadRequest)
+		}
+
 		rules = append(rules, rule)
 	}
 

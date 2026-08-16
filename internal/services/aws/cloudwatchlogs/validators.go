@@ -8,6 +8,7 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"
 )
@@ -548,4 +549,118 @@ func buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, totalEvents int) map[st
 		info["tooNewLogEventStartIndex"] = tooNewStartIndex
 	}
 	return info
+}
+
+// --- Scheduled query destination configuration ---
+
+var (
+	// s3DestinationURIPattern is the documented S3Uri pattern of the
+	// scheduled-query S3 destination.
+	s3DestinationURIPattern = regexp.MustCompile(`^s3://[a-z0-9][.\-a-z0-9]{1,61}[a-z0-9](/.*)?$`)
+
+	// ownerAccountIDPattern is the documented 12-digit account pattern of
+	// the scheduled-query S3 destination.
+	ownerAccountIDPattern = regexp.MustCompile(`^\d{12}$`)
+)
+
+// destinationParam reads a string member of a destination configuration map
+// across its case variants.
+func destinationParam(m map[string]interface{}, key string) string {
+	if v, ok := m[key]; ok {
+		if str, ok := v.(string); ok {
+			return str
+		}
+	}
+	if v, ok := m[request.LowerFirst(key)]; ok {
+		if str, ok := v.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+// destinationTags reads the tags member of a destination configuration map.
+func destinationTags(m map[string]interface{}) map[string]string {
+	raw, ok := m["tags"]
+	if !ok {
+		return nil
+	}
+	asMap, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	tags := make(map[string]string, len(asMap))
+	for k, v := range asMap {
+		if str, ok := v.(string); ok {
+			tags[k] = str
+		}
+	}
+	return tags
+}
+
+// validateDestinationConfiguration checks the documented member constraints
+// of a scheduled-query destination configuration. Delivery to a lookup table
+// requires a table name and an IAM role ARN; delivery to S3 requires an S3
+// URI and an IAM role ARN.
+func validateDestinationConfiguration(dc map[string]interface{}) error {
+	if lt, ok := dc["lookupTableConfiguration"].(map[string]interface{}); ok {
+		name := destinationParam(lt, "tableName")
+		if name == "" {
+			return NewLogsError("InvalidParameterException",
+				"lookupTableConfiguration requires tableName", 400)
+		}
+		if len(name) > logsstore.MaxLookupTableNameLength || !lookupTableNameRe.MatchString(name) {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("Invalid lookupTableName %q: 1-%d characters, alphanumeric and underscores only",
+					name, logsstore.MaxLookupTableNameLength), 400)
+		}
+		roleArn := destinationParam(lt, "roleArn")
+		if roleArn == "" {
+			return NewLogsError("InvalidParameterException",
+				"lookupTableConfiguration requires roleArn", 400)
+		}
+		if err := validateIAMRoleArn(roleArn); err != nil {
+			return err
+		}
+		if len(destinationParam(lt, "description")) > logsstore.MaxLookupTableDescriptionLength {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("description exceeds %d characters", logsstore.MaxLookupTableDescriptionLength), 400)
+		}
+		if len(destinationParam(lt, "kmsKeyId")) > logsstore.MaxKmsKeyIdLength {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("kmsKeyId exceeds %d characters", logsstore.MaxKmsKeyIdLength), 400)
+		}
+		if len(destinationTags(lt)) > logsstore.MaxLookupTableTags {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("a maximum of %d tags can be attached to a lookup table", logsstore.MaxLookupTableTags), 400)
+		}
+	}
+	if s3, ok := dc["s3Configuration"].(map[string]interface{}); ok {
+		uri := destinationParam(s3, "destinationIdentifier")
+		if uri == "" {
+			return NewLogsError("InvalidParameterException",
+				"s3Configuration requires destinationIdentifier", 400)
+		}
+		if len(uri) > 1024 || !s3DestinationURIPattern.MatchString(uri) {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("Invalid S3 destination identifier %q: must be a valid s3:// URI", uri), 400)
+		}
+		roleArn := destinationParam(s3, "roleArn")
+		if roleArn == "" {
+			return NewLogsError("InvalidParameterException",
+				"s3Configuration requires roleArn", 400)
+		}
+		if err := validateIAMRoleArn(roleArn); err != nil {
+			return err
+		}
+		if len(destinationParam(s3, "kmsKeyId")) > logsstore.MaxKmsKeyIdLength {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("kmsKeyId exceeds %d characters", logsstore.MaxKmsKeyIdLength), 400)
+		}
+		if owner := destinationParam(s3, "ownerAccountId"); owner != "" && !ownerAccountIDPattern.MatchString(owner) {
+			return NewLogsError("InvalidParameterException",
+				fmt.Sprintf("Invalid ownerAccountId %q: must be 12 digits", owner), 400)
+		}
+	}
+	return nil
 }

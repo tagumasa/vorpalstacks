@@ -358,5 +358,32 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 		return nil
 	}))
 
+	// MaxResults above the Smithy PoolQueryLimitType maximum of 60 must be
+	// rejected with InvalidParameterException instead of being silently
+	// clamped to the default.
+	results = append(results, r.RunTest("cognitoidp", "ListUserPools_MaxResultsOverLimit_Rejected", func() error {
+		_, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{
+			MaxResults: aws.Int32(61),
+		})
+		return AssertErrorContains(err, "InvalidParameterException")
+	}))
+
+	// ListUsers.Limit is QueryLimitType (range 0-60); 61 must be rejected.
+	results = append(results, r.RunTest("cognitoidp", "ListUsers_LimitOverLimit_Rejected", func() error {
+		pools, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{MaxResults: aws.Int32(1)})
+		if err != nil {
+			return fmt.Errorf("list pools: %v", err)
+		}
+		poolID := "us-east-1_NONEXISTENT"
+		if len(pools.UserPools) > 0 && pools.UserPools[0].Id != nil {
+			poolID = *pools.UserPools[0].Id
+		}
+		_, err = client.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
+			UserPoolId: aws.String(poolID),
+			Limit:      aws.Int32(61),
+		})
+		return AssertErrorContains(err, "InvalidParameterException")
+	}))
+
 	return results
 }

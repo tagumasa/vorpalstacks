@@ -102,11 +102,11 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	if d.authorizationEnabled && d.authorizer != nil {
 		authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)
 		if err != nil {
-			d.handleErrorForRequest(w, r, err)
+			d.handleErrorForService(w, r, serviceName, err)
 			return
 		}
 		if !authzResult {
-			d.handleErrorForRequest(w, r, accessDeniedErrorForService(serviceName))
+			d.handleErrorForService(w, r, serviceName, accessDeniedErrorForService(serviceName))
 			return
 		}
 	}
@@ -123,7 +123,7 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	}
 	d.recordAudit(serviceName, opName, reqCtx, parsedReq, result, err)
 	if err != nil {
-		d.handleErrorForRequest(w, r, err)
+		d.handleErrorForService(w, r, serviceName, err)
 		return
 	}
 	d.writeResponseWithOpName(w, r, serviceName, opName, result)

@@ -32,9 +32,17 @@ func GetStringParam(params map[string]interface{}, key string) string {
 	return ""
 }
 
-// GetIntParam extracts an integer parameter from the params map.
+// GetIntParam extracts an integer parameter from the params map. The lookup
+// tries the exact key, the lower-first-letter variant, and the all-lowercase
+// variant, because awsJson1_1 wire keys are camelCase ("startTime") while
+// handlers conventionally pass Smithy shape names ("StartTime").
 func GetIntParam(params map[string]interface{}, key string) int {
 	if v, ok := params[key]; ok {
+		if n, ok := asInt(v); ok {
+			return n
+		}
+	}
+	if v, ok := params[LowerFirst(key)]; ok {
 		if n, ok := asInt(v); ok {
 			return n
 		}

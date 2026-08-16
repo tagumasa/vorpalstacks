@@ -171,9 +171,14 @@ func (s *CognitoService) AdminUpdateUserAttributes(ctx context.Context, reqCtx *
 
 // ListUsers returns a list of users in the specified user pool.
 func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy QueryLimitType: range {min: 0, max: 60}
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.listUsersCore(reqCtx.GetRegion(), ListUsersInput{
 		UserPoolID: getUserPoolID(req),
-		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		MaxResults: limit,
 		NextToken:  request.GetStringParam(req.Parameters, "PaginationToken"),
 		Filter:     req.GetParam("Filter"),
 	})

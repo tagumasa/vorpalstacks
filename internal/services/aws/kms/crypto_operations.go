@@ -6,11 +6,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 // Encrypt encrypts plaintext using the specified KMS key.
@@ -84,8 +86,32 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 	}, nil
 }
 
+// errRecipientNotSupported rejects the Recipient parameter (Nitro Enclaves
+// envelope encryption) with a message that names the actual gap; the shared
+// ErrUnsupportedOperation sentinel talks about key types, which does not
+// fit this guard.
+var errRecipientNotSupported = awserrors.NewAWSError("UnsupportedOperationException",
+	"Recipient is not supported: Nitro Enclaves envelope encryption is not implemented", http.StatusBadRequest)
+
+// rejectRecipient rejects requests carrying the Recipient parameter
+// (Decrypt, GenerateDataKey, GenerateDataKeyPair, GenerateRandom,
+// DeriveSharedSecret in the Smithy model). Recipient is not implemented;
+// silently dropping it would hand normal plaintext to an enclave caller
+// that expects CiphertextForRecipient, so the request is rejected
+// explicitly.
+func rejectRecipient(req *request.ParsedRequest) error {
+	if v, ok := req.Parameters["Recipient"]; ok && v != nil {
+		return errRecipientNotSupported
+	}
+	return nil
+}
+
 // Decrypt decrypts ciphertext using the specified KMS key.
 func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectRecipient(req); err != nil {
+		return nil, err
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -295,6 +321,10 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 
 // GenerateDataKey generates a unique data key for encrypting data outside of KMS.
 func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectRecipient(req); err != nil {
+		return nil, err
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -420,6 +450,10 @@ func validateDataKeySpecAndBytes(key *kmsstore.Key, params map[string]interface{
 
 // GenerateRandom returns a random byte string for use in cryptographic operations.
 func (s *KMSService) GenerateRandom(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectRecipient(req); err != nil {
+		return nil, err
+	}
+
 	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
 	if numberOfBytes == 0 {
 		return nil, ErrValidation
@@ -453,6 +487,10 @@ func parseEncryptionContextForPrefix(params map[string]interface{}, prefix strin
 
 // GenerateDataKeyPair generates an asymmetric key pair and encrypts the private key with the KMS key.
 func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if err := rejectRecipient(req); err != nil {
+		return nil, err
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

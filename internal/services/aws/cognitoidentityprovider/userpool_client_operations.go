@@ -227,9 +227,14 @@ func (s *CognitoService) DeleteUserPoolClient(ctx context.Context, reqCtx *reque
 // ListUserPoolClients lists the user pool clients for a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPoolClients.html
 func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy QueryLimit: range {min: 1, max: 60}
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.listUserPoolClientsCore(reqCtx.GetRegion(), ListUserPoolClientsInput{
 		UserPoolID: getUserPoolID(req),
-		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+		MaxResults: maxResults,
 		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {

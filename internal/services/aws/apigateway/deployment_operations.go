@@ -218,7 +218,11 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	stage, err := s.updateStageCore(stores, apiId, stageName, parsePatchOperations(req.Parameters))
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	stage, err := s.updateStageCore(stores, apiId, stageName, ops)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

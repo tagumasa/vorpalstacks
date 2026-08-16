@@ -247,19 +247,14 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 	case "TOKEN":
 		if authorizer.IdentitySource != "" {
 			headerName := extractHeaderFromIdentitySource(authorizer.IdentitySource)
+			// Only the identity-source header supplies the token. Falling
+			// back to arbitrary header values would accept tokens from
+			// headers the authorizer is not configured to read, diverging
+			// from the runtime behaviour under test.
 			token := headers[headerName]
 			if token == "" {
-				for _, vals := range multiValueHeaders {
-					if len(vals) > 0 {
-						token = vals[0]
-						break
-					}
-				}
-			}
-			if token == "" {
-				for _, v := range headers {
-					token = v
-					break
+				if vals := multiValueHeaders[headerName]; len(vals) > 0 {
+					token = vals[0]
 				}
 			}
 			if token != "" {

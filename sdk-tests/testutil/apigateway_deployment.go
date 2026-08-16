@@ -385,5 +385,76 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		return nil
 	}))
 
+	results = append(results, r.RunTest("apigateway", "UpdateStage_AccessLogDestinationArn_Validated", func() error {
+		alAPI := fmt.Sprintf("AlAPI-%d", time.Now().UnixNano())
+		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
+			Name: aws.String(alAPI),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+
+		depResp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
+			RestApiId: createResp.Id,
+		})
+		if err != nil {
+			return fmt.Errorf("deploy: %v", err)
+		}
+
+		_, err = client.CreateStage(ctx, &apigateway.CreateStageInput{
+			RestApiId:    createResp.Id,
+			StageName:    aws.String("access-log"),
+			DeploymentId: depResp.Id,
+		})
+		if err != nil {
+			return fmt.Errorf("create stage: %v", err)
+		}
+
+		// A Lambda function ARN is not a valid access log destination.
+		_, err = client.UpdateStage(ctx, &apigateway.UpdateStageInput{
+			RestApiId: createResp.Id,
+			StageName: aws.String("access-log"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),
+					Value: aws.String("arn:aws:lambda:us-east-1:123456789012:function:logs")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for Lambda destination ARN, got: %v", err)
+		}
+
+		// Firehose delivery streams must begin with amazon-apigateway-.
+		_, err = client.UpdateStage(ctx, &apigateway.UpdateStageInput{
+			RestApiId: createResp.Id,
+			StageName: aws.String("access-log"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),
+					Value: aws.String("arn:aws:firehose:us-east-1:123456789012:deliverystream/my-stream")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for non-prefixed Firehose ARN, got: %v", err)
+		}
+
+		// A CloudWatch Logs log group ARN is accepted.
+		stageResp, err := client.UpdateStage(ctx, &apigateway.UpdateStageInput{
+			RestApiId: createResp.Id,
+			StageName: aws.String("access-log"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),
+					Value: aws.String("arn:aws:logs:us-east-1:123456789012:log-group:my-api-logs")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("update stage with valid logs ARN: %v", err)
+		}
+		if stageResp.AccessLogSettings == nil || stageResp.AccessLogSettings.DestinationArn == nil ||
+			*stageResp.AccessLogSettings.DestinationArn != "arn:aws:logs:us-east-1:123456789012:log-group:my-api-logs" {
+			return fmt.Errorf("accessLogSettings destinationArn not stored, got %v", stageResp.AccessLogSettings)
+		}
+		return nil
+	}))
+
 	return results
 }

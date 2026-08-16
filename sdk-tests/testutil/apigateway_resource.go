@@ -633,5 +633,60 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		return nil
 	}))
 
+	results = append(results, r.RunTest("apigateway", "UpdateResource_RootPathPart_Rejected", func() error {
+		rpAPI := fmt.Sprintf("RpAPI-%d", time.Now().UnixNano())
+		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
+			Name: aws.String(rpAPI),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+
+		_, err = client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  createResp.Id,
+			ResourceId: createResp.RootResourceId,
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/pathPart"), Value: aws.String("root")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for root pathPart update, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "UpdateResource_UnsupportedPatchOp_Rejected", func() error {
+		upAPI := fmt.Sprintf("UpAPI-%d", time.Now().UnixNano())
+		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
+			Name: aws.String(upAPI),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+
+		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
+			RestApiId: createResp.Id,
+			ParentId:  createResp.RootResourceId,
+			PathPart:  aws.String("items"),
+		})
+		if err != nil {
+			return fmt.Errorf("create resource: %v", err)
+		}
+
+		_, err = client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  createResp.Id,
+			ResourceId: resResp.Id,
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpMove, From: aws.String("/pathPart"), Path: aws.String("/pathPart")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for unsupported patch op, got: %v", err)
+		}
+		return nil
+	}))
+
 	return results
 }

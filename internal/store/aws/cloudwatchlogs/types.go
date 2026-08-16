@@ -12,7 +12,30 @@ const (
 	MaxRetentionDays = 3653
 	// DefaultRetentionDays is the default retention period in days.
 	DefaultRetentionDays = 30
+	// MaxLookupTables is the documented per-account, per-Region quota of
+	// lookup tables.
+	MaxLookupTables = 100
+	// MaxLookupTableBodyBytes is the documented size ceiling of a lookup
+	// table's CSV content (10 MB).
+	MaxLookupTableBodyBytes = 10485760
+	// MaxLookupTableNameLength is the documented maximum length of a lookup
+	// table name.
+	MaxLookupTableNameLength = 256
+	// MaxLookupTableDescriptionLength is the documented maximum length of a
+	// lookup table description.
+	MaxLookupTableDescriptionLength = 1024
+	// MaxKmsKeyIdLength is the documented maximum length of the kmsKeyId
+	// parameter of lookup table and scheduled-query destination operations
+	// (the shared KmsKeyId shape).
+	MaxKmsKeyIdLength = 256
+	// MaxLookupTableTags is the documented maximum number of tags attached
+	// to one lookup table resource.
+	MaxLookupTableTags = 50
 )
+
+// LookupTableNamePattern is the documented character set of lookup table
+// names: alphanumeric characters and underscores.
+const LookupTableNamePattern = `^[a-zA-Z0-9_]+$`
 
 // validRetentionDays is the set of retention values accepted by AWS
 // CloudWatch Logs PutRetentionPolicy. Any value outside this set is
@@ -226,15 +249,48 @@ type ScheduledQuery struct {
 	Tags                     map[string]string      `json:"tags,omitempty"`
 }
 
+// ScheduledQueryDestination records the delivery outcome of one destination
+// of a scheduled query execution, reported through GetScheduledQueryHistory.
+type ScheduledQueryDestination struct {
+	DestinationType       string `json:"destinationType"`
+	DestinationIdentifier string `json:"destinationIdentifier"`
+	Status                string `json:"status"`
+	ProcessedIdentifier   string `json:"processedIdentifier,omitempty"`
+	ErrorMessage          string `json:"errorMessage,omitempty"`
+}
+
 // ScheduledQueryExecution represents a single execution of a scheduled query.
 type ScheduledQueryExecution struct {
-	ScheduledQueryId string `json:"scheduledQueryId"`
-	QueryId          string `json:"queryId"`
-	TriggerTime      int64  `json:"triggerTime"`
-	Status           string `json:"status"`
-	ErrorMessage     string `json:"errorMessage,omitempty"`
-	RecordsScanned   int64  `json:"recordsScanned"`
-	RecordsMatched   int64  `json:"recordsMatched"`
+	ScheduledQueryId string                       `json:"scheduledQueryId"`
+	QueryId          string                       `json:"queryId"`
+	Destinations     []*ScheduledQueryDestination `json:"destinations,omitempty"`
+	TriggerTime      int64                        `json:"triggerTime"`
+	Status           string                       `json:"status"`
+	ErrorMessage     string                       `json:"errorMessage,omitempty"`
+	RecordsScanned   int64                        `json:"recordsScanned"`
+	RecordsMatched   int64                        `json:"recordsMatched"`
+}
+
+// LookupTable stores the reference data the lookup and cidrlookup query
+// commands enrich events with. TableBody holds the CSV content including
+// the header row; TableFields mirrors the header and RecordsCount counts
+// the data rows. When the table is encrypted with a customer-managed KMS
+// key, TableBody is empty and EncryptedBody, EncryptedDataKey and
+// ContentNonce hold the envelope-encrypted content instead.
+type LookupTable struct {
+	Name             string            `json:"name"`
+	Description      string            `json:"description,omitempty"`
+	TableBody        string            `json:"tableBody,omitempty"`
+	TableFields      []string          `json:"tableFields,omitempty"`
+	RecordsCount     int64             `json:"recordsCount"`
+	SizeBytes        int64             `json:"sizeBytes"`
+	KmsKeyId         string            `json:"kmsKeyId,omitempty"`
+	EncryptedBody    []byte            `json:"encryptedBody,omitempty"`
+	EncryptedDataKey []byte            `json:"encryptedDataKey,omitempty"`
+	ContentNonce     []byte            `json:"contentNonce,omitempty"`
+	Tags             map[string]string `json:"tags,omitempty"`
+	CreationTime     int64             `json:"creationTime"`
+	LastUpdatedTime  int64             `json:"lastUpdatedTime"`
 }
 
 // NewLogGroup creates a new CloudWatch Logs log group.

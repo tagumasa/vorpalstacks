@@ -1,15 +1,65 @@
 package cloudwatchlogs
 
 import (
-	"regexp"
+	"encoding/base64"
+	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// queryResultRow represents a single row in the query results.
+// queryResultRow represents a single row in the query results. columns
+// records the order in which field names were first written so that output
+// field order and "first field" selection stay deterministic.
 type queryResultRow struct {
-	fields map[string]string
+	fields  map[string]string
+	columns []string
+}
+
+// set stores a field value, appending new field names to the column order.
+func (r *queryResultRow) set(k, v string) {
+	if r.fields == nil {
+		r.fields = make(map[string]string)
+	}
+	if _, ok := r.fields[k]; !ok {
+		r.columns = append(r.columns, k)
+	}
+	r.fields[k] = v
+}
+
+// ordered returns the row's field names in insertion order. Fields written
+// directly to the map without set are appended in sorted order as a
+// fallback so the result is always deterministic.
+func (r *queryResultRow) ordered() []string {
+	out := make([]string, 0, len(r.fields))
+	seen := make(map[string]bool, len(r.fields))
+	for _, k := range r.columns {
+		if _, ok := r.fields[k]; !ok || seen[k] {
+			continue
+		}
+		seen[k] = true
+		out = append(out, k)
+	}
+	var rest []string
+	for k := range r.fields {
+		if !seen[k] {
+			rest = append(rest, k)
+		}
+	}
+	sort.Strings(rest)
+	return append(out, rest...)
+}
+
+// cloneRow deep-copies a row including its column order.
+func cloneRow(src queryResultRow) queryResultRow {
+	fields := make(map[string]string, len(src.fields))
+	for k, v := range src.fields {
+		fields[k] = v
+	}
+	columns := make([]string, len(src.columns))
+	copy(columns, src.columns)
+	return queryResultRow{fields: fields, columns: columns}
 }
 
 // queryResultField represents a field-value pair in the output.
@@ -25,32 +75,6 @@ type queryStats struct {
 	bytesScanned   int64
 }
 
-// executeQuery runs a CloudWatch Logs Insights query against the given events.
-// It supports the CWLI commands: fields, filter, stats, sort, limit, parse, display.
-func executeQuery(queryString string, events []logEventWithContext) ([]queryResultRow, queryStats) {
-	stats := queryStats{
-		recordsScanned: int64(len(events)),
-	}
-	for _, e := range events {
-		stats.bytesScanned += int64(len(e.message))
-	}
-
-	commands := parseQueryPipeline(queryString)
-
-	rows := make([]queryResultRow, 0, len(events))
-	for _, evt := range events {
-		row := buildRow(evt)
-		rows = append(rows, row)
-	}
-
-	for _, cmd := range commands {
-		rows = applyCommand(cmd, rows)
-	}
-
-	stats.recordsMatched = int64(len(rows))
-	return rows, stats
-}
-
 // logEventWithContext carries a log event with its group/stream context.
 type logEventWithContext struct {
 	timestamp     int64
@@ -60,444 +84,344 @@ type logEventWithContext struct {
 	logStream     string
 }
 
-func buildRow(evt logEventWithContext) queryResultRow {
-	fields := map[string]string{
-		"@timestamp":     strconv.FormatInt(evt.timestamp, 10),
-		"@message":       evt.message,
-		"@logStream":     evt.logStream,
-		"@logGroup":      evt.logGroup,
-		"@ingestionTime": strconv.FormatInt(evt.ingestionTime, 10),
+// sourceGroupInfo is the log group metadata SOURCE selection needs.
+type sourceGroupInfo struct {
+	Name  string
+	Class string
+	Tags  map[string]string
+}
+
+// binFillInfo records the bin grouping of the last stats command so that
+// fillmissing can synthesise rows for empty time bins.
+type binFillInfo struct {
+	dur    int64
+	minBin int64
+	maxBin int64
+}
+
+// execContext carries everything a pipeline execution needs beyond the
+// rows: the query window, the underlying events, log group resolution for
+// SOURCE/join/subqueries, and per-run scratch state.
+type execContext struct {
+	startTime int64
+	endTime   int64
+	accountID string
+
+	events          []logEventWithContext
+	effectiveGroups []string
+	defaultGroups   []string
+
+	fetchEvents    func(groups []string, start, end int64) ([]logEventWithContext, error)
+	listLogGroups  func() ([]sourceGroupInfo, error)
+	getLookupTable func(name string) (*parsedLookupTable, error)
+
+	preceding  []command
+	sorted     bool
+	statsCount int
+	lastBins   *binFillInfo
+	// currentBinDur is the bin duration of the stats command currently
+	// emitting, which the time-series functions scale their window by.
+	currentBinDur int64
+
+	subqueryCache map[string][]interface{}
+	lookupCache   map[string]*parsedLookupTable
+	sourceError   error
+}
+
+func (ctx *execContext) now() int64 {
+	return time.Now().UnixMilli()
+}
+
+// runPrecedingOnWindow re-runs the commands preceding diff/logcompare over
+// a different time window so that the comparison covers the same analysis.
+func (ctx *execContext) runPrecedingOnWindow(start, end int64) ([]queryResultRow, error) {
+	groups := ctx.effectiveGroups
+	if groups == nil {
+		groups = ctx.defaultGroups
 	}
-	return queryResultRow{fields: fields}
+	events, err := ctx.fetchEvents(groups, start, end)
+	if err != nil {
+		return nil, err
+	}
+	rows := buildRows(events, ctx.accountID)
+	for _, cmd := range ctx.preceding {
+		rows = cmd.apply(ctx, rows)
+	}
+	return rows, nil
 }
 
-type queryCommand struct {
-	name string
-	args string
+// runSubquery executes a nested query over its own SOURCE selection, or the
+// enclosing query's log groups when the subquery has no SOURCE.
+func (ctx *execContext) runSubquery(toks []token) ([]queryResultRow, error) {
+	cmds, err := compilePipeline(toks)
+	if err != nil {
+		return nil, err
+	}
+	child := &execContext{
+		startTime:       ctx.startTime,
+		endTime:         ctx.endTime,
+		accountID:       ctx.accountID,
+		defaultGroups:   ctx.defaultGroups,
+		effectiveGroups: ctx.defaultGroups,
+		events:          ctx.events,
+		fetchEvents:     ctx.fetchEvents,
+		listLogGroups:   ctx.listLogGroups,
+		getLookupTable:  ctx.getLookupTable,
+		subqueryCache:   ctx.subqueryCache,
+		lookupCache:     ctx.lookupCache,
+	}
+	if len(cmds) > 0 {
+		if _, ok := cmds[0].cmd.(*sourceCommand); ok {
+			// The SOURCE command refetches events into the child context.
+		} else {
+			child.effectiveGroups = ctx.effectiveGroups
+			child.events = ctx.events
+		}
+	}
+	rows := buildRows(child.events, child.accountID)
+	for _, c := range cmds {
+		rows = c.cmd.apply(child, rows)
+		child.preceding = append(child.preceding, c.cmd)
+	}
+	if child.sourceError != nil {
+		return nil, child.sourceError
+	}
+	return rows, nil
 }
 
-func parseQueryPipeline(queryString string) []queryCommand {
-	queryString = strings.TrimSpace(queryString)
-	parts := strings.Split(queryString, "|")
+// compiledCommand pairs a command with its head token for validation
+// reporting.
+type compiledCommand struct {
+	cmd  command
+	head token
+}
 
-	var commands []queryCommand
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
+// compilePipeline lexes, splits, and parses a full query into commands.
+func compilePipeline(toks []token) ([]compiledCommand, error) {
+	segs, err := parsePipelineCommands(toks)
+	if err != nil {
+		return nil, err
+	}
+	var out []compiledCommand
+	for _, seg := range segs {
+		if len(seg) == 0 {
 			continue
 		}
-		spaceIdx := strings.Index(part, " ")
-		if spaceIdx < 0 {
-			commands = append(commands, queryCommand{name: strings.ToLower(part), args: ""})
-		} else {
-			name := strings.ToLower(part[:spaceIdx])
-			args := strings.TrimSpace(part[spaceIdx+1:])
-			commands = append(commands, queryCommand{name: name, args: args})
+		cmd, err := parseCommand(seg)
+		if err != nil {
+			return nil, err
 		}
+		if cmd == nil {
+			continue
+		}
+		out = append(out, compiledCommand{cmd: cmd, head: seg[0]})
 	}
-	return commands
+	return out, nil
 }
 
-func applyCommand(cmd queryCommand, rows []queryResultRow) []queryResultRow {
-	switch cmd.name {
-	case "fields":
-		return applyFields(cmd.args, rows)
-	case "filter":
-		return applyFilter(cmd.args, rows)
-	case "stats":
-		return applyStats(cmd.args, rows)
-	case "sort":
-		return applySort(cmd.args, rows)
-	case "limit":
-		return applyLimit(cmd.args, rows)
-	case "parse":
-		return applyParse(cmd.args, rows)
-	case "display":
-		return applyDisplay(cmd.args, rows)
-	default:
-		return rows
+// validateQueryPipeline compiles the query and checks the documented
+// structural rules. AWS rejects queries that fail to compile with
+// MalformedQueryException carrying a QueryCompileError with character
+// offsets; without this check an unknown command would be silently ignored
+// at execution time and the query would report success over unintended
+// results.
+func validateQueryPipeline(queryString string) error {
+	toks, err := lexQuery(queryString)
+	if err != nil {
+		return err
 	}
-}
-
-func applyFields(args string, rows []queryResultRow) []queryResultRow {
-	fieldNames := splitAndTrim(args, ",")
-	if len(fieldNames) == 0 {
-		return rows
+	cmds, err := compilePipeline(toks)
+	if err != nil {
+		return err
 	}
-	for i := range rows {
-		filtered := make(map[string]string)
-		for _, fn := range fieldNames {
-			fn = strings.TrimSpace(fn)
-			if v, ok := rows[i].fields[fn]; ok {
-				filtered[fn] = v
-			}
-		}
-		rows[i].fields = filtered
-	}
-	return rows
-}
-
-func applyFilter(args string, rows []queryResultRow) []queryResultRow {
-	var result []queryResultRow
-	for _, row := range rows {
-		if evalFilterExpr(args, row) {
-			result = append(result, row)
-		}
-	}
-	return result
-}
-
-func evalFilterExpr(expr string, row queryResultRow) bool {
-	expr = strings.TrimSpace(expr)
-	if expr == "" {
-		return true
-	}
-
-	if orParts := splitLogicalExpr(expr, " or "); len(orParts) > 1 {
-		for _, p := range orParts {
-			if evalFilterExpr(p, row) {
-				return true
-			}
-		}
-		return false
-	}
-
-	if andParts := splitLogicalExpr(expr, " and "); len(andParts) > 1 {
-		for _, p := range andParts {
-			if !evalFilterExpr(p, row) {
-				return false
-			}
-		}
-		return true
-	}
-
-	return evalComparison(expr, row)
-}
-
-func splitLogicalExpr(expr, sep string) []string {
-	if !strings.Contains(expr, sep) {
+	if len(cmds) == 0 {
 		return nil
 	}
-	return strings.Split(expr, sep)
+	return validateCommandOrder(cmds)
 }
 
-func evalComparison(expr string, row queryResultRow) bool {
-	expr = strings.TrimSpace(expr)
-
-	ops := []string{">=", "<=", "!=", ">", "<", "=", " like ", " not like "}
-	for _, op := range ops {
-		if idx := strings.Index(strings.ToLower(expr), op); idx >= 0 {
-			left := strings.TrimSpace(expr[:idx])
-			right := strings.TrimSpace(expr[idx+len(op):])
-
-			leftVal := getFieldValue(left, row)
-			rightVal := strings.Trim(right, "\"'")
-
-			if op == " like " || op == " not like " {
-				pattern := strings.Trim(right, "\"'")
-				matched := wildcardMatch(pattern, leftVal)
-				if op == " not like " {
-					return !matched
-				}
-				return matched
+// validateCommandOrder enforces the documented command placement rules.
+func validateCommandOrder(cmds []compiledCommand) error {
+	lastStats := -1
+	var statsHeads []token
+	var joinHeads []token
+	patternIdx := -1
+	sortIdx := -1
+	dedupIdx := -1
+	for i, c := range cmds {
+		switch c.cmd.name() {
+		case "stats":
+			statsHeads = append(statsHeads, c.head)
+			lastStats = i
+		case "join":
+			joinHeads = append(joinHeads, c.head)
+		case "pattern":
+			if patternIdx < 0 {
+				patternIdx = i
 			}
-
-			if op == "=" || op == "==" {
-				return leftVal == rightVal
-			}
-			if op == "!=" {
-				return leftVal != rightVal
-			}
-
-			leftNum, err1 := strconv.ParseFloat(leftVal, 64)
-			rightNum, err2 := strconv.ParseFloat(rightVal, 64)
-			if err1 != nil || err2 != nil {
-				return false
-			}
-			switch op {
-			case ">":
-				return leftNum > rightNum
-			case "<":
-				return leftNum < rightNum
-			case ">=":
-				return leftNum >= rightNum
-			case "<=":
-				return leftNum <= rightNum
+		case "sort":
+			sortIdx = i
+		case "dedup":
+			if dedupIdx < 0 {
+				dedupIdx = i
 			}
 		}
 	}
-	return true
-}
-
-func getFieldValue(field string, row queryResultRow) string {
-	if v, ok := row.fields[field]; ok {
-		return v
+	if len(statsHeads) > 10 {
+		// The error points at the first command beyond the limit.
+		return newQueryCompileError("A query can have a maximum of 10 stats commands",
+			statsHeads[10].start, statsHeads[10].end)
 	}
-	if v, ok := row.fields["@"+field]; ok {
-		return v
+	if len(joinHeads) > 1 {
+		// The error points at the second join, which is the violation.
+		return newQueryCompileError("Only one join command is supported per query",
+			joinHeads[1].start, joinHeads[1].end)
 	}
-	return ""
-}
-
-func wildcardMatch(pattern, text string) bool {
-	pattern = strings.ReplaceAll(pattern, "*", ".*")
-	pattern = "^" + pattern + "$"
-	matched, _ := regexp.MatchString(pattern, text)
-	return matched
-}
-
-func applyStats(args string, rows []queryResultRow) []queryResultRow {
-	args = strings.TrimSpace(args)
-
-	byIdx := strings.Index(strings.ToLower(args), " by ")
-	var aggExpr string
-	var groupFields []string
-	if byIdx >= 0 {
-		aggExpr = strings.TrimSpace(args[:byIdx])
-		groupFields = splitAndTrim(args[byIdx+4:], ",")
-	} else {
-		aggExpr = args
+	if patternIdx >= 0 && sortIdx >= 0 && sortIdx < patternIdx {
+		return newQueryCompileError(
+			"A query is not valid if it includes a pattern command after a sort command", cmds[patternIdx].head.start, cmds[patternIdx].head.end)
 	}
-
-	if len(groupFields) == 0 {
-		result := computeAggregations(aggExpr, rows)
-		return []queryResultRow{{fields: result}}
-	}
-
-	groups := make(map[string][]queryResultRow)
-	var groupOrder []string
-	for _, row := range rows {
-		keyParts := make([]string, len(groupFields))
-		for i, gf := range groupFields {
-			keyParts[i] = getFieldValue(gf, row)
+	// sort and limit must appear after the last stats command.
+	for i, c := range cmds {
+		n := c.cmd.name()
+		if (n == "sort" || n == "limit") && lastStats >= 0 && i < lastStats {
+			return newQueryCompileError(
+				"If you use a sort or limit command, it must appear after the last stats command", c.head.start, c.head.end)
 		}
-		key := strings.Join(keyParts, "|")
-		if _, exists := groups[key]; !exists {
-			groupOrder = append(groupOrder, key)
-		}
-		groups[key] = append(groups[key], row)
 	}
-
-	var result []queryResultRow
-	for _, key := range groupOrder {
-		groupRows := groups[key]
-		resultFields := computeAggregations(aggExpr, groupRows)
-		for i, gf := range groupFields {
-			val := strings.Split(key, "|")
-			if i < len(val) {
-				resultFields[gf] = val[i]
+	// Only limit may follow dedup.
+	if dedupIdx >= 0 {
+		for i := dedupIdx + 1; i < len(cmds); i++ {
+			if cmds[i].cmd.name() != "limit" {
+				return newQueryCompileError(
+					"The only query command that you can use after the dedup command is limit", cmds[i].head.start, cmds[i].head.end)
 			}
 		}
-		result = append(result, queryResultRow{fields: resultFields})
 	}
-	return result
+	// SOURCE is only valid as the first command.
+	for i, c := range cmds {
+		if c.cmd.name() == "SOURCE" && i > 0 {
+			return newQueryCompileError("SOURCE is only valid as the first command of a query", c.head.start, c.head.end)
+		}
+	}
+	return nil
 }
 
-func computeAggregations(expr string, rows []queryResultRow) map[string]string {
-	result := make(map[string]string)
-	funcs := splitAndTrim(expr, ",")
-	for _, f := range funcs {
-		f = strings.TrimSpace(f)
-		openIdx := strings.Index(f, "(")
-		closeIdx := strings.LastIndex(f, ")")
-		if openIdx < 0 || closeIdx < 0 {
+// buildRows converts raw log events into the initial row set with the
+// discoverable fields. JSON log messages contribute their top-level keys as
+// discovered fields, matching the automatic field discovery of Logs
+// Insights; nested structures are kept as canonical JSON strings.
+// maxDiscoveredJSONFields is the documented ceiling on the number of fields
+// Logs Insights extracts from a JSON log event; further fields are ignored
+// and must be extracted with parse.
+const maxDiscoveredJSONFields = 200
+
+func buildRows(events []logEventWithContext, accountID string) []queryResultRow {
+	rows := make([]queryResultRow, 0, len(events))
+	for _, evt := range events {
+		row := queryResultRow{}
+		row.set("@timestamp", formatTimestampField(evt.timestamp))
+		row.set("@message", evt.message)
+		row.set("@logStream", evt.logStream)
+		// @log identifies the event's log group as account:group-name.
+		row.set("@log", accountID+":"+evt.logGroup)
+		row.set("@ingestionTime", formatTimestampField(evt.ingestionTime))
+		// @ptr addresses the event for GetLogRecord; aggregate rows built
+		// by later commands never carry it.
+		row.set("@ptr", eventPointer(evt.logGroup, evt.logStream, evt.timestamp, evt.message))
+		discoverJSONFields(evt.message, &row)
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// eventPointer encodes the logGroup|logStream|timestamp|message pointer
+// that GetLogRecord accepts, in base64.
+func eventPointer(group, stream string, ts int64, msg string) string {
+	return base64.StdEncoding.EncodeToString([]byte(group + "|" + stream + "|" + strconv.FormatInt(ts, 10) + "|" + msg))
+}
+
+// discoverJSONFields merges the top-level keys of a JSON object message
+// into the row fields. Discoverable @-fields are never overwritten; field
+// names starting with @ are displayed with an additional @ prefix, per the
+// documented discovery behaviour.
+func discoverJSONFields(message string, row *queryResultRow) {
+	trimmed := strings.TrimSpace(message)
+	if !strings.HasPrefix(trimmed, "{") {
+		return
+	}
+	var decoded map[string]interface{}
+	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+		return
+	}
+	keys := make([]string, 0, len(decoded))
+	for k := range decoded {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	discovered := 0
+	for _, k := range keys {
+		name := k
+		if strings.HasPrefix(k, "@") {
+			name = "@" + k
+		}
+		if _, exists := row.fields[name]; exists {
 			continue
 		}
-		funcName := strings.ToLower(strings.TrimSpace(f[:openIdx]))
-		arg := strings.TrimSpace(f[openIdx+1 : closeIdx])
-		alias := funcName + "(" + arg + ")"
-		if asIdx := strings.Index(strings.ToLower(f), " as "); asIdx >= 0 {
-			alias = strings.TrimSpace(f[asIdx+4:])
+		if discovered >= maxDiscoveredJSONFields {
+			return
 		}
-
-		switch funcName {
-		case "count":
-			if arg == "*" || arg == "" {
-				result[alias] = strconv.Itoa(len(rows))
-			} else {
-				count := 0
-				for _, row := range rows {
-					if v := getFieldValue(arg, row); v != "" {
-						count++
-					}
-				}
-				result[alias] = strconv.Itoa(count)
-			}
-		case "sum":
-			result[alias] = computeNumericAgg(rows, arg, "sum")
-		case "avg":
-			result[alias] = computeNumericAgg(rows, arg, "avg")
-		case "min":
-			result[alias] = computeNumericAgg(rows, arg, "min")
-		case "max":
-			result[alias] = computeNumericAgg(rows, arg, "max")
-		case "count_distinct":
-			seen := make(map[string]bool)
-			for _, row := range rows {
-				v := getFieldValue(arg, row)
-				if v != "" {
-					seen[v] = true
-				}
-			}
-			result[alias] = strconv.Itoa(len(seen))
-		}
+		row.set(name, storeValue(decoded[k]))
+		discovered++
 	}
-	return result
 }
 
-func computeNumericAgg(rows []queryResultRow, field, aggType string) string {
-	var values []float64
-	for _, row := range rows {
-		v := getFieldValue(field, row)
-		if n, err := strconv.ParseFloat(v, 64); err == nil {
-			values = append(values, n)
-		}
-	}
-	if len(values) == 0 {
-		return "0"
-	}
-	switch aggType {
-	case "sum":
-		sum := 0.0
-		for _, v := range values {
-			sum += v
-		}
-		return strconv.FormatFloat(sum, 'f', -1, 64)
-	case "avg":
-		sum := 0.0
-		for _, v := range values {
-			sum += v
-		}
-		return strconv.FormatFloat(sum/float64(len(values)), 'f', -1, 64)
-	case "min":
-		min := values[0]
-		for _, v := range values {
-			if v < min {
-				min = v
-			}
-		}
-		return strconv.FormatFloat(min, 'f', -1, 64)
-	case "max":
-		max := values[0]
-		for _, v := range values {
-			if v > max {
-				max = v
-			}
-		}
-		return strconv.FormatFloat(max, 'f', -1, 64)
-	}
-	return "0"
+// formatTimestampField renders epoch milliseconds; numeric formatting keeps
+// the value numeric for later comparisons.
+func formatTimestampField(ms int64) string {
+	return formatNumber(float64(ms))
 }
 
-func applySort(args string, rows []queryResultRow) []queryResultRow {
-	args = strings.TrimSpace(args)
-	descending := false
-	if strings.HasSuffix(strings.ToLower(args), " desc") {
-		descending = true
-		args = strings.TrimSpace(args[:len(args)-5])
-	} else if strings.HasSuffix(strings.ToLower(args), " asc") {
-		args = strings.TrimSpace(args[:len(args)-4])
+// executeQuery runs a CloudWatch Logs Insights query against the given
+// events. Commands follow the documented Logs Insights QL grammar.
+func executeQuery(queryString string, events []logEventWithContext) ([]queryResultRow, queryStats) {
+	ctx := &execContext{events: events, subqueryCache: map[string][]interface{}{}}
+	rows, _ := executeQueryContext(ctx, queryString)
+	stats := queryStats{
+		recordsScanned: int64(len(events)),
 	}
-
-	field := strings.TrimSpace(args)
-	sort.SliceStable(rows, func(i, j int) bool {
-		vi := getFieldValue(field, rows[i])
-		vj := getFieldValue(field, rows[j])
-		if ni, err := strconv.ParseFloat(vi, 64); err == nil {
-			if nj, err := strconv.ParseFloat(vj, 64); err == nil {
-				if descending {
-					return ni > nj
-				}
-				return ni < nj
-			}
-		}
-		if descending {
-			return vi > vj
-		}
-		return vi < vj
-	})
-	return rows
+	for _, e := range events {
+		stats.bytesScanned += int64(len(e.message))
+	}
+	stats.recordsMatched = int64(len(rows))
+	return rows, stats
 }
 
-func applyLimit(args string, rows []queryResultRow) []queryResultRow {
-	n, err := strconv.Atoi(strings.TrimSpace(args))
-	if err != nil || n <= 0 {
-		return rows
-	}
-	if n > len(rows) {
-		n = len(rows)
-	}
-	return rows[:n]
-}
-
-func applyParse(args string, rows []queryResultRow) []queryResultRow {
-	args = strings.TrimSpace(args)
-	asIdx := strings.Index(strings.ToLower(args), " as ")
-	if asIdx < 0 {
-		return rows
-	}
-
-	pattern := strings.TrimSpace(args[:asIdx])
-	rest := strings.TrimSpace(args[asIdx+4:])
-
-	fieldNames := splitAndTrim(rest, ",")
-	if len(fieldNames) == 0 {
-		return rows
-	}
-
-	wildcardParts := strings.Split(pattern, "*")
-	regexParts := make([]string, len(wildcardParts))
-	for i, p := range wildcardParts {
-		regexParts[i] = regexp.QuoteMeta(p)
-	}
-	regexStr := strings.Join(regexParts, "(.*?)")
-	if len(wildcardParts)-1 != len(fieldNames) {
-		return rows
-	}
-
-	re, err := regexp.Compile(regexStr)
+// executeQueryContext compiles and runs the query within an execution
+// context. It returns the result rows and any compile error.
+func executeQueryContext(ctx *execContext, queryString string) ([]queryResultRow, error) {
+	toks, err := lexQuery(queryString)
 	if err != nil {
-		return rows
+		return nil, err
 	}
+	cmds, err := compilePipeline(toks)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateCommandOrder(cmds); err != nil {
+		return nil, err
+	}
+	ctx.effectiveGroups = ctx.defaultGroups
 
-	for i := range rows {
-		msg := rows[i].fields["@message"]
-		matches := re.FindStringSubmatch(msg)
-		if matches != nil {
-			for j, fn := range fieldNames {
-				fn = strings.TrimSpace(fn)
-				if j+1 < len(matches) {
-					rows[i].fields[fn] = matches[j+1]
-				}
-			}
-		}
+	rows := buildRows(ctx.events, ctx.accountID)
+	for _, c := range cmds {
+		rows = c.cmd.apply(ctx, rows)
+		ctx.preceding = append(ctx.preceding, c.cmd)
 	}
-	return rows
-}
-
-func applyDisplay(args string, rows []queryResultRow) []queryResultRow {
-	fieldNames := splitAndTrim(args, ",")
-	for i := range rows {
-		filtered := make(map[string]string)
-		for _, fn := range fieldNames {
-			fn = strings.TrimSpace(fn)
-			if v, ok := rows[i].fields[fn]; ok {
-				filtered[fn] = v
-			}
-		}
-		rows[i].fields = filtered
+	if ctx.sourceError != nil {
+		// SOURCE resolution and refetch failures fail the query rather
+		// than silently returning the default groups' rows.
+		return nil, ctx.sourceError
 	}
-	return rows
-}
-
-func splitAndTrim(s, sep string) []string {
-	parts := strings.Split(s, sep)
-	var result []string
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			result = append(result, p)
-		}
-	}
-	return result
+	return rows, nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	kinesistypes "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -62,6 +63,7 @@ type integClients struct {
 	s3        *s3.Client
 	iam       *iam.Client
 	dynamodb  *dynamodb.Client
+	kms       *kms.Client
 	ctx       context.Context
 	region    string
 	accountID string
@@ -88,6 +90,7 @@ func (r *TestRunner) newIntegClients() (*integClients, error) {
 		s3:        s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
 		iam:       iam.NewFromConfig(cfg),
 		dynamodb:  dynamodb.NewFromConfig(cfg),
+		kms:       kms.NewFromConfig(cfg),
 		ctx:       context.Background(),
 		region:    r.region,
 		accountID: r.accountID,
@@ -467,6 +470,12 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	}))
 	results = append(results, r.runIntegWithTimeout("CWLogs_Kinesis", func() TestResult {
 		return r.runCWLogsToKinesis(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CWLogs_LookupTable_KMS", func() TestResult {
+		return r.runCWLogsLookupTableKMS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CWLogs_ScheduledQuery_S3", func() TestResult {
+		return r.runCWLogsScheduledQueryS3(ic, ts)
 	}))
 
 	results = append(results, r.runIntegWithTimeout("SNS_SQS", func() TestResult {

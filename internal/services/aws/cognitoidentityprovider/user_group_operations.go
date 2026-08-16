@@ -9,10 +9,15 @@ import (
 // ListUsersInGroup lists the users in a group with store-level pagination.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUsersInGroup.html
 func (s *CognitoService) ListUsersInGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy QueryLimitType: range {min: 0, max: 60}
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.listUsersInGroupCore(reqCtx.GetRegion(), ListUsersInGroupInput{
 		UserPoolID: getUserPoolID(req),
 		GroupName:  getGroupName(req),
-		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		MaxResults: limit,
 		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {
@@ -37,10 +42,15 @@ func (s *CognitoService) ListUsersInGroup(ctx context.Context, reqCtx *request.R
 // AdminListGroupsForUser lists the groups for a user with store-level pagination.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminListGroupsForUser.html
 func (s *CognitoService) AdminListGroupsForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy QueryLimitType: range {min: 0, max: 60}
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.adminListGroupsForUserCore(reqCtx.GetRegion(), AdminListGroupsForUserInput{
 		UserPoolID: getUserPoolID(req),
 		Username:   getUsername(req),
-		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		MaxResults: limit,
 		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {

@@ -292,11 +292,6 @@ func (s *LogsService) CancelImportTask(ctx context.Context, reqCtx *request.Requ
 
 // DescribeImportTaskBatches lists import task batches.
 func (s *LogsService) DescribeImportTaskBatches(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	importId := request.GetParamLowerFirst(req.Parameters, "ImportId")
-	if importId == "" {
-		return nil, ErrMissingParameter
-	}
-
 	// batchImportStatus is accepted but batch-level status tracking is not
 	// implemented; the response always returns an empty importBatches list.
 
@@ -305,13 +300,13 @@ func (s *LogsService) DescribeImportTaskBatches(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	task, err := store.GetImportTask(importId)
+	task, err := s.describeImportTaskBatchesCore(store, request.GetParamLowerFirst(req.Parameters, "ImportId"))
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"importId":        importId,
+		"importId":        task.ImportId,
 		"importSourceArn": task.ImportSourceArn,
 		"importBatches":   []interface{}{},
 	}, nil

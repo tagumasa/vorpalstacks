@@ -72,9 +72,14 @@ func (s *CognitoService) DeleteGroup(ctx context.Context, reqCtx *request.Reques
 // ListGroups lists the groups in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListGroups.html
 func (s *CognitoService) ListGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy QueryLimitType: range {min: 0, max: 60}
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.listGroupsCore(reqCtx.GetRegion(), ListGroupsInput{
 		UserPoolID: getUserPoolID(req),
-		MaxResults: request.GetIntParam(req.Parameters, "Limit"),
+		MaxResults: limit,
 		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {

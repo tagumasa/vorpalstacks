@@ -628,9 +628,9 @@ func (s *CognitoService) ListTerms(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	// Smithy ListTermsRequestMaxResultsInteger: range {min: 1, max: 60}
-	maxResults := 60
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 && mr <= 60 {
-		maxResults = mr
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", 60)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := store.ListTermsPaginated(userPoolID, storecommon.ListOptions{

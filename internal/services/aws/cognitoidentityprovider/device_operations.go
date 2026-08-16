@@ -167,9 +167,9 @@ func (s *CognitoService) ListDevices(ctx context.Context, reqCtx *request.Reques
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit := 60
-	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 && l <= 60 {
-		limit = l
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := store.ListDevicesPaginated(user.UserPoolID, user.ID, storecommon.ListOptions{
@@ -313,9 +313,9 @@ func (s *CognitoService) AdminListDevices(ctx context.Context, reqCtx *request.R
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit := 60
-	if l := request.GetIntParam(req.Parameters, "Limit"); l > 0 && l <= 60 {
-		limit = l
+	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := store.ListDevicesPaginated(userPoolID, user.ID, storecommon.ListOptions{

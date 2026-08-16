@@ -294,5 +294,38 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 		return nil
 	}))
 
+	results = append(results, r.RunTest("apigateway", "UpdateUsagePlan_ApiStageIndexOutOfRange_Rejected", func() error {
+		upResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+			Name: aws.String(fmt.Sprintf("oob-plan-%d", time.Now().UnixNano())),
+		})
+		if err != nil {
+			return fmt.Errorf("create usage plan: %v", err)
+		}
+		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+
+		// The plan has no api stages; index 0 is out of range and must be
+		// rejected instead of silently appending an empty stage entry.
+		_, err = client.UpdateUsagePlan(ctx, &apigateway.UpdateUsagePlanInput{
+			UsagePlanId: upResp.Id,
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/apiStages/0/apiId"), Value: aws.String("abc123")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for out-of-range apiStages index, got: %v", err)
+		}
+
+		getResp, getErr := client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+			UsagePlanId: upResp.Id,
+		})
+		if getErr != nil {
+			return fmt.Errorf("get usage plan: %v", getErr)
+		}
+		if len(getResp.ApiStages) != 0 {
+			return fmt.Errorf("expected no api stages after rejected update, got %d", len(getResp.ApiStages))
+		}
+		return nil
+	}))
+
 	return results
 }

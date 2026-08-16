@@ -229,6 +229,21 @@ func (s *LogsService) describeImportTasksCore(store *logsstore.Store, importId, 
 	return result.Items, result.NextMarker, nil
 }
 
+// describeImportTaskBatchesCore validates input and resolves the import task
+// whose batches are being described. batchImportStatus is accepted at the
+// handler layer but batch-level status tracking is not implemented; callers
+// render an empty importBatches list.
+func (s *LogsService) describeImportTaskBatchesCore(store *logsstore.Store, importId string) (*logsstore.ImportTask, error) {
+	if importId == "" {
+		return nil, ErrMissingParameter
+	}
+	task, err := store.GetImportTask(importId)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+	return task, nil
+}
+
 // cancelImportTaskCore validates input and cancels an import task.
 func (s *LogsService) cancelImportTaskCore(store *logsstore.Store, importId string) error {
 	if importId == "" {

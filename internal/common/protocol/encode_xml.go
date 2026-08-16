@@ -707,7 +707,9 @@ func EncodeEC2QueryXMLResponse(w http.ResponseWriter, operationName string, resp
 
 	xmlBuilder.WriteString("<requestId>example-request-id</requestId>")
 	xmlBuilder.WriteString("</" + rootName + ">")
-	w.Header().Set("Content-Type", "application/xml")
+	// The EC2 Query protocol responds with text/xml;charset=UTF-8, matching
+	// real AWS EC2 responses.
+	w.Header().Set("Content-Type", "text/xml;charset=UTF-8")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
 		return fmt.Errorf("write response: %w", err)
 	}

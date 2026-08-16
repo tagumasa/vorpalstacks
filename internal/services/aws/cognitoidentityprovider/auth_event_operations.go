@@ -32,9 +32,9 @@ func (s *CognitoService) AdminListUserAuthEvents(ctx context.Context, reqCtx *re
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	maxResults := 60
-	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 && mr <= 60 {
-		maxResults = mr
+	maxResults, err := parseListLimit(req.Parameters, "MaxResults", 60)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := store.ListAuthEventsPaginated(userPoolID, user.ID, storecommon.ListOptions{

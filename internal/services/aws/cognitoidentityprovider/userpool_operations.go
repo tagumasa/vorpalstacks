@@ -98,8 +98,13 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 // ListUserPools lists the Cognito user pools.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPools.html
 func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	// Smithy PoolQueryLimitType: range {min: 1, max: 60}
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", 60)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.listUserPoolsCore(reqCtx.GetRegion(), ListUserPoolsInput{
-		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+		MaxResults: maxResults,
 		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {

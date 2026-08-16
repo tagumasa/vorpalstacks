@@ -18,6 +18,7 @@ type CustomJSONMarshaler = awserrors.CustomJSONMarshaler
 var (
 	NewAWSError             = awserrors.NewAWSError
 	WriteAWSError           = awserrors.WriteAWSError
+	WriteEC2QueryAWSError   = awserrors.WriteEC2QueryAWSError
 	WriteCustomJSONError    = awserrors.WriteCustomJSONError
 	WriteAWSErrorWithFormat = awserrors.WriteAWSErrorWithFormat
 	ErrAccessDenied         = awserrors.ErrAccessDenied

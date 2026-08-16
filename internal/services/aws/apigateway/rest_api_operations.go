@@ -157,7 +157,11 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	api, err := s.updateRestApiCore(stores, getRestApiId(req), parsePatchOperations(req.Parameters))
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	api, err := s.updateRestApiCore(stores, getRestApiId(req), ops)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

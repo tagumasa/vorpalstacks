@@ -3,7 +3,7 @@ module vorpalstacks-sdk-tests
 go 1.25.12
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.42.1
+	github.com/aws/aws-sdk-go-v2 v1.43.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.30
 	github.com/aws/aws-sdk-go-v2/service/acm v1.42.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.41.1
@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.66.1
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.57.1
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.63.1
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.79.1
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.82.2
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.35.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.64.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.60.1
@@ -43,17 +43,17 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.38.1
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.37.1
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.75.1
-	github.com/aws/smithy-go v1.27.3
+	github.com/aws/smithy-go v1.27.8
 	github.com/eclipse/paho.golang v0.23.0
 	github.com/gorilla/websocket v1.5.3
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.18 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.29 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.30 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.37 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.37 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.23 // indirect

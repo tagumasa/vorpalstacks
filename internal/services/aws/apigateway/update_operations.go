@@ -30,10 +30,18 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 		return nil, ErrNotFoundException
 	}
 
-	ops := parsePatchOperations(req.Parameters)
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	for _, po := range ops {
 		switch po.Path {
 		case "/pathPart":
+			// The root resource's path part is the API's root path ("/") and
+			// is immutable in AWS; DeleteResource already rejects deleting it.
+			if resource.ParentId == "" {
+				return nil, NewBadRequestException("cannot modify the pathPart of the root resource")
+			}
 			if po.Value == "" {
 				return nil, NewBadRequestException("pathPart cannot be empty")
 			}
@@ -51,15 +59,16 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 				}
 			}
 			resource.PathPart = po.Value
-			if resource.ParentId == "" {
-				resource.Path = "/" + po.Value
-			} else {
-				parent, err := stores.restApis.GetResource(apiId, resource.ParentId)
-				if err == nil {
-					parentPath := strings.TrimRight(parent.Path, "/")
-					resource.Path = parentPath + "/" + po.Value
-				}
+			// A non-root resource always has a parent; a failed parent
+			// lookup means the resource tree is inconsistent, and
+			// persisting the new path part with the stale full path would
+			// corrupt it further.
+			parent, err := stores.restApis.GetResource(apiId, resource.ParentId)
+			if err != nil {
+				return nil, toApiGatewayError(err)
 			}
+			parentPath := strings.TrimRight(parent.Path, "/")
+			resource.Path = parentPath + "/" + po.Value
 		}
 	}
 
@@ -96,7 +105,11 @@ func (s *APIGatewayService) UpdateMethod(ctx context.Context, reqCtx *request.Re
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch {
 		case po.Path == "/authorizationType":
 			if !validateAuthorizationType(po.Value) {
@@ -189,7 +202,11 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch {
 		case po.Path == "/uri":
 			integration.Uri = po.Value
@@ -311,7 +328,11 @@ func (s *APIGatewayService) UpdateIntegrationResponse(ctx context.Context, reqCt
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch {
 		case po.Path == "/selectionPattern":
 			response.SelectionPattern = po.Value
@@ -377,7 +398,11 @@ func (s *APIGatewayService) UpdateDeployment(ctx context.Context, reqCtx *reques
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch po.Path {
 		case "/description":
 			deployment.Description = po.Value
@@ -416,7 +441,11 @@ func (s *APIGatewayService) UpdateModel(ctx context.Context, reqCtx *request.Req
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch po.Path {
 		case "/description":
 			model.Description = po.Value

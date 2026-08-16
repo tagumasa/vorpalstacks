@@ -62,40 +62,45 @@ type PatchOperation struct {
 	Value string
 }
 
-func parsePatchOperations(params map[string]interface{}) []PatchOperation {
+// parsePatchOperations extracts the patchOperations request member. Only
+// add, remove, and replace are implemented in the patch appliers; any other
+// operation (including the RFC 6902 move, copy, and test values that the Op
+// enum admits) is rejected with BadRequestException instead of being silently
+// skipped — AWS documents that applying an unsupported operation on a
+// resource returns an error message.
+func parsePatchOperations(params map[string]interface{}) ([]PatchOperation, error) {
 	var ops []PatchOperation
 	patchOps, ok := params["patchOperations"].([]interface{})
 	if !ok {
-		return ops
+		return ops, nil
 	}
 
-	// Only add, remove, and replace are implemented in the patch appliers.
-	// move, copy, and test (RFC 6902) are intentionally excluded because the
-	// applier code does not handle them; accepting them would silently treat
-	// them as replace, which is incorrect.
 	validOps := map[string]bool{
 		"add": true, "remove": true, "replace": true,
 	}
 
 	for _, op := range patchOps {
-		if opMap, ok := op.(map[string]interface{}); ok {
-			po := PatchOperation{}
-			if o, ok := opMap["op"].(string); ok {
-				po.Op = o
-			}
-			if !validOps[po.Op] {
-				continue
-			}
-			if p, ok := opMap["path"].(string); ok {
-				po.Path = p
-			}
-			if v, ok := opMap["value"].(string); ok {
-				po.Value = v
-			}
-			ops = append(ops, po)
+		opMap, ok := op.(map[string]interface{})
+		if !ok {
+			continue
 		}
+		po := PatchOperation{}
+		if o, ok := opMap["op"].(string); ok {
+			po.Op = o
+		}
+		if !validOps[po.Op] {
+			return nil, NewBadRequestException(fmt.Sprintf(
+				"unsupported patch operation %q; supported operations are add, remove and replace", po.Op))
+		}
+		if p, ok := opMap["path"].(string); ok {
+			po.Path = p
+		}
+		if v, ok := opMap["value"].(string); ok {
+			po.Value = v
+		}
+		ops = append(ops, po)
 	}
-	return ops
+	return ops, nil
 }
 
 func parseInt64(s string) (int64, error) {

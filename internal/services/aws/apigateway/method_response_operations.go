@@ -145,7 +145,10 @@ func (s *APIGatewayService) UpdateMethodResponse(ctx context.Context, reqCtx *re
 		return nil, toApiGatewayError(err)
 	}
 
-	patchOps := parsePatchOperations(req.Parameters)
+	patchOps, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	for _, po := range patchOps {
 		switch {
 		case strings.HasPrefix(po.Path, "/responseParameters/"):

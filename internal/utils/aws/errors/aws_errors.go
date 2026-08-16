@@ -107,6 +107,59 @@ func (e *AWSError) ToXML() string {
 	return buf.String()
 }
 
+// EC2XMLErrorResponse is the EC2 Query protocol error envelope. Unlike the
+// standard AWS Query ErrorResponse, EC2 nests the error inside a Response
+// root with an Errors wrapper and capitalises RequestID; the AWS SDKs'
+// EC2 deserialisers only read this shape.
+type EC2XMLErrorResponse struct {
+	XMLName xml.Name `xml:"Response"`
+	Errors  struct {
+		Error struct {
+			Type    string `xml:"Type"`
+			Code    string `xml:"Code"`
+			Message string `xml:"Message"`
+		} `xml:"Error"`
+	} `xml:"Errors"`
+	RequestID string `xml:"RequestID"`
+}
+
+// ToEC2QueryXML converts the error to the EC2 Query protocol XML format.
+func (e *AWSError) ToEC2QueryXML() string {
+	var faultType string
+	if e.Fault == "Client" {
+		faultType = "Sender"
+	} else {
+		faultType = "Receiver"
+	}
+
+	resp := EC2XMLErrorResponse{}
+	resp.Errors.Error.Type = faultType
+	resp.Errors.Error.Code = e.Code
+	resp.Errors.Error.Message = e.Message
+	resp.RequestID = e.RequestID
+
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	if err := enc.Encode(resp); err != nil {
+		logs.Error("Failed to encode EC2 XML error response", logs.String("code", e.Code), logs.Err(err))
+	}
+	return buf.String()
+}
+
+// WriteEC2QueryAWSError writes the error using the EC2 Query protocol XML
+// envelope. The AWS SDK EC2 deserialiser cannot extract the error code from
+// the standard ErrorResponse shape and reports UnknownError instead.
+func WriteEC2QueryAWSError(w http.ResponseWriter, err *AWSError) {
+	// The EC2 Query protocol responds with text/xml;charset=UTF-8, matching
+	// real AWS EC2 responses.
+	w.Header().Set("Content-Type", "text/xml;charset=UTF-8")
+	w.WriteHeader(err.HTTPStatus)
+	if _, writeErr := w.Write([]byte(err.ToEC2QueryXML())); writeErr != nil {
+		logs.Error("Failed to write EC2 XML error response", logs.Err(writeErr))
+	}
+}
+
 // ToJSON converts the error to JSON format.
 func (e *AWSError) ToJSON() string {
 	data := map[string]interface{}{

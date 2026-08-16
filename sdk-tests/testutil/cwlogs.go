@@ -57,6 +57,8 @@ func (tc *cwlogsTestCtx) runAll() []TestResult {
 	results = append(results, tc.tagTests()...)
 	results = append(results, tc.paginationTests()...)
 	results = append(results, tc.legacyTests()...)
+	results = append(results, tc.queryTests()...)
+	results = append(results, tc.lookupTableTests()...)
 
 	return results
 }

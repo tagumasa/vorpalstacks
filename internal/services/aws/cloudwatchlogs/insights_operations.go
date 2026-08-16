@@ -3,9 +3,13 @@ package cloudwatchlogs
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	corelogs "vorpalstacks/internal/core/logs"
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 type queryState struct {
@@ -92,11 +96,87 @@ func (s *LogsService) executeQuery(region, queryId, queryString string, logGroup
 		return
 	}
 
+	ctx := &execContext{
+		startTime:     startTime,
+		endTime:       endTime,
+		accountID:     s.accountID,
+		defaultGroups: logGroupNames,
+		events:        fetchLogEvents(store, logGroupNames, startTime, endTime),
+		fetchEvents: func(groups []string, start, end int64) ([]logEventWithContext, error) {
+			return fetchLogEvents(store, groups, start, end), nil
+		},
+		listLogGroups: func() ([]sourceGroupInfo, error) {
+			return listSourceGroups(store), nil
+		},
+		getLookupTable: func(name string) (*parsedLookupTable, error) {
+			lt, err := store.GetLookupTable(name)
+			if err != nil {
+				return nil, fmt.Errorf("lookup table %s not found", name)
+			}
+			body, err := s.lookupTablePlainBody(lt, region)
+			if err != nil {
+				return nil, fmt.Errorf("lookup table %s is unavailable: %v", name, err)
+			}
+			columns, records, err := parseLookupCSV(body)
+			if err != nil {
+				return nil, fmt.Errorf("lookup table %s is invalid: %v", name, err)
+			}
+			return newParsedLookupTable(columns, records), nil
+		},
+		subqueryCache: map[string][]interface{}{},
+	}
+
+	rows, err := executeQueryContext(ctx, queryString)
+	if err != nil {
+		s.failQuery(queryId, err.Error())
+		return
+	}
+	if ctx.sourceError != nil {
+		s.failQuery(queryId, fmt.Sprintf("source error: %v", ctx.sourceError))
+		return
+	}
+	if int64(len(rows)) > limit {
+		rows = rows[:limit]
+	}
+
+	stats := queryStats{
+		recordsScanned: int64(len(ctx.events)),
+	}
+	for _, e := range ctx.events {
+		stats.bytesScanned += int64(len(e.message))
+	}
+	stats.recordsMatched = int64(len(rows))
+
+	val, ok := s.queries.Load(queryId)
+	if !ok {
+		return
+	}
+	qs := val.(*queryState)
+	qs.results = rows
+	qs.stats = stats
+	qs.status = "Complete"
+}
+
+// fetchLogEvents reads all events of the given log groups within the time
+// window. Stream listing and event reads surface their errors through the
+// server log; unresolvable groups yield no events, matching the documented
+// behaviour of querying a group without matching events.
+func fetchLogEvents(store *logsstore.Store, groups []string, startTime, endTime int64) []logEventWithContext {
 	var allEvents []logEventWithContext
-	for _, lgName := range logGroupNames {
-		streams, _, _ := store.ListLogStreams(lgName, "", "", 1000)
+	for _, lgName := range groups {
+		streams, _, err := store.ListLogStreams(lgName, "", "", 1000)
+		if err != nil {
+			corelogs.Error("Failed to list log streams for query",
+				corelogs.String("logGroup", lgName), corelogs.Err(err))
+			continue
+		}
 		for _, ls := range streams {
-			events, _, _, _ := store.GetLogEvents(lgName, ls.Name, startTime, endTime, int(limit), true, "")
+			events, _, _, err := store.GetLogEvents(lgName, ls.Name, startTime, endTime, 10000, true, "")
+			if err != nil {
+				corelogs.Error("Failed to read log events for query",
+					corelogs.String("logGroup", lgName), corelogs.String("logStream", ls.Name), corelogs.Err(err))
+				continue
+			}
 			for _, evt := range events {
 				allEvents = append(allEvents, logEventWithContext{
 					timestamp:     evt.Timestamp,
@@ -108,17 +188,27 @@ func (s *LogsService) executeQuery(region, queryId, queryString string, logGroup
 			}
 		}
 	}
+	return allEvents
+}
 
-	rows, stats := executeQuery(queryString, allEvents)
-
-	val, ok := s.queries.Load(queryId)
-	if !ok {
-		return
+// listSourceGroups returns the log group inventory for SOURCE selection.
+func listSourceGroups(store *logsstore.Store) []sourceGroupInfo {
+	var out []sourceGroupInfo
+	marker := ""
+	for {
+		groups, next, err := store.ListLogGroups("", marker, 50)
+		if err != nil {
+			return out
+		}
+		for _, g := range groups {
+			out = append(out, sourceGroupInfo{Name: g.Name, Class: g.LogGroupClass, Tags: g.Tags})
+		}
+		if next == "" || len(groups) == 0 {
+			break
+		}
+		marker = next
 	}
-	qs := val.(*queryState)
-	qs.results = rows
-	qs.stats = stats
-	qs.status = "Complete"
+	return out
 }
 
 func (s *LogsService) failQuery(queryId, message string) {
@@ -175,6 +265,32 @@ func (s *LogsService) DescribeQueries(ctx context.Context, reqCtx *request.Reque
 	return resp, nil
 }
 
+// resultTimestampLayout is the rendering query results use for
+// timestamp-typed values.
+const resultTimestampLayout = "2006-01-02 15:04:05.000"
+
+// formatResultTimestamp renders the internal epoch-millisecond value of
+// @timestamp and @ingestionTime in the "2006-01-02 15:04:05.000" form that
+// query results present. Non-numeric values pass through unchanged.
+func formatResultTimestamp(v string) string {
+	ms, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+	if err != nil {
+		return v
+	}
+	return time.UnixMilli(ms).UTC().Format(resultTimestampLayout)
+}
+
+// parseResultTimestamp parses the "2006-01-02 15:04:05.000" rendering back
+// into epoch milliseconds, so stored timestamp values round-trip through
+// later commands such as dateceil over a binned column.
+func parseResultTimestamp(s string) (int64, bool) {
+	t, err := time.Parse(resultTimestampLayout, strings.TrimSpace(s))
+	if err != nil {
+		return 0, false
+	}
+	return t.UnixMilli(), true
+}
+
 // GetQueryResults retrieves the results of a completed query.
 func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxItems")), 10000, 10000)
@@ -192,9 +308,14 @@ func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.Reque
 	}
 
 	resultRows := make([][]map[string]interface{}, len(result.Results))
-	for i, row := range result.Results {
+	for i := range result.Results {
+		row := &result.Results[i]
 		fields := make([]map[string]interface{}, 0, len(row.fields))
-		for k, v := range row.fields {
+		for _, k := range row.ordered() {
+			v := row.fields[k]
+			if k == "@timestamp" || k == "@ingestionTime" {
+				v = formatResultTimestamp(v)
+			}
 			fields = append(fields, map[string]interface{}{
 				"field": k,
 				"value": v,

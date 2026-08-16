@@ -369,5 +369,30 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 		return nil
 	}))
 
+	// Recipient (Nitro Enclaves envelope encryption) is not implemented;
+	// requests carrying it must be rejected explicitly instead of silently
+	// returning normal plaintext to an enclave caller.
+	results = append(results, r.RunTest("kms", "Decrypt_Recipient_Rejected", func() error {
+		_, err := tc.client.Decrypt(tc.ctx, &kms.DecryptInput{
+			CiphertextBlob: []byte("recipient-ciphertext"),
+			Recipient: &types.RecipientInfo{
+				KeyEncryptionAlgorithm: types.KeyEncryptionMechanismRsaesOaepSha256,
+				AttestationDocument:    []byte("attestation-document"),
+			},
+		})
+		return AssertErrorContains(err, "UnsupportedOperationException")
+	}))
+
+	results = append(results, r.RunTest("kms", "GenerateRandom_Recipient_Rejected", func() error {
+		_, err := tc.client.GenerateRandom(tc.ctx, &kms.GenerateRandomInput{
+			NumberOfBytes: aws.Int32(32),
+			Recipient: &types.RecipientInfo{
+				KeyEncryptionAlgorithm: types.KeyEncryptionMechanismRsaesOaepSha256,
+				AttestationDocument:    []byte("attestation-document"),
+			},
+		})
+		return AssertErrorContains(err, "UnsupportedOperationException")
+	}))
+
 	return results
 }

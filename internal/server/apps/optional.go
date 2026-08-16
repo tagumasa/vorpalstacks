@@ -136,6 +136,8 @@ func (a *App) initOptionalServices() error {
 		st.kmsService.SetPrincipalResolver(a.server.Dispatcher().PrincipalResolver())
 	}
 
+	a.wireWAFv2ResourceCheckers(st)
+
 	return nil
 }
 
@@ -303,6 +305,27 @@ func (a *App) initWAFv2(st *serviceState) error {
 	st.wafv2Service.SetStorageManager(a.server.StorageManager())
 	st.wafv2Service.RegisterHandlers(a.server.Dispatcher())
 	return nil
+}
+
+// wireWAFv2ResourceCheckers registers the per-service resource checkers that
+// AssociateWebACL uses to resolve associable resource ARNs. It must run after
+// every service initialiser: the checker services are created by different
+// initialisers (some core, some optional), so registering inside initWAFv2
+// would depend on the order of the initers list and silently skip any service
+// that is initialised later than WAFv2.
+func (a *App) wireWAFv2ResourceCheckers(st *serviceState) {
+	if st.wafv2Service == nil {
+		return
+	}
+	if st.apiGatewayService != nil {
+		st.wafv2Service.RegisterWebACLResourceChecker(st.apiGatewayService)
+	}
+	if st.appSyncService != nil {
+		st.wafv2Service.RegisterWebACLResourceChecker(st.appSyncService)
+	}
+	if st.cognitoService != nil {
+		st.wafv2Service.RegisterWebACLResourceChecker(st.cognitoService)
+	}
 }
 
 // --- NeptuneGraph (optional) ---

@@ -121,6 +121,10 @@ func (s *Store) scheduledQueryKey(id string) string {
 	return "scheduled-query:" + id
 }
 
+func (s *Store) lookupTableKey(name string) string {
+	return "lookup-table:" + name
+}
+
 func (s *Store) scheduledQueryExecutionKey(sqId string, triggerTime int64) string {
 	return "sq-execution:" + sqId + ":" + strconv.FormatInt(triggerTime, 10)
 }

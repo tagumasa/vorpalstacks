@@ -2,9 +2,12 @@ package cognitoidentityprovider
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -507,4 +510,64 @@ var userPoolNamePattern = regexp.MustCompile(`^[\w\s+=,.@-]+$`)
 // pattern and length constraint (1-128) for UserPoolNameType.
 func validateUserPoolNamePattern(v string) bool {
 	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+}
+
+// listLimitMax is the upper bound shared by the Cognito list-limit shapes
+// (QueryLimitType, PoolQueryLimitType, QueryLimit — all Smithy max 60).
+const listLimitMax = 60
+
+// parseListLimit extracts a list-limit parameter typed QueryLimitType in the
+// Smithy model (range 0-60, e.g. ListUsers.Limit). Absent or zero selects
+// defaultValue, matching the AWS behaviour of returning the documented
+// default; an explicitly provided value outside 0-60 is rejected.
+func parseListLimit(params map[string]interface{}, key string, defaultValue int) (int, error) {
+	if err := rejectNonNumericLimit(params, key, "0"); err != nil {
+		return 0, err
+	}
+	v, present := request.GetIntParamCaseInsensitive(params, key)
+	if !present || v == 0 {
+		return defaultValue, nil
+	}
+	if v < 0 || v > listLimitMax {
+		return 0, awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("%s must be between 0 and %d", key, listLimitMax), http.StatusBadRequest)
+	}
+	return v, nil
+}
+
+// parseStrictListLimit extracts a list-limit parameter whose Smithy shape
+// has a minimum of 1 (PoolQueryLimitType / QueryLimit, e.g. ListUserPools,
+// ListUserPoolClients). Absent selects defaultValue; an explicitly provided
+// value outside 1-60 is rejected, including an explicit zero.
+func parseStrictListLimit(params map[string]interface{}, key string, defaultValue int) (int, error) {
+	if err := rejectNonNumericLimit(params, key, "1"); err != nil {
+		return 0, err
+	}
+	v, present := request.GetIntParamCaseInsensitive(params, key)
+	if !present {
+		return defaultValue, nil
+	}
+	if v < 1 || v > listLimitMax {
+		return 0, awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("%s must be between 1 and %d", key, listLimitMax), http.StatusBadRequest)
+	}
+	return v, nil
+}
+
+// rejectNonNumericLimit fails closed when a limit parameter is present but
+// cannot be interpreted as an integer. GetIntParamCaseInsensitive cannot
+// distinguish that case from an absent parameter, so presence is checked
+// against the key variants directly.
+func rejectNonNumericLimit(params map[string]interface{}, key, lowerBound string) error {
+	for _, k := range []string{key, request.LowerFirst(key), strings.ToLower(key)} {
+		if _, ok := params[k]; !ok {
+			continue
+		}
+		if _, isInt := request.GetIntParamCaseInsensitive(params, key); !isInt {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("%s must be a number between %s and %d", key, lowerBound, listLimitMax), http.StatusBadRequest)
+		}
+		break
+	}
+	return nil
 }

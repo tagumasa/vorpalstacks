@@ -124,7 +124,11 @@ func (s *APIGatewayService) UpdateRequestValidator(ctx context.Context, reqCtx *
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	for _, po := range ops {
 		switch po.Path {
 		case "/name":
 			validator.Name = po.Value

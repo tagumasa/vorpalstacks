@@ -356,15 +356,16 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				var err error
 				idx, err = strconv.Atoi(idxStr)
 				if err != nil || idx < 0 {
-					continue
+					return nil, NewBadRequestException("invalid apiStages index: " + idxStr)
 				}
 				if idx >= len(usagePlan.ApiStages) {
 					if po.Op != "remove" {
-						usagePlan.ApiStages = append(usagePlan.ApiStages, apigateway.ApiStage{})
-						idx = len(usagePlan.ApiStages) - 1
-					} else {
-						continue
+						// Appending placeholder entries up to the requested
+						// index would silently corrupt the plan with empty
+						// stages; reject the out-of-range index instead.
+						return nil, NewBadRequestException("apiStages index out of range: " + idxStr)
 					}
+					continue
 				}
 			}
 			if len(parts) < 2 {

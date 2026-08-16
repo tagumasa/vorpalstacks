@@ -392,3 +392,31 @@ func validateMethodSettingThrottleBurstLimit(v int64) bool {
 func validateMethodSettingThrottleRateLimit(v float64) bool {
 	return v >= 0 && v <= maxMethodSettingThrottleRateLimit
 }
+
+// validateAccessLogDestinationArn returns true if the ARN references either
+// a CloudWatch Logs log group or a Kinesis Data Firehose delivery stream.
+// AWS requires Firehose stream names used for access logs to begin with
+// "amazon-apigateway-".
+func validateAccessLogDestinationArn(arn string) bool {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 6 || parts[0] != "arn" || parts[2] == "" || parts[3] == "" {
+		return false
+	}
+	resource := parts[5]
+	switch parts[2] {
+	case "logs":
+		// CloudWatch Logs log group ARNs place the group name after a
+		// colon: arn:<partition>:logs:<region>:<account>:log-group:<name>[:*]
+		return len(parts) >= 7 && parts[5] == "log-group" && parts[6] != ""
+	case "firehose":
+		// Firehose ARNs use a slash before the stream name:
+		// arn:<partition>:firehose:<region>:<account>:deliverystream/<name>
+		if !strings.HasPrefix(resource, "deliverystream/") || len(resource) <= len("deliverystream/") {
+			return false
+		}
+		streamName := strings.TrimPrefix(resource, "deliverystream/")
+		return strings.HasPrefix(streamName, "amazon-apigateway-")
+	default:
+		return false
+	}
+}

@@ -16,8 +16,10 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	"vorpalstacks/internal/utils/aws/arn"
 	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
@@ -36,10 +38,11 @@ type wafv2Stores struct {
 
 // WAFv2Service implements the AWS WAF v2 API operations.
 type WAFv2Service struct {
-	accountID      string
-	region         string
-	stores         sync.Map // region → *wafv2Stores
-	storageManager *storage.RegionStorageManager
+	accountID        string
+	region           string
+	stores           sync.Map // region → *wafv2Stores
+	storageManager   *storage.RegionStorageManager
+	resourceCheckers []eventbus.WebACLResourceChecker
 }
 
 // NewWAFv2Service creates a new WAFv2Service instance.
@@ -50,6 +53,37 @@ func NewWAFv2Service(accountID, region string) *WAFv2Service {
 // SetStorageManager injects the region storage manager for lazy store creation.
 func (s *WAFv2Service) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// RegisterWebACLResourceChecker registers a service that hosts resources
+// eligible for WebACL association. AssociateWebACL rejects ARNs owned by a
+// registered checker that cannot be resolved to an existing resource.
+func (s *WAFv2Service) RegisterWebACLResourceChecker(checker eventbus.WebACLResourceChecker) {
+	s.resourceCheckers = append(s.resourceCheckers, checker)
+}
+
+// ensureAssociableResource verifies that the ResourceArn resolves to an
+// existing resource when its ARN service namespace is owned by a registered
+// checker. AWS returns WAFUnavailableEntityException when it cannot retrieve
+// the specified resource; namespaces without a checker are resource types
+// this platform does not host, which keep stub-association semantics.
+func (s *WAFv2Service) ensureAssociableResource(ctx context.Context, region, resourceArn string) error {
+	parsed, err := arn.ParseARN(resourceArn)
+	if err != nil {
+		return invalidParamError("ResourceArn is not a valid ARN")
+	}
+	for _, checker := range s.resourceCheckers {
+		if checker.WebACLResourceService() != parsed.Service {
+			continue
+		}
+		if !checker.WebACLResourceExists(ctx, region, resourceArn) {
+			return newAPIError("WAFUnavailableEntityException",
+				fmt.Sprintf("WAF couldn't retrieve the resource %s. If you've just created the resource, wait a few minutes for the change to propagate and retry the operation.", resourceArn),
+				http.StatusBadRequest)
+		}
+		return nil
+	}
+	return nil
 }
 
 // GetStoresForRegion returns the full wafv2Stores for the given region,
