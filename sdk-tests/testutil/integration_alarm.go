@@ -116,13 +116,19 @@ func (r *TestRunner) runAlarmToLambda(ic *integClients, ts string) TestResult {
 		ic.cw.DeleteAlarms(ic.ctx, &cloudwatch.DeleteAlarmsInput{AlarmNames: []string{alarmName}})
 	}()
 
-	base := time.Now().Truncate(60 * time.Second)
+	// Points relative to the wall clock keep at least one datum in the
+	// still-open minute bucket: that bucket's window is evaluated for a
+	// full minute of ticks after this call, so the alarm sees data even
+	// when slow setup (Lambda container cold start) lands the put near
+	// the boundary. Bucket-aligned back-dated points alone are evaluated
+	// only while their window is current and can be missed entirely.
+	now := time.Now()
 	ic.cw.PutMetricData(ic.ctx, &cloudwatch.PutMetricDataInput{
 		Namespace: aws.String("AWS/EC2"),
 		MetricData: []cloudwatchtypes.MetricDatum{
-			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-30 * time.Second))},
-			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-90 * time.Second))},
-			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(base.Add(-150 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(now.Add(-2 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(now.Add(-62 * time.Second))},
+			{MetricName: aws.String("MemoryUtilization"), Value: aws.Float64(100), Timestamp: aws.Time(now.Add(-122 * time.Second))},
 		},
 	})
 
