@@ -8,37 +8,42 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 34 AWS services with 2,929 test cases (2,865 SDK + 47 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,006 test cases (2,940 SDK + 49 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
 
+Rows follow the runner's service registrations: the Timestream row is one
+combined service running both Timestream Write and Timestream Query tests,
+which are separate services in the SDK classification used by
+[docs/services.md](../docs/services.md).
+
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
 | ACM | 57 | 100% | ✅ Perfect |
-| API Gateway | 140 | 100% | ✅ Perfect |
+| API Gateway | 144 | 100% | ✅ Perfect |
 | AppSync | 175 | 100% | ✅ Perfect |
 | Athena | 83 | 100% | ✅ Perfect |
-| CloudFront | 60 | 100% | ✅ Perfect |
+| CloudFront | 92 | 100% | ✅ Perfect |
 | CloudTrail | 112 | 100% | ✅ Perfect |
 | CloudWatch | 24 | 100% | ✅ Perfect |
-| CloudWatch Logs | 44 | 100% | ✅ Perfect |
-| Cognito | 69 | 100% | ✅ Perfect |
+| CloudWatch Logs | 60 | 100% | ✅ Perfect |
+| Cognito | 71 | 100% | ✅ Perfect |
 | Cognito Identity | 43 | 100% | ✅ Perfect |
 | DynamoDB | 111 | 100% | ✅ Perfect |
-| EC2 | 35 | 100% | ✅ Perfect |
+| EC2 | 37 | 100% | ✅ Perfect |
 | EventBridge | 59 | 100% | ✅ Perfect |
 | IAM | 174 | 100% | ✅ Perfect |
 | IoT | 361 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
-| KMS | 100 | 100% | ✅ Perfect |
+| KMS | 102 | 100% | ✅ Perfect |
 | Lambda | 71 | 100% | ✅ Perfect |
 | Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
 | RDS Data | 17 | 100% | ✅ Perfect |
 | Route53 | 46 | 100% | ✅ Perfect |
-| S3 | 105 | 100% | ✅ Perfect |
+| S3 | 120 | 100% | ✅ Perfect |
 | Scheduler | 44 | 100% | ✅ Perfect |
 | SecretsManager | 43 | 100% | ✅ Perfect |
 | SESv2 | 94 | 100% | ✅ Perfect |
@@ -47,10 +52,10 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | SSM | 49 | 100% | ✅ Perfect |
 | STS | 60 | 100% | ✅ Perfect |
 | StepFunctions | 65 | 100% | ✅ Perfect |
-| Timestream | 51 | 100% | ✅ Perfect |
-| WAFv2 | 69 | 100% | ✅ Perfect |
+| Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
+| WAFv2 | 71 | 100% | ✅ Perfect |
 
-**Overall: 2,929/2,929 tests passing (100%) — 2,865 SDK + 47 integration + 17 WebSocket** (confirmed 2026-08-15 on `main`)
+**Overall: 3,006/3,006 tests passing (100%) — 2,940 SDK + 49 integration + 17 WebSocket** (confirmed 2026-08-18 on `main`)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

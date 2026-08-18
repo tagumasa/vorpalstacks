@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts string, bucketName string) []TestResult {
@@ -265,6 +267,143 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		}
 		if string(body) != "0123456789ABCDEFGHIJ" {
 			return fmt.Errorf("expected body %q, got %q", "0123456789ABCDEFGHIJ", string(body))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetObject_GlacierInvalidObjectState", func() error {
+		key := "glacier-gate.txt"
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:       aws.String(bucketName),
+			Key:          aws.String(key),
+			Body:         strings.NewReader("archived"),
+			StorageClass: types.StorageClassGlacier,
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+
+		_, err = client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(key),
+		})
+		if err == nil {
+			return fmt.Errorf("expected InvalidObjectState for archived object, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) {
+			return fmt.Errorf("expected API error, got: %T: %v", err, err)
+		}
+		if apiErr.ErrorCode() != "InvalidObjectState" {
+			return fmt.Errorf("expected InvalidObjectState, got %s: %v", apiErr.ErrorCode(), err)
+		}
+		// The S3 API reference documents InvalidObjectState with HTTP 403.
+		if code := awsHTTPStatus(err); code != http.StatusForbidden {
+			return fmt.Errorf("expected HTTP 403 for InvalidObjectState, got %d", code)
+		}
+
+		// HEAD remains available for archived objects.
+		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return fmt.Errorf("HeadObject on archived object failed: %w", err)
+		}
+		if headResp.StorageClass != types.StorageClassGlacier {
+			return fmt.Errorf("expected StorageClass GLACIER on HEAD, got %s", headResp.StorageClass)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "CopyObject_GlacierSourceNotInActiveTier", func() error {
+		srcKey := "glacier-copy-src.txt"
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:       aws.String(bucketName),
+			Key:          aws.String(srcKey),
+			Body:         strings.NewReader("archived source"),
+			StorageClass: types.StorageClassGlacier,
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+
+		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:     aws.String(bucketName),
+			Key:        aws.String("glacier-copy-dst.txt"),
+			CopySource: aws.String(bucketName + "/" + srcKey),
+		})
+		if err == nil {
+			return fmt.Errorf("expected ObjectNotInActiveTierError for unrestored source, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) {
+			return fmt.Errorf("expected API error, got: %T: %v", err, err)
+		}
+		if apiErr.ErrorCode() != "ObjectNotInActiveTierError" {
+			return fmt.Errorf("expected ObjectNotInActiveTierError, got %s: %v", apiErr.ErrorCode(), err)
+		}
+		// The S3 API reference documents ObjectNotInActiveTierError with
+		// HTTP 403.
+		if code := awsHTTPStatus(err); code != http.StatusForbidden {
+			return fmt.Errorf("expected HTTP 403 for ObjectNotInActiveTierError, got %d", code)
+		}
+
+		// After restoring the source the copy succeeds.
+		_, err = client.RestoreObject(ctx, &s3.RestoreObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(srcKey),
+			RestoreRequest: &types.RestoreRequest{
+				Days: aws.Int32(1),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RestoreObject failed: %w", err)
+		}
+		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:     aws.String(bucketName),
+			Key:        aws.String("glacier-copy-dst.txt"),
+			CopySource: aws.String(bucketName + "/" + srcKey),
+		})
+		if err != nil {
+			return fmt.Errorf("CopyObject after restore failed: %w", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "RestoreObject_StandardClass", func() error {
+		key := "restore-standard.txt"
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(key),
+			Body:   strings.NewReader("standard object"),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+
+		_, err = client.RestoreObject(ctx, &s3.RestoreObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(key),
+			RestoreRequest: &types.RestoreRequest{
+				Days: aws.Int32(1),
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error restoring STANDARD object, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) {
+			return fmt.Errorf("expected API error, got: %T: %v", err, err)
+		}
+		if apiErr.ErrorCode() != "ObjectAlreadyInActiveTierError" {
+			return fmt.Errorf("expected ObjectAlreadyInActiveTierError, got %s: %v", apiErr.ErrorCode(), err)
+		}
+		// The S3 API reference documents ObjectAlreadyInActiveTierError with
+		// HTTP 403; 409 belongs to the separate RestoreAlreadyInProgress
+		// error.
+		if code := awsHTTPStatus(err); code != http.StatusForbidden {
+			return fmt.Errorf("expected HTTP 403 for ObjectAlreadyInActiveTierError, got %d", code)
 		}
 		return nil
 	}))

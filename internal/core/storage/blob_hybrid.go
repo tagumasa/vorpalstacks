@@ -101,7 +101,9 @@ func (s *HybridBlobStore) putUnlock(ctx context.Context, bucket, key string, rea
 		if metadata.ETag == "" {
 			metadata.ETag = s.calculateETag(data)
 		}
-		metadata.LastModified = time.Now().UTC()
+		if metadata.LastModified.IsZero() {
+			metadata.LastModified = time.Now().UTC()
+		}
 
 		if err := s.putSmallObject(storageKey, data, metadata); err != nil {
 			return nil, err
@@ -162,7 +164,9 @@ func (s *HybridBlobStore) putLargeStreaming(bucket, key string, reader io.Reader
 	if meta.ETag == "" {
 		meta.ETag = hex.EncodeToString(hash.Sum(nil))
 	}
-	meta.LastModified = time.Now().UTC()
+	if meta.LastModified.IsZero() {
+		meta.LastModified = time.Now().UTC()
+	}
 
 	metaBytes, err := json.Marshal(meta)
 	if err != nil {

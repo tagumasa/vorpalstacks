@@ -102,6 +102,8 @@ const (
 	StorageClassStandardIA         ObjectStorageClass = "STANDARD_IA"
 	StorageClassOneZoneIA          ObjectStorageClass = "ONEZONE_IA"
 	StorageClassIntelligentTiering ObjectStorageClass = "INTELLIGENT_TIERING"
+	StorageClassGlacierIR          ObjectStorageClass = "GLACIER_IR"
+	StorageClassDeepArchive        ObjectStorageClass = "DEEP_ARCHIVE"
 )
 
 // BucketVersioningStatus represents the versioning status of an S3 bucket.

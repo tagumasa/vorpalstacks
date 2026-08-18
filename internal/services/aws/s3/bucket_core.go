@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"time"
+	"vorpalstacks/internal/common/defaults"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -363,8 +364,36 @@ func (s *S3Service) createBucketCore(bucketStore s3store.BucketStoreInterface, i
 		return nil, err
 	}
 
+	// Bucket names form a single global namespace and this platform has a
+	// single account, so a duplicate name always collides with a bucket the
+	// requester owns. S3 returns BucketAlreadyOwnedByYou for that case in
+	// every Region except North Virginia, where legacy clients rely on a
+	// 200 OK response that resets the existing bucket's ACLs.
+	if bucketStore.Exists(in.Bucket) {
+		if in.Region == defaults.DefaultRegion {
+			existing, getErr := bucketStore.Get(in.Bucket)
+			if getErr != nil {
+				return nil, getErr
+			}
+			existing.ACL = nil
+			if putErr := bucketStore.Put(existing); putErr != nil {
+				return nil, putErr
+			}
+			return &AdminCreateBucketResult{Location: "/" + in.Bucket}, nil
+		}
+		return nil, ErrBucketAlreadyOwnedByYou
+	}
+	if s.s3Store != nil {
+		if found, _ := s.s3Store.FindBucket(in.Bucket); found != nil {
+			return nil, ErrBucketAlreadyOwnedByYou
+		}
+	}
+
 	bucket, err := bucketStore.Create(in.Bucket, in.Region)
 	if err != nil {
+		if errors.Is(err, s3store.ErrBucketAlreadyExists) {
+			return nil, ErrBucketAlreadyOwnedByYou
+		}
 		return nil, err
 	}
 
@@ -537,6 +566,17 @@ func (s *S3Service) getObjectStreamCore(ctx context.Context, objectStore s3store
 	reader, obj, err := objectStore.GetWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
 		return nil, err
+	}
+
+	if isArchiveClass(obj.StorageClass) {
+		reader.Close()
+		return nil, ErrInvalidObjectState
+	}
+
+	sseCRequested := sseCustomerRequested(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if sseCRequested && (obj.SSEMetadata == nil || obj.SSEMetadata.EncryptionType != s3store.SSETypeCustomer) {
+		reader.Close()
+		return nil, NewInvalidRequestError("The encryption parameters are not applicable to this object.")
 	}
 
 	result := &GetObjectStreamResult{
@@ -822,6 +862,18 @@ func (s *S3Service) putObjectStreamCore(ctx context.Context, bucketStore s3store
 		return nil, err
 	}
 
+	// An overwrite must carry the same encryption family as the object it
+	// replaces: a PUT that supplies SSE-C parameters for a non-SSE-C object,
+	// or omits them for an SSE-C object, is rejected rather than silently
+	// re-encrypting under a different type.
+	requestUsesSSEC := sseCustomerRequested(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if existing, headErr := objectStore.Head(ctx, in.Bucket, in.Key); headErr == nil && existing != nil {
+		existingIsSSEC := existing.SSEMetadata != nil && existing.SSEMetadata.EncryptionType == s3store.SSETypeCustomer
+		if existingIsSSEC != requestUsesSSEC {
+			return nil, ErrEncryptionTypeMismatch
+		}
+	}
+
 	metadata := in.Metadata
 	if metadata == nil {
 		metadata = make(map[string]string)
@@ -978,6 +1030,13 @@ func (s *S3Service) copyObjectCore(ctx context.Context, bucketStore s3store.Buck
 	}, nil
 }
 
+// isArchiveClass reports whether a storage class places objects in an
+// archive tier that must be restored before the object data can be read.
+// GLACIER_IR is excluded because it offers real-time retrieval.
+func isArchiveClass(cls s3store.ObjectStorageClass) bool {
+	return cls == s3store.StorageClassGlacier || cls == s3store.StorageClassDeepArchive
+}
+
 // copyObjectStreamCore is the streaming variant of copyObjectCore. It handles
 // the full server-side copy logic: source object retrieval (with optional
 // SSE-C decryption), target encryption determination, EncryptStream or
@@ -1010,12 +1069,16 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 		return nil, err
 	}
 
+	if isArchiveClass(srcObj.StorageClass) {
+		return nil, ErrObjectNotInActiveTier
+	}
+
 	if srcObj.Size > maxCopyObjectSize {
 		return nil, ErrEntityTooLarge
 	}
 
 	var srcReader io.Reader
-	if srcObj.SSEMetadata != nil || in.CopySourceSSECustomerKey != "" {
+	if srcObj.SSEMetadata != nil || sseCustomerRequested(in.CopySourceSSECustomerAlgo, in.CopySourceSSECustomerKey, in.CopySourceSSECustomerMD5) {
 		getResult, getErr := s.getObjectStreamCore(ctx, objectStore, GetObjectStreamInput{
 			Bucket:               srcBucket,
 			Key:                  srcKey,
@@ -1054,7 +1117,7 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 	if in.ServerSideEncryption != "" {
 		targetEncryptionType = EncryptionType(in.ServerSideEncryption)
 		targetKMSKeyID = in.SSEKMSKeyId
-	} else if in.SSECustomerAlgorithm != "" {
+	} else if sseCustomerRequested(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5) {
 		targetEncryptionType = EncryptionTypeSSE_C
 	} else {
 		targetEncryptionType = s.encryptionManager.DetermineEncryptionType(EncryptionTypeNone, bucketEncryption)
@@ -1133,4 +1196,73 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 
 	result.Object = obj
 	return result, nil
+}
+
+// UpdateObjectEncryptionInput is the transport-agnostic input for updating
+// the server-side encryption of an existing object.
+type UpdateObjectEncryptionInput struct {
+	Bucket    string
+	Key       string
+	VersionID string
+	KMSKeyArn string
+}
+
+// updateObjectEncryptionCore re-encrypts an existing SSE-S3 or SSE-KMS object
+// under the requested KMS key. Object data is rewritten in place — the ETag,
+// timestamps, storage class, tags, ACL, lock state, and version identifier
+// are preserved and no new version is created. Unencrypted sources and
+// DSSE-KMS or SSE-C sources are rejected, as are objects protected by an
+// active Object Lock, matching the S3 contract for this operation.
+func (s *S3Service) updateObjectEncryptionCore(ctx context.Context, objectStore s3store.ObjectStoreInterface, in UpdateObjectEncryptionInput) error {
+	if err := validateKMSKeyArn(in.KMSKeyArn); err != nil {
+		return err
+	}
+
+	encryptedData, obj, err := objectStore.GetEncrypted(ctx, in.Bucket, in.Key, in.VersionID)
+	if err != nil {
+		if errors.Is(err, s3store.ErrObjectNotFound) {
+			return NewNoSuchKeyError(in.Key)
+		}
+		return err
+	}
+
+	if obj.SSEMetadata == nil {
+		return NewInvalidRequestError("The UpdateObjectEncryption operation doesn't support unencrypted source objects. Only source objects encrypted with SSE-S3 or SSE-KMS are supported.")
+	}
+	switch obj.SSEMetadata.EncryptionType {
+	case s3store.SSETypeAES256, s3store.SSETypeKMS:
+	default:
+		return NewInvalidRequestError("The UpdateObjectEncryption operation doesn't support source objects with the encryption type DSSE-KMS or SSE-C. Only source objects encrypted with SSE-S3 or SSE-KMS are supported.")
+	}
+
+	if hold := obj.ObjectLockLegalHold; hold != nil && hold.Status == s3store.ObjectLockLegalHoldOn {
+		return awserrors.NewAWSError("AccessDenied", "The encryption type for the specified object can't be updated because that object is protected by S3 Object Lock. If the object has a governance-mode retention period or a legal hold, you must first remove the Object Lock status on the object before you issue your UpdateObjectEncryption request.", http.StatusForbidden)
+	}
+	if ret := obj.ObjectLockRetention; ret != nil && ret.Mode != "" {
+		if ret.RetainUntilDate == nil || ret.RetainUntilDate.After(time.Now().UTC()) {
+			if ret.Mode == s3store.ObjectLockRetentionModeCompliance {
+				return awserrors.NewAWSError("AccessDenied", "The encryption type for the specified object can't be updated because that object is protected by S3 Object Lock. You can't use the UpdateObjectEncryption operation with objects that have an Object Lock compliance mode retention period applied to them.", http.StatusForbidden)
+			}
+			return awserrors.NewAWSError("AccessDenied", "The encryption type for the specified object can't be updated because that object is protected by S3 Object Lock. If the object has a governance-mode retention period or a legal hold, you must first remove the Object Lock status on the object before you issue your UpdateObjectEncryption request.", http.StatusForbidden)
+		}
+	}
+
+	if s.bus != nil {
+		if invoker := s.bus.KMSInvoker(); invoker != nil && !invoker.KeyExists(ctx, in.KMSKeyArn) {
+			return NewInvalidRequestError("Requests that modify an object's encryption type to SSE-KMS require a valid Amazon Web Services KMS key Amazon Resource Name (ARN). Confirm that you have a correctly formatted KMS key ARN in your request, and then try again.")
+		}
+	}
+
+	plainData, _, err := s.decryptObjectData(encryptedData, obj.SSEMetadata, in.Bucket, in.Key, "", "")
+	if err != nil {
+		return err
+	}
+
+	encResult, err := s.encryptionManager.EncryptStream(bytes.NewReader(plainData), EncryptionTypeSSE_KMS, nil, in.Bucket, in.Key, in.KMSKeyArn, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = objectStore.UpdateObjectEncryption(ctx, in.Bucket, in.Key, obj.VersionID, encResult.EncryptedData, encResult.SSEMetadata)
+	return err
 }

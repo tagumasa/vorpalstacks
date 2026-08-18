@@ -263,39 +263,12 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 
 // HeadWithVersion retrieves metadata for a specific version of an object.
 func (s *ObjectStore) HeadWithVersion(ctx context.Context, bucket, key, versionId string) (*Object, error) {
-	var pbObj pb.Object
-	var err error
-
-	isVersioned := s.isVersioningEnabled(bucket)
-	effectiveVersionId := versionId
-	if !isVersioned && versionId == "null" {
-		effectiveVersionId = ""
+	pbObj, err := s.resolveObjectMetaPB(bucket, key, versionId)
+	if err != nil {
+		return nil, err
 	}
 
-	if effectiveVersionId != "" {
-		storageKey := s.versionedStorageKey(bucket, key, effectiveVersionId)
-		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			return nil, ErrObjectNotFound
-		}
-	} else if isVersioned {
-		latestKey := s.latestKeyStorageKey(bucket, key)
-		if err = s.BaseStore.GetProto(latestKey, &pbObj); err != nil {
-			// Fallback: object may predate versioning enablement.
-			nullKey := s.versionedStorageKey(bucket, key, "null")
-			if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
-				return nil, ErrObjectNotFound
-			}
-		}
-	} else {
-		if err = s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
-			return nil, ErrObjectNotFound
-		}
-	}
-
-	obj := ProtoToObject(&pbObj)
-	if obj.IsDeleteMarker {
-		return nil, ErrObjectNotFound
-	}
+	obj := ProtoToObject(pbObj)
 
 	blobVersionId := obj.VersionID
 	if blobVersionId == "null" {

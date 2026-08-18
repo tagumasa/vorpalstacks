@@ -78,6 +78,7 @@ type ObjectStoreInterface interface {
 	PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error)
 	PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error)
 	GetEncrypted(ctx context.Context, bucket, key, versionId string) ([]byte, *Object, error)
+	UpdateObjectEncryption(ctx context.Context, bucket, key, versionId string, encryptedData []byte, sseMetadata *SSEObjectMetadata) (*Object, error)
 	List(bucket, prefix, delimiter, marker string, maxKeys int) (*ObjectListResult, error)
 	ListObjectVersions(bucket, prefix, delimiter, keyMarker, versionIdMarker string, maxKeys int) (*ObjectListResult, error)
 	CountByBucket(bucket string) (int, error)

@@ -10,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
+
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts string, bucketName string) []TestResult {
@@ -141,19 +143,66 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "CreateBucket_DuplicateName", func() error {
+		// The default Region (us-east-1) keeps the S3 legacy behaviour:
+		// re-creating a bucket you already own succeeds with 200 OK and
+		// resets the bucket ACLs instead of returning an error. The test uses
+		// its own bucket so the legacy ACL reset never touches the shared
+		// suite bucket other tests rely on.
+		bucket := s3Bucket(ts, "dup-legacy")
 		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucketName),
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket (initial) failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		resp, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("expected legacy 200 OK for duplicate bucket name in us-east-1, got error: %w", err)
+		}
+		if resp.Location == nil || *resp.Location != "/"+bucket {
+			return fmt.Errorf("expected Location /%s, got %v", bucket, resp.Location)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "CreateBucket_DuplicateName_OtherRegion", func() error {
+		// A client signing against a non-default Region gets the standard
+		// behaviour: re-creating an owned bucket name fails with 409
+		// BucketAlreadyOwnedByYou.
+		westCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   "us-west-2",
+		})
+		if err != nil {
+			return fmt.Errorf("load us-west-2 config: %w", err)
+		}
+		westClient := s3.NewFromConfig(westCfg, func(o *s3.Options) { o.UsePathStyle = true })
+
+		bucket := s3Bucket(ts, "dup-other-region")
+		_, err = westClient.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket (us-west-2) failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, westClient, bucket)
+
+		_, err = westClient.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
 		})
 		if err == nil {
-			return fmt.Errorf("expected error for duplicate bucket name")
+			return fmt.Errorf("expected BucketAlreadyOwnedByYou for duplicate name in us-west-2, got nil")
 		}
 		var apiErr smithy.APIError
 		if !errors.As(err, &apiErr) {
 			return fmt.Errorf("expected API error, got: %T: %v", err, err)
 		}
-		code := apiErr.ErrorCode()
-		if code != "BucketAlreadyOwnedByYou" && code != "BucketAlreadyExists" {
-			return fmt.Errorf("expected BucketAlreadyOwnedByYou or BucketAlreadyExists, got %s: %v", code, err)
+		if apiErr.ErrorCode() != "BucketAlreadyOwnedByYou" {
+			return fmt.Errorf("expected BucketAlreadyOwnedByYou, got %s: %v", apiErr.ErrorCode(), err)
 		}
 		return nil
 	}))

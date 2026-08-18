@@ -182,3 +182,39 @@ func (o *BucketOperations) DeleteBucketPolicy(ctx *request.RequestContext, input
 	}
 	return store.buckets.SetPolicy(input.Bucket, "")
 }
+
+// GetBucketPolicyStatusInput contains the request parameters for the GetBucketPolicyStatus operation.
+type GetBucketPolicyStatusInput struct {
+	Bucket string
+}
+
+// PolicyStatus reports whether the bucket policy grants public access.
+type PolicyStatus struct {
+	IsPublic bool `xml:"IsPublic"`
+}
+
+// GetBucketPolicyStatusOutput contains the result of the GetBucketPolicyStatus operation.
+type GetBucketPolicyStatusOutput struct {
+	PolicyStatus *PolicyStatus
+}
+
+// GetBucketPolicyStatus reports whether the bucket is public. The
+// classification is shared with the BlockPublicPolicy enforcement so the
+// reported status and the rejected policies can never diverge. A bucket
+// without a policy grants nothing and is therefore never public.
+func (o *BucketOperations) GetBucketPolicyStatus(ctx *request.RequestContext, input *GetBucketPolicyStatusInput) (*GetBucketPolicyStatusOutput, error) {
+	store, err := o.svc.store(ctx)
+	if err != nil {
+		return nil, err
+	}
+	bucket, err := store.buckets.Get(input.Bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetBucketPolicyStatusOutput{
+		PolicyStatus: &PolicyStatus{
+			IsPublic: bucket.Policy != "" && policyContainsPublicAccess(bucket.Policy),
+		},
+	}, nil
+}

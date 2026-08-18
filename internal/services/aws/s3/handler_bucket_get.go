@@ -45,6 +45,14 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		result, err := h.bucketOps.GetBucketPolicy(ctx, &GetBucketPolicyInput{Bucket: bucket})
 		return result, http.StatusOK, err
 	}
+	if query.Has("policyStatus") {
+		action := "s3:GetBucketPolicyStatus"
+		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
+			return nil, http.StatusForbidden, err
+		}
+		result, err := h.bucketOps.GetBucketPolicyStatus(ctx, &GetBucketPolicyStatusInput{Bucket: bucket})
+		return result, http.StatusOK, err
+	}
 	if query.Has("cors") {
 		action := "s3:GetBucketCORS"
 		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {

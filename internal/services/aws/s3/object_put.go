@@ -224,7 +224,7 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 		return nil, NewNoSuchKeyError(input.Key)
 	}
 
-	if obj.StorageClass == s3store.StorageClassStandard || obj.StorageClass == "" {
+	if !isArchiveClass(obj.StorageClass) {
 		return nil, ErrObjectAlreadyRestored
 	}
 

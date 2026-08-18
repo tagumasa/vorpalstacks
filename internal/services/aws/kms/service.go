@@ -709,11 +709,31 @@ type kmsBusAdapter struct {
 	*KMSService
 }
 
+// resolveCanonicalKeyID normalises a key identifier (key ID, key ARN, or
+// alias) to the canonical key ID the HSM backend indexes keys by. The store
+// layer performs the same normalisation for direct KMS API calls; the bus
+// adapter must match it because internal callers such as S3 pass whatever
+// identifier the user supplied (SSEKMSKeyId, UpdateObjectEncryption KMSKeyArn).
+// When the key cannot be resolved the original value is returned so the HSM
+// lookup reports the not-found error.
+func (a *kmsBusAdapter) resolveCanonicalKeyID(keyID string) string {
+	stores, err := a.GetStoreForRegion(a.region)
+	if err != nil {
+		return keyID
+	}
+	key, err := stores.keys.Get(keyID)
+	if err != nil {
+		return keyID
+	}
+	return key.KeyID
+}
+
 // GenerateDataKey generates a data key encrypted under the specified KMS key.
 func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*eventbus.KMSDataKeyResult, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
 	}
+	keyID = a.resolveCanonicalKeyID(keyID)
 	// Evaluate grant constraints with the caller's sourceArn so that
 	// SourceArn-constrained grants are honoured for internal calls.
 	if sourceArn != "" {
@@ -736,6 +756,7 @@ func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
 	}
+	keyID = a.resolveCanonicalKeyID(keyID)
 	if sourceArn != "" {
 		if !a.grantAllowsSourceArn(keyID, sourceArn) {
 			return nil, ErrAccessDenied
@@ -787,7 +808,7 @@ func (a *kmsBusAdapter) KeyExists(ctx context.Context, keyID string) bool {
 	if a.hsmBackend == nil {
 		return false
 	}
-	return a.hsmBackend.KeyExists(keyID)
+	return a.hsmBackend.KeyExists(a.resolveCanonicalKeyID(keyID))
 }
 
 // KMSBusInvoker returns an eventbus.KMSInvoker backed by this service.

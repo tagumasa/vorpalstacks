@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 34 AWS services are implemented with 2,865 passing SDK tests, 47 cross-service integration tests, and 17 WebSocket tests (2,929 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While all supported AWS services (list in [docs/services.md](docs/services.md)) are implemented, with 2,940 passing SDK tests, 49 cross-service integration tests, and 17 WebSocket tests (3,006 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -24,7 +24,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 > **What this is not**: A fully faithful reproduction of every AWS behaviour. Some edge cases, undocumented behaviours, and advanced features may differ from AWS. See [docs/services.md](docs/services.md) for the current scope of each service.
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **Thirty-three AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, AppSync, Step Functions, WAFv2, Kinesis, KMS, Neptune, Neptune Graph, IoT Core, and more
+- **Broad AWS Service Coverage**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, AppSync, Step Functions, WAFv2, Kinesis, KMS, Neptune, Neptune Graph, IoT Core, and more — full list in [docs/services.md](docs/services.md)
 - **IAM Authorization**: Full IAM policy evaluation with user/group/role-based access control
 - **DynamoDB PartiQL**: SQL-like queries with WHERE functions (attribute_exists, begins_with, contains, size)
 - **S3 SelectObjectContent**: SQL queries on CSV/JSON objects with event streaming
@@ -234,9 +234,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Performance
 
-Vorpalstacks implements all 34 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
+Vorpalstacks implements all supported services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (2,865 SDK + 47 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (2,940 SDK + 49 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 

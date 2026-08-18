@@ -120,6 +120,43 @@ func (s *ObjectStore) isVersioningEnabled(bucket string) bool {
 	return enabled
 }
 
+// resolveObjectMetaPB loads the protobuf record for a bucket/key/versionId
+// request using the shared version-resolution rules: an explicit version ID
+// reads that version's record; an implicit request on a versioned bucket
+// reads the latest pointer and falls back to the pre-versioning null-version
+// record when the pointer is absent; a non-versioned bucket reads the
+// null-version record directly. Delete markers surface as ErrObjectNotFound.
+func (s *ObjectStore) resolveObjectMetaPB(bucket, key, versionId string) (*pb.Object, error) {
+	isVersioned := s.isVersioningEnabled(bucket)
+	effectiveVersionId := versionId
+	if !isVersioned && versionId == "null" {
+		effectiveVersionId = ""
+	}
+
+	var pbObj pb.Object
+	if effectiveVersionId != "" {
+		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, effectiveVersionId), &pbObj); err != nil {
+			return nil, ErrObjectNotFound
+		}
+	} else if isVersioned {
+		if err := s.BaseStore.GetProto(s.latestKeyStorageKey(bucket, key), &pbObj); err != nil {
+			// Fallback: object may predate versioning enablement, in which
+			// case only the null-version record exists.
+			if err2 := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err2 != nil {
+				return nil, ErrObjectNotFound
+			}
+		}
+	} else {
+		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
+			return nil, ErrObjectNotFound
+		}
+	}
+	if pbObj.IsDeleteMarker {
+		return nil, ErrObjectNotFound
+	}
+	return &pbObj, nil
+}
+
 func (s *ObjectStore) multipartKey(uploadId string) string {
 	return uploadId
 }

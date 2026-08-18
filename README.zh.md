@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 34 个 AWS 服务，Go SDK 测试 2,865 项、跨服务集成测试 47 项、WebSocket 测试 17 项（合计 2,929 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
+> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现全部受支持的 AWS 服务（列表见[docs/services.md](docs/services.md)），Go SDK 测试 2,940 项、跨服务集成测试 49 项、WebSocket 测试 17 项（合计 3,006 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
 
 轻量级 AWS 兼容边缘与本地云平台。
 
@@ -24,7 +24,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 > **关于本项目的局限**：并非对所有 AWS 行为的完整复刻。某些边界情况、未公开文档的行为和高级功能可能与 AWS 存在差异。各服务的具体支持范围请参阅 [docs/services.md](docs/services.md)。
 
 - **AWS API 兼容**：可直接使用现有 AWS SDK 和 CLI
-- **34 个 AWS 服务**：S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Core 等
+- **广泛的 AWS 服务支持**：S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Core 等（完整列表见[docs/services.md](docs/services.md)）
 - **IAM 授权**：完整的 IAM 策略评估，支持基于用户/组/角色的访问控制
 - **DynamoDB PartiQL**：支持 WHERE 函数（attribute_exists、begins_with、contains、size）的类 SQL 查询
 - **S3 SelectObjectContent**：通过事件流对 CSV/JSON 对象执行 SQL 查询
@@ -234,9 +234,9 @@ DATA_PATH/
 
 ## 性能
 
-Vorpalstacks 将全部 34 个服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
+Vorpalstacks 将全部受支持的服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
 
-这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 2,865 项 + 集成 47 项 + WS 17 项、Python 631 项、TypeScript 2028 项、C# 2019 项），无需容器化开销。
+这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 2,940 项 + 集成 49 项 + WS 17 项、Python 631 项、TypeScript 2028 项、C# 2019 项），无需容器化开销。
 
 ### 基准测试结果（参考值）
 

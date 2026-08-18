@@ -1172,5 +1172,99 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		return nil
 	}))
 
+	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_NoPolicy", func() error {
+		bucket := s3Bucket(ts, "polstat-none")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
+		}
+		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
+			return fmt.Errorf("PolicyStatus or IsPublic is nil")
+		}
+		if *resp.PolicyStatus.IsPublic {
+			return fmt.Errorf("expected IsPublic false for bucket without policy, got true")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_PublicPolicy", func() error {
+		bucket := s3Bucket(ts, "polstat-public")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
+		_, err = client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+			Bucket: aws.String(bucket),
+			Policy: aws.String(policy),
+		})
+		if err != nil {
+			return fmt.Errorf("PutBucketPolicy failed: %w", err)
+		}
+
+		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
+		}
+		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
+			return fmt.Errorf("PolicyStatus or IsPublic is nil")
+		}
+		if !*resp.PolicyStatus.IsPublic {
+			return fmt.Errorf("expected IsPublic true for Principal * policy, got false")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_NonPublicPolicy", func() error {
+		bucket := s3Bucket(ts, "polstat-fixed")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		principalARN := fmt.Sprintf("arn:aws:iam::%s:root", r.accountID)
+		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"` + principalARN + `"},"Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
+		_, err = client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+			Bucket: aws.String(bucket),
+			Policy: aws.String(policy),
+		})
+		if err != nil {
+			return fmt.Errorf("PutBucketPolicy failed: %w", err)
+		}
+
+		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
+		}
+		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
+			return fmt.Errorf("PolicyStatus or IsPublic is nil")
+		}
+		if *resp.PolicyStatus.IsPublic {
+			return fmt.Errorf("expected IsPublic false for fixed-principal policy, got true")
+		}
+		return nil
+	}))
+
 	return results
 }

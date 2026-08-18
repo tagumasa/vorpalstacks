@@ -80,9 +80,15 @@ var (
 	// ErrNoSuchNotification is returned when the notification configuration does not exist.
 	ErrNoSuchNotification = awserrors.NewAWSError("NotificationConfigurationNotFoundError", "The notification configuration does not exist", http.StatusNotFound)
 	// ErrInvalidObjectState is returned when the operation is not valid for the object's storage class.
-	ErrInvalidObjectState = awserrors.NewAWSError("InvalidObjectState", "The operation is not valid for the object's storage class", http.StatusConflict)
+	ErrInvalidObjectState = awserrors.NewAWSError("InvalidObjectState", "The action is not valid for the object's storage class", http.StatusForbidden)
 	// ErrObjectAlreadyRestored is returned when the object is already in the active tier.
-	ErrObjectAlreadyRestored = awserrors.NewAWSError("ObjectAlreadyInActiveTier", "The object is already in the active tier", http.StatusOK)
+	ErrObjectAlreadyRestored = awserrors.NewAWSError("ObjectAlreadyInActiveTierError", "This action is not allowed against this storage tier.", http.StatusForbidden)
+	// ErrObjectNotInActiveTier is returned when a COPY action reads a source object stored in an archive tier.
+	ErrObjectNotInActiveTier = awserrors.NewAWSError("ObjectNotInActiveTierError", "The source object of the COPY action is not in the active tier and is only stored in Amazon S3 Glacier.", http.StatusForbidden)
+	// ErrEncryptionTypeMismatch is returned when a write targets an existing object that was created with a different encryption type.
+	ErrEncryptionTypeMismatch = awserrors.NewAWSError("EncryptionTypeMismatch", "The existing object was created with a different encryption type. Subsequent write requests must include the appropriate encryption parameters in the request or while creating the session.", http.StatusBadRequest)
+	// ErrBucketAlreadyOwnedByYou is returned when re-creating a bucket that this account already owns (outside the North Virginia legacy Region).
+	ErrBucketAlreadyOwnedByYou = awserrors.NewAWSError("BucketAlreadyOwnedByYou", "Your previous request to create the named bucket succeeded and you already own it.", http.StatusConflict)
 	// ErrObjectLockedLegalHold is returned when deletion is blocked by a legal hold.
 	ErrObjectLockedLegalHold = awserrors.NewAWSError("AccessDenied", "Object is locked by legal hold", http.StatusForbidden)
 	// ErrObjectLockedRetention is returned when deletion is blocked by an active retention period.
@@ -112,4 +118,9 @@ func NewInvalidBucketNameError(bucketName string) *awserrors.AWSError {
 // NewInvalidArgumentError creates an InvalidArgument error.
 func NewInvalidArgumentError(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidArgument", message, http.StatusBadRequest)
+}
+
+// NewInvalidRequestError creates an InvalidRequest error.
+func NewInvalidRequestError(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidRequest", message, http.StatusBadRequest)
 }

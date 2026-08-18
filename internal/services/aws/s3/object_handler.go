@@ -126,6 +126,13 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		}
 		return result, header, http.StatusAccepted, nil
 
+	case method == "PUT" && query.Has("encryption"):
+		err := o.UpdateObjectEncryption(ctx, reqCtx, stores, bucket, key, query.Get("versionId"), r.Body)
+		if err != nil {
+			return nil, header, errorStatusCode(err, http.StatusInternalServerError), err
+		}
+		return nil, header, http.StatusOK, nil
+
 	case method == "POST" && query.Has("uploads"):
 		input := &CreateMultipartUploadInput{
 			Bucket:               bucket,
@@ -393,7 +400,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "HEAD":
-		result, err := o.HeadObject(ctx, reqCtx, stores, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId"), SSECustomerKey: r.Header.Get("x-amz-server-side-encryption-customer-key"), SSECustomerKeyMD5: r.Header.Get("x-amz-server-side-encryption-customer-key-MD5")})
+		result, err := o.HeadObject(ctx, reqCtx, stores, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId"), SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"), SSECustomerKey: r.Header.Get("x-amz-server-side-encryption-customer-key"), SSECustomerKeyMD5: r.Header.Get("x-amz-server-side-encryption-customer-key-MD5")})
 		if err != nil {
 			return nil, header, errorStatusCode(err, http.StatusNotFound), err
 		}

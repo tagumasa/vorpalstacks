@@ -2,7 +2,7 @@
 
 [English](README.md) | [中文](README.zh.md)
 
-> **注意：現在ベータ版です。** Vorpalstacksは現在アクティブに開発中です。34のAWSサービスを実装し、2,865件のSDKテスト、47件のサービス間統合テスト、17件のWebSocketテスト（計2,929件、他にPython 631件、TypeScript 2028件、C# 2019件）が通過していますが、すべてのエッジケースとAWSの動作が完全にカバーされているわけではありません。破壊的変更が発生する可能性があります。バグ報告とコントリビューションはもちろん歓迎しています。
+> **注意：現在ベータ版です。** Vorpalstacksは現在アクティブに開発中です。対応するすべてのAWSサービス（一覧は[docs/services.md](docs/services.md)）を実装しており、2,940件のSDKテスト、49件のサービス間統合テスト、17件のWebSocketテスト（計3,006件、他にPython 631件、TypeScript 2028件、C# 2019件）が通過していますが、すべてのエッジケースとAWSの動作が完全にカバーされているわけではありません。破壊的変更が発生する可能性があります。バグ報告とコントリビューションはもちろん歓迎しています。
 
 AWS互換サービスを提供する軽量エッジ・オンプレミスクラウドプラットフォーム。
 
@@ -24,7 +24,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 > **本プロジェクトが提供しないもの**: すべてのAWS動作の完全な再現ではありません。一部のエッジケース、公式ドキュメントにない動作、高度な機能はAWSと異なる場合があります。各サービスの対応範囲については[docs/services.md](docs/services.md)を参照してください。
 
 - **AWS API互換**: 既存のAWS SDKおよびCLIで動作
-- **34のAWSサービス**: S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Coreなど
+- **幅広いAWSサービス対応**: S3、SQS、SNS、Lambda、DynamoDB、API Gateway、AppSync、Step Functions、WAFv2、Kinesis、KMS、Neptune、Neptune Graph、IoT Coreなど（全一覧は[docs/services.md](docs/services.md)）
 - **IAM認可**: ユーザー/グループ/ロールベースのアクセス制御による完全なIAMポリシー評価
 - **DynamoDB PartiQL**: WHERE関数（attribute_exists、begins_with、contains、size）を含むSQLライククエリ
 - **S3 SelectObjectContent**: イベントストリーミングによるCSV/JSONオブジェクトへのSQLクエリ
@@ -233,9 +233,9 @@ Lambda機能を使用する場合：
 
 ## パフォーマンス
 
-Vorpalstacksは全34サービスをPebbleDBをバックエンドとするネイティブGoバイナリとして実装しており、インタプリタ言語や外部プロセス依存のオーバーヘッドを回避しています。
+Vorpalstacksは対応する全サービスをPebbleDBをバックエンドとするネイティブGoバイナリとして実装しており、インタプリタ言語や外部プロセス依存のオーバーヘッドを回避しています。
 
-このアーキテクチャによりコア操作でサブミリ秒のレイテンシを実現し、CI/CDパイプライン内でコンテナ化のオーバーヘッドなしに大量のAPIテスト（Go SDK 2,865件 + 統合 47件 + WS 17件、Python 631件、TypeScript 2028件、C# 2019件）を直接実行可能です。
+このアーキテクチャによりコア操作でサブミリ秒のレイテンシを実現し、CI/CDパイプライン内でコンテナ化のオーバーヘッドなしに大量のAPIテスト（Go SDK 2,940件 + 統合 49件 + WS 17件、Python 631件、TypeScript 2028件、C# 2019件）を直接実行可能です。
 
 ### ベンチマーク結果（参考値）
 

@@ -107,12 +107,13 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 
 // HeadObjectInput contains the input parameters for the HeadObject operation.
 type HeadObjectInput struct {
-	Bucket            string
-	Key               string
-	VersionId         string
-	SSECustomerKey    string
-	SSECustomerKeyMD5 string
-	ReplicationStatus string
+	Bucket               string
+	Key                  string
+	VersionId            string
+	SSECustomerAlgorithm string
+	SSECustomerKey       string
+	SSECustomerKeyMD5    string
+	ReplicationStatus    string
 }
 
 // HeadObjectOutput contains the output from the HeadObject operation.
@@ -173,6 +174,11 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		StorageClass:       string(obj.StorageClass),
 		VersionId:          obj.VersionID,
 		ReplicationStatus:  obj.ReplicationStatus,
+	}
+
+	sseCRequested := sseCustomerRequested(input.SSECustomerAlgorithm, input.SSECustomerKey, input.SSECustomerKeyMD5)
+	if sseCRequested && (obj.SSEMetadata == nil || obj.SSEMetadata.EncryptionType != s3store.SSETypeCustomer) {
+		return nil, NewInvalidRequestError("The encryption parameters are not applicable to this object.")
 	}
 
 	if obj.SSEMetadata != nil {

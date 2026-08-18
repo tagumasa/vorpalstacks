@@ -198,6 +198,8 @@ func determineObjectAction(r *http.Request) string {
 		return "s3:CreateMultipartUpload"
 	case method == "POST" && query.Has("restore"):
 		return "s3:RestoreObject"
+	case method == "PUT" && query.Has("encryption"):
+		return "s3:UpdateObjectEncryption"
 	case method == "PUT" && r.Header.Get("x-amz-copy-source") != "" && !query.Has("uploadId"):
 		return "s3:PutObject"
 	case method == "GET":

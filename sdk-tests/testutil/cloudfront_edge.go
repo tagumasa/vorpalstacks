@@ -85,8 +85,8 @@ func cfEdgeTests(tc *cfTestContext) []TestResult {
 	results = append(results, tc.runner.RunTest("cloudfront", "CreatePublicKey_MissingCallerReference_Rejected", func() error {
 		_, err := client.CreatePublicKey(ctx, &cloudfront.CreatePublicKeyInput{
 			PublicKeyConfig: &types.PublicKeyConfig{
-				Name:           aws.String(tc.uniquePrefix("pk-neg")),
-				EncodedKey:     aws.String("aGVsbG8="),
+				Name:       aws.String(tc.uniquePrefix("pk-neg")),
+				EncodedKey: aws.String("aGVsbG8="),
 				// An empty caller reference passes client-side
 				// validation but must be rejected by the server, which
 				// models the member as required.

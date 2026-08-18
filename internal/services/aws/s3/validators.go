@@ -476,6 +476,19 @@ func validateKMSMasterKeyID(keyID, algorithm string) error {
 	return NewInvalidArgumentError(fmt.Sprintf("invalid KMSMasterKeyID: %s (must be a valid KMS key ID, key ARN, alias name, or alias ARN)", keyID))
 }
 
+// validateKMSKeyArn validates that the value is a full KMS key ARN.
+// UpdateObjectEncryption accepts only the full key ARN; key IDs and aliases
+// that PutObject tolerates are rejected here per the S3 contract.
+func validateKMSKeyArn(arn string) error {
+	if arn == "" {
+		return NewInvalidRequestError("Requests that modify an object's encryption type to SSE-KMS require an Amazon Web Services KMS key Amazon Resource Name (ARN). Modify the request to specify a KMS key ARN, and then try again.")
+	}
+	if kmsKeyArnPattern.MatchString(arn) {
+		return nil
+	}
+	return NewInvalidRequestError("Requests that modify an object's encryption type to SSE-KMS require a valid Amazon Web Services KMS key Amazon Resource Name (ARN). Confirm that you have a correctly formatted KMS key ARN in your request, and then try again.")
+}
+
 // validateGranteeType checks the Grantee type for logging grants.
 func validateGranteeType(t string) error {
 	switch t {
@@ -563,4 +576,12 @@ func validateOwnershipControls(rules []OwnershipControlsRuleInput) error {
 	default:
 		return NewInvalidArgumentError(fmt.Sprintf("invalid ObjectOwnership: %s (must be BucketOwnerEnforced, BucketOwnerPreferred, or ObjectWriter)", rules[0].ObjectOwnership))
 	}
+}
+
+// sseCustomerRequested reports whether a request carries any SSE-C customer
+// header. AWS requires the algorithm, key, and key MD5 as a set, so the
+// presence of any one marks the request as an SSE-C request; incomplete sets
+// are rejected when the customer key is parsed.
+func sseCustomerRequested(algorithm, key, keyMD5 string) bool {
+	return algorithm != "" || key != "" || keyMD5 != ""
 }
