@@ -45,7 +45,7 @@ This document describes the architecture of Vorpalstacks.
 │              gRPC-Web Admin Server (Connect-RPC)                │
 │                 :50090 (configurable)                           │
 │                                                                 │
-│  Admin handlers for all 32 services (admin_handler.go)          │
+│  Admin handlers for all services (admin_handler.go)             │
 │  Runtime config, service status, port mapping                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -168,43 +168,47 @@ Request → Extract Access Key → Gather Policies → Evaluate → Allow/Deny
                                 (inline + attached + group)
 ```
 
-- `ResourceExtractor` maps operations to ARN patterns (14+ services)
-- `ActionMapper` maps operations to IAM action names (23+ services)
+- `ResourceExtractor` maps operations to ARN patterns
+- `ActionMapper` maps operations to IAM action names
 - Policy evaluation cache with configurable TTL and size
 
 ## Protocol Support
 
-| Protocol | Content-Type | Services |
-|----------|-------------|----------|
-| AWS JSON 1.1 | `application/x-amz-json-1.1` | IAM, API Gateway, SESv2, Lambda, Cognito, KMS, Athena, WAFv2, EventBridge, CloudTrail, Step Functions, CloudWatch Logs, Route53, SecretsManager, ACM, CloudWatch, Scheduler, SSM, STS, Timestream, Kinesis |
-| AWS JSON 1.0 | `application/x-amz-json-1.0` | DynamoDB |
-| REST-XML | XML over HTTP | S3, CloudFront |
-| AWS Query | `application/x-www-form-urlencoded` | SQS |
-| Connect-RPC | `application/connect+proto` | All 32 services (admin API on :50090) |
+| Protocol | Content-Type |
+|----------|-------------|
+| AWS JSON 1.1 | `application/x-amz-json-1.1` |
+| AWS JSON 1.0 | `application/x-amz-json-1.0` |
+| REST-XML | XML over HTTP |
+| AWS Query | `application/x-www-form-urlencoded` |
+| CBOR | `application/cbor` |
+| Connect-RPC | `application/connect+proto` |
+
+Protocol is auto-detected by `Content-Type` header in the classifier (`internal/server/http/classifier/`).
 
 ## Service Integration Patterns
 
 ### Event-Driven
 
 ```
-EventBridge ──event──▶ Lambda
+EventBridge ──event──▶ Lambda, SQS, SNS, Kinesis
+      │                Step Functions, CloudWatch Logs
+      │                AppSync, API Destinations (HTTP)
       │
-      ├── SNS ──notification──▶ Lambda
-      │        │
-      │        └── SQS ◀──message── Lambda
+      ├── SNS ──notification──▶ Lambda, SQS, HTTP(S)
       │
-      ├── SQS (direct)
-      ├── Step Functions
-      └── CloudWatch Logs
+      ├── SQS ◀──message── Lambda (async, DLQ)
+      │
+      └── Lambda ESM ◀──poll── SQS, Kinesis, DynamoDB Streams
 ```
 
 ### Scheduled
 
 ```
-Scheduler ──schedule──▶ Lambda
+Scheduler ──schedule──▶ Lambda, SQS, SNS
+      │                Kinesis, Step Functions
+      │                EventBridge, CloudWatch Logs
       │
-      ├── SQS
-      └── SNS
+      └── DLQ: SQS, SNS
 ```
 
 ### API Gateway Runtime
@@ -214,7 +218,31 @@ HTTP Request ──▶ API Gateway ──▶ Integration
                                        │
                      ┌─────────────────┼─────────────────┐
                      ▼                 ▼                 ▼
-                  Lambda             SQS              SNS
+                  Lambda    DynamoDB, Kinesis    SQS, SNS
+                          Step Functions
+```
+
+### AppSync
+
+```
+GraphQL ──▶ AppSync ──▶ Data Source
+                         │
+           ┌─────────────┼─────────────┐
+           ▼             ▼             ▼
+        Lambda    DynamoDB       Neptune
+                  EventBridge    RDS Data API
+                  HTTP           OpenSearch
+```
+
+### Step Functions
+
+```
+State Machine ──▶ Task State ──▶ Target
+                                 │
+           ┌─────────────────────┼─────────────────────┐
+           ▼                     ▼                     ▼
+        Lambda              SQS, SNS            DynamoDB
+                          EventBridge             Activity
 ```
 
 ### Cross-Cutting

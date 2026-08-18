@@ -54,7 +54,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 | Cognito Identity | Selective | 基本的なアイデンティティプールサポートのみ |
 | DynamoDB | Broad | IONインポート/エクスポート未対応 |
 | EventBridge | Broad | グローバルエンドポイント、パートナーイベントソースなし |
-| IAM | Broad | ポリシーシモュレータ、Organizations統合なし |
+| IAM | Broad | ポリシーシミュレータ、Organizations統合なし。GetHumanReadableSummary は除外（外部LLM依存） |
 | IoT Core | Broad | 272操作（モノ、証明書、ポリシー、ルールエンジン16アクション、ジョブ、シャドウ、デバイス管理）。ファームウェアプロビジョニング実行なし |
 | Kinesis | Full | |
 | KMS | Full | |

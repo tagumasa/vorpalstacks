@@ -14,7 +14,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 ## Key Features
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **32 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, Neptune, NeptuneData, NeptuneGraph, AppSync, and more
+- **Broad AWS Service Coverage**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, Neptune, NeptuneData, NeptuneGraph, AppSync, IoT Core, and more — the full list and current count are in [Services](services.md)
 - **IAM Authorization**: Full policy-based access control
 - **gRPC-Web Admin API**: Connect-RPC admin interface for all services
 - **Lightweight**: Single binary, minimal dependencies
@@ -28,11 +28,9 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Document | Description |
 |----------|-------------|
 | [Architecture](architecture.md) | System architecture, request flow, storage |
-| [Services](services.md) | Implemented AWS services (32 services) |
+| [Services](services.md) | Implemented AWS services |
 | [Configuration](configuration.md) | Environment variables, TLS, gRPC-Web, IAM Auth |
-| [Integration](integration.md) | Service-to-service communication patterns |
 | [Lambda Guide](lambda-guide.md) | Lambda runtime, Docker containers, endpoint injection |
-| [New Service Guide](new-service-guide.md) | Step-by-step guide for adding a new AWS service |
 | [Terraform](terraform.md) | Terraform provider usage guide |
 | [AWS DB Architecture](aws_db_architecture.md) | Storage patterns and key formats |
 | [LocalStack Comparison](localstack_vs_vorpalstacks_report.md) | Technical comparison with LocalStack |
@@ -51,7 +49,3 @@ aws --endpoint-url=http://localhost:50080 sns list-topics
 aws --endpoint-url=http://localhost:50080 sqs list-queues
 aws --endpoint-url=http://localhost:50080 lambda list-functions
 ```
-
-## For Developers
-
-See [plans/](../plans/) for development guidelines, API gap analyses, and implementation guides.

@@ -55,7 +55,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Cognito Identity | Selective | Basic identity pool support |
 | DynamoDB | Broad | ION import/export not supported |
 | EventBridge | Broad | No global endpoints or partner event sources |
-| IAM | Broad | No policy simulator or organisations integration |
+| IAM | Broad | No custom-policy simulator (SimulatePrincipalPolicy and ListPoliciesGrantingServiceAccess implemented) or organisations integration. GetHumanReadableSummary excluded (external LLM dependence) |
 | IoT Core | Broad | 272 operations incl. things, certificates, policies, rules engine (16 action types), jobs, shadows, device management. No firmware provisioning execution |
 | Kinesis | Full | |
 | KMS | Full | |

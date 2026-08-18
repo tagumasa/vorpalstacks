@@ -257,7 +257,7 @@ This hybrid approach provides broad API coverage by falling back to Moto for edg
 
 ### Vorpalstacks: All-Custom Implementation
 
-All 32 service APIs are implemented in Go with no external service binaries or mock library fallbacks. Every operation is backed by Pebble persistent storage. Cross-service integration uses an internal event bus for service-to-service communication (e.g., EventBridge invoking Lambda, SNS triggering Lambda, CloudWatch alarm evaluation).
+All service APIs are implemented in Go with no external service binaries or mock library fallbacks. Every operation is backed by Pebble persistent storage. Cross-service integration uses an internal event bus for service-to-service communication (e.g., EventBridge invoking Lambda, SNS triggering Lambda, CloudWatch alarm evaluation).
 
 This approach provides consistent behaviour across all services and persistent state without external dependencies beyond Docker for Lambda execution. The trade-off is that each service must be implemented from scratch, which limits total service count compared to a hybrid approach.
 

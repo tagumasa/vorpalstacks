@@ -55,7 +55,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 | Cognito Identity | 有限 | 仅支持基本身份池 |
 | DynamoDB | 大部分 | ION 导入/导出未支持 |
 | EventBridge | 较全面 | 不支持全局终端节点或合作伙伴事件源 |
-| IAM | 较全面 | 不支持策略模拟器或 Organizations 集成 |
+| IAM | 较全面 | 不支持策略模拟器或 Organizations 集成。GetHumanReadableSummary 已排除（依赖外部 LLM） |
 | IoT Core | 较全面 | 272 个操作（设备、证书、策略、规则引擎 16 种动作、作业、设备影子、设备管理）。无固件配置执行 |
 | Kinesis | 完整 | |
 | KMS | 完整 | |
