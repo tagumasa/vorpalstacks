@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -64,7 +65,7 @@ type ObjectStoreInterface interface {
 	GetRangeWithVersion(ctx context.Context, bucket, key, versionId string, offset, length int64) (io.ReadCloser, *Object, error)
 	SetACLWithVersion(bucket, key, versionId string, acp *AccessControlPolicy) error
 	GetACLWithVersion(bucket, key, versionId string) (*AccessControlPolicy, error)
-	CreateMultipartUpload(ctx context.Context, bucket, key, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass) (*MultipartUpload, error)
+	CreateMultipartUpload(ctx context.Context, bucket, key, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass, acl *AccessControlPolicy) (*MultipartUpload, error)
 	GetMultipartUpload(uploadId string) (*MultipartUpload, error)
 	UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, plainSize int64, contentNonce, dataKey []byte) (*ObjectPart, error)
 	ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker, maxParts int) ([]ObjectPart, int, bool, error)
@@ -88,10 +89,12 @@ type ObjectStoreInterface interface {
 	SetObjectRetention(ctx context.Context, bucket, key, versionId string, retention *ObjectLockRetention) error
 	GetObjectRetention(ctx context.Context, bucket, key, versionId string) (*ObjectLockRetention, error)
 	GetRange(ctx context.Context, bucket, key string, offset, length int64) (io.ReadCloser, *Object, error)
-	SetTags(bucket, key string, tags []types.Tag) error
+	SetTags(bucket, key, versionId string, tags []types.Tag) error
 	SetACL(bucket, key string, acp *AccessControlPolicy) error
 	GetACL(bucket, key string) (*AccessControlPolicy, error)
 	SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error
+	SetRestoreState(bucket, key, versionId string, expiry *time.Time) error
+	ActiveRestores() ([]RestoreIndexEntry, error)
 	SetReplicationStatus(bucket, key, versionId, status string) error
 }
 

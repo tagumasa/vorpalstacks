@@ -1,6 +1,6 @@
 module vorpalstacks
 
-go 1.25.12
+go 1.25.13
 
 require (
 	connectrpc.com/connect v1.20.0
@@ -18,6 +18,7 @@ require (
 	github.com/miekg/dns v1.1.72
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0
+	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/parquet-go/parquet-go v0.28.0
 	github.com/recolabs/gnata v0.1.2
@@ -85,7 +86,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/minlz v1.0.1-0.20250507153514-87eb42fe8882 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/mochi-mqtt/server/v2 v2.7.9 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/parquet-go/bitpack v1.0.0 // indirect
 	github.com/parquet-go/jsonlite v1.0.0 // indirect

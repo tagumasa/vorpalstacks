@@ -23,6 +23,12 @@ func NewBucketOperations(svc *S3Service) *BucketOperations {
 type CreateBucketInput struct {
 	Bucket                     string
 	ACL                        string
+	GrantFullControl           string
+	GrantRead                  string
+	GrantReadACP               string
+	GrantWrite                 string
+	GrantWriteACP              string
+	ObjectOwnership            string
 	LocationConstraint         string
 	ObjectLockEnabledForBucket bool
 }
@@ -48,6 +54,12 @@ func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *Crea
 		Bucket:                     input.Bucket,
 		Region:                     region,
 		ACL:                        input.ACL,
+		GrantFullControl:           input.GrantFullControl,
+		GrantRead:                  input.GrantRead,
+		GrantReadACP:               input.GrantReadACP,
+		GrantWrite:                 input.GrantWrite,
+		GrantWriteACP:              input.GrantWriteACP,
+		ObjectOwnership:            input.ObjectOwnership,
 		ObjectLockEnabledForBucket: input.ObjectLockEnabledForBucket,
 	})
 	if err != nil {

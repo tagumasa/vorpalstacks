@@ -179,6 +179,19 @@ func buildS3EventRecord(event *eventbus.S3ObjectEvent, configurationId string) [
 		},
 	}
 
+	// The restore completion record carries the glacierEventData extension
+	// with the restored copy's expiry and storage class; the notification
+	// structure documents it as visible only for s3:ObjectRestore:Completed
+	// events.
+	if event.Op == eventbus.S3ObjectRestoreCompleted && event.RestoreExpiry != nil {
+		record["glacierEventData"] = map[string]interface{}{
+			"restoreEventData": map[string]interface{}{
+				"lifecycleRestorationExpiryTime": event.RestoreExpiry.UTC().Format("2006-01-02T15:04:05.000Z"),
+				"lifecycleRestoreStorageClass":   event.RestoreStorageClass,
+			},
+		}
+	}
+
 	data, _ := json.Marshal(map[string]interface{}{
 		"Records": []interface{}{record},
 	})

@@ -22,20 +22,21 @@ func (h *AdminHandler) ListObjectsV2(ctx context.Context, req *connect.Request[p
 	}
 
 	input := pbToListObjectsInput(req.Msg)
+	// The admin console treats an unset (proto zero) MaxKeys as the
+	// 1000-page default; resolve it here because listObjectsCore only
+	// clamps and no longer re-defaults.
+	if input.MaxKeys <= 0 {
+		input.MaxKeys = 1000
+	}
+	if input.MaxKeys > 1000 {
+		input.MaxKeys = 1000
+	}
 	result, err := h.service.listObjectsCore(objectStore, input)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	maxKeys := input.MaxKeys
-	if maxKeys <= 0 {
-		maxKeys = 1000
-	}
-	if maxKeys > 1000 {
-		maxKeys = 1000
-	}
-
-	return connect.NewResponse(listObjectsResultToPb(result, input, maxKeys)), nil
+	return connect.NewResponse(listObjectsResultToPb(result, input, input.MaxKeys)), nil
 }
 
 // HeadObject retrieves metadata for an object without returning the body.

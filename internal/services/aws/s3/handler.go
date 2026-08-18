@@ -123,6 +123,8 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var header http.Header
 
+	event, _ := classifyS3Request(r, bucket, key)
+
 	switch {
 	case query.Has("delete") && bucket != "" && key == "":
 		result, statusCode, err = h.handleDeleteObjects(reqCtx, r, bucket, r.Body)
@@ -135,7 +137,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, nil, err)
+		h.recordAudit(event, reqCtx, r, nil, err)
 		h.writeError(w, err, bucket, key, requestID)
 		return
 	}
@@ -144,7 +146,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header()[k] = v
 	}
 
-	h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, result, nil)
+	h.recordAudit(event, reqCtx, r, result, nil)
 	h.writeResult(w, result, statusCode, requestID)
 }
 

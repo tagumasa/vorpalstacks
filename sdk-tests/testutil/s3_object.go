@@ -417,6 +417,125 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		return nil
 	}))
 
+	// An explicit MaxKeys of zero requests an empty page; the S3 list APIs
+	// document that the returned key count never exceeds the requested
+	// limit, and an empty page is not truncated.
+	results = append(results, r.RunTest("s3", "ListObjectsV2_MaxKeysZero", func() error {
+		resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+			Bucket:  aws.String(bucketName),
+			MaxKeys: aws.Int32(0),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjectsV2 with MaxKeys=0 failed: %w", err)
+		}
+		if resp.KeyCount == nil || *resp.KeyCount != 0 {
+			return fmt.Errorf("expected KeyCount 0, got %v", resp.KeyCount)
+		}
+		if len(resp.Contents) != 0 {
+			return fmt.Errorf("expected no Contents with MaxKeys=0, got %d", len(resp.Contents))
+		}
+		if resp.IsTruncated == nil || *resp.IsTruncated {
+			return fmt.Errorf("expected IsTruncated false with MaxKeys=0, got %v", resp.IsTruncated)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "ListObjects_MaxKeysZero", func() error {
+		resp, err := client.ListObjects(ctx, &s3.ListObjectsInput{
+			Bucket:  aws.String(bucketName),
+			MaxKeys: aws.Int32(0),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjects with MaxKeys=0 failed: %w", err)
+		}
+		if len(resp.Contents) != 0 {
+			return fmt.Errorf("expected no Contents with MaxKeys=0, got %d", len(resp.Contents))
+		}
+		if resp.IsTruncated == nil || *resp.IsTruncated {
+			return fmt.Errorf("expected IsTruncated false with MaxKeys=0, got %v", resp.IsTruncated)
+		}
+		if resp.NextMarker != nil && *resp.NextMarker != "" {
+			return fmt.Errorf("expected no NextMarker with MaxKeys=0, got %q", *resp.NextMarker)
+		}
+		return nil
+	}))
+
+	// The ListObjects API reference states that NextMarker "is returned
+	// only if you have the delimiter request parameter specified".
+	results = append(results, r.RunTest("s3", "ListObjects_NextMarkerOnlyWithDelimiter", func() error {
+		v1Bucket := s3Bucket(ts, "v1marker")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(v1Bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, v1Bucket)
+
+		for i := 0; i < 3; i++ {
+			_, err := client.PutObject(ctx, &s3.PutObjectInput{
+				Bucket: aws.String(v1Bucket),
+				Key:    aws.String(fmt.Sprintf("plain-key-%d.txt", i)),
+				Body:   strings.NewReader(fmt.Sprintf("body-%d", i)),
+			})
+			if err != nil {
+				return fmt.Errorf("PutObject %d failed: %w", i, err)
+			}
+		}
+
+		noDelimiter, err := client.ListObjects(ctx, &s3.ListObjectsInput{
+			Bucket:  aws.String(v1Bucket),
+			MaxKeys: aws.Int32(2),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjects without delimiter failed: %w", err)
+		}
+		if noDelimiter.IsTruncated == nil || !*noDelimiter.IsTruncated {
+			return fmt.Errorf("expected truncated response, got %v", noDelimiter.IsTruncated)
+		}
+		if noDelimiter.NextMarker != nil && *noDelimiter.NextMarker != "" {
+			return fmt.Errorf("expected no NextMarker without delimiter, got %q", *noDelimiter.NextMarker)
+		}
+
+		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(v1Bucket),
+			Key:    aws.String("folder/nested.txt"),
+			Body:   strings.NewReader("nested"),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject nested failed: %w", err)
+		}
+
+		withDelimiter, err := client.ListObjects(ctx, &s3.ListObjectsInput{
+			Bucket:    aws.String(v1Bucket),
+			Delimiter: aws.String("/"),
+			MaxKeys:   aws.Int32(1),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjects with delimiter failed: %w", err)
+		}
+		if withDelimiter.IsTruncated == nil || !*withDelimiter.IsTruncated {
+			return fmt.Errorf("expected truncated response with delimiter, got %v", withDelimiter.IsTruncated)
+		}
+		if withDelimiter.NextMarker == nil || *withDelimiter.NextMarker == "" {
+			return fmt.Errorf("expected NextMarker with delimiter on truncated response")
+		}
+
+		// A basic V1 roundtrip also covers the pre-V2 list path end to end:
+		// three plain keys plus the nested key, which is only rolled up
+		// into a common prefix when a delimiter is requested.
+		all, err := client.ListObjects(ctx, &s3.ListObjectsInput{
+			Bucket: aws.String(v1Bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjects full page failed: %w", err)
+		}
+		if len(all.Contents) != 4 {
+			return fmt.Errorf("expected 4 keys in full page, got %d", len(all.Contents))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("s3", "ListObjectVersions", func() error {
 		verBucket := s3Bucket(ts, "versions")
 		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{

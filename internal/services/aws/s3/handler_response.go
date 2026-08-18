@@ -135,7 +135,14 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 			}
 		}
 	case *HeadObjectOutput:
-		w.WriteHeader(statusCode)
+		if v.ContentRange != "" {
+			w.Header().Set("Content-Range", v.ContentRange)
+		}
+		if v.IsPartial {
+			w.WriteHeader(http.StatusPartialContent)
+		} else {
+			w.WriteHeader(statusCode)
+		}
 	case *ListBucketsOutput:
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(statusCode)

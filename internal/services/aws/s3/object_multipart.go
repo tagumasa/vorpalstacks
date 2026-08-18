@@ -93,6 +93,7 @@ type CreateMultipartUploadInput struct {
 	SSECustomerAlgorithm string
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
+	ACLHeaders           aclHeaders
 }
 
 // CreateMultipartUploadOutput contains the result of initiating a multipart upload.
@@ -188,7 +189,12 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 		sc = s3store.StorageClassStandard
 	}
 
-	upload, err := stores.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey, sc)
+	acl, err := o.svc.resolveUploadACL(ctx, stores, input.Bucket, input.ACLHeaders)
+	if err != nil {
+		return nil, err
+	}
+
+	upload, err := stores.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey, sc, acl)
 	if err != nil {
 		return nil, err
 	}
@@ -307,19 +313,23 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 
 // UploadPartCopyInput contains the parameters for uploading a part by copying from an existing object.
 type UploadPartCopyInput struct {
-	Bucket                    string
-	Key                       string
-	UploadId                  string
-	PartNumber                int
-	CopySource                string
-	CopySourceRange           string
-	CopySourceVersionId       string
-	CopySourceSSECustomerAlgo string
-	CopySourceSSECustomerKey  string
-	CopySourceSSECustomerMD5  string
-	SSECustomerAlgorithm      string
-	SSECustomerKey            string
-	SSECustomerKeyMD5         string
+	Bucket                      string
+	Key                         string
+	UploadId                    string
+	PartNumber                  int
+	CopySource                  string
+	CopySourceRange             string
+	CopySourceVersionId         string
+	CopySourceIfMatch           string
+	CopySourceIfNoneMatch       string
+	CopySourceIfModifiedSince   *time.Time
+	CopySourceIfUnmodifiedSince *time.Time
+	CopySourceSSECustomerAlgo   string
+	CopySourceSSECustomerKey    string
+	CopySourceSSECustomerMD5    string
+	SSECustomerAlgorithm        string
+	SSECustomerKey              string
+	SSECustomerKeyMD5           string
 }
 
 // UploadPartCopyOutput contains the result of an UploadPartCopy operation.
@@ -370,6 +380,17 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 	}
 	if err != nil {
 		return nil, ErrInvalidCopySource
+	}
+
+	if err := checkCopySourcePreconditions(srcObj, input.CopySourceIfMatch, input.CopySourceIfNoneMatch, input.CopySourceIfModifiedSince, input.CopySourceIfUnmodifiedSince); err != nil {
+		return nil, err
+	}
+
+	// A part copy reads the source object, so an archived source must have
+	// a restored temporary copy available — the same rule CopyObject
+	// enforces for its copy source.
+	if isArchiveClass(srcObj.StorageClass) && !objectRestored(srcObj, time.Now()) {
+		return nil, ErrObjectNotInActiveTier
 	}
 
 	if input.CopySourceRange == "" && srcObj.Size > maxCopyObjectSize {
@@ -599,9 +620,6 @@ func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.Reques
 	}
 
 	maxParts := input.MaxParts
-	if maxParts <= 0 {
-		maxParts = 1000
-	}
 
 	partNumberMarker := 0
 	if input.PartNumberMarker != "" {
@@ -765,6 +783,15 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
+	// The ACL requested by the CreateMultipartUpload headers is applied to
+	// the completed object.
+	if upload.ACL != nil {
+		obj.ACL = upload.ACL
+		if err := stores.objects.SetACL(input.Bucket, input.Key, upload.ACL); err != nil {
+			return nil, err
+		}
+	}
+
 	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCompleteMultipartUpload)
 
 	output := &CompleteMultipartUploadOutput{
@@ -926,10 +953,6 @@ func (o *ListMultipartUploadsOutput) ToXML() string {
 func (o *ObjectOperations) ListMultipartUploads(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListMultipartUploadsInput) (*ListMultipartUploadsOutput, error) {
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
-	}
-
-	if input.MaxUploads <= 0 {
-		input.MaxUploads = 1000
 	}
 
 	result, err := stores.objects.ListMultipartUploads(input.Bucket, input.Prefix, input.KeyMarker, input.UploadIdMarker, input.MaxUploads)

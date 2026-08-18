@@ -309,6 +309,18 @@ type Object struct {
 	ObjectLockRetention  *ObjectLockRetention `json:"object_lock_retention,omitempty"`
 	SSEMetadata          *SSEObjectMetadata   `json:"sse_metadata,omitempty"`
 	ReplicationStatus    string               `json:"replication_status,omitempty"`
+	Parts                []ObjectPartBoundary `json:"parts,omitempty"`
+	// RestoreExpiry records when the temporary restored copy of an archived
+	// object expires; the object's storage class is unchanged by a restore.
+	RestoreExpiry *time.Time `json:"restore_expiry,omitempty"`
+}
+
+// ObjectPartBoundary records the boundary of one part of a completed
+// multipart-uploaded object so that partNumber reads can serve individual
+// parts.
+type ObjectPartBoundary struct {
+	PartNumber int   `json:"part_number"`
+	Size       int64 `json:"size"`
 }
 
 // SSEObjectMetadata represents the server-side encryption metadata for an S3 object.
@@ -349,6 +361,9 @@ type MultipartUpload struct {
 	KMSKeyID         string             `json:"kms_key_id,omitempty"`
 	CustomerKeyMD5   string             `json:"customer_key_md5,omitempty"`
 	PlaintextDataKey []byte             `json:"plaintext_data_key,omitempty"`
+	// ACL is the object ACL requested by the CreateMultipartUpload headers,
+	// applied to the object when the upload completes.
+	ACL *AccessControlPolicy `json:"acl,omitempty"`
 }
 
 func (u *MultipartUpload) rebuildPartIndex() {

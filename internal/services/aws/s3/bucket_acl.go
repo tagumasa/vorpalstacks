@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"context"
+
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -69,7 +71,66 @@ func (o *BucketOperations) PutBucketAcl(ctx *request.RequestContext, input *PutB
 		}
 	}
 
+	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
+	// update ACLs fail" with AccessControlListNotSupported.
+	if aclsDisabled, _ := o.svc.bucketACLsDisabled(ctx, store, input.Bucket); aclsDisabled {
+		return ErrAccessControlListNotSupported
+	}
+
 	return store.buckets.SetACL(input.Bucket, acp)
+}
+
+// bucketACLsDisabled reports whether the bucket's Object Ownership setting
+// is BucketOwnerEnforced, under which ACLs are disabled and set/update ACL
+// requests fail.
+func (s *S3Service) bucketACLsDisabled(ctx context.Context, store *s3Stores, bucket string) (bool, error) {
+	b, err := store.buckets.Get(bucket)
+	if err != nil {
+		return false, err
+	}
+	return b.OwnershipControls != nil &&
+		len(b.OwnershipControls.Rules) == 1 &&
+		b.OwnershipControls.Rules[0].ObjectOwnership == "BucketOwnerEnforced", nil
+}
+
+// resolveUploadACL validates the ACL request headers of an upload (PutObject,
+// CreateMultipartUpload, CopyObject) and builds the object ACL they express.
+// With ACLs disabled (BucketOwnerEnforced), object ownership "accepts only
+// PUT requests that do not specify an ACL or PUT requests with bucket owner
+// full control ACLs"; anything else fails with 400
+// AccessControlListNotSupported. A nil result means no ACL was requested
+// (or the request is a no-op under disabled ACLs).
+func (s *S3Service) resolveUploadACL(ctx context.Context, store *s3Stores, bucket string, headers aclHeaders) (*s3store.AccessControlPolicy, error) {
+	specified := headers.ACL != "" || headers.GrantFullControl != "" || headers.GrantRead != "" ||
+		headers.GrantReadACP != "" || headers.GrantWrite != "" || headers.GrantWriteACP != ""
+	if !specified {
+		return nil, nil
+	}
+
+	disabled, err := s.bucketACLsDisabled(ctx, store, bucket)
+	if err != nil {
+		return nil, err
+	}
+	if disabled {
+		if headers.ACL != "" && headers.ACL != "private" && headers.ACL != "bucket-owner-full-control" {
+			return nil, ErrAccessControlListNotSupported
+		}
+		if headers.GrantFullControl != "" || headers.GrantRead != "" || headers.GrantReadACP != "" ||
+			headers.GrantWrite != "" || headers.GrantWriteACP != "" {
+			return nil, ErrAccessControlListNotSupported
+		}
+		return nil, nil
+	}
+
+	owner := &s3store.ACLOwner{ID: s.accountID, DisplayName: s.accountID}
+	if headers.ACL != "" {
+		return CannedACLToPolicy(headers.ACL, owner)
+	}
+	grants, err := ParseGrantHeaders(headers.GrantFullControl, headers.GrantRead, headers.GrantReadACP, headers.GrantWrite, headers.GrantWriteACP)
+	if err != nil {
+		return nil, NewInvalidArgumentError(err.Error())
+	}
+	return &s3store.AccessControlPolicy{Owner: owner, Grants: grants}, nil
 }
 
 func acpContainsPublicAccess(acp *s3store.AccessControlPolicy) bool {

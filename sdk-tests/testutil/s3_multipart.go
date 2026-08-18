@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -164,6 +165,92 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		expected := strings.Repeat("\x00", 5*1024*1024) + "part two content"
 		if string(body) != expected {
 			return fmt.Errorf("expected body %q, got %q", expected, string(body))
+		}
+		return nil
+	}))
+
+	// A partNumber read of a multipart-uploaded object serves that part's
+	// bytes as a ranged GET, and reports the part count header.
+	results = append(results, r.RunTest("s3", "GetObject_PartNumber_MultipartObject", func() error {
+		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket:     aws.String(mpuBucket),
+			Key:        aws.String("multipart-obj.txt"),
+			PartNumber: aws.Int32(2),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject partNumber=2 failed: %w", err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("reading body failed: %w", err)
+		}
+		if string(body) != "part two content" {
+			return fmt.Errorf("expected part two content, got %q", string(body))
+		}
+		total := int64(5*1024*1024) + int64(len("part two content"))
+		wantRange := fmt.Sprintf("bytes %d-%d/%d", 5*1024*1024, total-1, total)
+		if resp.ContentRange == nil || *resp.ContentRange != wantRange {
+			return fmt.Errorf("expected ContentRange %q, got %v", wantRange, resp.ContentRange)
+		}
+		if resp.PartsCount == nil || *resp.PartsCount != 2 {
+			return fmt.Errorf("expected PartsCount 2, got %v", resp.PartsCount)
+		}
+
+		_, err = client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket:     aws.String(mpuBucket),
+			Key:        aws.String("multipart-obj.txt"),
+			PartNumber: aws.Int32(99),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for partNumber beyond the part count, got nil")
+		}
+		if code := awsHTTPStatus(err); code != http.StatusRequestedRangeNotSatisfiable {
+			return fmt.Errorf("expected HTTP 416 for unsatisfiable partNumber, got %d: %v", code, err)
+		}
+		return nil
+	}))
+
+	// A plain object acts as a single implicit part: partNumber=1 serves
+	// the whole object and any other part number is unsatisfiable.
+	results = append(results, r.RunTest("s3", "GetObject_PartNumber_PlainObject", func() error {
+		key := "partnumber-plain.txt"
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(mpuBucket),
+			Key:    aws.String(key),
+			Body:   strings.NewReader("plain body"),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+
+		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket:     aws.String(mpuBucket),
+			Key:        aws.String(key),
+			PartNumber: aws.Int32(1),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject partNumber=1 failed: %w", err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("reading body failed: %w", err)
+		}
+		if string(body) != "plain body" {
+			return fmt.Errorf("expected whole body, got %q", string(body))
+		}
+
+		_, err = client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket:     aws.String(mpuBucket),
+			Key:        aws.String(key),
+			PartNumber: aws.Int32(2),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for partNumber=2 on a plain object, got nil")
+		}
+		if code := awsHTTPStatus(err); code != http.StatusRequestedRangeNotSatisfiable {
+			return fmt.Errorf("expected HTTP 416 for partNumber=2 on a plain object, got %d: %v", code, err)
 		}
 		return nil
 	}))

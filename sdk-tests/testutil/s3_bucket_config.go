@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/smithy-go"
 
 	"vorpalstacks-sdk-tests/config"
 )
@@ -1262,6 +1264,298 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if *resp.PolicyStatus.IsPublic {
 			return fmt.Errorf("expected IsPublic false for fixed-principal policy, got true")
+		}
+		return nil
+	}))
+
+	// CreateBucket accepts the x-amz-acl and x-amz-object-ownership request
+	// headers, which seed the bucket's ACL and ownership controls.
+	results = append(results, r.RunTest("s3", "CreateBucket_ACLHeader", func() error {
+		aclBucket := s3Bucket(ts, "create-acl")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(aclBucket),
+			ACL:    types.BucketCannedACLPublicRead,
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket with ACL header failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, aclBucket)
+
+		aclResp, err := client.GetBucketAcl(ctx, &s3.GetBucketAclInput{
+			Bucket: aws.String(aclBucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketAcl failed: %w", err)
+		}
+		foundPublicRead := false
+		for _, grant := range aclResp.Grants {
+			if grant.Grantee == nil || grant.Grantee.URI == nil {
+				continue
+			}
+			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
+				foundPublicRead = true
+			}
+		}
+		if !foundPublicRead {
+			return fmt.Errorf("expected an AllUsers READ grant from the public-read ACL header")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "CreateBucket_ObjectOwnershipHeader", func() error {
+		ownBucket := s3Bucket(ts, "create-own")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(ownBucket),
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerPreferred,
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket with ObjectOwnership header failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, ownBucket)
+
+		ownResp, err := client.GetBucketOwnershipControls(ctx, &s3.GetBucketOwnershipControlsInput{
+			Bucket: aws.String(ownBucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketOwnershipControls failed: %w", err)
+		}
+		if ownResp.OwnershipControls == nil || len(ownResp.OwnershipControls.Rules) != 1 {
+			return fmt.Errorf("expected one ownership rule, got %v", ownResp.OwnershipControls)
+		}
+		if ownResp.OwnershipControls.Rules[0].ObjectOwnership != types.ObjectOwnershipBucketOwnerPreferred {
+			return fmt.Errorf("expected BucketOwnerPreferred ownership, got %s", ownResp.OwnershipControls.Rules[0].ObjectOwnership)
+		}
+		return nil
+	}))
+
+	// With Object Ownership set to BucketOwnerEnforced the bucket "accepts
+	// only PUT requests that do not specify an ACL or PUT requests with
+	// bucket owner full control ACLs"; other ACLs fail with 400
+	// AccessControlListNotSupported, and later set-ACL requests fail too.
+	results = append(results, r.RunTest("s3", "ObjectOwnershipEnforced_RejectsNonOwnerACLs", func() error {
+		enforcedBucket := s3Bucket(ts, "own-enf")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(enforcedBucket),
+			ACL:             types.BucketCannedACLPublicRead,
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for public-read ACL with enforced ownership, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
+			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		}
+		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
+		}
+
+		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(s3Bucket(ts, "own-enf-ok")),
+			ACL:             types.BucketCannedACL("bucket-owner-full-control"),
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket with bucket-owner-full-control under enforced ownership failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, s3Bucket(ts, "own-enf-ok"))
+
+		// After the ownership setting is enforced, set/update ACL requests
+		// fail regardless of the ACL they carry.
+		_, err = client.PutBucketAcl(ctx, &s3.PutBucketAclInput{
+			Bucket: aws.String(s3Bucket(ts, "own-enf-ok")),
+			ACL:    types.BucketCannedACLPublicRead,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for PutBucketAcl on enforced bucket, got nil")
+		}
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
+			return fmt.Errorf("expected AccessControlListNotSupported from PutBucketAcl, got %v", err)
+		}
+
+		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(s3Bucket(ts, "own-enf-ok")),
+			Key:    aws.String("acl-key.txt"),
+			Body:   strings.NewReader("data"),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		_, err = client.PutObjectAcl(ctx, &s3.PutObjectAclInput{
+			Bucket: aws.String(s3Bucket(ts, "own-enf-ok")),
+			Key:    aws.String("acl-key.txt"),
+			ACL:    types.ObjectCannedACLPublicRead,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for PutObjectAcl on enforced bucket, got nil")
+		}
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
+			return fmt.Errorf("expected AccessControlListNotSupported from PutObjectAcl, got %v", err)
+		}
+		return nil
+	}))
+
+	// With ACLs disabled (BucketOwnerEnforced), uploads "with bucket owner
+	// full control ACLs or uploads that don't specify an ACL" are accepted;
+	// uploads specifying any other ACL fail with 400
+	// AccessControlListNotSupported.
+	results = append(results, r.RunTest("s3", "PutObject_ACLHeader_EnforcedBucket", func() error {
+		enforcedBucket := s3Bucket(ts, "up-enf")
+		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(enforcedBucket),
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
+		}); err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, enforcedBucket)
+
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(enforcedBucket),
+			Key:    aws.String("rejected.txt"),
+			Body:   strings.NewReader("data"),
+			ACL:    types.ObjectCannedACLPublicRead,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for public-read upload ACL, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
+			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		}
+		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
+		}
+
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(enforcedBucket),
+			Key:    aws.String("accepted.txt"),
+			Body:   strings.NewReader("data"),
+			ACL:    types.ObjectCannedACLBucketOwnerFullControl,
+		}); err != nil {
+			return fmt.Errorf("PutObject with bucket-owner-full-control under enforced ownership failed: %w", err)
+		}
+		return nil
+	}))
+
+	// With ACLs enabled (ObjectWriter), the x-amz-acl upload header builds
+	// the object's ACL.
+	results = append(results, r.RunTest("s3", "PutObject_ACLHeader_AppliedOnACLsEnabledBucket", func() error {
+		writerBucket := s3Bucket(ts, "up-ow")
+		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(writerBucket),
+			ObjectOwnership: types.ObjectOwnershipObjectWriter,
+		}); err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, writerBucket)
+
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(writerBucket),
+			Key:    aws.String("acl-object.txt"),
+			Body:   strings.NewReader("data"),
+			ACL:    types.ObjectCannedACLPublicRead,
+		}); err != nil {
+			return fmt.Errorf("PutObject with ACL header failed: %w", err)
+		}
+
+		aclResp, err := client.GetObjectAcl(ctx, &s3.GetObjectAclInput{
+			Bucket: aws.String(writerBucket),
+			Key:    aws.String("acl-object.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObjectAcl failed: %w", err)
+		}
+		foundPublicRead := false
+		for _, grant := range aclResp.Grants {
+			if grant.Grantee == nil || grant.Grantee.URI == nil {
+				continue
+			}
+			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
+				foundPublicRead = true
+			}
+		}
+		if !foundPublicRead {
+			return fmt.Errorf("expected an AllUsers READ grant from the public-read upload ACL")
+		}
+		return nil
+	}))
+
+	// CreateMultipartUpload validates the ACL headers of the initiating
+	// request under the same object-ownership rules as PutObject.
+	results = append(results, r.RunTest("s3", "CreateMultipartUpload_ACLHeader_EnforcedBucket", func() error {
+		enforcedBucket := s3Bucket(ts, "mp-enf")
+		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(enforcedBucket),
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
+		}); err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, enforcedBucket)
+
+		_, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+			Bucket: aws.String(enforcedBucket),
+			Key:    aws.String("rejected.bin"),
+			ACL:    types.ObjectCannedACLPublicRead,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for public-read multipart ACL, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
+			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		}
+		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
+		}
+		return nil
+	}))
+
+	// CopyObject carries the ACL headers of a direct upload to the created
+	// copy.
+	results = append(results, r.RunTest("s3", "CopyObject_ACLHeader_AppliedOnACLsEnabledBucket", func() error {
+		writerBucket := s3Bucket(ts, "cp-ow")
+		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(writerBucket),
+			ObjectOwnership: types.ObjectOwnershipObjectWriter,
+		}); err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, writerBucket)
+
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(writerBucket),
+			Key:    aws.String("src.txt"),
+			Body:   strings.NewReader("data"),
+		}); err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if _, err := client.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:     aws.String(writerBucket),
+			Key:        aws.String("dst.txt"),
+			CopySource: aws.String(writerBucket + "/src.txt"),
+			ACL:        types.ObjectCannedACLPublicRead,
+		}); err != nil {
+			return fmt.Errorf("CopyObject with ACL header failed: %w", err)
+		}
+
+		aclResp, err := client.GetObjectAcl(ctx, &s3.GetObjectAclInput{
+			Bucket: aws.String(writerBucket),
+			Key:    aws.String("dst.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObjectAcl failed: %w", err)
+		}
+		foundPublicRead := false
+		for _, grant := range aclResp.Grants {
+			if grant.Grantee == nil || grant.Grantee.URI == nil {
+				continue
+			}
+			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
+				foundPublicRead = true
+			}
+		}
+		if !foundPublicRead {
+			return fmt.Errorf("expected an AllUsers READ grant on the copy from the public-read ACL")
 		}
 		return nil
 	}))

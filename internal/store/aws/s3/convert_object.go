@@ -56,6 +56,8 @@ func ObjectToProto(o *Object) *pb.Object {
 		ObjectLockRetention:  objectLockRetentionToProto(o.ObjectLockRetention),
 		SseMetadata:          sseObjectMetadataToProto(o.SSEMetadata),
 		ReplicationStatus:    o.ReplicationStatus,
+		Parts:                partBoundariesToProto(o.Parts),
+		RestoreExpiry:        timeToProto(o.RestoreExpiry),
 	}
 }
 
@@ -91,7 +93,37 @@ func ProtoToObject(p *pb.Object) *Object {
 		ObjectLockRetention:  protoToObjectLockRetention(p.ObjectLockRetention),
 		SSEMetadata:          protoToSSEObjectMetadata(p.SseMetadata),
 		ReplicationStatus:    p.ReplicationStatus,
+		Parts:                protoToPartBoundaries(p.Parts),
+		RestoreExpiry:        protoToTime(p.RestoreExpiry),
 	}
+}
+
+func partBoundariesToProto(parts []ObjectPartBoundary) []*pb.ObjectPartEntry {
+	if parts == nil {
+		return nil
+	}
+	result := make([]*pb.ObjectPartEntry, len(parts))
+	for i, p := range parts {
+		result[i] = &pb.ObjectPartEntry{
+			PartNumber: int32(p.PartNumber),
+			Size:       p.Size,
+		}
+	}
+	return result
+}
+
+func protoToPartBoundaries(p []*pb.ObjectPartEntry) []ObjectPartBoundary {
+	if p == nil {
+		return nil
+	}
+	result := make([]ObjectPartBoundary, len(p))
+	for i, part := range p {
+		result[i] = ObjectPartBoundary{
+			PartNumber: int(part.PartNumber),
+			Size:       part.Size,
+		}
+	}
+	return result
 }
 
 // MultipartUploadToProto converts an internal MultipartUpload to a protobuf MultipartUpload.
@@ -116,6 +148,7 @@ func MultipartUploadToProto(u *MultipartUpload) *pb.MultipartUpload {
 		KmsKeyId:         u.KMSKeyID,
 		CustomerKeyMd5:   u.CustomerKeyMD5,
 		PlaintextDataKey: u.PlaintextDataKey,
+		Acl:              accessControlPolicyToProto(u.ACL),
 	}
 }
 
@@ -141,6 +174,7 @@ func ProtoToMultipartUpload(p *pb.MultipartUpload) *MultipartUpload {
 		KMSKeyID:         p.KmsKeyId,
 		CustomerKeyMD5:   p.CustomerKeyMd5,
 		PlaintextDataKey: p.PlaintextDataKey,
+		ACL:              protoToAccessControlPolicy(p.Acl),
 	}
 }
 

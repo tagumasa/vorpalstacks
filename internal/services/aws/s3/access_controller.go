@@ -46,6 +46,10 @@ type AccessCheck struct {
 // 3. Bucket Policy explicit Allow → Allow
 // 4. ACL Allow → Allow
 // 5. Default Deny
+//
+// The S3 HTTP plane is mounted ahead of the gRPC dispatcher, so identity
+// policies are not evaluated here: bucket policies and ACLs are the only
+// authorisation inputs on this path.
 func (ac *AccessController) CheckAccess(
 	ctx context.Context,
 	stores *s3Stores,
@@ -53,7 +57,7 @@ func (ac *AccessController) CheckAccess(
 ) error {
 	// Service-level operations (ListAllMyBuckets) and CreateBucket do not
 	// target an existing bucket, so skip the bucket lookup and policy/ACL
-	// evaluation.  IAM policy is evaluated upstream by dispatcher.Authorize.
+	// evaluation.
 	if check.Action == "s3:ListAllMyBuckets" || check.Action == "s3:CreateBucket" {
 		return nil
 	}
@@ -264,8 +268,7 @@ func (ac *AccessController) permissionMatchesAction(perm s3store.Permission, act
 				action == "s3:PutObjectTagging" || action == "s3:DeleteObjectTagging"
 		}
 		return action == "s3:PutObject" || action == "s3:DeleteObject" ||
-			action == "s3:AbortMultipartUpload" || action == "s3:CreateMultipartUpload" ||
-			action == "s3:UploadPart" || action == "s3:CompleteMultipartUpload"
+			action == "s3:AbortMultipartUpload"
 	case s3store.PermissionReadACP:
 		if isObject {
 			return action == "s3:GetObjectAcl"

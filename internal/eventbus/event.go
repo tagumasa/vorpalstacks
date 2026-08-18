@@ -176,6 +176,11 @@ const (
 	S3ObjectCreatedPost                    S3ObjectOp = "ObjectCreated:Post"
 	S3ObjectRemovedDelete                  S3ObjectOp = "ObjectRemoved:Delete"
 	S3ObjectRemovedDeleteMarkerCreated     S3ObjectOp = "ObjectRemoved:DeleteMarkerCreated"
+	S3ObjectTaggingPut                     S3ObjectOp = "ObjectTagging:Put"
+	S3ObjectTaggingDelete                  S3ObjectOp = "ObjectTagging:Delete"
+	S3ObjectRestorePost                    S3ObjectOp = "ObjectRestore:Post"
+	S3ObjectRestoreCompleted               S3ObjectOp = "ObjectRestore:Completed"
+	S3ObjectRestoreDelete                  S3ObjectOp = "ObjectRestore:Delete"
 )
 
 // S3ObjectEvent is published after a successful S3 object operation (PutObject,
@@ -190,6 +195,10 @@ type S3ObjectEvent struct {
 	ETag      string     `json:"etag"`
 	Op        S3ObjectOp `json:"op"`
 	SourceIP  string     `json:"source_ip"`
+	// RestoreExpiry and RestoreStorageClass populate the glacierEventData
+	// extension of the s3:ObjectRestore:Completed notification record.
+	RestoreExpiry       *time.Time `json:"restore_expiry,omitempty"`
+	RestoreStorageClass string     `json:"restore_storage_class,omitempty"`
 }
 
 // EventType returns "s3:ObjectEvent" for this event type.

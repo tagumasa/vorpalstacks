@@ -1,9 +1,11 @@
 package s3
 
 import (
+	"errors"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // Predefined S3 error variables.
@@ -16,6 +18,8 @@ var (
 	ErrBucketNotEmpty = awserrors.NewAWSError("BucketNotEmpty", "The bucket you tried to delete is not empty", http.StatusConflict)
 	// ErrNoSuchKey is returned when the specified key does not exist in the bucket.
 	ErrNoSuchKey = awserrors.NewAWSError("NoSuchKey", "The specified key does not exist.", http.StatusNotFound)
+	// ErrNoSuchVersion is returned when an explicitly requested object version does not exist.
+	ErrNoSuchVersion = awserrors.NewAWSError("NoSuchVersion", "The specified version does not exist.", http.StatusNotFound)
 	// ErrInvalidBucketName is returned when the specified bucket name is not valid.
 	ErrInvalidBucketName = awserrors.NewAWSError("InvalidBucketName", "The specified bucket is not valid.", http.StatusBadRequest)
 	// ErrInvalidRequest is returned when the request is malformed or invalid.
@@ -30,6 +34,10 @@ var (
 	ErrInvalidCopySource = awserrors.NewAWSError("InvalidCopySource", "The copy source is invalid", http.StatusBadRequest)
 	// ErrPreconditionFailed is returned when at least one of the pre-conditions did not hold.
 	ErrPreconditionFailed = awserrors.NewAWSError("PreconditionFailed", "At least one of the pre-conditions you specified did not hold", http.StatusPreconditionFailed)
+	// ErrAccessControlListNotSupported is returned when a request carries an
+	// ACL other than bucket-owner-full-control against a bucket whose Object
+	// Ownership is BucketOwnerEnforced, where ACLs are disabled.
+	ErrAccessControlListNotSupported = awserrors.NewAWSError("AccessControlListNotSupported", "The bucket does not allow ACLs", http.StatusBadRequest)
 	// ErrNotModified is returned when the resource has not been modified.
 	ErrNotModified = awserrors.NewAWSError("NotModified", "The resource was not modified", http.StatusNotModified)
 	// ErrObjectLockNotEnabled is returned when an Object Lock operation is attempted on a bucket without Object Lock enabled.
@@ -81,8 +89,6 @@ var (
 	ErrNoSuchNotification = awserrors.NewAWSError("NotificationConfigurationNotFoundError", "The notification configuration does not exist", http.StatusNotFound)
 	// ErrInvalidObjectState is returned when the operation is not valid for the object's storage class.
 	ErrInvalidObjectState = awserrors.NewAWSError("InvalidObjectState", "The action is not valid for the object's storage class", http.StatusForbidden)
-	// ErrObjectAlreadyRestored is returned when the object is already in the active tier.
-	ErrObjectAlreadyRestored = awserrors.NewAWSError("ObjectAlreadyInActiveTierError", "This action is not allowed against this storage tier.", http.StatusForbidden)
 	// ErrObjectNotInActiveTier is returned when a COPY action reads a source object stored in an archive tier.
 	ErrObjectNotInActiveTier = awserrors.NewAWSError("ObjectNotInActiveTierError", "The source object of the COPY action is not in the active tier and is only stored in Amazon S3 Glacier.", http.StatusForbidden)
 	// ErrEncryptionTypeMismatch is returned when a write targets an existing object that was created with a different encryption type.
@@ -108,6 +114,27 @@ func NewBucketAlreadyExistsError(bucketName string) *awserrors.AWSError {
 // NewNoSuchKeyError creates a NoSuchKey error for the given key.
 func NewNoSuchKeyError(key string) *awserrors.AWSError {
 	return awserrors.NewAWSError("NoSuchKey", "The specified key "+key+" does not exist.", http.StatusNotFound)
+}
+
+// versionLookupError reports a failed object or version lookup the way the
+// object was addressed: NoSuchVersion when an explicit versionId was
+// requested and does not exist, NoSuchKey when the current object was
+// addressed and is missing.
+func versionLookupError(key, versionId string) error {
+	if versionId != "" {
+		return ErrNoSuchVersion
+	}
+	return NewNoSuchKeyError(key)
+}
+
+// mapVersionLookupError translates a store lookup failure the same way:
+// an explicitly requested version that does not exist becomes
+// NoSuchVersion, every other error propagates unchanged.
+func mapVersionLookupError(err error, versionId string) error {
+	if versionId != "" && errors.Is(err, s3store.ErrObjectNotFound) {
+		return ErrNoSuchVersion
+	}
+	return err
 }
 
 // NewInvalidBucketNameError creates an InvalidBucketName error for the given bucket name.

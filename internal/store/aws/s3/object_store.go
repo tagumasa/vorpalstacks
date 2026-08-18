@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
@@ -28,6 +32,13 @@ const (
 	// keySep is the internal delimiter for Pebble storage keys. Using \x00
 	// avoids collisions with S3 object keys, which cannot contain null bytes.
 	keySep = "\x00"
+	// restoreIndexPrefix keys the restore index, which tracks every object
+	// version with an active temporary restored copy so the expiry sweep
+	// scans the index instead of listing all bucket versions. The \x01
+	// marker keeps index keys disjoint from object records, whose keys
+	// start with a bucket name (bucket names cannot contain control or
+	// null bytes).
+	restoreIndexPrefix = "\x01restore" + keySep
 )
 
 var (
@@ -101,6 +112,29 @@ func (s *ObjectStore) versionedStorageKey(bucket, key, versionId string) string 
 
 func (s *ObjectStore) latestKeyStorageKey(bucket, key string) string {
 	return bucket + keySep + key + keySep + "_latest"
+}
+
+// restoreIndexKey builds the restore-index key for one object version. An
+// empty versionId is normalised to "null", matching the object record key.
+func restoreIndexKey(bucket, key, versionId string) string {
+	if versionId == "" {
+		versionId = "null"
+	}
+	return restoreIndexPrefix + bucket + keySep + key + keySep + versionId
+}
+
+// parseRestoreIndexKey decodes a restore-index key into its entry. It
+// reports false for keys that do not carry the index layout.
+func parseRestoreIndexKey(key string) (RestoreIndexEntry, bool) {
+	rest := strings.TrimPrefix(key, restoreIndexPrefix)
+	if len(rest) == len(key) {
+		return RestoreIndexEntry{}, false
+	}
+	parts := strings.SplitN(rest, keySep, 3)
+	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		return RestoreIndexEntry{}, false
+	}
+	return RestoreIndexEntry{Bucket: parts[0], Key: parts[1], VersionID: parts[2]}, true
 }
 
 func (s *ObjectStore) generateVersionId() string {
@@ -325,6 +359,138 @@ func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClas
 
 		return nil
 	})
+}
+
+// RestoreIndexEntry identifies one object version with an active restore,
+// as recorded in the restore index.
+type RestoreIndexEntry struct {
+	Bucket    string
+	Key       string
+	VersionID string
+	Expiry    time.Time
+}
+
+// SetRestoreState records the expiry of the temporary restored copy of an
+// archived object; a nil expiry clears the restored state. The object's
+// storage class is never modified: an archived object stays in its archive
+// class while restored, and the expiry alone gates reads of the copy. The
+// restore index is written and cleared alongside the object record — in a
+// single atomic batch — so the expiry sweep only ever visits objects with
+// an active restore and the record and index can never diverge.
+func (s *ObjectStore) SetRestoreState(bucket, key, versionId string, expiry *time.Time) error {
+	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
+		isVersioned := s.isVersioningEnabled(bucket)
+
+		var storageKey string
+		if versionId != "" {
+			storageKey = s.versionedStorageKey(bucket, key, versionId)
+		} else if isVersioned {
+			storageKey = s.latestKeyStorageKey(bucket, key)
+		} else {
+			storageKey = s.versionedStorageKey(bucket, key, "null")
+		}
+
+		var pbObj pb.Object
+		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+			if isVersioned && versionId == "" {
+				nullKey := s.versionedStorageKey(bucket, key, "null")
+				if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
+					if expiry == nil {
+						// The object record is gone; forget the restore
+						// state entirely instead of failing the sweep.
+						return s.BaseStore.Delete(restoreIndexKey(bucket, key, versionId))
+					}
+					return ErrObjectNotFound
+				}
+				storageKey = nullKey
+			} else {
+				if expiry == nil {
+					return s.BaseStore.Delete(restoreIndexKey(bucket, key, versionId))
+				}
+				return err
+			}
+		}
+
+		if expiry != nil {
+			pbObj.RestoreExpiry = timestamppb.New(*expiry)
+		} else {
+			pbObj.RestoreExpiry = nil
+		}
+		obj := ProtoToObject(&pbObj)
+
+		vid := versionId
+		if vid == "" {
+			vid = obj.VersionID
+		}
+
+		// Buffer every mutation — the addressed record, the restore index
+		// entry, and the shadow copies of the record — and commit them in
+		// one batch so a crash between writes can never leave the object
+		// record and the restore index out of step.
+		batchBucket, ok := s.BaseStore.Bucket().(storage.BatchBucket)
+		if !ok {
+			return fmt.Errorf("s3: storage bucket does not support atomic batches")
+		}
+		batch := batchBucket.NewBatch()
+		defer batch.Close()
+
+		objBytes, err := proto.Marshal(ObjectToProto(obj))
+		if err != nil {
+			return err
+		}
+		if err := batch.Put([]byte(storageKey), objBytes); err != nil {
+			return err
+		}
+
+		indexKey := restoreIndexKey(bucket, key, vid)
+		if expiry != nil {
+			if err := batch.Put([]byte(indexKey), []byte(strconv.FormatInt(expiry.UnixNano(), 10))); err != nil {
+				return err
+			}
+		} else if err := batch.Delete([]byte(indexKey)); err != nil {
+			return err
+		}
+
+		if isVersioned {
+			versionedKey := s.versionedStorageKey(bucket, key, vid)
+			if versionedKey != storageKey {
+				if err := batch.Put([]byte(versionedKey), objBytes); err != nil {
+					return err
+				}
+			}
+			if obj.IsLatest {
+				latestKey := s.latestKeyStorageKey(bucket, key)
+				if latestKey != storageKey {
+					if err := batch.Put([]byte(latestKey), objBytes); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return batch.Commit()
+	})
+}
+
+// ActiveRestores lists every object version with an active restore, in
+// index order. The restore expiry sweep consumes this list instead of
+// listing all versions of every bucket.
+func (s *ObjectStore) ActiveRestores() ([]RestoreIndexEntry, error) {
+	var entries []RestoreIndexEntry
+	err := s.BaseStore.ScanPrefix(restoreIndexPrefix, func(key string, value []byte) error {
+		entry, ok := parseRestoreIndexKey(key)
+		if !ok {
+			return nil
+		}
+		nanos, err := strconv.ParseInt(string(value), 10, 64)
+		if err != nil {
+			return nil
+		}
+		entry.Expiry = time.Unix(0, nanos)
+		entries = append(entries, entry)
+		return nil
+	})
+	return entries, err
 }
 
 // SetReplicationStatus updates the replication status of an object.

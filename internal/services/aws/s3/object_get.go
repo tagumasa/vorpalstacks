@@ -3,7 +3,7 @@ package s3
 import (
 	"context"
 	"encoding/xml"
-
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -25,6 +25,7 @@ type GetObjectInput struct {
 	IfModifiedSince      *time.Time
 	IfUnmodifiedSince    *time.Time
 	Range                string
+	PartNumber           int
 	SSECustomerAlgorithm string
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
@@ -44,6 +45,7 @@ type GetObjectOutput struct {
 	Metadata             map[string]string
 	StorageClass         string
 	VersionId            string
+	Restore              string
 	ContentRange         string
 	IsPartial            bool
 	AcceptRanges         string
@@ -52,6 +54,7 @@ type GetObjectOutput struct {
 	SSECustomerAlgorithm string
 	SSECustomerKeyMD5    string
 	ReplicationStatus    string
+	PartsCount           int32
 }
 
 // GetObject retrieves an object from S3.
@@ -73,6 +76,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		IfModifiedSince:      input.IfModifiedSince,
 		IfUnmodifiedSince:    input.IfUnmodifiedSince,
 		Range:                input.Range,
+		PartNumber:           input.PartNumber,
 		SSECustomerAlgorithm: input.SSECustomerAlgorithm,
 		SSECustomerKey:       input.SSECustomerKey,
 		SSECustomerKeyMD5:    input.SSECustomerKeyMD5,
@@ -94,6 +98,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		Metadata:             coreResult.Metadata,
 		StorageClass:         coreResult.StorageClass,
 		VersionId:            coreResult.VersionID,
+		Restore:              coreResult.Restore,
 		ContentRange:         coreResult.ContentRange,
 		IsPartial:            coreResult.IsPartial,
 		AcceptRanges:         coreResult.AcceptRanges,
@@ -102,6 +107,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		SSECustomerAlgorithm: coreResult.SSECustomerAlgorithm,
 		SSECustomerKeyMD5:    coreResult.SSECustomerKeyMD5,
 		ReplicationStatus:    coreResult.ReplicationStatus,
+		PartsCount:           coreResult.PartsCount,
 	}, nil
 }
 
@@ -110,6 +116,12 @@ type HeadObjectInput struct {
 	Bucket               string
 	Key                  string
 	VersionId            string
+	IfMatch              string
+	IfNoneMatch          string
+	IfModifiedSince      *time.Time
+	IfUnmodifiedSince    *time.Time
+	Range                string
+	PartNumber           int
 	SSECustomerAlgorithm string
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
@@ -129,11 +141,15 @@ type HeadObjectOutput struct {
 	Metadata             map[string]string
 	StorageClass         string
 	VersionId            string
+	Restore              string
 	ServerSideEncryption string
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
 	SSECustomerKeyMD5    string
 	ReplicationStatus    string
+	ContentRange         string
+	IsPartial            bool
+	PartsCount           int32
 }
 
 // HeadObject retrieves metadata for an object without returning the object itself.
@@ -156,6 +172,12 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 	}
 	obj := coreResult.Object
 
+	if input.IfMatch != "" || input.IfNoneMatch != "" || input.IfModifiedSince != nil || input.IfUnmodifiedSince != nil {
+		if err := checkObjectPreconditions(obj, input.IfMatch, input.IfNoneMatch, input.IfModifiedSince, input.IfUnmodifiedSince); err != nil {
+			return nil, err
+		}
+	}
+
 	contentLength := obj.Size
 	if obj.SSEMetadata != nil {
 		contentLength = obj.SSEMetadata.UnencryptedSize
@@ -173,7 +195,63 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		Metadata:           obj.Metadata,
 		StorageClass:       string(obj.StorageClass),
 		VersionId:          obj.VersionID,
+		Restore:            restoreHeaderValue(obj, time.Now()),
 		ReplicationStatus:  obj.ReplicationStatus,
+	}
+
+	// A HEAD Range is resolved against metadata only: the response carries
+	// the Content-Range and partial Content-Length the corresponding GET
+	// would produce, without a body.  A partNumber request is resolved to
+	// the part's window first, with an optional Range evaluated within it.
+	if input.PartNumber > 0 {
+		start, end, count, err := resolvePartRange(obj.Parts, input.PartNumber, contentLength, input.Range)
+		if err != nil {
+			return nil, err
+		}
+		input.Range = fmt.Sprintf("bytes=%d-%d", start, end)
+		output.PartsCount = count
+	}
+	if input.Range != "" {
+		ranges, rangeErr := parseRangeHeader(input.Range)
+		if rangeErr != nil {
+			return nil, rangeErr
+		}
+		firstRange := ranges[0]
+		var offset, length int64
+		totalSize := contentLength
+
+		if firstRange.Start == -1 {
+			length = firstRange.Length
+			offset = totalSize - length
+			if offset < 0 {
+				offset = 0
+				length = totalSize
+			}
+		} else {
+			offset = firstRange.Start
+			if firstRange.Length == -1 {
+				length = totalSize - offset
+				if length < 0 {
+					length = 0
+				}
+			} else {
+				length = firstRange.Length
+			}
+		}
+
+		if offset >= totalSize {
+			return nil, ErrInvalidRange
+		}
+
+		actualEnd := offset + length - 1
+		if actualEnd >= totalSize {
+			actualEnd = totalSize - 1
+			length = totalSize - offset
+		}
+
+		output.ContentLength = length
+		output.ContentRange = fmt.Sprintf("bytes %d-%d/%d", offset, actualEnd, totalSize)
+		output.IsPartial = true
 	}
 
 	sseCRequested := sseCustomerRequested(input.SSECustomerAlgorithm, input.SSECustomerKey, input.SSECustomerKeyMD5)
@@ -268,7 +346,7 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 
 	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
-		return nil, err
+		return nil, mapVersionLookupError(err, input.VersionId)
 	}
 
 	objectSize := obj.Size

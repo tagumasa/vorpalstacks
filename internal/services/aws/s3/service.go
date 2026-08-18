@@ -186,6 +186,44 @@ func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *reque
 	}
 }
 
+// publishRestoreNotification publishes a restore lifecycle event. The
+// completion event record carries the glacierEventData extension with the
+// restored copy's expiry and storage class, as documented for
+// s3:ObjectRestore:Completed notifications.
+func (s *S3Service) publishRestoreNotification(ctx context.Context, reqCtx *request.RequestContext, bucket, key string, size int64, versionID, etag string, op eventbus.S3ObjectOp, expiry time.Time) {
+	if s.bus == nil {
+		return
+	}
+
+	region := reqCtx.GetRegion()
+
+	evt := &eventbus.S3ObjectEvent{
+		EventBase: eventbus.EventBase{
+			Timestamp: time.Now().UTC(),
+			Source:    "aws:s3",
+			Region:    region,
+			AccountID: s.accountID,
+			Caller: eventbus.CallerContext{
+				ServicePrincipal: "s3.amazonaws.com",
+				AccountID:        s.accountID,
+			},
+		},
+		Bucket:              bucket,
+		Key:                 key,
+		Size:                size,
+		VersionID:           versionID,
+		ETag:                etag,
+		Op:                  op,
+		SourceIP:            reqCtx.SourceIP,
+		RestoreExpiry:       &expiry,
+		RestoreStorageClass: string(s3store.StorageClassStandard),
+	}
+
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Warn("s3: event bus publish failed", logs.String("bucket", bucket), logs.String("key", key), logs.Err(err))
+	}
+}
+
 func (s *S3Service) store(ctx *request.RequestContext) (*s3Stores, error) {
 	region := ctx.GetRegion()
 

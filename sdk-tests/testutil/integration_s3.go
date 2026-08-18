@@ -91,6 +91,59 @@ func (r *TestRunner) runS3NotificationToSQS(ic *integClients, ts string) TestRes
 	})
 }
 
+// runS3TaggingNotificationToSQS pins the s3:ObjectTagging:Put notification
+// event: a queue subscribed to the tagging event receives the event record
+// when PutObjectTagging succeeds.
+func (r *TestRunner) runS3TaggingNotificationToSQS(ic *integClients, ts string) TestResult {
+	bucketName := fmt.Sprintf("integ-s3-tagq-%s", strings.ToLower(ts))
+	queueName := fmt.Sprintf("integ-s3-tagq-q-%s", ts)
+
+	queueURL, err := ic.createQueue(queueName)
+	if err != nil {
+		return r.RunTest(integSvc, "S3_ObjectTagging_Notification_SQS", func() error { return fmt.Errorf("create queue: %w", err) })
+	}
+	defer ic.deleteQueue(queueURL)
+
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
+
+	err = ic.createBucket(bucketName)
+	if err != nil {
+		return r.RunTest(integSvc, "S3_ObjectTagging_Notification_SQS", func() error { return fmt.Errorf("create bucket: %w", err) })
+	}
+	defer ic.deleteBucket(bucketName)
+
+	_, err = ic.s3.PutBucketNotificationConfiguration(ic.ctx, &s3.PutBucketNotificationConfigurationInput{
+		Bucket: aws.String(bucketName),
+		NotificationConfiguration: &s3types.NotificationConfiguration{
+			QueueConfigurations: []s3types.QueueConfiguration{
+				{
+					QueueArn: aws.String(queueARN),
+					Events:   []s3types.Event{s3types.EventS3ObjectTaggingPut},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "S3_ObjectTagging_Notification_SQS", func() error { return fmt.Errorf("put notification config: %w", err) })
+	}
+
+	ic.putObject(bucketName, "tagged-key.txt", []byte("tagged-data"))
+	_, err = ic.s3.PutObjectTagging(ic.ctx, &s3.PutObjectTaggingInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String("tagged-key.txt"),
+		Tagging: &s3types.Tagging{
+			TagSet: []s3types.Tag{{Key: aws.String("env"), Value: aws.String("integ")}},
+		},
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "S3_ObjectTagging_Notification_SQS", func() error { return fmt.Errorf("PutObjectTagging failed: %w", err) })
+	}
+
+	return r.pollVerify("S3_ObjectTagging_Notification_SQS", defaultPollTimeout, func() error {
+		return ic.verifyMessageContains(queueURL, "ObjectTagging:Put")
+	})
+}
+
 func (r *TestRunner) runS3NotificationToSNS(ic *integClients, ts string) TestResult {
 	bucketName := fmt.Sprintf("integ-s3-sns-%s", strings.ToLower(ts))
 	topicName := fmt.Sprintf("integ-s3-sns-t-%s", ts)

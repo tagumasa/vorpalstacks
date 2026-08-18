@@ -10,8 +10,13 @@ import (
 
 // List lists objects in a bucket with optional prefix and delimiter.
 func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int) (*ObjectListResult, error) {
-	if maxKeys <= 0 {
-		maxKeys = 1000
+	// Callers resolve the default page size; a limit of zero means an
+	// empty, non-truncated page and only negative values are clamped here.
+	if maxKeys < 0 {
+		maxKeys = 0
+	}
+	if maxKeys == 0 {
+		return &ObjectListResult{}, nil
 	}
 
 	var objects []*Object
@@ -107,8 +112,13 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 
 // ListObjectVersions lists object versions in a bucket.
 func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, versionIdMarker string, maxKeys int) (*ObjectListResult, error) {
-	if maxKeys <= 0 {
-		maxKeys = 1000
+	// Callers resolve the default page size; a limit of zero means an
+	// empty, non-truncated page and only negative values are clamped here.
+	if maxKeys < 0 {
+		maxKeys = 0
+	}
+	if maxKeys == 0 {
+		return &ObjectListResult{}, nil
 	}
 
 	var versions []*Object

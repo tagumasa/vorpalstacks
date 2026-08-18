@@ -37,6 +37,7 @@ type PutObjectInput struct {
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
 	Tagging              string
+	ACLHeaders           aclHeaders
 }
 
 // PutObjectOutput contains the output from the PutObject operation.
@@ -56,6 +57,10 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 	if err := validateStorageClass(input.StorageClass); err != nil {
+		return nil, err
+	}
+	acl, err := o.svc.resolveUploadACL(ctx, stores, input.Bucket, input.ACLHeaders)
+	if err != nil {
 		return nil, err
 	}
 
@@ -79,6 +84,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		SSECustomerKey:       input.SSECustomerKey,
 		SSECustomerKeyMD5:    input.SSECustomerKeyMD5,
 		Tagging:              input.Tagging,
+		ACL:                  acl,
 	})
 	if err != nil {
 		return nil, err
@@ -110,22 +116,27 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 
 // CopyObjectInput contains the input parameters for the CopyObject operation.
 type CopyObjectInput struct {
-	Bucket                    string
-	Key                       string
-	CopySource                string
-	CopySourceVersionId       string
-	MetadataDirective         string
-	ContentType               string
-	Metadata                  map[string]string
-	StorageClass              string
-	ServerSideEncryption      string
-	SSEKMSKeyId               string
-	SSECustomerAlgorithm      string
-	SSECustomerKey            string
-	SSECustomerKeyMD5         string
-	CopySourceSSECustomerAlgo string
-	CopySourceSSECustomerKey  string
-	CopySourceSSECustomerMD5  string
+	Bucket                      string
+	Key                         string
+	CopySource                  string
+	CopySourceVersionId         string
+	CopySourceIfMatch           string
+	CopySourceIfNoneMatch       string
+	CopySourceIfModifiedSince   *time.Time
+	CopySourceIfUnmodifiedSince *time.Time
+	MetadataDirective           string
+	ContentType                 string
+	Metadata                    map[string]string
+	StorageClass                string
+	ServerSideEncryption        string
+	SSEKMSKeyId                 string
+	SSECustomerAlgorithm        string
+	SSECustomerKey              string
+	SSECustomerKeyMD5           string
+	CopySourceSSECustomerAlgo   string
+	CopySourceSSECustomerKey    string
+	CopySourceSSECustomerMD5    string
+	ACLHeaders                  aclHeaders
 }
 
 // CopyObjectOutput contains the output from the CopyObject operation.
@@ -159,23 +170,33 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidCopySource
 	}
 
+	acl, err := o.svc.resolveUploadACL(ctx, stores, input.Bucket, input.ACLHeaders)
+	if err != nil {
+		return nil, err
+	}
+
 	coreResult, err := o.svc.copyObjectStreamCore(ctx, stores.buckets, stores.objects, CopyObjectStreamInput{
-		Bucket:                    input.Bucket,
-		Key:                       input.Key,
-		CopySource:                input.CopySource,
-		CopySourceVersionId:       input.CopySourceVersionId,
-		MetadataDirective:         input.MetadataDirective,
-		ContentType:               input.ContentType,
-		Metadata:                  input.Metadata,
-		StorageClass:              input.StorageClass,
-		ServerSideEncryption:      input.ServerSideEncryption,
-		SSEKMSKeyId:               input.SSEKMSKeyId,
-		SSECustomerAlgorithm:      input.SSECustomerAlgorithm,
-		SSECustomerKey:            input.SSECustomerKey,
-		SSECustomerKeyMD5:         input.SSECustomerKeyMD5,
-		CopySourceSSECustomerAlgo: input.CopySourceSSECustomerAlgo,
-		CopySourceSSECustomerKey:  input.CopySourceSSECustomerKey,
-		CopySourceSSECustomerMD5:  input.CopySourceSSECustomerMD5,
+		Bucket:                      input.Bucket,
+		Key:                         input.Key,
+		CopySource:                  input.CopySource,
+		CopySourceVersionId:         input.CopySourceVersionId,
+		CopySourceIfMatch:           input.CopySourceIfMatch,
+		CopySourceIfNoneMatch:       input.CopySourceIfNoneMatch,
+		CopySourceIfModifiedSince:   input.CopySourceIfModifiedSince,
+		CopySourceIfUnmodifiedSince: input.CopySourceIfUnmodifiedSince,
+		MetadataDirective:           input.MetadataDirective,
+		ContentType:                 input.ContentType,
+		Metadata:                    input.Metadata,
+		StorageClass:                input.StorageClass,
+		ServerSideEncryption:        input.ServerSideEncryption,
+		SSEKMSKeyId:                 input.SSEKMSKeyId,
+		SSECustomerAlgorithm:        input.SSECustomerAlgorithm,
+		SSECustomerKey:              input.SSECustomerKey,
+		SSECustomerKeyMD5:           input.SSECustomerKeyMD5,
+		CopySourceSSECustomerAlgo:   input.CopySourceSSECustomerAlgo,
+		CopySourceSSECustomerKey:    input.CopySourceSSECustomerKey,
+		CopySourceSSECustomerMD5:    input.CopySourceSSECustomerMD5,
+		ACL:                         acl,
 	})
 	if err != nil {
 		return nil, err
@@ -207,10 +228,14 @@ type RestoreRequest struct {
 	Days int `xml:"Days"`
 }
 
-// RestoreObject restores an archived copy of an object back into S3.
-func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *RestoreObjectInput) (interface{}, error) {
+// RestoreObject creates or extends the temporary restored copy of an
+// archived object and reports whether a restored copy already existed (the
+// request then only extended its expiry, which the API answers with 200 OK
+// instead of 202 Accepted). The object's storage class never changes; the
+// restored copy's expiry is rounded up to the following midnight UTC.
+func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *RestoreObjectInput) (bool, error) {
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return nil, err
+		return false, err
 	}
 
 	var obj *s3store.Object
@@ -221,35 +246,43 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 		obj, err = stores.objects.Head(ctx, input.Bucket, input.Key)
 	}
 	if err != nil {
-		return nil, NewNoSuchKeyError(input.Key)
+		return false, versionLookupError(input.Key, input.VersionId)
 	}
 
 	if !isArchiveClass(obj.StorageClass) {
-		return nil, ErrObjectAlreadyRestored
+		return false, ErrInvalidObjectState
 	}
 
 	restoreDays := 1
 	if input.Body != nil {
 		var restoreReq RestoreRequest
 		if err := request.NewSafeXMLDecoder(input.Body).Decode(&restoreReq); err != nil {
-			return nil, NewInvalidArgumentError("invalid RestoreObject request body")
+			return false, NewInvalidArgumentError("invalid RestoreObject request body")
 		}
 		if err := validateRestoreDays(restoreReq.Days); err != nil {
-			return nil, err
+			return false, err
 		}
 		restoreDays = restoreReq.Days
 	}
 
-	if err := stores.objects.SetStorageClass(input.Bucket, input.Key, input.VersionId, s3store.StorageClassStandard); err != nil {
-		return nil, err
+	now := time.Now()
+	alreadyRestored := objectRestored(obj, now)
+	expiry := nextRestoreExpiry(now, restoreDays)
+	if err := stores.objects.SetRestoreState(input.Bucket, input.Key, input.VersionId, &expiry); err != nil {
+		return false, err
 	}
+
+	// The restore completes synchronously in this implementation, so the
+	// initiation and completion notifications are published together.
+	o.svc.publishRestoreNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectRestorePost, expiry)
+	o.svc.publishRestoreNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectRestoreCompleted, expiry)
 
 	logs.Info("s3: object restored",
 		logs.String("bucket", input.Bucket),
 		logs.String("key", input.Key),
 		logs.String("days", fmt.Sprintf("%d", restoreDays)))
 
-	return nil, nil
+	return alreadyRestored, nil
 }
 
 // parseTaggingHeader parses the x-amz-tagging header value (URL-encoded

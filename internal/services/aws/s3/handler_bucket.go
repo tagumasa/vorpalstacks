@@ -39,11 +39,20 @@ func (h *S3Handler) handleServiceRequest(ctx *request.RequestContext, r *http.Re
 }
 
 // handleBucketRequest dispatches bucket-level S3 operations based on HTTP method.
-// Resolves the bucket store once, then delegates to method-specific dispatchers.
+// Resolves the bucket store once, checks the IAM actions required by the
+// classified operation, then delegates to method-specific dispatchers.
 func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Request, bucket string) (interface{}, int, error) {
 	stores, err := h.svc.store(ctx)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
+	}
+
+	if _, actions := classifyBucketRequest(r, bucket); len(actions) > 0 {
+		for _, a := range actions {
+			if err := h.checkAccess(ctx, r, stores, a.Action, a.Bucket, a.Key); err != nil {
+				return nil, http.StatusForbidden, err
+			}
+		}
 	}
 
 	switch r.Method {

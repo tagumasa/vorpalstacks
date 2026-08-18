@@ -9,23 +9,45 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
+// aclHeaders carries the x-amz-acl and x-amz-grant-* request header values
+// shared by PutBucketAcl and CreateBucket.
+type aclHeaders struct {
+	ACL              string
+	GrantFullControl string
+	GrantRead        string
+	GrantReadACP     string
+	GrantWrite       string
+	GrantWriteACP    string
+}
+
+func parseACLHeaders(r *http.Request) aclHeaders {
+	return aclHeaders{
+		ACL:              r.Header.Get("x-amz-acl"),
+		GrantFullControl: r.Header.Get("x-amz-grant-full-control"),
+		GrantRead:        r.Header.Get("x-amz-grant-read"),
+		GrantReadACP:     r.Header.Get("x-amz-grant-read-acp"),
+		GrantWrite:       r.Header.Get("x-amz-grant-write"),
+		GrantWriteACP:    r.Header.Get("x-amz-grant-write-acp"),
+	}
+}
+
 // dispatchPutBucket handles PUT requests targeting a bucket by dispatching
 // to the appropriate sub-resource operation based on the query string.
+// IAM action checks run in handleBucketRequest before dispatch.
 func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Request, bucket string, stores *s3Stores) (interface{}, int, error) {
 	query := r.URL.Query()
 
 	if query.Has("acl") {
-		action := "s3:PutBucketAcl"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
+		headers := parseACLHeaders(r)
+		input := &PutBucketAclInput{
+			Bucket:           bucket,
+			ACL:              headers.ACL,
+			GrantFullControl: headers.GrantFullControl,
+			GrantRead:        headers.GrantRead,
+			GrantReadACP:     headers.GrantReadACP,
+			GrantWrite:       headers.GrantWrite,
+			GrantWriteACP:    headers.GrantWriteACP,
 		}
-		input := &PutBucketAclInput{Bucket: bucket}
-		input.ACL = r.Header.Get("x-amz-acl")
-		input.GrantFullControl = r.Header.Get("x-amz-grant-full-control")
-		input.GrantRead = r.Header.Get("x-amz-grant-read")
-		input.GrantReadACP = r.Header.Get("x-amz-grant-read-acp")
-		input.GrantWrite = r.Header.Get("x-amz-grant-write")
-		input.GrantWriteACP = r.Header.Get("x-amz-grant-write-acp")
 		if input.ACL == "" && input.GrantFullControl == "" && input.GrantRead == "" && input.GrantWrite == "" {
 			var acp s3store.AccessControlPolicy
 			if err := request.NewSafeXMLDecoder(r.Body).Decode(&acp); err == nil {
@@ -36,10 +58,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("versioning") {
-		action := "s3:PutBucketVersioning"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config struct {
 			Status    string `xml:"Status"`
 			MfaDelete string `xml:"MfaDelete"`
@@ -55,10 +73,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("encryption") {
-		action := "s3:PutEncryptionConfiguration"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config ServerSideEncryptionConfiguration
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -70,10 +84,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("policy") {
-		action := "s3:PutBucketPolicy"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return nil, http.StatusBadRequest, err
@@ -85,10 +95,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusNoContent, err
 	}
 	if query.Has("cors") {
-		action := "s3:PutBucketCORS"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config CORSConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -100,10 +106,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("tagging") {
-		action := "s3:PutBucketTagging"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var tagSet struct {
 			Tags []Tag `xml:"TagSet>Tag"`
 		}
@@ -117,10 +119,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("lifecycle") {
-		action := "s3:PutLifecycleConfiguration"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config LifecycleConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -132,10 +130,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("website") {
-		action := "s3:PutBucketWebsite"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config WebsiteConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -147,10 +141,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("object-lock") {
-		action := "s3:PutBucketObjectLockConfiguration"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config ObjectLockConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -162,10 +152,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("notification") {
-		action := "s3:PutBucketNotification"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config NotificationConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -177,10 +163,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("logging") {
-		action := "s3:PutBucketLogging"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var wrapper struct {
 			LoggingEnabled *LoggingConfigurationInput `xml:"LoggingEnabled"`
 		}
@@ -194,10 +176,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("ownershipControls") {
-		action := "s3:PutBucketOwnershipControls"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config OwnershipControlsInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -209,10 +187,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("requestPayment") {
-		action := "s3:PutBucketRequestPayment"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config RequestPaymentConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -224,10 +198,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("accelerate") {
-		action := "s3:PutAccelerateConfiguration"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config AccelerateConfigurationInput
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -239,10 +209,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("publicAccessBlock") {
-		action := "s3:PutBucketPublicAccessBlock"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config PublicAccessBlockConfiguration
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -254,10 +220,6 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusOK, err
 	}
 	if query.Has("replication") {
-		action := "s3:PutReplicationConfiguration"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
-			return nil, http.StatusForbidden, err
-		}
 		var config ReplicationConfigurationXML
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
 			return nil, http.StatusBadRequest, err
@@ -289,12 +251,18 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		createConfig.ObjectLockEnabled = true
 	}
 
-	if err := h.checkAccess(ctx, r, stores, "s3:CreateBucket", bucket, ""); err != nil {
-		return nil, http.StatusForbidden, err
-	}
-
+	// CreateBucket accepts the same ACL headers as PutBucketAcl plus the
+	// x-amz-object-ownership header that seeds the ownership controls.
+	aclHdrs := parseACLHeaders(r)
 	result, err := h.bucketOps.CreateBucket(ctx, &CreateBucketInput{
 		Bucket:                     bucket,
+		ACL:                        aclHdrs.ACL,
+		GrantFullControl:           aclHdrs.GrantFullControl,
+		GrantRead:                  aclHdrs.GrantRead,
+		GrantReadACP:               aclHdrs.GrantReadACP,
+		GrantWrite:                 aclHdrs.GrantWrite,
+		GrantWriteACP:              aclHdrs.GrantWriteACP,
+		ObjectOwnership:            r.Header.Get("x-amz-object-ownership"),
 		LocationConstraint:         createConfig.LocationConstraint,
 		ObjectLockEnabledForBucket: createConfig.ObjectLockEnabled,
 	})

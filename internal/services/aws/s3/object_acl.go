@@ -53,7 +53,7 @@ func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.Req
 
 	acp, err := stores.objects.GetACLWithVersion(bucket, key, versionId)
 	if err != nil {
-		return nil, err
+		return nil, mapVersionLookupError(err, versionId)
 	}
 
 	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
@@ -121,5 +121,14 @@ func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	return stores.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp)
+	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
+	// update ACLs fail" with AccessControlListNotSupported.
+	if aclsDisabled, _ := o.svc.bucketACLsDisabled(ctx, stores, input.Bucket); aclsDisabled {
+		return ErrAccessControlListNotSupported
+	}
+
+	if err := stores.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp); err != nil {
+		return mapVersionLookupError(err, input.VersionId)
+	}
+	return nil
 }

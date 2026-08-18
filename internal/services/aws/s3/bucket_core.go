@@ -37,6 +37,12 @@ type AdminCreateBucketInput struct {
 	Bucket                     string
 	Region                     string
 	ACL                        string
+	GrantFullControl           string
+	GrantRead                  string
+	GrantReadACP               string
+	GrantWrite                 string
+	GrantWriteACP              string
+	ObjectOwnership            string
 	ObjectLockEnabledForBucket bool
 }
 
@@ -131,6 +137,9 @@ type PutObjectStreamInput struct {
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
 	Tagging              string
+	// ACL is the resolved object ACL for the upload; nil leaves the object
+	// without an ACL policy.
+	ACL *s3store.AccessControlPolicy
 }
 
 // PutObjectStreamResult holds the transport-agnostic result of PutObject.
@@ -151,6 +160,7 @@ type GetObjectStreamInput struct {
 	IfModifiedSince      *time.Time
 	IfUnmodifiedSince    *time.Time
 	Range                string
+	PartNumber           int
 	SSECustomerAlgorithm string
 	SSECustomerKey       string
 	SSECustomerKeyMD5    string
@@ -170,6 +180,7 @@ type GetObjectStreamResult struct {
 	Metadata             map[string]string
 	StorageClass         string
 	VersionID            string
+	Restore              string
 	ContentRange         string
 	IsPartial            bool
 	AcceptRanges         string
@@ -180,26 +191,36 @@ type GetObjectStreamResult struct {
 	ReplicationStatus    string
 	SSEMetadata          *s3store.SSEObjectMetadata
 	Tags                 []types.Tag
+	// PartsCount carries x-amz-mp-parts-count for partNumber reads of
+	// multipart-uploaded objects; zero omits the header.
+	PartsCount int32
 }
 
 // CopyObjectStreamInput is the transport-agnostic input for CopyObject.
 type CopyObjectStreamInput struct {
-	Bucket                    string
-	Key                       string
-	CopySource                string
-	CopySourceVersionId       string
-	MetadataDirective         string
-	ContentType               string
-	Metadata                  map[string]string
-	StorageClass              string
-	ServerSideEncryption      string
-	SSEKMSKeyId               string
-	SSECustomerAlgorithm      string
-	SSECustomerKey            string
-	SSECustomerKeyMD5         string
-	CopySourceSSECustomerAlgo string
-	CopySourceSSECustomerKey  string
-	CopySourceSSECustomerMD5  string
+	Bucket                      string
+	Key                         string
+	CopySource                  string
+	CopySourceVersionId         string
+	CopySourceIfMatch           string
+	CopySourceIfNoneMatch       string
+	CopySourceIfModifiedSince   *time.Time
+	CopySourceIfUnmodifiedSince *time.Time
+	MetadataDirective           string
+	ContentType                 string
+	Metadata                    map[string]string
+	StorageClass                string
+	ServerSideEncryption        string
+	SSEKMSKeyId                 string
+	SSECustomerAlgorithm        string
+	SSECustomerKey              string
+	SSECustomerKeyMD5           string
+	CopySourceSSECustomerAlgo   string
+	CopySourceSSECustomerKey    string
+	CopySourceSSECustomerMD5    string
+	// ACL is the resolved object ACL for the copied object; nil leaves the
+	// copy without an ACL policy.
+	ACL *s3store.AccessControlPolicy
 }
 
 // CopyObjectStreamResult holds the transport-agnostic result of CopyObject.
@@ -403,13 +424,42 @@ func (s *S3Service) createBucketCore(bucketStore s3store.BucketStoreInterface, i
 			return nil, err
 		}
 		bucket.ACL = acp
+	} else if in.GrantFullControl != "" || in.GrantRead != "" || in.GrantReadACP != "" || in.GrantWrite != "" || in.GrantWriteACP != "" {
+		grants, err := ParseGrantHeaders(in.GrantFullControl, in.GrantRead, in.GrantReadACP, in.GrantWrite, in.GrantWriteACP)
+		if err != nil {
+			return nil, NewInvalidArgumentError(err.Error())
+		}
+		bucket.ACL = &s3store.AccessControlPolicy{
+			Owner:  &s3store.ACLOwner{ID: s.accountID, DisplayName: s.accountID},
+			Grants: grants,
+		}
+	}
+
+	if in.ObjectOwnership != "" {
+		if err := validateOwnershipControls([]OwnershipControlsRuleInput{{ObjectOwnership: in.ObjectOwnership}}); err != nil {
+			return nil, err
+		}
+		// With ACLs disabled the bucket "accepts only PUT requests that do
+		// not specify an ACL or PUT requests with bucket owner full control
+		// ACLs"; other ACLs fail with 400 AccessControlListNotSupported.
+		if in.ObjectOwnership == "BucketOwnerEnforced" {
+			if in.ACL != "" && in.ACL != "private" && in.ACL != "bucket-owner-full-control" {
+				return nil, ErrAccessControlListNotSupported
+			}
+			if in.GrantFullControl != "" || in.GrantRead != "" || in.GrantReadACP != "" || in.GrantWrite != "" || in.GrantWriteACP != "" {
+				return nil, ErrAccessControlListNotSupported
+			}
+		}
+		bucket.OwnershipControls = &s3store.OwnershipControls{
+			Rules: []s3store.OwnershipControlsRule{{ObjectOwnership: in.ObjectOwnership}},
+		}
 	}
 
 	if in.ObjectLockEnabledForBucket {
 		bucket.ObjectLockEnabled = true
 	}
 
-	if in.ACL != "" || in.ObjectLockEnabledForBucket {
+	if bucket.ACL != nil || bucket.OwnershipControls != nil || in.ObjectLockEnabledForBucket {
 		if err := bucketStore.Put(bucket); err != nil {
 			return nil, err
 		}
@@ -455,11 +505,13 @@ func (s *S3Service) deleteBucketCore(bucketStore s3store.BucketStoreInterface, o
 	return &AdminDeleteBucketResult{}, nil
 }
 
-// listObjectsCore lists objects in a bucket with pagination.
+// listObjectsCore lists objects in a bucket with pagination.  MaxKeys is
+// expected to be resolved by the caller (an absent limit becomes the
+// 1000-page default at the transport edge); here it is only clamped.
 func (s *S3Service) listObjectsCore(objectStore s3store.ObjectStoreInterface, in AdminListObjectsInput) (*AdminListObjectsResult, error) {
 	maxKeys := in.MaxKeys
-	if maxKeys <= 0 {
-		maxKeys = 1000
+	if maxKeys < 0 {
+		maxKeys = 0
 	}
 	if maxKeys > 1000 {
 		maxKeys = 1000
@@ -482,7 +534,7 @@ func (s *S3Service) listObjectsCore(objectStore s3store.ObjectStoreInterface, in
 func (s *S3Service) headObjectCore(ctx context.Context, objectStore s3store.ObjectStoreInterface, in AdminHeadObjectInput) (*AdminHeadObjectResult, error) {
 	obj, err := objectStore.HeadWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
-		return nil, err
+		return nil, mapVersionLookupError(err, in.VersionID)
 	}
 	return &AdminHeadObjectResult{Object: obj}, nil
 }
@@ -525,6 +577,146 @@ func (s *S3Service) getObjectCore(ctx context.Context, objectStore s3store.Objec
 	}, nil
 }
 
+// checkObjectPreconditions evaluates the conditional request headers
+// (If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since) against
+// object metadata following the S3 rules: a failed If-Match or
+// If-Unmodified-Since yields 412 PreconditionFailed, while a matching
+// If-None-Match or an unmodified If-Modified-Since yields 304 NotModified.
+// GET and HEAD share this evaluation.
+func checkObjectPreconditions(obj *s3store.Object, ifMatch, ifNoneMatch string, ifModifiedSince, ifUnmodifiedSince *time.Time) error {
+	if ifMatch != "" {
+		if ifMatch == "*" {
+			// Wildcard: object must exist; the caller resolved the object.
+		} else if strings.Trim(obj.ETag, "\"") != strings.Trim(ifMatch, "\"") {
+			return ErrPreconditionFailed
+		}
+	}
+	if ifNoneMatch != "" {
+		if ifNoneMatch == "*" {
+			return ErrNotModified
+		} else if strings.Trim(obj.ETag, "\"") == strings.Trim(ifNoneMatch, "\"") {
+			return ErrNotModified
+		}
+	}
+	if ifUnmodifiedSince != nil {
+		if obj.LastModified.After(*ifUnmodifiedSince) {
+			return ErrPreconditionFailed
+		}
+	}
+	if ifModifiedSince != nil {
+		if !obj.LastModified.After(*ifModifiedSince) {
+			return ErrNotModified
+		}
+	}
+	return nil
+}
+
+// checkCopySourcePreconditions evaluates the x-amz-copy-source-if-* request
+// headers against the copy source object.  A failed source precondition
+// fails the whole copy with 412 PreconditionFailed: unlike a read, a copy
+// cannot complete meaningfully with a 304 response.
+func checkCopySourcePreconditions(obj *s3store.Object, ifMatch, ifNoneMatch string, ifModifiedSince, ifUnmodifiedSince *time.Time) error {
+	if ifMatch != "" {
+		if ifMatch == "*" {
+			// Wildcard: source object must exist; the caller resolved it.
+		} else if strings.Trim(obj.ETag, "\"") != strings.Trim(ifMatch, "\"") {
+			return ErrPreconditionFailed
+		}
+	}
+	if ifNoneMatch != "" {
+		if ifNoneMatch == "*" || strings.Trim(obj.ETag, "\"") == strings.Trim(ifNoneMatch, "\"") {
+			return ErrPreconditionFailed
+		}
+	}
+	if ifUnmodifiedSince != nil {
+		if obj.LastModified.After(*ifUnmodifiedSince) {
+			return ErrPreconditionFailed
+		}
+	}
+	if ifModifiedSince != nil {
+		if !obj.LastModified.After(*ifModifiedSince) {
+			return ErrPreconditionFailed
+		}
+	}
+	return nil
+}
+
+// resolvePartWindow maps a partNumber read to the part's byte window within
+// the object.  Objects completed without persisted boundaries (plain uploads
+// and multipart objects written before boundaries were kept) are treated as
+// a single implicit part.  An unsatisfiable part number yields the
+// documented 416 InvalidRange error, consistent with the API reference
+// describing partNumber as "effectively performing a 'ranged' GET request".
+func resolvePartWindow(parts []s3store.ObjectPartBoundary, partNumber int, totalSize int64) (start, length int64, partsCount int32, err error) {
+	if len(parts) == 0 {
+		if partNumber == 1 {
+			// A plain object is a single implicit part; the parts-count
+			// header is only documented for multipart-uploaded objects,
+			// so no count is reported.
+			return 0, totalSize, 0, nil
+		}
+		return 0, 0, 0, ErrInvalidRange
+	}
+	var offset int64
+	for _, p := range parts {
+		if p.PartNumber == partNumber {
+			return offset, p.Size, int32(len(parts)), nil
+		}
+		offset += p.Size
+	}
+	return 0, 0, 0, ErrInvalidRange
+}
+
+// resolvePartRange maps a partNumber request to an absolute byte window
+// within the object.  An optional Range header is evaluated within the
+// selected part.  The returned end offset is inclusive.
+func resolvePartRange(parts []s3store.ObjectPartBoundary, partNumber int, totalSize int64, rangeHeader string) (start, end int64, partsCount int32, err error) {
+	partStart, partLength, count, err := resolvePartWindow(parts, partNumber, totalSize)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	start = partStart
+	end = partStart + partLength - 1
+	partsCount = count
+
+	if rangeHeader != "" {
+		ranges, rangeErr := parseRangeHeader(rangeHeader)
+		if rangeErr != nil {
+			return 0, 0, 0, rangeErr
+		}
+		r := ranges[0]
+		var relStart, relLength int64
+		if r.Start == -1 {
+			relLength = r.Length
+			relStart = partLength - relLength
+			if relStart < 0 {
+				relStart = 0
+				relLength = partLength
+			}
+		} else {
+			relStart = r.Start
+			if r.Length == -1 {
+				relLength = partLength - relStart
+			} else {
+				relLength = r.Length
+			}
+			if relLength < 0 {
+				relLength = 0
+			}
+		}
+		if relStart >= partLength && partLength > 0 {
+			return 0, 0, 0, ErrInvalidRange
+		}
+		relEnd := relStart + relLength - 1
+		if relEnd > partLength-1 {
+			relEnd = partLength - 1
+		}
+		start += relStart
+		end = start + (relEnd - relStart)
+	}
+	return start, end, partsCount, nil
+}
+
 // getObjectStreamCore is the streaming variant of getObjectCore. It returns
 // the object body as io.ReadCloser and handles conditional headers, SSE
 // decryption (streaming for chunked encryption, materialise for others),
@@ -534,41 +726,39 @@ func (s *S3Service) getObjectStreamCore(ctx context.Context, objectStore s3store
 	if in.IfMatch != "" || in.IfNoneMatch != "" || in.IfModifiedSince != nil || in.IfUnmodifiedSince != nil {
 		obj, err := objectStore.HeadWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 		if err != nil {
+			return nil, mapVersionLookupError(err, in.VersionID)
+		}
+		if err := checkObjectPreconditions(obj, in.IfMatch, in.IfNoneMatch, in.IfModifiedSince, in.IfUnmodifiedSince); err != nil {
 			return nil, err
 		}
+	}
 
-		if in.IfMatch != "" {
-			if in.IfMatch == "*" {
-				// Wildcard: object must exist. HeadWithVersion succeeded.
-			} else if strings.Trim(obj.ETag, "\"") != strings.Trim(in.IfMatch, "\"") {
-				return nil, ErrPreconditionFailed
-			}
+	partsCount := int32(0)
+	if in.PartNumber > 0 {
+		meta, err := objectStore.HeadWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
+		if err != nil {
+			return nil, mapVersionLookupError(err, in.VersionID)
 		}
-		if in.IfNoneMatch != "" {
-			if in.IfNoneMatch == "*" {
-				return nil, ErrNotModified
-			} else if strings.Trim(obj.ETag, "\"") == strings.Trim(in.IfNoneMatch, "\"") {
-				return nil, ErrNotModified
-			}
+		totalSize := meta.Size
+		if meta.SSEMetadata != nil {
+			totalSize = meta.SSEMetadata.UnencryptedSize
 		}
-		if in.IfUnmodifiedSince != nil {
-			if obj.LastModified.After(*in.IfUnmodifiedSince) {
-				return nil, ErrPreconditionFailed
-			}
+		start, end, count, err := resolvePartRange(meta.Parts, in.PartNumber, totalSize, in.Range)
+		if err != nil {
+			return nil, err
 		}
-		if in.IfModifiedSince != nil {
-			if !obj.LastModified.After(*in.IfModifiedSince) {
-				return nil, ErrNotModified
-			}
-		}
+		partsCount = count
+		// The part selection behaves as a ranged GET of the part's bytes.
+		in.Range = fmt.Sprintf("bytes=%d-%d", start, end)
+		in.PartNumber = 0
 	}
 
 	reader, obj, err := objectStore.GetWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
-		return nil, err
+		return nil, mapVersionLookupError(err, in.VersionID)
 	}
 
-	if isArchiveClass(obj.StorageClass) {
+	if isArchiveClass(obj.StorageClass) && !objectRestored(obj, time.Now()) {
 		reader.Close()
 		return nil, ErrInvalidObjectState
 	}
@@ -592,6 +782,7 @@ func (s *S3Service) getObjectStreamCore(ctx context.Context, objectStore s3store
 		Metadata:           obj.Metadata,
 		StorageClass:       string(obj.StorageClass),
 		VersionID:          obj.VersionID,
+		Restore:            restoreHeaderValue(obj, time.Now()),
 		ReplicationStatus:  obj.ReplicationStatus,
 		SSEMetadata:        obj.SSEMetadata,
 		Tags:               obj.Tags,
@@ -736,6 +927,7 @@ func (s *S3Service) getObjectStreamCore(ctx context.Context, objectStore s3store
 			ContentDisposition:   obj.ContentDisposition,
 			CacheControl:         obj.CacheControl,
 			StorageClass:         string(obj.StorageClass),
+			PartsCount:           partsCount,
 		}, nil
 	}
 
@@ -744,6 +936,7 @@ func (s *S3Service) getObjectStreamCore(ctx context.Context, objectStore s3store
 		result.ContentLength = unencryptedSize
 	}
 
+	result.PartsCount = partsCount
 	return result, nil
 }
 
@@ -936,7 +1129,14 @@ func (s *S3Service) putObjectStreamCore(ctx context.Context, bucketStore s3store
 		parsedTags := parseTaggingHeader(in.Tagging)
 		if len(parsedTags) > 0 {
 			obj.Tags = parsedTags
-			_ = objectStore.SetTags(in.Bucket, in.Key, parsedTags)
+			_ = objectStore.SetTags(in.Bucket, in.Key, "", parsedTags)
+		}
+	}
+
+	if in.ACL != nil {
+		obj.ACL = in.ACL
+		if err := objectStore.SetACL(in.Bucket, in.Key, in.ACL); err != nil {
+			return nil, err
 		}
 	}
 
@@ -1037,6 +1237,38 @@ func isArchiveClass(cls s3store.ObjectStorageClass) bool {
 	return cls == s3store.StorageClassGlacier || cls == s3store.StorageClassDeepArchive
 }
 
+// objectRestored reports whether an archived object currently has a
+// temporary restored copy available for reads. The storage class is
+// unchanged by a restore, so the expiry timestamp alone carries the state.
+func objectRestored(obj *s3store.Object, now time.Time) bool {
+	return obj.RestoreExpiry != nil && now.Before(*obj.RestoreExpiry)
+}
+
+// restoreHeaderValue renders the x-amz-restore response header for an
+// object with an active temporary copy, e.g.
+// ongoing-request="false", expiry-date="Wed, 12 Aug 2020 00:00:00 GMT".
+// It returns the empty string when no restored copy is active.
+func restoreHeaderValue(obj *s3store.Object, now time.Time) string {
+	if !objectRestored(obj, now) {
+		return ""
+	}
+	return fmt.Sprintf(`ongoing-request="false", expiry-date=%q`, obj.RestoreExpiry.UTC().Format(http.TimeFormat))
+}
+
+// nextRestoreExpiry computes when a temporary restored copy expires: the
+// requested number of days is added to the completion time and the result
+// is rounded up to the following midnight UTC, as documented by the
+// restore API (a copy restored at 10:30 for 3 days expires at 00:00 on
+// the day after restore-time + 3 days).
+func nextRestoreExpiry(now time.Time, days int) time.Time {
+	end := now.UTC().AddDate(0, 0, days)
+	midnight := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
+	if end.Equal(midnight) {
+		return midnight
+	}
+	return midnight.AddDate(0, 0, 1)
+}
+
 // copyObjectStreamCore is the streaming variant of copyObjectCore. It handles
 // the full server-side copy logic: source object retrieval (with optional
 // SSE-C decryption), target encryption determination, EncryptStream or
@@ -1069,7 +1301,11 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 		return nil, err
 	}
 
-	if isArchiveClass(srcObj.StorageClass) {
+	if err := checkCopySourcePreconditions(srcObj, in.CopySourceIfMatch, in.CopySourceIfNoneMatch, in.CopySourceIfModifiedSince, in.CopySourceIfUnmodifiedSince); err != nil {
+		return nil, err
+	}
+
+	if isArchiveClass(srcObj.StorageClass) && !objectRestored(srcObj, time.Now()) {
 		return nil, ErrObjectNotInActiveTier
 	}
 
@@ -1194,6 +1430,13 @@ func (s *S3Service) copyObjectStreamCore(ctx context.Context, bucketStore s3stor
 		}
 	}
 
+	if in.ACL != nil {
+		obj.ACL = in.ACL
+		if err := objectStore.SetACL(in.Bucket, in.Key, in.ACL); err != nil {
+			return nil, err
+		}
+	}
+
 	result.Object = obj
 	return result, nil
 }
@@ -1221,7 +1464,7 @@ func (s *S3Service) updateObjectEncryptionCore(ctx context.Context, objectStore 
 	encryptedData, obj, err := objectStore.GetEncrypted(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
 		if errors.Is(err, s3store.ErrObjectNotFound) {
-			return NewNoSuchKeyError(in.Key)
+			return versionLookupError(in.Key, in.VersionID)
 		}
 		return err
 	}

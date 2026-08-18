@@ -19,16 +19,15 @@ func (h *S3Handler) handleObjectRequest(ctx *request.RequestContext, r *http.Req
 	}
 
 	if r.Method == "POST" && r.URL.Query().Has("select") {
-		action := "s3:GetObject"
-		if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
-			return nil, nil, http.StatusForbidden, err
-		}
 		return h.handleSelectObjectContent(ctx, r, bucket, key, stores)
 	}
 
-	action := determineObjectAction(r)
-	if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
-		return nil, nil, http.StatusForbidden, err
+	if _, actions := classifyObjectRequest(r, bucket, key); len(actions) > 0 {
+		for _, a := range actions {
+			if err := h.checkAccess(ctx, r, stores, a.Action, a.Bucket, a.Key); err != nil {
+				return nil, nil, http.StatusForbidden, err
+			}
+		}
 	}
 
 	return h.objectOps.HandleRequest(r.Context(), ctx, stores, r, bucket, key)
@@ -159,58 +158,4 @@ func (h *S3Handler) handleDeleteObjects(ctx *request.RequestContext, r *http.Req
 		return nil, http.StatusBadRequest, err
 	}
 	return result, http.StatusOK, nil
-}
-
-func determineObjectAction(r *http.Request) string {
-	method := r.Method
-	query := r.URL.Query()
-
-	switch {
-	case method == "POST" && query.Has("select"):
-		return "s3:GetObject"
-	case method == "GET" && query.Has("acl"):
-		return "s3:GetObjectAcl"
-	case method == "PUT" && query.Has("acl"):
-		return "s3:PutObjectAcl"
-	case method == "GET" && query.Has("tagging"):
-		return "s3:GetObjectTagging"
-	case method == "PUT" && query.Has("tagging"):
-		return "s3:PutObjectTagging"
-	case method == "DELETE" && query.Has("tagging"):
-		return "s3:DeleteObjectTagging"
-	case method == "GET" && query.Has("legal-hold"):
-		return "s3:GetObjectLegalHold"
-	case method == "PUT" && query.Has("legal-hold"):
-		return "s3:PutObjectLegalHold"
-	case method == "GET" && query.Has("retention"):
-		return "s3:GetObjectRetention"
-	case method == "PUT" && query.Has("retention"):
-		return "s3:PutObjectRetention"
-	case method == "GET" && query.Has("uploadId"):
-		return "s3:ListMultipartUploadParts"
-	case method == "PUT" && query.Has("uploadId"):
-		return "s3:UploadPart"
-	case method == "POST" && query.Has("uploadId"):
-		return "s3:CompleteMultipartUpload"
-	case method == "DELETE" && query.Has("uploadId"):
-		return "s3:AbortMultipartUpload"
-	case method == "POST" && query.Has("uploads"):
-		return "s3:CreateMultipartUpload"
-	case method == "POST" && query.Has("restore"):
-		return "s3:RestoreObject"
-	case method == "PUT" && query.Has("encryption"):
-		return "s3:UpdateObjectEncryption"
-	case method == "PUT" && r.Header.Get("x-amz-copy-source") != "" && !query.Has("uploadId"):
-		return "s3:PutObject"
-	case method == "GET":
-		return "s3:GetObject"
-	case method == "HEAD":
-		return "s3:GetObject"
-	case method == "PUT":
-		return "s3:PutObject"
-	case method == "DELETE":
-		return "s3:DeleteObject"
-	default:
-		return "s3:PutObject"
-	}
 }

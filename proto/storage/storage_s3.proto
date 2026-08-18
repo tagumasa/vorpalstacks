@@ -164,6 +164,21 @@ message Object {
   ObjectLockRetention object_lock_retention = 23;
   SSEObjectMetadata sse_metadata = 24;
   string replication_status = 25;
+  // Part boundaries of a completed multipart upload, kept so that
+  // partNumber reads can serve individual parts; empty for plain objects.
+  repeated ObjectPartEntry parts = 26;
+  // Expiry of the temporary restored copy of an archived object. The
+  // object's storage class never changes: while this timestamp is in the
+  // future the archived data is readable, after it passes the object is
+  // archive-only again.
+  google.protobuf.Timestamp restore_expiry = 27;
+}
+
+// ObjectPartEntry records the boundary of one part of a completed
+// multipart-uploaded object.
+message ObjectPartEntry {
+  int32 part_number = 1;
+  int64 size = 2;
 }
 
 // ObjectPart represents a part in a multipart upload.
@@ -194,6 +209,9 @@ message MultipartUpload {
   string kms_key_id = 13;
   string customer_key_md5 = 14;
   bytes plaintext_data_key = 15;
+  // Object ACL requested by the CreateMultipartUpload headers, applied to
+  // the object when the upload completes.
+  AccessControlPolicy acl = 16;
 }
 
 // DefaultRetention represents the default retention settings for object lock.

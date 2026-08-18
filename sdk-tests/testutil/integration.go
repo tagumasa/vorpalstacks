@@ -461,6 +461,9 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	results = append(results, r.runIntegWithTimeout("S3_Notification_SQS", func() TestResult {
 		return r.runS3NotificationToSQS(ic, ts)
 	}))
+	results = append(results, r.runIntegWithTimeout("S3_ObjectTagging_Notification_SQS", func() TestResult {
+		return r.runS3TaggingNotificationToSQS(ic, ts)
+	}))
 	results = append(results, r.runIntegWithTimeout("S3_Notification_SNS", func() TestResult {
 		return r.runS3NotificationToSNS(ic, ts)
 	}))

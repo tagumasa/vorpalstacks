@@ -74,7 +74,9 @@ func (o *ListObjectsOutput) ToXML() string {
 	result.WriteString(`</MaxKeys><Name>`)
 	result.WriteString(xmlEscape(o.Name))
 	result.WriteString(`</Name>`)
-	if o.NextMarker != "" {
+	// NextMarker is only returned for truncated responses that specified
+	// a delimiter; otherwise clients paginate using the last Key value.
+	if o.NextMarker != "" && o.IsTruncated && o.Delimiter != "" {
 		result.WriteString(`<NextMarker>`)
 		result.WriteString(s3Encode(xmlEscape(o.NextMarker), enc))
 		result.WriteString(`</NextMarker>`)
@@ -118,10 +120,6 @@ func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix, e
 func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectsInput) (*ListObjectsOutput, error) {
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
-	}
-
-	if input.MaxKeys <= 0 {
-		input.MaxKeys = 1000
 	}
 
 	coreResult, err := o.svc.listObjectsCore(stores.objects, AdminListObjectsInput{
@@ -242,10 +240,6 @@ func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.Re
 	marker := input.ContinuationToken
 	if marker == "" {
 		marker = input.StartAfter
-	}
-
-	if input.MaxKeys <= 0 {
-		input.MaxKeys = 1000
 	}
 
 	coreResult, err := o.svc.listObjectsCore(stores.objects, AdminListObjectsInput{
@@ -420,10 +414,6 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectVersionsInput) (*ListObjectVersionsOutput, error) {
 	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
-	}
-
-	if input.MaxKeys <= 0 {
-		input.MaxKeys = 1000
 	}
 
 	result, err := stores.objects.ListObjectVersions(input.Bucket, input.Prefix, input.Delimiter, input.KeyMarker, input.VersionIdMarker, input.MaxKeys)

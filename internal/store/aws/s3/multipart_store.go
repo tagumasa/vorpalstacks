@@ -16,7 +16,7 @@ import (
 )
 
 // CreateMultipartUpload initiates a multipart upload for an object.
-func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key string, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass) (*MultipartUpload, error) {
+func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key string, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass, acl *AccessControlPolicy) (*MultipartUpload, error) {
 	blobMeta := &storage.BlobMetadata{
 		ContentType:   contentType,
 		CustomHeaders: metadata,
@@ -40,6 +40,7 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 		CustomerKeyMD5:   customerKeyMD5,
 		SSEMetadata:      sseMetadata,
 		PlaintextDataKey: plaintextDataKey,
+		ACL:              acl,
 	}
 
 	data, err := proto.Marshal(MultipartUploadToProto(upload))
@@ -129,6 +130,12 @@ func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId stri
 
 // ListParts lists the parts of a multipart upload.
 func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
+	// Callers resolve the default page size; a limit of zero means an
+	// empty, non-truncated page and only negative values are clamped here.
+	if maxParts <= 0 {
+		return nil, 0, false, nil
+	}
+
 	upload, err := s.GetMultipartUpload(uploadId)
 	if err != nil {
 		return nil, 0, false, err
@@ -252,6 +259,15 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 	obj.ETag = blobMeta.ETag
 	obj.LastModified = blobMeta.LastModified
 
+	// Keep the plain-size part boundaries so partNumber reads can resolve
+	// individual parts of the completed object.
+	sortedParts := make([]ObjectPart, len(upload.Parts))
+	copy(sortedParts, upload.Parts)
+	sort.Slice(sortedParts, func(i, j int) bool { return sortedParts[i].PartNumber < sortedParts[j].PartNumber })
+	for _, p := range sortedParts {
+		obj.Parts = append(obj.Parts, ObjectPartBoundary{PartNumber: p.PartNumber, Size: p.Size})
+	}
+
 	if upload.SSEType != "" {
 		var sseMetadata *SSEObjectMetadata
 		if upload.SSEMetadata != nil && upload.SSEMetadata.EncryptedDataKey != nil {
@@ -326,8 +342,13 @@ func (s *ObjectStore) AbortMultipartUpload(ctx context.Context, bucket, key, upl
 
 // ListMultipartUploads lists the in-progress multipart uploads for a bucket.
 func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMarker string, maxUploads int) (*MultipartUploadListResult, error) {
-	if maxUploads <= 0 {
-		maxUploads = 1000
+	// Callers resolve the default page size; a limit of zero means an
+	// empty, non-truncated page and only negative values are clamped here.
+	if maxUploads < 0 {
+		maxUploads = 0
+	}
+	if maxUploads == 0 {
+		return &MultipartUploadListResult{}, nil
 	}
 
 	var uploads []*MultipartUpload

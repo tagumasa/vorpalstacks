@@ -2,12 +2,15 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -86,12 +89,65 @@ func (w *LifecycleWorker) enforceLifecycle() {
 		return
 	}
 
+	// The restored-copy expiry sweep runs regardless of lifecycle
+	// configuration, driven by the restore index.
+	w.expireRestoredCopies()
+
 	for _, bucket := range buckets {
 		if bucket.LifecycleConfiguration == nil || len(bucket.LifecycleConfiguration.Rules) == 0 {
 			continue
 		}
 
 		w.processBucketLifecycle(bucket)
+	}
+}
+
+// expireRestoredCopies clears the restore state of objects whose temporary
+// restored copy has expired and publishes the ObjectRestore:Delete
+// notification. It is driven by the store's restore index, so buckets
+// without active restores cost a single index scan instead of a full
+// version listing. Index entries whose object no longer exists (a deleted
+// version or bucket) are dropped silently.
+func (w *LifecycleWorker) expireRestoredCopies() {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		return
+	}
+
+	objectStore, err := s3store.NewObjectStore(regionStore, w.svc.blobStore, s3store.NewBucketStore(regionStore, w.accountID, w.accountID), w.accountID, w.accountID)
+	if err != nil {
+		return
+	}
+
+	now := time.Now()
+	entries, err := objectStore.ActiveRestores()
+	if err != nil {
+		logs.Warn("s3: restore index scan failed", logs.Err(err))
+		return
+	}
+
+	for _, entry := range entries {
+		if now.Before(entry.Expiry) {
+			continue
+		}
+		obj, err := objectStore.HeadWithVersion(context.Background(), entry.Bucket, entry.Key, entry.VersionID)
+		if err != nil {
+			if errors.Is(err, s3store.ErrObjectNotFound) {
+				// The object version is gone; forget the orphaned entry.
+				if err := objectStore.SetRestoreState(entry.Bucket, entry.Key, entry.VersionID, nil); err != nil {
+					logs.Warn("s3: restore index cleanup failed", logs.String("bucket", entry.Bucket), logs.String("key", entry.Key), logs.Err(err))
+				}
+				continue
+			}
+			logs.Warn("s3: restore expiry head failed", logs.String("bucket", entry.Bucket), logs.String("key", entry.Key), logs.Err(err))
+			continue
+		}
+		if err := objectStore.SetRestoreState(entry.Bucket, entry.Key, entry.VersionID, nil); err != nil {
+			logs.Warn("s3: restore expiry revert failed", logs.String("bucket", entry.Bucket), logs.String("key", entry.Key), logs.Err(err))
+			continue
+		}
+		reqCtx := request.NewRequestContext(context.Background(), w.storageManager, w.accountID, "")
+		w.svc.publishObjectNotification(reqCtx, reqCtx, entry.Bucket, entry.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectRestoreDelete)
 	}
 }
 

@@ -14,6 +14,32 @@ type RangeSpec struct {
 	Length int64
 }
 
+// parseListLimit resolves a list-limit query parameter (max-keys,
+// max-uploads, max-parts) for the S3 list operations.  An omitted parameter
+// yields defaultLimit; an explicit value is returned as-is after clamping,
+// because the list APIs document that the response "might contain fewer
+// keys but will never contain more" and "KeyCount will always be less than
+// or equal to the MaxKeys field" — an explicit zero therefore means an
+// empty page, and a negative value is clamped to zero rather than silently
+// re-defaulted to a full page.
+func parseListLimit(query url.Values, name string, defaultLimit int) (int, error) {
+	raw := query.Get(name)
+	if raw == "" {
+		return defaultLimit, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, NewInvalidArgumentError(fmt.Sprintf("Provided %s not an integer", name))
+	}
+	if n < 0 {
+		n = 0
+	}
+	if n > defaultLimit {
+		n = defaultLimit
+	}
+	return n, nil
+}
+
 func parseRangeHeader(rangeHeader string) (ranges []RangeSpec, err error) {
 	if !strings.HasPrefix(rangeHeader, "bytes=") {
 		return nil, NewInvalidArgumentError("invalid range header: missing bytes= prefix")

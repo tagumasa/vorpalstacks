@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"net/http"
 	"testing"
 
 	"vorpalstacks/internal/common/request"
@@ -350,54 +349,4 @@ func TestAccessController_AclContainsPublicAccess(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDetermineObjectAction(t *testing.T) {
-	tests := []struct {
-		method     string
-		query      map[string]string
-		hasCopySrc bool
-		want       string
-	}{
-		{"GET", nil, false, "s3:GetObject"},
-		{"HEAD", nil, false, "s3:GetObject"},
-		{"PUT", nil, false, "s3:PutObject"},
-		{"DELETE", nil, false, "s3:DeleteObject"},
-		{"GET", map[string]string{"acl": ""}, false, "s3:GetObjectAcl"},
-		{"PUT", map[string]string{"acl": ""}, false, "s3:PutObjectAcl"},
-		{"GET", map[string]string{"tagging": ""}, false, "s3:GetObjectTagging"},
-		{"PUT", map[string]string{"tagging": ""}, false, "s3:PutObjectTagging"},
-		{"DELETE", map[string]string{"tagging": ""}, false, "s3:DeleteObjectTagging"},
-		{"GET", map[string]string{"uploadId": "123"}, false, "s3:ListMultipartUploadParts"},
-		{"PUT", map[string]string{"uploadId": "123"}, false, "s3:UploadPart"},
-		{"POST", map[string]string{"uploadId": "123"}, false, "s3:CompleteMultipartUpload"},
-		{"DELETE", map[string]string{"uploadId": "123"}, false, "s3:AbortMultipartUpload"},
-		{"POST", map[string]string{"uploads": ""}, false, "s3:CreateMultipartUpload"},
-		{"PUT", nil, true, "s3:PutObject"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.method+"_"+tt.want, func(t *testing.T) {
-			req := createMockRequest(tt.method, tt.query, tt.hasCopySrc)
-			got := determineObjectAction(req)
-			if got != tt.want {
-				t.Errorf("determineObjectAction() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func createMockRequest(method string, query map[string]string, hasCopySrc bool) *http.Request {
-	req, _ := http.NewRequest(method, "/bucket/key", nil)
-	if query != nil {
-		q := req.URL.Query()
-		for k, v := range query {
-			q.Set(k, v)
-		}
-		req.URL.RawQuery = q.Encode()
-	}
-	if hasCopySrc {
-		req.Header.Set("x-amz-copy-source", "/source-bucket/source-key")
-	}
-	return req
 }
