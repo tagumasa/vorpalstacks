@@ -23,6 +23,11 @@ func (s *IAMService) CreateServiceSpecificCredential(ctx context.Context, reqCtx
 	if !validateServiceNamespace(serviceName) {
 		return nil, NewInvalidInputError("ServiceName", "must be 1 to 64 characters: alphanumeric or hyphens only")
 	}
+	// Only services that support service-specific credentials accept them;
+	// any other service name fails with NotSupportedService.
+	if !supportedServiceSpecificCredentialService(serviceName) {
+		return nil, ErrNotSupportedService
+	}
 
 	// CredentialAgeDays (Smithy range [1, 36600]). When not specified the
 	// credential does not expire.
@@ -52,6 +57,18 @@ func (s *IAMService) CreateServiceSpecificCredential(ctx context.Context, reqCtx
 	}, nil
 }
 
+// supportedServiceSpecificCredentialServices lists the services that
+// support service-specific credentials: CodeCommit (Git HTTPS credentials)
+// and Amazon Keyspaces (Cassandra credentials).
+var supportedServiceSpecificCredentialServices = map[string]bool{
+	"codecommit.amazonaws.com": true,
+	"cassandra.amazonaws.com":  true,
+}
+
+func supportedServiceSpecificCredentialService(serviceName string) bool {
+	return supportedServiceSpecificCredentialServices[serviceName]
+}
+
 // DeleteServiceSpecificCredential deletes the specified service-specific credential.
 func (s *IAMService) DeleteServiceSpecificCredential(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	credentialId := request.GetStringParam(req.Parameters, "ServiceSpecificCredentialId")
@@ -67,7 +84,12 @@ func (s *IAMService) DeleteServiceSpecificCredential(ctx context.Context, reqCtx
 	if userName != "" && !store.Users().Exists(userName) {
 		return nil, NewNoSuchUserError(userName)
 	}
-	if !store.ServiceSpecificCredentials().Exists(credentialId) {
+	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
+	}
+	// A named user that does not own the credential yields NoSuchEntity.
+	if userName != "" && cred.UserName != userName {
 		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
 	}
 
@@ -145,11 +167,16 @@ func (s *IAMService) ResetServiceSpecificCredential(ctx context.Context, reqCtx 
 	if userName != "" && !store.Users().Exists(userName) {
 		return nil, NewNoSuchUserError(userName)
 	}
-	if !store.ServiceSpecificCredentials().Exists(credentialId) {
+	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
+	}
+	// A named user that does not own the credential yields NoSuchEntity.
+	if userName != "" && cred.UserName != userName {
 		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
 	}
 
-	cred, err := store.ServiceSpecificCredentials().ResetPassword(credentialId)
+	cred, err = store.ServiceSpecificCredentials().ResetPassword(credentialId)
 	if err != nil {
 		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
 	}
@@ -172,12 +199,21 @@ func (s *IAMService) UpdateServiceSpecificCredential(ctx context.Context, reqCtx
 	if status != "Active" && status != "Inactive" {
 		return nil, NewInvalidInputError("Status", "must be Active or Inactive")
 	}
+	userName := request.GetStringParam(req.Parameters, "UserName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.ServiceSpecificCredentials().Exists(credentialId) {
+	if userName != "" && !store.Users().Exists(userName) {
+		return nil, NewNoSuchUserError(userName)
+	}
+	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
+	}
+	// A named user that does not own the credential yields NoSuchEntity.
+	if userName != "" && cred.UserName != userName {
 		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
 	}
 

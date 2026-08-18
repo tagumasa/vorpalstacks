@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"errors"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -12,9 +13,11 @@ import (
 
 // UploadSigningCertificate uploads an X.509 signing certificate to the specified IAM user.
 func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	// UserName is optional: omitting it addresses the certificate to the
+	// authenticated caller.
+	userName, err := resolveUserName(reqCtx, request.GetStringParam(req.Parameters, "UserName"))
+	if err != nil {
+		return nil, err
 	}
 	certificateBody := request.GetStringParam(req.Parameters, "CertificateBody")
 	if certificateBody == "" {
@@ -22,6 +25,11 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 	}
 	if len(certificateBody) > 16384 {
 		return nil, NewInvalidInputError("CertificateBody", "must be 1 to 16384 characters")
+	}
+
+	cert, err := parseCertificate(certificateBody)
+	if err != nil {
+		return nil, ErrMalformedCertificate
 	}
 
 	store, err := s.store(reqCtx)
@@ -32,21 +40,29 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	cert, err := store.SigningCertificates().Upload(userName, certificateBody)
+	created, err := store.SigningCertificates().UploadWithGuards(userName, certificateBody, certificateFingerprint(cert))
 	if err != nil {
+		if errors.Is(err, iamstore.ErrDuplicateSigningCertificate) {
+			return nil, ErrDuplicateCertificate
+		}
+		if errors.Is(err, iamstore.ErrSigningCertificateLimitExceeded) {
+			return nil, ErrLimitExceededSigningCertificates
+		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"Certificate": s.signingCertificateToResponse(cert),
+		"Certificate": s.signingCertificateToResponse(created),
 	}, nil
 }
 
 // ListSigningCertificates returns information about the signing certificates associated with the specified IAM user.
 func (s *IAMService) ListSigningCertificates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	// UserName is optional: omitting it lists the caller's own
+	// certificates.
+	userName, err := resolveUserName(reqCtx, request.GetStringParam(req.Parameters, "UserName"))
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -103,11 +119,24 @@ func (s *IAMService) UpdateSigningCertificate(ctx context.Context, reqCtx *reque
 		return nil, NewInvalidInputError("Status", "must be Active or Inactive")
 	}
 
+	// UserName is optional: when omitted, the caller's own user name is
+	// determined implicitly from the access key that signed the request.
+	owner, err := resolveUserName(reqCtx, request.GetStringParam(req.Parameters, "UserName"))
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.SigningCertificates().Exists(certificateId) {
+	cert, err := store.SigningCertificates().Get(certificateId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("signing certificate", certificateId)
+	}
+	// Any resolved user name other than the certificate owner fails with
+	// NoSuchEntity rather than mutating the certificate.
+	if cert.UserName != owner {
 		return nil, NewNoSuchEntityError("signing certificate", certificateId)
 	}
 
@@ -124,20 +153,25 @@ func (s *IAMService) DeleteSigningCertificate(ctx context.Context, reqCtx *reque
 	if certificateId == "" {
 		return nil, NewValidationError("CertificateId")
 	}
-	userName := request.GetStringParam(req.Parameters, "UserName")
+	// UserName is optional: when omitted, the caller's own user name is
+	// determined implicitly from the access key that signed the request.
+	userName, err := resolveUserName(reqCtx, request.GetStringParam(req.Parameters, "UserName"))
+	if err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.SigningCertificates().Exists(certificateId) {
+	cert, err := store.SigningCertificates().Get(certificateId)
+	if err != nil {
 		return nil, NewNoSuchEntityError("signing certificate", certificateId)
 	}
-
-	if userName != "" {
-		if !store.Users().Exists(userName) {
-			return nil, NewNoSuchUserError(userName)
-		}
+	// Any resolved user name other than the certificate owner fails with
+	// NoSuchEntity instead of deleting the certificate.
+	if cert.UserName != userName {
+		return nil, NewNoSuchEntityError("signing certificate", certificateId)
 	}
 
 	if err := store.SigningCertificates().Delete(certificateId); err != nil {

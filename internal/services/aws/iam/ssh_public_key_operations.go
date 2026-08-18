@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"errors"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -24,6 +25,12 @@ func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.Req
 		return nil, NewInvalidInputError("SSHPublicKeyBody", "must be 1 to 16384 characters")
 	}
 
+	parsedKey, err := parseSSHPublicKey(sshPublicKeyBody)
+	if err != nil {
+		return nil, ErrInvalidPublicKey
+	}
+	canonicalBody := canonicalSSHPublicKeyBody(parsedKey)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -32,13 +39,21 @@ func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.Req
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	key, err := store.SSHPublicKeys().Upload(userName, sshPublicKeyBody)
+	key, err := store.SSHPublicKeys().UploadWithGuards(userName, canonicalBody)
 	if err != nil {
+		if errors.Is(err, iamstore.ErrDuplicateSSHPublicKey) {
+			return nil, ErrDuplicateSSHPublicKey
+		}
+		if errors.Is(err, iamstore.ErrSSHPublicKeyLimitExceeded) {
+			return nil, ErrLimitExceededSSHPublicKeys
+		}
 		return nil, err
 	}
 
+	// The output shape referenced by UploadSSHPublicKey includes the key
+	// body; return it in the canonical SSH form that was stored.
 	return map[string]interface{}{
-		"SSHPublicKey": s.sshPublicKeyToResponse(key, true),
+		"SSHPublicKey": s.sshPublicKeyToResponse(key, "SSH"),
 	}, nil
 }
 
@@ -51,6 +66,13 @@ func (s *IAMService) GetSSHPublicKey(ctx context.Context, reqCtx *request.Reques
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	if userName == "" {
 		return nil, NewValidationError("UserName")
+	}
+	encoding := request.GetStringParam(req.Parameters, "Encoding")
+	if encoding == "" {
+		return nil, NewValidationError("Encoding")
+	}
+	if encoding != "SSH" && encoding != "PEM" {
+		return nil, NewInvalidInputError("Encoding", "must be SSH or PEM")
 	}
 
 	store, err := s.store(reqCtx)
@@ -67,7 +89,7 @@ func (s *IAMService) GetSSHPublicKey(ctx context.Context, reqCtx *request.Reques
 	}
 
 	return map[string]interface{}{
-		"SSHPublicKey": s.sshPublicKeyToResponse(key, true),
+		"SSHPublicKey": s.sshPublicKeyToResponse(key, encoding),
 	}, nil
 }
 
@@ -96,7 +118,13 @@ func (s *IAMService) UpdateSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	if !store.Users().Exists(userName) {
 		return nil, NewNoSuchUserError(userName)
 	}
-	if !store.SSHPublicKeys().Exists(keyId) {
+	key, err := store.SSHPublicKeys().Get(keyId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("SSH public key", keyId)
+	}
+	// The named user must own the key; otherwise the operation reports the
+	// key as not existing for that user.
+	if key.UserName != userName {
 		return nil, NewNoSuchEntityError("SSH public key", keyId)
 	}
 
@@ -130,7 +158,7 @@ func (s *IAMService) ListSSHPublicKeys(ctx context.Context, reqCtx *request.Requ
 
 	keyList := make([]interface{}, len(keys))
 	for i, key := range keys {
-		keyList[i] = s.sshPublicKeyToResponse(key, false)
+		keyList[i] = s.sshPublicKeyToResponse(key, "")
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
@@ -173,7 +201,13 @@ func (s *IAMService) DeleteSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	if !store.Users().Exists(userName) {
 		return nil, NewNoSuchUserError(userName)
 	}
-	if !store.SSHPublicKeys().Exists(keyId) {
+	key, err := store.SSHPublicKeys().Get(keyId)
+	if err != nil {
+		return nil, NewNoSuchEntityError("SSH public key", keyId)
+	}
+	// The named user must own the key; otherwise the operation reports the
+	// key as not existing for that user.
+	if key.UserName != userName {
 		return nil, NewNoSuchEntityError("SSH public key", keyId)
 	}
 
@@ -184,7 +218,10 @@ func (s *IAMService) DeleteSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	return response.EmptyResponse(), nil
 }
 
-func (s *IAMService) sshPublicKeyToResponse(key *iamstore.SSHPublicKey, includeBody bool) map[string]interface{} {
+// sshPublicKeyToResponse renders an SSH public key. An empty encoding
+// omits the body (listing responses); "SSH" returns the canonical single
+// line form; "PEM" returns a SubjectPublicKeyInfo PEM block.
+func (s *IAMService) sshPublicKeyToResponse(key *iamstore.SSHPublicKey, encoding string) map[string]interface{} {
 	resp := map[string]interface{}{
 		"SSHPublicKeyId": key.SSHPublicKeyId,
 		"UserName":       key.UserName,
@@ -192,8 +229,15 @@ func (s *IAMService) sshPublicKeyToResponse(key *iamstore.SSHPublicKey, includeB
 		"Status":         key.Status,
 		"UploadDate":     key.UploadDate.Format(timeutils.ISO8601SimpleFormat),
 	}
-	if includeBody {
+	switch encoding {
+	case "SSH":
 		resp["SSHPublicKeyBody"] = key.SSHPublicKeyBody
+	case "PEM":
+		if parsed, err := parseSSHPublicKey(key.SSHPublicKeyBody); err == nil {
+			if pemBody, err := sshPublicKeyBodyPEM(parsed); err == nil {
+				resp["SSHPublicKeyBody"] = pemBody
+			}
+		}
 	}
 	return resp
 }

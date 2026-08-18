@@ -497,6 +497,17 @@ type AWSManagedPolicy struct {
 	Document    string
 }
 
+// awsManagedPolicyARNPrefix identifies seeded AWS managed policies. Their
+// permissions cannot be changed or deleted, so mutation operations reject
+// ARNs carrying this prefix.
+const awsManagedPolicyARNPrefix = "arn:aws:iam::aws:policy/"
+
+// IsAWSManagedPolicyARN reports whether the ARN refers to an AWS managed
+// policy, which cannot be modified or deleted.
+func IsAWSManagedPolicyARN(arn string) bool {
+	return strings.HasPrefix(arn, awsManagedPolicyARNPrefix)
+}
+
 // CreateAWSManagedPolicy creates an AWS managed policy (arn:aws:iam::aws:policy/...).
 func (s *PolicyStore) CreateAWSManagedPolicy(def AWSManagedPolicy) error {
 	if s.Exists(def.ARN) {

@@ -109,8 +109,18 @@ func (s *MFADeviceStore) ListForUser(userName string, marker string, maxItems in
 }
 
 // ListVirtual returns all virtual MFA devices.
-func (s *MFADeviceStore) ListVirtual(marker string, maxItems int) (*MFADeviceListResult, error) {
-	result, err := common.List[VirtualMFADevice](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
+// ListVirtual returns virtual MFA devices filtered by assignment status
+// ("Assigned", "Unassigned", or "Any"/empty for no filtering) with the
+// filter applied before pagination.
+func (s *MFADeviceStore) ListVirtual(assignmentStatus, marker string, maxItems int) (*MFADeviceListResult, error) {
+	var filter common.FilterFunc[VirtualMFADevice]
+	switch assignmentStatus {
+	case "Assigned":
+		filter = func(d *VirtualMFADevice) bool { return d.UserAssignment != nil }
+	case "Unassigned":
+		filter = func(d *VirtualMFADevice) bool { return d.UserAssignment == nil }
+	}
+	result, err := common.List[VirtualMFADevice](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, err
 	}

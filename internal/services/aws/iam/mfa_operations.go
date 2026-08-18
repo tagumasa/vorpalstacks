@@ -208,6 +208,13 @@ func (s *IAMService) ListMFADevices(ctx context.Context, reqCtx *request.Request
 // ListVirtualMFADevices lists all virtual MFA devices.
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	assignmentStatus := request.GetStringParam(req.Parameters, "AssignmentStatus")
+	if assignmentStatus == "" {
+		assignmentStatus = "Any"
+	}
+	if assignmentStatus != "Any" && assignmentStatus != "Assigned" && assignmentStatus != "Unassigned" {
+		return nil, NewInvalidInputError("AssignmentStatus", "must be one of: Any, Assigned, Unassigned")
+	}
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
@@ -215,7 +222,7 @@ func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.MFADevices().ListVirtual(marker, maxItems)
+	result, err := store.MFADevices().ListVirtual(assignmentStatus, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -268,9 +275,9 @@ func (s *IAMService) GetMFADevice(ctx context.Context, reqCtx *request.RequestCo
 		resp["UserName"] = device.UserAssignment.UserName
 	}
 
-	return map[string]interface{}{
-		"MFADevice": resp,
-	}, nil
+	// The operation output is flat: SerialNumber, EnableDate and UserName
+	// sit at the top level without an MFADevice wrapper.
+	return resp, nil
 }
 
 // ResyncMFADevice resynchronises an MFA device for a user.
@@ -346,7 +353,10 @@ func (s *IAMService) UpdateAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	policy := store.PasswordPolicy().GetOrDefault()
+	// The operation replaces the whole policy: every parameter the request
+	// omits reverts to its documented default value instead of being
+	// merged with the previously stored policy.
+	policy := store.PasswordPolicy().ParameterDefaults()
 
 	minLength := request.GetIntParam(req.Parameters, "MinimumPasswordLength")
 	if minLength != 0 {
@@ -393,9 +403,7 @@ func (s *IAMService) UpdateAccountPasswordPolicy(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"PasswordPolicy": s.passwordPolicyToResponse(reqCtx, policy),
-	}, nil
+	return response.EmptyResponse(), nil
 }
 
 func toBool(v interface{}) bool {
@@ -572,13 +580,13 @@ func (s *IAMService) GetAccountSummary(ctx context.Context, reqCtx *request.Requ
 		"InstanceProfiles":          strconv.Itoa(instanceProfiles),
 		"MFADevices":                strconv.Itoa(mfaDevices),
 		"ServerCertificates":        strconv.Itoa(serverCertificates),
-		"UsersQuota":                "5000",
-		"GroupsQuota":               "300",
-		"RolesQuota":                "1000",
-		"InstanceProfilesQuota":     "500",
-		"LocalManagedPoliciesQuota": "1500",
-		"MFADevicesQuota":           "500",
-		"ServerCertificatesQuota":   "20",
+		"UsersQuota":                strconv.Itoa(iamstore.QuotaUsersPerAccount),
+		"GroupsQuota":               strconv.Itoa(iamstore.QuotaGroupsPerAccount),
+		"RolesQuota":                strconv.Itoa(iamstore.QuotaRolesPerAccount),
+		"InstanceProfilesQuota":     strconv.Itoa(iamstore.QuotaInstanceProfilesPerAccount),
+		"LocalManagedPoliciesQuota": strconv.Itoa(iamstore.QuotaLocalManagedPoliciesPerAccount),
+		"MFADevicesQuota":           strconv.Itoa(iamstore.QuotaMFADevicesPerAccount),
+		"ServerCertificatesQuota":   strconv.Itoa(iamstore.QuotaServerCertificatesPerAccount),
 	}
 
 	return map[string]interface{}{

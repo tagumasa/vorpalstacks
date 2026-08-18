@@ -235,7 +235,7 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		Marker:   pagination.GetMarker(req.Parameters),
 		MaxItems: pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
 	}
-	return s.getAccountAuthorizationDetailsCore(store, input)
+	return s.getAccountAuthorizationDetailsCore(reqCtx, store, input)
 }
 
 func (s *IAMService) userToResponse(reqCtx *request.RequestContext, user *iamstore.User) map[string]interface{} {

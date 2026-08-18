@@ -3,8 +3,11 @@ package iam
 
 import (
 	"context"
+	"errors"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
 // AddUserToGroup adds a user to a group.
@@ -31,12 +34,17 @@ func (s *IAMService) AddUserToGroup(ctx context.Context, reqCtx *request.Request
 		return nil, NewNoSuchGroupError(groupName)
 	}
 
-	if store.UserGroups().IsUserInGroup(userName, groupName) {
-		return nil, NewUserAlreadyInGroupError(userName, groupName)
-	}
-
-	if err := store.UserGroups().AddUserToGroup(userName, groupName); err != nil {
-		return nil, err
+	// Adding an existing membership is an idempotent success; the
+	// documented error surface has no duplicate-membership error. The store
+	// sentinel covers concurrent duplicate additions racing past the
+	// pre-check.
+	if !store.UserGroups().IsUserInGroup(userName, groupName) {
+		if err := store.UserGroups().AddUserToGroup(userName, groupName); err != nil {
+			if errors.Is(err, iamstore.ErrUserAlreadyInGroup) {
+				return response.EmptyResponse(), nil
+			}
+			return nil, err
+		}
 	}
 
 	return response.EmptyResponse(), nil

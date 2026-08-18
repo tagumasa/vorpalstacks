@@ -2,10 +2,13 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
@@ -100,6 +103,26 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 		}
 		if aws.ToString(resp.User.UserName) != newName {
 			return fmt.Errorf("username not updated: got %s, want %s", aws.ToString(resp.User.UserName), newName)
+		}
+
+		// A new name outside the entity-name pattern must be rejected, and
+		// renaming onto an existing user must fail with EntityAlreadyExists.
+		if _, err := tc.client.UpdateUser(tc.ctx, &iam.UpdateUserInput{
+			UserName:    aws.String(newName),
+			NewUserName: aws.String("invalid user name!"),
+		}); err == nil || !isInvalidInputError(err) {
+			return fmt.Errorf("invalid NewUserName: got %v, want InvalidInput", err)
+		}
+		other := fmt.Sprintf("UpdateOther-%s", tc.ts)
+		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		if _, err := tc.client.UpdateUser(tc.ctx, &iam.UpdateUserInput{
+			UserName:    aws.String(newName),
+			NewUserName: aws.String(other),
+		}); err == nil || !containsErrorCode(err, "EntityAlreadyExists") {
+			return fmt.Errorf("rename onto existing user: got %v, want EntityAlreadyExists", err)
 		}
 		return nil
 	}))
@@ -252,6 +275,66 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iam", "ChangePassword", func() error {
+		user := fmt.Sprintf("ChangePw-%s", tc.ts)
+		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+			return fmt.Errorf("CreateUser for ChangePassword: %w", err)
+		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+
+		const oldPass = "Valid!Old1-Pw-2026"
+		const newPass = "Valid!New1-Pw-2026"
+		if _, err := tc.client.CreateLoginProfile(tc.ctx, &iam.CreateLoginProfileInput{
+			UserName:              aws.String(user),
+			Password:              aws.String(oldPass),
+			PasswordResetRequired: false,
+		}); err != nil {
+			return fmt.Errorf("CreateLoginProfile for ChangePassword: %w", err)
+		}
+		defer tc.client.DeleteLoginProfile(tc.ctx, &iam.DeleteLoginProfileInput{UserName: aws.String(user)})
+
+		key, err := tc.client.CreateAccessKey(tc.ctx, &iam.CreateAccessKeyInput{UserName: aws.String(user)})
+		if err != nil {
+			return fmt.Errorf("CreateAccessKey for ChangePassword: %w", err)
+		}
+		defer tc.client.DeleteAccessKey(tc.ctx, &iam.DeleteAccessKeyInput{
+			UserName:    aws.String(user),
+			AccessKeyId: key.AccessKey.AccessKeyId,
+		})
+
+		// ChangePassword carries only OldPassword/NewPassword on the wire;
+		// the target user is the authenticated caller itself.
+		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load config for user client: %w", err)
+		}
+		cfg.Credentials = credentials.NewStaticCredentialsProvider(
+			*key.AccessKey.AccessKeyId,
+			*key.AccessKey.SecretAccessKey,
+			"",
+		)
+		userClient := iam.NewFromConfig(cfg)
+
+		if _, err := userClient.ChangePassword(tc.ctx, &iam.ChangePasswordInput{
+			OldPassword: aws.String(oldPass),
+			NewPassword: aws.String(newPass),
+		}); err != nil {
+			return fmt.Errorf("ChangePassword as the owning user failed: %w", err)
+		}
+
+		// The superseded password must not be accepted as OldPassword.
+		if _, err := userClient.ChangePassword(tc.ctx, &iam.ChangePasswordInput{
+			OldPassword: aws.String(oldPass),
+			NewPassword: aws.String("Valid!New2-Pw-2026"),
+		}); err == nil {
+			return fmt.Errorf("ChangePassword accepted the superseded old password")
+		}
+		return nil
+	}))
+
 	// User tags
 	results = append(results, r.RunTest("iam", "TagUser", func() error {
 		_, err := tc.client.TagUser(tc.ctx, &iam.TagUserInput{
@@ -394,6 +477,71 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 			if name == tc.userInlinePolicy {
 				return fmt.Errorf("inline policy should be deleted")
 			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "CreateLoginProfile_PasswordTooLong", func() error {
+		user := fmt.Sprintf("LongPw-%s", tc.ts)
+		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+
+		_, err := tc.client.CreateLoginProfile(tc.ctx, &iam.CreateLoginProfileInput{
+			UserName: aws.String(user),
+			Password: aws.String(strings.Repeat("A1!a", 33)), // 132 characters
+		})
+		if err == nil {
+			return fmt.Errorf("a password longer than 128 characters must be rejected")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "ListUserTags_Pagination", func() error {
+		// The user carries CreatedBy from CreateUser; add two more tags so
+		// pagination has three entries to traverse.
+		if _, err := tc.client.TagUser(tc.ctx, &iam.TagUserInput{
+			UserName: aws.String(tc.user),
+			Tags: []types.Tag{
+				{Key: aws.String("Page1"), Value: aws.String("a")},
+				{Key: aws.String("Page2"), Value: aws.String("b")},
+			},
+		}); err != nil {
+			return err
+		}
+		defer tc.client.UntagUser(tc.ctx, &iam.UntagUserInput{
+			UserName: aws.String(tc.user),
+			TagKeys:  []string{"Page1", "Page2"},
+		})
+
+		first, err := tc.client.ListUserTags(tc.ctx, &iam.ListUserTagsInput{
+			UserName: aws.String(tc.user),
+			MaxItems: aws.Int32(2),
+		})
+		if err != nil {
+			return err
+		}
+		if len(first.Tags) != 2 {
+			return fmt.Errorf("first page size: got %d, want 2", len(first.Tags))
+		}
+		if !first.IsTruncated || first.Marker == nil || *first.Marker == "" {
+			return fmt.Errorf("first page must be truncated with a marker")
+		}
+
+		second, err := tc.client.ListUserTags(tc.ctx, &iam.ListUserTagsInput{
+			UserName: aws.String(tc.user),
+			Marker:   first.Marker,
+			MaxItems: aws.Int32(2),
+		})
+		if err != nil {
+			return err
+		}
+		if len(second.Tags) != 1 {
+			return fmt.Errorf("second page size: got %d, want 1", len(second.Tags))
+		}
+		if second.IsTruncated {
+			return fmt.Errorf("second page must not be truncated")
 		}
 		return nil
 	}))

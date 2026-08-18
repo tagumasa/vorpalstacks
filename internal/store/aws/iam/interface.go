@@ -169,7 +169,7 @@ type MFADeviceStoreInterface interface {
 	EnableForUser(serialNumber, userName string) error
 	Deactivate(serialNumber string) error
 	ListForUser(userName string, marker string, maxItems int) (*MFADeviceListResult, error)
-	ListVirtual(marker string, maxItems int) (*MFADeviceListResult, error)
+	ListVirtual(assignmentStatus, marker string, maxItems int) (*MFADeviceListResult, error)
 	Resync(serialNumber string) error
 	Count() int
 	MigrateUser(oldUserName, newUserName string) error
@@ -184,6 +184,7 @@ type PasswordPolicyStoreInterface interface {
 	Delete() error
 	GetOrDefault() *AccountPasswordPolicy
 	DefaultPolicy() *AccountPasswordPolicy
+	ParameterDefaults() *AccountPasswordPolicy
 }
 
 // IAMStoreInterface defines access to all IAM stores.

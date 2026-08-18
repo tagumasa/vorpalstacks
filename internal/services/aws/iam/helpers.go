@@ -5,6 +5,7 @@ import (
 	"context"
 	"strconv"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -13,10 +14,6 @@ import (
 )
 
 const (
-	// MaxAccessKeysPerUser is the maximum number of access keys a user can have.
-	MaxAccessKeysPerUser = 2
-	// MaxPolicyVersions is the maximum number of policy versions allowed.
-	MaxPolicyVersions = 5
 	// MaxTagsPerResource is the maximum number of tags allowed on a single IAM resource.
 	MaxTagsPerResource = 50
 	// MaxTagKeyLength is the maximum length of a tag key.
@@ -112,10 +109,22 @@ func listResourceTags[T any](ctx context.Context, s *IAMService, reqCtx *request
 	if err != nil {
 		return nil, ops.notFoundFn(name)
 	}
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(*ops.tagsFn(res)),
-		"IsTruncated": false,
-	}, nil
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+	paged := pagination.PaginateSlice(tags.ToResponse(*ops.tagsFn(res)), marker, maxItems, func(item map[string]interface{}) string {
+		if key, ok := item["Key"].(string); ok {
+			return key
+		}
+		return ""
+	})
+	resp := map[string]interface{}{
+		"Tags":        paged.Items,
+		"IsTruncated": paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp, nil
 }
 
 // buildAttachedManagedPolicies returns the attached managed policy list for

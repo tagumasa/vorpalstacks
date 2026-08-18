@@ -13,7 +13,7 @@ import (
 )
 
 // CreateAccessKey creates a new access key for the specified user.
-// The per-user quota (MaxAccessKeysPerUser) is enforced atomically inside
+// The per-user access key quota is enforced atomically inside
 // the store layer to prevent race conditions on concurrent requests.
 func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
@@ -30,7 +30,7 @@ func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.Reques
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	key, err := store.AccessKeys().CreateWithLimit(userName, MaxAccessKeysPerUser)
+	key, err := store.AccessKeys().CreateWithLimit(userName, iamstore.MaxAccessKeysPerUser)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrAccessKeyLimitExceeded) {
 			return nil, ErrAccessKeyLimitExceeded

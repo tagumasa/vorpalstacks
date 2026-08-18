@@ -51,22 +51,47 @@ func (s *SigningCertificateStore) Exists(certificateId string) bool {
 }
 
 // Upload uploads a new signing certificate for the given user.
-func (s *SigningCertificateStore) Upload(userName, certificateBody string) (*SigningCertificate, error) {
-	id, err := generateSigningCertificateID()
+// MaxSigningCertificatesPerUser is the AWS-enforced quota of signing
+// certificates per IAM user.
+const MaxSigningCertificatesPerUser = 2
+
+// UploadWithGuards creates a signing certificate after checking, inside a
+// single lock scope, that the same certificate is not already registered for
+// the user and that the per-user quota is not exceeded.
+func (s *SigningCertificateStore) UploadWithGuards(userName, certificateBody, fingerprint string) (*SigningCertificate, error) {
+	var created *SigningCertificate
+	err := s.kl.WithLock("signing-cert:"+userName, func() error {
+		existing, err := s.ListByUserName(userName)
+		if err != nil {
+			return err
+		}
+		for _, cert := range existing {
+			if cert.Fingerprint != "" && cert.Fingerprint == fingerprint {
+				return NewStoreError("upload_signing_certificate", ErrDuplicateSigningCertificate)
+			}
+		}
+		if len(existing) >= MaxSigningCertificatesPerUser {
+			return NewStoreError("upload_signing_certificate", ErrSigningCertificateLimitExceeded)
+		}
+
+		id, err := generateSigningCertificateID()
+		if err != nil {
+			return NewStoreError("generate_signing_certificate_id", err)
+		}
+		created = &SigningCertificate{
+			CertificateId:   id,
+			UserName:        userName,
+			CertificateBody: certificateBody,
+			Status:          "Active",
+			UploadDate:      time.Now().UTC(),
+			Fingerprint:     fingerprint,
+		}
+		return s.Put(created)
+	})
 	if err != nil {
 		return nil, err
 	}
-	cert := &SigningCertificate{
-		CertificateId:   id,
-		UserName:        userName,
-		CertificateBody: certificateBody,
-		Status:          "Active",
-		UploadDate:      time.Now().UTC(),
-	}
-	if err := s.Put(cert); err != nil {
-		return nil, err
-	}
-	return cert, nil
+	return created, nil
 }
 
 // UpdateStatus changes the status of a signing certificate (e.g. Active/Inactive).

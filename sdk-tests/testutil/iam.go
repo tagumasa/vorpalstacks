@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -114,7 +115,10 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}
 
 	results = append(results, r.iamUserTests(tc)...)
+	results = append(results, r.iamSigningCertificateTests(tc)...)
+	results = append(results, r.iamSSHPublicKeyTests(tc)...)
 	results = append(results, r.iamGroupTests(tc)...)
+	results = append(results, r.iamDeleteOperationTests(tc)...)
 	results = append(results, r.iamRoleTests(tc)...)
 	results = append(results, r.iamPolicyTests(tc)...)
 	results = append(results, r.iamPermissionsBoundaryTests(tc)...)
@@ -174,4 +178,30 @@ func iamTagPresent(tags []types.Tag, key, value string) bool {
 		}
 	}
 	return false
+}
+
+// isInvalidInputError reports whether err carries the InvalidInput error
+// code, matching either the SDK error type or the wire error string.
+func isInvalidInputError(err error) bool {
+	var invalidInput *types.InvalidInputException
+	if errors.As(err, &invalidInput) {
+		return true
+	}
+	return err != nil && strings.Contains(err.Error(), "InvalidInput")
+}
+
+// containsErrorCode reports whether err carries the given AWS error code.
+// The SDK surfaces modelled exceptions by shape name (e.g.
+// LimitExceededException) while the wire code lacks the suffix, so both
+// spellings are accepted.
+func containsErrorCode(err error, code string) bool {
+	if err == nil {
+		return false
+	}
+	norm := func(c string) string { return strings.TrimSuffix(c, "Exception") }
+	var awsErr interface{ ErrorCode() string }
+	if errors.As(err, &awsErr) && norm(awsErr.ErrorCode()) == norm(code) {
+		return true
+	}
+	return strings.Contains(err.Error(), "api error "+code)
 }

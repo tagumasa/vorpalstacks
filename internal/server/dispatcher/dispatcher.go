@@ -111,6 +111,17 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 		}
 	}
 
+	// Populate the caller identity from the presented access key whenever
+	// the authorizer has not already done so. Policy evaluation stays off in
+	// this mode, but implicit-caller operations must still resolve the same
+	// principal they would under full authorisation.
+	if reqCtx.Principal == "" && d.principalResolver != nil && parsedReq.AccessKeyID != "" {
+		if username, err := d.principalResolver.ResolvePrincipal(httpCtx, parsedReq.AccessKeyID); err == nil && username != "" {
+			reqCtx.Principal = username
+			reqCtx.PrincipalType = request.PrincipalTypeUser
+		}
+	}
+
 	t0 := time.Now()
 	result, err := handler(httpCtx, reqCtx, parsedReq)
 	elapsed := time.Since(t0)

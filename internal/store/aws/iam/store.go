@@ -7,6 +7,26 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
+// Account-level and per-user IAM quotas with their documented AWS default
+// values (IAM and AWS STS quotas, AWS General Reference). Every other
+// declaration site — handlers, error messages, GetAccountSummary — must
+// reference these constants rather than repeating the numbers.
+const (
+	QuotaUsersPerAccount                = 5000
+	QuotaGroupsPerAccount               = 300
+	QuotaRolesPerAccount                = 1000
+	QuotaInstanceProfilesPerAccount     = 1000
+	QuotaLocalManagedPoliciesPerAccount = 1500
+	QuotaServerCertificatesPerAccount   = 20
+	MaxAccessKeysPerUser                = 2
+	MaxIAMGroupsPerUser                 = 10
+	MaxMFADevicesPerUser                = 8
+	// QuotaMFADevicesPerAccount has no documented account-level default in
+	// the AWS quota tables (only the per-user quota of 8 is listed); the
+	// value keeps the historical GetAccountSummary display.
+	QuotaMFADevicesPerAccount = 500
+)
+
 // globalIAMStore ensures a single IAMStore instance per (storage, accountID) pair.
 // All services (IAM, STS, admin_auth, IAM admin handler) must use this
 // to avoid duplicate store instances and redundant AWS managed policy seeding.

@@ -11,6 +11,8 @@ import (
 	"errors"
 
 	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
@@ -275,6 +277,10 @@ func (s *IAMService) createPolicyCore(store *iamstore.IAMStore, input *CreatePol
 		return nil, ErrMalformedPolicyDocument
 	}
 
+	if len(input.Description) > 1000 {
+		return nil, NewInvalidInputError("Description", "must be 0 to 1000 characters")
+	}
+
 	if err := validateNewTags(input.Tags); err != nil {
 		return nil, err
 	}
@@ -417,8 +423,16 @@ func (s *IAMService) updateUserCore(store *iamstore.IAMStore, input *UpdateUserI
 	if input.NewPath != "" && !validatePath(input.NewPath) {
 		return nil, NewInvalidInputError("NewPath", "must be a valid path starting and ending with /")
 	}
+	if input.NewUserName != "" {
+		if err := validateEntityName(input.NewUserName, "NewUserName"); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := store.RenameUser(input.UserName, input.NewUserName, input.NewPath); err != nil {
+		if errors.Is(err, iamstore.ErrUserAlreadyExists) {
+			return nil, ErrUserAlreadyExists
+		}
 		return nil, err
 	}
 
@@ -475,8 +489,16 @@ func (s *IAMService) updateGroupCore(store *iamstore.IAMStore, input *UpdateGrou
 	if input.NewPath != "" && !validatePath(input.NewPath) {
 		return nil, NewInvalidInputError("NewPath", "must be a valid path starting and ending with /")
 	}
+	if input.NewGroupName != "" {
+		if err := validateEntityName128(input.NewGroupName, "NewGroupName"); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := store.RenameGroup(input.GroupName, input.NewGroupName, input.NewPath); err != nil {
+		if errors.Is(err, iamstore.ErrGroupAlreadyExists) {
+			return nil, ErrGroupAlreadyExists
+		}
 		return nil, err
 	}
 
@@ -741,6 +763,14 @@ func (s *IAMService) deletePolicyCore(store *iamstore.IAMStore, input *DeletePol
 		return NewNoSuchPolicyError(input.PolicyArn)
 	}
 
+	// The permissions defined in AWS managed policies cannot be changed,
+	// so the policies themselves cannot be deleted. A missing policy is
+	// reported before modifiability so that an AWS-managed ARN that is
+	// not present yields NoSuchEntity.
+	if iamstore.IsAWSManagedPolicyARN(input.PolicyArn) {
+		return NewInvalidInputError("PolicyArn", "AWS managed policies cannot be modified")
+	}
+
 	if policy.AttachmentCount > 0 {
 		return NewDeletePolicyConflictError(input.PolicyArn)
 	}
@@ -822,7 +852,7 @@ type AccountAuthorizationDetailsInput struct {
 // groups, roles, local managed policies) with their inline and attached
 // policy relationships.  The logic is consolidated in core.go so that
 // both the HTTP API and future admin-handler paths delegate here.
-func (s *IAMService) getAccountAuthorizationDetailsCore(store *iamstore.IAMStore, input *AccountAuthorizationDetailsInput) (interface{}, error) {
+func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestContext, store *iamstore.IAMStore, input *AccountAuthorizationDetailsInput) (interface{}, error) {
 	filters := input.Filters
 	if len(filters) == 0 {
 		filters = map[string]bool{
@@ -866,6 +896,15 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(store *iamstore.IAMStore
 			detail["GroupList"] = groupList
 			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeUser, user.UserName)
 			detail["UserPolicyList"] = buildInlinePolicyList(store, PrincipalTypeUser, user.UserName)
+			if user.PermissionsBoundary != nil {
+				detail["PermissionsBoundary"] = map[string]interface{}{
+					"PermissionsBoundaryType": user.PermissionsBoundary.PermissionsBoundaryType,
+					"PermissionsBoundaryArn":  user.PermissionsBoundary.PermissionsBoundaryArn,
+				}
+			}
+			if tagList := tags.ToResponse(user.Tags); tagList != nil {
+				detail["Tags"] = tagList
+			}
 			items = append(items, detail)
 		}
 		sections = append(sections, section{
@@ -915,6 +954,34 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(store *iamstore.IAMStore
 			}
 			detail["RolePolicyList"] = buildInlinePolicyList(store, PrincipalTypeRole, role.RoleName)
 			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeRole, role.RoleName)
+			if role.PermissionsBoundary != nil {
+				detail["PermissionsBoundary"] = map[string]interface{}{
+					"PermissionsBoundaryType": role.PermissionsBoundary.PermissionsBoundaryType,
+					"PermissionsBoundaryArn":  role.PermissionsBoundary.PermissionsBoundaryArn,
+				}
+			}
+			if tagList := tags.ToResponse(role.Tags); tagList != nil {
+				detail["Tags"] = tagList
+			}
+			if role.RoleLastUsed != nil {
+				lastUsed := map[string]interface{}{}
+				if role.RoleLastUsed.LastUsedDate != nil {
+					lastUsed["LastUsedDate"] = role.RoleLastUsed.LastUsedDate.Format(timeutils.ISO8601SimpleFormat)
+				}
+				if role.RoleLastUsed.Region != "" {
+					lastUsed["Region"] = role.RoleLastUsed.Region
+				}
+				detail["RoleLastUsed"] = lastUsed
+			}
+			profileList, err := store.InstanceProfiles().ListForRole(role.RoleName, "", 1000)
+			if err != nil {
+				return nil, err
+			}
+			instanceProfiles := make([]interface{}, 0, len(profileList.InstanceProfiles))
+			for _, profile := range profileList.InstanceProfiles {
+				instanceProfiles = append(instanceProfiles, s.instanceProfileToResponseWithRoles(reqCtx, profile, store))
+			}
+			detail["InstanceProfileList"] = instanceProfiles
 			items = append(items, detail)
 		}
 		sections = append(sections, section{
@@ -930,13 +997,31 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(store *iamstore.IAMStore
 		}
 		items := make([]interface{}, 0, len(policies))
 		for _, policy := range policies {
-			items = append(items, map[string]interface{}{
-				"PolicyName":       policy.PolicyName,
-				"PolicyId":         policy.ID,
-				"Arn":              policy.Arn,
-				"Path":             policy.Path,
-				"DefaultVersionId": policy.DefaultVersionId,
-			})
+			versions, err := store.Policies().ListVersions(policy.Arn, "", 1000)
+			if err != nil {
+				return nil, err
+			}
+			versionList := make([]interface{}, 0, len(versions.Versions))
+			for _, version := range versions.Versions {
+				versionList = append(versionList, s.policyVersionToResponse(version))
+			}
+			detail := map[string]interface{}{
+				"PolicyName":                    policy.PolicyName,
+				"PolicyId":                      policy.ID,
+				"Arn":                           policy.Arn,
+				"Path":                          policy.Path,
+				"DefaultVersionId":              policy.DefaultVersionId,
+				"AttachmentCount":               policy.AttachmentCount,
+				"CreateDate":                    policy.CreateDate.Format(timeutils.ISO8601SimpleFormat),
+				"UpdateDate":                    policy.UpdateDate.Format(timeutils.ISO8601SimpleFormat),
+				"IsAttachable":                  policy.IsAttachable,
+				"PermissionsBoundaryUsageCount": policy.PermissionsBoundaryUsageCount,
+				"PolicyVersionList":             versionList,
+			}
+			if policy.Description != "" {
+				detail["Description"] = policy.Description
+			}
+			items = append(items, detail)
 		}
 		sections = append(sections, section{
 			key: "Policies", filter: "LocalManagedPolicy", items: items,
@@ -1016,6 +1101,11 @@ func (s *IAMService) deletePolicyVersionCore(store *iamstore.IAMStore, policyArn
 	if err != nil {
 		return NewNoSuchPolicyError(policyArn)
 	}
+	// A missing policy is reported before modifiability so that an
+	// AWS-managed ARN that is not present yields NoSuchEntity.
+	if iamstore.IsAWSManagedPolicyARN(policyArn) {
+		return NewInvalidInputError("PolicyArn", "AWS managed policies cannot be modified")
+	}
 
 	if policy.DefaultVersionId == versionId {
 		return NewDeleteConflictError("Cannot delete the default policy version.")
@@ -1039,6 +1129,11 @@ func (s *IAMService) listPolicyVersionsCore(store *iamstore.IAMStore, policyArn,
 func (s *IAMService) setDefaultPolicyVersionCore(store *iamstore.IAMStore, policyArn, versionId string) error {
 	if !store.Policies().Exists(policyArn) {
 		return NewNoSuchPolicyError(policyArn)
+	}
+	// A missing policy is reported before modifiability so that an
+	// AWS-managed ARN that is not present yields NoSuchEntity.
+	if iamstore.IsAWSManagedPolicyARN(policyArn) {
+		return NewInvalidInputError("PolicyArn", "AWS managed policies cannot be modified")
 	}
 	if err := store.Policies().SetDefaultVersion(policyArn, versionId); err != nil {
 		return NewNoSuchPolicyVersionError(versionId)

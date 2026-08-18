@@ -2,7 +2,9 @@
 package iam
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -73,167 +75,187 @@ func (s *IAMService) GetStoreForRegion(_ string) (*iamstore.IAMStore, error) {
 	return actual.(*iamstore.IAMStore), nil
 }
 
+// iamHandlerMethods maps every IAM operation to its handler method. The
+// dispatcher registration iterates it, and the action registry guard test
+// compares its keys with the registry entries in both directions.
+var iamHandlerMethods = map[string]func(*IAMService, context.Context, *request.RequestContext, *request.ParsedRequest) (interface{}, error){
+	"GetUser":                                   (*IAMService).GetUser,
+	"CreateUser":                                (*IAMService).CreateUser,
+	"DeleteUser":                                (*IAMService).DeleteUser,
+	"UpdateUser":                                (*IAMService).UpdateUser,
+	"ListUsers":                                 (*IAMService).ListUsers,
+	"TagUser":                                   (*IAMService).TagUser,
+	"UntagUser":                                 (*IAMService).UntagUser,
+	"ListUserTags":                              (*IAMService).ListUserTags,
+	"PutUserPermissionsBoundary":                (*IAMService).PutUserPermissionsBoundary,
+	"DeleteUserPermissionsBoundary":             (*IAMService).DeleteUserPermissionsBoundary,
+	"GetLoginProfile":                           (*IAMService).GetLoginProfile,
+	"CreateLoginProfile":                        (*IAMService).CreateLoginProfile,
+	"DeleteLoginProfile":                        (*IAMService).DeleteLoginProfile,
+	"UpdateLoginProfile":                        (*IAMService).UpdateLoginProfile,
+	"ChangePassword":                            (*IAMService).ChangePassword,
+	"CreateAccessKey":                           (*IAMService).CreateAccessKey,
+	"DeleteAccessKey":                           (*IAMService).DeleteAccessKey,
+	"ListAccessKeys":                            (*IAMService).ListAccessKeys,
+	"GetAccessKeyLastUsed":                      (*IAMService).GetAccessKeyLastUsed,
+	"UpdateAccessKey":                           (*IAMService).UpdateAccessKey,
+	"CreateGroup":                               (*IAMService).CreateGroup,
+	"GetGroup":                                  (*IAMService).GetGroup,
+	"UpdateGroup":                               (*IAMService).UpdateGroup,
+	"DeleteGroup":                               (*IAMService).DeleteGroup,
+	"ListGroups":                                (*IAMService).ListGroups,
+	"ListGroupsForUser":                         (*IAMService).ListGroupsForUser,
+	"AddUserToGroup":                            (*IAMService).AddUserToGroup,
+	"RemoveUserFromGroup":                       (*IAMService).RemoveUserFromGroup,
+	"CreateRole":                                (*IAMService).CreateRole,
+	"GetRole":                                   (*IAMService).GetRole,
+	"UpdateRole":                                (*IAMService).UpdateRole,
+	"UpdateRoleDescription":                     (*IAMService).UpdateRoleDescription,
+	"DeleteRole":                                (*IAMService).DeleteRole,
+	"ListRoles":                                 (*IAMService).ListRoles,
+	"UpdateAssumeRolePolicy":                    (*IAMService).UpdateAssumeRolePolicy,
+	"TagRole":                                   (*IAMService).TagRole,
+	"UntagRole":                                 (*IAMService).UntagRole,
+	"ListRoleTags":                              (*IAMService).ListRoleTags,
+	"PutRolePermissionsBoundary":                (*IAMService).PutRolePermissionsBoundary,
+	"DeleteRolePermissionsBoundary":             (*IAMService).DeleteRolePermissionsBoundary,
+	"ListInstanceProfilesForRole":               (*IAMService).ListInstanceProfilesForRole,
+	"CreateInstanceProfile":                     (*IAMService).CreateInstanceProfile,
+	"GetInstanceProfile":                        (*IAMService).GetInstanceProfile,
+	"DeleteInstanceProfile":                     (*IAMService).DeleteInstanceProfile,
+	"ListInstanceProfiles":                      (*IAMService).ListInstanceProfiles,
+	"AddRoleToInstanceProfile":                  (*IAMService).AddRoleToInstanceProfile,
+	"RemoveRoleFromInstanceProfile":             (*IAMService).RemoveRoleFromInstanceProfile,
+	"ListInstanceProfileTags":                   (*IAMService).ListInstanceProfileTags,
+	"TagInstanceProfile":                        (*IAMService).TagInstanceProfile,
+	"UntagInstanceProfile":                      (*IAMService).UntagInstanceProfile,
+	"CreatePolicy":                              (*IAMService).CreatePolicy,
+	"GetPolicy":                                 (*IAMService).GetPolicy,
+	"DeletePolicy":                              (*IAMService).DeletePolicy,
+	"ListPolicies":                              (*IAMService).ListPolicies,
+	"CreatePolicyVersion":                       (*IAMService).CreatePolicyVersion,
+	"GetPolicyVersion":                          (*IAMService).GetPolicyVersion,
+	"DeletePolicyVersion":                       (*IAMService).DeletePolicyVersion,
+	"ListPolicyVersions":                        (*IAMService).ListPolicyVersions,
+	"SetDefaultPolicyVersion":                   (*IAMService).SetDefaultPolicyVersion,
+	"TagPolicy":                                 (*IAMService).TagPolicy,
+	"UntagPolicy":                               (*IAMService).UntagPolicy,
+	"ListPolicyTags":                            (*IAMService).ListPolicyTags,
+	"AttachUserPolicy":                          (*IAMService).AttachUserPolicy,
+	"DetachUserPolicy":                          (*IAMService).DetachUserPolicy,
+	"ListAttachedUserPolicies":                  (*IAMService).ListAttachedUserPolicies,
+	"AttachGroupPolicy":                         (*IAMService).AttachGroupPolicy,
+	"DetachGroupPolicy":                         (*IAMService).DetachGroupPolicy,
+	"ListAttachedGroupPolicies":                 (*IAMService).ListAttachedGroupPolicies,
+	"AttachRolePolicy":                          (*IAMService).AttachRolePolicy,
+	"DetachRolePolicy":                          (*IAMService).DetachRolePolicy,
+	"ListAttachedRolePolicies":                  (*IAMService).ListAttachedRolePolicies,
+	"PutUserPolicy":                             (*IAMService).PutUserPolicy,
+	"GetUserPolicy":                             (*IAMService).GetUserPolicy,
+	"DeleteUserPolicy":                          (*IAMService).DeleteUserPolicy,
+	"ListUserPolicies":                          (*IAMService).ListUserPolicies,
+	"PutGroupPolicy":                            (*IAMService).PutGroupPolicy,
+	"GetGroupPolicy":                            (*IAMService).GetGroupPolicy,
+	"DeleteGroupPolicy":                         (*IAMService).DeleteGroupPolicy,
+	"ListGroupPolicies":                         (*IAMService).ListGroupPolicies,
+	"PutRolePolicy":                             (*IAMService).PutRolePolicy,
+	"GetRolePolicy":                             (*IAMService).GetRolePolicy,
+	"DeleteRolePolicy":                          (*IAMService).DeleteRolePolicy,
+	"ListRolePolicies":                          (*IAMService).ListRolePolicies,
+	"CreateVirtualMFADevice":                    (*IAMService).CreateVirtualMFADevice,
+	"DeleteVirtualMFADevice":                    (*IAMService).DeleteVirtualMFADevice,
+	"EnableMFADevice":                           (*IAMService).EnableMFADevice,
+	"DeactivateMFADevice":                       (*IAMService).DeactivateMFADevice,
+	"ListMFADevices":                            (*IAMService).ListMFADevices,
+	"ListVirtualMFADevices":                     (*IAMService).ListVirtualMFADevices,
+	"ResyncMFADevice":                           (*IAMService).ResyncMFADevice,
+	"TagMFADevice":                              (*IAMService).TagMFADevice,
+	"UntagMFADevice":                            (*IAMService).UntagMFADevice,
+	"ListMFADeviceTags":                         (*IAMService).ListMFADeviceTags,
+	"GetAccountPasswordPolicy":                  (*IAMService).GetAccountPasswordPolicy,
+	"UpdateAccountPasswordPolicy":               (*IAMService).UpdateAccountPasswordPolicy,
+	"DeleteAccountPasswordPolicy":               (*IAMService).DeleteAccountPasswordPolicy,
+	"GetAccountSummary":                         (*IAMService).GetAccountSummary,
+	"CreateAccountAlias":                        (*IAMService).CreateAccountAlias,
+	"DeleteAccountAlias":                        (*IAMService).DeleteAccountAlias,
+	"ListAccountAliases":                        (*IAMService).ListAccountAliases,
+	"UploadServerCertificate":                   (*IAMService).UploadServerCertificate,
+	"GetServerCertificate":                      (*IAMService).GetServerCertificate,
+	"UpdateServerCertificate":                   (*IAMService).UpdateServerCertificate,
+	"DeleteServerCertificate":                   (*IAMService).DeleteServerCertificate,
+	"ListServerCertificates":                    (*IAMService).ListServerCertificates,
+	"TagServerCertificate":                      (*IAMService).TagServerCertificate,
+	"UntagServerCertificate":                    (*IAMService).UntagServerCertificate,
+	"ListServerCertificateTags":                 (*IAMService).ListServerCertificateTags,
+	"UploadSigningCertificate":                  (*IAMService).UploadSigningCertificate,
+	"ListSigningCertificates":                   (*IAMService).ListSigningCertificates,
+	"UpdateSigningCertificate":                  (*IAMService).UpdateSigningCertificate,
+	"DeleteSigningCertificate":                  (*IAMService).DeleteSigningCertificate,
+	"UploadSSHPublicKey":                        (*IAMService).UploadSSHPublicKey,
+	"GetSSHPublicKey":                           (*IAMService).GetSSHPublicKey,
+	"UpdateSSHPublicKey":                        (*IAMService).UpdateSSHPublicKey,
+	"ListSSHPublicKeys":                         (*IAMService).ListSSHPublicKeys,
+	"DeleteSSHPublicKey":                        (*IAMService).DeleteSSHPublicKey,
+	"CreateServiceSpecificCredential":           (*IAMService).CreateServiceSpecificCredential,
+	"DeleteServiceSpecificCredential":           (*IAMService).DeleteServiceSpecificCredential,
+	"ListServiceSpecificCredentials":            (*IAMService).ListServiceSpecificCredentials,
+	"ResetServiceSpecificCredential":            (*IAMService).ResetServiceSpecificCredential,
+	"UpdateServiceSpecificCredential":           (*IAMService).UpdateServiceSpecificCredential,
+	"CreateSAMLProvider":                        (*IAMService).CreateSAMLProvider,
+	"GetSAMLProvider":                           (*IAMService).GetSAMLProvider,
+	"ListSAMLProviders":                         (*IAMService).ListSAMLProviders,
+	"UpdateSAMLProvider":                        (*IAMService).UpdateSAMLProvider,
+	"DeleteSAMLProvider":                        (*IAMService).DeleteSAMLProvider,
+	"TagSAMLProvider":                           (*IAMService).TagSAMLProvider,
+	"UntagSAMLProvider":                         (*IAMService).UntagSAMLProvider,
+	"ListSAMLProviderTags":                      (*IAMService).ListSAMLProviderTags,
+	"CreateOpenIDConnectProvider":               (*IAMService).CreateOpenIDConnectProvider,
+	"GetOpenIDConnectProvider":                  (*IAMService).GetOpenIDConnectProvider,
+	"ListOpenIDConnectProviders":                (*IAMService).ListOpenIDConnectProviders,
+	"UpdateOpenIDConnectProviderThumbprint":     (*IAMService).UpdateOpenIDConnectProviderThumbprint,
+	"AddClientIDToOpenIDConnectProvider":        (*IAMService).AddClientIDToOpenIDConnectProvider,
+	"RemoveClientIDFromOpenIDConnectProvider":   (*IAMService).RemoveClientIDFromOpenIDConnectProvider,
+	"DeleteOpenIDConnectProvider":               (*IAMService).DeleteOpenIDConnectProvider,
+	"TagOpenIDConnectProvider":                  (*IAMService).TagOpenIDConnectProvider,
+	"UntagOpenIDConnectProvider":                (*IAMService).UntagOpenIDConnectProvider,
+	"ListOpenIDConnectProviderTags":             (*IAMService).ListOpenIDConnectProviderTags,
+	"GetMFADevice":                              (*IAMService).GetMFADevice,
+	"EnableOutboundWebIdentityFederation":       (*IAMService).EnableOutboundWebIdentityFederation,
+	"DisableOutboundWebIdentityFederation":      (*IAMService).DisableOutboundWebIdentityFederation,
+	"GetOutboundWebIdentityFederationInfo":      (*IAMService).GetOutboundWebIdentityFederationInfo,
+	"SetSecurityTokenServicePreferences":        (*IAMService).SetSecurityTokenServicePreferences,
+	"GetAccountAuthorizationDetails":            (*IAMService).GetAccountAuthorizationDetails,
+	"ListEntitiesForPolicy":                     (*IAMService).ListEntitiesForPolicy,
+	"GenerateCredentialReport":                  (*IAMService).GenerateCredentialReport,
+	"GetCredentialReport":                       (*IAMService).GetCredentialReport,
+	"CreateServiceLinkedRole":                   (*IAMService).CreateServiceLinkedRole,
+	"DeleteServiceLinkedRole":                   (*IAMService).DeleteServiceLinkedRole,
+	"GetServiceLinkedRoleDeletionStatus":        (*IAMService).GetServiceLinkedRoleDeletionStatus,
+	"GenerateServiceLastAccessedDetails":        (*IAMService).GenerateServiceLastAccessedDetails,
+	"GetServiceLastAccessedDetails":             (*IAMService).GetServiceLastAccessedDetails,
+	"GetServiceLastAccessedDetailsWithEntities": (*IAMService).GetServiceLastAccessedDetailsWithEntities,
+	"SimulatePrincipalPolicy":                   (*IAMService).SimulatePrincipalPolicy,
+	"ListPoliciesGrantingServiceAccess":         (*IAMService).ListPoliciesGrantingServiceAccess,
+}
+
 // RegisterHandlers registers all IAM operation handlers with the dispatcher.
 func (s *IAMService) RegisterHandlers(d handler.Registrar) {
-	d.RegisterHandlerForService("iam", "GetUser", s.GetUser)
-	d.RegisterHandlerForService("iam", "CreateUser", s.CreateUser)
-	d.RegisterHandlerForService("iam", "DeleteUser", s.DeleteUser)
-	d.RegisterHandlerForService("iam", "UpdateUser", s.UpdateUser)
-	d.RegisterHandlerForService("iam", "ListUsers", s.ListUsers)
-	d.RegisterHandlerForService("iam", "TagUser", s.TagUser)
-	d.RegisterHandlerForService("iam", "UntagUser", s.UntagUser)
-	d.RegisterHandlerForService("iam", "ListUserTags", s.ListUserTags)
-	d.RegisterHandlerForService("iam", "PutUserPermissionsBoundary", s.PutUserPermissionsBoundary)
-	d.RegisterHandlerForService("iam", "DeleteUserPermissionsBoundary", s.DeleteUserPermissionsBoundary)
-	d.RegisterHandlerForService("iam", "GetLoginProfile", s.GetLoginProfile)
-	d.RegisterHandlerForService("iam", "CreateLoginProfile", s.CreateLoginProfile)
-	d.RegisterHandlerForService("iam", "DeleteLoginProfile", s.DeleteLoginProfile)
-	d.RegisterHandlerForService("iam", "UpdateLoginProfile", s.UpdateLoginProfile)
-	d.RegisterHandlerForService("iam", "ChangePassword", s.ChangePassword)
-	d.RegisterHandlerForService("iam", "CreateAccessKey", s.CreateAccessKey)
-	d.RegisterHandlerForService("iam", "DeleteAccessKey", s.DeleteAccessKey)
-	d.RegisterHandlerForService("iam", "ListAccessKeys", s.ListAccessKeys)
-	d.RegisterHandlerForService("iam", "GetAccessKeyLastUsed", s.GetAccessKeyLastUsed)
-	d.RegisterHandlerForService("iam", "UpdateAccessKey", s.UpdateAccessKey)
-	d.RegisterHandlerForService("iam", "CreateGroup", s.CreateGroup)
-	d.RegisterHandlerForService("iam", "GetGroup", s.GetGroup)
-	d.RegisterHandlerForService("iam", "UpdateGroup", s.UpdateGroup)
-	d.RegisterHandlerForService("iam", "DeleteGroup", s.DeleteGroup)
-	d.RegisterHandlerForService("iam", "ListGroups", s.ListGroups)
-	d.RegisterHandlerForService("iam", "ListGroupsForUser", s.ListGroupsForUser)
-	d.RegisterHandlerForService("iam", "AddUserToGroup", s.AddUserToGroup)
-	d.RegisterHandlerForService("iam", "RemoveUserFromGroup", s.RemoveUserFromGroup)
-	d.RegisterHandlerForService("iam", "TagGroup", s.TagGroup)
-	d.RegisterHandlerForService("iam", "UntagGroup", s.UntagGroup)
-	d.RegisterHandlerForService("iam", "ListGroupTags", s.ListGroupTags)
-	d.RegisterHandlerForService("iam", "CreateRole", s.CreateRole)
-	d.RegisterHandlerForService("iam", "GetRole", s.GetRole)
-	d.RegisterHandlerForService("iam", "UpdateRole", s.UpdateRole)
-	d.RegisterHandlerForService("iam", "UpdateRoleDescription", s.UpdateRoleDescription)
-	d.RegisterHandlerForService("iam", "DeleteRole", s.DeleteRole)
-	d.RegisterHandlerForService("iam", "ListRoles", s.ListRoles)
-	d.RegisterHandlerForService("iam", "UpdateAssumeRolePolicy", s.UpdateAssumeRolePolicy)
-	d.RegisterHandlerForService("iam", "TagRole", s.TagRole)
-	d.RegisterHandlerForService("iam", "UntagRole", s.UntagRole)
-	d.RegisterHandlerForService("iam", "ListRoleTags", s.ListRoleTags)
-	d.RegisterHandlerForService("iam", "PutRolePermissionsBoundary", s.PutRolePermissionsBoundary)
-	d.RegisterHandlerForService("iam", "DeleteRolePermissionsBoundary", s.DeleteRolePermissionsBoundary)
-	d.RegisterHandlerForService("iam", "ListInstanceProfilesForRole", s.ListInstanceProfilesForRole)
-	d.RegisterHandlerForService("iam", "CreateInstanceProfile", s.CreateInstanceProfile)
-	d.RegisterHandlerForService("iam", "GetInstanceProfile", s.GetInstanceProfile)
-	d.RegisterHandlerForService("iam", "DeleteInstanceProfile", s.DeleteInstanceProfile)
-	d.RegisterHandlerForService("iam", "ListInstanceProfiles", s.ListInstanceProfiles)
-	d.RegisterHandlerForService("iam", "AddRoleToInstanceProfile", s.AddRoleToInstanceProfile)
-	d.RegisterHandlerForService("iam", "RemoveRoleFromInstanceProfile", s.RemoveRoleFromInstanceProfile)
-	d.RegisterHandlerForService("iam", "ListInstanceProfileTags", s.ListInstanceProfileTags)
-	d.RegisterHandlerForService("iam", "TagInstanceProfile", s.TagInstanceProfile)
-	d.RegisterHandlerForService("iam", "UntagInstanceProfile", s.UntagInstanceProfile)
-	d.RegisterHandlerForService("iam", "CreatePolicy", s.CreatePolicy)
-	d.RegisterHandlerForService("iam", "GetPolicy", s.GetPolicy)
-	d.RegisterHandlerForService("iam", "DeletePolicy", s.DeletePolicy)
-	d.RegisterHandlerForService("iam", "ListPolicies", s.ListPolicies)
-	d.RegisterHandlerForService("iam", "CreatePolicyVersion", s.CreatePolicyVersion)
-	d.RegisterHandlerForService("iam", "GetPolicyVersion", s.GetPolicyVersion)
-	d.RegisterHandlerForService("iam", "DeletePolicyVersion", s.DeletePolicyVersion)
-	d.RegisterHandlerForService("iam", "ListPolicyVersions", s.ListPolicyVersions)
-	d.RegisterHandlerForService("iam", "SetDefaultPolicyVersion", s.SetDefaultPolicyVersion)
-	d.RegisterHandlerForService("iam", "TagPolicy", s.TagPolicy)
-	d.RegisterHandlerForService("iam", "UntagPolicy", s.UntagPolicy)
-	d.RegisterHandlerForService("iam", "ListPolicyTags", s.ListPolicyTags)
-	d.RegisterHandlerForService("iam", "AttachUserPolicy", s.AttachUserPolicy)
-	d.RegisterHandlerForService("iam", "DetachUserPolicy", s.DetachUserPolicy)
-	d.RegisterHandlerForService("iam", "ListAttachedUserPolicies", s.ListAttachedUserPolicies)
-	d.RegisterHandlerForService("iam", "AttachGroupPolicy", s.AttachGroupPolicy)
-	d.RegisterHandlerForService("iam", "DetachGroupPolicy", s.DetachGroupPolicy)
-	d.RegisterHandlerForService("iam", "ListAttachedGroupPolicies", s.ListAttachedGroupPolicies)
-	d.RegisterHandlerForService("iam", "AttachRolePolicy", s.AttachRolePolicy)
-	d.RegisterHandlerForService("iam", "DetachRolePolicy", s.DetachRolePolicy)
-	d.RegisterHandlerForService("iam", "ListAttachedRolePolicies", s.ListAttachedRolePolicies)
-	d.RegisterHandlerForService("iam", "PutUserPolicy", s.PutUserPolicy)
-	d.RegisterHandlerForService("iam", "GetUserPolicy", s.GetUserPolicy)
-	d.RegisterHandlerForService("iam", "DeleteUserPolicy", s.DeleteUserPolicy)
-	d.RegisterHandlerForService("iam", "ListUserPolicies", s.ListUserPolicies)
-	d.RegisterHandlerForService("iam", "PutGroupPolicy", s.PutGroupPolicy)
-	d.RegisterHandlerForService("iam", "GetGroupPolicy", s.GetGroupPolicy)
-	d.RegisterHandlerForService("iam", "DeleteGroupPolicy", s.DeleteGroupPolicy)
-	d.RegisterHandlerForService("iam", "ListGroupPolicies", s.ListGroupPolicies)
-	d.RegisterHandlerForService("iam", "PutRolePolicy", s.PutRolePolicy)
-	d.RegisterHandlerForService("iam", "GetRolePolicy", s.GetRolePolicy)
-	d.RegisterHandlerForService("iam", "DeleteRolePolicy", s.DeleteRolePolicy)
-	d.RegisterHandlerForService("iam", "ListRolePolicies", s.ListRolePolicies)
-	d.RegisterHandlerForService("iam", "CreateVirtualMFADevice", s.CreateVirtualMFADevice)
-	d.RegisterHandlerForService("iam", "DeleteVirtualMFADevice", s.DeleteVirtualMFADevice)
-	d.RegisterHandlerForService("iam", "EnableMFADevice", s.EnableMFADevice)
-	d.RegisterHandlerForService("iam", "DeactivateMFADevice", s.DeactivateMFADevice)
-	d.RegisterHandlerForService("iam", "ListMFADevices", s.ListMFADevices)
-	d.RegisterHandlerForService("iam", "ListVirtualMFADevices", s.ListVirtualMFADevices)
-	d.RegisterHandlerForService("iam", "ResyncMFADevice", s.ResyncMFADevice)
-	d.RegisterHandlerForService("iam", "TagMFADevice", s.TagMFADevice)
-	d.RegisterHandlerForService("iam", "UntagMFADevice", s.UntagMFADevice)
-	d.RegisterHandlerForService("iam", "ListMFADeviceTags", s.ListMFADeviceTags)
-	d.RegisterHandlerForService("iam", "GetAccountPasswordPolicy", s.GetAccountPasswordPolicy)
-	d.RegisterHandlerForService("iam", "UpdateAccountPasswordPolicy", s.UpdateAccountPasswordPolicy)
-	d.RegisterHandlerForService("iam", "DeleteAccountPasswordPolicy", s.DeleteAccountPasswordPolicy)
-	d.RegisterHandlerForService("iam", "GetAccountSummary", s.GetAccountSummary)
-	d.RegisterHandlerForService("iam", "CreateAccountAlias", s.CreateAccountAlias)
-	d.RegisterHandlerForService("iam", "DeleteAccountAlias", s.DeleteAccountAlias)
-	d.RegisterHandlerForService("iam", "ListAccountAliases", s.ListAccountAliases)
-	d.RegisterHandlerForService("iam", "UploadServerCertificate", s.UploadServerCertificate)
-	d.RegisterHandlerForService("iam", "GetServerCertificate", s.GetServerCertificate)
-	d.RegisterHandlerForService("iam", "UpdateServerCertificate", s.UpdateServerCertificate)
-	d.RegisterHandlerForService("iam", "DeleteServerCertificate", s.DeleteServerCertificate)
-	d.RegisterHandlerForService("iam", "ListServerCertificates", s.ListServerCertificates)
-	d.RegisterHandlerForService("iam", "TagServerCertificate", s.TagServerCertificate)
-	d.RegisterHandlerForService("iam", "UntagServerCertificate", s.UntagServerCertificate)
-	d.RegisterHandlerForService("iam", "ListServerCertificateTags", s.ListServerCertificateTags)
-	d.RegisterHandlerForService("iam", "UploadSigningCertificate", s.UploadSigningCertificate)
-	d.RegisterHandlerForService("iam", "ListSigningCertificates", s.ListSigningCertificates)
-	d.RegisterHandlerForService("iam", "UpdateSigningCertificate", s.UpdateSigningCertificate)
-	d.RegisterHandlerForService("iam", "DeleteSigningCertificate", s.DeleteSigningCertificate)
-	d.RegisterHandlerForService("iam", "UploadSSHPublicKey", s.UploadSSHPublicKey)
-	d.RegisterHandlerForService("iam", "GetSSHPublicKey", s.GetSSHPublicKey)
-	d.RegisterHandlerForService("iam", "UpdateSSHPublicKey", s.UpdateSSHPublicKey)
-	d.RegisterHandlerForService("iam", "ListSSHPublicKeys", s.ListSSHPublicKeys)
-	d.RegisterHandlerForService("iam", "DeleteSSHPublicKey", s.DeleteSSHPublicKey)
-	d.RegisterHandlerForService("iam", "CreateServiceSpecificCredential", s.CreateServiceSpecificCredential)
-	d.RegisterHandlerForService("iam", "DeleteServiceSpecificCredential", s.DeleteServiceSpecificCredential)
-	d.RegisterHandlerForService("iam", "ListServiceSpecificCredentials", s.ListServiceSpecificCredentials)
-	d.RegisterHandlerForService("iam", "ResetServiceSpecificCredential", s.ResetServiceSpecificCredential)
-	d.RegisterHandlerForService("iam", "UpdateServiceSpecificCredential", s.UpdateServiceSpecificCredential)
-	d.RegisterHandlerForService("iam", "CreateSAMLProvider", s.CreateSAMLProvider)
-	d.RegisterHandlerForService("iam", "GetSAMLProvider", s.GetSAMLProvider)
-	d.RegisterHandlerForService("iam", "ListSAMLProviders", s.ListSAMLProviders)
-	d.RegisterHandlerForService("iam", "UpdateSAMLProvider", s.UpdateSAMLProvider)
-	d.RegisterHandlerForService("iam", "DeleteSAMLProvider", s.DeleteSAMLProvider)
-	d.RegisterHandlerForService("iam", "TagSAMLProvider", s.TagSAMLProvider)
-	d.RegisterHandlerForService("iam", "UntagSAMLProvider", s.UntagSAMLProvider)
-	d.RegisterHandlerForService("iam", "ListSAMLProviderTags", s.ListSAMLProviderTags)
-	d.RegisterHandlerForService("iam", "CreateOpenIDConnectProvider", s.CreateOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "GetOpenIDConnectProvider", s.GetOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "ListOpenIDConnectProviders", s.ListOpenIDConnectProviders)
-	d.RegisterHandlerForService("iam", "UpdateOpenIDConnectProviderThumbprint", s.UpdateOpenIDConnectProviderThumbprint)
-	d.RegisterHandlerForService("iam", "AddClientIDToOpenIDConnectProvider", s.AddClientIDToOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "RemoveClientIDFromOpenIDConnectProvider", s.RemoveClientIDFromOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "DeleteOpenIDConnectProvider", s.DeleteOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "TagOpenIDConnectProvider", s.TagOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "UntagOpenIDConnectProvider", s.UntagOpenIDConnectProvider)
-	d.RegisterHandlerForService("iam", "ListOpenIDConnectProviderTags", s.ListOpenIDConnectProviderTags)
-	d.RegisterHandlerForService("iam", "GetMFADevice", s.GetMFADevice)
-	d.RegisterHandlerForService("iam", "EnableOutboundWebIdentityFederation", s.EnableOutboundWebIdentityFederation)
-	d.RegisterHandlerForService("iam", "DisableOutboundWebIdentityFederation", s.DisableOutboundWebIdentityFederation)
-	d.RegisterHandlerForService("iam", "GetOutboundWebIdentityFederationInfo", s.GetOutboundWebIdentityFederationInfo)
-	d.RegisterHandlerForService("iam", "SetSecurityTokenServicePreferences", s.SetSecurityTokenServicePreferences)
-	d.RegisterHandlerForService("iam", "GetAccountAuthorizationDetails", s.GetAccountAuthorizationDetails)
-	d.RegisterHandlerForService("iam", "ListEntitiesForPolicy", s.ListEntitiesForPolicy)
-	d.RegisterHandlerForService("iam", "GenerateCredentialReport", s.GenerateCredentialReport)
-	d.RegisterHandlerForService("iam", "GetCredentialReport", s.GetCredentialReport)
-	d.RegisterHandlerForService("iam", "CreateServiceLinkedRole", s.CreateServiceLinkedRole)
-	d.RegisterHandlerForService("iam", "DeleteServiceLinkedRole", s.DeleteServiceLinkedRole)
-	d.RegisterHandlerForService("iam", "GetServiceLinkedRoleDeletionStatus", s.GetServiceLinkedRoleDeletionStatus)
-	d.RegisterHandlerForService("iam", "GenerateServiceLastAccessedDetails", s.GenerateServiceLastAccessedDetails)
-	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetails", s.GetServiceLastAccessedDetails)
-	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetailsWithEntities", s.GetServiceLastAccessedDetailsWithEntities)
-	d.RegisterHandlerForService("iam", "SimulatePrincipalPolicy", s.SimulatePrincipalPolicy)
+	for op, method := range iamHandlerMethods {
+		d.RegisterHandlerForService("iam", op, func(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+			return method(s, ctx, reqCtx, req)
+		})
+	}
+}
+
+// RegisteredIAMOperations returns the sorted names of all operations with
+// registered handlers.
+func RegisteredIAMOperations() []string {
+	ops := make([]string, 0, len(iamHandlerMethods))
+	for op := range iamHandlerMethods {
+		ops = append(ops, op)
+	}
+	sort.Strings(ops)
+	return ops
 }
 
 // WaitForReport blocks until any in-flight credential report generation

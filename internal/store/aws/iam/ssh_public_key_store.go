@@ -54,24 +54,50 @@ func (s *SSHPublicKeyStore) Exists(keyId string) bool {
 }
 
 // Upload uploads a new SSH public key for the given user.
-func (s *SSHPublicKeyStore) Upload(userName, sshPublicKeyBody string) (*SSHPublicKey, error) {
-	id, err := generateSSHPublicKeyID()
+// MaxSSHPublicKeysPerUser is the AWS-enforced quota of SSH public keys per
+// IAM user.
+const MaxSSHPublicKeysPerUser = 5
+
+// UploadWithGuards stores a canonicalised SSH public key after checking,
+// inside a single lock scope, that the same key material is not already
+// registered for the user and that the per-user quota is not exceeded.
+// The fingerprint is computed over the key blob, so differing comments do
+// not hide a duplicate.
+func (s *SSHPublicKeyStore) UploadWithGuards(userName, sshPublicKeyBody string) (*SSHPublicKey, error) {
+	var created *SSHPublicKey
+	err := s.kl.WithLock("ssh-key:"+userName, func() error {
+		existing, err := s.ListByUserName(userName)
+		if err != nil {
+			return err
+		}
+		fingerprint := computeFingerprint(sshPublicKeyBody)
+		for _, key := range existing {
+			if key.Fingerprint == fingerprint {
+				return NewStoreError("upload_ssh_public_key", ErrDuplicateSSHPublicKey)
+			}
+		}
+		if len(existing) >= MaxSSHPublicKeysPerUser {
+			return NewStoreError("upload_ssh_public_key", ErrSSHPublicKeyLimitExceeded)
+		}
+
+		id, err := generateSSHPublicKeyID()
+		if err != nil {
+			return NewStoreError("generate_ssh_public_key_id", err)
+		}
+		created = &SSHPublicKey{
+			SSHPublicKeyId:   id,
+			UserName:         userName,
+			SSHPublicKeyBody: sshPublicKeyBody,
+			Fingerprint:      fingerprint,
+			Status:           "Active",
+			UploadDate:       time.Now().UTC(),
+		}
+		return s.Put(created)
+	})
 	if err != nil {
 		return nil, err
 	}
-	fingerprint := computeFingerprint(sshPublicKeyBody)
-	key := &SSHPublicKey{
-		SSHPublicKeyId:   id,
-		UserName:         userName,
-		SSHPublicKeyBody: sshPublicKeyBody,
-		Fingerprint:      fingerprint,
-		Status:           "Active",
-		UploadDate:       time.Now().UTC(),
-	}
-	if err := s.Put(key); err != nil {
-		return nil, err
-	}
-	return key, nil
+	return created, nil
 }
 
 // UpdateStatus changes the status of an SSH public key (e.g. Active/Inactive).

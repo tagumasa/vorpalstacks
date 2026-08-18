@@ -6,9 +6,7 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -196,48 +194,11 @@ func (s *IAMService) ListGroupsForUser(ctx context.Context, reqCtx *request.Requ
 }
 
 func (s *IAMService) groupToResponse(reqCtx *request.RequestContext, group *iamstore.Group) map[string]interface{} {
-	resp := map[string]interface{}{
+	return map[string]interface{}{
 		"GroupId":    group.ID,
 		"Path":       group.Path,
 		"GroupName":  group.GroupName,
 		"Arn":        group.Arn,
 		"CreateDate": group.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 	}
-
-	if group.PermissionsBoundary != nil {
-		resp["PermissionsBoundary"] = map[string]interface{}{
-			"PermissionsBoundaryType": group.PermissionsBoundary.PermissionsBoundaryType,
-			"PermissionsBoundaryArn":  group.PermissionsBoundary.PermissionsBoundaryArn,
-		}
-	}
-
-	if tags := tags.ToResponse(group.Tags); tags != nil {
-		resp["Tags"] = tags
-	}
-
-	return resp
-}
-
-var groupTagOps = tagOps[*iamstore.Group]{
-	paramName:  "GroupName",
-	emptyErr:   ErrNoSuchGroup,
-	notFoundFn: func(n string) error { return NewNoSuchGroupError(n) },
-	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Group, error) { return s.Groups().Get(n) },
-	putFn:      func(s *iamstore.IAMStore, r *iamstore.Group) error { return s.Groups().Put(r) },
-	tagsFn:     func(r *iamstore.Group) *[]types.Tag { return &r.Tags },
-}
-
-// TagGroup adds tags to an IAM group.
-func (s *IAMService) TagGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagResource(ctx, s, reqCtx, req, groupTagOps)
-}
-
-// UntagGroup removes tags from an IAM group.
-func (s *IAMService) UntagGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return untagResource(ctx, s, reqCtx, req, groupTagOps)
-}
-
-// ListGroupTags lists tags for an IAM group.
-func (s *IAMService) ListGroupTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return listResourceTags(ctx, s, reqCtx, req, groupTagOps)
 }

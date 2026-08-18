@@ -351,5 +351,30 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iam", "CreateServiceLinkedRole_Naming", func() error {
+		resp, err := tc.client.CreateServiceLinkedRole(tc.ctx, &iam.CreateServiceLinkedRoleInput{
+			AWSServiceName: aws.String("ecs.amazonaws.com"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Role == nil {
+			return fmt.Errorf("role is nil")
+		}
+		if aws.ToString(resp.Role.RoleName) != "AWSServiceRoleForECS" {
+			return fmt.Errorf("service-linked role name: got %s, want AWSServiceRoleForECS", aws.ToString(resp.Role.RoleName))
+		}
+		if aws.ToString(resp.Role.Path) != "/aws-service-role/ecs.amazonaws.com/" {
+			return fmt.Errorf("service-linked role path: got %s", aws.ToString(resp.Role.Path))
+		}
+		_, err = tc.client.DeleteServiceLinkedRole(tc.ctx, &iam.DeleteServiceLinkedRoleInput{
+			RoleName: aws.String("AWSServiceRoleForECS"),
+		})
+		if err != nil {
+			return fmt.Errorf("cleanup DeleteServiceLinkedRole: %w", err)
+		}
+		return nil
+	}))
+
 	return results
 }

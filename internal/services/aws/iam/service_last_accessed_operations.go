@@ -327,12 +327,9 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, regio
 func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetStringParam(req.Parameters, "Arn")
 	if arn == "" {
-		arn = request.GetStringParam(req.Parameters, "arn")
+		return nil, NewValidationError("Arn")
 	}
 	granularity := request.GetStringParam(req.Parameters, "Granularity")
-	if granularity == "" {
-		granularity = request.GetStringParam(req.Parameters, "granularity")
-	}
 	if granularity == "" {
 		granularity = "P30D"
 	}

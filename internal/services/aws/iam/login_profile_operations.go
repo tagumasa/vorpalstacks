@@ -198,9 +198,11 @@ func (s *IAMService) ChangePassword(ctx context.Context, reqCtx *request.Request
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	// The operation targets the authenticated caller itself; the request
+	// carries no UserName member on the wire.
+	userName, err := resolveUserName(reqCtx, "")
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

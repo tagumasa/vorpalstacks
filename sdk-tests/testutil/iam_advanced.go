@@ -275,7 +275,7 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 
 	// ========== SSH Public Key ==========
 	sshUserName := fmt.Sprintf("SSHUser-%s", tc.ts)
-	testSSHPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0g+Z+s+Z+s+Z test@example.com"
+	testSSHPublicKey := sshRsaPublicKeyBody(generateTestRSAKey(), "advanced@example.com")
 
 	results = append(results, r.RunTest("iam", "_Advanced_CreateUserForSSH", func() error {
 		_, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{
@@ -390,22 +390,10 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 
 	// ========== Server Certificate ==========
 	serverCertName := fmt.Sprintf("TestCert-%s", tc.ts)
-	testCertBody := `-----BEGIN CERTIFICATE-----
-MIIBkTCB+wIJAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRl
-c3QgY2EwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjARMQ8wDQYDVQQD
-DAZ0ZXN0IGNhMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC0g+Z+s+Z+s+Z+
-s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s
-IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
-ExDzANBgNVBAMMBnRlc3QgY2EwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwM
-DAwWjARMQ8wDQYDVQQDDAZ0ZXN0IGNh
------END CERTIFICATE-----`
-	testPrivateKey := `-----BEGIN RSA PRIVATE KEY-----
-MIIBkTCB+wIJAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRl
-c3QgY2EwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjARMQ8wDQYDVQQD
-DAZ0ZXN0IGNhMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC0g+Z+s+Z+s+Z+
-s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s
-IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
------END RSA PRIVATE KEY-----`
+	testCertBody, testPrivateKey, err := generateSelfSignedCertificate(serverCertName)
+	if err != nil {
+		return []TestResult{{Service: "iam", TestName: "Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	results = append(results, r.RunTest("iam", "UploadServerCertificate", func() error {
 		resp, err := tc.client.UploadServerCertificate(tc.ctx, &iam.UploadServerCertificateInput{
@@ -428,7 +416,44 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 		if len(resp.Tags) == 0 {
 			return fmt.Errorf("UploadServerCertificate response missing Tags")
 		}
+		if resp.ServerCertificateMetadata.Expiration == nil {
+			return fmt.Errorf("UploadServerCertificate response missing Expiration")
+		}
 		tc.serverCertArn = aws.ToString(resp.ServerCertificateMetadata.Arn)
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "UploadServerCertificate_Malformed", func() error {
+		_, err := tc.client.UploadServerCertificate(tc.ctx, &iam.UploadServerCertificateInput{
+			ServerCertificateName: aws.String(serverCertName + "-malformed"),
+			CertificateBody:       aws.String("garbage certificate body"),
+			PrivateKey:            aws.String(testPrivateKey),
+		})
+		if err == nil {
+			return fmt.Errorf("a malformed certificate body must be rejected")
+		}
+		if !containsErrorCode(err, "MalformedCertificate") {
+			return fmt.Errorf("malformed certificate: got %v, want MalformedCertificate", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "UploadServerCertificate_KeyPairMismatch", func() error {
+		_, otherKey, err := generateSelfSignedCertificate(serverCertName + "-other")
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.UploadServerCertificate(tc.ctx, &iam.UploadServerCertificateInput{
+			ServerCertificateName: aws.String(serverCertName + "-mismatch"),
+			CertificateBody:       aws.String(testCertBody),
+			PrivateKey:            aws.String(otherKey),
+		})
+		if err == nil {
+			return fmt.Errorf("a private key from another certificate must be rejected")
+		}
+		if !containsErrorCode(err, "KeyPairMismatch") {
+			return fmt.Errorf("key pair mismatch: got %v, want KeyPairMismatch", err)
+		}
 		return nil
 	}))
 
@@ -499,6 +524,50 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 		}
 		if aws.ToString(resp.ServerCertificate.ServerCertificateMetadata.ServerCertificateName) != newName {
 			return fmt.Errorf("renamed cert name mismatch: got %s", aws.ToString(resp.ServerCertificate.ServerCertificateMetadata.ServerCertificateName))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "UpdateServerCertificate_InvalidNewName", func() error {
+		_, err := tc.client.UpdateServerCertificate(tc.ctx, &iam.UpdateServerCertificateInput{
+			ServerCertificateName:    aws.String(serverCertName),
+			NewServerCertificateName: aws.String("invalid name with spaces!"),
+		})
+		if err == nil {
+			return fmt.Errorf("an invalid new certificate name must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("invalid new name: got %v, want InvalidInput", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "UpdateServerCertificate_DuplicateName", func() error {
+		otherName := serverCertName + "-occupied"
+		otherCert, otherKey, err := generateSelfSignedCertificate(otherName)
+		if err != nil {
+			return err
+		}
+		if _, err := tc.client.UploadServerCertificate(tc.ctx, &iam.UploadServerCertificateInput{
+			ServerCertificateName: aws.String(otherName),
+			CertificateBody:       aws.String(otherCert),
+			PrivateKey:            aws.String(otherKey),
+		}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteServerCertificate(tc.ctx, &iam.DeleteServerCertificateInput{
+			ServerCertificateName: aws.String(otherName),
+		})
+
+		_, err = tc.client.UpdateServerCertificate(tc.ctx, &iam.UpdateServerCertificateInput{
+			ServerCertificateName:    aws.String(serverCertName),
+			NewServerCertificateName: aws.String(otherName),
+		})
+		if err == nil {
+			return fmt.Errorf("renaming onto an existing certificate name must be rejected")
+		}
+		if !containsErrorCode(err, "EntityAlreadyExists") {
+			return fmt.Errorf("duplicate new name: got %v, want EntityAlreadyExists", err)
 		}
 		return nil
 	}))
@@ -642,6 +711,54 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 			}
 		}
 		return fmt.Errorf("service credential not found after update")
+	}))
+
+	results = append(results, r.RunTest("iam", "ServiceSpecificCredential_Ownership", func() error {
+		other := fmt.Sprintf("SSCOwner-%s", tc.ts)
+		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+
+		// Mutating the credential through a user that does not own it
+		// fails with NoSuchEntity.
+		_, err := tc.client.UpdateServiceSpecificCredential(tc.ctx, &iam.UpdateServiceSpecificCredentialInput{
+			UserName:                    aws.String(other),
+			ServiceSpecificCredentialId: aws.String(tc.serviceCredId),
+			Status:                      types.StatusTypeActive,
+		})
+		if err == nil {
+			return fmt.Errorf("update through a non-owner must be rejected")
+		}
+		if !containsErrorCode(err, "NoSuchEntity") {
+			return fmt.Errorf("non-owner update: got %v, want NoSuchEntity", err)
+		}
+
+		_, err = tc.client.DeleteServiceSpecificCredential(tc.ctx, &iam.DeleteServiceSpecificCredentialInput{
+			UserName:                    aws.String(other),
+			ServiceSpecificCredentialId: aws.String(tc.serviceCredId),
+		})
+		if err == nil {
+			return fmt.Errorf("delete through a non-owner must be rejected")
+		}
+		if !containsErrorCode(err, "NoSuchEntity") {
+			return fmt.Errorf("non-owner delete: got %v, want NoSuchEntity", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "CreateServiceSpecificCredential_UnsupportedService", func() error {
+		_, err := tc.client.CreateServiceSpecificCredential(tc.ctx, &iam.CreateServiceSpecificCredentialInput{
+			UserName:    aws.String(sshUserName),
+			ServiceName: aws.String("s3.amazonaws.com"),
+		})
+		if err == nil {
+			return fmt.Errorf("a service without service-specific credential support must be rejected")
+		}
+		if !containsErrorCode(err, "NotSupportedService") {
+			return fmt.Errorf("unsupported service: got %v, want NotSupportedService", err)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ResetServiceSpecificCredential", func() error {

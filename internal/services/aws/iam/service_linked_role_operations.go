@@ -30,14 +30,16 @@ func (s *IAMService) CreateServiceLinkedRole(ctx context.Context, reqCtx *reques
 		return nil, NewInvalidInputError("CustomSuffix", "must match pattern ^[\\w+=,.@-]+$ and be 1-64 characters")
 	}
 
-	// Derive the role name from the service's short name (the prefix
-	// before the first dot) plus an optional custom suffix. validateAWSServiceName
-	// guarantees the dotted <service>.amazonaws.com form so the prefix is never
-	// empty. AWS enforces a 64-character maximum on IAM role names, so reject
-	// any combination that would exceed the limit before attempting to create
-	// the role.
+	// Service-linked role names combine a service-provided prefix with the
+	// optional custom suffix; the documented prefix form is
+	// AWSServiceRoleFor<Service> (for example ecs.amazonaws.com creates
+	// AWSServiceRoleForECS). AWS defines the exact capitalisation per
+	// service; this derivation uses the uppercase short name, which matches
+	// the documented example. AWS enforces a 64-character maximum on IAM
+	// role names, so reject any combination that would exceed the limit
+	// before attempting to create the role.
 	dotIdx := strings.Index(awsServiceName, ".")
-	roleName := awsServiceName[:dotIdx]
+	roleName := "AWSServiceRoleFor" + strings.ToUpper(awsServiceName[:dotIdx])
 	if customSuffix != "" {
 		roleName = roleName + "-" + customSuffix
 	}

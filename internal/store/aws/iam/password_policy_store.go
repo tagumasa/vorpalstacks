@@ -56,16 +56,30 @@ func (s *PasswordPolicyStore) GetOrDefault() *AccountPasswordPolicy {
 
 // DefaultPolicy returns the default password policy configuration.
 func (s *PasswordPolicyStore) DefaultPolicy() *AccountPasswordPolicy {
+	// The default password policy applied when no custom policy exists:
+	// minimum length 8, at least three of the four character types, and
+	// passwords never expire (per the IAM User Guide "Default password
+	// policy": minimum length of 8, three of four character types, never
+	// expire). Requiring all four types individually would be stricter
+	// than the documented rule, so the mixed-class requirement is carried
+	// by MinimumCharacterTypes instead of the per-class booleans.
 	return &AccountPasswordPolicy{
 		MinimumPasswordLength:      8,
-		RequireSymbols:             true,
-		RequireNumbers:             true,
-		RequireUppercaseCharacters: true,
-		RequireLowercaseCharacters: true,
-		AllowUsersToChangePassword: true,
-		MaxPasswordAge:             90,
-		PasswordReusePrevention:    24,
+		MinimumCharacterTypes:      3,
+		AllowUsersToChangePassword: false,
+		MaxPasswordAge:             0,
+		PasswordReusePrevention:    0,
 		HardExpiry:                 false,
 		ExpirePasswords:            false,
+	}
+}
+
+// ParameterDefaults returns the policy whose field values are the documented
+// per-parameter defaults of UpdateAccountPasswordPolicy: any parameter the
+// request omits reverts to these values rather than being merged with the
+// previous policy.
+func (s *PasswordPolicyStore) ParameterDefaults() *AccountPasswordPolicy {
+	return &AccountPasswordPolicy{
+		MinimumPasswordLength: 6,
 	}
 }

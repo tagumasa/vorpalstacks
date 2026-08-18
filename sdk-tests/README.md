@@ -33,7 +33,7 @@ which are separate services in the SDK classification used by
 | DynamoDB | 111 | 100% | ✅ Perfect |
 | EC2 | 37 | 100% | ✅ Perfect |
 | EventBridge | 59 | 100% | ✅ Perfect |
-| IAM | 174 | 100% | ✅ Perfect |
+| IAM | 220 | 100% | ✅ Perfect |
 | IoT | 361 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
 | KMS | 102 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 71 | 100% | ✅ Perfect |
 
-**Overall: 3,006/3,006 tests passing (100%) — 2,940 SDK + 49 integration + 17 WebSocket** (confirmed 2026-08-18 on `main`)
+**Overall: 3,052/3,052 tests passing (100%) — 2,986 SDK + 49 integration + 17 WebSocket** (confirmed 2026-08-18 on `main` after the IAM follow-up fix session)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

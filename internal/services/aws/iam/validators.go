@@ -204,6 +204,12 @@ var numberPattern = regexp.MustCompile(`[0-9]`)
 // applicable requirement of the account password policy.  Each boolean
 // flag on the policy is checked independently, matching AWS behaviour.
 func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPasswordPolicy) bool {
+	// The absolute password length range (passwordType) applies regardless
+	// of any custom policy.
+	if len(password) < 1 || len(password) > 128 {
+		return false
+	}
+
 	if len(password) < policy.MinimumPasswordLength {
 		return false
 	}
@@ -242,6 +248,33 @@ func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPass
 			}
 		}
 		if !hasLower {
+			return false
+		}
+	}
+
+	// The default password policy requires a mix of character types rather
+	// than every individual class.
+	if policy.MinimumCharacterTypes > 0 {
+		classes := 0
+		if symbolPattern.MatchString(password) {
+			classes++
+		}
+		if numberPattern.MatchString(password) {
+			classes++
+		}
+		for _, r := range password {
+			if unicode.IsUpper(r) {
+				classes++
+				break
+			}
+		}
+		for _, r := range password {
+			if unicode.IsLower(r) {
+				classes++
+				break
+			}
+		}
+		if classes < policy.MinimumCharacterTypes {
 			return false
 		}
 	}

@@ -24,6 +24,11 @@ func (s *IAMService) EnableOutboundWebIdentityFederation(ctx context.Context, re
 		return nil, err
 	}
 
+	// Enabling an already enabled feature fails with FeatureEnabled.
+	if settings.OutboundWebIdentityFederationEnabled {
+		return nil, ErrFeatureEnabled
+	}
+
 	// Derive the OIDC issuer identifier from the configured base URL
 	// rather than hardcoding amazonaws.com.  For edge/on-prem
 	// deployments the base URL reflects the actual deployment domain.
@@ -78,6 +83,11 @@ func (s *IAMService) DisableOutboundWebIdentityFederation(ctx context.Context, r
 		return nil, err
 	}
 
+	// Disabling a feature that is not enabled fails with FeatureDisabled.
+	if !settings.OutboundWebIdentityFederationEnabled {
+		return nil, ErrFeatureDisabled
+	}
+
 	settings.OutboundWebIdentityFederationEnabled = false
 	settings.IssuerIdentifier = ""
 
@@ -98,6 +108,12 @@ func (s *IAMService) GetOutboundWebIdentityFederationInfo(ctx context.Context, r
 	settings, err := store.AccountSettings().Get()
 	if err != nil {
 		return nil, err
+	}
+
+	// Reading the configuration of a disabled feature fails with
+	// FeatureDisabled.
+	if !settings.OutboundWebIdentityFederationEnabled {
+		return nil, ErrFeatureDisabled
 	}
 
 	return map[string]interface{}{

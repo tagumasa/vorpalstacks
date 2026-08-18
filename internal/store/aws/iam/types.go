@@ -73,15 +73,15 @@ type AccessKeyListResult struct {
 }
 
 // Group represents an IAM group.
+// Group carries no tags or permissions boundary: IAM groups are not
+// taggable and no group operation accepts a boundary.
 type Group struct {
-	ID                  string               `json:"id"`
-	Path                string               `json:"path"`
-	GroupName           string               `json:"group_name"`
-	Arn                 string               `json:"arn"`
-	AccountId           string               `json:"account_id"`
-	CreateDate          time.Time            `json:"create_date"`
-	PermissionsBoundary *PermissionsBoundary `json:"permissions_boundary,omitempty"`
-	Tags                []types.Tag          `json:"tags,omitempty"`
+	ID         string    `json:"id"`
+	Path       string    `json:"path"`
+	GroupName  string    `json:"group_name"`
+	Arn        string    `json:"arn"`
+	AccountId  string    `json:"account_id"`
+	CreateDate time.Time `json:"create_date"`
 }
 
 // GroupListResult represents the result of listing IAM groups.
@@ -251,6 +251,11 @@ type AccountPasswordPolicy struct {
 	PasswordReusePrevention    int  `json:"password_reuse_prevention"`
 	HardExpiry                 bool `json:"hard_expiry"`
 	ExpirePasswords            bool `json:"expire_passwords"`
+	// MinimumCharacterTypes models the IAM default password policy rule
+	// that passwords contain at least three of the four character types.
+	// It is internal to password validation and never part of the API
+	// surface; custom policies leave it at zero.
+	MinimumCharacterTypes int `json:"minimum_character_types,omitempty"`
 }
 
 // AccountAlias represents an IAM account alias.
@@ -288,6 +293,10 @@ type SigningCertificate struct {
 	CertificateBody string    `json:"certificate_body"`
 	Status          string    `json:"status"`
 	UploadDate      time.Time `json:"upload_date"`
+	// Fingerprint identifies the parsed certificate contents for duplicate
+	// detection. It is internal to the store and not part of the API
+	// surface.
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // SSHPublicKey represents an IAM SSH public key.

@@ -92,6 +92,26 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 		if aws.ToString(resp.Group.GroupName) != tc.group {
 			return fmt.Errorf("group name not updated")
 		}
+
+		// A new name outside the group-name pattern must be rejected, and
+		// renaming onto an existing group must fail with EntityAlreadyExists.
+		if _, err := tc.client.UpdateGroup(tc.ctx, &iam.UpdateGroupInput{
+			GroupName:    aws.String(tc.group),
+			NewGroupName: aws.String("invalid group name!"),
+		}); err == nil || !isInvalidInputError(err) {
+			return fmt.Errorf("invalid NewGroupName: got %v, want InvalidInput", err)
+		}
+		other := fmt.Sprintf("UpdateGroupOther-%s", tc.ts)
+		if _, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{GroupName: aws.String(other)}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(other)})
+		if _, err := tc.client.UpdateGroup(tc.ctx, &iam.UpdateGroupInput{
+			GroupName:    aws.String(tc.group),
+			NewGroupName: aws.String(other),
+		}); err == nil || !containsErrorCode(err, "EntityAlreadyExists") {
+			return fmt.Errorf("rename onto existing group: got %v, want EntityAlreadyExists", err)
+		}
 		return nil
 	}))
 
@@ -139,6 +159,34 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 		}
 		if !found {
 			return fmt.Errorf("group %s not found in ListGroupsForUser", tc.group)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "AddUserToGroup_Idempotent", func() error {
+		// Re-adding an existing membership succeeds without change; the
+		// documented error surface has no duplicate-membership error.
+		if _, err := tc.client.AddUserToGroup(tc.ctx, &iam.AddUserToGroupInput{
+			GroupName: aws.String(tc.group),
+			UserName:  aws.String(tc.user),
+		}); err != nil {
+			return fmt.Errorf("second AddUserToGroup for an existing membership failed: %w", err)
+		}
+
+		resp, err := tc.client.GetGroup(tc.ctx, &iam.GetGroupInput{
+			GroupName: aws.String(tc.group),
+		})
+		if err != nil {
+			return fmt.Errorf("GetGroup after repeated AddUserToGroup: %w", err)
+		}
+		count := 0
+		for _, u := range resp.Users {
+			if aws.ToString(u.UserName) == tc.user {
+				count++
+			}
+		}
+		if count != 1 {
+			return fmt.Errorf("user %s appears %d times in group, want exactly 1", tc.user, count)
 		}
 		return nil
 	}))

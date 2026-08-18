@@ -1,7 +1,13 @@
 package testutil
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base32"
+	"encoding/binary"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -158,5 +164,160 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iam", "ListVirtualMFADevices_AssignmentStatus", func() error {
+		// Create a fresh device so the test does not depend on the
+		// lifecycle of the earlier device tests.
+		deviceName := fmt.Sprintf("AssignMFA-%s", tc.ts)
+		created, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
+			VirtualMFADeviceName: aws.String(deviceName),
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{
+			SerialNumber: created.VirtualMFADevice.SerialNumber,
+		})
+
+		resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{
+			AssignmentStatus: types.AssignmentStatusTypeUnassigned,
+			MaxItems:         aws.Int32(1000),
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, d := range resp.VirtualMFADevices {
+			if aws.ToString(d.SerialNumber) == aws.ToString(created.VirtualMFADevice.SerialNumber) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("unassigned device not listed under AssignmentStatus=Unassigned")
+		}
+
+		assigned, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{
+			AssignmentStatus: types.AssignmentStatusTypeAssigned,
+			MaxItems:         aws.Int32(1000),
+		})
+		if err != nil {
+			return err
+		}
+		for _, d := range assigned.VirtualMFADevices {
+			if aws.ToString(d.SerialNumber) == aws.ToString(created.VirtualMFADevice.SerialNumber) {
+				return fmt.Errorf("unassigned device must not appear under AssignmentStatus=Assigned")
+			}
+		}
+
+		_, err = tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{
+			AssignmentStatus: "Bogus",
+		})
+		if err == nil || !isInvalidInputError(err) {
+			return fmt.Errorf("invalid AssignmentStatus: got %v, want InvalidInput", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "MFA_DeviceLifecycle", func() error {
+		user := fmt.Sprintf("MFALife-%s", tc.ts)
+		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+			return err
+		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+
+		device, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
+			VirtualMFADeviceName: aws.String(fmt.Sprintf("MFALife-Dev-%s", tc.ts)),
+		})
+		if err != nil {
+			return err
+		}
+		serial := device.VirtualMFADevice.SerialNumber
+		defer tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{SerialNumber: serial})
+
+		// EnableMFADevice requires two consecutive codes.
+		if _, err := tc.client.EnableMFADevice(tc.ctx, &iam.EnableMFADeviceInput{
+			UserName:            aws.String(user),
+			SerialNumber:        serial,
+			AuthenticationCode1: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 0)),
+			AuthenticationCode2: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 1)),
+		}); err != nil {
+			return fmt.Errorf("EnableMFADevice: %w", err)
+		}
+
+		list, err := tc.client.ListMFADevices(tc.ctx, &iam.ListMFADevicesInput{UserName: aws.String(user)})
+		if err != nil {
+			return fmt.Errorf("ListMFADevices: %w", err)
+		}
+		found := false
+		for _, d := range list.MFADevices {
+			if aws.ToString(d.SerialNumber) == aws.ToString(serial) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("enabled device not listed by ListMFADevices")
+		}
+
+		get, err := tc.client.GetMFADevice(tc.ctx, &iam.GetMFADeviceInput{
+			UserName:     aws.String(user),
+			SerialNumber: serial,
+		})
+		if err != nil {
+			return fmt.Errorf("GetMFADevice: %w", err)
+		}
+		if aws.ToString(get.SerialNumber) == "" {
+			return fmt.Errorf("GetMFADevice returned an empty serial number")
+		}
+
+		// ResyncMFADevice accepts a fresh pair of consecutive codes.
+		if _, err := tc.client.ResyncMFADevice(tc.ctx, &iam.ResyncMFADeviceInput{
+			UserName:            aws.String(user),
+			SerialNumber:        serial,
+			AuthenticationCode1: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 0)),
+			AuthenticationCode2: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 1)),
+		}); err != nil {
+			return fmt.Errorf("ResyncMFADevice: %w", err)
+		}
+
+		if _, err := tc.client.DeactivateMFADevice(tc.ctx, &iam.DeactivateMFADeviceInput{
+			UserName:     aws.String(user),
+			SerialNumber: serial,
+		}); err != nil {
+			return fmt.Errorf("DeactivateMFADevice: %w", err)
+		}
+
+		list, err = tc.client.ListMFADevices(tc.ctx, &iam.ListMFADevicesInput{UserName: aws.String(user)})
+		if err != nil {
+			return err
+		}
+		for _, d := range list.MFADevices {
+			if aws.ToString(d.SerialNumber) == aws.ToString(serial) {
+				return fmt.Errorf("device still listed after DeactivateMFADevice")
+			}
+		}
+		return nil
+	}))
+
 	return results
+}
+
+// totpCodeAt derives the RFC 6238 six-digit code for the given base32
+// seed at a step offset from the current time, mirroring the server-side
+// validator.
+func totpCodeAt(base32Seed []byte, stepOffset int64) string {
+	secret := strings.ToUpper(strings.ReplaceAll(string(base32Seed), " ", ""))
+	decoded, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(secret)
+	if err != nil {
+		panic(fmt.Sprintf("base32 decode failed: %v", err))
+	}
+	step := time.Now().Unix()/30 + stepOffset
+	counter := make([]byte, 8)
+	binary.BigEndian.PutUint64(counter, uint64(step))
+	h := hmac.New(sha1.New, decoded)
+	h.Write(counter)
+	sum := h.Sum(nil)
+	offset := sum[len(sum)-1] & 0x0F
+	code := binary.BigEndian.Uint32(sum[offset:offset+4]) & 0x7FFFFFFF
+	return fmt.Sprintf("%06d", code%1000000)
 }

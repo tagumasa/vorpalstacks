@@ -95,6 +95,19 @@ func (r *TestRunner) iamInstanceProfileTests(tc *iamTestContext) []TestResult {
 		if !found {
 			return fmt.Errorf("role %s not found in instance profile after AddRoleToInstanceProfile", tc.role)
 		}
+
+		// An instance profile holds at most one role; re-adding fails with
+		// LimitExceeded.
+		_, err = tc.client.AddRoleToInstanceProfile(tc.ctx, &iam.AddRoleToInstanceProfileInput{
+			InstanceProfileName: aws.String(tc.profile),
+			RoleName:            aws.String(tc.role),
+		})
+		if err == nil {
+			return fmt.Errorf("re-adding the same role must fail with LimitExceeded")
+		}
+		if !containsErrorCode(err, "LimitExceeded") {
+			return fmt.Errorf("duplicate role add: got %v, want LimitExceeded", err)
+		}
 		return nil
 	}))
 

@@ -54,6 +54,22 @@ var (
 	// a group they are already a member of.
 	ErrUserAlreadyInGroup = errors.New("user already in group")
 
+	// ErrDuplicateSigningCertificate is returned when the certificate being
+	// uploaded is already registered for the user.
+	ErrDuplicateSigningCertificate = errors.New("duplicate signing certificate")
+
+	// ErrSigningCertificateLimitExceeded is returned when the user already
+	// holds the maximum number of signing certificates.
+	ErrSigningCertificateLimitExceeded = errors.New("signing certificate limit exceeded")
+
+	// ErrDuplicateSSHPublicKey is returned when the key material being
+	// uploaded is already registered for the user.
+	ErrDuplicateSSHPublicKey = errors.New("duplicate ssh public key")
+
+	// ErrSSHPublicKeyLimitExceeded is returned when the user already holds
+	// the maximum number of SSH public keys.
+	ErrSSHPublicKeyLimitExceeded = errors.New("ssh public key limit exceeded")
+
 	// ErrRoleNotFound is returned when the specified IAM role does not exist.
 	ErrRoleNotFound = errors.New("role not found")
 

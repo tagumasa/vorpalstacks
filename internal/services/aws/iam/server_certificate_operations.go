@@ -2,6 +2,8 @@ package iam
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 
 	"vorpalstacks/internal/common/pagination"
@@ -49,6 +51,32 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 		return nil, NewInvalidInputError("PrivateKey", "must be 1 to 16384 characters")
 	}
 
+	parsedCert, err := parseCertificate(certificateBody)
+	if err != nil {
+		return nil, ErrMalformedCertificate
+	}
+	privKey, err := parsePrivateKey(privateKey)
+	if err != nil {
+		return nil, ErrMalformedCertificate
+	}
+	if !keyPairMatches(parsedCert, privKey) {
+		return nil, ErrKeyPairMismatch
+	}
+	if certificateChain != "" {
+		rest := []byte(certificateChain)
+		for {
+			var block *pem.Block
+			block, rest = pem.Decode(rest)
+			if block == nil {
+				break
+			}
+			if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+				return nil, ErrMalformedCertificate
+			}
+		}
+	}
+	expiration := &parsedCert.NotAfter
+
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 	if err := validateNewTags(newTags); err != nil {
 		return nil, err
@@ -58,7 +86,7 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	cert, err := store.ServerCertificates().Create(name, path, certificateBody, privateKey, certificateChain, newTags)
+	cert, err := store.ServerCertificates().Create(name, path, certificateBody, privateKey, certificateChain, expiration, newTags)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrServerCertificateAlreadyExists) {
 			return nil, NewEntityAlreadyExistsError("Server Certificate " + name)
@@ -116,6 +144,14 @@ func (s *IAMService) UpdateServerCertificate(ctx context.Context, reqCtx *reques
 
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
 	newName := request.GetStringParam(req.Parameters, "NewServerCertificateName")
+	if newPath != "" && !validatePath(newPath) {
+		return nil, NewInvalidInputError("NewPath", "must be a valid path starting and ending with /")
+	}
+	if newName != "" {
+		if err := validateEntityName128(newName, "NewServerCertificateName"); err != nil {
+			return nil, err
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -123,6 +159,9 @@ func (s *IAMService) UpdateServerCertificate(ctx context.Context, reqCtx *reques
 	}
 	if !store.ServerCertificates().Exists(name) {
 		return nil, NewNoSuchEntityError("server certificate", name)
+	}
+	if newName != "" && newName != name && store.ServerCertificates().Exists(newName) {
+		return nil, NewEntityAlreadyExistsError("Server Certificate " + newName)
 	}
 	if err := store.ServerCertificates().Update(name, newPath, newName, "", ""); err != nil {
 		return nil, err

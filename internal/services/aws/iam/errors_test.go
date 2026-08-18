@@ -91,12 +91,6 @@ func TestIAMErrors(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, err.GetHTTPStatusCode())
 	})
 
-	t.Run("NewUserAlreadyInGroupError", func(t *testing.T) {
-		err := NewUserAlreadyInGroupError("testuser", "testgroup")
-		assert.Equal(t, "EntityAlreadyExists: User testuser in group testgroup already exists", err.Error())
-		assert.Equal(t, http.StatusConflict, err.GetHTTPStatusCode())
-	})
-
 	t.Run("NewNoSuchRoleError", func(t *testing.T) {
 		err := NewNoSuchRoleError("testrole")
 		assert.Equal(t, "NoSuchEntity: The role with name testrole cannot be found.", err.Error())
