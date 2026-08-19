@@ -8,16 +8,6 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func filterByKeyCondition(items []*dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) []*dbstore.Item {
-	var result []*dbstore.Item
-	for _, item := range items {
-		if evaluateKeyCondition(item, expr, names, values) {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
 func evaluateKeyCondition(item *dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) bool {
 	tokens := tokenizeExpression(expr)
 	if len(tokens) < 3 {

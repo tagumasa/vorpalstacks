@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -330,4 +331,90 @@ func isConditionFunctionName(s string) bool {
 		return true
 	}
 	return false
+}
+
+// attributeValueType reports the scalar type descriptor ("S", "N", or "B")
+// carried by an attribute value; set, document, boolean, and null values
+// carry no scalar type and cannot serve as key attributes.
+func attributeValueType(av *dbstore.AttributeValue) string {
+	switch {
+	case av.S != nil:
+		return string(dbstore.ScalarAttributeTypeS)
+	case av.N != nil:
+		return string(dbstore.ScalarAttributeTypeN)
+	case av.B != nil:
+		return string(dbstore.ScalarAttributeTypeB)
+	default:
+		return ""
+	}
+}
+
+// attributeTypeDefinitions indexes the table's attribute definitions by
+// attribute name.
+func attributeTypeDefinitions(table *dbstore.Table) map[string]dbstore.ScalarAttributeType {
+	defs := make(map[string]dbstore.ScalarAttributeType, len(table.AttributeDefinitions))
+	for _, def := range table.AttributeDefinitions {
+		defs[def.AttributeName] = def.AttributeType
+	}
+	return defs
+}
+
+// keyTypeMismatchError builds the ValidationException DynamoDB answers a
+// wrong-typed key attribute with.
+func keyTypeMismatchError(attrName string, expected, actual dbstore.ScalarAttributeType) error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		fmt.Sprintf("Type mismatch for key %s expected: %s actual: %s", attrName, expected, actual),
+		http.StatusBadRequest)
+}
+
+// validateKeySchemaAttrTypes checks the attributes named by a key schema
+// against the table's attribute definitions. Values of non-scalar types are
+// reported as mismatches against the expected scalar type.
+func validateKeySchemaAttrTypes(table *dbstore.Table, keySchema []*dbstore.KeySchemaElement, attrs map[string]*dbstore.AttributeValue) error {
+	defs := attributeTypeDefinitions(table)
+	for _, ks := range keySchema {
+		attr, ok := attrs[ks.AttributeName]
+		if !ok || attr == nil {
+			continue
+		}
+		expected, hasDef := defs[ks.AttributeName]
+		if !hasDef {
+			continue
+		}
+		actual := attributeValueType(attr)
+		if actual == "" {
+			return keyTypeMismatchError(ks.AttributeName, expected, expected)
+		}
+		if actual != string(expected) {
+			return keyTypeMismatchError(ks.AttributeName, expected, dbstore.ScalarAttributeType(actual))
+		}
+	}
+	return nil
+}
+
+// validateKeyTypes checks a supplied primary key against the table's key
+// schema and attribute definitions.
+func validateKeyTypes(table *dbstore.Table, key map[string]*dbstore.AttributeValue) error {
+	return validateKeySchemaAttrTypes(table, table.KeySchema, key)
+}
+
+// validateItemKeyTypes validates the primary key carried by an item along
+// with any secondary index key attributes the item carries, matching the
+// BatchWriteItem contract that index key attribute types must agree with the
+// schema definitions.
+func validateItemKeyTypes(table *dbstore.Table, item map[string]*dbstore.AttributeValue) error {
+	if err := validateKeyTypes(table, item); err != nil {
+		return err
+	}
+	for _, idx := range table.GlobalSecondaryIndexes {
+		if err := validateKeySchemaAttrTypes(table, idx.KeySchema, item); err != nil {
+			return err
+		}
+	}
+	for _, idx := range table.LocalSecondaryIndexes {
+		if err := validateKeySchemaAttrTypes(table, idx.KeySchema, item); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -28,6 +28,7 @@ type DynamoDBStore struct {
 	exports      *ExportStore
 	imports      *ImportStore
 	streams      *StreamStore
+	idempotency  *IdempotencyStore
 	storage      storage.TransactionalStorageWith2PC
 	ttlWorker    *ttlWorker
 }
@@ -42,6 +43,7 @@ func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, regi
 	exportStore := NewExportStore(store, accountID, region)
 	importStore := NewImportStore(store, accountID, region)
 	streamStore := NewStreamStore(store, accountID, region)
+	idempotencyStore := NewIdempotencyStore(store, region)
 
 	s := &DynamoDBStore{
 		tables:       tableStore,
@@ -52,6 +54,7 @@ func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, regi
 		exports:      exportStore,
 		imports:      importStore,
 		streams:      streamStore,
+		idempotency:  idempotencyStore,
 		storage:      store,
 	}
 	s.ttlWorker = newTTLWorker(s)
@@ -78,6 +81,11 @@ func (s *DynamoDBStore) Items() ItemStoreInterface {
 // Indexes returns the index store for managing GSI and LSI index entries.
 func (s *DynamoDBStore) Indexes() *IndexStore {
 	return s.indexes
+}
+
+// Idempotency returns the store for client request token idempotency.
+func (s *DynamoDBStore) Idempotency() *IdempotencyStore {
+	return s.idempotency
 }
 
 // Backups returns the backup store for managing DynamoDB backups.

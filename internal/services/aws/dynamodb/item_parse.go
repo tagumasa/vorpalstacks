@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -100,6 +101,9 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 		if len(strs) == 0 {
 			return nil
 		}
+		if hasDuplicateString(strs) {
+			return nil
+		}
 		return dbstore.StringSet(strs)
 	}
 	if ns, ok := m["NS"].([]interface{}); ok {
@@ -115,6 +119,9 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 			nums = append(nums, str)
 		}
 		if len(nums) == 0 {
+			return nil
+		}
+		if hasDuplicateNumber(nums) {
 			return nil
 		}
 		return dbstore.NumberSet(nums)
@@ -135,6 +142,9 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 			}
 		}
 		if len(binaries) == 0 {
+			return nil
+		}
+		if hasDuplicateBinary(binaries) {
 			return nil
 		}
 		return dbstore.BinarySet(binaries)
@@ -577,23 +587,65 @@ func getExpressionAttributes(params map[string]interface{}) (map[string]string, 
 	return names, values, nil
 }
 
+// dynamoDBNumberPattern matches the decimal grammar DynamoDB accepts for
+// Number values: an optional sign, digits with an optional fraction, and an
+// optional decimal exponent. Fraction forms such as "1/3" that big.Rat
+// would accept are not part of the grammar.
+var dynamoDBNumberPattern = regexp.MustCompile(`^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$`)
+
+// Number magnitude boundaries as exact rationals: values must satisfy
+// 1E-130 <= |v| < 1E+126 (the documented range tops out at
+// 9.9999999999999999999999999999999999999E+125, which every 38-digit
+// mantissa stays below).
+var (
+	numberMaxMagnitude = pow10Rat(126)
+	numberMinMagnitude = pow10Rat(-130)
+)
+
+func pow10Rat(exp int) *big.Rat {
+	ten := big.NewInt(10)
+	if exp >= 0 {
+		num := new(big.Int).Exp(ten, big.NewInt(int64(exp)), nil)
+		return new(big.Rat).SetInt(num)
+	}
+	den := new(big.Int).Exp(ten, big.NewInt(int64(-exp)), nil)
+	return new(big.Rat).SetFrac(big.NewInt(1), den)
+}
+
 func isValidDynamoDBNumber(n string) bool {
 	if n == "" {
 		return false
 	}
-
-	_, ok := new(big.Rat).SetString(n)
+	if !dynamoDBNumberPattern.MatchString(n) {
+		return false
+	}
+	value, ok := new(big.Rat).SetString(n)
 	if !ok {
 		return false
 	}
-
-	digitCount := 0
-	for _, c := range n {
-		if c >= '0' && c <= '9' {
-			digitCount++
-		}
+	if value.Sign() == 0 {
+		return true
 	}
-	return digitCount <= 38
+	abs := new(big.Rat).Abs(value)
+	if abs.Cmp(numberMaxMagnitude) >= 0 || abs.Cmp(numberMinMagnitude) < 0 {
+		return false
+	}
+	return countSignificantDigits(n) <= numberMaxSignificantDigits
+}
+
+// countSignificantDigits counts the mantissa's significant digits: leading
+// and trailing zeros are trimmed, matching the DynamoDB number normalisation
+// (zero alone carries no significant digits).
+func countSignificantDigits(n string) int {
+	mantissa := n
+	if idx := strings.IndexAny(mantissa, "eE"); idx != -1 {
+		mantissa = mantissa[:idx]
+	}
+	mantissa = strings.TrimLeft(mantissa, "+-")
+	mantissa = strings.ReplaceAll(mantissa, ".", "")
+	mantissa = strings.TrimLeft(mantissa, "0")
+	mantissa = strings.TrimRight(mantissa, "0")
+	return len(mantissa)
 }
 
 func buildUpdatedAttributesResponse(attrs map[string]*dbstore.AttributeValue, updatedAttrNames []string) map[string]interface{} {
@@ -604,4 +656,46 @@ func buildUpdatedAttributesResponse(attrs map[string]*dbstore.AttributeValue, up
 		}
 	}
 	return result
+}
+
+// hasDuplicateString reports whether the string set contains a repeated
+// element. Set elements must be unique; empty string and binary elements are
+// allowed.
+func hasDuplicateString(items []string) bool {
+	seen := make(map[string]bool, len(items))
+	for _, item := range items {
+		if seen[item] {
+			return true
+		}
+		seen[item] = true
+	}
+	return false
+}
+
+// hasDuplicateNumber reports whether the number set contains a repeated
+// value, comparing numerically so that "1" and "1.0" count as duplicates.
+func hasDuplicateNumber(items []string) bool {
+	seen := make(map[string]bool, len(items))
+	for _, item := range items {
+		normalized := normalizeNumberString(item)
+		if seen[normalized] {
+			return true
+		}
+		seen[normalized] = true
+	}
+	return false
+}
+
+// hasDuplicateBinary reports whether the binary set contains a repeated
+// element.
+func hasDuplicateBinary(items [][]byte) bool {
+	seen := make(map[string]bool, len(items))
+	for _, item := range items {
+		key := string(item)
+		if seen[key] {
+			return true
+		}
+		seen[key] = true
+	}
+	return false
 }

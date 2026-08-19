@@ -671,3 +671,60 @@ func validateKeySchemaAttributeName(name string) bool {
 func validateNonKeyAttributeName(name string) bool {
 	return validateLength(name, nonKeyAttrNameMinLen, nonKeyAttrNameMaxLen)
 }
+
+// Select parameter values (Smithy Select enum).
+const (
+	selectCount              = "COUNT"
+	selectAllAttributes      = "ALL_ATTRIBUTES"
+	selectAllProjectedAttrs  = "ALL_PROJECTED_ATTRIBUTES"
+	selectSpecificAttributes = "SPECIFIC_ATTRIBUTES"
+)
+
+// parseSelectParam validates the Select parameter of Query/Scan against the
+// API reference rules: ALL_PROJECTED_ATTRIBUTES is only valid on an index,
+// SPECIFIC_ATTRIBUTES requires a ProjectionExpression, and Select may only
+// accompany a ProjectionExpression when it is SPECIFIC_ATTRIBUTES. Index
+// reads default to ALL_PROJECTED_ATTRIBUTES, table reads to ALL_ATTRIBUTES.
+func parseSelectParam(params map[string]interface{}, indexName string, hasProjection bool) (countOnly, allProjected bool, err error) {
+	raw, present := params["Select"]
+	if !present {
+		return false, indexName != "", nil
+	}
+	value, ok := raw.(string)
+	if !ok {
+		return false, false, ErrInvalidParameter
+	}
+	switch value {
+	case selectCount:
+		return true, false, nil
+	case selectAllAttributes:
+		if hasProjection {
+			return false, false, ErrInvalidParameter
+		}
+		return false, false, nil
+	case selectAllProjectedAttrs:
+		if indexName == "" || hasProjection {
+			return false, false, ErrInvalidParameter
+		}
+		return false, true, nil
+	case selectSpecificAttributes:
+		if !hasProjection {
+			return false, false, ErrInvalidParameter
+		}
+		return false, false, nil
+	default:
+		return false, false, ErrInvalidParameter
+	}
+}
+
+// DynamoDB Number constraints (developer guide, Supported data types):
+// up to 38 digits of precision, positive range 1E-130 to
+// 9.9999999999999999999999999999999999999E+125 (symmetric negative range).
+const (
+	numberMaxSignificantDigits = 38
+)
+
+// ClientRequestToken idempotency window (TransactWriteItems API reference:
+// "A client request token is valid for 10 minutes after the first request
+// that uses it is completed").
+const idempotencyWindowMinutes = 10

@@ -71,6 +71,10 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	results = append(results, r.dynamoDBBatchEdgeCaseTests(ctx, client)...)
 	client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: &compTableName})
 
+	// Phase 4b: Query/Scan conformance (self-contained)
+	results = append(results, r.dynamoDBQueryScanConformanceTests(ctx, client)...)
+	results = append(results, r.dynamoDBGlobalTableReplicationTests(ctx, client)...)
+
 	// Phase 5: Table edge cases (self-contained)
 	results = append(results, r.dynamoDBTableEdgeCaseTests(ctx, client)...)
 

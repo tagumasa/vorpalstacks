@@ -92,10 +92,21 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+2 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				path := resolveName(tokens[i], names)
+				path, nameErr := resolveNameStrict(tokens[i], names)
+				if nameErr != nil {
+					return nil, nameErr
+				}
 				exprTokens := []string{tokens[i+2]}
 				j := i + 3
-				for j < len(tokens) && (tokens[j] == "+" || tokens[j] == "-" || tokens[j] == "*") && j+1 < len(tokens) {
+				for j+1 < len(tokens) {
+					if tokens[j] == "*" {
+						// Arithmetic in a SET action supports only the plus
+						// and minus operators.
+						return nil, ErrInvalidParameter
+					}
+					if tokens[j] != "+" && tokens[j] != "-" {
+						break
+					}
 					exprTokens = append(exprTokens, tokens[j], tokens[j+1])
 					j += 2
 				}
@@ -103,12 +114,17 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if valErr != nil {
 					return nil, valErr
 				}
-				if value != nil {
-					if err := setNestedValue(attrs, path, value); err != nil {
-						return nil, err
-					}
-					updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
+				if value == nil {
+					// Every operand of a SET action must resolve to a
+					// value; an undefined value placeholder or a reference
+					// to an attribute that does not exist is a validation
+					// error.
+					return nil, ErrInvalidParameter
 				}
+				if err := setNestedValue(attrs, path, value); err != nil {
+					return nil, err
+				}
+				updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
 				i = j
 				if i < len(tokens) && tokens[i] == "," {
 					i++
@@ -120,7 +136,10 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				path := resolveName(tokens[i], names)
+				path, nameErr := resolveNameStrict(tokens[i], names)
+				if nameErr != nil {
+					return nil, nameErr
+				}
 				if rmErr := removeNestedValue(attrs, path); rmErr != nil {
 					return nil, rmErr
 				}
@@ -136,14 +155,19 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+1 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				attrName := resolveName(tokens[i], names)
+				attrName, nameErr := resolveNameStrict(tokens[i], names)
+				if nameErr != nil {
+					return nil, nameErr
+				}
 				value := resolveValue(tokens[i+1], values, names)
-				if value != nil {
-					if changed, err := applyAddActionWithTracking(attrs, attrName, value); err != nil {
-						return nil, err
-					} else if changed {
-						updatedAttrs = append(updatedAttrs, attrName)
-					}
+				if value == nil {
+					// An undefined value placeholder is a validation error.
+					return nil, ErrInvalidParameter
+				}
+				if changed, err := applyAddActionWithTracking(attrs, attrName, value); err != nil {
+					return nil, err
+				} else if changed {
+					updatedAttrs = append(updatedAttrs, attrName)
 				}
 				i += 2
 				if i < len(tokens) && tokens[i] == "," {
@@ -156,12 +180,21 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+1 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				attrName := resolveName(tokens[i], names)
+				attrName, nameErr := resolveNameStrict(tokens[i], names)
+				if nameErr != nil {
+					return nil, nameErr
+				}
 				value := resolveValue(tokens[i+1], values, names)
-				if value != nil {
-					if applyDeleteActionWithTracking(attrs, attrName, value) {
-						updatedAttrs = append(updatedAttrs, attrName)
-					}
+				if value == nil {
+					// An undefined value placeholder is a validation error.
+					return nil, ErrInvalidParameter
+				}
+				changed, delErr := applyDeleteActionWithTracking(attrs, attrName, value)
+				if delErr != nil {
+					return nil, delErr
+				}
+				if changed {
+					updatedAttrs = append(updatedAttrs, attrName)
 				}
 				i += 2
 				if i < len(tokens) && tokens[i] == "," {
@@ -465,10 +498,19 @@ func applyAddActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrNa
 	return false, ErrInvalidParameter
 }
 
-func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) bool {
+func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
 	existing, exists := attrs[attrName]
 	if !exists {
-		return false
+		return false, nil
+	}
+
+	// The DELETE action removes elements from a set; the operand must be a
+	// set of the same type as the stored attribute.
+	if (value.SS != nil && existing.SS == nil) || (value.NS != nil && existing.NS == nil) || (value.BS != nil && existing.BS == nil) {
+		return false, ErrInvalidParameter
+	}
+	if value.SS == nil && value.NS == nil && value.BS == nil {
+		return false, ErrInvalidParameter
 	}
 
 	if value.SS != nil && existing.SS != nil {
@@ -487,7 +529,7 @@ func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, att
 		} else {
 			existing.SS = newSS
 		}
-		return true
+		return true, nil
 	}
 
 	if value.NS != nil && existing.NS != nil {
@@ -506,7 +548,7 @@ func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, att
 		} else {
 			existing.NS = newNS
 		}
-		return true
+		return true, nil
 	}
 
 	if value.BS != nil && existing.BS != nil {
@@ -525,9 +567,9 @@ func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, att
 		} else {
 			existing.BS = newBS
 		}
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func applyAttributeUpdatesWithTracking(attrs map[string]*dbstore.AttributeValue, updates interface{}) ([]string, error) {
@@ -695,7 +737,27 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 		}
 	}
 
-	return resolveValue(token, values, names), nil
+	// Bare attribute paths resolve against the item's attributes so that
+	// assignments such as "SET a = b" copy the existing value instead of
+	// silently skipping.
+	return resolveValueOrPath(token, values, names, attrs)
+}
+
+// resolveNameStrict resolves an expression attribute name placeholder,
+// rejecting placeholders that were never defined in
+// ExpressionAttributeNames — an undefined substitution is a validation
+// error, not a literal attribute name.
+func resolveNameStrict(token string, names map[string]string) (string, error) {
+	if strings.HasPrefix(token, "#") {
+		if names == nil {
+			return "", ErrInvalidParameter
+		}
+		if resolved, ok := names[token]; ok {
+			return resolved, nil
+		}
+		return "", ErrInvalidParameter
+	}
+	return token, nil
 }
 
 func evaluateArithmeticExpression(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
@@ -718,7 +780,7 @@ func evaluateArithmeticExpression(token string, values map[string]*dbstore.Attri
 		if i == 0 {
 			op = "+"
 			operand = part
-		} else if part == "+" || part == "-" || part == "*" {
+		} else if part == "+" || part == "-" {
 			op = part
 			i++
 			if i < len(parts) {
@@ -738,15 +800,16 @@ func evaluateArithmeticExpression(token string, values map[string]*dbstore.Attri
 		if vErr != nil {
 			return nil, vErr
 		}
-		if valAttr != nil && valAttr.N != nil {
-			if r, ok := new(big.Rat).SetString(*valAttr.N); ok {
-				val = r
-			}
+		if valAttr == nil || valAttr.N == nil {
+			// Arithmetic operands must be numbers present in the item or
+			// the value map.
+			return nil, ErrInvalidParameter
 		}
-
-		if val == nil {
-			return nil, nil
+		r, ok := new(big.Rat).SetString(*valAttr.N)
+		if !ok {
+			return nil, ErrInvalidParameter
 		}
+		val = r
 
 		if result == nil {
 			result = val
@@ -756,8 +819,6 @@ func evaluateArithmeticExpression(token string, values map[string]*dbstore.Attri
 				result = new(big.Rat).Add(result, val)
 			case "-":
 				result = new(big.Rat).Sub(result, val)
-			case "*":
-				result = new(big.Rat).Mul(result, val)
 			}
 		}
 	}

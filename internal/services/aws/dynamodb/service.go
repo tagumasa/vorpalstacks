@@ -16,14 +16,16 @@ import (
 
 // DynamoDBService provides DynamoDB operations for managing tables, items, and other resources.
 type DynamoDBService struct {
-	accountID       string
-	stores          sync.Map // region → dynamodbstore.DynamoDBStoreInterface
-	storageManager  *storage.RegionStorageManager
-	busStoreFactory *dynamodbstore.DynamoDBStoreFactory
-	bus             eventbus.Bus
-	bgCtx           context.Context
-	bgCancel        context.CancelFunc
-	bgWg            sync.WaitGroup
+	accountID               string
+	stores                  sync.Map // region → dynamodbstore.DynamoDBStoreInterface
+	storageManager          *storage.RegionStorageManager
+	busStoreFactory         *dynamodbstore.DynamoDBStoreFactory
+	bus                     eventbus.Bus
+	bgCtx                   context.Context
+	bgCancel                context.CancelFunc
+	bgWg                    sync.WaitGroup
+	idempotencySweepOnce    sync.Once
+	clientRequestTokenLocks [clientRequestTokenLockShards]sync.Mutex
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.

@@ -112,12 +112,16 @@ func attributeNestedExists(attrs map[string]*dbstore.AttributeValue, path string
 	return getNestedAttributeValue(attrs, path) != nil
 }
 
-func skipToKeyMap(items []*dbstore.Item, exclusiveStartKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) []*dbstore.Item {
+// skipToKeyMap drops the items already covered by an exclusive start key.
+// The traversal direction decides which remaining side of the cursor is
+// unreturned: a forward page continues with the first item that sorts after
+// the cursor, a reverse page with the first item that sorts before it.
+func skipToKeyMap(items []*dbstore.Item, exclusiveStartKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string, forward bool) []*dbstore.Item {
 	if exclusiveStartKey == nil {
 		return items
 	}
 	for i, item := range items {
-		if itemKeyMatches(item.Key, exclusiveStartKey) {
+		if itemKeyMatches(mergeIndexKey(item, table, indexName), exclusiveStartKey) {
 			if i+1 < len(items) {
 				return items[i+1:]
 			}
@@ -125,7 +129,8 @@ func skipToKeyMap(items []*dbstore.Item, exclusiveStartKey map[string]*dbstore.A
 		}
 	}
 	for i, item := range items {
-		if itemKeySortsAfter(item.Key, exclusiveStartKey, table, indexName) {
+		cmp := itemKeyCompares(mergeIndexKey(item, table, indexName), exclusiveStartKey, table, indexName)
+		if (forward && cmp > 0) || (!forward && cmp < 0) {
 			return items[i:]
 		}
 	}
@@ -169,22 +174,29 @@ func getHashKeyNameForIndex(table *dbstore.Table, indexName string) string {
 }
 
 func itemKeySortsAfter(itemKey, startKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) bool {
+	return itemKeyCompares(itemKey, startKey, table, indexName) > 0
+}
+
+// itemKeyCompares orders itemKey against startKey by the index key schema:
+// negative when itemKey sorts before startKey, zero when the keys are equal,
+// positive when it sorts after.
+func itemKeyCompares(itemKey, startKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) int {
 	if len(startKey) == 0 {
-		return true
+		return 1
 	}
 	hashKeyName := getHashKeyNameForIndex(table, indexName)
 	if hashKeyName == "" {
-		return true
+		return 1
 	}
 	startVal, ok := startKey[hashKeyName]
 	if ok {
 		itemVal, ok := itemKey[hashKeyName]
 		if !ok {
-			return false
+			return -1
 		}
 		cmp := genericCompare(itemVal, startVal)
 		if cmp != 0 {
-			return cmp > 0
+			return cmp
 		}
 	}
 	sortKeyName := getSortKeyName(table, indexName)
@@ -192,13 +204,12 @@ func itemKeySortsAfter(itemKey, startKey map[string]*dbstore.AttributeValue, tab
 		if startVal, ok := startKey[sortKeyName]; ok {
 			itemVal, ok := itemKey[sortKeyName]
 			if !ok {
-				return false
+				return -1
 			}
-			cmp := genericCompare(itemVal, startVal)
-			return cmp > 0
+			return genericCompare(itemVal, startVal)
 		}
 	}
-	return true
+	return 1
 }
 
 func itemKeyMatches(itemKey, searchKey map[string]*dbstore.AttributeValue) bool {

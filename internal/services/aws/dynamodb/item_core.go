@@ -170,52 +170,7 @@ func (s *DynamoDBService) putItemCore(
 	}
 	s.sendToKinesisDestinations(table, eventName, key, storedItem.Attributes, oldItemAttributes(oldItem))
 
-	repKey := key
-	repAttrs := item
-	repItemSize := calculateItemSize(item)
-	s.replicateToGlobalTableReplicas(store, region, table.Name, func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
-		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			existing, getErr := txn.GetItem(table.Name, repKey)
-			isNewRep := false
-			if getErr != nil {
-				if dbstore.IsItemNotFound(getErr) {
-					isNewRep = true
-				} else {
-					return getErr
-				}
-			}
-			if !isNewRep && existing != nil {
-				if delErr := txn.DeleteIndexEntries(table.Name, existing); delErr != nil {
-					return delErr
-				}
-			}
-			if putErr := txn.PutItem(table.Name, repKey, repAttrs); putErr != nil {
-				return putErr
-			}
-			repItem := &dbstore.Item{
-				TableName:  table.Name,
-				Key:        repKey,
-				Attributes: repAttrs,
-			}
-			if putIdxErr := txn.PutIndexEntries(table.Name, repItem); putIdxErr != nil {
-				return putIdxErr
-			}
-			if isNewRep {
-				if upErr := txn.UpdateItemCount(table.Name, 1); upErr != nil {
-					return upErr
-				}
-				if upErr := txn.UpdateTableSize(table.Name, repItemSize); upErr != nil {
-					return upErr
-				}
-			} else {
-				oldSize := calculateItemSize(existing.Attributes)
-				if upErr := txn.UpdateTableSize(table.Name, repItemSize-oldSize); upErr != nil {
-					return upErr
-				}
-			}
-			return nil
-		})
-	})
+	s.replicateToGlobalTableReplicas(store, region, table.Name, replicaPutOp(table, key, item))
 
 	return storedItem, oldItem, nil
 }
@@ -286,32 +241,7 @@ func (s *DynamoDBService) deleteItemCore(
 		s.sendToKinesisDestinations(table, dbstore.StreamEventRemove, key, nil, oldItem.Attributes)
 	}
 
-	repKey := key
-	s.replicateToGlobalTableReplicas(store, region, table.Name, func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
-		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			existing, getErr := txn.GetItem(table.Name, repKey)
-			if getErr != nil {
-				if dbstore.IsItemNotFound(getErr) {
-					return nil
-				}
-				return getErr
-			}
-			if delIdxErr := txn.DeleteIndexEntries(table.Name, existing); delIdxErr != nil {
-				return delIdxErr
-			}
-			if delErr := txn.DeleteItem(table.Name, repKey); delErr != nil {
-				return delErr
-			}
-			if upErr := txn.UpdateItemCount(table.Name, -1); upErr != nil {
-				return upErr
-			}
-			existingSize := calculateItemSize(existing.Attributes)
-			if upErr := txn.UpdateTableSize(table.Name, -existingSize); upErr != nil {
-				return upErr
-			}
-			return nil
-		})
-	})
+	s.replicateToGlobalTableReplicas(store, region, table.Name, replicaDeleteOp(table, key))
 
 	return oldItem, nil
 }

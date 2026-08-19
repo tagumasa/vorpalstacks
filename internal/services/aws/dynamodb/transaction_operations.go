@@ -3,12 +3,19 @@ package dynamodb
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"sort"
+	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -173,6 +180,68 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 		return nil, fmt.Errorf("transact write items: get store: %w", err)
 	}
 
+	// A ClientRequestToken makes the call idempotent for a ten-minute
+	// window: a retry with the same token and the same payload replays the
+	// recorded outcome without re-executing, while the same token with a
+	// different payload is rejected.
+	requestHash := ""
+	claimedToken := false
+	if clientRequestToken != "" {
+		s.ensureIdempotencySweeper()
+		requestHash = hashTransactWriteRequest(req.Parameters)
+
+		// The claim section is serialised per token so concurrent retries
+		// cannot both execute: the loser observes the in-progress record
+		// and fails with the documented in-progress error.
+		unlock := s.lockClientRequestToken(clientRequestToken)
+		recordedHash, state, found, lookupErr := store.Idempotency().Lookup(clientRequestToken)
+		if lookupErr != nil {
+			unlock()
+			return nil, lookupErr
+		}
+		if found {
+			unlock()
+			if recordedHash != requestHash {
+				return nil, ErrIdempotentParameterMismatch
+			}
+			// A record written before the state field existed was only
+			// stored after success, so an empty state counts as completed.
+			if state != dbstore.IdempotencyStateCompleted && state != "" {
+				return nil, ErrTransactionInProgress
+			}
+			// Replay: parse for the response shape only; no execution, no
+			// stream, replication, or capacity side effects.
+			replayReasons := make([]CancellationReason, len(transactItems))
+			for i := range replayReasons {
+				replayReasons[i] = CancellationReason{Code: "None"}
+			}
+			replayOps, replayErr := parseTransactWriteItems(s, store, transactItems, replayReasons)
+			if replayErr != nil {
+				return nil, replayErr
+			}
+			return buildTransactWriteResponse(req.Parameters, replayOps, true), nil
+		}
+		if claimErr := store.Idempotency().Record(clientRequestToken, requestHash,
+			dbstore.IdempotencyStateInProgress,
+			time.Now().Add(idempotencyWindowMinutes*time.Minute)); claimErr != nil {
+			unlock()
+			return nil, claimErr
+		}
+		claimedToken = true
+		unlock()
+	}
+
+	// releaseClaimedToken drops the in-progress record after a failed
+	// execution so the client can retry the token.
+	releaseClaimedToken := func() {
+		if !claimedToken {
+			return
+		}
+		if delErr := store.Idempotency().Delete(clientRequestToken); delErr != nil {
+			logs.Error("Failed to release idempotency token claim", logs.Err(delErr))
+		}
+	}
+
 	cancellationReasons := make([]CancellationReason, len(transactItems))
 	for i := range cancellationReasons {
 		cancellationReasons[i] = CancellationReason{Code: "None"}
@@ -180,11 +249,21 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 
 	operations, err := parseTransactWriteItems(s, store, transactItems, cancellationReasons)
 	if err != nil {
+		releaseClaimedToken()
 		return nil, err
 	}
 
 	if err := executeTransactWriteItems(ctx, s, store, operations, cancellationReasons); err != nil {
+		releaseClaimedToken()
 		return nil, err
+	}
+
+	if claimedToken {
+		if recordErr := store.Idempotency().Record(clientRequestToken, requestHash,
+			dbstore.IdempotencyStateCompleted,
+			time.Now().Add(idempotencyWindowMinutes*time.Minute)); recordErr != nil {
+			return nil, recordErr
+		}
 	}
 
 	// Dispatch change records to Kinesis destinations asynchronously
@@ -210,9 +289,25 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 			eventName = dbstore.StreamEventInsert
 		}
 		s.sendToKinesisDestinations(table, eventName, op.key, op.streamNewImage, op.streamOldImage)
+
+		// Committed transaction writes replicate to global table replica
+		// regions just like single-item writes do; Update replicates its
+		// committed post-image as a put.
+		switch op.opType {
+		case "Put":
+			if op.itemData != nil {
+				s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaPutOp(table, op.key, op.itemData))
+			}
+		case "Update":
+			if op.streamNewImage != nil {
+				s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaPutOp(table, op.key, op.streamNewImage))
+			}
+		case "Delete":
+			s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaDeleteOp(table, op.key))
+		}
 	}
 
-	return buildTransactWriteResponse(req.Parameters, operations), nil
+	return buildTransactWriteResponse(req.Parameters, operations, false), nil
 }
 
 func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, transactItems []interface{}, cancellationReasons []CancellationReason) ([]writeOperation, error) {
@@ -223,8 +318,7 @@ func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInte
 	for idx, item := range transactItems {
 		itemMap, ok := item.(map[string]interface{})
 		if !ok {
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		op, err := parseWriteOperation(s, store, idx, itemMap, usedWriteKeys, usedConditionKeys, cancellationReasons)
@@ -246,38 +340,40 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 			continue
 		}
 
+		// Request-shape failures (malformed members, unknown or missing
+		// tables) are request-level validation errors answered with
+		// ValidationException or ResourceNotFoundException. Only semantic
+		// per-item outcomes — the same item targeted by more than one
+		// action, condition failures during execution — cancel the
+		// transaction and are reported through CancellationReasons.
 		tableName := request.GetStringParam(opMap, "TableName")
 		if !validateResourceName(tableName) {
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		if _, err := store.Tables().Get(tableName); err != nil {
-			cancellationReasons[idx] = CancellationReason{Code: "ResourceNotFound"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrTableNotFound
 		}
 
 		key, err := extractOperationKey(s, store, opType, opMap, tableName)
 		if err != nil {
-			code := "ValidationError"
 			var opErr *opParseError
-			if errors.As(err, &opErr) {
-				code = opErr.code
+			if errors.As(err, &opErr) && opErr.code == "ResourceNotFound" {
+				return nil, ErrTableNotFound
 			}
-			cancellationReasons[idx] = CancellationReason{Code: code}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		keyStr := buildKeyString(tableName, key)
 		if opType == "ConditionCheck" {
 			if usedWriteKeys[keyStr] {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+				cancellationReasons[idx] = CancellationReason{Code: "ValidationError", Message: "One or more parameter values were invalid."}
 				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 			}
 			usedConditionKeys[keyStr] = true
 		} else {
 			if usedWriteKeys[keyStr] || usedConditionKeys[keyStr] {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+				cancellationReasons[idx] = CancellationReason{Code: "ValidationError", Message: "One or more parameter values were invalid."}
 				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 			}
 			usedWriteKeys[keyStr] = true
@@ -285,14 +381,12 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 
 		opNames, namesErr := parseExpressionAttributeNames(opMap)
 		if namesErr != nil {
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		opValues, opValsErr := parseExpressionAttributeValues(opMap)
 		if opValsErr != nil {
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		op := &writeOperation{
@@ -308,15 +402,13 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 
 		if opType == "ConditionCheck" && op.conditionExpr == "" {
 			// ConditionExpression is required for ConditionCheck (Smithy @required).
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			return nil, ErrInvalidParameter
 		}
 
 		if opType == "Put" {
 			itemData, itemErr := parseItem(opMap["Item"])
 			if itemErr != nil || itemData == nil {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+				return nil, ErrInvalidParameter
 			}
 			op.itemData = itemData
 		}
@@ -324,8 +416,7 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		if opType == "Update" {
 			// UpdateExpression is required for Update (Smithy @required).
 			if request.GetStringParam(opMap, "UpdateExpression") == "" {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+				return nil, ErrInvalidParameter
 			}
 			op.updateReq = opMap
 		}
@@ -333,7 +424,7 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		return op, nil
 	}
 
-	return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("no recognised operation type (Put/Update/Delete/ConditionCheck) in TransactItem")}
+	return nil, ErrInvalidParameter
 }
 
 // opParseError represents a parse error encountered during transaction operation parsing.
@@ -348,18 +439,22 @@ func (e *opParseError) Error() string {
 }
 
 func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, opType string, opMap map[string]interface{}, tableName string) (map[string]*dbstore.AttributeValue, error) {
+	table, tblErr := store.Tables().Get(tableName)
+	if tblErr != nil {
+		return nil, &opParseError{code: "ResourceNotFound", err: tblErr}
+	}
+
 	if opType == "Put" {
 		itemData, itemErr := parseItem(opMap["Item"])
 		if itemErr != nil || itemData == nil {
 			return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("invalid item data")}
 		}
-		table, err := store.Tables().Get(tableName)
-		if err != nil {
-			return nil, &opParseError{code: "ResourceNotFound", err: err}
-		}
 		key := s.extractKeyFromItem(table, itemData)
 		if key == nil {
 			return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("failed to extract key")}
+		}
+		if err := validateItemKeyTypes(table, itemData); err != nil {
+			return nil, &opParseError{code: "ValidationError", err: err}
 		}
 		return key, nil
 	}
@@ -367,6 +462,9 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 	key, keyErr := parseKey(opMap["Key"])
 	if keyErr != nil || key == nil {
 		return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("invalid key")}
+	}
+	if err := validateKeyTypes(table, key); err != nil {
+		return nil, &opParseError{code: "ValidationError", err: err}
 	}
 	return key, nil
 }
@@ -413,8 +511,12 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 	}))
 
 	if err := twoPhase.Commit(ctx); err != nil {
-		if _, ok := err.(*TransactionCanceledError); ok {
-			return err
+		// The two-phase commit wraps validator errors, so the cancellation
+		// error must be unwrapped with errors.As to preserve its
+		// CancellationReasons on the wire.
+		var canceledErr *TransactionCanceledError
+		if errors.As(err, &canceledErr) {
+			return canceledErr
 		}
 		return ErrTransactionCanceled
 	}
@@ -449,7 +551,7 @@ func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *d
 			return fmt.Errorf("validator condition check %s: %w", op.tableName, err)
 		}
 		if !conditionMet {
-			reason := CancellationReason{Code: "ConditionalCheckFailed"}
+			reason := CancellationReason{Code: "ConditionalCheckFailed", Message: "The conditional request failed"}
 			if op.returnValuesOnConditionCheck == "ALL_OLD" && item != nil && itemExists {
 				reason.Item = buildItemResponse(item.Attributes)
 			}
@@ -630,7 +732,16 @@ func updateTableMetrics(dbTxn *dbstore.DynamoDBTxn, tableName string, existed bo
 	return nil
 }
 
-func buildTransactWriteResponse(params map[string]interface{}, operations []writeOperation) map[string]interface{} {
+// transactCapacityUnitsPerTable is the flat per-table capacity charge of a
+// transactional write: transactional operations are charged at twice the
+// normal rate.
+const transactCapacityUnitsPerTable = 2.0
+
+// buildTransactWriteResponse assembles the TransactWriteItems response. The
+// initial execution reports write capacity units; a replay with the same
+// client token reports read capacity units, as the idempotency contract
+// documents.
+func buildTransactWriteResponse(params map[string]interface{}, operations []writeOperation, replay bool) map[string]interface{} {
 	resp := map[string]interface{}{}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(params)
@@ -641,7 +752,16 @@ func buildTransactWriteResponse(params map[string]interface{}, operations []writ
 		}
 		var consumedCapacities []map[string]interface{}
 		for tableName := range tableNames {
-			consumedCapacities = append(consumedCapacities, buildConsumedCapacityResponse(tableName, 2.0))
+			capacity := map[string]interface{}{
+				"TableName":     tableName,
+				"CapacityUnits": transactCapacityUnitsPerTable,
+			}
+			if replay {
+				capacity["ReadCapacityUnits"] = transactCapacityUnitsPerTable
+			} else {
+				capacity["WriteCapacityUnits"] = transactCapacityUnitsPerTable
+			}
+			consumedCapacities = append(consumedCapacities, capacity)
 		}
 		if len(consumedCapacities) > 0 {
 			resp["ConsumedCapacity"] = consumedCapacities
@@ -751,4 +871,77 @@ func escapeKeyPart(s string) string {
 		}
 	}
 	return result
+}
+
+// hashTransactWriteRequest derives a stable digest of the request payload
+// (everything except the client token itself) so a token replayed with a
+// different payload can be detected within the idempotency window.
+func hashTransactWriteRequest(params map[string]interface{}) string {
+	payload := make(map[string]interface{}, len(params))
+	for k, v := range params {
+		if k == "ClientRequestToken" {
+			continue
+		}
+		payload[k] = v
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// idempotencySweepInterval is how often expired client request tokens are
+// removed from the per-region idempotency buckets.
+const idempotencySweepInterval = time.Minute
+
+// clientRequestTokenLockShards shards the per-token claim locks: tokens are
+// unique per request, so keyed locks would grow without bound, while a
+// fixed shard count still serialises every caller of one token (the same
+// token always maps to the same shard).
+const clientRequestTokenLockShards = 64
+
+// lockClientRequestToken serialises the idempotency claim section for one
+// client request token and returns the unlock function. Unrelated tokens
+// that share a shard also serialise briefly; the claim section is a single
+// store read and write, so the contention is immaterial.
+func (s *DynamoDBService) lockClientRequestToken(token string) func() {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(token))
+	mu := &s.clientRequestTokenLocks[h.Sum32()%clientRequestTokenLockShards]
+	mu.Lock()
+	return mu.Unlock
+}
+
+// ensureIdempotencySweeper starts the background sweeper that removes
+// transaction client request tokens once their idempotency window has
+// lapsed, across every region store cached by the service.
+func (s *DynamoDBService) ensureIdempotencySweeper() {
+	s.idempotencySweepOnce.Do(func() {
+		s.bgWg.Add(1)
+		go func() {
+			defer func() { resilience.RecoverPanic("dynamodb idempotency sweep") }()
+			defer s.bgWg.Done()
+			ticker := time.NewTicker(idempotencySweepInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					s.stores.Range(func(_, v any) bool {
+						store, ok := v.(dbstore.DynamoDBStoreInterface)
+						if !ok {
+							return true
+						}
+						if _, err := store.Idempotency().SweepExpired(time.Now()); err != nil {
+							logs.Error("Failed to sweep expired idempotency tokens", logs.Err(err))
+						}
+						return true
+					})
+				case <-s.bgCtx.Done():
+					return
+				}
+			}
+		}()
+	})
 }

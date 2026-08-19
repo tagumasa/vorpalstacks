@@ -161,7 +161,9 @@ make tidy
 - AWS API endpoints: port 50080 (`PORT`)
 - Admin console: `http://localhost:50090/webconsole/` (`GRPC_WEB_PORT`)
 
-> **WARNING (Linux) — gopls OOM**: gopls (the Go language server) running concurrently with `go build` / `go vet` / `go test` can exhaust memory and crash the machine. **Always kill gopls before running any go command**: `pkill gopls || true`. Go telemetry should also be disabled: run `go telemetry off` once, or set `GOTELEMETRY=off` in the environment.
+> **WARNING (Linux/macOS) — gopls OOM**: gopls (the Go language server) running concurrently with `go build` / `go vet` / `go test` can exhaust memory and crash the machine. **Always kill gopls before running any go command**: `pkill gopls || true`.
+>
+> **WARNING — mandatory env vars for build and test commands**: every `go build` / `go test` invocation (including `make build` / `make test`, which pass the environment through) MUST explicitly set `GOTELEMETRY=off` and `GOGC=30`, e.g. `GOTELEMETRY=off GOGC=30 go test ./...`. Omitting them can let the Go runtime exhaust memory and OOM-kill the machine.
 
 ### vstacks CLI
 

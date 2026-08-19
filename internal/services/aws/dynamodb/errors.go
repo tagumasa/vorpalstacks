@@ -35,7 +35,10 @@ type TransactionCanceledError struct {
 // CancellationReason represents a reason for transaction cancellation.
 type CancellationReason struct {
 	Code string
-	Item map[string]interface{}
+	// Message describes the cancellation; items without an error carry the
+	// literal code "None" and omit the message entirely.
+	Message string
+	Item    map[string]interface{}
 }
 
 // NewTransactionCanceledError creates a new TransactionCanceledError.
@@ -49,8 +52,9 @@ func NewTransactionCanceledError(message string, reasons []CancellationReason) *
 // ToJSON serialises the error to JSON format.
 func (e *TransactionCanceledError) ToJSON() string {
 	type cancellationReasonJSON struct {
-		Item map[string]interface{} `json:"Item,omitempty"`
-		Code string                 `json:"Code"`
+		Item    map[string]interface{} `json:"Item,omitempty"`
+		Code    string                 `json:"Code"`
+		Message string                 `json:"Message,omitempty"`
 	}
 
 	type errorJSON struct {
@@ -62,8 +66,9 @@ func (e *TransactionCanceledError) ToJSON() string {
 	reasons := make([]cancellationReasonJSON, len(e.CancellationReasons))
 	for i, r := range e.CancellationReasons {
 		reasons[i] = cancellationReasonJSON{
-			Item: r.Item,
-			Code: r.Code,
+			Item:    r.Item,
+			Code:    r.Code,
+			Message: r.Message,
 		}
 	}
 
@@ -180,6 +185,9 @@ var (
 	ErrContinuousBackupsUnavailable = NewAPIError("com.amazonaws.dynamodb.v20120810#ContinuousBackupsUnavailableException", "Backups are not available for this table", http.StatusBadRequest)
 	// ErrDuplicateItem is returned when a batch write contains duplicate items.
 	ErrDuplicateItem = NewAPIError("com.amazonaws.dynamodb.v20120810#DuplicateItemException", "Duplicate item in request", http.StatusBadRequest)
+	// ErrDuplicateKeys is returned when a batch request names the same
+	// primary key more than once; the whole request is rejected.
+	ErrDuplicateKeys = NewAPIError("com.amazon.coral.validate#ValidationException", "Provided list of item keys contains duplicates", http.StatusBadRequest)
 	// ErrExportConflict is returned when an export operation conflicts with an existing export.
 	ErrExportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportConflictException", "Export conflict", http.StatusBadRequest)
 	// ErrFailure is returned when a generic failure occurs during import or export.
@@ -196,8 +204,8 @@ var (
 	ErrReplicatedWriteConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicatedWriteConflictException", "Replicated write conflict", http.StatusBadRequest)
 	// ErrThrottling is returned when the request is throttled.
 	ErrThrottling = NewAPIError("com.amazonaws.dynamodb.v20120810#ThrottlingException", "Rate of requests exceeds throughput limit", http.StatusBadRequest)
-	// ErrTransactionInProgress is returned when a transaction is already in progress.
-	ErrTransactionInProgress = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionInProgressException", "Transaction in progress", http.StatusBadRequest)
+	// ErrTransactionInProgress is returned when a client request token is retried while the transaction it identifies is already in progress.
+	ErrTransactionInProgress = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionInProgressException", "The transaction with the given request token is already in progress.", http.StatusBadRequest)
 	// ErrInvalidExportTime is returned when the requested export time is invalid.
 	ErrInvalidExportTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidExportTimeException", "Invalid export time", http.StatusBadRequest)
 	// ErrInvalidRestoreTime is returned when the requested restore time is invalid.

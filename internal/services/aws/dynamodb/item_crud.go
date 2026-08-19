@@ -43,6 +43,10 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 		return nil, ErrInvalidParameter
 	}
 
+	if err := validateItemKeyTypes(table, item); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -54,6 +58,11 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
+	// PutItem and DeleteItem recognise only NONE and ALL_OLD (model
+	// ReturnValue enum); any other value is rejected rather than ignored.
+	if returnValues != "" && returnValues != "NONE" && returnValues != "ALL_OLD" {
+		return nil, ErrInvalidParameter
+	}
 
 	// Build condition checker callback from ConditionExpression.
 	var condChecker ConditionChecker
@@ -80,7 +89,7 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 		}
 	}
 
-	storedItem, oldItem, err := s.putItemCore(ctx, store, reqCtx.GetRegion(), table, key, item, condChecker)
+	_, oldItem, err := s.putItemCore(ctx, store, reqCtx.GetRegion(), table, key, item, condChecker)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +97,6 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	resp := map[string]interface{}{}
 	if returnValues == "ALL_OLD" && oldItem != nil {
 		resp["Attributes"] = buildItemResponse(oldItem.Attributes)
-	} else if returnValues == "ALL_NEW" && storedItem != nil {
-		resp["Attributes"] = buildItemResponse(storedItem.Attributes)
 	}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
@@ -115,6 +122,10 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 
 	if !validateKeyValueNotEmpty(key) {
 		return nil, ErrInvalidParameter
+	}
+
+	if err := validateKeyTypes(table, key); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -143,7 +154,11 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, 0.5)
+		// Strongly consistent reads consume twice the capacity of eventually
+		// consistent ones; the underlying store is always strongly
+		// consistent, so the flag only affects the reported charge.
+		capacityUnits := rcuPerItem(request.GetBoolParam(req.Parameters, "ConsistentRead"), "", table)
+		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, capacityUnits)
 	}
 
 	return resp, nil
@@ -166,6 +181,10 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrInvalidParameter
 	}
 
+	if err := validateKeyTypes(table, key); err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -177,6 +196,11 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
+	// PutItem and DeleteItem recognise only NONE and ALL_OLD (model
+	// ReturnValue enum); any other value is rejected rather than ignored.
+	if returnValues != "" && returnValues != "NONE" && returnValues != "ALL_OLD" {
+		return nil, ErrInvalidParameter
+	}
 
 	// Build condition checker callback from ConditionExpression.
 	var condChecker ConditionChecker
@@ -234,6 +258,10 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 	}
 	if !validateKeyValueNotEmpty(key) {
 		return nil, ErrInvalidParameter
+	}
+
+	if err := validateKeyTypes(table, key); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

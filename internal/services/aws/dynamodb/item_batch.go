@@ -32,6 +32,9 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 	}
 	responses := make(map[string]interface{})
 	unprocessed := make(map[string]interface{})
+	tableReadCounts := make(map[string]int)
+	tableConsistentRead := make(map[string]bool)
+	seenGetKeys := make(map[string]bool)
 
 	for tableName, tableReq := range requestItems {
 		tr, ok := tableReq.(map[string]interface{})
@@ -43,14 +46,20 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 			return nil, ErrTableNotFound
 		}
 
+		batchTable, tblErr := store.Tables().Get(tableName)
+		if tblErr != nil || batchTable == nil {
+			return nil, ErrTableNotFound
+		}
+
 		keys, ok := tr["Keys"].([]interface{})
 		if !ok {
 			return nil, ErrInvalidParameter
 		}
 
 		// ConsistentRead is accepted for API compatibility. Single-instance
-		// Pebble provides strong consistency for all reads.
-		_ = request.GetBoolParam(tr, "ConsistentRead")
+		// Pebble provides strong consistency for all reads; the flag is
+		// honoured in the reported capacity charge.
+		tableConsistentRead[tableName] = request.GetBoolParam(tr, "ConsistentRead")
 
 		var tableItems []map[string]interface{}
 		var unprocessedKeys []interface{}
@@ -62,14 +71,32 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 				continue
 			}
 
+			// A wrong-typed key rejects the whole batch request, matching
+			// the BatchGetItem contract.
+			if err := validateKeyTypes(batchTable, key); err != nil {
+				return nil, err
+			}
+
+			// Duplicate keys in one request are rejected rather than
+			// deduplicated.
+			keyStr := buildKeyString(tableName, key)
+			if seenGetKeys[keyStr] {
+				return nil, ErrDuplicateKeys
+			}
+			seenGetKeys[keyStr] = true
+
 			item, err := store.Items().Get(tableName, key)
 			if err != nil {
 				if dbstore.IsItemNotFound(err) {
+					// Requests for nonexistent items consume the minimum
+					// read capacity units according to the read type.
+					tableReadCounts[tableName]++
 					continue
 				}
 				unprocessedKeys = append(unprocessedKeys, k)
 				continue
 			}
+			tableReadCounts[tableName]++
 
 			projection, projErr := parseProjectionExpression(tr)
 			if projErr != nil {
@@ -99,8 +126,9 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
 		var consumedCapacity []interface{}
-		for tableName := range responses {
-			consumedCapacity = append(consumedCapacity, buildConsumedCapacityResponse(tableName, 0.5))
+		for tableName, readCount := range tableReadCounts {
+			capacityUnits := float64(readCount) * rcuPerItem(tableConsistentRead[tableName], "", nil)
+			consumedCapacity = append(consumedCapacity, buildConsumedCapacityResponse(tableName, capacityUnits))
 		}
 		if len(consumedCapacity) > 0 {
 			resp["ConsumedCapacity"] = consumedCapacity
@@ -143,6 +171,10 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 
 	var allWrites []writeOp
 	tableCache := make(map[string]*dbstore.Table)
+	// Primary keys already targeted in this request, per table: the whole
+	// batch write is rejected when the same item appears twice, whether as
+	// two puts or as a put plus a delete.
+	seenWriteKeys := make(map[string]bool)
 
 	for tableName, tableReq := range requestItems {
 		writes, ok := tableReq.([]interface{})
@@ -187,6 +219,18 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 					return nil, ErrInvalidParameter
 				}
 
+				// Key attribute types must match the table schema and any
+				// index key definitions.
+				if err := validateItemKeyTypes(table, item); err != nil {
+					return nil, err
+				}
+
+				keyStr := buildKeyString(tableName, key)
+				if seenWriteKeys[keyStr] {
+					return nil, ErrDuplicateKeys
+				}
+				seenWriteKeys[keyStr] = true
+
 				allWrites = append(allWrites, writeOp{
 					tableName: tableName,
 					opType:    "Put",
@@ -206,6 +250,16 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 				if !validateKeyValueNotEmpty(key) {
 					return nil, ErrInvalidParameter
 				}
+
+				if err := validateKeyTypes(table, key); err != nil {
+					return nil, err
+				}
+
+				keyStr := buildKeyString(tableName, key)
+				if seenWriteKeys[keyStr] {
+					return nil, ErrDuplicateKeys
+				}
+				seenWriteKeys[keyStr] = true
 
 				allWrites = append(allWrites, writeOp{
 					tableName: tableName,
@@ -318,8 +372,16 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 					eventName = dbstore.StreamEventInsert
 				}
 				s.sendToKinesisDestinations(table, eventName, op.key, op.item, batchOldAttrs)
-			} else if op.opType == "Delete" && batchOldAttrs != nil {
-				s.sendToKinesisDestinations(table, dbstore.StreamEventRemove, op.key, nil, batchOldAttrs)
+				if table != nil {
+					s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaPutOp(table, op.key, op.item))
+				}
+			} else if op.opType == "Delete" {
+				if batchOldAttrs != nil {
+					s.sendToKinesisDestinations(table, dbstore.StreamEventRemove, op.key, nil, batchOldAttrs)
+				}
+				if table != nil {
+					s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaDeleteOp(table, op.key))
+				}
 			}
 		}
 	}

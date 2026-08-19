@@ -134,6 +134,7 @@ type DynamoDBStoreInterface interface {
 	Exports() ExportStoreInterface
 	Imports() ImportStoreInterface
 	Streams() *StreamStore
+	Idempotency() *IdempotencyStore
 	Storage() storage.TransactionalStorageWith2PC
 	View(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
 	Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
